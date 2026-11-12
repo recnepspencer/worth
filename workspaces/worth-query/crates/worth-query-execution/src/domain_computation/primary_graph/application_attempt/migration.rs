@@ -92,6 +92,9 @@ where
         );
     }
     let WorthQueryApplicationEffectProgram {
+        synchronous_outputs,
+        authored_stages,
+        producer_round_limits: _,
         read_set,
         effects,
         conditional_definition,
@@ -104,6 +107,13 @@ where
         content_attachments,
     } = program;
 
+    if !authored_stages.is_empty() || !synchronous_outputs.is_empty() {
+        return Err(
+            WorthQueryProgramMigrationPreparationDenial::UnsupportedPosture(
+                "program migration cannot transfer a pending synchronous graph",
+            ),
+        );
+    }
     if !content_attachments.is_empty() {
         return Err(
             WorthQueryProgramMigrationPreparationDenial::UnsupportedPosture(

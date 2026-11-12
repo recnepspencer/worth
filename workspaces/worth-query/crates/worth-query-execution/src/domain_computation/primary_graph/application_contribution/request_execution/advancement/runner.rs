@@ -4,6 +4,7 @@ use super::{
     phase_custody::{ActiveAdvancement, AdvancementSource},
     Form, QueryRequestExecution, WorthQueryAdvancementDenial, WorthQueryAdvancementPhase,
 };
+use crate::domain_computation::execution_runtime::product_world::published_effect::PublishedEffect;
 use worth_execution::ExecutionWorkCeiling;
 
 pub fn run_advancement(
@@ -46,9 +47,16 @@ fn run_admitted_advancement(
     discard: &mut dyn FnMut(),
 ) -> Result<(), WorthQueryAdvancementDenial> {
     // Follows the old owned FnOnce into Execution, then its successful result.
-    // A native final refusal must destroy that result inside Execution's boundary.
+    // A native final refusal must destroy that result inside Execution's
+    // boundary, with one exception (public #132): once World has answered a
+    // publication of this body with an effect, the commit cannot be withheld,
+    // so a completed body keeps its own typed outcome past a late native stop,
+    // as the accounted path always does.
+    let published = PublishedEffect::fresh();
+    let _published_scope = PublishedEffect::install(Some(published.clone()));
     let handoff = AdvancementHandoff {
         discard: Some(discard),
+        published: published.clone(),
     };
     let request = execution
         .execution_request()
@@ -118,19 +126,31 @@ fn run_admitted_advancement(
         observation::record_panicked(outcome.as_ref().ok().map(|(_, report)| *report));
         std::panic::resume_unwind(payload);
     }
-    outcome
-        .map(|(result, report)| {
+    match outcome {
+        Ok((result, report)) => {
             observation::record_report(report);
             result
                 .expect("a completed advancement has its body result")
                 .release();
-        })
-        .map_err(advancement_denial)
+            Ok(())
+        }
+        // The only reader of the marker. World's outcome set it, so the body
+        // published and completed (a body that did not complete unwound above);
+        // the handoff kept its result. Only the native handoff refuses after
+        // the body, so this arm never applies to the accounted path.
+        Err(worth_execution::WorkCeilingDenial::Stopped(_)) if published.observed() => {
+            observation::record_kept_after_publication();
+            Ok(())
+        }
+        Err(denial) => Err(advancement_denial(denial)),
+    }
 }
 
 /// Owns only destruction at the original boundary, never request or phase authority.
 struct AdvancementHandoff<'a> {
     discard: Option<&'a mut dyn FnMut()>,
+    /// Set from World's publication outcome; a published body's result is kept.
+    published: PublishedEffect,
 }
 
 impl AdvancementHandoff<'_> {
@@ -141,6 +161,9 @@ impl AdvancementHandoff<'_> {
 
 impl Drop for AdvancementHandoff<'_> {
     fn drop(&mut self) {
+        if self.published.observed() {
+            return;
+        }
         if let Some(discard) = self.discard.take() {
             discard();
         }

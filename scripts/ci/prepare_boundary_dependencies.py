@@ -10,7 +10,15 @@ def manifests(root):
     root = Path(root).resolve()
     config = root/'tools/boundary-check/config'
     policy = tomllib.loads((config/'road1.toml').read_text(encoding='utf-8'))
-    selected = {'Cargo.toml'}
+    domain = tomllib.loads((config/'domain-values.toml').read_text(encoding='utf-8'))
+    domain_manifests = domain.get('workspace_manifests', [])
+    if not isinstance(domain_manifests, list):
+        raise ValueError('domain workspace_manifests must be an array')
+    if any(not isinstance(path, str) or
+           (path != 'Cargo.toml' and not path.endswith('/Cargo.toml'))
+           for path in domain_manifests):
+        raise ValueError('domain workspace manifest must be a literal Cargo.toml path')
+    selected = {'Cargo.toml', *domain_manifests}
     for key in ('subworkspaces', 'context_workspaces'):
         for row in policy.get(key, []):
             selected.add(str(Path(row['path'])/'Cargo.toml').replace('\\', '/'))

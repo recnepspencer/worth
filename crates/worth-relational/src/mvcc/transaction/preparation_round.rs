@@ -6,9 +6,17 @@ use super::{
 use crate::authority::mutation::MutationApplyDenial;
 use crate::runtime::PendingSymbolMeanings;
 
+enum CoupledRoundCustody {
+    /// Preview/assembly may create provisional coupling owned by this round.
+    Provisional,
+    /// Funded proposal validation borrows an already assembled outer draft.
+    OuterOwned,
+}
+
 struct PreparationOverlayRound<'transaction> {
     transaction: &'transaction mut BranchBoundRelationalTransaction,
     accepted: bool,
+    coupled: CoupledRoundCustody,
     overlay: DetachedRelationalTransactionOverlay,
     content: crate::content::RelationalContentAttachments,
     footprint: RelationalTransactionFootprint,
@@ -20,25 +28,27 @@ impl Drop for PreparationOverlayRound<'_> {
         if self.accepted {
             return;
         }
-        if let Some(binding) = &self.transaction.authored_coupling {
-            let abandoned = binding
-                .applied
-                .lock()
-                .unwrap_or_else(|e| e.into_inner())
-                .take();
-            drop(abandoned);
-            let abandoned = binding
-                .completed
-                .lock()
-                .unwrap_or_else(|e| e.into_inner())
-                .take();
-            drop(abandoned);
+        if matches!(self.coupled, CoupledRoundCustody::Provisional) {
+            if let Some(binding) = &self.transaction.authored_coupling {
+                let abandoned = binding
+                    .applied
+                    .lock()
+                    .unwrap_or_else(|e| e.into_inner())
+                    .take();
+                drop(abandoned);
+                let abandoned = binding
+                    .completed
+                    .lock()
+                    .unwrap_or_else(|e| e.into_inner())
+                    .take();
+                drop(abandoned);
+            }
+            *self
+                .transaction
+                .prepared_coupled_commands
+                .get_mut()
+                .unwrap_or_else(|error| error.into_inner()) = None;
         }
-        *self
-            .transaction
-            .prepared_coupled_commands
-            .get_mut()
-            .unwrap_or_else(|error| error.into_inner()) = None;
         std::mem::swap(&mut self.transaction.overlay, &mut self.overlay);
         std::mem::swap(&mut self.transaction.content, &mut self.content);
         std::mem::swap(&mut self.transaction.footprint, &mut self.footprint);
@@ -65,6 +75,7 @@ impl BranchBoundRelationalTransaction {
                 .map(super::OwnedNormalizedPlan::copy_for_ordinary_preview),
             transaction: self,
             accepted: false,
+            coupled: CoupledRoundCustody::Provisional,
         };
         round(&mut *guard.transaction)
     }
@@ -93,6 +104,7 @@ impl BranchBoundRelationalTransaction {
             cached_plan: original_plan,
             transaction: self,
             accepted: false,
+            coupled: CoupledRoundCustody::OuterOwned,
         };
         round(&mut *guard.transaction)
     }
@@ -117,6 +129,7 @@ impl BranchBoundRelationalTransaction {
             cached_plan: original_plan,
             transaction: self,
             accepted: false,
+            coupled: CoupledRoundCustody::Provisional,
         };
         let answer = round(&mut *guard.transaction);
         guard.accepted = answer.is_ok();

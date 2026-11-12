@@ -51,6 +51,9 @@ impl<Schema, Operation, Input, Scope>
             self.admission.operation(),
         )?;
         let program = WorthQueryApplicationEffectProgram {
+            synchronous_outputs: Vec::new(),
+            authored_stages: Vec::new(),
+            producer_round_limits: crate::domain_computation::primary_graph::application_contribution::producer::synchronous_outputs::default_producer_round_bounds(),
             read_set: self,
             effects,
             conditional_definition: None,

@@ -10,6 +10,7 @@ use worth_query_host::facade::{
 #[derive(Clone, Debug, worth_foundational::facade::WorthValue)]
 pub enum Value {
     Primary(u64),
+    Calculated(u64),
     Secondary(u64),
     ReadEnabled(bool),
     Ceiling(u64),
@@ -38,10 +39,12 @@ impl ApplicationDeclaredOperation<NumericSchema> for EditNumber {
             .operation_projection_work_budget(Self::reference(), 8)
             .operation_read_field(Self::reference(), Key::at("Key"))
             .operation_read_field(Self::reference(), Primary::at("Primary"))
+            .operation_read_field(Self::reference(), Calculated::at("Calculated"))
             .operation_read_field(Self::reference(), Ceiling::at("Ceiling"))
             .operation_read_entity(Self::reference(), Number::reference())
             .operation_read_relation(Self::reference(), AuthoredReference::reference())
             .operation_write(Self::reference(), Primary::at("Primary"))
+            .operation_write(Self::reference(), Calculated::at("Calculated"))
     }
 }
 
@@ -143,6 +146,9 @@ impl OperationHandler<NumericSchema, EditBinding> for Handler {
             Value::Primary(value) | Value::AdjacentPrimary(value) if value > ceiling => {
                 return HandlerResult::DomainDenied(MissingValue)
             }
+            Value::Calculated(_) => reader
+                .field(&root, Calculated::at("Calculated"))
+                .map(|value| value.is_some()),
             Value::Primary(_) | Value::AdjacentPrimary(_) => reader
                 .field(&root, Primary::at("Primary"))
                 .map(|value| value.is_some()),
@@ -171,6 +177,9 @@ impl OperationHandler<NumericSchema, EditBinding> for Handler {
             }
         };
         let written = match input.value {
+            Value::Calculated(value) => {
+                writer.write_field(&target, Calculated::at("Calculated"), value)
+            }
             Value::Primary(value) | Value::AdjacentPrimary(value) => {
                 writer.write_field(&target, Primary::at("Primary"), Counter(value))
             }

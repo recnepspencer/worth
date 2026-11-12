@@ -172,6 +172,11 @@ impl<Snapshot> RelationalPinnedRead<Snapshot> {
 }
 
 impl<Snapshot> RelationalPinnedRead<Snapshot> {
+    pub(crate) fn applied_field_image(&self) -> Option<&crate::indexes::AppliedFieldImage> {
+        self.applied_changes
+            .as_ref()
+            .map(|changes| changes.fields.as_ref())
+    }
     pub(crate) fn candidate_aggregate(
         &self,
     ) -> Option<&crate::aggregate_identity::AggregateCandidateRead> {

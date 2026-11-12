@@ -16,9 +16,11 @@ mod validation;
 
 pub(super) use validation::admit_request;
 pub(super) use validation::operation_scope_binding;
-pub(super) use validation::validate_static_authority;
 pub(in crate::domain_computation::authorization) use validation::validate_static_authority_retained;
 pub(in crate::domain_computation::authorization) use validation::WorthQueryRetainedMutationStaticStop;
+pub(super) use validation::{
+    validate_conventional_preflight, validate_installed_operation, ConventionalPreflightEntrance,
+};
 
 pub(in crate::domain_computation::authorization) struct WorthQueryConventionalAuthorizationDecisionPermit(
     (),

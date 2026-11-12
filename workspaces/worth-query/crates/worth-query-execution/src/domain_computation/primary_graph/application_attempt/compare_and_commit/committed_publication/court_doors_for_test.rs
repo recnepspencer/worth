@@ -16,3 +16,10 @@ impl WorthQueryCommittedProductPublication {
         Self::take_output_demand_observation(self)
     }
 }
+
+impl WorthQueryCommittedProductPublication {
+    #[doc(hidden)]
+    pub fn co_committed_at_for_test(&self, observation: &ProductBranchObservation) -> bool {
+        Self::co_committed_at(self, observation)
+    }
+}

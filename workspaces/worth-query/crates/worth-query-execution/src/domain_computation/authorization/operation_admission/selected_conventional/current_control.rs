@@ -56,7 +56,7 @@ where
         current,
         prepared,
         principal,
-        control_scope,
+        SelectedMutationScope::Issued(control_scope),
         request,
     )
 }
@@ -118,7 +118,7 @@ where
         current,
         prepared,
         principal,
-        mutation_scope,
+        SelectedMutationScope::Issued(mutation_scope),
         request,
     )
 }

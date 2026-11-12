@@ -55,3 +55,11 @@ impl WorthQueryClosedProviderSessionDisposition {
         &self.terminal_binding
     }
 }
+
+/// A provider closes the executed session with either a physical publication
+/// description or an owner-issued, contact-bearing output adoption.
+#[derive(Debug)]
+pub enum WorthQueryProviderCommitCompletion {
+    Committed(WorthQueryProviderTerminalDescription),
+    OutputAdoptionPrepared(Box<crate::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::commit_execution::executed_adoption::PreparedExecutedOutputAdoption>),
+}

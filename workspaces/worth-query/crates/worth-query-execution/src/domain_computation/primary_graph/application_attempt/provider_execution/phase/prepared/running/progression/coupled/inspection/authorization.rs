@@ -9,7 +9,8 @@ impl CommitPreparedCoupledWriter<'_> {
     ) -> Result<(), crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial>
     where
         S: ApplicationSchema,
-        B: WorthQueryApplicationProducerBinding<S>,
+        B: ApplicationMutationBinding<S>,
+        B::Input: Clone + Send + Sync,
     {
         let typed = self
             .custody

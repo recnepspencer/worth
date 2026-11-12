@@ -343,6 +343,17 @@ impl WorthQueryInstalledGraphReadContract {
         &self.meaning.schema_basis_digest
     }
 
+    /// These declarations can read beyond the flattened field projection.
+    /// Dependency admission conservatively overlaps them until their own
+    /// installed closure can supply a narrower comparison.
+    pub fn has_extended_read_scope(&self) -> bool {
+        let meaning = self.meaning();
+        !meaning.root_paths.is_empty()
+            || meaning.orbit.is_some()
+            || meaning.component_selection.is_some()
+            || meaning.managed_index.is_some()
+    }
+
     pub fn root_entity(&self) -> &str {
         &self.meaning.root_entity
     }

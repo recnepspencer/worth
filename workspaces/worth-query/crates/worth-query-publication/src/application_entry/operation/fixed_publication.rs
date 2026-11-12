@@ -24,7 +24,8 @@ where
     MutationInput<Schema, Intent>: Clone + Send + Sync,
     MutationScope<Schema, Intent>:
         ApplicationMutationScopeResolution<Schema, MutationPrincipal<Schema, Intent>>,
-    Demand<Schema, Root>: Clone,
+    Demand<Schema, Root>: Clone + Send,
+    Root::Dependents:worth_query_execution::publication_boundary::synchronous_outputs::SynchronousOutputEdges<Schema,Demand<Schema,Root>>,
     SourceIntent<Schema, Root>: ApplicationQueryIntent<Schema, Binding = Source<Schema, Root>>,
     SourceScope<Schema, Root>:
         ApplicationQueryScopeResolution<Schema, SourcePrincipal<Schema, Root>>,
@@ -65,15 +66,12 @@ where
                     &mut work,
                     execution.allocation_policy(),
                 );
-            let outcome = match outcome {
-                Ok(WorthQueryApplicationPerformedMutationOutcome::CleanupRequired { cleanup, outcome }) => {
-                    self.cleanup.absorb_managed(&self.runtime, cleanup);
-                    Ok(*outcome)
-                }
-                other => other,
-            };
+            let mut outcome=outcome;
+            while let Ok(WorthQueryApplicationPerformedMutationOutcome::CleanupRequired{cleanup,outcome:inner})=outcome {
+                self.cleanup.absorb_managed(&self.runtime,cleanup);outcome=Ok(*inner);
+            }
             match outcome {
-                Ok(WorthQueryApplicationPerformedMutationOutcome::CleanupRequired { .. }) => unreachable!("the native classifier transfers a single cleanup owner"),
+                Ok(WorthQueryApplicationPerformedMutationOutcome::CleanupRequired { .. }) => unreachable!("all actual cleanup wrappers were drained"),
                 Err(denial @ WorthQueryPerformedMutationExecutionDenial::Action(_)) => {
                     return Advance::Terminal {
                         operation: WorthQueryTerminalFixedOperation::new(self),

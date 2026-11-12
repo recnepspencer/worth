@@ -5,6 +5,8 @@
 /// again can succeed.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryOutputDemandDenialKind {
+    ConflictingIntent { target: worth_relational::facade::transactions::RecordRef, earlier: usize, later: usize },
+    AuthoredStageRefused { ordinal: usize, binding: &'static str },
     DurableStateAdmission(crate::domain_computation::execution_runtime::product_world::WorthQueryDurableStateAdmissionDenial),
     /// The original unpublished record refused its native recovery visit.
     WorldRecovery(worth_runtime_world::facade::RuntimeWorldRecoveryDenial),
@@ -64,6 +66,8 @@ pub enum WorthQueryOutputDemandDenialKind {
     UnobservedWrite(crate::domain_computation::primary_graph::WorthQueryApplicationUnobservedWrite),
     /// The installed producer ran and its domain rejected the decision.
     ProducerDomainDenied,
+    /// An installed connection rejected discovery input or its computed demands.
+    DiscoveryConnection(Box<worth_query_declaration::facade::application_program::WorthQueryRequiredOutputConnectionDenial>),
     /// The selected original source could not supply a concrete resource quote.
     /// The admitted request lost its operation authorization before publication.
     RequestAuthorization(
@@ -90,6 +94,10 @@ pub enum WorthQueryOutputDemandDenialKind {
     TimedOut,
     /// The producer needs more work than the demand allows.
     WorkBudgetExceeded,
+    /// The next handler start exceeds this exact route's edit policy.
+    ProducerRouteRoundBudgetExceeded { source: worth_relational::facade::identity::EntityId, started: usize, limit: usize },
+    /// The next handler start exceeds the complete edit attempt's policy.
+    ProducerAttemptRoundBudgetExceeded { source: worth_relational::facade::identity::EntityId, started: usize, limit: usize },
     /// The producer's retained output is larger than the demand allows.
     RetentionBudgetExceeded,
     /// The branch had no capacity to publish the output.

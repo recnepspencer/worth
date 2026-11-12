@@ -17,11 +17,51 @@ impl Drop for WorthQueryCoupledParticipantCorruptionForTest {
         self.arm.store(0, Ordering::Release);
     }
 }
+const WITHHELD_OUTPUT_WITNESS: u8 = 10;
+const BREAK_WITHOUT_SUBJECT: u8 = 11;
+impl WorthQueryCoupledParticipantCorruptionForTest {
+    /// Whether a writer has taken the armed fault.
+    #[doc(hidden)]
+    pub fn taken_for_test(&self) -> bool {
+        self.arm.load(Ordering::Acquire) == 0
+    }
+}
 impl WorthQueryApplicationAttemptOperationControl {
     pub(in crate::domain_computation::primary_graph) fn take_coupled_participant_corruption(
         &self,
+        prepared_writers: usize,
     ) -> u8 {
+        match self.coupled_participant_fault.load(Ordering::Acquire) {
+            5 if prepared_writers < 2 => return 0,
+            // Taken after the commit, by the first writer whose witness is sealed.
+            WITHHELD_OUTPUT_WITNESS | BREAK_WITHOUT_SUBJECT => return 0,
+            _ => {}
+        }
         self.coupled_participant_fault.swap(0, Ordering::AcqRel)
+    }
+    /// True once, for the next coupled assembly after the fault is armed.
+    pub(in crate::domain_computation::primary_graph) fn take_break_without_subject(&self) -> bool {
+        self.coupled_participant_fault
+            .compare_exchange(
+                BREAK_WITHOUT_SUBJECT,
+                0,
+                Ordering::AcqRel,
+                Ordering::Acquire,
+            )
+            .is_ok()
+    }
+    /// True once, for the first coupled writer sealed after the fault is armed.
+    pub(in crate::domain_computation::primary_graph) fn take_withheld_output_witness(
+        &self,
+    ) -> bool {
+        self.coupled_participant_fault
+            .compare_exchange(
+                WITHHELD_OUTPUT_WITNESS,
+                0,
+                Ordering::AcqRel,
+                Ordering::Acquire,
+            )
+            .is_ok()
     }
 }
 impl<S> WorthQueryPrimaryGraphApplicationRuntime<S> {
@@ -38,6 +78,94 @@ impl<S> WorthQueryPrimaryGraphApplicationRuntime<S> {
         );
         assert_eq!(
             arm.swap(3, Ordering::AcqRel),
+            0,
+            "coupled corruption is already armed"
+        );
+        WorthQueryCoupledParticipantCorruptionForTest { arm }
+    }
+    /// Replays a token issued from the actual Native-applied owned part.
+    #[doc(hidden)]
+    pub fn replay_next_coupled_continuation_for_test(
+        &self,
+    ) -> WorthQueryCoupledParticipantCorruptionForTest {
+        let arm = Arc::clone(
+            &self
+                .runtime
+                .primary_provider
+                .application_attempt_operation_control
+                .coupled_participant_fault,
+        );
+        assert_eq!(
+            arm.swap(4, Ordering::AcqRel),
+            0,
+            "coupled corruption is already armed"
+        );
+        WorthQueryCoupledParticipantCorruptionForTest { arm }
+    }
+    /// The second actual writer destructively targets the first writer's real allocation.
+    #[doc(hidden)]
+    pub fn destroy_another_writers_fresh_record_for_test(
+        &self,
+    ) -> WorthQueryCoupledParticipantCorruptionForTest {
+        self.arm_fresh_record_corruption(5)
+    }
+    /// The actual producer destructively targets its authored prefix's new source.
+    #[doc(hidden)]
+    pub fn destroy_the_authored_prefixs_fresh_record_for_test(
+        &self,
+    ) -> WorthQueryCoupledParticipantCorruptionForTest {
+        self.arm_fresh_record_corruption(6)
+    }
+    /// The actual writer's own complete commands return as a continued round of its route.
+    #[doc(hidden)]
+    pub fn continue_next_coupled_route_with_its_effect_for_test(
+        &self,
+    ) -> WorthQueryCoupledParticipantCorruptionForTest {
+        self.arm_fresh_record_corruption(7)
+    }
+    /// Only the actual writer's in-place patches return, at values D already holds.
+    #[doc(hidden)]
+    pub fn continue_next_coupled_route_unchanged_for_test(
+        &self,
+    ) -> WorthQueryCoupledParticipantCorruptionForTest {
+        self.arm_fresh_record_corruption(8)
+    }
+    /// The actual writer's in-place patches return with each unsigned value moved by one.
+    #[doc(hidden)]
+    pub fn continue_next_coupled_route_with_a_changed_patch_for_test(
+        &self,
+    ) -> WorthQueryCoupledParticipantCorruptionForTest {
+        self.arm_fresh_record_corruption(9)
+    }
+    /// The next coupled writer commits without a sealed Native output witness,
+    /// as when the witness cannot prove one of its roles (public #126).
+    #[doc(hidden)]
+    pub fn withhold_next_coupled_output_witness_for_test(
+        &self,
+    ) -> WorthQueryCoupledParticipantCorruptionForTest {
+        self.arm_fresh_record_corruption(WITHHELD_OUTPUT_WITNESS)
+    }
+    /// The next coupled assembly ends the edit without recording any refusing
+    /// subject, as a lost refusal would.
+    #[doc(hidden)]
+    pub fn break_next_coupled_assembly_without_a_subject_for_test(
+        &self,
+    ) -> WorthQueryCoupledParticipantCorruptionForTest {
+        self.arm_fresh_record_corruption(BREAK_WITHOUT_SUBJECT)
+    }
+    fn arm_fresh_record_corruption(
+        &self,
+        fault: u8,
+    ) -> WorthQueryCoupledParticipantCorruptionForTest {
+        let arm = Arc::clone(
+            &self
+                .runtime
+                .primary_provider
+                .application_attempt_operation_control
+                .coupled_participant_fault,
+        );
+        assert_eq!(
+            arm.swap(fault, Ordering::AcqRel),
             0,
             "coupled corruption is already armed"
         );

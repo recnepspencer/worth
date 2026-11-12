@@ -61,7 +61,7 @@ pub(in crate::domain_computation::primary_graph::provider) fn commit_prepared_ap
     history: Option<crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerCutover<'_>>,
     allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
 ) -> Result<
-    crate::domain_computation::WorthQueryProviderTerminalDescription,
+    crate::domain_computation::WorthQueryProviderCommitCompletion,
     crate::domain_computation::WorthQueryProviderSessionCommitStop,
 > {
     let prepared =
@@ -150,6 +150,11 @@ pub(in crate::domain_computation::primary_graph) use relational_commit::{
     PreparedRebaseDenial, PreparedSourceFactRebase,
 };
 
+// Every stop here precedes the Native transaction. A read control stop keeps
+// its control posture; every other typed refusal (a content or read rejection,
+// a relation preimage, any preimage retention denial, candidate support) is a
+// pre-effect refusal carrying its cause (public #122). The rest go through the
+// existing abort-and-cleanup owner.
 pub(in crate::domain_computation) use relational_commit::QueryPreparingApplicationCommit;
 pub(in crate::domain_computation::primary_graph::provider) use relational_commit::RetainedQueryDurablePreparation;
 // Typed content/read stops precede the Native transaction. Preserve semantic

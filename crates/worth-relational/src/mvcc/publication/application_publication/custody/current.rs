@@ -38,16 +38,7 @@ pub(super) fn readmit(
         .ok_or_else(|| refuse(meaning.source_scope))?;
     let result = execution
         .run_native_with_checkpoint(|context| {
-            checkpoint(
-                context,
-                (producer.len()
-                    + origin.producer.len()
-                    + meaning.family.len()
-                    + origin.meaning.family.len()
-                    + roles.len()
-                    + 96) as u64,
-            )
-            .map_err(execution_stop)?;
+            super::description::charge(context, origin, producer, meaning, roles.len())?;
             let kind = installed.source_scope_ownership.scope_kind(producer);
             if !kind.is_some_and(|kind| owner_matches(installed, basis, &roster, origin, kind))
                 || origin.producer != producer
@@ -57,30 +48,24 @@ pub(super) fn readmit(
             {
                 return Err(refuse(meaning.source_scope));
             }
-            for (index, role) in roles.iter().enumerate() {
-                checkpoint(
-                    context,
-                    (index + origin.members.len() + role.role.len() + role.entity_name.len() + 1)
-                        as u64,
-                )
-                .map_err(execution_stop)?;
-                if roles[..index]
-                    .iter()
-                    .any(|prior| prior.target == role.target)
-                    || !origin.members.iter().any(|member| {
-                        role.target == EntityReference::Existing(member.id)
-                            && member.role == role.role
-                            && member.entity_name == role.entity_name
-                            && member.kind == role.kind
-                            && member.posture == role.posture
-                    })
-                {
-                    return Err(refuse(match role.target {
-                        EntityReference::Existing(id) => id,
-                        _ => meaning.source_scope,
-                    }));
-                }
-            }
+            super::description::require(
+                context,
+                origin,
+                producer,
+                dependency,
+                meaning,
+                roles.iter().map(|role| super::RecordedRequiredOutputRole {
+                    role: &role.role,
+                    entity_name: &role.entity_name,
+                    kind: role.kind,
+                    posture: role.posture,
+                    entity: match role.target {
+                        EntityReference::Existing(entity) => Some(entity),
+                        _ => None,
+                    },
+                }),
+            )?
+            .map_err(refuse)?;
             Ok(())
         })
         .map_err(execution_stop)?
@@ -101,58 +86,77 @@ impl crate::runtime::RelationalRuntime {
         running_producer: &str,
         meaning: &super::super::RequiredOutputPublicationMeaning,
     ) -> Result<Option<RelationalRequiredOutputPublication>, TransactionCommitError> {
-        let Some(kind) = installed
-            .source_scope_ownership
-            .scope_kind(running_producer)
-        else {
-            return Ok(None);
-        };
-        if installed.runtime_instance_id != self.runtime_instance_id()
-            || basis.descriptor().runtime_instance_id() != self.runtime_instance_id()
-            || !basis.is_current()
-        {
-            return Err(super::super::origin_denial(
-                "foreign current publication owner",
-            ));
-        }
-        installed.require_current_ownership_storage(basis, meaning.source_scope)?;
-        let roster = crate::publication::ownership::select_current(
+        readmit_successor(
+            self.runtime_instance_id(),
             execution,
+            installed,
             basis,
-            &[RecordRef::Entity(meaning.source_scope)],
-        )?;
-        let selected = execution
-            .run_native_with_checkpoint(|context| {
-                for (origin, ordinal) in roster.coordinates() {
-                    checkpoint(
-                        context,
-                        (origin.meaning.family.len() + meaning.family.len() + 1) as u64,
-                    )
-                    .map_err(execution_stop)?;
-                    if !origin.meaning.same_route(meaning) {
-                        continue;
-                    }
-                    checkpoint(
-                        context,
-                        (origin.producer.len() + running_producer.len() + 96) as u64,
-                    )
-                    .map_err(execution_stop)?;
-                    if !owner_matches(installed, basis, &roster, origin, kind) {
-                        return Err(TransactionCommitError::publication(
-                            PublicationError::authored_retirement(
-                                Cause::CorruptPublication,
-                                RecordRef::Entity(meaning.source_scope),
-                            ),
-                        ));
-                    }
-                    return Ok(Some((Arc::clone(origin), ordinal)));
-                }
-                Ok(None)
-            })
-            .map_err(execution_stop)?
-            .0?;
-        Ok(selected.map(|(origin, ordinal)| issue(installed, basis, roster, origin, ordinal)))
+            running_producer,
+            meaning,
+        )
     }
+}
+
+/// The runtime and its scoped preparation port use this one current-custody owner.
+pub(in crate::mvcc::publication::application_publication) fn readmit_successor(
+    runtime_instance_id: u64,
+    execution: &ExecutionRequest<'_, '_>,
+    installed: &super::super::RelationalInstalledApplicationPublicationAuthority,
+    basis: &AdmittedRelationalBranchBasis,
+    running_producer: &str,
+    meaning: &super::super::RequiredOutputPublicationMeaning,
+) -> Result<Option<RelationalRequiredOutputPublication>, TransactionCommitError> {
+    let Some(kind) = installed
+        .source_scope_ownership
+        .scope_kind(running_producer)
+    else {
+        return Ok(None);
+    };
+    if installed.runtime_instance_id != runtime_instance_id
+        || basis.descriptor().runtime_instance_id() != runtime_instance_id
+        || !basis.is_current()
+    {
+        return Err(super::super::origin_denial(
+            "foreign current publication owner",
+        ));
+    }
+    installed.require_current_ownership_storage(basis, meaning.source_scope)?;
+    let roster = crate::publication::ownership::select_current(
+        execution,
+        basis,
+        &[RecordRef::Entity(meaning.source_scope)],
+    )?;
+    let selected = execution
+        .run_native_with_checkpoint(|context| {
+            for (origin, ordinal) in roster.coordinates() {
+                checkpoint(
+                    context,
+                    (origin.meaning.family.len() + meaning.family.len() + 1) as u64,
+                )
+                .map_err(execution_stop)?;
+                if !origin.meaning.same_route(meaning) {
+                    continue;
+                }
+                checkpoint(
+                    context,
+                    (origin.producer.len() + running_producer.len() + 96) as u64,
+                )
+                .map_err(execution_stop)?;
+                if !owner_matches(installed, basis, &roster, origin, kind) {
+                    return Err(TransactionCommitError::publication(
+                        PublicationError::authored_retirement(
+                            Cause::CorruptPublication,
+                            RecordRef::Entity(meaning.source_scope),
+                        ),
+                    ));
+                }
+                return Ok(Some((Arc::clone(origin), ordinal)));
+            }
+            Ok(None)
+        })
+        .map_err(execution_stop)?
+        .0?;
+    Ok(selected.map(|(origin, ordinal)| issue(installed, basis, roster, origin, ordinal)))
 }
 
 fn owner_matches(

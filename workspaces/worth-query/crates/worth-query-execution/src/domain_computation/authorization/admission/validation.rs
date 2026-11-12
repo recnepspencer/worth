@@ -15,6 +15,10 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrimaryGraphApplicationRuntime,
 };
 
+mod conventional_preflight;
+pub(in crate::domain_computation::authorization) use conventional_preflight::{
+    validate_conventional_preflight, ConventionalPreflightEntrance,
+};
 mod retained_mutation;
 pub(in crate::domain_computation::authorization) use retained_mutation::{
     validate_static_authority_retained, WorthQueryRetainedMutationStaticStop,
@@ -42,23 +46,14 @@ pub(in crate::domain_computation::authorization) fn operation_scope_binding<
     )
 }
 
-pub(in crate::domain_computation::authorization) fn validate_static_authority<
-    Schema,
-    Principal,
-    PrincipalIdentity,
-    Operation,
-    Input,
-    Scope,
+pub(in crate::domain_computation::authorization) fn validate_installed_operation<
+    S: ApplicationSchema,
+    O,
+    I,
 >(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-    principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
-    scope: &WorthQueryApplicationEntityIdentity<Schema, Scope>,
-    operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
-) -> Result<(), WorthQueryOperationAuthorizationDenial>
-where
-    Schema: ApplicationSchema,
-{
-    validate_static_authority_prefix(runtime, principal, scope, operation.installed_view())?;
+    runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+    operation: &WorthQueryInstalledApplicationOperation<S, O, I>,
+) -> Result<(), WorthQueryOperationAuthorizationDenial> {
     runtime
         .runtime
         .installed_packages()

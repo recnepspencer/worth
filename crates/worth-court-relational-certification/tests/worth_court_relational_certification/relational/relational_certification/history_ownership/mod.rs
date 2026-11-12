@@ -81,3 +81,5 @@ mod historical_progressed_source;
 
 mod current_publications;
 mod current_successor;
+
+mod publication_appendix;

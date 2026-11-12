@@ -13,6 +13,8 @@ use worth_relational::facade::{
 pub struct WorthQueryHistoricalProducerRead {
     publication: (u64, usize),
     basis: RelationalBranchBasisDescriptor,
+    _applied:
+        Option<worth_relational::facade::runtime::RelationalAppliedCandidateReadQualification>,
     operation: &'static str,
     keys: Arc<ComputationFactAttribution>,
 }
@@ -26,9 +28,22 @@ impl WorthQueryHistoricalProducerRead {
         Self {
             publication: publication.authority().publication_coordinate(),
             basis: basis.descriptor().clone(),
+            _applied: None,
             operation,
             keys,
         }
+    }
+    pub(in crate::domain_computation::primary_graph) fn from_input(
+        publication: &RelationalRequiredOutputPublication,
+        input: &worth_relational::facade::mvcc::RelationalPredecessorInput,
+        operation: &'static str,
+        keys: Arc<ComputationFactAttribution>,
+    ) -> Self {
+        let mut evidence = Self::from_read(publication, input.before_basis(), operation, keys);
+        evidence._applied = input
+            .applied_read()
+            .map(|read| read.candidate_identity().qualification());
+        evidence
     }
     pub fn publication_commit(&self) -> CommitId {
         CommitId(self.publication.0)

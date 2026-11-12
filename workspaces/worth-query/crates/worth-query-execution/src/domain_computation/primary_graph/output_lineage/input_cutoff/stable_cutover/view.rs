@@ -5,6 +5,12 @@ use std::sync::Arc;
 use worth_runtime_world::facade::ProductBranchObservation;
 
 impl PublishedStableLineage {
+    pub(in crate::domain_computation::primary_graph) fn has_executed_adoption_support(
+        &self,
+    ) -> bool {
+        self.recorded().computation_source.is_executed_adoption()
+    }
+
     /// The filled row a reader at `observation` selected.
     pub(in crate::domain_computation::primary_graph::output_lineage) fn selected_at(
         cell: &Arc<std::sync::OnceLock<RecordedOutput>>,
@@ -73,6 +79,14 @@ impl PublishedStableLineage {
     ) -> Option<crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload>
     {
         self.recorded().checkpoint_source_facts()
+    }
+    /// Borrow the already sealed output expectations from the selected row.
+    /// Capture must carry these alongside producer facts, never reread a new
+    /// head to reconstruct what the original output expected.
+    pub(in crate::domain_computation::primary_graph) fn checkpoint_output_witness(
+        &self,
+    ) -> Option<&super::super::super::SealedNativeOutputWitness> {
+        self.recorded().native_output_witness()
     }
     pub(in crate::domain_computation::primary_graph) fn observation(
         &self,

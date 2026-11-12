@@ -16,6 +16,8 @@ mod intent_projection;
 mod owned_graph;
 #[path = "proposal_touches/preparation.rs"]
 mod preparation;
+#[path = "proposal_touches/work_observation.rs"]
+mod work_observation;
 
 /// One semantic locus touched by an invariant-validated Relational mutation.
 ///
@@ -192,19 +194,46 @@ impl ValidatedRelationalProposal {
         preparation::project_commands(self, execution, true, commands)
     }
 
-    /// Each concrete producer's touches use its own applied command contribution,
+    /// Actor-only authoring of one later authored stage (`stage` 0 is the
+    /// first stage after the prefix), from that stage's own applied commands.
+    /// Each stage's invariants are judged on its own contribution, as each
+    /// producer's are; `None` when the group has no such stage.
+    pub fn authored_stage_mutation_touches(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        stage: usize,
+    ) -> Option<Result<ValidatedMutationTouches<'_>, ValidatedMutationTouchProjectionError>> {
+        let part = match self
+            .state
+            .required_output_publication
+            .as_ref()
+            .map(|p| &p.publication)
+        {
+            Some(crate::mvcc::RequiredOutputPublication::CoupledAuthored { group }) => {
+                group.stages.get(stage)?
+            }
+            _ => return None,
+        };
+        Some(preparation::project_commands(
+            self,
+            execution,
+            true,
+            Some(&part.commands.plan().merged_intents),
+        ))
+    }
+
+    /// One concrete producer's touches use its own applied command contribution,
     /// under the final proposal's single invariant judgment and request budgets.
+    /// The participant is the part whose producing meaning equals `meaning`
+    /// exactly, implementation and epoch included; only that part is projected.
+    /// O(parts) meaning comparisons, then O(that part's intents).
     pub fn coupled_producer_mutation_touches<'a>(
         &'a self,
-        execution: &'a ExecutionRequest<'_, '_>,
-    ) -> impl Iterator<
-        Item = (
-            &'a str,
-            &'a crate::mvcc::RequiredOutputPublicationMeaning,
-            Result<ValidatedMutationTouches<'a>, ValidatedMutationTouchProjectionError>,
-        ),
-    > + 'a {
-        self.state
+        execution: &ExecutionRequest<'_, '_>,
+        meaning: &crate::mvcc::RequiredOutputPublicationMeaning,
+    ) -> Option<Result<ValidatedMutationTouches<'a>, ValidatedMutationTouchProjectionError>> {
+        let part = self
+            .state
             .required_output_publication
             .iter()
             .filter_map(|p| match &p.publication {
@@ -212,27 +241,13 @@ impl ValidatedRelationalProposal {
                 _ => None,
             })
             .flat_map(|group| group.parts.iter())
-            .map(move |part| {
-                let (producer, _) = part
-                    .publication
-                    .lineage_attribution()
-                    .expect("Native admitted Preserve participant");
-                let crate::mvcc::RequiredOutputPublication::Preserve { meaning, .. } =
-                    &part.publication
-                else {
-                    unreachable!("Native admitted Preserve participant")
-                };
-                (
-                    producer,
-                    meaning,
-                    preparation::project_commands(
-                        self,
-                        execution,
-                        false,
-                        Some(&part.commands.plan().merged_intents),
-                    ),
-                )
-            })
+            .rfind(|part| part.publication.producing_meaning() == Some(meaning))?;
+        Some(preparation::project_commands(
+            self,
+            execution,
+            false,
+            Some(&part.commands.plan().merged_intents),
+        ))
     }
 
     /// O(reached intents + prior/supplied fields), plus canonical sorting.

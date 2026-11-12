@@ -23,6 +23,7 @@ pub(in crate::domain_computation::primary_graph) enum SourceQueryRequest<I> {
     Recorded(Arc<super::request_recipe::CapturedSourceQueryRequest>),
 }
 mod admitted;
+mod applied;
 mod current_control;
 mod permission;
 mod predecessor;

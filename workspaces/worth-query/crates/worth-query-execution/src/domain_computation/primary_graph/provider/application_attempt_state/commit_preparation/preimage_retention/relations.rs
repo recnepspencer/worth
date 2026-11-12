@@ -128,7 +128,9 @@ pub(super) fn retain(
     let memory = execution
         .allocation_policy()
         .reserve_memory(rows_bytes as u64)
-        .map_err(WorthQueryProviderSessionFailure::allocation_denied)?;
+        .map_err(|cause| {
+            WorthQueryProviderSessionFailure::allocation_denied(cause, "retained relation preimage")
+        })?;
     let mut rows = Vec::new();
     rows.try_reserve_exact(footprint.relations().len())
         .map_err(|_| {
@@ -213,7 +215,11 @@ pub(super) fn retain(
                     rows.push((locus.clone(), *mutation));
                     count += 1;
                 }
-                if count == 0 {
+                // A static demand describes changed rows, not the graph's
+                // adjacency. The complete validated footprint closes unused
+                // kinds when it carries another demanded change; every carried
+                // row is still checked against this actor's observations above.
+                if count == 0 && footprint.relations().is_empty() {
                     // An empty historical locus requires an actual complete empty read
                     // on a record this actor mutates; absence of a read is not emptiness.
                     let mut empty = false;

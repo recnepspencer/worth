@@ -1,5 +1,5 @@
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
-mod contact_observation;
+pub(in crate::domain_computation::primary_graph::application_contribution) mod contact_observation;
 mod current_control;
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) use current_control::{select_history_control, select_invocation_control};
 use std::sync::Arc;
@@ -33,12 +33,14 @@ use super::demand::WorthQueryOutputDemandDenialKind;
 mod admitted;
 mod coupled_adoption;
 mod coupled_preparation;
-pub(super) use coupled_preparation::preparation_denial as coupled_preparation_denial;
+pub(in crate::domain_computation::primary_graph::application_contribution) use coupled_preparation::preparation_denial as coupled_preparation_denial;
 mod coupled;
 mod coupled_source;
-use coupled::InstalledCoupledProducerExecutor;
-pub(super) use coupled::PreparedCoupledWriter;
-pub(super) use coupled_source::{CoupledSourceReadStop, ErasedAppliedProducerSource};
+pub(in crate::domain_computation::primary_graph::application_contribution) use coupled::InstalledCoupledProducerExecutor;
+pub(in crate::domain_computation::primary_graph::application_contribution) use coupled::PreparedCoupledWriter;
+pub(in crate::domain_computation::primary_graph::application_contribution) use coupled_source::{
+    CoupledSourceRead, CoupledSourceReadStop, ErasedAppliedProducerSource,
+};
 pub(crate) mod denial;
 mod input_cutoff;
 mod input_reuse;
@@ -89,6 +91,10 @@ type Operation<Schema, Binding> =
 pub(super) trait InstalledProducerExecutor<Schema>:
     InstalledSelectedProducerExecutor<Schema> + InstalledCoupledProducerExecutor<Schema> + Send + Sync
 {
+    fn dependency_scopes(
+        &self,
+        application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    ) -> Result<super::super::authored_edit::ProducerDependencyScopes, WorthQueryOutputDemandDenial>;
     fn supports_history_group(&self) -> bool;
 
     fn recover_publication(
@@ -138,6 +144,21 @@ where
             > + 'static,
     SourceQuery<Schema, Binding>: 'static,
 {
+    fn dependency_scopes(
+        &self,
+        application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    ) -> Result<super::super::authored_edit::ProducerDependencyScopes, WorthQueryOutputDemandDenial>
+    {
+        let mut queries = super::super::authored_edit::managed_reads(
+            application,
+            self.mutation.operation().contracts().managed_index_reads(),
+        )?;
+        queries.push(super::super::authored_edit::DeclaredQueryRead {
+            identity: self.source_query.identity().into(),
+            contract: self.source_query.query().read_graph().clone(),
+        });
+        Ok(super::super::authored_edit::ProducerDependencyScopes { identity: Binding::IDENTITY.into(), family: <Binding::OutputFamily as worth_query_declaration::facade::application_program::WorthQueryProducerOutputFamily<Schema>>::IDENTITY, contract: self.mutation.operation().contracts().read_touch_overlap().clone(), queries })
+    }
     fn supports_history_group(&self) -> bool {
         use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;
         !Operation::<Schema, Binding>::WORKFLOW_CONTROL

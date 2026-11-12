@@ -69,14 +69,16 @@ impl AggregateObservation {
             _allocation: query.allocation.cloned(),
         }))
     }
-    pub(in crate::domain_computation::primary_graph) fn refresh_at_member(
+    pub(in crate::domain_computation::primary_graph) fn refresh_on_pin_at_member<Phase>(
         &self,
-        pin: &RelationalPinnedRead,
+        pin: &RelationalPinnedRead<Phase>,
+        origin: super::projection_read_origin::ProjectionReadOriginRef<'_>,
         execution: &ExecutionRequest<'_, '_>,
         member: EntityId,
     ) -> Result<Arc<Self>, PinnedAggregateReadDenial> {
-        Self::read(
+        Self::read_projected(
             pin,
+            origin,
             execution,
             AggregateQuery {
                 allocation: self._allocation.as_ref(),

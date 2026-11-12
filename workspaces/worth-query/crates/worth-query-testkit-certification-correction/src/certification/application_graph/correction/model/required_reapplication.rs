@@ -13,30 +13,43 @@ use worth_query_host::facade::{
     application_entry::*, primary_graph::*, runtime::ExecutionAllocationPolicy,
 };
 
+mod ordinary;
+mod overlapping;
+pub fn ordinary_outputs() {
+    ordinary::run(false);
+    ordinary::run(true);
+}
 pub fn run() {
-    let application = host::install_with_outputs();
+    run_in(host::install_with_outputs());
+    run_in(host::install_with_output_limits(host::worker_limits()));
+    overlapping::run(false);
+    overlapping::run(true);
+}
+pub fn overlapping_fields() {
+    overlapping::run(false);
+    overlapping::run(true);
+}
+fn run_in(application: host::OutputHost) {
     let scope = request_scope();
     let principal = authenticate_operator(application.installed_schema(), &scope);
     let request = application.runtime().request(&principal, &scope);
     let source_key = "required-reapplication-source".to_owned();
-    let source = request
-        .advanced()
-        .mutate(Edit {
-            key: "numeric".to_owned(),
-            value: Value::Primary(11),
-        })
-        .without_source()
-        .idempotency(&source_key)
-        .execute_performed::<OutputProgram, Root>(
-            &application,
-            ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
-    let WorthQueryApplicationPerformedMutationOutcome::Performed(source) = source else {
-        panic!("source must perform");
-    };
-    let original = source.receipt().clone();
-    settle(&application, source);
+    let original =
+        super::required_output_courts::co_committed::publish_and_deliver(&application, 23, || {
+            request
+                .advanced()
+                .mutate(Edit {
+                    key: "numeric".to_owned(),
+                    value: Value::Primary(11),
+                })
+                .without_source()
+                .idempotency(&source_key)
+                .execute_performed::<OutputProgram, Root>(
+                    &application,
+                    ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .unwrap()
+        });
     assert_eq!(read_calculation(&application), 23);
 
     let selected = request.corrections().select(&original, limits()).unwrap();
@@ -59,23 +72,21 @@ pub fn run() {
     assert_eq!(read_calculation(&application), 11);
 
     let disjoint_key = "required-reapplication-disjoint".to_owned();
-    let disjoint = request
-        .advanced()
-        .mutate(super::other_edit::OtherEdit {
-            key: "numeric".to_owned(),
-            value: Value::Secondary(19),
-        })
-        .without_source()
-        .idempotency(&disjoint_key)
-        .execute_performed::<OutputProgram, Root>(
-            &application,
-            ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
-    let WorthQueryApplicationPerformedMutationOutcome::Performed(disjoint) = disjoint else {
-        panic!("disjoint edit must perform");
-    };
-    settle(&application, disjoint);
+    super::required_output_courts::co_committed::publish_and_deliver(&application, 11, || {
+        request
+            .advanced()
+            .mutate(super::other_edit::OtherEdit {
+                key: "numeric".to_owned(),
+                value: Value::Secondary(19),
+            })
+            .without_source()
+            .idempotency(&disjoint_key)
+            .execute_performed::<OutputProgram, Root>(
+                &application,
+                ExecutionAllocationPolicy::SystemAllocation,
+            )
+            .unwrap()
+    });
     let page = request
         .corrections()
         .alternatives(&selected, limits(), NonZeroUsize::MIN)

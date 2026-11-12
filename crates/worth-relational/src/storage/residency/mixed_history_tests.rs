@@ -218,7 +218,7 @@ fn an_adopted_opening_is_independent_of_the_destination_physical_row() {
 }
 
 #[test]
-fn relation_adoption_and_append_preserve_the_independent_entity_prefixes() {
+fn relation_adoption_and_append_publication_the_independent_entity_prefixes() {
     let fixture = region_with_history();
     let request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);

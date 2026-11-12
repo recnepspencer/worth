@@ -376,6 +376,7 @@ impl RecordedOutput {
             producer_dependency_identity,
             idempotency_key_identity,
             mutable,
+            original_ready_key: None,
             coupled_completion,
         }
     }

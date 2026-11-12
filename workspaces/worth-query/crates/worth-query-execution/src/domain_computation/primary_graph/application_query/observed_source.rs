@@ -251,3 +251,6 @@ impl<Query> WorthQueryObservedSource<Query> {
 }
 
 mod court_doors_for_test;
+
+mod applied_support;
+pub(in crate::domain_computation::primary_graph) use applied_support::AppliedQuerySupport;

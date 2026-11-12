@@ -9,6 +9,7 @@ use worth_query_declaration::facade::application_program::{
 };
 
 mod correction;
+mod envelope;
 mod promotion;
 mod recovery;
 mod selected;

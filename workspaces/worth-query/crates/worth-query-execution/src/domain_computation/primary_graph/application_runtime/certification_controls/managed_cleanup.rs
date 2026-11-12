@@ -13,4 +13,15 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
     {
         self.runtime.primary_provider.managed_cleanup_control.arm()
     }
+    /// Schedule this bounded number of actual native cleanups on foreign workers.
+    pub fn schedule_managed_cleanups_on_worker_for_test(
+        &self,
+        count: std::num::NonZeroUsize,
+    ) -> Result<WorthQueryManagedCleanupScheduleForTest, WorthQueryManagedCleanupRegistrationDenial>
+    {
+        self.runtime
+            .primary_provider
+            .managed_cleanup_control
+            .arm_count(count)
+    }
 }

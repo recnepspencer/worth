@@ -1,5 +1,6 @@
 //! A prior performed output selected through its retained partition locator.
 
+pub(super) mod executed_adoption;
 mod generation_append;
 pub(crate) mod selected_basis;
 pub(crate) mod stable_cutover;
@@ -65,16 +66,31 @@ impl RetainedInputCutoffCandidate {
         }
     }
 
+    pub(in crate::domain_computation::primary_graph) fn required_publication_head(
+        &self,
+    ) -> Result<
+        super::required_publication::head::SelectedRequiredPublicationHead,
+        CompanionPreflightStop,
+    > {
+        super::required_publication::head::SelectedRequiredPublicationHead::retain(&self.cell)
+    }
+
     pub(in crate::domain_computation::primary_graph) fn prepared_input_key(
         &self,
     ) -> Option<&PreparedInputReuseKey> {
         self.recorded().prepared_input_reuse_key.as_ref()
     }
 
+    /// Only an actual adopting execution replaces the completed computation's
+    /// support. Ordinary cutoff aliases keep the original performed boundary.
+    fn completed_computation_record(&self) -> Option<&RecordedOutput> {
+        self.recorded().completed_computation_record()
+    }
+
     pub(in crate::domain_computation::primary_graph) fn completed_handler_fact_count(
         &self,
     ) -> Option<usize> {
-        self.originating_recorded()?
+        self.completed_computation_record()?
             .completed_handler_facts
             .as_ref()
             .map(|boundary| boundary.handler_fact_count())
@@ -83,7 +99,7 @@ impl RetainedInputCutoffCandidate {
     pub(in crate::domain_computation::primary_graph) fn completed_decision_reuse(
         &self,
     ) -> Option<&super::CompletedDecisionReuseProof> {
-        self.originating_recorded()?
+        self.completed_computation_record()?
             .completed_decision_reuse
             .as_ref()
     }
@@ -91,13 +107,14 @@ impl RetainedInputCutoffCandidate {
     pub(in crate::domain_computation::primary_graph) fn native_output_witness(
         &self,
     ) -> Option<&SealedNativeOutputWitness> {
-        self.originating_recorded()?.native_output_witness()
+        self.completed_computation_record()?.native_output_witness()
     }
 
     pub(in crate::domain_computation::primary_graph::output_lineage) fn native_output_witness_cell(
         &self,
     ) -> Option<&Arc<std::sync::OnceLock<SealedNativeOutputWitness>>> {
-        self.originating_recorded()?.native_output_witness_cell()
+        self.completed_computation_record()?
+            .native_output_witness_cell()
     }
 
     pub(in crate::domain_computation::primary_graph) fn settlement_identity(
@@ -110,6 +127,22 @@ impl RetainedInputCutoffCandidate {
         &self,
     ) -> &[ConsumedOutputEvidence] {
         &self.recorded().consumed_outputs
+    }
+
+    /// See `RecordedOutput::retains_facts_without_witness`.
+    pub(in crate::domain_computation::primary_graph) fn retains_facts_without_witness(
+        &self,
+    ) -> bool {
+        self.recorded().retains_facts_without_witness()
+    }
+
+    /// The original performed run, not its rebased postconditions, decides this.
+    pub(in crate::domain_computation::primary_graph) fn requires_own_effect_continuation(
+        &self,
+    ) -> bool {
+        self.recorded()
+            .computation_source
+            .superseded_by_own_effect()
     }
 
     pub(in crate::domain_computation::primary_graph) fn verification_requirement(
@@ -141,14 +174,46 @@ impl WorthQueryApplicationOutputLineage {
         source_partition_identity: [u8; 32],
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Option<RetainedInputCutoffCandidate>, CompanionPreflightStop> {
+        self.prior_input_cutoff_candidate_for_binding(
+            TypeId::of::<Binding>(),
+            scope,
+            observation,
+            source_partition_identity,
+            execution,
+        )
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn prior_input_cutoff_candidate_for_binding(
+        &self,
+        binding: TypeId,
+        scope: &crate::domain_computation::authorization::WorthQueryOperationScopeBinding,
+        observation: &ProductBranchObservation,
+        source_partition_identity: [u8; 32],
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Option<RetainedInputCutoffCandidate>, CompanionPreflightStop> {
         let source = SemanticSource {
             runtime_authority: scope.runtime_authority(),
             schema: scope.binding_identity().clone(),
             scope: scope.scope(),
             output_binding: self
-                .binding_identity(TypeId::of::<Binding>())
+                .binding_identity(binding)
                 .expect("admitted binding is installed"),
         };
+        self.prior_input_cutoff_candidate_in_source(
+            &source,
+            observation,
+            source_partition_identity,
+            execution,
+        )
+    }
+
+    pub(in crate::domain_computation::primary_graph::output_lineage) fn prior_input_cutoff_candidate_in_source(
+        &self,
+        source: &SemanticSource,
+        observation: &ProductBranchObservation,
+        source_partition_identity: [u8; 32],
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Option<RetainedInputCutoffCandidate>, CompanionPreflightStop> {
         let mut coordinate = ProductCoordinate {
             occurrence: observation.lifecycle_incarnation(),
             generation: observation.reference_generation().get(),
@@ -156,12 +221,12 @@ impl WorthQueryApplicationOutputLineage {
         loop {
             if let Some((generation, slot)) = self.partition_index.latest_admitted(
                 execution,
-                &source,
+                source,
                 coordinate,
                 source_partition_identity,
             )? {
                 let cell = self.recorded_cell_at_partition_slot_admitted(
-                    &source,
+                    source,
                     coordinate.occurrence,
                     generation,
                     source_partition_identity,

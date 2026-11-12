@@ -1,9 +1,10 @@
 //! Proposal-lived initialization, retained read custody and single write consumption.
+mod pin_read;
 mod symbol_admission;
 use super::changes::AggregateChanges;
 use super::preparation::{PreparedAggregateArtifact, PreparedConsequences};
 use super::projection::AggregateProjection;
-use crate::authority::mutation::MutationEffect;
+use crate::authority::mutation::AdjacencyDelta;
 use crate::branch::{
     RelationalBranchRootSchemaAuthority, SelectedRelationalBranchRead,
     SelectedRelationalBranchState,
@@ -11,6 +12,7 @@ use crate::branch::{
 use crate::mvcc::{RelationalMaterializationTransactionMode, RelationalMutationProposalIdentity};
 use crate::schema::data::AggregateIdentityContractDeclaration;
 use crate::storage::overlay::WorkingState;
+use crate::transactions::data::RecordRef;
 use crate::transactions::data::{
     CommitConflict, ConflictClass, MergedCommitPlan, TransactionCommitError,
 };
@@ -29,6 +31,8 @@ enum ArtifactState {
     Uninitialized,
     Ready(PreparedAggregateArtifact),
     Consumed(Arc<AggregateProjection>),
+    /// A pin read prepared the projection only; a commit prepares again.
+    Projected(Arc<AggregateProjection>),
     Failed(TransactionCommitError),
 }
 
@@ -50,7 +54,9 @@ impl AggregateProposal {
         authority: &RelationalBranchRootSchemaAuthority,
         selected: &SelectedRelationalBranchState,
         identity: &RelationalMutationProposalIdentity,
-        effect: MutationEffect,
+        records: &[RecordRef],
+        adjacency: &[AdjacencyDelta],
+        has_entity_deletions: bool,
         materialization: Option<RelationalMaterializationTransactionMode>,
     ) -> Option<Self> {
         let registry = authority.registry();
@@ -68,7 +74,7 @@ impl AggregateProposal {
             selected: selected.clone(),
             changes: materialization
                 .is_none()
-                .then(|| AggregateChanges::from_applied(effect)),
+                .then(|| AggregateChanges::from_applied(records, adjacency, has_entity_deletions)),
             state: Mutex::new(ArtifactState::Uninitialized),
         })
     }
@@ -116,7 +122,7 @@ impl AggregateProposal {
             ArtifactState::Ready(artifact) => return Ok(Arc::clone(&artifact.projection)),
             ArtifactState::Consumed(projection) => return Ok(Arc::clone(projection)),
             ArtifactState::Failed(error) => return Err(error.clone()),
-            ArtifactState::Uninitialized => {}
+            ArtifactState::Uninitialized | ArtifactState::Projected(_) => {}
         }
         let changes = self
             .changes
@@ -128,7 +134,7 @@ impl AggregateProposal {
             &self.authority,
             selected,
             after,
-            business,
+            super::preparation::BusinessPlan::Commands(business),
             changes,
             self.identity.proposed_version_id(),
             self.identity.commit_id(),
@@ -179,21 +185,6 @@ impl<'a> AggregateProposalBorrow<'a> {
             source: self,
             business,
         }
-    }
-
-    pub(crate) fn candidate_read(
-        self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        business: &MergedCommitPlan,
-    ) -> Result<super::AggregateCandidateRead, TransactionCommitError> {
-        let projection =
-            self.owner
-                .projection(execution, None, &self.selected, self.after, business)?;
-        Ok(super::AggregateCandidateRead::new(
-            projection,
-            Arc::clone(self.owner.selected.state().root()),
-            self.owner.selected.version_id(),
-        ))
     }
 
     pub(crate) fn ensure_prepared(

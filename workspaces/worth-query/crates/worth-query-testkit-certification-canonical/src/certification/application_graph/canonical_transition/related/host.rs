@@ -189,6 +189,8 @@ pub fn edit_source(
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.runtime().request(&principal, &scope);
+    let _observation = WorthQueryExecutionObservation::install_on_this_thread();
+    let before = host.runtime().producer_contacts_on_this_thread_for_test();
     let outcome = request
         .advanced()
         .mutate(super::edit::Input {
@@ -202,8 +204,20 @@ pub fn edit_source(
             worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("the native program-owned source edit executes");
-    let WorthQueryApplicationPerformedMutationOutcome::Performed(performed) = outcome else {
-        panic!("the source edit must retain its required-output custody");
+    let performed = match outcome {
+        WorthQueryApplicationPerformedMutationOutcome::Performed(performed) => performed,
+        WorthQueryApplicationPerformedMutationOutcome::NotPerformed(outcome) => {
+            panic!("the source edit must retain its required-output custody; actual Native outcome: {outcome:?}")
+        }
+        WorthQueryApplicationPerformedMutationOutcome::RequiredOutputDenied(failure) => {
+            panic!(
+                "the source edit must retain its required-output custody; refusal: {:?}",
+                failure.denial()
+            )
+        }
+        _ => panic!(
+            "the source edit must retain its required-output custody; preparation is incomplete"
+        ),
     };
     let controls = WorthQueryOutputDemandControls::host_policy();
     let mut started = performed
@@ -221,7 +235,11 @@ pub fn edit_source(
     else {
         panic!("the source edit's real required-output producer must settle");
     };
-    assert_eq!(settled.root_producer_contacts_in_this_demand(), 1);
+    assert_eq!(
+        host.runtime().producer_contacts_on_this_thread_for_test() - before,
+        1,
+        "the source edit and its delivery execute one real producer in total"
+    );
     settled
         .root_receipt()
         .expect("the real regeneration has a producer receipt")

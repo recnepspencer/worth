@@ -177,6 +177,7 @@ impl crate::runtime::RelationalRuntime {
             0
         };
         Ok(super::BranchBoundRelationalTransaction {
+            appendix_adoption: None,
             authored_coupling: None,
             prepared_coupled_commands: std::sync::Mutex::new(None),
             content: Default::default(),

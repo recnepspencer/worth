@@ -87,6 +87,7 @@ fn denied(cause: ExecutionRequestArrayDenial) -> WorthQueryApplicationCommitOutc
             let failure =
                 crate::domain_computation::WorthQueryProviderSessionFailure::allocation_denied(
                     cause,
+                    "managed commit completion storage",
                 );
             WorthQueryApplicationCommitOutcome::Denied(
                 WorthQueryApplicationCommitDenial::provider_execution_denied(

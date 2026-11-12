@@ -60,6 +60,7 @@ impl<Schema: ApplicationSchema, Intent: ApplicationMutationIntent<Schema>>
         let self_native = self.native;
         Ok(WorthQueryOperationDescription {
             intent: self_native.intent,
+            producer_round_limits: self_native.producer_round_limits,
             encoded_input: Ok(encoded_input),
             key,
             preconditions: self_native.preconditions,

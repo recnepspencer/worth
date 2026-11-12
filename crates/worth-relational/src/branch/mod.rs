@@ -37,7 +37,8 @@ mod model_ownership;
 mod owner_services;
 mod recorded_basis;
 pub use model_ownership::{
-    RelationalModelOwnership, RelationalModelOwnershipConflict, RelationalModelOwnershipDenial,
+    observe_candidate_custody_reads, RelationalCandidateCustodyReads, RelationalModelOwnership,
+    RelationalModelOwnershipConflict, RelationalModelOwnershipDenial,
     RelationalModelOwnershipDomain, RelationalOwnedModelEntityBoundary,
     RelationalOwnedModelForeignRelation, RelationalOwnedModelGraphSelection,
     RelationalOwnedModelOutputRoute, RelationalOwnedModelPublicationRead,

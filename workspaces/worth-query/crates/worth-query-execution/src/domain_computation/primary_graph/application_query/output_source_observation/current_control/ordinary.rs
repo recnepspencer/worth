@@ -9,6 +9,7 @@ struct CurrentSourceQueryControl
 <'a> {
     proof: CurrentReadControl<'a>,
     lane: Arc<WorthQueryApplicationBranchCommitLane>,
+    held: Option<&'a crate::domain_computation::primary_graph::provider::WorthQueryApplicationBranchCommitCoordination<'a>>,
 }
 impl<'a, S: ApplicationSchema> SourceQueryReaderAccess<'a, S> {
     pub(in crate::domain_computation::primary_graph) fn with_predecessor_reads(
@@ -44,8 +45,28 @@ impl<'a, S: ApplicationSchema> SourceQueryReaderAccess<'a, S> {
             .application_branch_commit_lane_for_occurrence(
                 proof.current().observation().lifecycle_incarnation(),
             );
-        self.current = Some(CurrentSourceQueryControl { proof, lane });
+        self.current = Some(CurrentSourceQueryControl {
+            proof,
+            lane,
+            held: None,
+        });
         Ok(self)
+    }
+    pub(in crate::domain_computation::primary_graph) fn with_coordinated_control(
+        self,
+        proof: CurrentReadControl<'a>,
+        coordination: &'a crate::domain_computation::primary_graph::provider::WorthQueryApplicationBranchCommitCoordination<'a>,
+    ) -> Result<Self, WorthQueryOutputDemandDenial> {
+        let mut admitted = self.with_current_control(proof)?;
+        if !coordination.admits(proof.current().observation()) {
+            return Err(demand_denial(CurrentReadDenial::HeadDiverged));
+        }
+        admitted
+            .current
+            .as_mut()
+            .expect("current control just admitted")
+            .held = Some(coordination);
+        Ok(admitted)
     }
     pub(in crate::domain_computation::primary_graph::application_query::output_source_observation) fn read_control(
         &self,
@@ -66,6 +87,35 @@ impl<'a, S: ApplicationSchema> SourceQueryReaderAccess<'a, S> {
         let Some(control) = &self.current else {
             return Ok(value);
         };
+        if let Some(coordination) = control.held {
+            let confirmed = match native {
+                ApplicationQueryNativeAccess::Acquire => self
+                    .application
+                    .runtime
+                    .primary_provider
+                    .graph
+                    .with_runtime(execution, |native| {
+                        control.proof.confirm_in_coordinated(
+                            execution,
+                            self.application,
+                            coordination,
+                            native,
+                            value,
+                        )
+                    }),
+                ApplicationQueryNativeAccess::Borrowed(native) => {
+                    control.proof.confirm_in_coordinated(
+                        execution,
+                        self.application,
+                        coordination,
+                        native,
+                        value,
+                    )
+                }
+            };
+            return confirmed
+                .map_err(|cause| SourceQueryObservationStop::CurrentControl(demand_denial(cause)));
+        }
         match native {
             ApplicationQueryNativeAccess::Acquire => {
                 control

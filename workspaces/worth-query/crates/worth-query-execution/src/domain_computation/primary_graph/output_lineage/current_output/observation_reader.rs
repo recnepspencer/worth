@@ -72,11 +72,9 @@ impl WorthQueryApplicationOutputLineage {
                     if !self.implementation_is_current(recorded) {
                         break;
                     }
-                    let origin = recorded
-                        .performed_origin
-                        .as_ref()
-                        .and_then(|origin| origin.get())
-                        .unwrap_or(recorded);
+                    let completed = recorded
+                        .completed_computation_record()
+                        .ok_or(CompanionPreflightStop::SelectedSourceMismatch)?;
                     outputs.push(ObservedRetainedOutput {
                         binding: *output_binding,
                         stable: super::super::PublishedStableLineage::selected_at(
@@ -89,7 +87,9 @@ impl WorthQueryApplicationOutputLineage {
                             .filter(|facts| !facts.is_empty()),
                         consumed_outputs: Arc::clone(&recorded.consumed_outputs),
                         verification_requirement: recorded.verification_requirement(),
-                        native_output_witness: origin.native_output_witness_cell().map(Arc::clone),
+                        native_output_witness: completed
+                            .native_output_witness_cell()
+                            .map(Arc::clone),
                     });
                     break;
                 }

@@ -82,7 +82,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         Ok(())
     }
 }
-fn native_denial(
+pub(super) fn native_denial(
     error: worth_relational::facade::mvcc::TransactionCommitError,
 ) -> WorthQueryOutputDemandDenial {
     use crate::domain_computation::primary_graph::{

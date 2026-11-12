@@ -144,6 +144,23 @@ impl RuntimeSymbolTable {
 }
 
 impl PendingSymbolMeanings {
+    /// A reserved dictionary identity is an actual candidate effect even if
+    /// no application record survives in its authoritative patch.
+    pub(crate) fn has_reserved_meanings(&self) -> bool {
+        !self.reserved.is_empty()
+    }
+    /// A later count above an earlier one is a new candidate dictionary effect.
+    pub(crate) fn reserved_meaning_count(&self) -> usize {
+        self.reserved.len()
+    }
+    /// The same dictionary view under separate custody. Whatever a judgment
+    /// reserves or requires in the copy is dropped with it, never published.
+    pub(crate) fn discardable_copy(&self) -> Result<Self, SymbolReservationDenial> {
+        let mut copy = self.owner.begin_pending_meanings();
+        copy.adopt(self)?;
+        Ok(copy)
+    }
+
     pub(crate) fn reserve_revision_reference(
         &mut self,
         text: &str,
@@ -187,6 +204,21 @@ impl PendingSymbolMeanings {
             }
         });
         binding
+    }
+
+    /// Carry owner-issued admission and cold meanings from the immediately
+    /// preceding applied pin. The caller verifies the proposal and revision.
+    /// Existing admission transfer checks the exact cold directory and every
+    /// carried meaning; only this new candidate binding receives the marks.
+    pub(crate) fn binding_from_applied_predecessor(
+        &self,
+        previous: &RuntimeSymbolTable,
+    ) -> Result<RuntimeSymbolTable, &'static str> {
+        let binding = self.binding();
+        previous
+            .prepare_admission_transfer(&self.binding, &self.interner)?
+            .publish(&binding)?;
+        Ok(binding)
     }
 
     pub(crate) fn interner(&self) -> &StringInterner {

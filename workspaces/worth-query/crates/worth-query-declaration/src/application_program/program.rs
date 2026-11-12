@@ -22,7 +22,8 @@ pub use validation_denial::{
 mod dependency_graph;
 mod validation;
 use definition_validation::validate_features_and_actions;
-use dependency_graph::require_acyclic_connections;
+use dependency_graph::order_connections;
+pub use dependency_graph::ApplicationProgramConnectionOrder;
 use validation::validate;
 
 /// Complete authored static program definition.
@@ -135,6 +136,7 @@ pub struct ValidatedApplicationProgram<Schema, Program> {
     features: Box<[ApplicationFeatureDeclaration]>,
     actions: Box<[ApplicationActionDeclaration]>,
     connections: Box<[ApplicationConnectionDeclaration]>,
+    connection_order: ApplicationProgramConnectionOrder,
     rules: Box<[ApplicationProgramRuleDeclaration]>,
     semantic_description: ApplicationSemanticDescription,
     adoption_authorization: Option<super::ApplicationProgramAdoptionAuthorizationDeclaration>,
@@ -180,6 +182,9 @@ impl<Schema, Program> ValidatedApplicationProgram<Schema, Program> {
     }
     pub fn connections(&self) -> &[ApplicationConnectionDeclaration] {
         &self.connections
+    }
+    pub fn connection_order(&self) -> &ApplicationProgramConnectionOrder {
+        &self.connection_order
     }
     pub fn rules(&self) -> &[ApplicationProgramRuleDeclaration] {
         &self.rules

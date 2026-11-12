@@ -128,6 +128,7 @@ where
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::ProducerUnavailable
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::ManagedCleanupRequired(_)
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::ProducerDomainDenied
+                | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::DiscoveryConnection(_)
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::RequestAuthorization(_)
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::ProductSelection(_)
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::SchedulingRejected
@@ -138,6 +139,8 @@ where
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::NoEffect
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::Cancelled
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::TimedOut
+                | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::ProducerRouteRoundBudgetExceeded { .. }
+                | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::ProducerAttemptRoundBudgetExceeded { .. }
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::PublicationCapacityExceeded
@@ -149,6 +152,8 @@ where
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::IncompleteDependencyCoverage
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::Closed
+                | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::AuthoredStageRefused { .. }
+                | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::ConflictingIntent { .. }
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::DuplicatePerformedSource
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::BridgeConditional(_)
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::ProductDelivery(_)

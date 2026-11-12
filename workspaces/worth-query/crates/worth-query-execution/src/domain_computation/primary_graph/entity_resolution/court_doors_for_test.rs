@@ -37,3 +37,37 @@ impl WorthQueryEntityResolutionTruth<'_> {
         Self::validate_entity_freshness::<Schema, Entity>(self, execution, identity)
     }
 }
+
+impl WorthQueryInstalledEntityResolutionContext {
+    #[doc(hidden)]
+    pub fn resolve_applied_field_for_test<Schema, Field>(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        before: &worth_relational::facade::runtime::RelationalPinnedRead,
+        candidate: &worth_relational::facade::runtime::RelationalPinnedRead<
+            worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
+        >,
+        field: Field,
+        value: Field::Value,
+    ) -> Result<
+        WorthQueryApplicationEntityIdentity<Schema, Field::Entity>,
+        WorthQueryEntityResolutionDenial,
+    >
+    where
+        Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection,
+    {
+        self.resolve_applied_field(execution, before, candidate, field, value)
+    }
+    #[doc(hidden)]
+    pub fn validate_applied_identity_for_test<Schema, Entity>(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        before: &worth_relational::facade::runtime::RelationalPinnedRead,
+        candidate: &worth_relational::facade::runtime::RelationalPinnedRead<
+            worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
+        >,
+        identity: &WorthQueryApplicationEntityIdentity<Schema, Entity>,
+    ) -> Result<(), WorthQueryEntityResolutionDenial> {
+        self.validate_applied_identity(execution, before, candidate, identity)
+    }
+}

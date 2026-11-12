@@ -28,10 +28,12 @@ pub use identity::{
     application_value_identity, ApplicationCanonicalIdentity, ApplicationCanonicalInput,
     ApplicationCanonicalInputDenial, ApplicationCanonicalInputScalar, ApplicationCanonicalWork,
     ApplicationComputationPartitionIdentity, ApplicationComputationPartitionIdentityDenial,
-    ApplicationEncodedInput, ApplicationEncodedMutationKey, ApplicationMutationIdentities,
-    ApplicationMutationIdentityAdmittedDenial, ApplicationMutationIdentityDenial,
-    ApplicationOwnedMutationIdentities, ApplicationRetainedInput, ApplicationRetainedInputDenial,
-    ApplicationSharedInput, ApplicationValueIdentityDomain, CanonicalEncodingCharge,
+    ApplicationEditEnvelopeKey, ApplicationEditIntentIdentity, ApplicationEditStageIdentity,
+    ApplicationEditStageIntent, ApplicationEncodedInput, ApplicationEncodedMutationKey,
+    ApplicationMutationIdentities, ApplicationMutationIdentityAdmittedDenial,
+    ApplicationMutationIdentityDenial, ApplicationOwnedMutationIdentities,
+    ApplicationRetainedInput, ApplicationRetainedInputDenial, ApplicationSharedInput,
+    ApplicationValueIdentityDomain, CanonicalEncodingCharge,
 };
 pub use input_scope::ApplicationMutationInputScope;
 pub use intent::{

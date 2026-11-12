@@ -99,6 +99,7 @@ impl TouchedRecordsPreparationDenial {
             Self::Allocation(cause) => {
                 crate::domain_computation::WorthQueryProviderSessionFailure::allocation_denied(
                     cause,
+                    "application touched records",
                 )
             }
             Self::ChangedRecordsUnavailable => {

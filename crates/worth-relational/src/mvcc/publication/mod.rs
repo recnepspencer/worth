@@ -1,4 +1,5 @@
 pub(crate) use application_publication::BoundAuthoredCoupling;
+pub(crate) use application_publication::CoupledSource;
 mod application_publication;
 mod authority;
 mod caller_association;
@@ -6,16 +7,21 @@ mod preparation_denial;
 pub use application_publication::RelationalInstalledApplicationPublicationAuthority;
 pub(crate) use application_publication::{origin_denial, RequiredOutputPublicationAdmission};
 pub use application_publication::{
-    AuthoredOwnedMemberKind, RelationalAuthoredCoupledCandidate, RelationalAuthoredCoupledOwners,
-    RelationalAuthoredCoupledProducerAssembly, RelationalAuthoredCoupledTransaction,
-    RelationalAuthoredRestoration, RelationalAuthoredRetirement, RelationalCoupledAssemblyFailure,
-    RelationalCoupledAuthoredPublication, RelationalDeclaredCoupledOwner,
+    AuthoredOwnedMemberKind, RecordedRequiredOutputRole, RelationalAuthoredCoupledCandidate,
+    RelationalAuthoredCoupledOwners, RelationalAuthoredCoupledProducerAssembly,
+    RelationalAuthoredCoupledTransaction, RelationalAuthoredRestoration,
+    RelationalAuthoredRetirement, RelationalCoupledAssemblyFailure,
+    RelationalCoupledAuthoredPublication, RelationalCoupledAuthoredSourceEffects,
+    RelationalCoupledContribution, RelationalCoupledProducerContinuation,
+    RelationalCoupledProducerPosture, RelationalDeclaredCoupledOwner,
     RelationalHistoricalOutputSelection, RelationalPerformedOutputPublications,
-    RelationalPredecessorBasisDenial, RelationalPredecessorBasisOrigin,
-    RelationalPreparedOutputPublications, RelationalRequiredOutputPublication,
-    RelationalRequiredOutputRouteAbsence, RelationalRestoredProducerPrior,
-    RequiredOutputProducingImplementation, RequiredOutputPublication,
-    RequiredOutputPublicationMeaning, RequiredOutputRolePosture, RequiredOutputRoleTarget,
+    RelationalPredecessorBasisDenial, RelationalPredecessorBasisOrigin, RelationalPredecessorInput,
+    RelationalPreparedOutputPublications, RelationalPublicationAdoptionRequest,
+    RelationalPublicationAppendix, RelationalPublicationBodySelection,
+    RelationalRequiredOutputPublication, RelationalRequiredOutputRouteAbsence,
+    RelationalRestoredProducerPrior, RequiredOutputProducingImplementation,
+    RequiredOutputPublication, RequiredOutputPublicationMeaning, RequiredOutputRolePosture,
+    RequiredOutputRoleTarget,
 };
 pub(crate) use preparation_denial::PublicationPreparationDenial;
 mod candidate;
@@ -32,7 +38,10 @@ pub(crate) use authority::{
     PreparedRelationalPublication, PreparedRelationalPublicationAccelerators,
 };
 pub(crate) use candidate::{CandidatePayload, PreparedRelationalCandidateAdmissionStop};
-pub use candidate::{DiscardedRelationalCommitCandidate, PreparedRelationalCommitCandidate};
+pub use candidate::{
+    DiscardedRelationalCommitCandidate, PreparedRelationalCommitCandidate,
+    RelationalCurrentOutputAdoption,
+};
 pub(crate) use companion::{
     CandidateCompanionBinding, CompanionRegistrationEpoch, CompanionRegistry,
     ManagedSourceHistoryOwner, ManagedSourceRootImage, PreparedManagedIndexSourceFork,

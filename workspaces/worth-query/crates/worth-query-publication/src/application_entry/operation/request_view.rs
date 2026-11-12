@@ -38,6 +38,7 @@ impl<Schema: ApplicationSchema, Intent: ApplicationMutationIntent<Schema>>
             scope: request.scope,
             branch: self.branch,
             intent: &self.intent,
+            producer_round_limits: self.producer_round_limits,
             preconditions: Default::default(),
             source,
             source_preparation: std::marker::PhantomData,

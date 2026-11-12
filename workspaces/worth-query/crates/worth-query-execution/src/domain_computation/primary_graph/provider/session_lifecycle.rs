@@ -68,7 +68,7 @@ impl WorthQueryProviderSessionLifecycle for Arc<WorthQueryPrimaryGraphProvider> 
         session: &WorthQueryProviderSessionView<'_>,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
-        crate::domain_computation::WorthQueryProviderTerminalDescription,
+        crate::domain_computation::WorthQueryProviderCommitCompletion,
         crate::domain_computation::WorthQueryProviderSessionCommitStop,
     > {
         session.admit_home_owner(

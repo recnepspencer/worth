@@ -1,9 +1,14 @@
 pub(crate) use publication::BoundAuthoredCoupling;
+pub(crate) use publication::CoupledSource;
 mod observation;
 pub use crate::history::data::{RelationalCallerAssociation, RelationalCallerAssociationRefusal};
 pub(crate) mod publication;
 pub use publication::RelationalPublicationReadDependencyDenial;
-pub use publication::{PreparedMemoryRelationalCutover, ScopedRelationalPublication};
+pub use publication::{
+    PreparedMemoryRelationalCutover, RecordedRequiredOutputRole,
+    RelationalPublicationAdoptionRequest, RelationalPublicationAppendix,
+    RelationalPublicationBodySelection, ScopedRelationalPublication,
+};
 pub(crate) mod owned_graph_selection;
 pub(crate) mod retained_entity_selection;
 pub use owned_graph_selection::{
@@ -40,10 +45,11 @@ pub use publication::{
     PreparedRelationalCommitCandidate, PublicationCompanionPreflight,
     PublicationCompanionRegistration, PublicationCompanionRegistrationPort,
     PublicationCompanionRegistrationStop, PublicationCompanionRetirementDenial,
-    PublishRelationalCommit, RelationalPublicationCompanion, RelationalPublicationDeferred,
-    RelationalPublicationDenial, RelationalPublicationDurabilityPosture,
-    RelationalPublicationFailure, RelationalPublicationFailureKind, RelationalPublicationOutcome,
-    RelationalPublicationPort, RelationalPublicationProjectionPosture, ReservedCompanionBranchCell,
+    PublishRelationalCommit, RelationalCurrentOutputAdoption, RelationalPublicationCompanion,
+    RelationalPublicationDeferred, RelationalPublicationDenial,
+    RelationalPublicationDurabilityPosture, RelationalPublicationFailure,
+    RelationalPublicationFailureKind, RelationalPublicationOutcome, RelationalPublicationPort,
+    RelationalPublicationProjectionPosture, ReservedCompanionBranchCell,
     RetiredPublicationCompanionRegistration, StaleRelationalBranchObservation,
 };
 pub(crate) use publication::{
@@ -55,9 +61,11 @@ pub use publication::{
     RelationalAuthoredCoupledCandidate, RelationalAuthoredCoupledOwners,
     RelationalAuthoredCoupledProducerAssembly, RelationalAuthoredCoupledTransaction,
     RelationalAuthoredRestoration, RelationalAuthoredRetirement, RelationalCoupledAssemblyFailure,
-    RelationalCoupledAuthoredPublication, RelationalDeclaredCoupledOwner,
+    RelationalCoupledAuthoredPublication, RelationalCoupledAuthoredSourceEffects,
+    RelationalCoupledContribution, RelationalCoupledProducerContinuation,
+    RelationalCoupledProducerPosture, RelationalDeclaredCoupledOwner,
     RelationalHistoricalOutputSelection, RelationalPerformedOutputPublications,
-    RelationalPredecessorBasisDenial, RelationalPredecessorBasisOrigin,
+    RelationalPredecessorBasisDenial, RelationalPredecessorBasisOrigin, RelationalPredecessorInput,
     RelationalPreparedOutputPublications, RelationalRequiredOutputPublication,
     RelationalRequiredOutputRouteAbsence, RelationalRestoredProducerPrior,
     RequiredOutputProducingImplementation, RequiredOutputPublication,

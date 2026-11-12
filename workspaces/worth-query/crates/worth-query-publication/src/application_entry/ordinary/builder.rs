@@ -68,6 +68,15 @@ impl<'a, 'p, 's, S: ApplicationSchema, I: ApplicationMutationIntent<S>>
 impl<'a, 'p, 's, S: ApplicationSchema, I: ApplicationMutationIntent<S>, SourcePreparation>
     WorthQueryOperationBuilder<'a, 'p, 's, S, I, SourcePreparation>
 {
+    /// Limits synchronous producer starts while retaining this original operation.
+    pub fn producer_round_limits(
+        self,
+        limits: crate::application_entry::ApplicationProducerRoundLimits,
+    ) -> Self {
+        Self {
+            native: self.native.producer_round_limits(limits),
+        }
+    }
     pub fn preconditions(
         self,
         preconditions: TypedMutationPreconditions<S, <I::Binding as ApplicationMutationBinding<S>>::Operation, <<I::Binding as ApplicationMutationBinding<S>>::ScopeBinding as worth_query_declaration::facade::application_operation::ApplicationMutationScopeBinding<S>>::Scope>,

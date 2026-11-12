@@ -60,7 +60,8 @@ pub fn map_bootstrap_commit_denial(
             Failure::RetentionIdentityExhausted => {
                 WorthQueryPrimaryGraphInstallationDenialKind::RetentionIdentityExhausted
             }
-            Failure::SnapshotCountOverflow
+            Failure::OutputAdoptionRequired { .. }
+            | Failure::SnapshotCountOverflow
             | Failure::PreparedRootMismatch
             | Failure::PreparedBasisDescriptor(_)
             | Failure::NextBasisAdmission(_)

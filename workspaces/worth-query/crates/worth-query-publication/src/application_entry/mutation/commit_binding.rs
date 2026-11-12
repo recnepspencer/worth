@@ -14,6 +14,7 @@ use worth_query_installation::facade::ApplicationSchema;
 /// request's identities derive.
 #[derive(Clone, Copy)]
 pub(in crate::application_entry) struct WorthQueryCommitExtension {
+    pub(super) envelope: Option<worth_query_declaration::facade::application_operation::ApplicationEditIntentIdentity>,
     pub(super) source: Option<WorthQueryBoundSourceExpectation>,
     pub(super) transport_intent: Option<[u8; 32]>,
     pub(super) transport_key: Option<[u8; 32]>,
@@ -28,6 +29,9 @@ impl WorthQueryCommitExtension {
         self,
         idempotency: WorthQueryApplicationIdempotencyBinding,
     ) -> WorthQueryApplicationIdempotencyBinding {
+        let idempotency = self.envelope.map_or(idempotency, |intent| {
+            idempotency.bind_edit_envelope(&intent)
+        });
         let idempotency = match self.transport_key {
             Some(key) => idempotency.bind_transport_key(&key),
             None => idempotency,

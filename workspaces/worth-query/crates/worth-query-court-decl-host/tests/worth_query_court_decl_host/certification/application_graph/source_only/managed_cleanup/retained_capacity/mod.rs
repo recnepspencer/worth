@@ -65,7 +65,15 @@ fn managed_no_effect_capacity_retains_actual_cleanup_failure() {
             pressure.join().unwrap();
             terminal
         });
-        assert_native_failure(terminal.managed_cleanup_failure().unwrap());
+        assert_native_failure({
+            let mut failures = terminal.managed_cleanup_failures();
+            assert_eq!(
+                failures.len(),
+                1,
+                "the original operation retains exactly one native owner"
+            );
+            failures.next().unwrap()
+        });
         assert!(
             matches!(terminal.native_outcome(), Some(WorthQueryApplicationMutationOutcome::Commit(
             WorthQueryApplicationUncommitted::NoEffect(no_effect))) if no_effect.cause() == WorthQueryApplicationNoEffectCause::CapacityExhausted)
@@ -111,11 +119,17 @@ fn managed_no_effect_capacity_retains_actual_cleanup_failure() {
     let closed = terminal
         .close(&host.runtime().request(&fresh_principal, &fresh_scope))
         .unwrap_or_else(|(_, cause)| panic!("fresh no-effect close: {cause:?}"));
-    assert!(closed
-        .managed_cleanup_receipt()
-        .unwrap()
-        .inspection()
-        .resources_released());
+    assert!({
+        let receipts = closed.managed_cleanup_receipts();
+        assert_eq!(
+            receipts.len(),
+            1,
+            "the original operation has exactly one native release receipt"
+        );
+        &receipts[0]
+    }
+    .inspection()
+    .resources_released());
 
     assert_eq!(host.contacts.counts(), (1, 1));
 }

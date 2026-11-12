@@ -63,10 +63,8 @@ pub mod commit_strategies {
         FrozenCommitStrategyRegistry, StrategyExecutionError,
     };
 }
-
 #[path = "facade/change_source.rs"]
 pub mod change_source;
-
 pub mod diagnostics {
     pub use crate::diagnostics::data::RelationalDiagnosticsFacade;
     pub use crate::diagnostics::data::{
@@ -225,6 +223,7 @@ pub mod runtime {
     pub use crate::runtime::builder::{RelationalRuntimeBuilder, RelationalRuntimeDefinition};
     #[cfg(test)]
     pub use crate::runtime::HarnessAuditMode;
+    pub use crate::runtime::RelationalColdSymbolPlacementForTest;
     pub use crate::runtime::{
         custom_invariant_inventory_digest, home_program_transition_body_digest,
         AdjacencyStructuralRevision, AdjacencyStructuralRevisionDenial, BoundedFrontierReadStop,
@@ -310,8 +309,9 @@ pub mod publication {
         SubscriberStreamFailureClass,
     };
     pub use crate::publication::data::{
-        AuthoredRetirementRefusal, PublicationArtifactSnapshot, PublicationDiagnosticsSnapshot,
-        PublicationError, PublicationObservationSnapshot, PublicationSettlementRepairError,
+        AuthoredRetirementRefusal, CoupledFreshWriter, PublicationArtifactSnapshot,
+        PublicationDiagnosticsSnapshot, PublicationError, PublicationObservationSnapshot,
+        PublicationSettlementRepairError,
     };
     pub use crate::publication::patch::data::{
         PatchDetail, PatchFragmentBudget, PatchOrdering, PatchPublicationMode, PatchStreamBatch,

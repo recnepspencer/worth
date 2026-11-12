@@ -13,6 +13,7 @@ impl Fragment for Storage {
         FirstOutput,
         SecondOutput,
         ChildOutput,
+        Cap,
     );
 }
 mod bindings;
@@ -49,7 +50,7 @@ impl Principal {
 pub struct Model;
 impl Entity for Model {
     const NAME: &'static str = "Model";
-    type Aspects = (ModelFacts,);
+    type Aspects = (ModelFacts, Option<predecessor::content::Payload>);
     type Relations = (ModelMember,);
 }
 impl Model {
@@ -61,7 +62,7 @@ impl Model {
 pub struct Member;
 impl Entity for Member {
     const NAME: &'static str = "Member";
-    type Aspects = (MemberFacts,);
+    type Aspects = (MemberFacts, Option<Calibration>);
     type Relations = (ChildOf, UpstreamOf);
 }
 impl Member {
@@ -74,7 +75,7 @@ pub struct FirstOutput;
 impl Entity for FirstOutput {
     const NAME: &'static str = "FirstOutput";
     type Aspects = (FirstFacts,);
-    type Relations = (ChildOfFirst, FirstOf);
+    type Relations = (ChildOfFirst, FirstOf, JoinedOf, ReconciledSourceOf);
 }
 impl FirstOutput {
     pub fn reference() -> ApplicationEntityRef<Schema, Self> {

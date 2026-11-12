@@ -195,6 +195,7 @@ impl ManagedUnpublishedAttempt {
             required_prerequisites: self.required_prerequisites,
             prepared_lineage_slot: self.prepared_lineage_slot,
             prepared_output_witness: self.prepared_output_witness,
+            coupled_deletions: Default::default(),
         }
     }
 }

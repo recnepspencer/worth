@@ -20,6 +20,7 @@ mod optional_field_authoring;
 mod ordinary_field_authoring;
 mod original_input;
 pub(crate) mod output_correspondence;
+mod producer_round_limits;
 mod relation_effects;
 mod relation_initialization;
 mod target_admission;
@@ -207,6 +208,9 @@ impl<Schema, Operation, Input, Scope>
         self.output_correspondence.validate_effects(&self.effects)?;
         self.validate_body_external_emission()?;
         Ok(WorthQueryApplicationEffectProgram {
+            synchronous_outputs: Vec::new(),
+            authored_stages: Vec::new(),
+            producer_round_limits: crate::domain_computation::primary_graph::application_contribution::producer::synchronous_outputs::default_producer_round_bounds(),
             read_set: self.read_set,
             effects: self.effects,
             content_attachments: self.content_attachments,

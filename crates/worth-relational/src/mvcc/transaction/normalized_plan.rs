@@ -62,7 +62,7 @@ impl OwnedNormalizedPlan {
         Ok(std::sync::Arc::new(owned))
     }
 
-    pub(super) fn copy_batches(
+    pub(crate) fn copy_batches(
         transaction_id: TransactionId,
         batches: &[WorkerIntentBatch],
         request: &ExecutionRequest<'_, '_>,

@@ -12,12 +12,13 @@ use worth_relational::facade::{
 pub(super) fn prepare_members(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     provider: &WorthQueryPrimaryGraphProvider,
+    root: &WorthQueryPrimaryGraphApplicationAttempt,
     members: &mut [CoupledApplicationMember],
     candidate: &mut PreparedRelationalCommitCandidate,
     before: &SnapshotHandle,
     policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
 ) -> Result<(), Denial> {
-    let complete = if members.is_empty() {
+    let complete = if members.is_empty() && root.candidate_read_support().is_empty() {
         None
     } else {
         Some(
@@ -27,7 +28,19 @@ pub(super) fn prepare_members(
                 .expect("Native retained genuine coupled proposal read custody"),
         )
     };
+    if !root.candidate_read_support().is_empty() {
+        support::require_read_support(
+            execution,
+            provider,
+            root,
+            before,
+            complete.as_ref().expect("actual edit query candidate"),
+        )
+        .map_err(Denial::CoupledSupport)?;
+    }
     for member in members {
+        let source = member.source();
+        let producer = member.producer_route().is_some();
         let owned = member.owned.as_mut().expect("atomic group extraction");
         support::require(
             execution,
@@ -35,7 +48,19 @@ pub(super) fn prepare_members(
             &owned.attempt,
             before,
             complete.as_ref().expect("coupled complete image"),
-            member.meaning.source_scope,
+            source,
+            owned
+                .commit
+                .as_ref()
+                .and_then(|prepared| prepared.rebase.as_ref()),
+        )
+        .map_err(Denial::CoupledSupport)?;
+        support::require_read_support(
+            execution,
+            provider,
+            &owned.attempt,
+            before,
+            complete.as_ref().expect("actual member query candidate"),
         )
         .map_err(Denial::CoupledSupport)?;
         let prepared = owned
@@ -48,15 +73,23 @@ pub(super) fn prepare_members(
                 .required_prerequisites;
         managed_source::bind(execution, provider, before, &owned.attempt, candidate)
             .map_err(Denial::ManagedSource)?;
-        prepared.witness = crate::domain_computation::primary_graph::output_lineage::PreparedNativeOutputWitness::prepare(&owned.attempt, &provider.graph.layout).map_err(Denial::OutputWitness)?;
+        prepared.witness = if producer {
+            crate::domain_computation::primary_graph::output_lineage::PreparedNativeOutputWitness::prepare(&owned.attempt, &provider.graph.layout)
+                .map_err(Denial::OutputWitness)?
+        } else {
+            None
+        };
         owned
             .attempt
             .reserve_coupled_dispatch(provider)
             .map_err(Denial::Dispatch)?;
         let request = owned.attempt.affinity().publication_request();
-        prepared.rebase = Some(provider.graph.with_runtime(execution, |runtime| prepared.rebase.take().expect("one rebase preparation").prepare_candidate(candidate, runtime, before,
-            crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(policy, Some(request))
-        )).map_err(Denial::SourceFacts)?);
+        if let Some(rebase) = prepared.rebase.take() {
+            prepared.rebase = Some(provider.graph.with_runtime(execution, |runtime| rebase.prepare_candidate(
+                candidate, runtime, before,
+                crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(policy, Some(request)),
+            )).map_err(Denial::SourceFacts)?);
+        }
     }
     Ok(())
 }
@@ -67,6 +100,7 @@ pub(super) fn prepare_lineage(
     planned: &worth_runtime_world::facade::PlannedProductReferenceSuccessor,
 ) -> Result<(), WorthQueryOutputDemandDenial> {
     for member in members {
+        let crate::domain_computation::primary_graph::provider::CoupledApplicationMemberKind::Producer { producer, .. } = &member.kind else { continue };
         let owned = member.owned.as_mut().expect("group owns writer");
         let prepared = owned.commit.as_mut().expect("group owns prepared evidence");
         if let Some(slot) = prepared.slot.as_ref()
@@ -101,7 +135,7 @@ pub(super) fn prepare_lineage(
                 .take_coupled_preparation()
                 .expect("actual registered producer source and completed handler");
             slot.retain_native_prior_checkpoint(
-                &member.producer,
+                producer,
                 source.completion.source().checkpoint_identity(),
             )?;
             slot.retain_coupled_completion(source.completion);
@@ -160,7 +194,10 @@ fn slot_denial(
         }
         worth_execution::ExecutionRequestArrayDenial::Allocation(cause) => {
             crate::domain_computation::WorthQueryProviderSessionCommitStop::PreEffectDenied(
-                WorthQueryProviderSessionFailure::allocation_denied(cause),
+                WorthQueryProviderSessionFailure::allocation_denied(
+                    cause,
+                    "coupled completion backing",
+                ),
             )
         }
     }
@@ -176,8 +213,9 @@ impl WorthQueryCommittedApplicationSession {
             .into_publications()
         {
             if let Some(member) = self.members.iter_mut().find(|member| {
-                member.producer == publication.producer()
-                    && &member.meaning == publication.meaning()
+                member.producer_route().is_some_and(|(producer, meaning)| {
+                    producer == publication.producer() && meaning == publication.meaning()
+                })
             }) {
                 let slot = &mut member
                     .owned
@@ -193,15 +231,19 @@ impl WorthQueryCommittedApplicationSession {
                 );
             }
         }
-        assert!(self.members.iter().all(|member| member
-            .owned
-            .as_ref()
-            .unwrap()
-            .commit
-            .as_ref()
-            .unwrap()
-            .publication
-            .is_some()));
+        assert!(
+            self.members.iter().all(|member| {
+                let prepared = member
+                    .owned
+                    .as_ref()
+                    .expect("actual participant")
+                    .commit
+                    .as_ref()
+                    .expect("prepared participant");
+                prepared.publication.is_some() == prepared.publication_required
+            }),
+            "Native finishes exactly the owned participants; ordinary writers have no origin"
+        );
     }
     pub(super) fn take_member_session(
         &self,
@@ -236,6 +278,7 @@ impl WorthQueryCommittedApplicationSession {
             required_prerequisites: prepared.required,
             prepared_lineage_slot: prepared.slot,
             prepared_output_witness: prepared.witness,
+            coupled_deletions: self.coupled_deletions.clone(),
         }
     }
 }

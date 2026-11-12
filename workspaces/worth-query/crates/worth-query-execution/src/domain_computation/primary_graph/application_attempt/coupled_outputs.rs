@@ -15,11 +15,12 @@ use worth_query_declaration::facade::{
     application_schema::ApplicationSchema,
 };
 mod preimage;
-mod source_arguments;
+pub(in crate::domain_computation::primary_graph) mod source_arguments;
 pub(super) use preimage::CoupledPreImage;
 pub(in crate::domain_computation::primary_graph) use source_arguments::CoupledSourceArguments;
 
 pub(in crate::domain_computation::primary_graph) struct DeclaredCoupledOutputDemand {
+    pub(in crate::domain_computation::primary_graph) reuse_prepared: bool,
     pub(in crate::domain_computation::primary_graph) connection: &'static str,
     pub(in crate::domain_computation::primary_graph) family: &'static str,
     pub(in crate::domain_computation::primary_graph) family_type: EqualityTypeId,
@@ -28,12 +29,24 @@ pub(in crate::domain_computation::primary_graph) struct DeclaredCoupledOutputDem
     pub(in crate::domain_computation::primary_graph) lower_source:
         fn(&dyn Any, &dyn Any) -> Result<CoupledSourceArguments, Denial>,
 }
-#[derive(Default)]
 pub struct DeclaredCoupledOutputDemands {
+    pub(in crate::domain_computation::primary_graph) round_limits: (std::num::NonZeroUsize, std::num::NonZeroUsize),
     pub(in crate::domain_computation::primary_graph) values: Vec<DeclaredCoupledOutputDemand>,
     _memory: Vec<worth_execution::ExecutionMemoryReservation>,
     failure: std::cell::RefCell<Option<Denial>>,
     declared: bool,
+    pub(in crate::domain_computation::primary_graph) authored_stages: Option<Box<dyn Any + Send>>,
+    pub(in crate::domain_computation::primary_graph) synchronous: Vec<crate::domain_computation::primary_graph::application_contribution::producer::synchronous_outputs::CapturedSynchronousOutputs>,
+}
+
+impl Default for DeclaredCoupledOutputDemands {
+    fn default() -> Self {
+        Self {
+            round_limits: crate::domain_computation::primary_graph::application_contribution::producer::synchronous_outputs::default_producer_round_bounds(),
+            values: Vec::new(), _memory: Vec::new(), failure: std::cell::RefCell::new(None),
+            declared: false, synchronous: Vec::new(), authored_stages: None,
+        }
+    }
 }
 
 impl DeclaredCoupledOutputDemands {
@@ -45,7 +58,7 @@ impl DeclaredCoupledOutputDemands {
         }
     }
     pub(in crate::domain_computation::primary_graph) fn is_declared(&self) -> bool {
-        self.declared
+        self.declared || !self.synchronous.is_empty() || self.authored_stages.is_some()
     }
     pub(in crate::domain_computation::primary_graph) fn take_failure(&self) -> Option<Denial> {
         self.failure.borrow_mut().take()
@@ -123,6 +136,7 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
             let demand = Binding::demand_from_preimage(self.input, self.preimage)
                 .map_err(|cause| Denial::new(Kind::CorrectionCaptureDenied, cause.subject()))?;
             demands.values.push(DeclaredCoupledOutputDemand {
+                reuse_prepared: false,
                 connection: Connection::IDENTITY,
                 family: Family::<Schema, Connection>::IDENTITY,
                 family_type: EqualityTypeId::of::<Family<Schema, Connection>>(),

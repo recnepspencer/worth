@@ -232,6 +232,7 @@ where
             )
             .map(|admitted| WorthQueryAdmittedProgramOutput {
                 admitted,
+                original_result: super::original_result::OriginalProgramResult::Awaiting,
                 original_root_completion: None,
                 target_feature: TypeId::of::<<<Root as ApplicationOutputGraphShape<Schema>>::RootConnection as ApplicationConnectionShape<Schema>>::TargetFeature>(),
                 artifact,
@@ -295,6 +296,7 @@ where
             )
             .map(|admitted| WorthQueryAdmittedProgramOutput {
                 admitted,
+                original_result: super::original_result::OriginalProgramResult::Awaiting,
                 original_root_completion: None,
                 target_feature: TypeId::of::<<<Root as ApplicationOutputGraphShape<Schema>>::RootConnection as ApplicationConnectionShape<Schema>>::TargetFeature>(),
                 artifact,

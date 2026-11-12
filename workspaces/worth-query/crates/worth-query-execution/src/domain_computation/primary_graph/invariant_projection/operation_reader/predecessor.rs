@@ -60,35 +60,49 @@ impl<S: ApplicationSchema, O>
         let execution = *self.reader.execution;
         let retention = self.reader.retention_control;
         let remaining = self.reader.work_budget.remaining();
-        let native = self
-            .reader
-            .native
-            .committed_runtime()
-            .ok_or(Denial::PredecessorMismatch)?;
-        let (prior, basis, contracts, authorization) =
-            access.prepare_predecessor(&execution, native, operation, scope, partition)?;
         let authority = &access.application.mutation_projection;
-        let limit = match (contracts.projection_work_budget(), remaining) {
-            (Some(contract), Some(remaining)) => Some(contract.min(remaining)),
-            (limit, None) | (None, limit) => limit,
+        let project = |native: &worth_relational::facade::runtime::RelationalRuntime| {
+            let (prior, input, contracts, authorization) =
+                access.prepare_predecessor(&execution, native, operation, scope, partition)?;
+            let limit = match (contracts.projection_work_budget(), remaining) {
+                (Some(contract), Some(remaining)) => Some(contract.min(remaining)),
+                (limit, None) | (None, limit) => limit,
+            };
+            let completed = authority.project_borrowed_input(
+                &execution,
+                native,
+                &input,
+                limit,
+                |reader| {
+                    let (output, facts) =
+                        authority.inspect_reader(reader, Some(contracts), None, |reader| {
+                            read(&mut PredecessorDecisionReader { reader })
+                        });
+                    (output, facts, reader.work_budget.consumed())
+                },
+                retention,
+            );
+            // Always recheck C, even when the consumer or projection refuses.
+            access.predecessor_control(&execution, native)?;
+            Ok::<_, Denial>((
+                prior,
+                input,
+                authorization,
+                completed.map_err(Denial::Projection)?,
+            ))
         };
-        let completed = authority.project_borrowed_basis(
-            &execution,
-            native,
-            &basis,
-            limit,
-            |reader| {
-                let (output, facts) =
-                    authority.inspect_reader(reader, Some(contracts), None, |reader| {
-                        read(&mut PredecessorDecisionReader { reader })
-                    });
-                (output, facts, reader.work_budget.consumed())
-            },
-            retention,
-        );
-        // Always recheck C, even when the consumer or projection refuses.
-        access.predecessor_control(&execution, native)?;
-        let completed = completed.map_err(Denial::Projection)?;
+        let (prior, input, authorization, completed) = match self.reader.native.committed_runtime()
+        {
+            Some(native) => project(native),
+            // Scoped Native assembly holds its preparation port, not Query's
+            // Native transport. This is the sole ordinary transport entrance.
+            None => access
+                .application
+                .runtime
+                .primary_provider
+                .graph
+                .with_runtime(&execution, project),
+        }?;
         let (output, facts, consumed) = completed.output;
         if !self.reader.work_budget.consume(consumed) {
             return Err(Denial::Projection(
@@ -103,9 +117,9 @@ impl<S: ApplicationSchema, O>
         let (keys, _) = facts
             .into_expected(&execution)
             .map_err(|cause| Denial::Decision(format!("{cause:?}")))?;
-        access.record_predecessor_read(WorthQueryHistoricalProducerRead::from_read(
+        access.record_predecessor_read(WorthQueryHistoricalProducerRead::from_input(
             &prior,
-            &basis,
+            &input,
             R::IDENTIFIER,
             keys.into_historical_keys(),
         ));

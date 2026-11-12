@@ -17,7 +17,6 @@ use super::generation_append::PreparedGenerationAppend;
 use super::stable_publication::PreparedStableLineagePublication;
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial;
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind;
-use crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation;
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind as Kind;
 
@@ -72,27 +71,17 @@ enum StableInstallationStop {
 }
 
 impl<'lane, 'selected> PreparedStableLineagePublication<'lane, 'selected> {
-    pub(in crate::domain_computation::primary_graph) fn publish<
-        Binding: 'static,
-        Schema,
-        Operation,
-        Input,
-        Scope,
-    >(
+    pub(in crate::domain_computation::primary_graph) fn publish(
         self,
-        operation: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
+        request: &crate::domain_computation::authorization::admitted_request::AdmittedRequestCurrentness,
+        operation: &str,
         observation: &ProductBranchObservation,
         world: &RuntimeWorldObservationPort,
         registration: PreparedCurrentSettlementRegistration<'selected>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<PublishedStableLineage, StablePublicationStop> {
-        let scope = operation.operation_scope_binding();
-
         if !Arc::ptr_eq(registration.identity(), &self.address.identity)
-            || !std::ptr::eq(
-                registration.selected_source(),
-                self.address.verified.selected,
-            )
+            || !std::ptr::eq(registration.selected_source(), self.address.selected)
             || self.address.coordinate.occurrence != observation.lifecycle_incarnation()
             || self.address.coordinate.generation != observation.reference_generation().get()
             || !self.address._coordination.admits(observation)
@@ -109,8 +98,8 @@ impl<'lane, 'selected> PreparedStableLineagePublication<'lane, 'selected> {
         let revalidation = (|| {
             lineage.drain_cancelled_slots()?;
             let actual = lineage
-                .prior_input_cutoff_candidate::<Binding>(
-                    scope,
+                .prior_input_cutoff_candidate_in_source(
+                    &self.address.source,
                     observation,
                     self.address.partition,
                     execution,
@@ -123,9 +112,10 @@ impl<'lane, 'selected> PreparedStableLineagePublication<'lane, 'selected> {
                         "stable lineage basis unavailable",
                     )
                 })?;
-            if !actual.as_ref().is_some_and(|actual| {
-                Arc::ptr_eq(&actual.cell, &self.address.verified.candidate.cell)
-            }) {
+            if !actual
+                .as_ref()
+                .is_some_and(|actual| Arc::ptr_eq(&actual.cell, &self.address.candidate.cell))
+            {
                 return Err(denial(Kind::PublicationStale));
             }
 
@@ -181,7 +171,8 @@ impl<'lane, 'selected> PreparedStableLineagePublication<'lane, 'selected> {
         };
         // Time and cancellation authority belongs to the admitted operation.
         // Revalidate after all storage preparation, before either owner effect.
-        if let Err(stop) = operation.validate_current_authority() {
+        if let Some(lapse) = request.lapse() {
+            let stop = WorthQueryOperationAuthorizationDenial::new(lapse.denial_kind(), operation);
             lineage.partition_index.abandon_stable_locator(
                 &argument.publication.address.source,
                 argument.publication.address.coordinate,
@@ -202,10 +193,7 @@ impl<'lane, 'selected> PreparedStableLineagePublication<'lane, 'selected> {
                 // Product lock acquisition may have waited past cancellation
                 // or expiry. Sample the same owner before the source CAS; carry
                 // its Copy stop out before constructing the allocating denial.
-                if let Some(kind) = operation
-                    .current_authority_lapse()
-                    .map(|lapse| lapse.denial_kind())
-                {
+                if let Some(kind) = request.lapse().map(|lapse| lapse.denial_kind()) {
                     return StableInstallation::Stopped {
                         prepared: argument,
                         reason: StableInstallationStop::RequestAuthority(kind),
@@ -310,7 +298,7 @@ impl<'lane, 'selected> PreparedStableLineagePublication<'lane, 'selected> {
             StableInstallationStop::SourceMoved => denial(Kind::PublicationStale).into(),
             StableInstallationStop::RequestAuthority(kind) => {
                 StablePublicationStop::RequestAuthority(
-                    WorthQueryOperationAuthorizationDenial::new(kind, operation.operation()),
+                    WorthQueryOperationAuthorizationDenial::new(kind, operation),
                 )
             }
         })

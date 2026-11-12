@@ -13,8 +13,22 @@ pub struct MaintenancePhaseWork {
     pub accounted: bool,
 }
 
+/// Passive events at the actual symbol-round and coupled-completion edges.
+/// They confer no authority and never control execution or request accounting.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SymbolPreparationEvent {
+    RoundStarted,
+    AssemblerCallback,
+    AssemblerBreak,
+    CoupledCompleted(bool),
+    ColdBucketRetry,
+    ProbeReturnedOk,
+}
+
 #[derive(Debug, Default)]
 pub struct MaintenanceWorkObservation {
+    pub symbol_preparation: Vec<SymbolPreparationEvent>,
+    pub omitted_symbol_preparation_events: usize,
     pub phases: Vec<MaintenancePhaseWork>,
     pub omitted_phases: usize,
     /// Actual Native ownership records written, including structural retirements.
@@ -69,6 +83,24 @@ fn record(work: MaintenancePhaseWork) {
             } else {
                 recorder.observation.omitted_phases =
                     recorder.observation.omitted_phases.saturating_add(1);
+            }
+        }
+    });
+}
+
+/// Record only while the existing bounded, thread-owned observer is installed.
+/// The product path never reads these events or changes a decision for them.
+pub(crate) fn symbol_preparation_event(event: SymbolPreparationEvent) {
+    RECORDER.with(|slot| {
+        if let Some(recorder) = slot.borrow().as_ref() {
+            let mut recorder = recorder.borrow_mut();
+            if recorder.observation.symbol_preparation.len() < recorder.maximum {
+                recorder.observation.symbol_preparation.push(event);
+            } else {
+                recorder.observation.omitted_symbol_preparation_events = recorder
+                    .observation
+                    .omitted_symbol_preparation_events
+                    .saturating_add(1);
             }
         }
     });

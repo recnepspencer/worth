@@ -12,6 +12,7 @@ use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphPr
 #[path = "provider_registration/consumed_capacity.rs"]
 mod consumed_capacity;
 pub(in crate::domain_computation::primary_graph) use consumed_capacity::ApplicationAttemptRegistrationStop;
+mod candidate_read_support;
 mod coupled_preparation;
 #[path = "provider_registration/output_contract.rs"]
 mod output_contract;
@@ -19,7 +20,8 @@ mod output_contract;
 mod published_causality;
 
 pub(in crate::domain_computation::primary_graph) struct WorthQueryPrimaryGraphApplicationAttempt {
-    coupled_preparation: Option<crate::domain_computation::primary_graph::provider::CoupledProducerPreparation>,
+    candidate_read_support: candidate_read_support::CandidateReadSupports,
+    coupled_preparation: Option<crate::domain_computation::primary_graph::provider::CoupledAttemptPreparation>,
     workflow_origin: Option<crate::domain_computation::primary_graph::workflow::operation_output::WorkflowOperationOrigin>,
     required_output_demand: Option<crate::domain_computation::primary_graph::RequiredOutputDemandContext>,
     affinity: WorthQueryApplicationAttemptAffinity,
@@ -56,6 +58,12 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryPrimaryGraphAp
 }
 
 impl WorthQueryPrimaryGraphApplicationAttempt {
+    pub(in crate::domain_computation::primary_graph) fn receipt_appendix(
+        &self,
+    ) -> Option<crate::domain_computation::primary_graph::provider::ReceiptAppendix> {
+        self.effects.receipt_appendix()
+    }
+
     pub(in crate::domain_computation::primary_graph) fn content_attachments(
         &self,
     ) -> &worth_relational::facade::content::RelationalContentAttachments {
@@ -358,6 +366,7 @@ impl WorthQueryPrimaryGraphProvider {
         Ok(WorthQueryPreparedApplicationAttempt {
             attempt: WorthQueryPrimaryGraphApplicationAttempt {
                 coupled_preparation: None,
+                candidate_read_support: Default::default(),
                 workflow_origin,
                 required_output_demand,
                 affinity,

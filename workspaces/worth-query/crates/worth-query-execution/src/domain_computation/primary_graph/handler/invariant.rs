@@ -139,6 +139,17 @@ where
         self.identities.idempotency_key()
     }
 
+    /// Zero-based authored-stage position; absent outside an edit envelope.
+    pub fn stage_ordinal(&self) -> Option<usize> {
+        // Ordinal-sensitive decisions must not reuse an ordinary decision that
+        // retained only the domain key. This existing posture disables reuse
+        // without weakening the tracked reader or inventing a key dependency.
+        self.context_use.set(self.context_use.get().opaque_reader());
+        self.identities
+            .edit_stage_identity()
+            .map(|stage| stage.ordinal())
+    }
+
     /// Identity of the request's idempotency key, encoded once for the whole
     /// request and scoped to the binding's key namespace.
     pub fn key_identity(&self) -> &[u8; 32] {

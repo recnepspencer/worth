@@ -11,6 +11,7 @@ use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
 /// Completed read proofs and the sealed computation move across a World recovery plan. The cancelled address
 /// and its retained capacity stay with the original slot's Drop path.
 pub struct PreparedLineageRecoveryMetadata {
+    original_ready_key: Option<std::sync::Arc<crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandKey>>,
     coupled_completion: Option<super::super::CoupledOutputCompletion>,
     native_prior_checkpoint:
         Option<super::super::native_prior_checkpoint::NativePriorCheckpointLocator>,
@@ -58,6 +59,7 @@ impl PreparedOutputLineageSlot {
         mut self,
     ) -> PreparedLineageRecoveryMetadata {
         let metadata = PreparedLineageRecoveryMetadata {
+            original_ready_key: self.original_ready_key.take(),
             coupled_completion: self.coupled_completion.take(),
             native_prior_checkpoint: self.native_prior_checkpoint.take(),
             computation: self.computation.take(),
@@ -78,6 +80,7 @@ impl PreparedOutputLineageSlot {
         assert!(self.completed_decision_reuse.is_none());
         assert!(self.prepared_input_reuse_key.is_none());
 
+        self.original_ready_key = metadata.original_ready_key.take();
         self.coupled_completion = metadata.coupled_completion.take();
         assert!(self.native_prior_checkpoint.is_none());
         self.native_prior_checkpoint = metadata.native_prior_checkpoint.take();

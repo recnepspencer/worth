@@ -74,7 +74,8 @@ class CourtDoorTests(unittest.TestCase):
         from src_door_callers import CRATES, OWNER, GENERATED_HEADER, updated
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            for owner in [OWNER, 'crates/native/']:
+            publication = f'{CRATES}/worth-query-publication/'
+            for owner in [OWNER, publication, 'crates/native/']:
                 source = root / owner / 'src'
                 source.mkdir(parents=True)
                 (source / 'lib.rs').write_text('pub fn inspect_for_test() {}\n')
@@ -84,6 +85,7 @@ class CourtDoorTests(unittest.TestCase):
             result = updated(root, [], [caller])
             self.assertEqual(set(result[1:]), {
                 f'{OWNER} {caller.relative_to(root)}',
+                f'{publication} {caller.relative_to(root)}',
                 f'crates/native/ {caller.relative_to(root)}',
             })
             self.assertEqual(result[0], GENERATED_HEADER)

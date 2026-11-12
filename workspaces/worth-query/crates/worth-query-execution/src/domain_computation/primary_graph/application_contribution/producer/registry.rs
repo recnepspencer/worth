@@ -94,10 +94,20 @@ pub(in crate::domain_computation::primary_graph) use pending::PendingProducerReg
 pub(in crate::domain_computation::primary_graph) use semantic_edition::InstalledProducerEdition;
 
 pub struct InstalledProducerProvider<Schema> {
-    pub(super) declaration: DeclaredProducerBinding,
-    pub(super) edition: InstalledProducerEdition,
+    pub(in crate::domain_computation::primary_graph::application_contribution) declaration:
+        DeclaredProducerBinding,
+    pub(in crate::domain_computation::primary_graph::application_contribution) edition:
+        InstalledProducerEdition,
     value: Arc<dyn Any + Send + Sync>,
     pub(super) executor: Arc<dyn InstalledProducerExecutor<Schema>>,
+}
+
+impl<S> InstalledProducerProvider<S> {
+    pub(in crate::domain_computation::primary_graph::application_contribution) fn coupled_executor(
+        &self,
+    ) -> &dyn super::execution::InstalledCoupledProducerExecutor<S> {
+        self.executor.as_ref()
+    }
 }
 
 pub struct WorthQueryInstalledApplicationProducerRegistry<Schema> {

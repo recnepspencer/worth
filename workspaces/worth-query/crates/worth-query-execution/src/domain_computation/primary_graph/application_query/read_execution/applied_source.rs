@@ -102,3 +102,29 @@ where
             .expect("one actual source footprint"),
     })
 }
+
+impl AppliedSourceReadStop {
+    pub(in crate::domain_computation::primary_graph) fn into_source_query_stop(
+        self,
+        query: &str,
+    ) -> super::super::SourceQueryObservationStop {
+        use super::super::{
+            authorized_read::WorthQueryAuthorizedApplicationReadDenial as Read, one_shot,
+        };
+        let denial = match self {
+            Self::Read(cause) => one_shot::map_authorized_read_denial(Read::Read(cause), query),
+            Self::Native(cause) => one_shot::map_authorized_read_denial(
+                Read::Read(super::relational_read_denial(cause, query)),
+                query,
+            ),
+            Self::Projection(cause) => one_shot::denial(
+                one_shot::WorthQueryApplicationOneShotDenialKind::Projection(cause.kind()),
+                query,
+                format!("{cause:?}"),
+            ),
+        };
+        super::super::SourceQueryObservationStop::Read(
+            super::super::WorthQueryAdmittedOneShotStop::Execution(denial),
+        )
+    }
+}

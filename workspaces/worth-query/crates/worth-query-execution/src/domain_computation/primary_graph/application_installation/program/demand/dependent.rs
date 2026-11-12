@@ -68,6 +68,7 @@ where
             )
             .map(|admitted| WorthQueryAdmittedProgramOutput {
                 admitted,
+                original_result: original_result::OriginalProgramResult::Disabled,
                 original_root_completion: None,
                 target_feature: TypeId::of::<Connection::TargetFeature>(),
                 artifact,

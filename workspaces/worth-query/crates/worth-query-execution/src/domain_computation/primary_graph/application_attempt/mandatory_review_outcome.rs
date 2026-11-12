@@ -160,6 +160,16 @@ pub(in crate::domain_computation::primary_graph) fn reviewed_outcome(
     binding: WorthQueryMandatoryReviewBinding,
 ) -> WorthQueryMandatoryReviewOutcome {
     match outcome {
+        WorthQueryApplicationCommitOutcome::OutputAdopted(_) => {
+            WorthQueryMandatoryReviewOutcome::Denied(
+                WorthQueryApplicationCommitDenial::provider_rejected_with_detail(
+                    super::WorthQueryApplicationCommitDenialStage::ProviderCommit,
+                    "producer output adoption cannot fulfill this authored transition",
+                ),
+                binding.into_mandatory(),
+            )
+        }
+
         WorthQueryApplicationCommitOutcome::RecoveredCommitted(receipt) => {
             WorthQueryMandatoryReviewOutcome::RecoveredCommitted {
                 receipt,

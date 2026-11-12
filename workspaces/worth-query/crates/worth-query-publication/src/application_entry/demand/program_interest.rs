@@ -95,6 +95,22 @@ where
         }
     }
 
+    pub(in crate::application_entry) fn original_root_result(
+        &self,
+    ) -> Option<WorthQueryApplicationOutputDemandSettlement<SourceQuery<Schema, Demand>>> {
+        let NativeProgramDemandCustody::Ordinary(admitted) = &self.admitted else {
+            // History has its independent exact-candidate original-root owner.
+            return None;
+        };
+        admitted
+            .original_root_result(
+                &worth_query_execution::publication_boundary::program_publication_access(),
+            )
+            .map(|(original, source)| {
+                WorthQueryApplicationOutputDemandSettlement::new(original, source)
+            })
+    }
+
     pub(in crate::application_entry) fn notifications(
         &self,
     ) -> Result<

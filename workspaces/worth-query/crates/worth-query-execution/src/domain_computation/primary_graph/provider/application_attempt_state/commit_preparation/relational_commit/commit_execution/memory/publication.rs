@@ -6,7 +6,7 @@ pub(super) fn publish(
     query: durable_custody::QueryPreparingApplicationCommit,
     history: Option<crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerCutover<'_>>,
 ) -> Result<
-    WorthQueryCommittedApplicationSession,
+    ApplicationCommitExecution,
     crate::domain_computation::WorthQueryProviderSessionCommitStop,
 > {
     let durable_custody::QueryPreparingApplicationCommit {
@@ -34,6 +34,40 @@ pub(super) fn publish(
         unreachable!("Native preparation completed once")
     };
     let source_fact_rebase = source_fact_rebase.expect("candidate source facts prepared");
+    let adoption = executed_adoption::prepare(
+        &execution,
+        provider,
+        &attempt,
+        &candidate,
+        members.is_empty() && history.is_none() && prepared_output_witness.is_some(),
+        source_fact_rebase,
+        required_prerequisites,
+    )?;
+    let (source_fact_rebase, restored_required) = match adoption {
+        executed_adoption::AdoptionPreparation::Declined { rebase, required } => (rebase, required),
+        executed_adoption::AdoptionPreparation::Selected {
+            selected,
+            adoption,
+            association,
+            rebase,
+            required,
+        } => {
+            return Ok(ApplicationCommitExecution::AdoptionPrepared(Box::new(
+                executed_adoption::PreparedExecutedOutputAdoption::new(
+                    attempt,
+                    candidate,
+                    selected,
+                    adoption,
+                    association,
+                    before,
+                    rebase,
+                    required,
+                    prepared_output_witness.expect("adoption retains its real prepared witness"),
+                ),
+            )));
+        }
+    };
+    required_prerequisites = restored_required;
     let prepared_touched_records =
         prepared_touched_records.expect("candidate touched records prepared");
     let index_maintenance_work = index_maintenance_work.expect("candidate indexes prepared");
@@ -105,30 +139,33 @@ pub(super) fn publish(
         .component_results()
         .retain_relational_commit_result()
         .expect("World performed a prepared Relational application candidate");
-    Ok(WorthQueryCommittedApplicationSession {
-        attempt,
-        members,
-        prepared_group_publications,
-        group_evidence,
-        group_emissions,
-        own_publication: None,
-        own_records: None,
-        predicate,
-        work,
-        index_maintenance_work,
-        retained_preimage,
-        preimage_retention_work,
-        before: before.into_publication(),
-        next_basis,
-        committed,
-        published_snapshot_custody: PublishedSnapshotCustody::LiveOwned,
-        prepared_touched_records: Some(prepared_touched_records),
-        product_publication: performed,
-        managed_views,
-        source_fact_rebase: Some(source_fact_rebase),
+    Ok(ApplicationCommitExecution::Committed(
+        WorthQueryCommittedApplicationSession {
+            attempt,
+            members,
+            prepared_group_publications,
+            group_evidence,
+            group_emissions,
+            own_publication: None,
+            own_records: None,
+            predicate,
+            work,
+            index_maintenance_work,
+            retained_preimage,
+            preimage_retention_work,
+            before: before.into_publication(),
+            next_basis,
+            committed,
+            published_snapshot_custody: PublishedSnapshotCustody::LiveOwned,
+            prepared_touched_records: Some(prepared_touched_records),
+            product_publication: performed,
+            managed_views,
+            source_fact_rebase: Some(source_fact_rebase),
 
-        required_prerequisites,
-        prepared_lineage_slot,
-        prepared_output_witness,
-    })
+            required_prerequisites,
+            prepared_lineage_slot,
+            prepared_output_witness,
+            coupled_deletions: Default::default(),
+        },
+    ))
 }

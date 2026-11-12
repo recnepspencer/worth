@@ -17,9 +17,11 @@ pub(super) fn validate<'a>(
         ));
     }
     let origin = &predecessor.origin;
-    context
-        .checkpoint((origin.meaning.family.len() + meaning.family.len() + 96) as u64)
-        .map_err(origin_request)?;
+    crate::execution::request_stage::checkpoint(
+        context,
+        (origin.meaning.family.len() + meaning.family.len() + 96) as u64,
+    )
+    .map_err(origin_request)?;
     if origin.meaning.family != meaning.family
         || origin.meaning.source_scope != meaning.source_scope
         || origin.meaning.source_partition != meaning.source_partition
@@ -76,7 +78,7 @@ pub(super) fn validate<'a>(
     }
     // The carried holder is checked against its exact performed native coordinate,
     // not an ancestry search or a caller-supplied description.
-    context.checkpoint(1).map_err(origin_request)?;
+    crate::execution::request_stage::checkpoint(context, 1).map_err(origin_request)?;
     let crate::publication::ownership::PublicationEvidence::Canonical(envelope) =
         &predecessor.evidence
     else {

@@ -222,6 +222,14 @@ impl RelationalPublicationPort {
                 },
             ));
         }
+        if let Some(cause) = candidate.omitted_appendix_publication_refusal() {
+            return Err(RelationalPublicationOutcome::failed(
+                super::RelationalPublicationFailure::new(
+                    cause,
+                    "a body without its publication appendix requires current-output adoption",
+                ),
+            ));
+        }
         // This original epoch spans both user preparation and the fixed swap.
         let companion_epoch = self.publication_binding.companion_epoch().map_err(|_| {
             RelationalPublicationOutcome::deferred(

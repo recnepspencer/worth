@@ -1,5 +1,5 @@
 mod authored_retirement_refusal;
-pub use authored_retirement_refusal::AuthoredRetirementRefusal;
+pub use authored_retirement_refusal::{AuthoredRetirementRefusal, CoupledFreshWriter};
 mod artifact_snapshot;
 mod observation_snapshot;
 mod publication_error;

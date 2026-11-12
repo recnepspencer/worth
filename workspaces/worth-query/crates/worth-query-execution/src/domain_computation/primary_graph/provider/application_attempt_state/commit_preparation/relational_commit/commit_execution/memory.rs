@@ -9,7 +9,7 @@ pub(super) fn commit(
     history: Option<crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerCutover<'_>>,
     allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
 ) -> Result<
-    WorthQueryCommittedApplicationSession,
+    ApplicationCommitExecution,
     crate::domain_computation::WorthQueryProviderSessionCommitStop,
 > {
     let _ = mint;

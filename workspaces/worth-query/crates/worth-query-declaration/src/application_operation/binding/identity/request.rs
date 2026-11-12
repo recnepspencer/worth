@@ -1,5 +1,10 @@
 //! Both identities of one mutation request, encoded once beside the request.
 
+mod envelope;
+pub use envelope::{
+    ApplicationEditEnvelopeKey, ApplicationEditIntentIdentity, ApplicationEditStageIdentity,
+    ApplicationEditStageIntent,
+};
 mod owned;
 pub use owned::{ApplicationEncodedMutationKey, ApplicationOwnedMutationIdentities};
 
@@ -101,6 +106,7 @@ where
     key: &'request Binding::IdempotencyKey,
     input: MutationInput<'request, Binding::Input>,
     key_identity: [u8; 32],
+    stage: Option<ApplicationEditStageIdentity>,
     input_identity: [u8; 32],
     work: ApplicationCanonicalWork,
     capture: Option<ApplicationCanonicalInput>,
@@ -119,6 +125,7 @@ where
             key: self.key,
             input: self.input.clone(),
             key_identity: self.key_identity,
+            stage: self.stage,
             input_identity: self.input_identity,
             work: self.work,
             capture: self.capture.clone(),
@@ -147,7 +154,9 @@ where
     Binding: ApplicationMutationBinding<Schema>,
 {
     fn eq(&self, other: &Self) -> bool {
-        self.key_identity == other.key_identity && self.input_identity == other.input_identity
+        self.key_identity == other.key_identity
+            && self.input_identity == other.input_identity
+            && self.stage == other.stage
     }
 }
 
@@ -176,6 +185,7 @@ where
             key,
             input: MutationInput::Borrowed(input),
             key_identity: key_identity.identity(),
+            stage: None,
             input_identity: input_identity.identity(),
             work: key_identity.work().combine(input_identity.work()),
             capture: input_identity.capture,
@@ -213,6 +223,7 @@ where
             key,
             input: MutationInput::Borrowed(input),
             key_identity: key_identity.identity(),
+            stage: None,
             input_identity: input_identity.identity(),
             work: key_identity.work().combine(input_identity.work()),
             capture: input_identity.capture,
@@ -237,6 +248,7 @@ where
             key,
             input: MutationInput::Shared(input.shared_input().clone()),
             key_identity: key_identity.identity(),
+            stage: None,
             input_identity: *input.identity(),
             work: key_identity.work().combine(input.canonical_work()),
             capture: input.canonical_input().cloned(),
@@ -268,6 +280,11 @@ where
     }
 
     /// The client idempotency key these identities were encoded from.
+    /// Framework position in an edit envelope; ordinary mutations have none.
+    pub const fn edit_stage_identity(&self) -> Option<&ApplicationEditStageIdentity> {
+        self.stage.as_ref()
+    }
+
     pub const fn idempotency_key(&self) -> &'request Binding::IdempotencyKey {
         self.key
     }

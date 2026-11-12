@@ -314,21 +314,22 @@ fn retained_currentness_read(
         .filter(|facts| !facts.is_empty());
     // Missing comparable facts must not hide the original consumed lineage.
     // With neither, preserve the own-publication fallback at the caller.
-    if facts.is_none() && recorded.consumed_outputs.is_empty() {
+    if facts.is_none()
+        && recorded.consumed_outputs.is_empty()
+        && recorded.required_publication.is_none()
+    {
         return Ok(None);
     }
-    let origin = recorded
-        .performed_origin
-        .as_ref()
-        .and_then(|cell| cell.get())
-        .unwrap_or(recorded);
+    let completed = recorded
+        .completed_computation_record()
+        .ok_or(CompanionPreflightStop::SelectedSourceMismatch)?;
     Ok(Some(RetainedOutputCurrentnessRead {
         identity: Arc::clone(&recorded.settlement_identity),
         historical_selection: recorded.historical_selection.clone(),
         required_publication: recorded.required_publication.clone(),
         facts,
         consumed_outputs: Arc::clone(&recorded.consumed_outputs),
-        native_output_witness: origin.native_output_witness_cell().map(Arc::clone),
+        native_output_witness: completed.native_output_witness_cell().map(Arc::clone),
         consumed_nothing: recorded.consumed_outputs.is_empty()
             && recorded.performed_origin.is_none(),
         verification_requirement: recorded.verification_requirement(),

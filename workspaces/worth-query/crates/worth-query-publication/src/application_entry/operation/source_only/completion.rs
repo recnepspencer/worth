@@ -118,11 +118,12 @@ where
     P: ApplicationProgramDefinition<S>,
 {
     /// Exact managed-run cleanup custody retained independently of business evidence.
-    pub fn managed_cleanup_failure(
+    pub fn managed_cleanup_failures(
         &self,
-    ) -> Option<&worth_query_execution::facade::primary_graph::WorthQueryMutationCleanupFailure>
-    {
-        self.operation.cleanup.managed_failure()
+    ) -> impl ExactSizeIterator<
+        Item = &worth_query_execution::facade::primary_graph::WorthQueryMutationCleanupFailure,
+    > {
+        self.operation.cleanup.managed_failures()
     }
     /// Cleanup discharge retains this terminal and does not settle its business outcome.
     pub fn release_cleanup(

@@ -107,11 +107,25 @@ where
         self.advance_denial.as_ref()
     }
     /// Exact managed-run cleanup custody retained independently of business evidence.
-    pub fn managed_cleanup_failure(
+    pub fn managed_cleanup_failures(
         &self,
-    ) -> Option<&worth_query_execution::facade::primary_graph::WorthQueryMutationCleanupFailure>
-    {
-        self.operation.cleanup.managed_failure()
+    ) -> impl ExactSizeIterator<
+        Item = &worth_query_execution::facade::primary_graph::WorthQueryMutationCleanupFailure,
+    > {
+        self.operation.cleanup.managed_failures()
+    }
+    /// Interrupt this receiver only after actual native cleanup has released the prefix.
+    pub fn cancel_after_managed_releases_for_test(
+        &mut self,
+        count: std::num::NonZeroUsize,
+        cancellation:worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource,
+    ) -> Result<
+        super::cleanup::WorthQueryCleanupReleaseInterruptionForTest,
+        super::cleanup::WorthQueryCleanupReleaseRegistrationDenial,
+    > {
+        self.operation
+            .cleanup
+            .cancel_after_managed_releases(count, cancellation)
     }
     /// Discharge of this collection retains terminal business evidence and required-output obligations.
     pub fn release_cleanup(

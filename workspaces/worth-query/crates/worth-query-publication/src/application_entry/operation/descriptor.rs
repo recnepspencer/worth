@@ -87,6 +87,7 @@ pub struct WorthQueryOperationDescription<
     Intent: ApplicationMutationIntent<Schema>,
 > {
     pub(super) intent: Intent,
+    pub(super) producer_round_limits: crate::application_entry::ApplicationProducerRoundLimits,
     // Freeze input custody once; attempts share it without copying domain input or authority.
     pub(super) encoded_input: Result<
         worth_query_declaration::facade::application_operation::ApplicationEncodedInput<

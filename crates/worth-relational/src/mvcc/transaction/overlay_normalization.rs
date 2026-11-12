@@ -140,15 +140,18 @@ impl DetachedRelationalTransactionOverlay {
                 )),
             ),
             Ok((index, new_footprint)) => {
-                for intent in self.batches.iter_mut().flat_map(|batch| &mut batch.intents) {
-                    if let Err(denial) = intent.normalize_client_keys(interner, policy) {
-                        return (
-                            entries,
-                            Err(crate::transactions::data::TransactionCommitError::conflict(
-                                Denial::from(denial).into_conflict(),
-                            )),
-                        );
-                    }
+                if let Err(denial) = normalize_intents(
+                    self.batches.iter_mut().flat_map(|batch| &mut batch.intents),
+                    interner,
+                    policy,
+                    allocation_policy,
+                ) {
+                    return (
+                        entries,
+                        Err(crate::transactions::data::TransactionCommitError::conflict(
+                            denial.into_conflict(),
+                        )),
+                    );
                 }
                 self.index = index;
                 *footprint = new_footprint;
@@ -172,3 +175,17 @@ mod no_raw_keys;
 #[cfg(test)]
 #[path = "overlay_normalization/selected_policy.rs"]
 mod selected_policy;
+
+/// Both full-overlay and delta staging use the intent owner's exact key rewrite.
+pub(super) fn normalize_intents<'a>(
+    intents: impl Iterator<Item = &'a mut crate::transactions::data::MutationIntent>,
+    interner: &mut StringInterner,
+    policy: ClientKeySymbolPolicy,
+    allocation: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+) -> Result<(), Denial> {
+    for intent in intents {
+        allocation.check_live()?;
+        intent.normalize_client_keys(interner, policy)?;
+    }
+    Ok(())
+}

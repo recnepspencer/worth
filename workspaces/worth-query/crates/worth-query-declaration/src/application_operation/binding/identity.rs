@@ -77,7 +77,8 @@ pub use polled::{
     application_computation_partition_digest_polled,
 };
 pub use request::{
-    ApplicationEncodedMutationKey, ApplicationMutationIdentities,
+    ApplicationEditEnvelopeKey, ApplicationEditIntentIdentity, ApplicationEditStageIdentity,
+    ApplicationEditStageIntent, ApplicationEncodedMutationKey, ApplicationMutationIdentities,
     ApplicationMutationIdentityAdmittedDenial, ApplicationMutationIdentityDenial,
     ApplicationOwnedMutationIdentities,
 };

@@ -390,3 +390,5 @@ where
 }
 
 mod primary_index_generations;
+
+mod cold_symbols;

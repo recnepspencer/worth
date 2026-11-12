@@ -1,20 +1,22 @@
 pub(crate) use worth_query_testkit_certification_application_graph::facade::certification::application_graph::producer_predicate_checkpoint::ordinary_source::terminal_unavailable::*;
 
 #[test]
-fn fixed_leaf_domain_refusal_closes_unavailable_without_reexecution() {
+fn fixed_leaf_domain_refusal_is_atomic_and_preserves_typed_cause() {
     let source_before = (decision_count(0), candidate_count(0));
     let assessment_before = assessment_counts(0);
     let mut host = install();
     let terminal = terminal_owner(&host);
-    assert_eq!(host.retained_source_custody_count_for_test(), 1);
+    assert_eq!(host.retained_source_custody_count_for_test(), 0);
     assert_eq!(
         host.close_conditional_runtime().unwrap_err().kind(),
         WorthQueryConditionalRuntimeInstallationDenialKind::RuntimeKeepaliveRetained
     );
     let terminal = refuse_foreign_and_cancelled(&host, terminal);
-    assert!(terminal.output_unavailable().is_none());
+    assert!(matches!(terminal.output_unavailable(),
+        Err(WorthQueryOperationCloseDenial::DeferredFixedCompletionUnsupported { issue })
+            if issue == "https://github.com/recnepspencer/worth/issues/120"));
     let closed = close_original(&host, terminal);
-    assert!(closed.output_unavailable().is_some());
+    assert!(closed.output_unavailable().is_none());
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.runtime().request(&principal, &scope);
@@ -27,8 +29,8 @@ fn fixed_leaf_domain_refusal_closes_unavailable_without_reexecution() {
             .unwrap()
             .rows()[0]
             .retention_days,
-        0,
-        "source is independently saved despite no assessment output"
+        worth_query_testkit_document_retention::facade::document_retention_model::host::SEED_RETENTION,
+        "the refused source leaves the original value unchanged"
     );
     assert_eq!(decision_count(0), source_before.0 + 1);
     assert_eq!(candidate_count(0), source_before.1 + 1);

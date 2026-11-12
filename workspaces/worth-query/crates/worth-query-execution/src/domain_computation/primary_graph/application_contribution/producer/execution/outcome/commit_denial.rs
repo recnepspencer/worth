@@ -75,6 +75,7 @@ pub(super) fn stopped(
             | Kind::OriginalEffectReleased
             | Kind::IdempotencyIntentUnverifiable
             | Kind::OperationBodyExecutionRequired
+            | Kind::CoupledRefusalWithoutSubject
             | Kind::SignedCreationAuthentication { .. }
             | Kind::SignedEntityImmutable
             | Kind::SigningLifecycleForgery
@@ -92,6 +93,7 @@ pub(super) fn stopped(
             | Kind::MandatoryReviewProgramMismatch
             | Kind::DelegationActivationRequired
             | Kind::CapabilityRevocationRequired
+            | Kind::RequiredOutputPreparationMissing
             | Kind::ApplicationProgramRequired
             | Kind::WorkflowAuthorityRequired
             | Kind::ProgramNotActiveOnOccurrence { .. }

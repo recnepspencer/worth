@@ -64,7 +64,7 @@ impl<Schema, Operation, Input, Scope>
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         declared_key: [u8; 32],
         implementation: worth_relational::facade::mvcc::RequiredOutputProducingImplementation,
-        predecessor: &worth_relational::facade::mvcc::RelationalRequiredOutputPublication,
+        predecessor: Option<&worth_relational::facade::mvcc::RelationalRequiredOutputPublication>,
         policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
         retain_output_field_evidence: bool,
     ) -> Result<([u8; 32], [u8; 32]), WorthQueryProducerIdentityDenial> {
@@ -74,7 +74,7 @@ impl<Schema, Operation, Input, Scope>
             declared_key,
             implementation,
             None,
-            Some(predecessor),
+            predecessor,
             policy,
             retain_output_field_evidence,
         )

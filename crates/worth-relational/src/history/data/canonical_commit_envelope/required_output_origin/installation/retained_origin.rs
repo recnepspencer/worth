@@ -3,6 +3,7 @@ use super::{
     origin_request, CanonicalRequiredOutputOrigin, CanonicalRequiredOutputRelation,
     TransactionCommitError,
 };
+use crate::execution::request_stage::checkpoint;
 use worth_execution::MapKernelContext;
 
 pub(super) fn compare_retained_origin(
@@ -47,13 +48,15 @@ pub(super) fn compare_retained_origin(
                 })?;
             }
         }
-        context
-            .checkpoint(u64::try_from(work).map_err(|_| {
+        checkpoint(
+            context,
+            u64::try_from(work).map_err(|_| {
                 origin_request(
                     crate::execution::RelationalExecutionDenialCause::WorkCounterOverflow,
                 )
-            })?)
-            .map_err(origin_request)?;
+            })?,
+        )
+        .map_err(origin_request)?;
     }
     if carried != canonical {
         if canonical.source_scope_owned {
@@ -64,33 +67,31 @@ pub(super) fn compare_retained_origin(
             let mut subject = RecordRef::Entity(canonical.meaning.source_scope);
             for (index, member) in canonical.members.iter().enumerate() {
                 let other = carried.members.get(index);
-                context
-                    .checkpoint(
-                        (std::mem::size_of_val(member)
-                            + member.role.len()
-                            + member.entity_name.len()
-                            + member.birth_producer.len()
-                            + other.map_or(0, |other| {
-                                other.role.len()
-                                    + other.entity_name.len()
-                                    + other.birth_producer.len()
-                            })) as u64,
-                    )
-                    .map_err(origin_request)?;
+                checkpoint(
+                    context,
+                    (std::mem::size_of_val(member)
+                        + member.role.len()
+                        + member.entity_name.len()
+                        + member.birth_producer.len()
+                        + other.map_or(0, |other| {
+                            other.role.len() + other.entity_name.len() + other.birth_producer.len()
+                        })) as u64,
+                )
+                .map_err(origin_request)?;
                 if other != Some(member) {
                     subject = RecordRef::Entity(member.id);
                     break;
                 }
             }
-            context
-                .checkpoint(
-                    canonical
-                        .relations
-                        .len()
-                        .saturating_mul(std::mem::size_of::<CanonicalRequiredOutputRelation>())
-                        as u64,
-                )
-                .map_err(origin_request)?;
+            checkpoint(
+                context,
+                canonical
+                    .relations
+                    .len()
+                    .saturating_mul(std::mem::size_of::<CanonicalRequiredOutputRelation>())
+                    as u64,
+            )
+            .map_err(origin_request)?;
             if subject == RecordRef::Entity(canonical.meaning.source_scope)
                 && let Some((_, relation)) = canonical
                     .relations

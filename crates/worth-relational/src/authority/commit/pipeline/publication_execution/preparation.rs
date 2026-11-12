@@ -1,3 +1,4 @@
+mod application_effect;
 use super::super::phase_backing::CommitPhaseBacking;
 mod current_ownership;
 mod owned_record_custody;
@@ -88,11 +89,21 @@ pub(super) fn prepare_publication_phase(
             deferred_diagnostic_artifacts,
             target_schema_registry,
         ) = publication.into_inner().into_finalize().into_parts();
+        let application_unchanged = application_effect::unchanged(
+            execution,
+            &changed_records,
+            &adjacency_deltas,
+            &canonical_commit_envelope,
+            &mutation_identities.symbols,
+            &merge_base_commits,
+            &merge_parent_branches,
+        )?;
         let current_ownership = current_ownership::select(
             execution,
             runtime,
             &branch_basis,
             &canonical_commit_envelope,
+            created_entities,
             &adjacency_deltas,
             &working_state,
             required_output_publication.as_ref(),
@@ -360,6 +371,7 @@ pub(super) fn prepare_publication_phase(
                 .with_commit_log(commit_log.clone())
             })?;
         PreparedPublicationPhase {
+            application_unchanged,
             record_allocations: mutation_identities.records,
             symbol_meanings,
             _candidate_symbols: runtime.services.symbols.clone(),

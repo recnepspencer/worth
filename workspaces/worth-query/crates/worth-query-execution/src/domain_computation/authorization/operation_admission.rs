@@ -74,7 +74,7 @@ mod output_demand;
 #[path = "operation_admission/selected_conventional.rs"]
 mod selected_conventional;
 pub(in crate::domain_computation) use selected_conventional::{
-    authorize_current_control_mutation_on_selected,
+    authorize_applied_control_mutation_on_selected, authorize_current_control_mutation_on_selected,
     authorize_historical_control_mutation_on_selected, authorize_public_mutation_on_selected,
     SelectedConventionalAdmissionStop,
 };

@@ -6,6 +6,7 @@ use super::super::{
 };
 use super::{authoring::Disclosure, courts::perform};
 use worth_query_host::facade::{application_entry::*, causal_inspection::*, primary_graph::*};
+mod attribution;
 pub mod query;
 mod retained;
 
@@ -65,6 +66,7 @@ pub fn scalar_output_uses_its_own_performed_revision() {
         );
         let producer = producer.expect("changed input runs the actual producer");
         let (after, total) = retained::read(&application, &principal, &scope, &read);
+        attribution::paired_changes(&application, &source, &read);
         drop(read);
         assert_eq!(total, Some(expected));
         let report = request
@@ -96,11 +98,18 @@ pub fn scalar_output_uses_its_own_performed_revision() {
             report.producer_connection().producer_commit(),
             producer.commit_reference()
         );
-        assert_ne!(
-            report.producer_connection().output_publication_commit(),
-            source.commit_reference(),
-            "the input edit did not author the producer's Scalar output",
-        );
+        if source.aftermath_causality().is_none() {
+            assert_eq!(
+                report.producer_connection().output_publication_commit(),
+                source.commit_reference(),
+                "the source and actual earlier producer share the one Native edit commit",
+            );
+        } else {
+            assert_ne!(
+                report.producer_connection().output_publication_commit(),
+                source.commit_reference()
+            );
+        }
         assert_eq!(
             report.producer_connection().output_role(),
             "scalar-calculated-number"

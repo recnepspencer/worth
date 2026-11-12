@@ -33,7 +33,7 @@ pub(super) fn runtime() -> RelationalRuntime {
         .build()
         .unwrap()
 }
-fn target(key: &str) -> CreatedEntityRef {
+pub(super) fn target(key: &str) -> CreatedEntityRef {
     CreatedEntityRef {
         partition_id: PartitionId::main(),
         kind_id: KindId(1),
@@ -43,7 +43,7 @@ fn target(key: &str) -> CreatedEntityRef {
 fn fields(value: &str) -> AspectFieldPatch {
     string_aspect_field_patch([(aspect_key("name"), field_key("name"), value)])
 }
-fn create(key: &str) -> WorkerIntentBatch {
+pub(super) fn create(key: &str) -> WorkerIntentBatch {
     WorkerIntentBatch::new("authored-create").push(MutationIntent::Create(CreateIntent::Entity(
         EntitySpec {
             partition_id: PartitionId::main(),
@@ -73,6 +73,11 @@ pub(super) fn commit(prior: &RelationalRequiredOutputPublication) -> CommitId {
 }
 impl World {
     pub fn new(execution: &ExecutionRequest<'_, '_>) -> Self {
+        Self::with_other_publication_owner(execution).0
+    }
+    pub fn with_other_publication_owner(
+        execution: &ExecutionRequest<'_, '_>,
+    ) -> (Self, RelationalInstalledApplicationPublicationAuthority) {
         let mut runtime = runtime();
         let receipt = runtime
             .prepare_initial_schema_installation()
@@ -80,6 +85,7 @@ impl World {
             .install(RelationalSchemaRegistry::new())
             .unwrap();
         let (owner, installed) = receipt.issue_application_publication_owner();
+        let (_, other) = receipt.issue_application_publication_owner();
         let installed =
             installed.with_source_scope_owned_producers([("source-owned".into(), KindId(1))]);
         let mut tx = begin_main_transaction(&runtime);
@@ -89,13 +95,16 @@ impl World {
         let source = born.created_entity(&target("old-input")).unwrap();
         let source_commit = born.commit.commit_id;
         release_test_commit_snapshot(&runtime, &born);
-        Self {
-            runtime,
-            owner,
-            installed,
-            source,
-            source_commit,
-        }
+        (
+            Self {
+                runtime,
+                owner,
+                installed,
+                source,
+                source_commit,
+            },
+            other,
+        )
     }
     pub fn basis(&self) -> AdmittedRelationalBranchBasis {
         self.runtime
@@ -109,14 +118,17 @@ impl World {
     ) -> RelationalRequiredOutputPublication {
         self.birth_for(execution, self.source, "output")
     }
-    pub fn add_unrelated_publication(&self, execution: &ExecutionRequest<'_, '_>) {
+    pub fn add_unrelated_publication(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+    ) -> RelationalRequiredOutputPublication {
         let mut tx = begin_main_transaction(&self.runtime);
         tx.push_batch(create("other-source"), execution.allocation_policy())
             .unwrap();
         let result = tx.commit(execution, &self.runtime).unwrap();
         let source = result.created_entity(&target("other-source")).unwrap();
         release_test_commit_snapshot(&self.runtime, &result);
-        self.birth_for(execution, source, "other-output");
+        self.birth_for(execution, source, "other-output")
     }
     fn birth_for(
         &self,
@@ -338,16 +350,15 @@ impl World {
         };
         let restored = cold
             .runtime
-            .readmit_required_output_publication(
+            .readmit_current_owned_output_successor(
                 execution,
                 &cold.installed,
                 &cold.basis(),
                 prior.producer(),
-                &[1; 32],
                 prior.meaning(),
-                &roles(prior, RequiredOutputRolePosture::Create),
             )
-            .unwrap();
+            .unwrap()
+            .expect("the checkpoint preserves this exact current route");
         (cold, restored)
     }
 }

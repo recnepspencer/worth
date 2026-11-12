@@ -3,6 +3,7 @@ use crate::domain_computation::primary_graph::application_attempt::CompletedHand
 use crate::domain_computation::primary_graph::{ComputationPrior, SealedComputationRetention};
 
 pub(in crate::domain_computation) struct ProducerHandlerPreparation {
+    predecessor_reads: Option<std::sync::Arc<super::super::application_contribution::producer::predecessor_reads::ProducerPredecessorReadState>>,
     completed_handler_facts: Option<CompletedHandlerFactBoundary>,
     decision_context_use: Option<crate::domain_computation::primary_graph::DecisionContextUse>,
     prepared_decision_reuse: Option<
@@ -48,8 +49,25 @@ impl HandlerComputationCustody {
 }
 
 impl ProducerHandlerPreparation {
+    pub(in crate::domain_computation::primary_graph) fn bind_predecessor_reads(
+        &mut self,
+        state: std::sync::Arc<super::super::application_contribution::producer::predecessor_reads::ProducerPredecessorReadState>,
+    ) {
+        assert!(
+            self.predecessor_reads.replace(state).is_none(),
+            "one producer read context"
+        );
+    }
+    pub(in crate::domain_computation::primary_graph) fn selected_read_predecessor(
+        &self,
+    ) -> Option<worth_relational::facade::mvcc::RelationalRequiredOutputPublication> {
+        self.predecessor_reads
+            .as_ref()
+            .and_then(|state| state.selected())
+    }
     pub(in crate::domain_computation) fn new() -> Self {
         Self {
+            predecessor_reads: None,
             completed_handler_facts: None,
             decision_context_use: None,
             prepared_decision_reuse: None,
@@ -109,12 +127,17 @@ impl ProducerHandlerPreparation {
 
     pub(in crate::domain_computation) fn record_completed_handler_facts(
         &mut self,
-        boundary: CompletedHandlerFactBoundary,
+        mut boundary: CompletedHandlerFactBoundary,
         computation: SealedComputationRetention,
     ) {
         assert!(
             self.completed_handler_facts.is_none(),
             "one completed handler read"
+        );
+        boundary.retain_historical_reads(
+            self.predecessor_reads
+                .as_ref()
+                .and_then(|state| state.take_historical()),
         );
         self.sealed_computation.seal(computation);
         self.completed_decision_reuse = self.prepared_decision_reuse.take().and_then(|prepared| {

@@ -65,13 +65,11 @@ impl<'scope> WorthQueryProviderSessionLease<'scope> {
             &WorthQueryGraphProviderAnchor,
             super::WorthQueryProviderSessionView<'_>,
         ) -> Result<
-            super::WorthQueryProviderTerminalDescription,
+            super::WorthQueryProviderCommitCompletion,
             super::WorthQueryProviderSessionCommitStop,
         >,
-    ) -> Result<
-        super::WorthQueryProviderTerminalDescription,
-        super::WorthQueryProviderSessionCommitStop,
-    > {
+    ) -> Result<super::WorthQueryProviderCommitCompletion, super::WorthQueryProviderSessionCommitStop>
+    {
         let result = physical(&self.provider, self.token.view(self.request));
         if result.is_ok()
             || matches!(

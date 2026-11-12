@@ -12,6 +12,7 @@ pub enum WorthQuerySessionCommitOutcome {
     ProductPreparationRefused(crate::domain_computation::WorthQueryProductPreparationRefused),
 
     NoEffect(worth_runtime_world::facade::NoEffectCompositePublication),
+    OutputAdoptionPrepared(Box<crate::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::commit_execution::executed_adoption::PreparedExecutedOutputAdoption>),
     Committed(WorthQueryClosedProviderSessionDisposition),
     CommitDenied(WorthQueryProviderSessionFailure),
     CommitDeferred(super::WorthQueryProviderSessionCommitDeferred),
@@ -22,7 +23,8 @@ pub enum WorthQuerySessionCommitOutcome {
 impl WorthQuerySessionCommitOutcome {
     pub fn recovery_posture(&self) -> WorthQueryProviderSessionRecoveryPosture {
         match self {
-            Self::Committed(_)
+            Self::OutputAdoptionPrepared(_)
+            | Self::Committed(_)
             | Self::ProductStale(_)
             | Self::NoEffect(_)
             | Self::CommitDenied(_)
@@ -40,7 +42,8 @@ impl WorthQuerySessionCommitOutcome {
     pub fn failure(&self) -> Option<&WorthQueryProviderSessionFailure> {
         match self {
             Self::CommitDenied(failure) | Self::CommitRecoveryRequired(failure) => Some(failure),
-            Self::Committed(_)
+            Self::OutputAdoptionPrepared(_)
+            | Self::Committed(_)
             | Self::ProductStale(_)
             | Self::NoEffect(_)
             | Self::ProductUnpublished(_)

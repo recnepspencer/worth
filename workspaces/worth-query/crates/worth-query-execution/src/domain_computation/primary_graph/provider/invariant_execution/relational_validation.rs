@@ -7,6 +7,7 @@ impl WorthQueryPrimaryGraphProvider {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         batch: worth_relational::facade::transactions::WorkerIntentBatch,
+        appendix: Option<super::publication_appendix::SelectedPublicationAppendix>,
         content: &worth_relational::facade::content::RelationalContentAttachments,
         branch: &worth_relational::facade::history::BranchId,
         product: &crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding,
@@ -86,9 +87,30 @@ impl WorthQueryPrimaryGraphProvider {
                             "Native candidate content attachment refused",
                         )
                     })?;
-                transaction
-                    .push_batch(batch, allocation_control.policy())
-                    .map_err(map_transaction_staging_failure)?;
+                match appendix {
+                    Some(appendix) => {
+                        let selected = appendix.judge(
+                            runtime,
+                            execution,
+                            basis,
+                            batch,
+                            content,
+                            &self
+                                .graph
+                                .application_publication
+                                .as_ref()
+                                .ok_or_else(owner_failure)?
+                                .native,
+                            &self.graph.layout,
+                        )?;
+                        transaction
+                            .push_publication_body(selected, allocation_control.policy())
+                            .map_err(map_validation_failure)?;
+                    }
+                    None => transaction
+                        .push_batch(batch, allocation_control.policy())
+                        .map_err(map_transaction_staging_failure)?,
+                }
                 self.fault_port.candidate_staged_for_validation();
                 Ok::<_, WorthQueryInvariantExecutionFailure>(match &factory {
                     Some(factory) => runtime.validate_branch_transaction_with_source_context(
@@ -197,7 +219,7 @@ impl WorthQueryPrimaryGraphProvider {
         Ok((candidate, predicate))
     }
 }
-fn context_execution_failure(
+pub(super) fn context_execution_failure(
     cause: worth_relational::facade::transactions::RelationalExecutionDenialCause,
 ) -> WorthQueryInvariantExecutionFailure {
     super::super::invariant_execution_failure::map_execution_failure(

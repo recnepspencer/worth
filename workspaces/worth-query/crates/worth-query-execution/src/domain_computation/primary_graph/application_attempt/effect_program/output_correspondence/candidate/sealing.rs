@@ -45,11 +45,32 @@ impl WorthQueryApplicationOutputCorrespondenceCandidate {
     /// canonical member identities resolve local Create refs independently of
     /// other writers in the same atomic transaction.
     pub(in crate::domain_computation::primary_graph) fn seal_from_publication(
-        mut self,
+        self,
         publication: &worth_relational::facade::mvcc::RelationalRequiredOutputPublication,
     ) -> WorthQueryApplicationOutputCorrespondence {
+        self.seal_native_members(publication.members())
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn seal_from_adoption(
+        self,
+        adoption: &worth_relational::facade::mvcc::RelationalCurrentOutputAdoption,
+    ) -> WorthQueryApplicationOutputCorrespondence {
+        self.seal_native_members(adoption.members())
+    }
+
+    fn seal_native_members<'a>(
+        mut self,
+        members: impl ExactSizeIterator<
+            Item = (
+                &'a str,
+                &'a str,
+                worth_relational::facade::mvcc::RequiredOutputRolePosture,
+                EntityId,
+            ),
+        >,
+    ) -> WorthQueryApplicationOutputCorrespondence {
         let mut resolved = Vec::with_capacity(self.roles.len());
-        for (role, entity_name, _, entity) in publication.members() {
+        for (role, entity_name, _, entity) in members {
             let (role, binding) = self
                 .roles
                 .remove_entry(role)

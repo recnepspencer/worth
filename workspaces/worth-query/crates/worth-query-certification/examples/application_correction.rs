@@ -43,6 +43,8 @@ fn main() {
                 Some("tree-controls") => application_correction_support::tree_controls::run(),
                 Some("tree-history") => application_correction_support::history_reapplication::run(),
                 Some("tree-outputs") => application_correction_support::required_reapplication::run(),
+                Some("ordinary-outputs") => application_correction_support::required_reapplication::ordinary_outputs(),
+                Some("tree-output-overlap") => application_correction_support::required_reapplication::overlapping_fields(),
                 Some("adoption-cycles") => application_correction_support::fork_head_adoption::run(),
                 Some("tree") => {
                     application_correction_support::tree_reapplication::run();
@@ -53,7 +55,7 @@ fn main() {
                 Some("outputs") => {
                     application_correction_support::required_output_courts::run();
                 }
-                Some(other) => panic!("unknown correction court {other:?}; expected composite, composite-recovery, composite-unwind, authored, race, tree, tree-controls, tree-history, tree-outputs, adoption-cycles, outputs, or no argument for all"),
+                Some(other) => panic!("unknown correction court {other:?}; expected composite, composite-recovery, composite-unwind, authored, race, tree, tree-controls, tree-history, tree-outputs, tree-output-overlap, ordinary-outputs, adoption-cycles, outputs, or no argument for all"),
             }
             let _ = done.send(());
         })

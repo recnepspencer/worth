@@ -13,6 +13,7 @@ pub enum WorthQueryProviderProgressionOutcome {
     ProductPreparationRefused(crate::domain_computation::WorthQueryProductPreparationRefused),
 
     NoEffect(WorthQueryApplicationNoEffect),
+    OutputAdopted(crate::domain_computation::primary_graph::output_lineage::executed_adoption::PendingExecutedOutputAdoption),
     Committed(WorthQueryPendingApplicationCommitReceipt),
     RecoveredCommitted(crate::domain_computation::primary_graph::provider::WorthQueryRecoveredApplicationCommitReceipt),
     Stale(WorthQueryApplicationStaleAttempt),
@@ -41,6 +42,11 @@ impl WorthQueryProviderProgressionOutcome {
             Self::ProductPreparationRefused(owner) => {
                 WorthQueryApplicationCommitOutcome::ProductPreparationRefused(owner)
             }
+            Self::OutputAdopted(adoption) => {
+                return adoption
+                    .complete(completion)
+                    .map(WorthQueryApplicationCommitOutcome::OutputAdopted)
+            }
             Self::NoEffect(no_effect) => WorthQueryApplicationCommitOutcome::NoEffect(no_effect),
             Self::Committed(receipt) => {
                 WorthQueryApplicationCommitOutcome::Committed(receipt.complete(completion)?)
@@ -57,6 +63,30 @@ impl WorthQueryProviderProgressionOutcome {
             Self::Indeterminate(evidence) => {
                 WorthQueryApplicationCommitOutcome::Indeterminate(evidence)
             }
+        })
+    }
+    /// Move unpublished business evidence without issuing graph-work completion.
+    pub(in crate::domain_computation::primary_graph) fn into_uncommitted(
+        self,
+    ) -> Result<super::super::WorthQueryApplicationUncommitted, Self> {
+        use super::super::WorthQueryApplicationUncommitted as Uncommitted;
+        Ok(match self {
+            Self::CoupledFailure(outcome) => outcome,
+            Self::ProductStale(stale) => Uncommitted::ProductStale(stale),
+            Self::ProductUnpublished(value) => Uncommitted::ProductUnpublished(value),
+            Self::NoEffect(value) => Uncommitted::NoEffect(value),
+            Self::ProductPreparationPending(value) => Uncommitted::ProductPreparationPending(value),
+            Self::ProductPreparationRefused(value) => Uncommitted::ProductPreparationRefused(value),
+            Self::Stale(value) => Uncommitted::Stale(value),
+            Self::Cancelled => Uncommitted::Cancelled,
+            Self::TimedOut => Uncommitted::TimedOut,
+            Self::Denied(value) => Uncommitted::Denied(value),
+            Self::Aborted => Uncommitted::Aborted,
+            Self::Deferred(value) => Uncommitted::Deferred(value),
+            Self::Indeterminate(value) => Uncommitted::Indeterminate(value),
+            published @ (Self::OutputAdopted(_)
+            | Self::Committed(_)
+            | Self::RecoveredCommitted(_)) => return Err(published),
         })
     }
 }

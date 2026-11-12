@@ -23,11 +23,13 @@ use crate::transactions::data::{
 mod authored_index_writes;
 mod index_catalog;
 mod live_managed_source_history;
+mod live_publication_inputs;
 pub(crate) use authored_index_writes::{CanonicalAuthoredIndexWrite, CanonicalAuthoredIndexWrites};
 pub(crate) use index_catalog::CanonicalIndexDefinitionDelta;
 mod descriptive_decode;
 mod original_inputs;
 pub(crate) use live_managed_source_history::LiveManagedSourceHistory;
+pub(crate) use live_publication_inputs::{AppliedPublicationInputAccess, LivePublicationInputs};
 pub use original_inputs::{
     RelationalIntroducedSchemaObservation, RelationalOriginalInputObservation,
 };

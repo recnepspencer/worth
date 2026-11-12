@@ -3,6 +3,7 @@ use super::schema::*;
 use worth_query_host::facade::declaration::application_schema::*;
 pub mod authoring;
 pub mod calculation;
+pub mod continuation;
 pub mod courts;
 pub mod output;
 pub mod program;

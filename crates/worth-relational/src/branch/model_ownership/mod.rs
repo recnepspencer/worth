@@ -3,6 +3,8 @@ use crate::identity::data::{EntityId, KindId};
 use std::collections::BTreeSet;
 
 mod basis;
+mod custody_observation;
+pub use custody_observation::{observe_candidate_custody_reads, RelationalCandidateCustodyReads};
 mod current_publications;
 pub use current_publications::{
     RelationalOwnedModelOutputRoute, RelationalOwnedModelPublicationRead,

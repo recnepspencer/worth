@@ -7,6 +7,7 @@ impl WorthQueryOutputDemandDenialKind {
     pub(super) fn default_recovery_posture(&self) -> WorthQueryOutputDemandRecoveryPosture {
         use WorthQueryOutputDemandRecoveryPosture::{Retryable, Terminal};
         match self {
+            Self::AuthoredStageRefused { .. } | Self::ConflictingIntent { .. } => Terminal,
             Self::PublicationReceipt(stop) => {
                 use crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenialKind as Read;
                 match stop {
@@ -80,6 +81,7 @@ impl WorthQueryOutputDemandDenialKind {
             | Self::UnobservedWrite(_)
             | Self::ProducerUnavailable
             | Self::ProducerDomainDenied
+            | Self::DiscoveryConnection(_)
             | Self::RequestAuthorization(_)
             | Self::SchedulingRejected
             | Self::PublicationStale
@@ -87,6 +89,8 @@ impl WorthQueryOutputDemandDenialKind {
             | Self::Superseded
             | Self::Cancelled
             | Self::TimedOut
+            | Self::ProducerRouteRoundBudgetExceeded { .. }
+            | Self::ProducerAttemptRoundBudgetExceeded { .. }
             | Self::WorkBudgetExceeded
             | Self::RetentionBudgetExceeded
             | Self::PublicationCapacityExceeded

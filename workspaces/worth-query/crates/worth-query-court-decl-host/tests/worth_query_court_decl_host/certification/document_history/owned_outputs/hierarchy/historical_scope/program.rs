@@ -91,6 +91,14 @@ impl ApplicationProgramDefinition<Schema> for Program {
                 .conditional_operation::<restricted_owned::preserve::Operation>()
                 .finish(),
             super::super::super::predecessor::program::feature(),
+            family::diamond::feature(),
+            family::decision_input::feature(),
+            family::parity_input::feature(),
+            family::convergent::feature(),
+            family::ordinary_input::feature(),
+            family::decision_write::feature(),
+            synchronous_edit::reconciliation::feature(),
+            synchronous_edit::reconciliation::child_feature(),
         ]
     }
 }

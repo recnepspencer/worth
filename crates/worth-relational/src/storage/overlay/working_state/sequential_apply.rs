@@ -29,13 +29,14 @@ impl WorkingState {
             } else {
                 journal.adjacency_omitted
             };
-            let prior = match request {
-                Some(request) => self.partitions.get_mut_for_request(&id, request)?,
-                None => self.partitions.get_mut(&id),
-            };
-            if let Some(prior) = prior {
+            if let Some(prior) = self.partitions.get_mut(&id) {
+                // An entity-only suffix contributes no relation image. Keep
+                // the prefix's actual materialization posture so the current-
+                // fact writer can still promote an entity-only shell later.
+                let relations_are_sparse =
+                    prior.relation_overlay_is_sparse || !journal.relation_slots.is_empty();
                 prior.merge_overlay_from_owned(&mut overlay, &journal);
-                prior.relation_overlay_is_sparse = true;
+                prior.relation_overlay_is_sparse = relations_are_sparse;
             } else {
                 overlay.relation_overlay_is_sparse = true;
                 match request {

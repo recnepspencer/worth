@@ -33,6 +33,8 @@ pub struct WorthQueryApplicationProgramOutputSettlement<RootQuery> {
     pub(super) performed_source: Option<WorthQueryPerformedProgramOutputSource>,
     pub(super) root:
         crate::application_entry::WorthQueryApplicationOutputDemandSettlement<RootQuery>,
+    // Final Current root is operational proof; `root` retains original evidence.
+    pub(super) current_root: crate::application_entry::WorthQueryApplicationOutputDemandSettlement<RootQuery>,
     pub(super) outputs: Vec<ProgramOutputRecord>,
     pub(in crate::application_entry) dependencies: Option<worth_query_execution::publication_boundary::discovery_currentness::WorthQueryRetainedQueryDependencies>,
     pub(super) work: super::program_output_work::WorthQueryApplicationProgramWork,
@@ -50,22 +52,23 @@ impl<RootQuery> WorthQueryApplicationProgramOutputSettlement<RootQuery> {
     ) -> impl Iterator<
         Item = &worth_query_execution::facade::primary_graph::WorthQueryOutputDemandSettlement,
     > + Clone {
-        std::iter::once(self.root.retained_settlement()).chain(
+        std::iter::once(self.current_root.retained_settlement()).chain(
             self.outputs
                 .iter()
                 .map(ProgramOutputRecord::retained_settlement),
         )
     }
 
-    /// Split the original complete tree's immutable receipts from its move-only
-    /// discovery custody. History retains them before final forest qualification.
+    /// Split this completed tree's operational receipts from its move-only
+    /// discovery custody. Recording qualifies final output versions; the public
+    /// original-root view remains separate immutable delivery evidence.
     pub(in crate::application_entry) fn original_tree_parts(&mut self) -> (
         std::sync::Arc<worth_query_execution::facade::primary_graph::WorthQueryOutputDemandSettlement>,
         impl ExactSizeIterator<Item = std::sync::Arc<worth_query_execution::facade::primary_graph::WorthQueryOutputDemandSettlement>> + '_,
         &mut Option<worth_query_execution::publication_boundary::discovery_currentness::WorthQueryRetainedQueryDependencies>,
     ){
         (
-            self.root.retain_settlement(),
+            self.current_root.retain_settlement(),
             self.outputs
                 .iter()
                 .map(|output| std::sync::Arc::clone(&output.retained_settlement)),
@@ -112,14 +115,14 @@ impl<RootQuery> WorthQueryApplicationProgramOutputSettlement<RootQuery> {
     /// including executions canceled after they started. Upstream executions
     /// initiated while another handle advances are excluded.
     pub fn root_producer_contacts_in_this_demand(&self) -> usize {
-        self.root.producer_contacts_in_this_demand()
+        self.current_root.producer_contacts_in_this_demand()
     }
 
     pub fn observation(&self) -> &crate::application_entry::WorthQueryApplicationReadObservation {
         self.outputs
             .iter()
             .map(|output| &output.observation)
-            .chain(std::iter::once(self.root.observation()))
+            .chain(std::iter::once(self.current_root.observation()))
             .max_by_key(|observation| observation.selected_commit().ordinal())
             .expect("one program settlement always retains its root output")
     }

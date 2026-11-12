@@ -188,3 +188,43 @@ fn publication_refuses_a_required_symbol_that_only_has_an_unused_reservation() {
         None
     );
 }
+
+#[test]
+fn the_candidate_binding_is_its_base_dictionary_with_every_admitted_meaning() {
+    let owner = RuntimeSymbolTable::default();
+    owner.with_write(|symbols| symbols.intern("committed").unwrap());
+    let mut preview = owner.begin_pending_meanings();
+    preview.reserve("adopted-preview").unwrap();
+    let mut candidate = owner.begin_pending_meanings();
+    candidate.reserve("first").unwrap();
+    candidate.adopt(&preview).unwrap();
+    candidate.reserve("second").unwrap();
+    candidate.reserve("committed").unwrap();
+    // The definition this binding replaces: the base snapshot's map, then
+    // each admitted meaning inserted over it.
+    let expected = candidate.binding.detached_owner_snapshot();
+    expected.update(|state| {
+        for (symbol, text) in &candidate.admitted {
+            state
+                .configuration
+                .insert(SymbolTextLookupKey::from_text(text), *symbol);
+        }
+    });
+    let actual = candidate.binding();
+    assert_eq!(
+        actual.configuration_snapshot(),
+        expected.configuration_snapshot()
+    );
+    assert_eq!(actual.interner_snapshot(), candidate.interner);
+    // "committed" is already in the base interner, so it is not admitted again.
+    for text in ["first", "second", "adopted-preview"] {
+        assert!(
+            actual
+                .configuration_snapshot()
+                .entries
+                .iter()
+                .any(|(_, admitted)| admitted.as_str() == text),
+            "{text} is missing from the candidate binding"
+        );
+    }
+}

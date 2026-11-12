@@ -1,3 +1,4 @@
+mod coupled_field_restaging;
 mod effective_records;
 mod staged_mutations;
 pub use staged_mutations::RelationalTransactionStagedMutations;
@@ -5,6 +6,7 @@ mod admission;
 mod bound;
 mod commit;
 pub(crate) mod commit_plan;
+mod coupled_batch;
 mod footprint;
 mod footprint_client_keys;
 mod footprint_staging;

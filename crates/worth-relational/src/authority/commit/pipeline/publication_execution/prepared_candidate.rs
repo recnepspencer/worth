@@ -1,6 +1,15 @@
 //! Read and consume the same funded, prepared publication candidate.
 use super::{PreparedCommitPublicationCompletion, PreparedCommitPublicationExecution};
 impl PreparedCommitPublicationExecution {
+    pub(crate) fn application_unchanged(&self) -> bool {
+        self.publication.value().application_unchanged
+    }
+    pub(crate) fn appendix_adoption(
+        &self,
+    ) -> Option<&crate::history::data::CanonicalRequiredOutputOrigin> {
+        self.admitted.value().validation_input().appendix_adoption()
+    }
+
     pub(crate) fn canonical_envelope(
         &self,
     ) -> &std::sync::Arc<crate::history::data::CanonicalCommitEnvelope> {
@@ -125,6 +134,7 @@ impl PreparedCommitPublicationExecution {
             history: self.history,
             publication,
             publication_snapshot: self.publication_snapshot,
+            source_effects: self.source_effects,
             aspect_evaluation_traces: self.aspect_evaluation_traces,
             aspect_emission_traces: self.aspect_emission_traces,
             published_snapshot_slot,

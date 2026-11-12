@@ -7,14 +7,74 @@ impl RelationalAuthoredCoupledCandidate<'_> {
     pub fn append_corrupt_participant_for_test(
         &mut self,
         execution: &ExecutionRequest<'_, '_>,
-        mut publication: RequiredOutputPublication,
+        posture: RelationalCoupledProducerPosture,
         content: &crate::content::RelationalContentAttachments,
         mut batches: Vec<crate::transactions::data::WorkerIntentBatch>,
         fault: u8,
     ) -> Result<(), RelationalCoupledAssemblyFailure> {
+        if fault == 4 {
+            self.append_publication(execution, posture, content, batches)?;
+            return self
+                .replay_continuation_probe(execution)
+                .map_err(Into::into);
+        }
+        if matches!(fault, 7..=9) {
+            return self.continued_round_probe(execution, posture, content, batches, fault);
+        }
+        if matches!(fault, 5 | 6) {
+            let target = if fault == 6 {
+                posture
+                    .producing_meaning()
+                    .expect("actual writer route")
+                    .source_scope
+            } else {
+                let prior = self
+                    .parts
+                    .first()
+                    .and_then(|part| part.publication.owned())
+                    .ok_or_else(|| {
+                        part::reject(
+                            crate::publication::data::AuthoredRetirementRefusal::CorruptPublication,
+                            self.authored_source(),
+                        )
+                    })?;
+                let roles = match prior {
+                    RequiredOutputPublication::Birth { roles, .. }
+                    | RequiredOutputPublication::Preserve { roles, .. } => roles,
+                    _ => unreachable!("a real producer part"),
+                };
+                let role = roles
+                    .first()
+                    .expect("the actual producer has its output role");
+                match &role.target {
+                    crate::transactions::data::EntityReference::Existing(id) => *id,
+                    crate::transactions::data::EntityReference::Created(reference) => {
+                        self.mutation.outcome.created_entities.resolve(reference).ok_or_else(||
+                            part::reject(crate::publication::data::AuthoredRetirementRefusal::CorruptPublication, self.authored_source()))?
+                    }
+                }
+            };
+            let batch = batches.first_mut().expect("actual writer batch");
+            batch
+                .intents
+                .push(crate::transactions::data::MutationIntent::Entity(
+                    crate::transactions::data::EntityMutationIntent::Delete(
+                        crate::transactions::data::DeleteEntityIntent { entity_id: target },
+                    ),
+                ));
+            return self.append_publication(execution, posture, content, batches);
+        }
+        let RelationalCoupledProducerPosture::Publication(mut publication) = posture else {
+            return self.append_publication(execution, posture, content, batches);
+        };
         if fault == 3 {
             let RequiredOutputPublication::Preserve { predecessor, .. } = &publication else {
-                return self.append_preserve(execution, publication, content, batches);
+                return self.append_publication(
+                    execution,
+                    RelationalCoupledProducerPosture::Publication(publication),
+                    content,
+                    batches,
+                );
             };
             let registry = self
                 .binding
@@ -61,7 +121,12 @@ impl RelationalAuthoredCoupledCandidate<'_> {
                 ..
             } = publication
             else {
-                return self.append_preserve(execution, publication, content, batches);
+                return self.append_publication(
+                    execution,
+                    RelationalCoupledProducerPosture::Publication(publication),
+                    content,
+                    batches,
+                );
             };
             let foreign = worth_proof::InstalledApplicationPublicationOwner::fresh();
             let admission = foreign.admit_required_output(
@@ -114,6 +179,11 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             predecessor.evidence =
                 crate::publication::ownership::PublicationEvidence::Canonical(envelope);
         }
-        self.append_preserve(execution, publication, content, batches)
+        self.append_publication(
+            execution,
+            RelationalCoupledProducerPosture::Publication(publication),
+            content,
+            batches,
+        )
     }
 }

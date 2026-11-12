@@ -181,19 +181,7 @@ impl ApplicationProgramDefinition<Schema> for Program {
         ApplicationProgramIdentity::new("owned-outputs.program.v1");
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
         vec![
-            ApplicationFeatureSpec::root::<Schema, Entry>()
-                .provides::<EntryOutput>()
-                .action::<edit::Binding, Completion>()
-                .finish_action()
-                .action::<member_edit::Binding, Completion>()
-                .finish_action()
-                .action::<authored_member::retire::Binding, Completion>()
-                .finish_action()
-                .action::<authored_member::restore::Binding, Completion>()
-                .finish_action()
-                .action::<member_delete::Binding, Completion>()
-                .finish_action()
-                .finish(),
+            entry_spec::<Completion>(),
             ApplicationFeatureSpec::root::<Schema, Derived>()
                 .conditional_operation::<from_first::initial::Operation>()
                 .conditional_operation::<from_first::preserve::Operation>()
@@ -215,6 +203,14 @@ impl ApplicationProgramDefinition<Schema> for Program {
                 .conditional_operation::<restricted_owned::preserve::Operation>()
                 .finish(),
             predecessor::program::feature(),
+            family::diamond::feature(),
+            family::decision_input::feature(),
+            family::parity_input::feature(),
+            family::convergent::feature(),
+            family::ordinary_input::feature(),
+            family::decision_write::feature(),
+            synchronous_edit::reconciliation::feature(),
+            synchronous_edit::reconciliation::child_feature(),
         ]
     }
 }
@@ -259,3 +255,107 @@ pub type AuthoredRestoreAction = ApplicationActionReference<
     authored_member::restore::Binding,
     Completion,
 >;
+
+pub(super) fn entry_spec<Delivery: ApplicationActionDelivery<Schema, edit::Binding>>(
+) -> ApplicationFeatureSpec {
+    entry_spec_with_member_delivery::<Delivery, Completion>()
+}
+pub(super) fn entry_spec_with_member_delivery<
+    Delivery: ApplicationActionDelivery<Schema, edit::Binding>,
+    MemberDelivery: ApplicationActionDelivery<Schema, member_edit::Binding>,
+>() -> ApplicationFeatureSpec {
+    with_envelope_completion_actions(entry_builder::<Delivery, MemberDelivery, Completion>())
+        .finish()
+}
+fn entry_builder<
+    Delivery: ApplicationActionDelivery<Schema, edit::Binding>,
+    MemberDelivery: ApplicationActionDelivery<Schema, member_edit::Binding>,
+    RestoreDelivery: ApplicationActionDelivery<Schema, authored_member::restore::Binding>,
+>() -> ApplicationFeatureSpecBuilder<Schema, ApplicationRootComposition, Entry> {
+    ApplicationFeatureSpec::root::<Schema, Entry>()
+        .provides::<EntryOutput>()
+        .action::<predecessor::synchronous::Binding, Completion>()
+        .finish_action()
+        .action::<synchronous_edit::new_source::Binding, Completion>()
+        .finish_action()
+        .action::<synchronous_edit::new_source::restricted::Binding, Completion>()
+        .finish_action()
+        .action::<synchronous_edit::Binding, Completion>()
+        .finish_action()
+        .action::<edit::Binding, Delivery>()
+        .finish_action()
+        .action::<member_edit::Binding, MemberDelivery>()
+        .finish_action()
+        .action::<authored_member::retire::Binding, Completion>()
+        .finish_action()
+        .action::<authored_member::restore::Binding, RestoreDelivery>()
+        .finish_action()
+        .action::<member_delete::Binding, Completion>()
+        .finish_action()
+}
+
+pub(super) fn entry_spec_with_envelope_deliveries<
+    Delivery: ApplicationActionDelivery<Schema, edit::Binding>,
+    MemberDelivery: ApplicationActionDelivery<Schema, member_edit::Binding>,
+    ModelPart: ApplicationActionDelivery<Schema, synchronous_edit::envelope_fixture::model::Binding>,
+    MemberPart: ApplicationActionDelivery<Schema, synchronous_edit::envelope_fixture::member::Binding>,
+    CapPart: ApplicationActionDelivery<Schema, synchronous_edit::envelope_fixture::cap::Binding>,
+    CalibrationPart: ApplicationActionDelivery<Schema, synchronous_edit::envelope_fixture::calibration::Binding>,
+    DependentPart: ApplicationActionDelivery<Schema, synchronous_edit::envelope_fixture::dependent::Binding>,
+    CyclicPart: ApplicationActionDelivery<Schema, synchronous_edit::envelope_fixture::cyclic::Binding>,
+    AfterProducerPart: ApplicationActionDelivery<Schema, synchronous_edit::envelope_fixture::after_producer::Binding>,
+    RestorePart: ApplicationActionDelivery<Schema, authored_member::restore::Binding>,
+>() -> ApplicationFeatureSpec {
+    envelope_actions::<
+        ModelPart,
+        MemberPart,
+        CapPart,
+        CalibrationPart,
+        DependentPart,
+        CyclicPart,
+        AfterProducerPart,
+    >(entry_builder::<Delivery, MemberDelivery, RestorePart>())
+    .finish()
+}
+// Every program in this fixture installs one complete schema and handler
+// inventory. Its custom entries share these extra completion declarations.
+pub(super) fn with_envelope_completion_actions(
+    entry: ApplicationFeatureSpecBuilder<Schema, ApplicationRootComposition, Entry>,
+) -> ApplicationFeatureSpecBuilder<Schema, ApplicationRootComposition, Entry> {
+    envelope_actions::<
+        Completion,
+        Completion,
+        Completion,
+        Completion,
+        Completion,
+        Completion,
+        Completion,
+    >(entry)
+}
+fn envelope_actions<
+    ModelPart: ApplicationActionDelivery<Schema, synchronous_edit::envelope_fixture::model::Binding>,
+    MemberPart: ApplicationActionDelivery<Schema, synchronous_edit::envelope_fixture::member::Binding>,
+    CapPart: ApplicationActionDelivery<Schema, synchronous_edit::envelope_fixture::cap::Binding>,
+    CalibrationPart: ApplicationActionDelivery<Schema, synchronous_edit::envelope_fixture::calibration::Binding>,
+    DependentPart: ApplicationActionDelivery<Schema, synchronous_edit::envelope_fixture::dependent::Binding>,
+    CyclicPart: ApplicationActionDelivery<Schema, synchronous_edit::envelope_fixture::cyclic::Binding>,
+    AfterProducerPart: ApplicationActionDelivery<Schema, synchronous_edit::envelope_fixture::after_producer::Binding>,
+>(
+    entry: ApplicationFeatureSpecBuilder<Schema, ApplicationRootComposition, Entry>,
+) -> ApplicationFeatureSpecBuilder<Schema, ApplicationRootComposition, Entry> {
+    entry
+        .action::<synchronous_edit::envelope_fixture::model::Binding, ModelPart>()
+        .finish_action()
+        .action::<synchronous_edit::envelope_fixture::member::Binding, MemberPart>()
+        .finish_action()
+        .action::<synchronous_edit::envelope_fixture::cap::Binding, CapPart>()
+        .finish_action()
+        .action::<synchronous_edit::envelope_fixture::calibration::Binding, CalibrationPart>()
+        .finish_action()
+        .action::<synchronous_edit::envelope_fixture::dependent::Binding, DependentPart>()
+        .finish_action()
+        .action::<synchronous_edit::envelope_fixture::cyclic::Binding, CyclicPart>()
+        .finish_action()
+        .action::<synchronous_edit::envelope_fixture::after_producer::Binding, AfterProducerPart>()
+        .finish_action()
+}

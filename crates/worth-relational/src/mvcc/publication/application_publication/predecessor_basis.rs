@@ -7,6 +7,36 @@ use crate::{
     runtime::RelationalRuntime,
 };
 
+/// Exact consumed inputs. A coupled image is an applied proposal, never a
+/// committed branch basis or a snapshot. Only the publication owner issues it.
+/// ```compile_fail,E0451
+/// use worth_relational::facade::mvcc::RelationalPredecessorInput;
+/// fn forge() -> RelationalPredecessorInput {
+///     RelationalPredecessorInput { before: panic!(), applied: None }
+/// }
+/// ```
+#[derive(Clone, Debug)]
+pub struct RelationalPredecessorInput {
+    before: AdmittedRelationalBranchBasis,
+    applied: Option<std::sync::Arc<dyn crate::history::data::AppliedPublicationInputAccess>>,
+}
+impl RelationalPredecessorInput {
+    /// The genuine committed basis before the transaction. For an applied
+    /// input this supplies index ancestry, not the writer's input values.
+    pub fn before_basis(&self) -> &AdmittedRelationalBranchBasis {
+        &self.before
+    }
+    pub fn applied_read(
+        &self,
+    ) -> Option<
+        &crate::runtime::RelationalPinnedRead<
+            crate::runtime::RelationalAppliedCandidateReadIdentity,
+        >,
+    > {
+        self.applied.as_ref().map(|input| input.read())
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum RelationalPredecessorBasisOrigin {
     HistoricalSelection,
@@ -39,6 +69,27 @@ impl RelationalRuntime {
         predecessor: Option<&RelationalRequiredOutputPublication>,
         expected_predecessor: Option<CommitId>,
     ) -> Result<AdmittedRelationalBranchBasis, RelationalPredecessorBasisDenial> {
+        let input = self.predecessor_publication_input(
+            execution,
+            selected,
+            predecessor,
+            expected_predecessor,
+        )?;
+        if input.applied.is_some() {
+            return Err(RelationalPredecessorBasisDenial::PredecessorBasisUnavailable);
+        }
+        Ok(input.before)
+    }
+
+    /// Select genuine committed or pre-writer applied inputs from the same
+    /// authenticated route retention. No input is reconstructed from C.
+    pub fn predecessor_publication_input(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        selected: &AdmittedRelationalBranchBasis,
+        predecessor: Option<&RelationalRequiredOutputPublication>,
+        expected_predecessor: Option<CommitId>,
+    ) -> Result<RelationalPredecessorInput, RelationalPredecessorBasisDenial> {
         use RelationalPredecessorBasisDenial as Denial;
         let Some(prior) = predecessor else {
             return Err(Denial::PredecessorBasisUnavailable);
@@ -134,5 +185,9 @@ impl RelationalRuntime {
         )
         .and_then(|basis| cell.register_basis(basis))
         .map_err(Denial::BasisAdmission)
+        .map(|before| RelationalPredecessorInput {
+            before,
+            applied: retained.applied.clone(),
+        })
     }
 }

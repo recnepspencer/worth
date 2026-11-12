@@ -15,6 +15,8 @@ enum Origin {
     /// staleness or consumed outputs. Restore carries that wire promise and
     /// must still compare the original producer facts and native output.
     CheckpointFacts,
+    /// A completed handler whose actual Native candidate applied no effect.
+    ExecutedAdoption,
     Unavailable,
 }
 
@@ -45,6 +47,30 @@ impl ComputationSourceEvidence {
         Self(Origin::CheckpointFacts)
     }
 
+    /// Historical completion can require reobservation without proving Current.
+    pub(super) fn superseded_by_own_effect(self) -> bool {
+        matches!(
+            self.0,
+            Origin::Performed {
+                superseded_by_own_effect: true
+            }
+        )
+    }
+
+    pub(super) fn is_executed_adoption(self) -> bool {
+        matches!(self.0, Origin::ExecutedAdoption)
+    }
+
+    pub(super) fn has_completed_execution(self) -> bool {
+        matches!(self.0, Origin::Performed { .. } | Origin::ExecutedAdoption)
+    }
+
+    pub(super) fn from_executed_adoption(
+        _adoption: &worth_relational::facade::mvcc::RelationalCurrentOutputAdoption,
+    ) -> Self {
+        Self(Origin::ExecutedAdoption)
+    }
+
     pub(super) fn unavailable() -> Self {
         Self(Origin::Unavailable)
     }
@@ -62,7 +88,8 @@ impl ComputationSourceEvidence {
             Origin::Performed {
                 superseded_by_own_effect: false,
             }
-            | Origin::CheckpointFacts => Some(CurrentComputation { source: self }),
+            | Origin::CheckpointFacts
+            | Origin::ExecutedAdoption => Some(CurrentComputation { source: self }),
         }
     }
 

@@ -100,6 +100,7 @@ scalar_read!(
     "Model",
     public
 );
+pub mod joined;
 pub mod members;
 pub mod producer_model;
 scalar_read!(
@@ -194,7 +195,7 @@ pub fn declare(
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
     let schema = model::declare(schema);
     let schema = members::declare(schema);
-    let schema = producer_model::declare(schema);
+    let schema = joined::declare(producer_model::declare(schema));
     let schema = member::declare(schema);
     let schema = first_output::declare(schema);
     let schema = first_discovery::declare(schema);

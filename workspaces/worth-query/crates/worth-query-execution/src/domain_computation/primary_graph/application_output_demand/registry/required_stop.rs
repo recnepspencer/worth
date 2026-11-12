@@ -76,6 +76,7 @@ pub(super) fn fails_row(stop: &WorthQueryOutputDemandDenial) -> bool {
 pub(super) fn intrinsic_to_row(kind: WorthQueryOutputDemandDenialKind) -> bool {
     use WorthQueryOutputDemandDenialKind as Kind;
     match kind {
+        Kind::AuthoredStageRefused { .. } | Kind::ConflictingIntent { .. } => true,
         Kind::WorldRecovery(_) | Kind::RecoveryPublication(_) | Kind::PublicationReceipt(_) => {
             false
         }
@@ -93,6 +94,8 @@ pub(super) fn intrinsic_to_row(kind: WorthQueryOutputDemandDenialKind) -> bool {
         Kind::Cancelled
         | Kind::ManagedIndexSourceDenied
         | Kind::TimedOut
+        | Kind::ProducerRouteRoundBudgetExceeded { .. }
+        | Kind::ProducerAttemptRoundBudgetExceeded { .. }
         | Kind::WorkBudgetExceeded
         | Kind::RetentionBudgetExceeded
         | Kind::SourcePrincipal(_)
@@ -115,6 +118,7 @@ pub(super) fn intrinsic_to_row(kind: WorthQueryOutputDemandDenialKind) -> bool {
         | Kind::ManagedCleanupRequired(_)
         | Kind::ProducerUnavailable
         | Kind::ProducerDomainDenied
+        | Kind::DiscoveryConnection(_)
         | Kind::SchedulingRejected
         | Kind::NoEffect
         | Kind::Superseded

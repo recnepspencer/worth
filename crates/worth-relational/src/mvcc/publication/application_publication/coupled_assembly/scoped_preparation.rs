@@ -45,7 +45,8 @@ impl RelationalPreparationPort {
                     .as_ref()
                     .expect("bound assembly")
                     .owners
-                    .anchor,
+                    .source
+                    .subject(),
             )
         })?;
         let basis = transaction.basis.clone();
@@ -92,6 +93,9 @@ impl RelationalPreparationPort {
                                 &mut symbols,
                                 assembly,
                             )?;
+                            crate::execution::phase_observation::symbol_preparation_event(
+                                crate::execution::phase_observation::SymbolPreparationEvent::CoupledCompleted(complete),
+                            );
                             if !complete {
                                 return Ok(false);
                             }
@@ -125,7 +129,7 @@ impl BoundAuthoredCoupling {
         let prepared = prepared.as_ref().ok_or_else(|| {
             part::reject(
                 crate::publication::data::AuthoredRetirementRefusal::MissingCoupledOwner,
-                self.owners.anchor,
+                self.owners.source.subject(),
             )
         })?;
         symbols.adopt(prepared.mutation.candidate_symbols())?;
@@ -140,13 +144,13 @@ impl BoundAuthoredCoupling {
         let prepared = prepared.as_mut().ok_or_else(|| {
             part::reject(
                 crate::publication::data::AuthoredRetirementRefusal::MissingCoupledOwner,
-                self.owners.anchor,
+                self.owners.source.subject(),
             )
         })?;
         if !prepared.identity.same_proposal_sequence(identity) {
             return Err(part::reject(
                 crate::publication::data::AuthoredRetirementRefusal::ForeignCoupledOwner,
-                self.owners.anchor,
+                self.owners.source.subject(),
             ));
         }
         std::mem::swap(symbols, &mut prepared.mutation.identities.symbols);

@@ -50,15 +50,21 @@ fn retention_refusals_keep_exact_cause_and_pre_effect_posture() {
         panic!("original cancellation must retain its preparation control posture");
     };
     assert_eq!(control.kind(), Control::Cancelled);
-    let Stop::PreEffectDenied(failure) =
-        super::super::preparation_stop(retention_failure(Retention::EmptyDemand))
-    else {
-        panic!("semantic retention failure must refuse before any effect");
-    };
-    assert_eq!(
-        failure.preimage_retention_denial(),
-        Some(Retention::EmptyDemand)
-    );
-    assert_eq!(failure.kind(), Kind::ProviderRejected);
-    assert_eq!(failure.recovery_posture(), Posture::Closed);
+    // Retention runs before the Native transaction for every variant, so a
+    // semantic refusal is pre-effect too and carries its exact cause (#122).
+    for denial in [
+        Retention::EmptyDemand,
+        Retention::MissingDemandedField,
+        Retention::AmbiguousDemandedField,
+        Retention::NoMutatedRecord,
+    ] {
+        let Stop::PreEffectDenied(failure) =
+            super::super::preparation_stop(retention_failure(denial))
+        else {
+            panic!("semantic retention failure {denial:?} must refuse before effect");
+        };
+        assert_eq!(failure.preimage_retention_denial(), Some(denial));
+        assert_eq!(failure.kind(), Kind::ProviderRejected);
+        assert_eq!(failure.recovery_posture(), Posture::Closed);
+    }
 }

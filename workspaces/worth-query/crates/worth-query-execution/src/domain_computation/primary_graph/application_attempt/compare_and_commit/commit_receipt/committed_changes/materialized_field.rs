@@ -20,29 +20,29 @@ impl MaterializedCommittedField {
     }
     pub(in crate::domain_computation::primary_graph) fn value(&self) -> Option<&AspectValue> {
         self.original
-            .envelope
-            .patch
-            .authoritative_record_patches
+            .source_record_patches()
             .get(self.patch?)?
             .authoritative_patch
             .field_value_at(self.value?)
     }
 }
 impl WorthQueryApplicationCommittedChanges {
-    pub(in crate::domain_computation::primary_graph) fn materialize_field(
+    fn source_record_patches(
+        &self,
+    ) -> &[worth_relational::facade::publication::PublishedAuthoritativeRecordPatch] {
+        self.source_effects.as_ref().map_or(
+            self.envelope.patch.authoritative_record_patches.as_slice(),
+            |source| source.record_patches(),
+        )
+    }
+    pub(in crate::domain_computation::primary_graph) fn materialize_source_field(
         &self,
         context: &mut MapKernelContext<'_, '_>,
         entity: EntityId,
         coordinate: InstalledFieldCoordinate<'_>,
     ) -> Result<MaterializedCommittedField, MapKernelStop> {
         let mut selected = None;
-        for (index, patch) in self
-            .envelope
-            .patch
-            .authoritative_record_patches
-            .iter()
-            .enumerate()
-        {
+        for (index, patch) in self.source_record_patches().iter().enumerate() {
             checkpoint(context, 1)?;
             if patch.target != RecordRef::Entity(entity) {
                 continue;
@@ -59,7 +59,7 @@ impl WorthQueryApplicationCommittedChanges {
         let (effect, value) = match selected {
             None => (Effect::Unchanged, None),
             Some(index) => {
-                let patch = &self.envelope.patch.authoritative_record_patches[index];
+                let patch = &self.source_record_patches()[index];
                 if !matches!(
                     patch.structural_change,
                     RecordStructuralChange::Created | RecordStructuralChange::Updated
@@ -81,5 +81,18 @@ impl WorthQueryApplicationCommittedChanges {
             effect,
             value,
         })
+    }
+}
+
+impl WorthQueryApplicationCommittedChanges {
+    #[doc(hidden)]
+    pub fn source_field_effect_for_test(
+        &self,
+        context: &mut MapKernelContext<'_, '_>,
+        entity: EntityId,
+        coordinate: InstalledFieldCoordinate<'_>,
+    ) -> Result<Effect, MapKernelStop> {
+        self.materialize_source_field(context, entity, coordinate)
+            .map(|field| field.effect())
     }
 }

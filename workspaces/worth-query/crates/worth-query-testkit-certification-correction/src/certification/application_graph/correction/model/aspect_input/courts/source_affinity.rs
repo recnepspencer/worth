@@ -166,6 +166,10 @@ fn perform_sibling(
         .request(&principal, &scope)
         .on_branch(branch);
     let key = "aspect-affinity-sibling".to_owned();
+    let _observation = worth_query_execution::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
+    let before = application
+        .runtime()
+        .producer_contacts_on_this_thread_for_test();
     let source = request
         .advanced()
         .mutate(AspectEdit {
@@ -200,7 +204,13 @@ fn perform_sibling(
     else {
         panic!("the real sibling producer settles")
     };
-    assert_eq!(settled.root_producer_contacts_in_this_demand(), 1);
+    assert_eq!(
+        application
+            .runtime()
+            .producer_contacts_on_this_thread_for_test()
+            - before,
+        1
+    );
     assert!(settled.root_receipt().is_some());
     assert_eq!(receipt.product_branch(), branch);
     receipt

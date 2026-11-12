@@ -1,8 +1,16 @@
 //! Its own installed schema: model, owned member and two derived output entities.
 use super::*;
 use worth_query_decl::facade::application_schema::fragment::*;
+mod calibration;
+pub use calibration::*;
+mod cap;
+pub use cap::*;
 mod records;
 pub use records::*;
+mod joined;
+pub use joined::JoinedOf;
+mod reconciled_source;
+pub use reconciled_source::ReconciledSourceOf;
 #[derive(Clone, Copy, Debug)]
 pub struct Schema;
 impl Fragment for Schema {
@@ -98,8 +106,19 @@ impl Registration<Schema> for Actor {
 fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
-    let schema = predecessor::declare(family::predecessor_family::declare(schema));
-    let schema = authored_member::declare(schema);
+    let schema = family::convergent::declare(schema);
+    let schema = family::parity_input::declare(schema);
+    let schema = synchronous_edit::reconciliation::declare(schema);
+    let schema = family::ordinary_input::declare(family::decision_write::declare(
+        family::decision_input::declare(schema),
+    ));
+    let schema = family::diamond::declare(predecessor::declare(
+        family::predecessor_family::declare(schema),
+    ));
+    let schema = synchronous_edit::envelope_fixture::declare(schema);
+    let schema = synchronous_edit::new_source::declare(synchronous_edit::declare(
+        authored_member::declare(schema),
+    ));
     let schema = query::declare(member_delete::declare(member_edit::declare(edit::declare(
         navigation::declare(schema),
     ))));

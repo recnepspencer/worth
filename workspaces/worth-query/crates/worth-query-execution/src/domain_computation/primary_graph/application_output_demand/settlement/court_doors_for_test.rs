@@ -76,6 +76,7 @@ impl WorthQueryOutputDemandSettlement {
         observation: Arc<WorthQueryApplicationReadObservation>,
     ) -> Self {
         Self {
+            _original_delivery_memory: None,
             posture,
             runtime_authority,
             schema_binding,

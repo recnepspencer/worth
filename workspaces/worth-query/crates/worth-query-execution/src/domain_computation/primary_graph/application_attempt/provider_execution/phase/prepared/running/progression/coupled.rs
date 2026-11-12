@@ -10,7 +10,6 @@ use crate::domain_computation::primary_graph::{
 };
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationEffectProgram, WorthQueryApplicationIdempotencyBinding,
-    WorthQueryApplicationProducerBinding,
 };
 use std::any::Any;
 use worth_query_declaration::facade::application_operation::{
@@ -18,19 +17,20 @@ use worth_query_declaration::facade::application_operation::{
 };
 use worth_query_installation::facade::ApplicationSchema;
 
-type Mutation<S, B> = <B as WorthQueryApplicationProducerBinding<S>>::Operation;
-type Operation<S, B> = <Mutation<S, B> as ApplicationMutationBinding<S>>::Operation;
-type Input<S, B> = <Mutation<S, B> as ApplicationMutationBinding<S>>::Input;
-type Scope<S, B> = <<Mutation<S, B> as ApplicationMutationBinding<S>>::ScopeBinding as ApplicationMutationScopeBinding<S>>::Scope;
+type Operation<S, B> = <B as ApplicationMutationBinding<S>>::Operation;
+type Input<S, B> = <B as ApplicationMutationBinding<S>>::Input;
+type Scope<S, B> = <<B as ApplicationMutationBinding<S>>::ScopeBinding as ApplicationMutationScopeBinding<S>>::Scope;
 
 /// Erasure retains this nominal typed owner, including the complete admission
 /// brand. Only the installed executor for the same binding can recover it.
-pub(in crate::domain_computation::primary_graph) struct CoupledProducerAttempt<
+pub(in crate::domain_computation::primary_graph) struct CoupledMutationAttempt<
     S: ApplicationSchema,
-    B: WorthQueryApplicationProducerBinding<S>,
+    B: ApplicationMutationBinding<S>,
 > {
     commit: WorthQueryRunningApplicationCommit<S, Operation<S, B>, Input<S, B>, Scope<S, B>>,
-    source: crate::domain_computation::primary_graph::application_query::AppliedSourcePublication,
+    source: Option<
+        crate::domain_computation::primary_graph::application_query::AppliedSourcePublication,
+    >,
     marker: std::marker::PhantomData<fn() -> B>,
 }
 
@@ -41,11 +41,14 @@ pub(in crate::domain_computation::primary_graph) fn prepare_coupled_application<
     coordination: &crate::domain_computation::primary_graph::provider::WorthQueryApplicationBranchCommitCoordination<'_>,
     program: WorthQueryApplicationEffectProgram<S, Operation<S, B>, Input<S, B>, Scope<S, B>>,
     idempotency: WorthQueryApplicationIdempotencyBinding,
-    source: crate::domain_computation::primary_graph::application_query::AppliedSourcePublication,
+    source: Option<
+        crate::domain_computation::primary_graph::application_query::AppliedSourcePublication,
+    >,
 ) -> Result<Box<dyn Any>, WorthQueryApplicationCommitOutcome>
 where
     S: ApplicationSchema,
-    B: WorthQueryApplicationProducerBinding<S>,
+    B: ApplicationMutationBinding<S>,
+    B::Input: Clone + Send + Sync,
 {
     let entry = application.validate_commit_program_in_advancement(phase, program)?;
     let prepared = match prepare_application_commit(
@@ -57,7 +60,7 @@ where
         WorthQueryApplicationCommitPreparation::Terminal(outcome) => return Err(outcome),
     };
     let commit = start_managed_application_commit(phase, application, prepared)?;
-    Ok(Box::new(CoupledProducerAttempt::<S, B> {
+    Ok(Box::new(CoupledMutationAttempt::<S, B> {
         commit,
         source,
         marker: std::marker::PhantomData,
@@ -67,7 +70,8 @@ where
 /// Session custody can borrow the outer advancement while the actual admission
 /// remains nominally typed and owned by its installed producer executor.
 pub(in crate::domain_computation::primary_graph) struct RegisteredCoupledWriter<'run> {
-    source: crate::domain_computation::primary_graph::application_query::AppliedSourcePublication,
+    source: Option<crate::domain_computation::primary_graph::application_query::AppliedSourcePublication>,
+    coupled_outputs: crate::domain_computation::primary_graph::application_attempt::coupled_outputs::DeclaredCoupledOutputDemands,
     typed: Box<dyn Any>,
     registered: WorthQueryRegisteredProviderAttempt<'run>,
     returned: crate::domain_computation::provider_session::ReturnedProviderDirectRun,
@@ -77,7 +81,7 @@ pub(in crate::domain_computation::primary_graph) struct RegisteredCoupledWriter<
         crate::domain_computation::primary_graph::provider::OriginalCompletionReceiver,
     completion_storage: super::super::completion_storage::ApplicationCommitCompletionStorage,
 }
-struct CoupledWriterAdmission<S: ApplicationSchema, B: WorthQueryApplicationProducerBinding<S>> {
+struct CoupledWriterAdmission<S: ApplicationSchema, B: ApplicationMutationBinding<S>> {
     admission: crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation<
         S,
         Operation<S, B>,
@@ -98,13 +102,15 @@ pub(in crate::domain_computation::primary_graph) fn register_coupled_application
 ) -> Result<RegisteredCoupledWriter<'run>, WorthQueryApplicationCommitOutcome>
 where
     S: ApplicationSchema,
-    B: WorthQueryApplicationProducerBinding<S>,
+    B: ApplicationMutationBinding<S>,
+    B::Input: Clone + Send + Sync,
 {
     let attempt = attempt
-        .downcast::<CoupledProducerAttempt<S, B>>()
+        .downcast::<CoupledMutationAttempt<S, B>>()
         .unwrap_or_else(|_| panic!("installed executor retains its own nominal producer attempt"));
     let source = attempt.source;
     let WorthQueryRunningApplicationCommit {
+        coupled_outputs,
         completion_storage,
         admission,
         lease,
@@ -217,6 +223,7 @@ where
     let (registered, mutation_run) = registered.into_coupled_parts();
     Ok(RegisteredCoupledWriter {
         source,
+        coupled_outputs,
         typed: Box::new(CoupledWriterAdmission::<S, B> {
             admission,
             authorization,
@@ -234,6 +241,6 @@ where
 
 mod inspection;
 pub(in crate::domain_computation::primary_graph) use inspection::{
-    inspect_coupled_application, ApprovedCoupledWriter, CommitPreparedCoupledWriter,
-    InspectedCoupledWriter,
+    inspect_authored_application, inspect_coupled_application, ApprovedCoupledWriter,
+    CommitPreparedCoupledWriter, InspectedAuthoredApplication, InspectedCoupledWriter,
 };

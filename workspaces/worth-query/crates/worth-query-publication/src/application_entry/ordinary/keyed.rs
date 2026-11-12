@@ -20,7 +20,7 @@ use worth_query_declaration::facade::application_schema::ApplicationSchema;
 /// <I::Binding as ApplicationMutationBinding<S>>::Input:Clone+Send+Sync,
 /// <I::Binding as ApplicationMutationBinding<S>>::ScopeBinding:ApplicationMutationScopeResolution<S,<I::Binding as ApplicationMutationBinding<S>>::PrincipalIdentity>,
 /// P:ApplicationProgramDefinition<S>,P::Outputs:ApplicationProgramOutputsShape<S>,
-/// R:ApplicationOutputGraphShape<S>+ApplicationDiscoveredOutputRoot,
+/// R:ApplicationOutputGraphShape<S>+ApplicationDiscoveredOutputRoot+worth_query_execution::facade::primary_graph::SynchronousDiscoveredOutputRoot<S>,
 /// <R::RootConnection as ApplicationConnectionShape<S>>::Binding:WorthQueryApplicationDiscoveredOutputConnection<S,Source=I::Binding> {
 ///     let _ = pending.execute_performed_discovered::<P,R>(runtime,allocation);
 /// }
@@ -38,7 +38,7 @@ use worth_query_declaration::facade::application_schema::ApplicationSchema;
 /// <I::Binding as ApplicationMutationBinding<S>>::Input:Clone+Send+Sync,
 /// <I::Binding as ApplicationMutationBinding<S>>::ScopeBinding:ApplicationMutationScopeResolution<S,<I::Binding as ApplicationMutationBinding<S>>::PrincipalIdentity>,
 /// P:ApplicationProgramDefinition<S>,P::Outputs:ApplicationProgramOutputsShape<S>,
-/// R:ApplicationOutputGraphShape<S>+ApplicationDiscoveredOutputRoot,
+/// R:ApplicationOutputGraphShape<S>+ApplicationDiscoveredOutputRoot+worth_query_execution::facade::primary_graph::SynchronousDiscoveredOutputRoot<S>,
 /// <R::RootConnection as ApplicationConnectionShape<S>>::Binding:WorthQueryApplicationDiscoveredOutputConnection<S,Source=I::Binding> {
 ///     let _ = pending.execute_performed_discovered::<P,R>(runtime,allocation);
 /// }

@@ -61,6 +61,25 @@ pub(super) fn finish(
             return Ok(CheckpointProgress::Advanced);
         }
         Ok((execution::ProducerExecutionOutcome::Committed(receipt), ready_backing)) => {
+            let mut record = performed.borrow_mut();
+            let (receipt, recorded) = record
+                .publication(readiness, receipt, |member| member.performed())
+                .into_parts();
+            super::super::caller_pass_observation::observe_publication(
+                true,
+                *recorded,
+                runtime_identity,
+                root,
+            );
+            (receipt.into_receipt(), ready_backing)
+        }
+        Ok((
+            execution::ProducerExecutionOutcome::OwnEffectContinuation(receipt),
+            ready_backing,
+        )) => {
+            // The original coupled publication already happened. Preserve its
+            // existing Published delivery protocol without marking another
+            // publication or issuing Stable/Current authority.
             (receipt, ready_backing)
         }
         Ok((execution::ProducerExecutionOutcome::Stable(stable), ready_backing)) => {
@@ -92,20 +111,6 @@ pub(super) fn finish(
         }
     };
     let (receipt, ready_backing) = receipt;
-    let mut record = performed.borrow_mut();
-    let (receipt, recorded) = record
-        .publication(readiness, receipt, |member| member.performed())
-        .into_parts();
-
-    super::super::caller_pass_observation::observe_publication(
-        true,
-        *recorded,
-        runtime_identity,
-        root,
-    );
-    let _ = (recorded, runtime_identity, root);
-    let receipt = receipt.into_receipt();
-    drop(record);
     let retained = crate::domain_computation::primary_graph::application_output_demand::OriginalProducingPublication::for_successor(
         execution, original_publication, (&receipt).into(),
     );

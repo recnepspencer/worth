@@ -3703,18 +3703,29 @@ runtime close refuses with `RuntimeKeepaliveRetained`. Successful operation
 close releases that operation's keepalive; refusal returns the complete owner.
 Dropping an owner abandons custody and does not perform successful cleanup.
 
-For an eligible Required fixed leaf, a producer's terminal domain refusal can
-close through the same ordinary terminal owner. `terminal.close(&fresh_request)`
-delegates native negative completion before cleanup; a refusal returns the same
-owner. If native finish succeeds but cleanup refuses, inspect
-`terminal.output_unavailable()` and retry close with fresh authority. Successful
-close carries that actual evidence in `closed.output_unavailable()`: the original
-source was saved and no current output was produced. This is neither successful
-required-output settlement nor permission to publish a positive result. Native
-eligibility still refuses unresolved preparation, partial work, already settled
-roots, dependent trees and discovered aggregates. No source or producer is
-reexecuted to close. The executable ordinary fixed-leaf court is
-[`terminal_unavailable.rs`](../workspaces/worth-query/crates/worth-query-testkit-certification-application-graph/src/certification/application_graph/producer_predicate_checkpoint/ordinary_source/terminal_unavailable.rs).
+A synchronous typed fixed edit commits its source and required outputs together.
+A producer's terminal domain refusal refuses that whole edit: the source and
+head remain unchanged, and `close_with_evidence` retains the real typed producer
+cause while discharging cleanup. It creates no saved-source unavailable claim.
+The executable [atomic fixed-leaf court](../workspaces/worth-query/crates/worth-query-testkit-certification-application-graph/src/certification/application_graph/producer_predicate_checkpoint/ordinary_source/terminal_unavailable.rs)
+checks that boundary.
+
+Deferred correction ingress into the fixed owner is postponed in
+[public #120](https://github.com/recnepspencer/worth/issues/120).
+`terminal.output_unavailable()` returns the typed
+`DeferredFixedCompletionUnsupported` refusal naming that issue; a pending fixed
+unavailable close preserves its owner with the same refusal. This reserved
+shape grants no deferred source custody.
+
+A genuine deferred correction's direct required leaf preparation can still use
+`handle.finish_unavailable(&application, &fresh_request)`. Native admits only a
+cleanup-free terminal domain refusal before output publication. Its evidence
+means the original source was saved and no current output was produced; it is
+not positive settlement. Unexecuted, partial, settled, multiply retained,
+dependent and discovered custody remain ineligible. No source or producer is
+reexecuted to complete unavailability. The [direct deferred-correction courts](../workspaces/worth-query/crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/deferred_completion/courts.rs)
+exercise the actual recorded inverse, producer value, current authority and
+Native completion.
 
 Capture the original meaning once. Supply a fresh authenticated ordinary request
 for every `advance`, delivery and close. Native admission checks current authority
@@ -4128,6 +4139,16 @@ runtime remains with the caller, and no source effect has run. This uses the
 same native artifact-source guard as later required-output preparation.
 
 
+A coupled edit can retain several real managed-cleanup failures even though it
+has one business outcome. Fixed terminal, source-only, workflow and capability
+owners expose the collection with `managed_cleanup_failures()`. Keep the owner
+when `release_cleanup` or close refuses. Lawful release discharges every retained
+Native obligation; `managed_cleanup_receipts()` exposes all genuine release
+receipts, including any prefix completed before a retry. A fixed terminal's
+`close_with_evidence` preserves the original source refusal alongside this complete
+release evidence. Native cleanup receipts do not certify business settlement.
+Single-read cleanup keeps its separate read-owner contract.
+
 For a fixed required-output action, declare its exact composition occurrence,
 output root and projection. `ApplicationFixedActionDelivery<Schema, Binding>`
 names `Root` and `Projection`. For a query, choose `ApplicationQueryProjection<Read>`
@@ -4495,6 +4516,120 @@ rules using the actual producer antecedent, including after repeated Native-only
 restore/retire cycles. Restoration grants no producer readiness or replayable
 producer-input contract.
 
+### Ordinary coupled source edits
+
+An ordinary authored edit can declare a finite set of source-owned roots
+through `coupled_outputs`. Each root reads the edited source in the unpublished
+candidate. Native's current route custody selects Preserve for a live output,
+or admits Initial from genuine route absence. The source and every declared
+writer publish together; Preserves retain the outputs' native identities and
+each writer keeps its own custody. A producer refusal refuses the entire edit; the commit
+denial's `coupled_producer_denial()` retains that producer's typed cause and
+domain reason. A foreign prepared publication also refuses before any effect.
+
+Synchronous edits have finite producer-start limits, separate from demand
+settlement attempts. Use `producer_round_limits(ApplicationProducerRoundLimits::new(per_route, per_attempt))`
+on the mutation or owning operation builder, with positive `NonZeroUsize`
+bounds. Defaults are 64 starts per exact source/family/partition route and
+4,096 across the edit attempt. Real verification executions and Native symbol
+retries consume starts; read-only certification does not. The next start over
+either limit refuses typed before contacting a handler and rolls back the whole
+edit. A retry of an already committed key resolves the original receipt before
+producer starts. The limits carry no permission and do not change intent identity.
+
+A route publishes one producing run per synchronous edit. Native refuses a
+further in-edit run of the same route that would change anything, with
+`CoupledContinuationProvenancePostponed { issue: 119 }`, before publication;
+a run that applies nothing leaves the edit exactly as it was. No application
+entry requests such a run yet: a route whose output depends on its own effect
+is completed by ordinary delivery after the commit. An explicit retirement,
+restoration or selection writer runs exactly once
+(`CoupledContinuationRequiresEditSource`).
+
+A wide edit is also bounded by host budgets. Each producer an edit starts holds
+an active World observation and a graph-work admission until the edit commits.
+Exhausting either refuses the whole edit typed, with
+`ObservationCapacityExhausted` or `GraphWorkAdmissionUnavailable`, before the
+start limits are reached. Size both budgets for the widest edit you admit.
+
+The edit's receipt describes the source and producer changes in one Native
+commit. Repeating its idempotency key returns the original receipt. Subsequent
+demands reuse the coupled outputs without another producer contact or readiness
+commit, including after reopening a checkpoint with the same build. The
+source may be newly created by this edit or by an earlier coupled producer.
+Its full-generation identity must be live at that producer's exact unpublished
+input candidate. Native's own allocation correspondence proves a new source;
+a missing current record alone never proves route absence. Principal, READ,
+operation permissions and request control remain at the current committed basis.
+A candidate's new membership or grant cannot authorize its own producer read.
+Unauthorized reads retain the original current-scope refusal whether the private
+candidate contains the source or not. Request control is checked from the actual
+C-issued principal after the private lookup; cancellation, deadlines and expired
+authentication retain their typed causes. Applied entity descriptions expose no
+committed index generation (`identity_index_generation()` returns `None`) and
+cannot be used as ordinary current scopes. Current descriptions retain `Some`
+with their exact committed index generation. Native refuses an unavailable
+source as `CoupledSourceNotLive`.
+
+An otherwise admitted fresh generic `execute_in_program` call cannot omit an
+installed required source's typed preparation. It refuses
+`RequiredOutputPreparationMissing`, naming the binding. Use the owning action's
+retention entry or the advanced typed required-source entry that supplies the
+actual installed root. Recorded receipt replay and intent drift keep their
+established precedence over this fresh-entry refusal.
+
+A fixed required `ApplicationOutputGraph` also joins its installed root and
+transitive dependents to the source publication. Each discovery query reads its
+actual parent's unpublished output, with principal, permission and request
+control checked at C. The installed connection computes the dependent demands;
+publication rosters never supply that set. The complete discovery read support
+is checked against the final candidate, so a later producer cannot invalidate
+the discovery that selected it. A late discovery or producer refusal leaves the
+whole edit unchanged. Declared occurrence dependencies prepare all parents before
+a converging child, including unequal-depth paths. Discovery observes the wave's
+complete applied image. Automatic demands for the same full-generation source,
+family and canonical parameter partition share one actual writer; distinct
+sources or partitions never alias. Explicit duplicate `coupled_outputs`
+declarations retain their typed refusal. Required-output readiness consumes the
+actual group receipts without another producer contact or Native commit.
+
+Automatic fixed-tree demands verify an existing family against the edited
+candidate before opening its producer. Healthy roots and children retain their
+identities without another producer contact; discovery still runs. Reuse needs
+recorded source/output evidence and a supported reuse or completed-result
+contract, including an original committed Ready. Ready never exempts the family
+from checking its inputs, output facts and current build. A published output
+whose owner has not issued Ready cannot grant this completed-result reuse.
+Changed inputs take the real producer path. Final qualification also checks this
+verified parent support, so a later child changing one of its inputs refuses the
+whole edit before publication.
+
+Independent publication families also join an ordinary coupled edit. Native
+selects their current canonical route and original publication coordinate;
+they do not use the source-owned roster. Initial and Preserve producers share
+the family route, and output readiness rejoins their actual performed receipt.
+The retirement and restoration paths keep their source-owned custody rules.
+
+A discovered required `ApplicationDiscoveredOutputGraph` also computes its roots
+inside the source transaction. Its captured discovery request is shared with
+receipt recovery, while its installed connection computes the root set from the
+unpublished authored image at D. Names and fields come from D; principal,
+permission and request checks stay at C. Its roots and descendants join the same
+wave and retain discovery support until final qualification. Connection failures
+retain the original `WorthQueryRequiredOutputConnectionDenial` under
+`DiscoveryConnection`, naming that connection. Post-receipt delivery and recovery
+observe the existing publications without reopening healthy producers or making
+another commit, including current demands after a checkpoint reopen.
+
+[P5/S6 synchronous edit publication](../plans/WORTH-query/synchronous-edit-publication.md)
+is still in progress: general demand continuations and the explicit document-seal
+envelope remain in that plan. Demand-only output graphs retain their separate
+lazy delivery meaning. Synchronous consequences belong to the required-source
+entry or the planned envelope. Declared predecessor observations also
+work inside coupled handlers, with independently admitted current-C read
+permission and the edit's genuinely held commit lane. Native never labels the
+transaction-before basis as a coupled producer's consumed applied input image.
+
 For an authored splice that changes relations, add typed relation loci to the
 recorded inverse's pre-image demand:
 
@@ -4614,7 +4749,12 @@ Admission and control loss veto publication even when a handler catches them.
 
 Native chooses exactly the predecessor checked by the ordinary succession fence.
 Its decision root is retained by reference under the live head/candidate lifecycle;
-succession replaces the hold and retirement releases it. Historical keys and
+succession replaces the hold and retirement releases it. For a coupled writer,
+Native retains that writer's exact pre-append applied image: the authored edits
+and earlier writers are visible, while its own new output is not. This is an
+applied input posture, never an invented committed branch basis. Deep envelope
+clones and codecs cannot reissue the live input hold. The historical envelope
+transfers the pin once to the live-route retention owner. Historical keys and
 publication/basis provenance remain separate from current dependencies. Current
 READ authorization support remains a current dependency. No old value is
 substituted with a current value, and no old root is retained by Query evidence.
@@ -5039,8 +5179,8 @@ retained settlement before asking native release again. Neither release nor
 close reruns the producer or publishes a current result.
 Physical release never erases unresolved producer recovery. Dropping an owner is
 abandonment, not a successful close. Performed-source required and
-discovered aggregate completion rules, including fixed-leaf unavailable
-completion, are unchanged.
+discovered aggregate completion rules, including direct deferred-leaf unavailable
+completion (deferred fixed ingress is postponed in [#120](https://github.com/recnepspencer/worth/issues/120)), are unchanged.
 
 #### Observe a member without progressing its producer
 

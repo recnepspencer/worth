@@ -18,7 +18,7 @@ pub(super) fn prepare<Schema, Binding>(
     before_pin: &RelationalPinnedRead,
     candidate: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
     erased: ErasedAppliedProducerSource,
-    predecessor: &worth_relational::facade::mvcc::RelationalRequiredOutputPublication,
+    predecessor: Option<&worth_relational::facade::mvcc::RelationalRequiredOutputPublication>,
     edition: super::super::InstalledProducerEdition,
 ) -> Result<Box<dyn std::any::Any>, ProducerExecutionStop>
 where
@@ -109,13 +109,13 @@ where
         WorthQueryProducerCommitAuthority::ProgramOutput,
     )?;
     let identities = identities.borrow();
-    let prepared = selected_public::prepare_selected_public_mutation::<Schema, Binding>(
+    let prepared = selected_public::prepare_applied_public_mutation::<Schema, Binding>(
         &execution,
         installed,
         runtime,
         &shared,
-        None,
-        None,
+        before_pin,
+        candidate,
         external,
         request,
         identities.mutation_input(),
@@ -132,12 +132,43 @@ where
         )
         .map_err(|cause| failed(Binding::IDENTITY, cause))?;
     admission.graph_work_mut().arm_coupled_handler();
+    let predecessor_reads =
+        super::super::predecessor_reads::ProducerPredecessorReadAccess::prepare_coupled::<
+            Schema,
+            Binding,
+        >(
+            admission
+                .graph_work_mut()
+                .coupled_handler_mut()
+                .expect("armed handler"),
+            source.checkpoint_identity(),
+            edition,
+        );
+    let producer_request = admission.retain_admitted_request();
+    let producer_principal = admission.operation_scope_binding().principal();
+    let read_admission = prepared.scope.as_ref().map(|scope| {
+        crate::domain_computation::authorization::BorrowedReadOperationAdmission::new(
+            runtime,
+            prepared.principal.principal(),
+            scope,
+            request,
+            admission.graph_work().identity(),
+        )
+    });
+    let source_query = crate::domain_computation::primary_graph::application_query::SourceQueryReaderAccess::ordinary(
+        runtime, &shared, external, request,
+    ).with_coordinated_control(
+        crate::domain_computation::primary_graph::product_operation::current_read::CurrentReadControl::new(
+            shared.selected().product().read_lease_ref(), &producer_request, &producer_principal,
+        ), coordination,
+    ).map_err(super::denial::request_admission_rejected)?
+        .with_predecessor_reads(read_admission, predecessor_reads);
     let prepared_handler = runtime
         .prepare_mutation_handler_plan_on_basis::<Operation<Schema, Binding>>(
             phase,
             &identities,
             prepared.principal.principal().principal_identity(),
-            None,
+            Some(&source_query),
             admission,
             Some((before_pin, candidate)),
             || {
@@ -152,6 +183,9 @@ where
         Ok(handler) => handler.run(runtime, &identities),
         Err(report) => report.into_uncompleted_report(),
     };
+    if let Some(stop) = source_query.take_control_failure() {
+        return Err(super::denial::request_admission_rejected(stop));
+    }
     let completed = completed_handler::<
         _,
         _,
@@ -186,6 +220,12 @@ where
                 .is_some(),
         )
         .map_err(|cause| denial::identity_failed(Binding::IDENTITY, cause))?;
+    contact_observation::record_coupled_key(
+        runtime.runtime.authority_identity().as_u64(),
+        Binding::IDENTITY,
+        source.root(),
+        key,
+    );
     let idempotency = bound
         .bind_idempotency(
             WorthQueryApplicationIdempotencyBinding::new(key, *identities.input_identity())
@@ -196,19 +236,19 @@ where
     let program = program
         .with_output_demand_observation()
         .with_producer_required_invariants(Binding::REQUIRED_INVARIANTS);
-    prepare_coupled_application::<Schema, Binding>(
+    prepare_coupled_application::<Schema, Binding::Operation>(
         &execution,
         phase,
         runtime,
         coordination,
         program,
         idempotency,
-        (*source).into_publication_source(),
+        Some((*source).into_publication_source()),
     )
     .map_err(|outcome| preparation_denial(Binding::IDENTITY, outcome))
 }
 
-pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn preparation_denial(
+pub(in crate::domain_computation::primary_graph::application_contribution) fn preparation_denial(
     producer: &str,
     outcome: crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome,
 ) -> ProducerExecutionStop {

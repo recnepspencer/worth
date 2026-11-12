@@ -37,6 +37,7 @@ use super::WorthQueryOutputReadinessDeliveryEvidence;
 /// settlement is held. After compaction, the receipt identifies the same
 /// committed lineage so the owner can reacquire its still-current occurrence.
 pub struct WorthQueryOutputDemandSettlement {
+    _original_delivery_memory: Option<worth_execution::ExecutionMemoryReservation>,
     posture: WorthQueryOutputSettlementPosture,
     runtime_authority: u64,
     schema_binding: ApplicationSchemaBindingIdentity,
@@ -109,6 +110,7 @@ impl WorthQueryOutputDemandSettlement {
                 )
             })?;
         Ok(Arc::new(Self {
+            _original_delivery_memory: None,
             posture: match &completion.authority {
                 WorthQueryAcceptedOutputAuthority::Committed(_) => {
                     WorthQueryOutputSettlementPosture::Performed
@@ -153,6 +155,45 @@ impl WorthQueryOutputDemandSettlement {
                 observation,
             ),
         }))
+    }
+
+    /// A second immutable delivery header is retained in addition to final
+    /// Ready. Fund that actual extra allocation for its entire shared lifetime.
+    pub(in crate::domain_computation::primary_graph) fn from_original_program_ready<Schema>(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        completion: &ReadyCompletion,
+        producer: &str,
+        family: &str,
+        contacts: usize,
+    ) -> Result<Arc<Self>, WorthQueryOutputDemandDenial>
+    where
+        Schema: worth_query_installation::facade::ApplicationSchema,
+    {
+        let layout = std::alloc::Layout::new::<[std::sync::atomic::AtomicUsize; 2]>()
+            .extend(std::alloc::Layout::new::<Self>())
+            .expect("fixed original result header")
+            .0
+            .pad_to_align();
+        let bytes = (layout.size() as u64)
+            .saturating_add(producer.len() as u64)
+            .saturating_add(family.len() as u64);
+        let memory = crate::domain_computation::primary_graph::structural_walk::memory::reserve(
+            execution,
+            execution.has_accounting(),
+            bytes,
+        )
+        .map_err(|cause| {
+            crate::domain_computation::primary_graph::output_reuse::read_denial(cause).with_subject(
+                format!("{producer}: {family}: original program root delivery"),
+            )
+        })?;
+        let mut original =
+            Self::from_committed_ready(execution, runtime, completion, producer, family, contacts)?;
+        Arc::get_mut(&mut original)
+            .expect("the new original delivery has one owner")
+            ._original_delivery_memory = memory;
+        Ok(original)
     }
 
     pub(in crate::domain_computation::primary_graph) fn publication_view(

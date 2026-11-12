@@ -33,6 +33,7 @@ pub enum WorthQueryProviderCompareAndCommitOutcome {
     ProductPreparationRefused(crate::domain_computation::WorthQueryProductPreparationRefused),
 
     NoEffect(worth_runtime_world::facade::NoEffectCompositePublication),
+    OutputAdoptionPrepared(Box<crate::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::commit_execution::executed_adoption::PreparedExecutedOutputAdoption>),
     Committed(WorthQueryCommittedProviderSession),
     Stale(WorthQueryStaleDecisionReadSet),
     Denied(WorthQueryProviderCompareAndCommitDenial),
@@ -262,6 +263,10 @@ impl<'run> WorthQueryPreparedProposedCommit<'run> {
             WorthQuerySessionCommitOutcome::NoEffect(no_effect) => {
                 let _ = overlay.discard();
                 WorthQueryProviderCompareAndCommitOutcome::NoEffect(no_effect)
+            }
+            WorthQuerySessionCommitOutcome::OutputAdoptionPrepared(adoption) => {
+                overlay.release_to_provider_resolution();
+                WorthQueryProviderCompareAndCommitOutcome::OutputAdoptionPrepared(adoption)
             }
             WorthQuerySessionCommitOutcome::Committed(disposition) => {
                 overlay.release_to_provider_resolution();

@@ -32,7 +32,7 @@ pub(super) fn commit_owner_validated(
     history: Option<crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerCutover<'_>>,
     allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
 ) -> Result<
-    crate::domain_computation::WorthQueryProviderTerminalDescription,
+    crate::domain_computation::WorthQueryProviderCommitCompletion,
     crate::domain_computation::WorthQueryProviderSessionCommitStop,
 > {
     let request = prepared.attempt.affinity().publication_request().clone();
@@ -64,7 +64,17 @@ pub(super) fn commit_owner_validated(
             (stop, _) => stop,
         }
     })?;
-    finish_owner_validated(execution, provider, committed)
+    match committed {
+        commit_execution::ApplicationCommitExecution::Committed(committed) => {
+            finish_owner_validated(execution, provider, committed)
+                .map(crate::domain_computation::WorthQueryProviderCommitCompletion::Committed)
+        }
+        commit_execution::ApplicationCommitExecution::AdoptionPrepared(adoption) => Ok(
+            crate::domain_computation::WorthQueryProviderCommitCompletion::OutputAdoptionPrepared(
+                adoption,
+            ),
+        ),
+    }
 }
 
 #[inline(never)]

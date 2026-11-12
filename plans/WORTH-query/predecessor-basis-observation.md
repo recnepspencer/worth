@@ -71,6 +71,16 @@ are distinct from current invariant identities and cannot mint mutation targets.
 Their C authorization is retained through the existing source support owner and
 rechecked as a current dependency. Historical keys remain separate metadata.
 
+The sealed reader also exposes `content(&PredecessorEntity, content_field)`.
+It uses the independently authorized read operation's field permission and the
+same installed content binding, frame admission and sticky projection refusal
+as a current content read. Values and content bytes come from the predecessor
+basis; no historical handle is promoted into a current identity. An absent
+optional content field remains absence. An undeclared field returns a typed
+`ContentReadDenial::Field` without exposing bytes; the caller may compute from
+its other permitted inputs. Content admission failures retain the current
+content reader's sticky projection refusal.
+
 ## D1348 resolution
 
 Read operations independently authorize at C using the genuine issued producer

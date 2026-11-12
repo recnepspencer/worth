@@ -1,3 +1,5 @@
+mod disjoint_publication;
+pub(crate) use disjoint_publication::compose as compose_disjoint_publication;
 mod borrowed_evidence;
 pub(crate) use borrowed_evidence::{BorrowedAspectDeltaEvidence, BorrowedPatchOperation};
 mod aspect_trace_projection;

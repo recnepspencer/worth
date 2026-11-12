@@ -82,6 +82,7 @@ where
         idempotency,
         aftermath_causality,
     } = prepared;
+    let idempotency = *idempotency;
     let snapshot = lease.snapshot();
     let execution = phase
         .execution_request_for(&application.runtime.product_runtime)

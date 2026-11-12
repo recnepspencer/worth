@@ -25,18 +25,27 @@ impl RelationalRuntime {
             return Ok(None);
         };
         let CanonicalCoupledAuthoredSources::Retirement(source) = &group.sources else {
+            let recorded = match &group.sources {
+                CanonicalCoupledAuthoredSources::Retirement(source) => source.anchor,
+                CanonicalCoupledAuthoredSources::Edit(source) => *source,
+                // Header validation admits only lists of two or more sources.
+                CanonicalCoupledAuthoredSources::Stages(sources) => match sources.first() {
+                    Some(source) => *source,
+                    None => {
+                        return Err(crate::mvcc::origin_denial(
+                            "coupled authored stage list is empty",
+                        ));
+                    }
+                },
+                CanonicalCoupledAuthoredSources::Restoration(source) => source.original_anchor,
+            };
             return Err(refuse(
                 Cause::InvalidAuthoredAnchor,
                 restoration
                     .entities
                     .first()
                     .map(|(id, _)| *id)
-                    .unwrap_or_else(|| match &group.sources {
-                        CanonicalCoupledAuthoredSources::Retirement(source) => source.anchor,
-                        CanonicalCoupledAuthoredSources::Restoration(source) => {
-                            source.original_anchor
-                        }
-                    }),
+                    .unwrap_or(recorded),
             ));
         };
         let (owners, current) = execution
@@ -101,15 +110,15 @@ impl RelationalRuntime {
             .collect();
         Ok(Some(RelationalAuthoredCoupledOwners {
             before: restoration.before.clone(),
-            anchor: source.anchor,
-            birth: source.birth,
-            co_anchors: source.co_anchors.clone(),
-            roles: Vec::new(),
+            source: crate::mvcc::CoupledSource::Restoration {
+                anchor: source.anchor,
+                plan: Arc::new(restoration.clone()),
+            },
             retirements: restoration.publications.clone(),
             owners,
             current,
             deferred_edges,
-            restoration: Some(Arc::new(restoration)),
+            stages: Vec::new(),
         }))
     }
 }

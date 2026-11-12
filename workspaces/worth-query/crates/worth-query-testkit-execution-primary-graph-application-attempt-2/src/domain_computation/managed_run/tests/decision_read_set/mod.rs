@@ -96,13 +96,11 @@ impl WorthQueryProviderSessionLifecycle for DecisionProvider {
         _session: &WorthQueryProviderSessionView<'_>,
         _allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
-        worth_query_execution::facade::domain_computation::WorthQueryProviderTerminalDescription,
+        worth_query_execution::facade::domain_computation::WorthQueryProviderCommitCompletion,
         worth_query_execution::facade::domain_computation::WorthQueryProviderSessionCommitStop,
     > {
-        Ok(
-            worth_query_execution::facade::domain_computation::WorthQueryProviderTerminalDescription::new("unused commit")
-                .expect("fixture description is valid"),
-        )
+        Ok(worth_query_execution::facade::domain_computation::WorthQueryProviderCommitCompletion::Committed(worth_query_execution::facade::domain_computation::WorthQueryProviderTerminalDescription::new("unused commit")
+                .expect("fixture description is valid")))
     }
 
     fn abort_provider_session(

@@ -70,7 +70,7 @@ pub(super) fn retain_attempt_preimage(
     let candidates = attempt.facts().preimage_candidates(demand, &footprint, policy)
         .map_err(|cause| match cause {
             crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial::Allocation(denial) =>
-                WorthQueryProviderSessionFailure::allocation_denied(denial),
+                WorthQueryProviderSessionFailure::allocation_denied(denial, "authored preimage retention"),
             _ => provider_failure(WorthQueryProviderSessionProtocolStage::Commit,
                 "preimage projection capacity exhausted"),
         })?;

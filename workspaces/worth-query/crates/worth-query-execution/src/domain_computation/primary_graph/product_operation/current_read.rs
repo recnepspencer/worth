@@ -109,6 +109,30 @@ impl<'a> CurrentReadControl<'a> {
         self.confirm_in_borrowed_preserving(execution, runtime, lane, native, value)
             .map_err(|(_, cause)| cause)
     }
+    /// The edit assembler already holds this occurrence's genuine lane. Do not
+    /// re-enter it, and do not acquire Native from inside this borrowed check.
+    pub(in crate::domain_computation::primary_graph) fn confirm_in_coordinated<
+        S: ApplicationSchema,
+        T,
+    >(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+        coordination: &crate::domain_computation::primary_graph::provider::WorthQueryApplicationBranchCommitCoordination<'_>,
+        native: &RelationalRuntime,
+        value: T,
+    ) -> Result<T, CurrentReadDenial> {
+        deliver(head::confirm_in_native(
+            runtime,
+            execution,
+            self.current,
+            Some(self.request),
+            coordination,
+            native,
+            value,
+        ))
+        .map_err(|(_, cause)| cause)
+    }
     pub(in crate::domain_computation::primary_graph) fn confirm_in_borrowed_preserving<
         S: ApplicationSchema,
         T,

@@ -122,6 +122,91 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             Err(report) => report.into_uncompleted_report(),
         }
     }
+    /// An authored stage retains C authorization while its ordinary readers
+    /// borrow the exact unpublished D pin from Native.
+    pub(in crate::domain_computation::primary_graph) fn execute_authored_stage_handler<
+        B: ApplicationMutationBinding<S>,
+    >(
+        &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        identities: &ApplicationMutationIdentities<'_, S, B>,
+        principal_identity: &B::PrincipalIdentity,
+        principal: &WorthQueryAuthenticatedExternalPrincipal<S>,
+        admission: WorthQueryAdmittedApplicationOperation<
+            S,
+            B::Operation,
+            B::Input,
+            <B::ScopeBinding as ApplicationMutationScopeBinding<S>>::Scope,
+        >,
+        before: &crate::basis::WorthQueryProductBranchLease,
+        before_pin: &worth_relational::facade::runtime::RelationalPinnedRead,
+        candidate: &worth_relational::facade::runtime::RelationalPinnedRead<
+            worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
+        >,
+        coordination: &crate::domain_computation::primary_graph::provider::WorthQueryApplicationBranchCommitCoordination<'_>,
+        allocation: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+    ) -> WorthQueryMutationHandlerExecutionReport<
+        WorthQueryCompletedMutationCandidate<S, B>,
+        B::Denial,
+    > {
+        let refused = |cause| {
+            WorthQueryMutationHandlerExecutionReport::new(
+                Err(cause),
+                WorthQueryMutationHandlerWork::NotStarted,
+            )
+        };
+        let execution = match phase.execution_request_for(&self.runtime.product_runtime) {
+            Ok(execution) => execution,
+            Err(cause) => {
+                return refused(MutationHandlerExecutionDenial::ForeignAdvancementPhase(
+                    cause,
+                ))
+            }
+        };
+        let shared = match self.prepare_decision_query_basis(&execution, admission.graph_work()) {
+            Ok(shared) => shared,
+            Err(cause) => return refused(cause),
+        };
+        if shared.selected().product().observation() != before.observation() {
+            return refused(MutationHandlerExecutionDenial::Handler(
+                HandlerExecutionDenial::new(DecisionQueryPreparationStop::MissingProduct),
+            ));
+        }
+        let request = admission.publication_request().clone();
+        let operation_principal = admission.operation_scope_binding().principal();
+        let admitted_request = admission.retain_admitted_request();
+        let access = SourceQueryReaderAccess::ordinary(self, &shared, principal, &request)
+            .with_coordinated_control(
+                crate::domain_computation::primary_graph::product_operation::current_read::CurrentReadControl::new(shared.selected().product().read_lease_ref(), &admitted_request, &operation_principal), coordination);
+        let access = match access {
+            Ok(access) => access,
+            Err(cause) => {
+                return refused(MutationHandlerExecutionDenial::Handler(
+                    HandlerExecutionDenial::new(cause),
+                ))
+            }
+        };
+        let report = match self.prepare_mutation_handler_plan_on_basis::<B>(
+            phase,
+            identities,
+            principal_identity,
+            Some(&access),
+            admission,
+            Some((before_pin, candidate)),
+            || {},
+            allocation,
+        ) {
+            Ok(prepared) => prepared.run(self, identities),
+            Err(report) => report.into_uncompleted_report(),
+        };
+        if let Some(cause) = access.take_control_failure() {
+            return refused(MutationHandlerExecutionDenial::Handler(
+                HandlerExecutionDenial::new(cause),
+            ));
+        }
+        report
+    }
+
     fn prepare_decision_query_basis(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

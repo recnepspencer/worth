@@ -146,3 +146,8 @@ fn authored_root_retirement_with_collateral_restores_and_reapplies_recorded_sour
 }
 
 mod inline_domain;
+
+#[test]
+fn genuine_deferred_inverse_completes_unavailable_with_current_authority() {
+    model::deferred_completion::run();
+}

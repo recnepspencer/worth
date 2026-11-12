@@ -2,13 +2,16 @@
 //! publish exactly one derived output owned by its source model (SourceScopeCascade).
 use super::*;
 #[macro_use]
+mod ordinary_carrier;
+#[macro_use]
 mod phase;
 mod readiness;
-use readiness::readiness_query;
+pub(super) use readiness::readiness_query;
 #[derive(Clone, Debug)]
 pub enum Denial {
     InitialHasPriorOutput,
     PreserveMissingOutput,
+    DerivedValueOutOfRange,
 }
 worth_query_structured_value_binding!(pub DenialBinding for Denial { identity: "owned-outputs.producer-denial.v1" });
 worth_query_structured_value_binding!(pub ResultBinding for () { identity: "owned-outputs.producer-result.v1" });
@@ -328,7 +331,8 @@ family!(
     ChildKey,
     ChildValue,
     ChildOfFirst,
-    |value: u64| value * 100
+    |value: u64| value * 100,
+    settle => FromFirstTree
 );
 family!(
     restricted_from_first,
@@ -371,3 +375,14 @@ family!(
     FirstOf,
     |value| value + 9000
 );
+
+pub mod diamond;
+
+pub mod decision_input;
+
+pub mod decision_write;
+
+pub mod ordinary_input;
+
+pub mod convergent;
+pub mod parity_input;

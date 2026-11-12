@@ -216,6 +216,15 @@ pub(in crate::domain_computation::primary_graph) fn requested_outcome(
     binding: WorthQueryElevationRequestBinding,
 ) -> WorthQueryElevationRequestOutcome {
     match outcome {
+        WorthQueryApplicationCommitOutcome::OutputAdopted(_) => {
+            WorthQueryElevationRequestOutcome::Denied(
+                WorthQueryApplicationCommitDenial::provider_rejected_with_detail(
+                    super::WorthQueryApplicationCommitDenialStage::ProviderCommit,
+                    "producer output adoption cannot fulfill this authored transition",
+                ),
+            )
+        }
+
         WorthQueryApplicationCommitOutcome::RecoveredCommitted(receipt) => {
             WorthQueryElevationRequestOutcome::RecoveredCommitted(receipt)
         }

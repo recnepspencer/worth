@@ -7,14 +7,15 @@ use worth_query_declaration::facade::application_query::{
     ApplicationQueryBinding, ApplicationQueryParameterSet,
 };
 use worth_relational::facade::runtime::RelationalPinnedRead;
+mod created;
 
-pub(in crate::domain_computation::primary_graph::application_contribution::producer) enum CoupledSourceReadStop
+pub(in crate::domain_computation::primary_graph::application_contribution) enum CoupledSourceReadStop
 {
     Native(worth_relational::facade::mvcc::RelationalCoupledAssemblyFailure),
     Query(ProducerExecutionStop),
 }
 impl CoupledSourceReadStop {
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn capture(
+    pub(in crate::domain_computation::primary_graph::application_contribution) fn capture(
         cause: crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
     ) -> Self {
         execution_failed(
@@ -49,14 +50,26 @@ impl From<WorthQueryOutputDemandDenial> for CoupledSourceReadStop {
     }
 }
 
-pub(in crate::domain_computation::primary_graph::application_contribution::producer) struct ErasedAppliedProducerSource
+pub(in crate::domain_computation::primary_graph::application_contribution) struct ErasedAppliedProducerSource
 {
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer) predecessor:
-        worth_relational::facade::mvcc::RelationalRequiredOutputPublication,
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer) profile:
+    pub(in crate::domain_computation::primary_graph::application_contribution) scope:
+        worth_relational::facade::identity::EntityId,
+    pub(in crate::domain_computation::primary_graph::application_contribution) partition: [u8; 32],
+    pub(in crate::domain_computation::primary_graph::application_contribution) predecessor:
+        Option<worth_relational::facade::mvcc::RelationalRequiredOutputPublication>,
+    pub(in crate::domain_computation::primary_graph::application_contribution) profile:
         &'static str,
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer) source:
+    pub(in crate::domain_computation::primary_graph::application_contribution) lifecycle:
+        super::super::WorthQueryProducerLifecyclePosture,
+    pub(in crate::domain_computation::primary_graph::application_contribution) source:
         Box<dyn std::any::Any>,
+}
+
+pub(in crate::domain_computation::primary_graph::application_contribution) enum CoupledSourceRead {
+    Retiring,
+    Prepared(usize),
+    Verified(super::super::VerifiedAppliedParent),
+    Source(ErasedAppliedProducerSource),
 }
 
 pub(super) fn read<Schema, Binding>(
@@ -69,7 +82,7 @@ pub(super) fn read<Schema, Binding>(
     before_pin: &RelationalPinnedRead,
     demand: &DeclaredCoupledOutputDemand,
     assembly: &worth_relational::facade::mvcc::RelationalAuthoredCoupledCandidate<'_>,
-) -> Result<Option<ErasedAppliedProducerSource>, CoupledSourceReadStop>
+) -> Result<CoupledSourceRead, CoupledSourceReadStop>
 where
     Schema: ApplicationSchema,
     Binding: WorthQueryApplicationProducerBinding<Schema>,
@@ -139,18 +152,12 @@ where
         Err(cause) if cause.kind() == crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind::Refused(
             crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalKind::UnknownEntity,
         ) => {
-            let graph = runtime.runtime.primary_graph().ok_or_else(foreign)?;
-            let (resolved, _) = graph.retain_entity_resolution_context().resolve_applied_with_work(
-                execution, before_pin, &candidate, field.entity(), field.aspect(), field.field(), &arguments.value,
-            );
-            let resolved = resolved.map_err(|cause| scope_rejected(Binding::IDENTITY, cause))?;
             let captured = crate::domain_computation::primary_graph::application_query::capture_parameters::<Schema, SourceBinding<Schema, Binding>>(
                 execution, runtime, 0, || Ok(parameters),
             ).map_err(CoupledSourceReadStop::capture)?;
-            match assembly.declared_owner(execution, demand.family, resolved.entity, captured.parameters().identity().bytes())? {
-                worth_relational::facade::mvcc::RelationalDeclaredCoupledOwner::Retiring => return Ok(None),
-                worth_relational::facade::mvcc::RelationalDeclaredCoupledOwner::Surviving(_) => return Err(foreign().into()),
-            }
+            return created::read(installed, execution, runtime, external, request, selected, before_pin,
+                &candidate, &arguments.value, &captured, cause, assembly, demand);
+
         }
         Err(cause) => return Err(scope_rejected(Binding::IDENTITY, cause).into()),
     };
@@ -169,21 +176,106 @@ where
         .map_err(|cause| query_admission_denied(Binding::IDENTITY, cause))?;
     let partition = *plan.parameter_binding_identity().bytes();
     let root = scope.entity_id();
+    if demand.reuse_prepared
+        && let Some(index) =
+            assembly.prepared_route_index(execution, demand.family, root, &partition)?
+    {
+        return Ok(CoupledSourceRead::Prepared(index));
+    }
     let predecessor = match assembly.declared_owner(execution, demand.family, root, &partition)? {
-        worth_relational::facade::mvcc::RelationalDeclaredCoupledOwner::Retiring => {
-            return Ok(None)
+        Some(worth_relational::facade::mvcc::RelationalDeclaredCoupledOwner::Retiring) => {
+            return Ok(CoupledSourceRead::Retiring)
         }
-        worth_relational::facade::mvcc::RelationalDeclaredCoupledOwner::Surviving(owner) => {
-            owner.clone()
+        Some(worth_relational::facade::mvcc::RelationalDeclaredCoupledOwner::Surviving(owner)) => {
+            Some(owner.clone())
         }
+        None => None,
     };
     let source = runtime
         .project_applied_source_plan(execution, plan, &candidate)
         .map_err(|cause| failed(Binding::IDENTITY, cause))?;
+    let predecessor = if predecessor.is_some() {
+        predecessor
+    } else {
+        let graph = runtime.runtime.primary_graph().ok_or_else(foreign)?;
+        let publisher = graph.application_publication.as_ref().ok_or_else(foreign)?;
+        let meaning = worth_relational::facade::mvcc::RequiredOutputPublicationMeaning {
+            implementation:
+                worth_relational::facade::mvcc::RequiredOutputProducingImplementation::new(
+                    runtime
+                        .installed_producers
+                        .entries
+                        .get(Binding::IDENTITY)
+                        .expect("installed source reader")
+                        .edition
+                        .build_identity(),
+                    runtime
+                        .installed_producers
+                        .entries
+                        .get(Binding::IDENTITY)
+                        .expect("installed source reader")
+                        .edition
+                        .digest(),
+                ),
+            family: demand.family.into(),
+            source_scope: root,
+            source_partition: worth_foundational::facade::CanonicalDigestId::new(partition),
+            source_epoch: worth_foundational::facade::CanonicalDigestId::new(
+                source.checkpoint_identity(),
+            ),
+        };
+        graph.with_runtime(execution, |native| match Binding::OWNERSHIP {
+            worth_foundational::facade::ProducerPublicationOwnership::SourceScopeCascade => native
+                .readmit_current_owned_output_successor(
+                    execution,
+                    &publisher.native,
+                    before.relational_basis(),
+                    Binding::IDENTITY,
+                    &meaning,
+                ),
+            worth_foundational::facade::ProducerPublicationOwnership::Independent => native
+                .readmit_current_independent_output_successor(
+                    execution,
+                    &publisher.native,
+                    before.relational_basis(),
+                    Binding::IDENTITY,
+                    &meaning,
+                ),
+        })?
+    };
+    if demand.reuse_prepared
+        && assembly.permits_unchanged_output_selection()
+        && let Some(parent) = runtime.verify_applied_output_parent::<Binding::OutputFamily>(
+            execution,
+            request,
+            before,
+            &candidate,
+            &source,
+            predecessor.as_ref(),
+        )?
+    {
+        return Ok(CoupledSourceRead::Verified(parent));
+    }
     let profile = <Binding::OutputFamily as super::super::WorthQueryProducerOutputFamily<Schema>>::profile_kind(&source.value);
-    Ok(Some(ErasedAppliedProducerSource {
+    let lifecycle = super::super::demand::selection::retained_liveness::applied_lifecycle::<
+        Schema,
+        Binding::OutputFamily,
+    >(
+        runtime,
+        execution,
+        before.observation(),
+        source.root(),
+        source.partition(),
+        source.checkpoint_identity(),
+        &candidate,
+        predecessor.as_ref(),
+    )?;
+    Ok(CoupledSourceRead::Source(ErasedAppliedProducerSource {
+        scope: source.root(),
+        partition: source.partition(),
         predecessor,
         profile,
+        lifecycle,
         source: Box::new(source),
     }))
 }

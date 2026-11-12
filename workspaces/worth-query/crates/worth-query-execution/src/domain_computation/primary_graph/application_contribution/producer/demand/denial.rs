@@ -2,6 +2,7 @@ mod settlement_provenance;
 pub use settlement_provenance::WorthQueryOutputSettlementProvenanceDenial;
 pub(super) mod cleanup_custody;
 mod diagnostic_copy;
+mod discovery_connection;
 mod history_source;
 mod invariant_refusal;
 mod kind;
@@ -11,7 +12,6 @@ mod publication_stale;
 mod retirement_refusal;
 pub use kind::{WorthQueryOutputDemandDenialKind, WorthQueryOutputDemandRecoveryPosture};
 pub(in crate::domain_computation::primary_graph) use publication_stale::ProducerPublicationStale;
-
 /// A refusal to select, admit, or advance an output demand, with the subject it
 /// names (usually the output family or producer).
 ///

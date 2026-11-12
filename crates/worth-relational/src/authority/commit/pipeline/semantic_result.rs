@@ -43,11 +43,30 @@ pub(super) fn prepare_semantic_result(
         .publication_summary
         .as_ref()
         .ok_or_else(|| denied(Refusal::MissingOriginalSummary))?;
-    let (created_entities, created_relations, validation) = runtime.services.symbols.with_read(|symbols| {
-        Ok::<_, Refusal>((input.entities.canonical_meaning(symbols)?, input.relations.canonical_meaning(symbols)?,
-            input.validation.iter().map(|execution| crate::transactions::data::RelationalInvariantExecutionMeaning::from_original(execution, symbols))
-                .collect::<Result<Vec<_>, _>>()?))
-    }).map_err(denied)?;
+    let (created_entities, created_relations, validation) = runtime
+        .services
+        .symbols
+        .with_read(|symbols| {
+            let entities = input.entities.canonical_meaning(symbols)?;
+            // Borrow a single reverse index of the genuine allocation roster. Each
+            // relation endpoint pays one lookup, rather than rescanning all creates.
+            let by_id = entities
+                .iter()
+                .map(|entry| (entry.assigned, &entry.key))
+                .collect::<std::collections::BTreeMap<_, _>>();
+            let relations = input.relations.canonical_meaning(symbols, &by_id)?;
+            let validation = input
+                .validation
+                .iter()
+                .map(|execution| {
+                    crate::transactions::data::RelationalInvariantExecutionMeaning::from_original(
+                        execution, symbols,
+                    )
+                })
+                .collect::<Result<Vec<_>, Refusal>>()?;
+            Ok::<_, Refusal>((entities, relations, validation))
+        })
+        .map_err(denied)?;
     Ok(Arc::new(RelationalCommitSemanticResult {
         decoded_memory: None,
         receipt: input.envelope.commit.clone(),

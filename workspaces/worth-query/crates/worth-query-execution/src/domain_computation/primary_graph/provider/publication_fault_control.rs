@@ -1,4 +1,4 @@
-//! Receiver-owned leases for the two native publication posture boundaries.
+//! Receiver-owned leases at real publication preparation boundaries.
 use super::fault_port::WorthQueryPrimaryGraphFault;
 use std::sync::{
     atomic::{AtomicBool, Ordering},
@@ -9,6 +9,7 @@ use std::sync::{
 enum Boundary {
     PreTransaction,
     PostCommitSnapshot,
+    QuerySupportMemory,
 }
 struct Registration {
     boundary: Boundary,
@@ -80,6 +81,28 @@ impl PublicationFaultControl {
     ) -> Result<WorthQueryPublicationFaultGuardForTest, WorthQueryPublicationFaultRegistrationDenial>
     {
         self.arm(Boundary::PostCommitSnapshot)
+    }
+    pub(in crate::domain_computation::primary_graph) fn probe_query_support_memory(
+        self: &Arc<Self>,
+    ) -> Result<WorthQueryPublicationFaultGuardForTest, WorthQueryPublicationFaultRegistrationDenial>
+    {
+        self.arm(Boundary::QuerySupportMemory)
+    }
+    pub(super) fn take_query_support_memory_probe(&self) -> bool {
+        if !self.active.load(Ordering::Acquire) {
+            return false;
+        }
+        let slot = self.registration.lock().unwrap_or_else(|p| p.into_inner());
+        let Some(active) = slot.as_ref() else {
+            return false;
+        };
+        let mut registration = active.lock().unwrap_or_else(|p| p.into_inner());
+        if registration.boundary == Boundary::QuerySupportMemory && !registration.consumed {
+            registration.consumed = true;
+            true
+        } else {
+            false
+        }
     }
     pub(super) fn take(&self, fault: WorthQueryPrimaryGraphFault) -> bool {
         if !self.active.load(Ordering::Acquire) {

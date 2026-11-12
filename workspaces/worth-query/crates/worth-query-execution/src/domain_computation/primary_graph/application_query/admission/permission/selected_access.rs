@@ -4,12 +4,14 @@ use crate::domain_computation::primary_graph::{
     WorthQueryIssuedSelectedScope, WorthQuerySelectedProductOperation,
 };
 use worth_query_installation::facade::ApplicationSchema;
+mod applied_source;
 mod historical_source;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 
-/// Both typed identities came from their owners on one selected immutable
-/// native root and one request. The HRTB Query continuation keeps their
-/// issuers, selected operation and local identities alive until read release.
+/// The principal and request are issued at C. Ordinary source identities are
+/// also issued there; historical/applied postures retain their exact D and
+/// validate its source only after C authorization. D supplies no grants.
+/// The continuation keeps the actual issuers and read operands alive.
 pub(in crate::domain_computation::primary_graph) struct SelectedIssuedAccessRoot<
     'a,
     Schema,
@@ -34,6 +36,7 @@ pub(in crate::domain_computation::primary_graph) struct SelectedIssuedAccessRoot
     pub(super) request:
         &'a worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     truth: Option<SelectedIssuedTruthRoot<'a>>,
+    applied_source: Option<applied_source::AppliedSourceTruth<'a>>,
     historical_source: Option<crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerInvocation<'a>>,
 }
 
@@ -93,6 +96,7 @@ impl<'a, Schema, Principal, PrincipalIdentity, Scope>
             product: selected.product().observation(),
             request: principal.request(),
             truth: None,
+            applied_source: None,
             historical_source: None,
         })
     }

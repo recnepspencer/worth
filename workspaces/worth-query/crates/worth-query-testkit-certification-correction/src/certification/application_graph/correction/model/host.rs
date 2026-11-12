@@ -1,5 +1,7 @@
 //! Install, edit, read and close through the public application owners.
+mod limits;
 use super::{authentication::*, edit, other_edit, program::*, query, schema::*};
+pub(super) use limits::{installation_limits, worker_limits};
 use worth_query_host::facade::{
     application_contribution::*,
     application_entry::*,
@@ -8,7 +10,6 @@ use worth_query_host::facade::{
     primary_graph::*,
     runtime,
 };
-
 pub use worth_query_testkit_document_retention::facade::document_world_resources as world_resources;
 pub type Host = WorthQueryProgramApplicationRuntime<NumericSchema, Program>;
 pub type OutputHost =
@@ -26,6 +27,8 @@ impl WorthQueryApplicationContribution<NumericSchema> for NumericContribution {
         contracts
             .conditional::<super::causal_inspection::retired_outputs::readiness::Readiness>()?;
         contracts.producer::<super::calculation::Producer>()?;
+        contracts.producer::<super::deferred_completion::reciprocal::Producer>()?;
+        contracts.conditional::<super::deferred_completion::readiness::Readiness>()?;
         contracts.producer::<super::aspect_input::calculation::Producer>()?;
         contracts.producer::<super::scalar_input::calculation::Producer>()?;
         contracts.conditional::<super::scalar_input::readiness::Readiness>()?;
@@ -57,6 +60,13 @@ impl WorthQueryApplicationContribution<NumericSchema> for NumericContribution {
             super::causal_inspection::retired_outputs::calculation::Provider,
         )?;
         setup.conditional::<super::causal_inspection::retired_outputs::readiness::Readiness>(())?;
+        setup.handler::<super::deferred_completion::reciprocal::Binding, _>(
+            super::deferred_completion::reciprocal::Handler,
+        )?;
+        setup.producer::<super::deferred_completion::reciprocal::Producer>(
+            super::deferred_completion::reciprocal::Provider,
+        )?;
+        setup.conditional::<super::deferred_completion::readiness::Readiness>(())?;
         setup.handler::<super::calculation::Binding, _>(super::calculation::Handler)?;
         setup.handler::<super::scalar_input::authoring::Binding, _>(
             super::scalar_input::authoring::Handler,
@@ -133,6 +143,14 @@ pub fn install_with_outputs() -> OutputHost {
         roster().support(validated::<Program>()),
     )
 }
+pub(super) fn install_with_output_limits(limits: WorthQueryApplicationLimits) -> OutputHost {
+    install_program_with_seed_and_limits(
+        validated::<super::output_program::OutputProgram>(),
+        roster().support(validated::<Program>()),
+        |_| Ok(()),
+        limits,
+    )
+}
 pub fn roster() -> WorthQueryApplicationProgramRoster<'static, NumericSchema> {
     WorthQueryApplicationProgramRoster::new()
         .support(validated::<Successor>())
@@ -160,13 +178,27 @@ where
     P: ApplicationProgramDefinition<NumericSchema, Contributions = (NumericContribution,)>,
     P::Outputs: WorthQueryApplicationProgramRoots<NumericSchema>,
 {
+    install_program_with_seed_and_limits(program, roster, seed, installation_limits())
+}
+pub(super) fn install_program_with_seed_and_limits<P>(
+    program: ValidatedApplicationProgram<NumericSchema, P>,
+    roster: WorthQueryApplicationProgramRoster<'_, NumericSchema>,
+    seed: impl FnOnce(
+        &mut WorthQueryPrimaryGraphBootstrap<NumericSchema>,
+    ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>,
+    limits: WorthQueryApplicationLimits,
+) -> WorthQueryProgramApplicationRuntime<NumericSchema, P>
+where
+    P: ApplicationProgramDefinition<NumericSchema, Contributions = (NumericContribution,)>,
+    P::Outputs: WorthQueryApplicationProgramRoots<NumericSchema>,
+{
     in_memory_rostered_program(
         program,
         roster,
         NumericSchema::declaration().unwrap(),
         ((),),
         ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID")).unwrap(),
-        installation_limits(),
+        limits,
         |_, graph, installed| {
             let binding = installed
                 .principal_binding(ActorBinding::reference())
@@ -321,7 +353,6 @@ pub fn read_on<P: ApplicationProgramDefinition<NumericSchema>>(
         .rows()
         .to_vec()
 }
-
 pub(super) fn installation_limits() -> WorthQueryApplicationLimits {
     WorthQueryApplicationLimits::new(
         world_resources::world_resources(256, 4 * 1024 * 1024, 256, worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),

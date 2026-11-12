@@ -1,4 +1,5 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
+
 mod semantic;
 
 use crate::identity::data::EntityId;
@@ -22,6 +23,8 @@ struct StableCreatedEntityRef {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct CommitCreatedEntityBindings {
     by_exact_reference: BTreeMap<CreatedEntityRef, EntityId>,
+    // Derived solely from the owner-minted correspondence, never caller IDs.
+    by_entity_identity: BTreeSet<EntityId>,
     by_stable_reference: BTreeMap<StableCreatedEntityRef, EntityId>,
 }
 
@@ -29,7 +32,7 @@ impl CommitCreatedEntityBindings {
     /// Adopt correspondence minted by the same commit's private consequence apply.
     pub(crate) fn append_owned(
         &mut self,
-        mut generated: Self,
+        generated: Self,
     ) -> Result<(), crate::transactions::data::CommitConflict> {
         if generated
             .by_exact_reference
@@ -48,10 +51,17 @@ impl CommitCreatedEntityBindings {
                 },
             ));
         }
-        self.by_exact_reference
-            .append(&mut generated.by_exact_reference);
-        self.by_stable_reference
-            .append(&mut generated.by_stable_reference);
+        for entity in generated.by_entity_identity {
+            self.by_entity_identity.insert(entity);
+        }
+        // Each incoming binding pays only for its own tree path. BTreeMap::append
+        // rebuilds a sorted union and revisits the complete accumulated prefix.
+        for (reference, id) in generated.by_exact_reference {
+            self.by_exact_reference.insert(reference, id);
+        }
+        for (reference, id) in generated.by_stable_reference {
+            self.by_stable_reference.insert(reference, id);
+        }
         Ok(())
     }
 
@@ -73,10 +83,29 @@ impl CommitCreatedEntityBindings {
                 ))
             })
             .collect();
+        let by_entity_identity = by_create_reference.values().copied().collect();
         Self {
+            by_entity_identity,
             by_exact_reference: by_create_reference,
             by_stable_reference,
         }
+    }
+
+    /// Borrow only identities minted by this apply's allocation owner.
+    pub(crate) fn allocated_identities(&self) -> impl ExactSizeIterator<Item = EntityId> + '_ {
+        self.by_entity_identity.iter().copied()
+    }
+
+    /// Exact identities allocated by this apply, including private consequences.
+    /// The derived set carries the same authority as the creation correspondence.
+    pub(crate) fn created_here(
+        &self,
+        entity: EntityId,
+        context: &mut worth_execution::MapKernelContext<'_, '_>,
+    ) -> Result<bool, worth_execution::MapKernelStop> {
+        let levels = usize::BITS - self.by_entity_identity.len().max(1).leading_zeros();
+        crate::execution::request_stage::checkpoint(context, u64::from(levels) * 11 * 3 + 1)?;
+        Ok(self.by_entity_identity.contains(&entity))
     }
 
     /// Bound both possible tree searches and the stable fallback's key copy.

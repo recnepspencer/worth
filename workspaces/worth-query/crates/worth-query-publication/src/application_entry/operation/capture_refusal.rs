@@ -10,6 +10,7 @@ pub struct WorthQueryOperationInputCaptureRefusal<
     I: ApplicationMutationIntent<S>,
 > {
     intent: I,
+    producer_round_limits: crate::application_entry::ApplicationProducerRoundLimits,
     key: <I::Binding as ApplicationMutationBinding<S>>::IdempotencyKey,
     preconditions: Conditions<S, I>,
     source: Option<WorthQueryMutationExpectedSource<SourceQuery<S, I>>>,
@@ -64,6 +65,7 @@ impl<S: ApplicationSchema, I: ApplicationMutationIntent<S>>
                 scope: request.scope,
                 branch: self.branch,
                 intent: self.intent,
+                producer_round_limits: self.producer_round_limits,
                 preconditions: self.preconditions,
                 source: self.source,
                 source_preparation: std::marker::PhantomData::<WorthQueryMutationSourcePrepared>,
@@ -100,6 +102,7 @@ impl<S: ApplicationSchema, I: ApplicationMutationIntent<S>>
     ) -> WorthQueryOperationInputCaptureRefusal<S, I> {
         WorthQueryOperationInputCaptureRefusal {
             intent: self.native.intent,
+            producer_round_limits: self.native.producer_round_limits,
             key,
             preconditions: self.native.preconditions,
             source: self.native.source,

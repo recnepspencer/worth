@@ -158,27 +158,38 @@ pub(super) fn perform(
     let principal = authenticate_operator(application.installed_schema(), &scope);
     let request = application.runtime().request(&principal, &scope);
     let key = key.to_owned();
-    let source = request
-        .advanced()
-        .mutate(OperandEdit {
-            key: "numeric".to_owned(),
-            value,
-        })
-        .without_source()
-        .idempotency(&key)
-        .execute_performed::<OutputProgram, Root>(
-            application,
-            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
-    let source = match source {
-        WorthQueryApplicationPerformedMutationOutcome::Performed(source) => source,
-        WorthQueryApplicationPerformedMutationOutcome::NotPerformed(outcome) => {
-            panic!("ordinary operand source must perform; actual native outcome: {outcome:?}")
-        }
-        _ => panic!("ordinary operand source must perform; required-output custody was not ready"),
-    };
-    journey::settle_source(application, &request, source, expected_contacts)
+    journey::perform_and_settle_source(
+        application,
+        &request,
+        || {
+            let source = request
+                .advanced()
+                .mutate(OperandEdit {
+                    key: "numeric".to_owned(),
+                    value,
+                })
+                .without_source()
+                .idempotency(&key)
+                .execute_performed::<OutputProgram, Root>(
+                    application,
+                    worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .unwrap();
+            let source = match source {
+                WorthQueryApplicationPerformedMutationOutcome::Performed(source) => source,
+                WorthQueryApplicationPerformedMutationOutcome::NotPerformed(outcome) => {
+                    panic!(
+                        "ordinary operand source must perform; actual native outcome: {outcome:?}"
+                    )
+                }
+                _ => panic!(
+                    "ordinary operand source must perform; required-output custody was not ready"
+                ),
+            };
+            source
+        },
+        expected_contacts,
+    )
 }
 
 fn assert_primary_disclosure_refuses_operand_source(

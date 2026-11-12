@@ -8,9 +8,9 @@ use worth_query_declaration::facade::application_schema::ApplicationInvariantExe
 use worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding;
 use worth_query_installation::facade::ApplicationSchema;
 
-mod coupled_assembly;
-pub(in crate::domain_computation::primary_graph) use coupled_assembly::DeclaredProducerAssembly;
 pub(crate) mod demand;
+pub(crate) mod synchronous_outputs;
+pub(in crate::domain_computation::primary_graph) use demand::VerifiedAppliedParent;
 mod denial_value;
 pub(in crate::domain_computation::primary_graph) use demand::MatchedRequiredPredecessors;
 pub(in crate::domain_computation::primary_graph) use demand::{CurrentBasis, CurrentProof};

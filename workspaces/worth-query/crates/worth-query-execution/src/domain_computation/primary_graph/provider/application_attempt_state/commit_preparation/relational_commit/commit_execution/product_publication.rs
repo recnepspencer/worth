@@ -248,6 +248,7 @@ pub(super) fn prepare_lineage_slot(
         )
         .map_err(lineage_pending)?;
     if let Some(required) = required {
+        slot.retain_original_ready_key(required.original_ready_key());
         let (producer, source) = required.native_prior_checkpoint_input();
         slot.retain_native_prior_checkpoint(producer, source)
             .map_err(lineage_pending)?;

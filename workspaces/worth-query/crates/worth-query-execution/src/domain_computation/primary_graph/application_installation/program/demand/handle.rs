@@ -22,6 +22,7 @@ where
 
     pub fn close(&mut self) {
         self.admitted.close();
+        self.original_result = original_result::OriginalProgramResult::Disabled;
     }
 }
 

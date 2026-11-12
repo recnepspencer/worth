@@ -1,7 +1,7 @@
 //! Candidate construction returns before invariant and aggregate preparation.
 use super::proposal_source::RelationalProposalSource;
 use crate::authority::commit::phases::applied_mutation::{
-    apply_mutation_draft, apply_retained_entity_selection_draft, AppliedMutationDraft,
+    apply_mutation_draft, apply_retained_entity_selection_draft, AppliedDraftCustody,
 };
 use crate::authority::commit::phases::prepare::{
     prepare_lowered_working_state_scope, prepare_working_state_scope, PreparedWorkingStateScope,
@@ -17,7 +17,7 @@ use super::proposal_round::PreparedProposalRound;
 use crate::authority::mutation::MutationApplyDenial;
 pub(super) struct PreparedProposalCandidate {
     prepared: PreparedWorkingStateScope,
-    mutation: AppliedMutationDraft,
+    mutation: AppliedDraftCustody,
     identity: RelationalMutationProposalIdentity,
     validation_input: RelationalTransactionValidationInput,
 }
@@ -102,6 +102,7 @@ pub(super) fn prepare(
             source_interpretation,
             &validation_input.content,
         )
+        .map(AppliedDraftCustody::ordinary)
     } else {
         match prepared.plan.retained() {
             Some(retained) => apply_retained_entity_selection_draft(
@@ -115,7 +116,8 @@ pub(super) fn prepare(
                 symbols,
                 source_interpretation,
                 &validation_input.content,
-            ),
+            )
+            .map(AppliedDraftCustody::ordinary),
             None => apply_mutation_draft(
                 execution,
                 &runtime,
@@ -211,12 +213,5 @@ pub(super) fn validate(
         identity,
         validation_input,
         invariants,
-        coupled_publication: round.authored_coupling.as_ref().and_then(|binding| {
-            binding
-                .completed
-                .lock()
-                .unwrap_or_else(|e| e.into_inner())
-                .take()
-        }),
     }))
 }

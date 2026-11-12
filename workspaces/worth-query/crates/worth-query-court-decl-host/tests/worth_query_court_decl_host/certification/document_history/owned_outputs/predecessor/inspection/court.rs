@@ -132,6 +132,8 @@ fn connected_inspection_borrows_authentic_old_keys_without_current_dependency_au
     );
     report.close();
     // Query metadata and both diagnostics cannot lend the independent source metadata policy.
+    // Master refuses the mismatched issued access at fresh admission, before
+    // binding it into inspection governance or looking up any protected cause.
     let denied = request
         .inspect::<output::Binding>(&after)
         .why_observed()
@@ -148,12 +150,11 @@ fn connected_inspection_borrows_authentic_old_keys_without_current_dependency_au
     assert!(
         matches!(
             denied.owner_refusal(),
-            Some(WorthQueryApplicationInspectionOwnerRefusal::Governance(
-                WorthQueryApplicationQueryGovernanceDenialKind::CapabilityMismatch
-            ))
+            Some(WorthQueryApplicationInspectionOwnerRefusal::ForeignIssuedAccess)
         ),
-        "the actual typed inspection refusal was {denied:?}; owner: {:?}",
-        denied.owner_refusal()
+        "actual inspection owner refusal: {:?}; resource: {:?}",
+        denied.owner_refusal(),
+        denied.resource_refusal()
     );
     assert!(
         denied.producer_connection_refusal().is_none(),
@@ -170,16 +171,12 @@ fn connected_inspection_borrows_authentic_old_keys_without_current_dependency_au
         )
         .err()
         .expect("both diagnostics cannot replace either metadata admission");
-    assert!(
-        matches!(
-            denied.owner_refusal(),
-            Some(WorthQueryApplicationInspectionOwnerRefusal::Governance(
-                WorthQueryApplicationQueryGovernanceDenialKind::Required
-            ))
-        ),
-        "the actual typed inspection refusal was {denied:?}; owner: {:?}",
-        denied.owner_refusal()
-    );
+    assert!(matches!(
+        denied.owner_refusal(),
+        Some(WorthQueryApplicationInspectionOwnerRefusal::Governance(
+            WorthQueryApplicationQueryGovernanceDenialKind::Required
+        ))
+    ));
     assert!(denied.producer_connection_refusal().is_none());
     // Genuine foreign capability custody cannot lend any fresh admitted role.
     let foreign = install();

@@ -232,6 +232,7 @@ impl WorthQueryApplicationOutputLineage {
                 .or_default();
             let slot = generation.len();
             let transported = RecordedOutput {
+                original_ready_key: None,
                 coupled_completion: None,
                 producing_implementation: origin.producing_implementation,
                 required_publication: Some(publication),

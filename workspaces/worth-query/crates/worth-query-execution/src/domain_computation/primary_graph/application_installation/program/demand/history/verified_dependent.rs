@@ -95,6 +95,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         Ok(WorthQueryAdmittedHistoryProgramOutput {
             admitted: WorthQueryAdmittedProgramOutput {
                 admitted,
+                original_result: original_result::OriginalProgramResult::Disabled,
                 original_root_completion: None,
                 target_feature: crate::equality_type_id::EqualityTypeId::of::<C::TargetFeature>(),
                 artifact,

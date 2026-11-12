@@ -116,6 +116,10 @@ pub enum WorthQueryApplicationCommitDenialKind {
     /// not produced by its native executor. Caller-authored effects cannot
     /// substitute another implementation, even within the declared footprint.
     OperationBodyExecutionRequired,
+    /// The coupled producer assembly ended the edit without publishing and
+    /// recorded no refusing stage, producer or writer. Nothing committed; this
+    /// is an internal custody fault, never a caller error.
+    CoupledRefusalWithoutSubject,
     /// A signed creation lacks its native authentication or its immutable subject was changed.
     SignedCreationAuthentication { kind: worth_query_admission::facade::authentication_event::WorthQueryAuthenticationEventDenial },
     SignedEntityImmutable,
@@ -148,6 +152,8 @@ pub enum WorthQueryApplicationCommitDenialKind {
     CapabilityRevocationRequired,
     /// The operation must run under the branch's program; use a program lane.
     ApplicationProgramRequired,
+    /// An installed required source reached an entry without its typed output preparation.
+    RequiredOutputPreparationMissing,
     /// The operation is guarded by a workflow, so only the workflow runtime may
     /// commit it.
     WorkflowAuthorityRequired,
@@ -357,6 +363,16 @@ impl WorthQueryApplicationCommitDenial {
         Self {
             kind: WorthQueryApplicationCommitDenialKind::OperationBodyExecutionRequired,
             stage: WorthQueryApplicationCommitDenialStage::ProposalBinding,
+            detail: None,
+            cause: None,
+        }
+    }
+
+    pub(in crate::domain_computation::primary_graph) const fn coupled_refusal_without_subject(
+    ) -> Self {
+        Self {
+            kind: WorthQueryApplicationCommitDenialKind::CoupledRefusalWithoutSubject,
+            stage: WorthQueryApplicationCommitDenialStage::InvariantExecution,
             detail: None,
             cause: None,
         }

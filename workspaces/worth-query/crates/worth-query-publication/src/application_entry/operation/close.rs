@@ -5,6 +5,8 @@ use super::*;
 /// Explains why lawful close could not discharge the retained native cleanup obligations.
 pub enum WorthQueryOperationCloseDenial {
     FreshRequestMismatch,
+    /// Deferred correction custody cannot enter the fixed facade until this issue lands.
+    DeferredFixedCompletionUnsupported { issue: &'static str },
     ManagedCleanup(worth_query_execution::facade::primary_graph::WorthQueryMutationCleanupFailureKind),
     CleanupCapacity,
     NativeObligationRetained,
@@ -20,7 +22,7 @@ pub enum WorthQueryOperationCloseDenial {
 /// Native disposal evidence with any remaining original dispatch/recovery custody.
 /// Closing is not business completion.
 pub struct WorthQueryClosedOperation {
-    managed: Option<
+    managed: Vec<
         worth_query_execution::facade::primary_graph::WorthQueryApplicationManagedCleanupReceipt,
     >,
     retired_component_count: usize,
@@ -51,7 +53,7 @@ impl WorthQueryClosedOperation {
     ) -> Self {
         Self {
             retired_component_count: receipt.retired_component_count(),
-            managed: receipt.into_managed_receipt(),
+            managed: receipt.into_managed_receipts(),
             output_unavailable: None,
         }
     }
@@ -67,17 +69,16 @@ impl WorthQueryClosedOperation {
     pub fn output_unavailable(&self) -> Option<&WorthQueryApplicationProgramOutputUnavailable> {
         self.output_unavailable.as_ref()
     }
-    /// Native release evidence can retain logical recovery requirements; closure is no settlement proof.
-    /// Lends the actual remaining original dispatch/recovery owner.
-    pub fn managed_cleanup_receipt_mut(&mut self) -> Option<&mut worth_query_execution::facade::primary_graph::WorthQueryApplicationManagedCleanupReceipt>{
-        self.managed.as_mut()
+    /// Every actual native release receipt; closure is no business settlement proof.
+    /// Lends each actual remaining dispatch/recovery owner without copying custody.
+    pub fn managed_cleanup_receipts_mut(&mut self) -> &mut [worth_query_execution::facade::primary_graph::WorthQueryApplicationManagedCleanupReceipt]{
+        &mut self.managed
     }
-    pub fn managed_cleanup_receipt(
+    pub fn managed_cleanup_receipts(
         &self,
-    ) -> Option<
-        &worth_query_execution::facade::primary_graph::WorthQueryApplicationManagedCleanupReceipt,
-    > {
-        self.managed.as_ref()
+    ) -> &[worth_query_execution::facade::primary_graph::WorthQueryApplicationManagedCleanupReceipt]
+    {
+        &self.managed
     }
     pub const fn retired_component_count(&self) -> usize {
         self.retired_component_count

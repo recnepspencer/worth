@@ -83,6 +83,11 @@ impl WorthQueryApplicationIdempotencyBinding {
             &mut encoded,
             self.workflow_approval_identity,
         );
+        // Preserve every pre-envelope ordinary receipt byte. The extension is
+        // present only for an actual edit, never an absent marker on old keys.
+        if self.envelope_intent.is_some() {
+            append_identity_slot(&mut encoded, "edit-envelope", self.envelope_intent);
+        }
         mutation_binding::append_identity_slot(&mut encoded, self.mutation_binding_identity);
         if self.correction_identity.is_some() {
             append_identity_slot(&mut encoded, "correction", self.correction_identity);

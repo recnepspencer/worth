@@ -192,7 +192,7 @@ pub use projection::retained_projection::{
 };
 
 pub(in crate::domain_computation::primary_graph) use observed_source::{
-    AppliedQuerySource, AppliedSourcePublication,
+    AppliedQuerySource, AppliedQuerySupport, AppliedSourcePublication,
 };
 pub(in crate::domain_computation::primary_graph) use projection::ProjectionContentComparisonFault;
 

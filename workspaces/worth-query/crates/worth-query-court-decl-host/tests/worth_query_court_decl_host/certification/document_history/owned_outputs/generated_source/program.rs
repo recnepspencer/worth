@@ -52,14 +52,18 @@ macro_rules! program {
         pub struct Program;
         impl ApplicationProgramDefinition<Schema> for Program {
             type Contributions = (Contribution,);
-            type Outputs = ApplicationProgramOutputs<Root>;
+            type Outputs = ApplicationProgramOutputs<(Root,SeedRoot)>;
             type Rules = ApplicationRuleLeaf;
             const IDENTITY: ApplicationProgramIdentity = ApplicationProgramIdentity::new($id);
             fn feature_specs() -> Vec<ApplicationFeatureSpec> {
                 let mut specs = HierarchyProgram::feature_specs();
-                specs[0] = ApplicationFeatureSpec::root::<Schema, Entry>().provides::<EntryOutput>()
+                specs[0] = super::super::super::program::with_envelope_completion_actions(ApplicationFeatureSpec::root::<Schema, Entry>()).provides::<EntryOutput>()
+                    .action::<synchronous_edit::new_source::Binding, Completion>().finish_action()
+                .action::<synchronous_edit::new_source::restricted::Binding, Completion>().finish_action()
+                .action::<synchronous_edit::Binding, Completion>().finish_action()
+                    .action::<predecessor::synchronous::Binding, Completion>().finish_action()
                     .action::<edit::Binding, Delivery>().finish_action()
-                    .action::<member_edit::Binding, Completion>().finish_action()
+                    .action::<member_edit::Binding, SeedDelivery>().finish_action()
                     .action::<authored_member::retire::Binding, Completion>().finish_action()
                     .action::<authored_member::restore::Binding, Completion>().finish_action()
                     .action::<member_delete::Binding, Completion>().finish_action().finish();
@@ -88,3 +92,60 @@ program!(
     first_discovery,
     "owned-outputs.generated-source.denied-discovery.v1"
 );
+
+/// Record a real first-only seed step before the protected edit. The retained
+/// initial step still has no output, so inverse fallback must create a generation.
+pub struct SeedStart;
+impl ApplicationConnectionIdentity for SeedStart {
+    const IDENTITY: &'static str = "owned-outputs.generated-source.seed";
+}
+impl ApplicationOccurrenceConnectionBinding<Schema, Entry, Parent> for SeedStart {}
+pub type SeedConnection = ApplicationConnectionRef<
+    Schema,
+    Entry,
+    EntryOutput,
+    Parent,
+    super::super::hierarchy::program::FirstSeedInput,
+    SeedStart,
+>;
+impl WorthQueryApplicationRequiredOutputConnection<Schema> for SeedStart {
+    type Source = member_edit::Binding;
+    type Demand = first::Demand;
+    const IDENTITY: &'static str = <Self as ApplicationConnectionIdentity>::IDENTITY;
+    fn demand_from_source(
+        input: &member_edit::Intent,
+    ) -> Result<Self::Demand, WorthQueryRequiredOutputConnectionDenial> {
+        if input.key != "m" {
+            return Err(WorthQueryRequiredOutputConnectionDenial::new(
+                "the fixture's seed member",
+            ));
+        }
+        Ok(first::Demand("a".into()))
+    }
+}
+impl WorthQueryApplicationRequiredOutputSource<Schema, SeedStart> for member_edit::Binding {
+    fn demand_from_source(
+        input: &member_edit::Intent,
+    ) -> Result<first::Demand, WorthQueryRequiredOutputConnectionDenial> {
+        <SeedStart as WorthQueryApplicationRequiredOutputConnection<Schema>>::demand_from_source(
+            input,
+        )
+    }
+}
+pub type SeedRoot = ApplicationOutputGraph<SeedConnection, ApplicationOutputLeaf>;
+pub struct SeedDelivery;
+impl ApplicationActionDelivery<Schema, member_edit::Binding> for SeedDelivery {
+    type Mode = ApplicationFixedDeliveryMode<SeedRoot, ApplicationNoProjection>;
+    const IDENTITY: &'static str = "owned-outputs.generated-source.seed-delivery";
+}
+impl ApplicationFixedActionDelivery<Schema, member_edit::Binding> for SeedDelivery {
+    type Root = SeedRoot;
+    type Projection = ApplicationNoProjection;
+}
+pub type SeedAction = ApplicationActionReference<
+    Schema,
+    ApplicationRootComposition,
+    Entry,
+    member_edit::Binding,
+    SeedDelivery,
+>;

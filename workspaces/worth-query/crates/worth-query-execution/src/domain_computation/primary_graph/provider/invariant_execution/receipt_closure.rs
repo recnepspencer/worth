@@ -1,3 +1,5 @@
+mod coupled;
+pub(in crate::domain_computation::primary_graph) use coupled::ClosedCoupledInvariantReceipts;
 use worth_query_declaration::facade::application_schema::ApplicationInvariantExecutionPoint;
 use worth_query_installation::facade::{
     WorthQueryInstalledApplicationInvariantDescriptor,
@@ -91,6 +93,7 @@ fn close(
             "Relational custom invariant receipts do not match the installed invocation set",
         ));
     }
+    let mut counted = std::collections::BTreeSet::new();
     requirements
         .iter()
         .try_fold(semantic_work, |total, required| {
@@ -100,6 +103,11 @@ fn close(
                     super::closure_failure("required custom invariant receipt is absent")
                 })?;
             let work = validate_required_receipt(receipts[index], *required)?;
+            let work = if counted.insert(required.key) {
+                work
+            } else {
+                0
+            };
             total.checked_add(work).ok_or_else(super::owner_failure)
         })
 }

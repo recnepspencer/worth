@@ -9,9 +9,11 @@ use crate::publication::data::AuthoredRetirementRefusal as Cause;
 /// Its constructor is private; declarations and submitted rosters cannot mint it.
 pub struct RelationalCoupledAuthoredPublication {
     pub(crate) binding: Arc<BoundAuthoredCoupling>,
+    pub(crate) source_effects: RelationalCoupledAuthoredSourceEffects,
     pub(crate) authored_records: Vec<crate::transactions::data::RecordRef>,
     pub(crate) authored_commands: Arc<crate::mvcc::OwnedNormalizedPlan>,
     pub(crate) parts: Vec<CoupledPublicationPart>,
+    pub(crate) stages: Vec<CoupledAuthoredStagePart>,
     _authored_records_memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 impl std::fmt::Debug for RelationalCoupledAuthoredPublication {
@@ -97,8 +99,25 @@ pub(crate) fn prepare_coupled_candidate(
             mutation.outcome.effect.publication.changed_records.len(),
         ),
     )?;
-    let authored_records = mutation.outcome.effect.publication.changed_records.clone();
-    writer_custody::require(execution, &binding.owners, None, authored_commands.plan())?;
+    let mut authored_records = mutation.outcome.effect.publication.changed_records.clone();
+    let authored_fragments = mutation.outcome.effect.publication.patch_fragments.len();
+    writer_custody::require(
+        execution,
+        &binding.owners,
+        writer_custody::Writer::AuthoredPrefix,
+        authored_commands.plan(),
+    )?;
+    let mut fresh_records = net_plan::CreatorCustody::default();
+    fresh_records.retain(
+        execution,
+        crate::publication::data::CoupledFreshWriter::Authored,
+        binding.owners.source.subject(),
+        &mutation.outcome,
+    )?;
+    let mut authored_writes = authored_writes::AuthoredWrites::default();
+    authored_writes
+        .retain(execution, 0, authored_commands.plan(), &authored_records)
+        .map_err(|failure| failure.cause)?;
     let mut candidate = RelationalAuthoredCoupledCandidate {
         runtime: &runtime,
         transaction,
@@ -107,29 +126,67 @@ pub(crate) fn prepare_coupled_candidate(
         identity,
         binding: &binding,
         parts: Vec::new(),
+        stages: Vec::new(),
+        authored_fragments,
+        continuation: continuation::ContinuationState::default(),
+        fresh_records,
+        authored_writes,
+        read: std::cell::RefCell::new(None),
     };
+    crate::execution::phase_observation::symbol_preparation_event(
+        crate::execution::phase_observation::SymbolPreparationEvent::AssemblerCallback,
+    );
     if assembly
         .assemble(execution, &mut candidate)
         .map_err(|failure| failure.cause)?
         .is_break()
     {
+        crate::execution::phase_observation::symbol_preparation_event(
+            crate::execution::phase_observation::SymbolPreparationEvent::AssemblerBreak,
+        );
         return Ok(false);
     }
-    let RelationalAuthoredCoupledCandidate { parts, .. } = candidate;
+    let RelationalAuthoredCoupledCandidate {
+        parts,
+        stages,
+        authored_fragments,
+        ..
+    } = candidate;
+    if let Some(missing) = binding.owners.stages.get(stages.len()) {
+        return Err(part::reject(Cause::MissingAuthoredStage, *missing).into());
+    }
+    // Every authored stage applies before any producer part, so the authored
+    // writer's patches are exactly this applied prefix of the candidate's.
+    let source_effects = RelationalCoupledAuthoredSourceEffects::capture(
+        execution,
+        &mutation.outcome.effect.publication.patch_fragments[..authored_fragments],
+    )?;
+    for stage in &stages {
+        authored_records.extend_from_slice(&stage.records);
+    }
     execution.run_native_with_checkpoint(|context| {
-        for expected in &binding.owners.owners {
+        for expected in binding.owners.required_owners() {
             for part in &parts {
-                let RequiredOutputPublication::Preserve { meaning, .. } = &part.publication else { unreachable!("admitted Preserve") };
+                let meaning = part.publication.producing_meaning().expect("admitted producer route");
                 checkpoint(context, (meaning.family.len() + expected.origin.meaning.family.len() + 65) as u64)
                     .map_err(custody::execution_stop)?;
             }
-            if !parts.iter().any(|part| matches!(&part.publication,
-                RequiredOutputPublication::Preserve { meaning, .. } if expected.origin.meaning.same_route(meaning))) {
+            if !parts.iter().any(|part| matches!(part.publication.owned(),
+                Some(RequiredOutputPublication::Preserve { meaning, .. }) if expected.origin.meaning.same_route(meaning))) {
                 return Err(part::reject(Cause::MissingCoupledOwner, expected.origin.meaning.source_scope));
             }
         }
         Ok(())
     }).map_err(custody::execution_stop)?.0?;
+    if !parts.is_empty() || !stages.is_empty() {
+        super::disjoint_field_patches::compose(
+            execution,
+            transaction,
+            &mut mutation.outcome.effect,
+            &mutation.state,
+            prepared.schema_authority.aspect_plans(),
+        )?;
+    }
     let final_runtime = round.with_candidate_symbols(mutation.candidate_symbols());
     let intents = transaction.normalized_intents_for_merge(&final_runtime, execution)?;
     let commands =
@@ -142,7 +199,9 @@ pub(crate) fn prepare_coupled_candidate(
         &prepared.schema_authority,
         selected.selected(),
         identity,
-        mutation.outcome.effect.clone(),
+        &mutation.outcome.effect.publication.changed_records,
+        &mutation.outcome.effect.adjacency.deltas,
+        mutation.outcome.effect.publication.has_entity_deletions,
         None,
     );
     mutation.coupled_publication = Some(RequiredOutputPublicationAdmission {
@@ -150,9 +209,11 @@ pub(crate) fn prepare_coupled_candidate(
         publication: RequiredOutputPublication::CoupledAuthored {
             group: RelationalCoupledAuthoredPublication {
                 binding: Arc::clone(&binding),
+                source_effects,
                 authored_records,
                 authored_commands,
                 parts,
+                stages,
                 _authored_records_memory: authored_records_memory,
             },
         },

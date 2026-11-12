@@ -64,6 +64,7 @@ pub struct CommitPhaseTiming {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CommitPublication {
+    pub(crate) source_effects: Option<crate::mvcc::RelationalCoupledAuthoredSourceEffects>,
     pub diagnostics: Vec<RelationalDiagnosticArtifact>,
     pub envelope: SharedCanonicalCommitEnvelope,
     pub patch_position: crate::publication::patch::data::PatchStreamPosition,
@@ -377,5 +378,6 @@ impl CommitResult {
     }
 }
 
+mod authored_source;
 #[cfg(test)]
 mod snapshot_cleanup_tests;

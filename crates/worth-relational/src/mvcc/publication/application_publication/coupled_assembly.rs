@@ -14,13 +14,27 @@ use std::sync::Arc;
 use worth_execution::ExecutionRequest;
 mod adoption;
 mod aggregate_read;
+mod authored_writes;
 mod completion;
+mod continuation;
+pub use continuation::RelationalCoupledProducerContinuation;
 mod contribution;
+mod source_effects;
+pub use contribution::RelationalCoupledContribution;
+pub use source_effects::RelationalCoupledAuthoredSourceEffects;
+mod disjoint_aspect_patches;
+mod disjoint_field_patches;
 mod fresh_references;
 mod local_keys;
+mod net_plan;
+mod ordinary_roles;
 mod part;
-mod part_apply;
 mod part_corruption;
+mod participant_admission;
+mod prepared_route;
+mod producer_posture;
+mod stage;
+pub use producer_posture::RelationalCoupledProducerPosture;
 mod scoped_preparation;
 mod writer_custody;
 pub(crate) use completion::CoupledAppliedCandidate;
@@ -40,17 +54,31 @@ pub trait RelationalAuthoredCoupledProducerAssembly {
 #[derive(Debug)]
 pub struct RelationalCoupledAssemblyFailure {
     pub(crate) cause: crate::authority::mutation::MutationApplyDenial,
+    stage_conflict: Option<(crate::transactions::data::RecordRef, usize, usize)>,
 }
 impl From<TransactionCommitError> for RelationalCoupledAssemblyFailure {
     fn from(error: TransactionCommitError) -> Self {
         Self {
             cause: error.into(),
+            stage_conflict: None,
         }
     }
 }
 impl RelationalCoupledAssemblyFailure {
+    /// Exact conflicting record and physical authored-stage positions (prefix
+    /// is zero). Descriptive evidence for Query's typed stage refusal only.
+    pub fn authored_stage_conflict(
+        &self,
+    ) -> Option<(&crate::transactions::data::RecordRef, usize, usize)> {
+        self.stage_conflict
+            .as_ref()
+            .map(|(record, earlier, later)| (record, *earlier, *later))
+    }
     pub(crate) fn from_apply(cause: crate::authority::mutation::MutationApplyDenial) -> Self {
-        Self { cause }
+        Self {
+            cause,
+            stage_conflict: None,
+        }
     }
 }
 
@@ -86,15 +114,48 @@ pub struct RelationalAuthoredCoupledCandidate<'a> {
     pub(crate) identity: &'a RelationalMutationProposalIdentity,
     pub(crate) binding: &'a BoundAuthoredCoupling,
     pub(crate) parts: Vec<CoupledPublicationPart>,
+    pub(crate) stages: Vec<CoupledAuthoredStagePart>,
+    /// Patch fragments written by the authored writer: the prefix and stages.
+    authored_fragments: usize,
+    continuation: continuation::ContinuationState,
+    fresh_records: net_plan::CreatorCustody,
+    authored_writes: authored_writes::AuthoredWrites,
+    read: std::cell::RefCell<Option<RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>>>,
 }
 
 pub(crate) struct CoupledPublicationPart {
-    pub(crate) publication: RequiredOutputPublication,
+    pub(crate) ordinary_ids:
+        Option<worth_execution::ExecutionArray<crate::identity::data::EntityId>>,
+    pub(crate) input: RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
+    pub(crate) publication: RelationalCoupledProducerPosture,
+    pub(crate) commands: crate::mvcc::OwnedNormalizedPlan,
+    pub(crate) records: Vec<crate::transactions::data::RecordRef>,
+}
+
+/// One later authored stage applied over the candidate pin under the authored
+/// writer's custody. It is never a producer posture and owns no output route.
+pub(crate) struct CoupledAuthoredStagePart {
+    pub(crate) roles: Vec<RequiredOutputRoleTarget>,
+    pub(crate) output_ids: worth_execution::ExecutionArray<crate::identity::data::EntityId>,
+    pub(crate) source: crate::identity::data::EntityId,
+    pub(crate) input: RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
     pub(crate) commands: crate::mvcc::OwnedNormalizedPlan,
     pub(crate) records: Vec<crate::transactions::data::RecordRef>,
 }
 
 impl RelationalAuthoredCoupledCandidate<'_> {
+    /// Every applied part, authored stage or producer, in apply order. Pins,
+    /// local keys and successor reads are numbered over this one sequence.
+    pub(crate) fn applied_parts(&self) -> usize {
+        self.parts.len() + self.stages.len()
+    }
+
+    /// The full-generation source admitted by Native for this authored prefix.
+    /// Descriptive identity only; reading D still requires its applied read pin.
+    pub fn authored_source(&self) -> crate::identity::data::EntityId {
+        self.binding.owners.source.subject()
+    }
+
     /// Classify an actual candidate source through the same canonical roster
     /// that admitted this assembly. The caller cannot submit an owner set.
     pub fn declared_owner(
@@ -103,9 +164,9 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         family: &str,
         source: crate::identity::data::EntityId,
         partition: &[u8; 32],
-    ) -> Result<RelationalDeclaredCoupledOwner<'_>, TransactionCommitError> {
+    ) -> Result<Option<RelationalDeclaredCoupledOwner<'_>>, TransactionCommitError> {
         let original = execution.run_native_with_checkpoint(|context| {
-            if let Some(restoration) = &self.binding.owners.restoration {
+            if let Some(restoration) = self.binding.owners.source.restoration() {
                 for (old, created) in &restoration.entities {
                     checkpoint(context, self.mutation.outcome.created_entities.resolve_work_bound(created).ok_or_else(|| custody::execution_stop(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow))?).map_err(custody::execution_stop)?;
                     if self.mutation.outcome.created_entities.resolve(created) == Some(source) {
@@ -118,13 +179,18 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         let owner = self
             .binding
             .owners
-            .recorded_owner(execution, family, original, partition)?
-            .ok_or_else(|| {
-                part::reject(
-                    crate::publication::data::AuthoredRetirementRefusal::ExtraCoupledOwner,
-                    source,
-                )
-            })?;
+            .recorded_owner(execution, family, original, partition)?;
+        let Some(owner) = owner else {
+            if matches!(self.binding.owners.source, super::CoupledSource::Edit(_)) {
+                // This catalog has no entry. It is not route-absence custody;
+                // callers must select the current route through its own owner.
+                return Ok(None);
+            }
+            return Err(part::reject(
+                crate::publication::data::AuthoredRetirementRefusal::ExtraCoupledOwner,
+                source,
+            ));
+        };
         if let RelationalDeclaredCoupledOwner::Surviving(previous) = &owner {
             execution
                 .run_native_with_checkpoint(|context| {
@@ -133,7 +199,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
                 .map_err(custody::execution_stop)?
                 .0?;
         }
-        Ok(owner)
+        Ok(Some(owner))
     }
 
     pub fn pin_source(
@@ -141,17 +207,29 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         execution: &ExecutionRequest<'_, '_>,
     ) -> Result<RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>, TransactionCommitError>
     {
-        RelationalPinnedRead::capture_applied(
+        execution
+            .run_native_with_checkpoint(|context| {
+                checkpoint(context, 1).map_err(custody::execution_stop)
+            })
+            .map_err(custody::execution_stop)?
+            .0?;
+        if let Some(read) = self.read.borrow().as_ref() {
+            return Ok(read.clone());
+        }
+        let read = RelationalPinnedRead::capture_applied(
             execution,
             self.runtime,
             &self.binding.owners.before,
             self.identity,
-            self.parts.len() as u64,
+            self.applied_parts() as u64,
             self.mutation.state(),
             self.mutation.candidate_symbols(),
             &self.mutation.outcome.effect.publication.changed_records,
             self.aggregate_read(execution)?,
-        )
+            None,
+        )?;
+        self.read.replace(Some(read.clone()));
+        Ok(read)
     }
 }
 
@@ -182,7 +260,7 @@ impl BranchBoundRelationalTransaction {
         {
             return Err(part::reject(
                 crate::publication::data::AuthoredRetirementRefusal::ForeignCoupledOwner,
-                owners.anchor,
+                owners.source.subject(),
             ));
         }
         self.authored_coupling = Some(Arc::new(BoundAuthoredCoupling {

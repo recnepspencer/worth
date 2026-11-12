@@ -213,7 +213,8 @@ impl OperationHandler<DocumentRetentionSchema, RetentionAssessmentBinding>
             &document,
             DocumentRetentionField::at("DocumentRetentionField"),
         ) {
-            // A zero-day source is lawful to save but has no assessable retention period.
+            // Zero is valid source data for deferred correction, but synchronous
+            // required edits must refuse atomically when it cannot be assessed.
             Ok(Some(0)) if input.retention_days == 0 => {
                 return HandlerResult::DomainDenied(RetentionAssessmentDenial::NoRetentionPeriod);
             }

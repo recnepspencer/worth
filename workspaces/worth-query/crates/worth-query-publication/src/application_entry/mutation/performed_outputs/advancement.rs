@@ -221,6 +221,7 @@ where
                         source.receipt(),
                     );
                 }
+                let original_root = self.root.as_ref().and_then(|demand| demand.original_root_result());
                 self.complete = true;
                 self.source_preparation = None;
                 // A read-origin tree keeps its actual interests through explicit
@@ -233,11 +234,16 @@ where
                     .root_settlement
                     .take()
                     .expect("output progression retains its root settlement");
+                let current_root = root;
+                let root = original_root.unwrap_or_else(||
+                    crate::application_entry::WorthQueryApplicationOutputDemandSettlement::new(
+                        current_root.retain_settlement(), current_root.observed_source().clone(),
+                    ));
                 let program_work = super::super::program_output_work::WorthQueryApplicationProgramWork::from_settlements(
                     work,
                     (
-                        root.application_commit_receipt(),
-                        root.readiness_delivery(),
+                        current_root.application_commit_receipt(),
+                        current_root.readiness_delivery(),
                     ),
                     outputs.iter().map(|output| (output.receipt(), output.readiness_delivery())),
                 );
@@ -245,6 +251,7 @@ where
                     WorthQueryApplicationProgramOutputSettlement {
                         performed_source,
                         root,
+                        current_root,
                         outputs,
                         work: program_work,
                         dependencies,

@@ -214,6 +214,7 @@ impl WorthQueryApplicationOutputLineage {
             .as_ref()
             .map_or_else(|| observed_source_facts.clone(), |output| output.facts());
         let mut recorded = RecordedOutput {
+            original_ready_key: None,
             coupled_completion: None,
             producing_implementation,
             required_publication: None,

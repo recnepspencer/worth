@@ -13,6 +13,8 @@ pub use access::{
 mod authority;
 #[cfg(test)]
 pub(crate) use authority::at_next_charges;
+pub(crate) use authority::AppliedFieldImage;
+
 pub(crate) use authority::{
     persistent_map_path_bytes, row_copy_bounds, PreparedCandidateIndexPublication,
     PreparedForkIndexSelection,

@@ -173,11 +173,12 @@ impl<
     }
 
     /// Exact managed-run cleanup custody retained independently of business evidence.
-    pub fn managed_cleanup_failure(
+    pub fn managed_cleanup_failures(
         &self,
-    ) -> Option<&worth_query_execution::facade::primary_graph::WorthQueryMutationCleanupFailure>
-    {
-        self.cleanup.managed_failure()
+    ) -> impl ExactSizeIterator<
+        Item = &worth_query_execution::facade::primary_graph::WorthQueryMutationCleanupFailure,
+    > {
+        self.cleanup.managed_failures()
     }
     /// Exact completed native no-effect evidence retained for a fresh admitted attempt.
     pub fn native_retry_outcome(&self) -> Option<&NativeOutcome<S, I>> {

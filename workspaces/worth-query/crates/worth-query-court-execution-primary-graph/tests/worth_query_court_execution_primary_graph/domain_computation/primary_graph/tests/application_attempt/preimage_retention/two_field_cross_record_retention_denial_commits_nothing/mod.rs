@@ -134,6 +134,9 @@ fn two_field_cross_record_retention_denial_commits_nothing() {
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     );
 
+    // The two-field inverse demands `AccountStatus` and `AccountLabel`; they
+    // are mutated on two different records, so the demanded loci have no
+    // unique common mutated record (Q8.26-C7).
     assert_retention_denied(
         &outcome,
         WorthQueryPreImageRetentionDenial::AmbiguousDemandedField,
@@ -142,4 +145,5 @@ fn two_field_cross_record_retention_denial_commits_nothing() {
         .application
         .with_host_advancement(|phase| assert_eq!(relational_head(&phase, &world), before))
         .expect("the fixture read owns its installed host call");
+    next_valid_commit_publishes(&world, &before);
 }

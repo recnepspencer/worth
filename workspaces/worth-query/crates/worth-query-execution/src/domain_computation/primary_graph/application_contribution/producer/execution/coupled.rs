@@ -4,25 +4,25 @@ use crate::domain_computation::primary_graph::application_attempt::{
     inspect_coupled_application, register_coupled_application, InspectedCoupledWriter,
 };
 use worth_relational::facade::{
-    mvcc::{RelationalAuthoredCoupledCandidate, RequiredOutputPublication},
+    mvcc::{RelationalAuthoredCoupledCandidate, RelationalCoupledProducerPosture},
     runtime::{RelationalAppliedCandidateReadIdentity, RelationalPinnedRead},
     transactions::WorkerIntentBatch,
 };
 
-pub(in crate::domain_computation::primary_graph::application_contribution::producer) struct PreparedCoupledWriter<
+pub(in crate::domain_computation::primary_graph::application_contribution) struct PreparedCoupledWriter<
     'run,
 > {
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer) writer:
+    pub(in crate::domain_computation::primary_graph::application_contribution) writer:
         InspectedCoupledWriter<'run>,
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer) publication:
-        RequiredOutputPublication,
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer) batch:
+    pub(in crate::domain_computation::primary_graph::application_contribution) publication:
+        RelationalCoupledProducerPosture,
+    pub(in crate::domain_computation::primary_graph::application_contribution) batch:
         WorkerIntentBatch,
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer) content:
+    pub(in crate::domain_computation::primary_graph::application_contribution) content:
         worth_relational::facade::content::RelationalContentAttachments,
 }
 
-pub(in crate::domain_computation::primary_graph::application_contribution::producer) trait InstalledCoupledProducerExecutor<
+pub(in crate::domain_computation::primary_graph::application_contribution) trait InstalledCoupledProducerExecutor<
     Schema,
 >
 {
@@ -64,7 +64,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
         before_pin: &RelationalPinnedRead,
         demand: &crate::domain_computation::primary_graph::application_attempt::coupled_outputs::DeclaredCoupledOutputDemand,
         candidate: &RelationalAuthoredCoupledCandidate<'_>,
-    ) -> Result<Option<ErasedAppliedProducerSource>, CoupledSourceReadStop>;
+    ) -> Result<CoupledSourceRead, CoupledSourceReadStop>;
 
     fn prepare_coupled_writer<'run>(
         &self,
@@ -103,7 +103,7 @@ where
         >,
         crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome,
     > {
-        writer.prepare::<Schema, Binding>(execution, phase, runtime)
+        writer.prepare::<Schema, Binding::Operation>(execution, phase, runtime)
     }
     fn complete_coupled_writer(
         &self,
@@ -113,7 +113,7 @@ where
         writer: crate::domain_computation::primary_graph::application_attempt::CommitPreparedCoupledWriter<'_>,
         unpublished: Option<&crate::domain_computation::WorthQueryProductUnpublishedApplication>,
     ) -> crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome {
-        writer.complete::<Schema, Binding>(execution, phase, runtime, unpublished)
+        writer.complete::<Schema, Binding::Operation>(execution, phase, runtime, unpublished)
     }
     fn authorize_coupled_writer(
         &self,
@@ -123,7 +123,7 @@ where
         coordination: &crate::domain_computation::primary_graph::provider::WorthQueryApplicationBranchCommitCoordination<'_>,
     ) -> Result<(), crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial>
     {
-        writer.authorize::<Schema, Binding>(execution, runtime, coordination)
+        writer.authorize::<Schema, Binding::Operation>(execution, runtime, coordination)
     }
     fn read_coupled_source(
         &self,
@@ -135,7 +135,7 @@ where
         before_pin: &RelationalPinnedRead,
         demand: &crate::domain_computation::primary_graph::application_attempt::coupled_outputs::DeclaredCoupledOutputDemand,
         candidate: &RelationalAuthoredCoupledCandidate<'_>,
-    ) -> Result<Option<ErasedAppliedProducerSource>, CoupledSourceReadStop> {
+    ) -> Result<CoupledSourceRead, CoupledSourceReadStop> {
         coupled_source::read::<Schema, Binding>(
             self, execution, runtime, principal, request, before, before_pin, demand, candidate,
         )
@@ -173,14 +173,13 @@ where
             before_pin,
             candidate,
             source,
-            &predecessor,
+            predecessor.as_ref(),
             edition,
         )?;
-        let registered =
-            register_coupled_application::<Schema, Binding>(&execution, phase, runtime, prepared)
-                .map_err(|outcome| {
-                coupled_preparation::preparation_denial(Binding::IDENTITY, outcome)
-            })?;
+        let registered = register_coupled_application::<Schema, Binding::Operation>(
+            &execution, phase, runtime, prepared,
+        )
+        .map_err(|outcome| coupled_preparation::preparation_denial(Binding::IDENTITY, outcome))?;
         let (writer, publication, batch, content) = inspect_coupled_application::<Schema, Binding>(
             &execution,
             phase,

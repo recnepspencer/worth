@@ -249,6 +249,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     &admission,
                     before,
                     candidate,
+                    source_query,
                     projection,
                     allocation_control.policy(),
                 )

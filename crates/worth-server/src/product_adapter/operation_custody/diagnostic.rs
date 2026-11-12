@@ -143,6 +143,13 @@ pub(super) fn cleanup(cause: &WorthQueryOperationCloseDenial) -> WorthServerSour
         HistoryGroup(_) => "history_group",
         OutputRead(_) => "output_read",
         FreshRequestMismatch => "fresh_request_mismatch",
+        DeferredFixedCompletionUnsupported { issue } => {
+            return WorthServerSourceDiagnostic {
+                category: WorthServerSourceDiagnosticCategory::Cleanup,
+                code: "deferred_fixed_completion_unsupported".into(),
+                members: vec![(*issue).into()],
+            };
+        }
         ManagedCleanup(_) => "managed_cleanup",
         CleanupCapacity => "cleanup_capacity",
         NativeObligationRetained => "native_obligation_retained",

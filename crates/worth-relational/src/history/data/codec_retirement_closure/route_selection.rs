@@ -6,9 +6,7 @@ use crate::{
     mvcc::RequiredOutputPublicationMeaning,
     runtime::RelationalRuntime,
 };
-use worth_execution::{
-    ExecutionRequest, ExecutionResourceLease, ExecutionWorkCeiling, MapKernelContext,
-};
+use worth_execution::{ExecutionRequest, ExecutionResourceLease, MapKernelContext};
 
 pub(crate) fn readmit_required_output_route(
     execution: &ExecutionRequest<'_, '_>,
@@ -17,29 +15,28 @@ pub(crate) fn readmit_required_output_route(
     meaning: &RequiredOutputPublicationMeaning,
 ) -> Result<Option<RequiredOutputRoutePosition>, Stop> {
     let runtime = &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest::new(runtime, execution);
-    let result = execution.in_scope(|lease| {
-        ExecutionWorkCeiling::new(execution.work_ceiling()).run_with_checkpoint(
-            lease,
-            None,
-            |context| {
-                if basis.descriptor().runtime_instance_id() != runtime.runtime.runtime_instance_id()
-                    || !basis.is_current()
-                {
-                    return Err(
-                        "cold route selection requires the exact current native basis".into(),
-                    );
-                }
-                select_at(
-                    runtime,
-                    basis.inner.root.commit_id(),
-                    meaning,
-                    context,
-                    lease,
-                    basis.inner.root.schema_authority(),
-                )
-            },
-        )
-    });
+    let result =
+        execution.in_scope(|lease| {
+            worth_execution::ExecutionWorkCeiling::new(execution.work_ceiling())
+                .run_with_checkpoint(lease, None, |context| {
+                    if basis.descriptor().runtime_instance_id()
+                        != runtime.runtime.runtime_instance_id()
+                        || !basis.is_current()
+                    {
+                        return Err(
+                            "cold route selection requires the exact current native basis".into(),
+                        );
+                    }
+                    select_at(
+                        runtime,
+                        basis.inner.root.commit_id(),
+                        meaning,
+                        context,
+                        lease,
+                        basis.inner.root.schema_authority(),
+                    )
+                })
+        });
     execution.consult().map_err(request)?;
     result.map_err(request)?.map_err(request)?.0
 }

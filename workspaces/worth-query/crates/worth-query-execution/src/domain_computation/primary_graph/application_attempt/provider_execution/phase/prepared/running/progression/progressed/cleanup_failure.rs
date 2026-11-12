@@ -91,6 +91,7 @@ pub(super) fn cleanup_failed_outcome(outcome: Progression, receiver: &crate::dom
             | Kind::MutationBindingMismatch
             | Kind::MutationInputMismatch
             | Kind::OperationBodyExecutionRequired
+            | Kind::CoupledRefusalWithoutSubject
             | Kind::SignedCreationAuthentication { .. }
             | Kind::SignedEntityImmutable
             | Kind::SigningLifecycleForgery
@@ -106,6 +107,7 @@ pub(super) fn cleanup_failed_outcome(outcome: Progression, receiver: &crate::dom
             | Kind::MandatoryReviewProgramMismatch
             | Kind::DelegationActivationRequired
             | Kind::CapabilityRevocationRequired
+            | Kind::RequiredOutputPreparationMissing
             | Kind::ApplicationProgramRequired
             | Kind::WorkflowAuthorityRequired
             | Kind::ProgramNotActiveOnOccurrence { .. }
@@ -124,9 +126,10 @@ pub(super) fn cleanup_failed_outcome(outcome: Progression, receiver: &crate::dom
         Progression::TimedOut => cleanup_execution_indeterminate(Err(
             crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut,
         )),
-        Progression::Stale(_) | Progression::Aborted | Progression::Deferred(_) => {
-            cleanup_indeterminate()
-        }
+        Progression::OutputAdopted(_)
+        | Progression::Stale(_)
+        | Progression::Aborted
+        | Progression::Deferred(_) => cleanup_indeterminate(),
     };
     (evidence, None)
 }

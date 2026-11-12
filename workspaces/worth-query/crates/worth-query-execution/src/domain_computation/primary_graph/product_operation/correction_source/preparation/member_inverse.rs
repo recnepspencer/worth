@@ -105,7 +105,7 @@ impl WorthQueryPreparedCorrectionSource {
         inverses._memory = execution
             .allocation_policy()
             .reserve_memory(bytes)
-            .map_err(Denial::allocation_denied)?;
+            .map_err(|cause| Denial::allocation_denied(cause, "member inverse preparation"))?;
         let failed = |_| base("member preimage projection allocation failed");
         inverses
             .members

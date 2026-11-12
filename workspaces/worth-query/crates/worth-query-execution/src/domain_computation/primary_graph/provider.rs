@@ -1,6 +1,7 @@
 pub(crate) mod aftermath_causality;
 mod authored_retirement_selection;
-mod native_publication_roles;
+pub(in crate::domain_computation::primary_graph) mod native_publication_roles;
+pub(in crate::domain_computation::primary_graph) mod publication_posture;
 pub(crate) mod relational_execution_denial;
 pub use aftermath_causality::WorthQueryAftermathCausalityReadDenial;
 pub(in crate::domain_computation::primary_graph) use aftermath_causality::{
@@ -13,7 +14,8 @@ pub(in crate::domain_computation::primary_graph::provider) use application_attem
 pub(in crate::domain_computation::primary_graph) use application_attempt_state::RebaseVerificationFailure;
 pub(in crate::domain_computation) use application_attempt_state::RegisteredPrimaryRead;
 pub(in crate::domain_computation::primary_graph) use application_attempt_state::{
-    CoupledApplicationMember, CoupledProducerPreparation,
+    CandidateReadSupport, CoupledApplicationMember, CoupledApplicationMemberKind,
+    CoupledAttemptPreparation, CoupledProducerPreparation,
 };
 pub use application_attempt_state::{
     FactlessCurrentness, OwnEffectOnReads, RebaseVerificationReason,
@@ -46,6 +48,7 @@ mod home_retirement;
 pub(crate) use home_retirement::PrimaryProviderCustody;
 mod correction_material;
 pub(crate) mod idempotency;
+pub(in crate::domain_computation::primary_graph) use idempotency::ReceiptAppendix;
 mod original_meaning_support;
 mod original_publication;
 pub use idempotency::{
@@ -66,6 +69,7 @@ pub(in crate::domain_computation) use inbound_terminal_index::WorthQueryInboundT
 mod coupled_members;
 mod installation;
 mod invariant_execution;
+pub(in crate::domain_computation::primary_graph) use invariant_execution::ClosedCoupledInvariantReceipts;
 pub(in crate::domain_computation::primary_graph) use invariant_execution::CoupledProducerAssembly;
 pub(crate) mod invariant_execution_failure;
 mod managed_application_recovery;
@@ -209,16 +213,20 @@ impl WorthQueryPrimaryGraphProvider {
         mutation_partition: worth_relational::facade::identity::PartitionId,
         product: &worth_runtime_world::facade::ProductBranchObservation,
         has_output_settlement: bool,
-    ) -> worth_relational::facade::transactions::WorkerIntentBatch {
-        batch.push(idempotency::idempotency_create_intent(
+    ) -> (
+        worth_relational::facade::transactions::WorkerIntentBatch,
+        idempotency::ReceiptAppendix,
+    ) {
+        idempotency::bind_receipt(
+            batch,
             self.graph.layout.provider_idempotency(),
             idempotency,
             outcome_identity,
             emitted_effect_count,
             mutation_partition,
-            Some(product),
+            product,
             has_output_settlement,
-        ))
+        )
     }
 
     pub(in crate::domain_computation::primary_graph) fn bind_application_aftermath_causality_intent(

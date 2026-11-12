@@ -18,6 +18,7 @@ where
     ///         action_bindings: &[],
     ///         output_source_bindings: &[],
     ///         root_graph_types: &[],
+    ///         connection_order: todo!(),
     ///         action_inventory: todo!(),
     ///     };
     /// }
@@ -65,6 +66,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             action_bindings: &record.action_bindings,
             output_source_bindings: &record.output_source_bindings,
             root_graph_types: &record.root_graph_types,
+            connection_order: record.installed.connection_order(),
             action_inventory: record.installed.action_inventory(),
         })
     }
@@ -99,5 +101,15 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProgramOwner<'_, Schema> {
     > {
         self.action_inventory
             .resolve_declared_action::<Schema, Binding>(declared)
+    }
+}
+
+impl<Schema> WorthQuerySelectedProgramOwner<'_, Schema> {
+    /// Scheduling meaning of the program selected at C, including rostered revisions.
+    pub fn connection_order(
+        &self,
+    ) -> &worth_query_declaration::facade::application_program::ApplicationProgramConnectionOrder
+    {
+        self.connection_order
     }
 }

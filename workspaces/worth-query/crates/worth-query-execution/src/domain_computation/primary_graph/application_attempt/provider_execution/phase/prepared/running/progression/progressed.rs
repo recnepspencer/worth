@@ -94,7 +94,8 @@ const fn terminal_for(
     outcome: &WorthQueryProviderProgressionOutcome,
 ) -> WorthQueryManagedRunTerminalKind {
     match outcome {
-        WorthQueryProviderProgressionOutcome::Committed(_)
+        WorthQueryProviderProgressionOutcome::OutputAdopted(_)
+        | WorthQueryProviderProgressionOutcome::Committed(_)
         | WorthQueryProviderProgressionOutcome::RecoveredCommitted(_)
         | WorthQueryProviderProgressionOutcome::Stale(_)
         | WorthQueryProviderProgressionOutcome::ProductStale(_)

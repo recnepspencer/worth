@@ -71,6 +71,7 @@ fn project_in_scope<'p>(
     consult_stage(request, CommitStage::Validation)
         .map_err(|stop| collection::execution(stop.into()))?;
     work.mutation_targets_materialized = backing.touches.len() + backing.structs.len();
+    super::work_observation::record(work.validated_intents_examined);
     Ok(ValidatedMutationTouches {
         backing: Arc::new(backing),
         work,

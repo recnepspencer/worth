@@ -15,6 +15,8 @@ use crate::domain_computation::primary_graph::SourceInvalidationOwner;
 mod consumer_identity;
 mod consumption;
 mod decision_input;
+mod full_verification;
+mod own_evidence;
 
 mod recovery;
 
@@ -40,7 +42,7 @@ pub struct CurrentAcceptedOutput<'basis> {
     _snapshot: &'basis SnapshotHandle,
     _selected: &'basis PositionedRelationalSnapshot,
     facts: super::super::ComparableSourceFacts,
-    _actor: VerifiedCurrentCleanup,
+    _currentness: full_verification::CurrentAcceptedBacking<'basis>,
 }
 
 /// A checked relation between the pinned exact completion and the selected
@@ -128,47 +130,6 @@ impl AcceptedCurrentCandidate {
         )
     }
 
-    fn own_evidence_is_current(
-        &self,
-        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
-        runtime: &RelationalRuntime,
-        snapshot: &SnapshotHandle,
-    ) -> Result<bool, ConsumedOutputVerificationStop> {
-        // An old dependency set cannot constrain a consumer whose own native
-        // evidence has changed. Missing evidence cannot reject the old edges.
-        // This only requests disclosure, never Current.
-
-        let facts = self
-            .selected
-            .recorded()
-            .observed_source_facts()
-            .and_then(|facts| facts.for_comparison());
-        let (Some(facts), Some(witness)) = (facts, self.selected.native_output_witness()) else {
-            return Ok(true);
-        };
-        let count = self
-            .selected
-            .completed_handler_fact_count()
-            .unwrap_or(facts.len());
-        let Some(handler_facts) = facts.checked_slice(0..count) else {
-            return Ok(true);
-        };
-        // Handler evidence decides whether the old edges still apply. Source
-        // query stamps are a suffix whose meaning is checked by input equality.
-        match ConsumedOutputEvidence::own_evidence_is_current(
-            request_execution,
-            &handler_facts,
-            &self.selected.recorded().consumed_outputs,
-            witness,
-            runtime,
-            snapshot,
-        ) {
-            Ok(false) => Ok(false),
-            Ok(true) | Err(ConsumedOutputVerificationStop::Unavailable) => Ok(true),
-            Err(stop) => Err(stop),
-        }
-    }
-
     /// A complete actor posting set makes Clean a zero-fact-check proof. The
     /// recorded row and exact accepted cell remain pinned throughout the edit.
     pub(in crate::domain_computation::primary_graph) fn certify_current<'basis>(
@@ -198,6 +159,11 @@ impl AcceptedCurrentCandidate {
             return Ok(CurrentAcceptedResult::NeedsDisclosure);
         };
         let computation = qualified.computation();
+        if let Some(verified) = self.certify_executed_full_current(
+            execution, owner, runtime, product, snapshot, selected, &qualified,
+        )? {
+            return Ok(CurrentAcceptedResult::Current(verified));
+        }
         if self.selected.native_output_witness().is_none() {
             return Ok(CurrentAcceptedResult::NeedsDisclosure);
         }
@@ -332,7 +298,7 @@ impl AcceptedCurrentCandidate {
                 _snapshot: snapshot,
                 _selected: selected,
                 facts,
-                _actor: cleanup,
+                _currentness: cleanup.into(),
             })),
             Err(stopped) => {
                 let reason = stopped.reason();

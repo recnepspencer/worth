@@ -12,7 +12,8 @@ pub(super) fn validate<Schema, Entity>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     identity: &WorthQueryApplicationEntityIdentity<Schema, Entity>,
 ) -> Result<(), WorthQueryEntityResolutionDenial> {
-    if identity.runtime_authority() != truth.installed.runtime_authority
+    if identity.applied_qualification().is_some()
+        || identity.runtime_authority() != truth.installed.runtime_authority
         || identity.binding_identity() != &truth.installed.binding_identity
     {
         return Err(denial(

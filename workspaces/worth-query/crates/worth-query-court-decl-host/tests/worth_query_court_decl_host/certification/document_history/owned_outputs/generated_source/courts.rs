@@ -16,7 +16,36 @@ fn $exercise(worker: bool) {
     let document = host.with_host_advancement(|phase| document
         .with_output_trees::<program::$program::Program, program::$program::Root>(
             &phase, &request, &host, first::Demand("a".into()), WorthQueryOutputDemandControls::default())
+        .unwrap_or_else(|(_, cause)| panic!("{cause:?}"))
+        .with_output_tree::<program::$program::Program, program::SeedRoot>(
+            &phase, &request, &host, first::Demand("a".into()), WorthQueryOutputDemandControls::default())
         .unwrap_or_else(|(_, cause)| panic!("{cause:?}"))).unwrap();
+    // Give the later protected recording a genuine grant at its pre-edit C.
+    // Keep `before` at the original empty-output step, which navigation selects.
+    let document=if $protected {
+    let mut seed=document.edit(member_edit::Intent{key:"m".into(),value:6})
+        .idempotency_owned(&request,"generated-source-seed".into()).unwrap()
+        .retain_in_program::<program::$program::Program,program::SeedAction>(&host)
+        .unwrap_or_else(|(_,cause)|panic!("seed retention: {cause:?}"));
+    for count in 0..128 {
+        assert!(count<127,"seed did not finish");
+        seed=match seed.advance(&request) {
+            WorthQueryHistoryEditAdvance::Progress(next)=>next,
+            WorthQueryHistoryEditAdvance::Ready(next)=>{seed=next;break;},
+            WorthQueryHistoryEditAdvance::Refused{denial,..}=>panic!("seed: {denial:?}"),
+        };
+    }
+    let seeded=seed.finish(&request).unwrap_or_else(|(_,cause)|panic!("seed finish: {cause:?}"));
+    assert!(matches!(&seeded.outcome,WorthQueryFixedHistoryEditOutcome::Recorded{..}),"the grant seed is a genuine recorded edit");
+    let document=seeded.document;
+    drop(seeded.outcome);
+    let seed_selection=document.selection(&request).unwrap();
+    let seeded_request=host.request(&principal,&scope).on_branch(seed_selection.physical_endpoint().product_branch());
+    assert_eq!(seeded_request.query(query::first_discovery::Read("first:a".into())).execute().unwrap().rows()[0].value,30,"C already grants the old generation before the protected edit");
+
+    document
+    } else { document };
+
     let mut edit = document.edit(edit::Intent { key: "a".into(), value: 5 })
         .idempotency_owned(&request, "generated-source-edit".into()).unwrap()
         .retain_in_program::<program::$program::Program, program::$program::Action>(&host)

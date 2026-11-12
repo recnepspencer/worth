@@ -90,6 +90,9 @@ pub enum WorthQueryApplicationRealizedEffect {
 /// application runtime's `compare_and_commit_application` with an idempotency
 /// binding. Building it changed nothing.
 pub struct WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope> {
+    pub(in crate::domain_computation::primary_graph) producer_round_limits: (std::num::NonZeroUsize, std::num::NonZeroUsize),
+    pub(in crate::domain_computation::primary_graph) authored_stages: Vec<crate::domain_computation::primary_graph::application_contribution::authored_edit::CapturedAuthoredEditStage<Schema>>,
+    pub(in crate::domain_computation::primary_graph) synchronous_outputs: Vec<crate::domain_computation::primary_graph::application_contribution::producer::synchronous_outputs::CapturedSynchronousOutputs>,
     pub(in crate::domain_computation::primary_graph::application_attempt) read_set:
         WorthQueryCompleteApplicationReadSet<
             Schema,
@@ -232,6 +235,23 @@ impl<Schema, Operation, Input, Scope>
 }
 
 mod court_doors_for_test;
+
+// Capturing synchronous work must preserve the ordinary program's Send contract.
+const _: fn() = || {
+    fn send<T: Send>() {}
+    send::<WorthQueryApplicationEffectProgram<(), (), u8, ()>>();
+};
+
+impl<S, O, I, C> WorthQueryApplicationEffectProgram<S, O, I, C> {
+    pub fn with_authored_edit_stages(
+        mut self,
+        _access: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
+        stages: Vec<crate::domain_computation::primary_graph::application_contribution::authored_edit::CapturedAuthoredEditStage<S>>,
+    ) -> Self {
+        self.authored_stages = stages;
+        self
+    }
+}
 #[cfg(test)]
 #[path = "model_inline_type_budget.rs"]
 pub(crate) mod inline_type_budget;

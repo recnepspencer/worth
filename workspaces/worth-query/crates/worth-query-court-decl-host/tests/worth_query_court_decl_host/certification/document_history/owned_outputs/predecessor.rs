@@ -1,6 +1,7 @@
 //! Public production predecessor reads: the producer grant is not its READ grant.
 use super::*;
 use std::cell::RefCell;
+pub(super) mod content;
 worth_query_ability!(pub ReadInputs scoped_to Model, in Schema);
 worth_query_policy!(pub InputReadPolicy in Schema);
 worth_query_operation!(pub ReadOldInputs for Schema, input query::ParametersBinding; access {
@@ -17,6 +18,7 @@ worth_query_operation!(pub UndeclaredRead for Schema, input query::ParametersBin
 pub const CONTRACT: WorthQueryPredecessorReadContract<Schema> =
     WorthQueryPredecessorReadContract::new(&[
         WorthQueryPredecessorReadOperation::new(ReadOldInputs::reference()),
+        WorthQueryPredecessorReadOperation::new(content::ReadContentInputs::reference()),
         WorthQueryPredecessorReadOperation::new(ReadWrongScope::reference()),
     ]);
 pub fn declare(
@@ -32,7 +34,7 @@ pub fn declare(
         .unwrap()
         .reverse(ModelMember::reference())
         .allow(Model::reference());
-    inspection::declare(schema)
+    content::declare(inspection::declare(synchronous::declare(schema)))
         .declared_operation::<UndeclaredRead>(
             UndeclaredRead::reference()
                 .definition()
@@ -70,6 +72,9 @@ pub fn declare(
 type ReadResult = Result<Option<u64>, WorthQueryPredecessorReadDenial>;
 #[derive(Default)]
 struct Probe {
+    content_mode: Option<bool>,
+    content_values: Vec<Option<Vec<u8>>>,
+    content_denied: bool,
     wrong_scope: bool,
     undeclared: bool,
     foreign: bool,
@@ -94,7 +99,9 @@ pub fn observe<B: ApplicationMutationBinding<Schema>>(
     let wrong = PROBE.with(|probe| probe.borrow().wrong_scope);
     let undeclared = PROBE.with(|probe| probe.borrow().undeclared);
     let mut read = || {
-        if undeclared {
+        if let Some(granted) = PROBE.with(|probe| probe.borrow().content_mode) {
+            content::observe(reader, source, granted)
+        } else if undeclared {
             reader.predecessor_observation(UndeclaredRead::reference(), |old| {
                 let entity = old.entity(Model::reference(), source).unwrap();
                 let value = old.field(&entity, ModelValue::at("ModelValue")).unwrap();
@@ -128,7 +135,9 @@ pub fn observe<B: ApplicationMutationBinding<Schema>>(
 mod control;
 mod courts;
 pub(super) mod inspection;
+mod origin_kind;
 pub(super) mod program;
+pub(super) mod synchronous;
 type Host = WorthQueryProgramApplicationRuntime<Schema, program::Program>;
 fn install(worker: bool) -> Host {
     let limits = if worker {

@@ -154,6 +154,9 @@ pub use state::{
 
 pub use state::RelationalSymbolTableForTest;
 pub(crate) use state::TryPartitionMutationDenied;
+
+mod cold_symbol_placement;
+pub use cold_symbol_placement::RelationalColdSymbolPlacementForTest;
 #[cfg(test)]
 #[path = "mod_inline_type_budget.rs"]
 pub(crate) mod inline_type_budget;

@@ -18,6 +18,23 @@ pub(super) fn read(
     scope: &WorthQueryRequestScope,
     observation: &WorthQueryApplicationReadObservation,
 ) -> (WorthQueryApplicationQueryObservation, Option<u64>) {
+    let retained = application
+        .with_host_advancement(|phase| {
+            observation
+                .select_on(&phase, application.runtime())
+                .unwrap()
+                .retain_application_read()
+        })
+        .unwrap();
+    read_core(application, external, scope, &retained)
+}
+
+pub(super) fn read_core(
+    application: &host::OutputHost,
+    external: &WorthQueryAuthenticatedExternalPrincipal<NumericSchema>,
+    scope: &WorthQueryRequestScope,
+    observation: &worth_query_execution::facade::primary_graph::WorthQueryApplicationReadObservation,
+) -> (WorthQueryApplicationQueryObservation, Option<u64>) {
     application
         .with_host_advancement(|phase| {
             let runtime = application.runtime();
@@ -63,7 +80,9 @@ pub(super) fn read(
                     scope,
                 )
                 .unwrap();
-            let retained = observation.select_on(&phase, runtime).unwrap();
+            let retained = runtime
+                .select_application_read_observation(&phase, observation)
+                .unwrap();
             let plan = selected
                 .admit_retained_governed_application_query(
                     &phase,

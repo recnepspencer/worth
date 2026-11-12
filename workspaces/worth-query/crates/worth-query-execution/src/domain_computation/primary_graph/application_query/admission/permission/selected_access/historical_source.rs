@@ -41,6 +41,7 @@ impl<'a, S: ApplicationSchema, P, I, E> SelectedIssuedAccessRoot<'a, S, P, I, E>
                 root: truth.product().relational_basis(),
                 snapshot: truth.application_basis().snapshot_handle(),
             }),
+            applied_source: None,
             historical_source: Some(history),
         })
     }
@@ -54,6 +55,9 @@ impl<'a, S: ApplicationSchema, P, I, E> SelectedIssuedAccessRoot<'a, S, P, I, E>
         native: &mut ApplicationQueryNativeAccess<'_>,
         subject: &str,
     ) -> Result<(), WorthQueryApplicationQueryAdmissionDenial> {
+        if self.applied_source.is_some() {
+            return self.require_applied_source_after_authorization(runtime, execution, subject);
+        }
         let Some(history) = self.historical_source else {
             return Ok(());
         };

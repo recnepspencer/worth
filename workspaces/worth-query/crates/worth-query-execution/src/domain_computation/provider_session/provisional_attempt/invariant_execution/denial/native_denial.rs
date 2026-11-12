@@ -14,6 +14,11 @@ use worth_relational::facade::mvcc::{
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(super) enum NativeDenial {
+    PublicationReadmission(Box<worth_relational::facade::mvcc::TransactionCommitError>),
+    PublicationCellRegistration(
+        worth_relational::facade::mvcc::PublicationCompanionRegistrationStop,
+    ),
+    PublicationCompanion(worth_relational::facade::mvcc::CompanionPreflightStop),
     Staging(RelationalTransactionStagingDenial),
     Content(worth_relational::facade::content::RelationalContentDenial),
     AuthoredRetirement(Box<worth_relational::facade::publication::PublicationError>),
@@ -24,7 +29,10 @@ pub(super) enum NativeDenial {
 impl NativeDenial {
     pub(super) fn allocation(&self) -> Option<&ExecutionAllocationDenial> {
         match self {
-            Self::AuthoredRetirement(_) => None,
+            Self::AuthoredRetirement(_)
+            | Self::PublicationCompanion(_)
+            | Self::PublicationReadmission(_)
+            | Self::PublicationCellRegistration(_) => None,
             Self::Staging(denial) => denial.allocation_denial(),
             Self::Allocation(denial) => Some(denial),
             Self::RelationLaw(_) | Self::ManagedSource(_) | Self::Content(_) => None,

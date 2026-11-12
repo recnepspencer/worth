@@ -8,7 +8,8 @@ where
     S: ApplicationSchema + 'static,
     I: ApplicationMutationIntent<S>,
     P: ApplicationProgramDefinition<S>,
-    R: ApplicationOutputGraphShape<S> + ApplicationDiscoveredOutputRoot,
+    R: ApplicationOutputGraphShape<S> + ApplicationDiscoveredOutputRoot
+        + worth_query_execution::publication_boundary::synchronous_outputs::SynchronousDiscoveredOutputRoot<S>,
     Connection<S, R>: WorthQueryApplicationDiscoveredOutputConnection<S, Source = I::Binding>,
     A: ApplicationAction<S, I::Binding>,
     ActionDelivery<S, I, A>: ApplicationDiscoveredActionDelivery<S, I::Binding, Root = R>,

@@ -12,6 +12,12 @@ impl CanonicalCommitEnvelopeBody {
     ) -> Result<(), Stop> {
         let charge = super::super::super::codec_retirement_closure::charge;
         charge(context, event.participants.len() + 1)?;
+        // An envelope records its prefix and at least one later stage; fewer
+        // is an Edit, so a shorter list is a corrupt header, refused first.
+        if matches!(&event.sources, CanonicalCoupledAuthoredSources::Stages(sources) if sources.len() < 2)
+        {
+            return Err("coupled authored stage list is shorter than two".into());
+        }
         if self.required_output_origin.is_some()
             || self.authored_cascade_retirement.is_some()
             || self.authored_cascade_restoration.is_some()
@@ -21,6 +27,8 @@ impl CanonicalCommitEnvelopeBody {
             return Err("mixed or empty coupled authored publication".into());
         }
         match &event.sources {
+            CanonicalCoupledAuthoredSources::Edit(_) => {}
+            CanonicalCoupledAuthoredSources::Stages(_) => {}
             CanonicalCoupledAuthoredSources::Retirement(source) => {
                 self.validate_authored_retirement_components(source, true, context)?;
             }
@@ -30,13 +38,27 @@ impl CanonicalCommitEnvelopeBody {
         }
         for part in &event.participants {
             self.validate_output_origin_header(&part.origin)?;
-            if !part.origin.source_scope_owned
-                || !matches!(
-                    part.origin.publication,
-                    CanonicalOutputPublication::Preserve { .. }
-                )
+            let producing = matches!(
+                part.origin.publication,
+                CanonicalOutputPublication::Preserve { .. }
+            ) || (matches!(
+                event.sources,
+                CanonicalCoupledAuthoredSources::Edit(_)
+                    | CanonicalCoupledAuthoredSources::Stages(_)
+            ) && matches!(
+                part.origin.publication,
+                CanonicalOutputPublication::Birth
+                    | CanonicalOutputPublication::BirthAfterCodecRetirement { .. }
+            ));
+            if (!part.origin.source_scope_owned
+                && !matches!(
+                    event.sources,
+                    CanonicalCoupledAuthoredSources::Edit(_)
+                        | CanonicalCoupledAuthoredSources::Stages(_)
+                ))
+                || !producing
             {
-                return Err("coupled participant is not an opted-in successor Preserve".into());
+                return Err("coupled participant is not an opted-in producing origin".into());
             }
             self.validate_producer_retirement_components(
                 Some(&part.origin),
@@ -80,3 +102,5 @@ impl CanonicalCommitEnvelopeBody {
         Ok(())
     }
 }
+
+mod court_door;

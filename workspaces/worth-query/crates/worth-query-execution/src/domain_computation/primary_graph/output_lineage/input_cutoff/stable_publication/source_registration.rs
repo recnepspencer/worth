@@ -9,36 +9,68 @@ use crate::domain_computation::primary_graph::output_lineage::invalidation::Sour
 use crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity;
 
 impl<'lane, 'selected> PreparedStableLineagePublication<'lane, 'selected> {
-    /// Prepares the current native source image for the already sealed alias.
-    /// This shares the ordinary publication's consumed-output collection and
-    /// creates no separate source or settlement authority.
     pub(in crate::domain_computation::primary_graph) fn prepare_current_registration(
         &self,
         owner: &SourceInvalidationOwner,
         work_membership: Option<Arc<crate::domain_computation::primary_graph::application_output_demand::RequiredWorkMembership>>,
     ) -> Result<PreparedCurrentSettlementRegistration<'selected>, SettlementRegistrationStop> {
-        let selected = self.address.verified.selected;
+        self.prepare_registration(owner, work_membership, None)
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn prepare_executed_registration(
+        &self,
+        owner: &SourceInvalidationOwner,
+        adoption: &worth_relational::facade::mvcc::RelationalCurrentOutputAdoption,
+        work_membership: Option<Arc<crate::domain_computation::primary_graph::application_output_demand::RequiredWorkMembership>>,
+    ) -> Result<PreparedCurrentSettlementRegistration<'selected>, SettlementRegistrationStop> {
+        self.prepare_registration(owner, work_membership, Some(adoption))
+    }
+
+    /// Both postures retain the same consumed facts and output availability.
+    /// Only actual Native execution can establish a row without an old mark.
+    fn prepare_registration(
+        &self,
+        owner: &SourceInvalidationOwner,
+        work_membership: Option<Arc<crate::domain_computation::primary_graph::application_output_demand::RequiredWorkMembership>>,
+        adoption: Option<&worth_relational::facade::mvcc::RelationalCurrentOutputAdoption>,
+    ) -> Result<PreparedCurrentSettlementRegistration<'selected>, SettlementRegistrationStop> {
+        let selected = self.address.selected;
 
         let upstream = collect_consumed_output_upstream(self.consumed_outputs())?;
         // The selected candidate may itself be an alias. This sealed relation
         // names that exact predecessor, never just the performed origin.
         let equality = StableEqualityConsequence {
             partition: Some(self.address.partition),
-            predecessor: Arc::clone(self.address.verified.candidate.settlement_identity()),
+            predecessor: Arc::clone(self.address.candidate.settlement_identity()),
             successor: Arc::clone(&self.address.identity),
             selected,
         };
-        owner.prepare_current_stable_settlement(SettlementRegistration {
-                computation: None,
+        let registration = SettlementRegistration {
+                computation: self.recorded.completed_handler_facts.as_ref().and_then(|_| {
+                    let row = self.recorded.mutable.lock()
+                        .unwrap_or_else(std::sync::PoisonError::into_inner);
+                    matches!(row.computation,
+                        super::super::super::retained_computation::RecordedComputation::Retained(_))
+                        .then(super::super::super::invalidation::ComputationRegistration::retained)
+                }),
                 work_membership,
                 identity: Arc::clone(&self.address.identity),
-                facts: crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts::retain(self.address.verified.candidate.recorded().computation_source, self.facts.clone()),
+                facts: crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts::retain(self.recorded.computation_source, self.facts.clone()),
                 output_facts: None,
                 read_basis: selected.clone(),
                 stale_at_read_basis: im::OrdSet::new(),
                 requirement: None,
                 upstream,
-            }, selected, equality)
+            };
+        match adoption {
+            Some(adoption) => owner.prepare_current_executed_settlement(
+                registration,
+                selected,
+                equality,
+                adoption,
+            ),
+            None => owner.prepare_current_stable_settlement(registration, selected, equality),
+        }
     }
 }
 

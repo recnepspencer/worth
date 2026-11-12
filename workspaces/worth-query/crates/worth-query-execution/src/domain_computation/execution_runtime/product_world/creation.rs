@@ -96,6 +96,13 @@ impl WorthQueryProductRuntime {
             ),
         }
         .map_err(WorthQueryProductBranchCreationDenial::World)?;
+        if matches!(
+            &outcome,
+            RuntimeWorldBranchCreationOutcome::Performed(_)
+                | RuntimeWorldBranchCreationOutcome::ProductUnpublished(_)
+        ) {
+            super::published_effect::record();
+        }
         Ok(match outcome {
             RuntimeWorldBranchCreationOutcome::NoEffect(actual) => {
                 WorthQueryProductBranchCreationOutcome::NoEffect(

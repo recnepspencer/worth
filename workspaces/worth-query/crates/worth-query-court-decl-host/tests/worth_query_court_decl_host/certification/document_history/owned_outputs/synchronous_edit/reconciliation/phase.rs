@@ -1,0 +1,157 @@
+//! Two ordinary installed producer postures for the reconciliation fixture.
+macro_rules! reconciliation_phase {
+    ($module:ident, $ownership:ident, $source_query:ident, $operation:ident, $preserve:expr, $posture:ident, $action:ty, $writer:ident, $identity:literal,
+     $entity:ident, $facts:ident, $key:ident, $value:ident, $of:ident) => {
+        pub mod $module {
+            use super::*;
+            #[derive(Clone, serde::Serialize)] pub struct Input(pub query::Row);
+            worth_query_structured_value_binding!(pub InputBinding for Input { identity: $identity });
+            worth_query_operation!(pub $operation for Schema, input InputBinding; access {
+                read_entities: [Cap, Model, Member, FirstOutput, SecondOutput, ChildOutput];
+                read_fields: [CapKey::at("CapKey"), CapValue::at("CapValue"), MemberValue::at("MemberValue"), ModelKey::at("ModelKey"), ModelValue::at("ModelValue"), FirstKey::at("FirstKey"), FirstValue::at("FirstValue"), ChildKey::at("ChildKey"), ChildValue::at("ChildValue"), SecondKey::at("SecondKey"), SecondValue::at("SecondValue")];
+                read_relations: [CapNext, ModelMember, FirstOf, ChildOfFirst, SecondOf, ReconciledSourceOf];
+                writes: [FirstKey::at("FirstKey"), FirstValue::at("FirstValue"), ChildKey::at("ChildKey"), ChildValue::at("ChildValue"), SecondKey::at("SecondKey"), SecondValue::at("SecondValue")];
+                creates: [FirstOutput, SecondOutput, ChildOutput]; links: [FirstOf, ChildOfFirst, SecondOf, ReconciledSourceOf];
+                deletes: [FirstOutput, SecondOutput, ChildOutput]; unlinks: [FirstOf, ChildOfFirst, SecondOf, ReconciledSourceOf];
+            });
+            worth_query_operation_emits!($operation => [emission::Changed]);
+            pub type Operation = $operation;
+            pub struct Outputs;
+            pub struct Output;
+            impl WorthQueryApplicationOutputRole for Output {
+                type Schema = Schema; type Contract = Outputs; type Entity = $entity; type Action = $action;
+                type Cardinality = WorthQueryExactlyOneOutput; const NAME: &'static str = "derived";
+            }
+            impl ApplicationMutationOutputContract<Schema> for Outputs {
+                const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] = &[<Output as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR];
+                const ROLE_FAMILIES: &'static [ApplicationMutationOutputRoleFamilyDescriptor] = &[
+                    <Rows<Outputs, FirstOutput> as WorthQueryApplicationDeclaredOutputRoleFamily>::DESCRIPTOR,
+                    <Rows<Outputs, ChildOutput> as WorthQueryApplicationDeclaredOutputRoleFamily>::DESCRIPTOR,
+                    <Rows<Outputs, SecondOutput> as WorthQueryApplicationDeclaredOutputRoleFamily>::DESCRIPTOR,
+                ];
+            }
+            pub struct Decision { source: WorthQueryInvariantMutationTarget<Schema, SourceEntity>, output: Option<(WorthQueryInvariantMutationTarget<Schema, $entity>, u64)>, prepared: observation::Prepared }
+            pub struct Binding;
+            impl ApplicationMutationBinding<Schema> for Binding {
+                type Input = Input; type InputBinding = InputBinding; type Result = (); type ResultBinding = ResultBinding;
+                type IdempotencyKey = u64; type Operation = Operation; type Decision = Decision;
+                type Denial = Denial; type DenialBinding = DenialBinding; type Output = Outputs; type ScopeBinding = Scope;
+                type PrincipalBinding = Actor; type Mapping = Mapping; type Principal = Principal;
+                type PrincipalIdentity = u64; type PrincipalIdentityBinding = U64ApplicationValueBinding;
+                type SourceExpectation = ApplicationQueryMutationSource<query::$source_query::Query>;
+                const IDENTITY: &'static str = $identity; const HANDLER_IDENTITY: &'static str = $identity; const IDEMPOTENCY_IDENTITY: &'static str = $identity;
+                fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements { ApplicationWorkflowExecutionRequirements::not_applicable() }
+                fn scope_field() -> SourceKey { source_key() }
+                fn principal_binding() -> ApplicationPrincipalBindingRef<Schema, Actor, Mapping, Principal, u64, U64ApplicationValueBinding> { Actor::reference() }
+            }
+            impl ApplicationMutationIntent<Schema> for Input {
+                type Binding = Binding;
+                fn input(&self) -> &Self { self }
+                fn scope_binding(&self) -> Scope { Scope::new(source_key(), self.0.key.clone()) }
+            }
+            pub struct Producer;
+            pub struct Provider;
+            impl WorthQueryApplicationProducerBinding<Schema> for Producer {
+                type Operation = Binding; type OutputFamily = Family; type Provider = Provider; type OutputRole = Output;
+                const IDENTITY: &'static str = $identity;
+                const APPLICABILITY: &'static [WorthQueryProducerApplicability] = &[WorthQueryProducerApplicability::new(PROFILE, WorthQueryProducerLifecyclePosture::$posture)];
+                const REQUIRED_INVARIANTS: &'static [WorthQueryProducerInvariantRequirement] = &[];
+                const OWNERSHIP: ProducerPublicationOwnership = ProducerPublicationOwnership::$ownership;
+                const PREDECESSOR_READS: Option<WorthQueryPredecessorReadContract<Schema>> = None;
+                const REUSE_POLICY: &'static str = "exact-source";
+            }
+            impl WorthQueryApplicationProducerProvider<Schema, Producer> for Provider {
+                type DenialValue = WorthQueryUndeclaredProducerDenial;
+                const SEMANTIC_IDENTITY: &'static str = $identity;
+                fn operation_input(&self, row: &query::Row) -> Input { Input(row.clone()) }
+                fn idempotency_key(&self, _: &query::Row, identity: &[u8; 32]) -> u64 { u64::from_le_bytes(identity[..8].try_into().unwrap()) }
+                fn domain_denial_reason(&self, denial: &Denial) -> Option<&'static str> { Some(match denial {
+                    Denial::InitialHasPriorOutput => "InitialHasPriorOutput", Denial::PreserveMissingOutput => "PreserveMissingOutput", Denial::DerivedValueOutOfRange => "DerivedValueOutOfRange",
+                }) }
+            }
+            use worth_query_host::facade::domain;
+            #[derive(Clone, Copy, Debug, Eq, PartialEq)] pub struct ReadyDomain;
+            #[derive(Clone, Copy, Debug, Eq, PartialEq)] pub struct ReadyOperation;
+            #[derive(Clone, Copy, Debug, Eq, PartialEq)] pub struct ReadyFamily;
+            worth_query_host::facade::worth_query_conditional_node!(pub ReadyNode in ReadyDomain, ReadyOperation, ReadyFamily => operation $identity);
+            pub struct Readiness;
+            type Contract = WorthQueryOutputReadinessContract<ReadyDomain, ReadyOperation, ReadyFamily>;
+            fn readiness_contract(declaration: &ErasedApplicationSchemaDeclaration) -> Result<Contract, WorthQueryOutputReadinessContractDenial> {
+                WorthQueryOutputReadinessContractBuilder::for_field(declaration, $key::at(stringify!($key)),
+                    domain::WorthQueryDomainOperationIdentity::new($identity, 1), $identity,
+                    readiness_query(stringify!($entity), stringify!($facts), stringify!($key)),
+                    domain::WorthQueryOperationProjectionRole::new("derived").unwrap(),
+                    domain::WorthQueryExecutionStrategyName::new($identity).unwrap(), $identity)?
+                    .field_dependency(declaration, $key::at(stringify!($key)), WorthQueryReadinessFieldUse::DeliveryAndEligibility)?.build_typed()
+            }
+            fn conditional_binding(contract: &Contract) -> domain::WorthQueryApplicationConditionalOperationBinding<Schema, Operation, Input, ReadyDomain, ReadyOperation, ReadyFamily> {
+                domain::WorthQueryApplicationConditionalOperationBinding::declare(Operation::reference(), contract.definition().reference())
+            }
+            impl WorthQueryApplicationConditionalBinding<Schema> for Readiness {
+                type Configuration = (); type Installed = (); type Operation = Operation;
+                const IDENTITY: &'static str = $identity;
+                const REQUIRED_PRODUCERS: &'static [&'static str] = &[$identity];
+                fn package_contract(declaration: &ErasedApplicationSchemaDeclaration) -> Result<WorthQueryApplicationConditionalPackageContract, WorthQueryOutputReadinessContractDenial> {
+                    let contract = readiness_contract(declaration)?;
+                    let binding = conditional_binding(&contract);
+                    Ok(contract.into_package_contract(binding.portable().clone()))
+                }
+                fn install(_: (), _: &WorthQueryApplicationConditionalProducerAccess<'_, Schema>, installation: &mut WorthQueryConditionalApplicationRuntimeInstallation<Schema>) -> Result<(), WorthQueryConditionalRuntimeInstallationDenial> {
+                    let contract = readiness_contract(Schema::declaration().unwrap().erased()).unwrap();
+                    let binding = conditional_binding(&contract);
+                    let operation = installation.installed_schema().installed_operation(Operation::reference()).unwrap();
+                    let node = installation.installed_packages().bind_conditional_application_operation(operation, &binding).unwrap().bind_node(ReadyNode::reference()).unwrap();
+                    let ordinal = contract.delivery_ordinal(installation.installed_schema(), node.declaration(), $key::at(stringify!($key))).unwrap();
+                    installation.bind_output_readiness::<Producer, _, _, _, _, _, _>(node, ordinal)
+                }
+            }
+            pub struct Handler { pub derive: fn(u64) -> u64, pub peer_caps: bool, pub emission: bool }
+            impl OperationHandler<Schema, Binding> for Handler {
+                fn decide(&self, input: &Input, reader: &mut DecisionReader<'_, '_, '_, Schema, Binding>) -> HandlerResult<Decision, Denial> {
+                    let result = (|| {
+                        let source = reader.resolve_entity(source_key(), input.0.key.clone())?;
+                        reader.field(&source, source_value())?;
+                        let prepared = observation::capture(reader, &source, input.0.value, self.peer_caps)?;
+                        let prior = if $preserve { Some(reader.prior_output_preserved_or_created::<preserve::Binding, preserve::Output, initial::Binding, initial::Output>()?) }
+                            else { reader.resolve_optional_entity($key::at(stringify!($key)), output_key(&input.0))? };
+                        if !$preserve && prior.is_some() { return Ok(Err(Denial::InitialHasPriorOutput)); }
+                        if $preserve && prior.is_none() { return Ok(Err(Denial::PreserveMissingOutput)); }
+                        let output = match prior {
+                            Some(prior) => { let old = reader.field(&prior, $value::at(stringify!($value)))?.expect("required root value"); Some((reader.mutation_target(&prior)?, old)) }
+                            None => None,
+                        };
+                        Ok(Ok(Decision { source: reader.mutation_target(&source)?, output, prepared }))
+                    })();
+                    match result { Ok(Ok(decision)) => HandlerResult::Completed(decision), Ok(Err(denial)) => HandlerResult::DomainDenied(denial), Err(error) => HandlerResult::ExecutionDenied(error) }
+                }
+                fn build_candidate(&self, input: &Input, decision: Decision, writer: &mut CandidateWriter<'_, Schema, Binding>) -> HandlerResult<(), Denial> {
+                    let value = (self.derive)(decision.prepared.count);
+                    if value == u64::MAX { return HandlerResult::DomainDenied(Denial::DerivedValueOutOfRange); }
+                    let result = (|| {
+                        let source = writer.projected_entity(&decision.source)?;
+
+                        let output = match &decision.output {
+                            Some((prior, old)) => { let output = writer.projected_entity(prior)?; if *old != value { writer.write_field(&output, $value::at(stringify!($value)), value)?; } output }
+                            None => {
+                                let key = output_key(&input.0);
+                                let output = writer.create_entity_in_context(&source, $entity::reference(), WorthQueryApplicationEntityKey::new(key.clone()).unwrap())?;
+                                writer.initialize_field(&output, $key::at(stringify!($key)), key.clone())?;
+                                writer.initialize_field(&output, $value::at(stringify!($value)), value)?;
+                                writer.link($of::reference(), format!("of:{key}"), &output, &source)?;
+                                output
+                            }
+                        };
+                        writer.$writer::<Output>(&output)?;
+                        publication::publish(writer, &source, &output, decision.prepared)?;
+                        if self.emission { writer.emit(emission::Changed::reference(), input.0.clone())?; }
+                        Ok::<_, WorthQueryApplicationAttemptDenial>(())
+                    })();
+                    match result { Ok(()) => HandlerResult::Completed(()), Err(error) => HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error)) }
+                }
+            }
+            pub fn declare(schema: ApplicationSchemaDeclarationBuilder<Schema>) -> ApplicationSchemaDeclarationBuilder<Schema> {
+                schema.declared_operation::<Operation>(Operation::reference().definition().no_external_effect().no_aftermath().finish()).application_mutation_binding::<Binding>().operation_emit(Operation::reference(), emission::Changed::reference())
+            }
+        }
+    };
+}

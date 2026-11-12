@@ -16,6 +16,8 @@ impl ApplicationProgramDefinition<Schema> for Program {
         vec![ApplicationFeatureSpec::root::<Schema, Feature>()
             .native_action::<SpawnBinding>()
             .finish_action()
+            .native_action::<retarget::Binding>()
+            .finish_action()
             .native_action::<DespawnBinding>()
             .finish_action()
             .finish()]
@@ -28,6 +30,7 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
         setup: &mut WorthQueryApplicationContributionSetup<'_, Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
         setup.handler::<SpawnBinding, _>(handlers::Handler)?;
+        setup.handler::<retarget::Binding, _>(retarget::Handler)?;
         setup.handler::<DespawnBinding, _>(handlers::Handler)
     }
 }
@@ -65,5 +68,11 @@ pub(super) fn seed(
         )
         .field(Id::at("Id"), SCOPE),
     )?;
+    graph.bind_relation(WorthQueryApplicationRelationSeed::new(
+        Unrelated::reference(),
+        "unchanged-unrelated",
+        WorthQueryApplicationEntityKey::new("scope").unwrap(),
+        WorthQueryApplicationEntityKey::new("scope").unwrap(),
+    ))?;
     Ok(())
 }

@@ -61,7 +61,7 @@ fn denied(cause: ExecutionRequestArrayDenial) -> Denial {
             }
         }
         ExecutionRequestArrayDenial::Allocation(cause) => {
-            let failure = crate::domain_computation::WorthQueryProviderSessionFailure::allocation_denied(cause);
+            let failure = crate::domain_computation::WorthQueryProviderSessionFailure::allocation_denied(cause, "application publication storage");
             Denial::new(Kind::ExecutionDenied { kind: failure.kind() }, failure.detail())
         }
     }

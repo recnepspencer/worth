@@ -2,7 +2,7 @@
 use super::*;
 use crate::{
     history::data::{RequiredOutputPublicationPositions, RequiredOutputRoutePosition},
-    mvcc::{RelationalAuthoredRetirement, RelationalCoupledAuthoredPublication},
+    mvcc::RelationalCoupledAuthoredPublication,
     storage::overlay::WorkingState,
     transactions::data::{CommitCreatedEntityBindings, CommitCreatedRelationBindings, RecordRef},
 };
@@ -13,6 +13,10 @@ use worth_execution::{ExecutionResourceLease, MapKernelContext};
 pub(crate) enum CanonicalCoupledAuthoredSources {
     Retirement(Arc<CanonicalAuthoredRetirement>),
     Restoration(Arc<CanonicalAuthoredRestoration>),
+    Edit(crate::identity::data::EntityId),
+    /// An edit envelope: the authored prefix's source, then each later
+    /// authored stage's source, in apply order. Edit semantics otherwise.
+    Stages(Vec<crate::identity::data::EntityId>),
 }
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub(crate) struct CanonicalCoupledParticipant {
@@ -23,6 +27,8 @@ pub(crate) struct CanonicalCoupledParticipant {
 pub(crate) struct CanonicalCoupledAuthoredPublication {
     pub(crate) sources: CanonicalCoupledAuthoredSources,
     pub(crate) participants: Vec<CanonicalCoupledParticipant>,
+    #[serde(skip)]
+    pub(crate) live_inputs: crate::history::data::LivePublicationInputs,
     #[serde(skip)]
     pub(crate) _decoded_memory: Option<Arc<worth_execution::ExecutionMemoryReservation>>,
 }
@@ -38,9 +44,11 @@ impl CanonicalCoupledAuthoredPublication {
     pub(crate) fn output_origins(
         &self,
     ) -> impl Iterator<Item = &Arc<CanonicalRequiredOutputOrigin>> {
-        let sources = match &self.sources {
+        let sources: &[Arc<CanonicalRequiredOutputOrigin>] = match &self.sources {
             CanonicalCoupledAuthoredSources::Retirement(event) => &event.publications,
             CanonicalCoupledAuthoredSources::Restoration(event) => &event.publications,
+            CanonicalCoupledAuthoredSources::Edit(_)
+            | CanonicalCoupledAuthoredSources::Stages(_) => &[],
         };
         sources
             .iter()
@@ -59,7 +67,9 @@ impl CanonicalCommitEnvelopeBody {
         self.authored_cascade_retirement.as_ref().or_else(|| {
             match &self.coupled_authored_publication.as_ref()?.sources {
                 CanonicalCoupledAuthoredSources::Retirement(event) => Some(event),
-                CanonicalCoupledAuthoredSources::Restoration(_) => None,
+                CanonicalCoupledAuthoredSources::Restoration(_)
+                | CanonicalCoupledAuthoredSources::Edit(_)
+                | CanonicalCoupledAuthoredSources::Stages(_) => None,
             }
         })
     }
@@ -67,7 +77,9 @@ impl CanonicalCommitEnvelopeBody {
         self.authored_cascade_restoration.as_ref().or_else(|| {
             match &self.coupled_authored_publication.as_ref()?.sources {
                 CanonicalCoupledAuthoredSources::Restoration(event) => Some(event),
-                CanonicalCoupledAuthoredSources::Retirement(_) => None,
+                CanonicalCoupledAuthoredSources::Retirement(_)
+                | CanonicalCoupledAuthoredSources::Edit(_)
+                | CanonicalCoupledAuthoredSources::Stages(_) => None,
             }
         })
     }
@@ -88,37 +100,29 @@ pub(super) fn install(
     validated_history: &mut OutputOriginHistory,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<RequiredOutputPublicationPositions, TransactionCommitError> {
-    if group.parts.is_empty() {
-        // All declared roots were already members of the admitted retirement
-        // closure. Use its existing canonical event, with unchanged bytes.
-        let custody = &group.binding.owners;
-        return if let Some(admission) = &group.binding.retirement_admission {
-            super::authored_cascade::install(
-                envelope,
-                execution,
-                runtime,
-                basis,
-                created,
-                created_relations,
-                state,
-                installed,
-                admission,
-                RelationalAuthoredRetirement {
-                    roles: custody.roles.clone(),
-                    anchor: custody.anchor,
-                    owned_members: false,
-                    birth: custody.birth,
-                    co_anchors: custody.co_anchors.clone(),
-                    before: custody.before.clone(),
-                    publications: custody.retirements.clone(),
-                },
-                lease,
-                validated_history,
-                context,
-            )
-        } else {
-            Ok(basis.inner.root.output_publication_positions.clone())
-        };
+    crate::execution::request_stage::checkpoint(context, group.parts.len() as u64)
+        .map_err(origin_request)?;
+    if group
+        .parts
+        .iter()
+        .all(|part| part.publication.owned().is_none())
+    {
+        // With no owned participants, retain the existing authored source event.
+        // An ordinary Edit emits no coupled event or publication origin.
+        return super::coupled_source::install_empty(
+            envelope,
+            execution,
+            runtime,
+            basis,
+            created,
+            created_relations,
+            state,
+            installed,
+            &group,
+            lease,
+            validated_history,
+            context,
+        );
     }
     let full = std::mem::take(&mut envelope.patch.authoritative_record_patches);
     let answer: Result<RequiredOutputPublicationPositions, TransactionCommitError> = (|| {
@@ -130,74 +134,28 @@ pub(super) fn install(
             basis.inner.root.schema_authority().registry(),
             context,
         )?;
-        let custody = &group.binding.owners;
-        let sources = if let Some(restoration) = &custody.restoration {
-            super::authored_restoration::install(
-                envelope,
-                runtime,
-                basis,
-                created,
-                created_relations,
-                state,
-                installed.clone(),
-                group.binding.retirement_admission.as_deref(),
-                restoration,
-                lease,
-                validated_history,
-                context,
-            )?;
-            CanonicalCoupledAuthoredSources::Restoration(
-                envelope
-                    .authored_cascade_restoration
-                    .take()
-                    .expect("Native installed authored source restoration"),
-            )
-        } else {
-            if let Some(admission) = &group.binding.retirement_admission {
-                super::authored_cascade::install(
-                    envelope,
-                    execution,
-                    runtime,
-                    basis,
-                    created,
-                    created_relations,
-                    state,
-                    installed.clone(),
-                    admission,
-                    RelationalAuthoredRetirement {
-                        roles: custody.roles.clone(),
-                        anchor: custody.anchor,
-                        owned_members: false,
-                        birth: custody.birth,
-                        co_anchors: custody.co_anchors.clone(),
-                        before: custody.before.clone(),
-                        publications: custody.retirements.clone(),
-                    },
-                    lease,
-                    validated_history,
-                    context,
-                )?;
-            } else {
-                require_authored_sources(envelope, custody, context)?;
-                envelope.authored_cascade_retirement =
-                    Some(Arc::new(CanonicalAuthoredRetirement {
-                        _decoded_memory: None,
-                        anchor: custody.anchor,
-                        owned_members: false,
-                        birth: custody.birth,
-                        co_anchors: custody.co_anchors.clone(),
-                        publications: Vec::new(),
-                    }));
-            }
-            CanonicalCoupledAuthoredSources::Retirement(
-                envelope
-                    .authored_cascade_retirement
-                    .take()
-                    .expect("Native installed authored source retirement"),
-            )
-        };
+        let sources = super::coupled_source::install(
+            envelope,
+            execution,
+            runtime,
+            basis,
+            created,
+            created_relations,
+            state,
+            installed.clone(),
+            &group,
+            lease,
+            validated_history,
+            context,
+        )?;
         let mut participants = Vec::with_capacity(group.parts.len());
+        let mut live_inputs = crate::history::data::LivePublicationInputs::default();
         for part in group.parts {
+            let crate::mvcc::RelationalCoupledProducerPosture::Publication(publication) =
+                part.publication
+            else {
+                continue;
+            };
             restrict(
                 envelope,
                 &full,
@@ -215,18 +173,21 @@ pub(super) fn install(
                 state,
                 crate::mvcc::RequiredOutputPublicationAdmission {
                     installed: installed.clone(),
-                    publication: part.publication,
+                    publication,
                 },
                 Some(&part.records),
+                Some(&part.input),
                 lease,
                 validated_history,
                 context,
             )?;
+            let origin = envelope
+                .required_output_origin
+                .take()
+                .expect("Native installed coupled successor");
+            live_inputs.insert(Arc::clone(&origin), part.input);
             participants.push(CanonicalCoupledParticipant {
-                origin: envelope
-                    .required_output_origin
-                    .take()
-                    .expect("Native installed coupled successor"),
+                origin,
                 retirement: envelope.producer_cascade_retirement.take(),
             });
         }
@@ -234,6 +195,7 @@ pub(super) fn install(
             _decoded_memory: None,
             sources,
             participants,
+            live_inputs,
         };
         let mut positions = basis.inner.root.output_publication_positions.clone();
         for origin in event.output_origins() {
@@ -312,49 +274,7 @@ fn restrict(
     Ok(())
 }
 
-fn require_authored_sources(
-    envelope: &CanonicalCommitEnvelopeBody,
-    custody: &crate::mvcc::RelationalAuthoredCoupledOwners,
-    context: &mut MapKernelContext<'_, '_>,
-) -> Result<(), TransactionCommitError> {
-    use crate::publication::{
-        data::{AuthoredRetirementRefusal as Cause, PublicationError},
-        patch::data::RecordStructuralChange as Change,
-    };
-    let anchors = std::iter::once(custody.anchor)
-        .chain(custody.co_anchors.iter().map(|(id, _)| *id))
-        .collect::<Vec<_>>();
-    for id in &anchors {
-        context
-            .checkpoint(envelope.patch.authoritative_record_patches.len() as u64 + 1)
-            .map_err(origin_request)?;
-        if !envelope
-            .patch
-            .authoritative_record_patches
-            .iter()
-            .any(|p| p.target == RecordRef::Entity(*id) && p.structural_change == Change::Deleted)
-        {
-            return Err(TransactionCommitError::publication(
-                PublicationError::authored_retirement(Cause::MissingMember, RecordRef::Entity(*id)),
-            ));
-        }
-    }
-    for patch in &envelope.patch.authoritative_record_patches {
-        context
-            .checkpoint(anchors.len() as u64 + 1)
-            .map_err(origin_request)?;
-        if let RecordRef::Entity(id) = patch.target
-            && patch.structural_change == Change::Deleted
-            && !anchors.contains(&id)
-        {
-            return Err(TransactionCommitError::publication(
-                PublicationError::authored_retirement(Cause::ExtraEntity, RecordRef::Entity(id)),
-            ));
-        }
-    }
-    Ok(())
-}
-
+// Live input pins and decode backing are transient custody, not publication meaning.
 impl PartialEq for CanonicalCoupledAuthoredPublication {
     fn eq(&self, other: &Self) -> bool {
         self.sources == other.sources && self.participants == other.participants

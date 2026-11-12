@@ -11,8 +11,8 @@ use worth_relational::facade::{
     branch::AdmittedRelationalBranchBasis,
     identity::EntityId,
     mvcc::{
-        RelationalRequiredOutputPublication, RequiredOutputProducingImplementation,
-        RequiredOutputPublicationMeaning,
+        RelationalPredecessorInput, RelationalRequiredOutputPublication,
+        RequiredOutputProducingImplementation, RequiredOutputPublicationMeaning,
     },
     runtime::RelationalRuntime,
 };
@@ -74,15 +74,47 @@ impl ProducerPredecessorReadAccess {
         S: ApplicationSchema + 'static,
         B: WorthQueryApplicationProducerBinding<S>,
     {
+        let access = Self::for_route::<S, B>(
+            required.publication_family(),
+            required.key().source_epoch().checkpoint_identity().bytes(),
+            edition,
+        )?;
+        required.bind_predecessor_reads(Arc::clone(&access.state));
+        Some(access)
+    }
+    pub(in crate::domain_computation::primary_graph) fn prepare_coupled<S, B>(
+        handler: &mut crate::domain_computation::primary_graph::output_lineage::ProducerHandlerPreparation,
+        epoch: [u8; 32],
+        edition: InstalledProducerEdition,
+    ) -> Option<Self>
+    where
+        S: ApplicationSchema + 'static,
+        B: WorthQueryApplicationProducerBinding<S>,
+    {
+        let access = Self::for_route::<S, B>(
+            <B::OutputFamily as super::super::WorthQueryProducerOutputFamily<S>>::IDENTITY,
+            epoch,
+            edition,
+        )?;
+        handler.bind_predecessor_reads(Arc::clone(&access.state));
+        Some(access)
+    }
+    fn for_route<S, B>(
+        family: &'static str,
+        epoch: [u8; 32],
+        edition: InstalledProducerEdition,
+    ) -> Option<Self>
+    where
+        S: ApplicationSchema + 'static,
+        B: WorthQueryApplicationProducerBinding<S>,
+    {
         B::PREDECESSOR_READS?;
-        let state = Arc::new(ProducerPredecessorReadState::default());
-        required.bind_predecessor_reads(Arc::clone(&state));
         Some(Self {
-            state,
+            state: Arc::new(ProducerPredecessorReadState::default()),
             require: require::<S, B>,
             producer: B::IDENTITY,
-            family: required.publication_family(),
-            epoch: required.key().source_epoch().checkpoint_identity().bytes(),
+            family,
+            epoch,
             implementation: RequiredOutputProducingImplementation::new(
                 edition.build_identity(),
                 edition.digest(),
@@ -113,7 +145,7 @@ impl ProducerPredecessorReadAccess {
     ) -> Result<
         (
             RelationalRequiredOutputPublication,
-            AdmittedRelationalBranchBasis,
+            RelationalPredecessorInput,
         ),
         WorthQueryPredecessorReadDenial,
     > {
@@ -152,7 +184,7 @@ impl ProducerPredecessorReadAccess {
         let expected = worth_relational::facade::history::CommitId(
             prior.authority().publication_coordinate().0,
         );
-        let basis = native.predecessor_publication_basis(
+        let basis = native.predecessor_publication_input(
             execution,
             selected,
             Some(&prior),

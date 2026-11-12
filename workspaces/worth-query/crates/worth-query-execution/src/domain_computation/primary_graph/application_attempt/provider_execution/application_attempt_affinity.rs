@@ -35,6 +35,8 @@ struct WorthQueryApplicationAttemptCore {
     graph_work_managed_run: WorthQueryGraphWorkManagedRunIdentity,
     branch: BranchId,
     request: worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+    admitted_request:
+        crate::domain_computation::authorization::admitted_request::AdmittedRequestCurrentness,
     operation_scope: crate::domain_computation::authorization::WorthQueryOperationScopeBinding,
 }
 
@@ -159,6 +161,7 @@ impl WorthQueryApplicationAttemptBasis {
                 graph_work_managed_run: admission.graph_work_managed_run_identity(),
                 branch: admission.graph_work_branch().clone(),
                 request: admission.publication_request().clone(),
+                admitted_request: admission.retain_admitted_request(),
                 operation_scope: admission.operation_scope_binding().clone(),
             },
             product: product.retained_clone(),
@@ -273,6 +276,12 @@ impl WorthQueryApplicationAttemptAffinity {
         read: &super::super::CompletedOriginalRead,
     ) -> bool {
         self.owns_original_read(read) && read.belongs_to_graph_work(self.basis.graph_work_session)
+    }
+    pub(in crate::domain_computation::primary_graph) fn admitted_request(
+        &self,
+    ) -> &crate::domain_computation::authorization::admitted_request::AdmittedRequestCurrentness
+    {
+        &self.basis.admitted_request
     }
     pub(in crate::domain_computation::primary_graph) fn publication_request(
         &self,

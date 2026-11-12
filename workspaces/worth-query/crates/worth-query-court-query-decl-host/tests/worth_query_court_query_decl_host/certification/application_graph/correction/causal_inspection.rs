@@ -192,3 +192,13 @@ fn actual_conditional_history_loss_preserves_immutable_source_query_and_equivale
 fn history_omission_cannot_replace_diagnostic_admission_or_hide_request_cancellation() {
     super::model::causal_inspection::output_equivalence::history_omission_diagnostics_and_actual_private_cancellation_remain_distinct();
 }
+
+#[test]
+fn born_stale_coupled_scalar_retry_has_one_successor_then_current_delivery() {
+    super::model::scalar_input::continuation::retry_before_and_after_successor(false);
+}
+
+#[test]
+fn born_stale_coupled_scalar_retry_has_one_successor_worker_only() {
+    super::model::scalar_input::continuation::retry_before_and_after_successor(true);
+}

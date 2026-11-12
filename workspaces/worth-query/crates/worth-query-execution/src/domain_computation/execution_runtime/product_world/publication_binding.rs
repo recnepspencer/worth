@@ -37,8 +37,8 @@ impl WorthQueryProductPublicationBinding {
             adoption_preparation,
             observation,
             publication,
-            recovery,
             observation_port,
+            recovery,
             clock,
             root_identity,
         }
@@ -56,7 +56,7 @@ impl WorthQueryProductPublicationBinding {
         self.recovery.clone()
     }
 
-    pub(crate) fn observation_port(&self) -> &RuntimeWorldObservationPort {
+    pub(in crate::domain_computation) fn observation_port(&self) -> &RuntimeWorldObservationPort {
         &self.observation_port
     }
 

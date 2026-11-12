@@ -47,6 +47,7 @@ pub struct WorthQuerySelectedProgramOwner<'runtime, Schema> {
     action_bindings: &'runtime [TypeId],
     output_source_bindings: &'runtime [TypeId],
     root_graph_types: &'runtime [TypeId],
+    connection_order: &'runtime worth_query_declaration::facade::application_program::ApplicationProgramConnectionOrder,
     action_inventory:
         worth_query_installation::facade::WorthQueryInstalledActionInventory<'runtime>,
 }

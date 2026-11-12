@@ -126,6 +126,10 @@ impl WorthQueryRequiredOutputConnectionDenial {
     pub fn subject(&self) -> &str {
         &self.subject
     }
+    /// Actual owned diagnostic text, for retained-result accounting.
+    pub fn owned_allocation_capacity_bytes(&self) -> usize {
+        self.subject.capacity()
+    }
 }
 
 impl std::fmt::Display for WorthQueryRequiredOutputConnectionDenial {

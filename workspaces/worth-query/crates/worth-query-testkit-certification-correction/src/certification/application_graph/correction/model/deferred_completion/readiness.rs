@@ -1,0 +1,124 @@
+//! Typed readiness follows the actual declared arithmetic output field.
+use super::super::schema::*;
+use super::reciprocal::{Calculate, CalculateReciprocal, Producer};
+use worth_query_host::facade::{
+    application_contribution::*,
+    declaration::{
+        application_schema::*, authoring::*, binding::QueryBindingDescriptor,
+        canonicalization::canonicalize_request,
+    },
+    domain,
+};
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct ReadinessDomain;
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct ReadinessOperation;
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct ReadinessFamily;
+worth_query_host::facade::worth_query_conditional_node!(
+    pub ReadyNode in ReadinessDomain, ReadinessOperation, ReadinessFamily => operation "numeric-reciprocal-ready"
+);
+pub struct Readiness;
+pub type Contract =
+    WorthQueryOutputReadinessContract<ReadinessDomain, ReadinessOperation, ReadinessFamily>;
+pub type Binding = domain::WorthQueryApplicationConditionalOperationBinding<
+    NumericSchema,
+    CalculateReciprocal,
+    Calculate,
+    ReadinessDomain,
+    ReadinessOperation,
+    ReadinessFamily,
+>;
+pub fn binding(contract: &Contract) -> Binding {
+    Binding::declare(
+        CalculateReciprocal::reference(),
+        contract.definition().reference(),
+    )
+}
+pub fn contract(
+    declaration: &ErasedApplicationSchemaDeclaration,
+) -> Result<Contract, WorthQueryOutputReadinessContractDenial> {
+    WorthQueryOutputReadinessContractBuilder::for_field(
+        declaration,
+        Calculated::at("Calculated"),
+        domain::WorthQueryDomainOperationIdentity::new("numeric-reciprocal-readiness", 1),
+        "numeric-reciprocal-ready",
+        canonical_query(),
+        domain::WorthQueryOperationProjectionRole::new("reciprocal-number").unwrap(),
+        domain::WorthQueryExecutionStrategyName::new("numeric-reciprocal-readiness").unwrap(),
+        "numeric-reciprocal-readiness-v1",
+    )?
+    .field_dependency(
+        declaration,
+        Calculated::at("Calculated"),
+        WorthQueryReadinessFieldUse::DeliveryAndEligibility,
+    )?
+    .build_typed()
+}
+impl WorthQueryApplicationConditionalBinding<NumericSchema> for Readiness {
+    type Configuration = ();
+    type Installed = ();
+    type Operation = CalculateReciprocal;
+    const IDENTITY: &'static str = "numeric-correction.reciprocal-readiness.v1";
+    const REQUIRED_PRODUCERS: &'static [&'static str] =
+        &[<Producer as WorthQueryApplicationProducerBinding<NumericSchema>>::IDENTITY];
+    fn package_contract(
+        declaration: &ErasedApplicationSchemaDeclaration,
+    ) -> Result<
+        WorthQueryApplicationConditionalPackageContract,
+        WorthQueryOutputReadinessContractDenial,
+    > {
+        let contract = contract(declaration)?;
+        let binding = binding(&contract);
+        Ok(contract.into_package_contract(binding.portable().clone()))
+    }
+    fn install(
+        _: (),
+        _: &WorthQueryApplicationConditionalProducerAccess<'_, NumericSchema>,
+        installation: &mut worth_query_host::facade::primary_graph::WorthQueryConditionalApplicationRuntimeInstallation<NumericSchema>,
+    ) -> Result<
+        (),
+        worth_query_host::facade::primary_graph::WorthQueryConditionalRuntimeInstallationDenial,
+    > {
+        let contract = contract(installation.installed_schema().installed_declaration()).unwrap();
+        let operation = installation
+            .installed_schema()
+            .installed_operation(CalculateReciprocal::reference())
+            .unwrap();
+        let node = installation
+            .installed_packages()
+            .bind_conditional_application_operation(operation, &binding(&contract))
+            .unwrap()
+            .bind_node(ReadyNode::reference())
+            .unwrap();
+        let ordinal = contract
+            .delivery_ordinal(
+                installation.installed_schema(),
+                node.declaration(),
+                Calculated::at("Calculated"),
+            )
+            .unwrap();
+        installation.bind_output_readiness::<Producer, _, _, _, _, _, _>(node, ordinal)
+    }
+}
+pub fn canonical_query(
+) -> worth_query_host::facade::declaration::canonicalization::CanonicalQueryBundle {
+    let query = DetailQueryBuilder::new(RootEntityKey::new("Number").unwrap())
+        .project(AspectFieldSelector::new(crate::facade::certification::application_graph::correction::model::schema::NumberFacts::reference().name(), "Calculated").unwrap())
+        .build()
+        .unwrap()
+        .into_raw();
+    let shape = DetailResultShapeBuilder::new()
+        .field(
+            AuthoredResultShapeField::new(crate::facade::certification::application_graph::correction::model::schema::NumberFacts::reference().name(), "Calculated", "calculated_number")
+                .unwrap(),
+        )
+        .build()
+        .unwrap()
+        .into_raw();
+    canonicalize_request(
+        AuthoredQueryBundleRequest::for_ordinary_read(query, shape, QueryBindingDescriptor::new())
+            .unwrap(),
+    )
+    .unwrap()
+}

@@ -1,58 +1,20 @@
-use worth_foundational::facade::PortablePatchReadmissionPurpose;
-
 use crate::authority::mutation::outcomes::MutationOutcome;
-use crate::authority::mutation::stale_targets::ensure_entity_target_is_current;
 use crate::authority::mutation::MutationWorkspace;
-use crate::storage::overlay::CurrentPartitionAccess;
 use crate::transactions::data::{
     ApplyEntityAspectPatchIntent, CommitConflict, ConflictClass, EntityFieldUpdateMissingState,
-    RecordAspectPatchTarget,
 };
-
-use super::record_aspect_patch;
 
 pub(super) fn apply(
     intent: &ApplyEntityAspectPatchIntent,
     workspace: &mut MutationWorkspace<'_>,
 ) -> Result<MutationOutcome, crate::transactions::data::TransactionCommitError> {
     let slot = intent.entity_id.slot_index();
-    let (kind_id, old_state) = workspace.with_context(|context| {
-        ensure_entity_target_is_current(context.state, intent.entity_id)?;
-        let partition = context
-            .state
-            .get_current_partition(intent.entity_id.partition_id)
-            .ok_or_else(|| missing(intent, EntityFieldUpdateMissingState::Partition))?;
-        let slot_view = partition
-            .entity_arena()
-            .get_slot(slot)
-            .ok_or_else(|| missing(intent, EntityFieldUpdateMissingState::Slot))?;
-        let kind_id = slot_view
-            .kind_id()
-            .ok_or_else(|| missing(intent, EntityFieldUpdateMissingState::KindId))?;
-        Ok::<_, crate::transactions::data::TransactionCommitError>((
-            kind_id,
-            Some(slot_view.retained_extra()),
-        ))
-    })?;
-    let target = RecordAspectPatchTarget::Entity {
-        entity_id: intent.entity_id,
+    let super::entity_aspect_preparation::PreparedEntityAspectMutation {
         kind_id,
-    };
-    let patch = record_aspect_patch::readmit_original_portable(
-        &workspace.execution(),
-        &intent.aspect_patch,
-        PortablePatchReadmissionPurpose::RecordMutation,
-        workspace.entity_aspect_plan(kind_id),
-        target,
-    )?;
-    let mut new_state = record_aspect_patch::apply_entity(
-        &workspace.execution(),
-        old_state
-            .as_ref()
-            .and_then(|extra| extra.authoritative_aspect_state()),
-        &patch,
-        target,
-    )?;
+        authoritative_aspect_state: old_state,
+        new_authoritative_aspect_state: mut new_state,
+        patch,
+    } = workspace.prepare_entity_aspect_patch(intent)?;
     let version_id = workspace.version_id();
     workspace.with_context(|context| {
         context

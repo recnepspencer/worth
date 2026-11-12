@@ -1,3 +1,4 @@
+mod publication_appendix;
 use std::sync::Arc;
 
 mod authored_coupling;
@@ -6,6 +7,8 @@ mod candidate_admission;
 mod material;
 mod owned_members;
 mod receipt_closure;
+use candidate_admission::CandidateInvariantJudgment;
+pub(in crate::domain_computation::primary_graph) use receipt_closure::ClosedCoupledInvariantReceipts;
 mod relational_validation;
 mod validation_control;
 pub(in crate::domain_computation::primary_graph) use authored_coupling::CoupledProducerAssembly;
@@ -103,12 +106,19 @@ impl WorthQueryPrimaryGraphProvider {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         session: WorthQueryProviderSessionView<'_>,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+        allow_adoption: bool,
     ) -> Result<(), WorthQueryInvariantExecutionFailure> {
         if self.take_skipped_invariant_owner_execution() {
             return Err(owner_failure());
         }
         self.validate_owned_member_rosters(execution, session)?;
-        let material = self.invariant_candidate_material(session)?;
+        // This controls receipt omission, not write authority. History and
+        // coupled candidates retain the receipt because their commit owner
+        // does not have the ordinary executed-adoption posture.
+        let material = self.invariant_candidate_material(
+            session,
+            allow_adoption.then_some((execution, allocation_policy)),
+        )?;
         self.validate_and_retain_candidate(execution, session, material, None, allocation_policy)
     }
 
@@ -123,7 +133,7 @@ impl WorthQueryPrimaryGraphProvider {
             return Err(owner_failure());
         }
         self.validate_owned_member_rosters(execution, session)?;
-        let material = self.invariant_candidate_material(session)?;
+        let material = self.invariant_candidate_material(session, None)?;
         self.validate_and_retain_candidate(
             execution,
             session,
@@ -136,6 +146,10 @@ impl WorthQueryPrimaryGraphProvider {
     fn invariant_candidate_material(
         &self,
         session: WorthQueryProviderSessionView<'_>,
+        appendix_policy: Option<(
+            &worth_execution::ExecutionRequest<'_, '_>,
+            worth_execution::ExecutionAllocationPolicy<'_, '_>,
+        )>,
     ) -> Result<ApplicationInvariantCandidateMaterial, WorthQueryInvariantExecutionFailure> {
         let attempts = self
             .attempts
@@ -149,7 +163,11 @@ impl WorthQueryPrimaryGraphProvider {
                 "invariant execution lost proposed-effect closure",
             ));
         }
-        ApplicationInvariantCandidateMaterial::from_staged(&staged)
+        ApplicationInvariantCandidateMaterial::from_staged(
+            &staged,
+            &self.graph.layout,
+            appendix_policy,
+        )
     }
 
     fn semantic_invariant_material(
@@ -180,13 +198,22 @@ impl WorthQueryPrimaryGraphProvider {
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<(), WorthQueryInvariantExecutionFailure> {
         let mut material = self.prepare_authored_restoration(execution, material)?;
-        let native_assembly = assembly.map(|assembly| assembly as &dyn worth_relational::facade::mvcc::RelationalAuthoredCoupledProducerAssembly);
+
         let coupling =
-            self.native_authored_coupling(execution, session, &mut material, native_assembly)?;
+            self.native_authored_coupling(execution, session, &mut material, assembly)?;
         self.bind_independent_restoration(&mut material)?;
+        let appendix = if assembly.is_none()
+            && coupling.is_none()
+            && material.restoration_publication.is_none()
+        {
+            publication_appendix::select(self, execution, &mut material)?
+        } else {
+            None
+        };
         let (candidate, predicate) = self.validate_relational_candidate(
             execution,
             material.batch.clone(),
+            appendix,
             &material.content_attachments,
             &material.branch,
             &material.product,
@@ -197,7 +224,21 @@ impl WorthQueryPrimaryGraphProvider {
             coupling,
             allocation_policy,
         )?;
-        let work = self.admit_candidate_material(&candidate, &material, || {
+        let closed = if let Some(assembly) = assembly {
+            let mut requirements = material.requirements.clone();
+            requirements.extend(assembly.invariant_requirements(execution, self, &candidate)?);
+            Some(ClosedCoupledInvariantReceipts::admit(
+                &candidate,
+                &requirements,
+            )?)
+        } else {
+            None
+        };
+        let judgment = match closed.as_ref() {
+            Some(receipts) => CandidateInvariantJudgment::GroupOwner(receipts),
+            None => CandidateInvariantJudgment::Standalone(&candidate),
+        };
+        let work = self.admit_candidate_material(judgment, &material, || {
             super::application_touch_admission::admit_validated_application_touches(
                 execution,
                 &candidate,
@@ -211,7 +252,11 @@ impl WorthQueryPrimaryGraphProvider {
             )
         })?;
         if let Some(assembly) = assembly {
-            assembly.admit_validated(execution, self, &candidate)?;
+            assembly.admit_validated(
+                execution,
+                self,
+                closed.as_ref().expect("actual coupled closure"),
+            )?;
         }
         let members = assembly.map_or_else(Vec::new, CoupledProducerAssembly::prepared_members);
         super::coupled_members::require_complete(execution, &candidate, &members)?;
@@ -308,7 +353,7 @@ fn undeclared_application_touch_probe(
     ))
 }
 
-fn closure_failure(detail: &'static str) -> WorthQueryInvariantExecutionFailure {
+pub(super) fn closure_failure(detail: &'static str) -> WorthQueryInvariantExecutionFailure {
     WorthQueryInvariantExecutionFailure::new(
         WorthQueryInvariantExecutionDenialKind::StateLoadClosureMismatch,
         detail,

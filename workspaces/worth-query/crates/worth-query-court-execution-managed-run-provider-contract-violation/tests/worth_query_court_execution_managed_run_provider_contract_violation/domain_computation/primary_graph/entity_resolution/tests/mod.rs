@@ -148,7 +148,7 @@ fn rebuilt_index_generation_preserves_stable_entity_meaning() {
                     assert!(build.failed_indexes.is_empty());
                     assert_ne!(
                         build.generations[0].generation_id,
-                        identity.identity_index_generation()
+                        identity.identity_index_generation().expect("committed resolution retains its actual index generation")
                     );
                     let snapshot = selected.application_basis_for_test().snapshot_handle();
                     let truth = installed

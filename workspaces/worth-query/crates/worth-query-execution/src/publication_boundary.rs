@@ -199,3 +199,18 @@ pub mod operation_input_capture {
 pub mod capability_command {
     pub use crate::domain_computation::primary_graph::authenticated_principal::WorthQueryCommandPrincipalPin;
 }
+
+/// Executable sealed graph shape used only by source publication.
+pub mod synchronous_outputs {
+    pub use crate::domain_computation::primary_graph::application_contribution::producer::synchronous_outputs::{default_producer_round_bounds, SynchronousDiscoveredOutputRoot, SynchronousOutputEdges, AppliedOutputParent, SynchronousOutputAssembly, SynchronousOutputFailure};
+}
+
+pub mod authored_edit {
+    pub use crate::domain_computation::primary_graph::application_contribution::authored_edit::{
+        order_authored_stages, stage_admission_refusal, AuthoredEditStageAdmission,
+        AuthoredEditStageContext, AuthoredStageDomainDenial, AuthoredStageExecutionCause,
+        AuthoredStageExecutionDenial, CapturedAuthoredEditStage, DeclaredEditDependency,
+        DeclaredEditOrderRefusal, DeclaredEditParticipant, DeclaredEditReadScope,
+        DeclaredEditScopeCycle, DeclaredEditStage, DeclaredQueryRead, RetainedAuthoredStageResult,
+    };
+}

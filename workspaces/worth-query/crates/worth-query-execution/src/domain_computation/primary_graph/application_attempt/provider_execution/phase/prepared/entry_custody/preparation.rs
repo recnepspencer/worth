@@ -37,6 +37,9 @@ where
         phase,
     } = entry;
     let WorthQueryApplicationEffectProgram {
+        synchronous_outputs,
+        authored_stages,
+        producer_round_limits,
         read_set,
         mut effects,
         mut content_attachments,
@@ -54,7 +57,7 @@ where
     let new_commit_refusal = read_set.new_commit_refusal;
     let signed_creation = read_set.signed_creation;
     let mut mutation_proof = read_set.mutation_handler_binding;
-    let coupled_outputs = aftermath_causality
+    let mut coupled_outputs = aftermath_causality
         .as_ref()
         .and_then(|causality| {
             causality
@@ -67,6 +70,11 @@ where
                 .map(|proof| std::mem::take(&mut proof.coupled_outputs))
                 .unwrap_or_default()
         });
+    if !authored_stages.is_empty() {
+        coupled_outputs.authored_stages = Some(Box::new(authored_stages));
+    }
+    coupled_outputs.synchronous = synchronous_outputs;
+    coupled_outputs.round_limits = producer_round_limits;
     let workflow_approval_authority = workflow_settlement
         .as_ref()
         .and_then(|binding| binding.approval_authority.clone());
@@ -112,15 +120,17 @@ where
         Ok(product) => product,
         Err(outcome) => return terminal(outcome),
     };
-    if let Some(outcome) = resolve_retained_idempotency(
-        execution,
-        application,
-        &mut admission,
-        &current_product,
-        idempotency,
-        aftermath_causality.as_ref(),
-        coordination,
-    ) {
+    if idempotency.authored_stage_identity().is_none()
+        && let Some(outcome) = resolve_retained_idempotency(
+            execution,
+            application,
+            &mut admission,
+            &current_product,
+            idempotency,
+            aftermath_causality.as_ref(),
+            coordination,
+        )
+    {
         return terminal(outcome);
     }
     if let Some(denial) = new_commit_refusal {

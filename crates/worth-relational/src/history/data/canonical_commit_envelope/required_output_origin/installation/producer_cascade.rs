@@ -243,6 +243,7 @@ impl CanonicalCommitEnvelopeBody {
                 installed,
                 RouteCompletion {
                     contribution_records: None,
+                    source_input: None,
                     producer: &origin.producer,
                     dependency_identity: *origin.dependency_identity.bytes(),
                     meaning: &origin.meaning,

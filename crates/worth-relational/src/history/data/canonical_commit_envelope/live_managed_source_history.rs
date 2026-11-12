@@ -66,7 +66,18 @@ impl CanonicalCommitEnvelope {
             .filter(|packet| packet_matches(packet, &self));
         let Some(prepared) = prepared else {
             self.live_managed_source_history = LiveManagedSourceHistory::default();
-            return Ok(Arc::new(self));
+            return Ok(if self.coupled_authored_publication.is_some() {
+                Arc::new_cyclic(|owner| {
+                    self.coupled_authored_publication
+                        .as_ref()
+                        .expect("coupled event")
+                        .live_inputs
+                        .bind(owner);
+                    self
+                })
+            } else {
+                Arc::new(self)
+            });
         };
         let material = RetainedSourceHistoryMaterial::capture(execution, interpretation, &prepared)
             .map_err(|cause| cause.into_commit_error(interpretation.physical_basis()))?;
@@ -82,6 +93,9 @@ impl CanonicalCommitEnvelope {
             .map_err(|cause| storage(cause.into()))?;
         execution.consult().map_err(|cause| storage(cause.into()))?;
         Ok(Arc::new_cyclic(|owner| {
+            if let Some(event) = &self.coupled_authored_publication {
+                event.live_inputs.bind(owner);
+            }
             self.live_managed_source_history =
                 LiveManagedSourceHistory(Some(Arc::new(BoundHistory {
                     prepared,

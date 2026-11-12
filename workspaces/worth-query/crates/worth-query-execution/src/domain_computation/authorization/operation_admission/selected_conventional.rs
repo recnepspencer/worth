@@ -36,10 +36,14 @@ use crate::domain_computation::primary_graph::WorthQueryIssuedSelectedScope;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use crate::domain_computation::provider_session::WorthQueryGraphWorkAccessContextAffinity;
 
+#[path = "selected_conventional/applied_source.rs"]
+mod applied_source;
 #[path = "selected_conventional/current_control.rs"]
 mod current_control;
 #[path = "selected_conventional/historical_source.rs"]
 mod historical_source;
+pub(in crate::domain_computation) use applied_source::authorize_applied_control_mutation_on_selected;
+use applied_source::SelectedMutationScope;
 #[path = "selected_conventional/ordinary.rs"]
 mod ordinary;
 pub(in crate::domain_computation) use current_control::{
@@ -88,7 +92,7 @@ fn authorize_mutation_products<Schema, Binding, Scope>(
         Binding::Principal,
         Binding::PrincipalIdentity,
     >,
-    scope: &WorthQueryIssuedSelectedScope<'_, '_, Schema, Scope>,
+    scope: SelectedMutationScope<'_, '_, '_, Schema, Scope>,
     request: &WorthQueryRequestScope,
 ) -> Result<
     WorthQueryAdmittedApplicationOperation<Schema, Binding::Operation, Binding::Input, Scope>,
@@ -103,16 +107,15 @@ where
     use SelectedConventionalAdmissionStop as Stop;
 
     if !std::ptr::eq(principal.selected(), products.security().selected())
-        || !std::ptr::eq(
-            scope.selected(),
+        || !scope.admits_selection(
             if products.history.is_some() {
                 products.mutation.selected()
             } else {
                 products.security().selected()
             },
+            request,
         )
         || !principal.request().same_request(request)
-        || !scope.request().same_request(request)
     {
         return Err(Stop::ForeignIssuedSource);
     }
@@ -204,6 +207,7 @@ where
     // The one principal fact is counted and added to the session's retained
     // decision-fact count; neither operation is an authorization shortcut.
 
+    scope.require_applied_presence(execution, runtime, operation.operation())?;
     if let Some(history) = products.history {
         historical_source::require_source(
             execution,

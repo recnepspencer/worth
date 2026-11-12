@@ -82,6 +82,7 @@ impl PreparedOutputLineageSlot {
             prior_computation,
             filled,
             computation,
+            original_ready_key: None,
             coupled_completion,
         }
     }

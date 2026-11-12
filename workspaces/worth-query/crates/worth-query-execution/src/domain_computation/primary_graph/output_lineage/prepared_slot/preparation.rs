@@ -85,6 +85,7 @@ pub(in crate::domain_computation::primary_graph) fn prepare(
     lineage.live_occurrences.insert(coordinate.occurrence);
     drop(lineage);
     Ok(PreparedOutputLineageSlot {
+        original_ready_key: None,
         coupled_completion: None,
         required_publication: None,
         owner: Arc::clone(owner),

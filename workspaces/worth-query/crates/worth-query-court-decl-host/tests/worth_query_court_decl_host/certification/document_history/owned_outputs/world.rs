@@ -1,17 +1,29 @@
 //! Separate installed world: model `a` (value 1) owning member `m`, plus NAV grant.
 use super::*;
+pub(super) mod authorization_clock;
 use worth_query_host::facade::product::WorthQueryProductBranch;
 pub type Host = WorthQueryProgramApplicationRuntime<Schema, program::Program>;
 pub type Document<'a> = WorthQueryApplicationHistoryDocument<'a, Schema, History>;
 #[derive(Clone, Copy, Default)]
 pub struct Configuration {
     pub second_derivation: Option<fn(u64) -> u64>,
+    pub reconciliation_indices: bool,
+    pub reconciliation_peer_caps: bool,
+    pub reconciliation_emission: bool,
+    pub envelope_records: bool,
 }
 impl WorthQueryApplicationContribution<Schema> for Contribution {
     type Configuration = Configuration;
     fn contracts(
         contracts: &mut WorthQueryApplicationContributionContracts<Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+        synchronous_edit::reconciliation::contracts(contracts)?;
+        family::decision_write::contracts(contracts)?;
+        family::convergent::contracts(contracts)?;
+        family::decision_input::contracts(contracts)?;
+        family::parity_input::contracts(contracts)?;
+        family::ordinary_input::contracts(contracts)?;
+        family::diamond::contracts(contracts)?;
         family::predecessor_family::contracts(contracts)?;
         from_first::contracts(contracts)?;
         restricted_from_first::contracts(contracts)?;
@@ -27,11 +39,32 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
         configuration: Configuration,
         setup: &mut WorthQueryApplicationContributionSetup<'_, Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+        synchronous_edit::reconciliation::install(
+            setup,
+            configuration.reconciliation_indices,
+            configuration.reconciliation_peer_caps,
+            configuration.reconciliation_emission,
+        )?;
         setup.handler::<authored_member::retire::Binding, _>(authored_member::retire::Handler)?;
         setup.handler::<authored_member::restore::Binding, _>(authored_member::restore::Handler)?;
         setup.handler::<edit::Binding, _>(edit::Handler)?;
+        setup.handler::<synchronous_edit::new_source::restricted::Binding, _>(
+            synchronous_edit::new_source::restricted::Handler,
+        )?;
+        synchronous_edit::envelope_fixture::install(setup)?;
+        setup.handler::<synchronous_edit::Binding, _>(synchronous_edit::Handler)?;
+        setup.handler::<synchronous_edit::new_source::Binding, _>(
+            synchronous_edit::new_source::Handler,
+        )?;
+        setup.handler::<predecessor::synchronous::Binding, _>(predecessor::synchronous::Handler)?;
         setup.handler::<member_edit::Binding, _>(member_edit::Handler)?;
         setup.handler::<member_delete::Binding, _>(member_delete::Handler)?;
+        family::decision_write::install(setup)?;
+        family::convergent::install(setup)?;
+        family::decision_input::install(setup)?;
+        family::parity_input::install(setup)?;
+        family::ordinary_input::install(setup)?;
+        family::diamond::install(setup)?;
         family::predecessor_family::install(setup)?;
         from_first::install(setup)?;
         restricted_from_first::install(setup)?;
@@ -57,9 +90,12 @@ pub fn install_worker_only() -> Host {
     install_with(worker_limits())
 }
 pub(super) fn worker_limits() -> WorthQueryApplicationLimits {
+    worker_limits_with_clock(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system())
+}
+pub(super) fn worker_limits_with_clock(
+    clock: worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock,
+) -> WorthQueryApplicationLimits {
     use worth_query_host::facade::runtime::*;
-    let clock =
-        worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system();
     let world =
         worth_query_testkit_document_retention::facade::document_world_resources::world_resources(
             256,
@@ -110,6 +146,18 @@ where
     P: ApplicationProgramDefinition<Schema, Contributions = (Contribution,)>,
     P::Outputs: WorthQueryApplicationProgramRoots<Schema>,
 {
+    install_configured::<P>(limits, initial_value, other_value, Configuration::default())
+}
+pub(super) fn install_configured<P>(
+    limits: WorthQueryApplicationLimits,
+    initial_value: u64,
+    other_value: Option<u64>,
+    configuration: Configuration,
+) -> WorthQueryProgramApplicationRuntime<Schema, P>
+where
+    P: ApplicationProgramDefinition<Schema, Contributions = (Contribution,)>,
+    P::Outputs: WorthQueryApplicationProgramRoots<Schema>,
+{
     let schema = Schema::declaration().unwrap();
     in_memory_program(
         ApplicationProgramAuthoring::<Schema, P>::begin()
@@ -117,10 +165,35 @@ where
             .validated_program()
             .unwrap(),
         schema,
-        (Configuration::default(),),
-        ApplicationBuildIdentity::parse("91830000-0000-0000-0000-000000005356").unwrap(),
+        (configuration,),
+        ApplicationBuildIdentity::parse(
+            match (
+                configuration.reconciliation_indices,
+                configuration.reconciliation_peer_caps,
+                configuration.reconciliation_emission,
+            ) {
+                (false, false, false) => "91830000-0000-0000-0000-000000005356",
+                (true, false, false) => "91830000-0000-0000-0000-000000005358",
+                (false, true, false) => "91830000-0000-0000-0000-000000005359",
+                (false, false, true) => "91830000-0000-0000-0000-00000000535a",
+                (true, true, false) => "91830000-0000-0000-0000-00000000535b",
+                (true, false, true) => "91830000-0000-0000-0000-00000000535c",
+                (false, true, true) => "91830000-0000-0000-0000-00000000535d",
+                (true, true, true) => "91830000-0000-0000-0000-00000000535e",
+            },
+        )
+        .unwrap(),
         limits,
-        |_, graph, installed| seed(graph, installed, initial_value, other_value),
+        |_, graph, installed| {
+            seed(graph, installed, initial_value, other_value)?;
+            if configuration.envelope_records {
+                synchronous_edit::envelope_fixture::seed(graph)?;
+            }
+            if configuration.reconciliation_peer_caps {
+                synchronous_edit::reconciliation::peer_caps::seed(graph)?;
+            }
+            Ok(())
+        },
     )
     .unwrap()
 }
@@ -182,6 +255,54 @@ pub fn outputs(host: &Host, branch: WorthQueryProductBranch) -> (query::Row, que
         .rows()[0]
         .clone();
     (first, second)
+}
+
+pub fn restore_changed_build(checkpoint: WorthQueryApplicationCheckpoint, worker: bool) -> Host {
+    restore_program_checkpoint::<program::Program>(checkpoint, worker, true)
+}
+pub fn restore_same_build(checkpoint: WorthQueryApplicationCheckpoint, worker: bool) -> Host {
+    restore_program_checkpoint::<program::Program>(checkpoint, worker, false)
+}
+pub(super) fn restore_program_checkpoint<P>(
+    checkpoint: WorthQueryApplicationCheckpoint,
+    worker: bool,
+    changed: bool,
+) -> WorthQueryProgramApplicationRuntime<Schema, P>
+where
+    P: ApplicationProgramDefinition<Schema, Contributions = (Contribution,)>,
+    P::Outputs: WorthQueryApplicationProgramRoots<Schema>,
+{
+    let schema = Schema::declaration().unwrap();
+    let program = ApplicationProgramAuthoring::<Schema, P>::begin()
+        .with_schema(&schema)
+        .validated_program()
+        .unwrap();
+    let limits = if worker {
+        worker_limits()
+    } else {
+        host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system())
+    };
+    WorthQueryInterimCheckpointRestore::program(
+        program,
+        schema,
+        (Configuration {
+            second_derivation: if changed {
+                Some(|value| value + 2000)
+            } else {
+                None
+            },
+            ..Default::default()
+        },),
+        ApplicationBuildIdentity::parse(if changed {
+            "91830000-0000-0000-0000-000000005357"
+        } else {
+            "91830000-0000-0000-0000-000000005356"
+        })
+        .unwrap(),
+        limits,
+        checkpoint,
+    )
+    .unwrap()
 }
 
 pub(super) fn seed(

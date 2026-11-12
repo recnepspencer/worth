@@ -200,6 +200,7 @@ impl<'run> WorthQueryRegisteredProviderAttempt<'run> {
         Schema: worth_query_installation::facade::ApplicationSchema,
         Input: Clone + Send + Sync + 'static,
     {
+        let root_session = self.staged.provider_session_terminal_binding();
         let read_set = super::fresh::compare_provider_read_set(
             execution,
             self.staged,
@@ -212,32 +213,37 @@ impl<'run> WorthQueryRegisteredProviderAttempt<'run> {
                 return outcome
             }
         };
-        let assembly = crate::domain_computation::primary_graph::application_contribution::DeclaredProducerAssembly::new(
+        let assembly = crate::domain_computation::primary_graph::application_contribution::CoupledApplicationAssembly::new(
             phase, authority.coordination(), authority.application(), authority.admission().graph_work().authenticating_principal(),
-            authority.product, authority.admission().publication_request(), authority.coupled_outputs,
+            authority.product, authority.admission().publication_request(), authority.coupled_outputs, root_session,
         );
         let candidate = match fresh.progress_invariant(
             execution,
             self.steps,
             authority.provider(),
             authority.coupled_outputs.is_declared().then_some(&assembly as &dyn crate::domain_computation::primary_graph::provider::CoupledProducerAssembly),
+            authority.history,
             allocation_policy,
         ) {
             Ok(candidate) => candidate,
             Err(outcome) => {
                 assembly.abort_writers(execution);
-                return match assembly.take_denial() {
+                // A break that kept no subject is refused as the custody fault
+                // it is; any other uncommitted outcome carries its own subject.
+                let lost = assembly.broke_without_subject();
+                return assembly.finish_abort(match assembly.take_denial() {
                     Some(denial) => WorthQueryProviderProgressionOutcome::Denied(crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::coupled_producer(denial)),
+                    None if lost => WorthQueryProviderProgressionOutcome::Denied(crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::coupled_refusal_without_subject()),
                     None => outcome,
-                };
+                });
             },
         };
         if let Err(denial) = assembly.authorize_members(execution, authority.coordination()) {
             candidate.discard();
             assembly.abort_writers(execution);
-            return crate::domain_computation::primary_graph::application_attempt::provider_execution::outcome::progression_from_authorization_denial(
+            return assembly.finish_abort(crate::domain_computation::primary_graph::application_attempt::provider_execution::outcome::progression_from_authorization_denial(
                 denial, crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage::DecisionReadSet,
-            );
+            ));
         }
         let outcome = super::authorized::authorize_and_resolve_provider_commit(
             execution,

@@ -25,3 +25,11 @@ impl WorthQueryApplicationCommittedChanges {
         Self::from_commit(commit)
     }
 }
+
+impl WorthQueryApplicationCommittedChanges {
+    /// Read-only original published rows, for the closed semantic allocation oracle.
+    #[doc(hidden)]
+    pub fn record_patches_for_test(&self) -> &[PublishedAuthoritativeRecordPatch] {
+        &self.envelope.patch.authoritative_record_patches
+    }
+}

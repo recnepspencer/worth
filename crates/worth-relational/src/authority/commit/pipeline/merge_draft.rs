@@ -13,11 +13,27 @@ pub(super) struct AcceptedMergeDraft {
     pub(super) invariants: InvariantExecutionResult,
 }
 
+// This provisional result can still be discarded by the outer head probe.
+// It is not PreparedAuthorityScope until that probe and mirror admission finish.
+struct PendingMergeDraft {
+    selected_branch_state: crate::branch::SelectedRelationalBranchState,
+    structural_summary: crate::authority::commit::structural_summary::CommitStructuralSummary,
+    working_state: crate::runtime::WorkingState,
+    identity: crate::mvcc::RelationalMutationProposalIdentity,
+    mutation: crate::authority::commit::phases::applied_mutation::AppliedDraftCustody,
+    phase_timing: crate::transactions::data::CommitPhaseTiming,
+    invariants: InvariantExecutionResult,
+}
+
 pub(super) fn prepare_merge_draft(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalPreparationRuntime,
     admitted: &AdmittedCommitState,
 ) -> Result<AcceptedMergeDraft, TransactionCommitError> {
+    let mut cleanup =
+        crate::authority::commit::phases::applied_mutation::CoupledPreparationCleanup::new(
+            runtime.authored_coupling.as_ref(),
+        );
     let basis = admitted.validation_input().basis();
     let selected = admitted.selected_branch_state();
     crate::authority::commit::preparation::demand_mutation_inputs(
@@ -48,7 +64,6 @@ pub(super) fn prepare_merge_draft(
                 &runtime.services.symbols,
                 basis.identity().branch_id(),
                 accepted
-                    .scope
                     .structural_summary
                     .touched_partitions
                     .iter()
@@ -59,7 +74,20 @@ pub(super) fn prepare_merge_draft(
             })?;
     }
     runtime.settle_preparation_round(&round);
-    answer
+    let accepted = answer.map(|accepted| AcceptedMergeDraft {
+        scope: PreparedAuthorityScope {
+            selected_branch_state: accepted.selected_branch_state,
+            structural_summary: accepted.structural_summary,
+            working_state: accepted.working_state,
+            mutation_proposal: (accepted.identity, accepted.mutation.finish()),
+            phase_timing: accepted.phase_timing,
+        },
+        invariants: accepted.invariants,
+    });
+    if accepted.is_ok() {
+        cleanup.handoff();
+    }
+    accepted
 }
 
 fn prepare_symbol_round(
@@ -67,7 +95,7 @@ fn prepare_symbol_round(
     runtime: &RelationalPreparationRuntime,
     admitted: &AdmittedCommitState,
     selected: SelectedRelationalBranchRead<'_>,
-) -> Result<AcceptedMergeDraft, TransactionCommitError> {
+) -> Result<PendingMergeDraft, TransactionCommitError> {
     let input = admitted.validation_input();
     crate::authority::commit::preparation::probe_symbol_rounds(
         execution,
@@ -156,14 +184,13 @@ fn prepare_symbol_round(
                 execution,
                 &control,
             )?;
-            Ok(AcceptedMergeDraft {
-                scope: PreparedAuthorityScope {
-                    selected_branch_state: selected.selected().clone(),
-                    structural_summary,
-                    working_state,
-                    mutation_proposal: (identity, mutation),
-                    phase_timing,
-                },
+            Ok(PendingMergeDraft {
+                selected_branch_state: selected.selected().clone(),
+                structural_summary,
+                working_state,
+                identity,
+                mutation,
+                phase_timing,
                 invariants,
             })
         },

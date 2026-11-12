@@ -1,0 +1,125 @@
+//! Request-local required graph; its parent is proposed truth, never settlement.
+use super::super::CoupledApplicationAssembly;
+use super::execution::CoupledSourceReadStop;
+use crate::domain_computation::primary_graph::application_attempt::coupled_outputs::DeclaredCoupledOutputDemand;
+use worth_query_declaration::facade::{
+    application_program::{ApplicationOutputLeaf, WorthQueryApplicationOutputDemand},
+    application_schema::ApplicationSchema,
+};
+use worth_relational::facade::{
+    mvcc::RelationalAuthoredCoupledCandidate,
+    runtime::{RelationalAppliedCandidateReadIdentity, RelationalPinnedRead},
+};
+mod capture;
+pub(in crate::domain_computation::primary_graph) enum CapturedSynchronousOutputs {
+    Prepared {
+        root: Box<dyn std::any::Any + Send>,
+        _memory: Option<worth_execution::ExecutionMemoryReservation>,
+    },
+    Refused(retention::CaptureRefusal),
+}
+mod discovered;
+mod retention;
+mod retention_observation;
+#[doc(hidden)]
+pub use retention_observation::{
+    SynchronousCaptureRetentionCountsForTest, SynchronousCaptureRetentionForTest,
+};
+mod root;
+pub use discovered::SynchronousDiscoveredOutputRoot;
+mod discovery;
+mod edges;
+pub(in crate::domain_computation::primary_graph::application_contribution) mod rounds;
+mod source;
+mod wave;
+pub use rounds::default_producer_round_bounds;
+pub use wave::SynchronousOutputWave;
+
+/// The actual authored prefix read by root discovery, without producer settlement.
+struct AppliedAuthoredDiscovery {
+    source: worth_relational::facade::identity::EntityId,
+    pin: RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
+}
+pub struct AppliedOutputParent {
+    source: worth_relational::facade::identity::EntityId,
+    pin: RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
+}
+impl AppliedOutputParent {
+    pub(super) fn source(&self) -> worth_relational::facade::identity::EntityId {
+        self.source
+    }
+    pub(in crate::domain_computation::primary_graph::application_contribution) fn new(
+        pin: RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
+        source: worth_relational::facade::identity::EntityId,
+    ) -> Self {
+        Self { pin, source }
+    }
+}
+pub struct SynchronousOutputFailure(CoupledSourceReadStop);
+impl From<CoupledSourceReadStop> for SynchronousOutputFailure {
+    fn from(cause: CoupledSourceReadStop) -> Self {
+        Self(cause)
+    }
+}
+pub struct SynchronousOutputAssembly<'a, 'owner, 'run, 'phase, S: ApplicationSchema> {
+    owner: &'a CoupledApplicationAssembly<'owner, 'run, 'phase, S>,
+    execution: &'a worth_execution::ExecutionRequest<'a, 'a>,
+    before: &'a RelationalPinnedRead,
+    order:
+        &'a worth_query_declaration::facade::application_program::ApplicationProgramConnectionOrder,
+}
+mod sealed {
+    pub trait Edges {}
+}
+pub trait SynchronousOutputEdges<S, D>: sealed::Edges
+where
+    S: ApplicationSchema,
+    D: WorthQueryApplicationOutputDemand<S>,
+{
+    fn declared_families(visit: &mut impl FnMut(std::any::TypeId));
+    fn assemble(
+        context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        parent: &AppliedOutputParent,
+        demand: &D,
+        next: &mut SynchronousOutputWave<S>,
+    ) -> Result<(), SynchronousOutputFailure>;
+}
+impl sealed::Edges for ApplicationOutputLeaf {}
+impl<S: ApplicationSchema, D: WorthQueryApplicationOutputDemand<S>> SynchronousOutputEdges<S, D>
+    for ApplicationOutputLeaf
+{
+    fn declared_families(_: &mut impl FnMut(std::any::TypeId)) {}
+    fn assemble(
+        _: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        _: &AppliedOutputParent,
+        _: &D,
+        _: &mut SynchronousOutputWave<S>,
+    ) -> Result<(), SynchronousOutputFailure> {
+        Ok(())
+    }
+}
+
+impl<S: ApplicationSchema> SynchronousOutputAssembly<'_, '_, '_, '_, S> {
+    fn checkpoint(&self, subject: &str) -> Result<(), SynchronousOutputFailure> {
+        checkpoint(self.execution, subject, 1)
+    }
+}
+fn checkpoint(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    subject: &str,
+    work: u64,
+) -> Result<(), SynchronousOutputFailure> {
+    use crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial as Denial;
+    let denied = |cause: worth_execution::WorkCeilingDenial| {
+        SynchronousOutputFailure(CoupledSourceReadStop::capture(
+            Denial::relational_read_stopped(cause.into(), subject),
+        ))
+    };
+    execution
+        .run_native_with_checkpoint(|context| {
+            crate::domain_computation::primary_graph::admitted_capture::checkpoint(context, work)
+        })
+        .map_err(denied)?
+        .0
+        .map_err(|cause| denied(worth_execution::WorkCeilingDenial::Stopped(cause)))
+}

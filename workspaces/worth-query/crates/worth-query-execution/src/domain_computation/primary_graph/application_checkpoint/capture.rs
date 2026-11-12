@@ -201,9 +201,18 @@ where
                                         .and_then(|(facts, witness)| {
                                             output_facts::encode(&facts, witness)
                                         }),
-                                    AcceptedCheckpointFactSource::Stable(stable) => stable
-                                        .checkpoint_source_facts()
-                                        .and_then(|facts| facts::encode(&facts)),
+                                    AcceptedCheckpointFactSource::Stable(stable) => {
+                                        stable.checkpoint_source_facts().and_then(|facts| {
+                                            match stable.checkpoint_output_witness() {
+                                                Some(witness) => {
+                                                    output_facts::encode(&facts, witness)
+                                                }
+                                                // Existing authenticated checkpoint facts can
+                                                // already carry their original output revisions.
+                                                None => facts::encode(&facts),
+                                            }
+                                        })
+                                    }
                                 }
                                 .map(std::sync::Arc::new);
                                 identity.producer_fact_wire_version =

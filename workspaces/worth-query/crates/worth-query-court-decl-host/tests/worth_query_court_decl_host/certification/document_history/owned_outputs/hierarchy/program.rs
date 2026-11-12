@@ -3,8 +3,18 @@ use super::*;
 pub struct Parent;
 pub struct Input;
 pub struct Output;
+pub struct FirstSeedInput;
+impl ApplicationInputPort<Schema, Parent> for FirstSeedInput {
+    type Value = query::RowBinding;
+    const IDENTITY: &'static str = "hierarchy-seed-input";
+    const REQUIRED: bool = false;
+}
+
 impl ApplicationFeature<Schema> for Parent {
-    type Inputs = ApplicationFeatureInputList<Input, ApplicationFeatureInputLeaf>;
+    type Inputs = ApplicationFeatureInputList<
+        Input,
+        ApplicationFeatureInputList<FirstSeedInput, ApplicationFeatureInputLeaf>,
+    >;
     const IDENTITY: &'static str = "owned-outputs.hierarchy.parent";
 }
 impl ApplicationInputPort<Schema, Parent> for Input {
@@ -41,6 +51,11 @@ impl WorthQueryApplicationRequiredOutputConnection<Schema> for Start {
     ) -> Result<Self::Demand, WorthQueryRequiredOutputConnectionDenial> {
         Ok(first::Demand(input.0.key.clone()))
     }
+}
+pub struct ChildOutput;
+impl ApplicationOutputPort<Schema, Child> for ChildOutput {
+    type Value = query::RowBinding;
+    const IDENTITY: &'static str = "hierarchy-child-output";
 }
 pub struct Child;
 pub struct ChildInput;
@@ -138,6 +153,7 @@ impl ApplicationProgramDefinition<Schema> for Program {
                 .conditional_operation::<first::preserve::Operation>()
                 .finish(),
             ApplicationFeatureSpec::root::<Schema, Child>()
+                .provides::<ChildOutput>()
                 .conditional_operation::<from_first::initial::Operation>()
                 .conditional_operation::<from_first::preserve::Operation>()
                 .conditional_operation::<restricted_from_first::initial::Operation>()
@@ -156,6 +172,14 @@ impl ApplicationProgramDefinition<Schema> for Program {
                 .conditional_operation::<restricted_owned::preserve::Operation>()
                 .finish(),
             super::super::predecessor::program::feature(),
+            family::diamond::feature(),
+            family::decision_input::feature(),
+            family::parity_input::feature(),
+            family::convergent::feature(),
+            family::ordinary_input::feature(),
+            family::decision_write::feature(),
+            synchronous_edit::reconciliation::feature(),
+            synchronous_edit::reconciliation::child_feature(),
         ]
     }
 }

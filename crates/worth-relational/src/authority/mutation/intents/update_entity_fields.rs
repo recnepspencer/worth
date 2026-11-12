@@ -1,15 +1,10 @@
 use crate::authority::mutation::outcomes::MutationOutcome;
-use crate::authority::mutation::stale_targets::ensure_entity_target_is_current;
 use crate::authority::mutation::MutationWorkspace;
-use crate::storage::overlay::CurrentPartitionAccess;
 use crate::transactions::data::{
-    CommitConflict, ConflictClass, EntityFieldUpdateMissingState, RecordAspectPatchTarget,
-    UpdateEntityFieldsIntent,
+    CommitConflict, ConflictClass, EntityFieldUpdateMissingState, UpdateEntityFieldsIntent,
 };
-use worth_foundational::facade::PortablePatchReadmissionPurpose;
 
-use super::field_authoring_candidate::FieldAuthoringDomain;
-use super::record_aspect_patch;
+use super::entity_aspect_preparation::PreparedEntityAspectMutation;
 
 pub(super) fn apply(
     intent: &UpdateEntityFieldsIntent,
@@ -17,54 +12,12 @@ pub(super) fn apply(
 ) -> Result<MutationOutcome, crate::transactions::data::TransactionCommitError> {
     let version_id = workspace.version_id();
     let slot = intent.entity_id.slot_index();
-    let (kind_id, authoritative_aspect_state) = workspace.with_context(|context| {
-        ensure_entity_target_is_current(context.state, intent.entity_id)?;
-        let partition = context
-            .state
-            .get_current_partition(intent.entity_id.partition_id)
-            .ok_or_else(|| {
-                CommitConflict::new(ConflictClass::EntityFieldUpdateStateInconsistency {
-                    entity_id: intent.entity_id,
-                    missing: EntityFieldUpdateMissingState::Partition,
-                })
-            })?;
-        let slot_view = partition.entity_arena().get_slot(slot).ok_or_else(|| {
-            CommitConflict::new(ConflictClass::EntityFieldUpdateStateInconsistency {
-                entity_id: intent.entity_id,
-                missing: EntityFieldUpdateMissingState::Slot,
-            })
-        })?;
-        let kind_id = slot_view.kind_id().ok_or_else(|| {
-            CommitConflict::new(ConflictClass::EntityFieldUpdateStateInconsistency {
-                entity_id: intent.entity_id,
-                missing: EntityFieldUpdateMissingState::KindId,
-            })
-        })?;
-        Ok::<_, crate::transactions::data::TransactionCommitError>((
-            kind_id,
-            Some(slot_view.retained_extra()),
-        ))
-    })?;
-    let target = RecordAspectPatchTarget::Entity {
-        entity_id: intent.entity_id,
+    let PreparedEntityAspectMutation {
         kind_id,
-    };
-    let patch = record_aspect_patch::readmit_field_authoring(
-        &workspace.execution(),
-        &intent.fields,
-        PortablePatchReadmissionPurpose::RecordMutation,
-        workspace.entity_aspect_plan(kind_id),
-        target,
-        FieldAuthoringDomain::Entity,
-    )?;
-    let mut new_authoritative_aspect_state = record_aspect_patch::apply_entity(
-        &workspace.execution(),
-        authoritative_aspect_state
-            .as_ref()
-            .and_then(|extra| extra.authoritative_aspect_state()),
-        &patch,
-        target,
-    )?;
+        authoritative_aspect_state,
+        mut new_authoritative_aspect_state,
+        patch,
+    } = workspace.prepare_entity_field_update(intent)?;
     workspace.with_context(|context| {
         context
             .state

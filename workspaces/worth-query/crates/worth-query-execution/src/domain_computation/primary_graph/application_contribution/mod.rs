@@ -1,3 +1,4 @@
+pub(crate) mod authored_edit;
 mod composition;
 pub(in crate::domain_computation::primary_graph) use composition::PreparedApplicationRuntimeContributions;
 mod derived_relation;
@@ -12,10 +13,11 @@ pub use feature::{
     WorthQueryFeaturePairConfiguration, WorthQueryFeatureRoleRuntime, WorthQueryFeatureRuntime,
     WorthQueryRequiredFeatureContract, WorthQueryRequiredFeaturePair,
 };
+mod coupled_publication;
 pub(in crate::domain_computation) mod execution_denial;
 pub(crate) mod partitioned_computation;
 pub(crate) mod producer;
-pub(in crate::domain_computation::primary_graph) use producer::DeclaredProducerAssembly;
+pub(in crate::domain_computation::primary_graph) use coupled_publication::CoupledApplicationAssembly;
 pub(in crate::domain_computation::primary_graph) use producer::OwnerPlan;
 pub use producer::PendingProducerPublication;
 pub(in crate::domain_computation::primary_graph) use producer::{CurrentBasis, CurrentProof};

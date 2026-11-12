@@ -7,6 +7,9 @@ use worth_relational::facade::mvcc::CompanionPreflightStop;
 /// The latest output one binding recorded for a source, with everything
 /// selection compares before it reuses that output.
 pub struct WorthQueryRetainedOutputCandidate {
+    pub(in crate::domain_computation::primary_graph) original_ready_key: Option<std::sync::Arc<crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandKey>>,
+    pub(in crate::domain_computation::primary_graph::output_lineage) coupled_completion: Option<super::super::CoupledOutputCompletion>,
+    pub(in crate::domain_computation::primary_graph) recovered_checkpoint: Option<crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity>,
     pub(in crate::domain_computation::primary_graph) required_publication: Option<worth_relational::facade::mvcc::RelationalRequiredOutputPublication>,
     pub(in crate::domain_computation::primary_graph) producing_implementation: Option<worth_relational::facade::mvcc::RequiredOutputProducingImplementation>,
     pub(in crate::domain_computation::primary_graph) binding: TypeId,
@@ -84,22 +87,27 @@ impl WorthQueryApplicationOutputLineage {
                         )
                     });
                 if let Some(recorded) = recorded {
+                    let completed = recorded
+                        .completed_computation_record()
+                        .ok_or(CompanionPreflightStop::SelectedSourceMismatch)?;
                     candidates.push(WorthQueryRetainedOutputCandidate {
+                        original_ready_key: completed.original_ready_key.clone(),
+                        coupled_completion: recorded.coupled_completion.clone(),
                         producing_implementation: recorded.producing_implementation,
                         required_publication: recorded.required_publication.clone(),
+                        recovered_checkpoint: recorded
+                            .native_prior_checkpoint
+                            .as_ref()
+                            .and_then(|prior| prior.recovered().cloned()),
                         binding: *output_binding,
                         correspondence: Arc::clone(&recorded.correspondence),
                         source_identity: recorded.source_identity,
                         observed_source_facts: recorded
                             .observed_source_facts()
                             .and_then(|facts| facts.for_comparison()),
-                        // A stable alias seals no witness: its output is
-                        // its origin's, compared by the origin's witness.
-                        native_output_witness: recorded
-                            .performed_origin
-                            .as_ref()
-                            .and_then(|origin| origin.get())
-                            .unwrap_or(recorded)
+                        // Ordinary aliases keep the performed witness. An
+                        // actual adopting execution owns its fresh live witness.
+                        native_output_witness: completed
                             .native_output_witness_cell()
                             .map(Arc::clone),
                         verification_requirement: recorded.verification_requirement(),

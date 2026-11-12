@@ -31,7 +31,8 @@ where
         };
         let execution = &phase_request;
 
-        self.backing
+        let progress = self
+            .backing
             .runtime()
             .advance_program_output_demand(
                 execution,
@@ -47,23 +48,24 @@ where
                     denial = denial.with_read_cleanup(cleanup);
                 }
                 denial
-            })
-            .map(|progress| match progress {
-                WorthQueryOutputDemandAdvance::Pending => WorthQueryProgramOutputAdvance::Pending,
-                WorthQueryOutputDemandAdvance::Progressed => {
-                    WorthQueryProgramOutputAdvance::Progressed
+            })?;
+        if matches!(progress, WorthQueryOutputDemandAdvance::Progressed) {
+            demand.retain_original_result(execution, self.backing.runtime())?;
+        }
+        Ok(match progress {
+            WorthQueryOutputDemandAdvance::Pending => WorthQueryProgramOutputAdvance::Pending,
+            WorthQueryOutputDemandAdvance::Progressed => WorthQueryProgramOutputAdvance::Progressed,
+            WorthQueryOutputDemandAdvance::Settled(retained) => {
+                if let Some(completion) = &demand.original_root_completion {
+                    completion.completed(&retained);
                 }
-                WorthQueryOutputDemandAdvance::Settled(retained) => {
-                    if let Some(completion) = &demand.original_root_completion {
-                        completion.completed(&retained);
-                    }
-                    WorthQueryProgramOutputAdvance::Settled(WorthQuerySettledProgramOutput {
-                        retained,
-                        target_feature: demand.target_feature,
-                        artifact: demand.artifact,
-                        marker: std::marker::PhantomData,
-                    })
-                }
-            })
+                WorthQueryProgramOutputAdvance::Settled(WorthQuerySettledProgramOutput {
+                    retained,
+                    target_feature: demand.target_feature,
+                    artifact: demand.artifact,
+                    marker: std::marker::PhantomData,
+                })
+            }
+        })
     }
 }

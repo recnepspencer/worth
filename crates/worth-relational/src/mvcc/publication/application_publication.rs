@@ -1,4 +1,9 @@
+mod publication_appendix;
 use crate::transactions::data::TransactionCommitError;
+pub use publication_appendix::{
+    RelationalPublicationAdoptionRequest, RelationalPublicationAppendix,
+    RelationalPublicationBodySelection,
+};
 mod historical_selection;
 pub(crate) use historical_selection::require_graph_coverage;
 pub use historical_selection::RelationalHistoricalOutputSelection;
@@ -20,12 +25,17 @@ pub(crate) use coupled_assembly::BoundAuthoredCoupling;
 pub use coupled_assembly::{
     RelationalAuthoredCoupledCandidate, RelationalAuthoredCoupledProducerAssembly,
     RelationalAuthoredCoupledTransaction, RelationalCoupledAssemblyFailure,
-    RelationalCoupledAuthoredPublication,
+    RelationalCoupledAuthoredPublication, RelationalCoupledAuthoredSourceEffects,
+    RelationalCoupledContribution, RelationalCoupledProducerContinuation,
+    RelationalCoupledProducerPosture,
 };
+pub(crate) use coupled_owners::CoupledSource;
 pub use coupled_owners::{RelationalAuthoredCoupledOwners, RelationalDeclaredCoupledOwner};
 mod predecessor_basis;
 mod predecessor_observation;
-pub use predecessor_basis::{RelationalPredecessorBasisDenial, RelationalPredecessorBasisOrigin};
+pub use predecessor_basis::{
+    RelationalPredecessorBasisDenial, RelationalPredecessorBasisOrigin, RelationalPredecessorInput,
+};
 mod producing_implementation;
 mod route_absence;
 mod scope_ownership;
@@ -35,8 +45,8 @@ pub use completion::{
 };
 pub(crate) use custody::prepare as prepare_publications;
 pub use custody::{
-    RelationalPerformedOutputPublications, RelationalPreparedOutputPublications,
-    RelationalRequiredOutputPublication,
+    RecordedRequiredOutputRole, RelationalPerformedOutputPublications,
+    RelationalPreparedOutputPublications, RelationalRequiredOutputPublication,
 };
 pub use producing_implementation::RequiredOutputProducingImplementation;
 pub use route_absence::RelationalRequiredOutputRouteAbsence;

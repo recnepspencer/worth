@@ -137,6 +137,7 @@ pub(super) fn prepare_candidate_support(
     coupled::prepare_members(
         execution,
         provider,
+        &query.attempt,
         &mut query.members,
         candidate,
         query.before.as_snapshot(),

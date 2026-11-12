@@ -57,7 +57,9 @@ where
     >,
     P: ApplicationProgramDefinition<S>,
     P::Outputs: ApplicationProgramOutputsShape<S>,
-    R: ApplicationOutputGraphShape<S> + ApplicationDiscoveredOutputRoot,
+    R: ApplicationOutputGraphShape<S>
+        + ApplicationDiscoveredOutputRoot
+        + worth_query_execution::facade::primary_graph::SynchronousDiscoveredOutputRoot<S>,
     Connection<S, R>: WorthQueryApplicationDiscoveredOutputConnection<S, Source = I::Binding>,
 {
     let initial = description
@@ -123,7 +125,9 @@ where
     >,
     P: ApplicationProgramDefinition<S>,
     P::Outputs: ApplicationProgramOutputsShape<S>,
-    R: ApplicationOutputGraphShape<S> + ApplicationDiscoveredOutputRoot,
+    R: ApplicationOutputGraphShape<S>
+        + ApplicationDiscoveredOutputRoot
+        + worth_query_execution::facade::primary_graph::SynchronousDiscoveredOutputRoot<S>,
     Connection<S, R>: WorthQueryApplicationDiscoveredOutputConnection<S, Source = I::Binding>,
 {
     let mut borrowed = partial.into_same_binding_intent::<&NonCloneOriginal<I>>();

@@ -64,6 +64,42 @@ impl WorthQueryOperationReadTouchOverlapIndex {
         read_intersects_touch(read, touch)
     }
 
+    /// Dependency ordering must conservatively include unknown declared
+    /// footprints and membership changes, rather than infer independence.
+    pub fn may_intersect(
+        &self,
+        read: &WorthQueryOperationGraphReadScope,
+        touch: &WorthQueryOperationTouchScope,
+    ) -> bool {
+        use WorthQueryOperationGraphReadScope as Read;
+        use WorthQueryOperationTouchScope as Touch;
+        match (read, touch) {
+            (Read::DerivedSource(_) | Read::Components(_), _) | (_, Touch::DeclaredDomain(_)) => {
+                true
+            }
+            (
+                Read::NativeProjection(read),
+                Touch::CreateEntity(write) | Touch::DeleteEntity(write),
+            ) => read.schema() == write.schema() && read.entity().semantic_key() == write.entity(),
+            (Read::Relation(read), Touch::DeleteEntity(write)) => {
+                read.schema() == write.schema()
+                    && (read.from() == write.entity() || read.to() == write.entity())
+            }
+            _ => self.intersects(read, touch),
+        }
+    }
+
+    /// Query reads and graph reads share this installed overlap owner. No
+    /// execution layer reconstructs field meaning or guesses record locality.
+    pub fn query_intersects(
+        &self,
+        schema: &worth_query_declaration::facade::application_schema::ApplicationSchemaBindingIdentity,
+        query: &crate::application_query::WorthQueryInstalledGraphReadContract,
+        touch: &WorthQueryOperationTouchScope,
+    ) -> bool {
+        query_intersects_touch(schema, query, touch)
+    }
+
     /// Number of installed read scopes intersecting one indexed touch scope.
     /// Installation pays the cross-product once; execution performs O(1)
     /// overlap lookup after resolving the selected touch index.
@@ -126,5 +162,106 @@ fn read_intersects_touch(
                 && read.to() == touch.to()
         }
         _ => false,
+    }
+}
+
+fn query_intersects_touch(
+    schema: &worth_query_declaration::facade::application_schema::ApplicationSchemaBindingIdentity,
+    query: &crate::application_query::WorthQueryInstalledGraphReadContract,
+    touch: &WorthQueryOperationTouchScope,
+) -> bool {
+    use WorthQueryOperationTouchScope as Touch;
+    let field_read = |entity: &str,
+                      aspect: &worth_foundational::facade::AspectKey,
+                      fields: &[worth_foundational::facade::FieldKey]| {
+        query.projections().iter().any(|read| {
+            read.entity() == entity
+                && read.aspect_key() == aspect
+                && fields.contains(read.field_key())
+        }) || query
+            .relations()
+            .iter()
+            .filter_map(|relation| relation.predicate())
+            .any(|read| {
+                read.field().0 == entity
+                    && read.aspect_key() == aspect
+                    && fields.contains(read.field_key())
+            })
+            || query.predicates().iter().any(|read| {
+                read.field().0 == entity
+                    && read.aspect_key() == aspect
+                    && fields.contains(read.field_key())
+            })
+            || query.ordering().iter().any(|read| {
+                read.field().0 == entity
+                    && read.aspect_key() == aspect
+                    && fields.contains(read.field_key())
+            })
+    };
+    match touch {
+        Touch::WriteField(write) => {
+            write.schema() == schema
+                && (query.has_extended_read_scope()
+                    || field_read(
+                        write.entity(),
+                        write.contract().key(),
+                        write.field_path().fields(),
+                    ))
+        }
+        Touch::CreateEntity(write) | Touch::DeleteEntity(write) => {
+            write.schema() == schema
+                && (query.has_extended_read_scope()
+                    || query.root_entity() == write.entity()
+                    || query
+                        .projections()
+                        .iter()
+                        .any(|read| read.entity() == write.entity())
+                    || query
+                        .relations()
+                        .iter()
+                        .any(|read| read.from() == write.entity() || read.to() == write.entity()))
+        }
+        Touch::LinkRelation(write) | Touch::UnlinkRelation(write) => {
+            write.schema() == schema
+                && (query.has_extended_read_scope()
+                    || query.relations().iter().any(|read| {
+                        read.relation() == write.relation()
+                            && read.from() == write.from()
+                            && read.to() == write.to()
+                    }))
+        }
+        Touch::InitializeRelationField(write) => {
+            write.relation().schema() == schema
+                && (query.has_extended_read_scope()
+                    || query
+                        .relations()
+                        .iter()
+                        .any(|read| read.relation() == write.relation().relation()))
+        }
+        Touch::RemoveAspect(write) => {
+            write.schema() == schema
+                && (query.has_extended_read_scope()
+                    || query.projections().iter().any(|read| {
+                        read.entity() == write.entity()
+                            && read.aspect_key() == write.contract().key()
+                    })
+                    || query.predicates().iter().any(|read| {
+                        read.field().0 == write.entity()
+                            && read.aspect_key() == write.contract().key()
+                    })
+                    || query.ordering().iter().any(|read| {
+                        read.field().0 == write.entity()
+                            && read.aspect_key() == write.contract().key()
+                    })
+                    || query
+                        .relations()
+                        .iter()
+                        .filter_map(|read| read.predicate())
+                        .any(|read| {
+                            read.field().0 == write.entity()
+                                && read.aspect_key() == write.contract().key()
+                        }))
+        }
+        Touch::DeclaredDomain(_) => true,
     }
 }

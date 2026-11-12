@@ -99,6 +99,9 @@ pub enum WorthQueryApplicationCommitOutcome {
 
     /// Nothing was written. The cause says why.
     NoEffect(WorthQueryApplicationNoEffect),
+    /// Actual producer execution retained its current output with fresh Query support;
+    /// no Native commit or receipt was created.
+    OutputAdopted(crate::domain_computation::primary_graph::output_lineage::executed_adoption::WorthQueryApplicationOutputAdoption),
     /// This attempt committed; the receipt says what landed.
     Committed(super::WorthQueryApplicationCommitReceipt),
     /// Original durable meaning, with no live delivery or execution authority.
@@ -136,6 +139,7 @@ impl WorthQueryApplicationCommitOutcome {
             | Self::ProductPreparationPending(_)
             | Self::ProductPreparationRefused(_)
             | Self::NoEffect(_)
+            | Self::OutputAdopted(_)
             | Self::Stale(_)
             | Self::Cancelled
             | Self::TimedOut
@@ -162,6 +166,7 @@ impl WorthQueryApplicationCommitOutcome {
             Self::CleanupRequired(cleanup) => Uncommitted::CleanupRequired(cleanup),
             Self::ProductStale(stale) => Uncommitted::ProductStale(stale),
             Self::ProductUnpublished(unpublished) => Uncommitted::ProductUnpublished(unpublished),
+            Self::OutputAdopted(adoption) => Uncommitted::OutputAdopted(adoption),
             Self::ProductPreparationPending(owner) => Uncommitted::ProductPreparationPending(owner),
             Self::ProductPreparationRefused(owner) => Uncommitted::ProductPreparationRefused(owner),
             Self::NoEffect(no_effect) => Uncommitted::NoEffect(no_effect),
@@ -197,6 +202,7 @@ pub enum WorthQueryApplicationUncommitted {
     ProductPreparationRefused(crate::domain_computation::WorthQueryProductPreparationRefused),
 
     NoEffect(WorthQueryApplicationNoEffect),
+    OutputAdopted(crate::domain_computation::primary_graph::output_lineage::executed_adoption::WorthQueryApplicationOutputAdoption),
     Stale(WorthQueryApplicationStaleAttempt),
     Cancelled,
     TimedOut,
@@ -213,6 +219,7 @@ impl From<WorthQueryApplicationUncommitted> for WorthQueryApplicationCommitOutco
             Uncommitted::CleanupRequired(cleanup) => Self::CleanupRequired(cleanup),
             Uncommitted::ProductStale(stale) => Self::ProductStale(stale),
             Uncommitted::ProductUnpublished(unpublished) => Self::ProductUnpublished(unpublished),
+            Uncommitted::OutputAdopted(adoption) => Self::OutputAdopted(adoption),
             Uncommitted::ProductPreparationPending(owner) => Self::ProductPreparationPending(owner),
             Uncommitted::ProductPreparationRefused(owner) => Self::ProductPreparationRefused(owner),
             Uncommitted::NoEffect(no_effect) => Self::NoEffect(no_effect),

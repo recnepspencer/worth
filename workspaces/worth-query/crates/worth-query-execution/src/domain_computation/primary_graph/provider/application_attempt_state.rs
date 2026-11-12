@@ -9,12 +9,16 @@ use std::{
     sync::{Arc, Mutex},
 };
 
+mod candidate_read_support;
+mod candidate_support_store;
+pub(in crate::domain_computation::primary_graph) use candidate_read_support::CandidateReadSupport;
 mod commit_completion;
 mod coupled_extraction;
 mod coupled_preparation;
 mod coupled_settlement;
 pub(in crate::domain_computation::primary_graph) use coupled_preparation::{
-    CoupledApplicationMember, CoupledProducerPreparation,
+    CoupledApplicationMember, CoupledApplicationMemberKind, CoupledAttemptPreparation,
+    CoupledProducerPreparation,
 };
 pub(crate) mod commit_preparation;
 pub(in crate::domain_computation::primary_graph::provider) mod coupled_publication;

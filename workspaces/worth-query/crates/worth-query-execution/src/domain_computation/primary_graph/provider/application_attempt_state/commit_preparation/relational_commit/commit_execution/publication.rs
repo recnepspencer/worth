@@ -69,6 +69,12 @@ fn publish_retained(
     let mut members = std::mem::take(&mut committed.members);
     for member in &mut members {
         let mut session = committed.take_member_session(member);
+        if provider
+            .application_attempt_operation_control
+            .take_withheld_output_witness()
+        {
+            session.prepared_output_witness = None;
+        }
         let evidence =
             super::super::evidence_seal::seal_on_runtime(execution, runtime, &mut session);
         let mut pending = prepare_pending(provider, runtime, session, evidence);
@@ -132,7 +138,14 @@ fn prepare_pending(
     if let Some(managed_views) = managed_views {
         managed_views.apply(&committed, &next_basis, &product_publication);
     }
-    let changed_record_count = committed.patch().len();
+    // Native's canonical result counts distinct changed records. A record may
+    // have more than one patch, so patch cardinality is not the receipt field.
+    let changed_record_count = committed
+        .publication()
+        .envelope
+        .semantic_result()
+        .changed_records()
+        .len();
     let runtime_instance_id = committed.snapshot.runtime_instance_id();
     let emitted_effect_count = attempt.emitted_effect_count();
     let outcome_identity = attempt.outcome_identity();

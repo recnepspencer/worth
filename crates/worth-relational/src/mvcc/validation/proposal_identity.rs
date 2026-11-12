@@ -12,6 +12,7 @@ use crate::transactions::data::TransactionId;
 /// evidence for the exact proposal it validated.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RelationalMutationProposalIdentity {
+    omitted_publication_appendix: bool,
     runtime_instance_id: u64,
     ordinal: u64,
     transaction_id: TransactionId,
@@ -23,8 +24,13 @@ pub struct RelationalMutationProposalIdentity {
 }
 
 impl RelationalMutationProposalIdentity {
+    pub(crate) fn omitted_publication_appendix(&self) -> bool {
+        self.omitted_publication_appendix
+    }
+
     pub(crate) fn same_proposal_sequence(&self, other: &Self) -> bool {
-        self.runtime_instance_id == other.runtime_instance_id
+        self.omitted_publication_appendix == other.omitted_publication_appendix
+            && self.runtime_instance_id == other.runtime_instance_id
             && self.ordinal == other.ordinal
             && self.transaction_id == other.transaction_id
             && self.branch_observation == other.branch_observation
@@ -99,6 +105,7 @@ impl crate::runtime::RelationalPreparationRuntime {
             self.publication_binding(),
         );
         let identity = RelationalMutationProposalIdentity {
+            omitted_publication_appendix: validation_input.appendix_adoption().is_some(),
             runtime_instance_id: self.services.runtime_instance_id(),
             ordinal,
             transaction_id,

@@ -152,3 +152,34 @@ fn a_reinstall_at_another_runtime_or_generation_records_the_same_intent() {
     assert_eq!(installed, intent(9, 9, 9, [6; 32]), "a whole reinstall");
     assert_ne!(installed, intent(1, 1, 1, [5; 32]), "another package");
 }
+
+#[test]
+fn an_ordinary_recorded_intent_keeps_its_pre_envelope_bytes() {
+    let request = WorthQueryApplicationIdempotencyBinding::new([1; 32], [2; 32]);
+    let recorded = format!("v2:{}:source=-:operation=-:scope=-:precondition=-:input=-:proposal=-:conditional-definition=-", "02".repeat(32));
+    assert_eq!(request.intent_text(), recorded);
+    assert_eq!(
+        request.match_recorded_intent(&recorded),
+        Ok(super::WorthQueryRecordedIntentMatch::Same)
+    );
+    let key =
+        worth_query_declaration::facade::application_operation::ApplicationEditEnvelopeKey::encode(
+            "recorded-intent-court",
+            "edit",
+        )
+        .unwrap();
+    let envelope = request.bind_edit_envelope(&key.intent(&[]).unwrap());
+    assert!(envelope.intent_text().contains(":edit-envelope="));
+    assert_eq!(
+        envelope.match_recorded_intent(&envelope.intent_text()),
+        Ok(super::WorthQueryRecordedIntentMatch::Same)
+    );
+    assert_eq!(
+        request.match_recorded_intent(&envelope.intent_text()),
+        Ok(super::WorthQueryRecordedIntentMatch::Drift)
+    );
+    assert_eq!(
+        envelope.match_recorded_intent(&recorded),
+        Ok(super::WorthQueryRecordedIntentMatch::Drift)
+    );
+}

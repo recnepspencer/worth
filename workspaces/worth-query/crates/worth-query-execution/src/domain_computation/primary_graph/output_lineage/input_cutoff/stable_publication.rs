@@ -6,6 +6,7 @@ pub(in crate::domain_computation::primary_graph::output_lineage) use fact_spans:
 pub(crate) mod source_registration;
 mod storage_denial;
 use storage_denial::storage_denial;
+pub(super) mod executed_record;
 mod stable_record;
 pub(in crate::domain_computation::primary_graph::output_lineage) use performed_sequence::performed_fact_sequence;
 pub(in crate::domain_computation::primary_graph) use source_registration::StableEqualityConsequence;
@@ -45,7 +46,9 @@ pub(in crate::domain_computation::primary_graph) struct PreparedStableLineageAdd
     pub(super) identity: Arc<RecordedSettlementIdentity>,
     pub(super) record_cell: Arc<OnceLock<RecordedOutput>>,
     pub(super) expected_record_count: usize,
-    pub(super) verified: VerifiedInputCutoff<'selected>,
+    pub(super) candidate: RetainedInputCutoffCandidate,
+    pub(super) selected: &'selected worth_relational::facade::runtime::PositionedRelationalSnapshot,
+    pub(super) input_cutoff: Option<VerifiedInputCutoff<'selected>>,
     pub(super) _coordination: &'lane WorthQueryApplicationBranchCommitCoordination<'lane>,
 }
 
@@ -73,7 +76,7 @@ impl PreparedStableLineagePublication<'_, '_> {
     pub(in crate::domain_computation::primary_graph) fn displaced_settlement(
         &self,
     ) -> Option<Arc<RecordedSettlementIdentity>> {
-        let displaced = self.address.verified.candidate.settlement_identity();
+        let displaced = self.address.candidate.settlement_identity();
         (displaced.coordinate().occurrence == self.address.coordinate.occurrence)
             .then(|| Arc::clone(displaced))
     }
@@ -98,6 +101,30 @@ pub(in crate::domain_computation::primary_graph) fn prepare_stable_address<
     coordination: &'lane WorthQueryApplicationBranchCommitCoordination<'lane>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<PreparedStableLineageAddress<'lane, 'selected>, WorthQueryOutputDemandDenial> {
+    let mut address = prepare_address(
+        owner,
+        verified.candidate.clone(),
+        verified.selected,
+        scope,
+        TypeId::of::<Binding>(),
+        observation,
+        coordination,
+        execution,
+    )?;
+    address.input_cutoff = Some(verified);
+    Ok(address)
+}
+
+pub(super) fn prepare_address<'lane, 'selected>(
+    owner: &Arc<Mutex<WorthQueryApplicationOutputLineage>>,
+    candidate: RetainedInputCutoffCandidate,
+    selected: &'selected worth_relational::facade::runtime::PositionedRelationalSnapshot,
+    scope: &WorthQueryOperationScopeBinding,
+    binding: TypeId,
+    observation: &ProductBranchObservation,
+    coordination: &'lane WorthQueryApplicationBranchCommitCoordination<'lane>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> Result<PreparedStableLineageAddress<'lane, 'selected>, WorthQueryOutputDemandDenial> {
     if !coordination.admits(observation) {
         return Err(denial(Kind::PublicationStale));
     }
@@ -109,14 +136,13 @@ pub(in crate::domain_computation::primary_graph) fn prepare_stable_address<
         schema: scope.binding_identity().clone(),
         scope: scope.scope(),
         output_binding: lineage
-            .binding_identity(TypeId::of::<Binding>())
+            .binding_identity(binding)
             .expect("admitted binding is installed"),
     };
-    if verified.candidate.settlement_identity().source() != &source {
+    if candidate.settlement_identity().source() != &source {
         return Err(denial(Kind::ForeignSource));
     }
-    let partition = verified
-        .candidate
+    let partition = candidate
         .recorded()
         .source_partition_identity
         .expect("an owner-selected input candidate has its exact partition");
@@ -127,7 +153,7 @@ pub(in crate::domain_computation::primary_graph) fn prepare_stable_address<
     lineage.drain_cancelled_slots()?;
     // History no retained reader selects is freed before this address extends it.
     let actual = lineage
-        .prior_input_cutoff_candidate::<Binding>(scope, observation, partition, execution)
+        .prior_input_cutoff_candidate_in_source(&source, observation, partition, execution)
         .map_err(|stop| {
             crate::domain_computation::primary_graph::output_reuse::retained_fact_denial(
                 crate::domain_computation::primary_graph::output_reuse::preflight_stop(stop),
@@ -136,7 +162,7 @@ pub(in crate::domain_computation::primary_graph) fn prepare_stable_address<
         })?;
     if !actual
         .as_ref()
-        .is_some_and(|actual| same_candidate(actual, &verified.candidate))
+        .is_some_and(|actual| same_candidate(actual, &candidate))
     {
         return Err(denial(Kind::PublicationStale));
     }
@@ -159,7 +185,9 @@ pub(in crate::domain_computation::primary_graph) fn prepare_stable_address<
         identity,
         record_cell,
         expected_record_count: slot,
-        verified,
+        candidate,
+        selected,
+        input_cutoff: None,
         _coordination: coordination,
     })
 }

@@ -28,23 +28,31 @@ pub fn stable_input_reuse_has_no_performed_output_evaluation() {
     assert_eq!(contacts, 1);
     drop(read);
     let request = application.runtime().request(&principal, &scope);
-    let outcome = request
-        .advanced()
-        .mutate(OtherEdit {
-            key: "numeric".to_owned(),
-            value: Value::Secondary(8),
-        })
-        .without_source()
-        .idempotency(&"stable-evaluation-secondary-eight".to_owned())
-        .execute_performed::<OutputProgram, Root>(
-            &application,
-            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
-    let WorthQueryApplicationPerformedMutationOutcome::Performed(performed) = outcome else {
-        panic!("the queried Secondary edit must retain its declared required output")
-    };
-    let (_, _, read) = source_journey::settle_source(&application, &request, performed, 1);
+    let (_, _, read) = source_journey::perform_and_settle_source(
+        &application,
+        &request,
+        || {
+            let outcome = request
+                .advanced()
+                .mutate(OtherEdit {
+                    key: "numeric".to_owned(),
+                    value: Value::Secondary(8),
+                })
+                .without_source()
+                .idempotency(&"stable-evaluation-secondary-eight".to_owned())
+                .execute_performed::<OutputProgram, Root>(
+                    &application,
+                    worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .unwrap();
+            let WorthQueryApplicationPerformedMutationOutcome::Performed(performed) = outcome
+            else {
+                panic!("the queried Secondary edit must retain its declared required output")
+            };
+            performed
+        },
+        1,
+    );
     drop(read);
     let row = application
         .runtime()

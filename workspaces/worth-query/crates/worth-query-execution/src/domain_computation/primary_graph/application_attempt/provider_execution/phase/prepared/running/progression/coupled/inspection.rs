@@ -1,11 +1,18 @@
 //! A registered writer materializes its own real effect overlay.
 use super::*;
+use crate::domain_computation::primary_graph::WorthQueryApplicationProducerBinding;
+mod authored;
 mod authorization;
 mod preparation;
+mod registration;
+pub(in crate::domain_computation::primary_graph) use authored::{
+    inspect_authored_application, InspectedAuthoredApplication,
+};
 pub(in crate::domain_computation::primary_graph) use preparation::CommitPreparedCoupledWriter;
 
 struct CoupledWriterCustody {
-    completion: crate::domain_computation::primary_graph::output_lineage::CoupledOutputCompletion,
+    completion:
+        Option<crate::domain_computation::primary_graph::output_lineage::CoupledOutputCompletion>,
     typed: Box<dyn Any>,
     dispatch_outbox:
         Option<crate::domain_computation::application_aftermath::WorthQueryDispatchOutboxRecord>,
@@ -34,11 +41,11 @@ pub(in crate::domain_computation::primary_graph) fn inspect_coupled_application<
     candidate: &worth_relational::facade::runtime::RelationalPinnedRead<
         worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
     >,
-    predecessor: worth_relational::facade::mvcc::RelationalRequiredOutputPublication,
+    predecessor: Option<worth_relational::facade::mvcc::RelationalRequiredOutputPublication>,
 ) -> Result<
     (
         InspectedCoupledWriter<'run>,
-        worth_relational::facade::mvcc::RequiredOutputPublication,
+        worth_relational::facade::mvcc::RelationalCoupledProducerPosture,
         worth_relational::facade::transactions::WorkerIntentBatch,
         worth_relational::facade::content::RelationalContentAttachments,
     ),
@@ -49,51 +56,22 @@ where
     B: WorthQueryApplicationProducerBinding<S>,
 {
     use crate::domain_computation::primary_graph::WorthQueryProducerOutputFamily;
-    let RegisteredCoupledWriter {
+    let registration::InspectedRegistration {
         source,
-        mut typed,
-        registered,
-        returned,
-        cleanup,
-        lease,
-        original_completion,
-        completion_storage,
-    } = registered;
-    let authority = typed
-        .downcast_ref::<CoupledWriterAdmission<S, B>>()
-        .expect("installed executor retains its own registered admission");
-    let request = authority.admission.publication_request().clone();
-    let inspected = registered.inspect_coupled(
+        coupled_outputs: _,
+        inspection,
+        mut custody,
+    } = registration::inspect_registered::<S, B::Operation>(
         execution,
-        &application.runtime.primary_provider,
-        &request,
+        phase,
+        application,
+        registered,
         candidate,
-        execution.allocation_policy(),
-    );
-    let (inspection, dispatch_outbox) = match inspected {
-        Ok(inspected) => inspected,
-        Err(outcome) => {
-            drop(typed);
-            return Err(progressed::finish_coupled_application_commit(
-                execution,
-                phase,
-                application,
-                completion_storage.complete(WorthQueryProgressedApplicationCommit {
-                    original_completion,
-                    outcome,
-                    workflow_settlement_publication: None,
-                    lease,
-                    running: returned
-                        .take()
-                        .expect("closed inspection returned its actual run"),
-                    cleanup,
-                    request,
-                }),
-            ));
-        }
-    };
+    )?;
+    let source = source.expect("a genuine producer retains its source publication");
+    let typed = &mut custody.typed;
     let handler = typed
-        .downcast_mut::<CoupledWriterAdmission<S, B>>()
+        .downcast_mut::<CoupledWriterAdmission<S, B::Operation>>()
         .expect("installed writer keeps its nominal admission")
         .admission
         .graph_work_mut()
@@ -113,6 +91,8 @@ where
                 .runtime
                 .primary_provider
                 .coupled_writer_commands(
+                    execution,
+                    custody.lease.product().relational_basis(),
                     inspection.provider_session_view(),
                     B::IDENTITY,
                     B::OutputFamily::IDENTITY,
@@ -124,40 +104,16 @@ where
         Ok(commands) => commands,
         Err(cause) => {
             inspection.discard();
-            drop(typed);
-            let outcome = WorthQueryProviderProgressionOutcome::Denied(crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::invariant_execution_denied(
-                crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage::InvariantExecution, cause));
-            return Err(progressed::finish_coupled_application_commit(
-                execution,
-                phase,
-                application,
-                completion_storage.complete(WorthQueryProgressedApplicationCommit {
-                    original_completion,
-                    outcome,
-                    workflow_settlement_publication: None,
-                    lease,
-                    running: returned
-                        .take()
-                        .expect("discarded inspection returned its actual run"),
-                    cleanup,
-                    request,
-                }),
-            ));
+            let outcome = WorthQueryProviderProgressionOutcome::Denied(
+                crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::invariant_execution_denied(
+                    crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage::InvariantExecution, cause));
+            return Err(custody.finish(execution, phase, application, outcome));
         }
     };
+    custody.completion = Some(completion);
     Ok((
         InspectedCoupledWriter {
-            custody: CoupledWriterCustody {
-                completion,
-                typed,
-                dispatch_outbox,
-                returned,
-                cleanup,
-                lease,
-                request,
-                original_completion,
-                completion_storage,
-            },
+            custody,
             inspection,
         },
         commands.publication,

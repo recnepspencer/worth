@@ -1,6 +1,9 @@
 use super::WorthQueryPrimaryGraphProvider;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding;
 
+mod publication_appendix;
+pub(super) use publication_appendix::bind_receipt;
+pub(in crate::domain_computation::primary_graph) use publication_appendix::ReceiptAppendix;
 mod lookup_key;
 pub(crate) mod product_affinity;
 pub(in crate::domain_computation::primary_graph) use lookup_key::WorthQueryIdempotencyLookupKey;

@@ -208,3 +208,35 @@ fn relation_only_spawn_without_its_declared_link_refuses_before_commit() {
         "nothing committed"
     );
 }
+
+#[test]
+fn relation_only_edit_seals_unchanged_demanded_kinds_and_restores_the_changed_pair() {
+    let (host, scope) = world();
+    let principal = authenticate_operator(host.installed_schema(), &scope);
+    let request = host.runtime().request(&principal, &scope);
+    spawned(&host, &request, input(10, true, 0));
+    spawned(&host, &request, input(20, false, 0));
+    let edit = |key: &str| {
+        let outcome = request
+            .advanced()
+            .mutate(super::retarget::Input {
+                id: 10,
+                old: 11,
+                target: 20,
+            })
+            .without_source()
+            .idempotency(&key.to_owned())
+            .execute_in_program(&host, ExecutionAllocationPolicy::SystemAllocation)
+            .unwrap();
+        match outcome {
+            WorthQueryApplicationMutationOutcome::Committed { receipt, .. } => receipt,
+            outcome => panic!("the relation-only edit commits: {outcome:?}"),
+        }
+    };
+    let original = edit("retarget-first");
+    reverse(&request, &original, "restore-held-pair");
+    // This fresh edit's decision reads the actual edge restored by the inverse.
+    // It refuses unless 10 holds 11 again; this also catches a wrong inverse.
+    edit("retarget-after-undo");
+    assert!(live(&request, 10) && live(&request, 11) && live(&request, 20));
+}

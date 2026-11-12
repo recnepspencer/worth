@@ -152,7 +152,7 @@ where
             ));
         }
     }
-    require_acyclic_connections(&features, &connections)?;
+    let connection_order = order_connections(&features, &connections)?;
     for feature in &features {
         for input in feature.required_inputs() {
             if !bound_inputs.contains(&(feature.composition_instance(), feature.identity(), input))
@@ -202,6 +202,7 @@ where
         features,
         actions,
         connections,
+        connection_order,
         rules,
         semantic_description,
         adoption_authorization,

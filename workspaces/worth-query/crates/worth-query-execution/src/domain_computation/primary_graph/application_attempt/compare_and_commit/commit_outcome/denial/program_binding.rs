@@ -8,6 +8,20 @@ use super::{
 };
 
 impl WorthQueryApplicationCommitDenial {
+    pub(in crate::domain_computation::primary_graph) fn required_output_preparation_missing(
+        binding: &'static str,
+    ) -> Self {
+        Self {
+            kind: WorthQueryApplicationCommitDenialKind::RequiredOutputPreparationMissing,
+            stage: WorthQueryApplicationCommitDenialStage::ProposalBinding,
+            detail: Some(
+                format!("action {binding} requires its typed required-output source preparation")
+                    .into(),
+            ),
+            cause: None,
+        }
+    }
+
     /// The attempt reached the direct commit entry for a program-owned operation.
     #[expect(
         clippy::disallowed_methods,

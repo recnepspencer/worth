@@ -23,8 +23,9 @@ class BoundaryDependencyPreparationTests(unittest.TestCase):
             '[[source_dependency_allowlists]]\nworkspace_manifest="allowed/Cargo.toml"\n'
             '[[dependency_target_allowlists]]\nworkspace_manifest="target/Cargo.toml"\n')
         (self.config/'test-workspaces.txt').write_text('# inventory\n. | root\ncourts | stem\n')
+        (self.config/'domain-values.toml').write_text('workspace_manifests=["domain/Cargo.toml"]\n')
         self.expected = ['Cargo.toml', 'allowed/Cargo.toml', 'context/Cargo.toml', 'contracts/Cargo.toml',
-                         'courts/Cargo.toml', 'denied/Cargo.toml', 'target/Cargo.toml']
+                         'courts/Cargo.toml', 'denied/Cargo.toml', 'domain/Cargo.toml', 'target/Cargo.toml']
         for relative in self.expected:
             manifest = self.root/relative; manifest.parent.mkdir(parents=True, exist_ok=True)
             manifest.write_text('[workspace]\n')
@@ -32,6 +33,61 @@ class BoundaryDependencyPreparationTests(unittest.TestCase):
 
     def test_every_existing_boundary_workspace_source_is_used_once(self):
         self.assertEqual(manifests(self.root), self.expected)
+
+    def test_domain_registry_union_deduplicates_other_sources(self):
+        (self.config/'domain-values.toml').write_text(
+            'workspace_manifests=["domain/Cargo.toml", "courts/Cargo.toml", '
+            '"domain/Cargo.toml", "Cargo.toml"]\n')
+        self.assertEqual(manifests(self.root), self.expected)
+
+    def test_optional_domain_inventory_can_be_absent(self):
+        (self.config/'domain-values.toml').write_text('binding=[]\n')
+        self.assertEqual(manifests(self.root),
+                         [path for path in self.expected if path != 'domain/Cargo.toml'])
+
+    def test_invalid_domain_inventory_refuses_before_any_fetch(self):
+        for value in ('1', '[1]', '["domain/lib.rs"]',
+                      '["missing/Cargo.toml"]', '["../outside/Cargo.toml"]'):
+            with self.subTest(value=value):
+                (self.config/'domain-values.toml').write_text('workspace_manifests=' + value)
+                invoke = Mock()
+                with self.assertRaises(ValueError):
+                    prepare(self.root, invoke=invoke)
+                invoke.assert_not_called()
+
+    def test_missing_or_malformed_domain_registry_refuses_before_any_fetch(self):
+        registry = self.config/'domain-values.toml'
+        registry.unlink()
+        invoke = Mock()
+        with self.assertRaises(OSError):
+            prepare(self.root, invoke=invoke)
+        invoke.assert_not_called()
+        registry.write_text('workspace_manifests=[')
+        with self.assertRaises(ValueError):
+            prepare(self.root, invoke=invoke)
+        invoke.assert_not_called()
+
+    def test_domain_manifest_and_lock_are_both_required_before_any_fetch(self):
+        manifest = self.root/'domain/Cargo.toml'
+        for missing in (manifest, manifest.with_name('Cargo.lock')):
+            with self.subTest(missing=missing.name):
+                original = missing.read_text()
+                missing.unlink()
+                invoke = Mock()
+                with self.assertRaisesRegex(ValueError, 'manifest and lock'):
+                    prepare(self.root, invoke=invoke)
+                invoke.assert_not_called()
+                missing.write_text(original)
+
+    def test_actual_ci_inventory_contains_every_configured_domain_workspace(self):
+        import tomllib
+        repository = Path(__file__).resolve().parents[2]
+        config = repository/'tools/boundary-check/config/domain-values.toml'
+        domain = tomllib.loads(config.read_text(encoding='utf-8'))['workspace_manifests']
+        selected = manifests(repository)
+        self.assertTrue(domain)
+        self.assertTrue(set(domain).issubset(selected))
+        self.assertEqual(len(selected), len(set(selected)))
 
     def test_fetches_are_locked_and_a_cargo_failure_stops_with_original_code(self):
         invoke = Mock(side_effect=[subprocess.CompletedProcess([], 0), subprocess.CompletedProcess([], 101)])
