@@ -92,12 +92,12 @@ pub(super) fn observe(
             .count(),
         published.len() - 1
     );
-    // The receipt counts native patch fragments. Several fragments may name
-    // one metadata row; neither a fragment nor a physical row may disappear.
+    // The canonical receipt counts distinct changed records. Several patch
+    // fragments may name one metadata row; every fragment is mapped above.
     assert_eq!(
-        patches.len(),
+        published.len(),
         expected_records,
-        "Native's original changed-record count covers every patch fragment"
+        "Native's canonical changed-record count covers every distinct published row"
     );
     assert_eq!(
         published.len(),
