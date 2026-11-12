@@ -223,7 +223,8 @@ fn discovered_committed_retention_refuses_twice_then_promotes_original_carrier()
         .err()
         .expect("a second real reservation refusal returns the same carrier");
     assert!(
-        matches!(denial, worth_query_host::facade::application_entry::WorthQueryApplicationRecoveryRequestDenial::Recovery(worth_query_host::facade::primary_graph::WorthQueryManagedApplicationRecoveryDenial::Demand(ref denial)) if denial.kind()==WorthQueryOutputDemandDenialKind::PublicationCapacityExceeded)
+        matches!(denial, worth_query_host::facade::application_entry::WorthQueryApplicationRecoveryRequestDenial::Recovery(worth_query_host::facade::primary_graph::WorthQueryManagedApplicationRecoveryDenial::Demand(ref denial)) if denial.kind()==WorthQueryOutputDemandDenialKind::PublicationCapacityExceeded),
+        "the second retention refusal must preserve capacity denial: {denial:?}"
     );
     failure = returned;
     drop(guard);
