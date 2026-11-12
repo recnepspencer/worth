@@ -4225,6 +4225,7 @@ dependencies = [
  "file-id",
  "fs4",
  "getrandom 0.4.3",
+ "libc",
  "maybe-owned",
  "rustix 1.1.5",
  "same-file",
