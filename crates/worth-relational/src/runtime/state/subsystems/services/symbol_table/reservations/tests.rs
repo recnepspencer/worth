@@ -205,7 +205,9 @@ fn the_candidate_binding_is_its_base_dictionary_with_every_admitted_meaning() {
     let expected = candidate.binding.detached_owner_snapshot();
     expected.update(|state| {
         for (symbol, text) in &candidate.admitted {
-            state.configuration.insert(SymbolTextLookupKey::from_text(text), *symbol);
+            state
+                .configuration
+                .insert(SymbolTextLookupKey::from_text(text), *symbol);
         }
     });
     let actual = candidate.binding();

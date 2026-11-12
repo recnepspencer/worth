@@ -13,7 +13,8 @@ use worth_relational::facade::{
 pub struct WorthQueryHistoricalProducerRead {
     publication: (u64, usize),
     basis: RelationalBranchBasisDescriptor,
-    _applied: Option<worth_relational::facade::runtime::RelationalAppliedCandidateReadQualification>,
+    _applied:
+        Option<worth_relational::facade::runtime::RelationalAppliedCandidateReadQualification>,
     operation: &'static str,
     keys: Arc<ComputationFactAttribution>,
 }
