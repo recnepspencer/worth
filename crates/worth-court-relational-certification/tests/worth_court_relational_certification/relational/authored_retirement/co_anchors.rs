@@ -17,7 +17,7 @@ fn co_anchored_history_preserves_fresh_restoration_and_nonconsuming_inverse_admi
         .observe_branch(&runtime.main_branch_identity())
         .unwrap()
         .1;
-    // Decode the real text directly: serde_json::Value cannot carry Native u128 IDs.
+    // Decode the real text directly: serde_json::Value cannot carry full-width u128 plan revisions.
     #[derive(serde::Deserialize)]
     struct Retired {
         anchor: EntityId,
