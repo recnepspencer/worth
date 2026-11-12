@@ -928,6 +928,22 @@ Query owners in the mounted adapter through inspection, recovery and close.
 
 ---
 
+### Author, set up and export installed meaning
+
+Follow the [joined application walkthrough](build-an-application.md#share-reads-then-use-installed-contracts):
+author one exact shared decision-read scope, attach typed operation references,
+install the actual program, select declared indexes through installed typed
+lookup, and initialize Sources only inside fresh unpublished bootstrap custody.
+Export the retained package through Host and use the existing SDK reconstruction
+and fresh validation with an independently obtained installed identity.
+
+The [ordinary workflow example](../workspaces/worth-query/crates/worth-query-certification/examples/ordinary_product_workflow.rs)
+compiles shared authoring, production installation and actual export/readmission.
+The existing [managed-index setup consumer](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/refusing/host.rs)
+teaches typed provider setup and initialization without adding an index to an
+application that has none. These descriptive contracts confer no extra read,
+write, root or live-runtime initialization authority.
+
 ## Use requests and retained operations
 
 Declare schema and program meaning through `worth-query-decl`, then install and

@@ -12,6 +12,7 @@ use worth_query_host::facade::{
     worth_query_operation_emits, worth_query_portable_type, worth_query_structured_value_binding,
 };
 
+mod decision_reads;
 pub mod integrity;
 pub use integrity::TemporalIntegrity;
 
@@ -74,6 +75,7 @@ impl Registration<TemporalHostSchema> for Contracts {
         ApplicationSchemaDeclarationDenial,
     > {
         Ok({
+            let schema = decision_reads::declare(schema)?;
             let schema = schema
                 .principal_binding(TemporalPrincipalBinding::reference())
                 .effect(TemporalExecutionEffect::reference())
@@ -110,18 +112,6 @@ impl Registration<TemporalHostSchema> for Contracts {
                 .operation_projection_work_budget(ExecuteTemporal::reference(), 16)
                 .operation_read_field(
                     ExecuteTemporal::reference(),
-                    IntentIdentityField::at("IntentIdentityField"),
-                )
-                .operation_read_field(
-                    ExecuteTemporal::reference(),
-                    IntentRevisionField::at("IntentRevisionField"),
-                )
-                .operation_read_field(
-                    ExecuteTemporal::reference(),
-                    IntentLifecycleField::at("IntentLifecycleField"),
-                )
-                .operation_read_field(
-                    ExecuteTemporal::reference(),
                     IntentEffectField::at("IntentEffectField"),
                 )
                 .operation_write(
@@ -141,18 +131,6 @@ impl Registration<TemporalHostSchema> for Contracts {
                     TemporalExecutionEffect::reference(),
                 )
                 .operation_projection_work_budget(AmendTemporal::reference(), 12)
-                .operation_read_field(
-                    AmendTemporal::reference(),
-                    IntentIdentityField::at("IntentIdentityField"),
-                )
-                .operation_read_field(
-                    AmendTemporal::reference(),
-                    IntentRevisionField::at("IntentRevisionField"),
-                )
-                .operation_read_field(
-                    AmendTemporal::reference(),
-                    IntentLifecycleField::at("IntentLifecycleField"),
-                )
                 .operation_read_field(
                     AmendTemporal::reference(),
                     IntentGateField::at("IntentGateField"),
