@@ -164,6 +164,8 @@ class Gate:
             validate_environment(os.environ)
             validate_environment(self.env)
             self.env["CARGO_NET_OFFLINE"] = "true"
+            self.env["WORTH_CONSTITUTION_ROOT"] = str(ROOT)
+            self.env["WORTH_REPO"] = str(ROOT)
             self.explicit_build_identity = None
         if self.explicit_build_identity is not None:
             self.env["WORTH_IMPLEMENTATION_BUILD_ID"] = require_build_identity(self.explicit_build_identity)

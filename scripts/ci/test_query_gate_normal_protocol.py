@@ -178,9 +178,12 @@ class NormalProtocolTests(unittest.TestCase):
     def test_normal_issues_fresh_identity_instead_of_reusing_environment_or_receipt(self):
         plan = self.prepare()
         old = '067dcfd0-0f4d-4ffb-b80e-7e3a37012372'
-        with patch.dict('os.environ', {'WORTH_IMPLEMENTATION_BUILD_ID': old}), \
+        with patch.dict('os.environ', {'WORTH_IMPLEMENTATION_BUILD_ID': old,
+                                    'WORTH_CONSTITUTION_ROOT': '/foreign/source', 'WORTH_REPO': '/foreign/source'}), \
                 patch('query_gate.verification_identity') as reuse:
             gate = query_gate.Gate(self.root/'target/not-run', affected=plan)
             gate.plan([])
         reuse.assert_not_called()
         self.assertNotEqual(gate.env['WORTH_IMPLEMENTATION_BUILD_ID'], old)
+        self.assertEqual(gate.env['WORTH_CONSTITUTION_ROOT'], str(query_gate.ROOT))
+        self.assertEqual(gate.env['WORTH_REPO'], str(query_gate.ROOT))
