@@ -9,7 +9,10 @@ use worth_query_host::facade::{
         WorthQueryOperationAdvance as Advance, WorthQueryOperationCloseDenial,
     },
     primary_graph::{
-        WorthQueryApplicationCommitOutcome as C, WorthQueryApplicationUncommitted as U,
+        BridgeExecutionBasisFinalizationFailureKind, WorthQueryApplicationManagedCleanupReceipt,
+        WorthQueryApplicationUncommitted as U, WorthQueryCleanupDispatchPosture,
+        WorthQueryExecutionObservation, WorthQueryManagedRunCleanupFailureKind,
+        WorthQueryMutationCleanupFailure, WorthQueryMutationCleanupFailureKind,
         WorthQueryPrincipalResolutionMode, WorthQueryProductBranchAdmissionDenial,
         WorthQueryProductBranchAdmissionRefusalKind,
     },
@@ -17,6 +20,34 @@ use worth_query_host::facade::{
 use worth_query_topology_entry::{
     planar_source_adjustment_contacts, reset_planar_source_adjustment_contacts, BodyKey, PositionY,
 };
+fn failed_runs<'a>(
+    failures: impl ExactSizeIterator<Item = &'a WorthQueryMutationCleanupFailure>,
+) -> Vec<String> {
+    // This fixture arms exactly one actual foreign-worker cleanup, after prior work.
+    assert_eq!(failures.len(), 1, "one-shot native cleanup failure roster");
+    failures.map(|failure| {
+        assert_eq!(failure.kind(), WorthQueryMutationCleanupFailureKind::Native(
+            WorthQueryManagedRunCleanupFailureKind::BridgeFinalization(
+                BridgeExecutionBasisFinalizationFailureKind::SignalRuntimeThreadAffinityViolation)));
+        failure.run_identity().to_owned()
+    }).collect()
+}
+fn released_runs(receipts: &[WorthQueryApplicationManagedCleanupReceipt]) -> Vec<String> {
+    receipts
+        .iter()
+        .map(|receipt| {
+            assert!(receipt.inspection().resources_released());
+            // These pure field actions declare no external dispatch. Keep each strong
+            // receipt borrowed, including its actual original/recovery custody.
+            assert_eq!(
+                receipt.dispatch_posture(),
+                WorthQueryCleanupDispatchPosture::NotDeclared
+            );
+            assert!(receipt.original_dispatch().is_none());
+            receipt.inspection().run_identity().to_owned()
+        })
+        .collect()
+}
 #[derive(Clone, Copy)]
 enum Interference {
     NativeWrite,
@@ -91,7 +122,7 @@ fn terminal_court(interference: Interference) {
     let pause = world
         .application
         .pause_after_application_candidate_preparation_for_test(NonZeroUsize::MIN);
-    let terminal = std::thread::scope(|threads| {
+    let (terminal, original_runs) = std::thread::scope(|threads| {
         let (release, released) = std::sync::mpsc::sync_channel::<()>(0);
         let application = &world.application;
         let adapter = &adapter;
@@ -145,12 +176,7 @@ fn terminal_court(interference: Interference) {
             Advance::Terminal { operation, .. } => operation,
             _ => panic!("native no-effect cannot settle outputs"),
         };
-        let failure = terminal
-            .managed_cleanup_failure()
-            .expect("actual lower release returned custody");
-        assert_eq!(failure.kind(), worth_query_host::facade::primary_graph::WorthQueryMutationCleanupFailureKind::Native(
-            worth_query_host::facade::primary_graph::WorthQueryManagedRunCleanupFailureKind::BridgeFinalization(
-                worth_query_host::facade::primary_graph::BridgeExecutionBasisFinalizationFailureKind::SignalRuntimeThreadAffinityViolation)));
+        let original_runs = failed_runs(terminal.managed_cleanup_failures());
         match interference {
             Interference::NativeWrite => assert!(
                 matches!(terminal.native_outcome(), Some(WorthQueryApplicationMutationOutcome::Commit(U::ProductStale(stale)))
@@ -179,7 +205,7 @@ fn terminal_court(interference: Interference) {
                 Interference::ObservationCapacity => initial_y,
             }
         );
-        terminal
+        (terminal, original_runs)
     });
     assert_eq!(world.application.active_application_attempts_for_test(), 0);
     assert_eq!(
@@ -209,7 +235,10 @@ fn terminal_court(interference: Interference) {
         WorthQueryOperationCloseDenial::Execution(_)
     ));
     assert!(terminal.native_outcome().is_some());
-    assert!(terminal.managed_cleanup_failure().is_some());
+    assert_eq!(
+        failed_runs(terminal.managed_cleanup_failures()),
+        original_runs
+    );
     drop(principal);
     drop(scope);
     let fresh_scope = authentication::request_scope();
@@ -221,11 +250,10 @@ fn terminal_court(interference: Interference) {
     let closed = terminal
         .close(&world.application.request(&fresh_principal, &fresh_scope))
         .unwrap_or_else(|(_, cause)| panic!("fresh no-effect close: {cause:?}"));
-    assert!(closed
-        .managed_cleanup_receipt()
-        .unwrap()
-        .inspection()
-        .resources_released());
+    assert_eq!(
+        released_runs(closed.managed_cleanup_receipts()),
+        original_runs
+    );
 
     assert_eq!(
         planar_source_adjustment_contacts(&input),
@@ -235,8 +263,7 @@ fn terminal_court(interference: Interference) {
 }
 
 #[test]
-fn fixed_producer_cleanup_survives_diagnostic_drop_and_refused_release() {
-    use worth_query_host::facade::application_entry::WorthQueryOperationProgress as Progress;
+fn synchronous_coupled_publication_cleanup_survives_diagnostic_drop_and_refused_release() {
     let mut world = installation::install(&crate::installed_schema());
     let request_runtime = world.application.clone();
     let constructing = std::mem::replace(&mut world.application, request_runtime);
@@ -277,60 +304,36 @@ fn fixed_producer_cleanup_survives_diagnostic_drop_and_refused_release() {
             .unwrap_or_else(|(_, cause)| panic!("descriptor: {cause:?}"))
     };
     drop(constructing);
-    let operation = match operation.advance(&request) {
-        Advance::Progress {
-            operation,
-            progress: Progress::SourcePerformed,
-        } => operation,
-        _ => panic!("the source really commits before arming producer cleanup"),
-    };
-    let mut operation = Some(operation);
-    let operation = loop {
-        match operation.take().unwrap().advance(&request) {
-            Advance::Progress {
-                operation: next,
-                progress: Progress::OutputsStarted,
-            } => break next,
-            Advance::Progress {
-                operation: next, ..
-            } => operation = Some(next),
-            Advance::Refused { denial, .. } | Advance::Terminal { denial, .. } => {
-                panic!("pre-producer admission: {denial:?}")
-            }
-            Advance::Settled(_) => panic!("outputs have not yet run"),
-        }
-    };
-    let before_producer = request
+    let before_publication = request
         .retain_current_read()
         .unwrap()
         .selected_commit()
         .clone();
+    let _observation = WorthQueryExecutionObservation::install_on_this_thread();
     let _cleanup = world
         .application
         .schedule_next_managed_cleanup_on_worker_for_test()
         .unwrap();
+    // The source and required outputs perform together in this initial advance.
     let mut terminal = match operation.advance(&request) {
         Advance::Terminal { operation, denial } => {
             drop(denial);
             operation
         }
-        Advance::Refused { denial, .. } => {
-            panic!("cleanup is terminal producer evidence: {denial:?}")
+        Advance::Refused { denial, .. } => panic!("coupled cleanup refused: {denial:?}"),
+        Advance::Progress { .. } => {
+            panic!("initial coupled publication continued without terminal cleanup")
         }
-        _ => panic!("the actual producer cleanup must fail"),
+        Advance::Settled(_) => {
+            panic!("initial coupled publication settled without terminal cleanup")
+        }
     };
-    let original_run = terminal
-        .managed_cleanup_failure()
-        .expect("diagnostic drop cannot own cleanup")
-        .run_identity()
-        .to_owned();
-    assert_eq!(terminal.managed_cleanup_failure().unwrap().kind(),
-        worth_query_host::facade::primary_graph::WorthQueryMutationCleanupFailureKind::Native(
-            worth_query_host::facade::primary_graph::WorthQueryManagedRunCleanupFailureKind::BridgeFinalization(
-                worth_query_host::facade::primary_graph::BridgeExecutionBasisFinalizationFailureKind::SignalRuntimeThreadAffinityViolation)));
+    let original_runs = failed_runs(terminal.managed_cleanup_failures());
     assert!(matches!(
-        terminal.producer_native_outcome(),
-        Some(C::Indeterminate(_))
+        terminal.native_outcome(),
+        Some(WorthQueryApplicationMutationOutcome::Commit(
+            U::Indeterminate(_)
+        ))
     ));
     let head = request
         .retain_current_read()
@@ -338,8 +341,15 @@ fn fixed_producer_cleanup_survives_diagnostic_drop_and_refused_release() {
         .selected_commit()
         .clone();
     assert_ne!(
-        head, before_producer,
-        "the real producer published before native cleanup failed"
+        head, before_publication,
+        "the real coupled publication landed before native cleanup failed"
+    );
+    let producer_contacts = world
+        .application
+        .producer_contacts_on_this_thread_for_test();
+    assert!(
+        producer_contacts > 0,
+        "actual required outputs performed with the source"
     );
     let cancellation = worth_query_host::facade::admission::authenticated_principal::WorthQueryCancellationSource::new();
     cancellation.cancel();
@@ -352,31 +362,31 @@ fn fixed_producer_cleanup_survives_diagnostic_drop_and_refused_release() {
         Err(WorthQueryOperationCloseDenial::Execution(_))
     ));
     assert_eq!(
-        terminal.managed_cleanup_failure().unwrap().run_identity(),
-        original_run
+        failed_runs(terminal.managed_cleanup_failures()),
+        original_runs
     );
     let receipt = terminal.release_cleanup(&request).unwrap();
     assert_eq!(
-        receipt
-            .managed_cleanup_receipt()
-            .unwrap()
-            .inspection()
-            .run_identity(),
-        original_run
+        released_runs(receipt.managed_cleanup_receipts()),
+        original_runs
     );
-    assert!(receipt
-        .managed_cleanup_receipt()
-        .unwrap()
-        .inspection()
-        .resources_released());
+    assert_eq!(terminal.managed_cleanup_failures().len(), 0);
     assert_eq!(
         request.retain_current_read().unwrap().selected_commit(),
         &head
     );
     assert_eq!(planar_source_adjustment_contacts(&input), (1, 1));
+    assert_eq!(
+        world
+            .application
+            .producer_contacts_on_this_thread_for_test(),
+        producer_contacts
+    );
     assert!(matches!(
-        terminal.producer_native_outcome(),
-        Some(C::Indeterminate(_))
+        terminal.native_outcome(),
+        Some(WorthQueryApplicationMutationOutcome::Commit(
+            U::Indeterminate(_)
+        ))
     ));
     assert!(matches!(
         terminal.close(&request),
