@@ -241,7 +241,10 @@ def captured_gate_command(path, workspace, expanded):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--external', type=Path, required=True)
+    parser.add_argument('--external', type=Path)
+    parser.add_argument('--normal-result', type=Path, help='assess partial evidence, never push permission')
+    parser.add_argument('--expected-commit')
+    parser.add_argument('--expected-base')
     parser.add_argument('--before', type=Path)
     parser.add_argument('--phase34', type=Path)
     parser.add_argument('--repository', type=Path, default=Path(__file__).resolve().parents[2])
@@ -250,6 +253,18 @@ def main():
     parser.add_argument('--gate-selection', action='append', default=[], metavar='WORKSPACE=PATH')
     parser.add_argument('--gate-command', action='append', default=[], metavar='WORKSPACE=LOG')
     args = parser.parse_args()
+    if args.normal_result is not None:
+        if (not args.expected_commit or not args.expected_base or args.external or args.before or
+                args.phase34 or args.output or args.check_only or args.gate_selection or args.gate_command):
+            parser.error('normal assessment requires only repository/result/expected commit/base')
+        try:
+            print(json.dumps(assess_normal(args.repository, args.normal_result,
+                                           args.expected_commit, args.expected_base), indent=2))
+            return 0
+        except (OSError, ValueError, KeyError) as error:
+            parser.error(str(error))
+    if args.external is None or args.expected_commit or args.expected_base:
+        parser.error('legacy descriptor validation requires --external')
     values, source, tree = configuration(args.external)
     before = configuration(args.before)[0] if args.before else None
     contracts = gate_contract(args.repository)
@@ -292,6 +307,53 @@ def main():
         print(json.dumps({'status': result['status'], 'violations': errors, 'metadata_invocations': 0,
                           'document_route_cases': len(routes), 'actual_gate_aliases': len(gate_sets)}))
     return bool(errors)
+
+
+def assess_normal(repository, output, expected_commit, expected_base):
+    """Assess fresh affected evidence for manual Root consumption; no push token."""
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'ci'))
+    import query_gate
+    from query_gate_normal import compile_plan, command_plan, assert_unchanged
+    from query_gate_environment import require_build_identity
+    repository, output = Path(repository).resolve(), Path(output).resolve()
+    plan = compile_plan(repository, expected_base)
+    if plan['source']['commit'] != expected_commit:
+        raise ValueError('normal report is not the expected candidate')
+    summary = json.loads((output / 'summary.json').read_text(encoding='utf-8'))
+    commands = json.loads(json.dumps(command_plan(plan, query_gate)))
+    required = [*commands, *plan['suites']]
+    coverage = {'root': 'partial'} if plan['packages'] else {}
+    label = ('AFFECTED NORMAL / PARTIAL ROOT' if plan['packages'] else
+             'SOURCE-ONLY / NO RUST COURT COVERAGE')
+    if (summary.get('schema') != 'worth.affected-normal.v1' or
+            summary.get('normal_plan') != plan or summary.get('status') != 'green' or
+            summary.get('output') != str(output) or
+            summary.get('command_plan') != commands or summary.get('requested_suites') != required or
+            summary.get('workspace_coverage') != coverage or summary.get('label') != label):
+        raise ValueError('normal source/plan/coverage/status differs')
+    require_build_identity(summary['application_build'])
+    artifacts = {p.relative_to(output).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
+                 for p in output.rglob('*') if p.is_file() and p != output / 'summary.json'}
+    if artifacts != summary.get('artifacts'):
+        raise ValueError('normal run output is missing, foreign or changed')
+    for suite in required:
+        row = json.loads((output / (suite + '.json')).read_text(encoding='utf-8'))
+        if row.get('suite') != suite or row.get('ok') is not True or row.get('normal_plan') != plan:
+            raise ValueError('required normal result missing or failed: ' + suite)
+        if suite in commands:
+            actual = row.get('commands', [])
+            if [(r.get('name'), r.get('argv')) for r in actual] != [tuple(r) for r in commands[suite]]:
+                raise ValueError('normal command coverage differs: ' + suite)
+            if any(r.get('exit') != 0 for r in actual):
+                raise ValueError('normal command failed: ' + suite)
+        elif (row.get('failure') or row.get('failed') or row.get('missing') or
+              row.get('passed') != row.get('tests') or row.get('no_tests') or
+              row.get('coverage', {}).get('status') != 'partial'):
+            raise ValueError('normal execution observations incomplete: ' + suite)
+    assert_unchanged(repository, plan)
+    return dict(status='assessed', label=label, source=plan['source'], base=plan['base'],
+                workspace_coverage=coverage, push_authority=False,
+                limitations=summary['untested'])
 
 
 if __name__ == '__main__':

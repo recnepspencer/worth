@@ -64,7 +64,8 @@ def native_expression(suite, binary):
 
 class SuiteQueries:
     """Resolve the gate's existing predicates against nextest's real inventory."""
-    def __init__(self, suites, output):
+    def __init__(self, suites, output, affected=None):
+        self.affected = affected
         self.suites = tuple(suites)
         self.output = Path(output)
         self.expected = {suite: set() for suite in suites}
@@ -72,17 +73,19 @@ class SuiteQueries:
         self.binaries = {suite: {} for suite in suites}
         self.coverage = {'status': 'unmeasured'}
         self.aliases = {}
-        self.workspace_inventory = True
+        self.workspace_inventory = affected is None
+        self.target_owners = None
 
     def build_selection(self, metadata):
         """Apply existing suite ownership before building test executables."""
-        if set(landing_suites(workspace_of(self.suites[0]))) <= set(self.suites):
+        if self.affected is None and set(landing_suites(workspace_of(self.suites[0]))) <= set(self.suites):
             return None
         self.workspace_inventory = False
         members = set(metadata['workspace_members'])
         chosen = []
         for package in metadata['packages']:
-            if package['id'] not in members:
+            if package['id'] not in members or (self.affected is not None and
+                    package['name'] not in self.affected['packages']):
                 continue
             for target in package['targets']:
                 binary = {'package': package['name'], 'target': target['name'],
@@ -90,8 +93,11 @@ class SuiteQueries:
                           'harness': target.get('harness', True)}
                 if any(TEST_SUITES[suite][1](binary) for suite in self.suites):
                     chosen.append(binary)
+        if self.affected is not None and set(self.affected['required_courts']) - {r['package'] for r in chosen}:
+            raise GateSelectionFailure('required forward court has no selected Cargo target')
         if not chosen:
             raise GateSelectionFailure('requested suites have no Cargo target owners')
+        self.target_owners = {(row['package'], row['target']) for row in chosen}
         return {'packages': sorted({row['package'] for row in chosen}),
                 'targets': {'lib': True} if all(row['lib'] for row in chosen) else {}}
 
@@ -99,6 +105,10 @@ class SuiteQueries:
         jobs, owners, all_tests = [], defaultdict(list), set()
         for binary_id, metadata in sorted(discovered['rust-suites'].items()):
             binary = descriptor(binary_id, metadata)
+            if self.affected is not None and binary['package'] not in self.affected['packages']:
+                raise GateSelectionFailure('discovered binary outside affected owners: ' + binary_id)
+            if self.target_owners is not None and (binary['package'], binary['target']) not in self.target_owners:
+                raise GateSelectionFailure('discovered binary outside selected Cargo targets: ' + binary_id)
             if binary['harness']:
                 alias = f'{binary["package"]}::{binary["target"]}'
                 if alias in self.aliases and self.aliases[alias] != binary_id:
@@ -116,6 +126,10 @@ class SuiteQueries:
                 if not want(binary):
                     continue
                 chosen = [(name, case) for name, case in cases.items() if selected(suite, binary, name)]
+                if self.affected is not None and any(
+                        case.get('filter-match', {'status': 'matches'})['status'] != 'matches'
+                        for _, case in chosen if not case['ignored']):
+                    raise GateSelectionFailure('required affected cases were filtered: ' + binary_id)
                 self.binaries[suite][binary_id] = binary
                 executable = False
                 for name, case in chosen:
@@ -136,6 +150,12 @@ class SuiteQueries:
                     mains.append(binary_id)
             if terms or mains:
                 jobs.append((suite, ' + '.join(terms) if terms else None, None, 'ci', mains))
+        if self.affected is not None:
+            ordinary = {discovered['rust-suites'][binary]['package-name']
+                        for (binary, _), assigned in owners.items()
+                        if any(suite not in CATEGORY_SUITES for suite in assigned)}
+            if set(self.affected['required_courts']) - ordinary:
+                raise GateSelectionFailure('required forward court lacks active ordinary cases')
         duplicate = {str(key): value for key, value in owners.items() if len(value) != 1}
         if duplicate:
             raise GateSelectionFailure('requested suites repeat tests: ' + json.dumps(duplicate))
@@ -143,6 +163,8 @@ class SuiteQueries:
         self.coverage = {'status': 'partial' if unselected or not self.workspace_inventory else 'pass',
                          'inventory_scope': 'workspace' if self.workspace_inventory else 'selected-packages',
                          'unselected': [f'{binary}${name}' for binary, name in unselected],
+                         'active_packages': sorted({discovered['rust-suites'][binary]['package-name']
+                                                    for binary, _ in owners}),
                          'selected': len(owners), 'ignored': len(set().union(*self.ignored.values()))}
         self.output.mkdir(parents=True, exist_ok=True)
         (self.output / 'gate-selection.json').write_text(json.dumps({
@@ -182,7 +204,8 @@ def executed_observations(logs, aliases):
 
 
 class CostGate:
-    def __init__(self, repository, output, environment, execute=None, runner_factory=None):
+    def __init__(self, repository, output, environment, execute=None, runner_factory=None, affected=None):
+        self.affected = affected
         self.repository, self.output = Path(repository), Path(output)
         self.environment = environment
         self.execute = execute or execute_workspace
@@ -218,14 +241,16 @@ class CostGate:
         names = self.groups[workspace]
         native = [name for name in names if name not in DOC_SUITES]
         doc_suite = next((name for name in names if name in DOC_SUITES), None)
-        queries = SuiteQueries(native, output)
+        queries = SuiteQueries(native, output, self.affected)
         runner = self.runner_factory(self.repository, self.environment)
         failure, result, documentation = None, None, None
         try:
             try:
                 if native:
+                    options = ({'documentation_packages': self.affected['doc_packages']}
+                               if self.affected is not None else {})
                     result = self.execute(self.repository, workspace, [], output, cargo_runner=runner,
-                                          queries=queries, include_docs=bool(doc_suite))
+                                          queries=queries, include_docs=bool(doc_suite), **options)
                 else:
                     result = execute_documentation_lane(self.repository, workspace, output, runner)
                     queries.coverage = {'status': 'partial', 'reason': 'native inventory not requested'}
@@ -242,7 +267,7 @@ class CostGate:
                 if documentation['status'] != 'pass':
                     message = f'documentation failed: exit {documentation["exit_code"]}'
                     failure = f'{failure}; {message}' if failure else message
-            if set(landing_suites(workspace)) <= set(native) and queries.coverage['status'] != 'pass':
+            if self.affected is None and set(landing_suites(workspace)) <= set(native) and queries.coverage['status'] != 'pass':
                 raise GateSelectionFailure('complete landing gate leaves native tests unselected')
         except (ValueError, OSError) as error:
             failure = f'{failure}; {error}' if failure else str(error)

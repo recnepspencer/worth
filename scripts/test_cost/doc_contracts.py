@@ -270,9 +270,15 @@ def retain_observation(parsed, exit_code, output_directory, destinations):
     return parsed
 
 
-def execute(manifest, output_directory, runner, profile='dev'):
+def execute(manifest, output_directory, runner, profile='dev', packages=None):
     manifest, output = Path(manifest).resolve(), Path(output_directory).resolve()
     owners = owners_for(manifest)
+    selection = ['--workspace']
+    if packages is not None:
+        if not packages or len(set(packages)) != len(packages) or set(packages) - set(owners.values()):
+            raise DocContractFailure(DocFailureKind.UNKNOWN_OWNER, 'invalid selected documentation packages')
+        owners = {crate: package for crate, package in owners.items() if package in packages}
+        selection = ['--offline', *[part for package in sorted(packages) for part in ('-p', package)]]
     environment = getattr(runner, 'environment', None)
     if environment is None:
         environment = os.environ
@@ -281,7 +287,7 @@ def execute(manifest, output_directory, runner, profile='dev'):
             raise DocContractFailure(DocFailureKind.UNSAFE_SELECTION, name)
     output.mkdir(parents=True, exist_ok=True)
     log = output / 'doctests.log'
-    command = ['cargo', 'test', '--workspace', '--doc', '--profile', profile, '--no-fail-fast',
+    command = ['cargo', 'test', *selection, '--doc', '--profile', profile, '--no-fail-fast',
                '--locked', '--manifest-path', str(manifest), '--message-format=json',
                '--', '--format', 'pretty']
     result = runner(command, manifest.parent, log)
