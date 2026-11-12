@@ -16,6 +16,10 @@ pub(crate) struct PendingMutationIdentities {
 }
 
 mod aggregate_consequences;
+mod coupled_return;
+pub(crate) use coupled_return::{
+    AppliedCoreCustody, AppliedDraftCustody, CoupledPreparationCleanup,
+};
 pub(crate) mod content;
 pub(crate) mod ordinary_apply;
 pub(crate) mod owned_graph_selection;
@@ -99,7 +103,7 @@ pub(crate) fn apply_mutation_draft(
         crate::validation::candidate_source::NativeManagedSourceInterpretation,
     >,
     content: &crate::content::RelationalContentAttachments,
-) -> Result<AppliedMutationDraft, MutationApplyDenial> {
+) -> Result<AppliedDraftCustody, MutationApplyDenial> {
     require_original_source_interpretation(identity, &source_interpretation)?;
     let materialization = source_interpretation.materialization_mode();
     let version_id = identity.proposed_version_id();
@@ -117,10 +121,10 @@ pub(crate) fn apply_mutation_draft(
         adjacency_policy: runtime.config.storage.adjacency_policy.clone(),
         cross_context_policy: runtime.config.storage.cross_context_policy,
     };
-    let core = if let Some(binding) = &runtime.authored_coupling {
+    let mut core = if let Some(binding) = &runtime.authored_coupling {
         binding.adopt_applied(execution, identity, merged_plan, &mut symbols)?
     } else {
-        ordinary_apply::apply(
+        AppliedCoreCustody::ordinary(ordinary_apply::apply(
             execution,
             runtime,
             selected_state,
@@ -132,30 +136,23 @@ pub(crate) fn apply_mutation_draft(
             identity,
             symbols,
             materialization,
-        )?
+        )?)
     };
-    let AppliedMutationCore {
-        mut state,
-        outcome,
-        aggregate,
-        identities: PendingMutationIdentities { records, symbols },
-        coupled_publication: _,
-    } = core;
-    state.content = content::prepare(
+    core.state.content = content::prepare(
         execution,
         runtime,
         selected_state.selected().state().root(),
         schema,
         content,
-        &state,
-        &outcome.effect.publication.changed_records,
+        &core.state,
+        &core.outcome.effect.publication.changed_records,
         version_id,
         source_interpretation.restoration_content(),
     )?;
     source_interpretation
         .bind_content(
             execution,
-            state.content.directory().map_err(|_| {
+            core.state.content.directory().map_err(|_| {
                 crate::content::commit_denial(
                     crate::content::RelationalContentDenial::EncodingInconsistency,
                 )
@@ -163,13 +160,7 @@ pub(crate) fn apply_mutation_draft(
             schema,
         )
         .map_err(crate::content::commit_denial)?;
-    Ok(AppliedMutationDraft {
-        source_interpretation,
-        aggregate,
-        state,
-        outcome,
-        identities: PendingMutationIdentities { records, symbols },
-    })
+    Ok(core.into_draft(source_interpretation))
 }
 
 pub(crate) fn apply_retained_entity_selection_draft(

@@ -5,13 +5,16 @@ use crate::publication::data::AuthoredRetirementRefusal as Cause;
 
 impl BoundAuthoredCoupling {
     pub(crate) fn adopt_applied(
-        &self,
+        self: &Arc<Self>,
         execution: &ExecutionRequest<'_, '_>,
         identity: &RelationalMutationProposalIdentity,
         commands: &crate::transactions::data::MergedCommitPlan,
         symbols: &mut crate::runtime::PendingSymbolMeanings,
-    ) -> Result<AppliedMutationCore, crate::authority::mutation::MutationApplyDenial> {
-        let mut candidate = self
+    ) -> Result<
+        crate::authority::commit::phases::applied_mutation::AppliedCoreCustody,
+        crate::authority::mutation::MutationApplyDenial,
+    > {
+        let candidate = self
             .applied
             .lock()
             .unwrap_or_else(|e| e.into_inner())
@@ -19,12 +22,24 @@ impl BoundAuthoredCoupling {
             .ok_or_else(|| {
                 part::reject(Cause::ForeignCoupledOwner, self.owners.source.subject())
             })?;
+        let CoupledAppliedCandidate {
+            identity: original_identity,
+            commands: original_commands,
+            mutation,
+        } = candidate;
+        let mut candidate =
+            crate::authority::commit::phases::applied_mutation::AppliedCoreCustody::coupled(
+                Arc::clone(self),
+                original_identity,
+                original_commands,
+                mutation,
+            );
         execution
             .run_native_with_checkpoint(|context| {
                 for intent in commands
                     .merged_intents
                     .iter()
-                    .chain(&candidate.commands.plan().merged_intents)
+                    .chain(&candidate.commands().merged_intents)
                 {
                     checkpoint(
                         context,
@@ -36,16 +51,36 @@ impl BoundAuthoredCoupling {
             })
             .map_err(custody::execution_stop)?
             .0?;
-        if !candidate.identity.same_proposal_sequence(identity)
-            || candidate.commands.plan() != commands
-        {
+        if !candidate.matches(identity, commands) {
             return Err(
                 part::reject(Cause::ForeignCoupledOwner, self.owners.source.subject()).into(),
             );
         }
-        std::mem::swap(symbols, &mut candidate.mutation.identities.symbols);
-        *self.completed.lock().unwrap_or_else(|e| e.into_inner()) =
-            candidate.mutation.coupled_publication.take();
-        Ok(candidate.mutation)
+        std::mem::swap(symbols, &mut candidate.identities.symbols);
+        Ok(candidate)
+    }
+}
+
+impl BoundAuthoredCoupling {
+    /// Moves the same uncommitted state back; neither reconstructs nor reapplies it.
+    pub(crate) fn return_applied(
+        &self,
+        identity: RelationalMutationProposalIdentity,
+        commands: crate::mvcc::OwnedNormalizedPlan,
+        mutation: AppliedMutationCore,
+    ) {
+        let mut slot = self
+            .applied
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        assert!(
+            slot.is_none(),
+            "one original core returns to its existing owner"
+        );
+        *slot = Some(CoupledAppliedCandidate {
+            identity,
+            commands,
+            mutation,
+        });
     }
 }

@@ -1,6 +1,6 @@
 //! Own one applied proposal round while the transaction keeps unique authority.
 use super::proposal_source::RelationalProposalSource;
-use crate::authority::commit::phases::applied_mutation::AppliedMutationDraft;
+use crate::authority::commit::phases::applied_mutation::AppliedDraftCustody;
 use crate::authority::commit::phases::prepare::PreparedWorkingStateScope;
 use crate::authority::commit::pipeline::{CommitPhaseBacking, CommitPhaseReservation};
 use crate::mvcc::{
@@ -12,10 +12,9 @@ use crate::transactions::data::TransactionCommitError;
 
 pub(super) struct PreparedProposalRound {
     pub(super) prepared: PreparedWorkingStateScope,
-    pub(super) mutation: AppliedMutationDraft,
+    pub(super) mutation: AppliedDraftCustody,
     pub(super) identity: RelationalMutationProposalIdentity,
     pub(super) validation_input: RelationalTransactionValidationInput,
-    pub(super) coupled_publication: Option<crate::mvcc::RequiredOutputPublicationAdmission>,
     pub(super) invariants: crate::validation::engine::InvariantExecutionResult,
 }
 
@@ -27,9 +26,13 @@ impl RelationalPreparationRuntime {
         source: &RelationalProposalSource,
         context: Option<&dyn crate::validation::candidate_source::ManagedIndexSourceContextFactory>,
     ) -> Result<CommitPhaseBacking<PreparedProposalRound>, TransactionCommitError> {
+        let _cleanup =
+            crate::authority::commit::phases::applied_mutation::CoupledPreparationCleanup::new(
+                transaction.authored_coupling.as_ref(),
+            );
         let basis = transaction.basis.clone();
         let selected = crate::branch::SelectedRelationalBranchState::from_admitted_basis(&basis);
-        let (answer, round) = crate::storage::residency::probe_head(
+        let (mut answer, round) = crate::storage::residency::probe_head(
             execution,
             &selected.with_symbol_admission(&self.services.symbols),
             |partitions| {
@@ -78,6 +81,9 @@ impl RelationalPreparationRuntime {
             )?;
         }
         self.settle_preparation_round(&round);
+        if let Ok(prepared) = &mut answer {
+            prepared.value_mut().mutation.accept_probes();
+        }
         answer
     }
 

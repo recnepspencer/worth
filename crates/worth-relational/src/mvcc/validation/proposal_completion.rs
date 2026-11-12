@@ -26,7 +26,6 @@ pub(super) fn complete(
         mutation: proposed_mutation,
         identity: proposal_identity,
         validation_input,
-        coupled_publication,
         invariants,
     } = round.into_inner();
     let branch = basis.identity().branch_id().clone();
@@ -73,6 +72,16 @@ pub(super) fn complete(
         &transaction.basis.inner.retention_binding,
         crate::mvcc::RelationalInterruptionBoundary::ProposalValidation,
     )?;
+    // All inner and outer abandoning probes have completed. Transfer the exact
+    // draft and its existing coupled posture to validated proposal custody.
+    let proposed_mutation = proposed_mutation.finish();
+    let coupled_publication = transaction.authored_coupling.as_ref().and_then(|binding| {
+        binding
+            .completed
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .take()
+    });
     ValidatedRelationalProposal::retain(
         execution,
         ValidatedProposalState {
