@@ -1919,3 +1919,16 @@ publication. Directory Homes rebuild recovered correlation selectors before
 service. Reading one does not contact the external owner or recreate a live receipt
 or fresh delivery. Missing, ambiguous and unavailable sources return typed denials.
 Inbound completion remains separately admitted by its custody requirements.
+
+### Embedded Bank rail completion verification
+
+`BankRailCompletionServerInstallation::estate_verifier` exposes the actual Bank
+completion verification mechanism as an owned Query verifier. It keeps the
+configured public key, audience, source, epoch, protocol and expiry checks.
+Install it through the embedded Host's declared operation; raw callback bytes
+cannot replace any of those bindings. The Bank HTTP route uses the same factory.
+
+Directory dispatch, inbound custody and recovery claims support graceful
+close/reopen and quiescent kills. The Bank rail courts combine actual Home
+readmission with the real external rail and its independent consequence ledger.
+Full Bank-server restart and crash interruption remain uncertified.

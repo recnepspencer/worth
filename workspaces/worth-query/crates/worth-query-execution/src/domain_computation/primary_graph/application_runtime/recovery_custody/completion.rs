@@ -42,38 +42,43 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             {
                 return Err(Denial::new(Kind::CorrelationMismatch));
             }
+            let needs_inbound = outbox.record().inbound().is_some();
+            if needs_inbound {
+                let terminal = self
+                    .runtime
+                    .primary_provider
+                    .lookup_completed_inbound(outbox.record().correlation())
+                    .map_err(|_| Denial::new(Kind::TerminalIndexUnavailable))?;
+                if let Some(terminal) = terminal {
+                    let publication = binding.committed_product_publication();
+                    if !terminal.matches_original_dispatch(
+                        outbox.record(),
+                        binding.commit_reference(),
+                        publication.composite_commit(),
+                        publication.product_incarnation(),
+                    ) {
+                        return Err(Denial::new(Kind::CorrelationMismatch));
+                    }
+                    return Ok(());
+                }
+            }
             match self
                 .runtime
                 .dispatch_journal
                 .custody(outbox.record().correlation().digest())
                 .and_then(|custody| custody.observation())
             {
-                Some(Observation::Completed) => {}
+                Some(Observation::Completed) if needs_inbound => {
+                    Err(Denial::new(Kind::CompletionPublicationPending))
+                }
+                Some(Observation::Completed) => Ok(()),
                 Some(Observation::ProvenNoEffect(cause)) => {
-                    return Err(Denial::new(Kind::ProvenNoEffect(cause)))
+                    Err(Denial::new(Kind::ProvenNoEffect(cause)))
                 }
                 Some(Observation::Acknowledged | Observation::Unresolved(_)) | None => {
-                    return Err(Denial::new(Kind::UnresolvedExternalPosture))
+                    Err(Denial::new(Kind::UnresolvedExternalPosture))
                 }
             }
-            if outbox.record().inbound().is_some() {
-                let terminal = self
-                    .runtime
-                    .primary_provider
-                    .lookup_completed_inbound(outbox.record().correlation())
-                    .map_err(|_| Denial::new(Kind::TerminalIndexUnavailable))?
-                    .ok_or_else(|| Denial::new(Kind::CompletionPublicationPending))?;
-                let publication = binding.committed_product_publication();
-                if !terminal.matches_original_dispatch(
-                    outbox.record(),
-                    binding.commit_reference(),
-                    publication.composite_commit(),
-                    publication.product_incarnation(),
-                ) {
-                    return Err(Denial::new(Kind::CorrelationMismatch));
-                }
-            }
-            Ok(())
         })();
         if let Err(denial) = check {
             return Err(WorthQueryRecoveryTransitionDenial::Retained {

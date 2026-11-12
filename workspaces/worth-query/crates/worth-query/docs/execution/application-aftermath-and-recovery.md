@@ -903,3 +903,20 @@ fund `maintain_recovery_claims` to drive that original publication before anothe
 transition. Observe the acknowledged claim fate afterward: if settlement already
 made it terminal, the old handle cannot grant another transition. A pending
 record never grants effect authority merely because its bytes are retained.
+
+## Embedded Bank rail integration
+
+Bank's trusted `BankRailCompletionServerInstallation::estate_verifier` returns the
+same pinned cryptographic verifier used by the Bank HTTP route. An embedded Host
+can install that mechanism for its declared estate rail operation after each
+open. Callback bytes do not choose the source, audience or signing key.
+
+The graceful Bank rail courts use Bank's actual payload encoder and transport,
+a separate rail process, and its real signed HTTP callback bytes. They cover
+completion, lost-response retry, duplicate acknowledgement, timeout followed by
+late completion, proven semantic rejection and duplicate callbacks across
+repeated Home reopen. The fixture's admitted handler contact count and the
+rail's independent physical consequence ledger detect replay and double effect.
+This is Host/external-party integration; the full Bank server's Memory
+composition and the rail's own process-local delivery queue retain their stated
+limits. Crash recovery during an operation is not yet certified.

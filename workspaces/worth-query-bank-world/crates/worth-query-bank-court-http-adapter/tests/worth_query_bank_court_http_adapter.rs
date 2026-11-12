@@ -3,3 +3,6 @@
 
 #[path = "worth_query_bank_court_http_adapter/http_adapter/mod.rs"]
 mod http_adapter;
+
+#[path = "worth_query_bank_court_http_adapter/process/mod.rs"]
+mod process;
