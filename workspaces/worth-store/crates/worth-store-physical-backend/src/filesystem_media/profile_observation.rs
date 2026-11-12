@@ -1,12 +1,20 @@
+#[cfg(not(target_os = "macos"))]
 use std::num::NonZeroU64;
 use std::path::Path;
 
 use sha2::{Digest, Sha256};
 
+#[cfg(not(target_os = "macos"))]
 use super::capability_profile::ObservedFilesystemProfile;
-use super::{CapabilitySupport, FilesystemBackendProfile, FilesystemLocation, MediaCapability};
+use super::FilesystemBackendProfile;
+#[cfg(not(target_os = "macos"))]
+use super::{CapabilitySupport, FilesystemLocation, MediaCapability};
 
 mod admission_policy;
+#[cfg(all(test, target_os = "macos"))]
+mod mac_profile_tests;
+#[cfg(target_os = "macos")]
+mod mounted_filesystem;
 mod root_binding;
 
 pub(super) use admission_policy::deny_profile;
@@ -69,6 +77,27 @@ fn observe_ambient_profile(
     }
 }
 
+#[cfg(target_os = "macos")]
+fn observe_profile_at_path(root: &Path) -> Result<FilesystemBackendProfile, std::io::ErrorKind> {
+    let canonical = root.canonicalize().map_err(|error| error.kind())?;
+    let directory = cap_std::fs::Dir::open_ambient_dir(&canonical, cap_std::ambient_authority())
+        .map_err(|error| error.kind())?;
+    mounted_filesystem::observe(&directory.into_std_file())
+}
+
+#[cfg(target_os = "macos")]
+fn observe_profile_at_handle(
+    root: &super::NamespaceDirectoryHandle,
+) -> Result<FilesystemBackendProfile, std::io::ErrorKind> {
+    let file = root
+        .directory()
+        .try_clone()
+        .map(cap_std::fs::Dir::into_std_file)
+        .map_err(|error| error.kind())?;
+    mounted_filesystem::observe(&file)
+}
+
+#[cfg(not(target_os = "macos"))]
 fn observe_profile_at_path(root: &Path) -> Result<FilesystemBackendProfile, std::io::ErrorKind> {
     let canonical = root.canonicalize().map_err(|error| error.kind())?;
     let directory = cap_std::fs::Dir::open_ambient_dir(&canonical, cap_std::ambient_authority())
@@ -114,6 +143,7 @@ fn observe_profile_at_path(root: &Path) -> Result<FilesystemBackendProfile, std:
     ))
 }
 
+#[cfg(not(target_os = "macos"))]
 fn observe_profile_at_handle(
     root: &super::NamespaceDirectoryHandle,
 ) -> Result<FilesystemBackendProfile, std::io::ErrorKind> {
@@ -168,6 +198,7 @@ fn observe_profile_at_handle(
     ))
 }
 
+#[cfg(not(target_os = "macos"))]
 fn mount_profile_key(
     disk: &sysinfo::Disk,
 ) -> Result<(Box<str>, u64, bool, bool), std::io::ErrorKind> {
@@ -230,7 +261,7 @@ fn opened_volume_identity(
     Ok(digest_parts(&[&volume.to_le_bytes()]))
 }
 
-#[cfg(unix)]
+#[cfg(all(unix, not(target_os = "macos")))]
 fn mount_volume_identity(path: &Path) -> Option<[u8; 32]> {
     let identity = file_id::get_file_id(path).ok()?;
     let volume = match identity {
@@ -256,6 +287,7 @@ fn mount_volume_identity(path: &Path) -> Option<[u8; 32]> {
     Some(digest_parts(&[&volume.to_le_bytes()]))
 }
 
+#[cfg(not(target_os = "macos"))]
 fn path_is_on_mount(path: &Path, mount: &Path) -> bool {
     #[cfg(windows)]
     {
@@ -303,5 +335,8 @@ fn is_remote_path(path: &Path, filesystem_type: &str) -> bool {
         )
     }
     #[cfg(not(windows))]
-    false
+    {
+        let _ = path;
+        false
+    }
 }
