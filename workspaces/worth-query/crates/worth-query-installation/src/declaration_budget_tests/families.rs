@@ -17,6 +17,8 @@ macro_rules! declaration_families {
 }
 
 declaration_families! {
+    DecisionReadScope => "decision-read-scope",
+    OperationDecisionReadScope => "operation-decision-read-scope",
     ContentFormat => "content-format",
     ApplicationHistory => "application-history",
     InvariantManagedIndexSource => "invariant-managed-index-source",

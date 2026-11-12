@@ -10,17 +10,9 @@ pub(super) fn validate<S: ApplicationSchema>(
     schema: &WorthQueryInstalledApplicationSchema<S>,
     mutation: &ApplicationMutationBindingDescriptor,
 ) -> Result<(), WorthQueryApplicationOperationInstallationDenial> {
-    for member in schema.installed_declaration().members() {
-        let ApplicationSchemaMember::OperationDecisionRead {
-            operation,
-            target: Read::ManagedIndex { parent },
-        } = member
-        else {
-            continue;
-        };
-        if operation != mutation.operation_name() {
-            continue;
-        }
+    for target in worth_query_declaration::facade::application_schema::application_operation_decision_read_targets(
+        schema.installed_declaration().members(), mutation.operation_name()) {
+        let Read::ManagedIndex { parent } = target else { continue };
         let query = schema
             .installed_query_binding_inventory()
             .find(|query| parent.matches_descriptor(query))

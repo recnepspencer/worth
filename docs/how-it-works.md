@@ -631,6 +631,13 @@ publish.
   facts with `schema.declared_operation::<Operation>(definition)`, retaining
   explicit effect/aftermath policy. See [operation access](build-an-application.md#21-declare-operation-access-once).
 - Bindings: `worth_query_mutation_binding`, `worth_query_query_binding`.
+- Shared decision reads: author one `ApplicationDecisionReadScopeDefinition`,
+  register it with `decision_read_scope`, resolve its typed reference with
+  `decision_read_scope_reference`, and attach it with
+  `operation_decision_read_scope`. The scope requires `OperationReads<Operation>`.
+  Inline grants union with its exact contents. Canonical identity follows those
+  contents, including field loci and query correspondence, rather than the Rust
+  marker name. See the [compiled common-read declaration](../workspaces/worth-query/crates/worth-query-testkit-certification/src/certification/program_example_authority/product_workflow_support/schema/decision_reads.rs).
 - Capabilities and policy: `worth_query_capability`, `worth_query_ability`,
   `worth_query_policy`, `worth_query_principal_binding`.
 - Workflows: `worth_query_workflow`.
@@ -716,6 +723,28 @@ let runtime = in_memory_program(
 
 Contribution setup registers handlers (`setup.handler::<Binding, _>(..)`),
 invariants, producers, and conditional nodes.
+
+For a managed index, provider setup already resolves
+`installed_managed_index::<Index>()` against the receiving installed schema.
+Consumers can inspect that same typed leaf through `runtime.installed_schema()`;
+absence and incompatible meaning are distinct typed query-installation refusals.
+The leaf retains actual catalog ownership, so another installation's equal
+description cannot replace it. Initial Source construction is a separate call
+to `graph.initialize_managed_index::<Index>(phase)` in the fresh unpublished
+bootstrap closure. It checks the actual receiving provider binding and grants
+neither ordinary READ nor later live-runtime construction. The
+[existing public bootstrap consumer](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/refusing/host.rs)
+compiles and exercises this setup path.
+
+After installation, `runtime.export_domain_package(owner, limits)` exports the
+package retained by the actual installed index, including composed contribution
+contracts. It returns SDK typed records, with typed unknown-owner/export refusals.
+For transport or inspection, feed those records to the existing reconstruction
+API and call `validate_freshly` against an independently obtained installed
+package identity. Descriptions and fresh validation issue no runtime authority.
+The [ordinary workflow's compiled export journey](../workspaces/worth-query/crates/worth-query-certification/examples/ordinary_product_workflow/installed_package.rs)
+joins this to the shared declaration above; the [application guide](build-an-application.md#share-reads-then-use-installed-contracts)
+shows the call order.
 
 **Guaranteed.**
 

@@ -1,5 +1,6 @@
 mod aspect_removal;
-use std::collections::{BTreeMap, BTreeSet};
+mod physical_reads;
+pub(crate) use physical_reads::compile_reads;
 mod derived_reads;
 mod projection_mask;
 
@@ -33,6 +34,9 @@ pub(crate) enum WorthQueryPortableOperationContractSpineDenialKind {
 }
 
 type SpineResult<T> = Result<T, WorthQueryPortableOperationContractSpineDenialKind>;
+
+mod shared_reads;
+pub(crate) use shared_reads::compile_shared_read_scopes;
 
 pub(crate) fn compile_portable_operation_contract_records(
     schema: &ErasedApplicationSchemaDeclaration,
@@ -70,6 +74,22 @@ pub(crate) fn compile_portable_operation_contract_record(
     let mut reads = operation_decision_reads_from_members(members, operation, input_type.as_str());
     let derived_sources = derived_reads::append(members, operation, &mut reads)?;
     let mut graph_reads = compile_reads(schema, native_contracts, reads)?;
+    graph_reads.extend(members.iter().filter_map(|member| match member {
+        ApplicationSchemaMember::OperationDecisionReadScope {
+            operation: candidate,
+            scope,
+        } if candidate == operation
+            && !super::contract_resolution::operation_has_revocation(members, operation) =>
+        {
+            Some(
+                WorthQueryPortableOperationGraphReadScope::SharedDecisionRead {
+                    schema: schema.to_owned(),
+                    identity: scope.clone(),
+                },
+            )
+        }
+        _ => None,
+    }));
     graph_reads.extend(members.iter().filter_map(|member| match member {
         ApplicationSchemaMember::OperationComponentRead { definition }
             if definition.operation() == operation =>
@@ -122,77 +142,6 @@ pub(crate) fn compile_portable_operation_contract_record(
         reconciliation,
     )
     .with_body(body))
-}
-
-fn compile_reads(
-    schema: &str,
-    native_contracts: &[WorthQueryPortableNativeAspectContractRecord],
-    reads: Vec<ApplicationOperationDecisionReadTarget>,
-) -> SpineResult<Vec<WorthQueryPortableOperationGraphReadScope>> {
-    let mut entities = BTreeSet::new();
-    let mut projections = BTreeMap::<(String, String), BTreeSet<String>>::new();
-    let mut relations = BTreeSet::new();
-    for read in reads {
-        match read {
-            // The Parent and its Source admit their own reads. The operation's
-            // physical projection declarations are checked independently.
-            ApplicationOperationDecisionReadTarget::ManagedIndex { .. } => {}
-            ApplicationOperationDecisionReadTarget::Entity { entity } => {
-                entities.insert(entity);
-            }
-            ApplicationOperationDecisionReadTarget::Field {
-                entity,
-                aspect,
-                field,
-            } => {
-                projections
-                    .entry((entity, aspect))
-                    .or_default()
-                    .insert(field);
-            }
-            ApplicationOperationDecisionReadTarget::Relation { relation, from, to } => {
-                relations.insert((relation, from, to));
-            }
-        }
-    }
-    let mut scopes = Vec::with_capacity(entities.len() + projections.len() + relations.len());
-    scopes.extend(entities.into_iter().map(|entity| {
-        WorthQueryPortableOperationGraphReadScope::Entity {
-            schema: schema.to_owned(),
-            entity,
-        }
-    }));
-    for ((entity, aspect), fields) in projections {
-        let native = native_contract(native_contracts, schema, &entity, &aspect)?;
-        let fields = fields
-            .into_iter()
-            .map(|field| {
-                native
-                    .field(&field)
-                    .cloned()
-                    .ok_or(WorthQueryPortableOperationContractSpineDenialKind::MissingNativeField)
-            })
-            .collect::<Result<Vec<_>, _>>()?;
-        let mask = projection_mask::compile(native, &fields)?;
-        scopes.push(
-            WorthQueryPortableOperationGraphReadScope::NativeProjection {
-                schema: schema.to_owned(),
-                entity,
-                aspect: native.aspect().clone(),
-                contract: native.contract().clone(),
-                mask,
-            },
-        );
-    }
-    scopes.extend(relations.into_iter().map(|(relation, from, to)| {
-        WorthQueryPortableOperationGraphReadScope::Relation {
-            schema: schema.to_owned(),
-            relation,
-            from,
-            to,
-        }
-    }));
-    Ok(scopes)
 }
 
 fn compile_touches(

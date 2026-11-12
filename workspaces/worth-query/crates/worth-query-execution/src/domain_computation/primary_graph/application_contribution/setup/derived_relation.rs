@@ -61,9 +61,8 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationContributionSetup<'_, Schem
             ApplicationSchemaMember::DerivedRelation { definition } if definition.parts().relation==relation.name()
                 && definition.parts().from.borrowed()==relation.from_member() && definition.parts().to.borrowed()==relation.to_member()
                 && definition.parts().from.entity().is_some()))
-            && members.iter().any(|member|matches!(member,
-                ApplicationSchemaMember::OperationDerivedRead { operation,relation:declared }
-                    if operation==Operation::IDENTIFIER && declared==relation.name()));
+            && worth_query_declaration::facade::application_schema::application_operation_derived_read_relations(
+                members, Operation::IDENTIFIER).any(|declared| declared == relation.name());
         if !compatible || !self.contribution.members().any(|member| matches!(member,
             ApplicationSchemaMember::RuleReadableCollection { association } if association==&expected)) {
             return Err(WorthQueryPrimaryGraphInstallationDenial::new(

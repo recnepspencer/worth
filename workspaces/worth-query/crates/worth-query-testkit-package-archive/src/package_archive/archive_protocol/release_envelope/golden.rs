@@ -12,7 +12,7 @@ pub const RECORD_FIFTEEN_ENVELOPE_HEX: &str = include_str!("release_envelope_v1_
 pub const RECORD_SIXTEEN_ENVELOPE_HEX: &str = include_str!("release_envelope_v1_record_v16.hex");
 pub const RECORD_SEVENTEEN_ENVELOPE_HEX: &str = include_str!("release_envelope_v1_record_v17.hex");
 // D1289 canonical policy v2; the envelope/record framing is unchanged.
-pub const CURRENT_ENVELOPE_HEX: &str = include_str!("release_envelope_v1_record_v18_policy_v2.hex");
+pub const CURRENT_ENVELOPE_HEX: &str = include_str!("release_envelope_v1_record_v19.hex");
 
 pub fn assert_current_envelope_and_unsupported_records() {
     for (version, vector) in [
@@ -37,9 +37,19 @@ pub fn assert_current_envelope_and_unsupported_records() {
                 .unwrap_err();
         assert_eq!(
             denial.kind(),
-            WorthQueryPackageArchiveDenialKind::UnsupportedRecordVersion
+            WorthQueryPackageArchiveDenialKind::UnsupportedManifestVersion
         );
-        assert_eq!(denial.compatibility().unwrap().observed_version(), version);
+        // Historical manifest1 refuses before its displaced record grammar.
+        let compatibility = denial.compatibility().unwrap();
+        assert_eq!(
+            compatibility.layer(),
+            WorthQueryPackageArchiveProtocolLayer::Manifest
+        );
+        assert_eq!(compatibility.observed_version(), 1);
+        assert_eq!(
+            u16::from_be_bytes(untrusted.archive()[118..120].try_into().unwrap()),
+            version
+        );
     }
 
     let records = fixture::minimal_package().export_typed_records().unwrap();
@@ -66,7 +76,7 @@ pub fn assert_current_envelope_and_unsupported_records() {
     );
     assert_eq!(
         u16::from_be_bytes(decoded.archive()[118..120].try_into().unwrap()),
-        18
+        19
     );
     let archive =
         decode_package_archive(decoded.archive(), WorthQueryPackageArchiveLimits::DEFAULT).unwrap();

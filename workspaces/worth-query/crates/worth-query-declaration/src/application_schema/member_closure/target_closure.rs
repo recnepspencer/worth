@@ -43,9 +43,10 @@ impl ClosureIndex<'_> {
                 ApplicationSchemaMember::Aspect { entity: e, aspect: a, absence: worth_foundational::facade::AbsenceLaw::Optional, .. }
                 if e == entity && a == aspect)) && self.members.iter().filter_map(|member| match member {
                     ApplicationSchemaMember::Field { entity: e, aspect: a, field, .. } if e == entity && a == aspect => Some(field), _ => None,
-                }).all(|field| self.members.iter().any(|member| matches!(member,
-                    ApplicationSchemaMember::OperationDecisionRead { operation: o, target: ApplicationOperationDecisionReadTarget::Field { entity: e, aspect: a, field: f } }
-                    if o == operation && e == entity && a == aspect && f == field))),
+                }).all(|field| crate::application_schema::operation_declares_decision_read(
+                    self.members, operation, &ApplicationOperationDecisionReadTarget::Field {
+                        entity: entity.clone(), aspect: aspect.clone(), field: field.clone(),
+                    })),
             ApplicationOperationProgramTarget::Create { entity }
             | ApplicationOperationProgramTarget::Delete { entity } => {
                 self.entities.contains(entity.as_str())
@@ -104,21 +105,14 @@ impl ClosureIndex<'_> {
         operation: &str,
         target: &ApplicationMutationPreconditionTarget,
     ) -> bool {
-        self.members.iter().any(|member| {
-            matches!(
-                member,
-                ApplicationSchemaMember::OperationDecisionRead {
-                    operation: candidate_operation,
-                    target: ApplicationOperationDecisionReadTarget::Field {
-                        entity,
-                        aspect,
-                        field,
-                    },
-                } if candidate_operation == operation
-                    && entity == target.entity()
-                    && aspect == target.aspect()
-                    && field == target.field_name()
-            )
-        })
+        crate::application_schema::operation_declares_decision_read(
+            self.members,
+            operation,
+            &ApplicationOperationDecisionReadTarget::Field {
+                entity: target.entity().to_owned(),
+                aspect: target.aspect().to_owned(),
+                field: target.field_name().to_owned(),
+            },
+        )
     }
 }

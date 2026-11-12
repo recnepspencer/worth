@@ -16,6 +16,7 @@ use worth_relational::facade::schema::{
 
 mod expression;
 mod laws;
+mod operation_reads;
 
 #[derive(Debug)]
 pub struct DerivedRelationLayout {
@@ -25,7 +26,8 @@ pub struct DerivedRelationLayout {
     pub(in crate::domain_computation::primary_graph) to: ApplicationGraphMemberMeaning,
     pub(in crate::domain_computation::primary_graph) handle: DerivedRelationHandle,
     pub sources: Arc<[(Arc<str>, KindId, KindId, KindId)]>,
-    pub(in crate::domain_computation::primary_graph) operations: Arc<[Arc<str>]>,
+    pub(in crate::domain_computation::primary_graph) operations:
+        operation_reads::DerivedReadOperations,
     pub(in crate::domain_computation::primary_graph) carriers: Arc<[(Arc<str>, KindId)]>,
 }
 
@@ -66,6 +68,7 @@ pub(super) fn lower(
     let registry = sources
         .derived(registry, definitions)
         .map_err(|cause| invalid_member(&format!("derived Native registration: {cause:?}")))?;
+    let shared_operations = operation_reads::shared_index(schema.members());
     let mut layouts = BTreeMap::new();
     for member in schema.members() {
         let Member::DerivedRelation { definition } = member else {
@@ -123,17 +126,14 @@ pub(super) fn lower(
                 to: parts.to.clone(),
                 carriers,
                 sources,
-                operations: schema
-                    .members()
-                    .iter()
-                    .filter_map(|member| match member {
-                        Member::OperationDerivedRead {
-                            operation,
-                            relation,
-                        } if relation == &parts.relation => Some(Arc::from(operation.as_str())),
-                        _ => None,
-                    })
-                    .collect(),
+                operations: operation_reads::DerivedReadOperations::for_relation(
+                    schema.members(),
+                    &parts.relation,
+                    shared_operations
+                        .get(&parts.relation)
+                        .cloned()
+                        .unwrap_or_default(),
+                ),
                 handle: registry
                     .derived_relation(&identity(&parts.relation))
                     .expect("registered recipe"),

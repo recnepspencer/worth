@@ -74,5 +74,5 @@ pub(super) fn validate(
     Ok(())
 }
 fn has_read(members: &[Member], operation: &str, read: &Read) -> bool {
-    members.iter().any(|member| matches!(member, Member::OperationDecisionRead { operation: candidate, target } if candidate == operation && target == read))
+    crate::application_schema::operation_declares_decision_read(members, operation, read)
 }

@@ -63,7 +63,7 @@ pub(super) fn validate(operation: &str, body: &Body, members: &[Member]) -> Resu
         for path in site.path_links() {
             if !path.path.steps().iter().all(|step| members.iter().any(|m|matches!(m,Member::Relation{relation,from,to,..}
                 if relation==step.relation() && from==step.from() && to==step.to())))
-                || !path.decision_reads().iter().all(|read|members.iter().any(|m|matches!(m,Member::OperationDecisionRead{operation:op,target} if op==operation && target==read)))
+                || !path.decision_reads().iter().all(|read|crate::application_schema::operation_declares_decision_read(members, operation, read))
                 || !members.iter().any(|m|matches!(m,Member::Relation{relation,from,to,..} if relation==&path.link.relation && from==&path.link.from && to==&path.link.to))
                 || !members.iter().any(|m|matches!(m,Member::OperationProgram{operation:op,target} if op==operation && target==&path.link.program_target()))
             { return Err(Denial::program_body_dependency(operation)); }

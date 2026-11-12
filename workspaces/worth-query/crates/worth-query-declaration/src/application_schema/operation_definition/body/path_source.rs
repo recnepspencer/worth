@@ -24,8 +24,7 @@ impl ApplicationOperationBodyPathFieldSource {
         self.has_supported_shape()
             && self.path.steps().iter().all(|step| members.iter().any(|member| matches!(member,
                 Member::Relation { relation, from, to, .. } if relation == step.relation() && from == step.from() && to == step.to())))
-            && self.decision_reads().iter().all(|read| members.iter().any(|member| matches!(member,
-                Member::OperationDecisionRead { operation: declared, target } if declared == operation && target == read)))
+            && self.decision_reads().iter().all(|read| crate::application_schema::operation_declares_decision_read(members, operation, read))
     }
     pub fn canonical_record(&self) -> String {
         use std::fmt::Write;

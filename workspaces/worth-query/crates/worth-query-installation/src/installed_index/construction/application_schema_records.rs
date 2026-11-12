@@ -60,9 +60,12 @@ pub(super) fn compile_application_schema_records(
             *package.package.package().identity().digest(),
             schema_identity,
         );
-        let catalog =
+        let mut catalog =
             compile_native_contract_catalog(&binding, &seed.native_contracts, schema_work)
                 .map_err(map_catalog_denial_to_index_denial)?;
+        super::super::decision_read_scopes::compile(&binding, &mut catalog, &name, seed.declaration.members(), &seed.native_contracts)
+            .map_err(|()| crate::installed_index::WorthQueryInstalledPackageIndexDenial::new(
+                crate::installed_index::WorthQueryInstalledPackageIndexDenialKind::ConflictingApplicationSchema, &name))?;
         accumulate_catalog_counters(input.counters, &catalog);
         records.insert(
             (owner, name),

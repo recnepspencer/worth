@@ -60,8 +60,7 @@ fn source_is_declared(
                     binding, principal_entity, principal_identity_aspect, principal_identity_field, ..}
                     if binding==principal_binding && principal_entity==identity.entity()
                     && principal_identity_aspect==identity.aspect() && principal_identity_field==identity.field()))
-                && link.source_reads().iter().all(|read| members.iter().any(|m| matches!(m,
-                    ApplicationSchemaMember::OperationDecisionRead {operation:op,target} if op==operation && target==read)))
+                && link.source_reads().iter().all(|read| crate::application_schema::operation_declares_decision_read(members, operation, read))
         }
     }
 }
@@ -83,6 +82,5 @@ fn replacement_is_declared(
             if relation == &link.relation && integrity.cardinality.source_max == Some(1)))
         && members.iter().any(|member| matches!(member, ApplicationSchemaMember::OperationProgram { operation: declared, target }
             if declared == operation && target == &unlink))
-        && link.replacement_reads().iter().all(|read| members.iter().any(|member| matches!(member,
-            ApplicationSchemaMember::OperationDecisionRead { operation: declared, target } if declared == operation && target == read)))
+        && link.replacement_reads().iter().all(|read| crate::application_schema::operation_declares_decision_read(members, operation, read))
 }

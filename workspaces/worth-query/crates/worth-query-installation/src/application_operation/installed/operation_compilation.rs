@@ -51,7 +51,6 @@ pub(super) struct WorthQueryApplicationOperationCompilation<'a> {
     binding: ApplicationSchemaBindingIdentity,
     operation: String,
     input_type: String,
-    decision_reads: Vec<ApplicationOperationDecisionReadTarget>,
     graph_reads: WorthQueryOperationGraphReadContract,
     projection_work_budget: Option<usize>,
     execution_posture: WorthQueryInstalledApplicationOperationExecutionPosture,
@@ -129,22 +128,12 @@ impl<'a> WorthQueryApplicationOperationCompilation<'a> {
                 operation,
             )
         })?;
-        let decision_reads = decision_reads::from_installed(&graph_reads).map_err(|()| {
-            operation_denial(
-                WorthQueryApplicationOperationInstallationDenialKind::InvalidGraphObligationContract,
-                operation,
-            )
-        })?;
         let authored_program_width = program_width::resolve(portable_contract, operation)?;
         if authored_program_width == 0
-            && decision_reads.is_empty()
-            && !portable_contract.graph_reads().iter().any(|scope| {
-                matches!(
-                    scope,
-                    crate::package::WorthQueryPortableOperationGraphReadScope::Components { .. }
-                    | crate::package::WorthQueryPortableOperationGraphReadScope::DerivedSource { .. }
-                )
-            })
+            && graph_reads
+                .roles()
+                .iter()
+                .all(|role| role.read_scopes().is_empty())
         {
             return Err(operation_denial(
                 WorthQueryApplicationOperationInstallationDenialKind::MissingProgram,
@@ -168,7 +157,6 @@ impl<'a> WorthQueryApplicationOperationCompilation<'a> {
             binding,
             operation: operation.to_owned(),
             input_type: input_type.to_owned(),
-            decision_reads,
             graph_reads,
             projection_work_budget,
             execution_posture: operation_execution_posture(members, operation, input_type),
@@ -270,17 +258,10 @@ impl<'a> WorthQueryApplicationOperationCompilation<'a> {
             })
             .collect();
         let sealed = WorthQuerySealedOperationContractCompilation {
-            managed_index_reads: self
-                .members
-                .iter()
+            managed_index_reads: self.members.iter()
                 .filter_map(|member| match member {
-                    ApplicationSchemaMember::OperationDecisionRead {
-                        operation,
-                        target: ApplicationOperationDecisionReadTarget::ManagedIndex { parent },
-                    } if operation == &self.operation => Some(parent.clone()),
-                    _ => None,
-                })
-                .collect(),
+                    ApplicationSchemaMember::OperationDecisionRead { operation, target: ApplicationOperationDecisionReadTarget::ManagedIndex { parent } } if operation == &self.operation => Some(parent.clone()), _ => None,
+                }).collect(),
             body: self.portable_contract.body().cloned(),
             authorization,
             ability_requirements,
@@ -329,7 +310,7 @@ impl<'a> WorthQueryApplicationOperationCompilation<'a> {
     > {
         super::super::precondition_contract::compile_precondition_contract(
             operation_mutation_preconditions(self.members, &self.operation),
-            &self.decision_reads,
+            &self.graph_reads,
             abilities,
         )
         .map_err(|()| {
@@ -357,8 +338,9 @@ impl super::WorthQueryOperationAftermathInstallationSource
         &self.operation
     }
 
-    fn portable_decision_reads(&self) -> &[ApplicationOperationDecisionReadTarget] {
-        &self.decision_reads
+    fn portable_decision_reads(&self) -> Vec<ApplicationOperationDecisionReadTarget> {
+        decision_reads::from_installed(&self.graph_reads)
+            .expect("installed projections contain admitted atomic paths")
     }
 
     fn external_effect(&self) -> &InstalledExternalEffectContract {

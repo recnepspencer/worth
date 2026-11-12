@@ -13,6 +13,12 @@ use super::super::decode_budget::RecordDecodeAttempt;
 
 pub(super) fn write(output: &mut dyn BinaryEncodingSink, scope: &Scope) -> Result<(), Denial> {
     match scope {
+        Scope::SharedDecisionRead { schema, identity } => {
+            output.u16(6)?;
+            output.u16(1)?;
+            output.text(schema)?;
+            output.text(identity)
+        }
         Scope::DerivedSource { schema, relation } => {
             output.u16(5)?;
             output.u16(1)?;
@@ -63,6 +69,15 @@ pub(super) fn decode(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<Scope, Denial> {
     Ok(match input.u16()? {
+        6 => {
+            if input.u16()? != 1 {
+                return Err(Denial::new(Kind::UnsupportedRecordVariant));
+            }
+            Scope::SharedDecisionRead {
+                schema: input.text()?.to_owned(),
+                identity: input.text()?.to_owned(),
+            }
+        }
         5 => {
             if input.u16()? != 1 {
                 return Err(Denial::new(Kind::UnsupportedRecordVariant));
@@ -102,6 +117,16 @@ pub(super) fn canonical_order(left: &Scope, right: &Scope) -> Ordering {
     rank(left)
         .cmp(&rank(right))
         .then_with(|| match (left, right) {
+            (
+                Scope::SharedDecisionRead {
+                    schema: ls,
+                    identity: li,
+                },
+                Scope::SharedDecisionRead {
+                    schema: rs,
+                    identity: ri,
+                },
+            ) => (ls, li).cmp(&(rs, ri)),
             (
                 Scope::DerivedSource {
                     schema: ls,
@@ -174,9 +199,12 @@ pub(super) fn canonical_order(left: &Scope, right: &Scope) -> Ordering {
 }
 
 const fn rank(scope: &Scope) -> u8 {
+    // The SDK appends shared references before component/derived references.
+    // Canonical position is independent of the frozen numeric wire tags.
     match scope {
-        Scope::Components { .. } => 4,
-        Scope::DerivedSource { .. } => 5,
+        Scope::SharedDecisionRead { .. } => 4,
+        Scope::Components { .. } => 5,
+        Scope::DerivedSource { .. } => 6,
         Scope::Entity { .. } => 1,
         Scope::NativeProjection { .. } => 2,
         Scope::Relation { .. } => 3,

@@ -201,7 +201,7 @@ pub mod facade {
         WorthQueryInstalledBoundMutationPrincipal, WorthQueryInstalledHostConditionalProvider,
         WorthQueryInstalledMutationPrecondition, WorthQueryInstalledNamedClockConditionalNode,
         WorthQueryInstalledSigningLifecycleRule, WorthQueryInstalledTemporalConditionalOperation,
-        WorthQueryOperationEmissionContract,
+        WorthQueryOperationEmissionContract, WorthQueryOperationManagedIndexReadView,
         WorthQueryPortableApplicationConditionalOperationBinding,
         WorthQueryPortableApplicationConditionalOperationBindingParts,
         APPLICATION_AUTHORIZATION_FACT_FAMILY, APPLICATION_DECISION_FACT_FAMILY,
@@ -322,10 +322,10 @@ pub mod facade {
     };
     pub use crate::installed_index::WorthQueryCurrentRetainedMutationBinding;
     pub use crate::installed_index::{
-        WorthQueryInstalledPackageAuthority, WorthQueryInstalledPackageIndex,
-        WorthQueryInstalledPackageIndexCounters, WorthQueryInstalledPackageIndexDenial,
-        WorthQueryInstalledPackageIndexDenialKind, WorthQueryInstalledPackageIndexRebuildReport,
-        WorthQueryInstalledPackageIndexRelation,
+        WorthQueryInstalledPackageAuthority, WorthQueryInstalledPackageExportDenial,
+        WorthQueryInstalledPackageIndex, WorthQueryInstalledPackageIndexCounters,
+        WorthQueryInstalledPackageIndexDenial, WorthQueryInstalledPackageIndexDenialKind,
+        WorthQueryInstalledPackageIndexRebuildReport, WorthQueryInstalledPackageIndexRelation,
     };
     pub use crate::installed_index::{
         WorthQueryPrincipalBindingValidationAdmissionStop, WorthQueryValidatedPrincipalBinding,

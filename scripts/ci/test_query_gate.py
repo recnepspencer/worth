@@ -264,6 +264,25 @@ class CourtSelection(unittest.TestCase):
                         if query_gate_courts.selected(suite, binary, name)]
             self.assertEqual(selected, [expected])
 
+    def test_record_access_owner_cost_has_exact_namespace_and_suite_partition(self):
+        owner = {"package": "worth-query-declaration", "lib": True}
+        name = query_gate_courts.RECORD_ACCESS_COST + "typed_record_membership_comparison_growth"
+        suites = ["query-rest", "query-execution", "query-cost", "query-scale",
+                  "query-process", "bank-cost", "root-cost"]
+        def selected(binary, test):
+            return [suite for suite in suites
+                    if query_gate.TEST_SUITES[suite][1](binary)
+                    and query_gate_courts.selected(suite, binary, test)]
+        self.assertEqual(selected(owner, name), ["query-cost", "query-scale"])
+        self.assertEqual(selected(owner, "application_schema::ordinary"), ["query-rest"])
+        self.assertEqual(selected(owner, name.replace("::cost::", "::cost_neighbor::")),
+                         ["query-rest"])
+        self.assertEqual(selected({**owner, "lib": False}, name), ["query-rest"])
+        self.assertEqual(selected({"package": "worth-query-installation", "lib": True}, name),
+                         ["query-rest"])
+        self.assertEqual(selected({"package": "worth-query-court-installation", "lib": False},
+                                  "cost::existing"), ["query-cost", "query-scale", "bank-cost", "root-cost"])
+
     def test_full_workspace_landing_sets_include_cost_and_exclude_scheduled_scale(self):
         for workspace in ('root', 'query', 'bank'):
             suites = query_gate_courts.landing_suites(workspace)

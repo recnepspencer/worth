@@ -9,7 +9,11 @@ pub struct WorthQueryOperationGraphReadRole {
     role: String,
     participation: WorthQueryOperationGraphParticipation,
     access: WorthQueryOperationGraphAccess,
-    read_scopes: Vec<WorthQueryOperationGraphReadScope>,
+    read_scopes: std::sync::Arc<[WorthQueryOperationGraphReadScope]>,
+    shared_identity: Option<String>,
+    managed_index_reads: std::sync::Arc<
+        [worth_query_declaration::facade::application_query::ApplicationQueryBindingReference],
+    >,
 }
 
 impl WorthQueryOperationGraphReadRole {
@@ -23,7 +27,9 @@ impl WorthQueryOperationGraphReadRole {
             role,
             participation,
             access,
-            read_scopes,
+            read_scopes: read_scopes.into(),
+            shared_identity: None,
+            managed_index_reads: std::sync::Arc::from([]),
         }
     }
 
@@ -41,6 +47,32 @@ impl WorthQueryOperationGraphReadRole {
 
     pub fn read_scopes(&self) -> &[WorthQueryOperationGraphReadScope] {
         &self.read_scopes
+    }
+
+    pub fn shared_scope_identity(&self) -> Option<&str> {
+        self.shared_identity.as_deref()
+    }
+
+    pub(crate) fn shared(
+        identity: &str,
+        read_scopes: std::sync::Arc<[WorthQueryOperationGraphReadScope]>,
+        managed_index_reads: std::sync::Arc<[worth_query_declaration::facade::application_query::ApplicationQueryBindingReference]>,
+    ) -> Self {
+        Self {
+            role: format!("scope-{identity}"),
+            participation: WorthQueryOperationGraphParticipation::PrimaryLogicalGraph,
+            access: WorthQueryOperationGraphAccess::Project,
+            read_scopes,
+            shared_identity: Some(identity.to_owned()),
+            managed_index_reads,
+        }
+    }
+
+    pub(crate) fn managed_index_reads(
+        &self,
+    ) -> &[worth_query_declaration::facade::application_query::ApplicationQueryBindingReference]
+    {
+        &self.managed_index_reads
     }
 }
 

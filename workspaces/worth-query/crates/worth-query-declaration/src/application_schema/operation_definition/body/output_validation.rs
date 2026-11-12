@@ -58,8 +58,7 @@ pub(super) fn validate_outputs(
                     && Some(from.as_str()) == body.scope_entity() && to == &output.role.entity
                     && members.iter().any(|member| matches!(member, ApplicationSchemaMember::Relation { relation: name, from: root, to: child, .. }
                         if name == relation && root == from && child == to))
-                    && output.target.decision_reads().iter().all(|read| members.iter().any(|member| matches!(member,
-                        ApplicationSchemaMember::OperationDecisionRead { operation: owner, target } if owner == operation && target == read)))
+                    && output.target.decision_reads().iter().all(|read| crate::application_schema::operation_declares_decision_read(members, operation, read))
             }
         };
         if !target_valid {

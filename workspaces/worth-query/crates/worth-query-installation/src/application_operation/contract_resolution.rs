@@ -297,7 +297,10 @@ pub(super) fn operation_program_from_members(
     program
 }
 
-fn operation_has_revocation(members: &[ApplicationSchemaMember], operation: &str) -> bool {
+pub(super) fn operation_has_revocation(
+    members: &[ApplicationSchemaMember],
+    operation: &str,
+) -> bool {
     members.iter().any(|member| {
         matches!(
             member,

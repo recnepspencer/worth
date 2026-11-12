@@ -1,17 +1,34 @@
 use crate::domain_operation::{WorthQueryOperationGraphReadScope, WorthQueryOperationTouchScope};
 
+/// Borrowed union of installed leaves. Inspecting it never copies their retained contents.
+#[derive(Clone, Copy, Debug)]
+pub struct WorthQueryOperationReadScopeView<'a>(
+    &'a [crate::domain_operation::WorthQueryOperationGraphReadRole],
+);
+impl<'a> WorthQueryOperationReadScopeView<'a> {
+    pub fn iter(&self) -> impl Iterator<Item = &'a WorthQueryOperationGraphReadScope> {
+        self.0.iter().flat_map(|role| role.read_scopes())
+    }
+    pub fn len(&self) -> usize {
+        self.0.iter().map(|role| role.read_scopes().len()).sum()
+    }
+    pub fn is_empty(&self) -> bool {
+        self.0.iter().all(|role| role.read_scopes().is_empty())
+    }
+}
+
 /// Comparison-ready installed read/touch index. It retains typed scopes and
 /// never reparses declaration or canonical material.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryOperationReadTouchOverlapIndex {
-    reads: Vec<WorthQueryOperationGraphReadScope>,
+    reads: Vec<crate::domain_operation::WorthQueryOperationGraphReadRole>,
     touches: Vec<WorthQueryOperationTouchScope>,
     touch_overlap_counts: Vec<usize>,
 }
 
 impl WorthQueryOperationReadTouchOverlapIndex {
     pub(crate) fn new(
-        reads: Vec<WorthQueryOperationGraphReadScope>,
+        reads: Vec<crate::domain_operation::WorthQueryOperationGraphReadRole>,
         touches: Vec<WorthQueryOperationTouchScope>,
     ) -> Self {
         let touch_overlap_counts = touches
@@ -19,6 +36,7 @@ impl WorthQueryOperationReadTouchOverlapIndex {
             .map(|touch| {
                 reads
                     .iter()
+                    .flat_map(|role| role.read_scopes())
                     .filter(|read| read_intersects_touch(read, touch))
                     .count()
             })
@@ -30,8 +48,8 @@ impl WorthQueryOperationReadTouchOverlapIndex {
         }
     }
 
-    pub fn reads(&self) -> &[WorthQueryOperationGraphReadScope] {
-        &self.reads
+    pub fn reads(&self) -> WorthQueryOperationReadScopeView<'_> {
+        WorthQueryOperationReadScopeView(&self.reads)
     }
 
     pub fn touches(&self) -> &[WorthQueryOperationTouchScope] {

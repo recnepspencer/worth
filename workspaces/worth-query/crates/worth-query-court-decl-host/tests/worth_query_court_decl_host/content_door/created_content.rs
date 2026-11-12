@@ -16,8 +16,7 @@ impl ApplicationDeclaredOperation<Schema> for Create {
     fn declare_access(
         schema: ApplicationSchemaDeclarationBuilder<Schema>,
     ) -> ApplicationSchemaDeclarationBuilder<Schema> {
-        schema
-            .operation_read_field(Self::reference(), Key::at("Key"))
+        shared_reads::create(schema)
             .operation_write(Self::reference(), Key::at("Key"))
             .operation_write(Self::reference(), Values::at("Values"))
             .operation_create(Self::reference(), Record::reference())

@@ -1,6 +1,4 @@
-use worth_query_declaration::facade::application_schema::{
-    ApplicationMutationPreconditionTarget, ApplicationOperationDecisionReadTarget,
-};
+use worth_query_declaration::facade::application_schema::ApplicationMutationPreconditionTarget;
 
 use super::WorthQueryInstalledAbilityRequirement;
 
@@ -21,7 +19,7 @@ impl WorthQueryInstalledMutationPrecondition {
 
 pub(crate) fn compile_precondition_contract(
     mut targets: Vec<ApplicationMutationPreconditionTarget>,
-    decision_reads: &[ApplicationOperationDecisionReadTarget],
+    decision_reads: &crate::domain_operation::WorthQueryOperationGraphReadContract,
     abilities: &[WorthQueryInstalledAbilityRequirement],
 ) -> Result<Vec<WorthQueryInstalledMutationPrecondition>, ()> {
     targets.sort();
@@ -45,18 +43,23 @@ pub(crate) fn compile_precondition_contract(
 
 fn is_installed_decision_read(
     target: &ApplicationMutationPreconditionTarget,
-    decision_reads: &[ApplicationOperationDecisionReadTarget],
+    decision_reads: &crate::domain_operation::WorthQueryOperationGraphReadContract,
 ) -> bool {
-    decision_reads.iter().any(|read| {
-        matches!(
-            read,
-            ApplicationOperationDecisionReadTarget::Field {
-                entity,
-                aspect,
-                field,
-            } if entity == target.entity()
-                && aspect == target.aspect()
-                && field == target.field_name()
-        )
-    })
+    let Some(field) = worth_foundational::facade::FieldKey::new(target.field_name()) else {
+        return false;
+    };
+    decision_reads
+        .roles()
+        .iter()
+        .flat_map(|role| role.read_scopes())
+        .any(|read| {
+            let crate::domain_operation::WorthQueryOperationGraphReadScope::NativeProjection(read) =
+                read
+            else {
+                return false;
+            };
+            read.entity().semantic_key() == target.entity()
+                && read.aspect().as_str() == target.aspect()
+                && read.admits_field(&field)
+        })
 }
