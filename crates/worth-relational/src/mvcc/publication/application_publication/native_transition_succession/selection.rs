@@ -73,8 +73,9 @@ pub(super) fn select(
         return Ok(None);
     };
     let envelope = runtime
-        .history
-        .canonical_envelope(commit)
+        .history_access()
+        .demand_commit_envelope(execution, commit)
+        .map_err(custody::execution_stop)?
         .ok_or_else(|| origin_denial("selected retirement successor history absent"))?;
     let origin = execution
         .run_native_with_checkpoint(|context| {
