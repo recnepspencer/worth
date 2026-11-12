@@ -9,11 +9,10 @@ use crate::domain_computation::primary_graph::{
 pub(super) struct CoupledAdoption {
     candidate: RetainedInputCutoffCandidate,
     receipt: WorthQueryApplicationCommitReceipt,
-    stable: crate::domain_computation::primary_graph::output_lineage::PublishedStableLineage,
     posture: CompletionPosture,
 }
 enum CompletionPosture {
-    Current,
+    Current(crate::domain_computation::primary_graph::output_lineage::PublishedStableLineage),
     OwnEffectContinuation,
 }
 impl CoupledAdoption {
@@ -73,32 +72,31 @@ impl CoupledAdoption {
         {
             return Ok(None);
         }
-        let posture = if candidate.requires_own_effect_continuation()
+        if candidate.requires_own_effect_continuation()
             && receipt
                 .committed_product_publication()
                 .is_selected_at(selected.product().observation())
         {
-            CompletionPosture::OwnEffectContinuation
-        } else {
-            CompletionPosture::Current
-        };
-        // Only the Current route reads the witness. A completion that keeps
-        // facts without it cannot answer, so it is not adopted here and the
-        // ordinary path runs the producer (public #126). The born-stale branch
-        // above never reads the witness and keeps its successor chain.
-        if matches!(posture, CompletionPosture::Current)
-            && candidate.retains_facts_without_witness()
-        {
+            // D1704: this is the actual performing completion, not idempotency
+            // replay. Its existing source/settlement custody drives delivery;
+            // absence of a witness must never turn into Current or Stable.
+            return Ok(Some(Self {
+                candidate,
+                receipt,
+                posture: CompletionPosture::OwnEffectContinuation,
+            }));
+        }
+        // Only the Current route may read the witness. Missing witness custody
+        // cannot answer currentness; the ordinary owner must run the producer.
+        if candidate.retains_facts_without_witness() {
             return Ok(None);
         }
-        if matches!(posture, CompletionPosture::Current) {
-            match selected.require_current_output_receipts(phase, [&receipt]) {
-                Ok(()) => {}
-                Err(denial) if denial.kind() == WorthQueryOutputDemandDenialKind::Superseded => {
-                    return Ok(None);
-                }
-                Err(denial) => return Err(denial.into()),
+        match selected.require_current_output_receipts(phase, [&receipt]) {
+            Ok(()) => {}
+            Err(denial) if denial.kind() == WorthQueryOutputDemandDenialKind::Superseded => {
+                return Ok(None)
             }
+            Err(denial) => return Err(denial.into()),
         }
         let resolution = runtime
             .resolve_admitted_application_idempotency_with_request(execution, operation, binding)
@@ -156,8 +154,7 @@ impl CoupledAdoption {
         Ok(Some(Self {
             candidate,
             receipt,
-            stable,
-            posture,
+            posture: CompletionPosture::Current(stable),
         }))
     }
     pub(super) fn publish<Schema: ApplicationSchema>(
@@ -182,8 +179,8 @@ impl CoupledAdoption {
                 denial(WorthQueryOutputDemandDenialKind::PublicationStale, producer).into(),
             );
         }
-        match self.posture {
-            CompletionPosture::Current => {
+        match &self.posture {
+            CompletionPosture::Current(_) => {
                 current.require_current_output_receipts(phase, [&self.receipt])?
             }
             CompletionPosture::OwnEffectContinuation => {
@@ -214,6 +211,11 @@ impl CoupledAdoption {
         claims
             .publish(std::sync::Arc::clone(self.candidate.settlement_identity()))
             .retire(None, owner);
-        Ok(ProducerExecutionOutcome::Stable(self.stable))
+        Ok(match self.posture {
+            CompletionPosture::Current(stable) => ProducerExecutionOutcome::Stable(stable),
+            CompletionPosture::OwnEffectContinuation => {
+                ProducerExecutionOutcome::OwnEffectContinuation(self.receipt)
+            }
+        })
     }
 }

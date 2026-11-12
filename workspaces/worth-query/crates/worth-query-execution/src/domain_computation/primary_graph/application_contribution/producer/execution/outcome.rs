@@ -17,6 +17,10 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     Committed(ProducerCommitReceipt),
     Unpublished(super::unpublished::PendingProducerPublication),
     Stable(graph::output_lineage::PublishedStableLineage),
+    /// D1704: the actual coupled writer's existing Live custody still needs its
+    /// own-effect delivery successor. It grants neither Current nor Stable,
+    /// and this handoff records no new publication.
+    OwnEffectContinuation(WorthQueryApplicationCommitReceipt),
 }
 
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) type PreparedProducerExecutionPlan<
