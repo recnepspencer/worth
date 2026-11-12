@@ -32,6 +32,11 @@ fn original_created_endpoints_survive_prefix_lowering_in_either_position() {
         BTreeMap::from([(prefix_key, prefix_id)]),
         &symbols,
     );
+    let canonical_prefix = prefix.canonical_meaning(&symbols).unwrap();
+    let created_entities = canonical_prefix
+        .iter()
+        .map(|created| (created.assigned, &created.key))
+        .collect();
     for (source, target) in [
         (created.clone(), existing.clone()),
         (existing, created.clone()),
@@ -55,7 +60,9 @@ fn original_created_endpoints_survive_prefix_lowering_in_either_position() {
             .unwrap();
         assert_eq!(completed.resolve(&original), Some(assigned));
         assert_eq!(completed.resolve(&executed), None);
-        let semantic = completed.canonical_meaning(&symbols).unwrap();
+        let semantic = completed
+            .canonical_meaning(&symbols, &created_entities)
+            .unwrap();
         assert_eq!(semantic.len(), 1);
         assert_eq!(semantic[0].assigned, assigned);
         let other = CreatedRelationRef {
@@ -111,6 +118,11 @@ fn original_symbol_and_text_aliases_share_one_completed_correspondence() {
         BTreeMap::from([(prefix_key, prefix_id)]),
         &symbols,
     );
+    let canonical_prefix = prefix.canonical_meaning(&symbols).unwrap();
+    let created_entities = canonical_prefix
+        .iter()
+        .map(|created| (created.assigned, &created.key))
+        .collect();
     let generated = CommitCreatedRelationBindings::from_owner_map(
         BTreeMap::from([(executed, assigned)]),
         &symbols,
@@ -123,7 +135,13 @@ fn original_symbol_and_text_aliases_share_one_completed_correspondence() {
     let raw = relation(EntityReference::Created(entity("restored-anchor")), target);
     assert_eq!(completed.resolve(&original), Some(assigned));
     assert_eq!(completed.resolve(&raw), Some(assigned));
-    assert_eq!(completed.canonical_meaning(&symbols).unwrap().len(), 1);
+    assert_eq!(
+        completed
+            .canonical_meaning(&symbols, &created_entities)
+            .unwrap()
+            .len(),
+        1
+    );
 }
 
 #[test]
