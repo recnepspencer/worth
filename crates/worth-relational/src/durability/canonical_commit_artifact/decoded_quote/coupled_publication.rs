@@ -56,3 +56,34 @@ pub(super) fn quote(
         Ok(bytes)
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn malformed_stages_vector_still_refuses_noncanonical_payload() {
+        #[derive(serde::Serialize)]
+        enum Sources {
+            Stages(&'static str),
+        }
+        #[derive(serde::Serialize)]
+        struct Malformed {
+            sources: Sources,
+            participants: Vec<()>,
+        }
+        let bytes = rmp_serde::to_vec_named(&Malformed {
+            sources: Sources::Stages("not an entity vector"),
+            participants: Vec::new(),
+        })
+        .unwrap();
+        let request = worth_execution::SerialRequest::from_memory(
+            worth_execution::SerialMemoryBudget::new(None),
+            worth_execution::CancellationSource::new().token(),
+            None,
+        );
+        assert!(matches!(
+            quote(BorrowedPayload(&bytes), &ExecutionRequest::serial(&request)),
+            Err(Refusal::NonCanonicalPayload)
+        ));
+    }
+}
