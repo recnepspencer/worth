@@ -313,7 +313,7 @@ fn fixed_producer_cleanup_survives_diagnostic_drop_and_refused_release() {
         _ => panic!("the source really commits before arming producer cleanup"),
     };
     let mut operation = Some(operation);
-    let operation = loop {
+    let mut operation = loop {
         match operation.take().unwrap().advance(&request) {
             Advance::Progress {
                 operation: next,
@@ -337,15 +337,18 @@ fn fixed_producer_cleanup_survives_diagnostic_drop_and_refused_release() {
         .application
         .schedule_next_managed_cleanup_on_worker_for_test()
         .unwrap();
-    let mut terminal = match operation.advance(&request) {
-        Advance::Terminal { operation, denial } => {
-            drop(denial);
-            operation
+    let mut terminal = loop {
+        match operation.advance(&request) {
+            Advance::Progress {
+                operation: next, ..
+            } => operation = next,
+            Advance::Terminal { operation, denial } => {
+                drop(denial);
+                break operation;
+            }
+            Advance::Refused { denial, .. } => panic!("producer cleanup refused: {denial:?}"),
+            Advance::Settled(_) => panic!("injected real producer cleanup cannot settle"),
         }
-        Advance::Refused { denial, .. } => {
-            panic!("cleanup is terminal producer evidence: {denial:?}")
-        }
-        _ => panic!("the actual producer cleanup must fail"),
     };
     let original_runs = failed_runs(terminal.managed_cleanup_failures());
     assert!(matches!(
