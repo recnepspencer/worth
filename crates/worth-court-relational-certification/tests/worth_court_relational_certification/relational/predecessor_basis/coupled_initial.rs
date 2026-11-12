@@ -57,8 +57,8 @@ impl RelationalAuthoredCoupledProducerAssembly for Initial<'_> {
                         .unwrap(),
                         family: "source-owned".into(),
                         source_scope: world.source,
-                        source_partition: [0; 32],
-                        source_epoch: [1; 32],
+                        source_partition: worth_foundational::CanonicalDigestId::new([0; 32]),
+                        source_epoch: worth_foundational::CanonicalDigestId::new([1; 32]),
                     },
                     roles: vec![RequiredOutputRoleTarget {
                         role: "output".into(),
@@ -155,8 +155,8 @@ fn run(execution: &ExecutionRequest<'_, '_>) {
         .unwrap(),
         family: "source-owned".into(),
         source_scope: world.source,
-        source_partition: [0; 32],
-        source_epoch: [1; 32],
+        source_partition: worth_foundational::CanonicalDigestId::new([0; 32]),
+        source_epoch: worth_foundational::CanonicalDigestId::new([1; 32]),
     };
     let current = world
         .runtime

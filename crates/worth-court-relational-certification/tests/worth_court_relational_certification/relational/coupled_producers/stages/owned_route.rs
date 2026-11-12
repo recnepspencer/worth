@@ -76,7 +76,7 @@ impl RelationalAuthoredCoupledProducerAssembly for PreserveAfterStage<'_> {
             .admit_required_output_succession(running, self.prior.authority())
             .unwrap();
         let mut meaning = self.prior.meaning().clone();
-        meaning.source_epoch = [2; 32];
+        meaning.source_epoch = worth_foundational::CanonicalDigestId::new([2; 32]);
         let output = self.prior.members().next().unwrap().3;
         candidate.append_publication(
             execution,

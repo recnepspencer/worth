@@ -175,7 +175,7 @@ fn exercise(worker: bool) {
         )
         .unwrap();
     let mut meaning = world.meaning.clone();
-    meaning.source_epoch = [2; 32];
+    meaning.source_epoch = worth_foundational::CanonicalDigestId::new([2; 32]);
     let successor = begin(&world.runtime)
         .validate(&execution, &world.runtime)
         .unwrap()
