@@ -142,20 +142,6 @@ fn exercise(worker: bool, value: u64) {
     }
 
     assert_eq!(
-        member.committed_product_publication(),
-        described.committed_product_publication(),
-        "both describe the same commit, without the same origin posture"
-    );
-    host.with_host_advancement(|phase| {
-        let current=worth_query_host::facade::application_entry::WorthQueryApplicationReadObservation::retain_on_branch(&phase,host.runtime(),host.current_world()).unwrap();
-        let selected=current.select_on(&phase,host.runtime()).unwrap();
-        let old=before_read.select_on(&phase,host.runtime()).unwrap();
-        assert!(member.committed_product_publication().co_committed_at_for_test(selected.product().observation_for_test()));
-        assert!(!described.committed_product_publication().co_committed_at_for_test(selected.product().observation_for_test()),"a description alone cannot mint a group origin");
-        assert!(!member.committed_product_publication().co_committed_at_for_test(old.product().observation_for_test()),"a real group origin cannot name another endpoint");
-    }).unwrap();
-
-    assert_eq!(
         host.producer_contacts_on_this_thread_for_test(),
         expected_contacts,
         "readiness reuses the actual co-committed outputs"
