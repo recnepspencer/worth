@@ -77,12 +77,20 @@ fn exercise(worker: bool) {
     assert_eq!(courts::native_head(&host), original_head);
     super::super::failure::assert_model_unchanged(&host, &before);
     drop(schedule);
-    host.with_host_advancement(|phase| {
-        cleanup
-            .retry_in_advancement(&phase)
-            .unwrap_or_else(|owner| panic!("lawful cleanup retry: {owner:?}"))
-    })
-    .unwrap();
+    let released = host
+        .with_host_advancement(|phase| {
+            cleanup
+                .retry_in_advancement(&phase)
+                .unwrap_or_else(|owner| panic!("lawful cleanup retry: {owner:?}"))
+        })
+        .unwrap();
+    assert_eq!(
+        released.dispatch_posture(),
+        worth_query_host::facade::primary_graph::WorthQueryCleanupDispatchPosture::NotDeclared
+    );
+    assert!(released.original_dispatch().is_none());
+    // This refused edit declared no outbox; no original dispatch remains to drive.
+    drop(released);
     assert_eq!(
         courts::native_head(&host),
         original_head,

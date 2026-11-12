@@ -125,7 +125,6 @@ fn exercise(worker: bool, cold: bool) {
     assert_eq!(courts::native_head(&host), head);
     if cold {
         let checkpoint = super::super::super::failure::checkpoint(&host);
-        drop(request);
         drop(principal);
         drop(host);
         host = world::restore_program_checkpoint::<program::Program>(checkpoint, worker, false);
