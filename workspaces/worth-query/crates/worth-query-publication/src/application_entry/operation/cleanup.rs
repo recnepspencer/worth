@@ -140,7 +140,7 @@ impl WorthQueryOperationCleanup {
                 O::CleanupRequired(required) => {
                     let (original, cleanup) = required.into_parts();
                     self.absorb_managed(runtime, cleanup);
-                    outcome = original.into();
+                    outcome = original;
                 }
                 other => return other,
             }
