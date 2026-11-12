@@ -66,6 +66,7 @@ fn exercise(worker: bool) {
     let Outcome::RecoveredCommitted(replayed) = replay else {
         panic!("envelope replay was not RecoveredCommitted")
     };
+    assert!(receipt.receipt().matches_recorded_original(&replayed));
     // D1675/D1676: canonical owner readmission carries durable meaning,
     // never reconstructed live session custody or per-stage results.
     assert_eq!(
@@ -73,7 +74,7 @@ fn exercise(worker: bool) {
         receipt.receipt().commit_reference()
     );
     assert_eq!(
-        replayed.outcome_identity(),
+        Some(replayed.outcome_identity()),
         receipt.receipt().outcome_identity()
     );
     assert_eq!(

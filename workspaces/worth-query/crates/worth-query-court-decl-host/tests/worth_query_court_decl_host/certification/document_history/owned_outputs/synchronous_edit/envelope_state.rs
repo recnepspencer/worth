@@ -62,6 +62,7 @@ fn drift(worker: bool) {
     let Outcome::RecoveredCommitted(replay) = replay else {
         panic!("whole envelope was not replayed")
     };
+    assert!(receipt.receipt().matches_recorded_original(&replay));
     assert_eq!(
         replay.commit_reference(),
         receipt.receipt().commit_reference()

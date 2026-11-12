@@ -148,6 +148,7 @@ fn exercise(worker: bool) {
         let Outcome::RecoveredCommitted(replayed) = replay else {
             panic!("cold={cold}: replay was not committed")
         };
+        assert!(receipt.receipt().matches_recorded_original(&replayed));
         assert_eq!(
             replayed.commit_reference(),
             receipt.receipt().commit_reference()
