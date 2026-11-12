@@ -51,7 +51,7 @@ fn set_field<S: TopologySchemaBinding>(
     entity: &WorthQueryGeneratedEntity<S, Body>,
 ) {
     let value = worth_query_consumer_values::PositiveLength::new(7).unwrap();
-    let _ = reconstruction.field(entity, PositionY::reference(), value);
+    let _ = reconstruction.field(entity, PositionY::at("PositionY"), value);
 }
 ```
 
@@ -68,7 +68,7 @@ fn set_field<S: TopologySchemaBinding>(
     entity: &WorthQueryRetainedGeneratedOutputEntity<S, Body>,
 ) {
     let value = worth_query_consumer_values::PositiveLength::new(7).unwrap();
-    let _ = reconstruction.field(entity, PositionY::reference(), value);
+    let _ = reconstruction.field(entity, PositionY::at("PositionY"), value);
 }
 ```
 
@@ -95,7 +95,7 @@ contract at compile time:
 #         unimplemented!()
 #     }
 # }
-# impl TopologySchemaBinding for S {}
+# impl TopologySchemaBinding for S { type PrincipalFragment = worth_query_topology_entry::PrincipalRecords; }
 fn bind(
     writer: &mut CandidateWriter<'_, S, PlanarMutationBinding<S>>,
     body: &WorthQueryApplicationEffectEntity<S, Body>,
@@ -145,7 +145,7 @@ A role its contract does not declare:
 #         unimplemented!()
 #     }
 # }
-# impl TopologySchemaBinding for S {}
+# impl TopologySchemaBinding for S { type PrincipalFragment = worth_query_topology_entry::PrincipalRecords; }
 struct Stray;
 impl WorthQueryApplicationOutputRole for Stray {
     type Schema = S;
@@ -186,7 +186,7 @@ A declared role read as another entity:
 #         unimplemented!()
 #     }
 # }
-# impl TopologySchemaBinding for S {}
+# impl TopologySchemaBinding for S { type PrincipalFragment = worth_query_topology_entry::PrincipalRecords; }
 struct AnchorAsPrincipal;
 impl WorthQueryApplicationOutputRole for AnchorAsPrincipal {
     type Schema = S;
@@ -224,7 +224,7 @@ An at-most-one role used as exactly-one:
 #         unimplemented!()
 #     }
 # }
-# impl TopologySchemaBinding for S {}
+# impl TopologySchemaBinding for S { type PrincipalFragment = worth_query_topology_entry::PrincipalRecords; }
 struct ClosingAsRequired;
 impl WorthQueryApplicationOutputRole for ClosingAsRequired {
     type Schema = S;
@@ -265,7 +265,7 @@ A role declared with another posture:
 #         unimplemented!()
 #     }
 # }
-# impl TopologySchemaBinding for S {}
+# impl TopologySchemaBinding for S { type PrincipalFragment = worth_query_topology_entry::PrincipalRecords; }
 struct CreatedAnchor;
 impl WorthQueryApplicationOutputRole for CreatedAnchor {
     type Schema = S;
@@ -303,7 +303,7 @@ A declared role bound with a posture other than its own:
 #         unimplemented!()
 #     }
 # }
-# impl TopologySchemaBinding for S {}
+# impl TopologySchemaBinding for S { type PrincipalFragment = worth_query_topology_entry::PrincipalRecords; }
 fn bind(
     writer: &mut CandidateWriter<'_, S, PlanarMutationBinding<S>>,
     body: &WorthQueryApplicationEffectEntity<S, Body>,
@@ -331,7 +331,7 @@ A role of another operation's contract:
 #         unimplemented!()
 #     }
 # }
-# impl TopologySchemaBinding for S {}
+# impl TopologySchemaBinding for S { type PrincipalFragment = worth_query_topology_entry::PrincipalRecords; }
 fn bind(
     writer: &mut CandidateWriter<'_, S, PlanarMutationBinding<S>>,
     body: &WorthQueryApplicationEffectEntity<S, Body>,
@@ -359,7 +359,7 @@ A role of another operation's contract, read on this contract's view:
 #         unimplemented!()
 #     }
 # }
-# impl TopologySchemaBinding for S {}
+# impl TopologySchemaBinding for S { type PrincipalFragment = worth_query_topology_entry::PrincipalRecords; }
 fn read(outputs: WorthQueryApplicationTypedOutputCorrespondence<'_, PlanarOutputs>) {
     let _ = outputs.entity::<FinalAnchorOutput<S>>();
 }
@@ -388,7 +388,7 @@ Families, bound by suffix and read back:
 #         unimplemented!()
 #     }
 # }
-# impl TopologySchemaBinding for S {}
+# impl TopologySchemaBinding for S { type PrincipalFragment = worth_query_topology_entry::PrincipalRecords; }
 fn bind(
     writer: &mut CandidateWriter<'_, S, PlanarMutationBinding<S>>,
     body: &WorthQueryApplicationEffectEntity<S, Body>,
@@ -425,7 +425,7 @@ A family its contract does not declare:
 #         unimplemented!()
 #     }
 # }
-# impl TopologySchemaBinding for S {}
+# impl TopologySchemaBinding for S { type PrincipalFragment = worth_query_topology_entry::PrincipalRecords; }
 struct Stray;
 impl WorthQueryApplicationOutputRoleFamily for Stray {
     type Schema = S;
@@ -467,7 +467,7 @@ A declared family read as another entity:
 #         unimplemented!()
 #     }
 # }
-# impl TopologySchemaBinding for S {}
+# impl TopologySchemaBinding for S { type PrincipalFragment = worth_query_topology_entry::PrincipalRecords; }
 struct CreatedPrincipals;
 impl WorthQueryApplicationOutputRoleFamily for CreatedPrincipals {
     type Schema = S;
@@ -505,7 +505,7 @@ A family declared with other postures:
 #         unimplemented!()
 #     }
 # }
-# impl TopologySchemaBinding for S {}
+# impl TopologySchemaBinding for S { type PrincipalFragment = worth_query_topology_entry::PrincipalRecords; }
 struct AnyPostureCreated;
 impl WorthQueryApplicationOutputRoleFamily for AnyPostureCreated {
     type Schema = S;
@@ -546,7 +546,7 @@ A family declared with another minimum member count:
 #         unimplemented!()
 #     }
 # }
-# impl TopologySchemaBinding for S {}
+# impl TopologySchemaBinding for S { type PrincipalFragment = worth_query_topology_entry::PrincipalRecords; }
 struct AtLeastOneCreated;
 impl WorthQueryApplicationOutputRoleFamily for AtLeastOneCreated {
     type Schema = S;
@@ -584,7 +584,7 @@ A member bound with a posture outside its family's set:
 #         unimplemented!()
 #     }
 # }
-# impl TopologySchemaBinding for S {}
+# impl TopologySchemaBinding for S { type PrincipalFragment = worth_query_topology_entry::PrincipalRecords; }
 fn bind(
     writer: &mut CandidateWriter<'_, S, PlanarMutationBinding<S>>,
     body: &WorthQueryApplicationEffectEntity<S, Body>,
@@ -612,7 +612,7 @@ A family of another operation's contract:
 #         unimplemented!()
 #     }
 # }
-# impl TopologySchemaBinding for S {}
+# impl TopologySchemaBinding for S { type PrincipalFragment = worth_query_topology_entry::PrincipalRecords; }
 fn bind(
     writer: &mut CandidateWriter<'_, S, PlanarMutationBinding<S>>,
     body: &WorthQueryApplicationEffectEntity<S, Body>,
@@ -641,7 +641,7 @@ A member of another operation's family, read on this contract's view:
 #         unimplemented!()
 #     }
 # }
-# impl TopologySchemaBinding for S {}
+# impl TopologySchemaBinding for S { type PrincipalFragment = worth_query_topology_entry::PrincipalRecords; }
 fn read(outputs: WorthQueryApplicationTypedOutputCorrespondence<'_, PlanarOutputs>) {
     let _ = outputs.member::<FinalCreatedOutputs<S>, WorthQueryCreateOutput>("vertex");
 }
@@ -666,7 +666,7 @@ The entries of another operation's family, read on this contract's view:
 #         unimplemented!()
 #     }
 # }
-# impl TopologySchemaBinding for S {}
+# impl TopologySchemaBinding for S { type PrincipalFragment = worth_query_topology_entry::PrincipalRecords; }
 fn read(outputs: WorthQueryApplicationTypedOutputCorrespondence<'_, PlanarOutputs>) {
     let _ = outputs.family_entries::<FinalCreatedOutputs<S>>();
 }
@@ -697,7 +697,7 @@ contract:
 #         unimplemented!()
 #     }
 # }
-# impl TopologySchemaBinding for S {}
+# impl TopologySchemaBinding for S { type PrincipalFragment = worth_query_topology_entry::PrincipalRecords; }
 # struct Provider;
 # impl WorthQueryApplicationProducerProvider<S, Producer> for Provider {
 #     const SEMANTIC_IDENTITY: &'static str = "doc.provider";
@@ -749,7 +749,7 @@ A producer whose role is at-most-one:
 #         unimplemented!()
 #     }
 # }
-# impl TopologySchemaBinding for S {}
+# impl TopologySchemaBinding for S { type PrincipalFragment = worth_query_topology_entry::PrincipalRecords; }
 # struct Provider;
 # impl WorthQueryApplicationProducerProvider<S, Producer> for Provider {
 #     const SEMANTIC_IDENTITY: &'static str = "doc.provider";
@@ -796,7 +796,7 @@ A producer whose role binds another entity than its family outputs:
 #         unimplemented!()
 #     }
 # }
-# impl TopologySchemaBinding for S {}
+# impl TopologySchemaBinding for S { type PrincipalFragment = worth_query_topology_entry::PrincipalRecords; }
 # struct Provider;
 # impl WorthQueryApplicationProducerProvider<S, Producer> for Provider {
 #     const SEMANTIC_IDENTITY: &'static str = "doc.provider";
@@ -854,7 +854,7 @@ A producer whose role belongs to another operation's contract:
 #         unimplemented!()
 #     }
 # }
-# impl TopologySchemaBinding for S {}
+# impl TopologySchemaBinding for S { type PrincipalFragment = worth_query_topology_entry::PrincipalRecords; }
 # struct Provider;
 # impl WorthQueryApplicationProducerProvider<S, Producer> for Provider {
 #     const SEMANTIC_IDENTITY: &'static str = "doc.provider";
@@ -904,7 +904,7 @@ A producer whose role its contract does not declare:
 #         unimplemented!()
 #     }
 # }
-# impl TopologySchemaBinding for S {}
+# impl TopologySchemaBinding for S { type PrincipalFragment = worth_query_topology_entry::PrincipalRecords; }
 # struct Provider;
 # impl WorthQueryApplicationProducerProvider<S, Producer> for Provider {
 #     const SEMANTIC_IDENTITY: &'static str = "doc.provider";
