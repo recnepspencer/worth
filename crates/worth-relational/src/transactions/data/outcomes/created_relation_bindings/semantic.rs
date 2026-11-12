@@ -11,6 +11,7 @@ impl CommitCreatedRelationBindings {
     pub(crate) fn canonical_meaning(
         &self,
         symbols: &StringInterner,
+        created_entities: &BTreeMap<crate::identity::data::EntityId, &RelationalCreatedEntityKey>,
     ) -> Result<Vec<RelationalCreatedRelationCorrespondence>, Refusal> {
         let mut canonical = BTreeMap::new();
         for (original, assigned) in &self.by_exact_reference {
@@ -22,8 +23,8 @@ impl CommitCreatedRelationBindings {
                     .resolve_with_interner(symbols)
                     .ok_or(Refusal::MissingClientKeyText)?
                     .to_owned(),
-                source: canonical_created_endpoint(&original.source, symbols)?,
-                target: canonical_created_endpoint(&original.target, symbols)?,
+                source: endpoint(&original.source, symbols, created_entities)?,
+                target: endpoint(&original.target, symbols, created_entities)?,
             };
             insert(&mut canonical, key, *assigned)?;
         }
@@ -34,8 +35,8 @@ impl CommitCreatedRelationBindings {
                     partition: original.partition_id,
                     kind: original.kind_id,
                     client_key: original.client_key.clone(),
-                    source: stable_endpoint(&original.source),
-                    target: stable_endpoint(&original.target),
+                    source: stable_endpoint(&original.source, created_entities),
+                    target: stable_endpoint(&original.target, created_entities),
                 },
                 *assigned,
             )?;
@@ -47,9 +48,30 @@ impl CommitCreatedRelationBindings {
     }
 }
 
-fn stable_endpoint(original: &StableEntityReference) -> RelationalCreatedEndpoint {
+// A suffix applies through actual prefix IDs, while the enclosing original
+// still names their Create coordinates. Normalize only IDs in this commit's
+// actual allocation roster; existing committed endpoints retain Existing.
+fn endpoint(
+    reference: &crate::transactions::data::EntityReference,
+    symbols: &StringInterner,
+    created: &BTreeMap<crate::identity::data::EntityId, &RelationalCreatedEntityKey>,
+) -> Result<RelationalCreatedEndpoint, Refusal> {
+    if let crate::transactions::data::EntityReference::Existing(id) = reference
+        && let Some(key) = created.get(id)
+    {
+        return Ok(RelationalCreatedEndpoint::Created((*key).clone()));
+    }
+    canonical_created_endpoint(reference, symbols)
+}
+fn stable_endpoint(
+    original: &StableEntityReference,
+    created: &BTreeMap<crate::identity::data::EntityId, &RelationalCreatedEntityKey>,
+) -> RelationalCreatedEndpoint {
     match original {
-        StableEntityReference::Existing(id) => RelationalCreatedEndpoint::Existing(*id),
+        StableEntityReference::Existing(id) => created.get(id).map_or_else(
+            || RelationalCreatedEndpoint::Existing(*id),
+            |key| RelationalCreatedEndpoint::Created((*key).clone()),
+        ),
         StableEntityReference::Created {
             partition_id,
             kind_id,
