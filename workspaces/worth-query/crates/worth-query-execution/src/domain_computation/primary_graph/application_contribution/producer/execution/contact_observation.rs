@@ -58,12 +58,12 @@ pub(in crate::domain_computation::primary_graph::application_contribution) fn re
         .ok()
         .and_then(|selected| {
             let publication = receipt.committed_product_publication();
-            let described = publication.descriptive();
+            let described = original?.descriptive();
             Some([
                 publication.co_committed_at(selected.product().observation()),
                 described.co_committed_at(selected.product().observation()),
                 publication.co_committed_at(before.observation()),
-                publication == &original?.descriptive(),
+                publication == &described,
             ])
         });
     LIVE_COMPLETIONS.with(|records| {
