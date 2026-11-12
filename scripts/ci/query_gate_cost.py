@@ -277,6 +277,8 @@ class CostGate:
                 if native:
                     options = ({'documentation_packages': self.affected['doc_packages']}
                                if self.affected is not None else {})
+                    if self.affected is not None:
+                        options['recommendation_directory'] = output / 'run-local-recommendations'
                     result = self.execute(self.repository, workspace, [], output, cargo_runner=runner,
                                           queries=queries, include_docs=bool(doc_suite), **options)
                 else:
