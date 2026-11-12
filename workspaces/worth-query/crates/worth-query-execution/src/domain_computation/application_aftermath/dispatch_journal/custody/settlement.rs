@@ -67,7 +67,12 @@ impl<'a> DispatchJournalDriver<'a> {
                         ),
                     );
             }
-            PendingFate::Committed(QueryDispatchRecord::Observation { .. })
+            PendingFate::Committed(
+                QueryDispatchRecord::Observation { .. }
+                | QueryDispatchRecord::SourceControl { .. }
+                | QueryDispatchRecord::Inbound(_)
+                | QueryDispatchRecord::Recovery(_),
+            )
             | PendingFate::ProvenNoEffect
             | PendingFate::Absent => {}
         }
@@ -122,6 +127,7 @@ impl<'a> DispatchJournalDriver<'a> {
             let mut guard = self.journal.state();
             let state = guard.as_mut().expect("admitted dispatch journal");
             let frame = state.ledger.prepare(intent, &mut state.generations)?;
+            state.limits.validate(&frame)?;
             state.pending = Some(frame);
         }
         match self.finish_pending(medium, request)? {
@@ -187,13 +193,16 @@ impl<'a> DispatchJournalDriver<'a> {
             admit_subject(publication.subject(), medium, &frame)?;
             let mut guard = self.journal.state();
             let state = guard.as_mut().expect("admitted dispatch journal");
-            let record = *frame.record();
+            let record = frame.record().clone();
             state.ledger.readmit(frame)?;
-            match record {
+            match &record {
                 QueryDispatchRecord::Observation { attempt, .. } => {
-                    state.unrecorded.remove(&attempt);
+                    state.unrecorded.remove(attempt);
                 }
-                QueryDispatchRecord::Attempt(_) => {}
+                QueryDispatchRecord::Attempt(_)
+                | QueryDispatchRecord::SourceControl { .. }
+                | QueryDispatchRecord::Recovery(_)
+                | QueryDispatchRecord::Inbound(_) => {}
             }
             state.pending = None;
             Ok(record)

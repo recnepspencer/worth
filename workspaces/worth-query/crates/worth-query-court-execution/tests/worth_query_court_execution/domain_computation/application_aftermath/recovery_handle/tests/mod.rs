@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use worth_query_execution::court_doors_for_test::domain_computation::managed_run::recovery_registry::WorthQueryRecoveryHandleRegistry;
 use worth_query_execution::court_doors_for_test::domain_computation::managed_run::recovery_registry::WorthQueryRecoveryMintClaim;
-use worth_query_execution::court_doors_for_test::domain_computation::managed_run::recovery_registry::WorthQueryRecoveryResourceTerminal;
+use worth_foundational::facade::RecoveryClaimDisposition;
 use worth_query_installation::facade::PublishedAftermathPosture;
 
 #[test]
@@ -27,7 +27,7 @@ fn concurrent_receipt_claims_register_exactly_one_handle() {
     assert_eq!(results.iter().filter(|result| result.is_ok()).count(), 1);
     assert_eq!(results.iter().filter(|result| result.is_err()).count(), 1);
     let slot = results.into_iter().find_map(Result::ok).expect("one slot");
-    assert!(registry.mark_terminal_for_test(slot, WorthQueryRecoveryResourceTerminal::Disposed));
+    assert!(registry.mark_terminal_for_test(slot, RecoveryClaimDisposition::Disposed));
     registry.assert_no_live_handles_for_test();
 }
 
@@ -37,22 +37,20 @@ fn recovery_registry_enumerates_terminates_and_covers_four_paths_without_leak() 
     let slot = registry.register_axis_probe_for_test();
     assert!(registry.is_live_for_test(slot));
     assert!(registry.enumerate_live_for_test().contains(&slot));
-    assert!(
-        registry.mark_terminal_for_test(slot, WorthQueryRecoveryResourceTerminal::ForceTerminated)
-    );
+    assert!(registry.mark_terminal_for_test(slot, RecoveryClaimDisposition::ForceTerminated));
     assert!(!registry.is_live_for_test(slot));
     assert_eq!(
         registry.terminal_of_for_test(slot),
-        Some(WorthQueryRecoveryResourceTerminal::ForceTerminated)
+        Some(RecoveryClaimDisposition::ForceTerminated)
     );
     registry.assert_no_live_handles_for_test();
 
     let registry = WorthQueryRecoveryHandleRegistry::new_for_test();
     let terminals = [
-        WorthQueryRecoveryResourceTerminal::Consumed,
-        WorthQueryRecoveryResourceTerminal::Expired,
-        WorthQueryRecoveryResourceTerminal::Disposed,
-        WorthQueryRecoveryResourceTerminal::ForceTerminated,
+        RecoveryClaimDisposition::Consumed,
+        RecoveryClaimDisposition::Expired,
+        RecoveryClaimDisposition::Disposed,
+        RecoveryClaimDisposition::ForceTerminated,
     ];
     for terminal in terminals {
         let slot = registry.register_axis_probe_for_test();
@@ -72,10 +70,10 @@ fn recovery_registry_enumerates_terminates_and_covers_four_paths_without_leak() 
 #[test]
 fn only_relinquishment_returns_a_commits_mint_claim() {
     for retaining in [
-        WorthQueryRecoveryResourceTerminal::Consumed,
-        WorthQueryRecoveryResourceTerminal::Expired,
-        WorthQueryRecoveryResourceTerminal::Disposed,
-        WorthQueryRecoveryResourceTerminal::ForceTerminated,
+        RecoveryClaimDisposition::Consumed,
+        RecoveryClaimDisposition::Expired,
+        RecoveryClaimDisposition::Disposed,
+        RecoveryClaimDisposition::ForceTerminated,
     ] {
         let registry = WorthQueryRecoveryHandleRegistry::new_for_test();
         let claim = real_claim(3);
@@ -105,7 +103,7 @@ fn only_relinquishment_returns_a_commits_mint_claim() {
         "the retry gets a fresh slot, not the old one"
     );
     assert!(registry.is_live_for_test(second));
-    assert!(registry.mark_terminal_for_test(second, WorthQueryRecoveryResourceTerminal::Consumed));
+    assert!(registry.mark_terminal_for_test(second, RecoveryClaimDisposition::Consumed));
     registry.assert_no_live_handles_for_test();
 }
 

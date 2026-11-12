@@ -5,6 +5,11 @@ use std::num::NonZeroU64;
 use worth_foundational::facade::BoundaryProtocolVersion;
 const VERSION: BoundaryProtocolVersion = BoundaryProtocolVersion::new(1);
 const MAGIC: &[u8; 8] = b"WQDSP001";
+pub(super) const FRAME_ENVELOPE_BYTES: u64 = 8 + 4 + 16 + 8 + 32 + 8 + 32;
+mod inbound;
+mod recovery;
+mod source;
+pub(super) use inbound::accepted_retained_bytes;
 
 pub(super) fn encode(
     home: HomeIdentity,
@@ -21,6 +26,16 @@ pub(super) fn encode(
     bytes.extend_from_slice(&predecessor);
     bytes.extend_from_slice(&generation.get().to_le_bytes());
     match &record {
+        QueryDispatchRecord::Recovery(value) => recovery::encode(&mut bytes, value),
+        QueryDispatchRecord::Inbound(value) => inbound::encode(&mut bytes, value),
+        QueryDispatchRecord::SourceControl { source, posture } => {
+            bytes.push(2);
+            bytes.extend_from_slice(source.bytes());
+            bytes.push(match posture {
+                InboundSourceControl::Retired => 1,
+                InboundSourceControl::Revoked => 2,
+            });
+        }
         QueryDispatchRecord::Attempt(attempt) => {
             bytes.push(0);
             bytes.extend_from_slice(&attempt.identity.attempt_position().get().to_le_bytes());
@@ -112,7 +127,10 @@ impl Reader<'_> {
     }
 }
 
-pub(super) fn decode(bytes: &[u8]) -> Result<QueryDispatchFrame, QueryDispatchJournalDenial> {
+pub(super) fn decode(
+    bytes: &[u8],
+    maximum_bytes: u64,
+) -> Result<QueryDispatchFrame, QueryDispatchJournalDenial> {
     use QueryDispatchJournalDenial as Denial;
     let (payload, checksum) = bytes
         .split_at_checked(bytes.len().checked_sub(32).ok_or(Denial::MalformedFrame)?)
@@ -131,7 +149,7 @@ pub(super) fn decode(bytes: &[u8]) -> Result<QueryDispatchFrame, QueryDispatchJo
     }
     // The size law belongs to this version, so an intact later version
     // reports itself instead of a malformed frame.
-    if bytes.len() as u64 > QUERY_DISPATCH_FRAME_MAX_BYTES {
+    if bytes.len() as u64 > maximum_bytes {
         return Err(Denial::MalformedFrame);
     }
     let home =
@@ -152,6 +170,12 @@ pub(super) fn decode(bytes: &[u8]) -> Result<QueryDispatchFrame, QueryDispatchJo
             attempt: reader.attempt(home)?,
             observation: read_observation(reader.take()?)?,
         },
+        2 => QueryDispatchRecord::SourceControl {
+            source: CanonicalDigestId::new(reader.take()?),
+            posture: read_source_control(reader.take::<1>()?[0])?,
+        },
+        tag @ (7 | 8) => QueryDispatchRecord::Recovery(recovery::decode(tag, home, &mut reader)?),
+        tag @ (3 | 4 | 5 | 6) => QueryDispatchRecord::Inbound(inbound::decode(tag, &mut reader)?),
         _ => return Err(Denial::MalformedFrame),
     };
     if !reader.0.is_empty() {
@@ -166,4 +190,12 @@ pub(super) fn decode(bytes: &[u8]) -> Result<QueryDispatchFrame, QueryDispatchJo
         bytes: bytes.to_vec(),
         digest,
     })
+}
+
+fn read_source_control(code: u8) -> Result<InboundSourceControl, QueryDispatchJournalDenial> {
+    match code {
+        1 => Ok(InboundSourceControl::Retired),
+        2 => Ok(InboundSourceControl::Revoked),
+        _ => Err(QueryDispatchJournalDenial::MalformedFrame),
+    }
 }

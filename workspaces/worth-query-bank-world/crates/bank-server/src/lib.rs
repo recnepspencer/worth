@@ -113,8 +113,9 @@ pub use estate_progression::{
     BankRecoveryDurability, BankRecoveryExpiryDecision, BankRecoveryExpiryEvaluation,
     BankRecoveryIdempotencyResolution, BankRecoveryInspection, BankRecoveryPosture,
     BankRecoverySafeRetryDenial, BankRecoverySafeRetryReceipt, BankRecoverySupportTruth,
-    BankRecoveryTransitionReceipt, BankRequestedEstateElevation, BankReviewedEstateElevation,
-    BankRevocationCaptureFailure, BankRevocationCommand, BankRevocationPreparation,
+    BankRecoveryTransitionDenial, BankRecoveryTransitionReceipt, BankRequestedEstateElevation,
+    BankReviewedEstateElevation, BankRevocationCaptureFailure, BankRevocationCommand,
+    BankRevocationPreparation,
 };
 pub use external_effect_transport::BankExternalEffectTransportDenial;
 pub use identity_runtime::{

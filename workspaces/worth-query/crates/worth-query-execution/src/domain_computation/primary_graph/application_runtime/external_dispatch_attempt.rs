@@ -18,6 +18,7 @@ pub enum WorthQueryExternalDispatchAdmissionDenial {
     CompletedTransportRetained,
     TerminalIndexUnavailable,
     AttemptIdentityExhausted,
+    DurableAttemptRecordRequired,
 }
 
 /// The one terminal effect owner refused a new physical attempt.
@@ -46,12 +47,63 @@ impl WorthQueryExternalDispatchAttemptOrdinal {
         Self(value)
     }
 
-    pub(in crate::domain_computation) fn into_value(self) -> u64 {
+    pub(in crate::domain_computation) const fn value(&self) -> u64 {
         self.0
     }
+}
 
-    pub(in crate::domain_computation) const fn value_for_test(&self) -> u64 {
-        self.0
+/// Validated source, before journal custody has admitted a physical attempt.
+pub(in crate::domain_computation) struct WorthQueryPreparedExternalDispatchAttempt {
+    committed: WorthQueryCommittedDispatchOutboxObservation,
+    query_runtime: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
+    ordinal: Option<WorthQueryExternalDispatchAttemptOrdinal>,
+    clock: Arc<crate::domain_computation::runtime_time::WorthQueryRuntimeClock>,
+}
+impl WorthQueryPreparedExternalDispatchAttempt {
+    pub(in crate::domain_computation) fn admit_memory(
+        self,
+    ) -> Result<
+        WorthQueryAdmittedExternalDispatchAttempt<'static>,
+        WorthQueryExternalDispatchAdmissionDenial,
+    > {
+        let ordinal = self
+            .ordinal
+            .ok_or(WorthQueryExternalDispatchAdmissionDenial::DurableAttemptRecordRequired)?;
+        Ok(WorthQueryAdmittedExternalDispatchAttempt::seal_memory(
+            self.committed,
+            self.query_runtime,
+            ordinal,
+            self.clock,
+        ))
+    }
+    pub(in crate::domain_computation) fn admit_recorded<'contact>(
+        self,
+        contact: &'contact crate::domain_computation::primary_graph::application_attempt::provider_execution::external_dispatch::durable_attempt::DurableDispatchContact<'contact>,
+    ) -> Result<
+        WorthQueryAdmittedExternalDispatchAttempt<'contact>,
+        WorthQueryExternalDispatchAdmissionDenial,
+    > {
+        if self.ordinal.is_some()
+            || Some(contact.recorded_attempt().home())
+                != self
+                    .committed
+                    .committed_product_publication()
+                    .product_branch()
+                    .owner_identity()
+                    .durable()
+                    .map(|owner| owner.home())
+        {
+            return Err(WorthQueryExternalDispatchAdmissionDenial::ForeignProductWorld);
+        }
+        if contact.correlation() != self.committed.record().correlation().digest() {
+            return Err(WorthQueryExternalDispatchAdmissionDenial::PublicationCommitMismatch);
+        }
+        Ok(WorthQueryAdmittedExternalDispatchAttempt::seal_recorded(
+            self.committed,
+            self.query_runtime,
+            contact,
+            self.clock,
+        ))
     }
 }
 
@@ -61,7 +113,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
     pub(in crate::domain_computation::primary_graph) fn admit_external_dispatch_attempt(
         &self,
         committed: WorthQueryCommittedDispatchOutboxObservation,
-    ) -> Result<WorthQueryAdmittedExternalDispatchAttempt, WorthQueryExternalDispatchAdmissionDenial>
+    ) -> Result<WorthQueryPreparedExternalDispatchAttempt, WorthQueryExternalDispatchAdmissionDenial>
     {
         self.runtime
             .primary_provider
@@ -102,33 +154,45 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
             return Err(WorthQueryExternalDispatchAdmissionDenial::CompletedTransportRetained);
         }
         self.refuse_completed_external_effect(committed.record())?;
-        let ordinal = WorthQueryExternalDispatchAttemptOrdinal::mint(
-            {
-                let update_counter = &self.runtime.next_external_dispatch_attempt;
-                let mut current = update_counter.load(std::sync::atomic::Ordering::Acquire);
-                loop {
-                    let Some(updated_value) = current.checked_add(1) else {
-                        break Err(current);
-                    };
-                    match update_counter.compare_exchange_weak(
-                        current,
-                        updated_value,
-                        std::sync::atomic::Ordering::AcqRel,
-                        std::sync::atomic::Ordering::Acquire,
-                    ) {
-                        Ok(previous) => break Ok(previous),
-                        Err(reloaded_value) => current = reloaded_value,
+        let ordinal = if self
+            .runtime
+            .product_runtime
+            .owner
+            .owner_identity()
+            .durable()
+            .is_some()
+        {
+            None
+        } else {
+            let ordinal = WorthQueryExternalDispatchAttemptOrdinal::mint(
+                {
+                    let update_counter = &self.runtime.next_external_dispatch_attempt;
+                    let mut current = update_counter.load(std::sync::atomic::Ordering::Acquire);
+                    loop {
+                        let Some(updated_value) = current.checked_add(1) else {
+                            break Err(current);
+                        };
+                        match update_counter.compare_exchange_weak(
+                            current,
+                            updated_value,
+                            std::sync::atomic::Ordering::AcqRel,
+                            std::sync::atomic::Ordering::Acquire,
+                        ) {
+                            Ok(previous) => break Ok(previous),
+                            Err(reloaded_value) => current = reloaded_value,
+                        }
                     }
                 }
-            }
-            .map_err(|_| WorthQueryExternalDispatchAdmissionDenial::AttemptIdentityExhausted)?,
-        );
-        Ok(WorthQueryAdmittedExternalDispatchAttempt::seal(
+                .map_err(|_| WorthQueryExternalDispatchAdmissionDenial::AttemptIdentityExhausted)?,
+            );
+            Some(ordinal)
+        };
+        Ok(WorthQueryPreparedExternalDispatchAttempt {
             committed,
-            self.runtime.authority_identity(),
+            query_runtime: self.runtime.authority_identity(),
             ordinal,
-            Arc::clone(&self.runtime.authorization_clock),
-        ))
+            clock: Arc::clone(&self.runtime.authorization_clock),
+        })
     }
 
     /// Ask the one terminal effect owner before any physical attempt.

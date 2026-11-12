@@ -7,6 +7,28 @@ impl MaterialCatalog {
         position: u64,
     ) -> Result<(), Denial> {
         match record {
+            MaterialRecord::RecoveryPin {
+                identity, original, ..
+            } => {
+                self.admit_original(*original)?;
+                if identity.home() != self.home || identity.acquire_position().get() != position {
+                    return Err(Denial::OriginalMismatch);
+                }
+                self.material
+                    .get(original)
+                    .ok_or(Denial::Unavailable)?
+                    .available()?;
+                if self.pins.contains_key(identity)
+                    || self.pins.values().any(|row| {
+                        row.owner
+                            == (CorrectionMaterialPinOwner::Recovery {
+                                original: *original,
+                            })
+                    })
+                {
+                    return Err(Denial::PinAlreadyClaimed);
+                }
+            }
             MaterialRecord::Capture { material } => {
                 self.admit_original(material.original)?;
                 if self.material.contains_key(&material.original) {
@@ -46,7 +68,8 @@ impl MaterialCatalog {
                     CorrectionMaterialPinOwner::PreparedCommand { key } if *key == prepared.key => {
                     }
                     CorrectionMaterialPinOwner::PreparedCommand { .. }
-                    | CorrectionMaterialPinOwner::Publication { .. } => {
+                    | CorrectionMaterialPinOwner::Publication { .. }
+                    | CorrectionMaterialPinOwner::Recovery { .. } => {
                         return Err(Denial::PinOwnerMismatch)
                     }
                 }
@@ -87,8 +110,19 @@ impl MaterialCatalog {
                     (
                         CorrectionMaterialPinOwner::PreparedCommand { key },
                         CorrectionMaterialPinOwner::Publication { .. },
-                    ) if *key == current.prepared.key => {}
+                    ) if *key == current.prepared()?.key => {}
                     (
+                        CorrectionMaterialPinOwner::Recovery { .. },
+                        CorrectionMaterialPinOwner::Recovery { .. }
+                        | CorrectionMaterialPinOwner::PreparedCommand { .. }
+                        | CorrectionMaterialPinOwner::Publication { .. },
+                    )
+                    | (
+                        CorrectionMaterialPinOwner::PreparedCommand { .. }
+                        | CorrectionMaterialPinOwner::Publication { .. },
+                        CorrectionMaterialPinOwner::Recovery { .. },
+                    )
+                    | (
                         CorrectionMaterialPinOwner::PreparedCommand { .. },
                         CorrectionMaterialPinOwner::PreparedCommand { .. },
                     )
@@ -109,8 +143,22 @@ impl MaterialCatalog {
             MaterialRecord::Release {
                 identity, owner, ..
             } => {
+                if let CorrectionMaterialPinOwner::Recovery { original } = owner {
+                    let pin = self.pins.get(identity).ok_or(Denial::UnknownPin)?;
+                    if pin.owner != *owner || pin.original != *original {
+                        return Err(Denial::PinOwnerMismatch);
+                    }
+                    self.material
+                        .get(original)
+                        .ok_or(Denial::MaterialNotReady)?
+                        .available()?;
+                    return Ok(());
+                }
                 match owner {
                     CorrectionMaterialPinOwner::Publication { .. } => {}
+                    CorrectionMaterialPinOwner::Recovery { .. } => {
+                        unreachable!("handled recovery release")
+                    }
                     CorrectionMaterialPinOwner::PreparedCommand { .. } => {
                         return Err(Denial::PinOwnerMismatch)
                     }
@@ -129,9 +177,9 @@ impl MaterialCatalog {
                 material.available()?;
                 let intent = crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding::observe_recorded_intent(&material.metadata.intent)
                     .map_err(|_| Denial::OriginalBindingUnavailable)?;
-                if material.metadata.key != pin.prepared.key
-                    || material.metadata.input_identity != pin.prepared.input_identity
-                    || intent.correction != Some(pin.prepared.intent)
+                if material.metadata.key != pin.prepared()?.key
+                    || material.metadata.input_identity != pin.prepared()?.input_identity
+                    || intent.correction != Some(pin.prepared()?.intent)
                 {
                     return Err(Denial::PinIntentDrift);
                 }
@@ -180,7 +228,8 @@ impl MaterialCatalog {
     fn admit_owner(&self, owner: CorrectionMaterialPinOwner) -> Result<(), Denial> {
         match owner {
             CorrectionMaterialPinOwner::PreparedCommand { .. } => Ok(()),
-            CorrectionMaterialPinOwner::Publication { original } => self.admit_original(original),
+            CorrectionMaterialPinOwner::Publication { original }
+            | CorrectionMaterialPinOwner::Recovery { original } => self.admit_original(original),
         }
     }
 }

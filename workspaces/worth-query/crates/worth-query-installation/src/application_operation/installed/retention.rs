@@ -35,6 +35,17 @@ impl std::fmt::Debug for InstalledOperationCatalog {
 }
 
 impl InstalledOperationCatalog {
+    /// Allocating cold-readmission snapshot of the actual installed handles.
+    /// Fresh verifier configuration is not the authority for persisted limits.
+    pub fn readmission_snapshot(&self) -> Vec<Arc<dyn InstalledOperationSource>> {
+        self.operations
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .values()
+            .map(Arc::clone)
+            .collect()
+    }
+
     /// O(log installed operations); a shallow retain, without allocation or compilation.
     pub fn operation(&self, name: &str) -> Option<Arc<dyn InstalledOperationSource>> {
         self.operations

@@ -179,7 +179,7 @@ fn owning_discharge_preserves_the_terminal_command_through_cold_fold() {
     frames.push(append(&mut ledger, record));
     let (identity, row) = ledger.pins.first_key_value().unwrap();
     let identity = *identity;
-    let command = Arc::clone(&row.prepared);
+    let command = Arc::clone(row.prepared().unwrap());
     assert_eq!(ledger.pin_count(original(ledger.home, 1)), 1);
     assert_eq!(*command, prepared(&ledger));
     frames.push(append(

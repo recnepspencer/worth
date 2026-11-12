@@ -14,7 +14,7 @@ use super::ExternalEffectCorrelationIdentity;
 
 const DOMAIN: CanonicalBasisDomain =
     CanonicalBasisDomain::Future("worth-query.external-effect-causal-event");
-const RULE_VERSION: &str = "worth-query-external-effect-causal-event-v4";
+const RULE_VERSION: &str = "worth-query-external-effect-causal-event-v5";
 const BUDGET: CanonicalDigestWorkBudget = match CanonicalDigestWorkBudget::new(18, 4 * 1_024) {
     Some(budget) => budget,
     None => panic!("fixed external-effect causal event budget is valid"),
@@ -40,13 +40,23 @@ pub(super) fn provider_commit_identity(
             u64::from(record.generation_value()),
         ),
     };
-    derive(vec![
-        text_entry("stage", "provider-commit"),
-        integer_entry("query-runtime", runtime.as_u64()),
-        integer_entry(
-            "world-owner",
-            product.product_branch().owner_identity().get(),
-        ),
+    let mut entries = vec![text_entry("stage", "provider-commit")];
+    match product.product_branch().owner_identity().durable() {
+        Some(owner) => {
+            entries.push(text_entry("owner-scope", "home"));
+            append_home(&mut entries, owner.home());
+            entries.push(integer_entry("world-slot", owner.slot().get()));
+        }
+        None => {
+            entries.push(text_entry("owner-scope", "memory"));
+            entries.push(integer_entry("query-runtime", runtime.as_u64()));
+            entries.push(integer_entry(
+                "world-owner",
+                product.product_branch().owner_identity().get(),
+            ));
+        }
+    }
+    entries.extend([
         text_entry("product-branch", product.product_branch().name().as_str()),
         integer_entry(
             "product-incarnation",
@@ -66,7 +76,8 @@ pub(super) fn provider_commit_identity(
         text_entry("branch", &commit.branch_id.0),
         integer_entry("commit", commit.commit_id.0),
         integer_entry("version", commit.version_id.0),
-    ])
+    ]);
+    derive(entries)
 }
 
 pub(super) fn emission_identity(
@@ -74,9 +85,17 @@ pub(super) fn emission_identity(
     correlation: &ExternalEffectCorrelationIdentity,
     outcome_identity: u64,
 ) -> Result<DerivedEventIdentity, WorthQueryAftermathDerivationFailure> {
+    emission_digest(predecessor.digest(), correlation, outcome_identity)
+}
+
+pub(super) fn emission_digest(
+    predecessor: &CanonicalDigestId,
+    correlation: &ExternalEffectCorrelationIdentity,
+    outcome_identity: u64,
+) -> Result<DerivedEventIdentity, WorthQueryAftermathDerivationFailure> {
     derive(vec![
         text_entry("stage", "co-committed-application-emission"),
-        digest_entry("predecessor", predecessor.digest()),
+        digest_entry("predecessor", predecessor),
         digest_entry("correlation", correlation.digest()),
         integer_entry("outcome", outcome_identity),
     ])
@@ -85,14 +104,65 @@ pub(super) fn emission_identity(
 pub(super) fn attempt_identity(
     predecessor: &ExternalEffectPostureIdentity,
     correlation: &ExternalEffectCorrelationIdentity,
-    attempt_ordinal: u64,
+    coordinate: &super::dispatch_admission::DispatchAttemptCoordinate<'_>,
 ) -> Result<DerivedEventIdentity, WorthQueryAftermathDerivationFailure> {
-    derive(vec![
+    match coordinate {
+        super::dispatch_admission::DispatchAttemptCoordinate::Memory(ordinal) => {
+            let mut entries = attempt_entries(predecessor.digest(), correlation);
+            entries.push(text_entry("attempt-scope", "memory"));
+            entries.push(integer_entry("attempt-ordinal", ordinal.value()));
+            derive(entries)
+        }
+        super::dispatch_admission::DispatchAttemptCoordinate::Recorded(contact) => {
+            recorded_attempt_digest(
+                predecessor.digest(),
+                correlation,
+                contact.recorded_attempt(),
+            )
+        }
+    }
+}
+
+fn attempt_entries(
+    predecessor: &CanonicalDigestId,
+    correlation: &ExternalEffectCorrelationIdentity,
+) -> Vec<CanonicalBasisEntry> {
+    vec![
         text_entry("stage", "dispatch-attempt"),
-        digest_entry("predecessor", predecessor.digest()),
+        digest_entry("predecessor", predecessor),
         digest_entry("correlation", correlation.digest()),
-        integer_entry("attempt-ordinal", attempt_ordinal),
-    ])
+    ]
+}
+
+/// Descriptive naming shares the grammar but cannot create a live causal phase.
+pub(super) fn recorded_attempt_digest(
+    predecessor: &CanonicalDigestId,
+    correlation: &ExternalEffectCorrelationIdentity,
+    recorded: worth_foundational::facade::DispatchAttemptIdentity,
+) -> Result<DerivedEventIdentity, WorthQueryAftermathDerivationFailure> {
+    let mut entries = attempt_entries(predecessor, correlation);
+    entries.push(text_entry("attempt-scope", "home-journal"));
+    append_home(&mut entries, recorded.home());
+    entries.push(integer_entry(
+        "attempt-position",
+        recorded.attempt_position().get(),
+    ));
+    derive(entries)
+}
+
+fn append_home(
+    entries: &mut Vec<CanonicalBasisEntry>,
+    home: worth_foundational::facade::HomeIdentity,
+) {
+    let bytes = home.bytes();
+    entries.push(integer_entry(
+        "home-high",
+        u64::from_be_bytes(bytes[..8].try_into().unwrap()),
+    ));
+    entries.push(integer_entry(
+        "home-low",
+        u64::from_be_bytes(bytes[8..].try_into().unwrap()),
+    ));
 }
 
 pub(super) fn observation_identity(
@@ -100,9 +170,17 @@ pub(super) fn observation_identity(
     correlation: &ExternalEffectCorrelationIdentity,
     observation: &'static str,
 ) -> Result<DerivedEventIdentity, WorthQueryAftermathDerivationFailure> {
+    observation_digest(predecessor.digest(), correlation, observation)
+}
+
+pub(super) fn observation_digest(
+    predecessor: &CanonicalDigestId,
+    correlation: &ExternalEffectCorrelationIdentity,
+    observation: &'static str,
+) -> Result<DerivedEventIdentity, WorthQueryAftermathDerivationFailure> {
     derive(vec![
         text_entry("stage", "external-owner-observation"),
-        digest_entry("predecessor", predecessor.digest()),
+        digest_entry("predecessor", predecessor),
         digest_entry("correlation", correlation.digest()),
         text_entry("observation", observation),
     ])
@@ -168,20 +246,18 @@ mod tests {
     use super::*;
 
     #[test]
-    fn v4_rule_has_a_frozen_distinct_canonical_corpus() {
-        // The event grammar is v4; D1289 explicitly versions the hash policy as
-        // sha256-canonical-v2. Independently framed and SHA-256 hashed corpus:
-        // 8d093ec56688f3b670270b5b9ae93ac2ba6fd3d575fa31b0e912fd51ceacac45
+    fn portable_rule_has_a_frozen_distinct_canonical_corpus() {
+        // Independently length-framed and SHA-256 hashed under sha256-canonical-v2.
         let derived = derive(vec![
-            text_entry("stage", "v4-corpus"),
+            text_entry("stage", "v5-corpus"),
             integer_entry("query-runtime", 7),
         ])
         .unwrap();
         assert_eq!(
             derived.digest.bytes(),
             &[
-                141, 9, 62, 197, 102, 136, 243, 182, 112, 39, 11, 91, 154, 233, 58, 194, 186, 111,
-                211, 213, 117, 250, 49, 176, 233, 18, 253, 81, 206, 172, 172, 69,
+                34, 187, 250, 70, 254, 48, 245, 111, 241, 14, 216, 200, 216, 3, 75, 235, 31, 46,
+                237, 125, 114, 60, 203, 212, 188, 39, 248, 44, 200, 255, 102, 41
             ]
         );
     }

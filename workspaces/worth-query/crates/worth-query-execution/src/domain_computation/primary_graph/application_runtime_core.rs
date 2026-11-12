@@ -41,7 +41,7 @@ pub struct WorthQueryApplicationRuntimeCore {
     >,
     pub(super) inbound_maintenance_turn: AtomicU64,
     pub(in crate::domain_computation) dispatch_journal:
-        crate::domain_computation::application_aftermath::dispatch_journal::WorthQueryDispatchJournal,
+        std::sync::Arc<crate::domain_computation::application_aftermath::dispatch_journal::WorthQueryDispatchJournal>,
     pub(crate) recovery_handles: Arc<WorthQueryRecoveryHandleRegistry>,
     pub(in crate::domain_computation::primary_graph) output_producer_routes:
         super::super::application_contribution::WorthQueryInstalledOutputProducerRoutes,

@@ -8,6 +8,17 @@ license.workspace = true
 publish = false
 
 [dev-dependencies]
+axum = { workspace = true }
+bank-external-rail = { workspace = true }
+bank-http-adapter = { workspace = true }
+ed25519-dalek = { workspace = true }
+tokio = { workspace = true }
+worth-query-decl = { workspace = true }
+worth-query-testkit-host = { path = "../../../worth-query/crates/worth-query-testkit-host" }
+bank-domain = { workspace = true }
+worth-foundational = { workspace = true }
+worth-query-host = { workspace = true }
+worth-query-bank-testkit-server = { path = "../worth-query-bank-testkit-server" }
 worth-query-bank-testkit-http-adapter = { path = "../worth-query-bank-testkit-http-adapter" }
 
 [[test]]

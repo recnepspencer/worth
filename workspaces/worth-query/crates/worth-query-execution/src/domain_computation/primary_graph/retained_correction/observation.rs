@@ -4,7 +4,7 @@ use super::record::{MaterialCapture, MaterialReady};
 use super::*;
 
 #[derive(Clone)]
-pub(in crate::domain_computation::primary_graph) struct RetainedCorrectionMaterial {
+pub(in crate::domain_computation) struct RetainedCorrectionMaterial {
     _funding: Arc<MaterialFunding>,
     pub(in crate::domain_computation::primary_graph) capture: Arc<MaterialCapture>,
     pub(in crate::domain_computation::primary_graph) ready: Arc<MaterialReady>,
@@ -66,5 +66,59 @@ impl CorrectionMaterialOwner {
             }
         }
         found.ok_or(Denial::Unavailable)
+    }
+}
+
+impl RetainedCorrectionMaterial {
+    pub(in crate::domain_computation::primary_graph) fn admit_recovery_admission<
+        Schema: worth_query_installation::facade::ApplicationSchema,
+        Operation,
+        Input,
+        Scope,
+        InputBinding,
+    >(
+        &self,
+        admission: &crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
+        binding: crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding,
+        input: &worth_query_declaration::facade::application_operation::ApplicationEncodedInput<
+            InputBinding,
+        >,
+    ) -> Result<
+        (),
+        crate::domain_computation::application_aftermath::WorthQueryRecoveryHandleDenialKind,
+    >
+    where
+        InputBinding:
+            worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding<
+                Value = Input,
+            >,
+        Input: serde::Serialize,
+    {
+        let scope = admission.operation_scope_binding();
+        let matches = |actual: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding, recorded: worth_relational::facade::identity::EntityId| actual.partition_id() == recorded.partition_value() && actual.local_slot() == recorded.local_slot_value() && actual.generation() == recorded.generation_value();
+        use crate::domain_computation::application_aftermath::WorthQueryRecoveryHandleDenialKind as Kind;
+        if !matches(scope.principal(), self.capture.principal)
+            || !matches(scope.scope(), self.capture.scope_entity)
+        {
+            return Err(Kind::ForeignPrincipal);
+        }
+        let canonical = input
+            .capture_for_retention()
+            .map_err(|_| Kind::CanonicalDerivationDenied)?;
+        if input.identity() != &self.capture.input_identity
+            || !binding.is_for_mutation_binding(&self.capture.mutation)
+            || canonical.recorded_bytes() != self.capture.input.as_slice()
+            || admission
+                .governed_input_identity()
+                .is_some_and(|identity| identity != input.identity())
+        {
+            return Err(Kind::GovernedInputMismatch);
+        }
+        if binding.key_identity() != &self.capture.key
+            || binding.intent_identity() != &self.capture.intent_identity
+        {
+            return Err(Kind::ForeignIdempotencyRead);
+        }
+        Ok(())
     }
 }

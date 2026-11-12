@@ -55,7 +55,11 @@ pub fn inspect_recovery_handle(
     debug_assert_eq!(work.digest_text_materializations(), 0);
     Ok(WorthQueryRecoveryInspectionView {
         opaque_identity: handle.opaque_wire_identity(),
-        durability: WorthQueryRecoveryDurabilityPosture::StoreCapabilityRequired,
+        durability: if handle.home_owner().durable().is_some() {
+            WorthQueryRecoveryDurabilityPosture::DurableHome
+        } else {
+            WorthQueryRecoveryDurabilityPosture::ProcessLocal
+        },
         support_truth: FoundationalBoundaryEvidenceSupportTruthKind::DegradedRecoveryReport,
         published_posture: handle.binding().published_posture(),
         recovery_inspection_work: work,

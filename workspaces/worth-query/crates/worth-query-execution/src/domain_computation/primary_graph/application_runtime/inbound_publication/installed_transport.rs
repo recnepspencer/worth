@@ -14,7 +14,15 @@ use worth_runtime_world::facade::ProductBranchIncarnation;
 /// The transport observation carries no inbound signature or verifier claim.
 pub struct InstalledTransportCompletion {
     committed: WorthQueryCommittedDispatchOutboxObservation,
-    dispatch: WorthQueryExternalEffectDispatch,
+    observation: TransportCompletionObservation,
+}
+
+enum TransportCompletionObservation {
+    Live(WorthQueryExternalEffectDispatch),
+    Recorded {
+        causality: crate::domain_computation::application_aftermath::external_effect::RecordedCompletionCausality,
+        source: crate::domain_computation::application_aftermath::dispatch_journal::QueryInboundDispatchSource,
+    },
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -23,6 +31,7 @@ pub enum InstalledTransportCompletionDenial {
     CorrelationMismatch,
     CausalMismatch,
     NoInstalledInboundContract,
+    RecordedObservationUnavailable,
 }
 
 impl InstalledTransportCompletion {
@@ -52,8 +61,18 @@ impl InstalledTransportCompletion {
             return Err(Denial::CausalMismatch);
         }
         Ok(Self {
-            committed,
-            dispatch: dispatch.clone(),
+            committed: if committed
+                .committed_product_publication()
+                .product_branch()
+                .owner_identity()
+                .durable()
+                .is_some()
+            {
+                committed.into_descriptive()
+            } else {
+                committed
+            },
+            observation: TransportCompletionObservation::Live(dispatch.clone()),
         })
     }
 
@@ -62,13 +81,9 @@ impl InstalledTransportCompletion {
     ) -> &WorthQueryCommittedDispatchOutboxObservation {
         &self.committed
     }
-
-    pub(in crate::domain_computation::primary_graph) fn dispatch(
-        &self,
-    ) -> &WorthQueryExternalEffectDispatch {
-        &self.dispatch
-    }
 }
+
+mod recorded;
 
 /// A World-performed terminal from an actual installed transport completion.
 pub struct PerformedInstalledTransportCompletion {
@@ -131,6 +146,10 @@ impl PerformedInstalledTransportCompletion {
         &self,
     ) -> &WorthQueryProductPublicationReceipt {
         &self.publication
+    }
+
+    pub(super) fn publication_mut(&mut self) -> &mut WorthQueryProductPublicationReceipt {
+        &mut self.publication
     }
 }
 

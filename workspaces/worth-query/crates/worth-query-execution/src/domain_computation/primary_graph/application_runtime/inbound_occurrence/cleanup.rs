@@ -51,6 +51,27 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
         handle: &WorthQueryInboundVerifierHandle,
         maximum_work: NonZeroUsize,
     ) -> Result<WorthQueryInboundCleanupReport, Denial> {
+        self.with_host_advancement(|phase| {
+            let execution = phase
+                .execution_request_for(&self.runtime.product_runtime)
+                .map_err(|cause| Denial::advancement(cause.into()))?;
+            self.cleanup_completed_inbound_in_request(&execution, handle, maximum_work)
+        })
+        .map_err(Denial::advancement)?
+    }
+
+    pub(super) fn cleanup_completed_inbound_in_request(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        handle: &WorthQueryInboundVerifierHandle,
+        maximum_work: NonZeroUsize,
+    ) -> Result<WorthQueryInboundCleanupReport, Denial> {
+        let driver = self
+            .runtime
+            .dispatch_journal
+            .begin_inbound_admission(execution)
+            .map_err(|_| Denial::TerminalCleanupUnavailable)?;
+        self.synchronize_durable_inbound(&driver, execution)?;
         let installed = self
             .installed_inbound_verifier(handle)
             .ok_or(Denial::ForeignVerifier)?;
@@ -86,7 +107,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
                 *now,
                 work - correlations.len(),
             );
-        for (correlation, original, completion) in &compact {
+        for (key, correlation, original, completion) in &compact {
             let terminal = self
                 .runtime
                 .primary_provider
@@ -99,6 +120,27 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
             {
                 return Err(Denial::TerminalCleanupUnavailable);
             }
+            driver
+                .expire(key.clone(), &terminal, *now, execution)
+                .map_err(|_| Denial::TerminalCleanupUnavailable)?;
+        }
+        for correlation in &correlations {
+            let key = self
+                .runtime
+                .inbound_custody
+                .lock()
+                .unwrap_or_else(|p| p.into_inner())
+                .recorded_message_for_correlation(correlation)
+                .ok_or(Denial::TerminalCleanupUnavailable)?;
+            let terminal = self
+                .runtime
+                .primary_provider
+                .lookup_completed_inbound(correlation)
+                .map_err(|_| Denial::TerminalCleanupUnavailable)?
+                .ok_or(Denial::TerminalCleanupUnavailable)?;
+            driver
+                .expire(key, &terminal, *now, execution)
+                .map_err(|_| Denial::TerminalCleanupUnavailable)?;
         }
         let mut custody = self
             .runtime

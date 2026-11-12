@@ -19,6 +19,7 @@ mod original_observation;
 mod pin_join;
 mod prepared;
 mod ready;
+mod recovery;
 
 impl WorthQueryPrimaryGraphProvider {
     pub(in crate::domain_computation::primary_graph::provider) fn admit_correction_lineage_material(

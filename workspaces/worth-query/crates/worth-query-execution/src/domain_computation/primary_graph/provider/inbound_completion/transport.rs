@@ -4,7 +4,8 @@ use std::collections::BTreeMap;
 
 use worth_foundational::facade::AspectValue;
 use worth_relational::facade::{
-    branch::AdmittedRelationalBranchBasis, mvcc::PreparedRelationalCommitCandidate,
+    branch::AdmittedRelationalBranchBasis,
+    mvcc::{PreparedRelationalCommitCandidate, ValidatedRelationalProposal},
     transactions::RecordRef,
 };
 
@@ -12,21 +13,22 @@ use super::super::WorthQueryPrimaryGraphProvider;
 use super::{hex, string, WorthQueryInboundCompletionPreparationDenial as Denial};
 use crate::domain_computation::application_aftermath::WorthQueryExternalEffectDispatch;
 use crate::domain_computation::primary_graph::{
-    WorthQueryCommittedDispatchOutboxObservation, WorthQueryInstalledTransportCompletionBinding,
+    InstalledTransportCompletion, WorthQueryCommittedDispatchOutboxObservation,
+    WorthQueryInstalledTransportCompletionBinding,
 };
 
 impl WorthQueryPrimaryGraphProvider {
     /// Prepare the same one terminal Relational mutation used by authenticated
     /// inbound completion. Transport evidence is identified as such in the
     /// canonical row; no verifier claim or signed message is fabricated.
-    pub(in crate::domain_computation::primary_graph) fn prepare_installed_transport_completion_candidate(
+    pub(in crate::domain_computation::primary_graph) fn validate_installed_transport_completion_proposal(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         basis: &AdmittedRelationalBranchBasis,
-        owner: &WorthQueryCommittedDispatchOutboxObservation,
-        dispatch: &WorthQueryExternalEffectDispatch,
+        evidence: &InstalledTransportCompletion,
         binding: &WorthQueryInstalledTransportCompletionBinding,
-    ) -> Result<PreparedRelationalCommitCandidate, Denial> {
+    ) -> Result<ValidatedRelationalProposal, Denial> {
+        let owner = evidence.committed();
         let record = owner.record();
         let contract = record.inbound().ok_or(Denial::InstalledBindingMismatch)?;
         if contract != binding.contract()
@@ -36,10 +38,10 @@ impl WorthQueryPrimaryGraphProvider {
         {
             return Err(Denial::InstalledBindingMismatch);
         }
-        if !dispatch.matches_committed_owner(binding.runtime(), owner) {
+        if !evidence.matches_committed_owner(binding.runtime(), owner) {
             return Err(Denial::DispatchOwnerMismatch);
         }
-        let Some(observation) = dispatch.causal_ladder().observation() else {
+        let Some(observation) = evidence.observation_identity() else {
             return Err(Denial::DispatchOwnerMismatch);
         };
         let RecordRef::Entity(original_entity) = owner.record_ref() else {
@@ -105,14 +107,14 @@ impl WorthQueryPrimaryGraphProvider {
             ),
             (
                 layout.transport_attempt.clone(),
-                string(hex(dispatch.causal_ladder().attempt().identity().bytes())),
+                string(hex(evidence.attempt_identity().bytes())),
             ),
             (
                 layout.transport_observation.clone(),
-                string(hex(observation.identity().bytes())),
+                string(hex(observation.bytes())),
             ),
         ]);
-        self.prepare_completion_fields(execution, basis, *original_entity, &correlation, fields)
+        self.validate_completion_fields(execution, basis, *original_entity, &correlation, fields)
     }
 }
 

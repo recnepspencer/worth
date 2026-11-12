@@ -4,7 +4,8 @@ use super::*;
 pub(super) struct CommittedOutboxRead<'a> {
     pub(super) runtime: &'a worth_relational::facade::runtime::RelationalRuntime,
     pub(super) layout: &'a WorthQueryDispatchOutboxLayout,
-    pub(super) binding: &'a super::super::WorthQueryCommittedDispatchOutboxBinding,
+    pub(super) record: &'a WorthQueryDispatchOutboxRecord,
+    pub(super) record_ref: &'a RecordRef,
     pub(super) expected_commit: &'a worth_relational::facade::history::RelationalCommitReceipt,
     pub(super) expected_runtime: u64,
     pub(super) retained_basis: &'a worth_relational::facade::branch::RelationalBranchRetentionLease,
@@ -15,13 +16,13 @@ impl CommittedOutboxRead<'_> {
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<WorthQueryCommittedDispatchOutboxOwnerObservation, Denial> {
-        let RecordRef::Entity(entity_id) = self.binding.record_ref() else {
+        let RecordRef::Entity(entity_id) = self.record_ref else {
             return Err(Denial::NotAuthoritative);
         };
         let entity_id = *entity_id;
         let (created_at, values, owner_work) = self.read_record(execution, entity_id)?;
         let record = decode_fields(values)?;
-        if !self.binding.record().matches_persisted_fields(&record) {
+        if !self.record.matches_persisted_fields(&record) {
             return Err(Denial::RecordMismatch);
         }
         let committed = self
@@ -33,7 +34,7 @@ impl CommittedOutboxRead<'_> {
             return Err(Denial::CommitMismatch);
         }
         Ok(WorthQueryCommittedDispatchOutboxOwnerObservation::seal(
-            self.binding.record().clone(),
+            self.record.clone(),
             committed,
             RecordRef::Entity(entity_id),
             self.expected_runtime,

@@ -34,9 +34,14 @@ pub const fn directory_family_support(family: DurableStateFamily) -> DirectoryFa
         | PublicationDiagnosticMaterial => DirectoryFamilySupport::Supported(4),
         // Phase 8's external dispatch custody is delivered for exactly an
         // emission's outbox row and its attempt journal.
-        DispatchOutbox | DispatchAttempts | OutstandingDispatch => {
-            DirectoryFamilySupport::Supported(8)
-        }
+        DispatchOutbox
+        | DispatchAttempts
+        | OutstandingDispatch
+        | InboundSourceControls
+        | InboundCompletionRows
+        | InboundMessageCustody
+        | InstalledTransportCompletionCustody
+        | TerminalAcknowledgement => DirectoryFamilySupport::Supported(8),
         WorldConditionalDefinitionCustody
         | SignalNodeDefinitions
         | SignalTopology
@@ -99,15 +104,9 @@ pub const fn directory_family_support(family: DurableStateFamily) -> DirectoryFa
         | CapturedExternalInput
         | FixedOperationCustody
         | SignalResourceRequestCustody => DirectoryFamilySupport::RefusedUntil(7),
-        InboundCompletionRows
-        | InboundMessageCustody
-        | InstalledTransportCompletionCustody
-        | TerminalAcknowledgement
-        | InboundSourceControls
-        | RecoveryClaims
-        | RecoveryClaimDispositions
-        | RecoveryHandleCustody
-        | BankRecoveryClaim => DirectoryFamilySupport::RefusedUntil(8),
+        RecoveryClaims | RecoveryClaimDispositions | RecoveryHandleCustody | BankRecoveryClaim => {
+            DirectoryFamilySupport::Supported(8)
+        }
         CorrectionPreImages | CorrectionGovernedInput | CorrectionOriginalMeaning => {
             DirectoryFamilySupport::Supported(9)
         }

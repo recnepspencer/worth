@@ -18,6 +18,11 @@ pub(in crate::domain_computation) struct WorthQueryInboundTerminalOwnerResult {
 }
 
 impl WorthQueryInboundTerminalOwnerResult {
+    pub(in crate::domain_computation) fn publication_mut(
+        &mut self,
+    ) -> &mut WorthQueryProductPublicationReceipt {
+        self.performed.publication_mut()
+    }
     pub(in crate::domain_computation) fn from_performed(
         performed: WorthQueryPerformedInboundCompletion,
     ) -> Self {

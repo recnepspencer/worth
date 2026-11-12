@@ -420,7 +420,7 @@ pub use crate::durability::{
     HomeProgramTransitionPlanDescription, HomeProgramTransitionPlanDigest,
     HomeProgramTransitionProgramStep, HomeProgramTransitionSchemaCarrierDigest,
     HomeProgramTransitionSchemaDigest, HomeProgramTransitionStepAssociation,
-    HomeProgramTransitionStepRole, HomeProgramTransitionTargetMeaning,
+    HomeProgramTransitionStepRole, HomeProgramTransitionTargetMeaning, InboundSourceControl,
     MemoryProductBranchReference, NativeCheckpointBranchObservation,
     NativeCheckpointBranchReference, NativeCheckpointBranchTarget,
     ProgramSupportObligationIdentity, ProgramSupportObligationKind, ProgramSupportStatus,
@@ -762,3 +762,5 @@ pub use crate::durability::{
     CorrectionMaterialPinIdentity, CorrectionMaterialPinOwner, CorrectionMaterialPinTerminal,
     WorldOriginalFate,
 };
+
+pub use crate::durability::{DurableRecoveryClaimIdentity, RecoveryClaimDisposition};

@@ -60,10 +60,14 @@ pub enum BankEstateProgressionDenial {
     LifecycleProjection(BankEstateLifecycleProjectionDenial),
     Attempt(Box<crate::BankCommitPreparationDenial>),
     Recovery(BankRecoveryDenial),
+    RecoveryTransition(Box<crate::BankRecoveryTransitionDenial>),
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BankRecoveryDenialKind {
+    DurableClaimPublication,
+    RetainedMaterialUnavailable,
+    OriginalRead(BankEstateIdempotencyResolutionDenial),
     AdmissionAuthorization(crate::BankAuthorizationDenialKind),
     CompletionExecutionRequest(worth_query_host::facade::application_contribution::WorthQueryAdvancementDenial),
     DurableStateAdmission(worth_query_host::facade::product::WorthQueryDurableStateAdmissionDenial),
@@ -134,6 +138,18 @@ impl BankRecoveryDenial {
         use BankRecoveryDenialKind as Bank;
         use WorthQueryRecoveryHandleDenialKind as Query;
         let kind = match denial.kind() {
+            Query::DurableClaimPublication => Bank::DurableClaimPublication,
+            Query::RetainedMaterialUnavailable => Bank::RetainedMaterialUnavailable,
+            Query::OriginalRead(cause) => {
+                use worth_query_host::facade::primary_graph::WorthQueryRecoverySourceDenial as Source;
+                let contributing = match denial.source() {
+                    Some(Source::Original(original)) => original
+                        .authorization()
+                        .map_or(0, |authorization| authorization.causes().len()),
+                    Some(Source::Journal(_) | Source::Material(_)) | None => 0,
+                };
+                Bank::OriginalRead(idempotency::from_kind(cause, contributing))
+            }
             Query::AdmissionAuthorization(cause) => Bank::AdmissionAuthorization(
                 crate::BankAuthorizationDenial::from_kind(cause, 0).kind(),
             ),
@@ -237,6 +253,9 @@ impl std::fmt::Display for BankEstateProgressionDenial {
             Self::Recovery(denial) => {
                 write!(formatter, "recovery handle denied: {:?}", denial.kind())
             }
+            Self::RecoveryTransition(denial) => {
+                write!(formatter, "recovery transition denied: {:?}", denial.kind())
+            }
         }
     }
 }
@@ -304,3 +323,13 @@ impl From<WorthQueryApplicationAttemptDenial> for BankEstateProgressionDenial {
 }
 
 impl std::error::Error for BankEstateProgressionDenial {}
+
+impl BankEstateProgressionDenial {
+    pub(crate) fn from_recovery_transition(
+        denial: worth_query_host::facade::primary_graph::WorthQueryRecoveryTransitionDenial,
+    ) -> Self {
+        Self::RecoveryTransition(Box::new(crate::BankRecoveryTransitionDenial::from_query(
+            denial,
+        )))
+    }
+}

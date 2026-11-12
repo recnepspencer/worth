@@ -5,6 +5,7 @@ use worth_proof::CustodyReadmitted;
 
 #[derive(Debug)]
 pub enum QueryHomeCustodyReadmissionDenial {
+    RecoveryClaim(crate::domain_computation::application_aftermath::WorthQueryRecoveryHandleDenial),
     CorrectionMaterial(crate::facade::correction_material::QueryCorrectionMaterialDenial),
     ProgramSupport(crate::facade::program_support::QueryProgramSupportDenial),
     Activation(super::QueryHomeProgramActivationDenial),
@@ -15,6 +16,8 @@ pub enum QueryHomeCustodyReadmissionDenial {
     Dispatch(crate::domain_computation::application_aftermath::dispatch_journal::QueryDispatchJournalDenial),
     DispatchOutbox(crate::domain_computation::primary_graph::provider::WorthQueryCommittedDispatchOutboxReadDenial),
     DispatchCapability(crate::domain_computation::execution_runtime::product_world::WorthQueryDurableStateAdmissionDenial),
+    Inbound(crate::domain_computation::primary_graph::provider::WorthQueryInboundTerminalIndexDenial),
+    InboundCustody(crate::domain_computation::primary_graph::application_runtime::WorthQueryInboundAdmissionDenial),
     Execution(worth_execution::WorkCeilingDenial),
     World(RuntimeWorldServiceDenial<RuntimeWorldRecoveryDenial>),
     Recovery(RuntimeWorldRecoveryDenial),
@@ -125,7 +128,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
             .runtime()
             .runtime
             .primary_provider
-            .readmit_correction_material(material, &originals, execution)
+            .readmit_correction_material(std::sync::Arc::clone(&material), &originals, execution)
         {
             Ok(admission) => admission,
             Err(cause) => {
@@ -194,17 +197,79 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
                 cause: QueryHomeCustodyReadmissionDenial::Correction(cause),
             });
         }
-        if let Err(cause) = self.admit_original_custody(execution) {
+        let unpublished = match self.unpublished_native_commits(execution) {
+            Ok(commits) => commits,
+            Err(cause) => return Err(QueryHomeCustodyReadmissionRefused { query: self, cause }),
+        };
+        if let Err(cause) = self.admit_dispatch_contracts(execution, &unpublished) {
             return Err(QueryHomeCustodyReadmissionRefused { query: self, cause });
         }
-        if let Err(cause) = self.admit_dispatch_contracts(execution) {
-            return Err(QueryHomeCustodyReadmissionRefused { query: self, cause });
-        }
-        if let Err(cause) = self.admit_dispatch_custody(execution, dispatch) {
+        if let Err(cause) = self.admit_dispatch_custody(execution, std::sync::Arc::clone(&dispatch))
+        {
             return Err(QueryHomeCustodyReadmissionRefused {
                 query: self,
                 cause: QueryHomeCustodyReadmissionDenial::Dispatch(cause),
             });
+        }
+        if let Err(cause) = self
+            .runtime
+            .runtime()
+            .readmit_dispatch_completion_custody(execution)
+        {
+            return Err(QueryHomeCustodyReadmissionRefused {
+                query: self,
+                cause: QueryHomeCustodyReadmissionDenial::InboundCustody(cause),
+            });
+        }
+        if let Err(cause) = self.admit_original_custody(execution) {
+            return Err(QueryHomeCustodyReadmissionRefused { query: self, cause });
+        }
+        if let Err(cause) = self
+            .runtime
+            .runtime()
+            .admit_recovery_claim_sources(&originals, execution)
+            .and_then(|()| self.runtime.runtime().settle_recovery_custody(execution))
+        {
+            return Err(QueryHomeCustodyReadmissionRefused {
+                query: self,
+                cause: QueryHomeCustodyReadmissionDenial::RecoveryClaim(cause),
+            });
+        }
+        match self
+            .runtime
+            .runtime()
+            .runtime
+            .primary_provider
+            .readmit_correction_material(material, &originals, execution)
+        {
+            Ok(admission) => {
+                self.correction_material_admission = std::sync::OnceLock::from(admission)
+            }
+            Err(cause) => {
+                return Err(QueryHomeCustodyReadmissionRefused {
+                    query: self,
+                    cause: QueryHomeCustodyReadmissionDenial::CorrectionMaterial(cause),
+                })
+            }
+        }
+        // Cold terminal ACK settlement may advance the journal after its first
+        // fold. Admit the final exact prefix before the service witness escapes.
+        let application = self.runtime.runtime();
+        match application.runtime.dispatch_journal.readmit(
+            dispatch,
+            execution,
+            application
+                .runtime
+                .primary_provider
+                .dispatch_readmission_catalog(),
+        ) {
+            Ok(admission) => self.dispatch_custody_admission = std::sync::OnceLock::from(admission),
+            Err(cause) => {
+                return Err(QueryHomeCustodyReadmissionRefused {
+                    query: self,
+                    cause: QueryHomeCustodyReadmissionDenial::Dispatch(cause),
+                })
+            }
         }
         Ok(CustodyReadmitted::from_owner(self))
     }
@@ -246,6 +311,21 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
                 let effects = recovery
                     .inspect_recovered_effects(row.handle())
                     .map_err(Denial::Recovery)?;
+                if effects.native_receipt().is_none() {
+                    self.release_empty_original(execution, effects)?;
+                    continue;
+                }
+                if let Some((entity, completion)) = application
+                    .runtime
+                    .primary_provider
+                    .recovered_inbound_completion_row(execution, &effects)
+                    .map_err(|_| Denial::OriginalBindingUnavailable)?
+                {
+                    application
+                        .admit_recovered_inbound_completion(execution, &effects, entity, completion)
+                        .map_err(Denial::InboundCustody)?;
+                    continue;
+                }
                 application
                     .runtime
                     .primary_provider
@@ -267,6 +347,21 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
                 )
                 .map_err(Denial::ReleasedSource)?;
             for original in page.rows() {
+                if original.native_receipt().is_none() {
+                    continue;
+                }
+                if application
+                    .runtime
+                    .primary_provider
+                    .released_inbound_completion_row(execution, original)
+                    .map_err(|_| Denial::OriginalBindingUnavailable)?
+                    .is_some()
+                {
+                    // A released internal completion is not an application key
+                    // and is not canonical World completion. Accepted custody
+                    // remains retryable against its actual original outbox.
+                    continue;
+                }
                 application
                     .runtime
                     .primary_provider

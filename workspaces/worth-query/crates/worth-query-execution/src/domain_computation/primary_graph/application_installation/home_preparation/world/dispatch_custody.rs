@@ -10,15 +10,25 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
     pub(super) fn admit_dispatch_contracts(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
+        unpublished_native: &std::collections::BTreeSet<
+            worth_relational::facade::history::CommitId,
+        >,
     ) -> Result<(), QueryHomeCustodyReadmissionDenial> {
         use QueryHomeCustodyReadmissionDenial as Denial;
         let application = self.runtime.runtime();
         if application
             .runtime
             .primary_provider
-            .readmit_dispatch_outboxes(execution)
+            .readmit_dispatch_outboxes(
+                execution,
+                &application.runtime.product_runtime.owner.observation_port(),
+                &application.runtime.product_runtime.owner.inspection_port(),
+            )
             .map_err(Denial::DispatchOutbox)?
         {
+            application
+                .readmit_inbound_terminal_sources(execution, unpublished_native)
+                .map_err(Denial::Inbound)?;
             application.runtime.product_runtime.admit_directory_capability(
                 crate::domain_computation::primary_graph::WorthQueryOperationDurableCapability::InboundCompletion,
             ).map_err(Denial::DispatchCapability)?;
@@ -42,10 +52,14 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
         if fence.admit(dispatch.incarnation().fence()).is_err() {
             return Err(Denial::StaleIncarnation);
         }
-        let admission = application
-            .runtime
-            .dispatch_journal
-            .readmit(dispatch, execution)?;
+        let admission = application.runtime.dispatch_journal.readmit(
+            dispatch,
+            execution,
+            application
+                .runtime
+                .primary_provider
+                .dispatch_readmission_catalog(),
+        )?;
         match self.dispatch_custody_admission.get() {
             Some(existing) => {
                 if existing.position() != admission.position()

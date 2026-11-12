@@ -51,7 +51,11 @@ fn admitted_original_status_tracks_only_its_actual_provider_and_world_claim() {
             .unwrap()
     };
     assert_eq!(observe(), Some(Status::Unclaimed));
-    let handle = world.application.mint_recovery_handle(&live).unwrap();
+    let handle = world
+        .application
+        .with_host_advancement(|phase| world.application.mint_recovery_handle(&phase, &live))
+        .unwrap()
+        .unwrap();
     assert_eq!(observe(), Some(Status::Live));
     let registry = handle.registry_arc_for_test();
     assert_eq!(

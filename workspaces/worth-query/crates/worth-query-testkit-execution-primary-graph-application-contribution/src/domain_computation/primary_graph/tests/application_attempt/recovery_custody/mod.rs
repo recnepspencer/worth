@@ -82,6 +82,10 @@ pub fn committed_handle(
         panic!("the genuine recovery source commits: {outcome:?}");
     };
     assert!(receipt.dispatch_outbox().is_some());
-    let handle = world.application.mint_recovery_handle(&receipt).unwrap();
+    let handle = world
+        .application
+        .with_host_advancement(|phase| world.application.mint_recovery_handle(&phase, &receipt))
+        .unwrap()
+        .unwrap();
     (handle, admission, cancellation)
 }

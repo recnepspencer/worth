@@ -27,6 +27,11 @@ impl WorthQueryCompletedCommitEvidenceStore {
     ) -> Result<Progress, Denial> {
         use std::ops::Bound::{Excluded, Unbounded};
         request.consult().map_err(Denial::Execution)?;
+        // Dispose one recovered selector per admitted step before Native closes.
+        // Its weak source is not durable custody; the index rebuilds on reopen.
+        if self.recovered_dispatch.pop_first().is_some() {
+            return Ok(Progress::Advanced);
+        }
         let next = match self.home_retired_through {
             Some(after) => self
                 .by_commit

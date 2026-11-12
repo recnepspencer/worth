@@ -8,12 +8,17 @@ use super::super::idempotency::WorthQueryIdempotencyLookupKey;
 use super::super::WorthQueryPrimaryGraphCommittedApplication;
 mod correction_witness;
 mod home_retirement;
+mod recovered_dispatch;
 
 /// Immutable owner evidence indexed by the Relational commit that produced it.
 #[derive(Default)]
 pub(in crate::domain_computation::primary_graph) struct WorthQueryCompletedCommitEvidenceStore {
     by_commit: BTreeMap<CommitId, WorthQueryPrimaryGraphCommittedApplication>,
     home_retired_through: Option<CommitId>,
+    recovered_dispatch: BTreeMap<
+        crate::domain_computation::application_aftermath::ExternalEffectCorrelationIdentity,
+        super::super::committed_dispatch_outbox::recovered::RecoveredDispatchSelector,
+    >,
     by_dispatch_correlation: BTreeMap<
         crate::domain_computation::application_aftermath::ExternalEffectCorrelationIdentity,
         BTreeSet<CommitId>,
@@ -230,6 +235,9 @@ impl WorthQueryCompletedCommitEvidenceStore {
         let Some(commits) = self.by_dispatch_correlation.get(correlation) else {
             return Ok(None);
         };
+        if self.recovered_dispatch.contains_key(correlation) {
+            return Err(());
+        }
         if commits.len() != 1 {
             return Err(());
         }

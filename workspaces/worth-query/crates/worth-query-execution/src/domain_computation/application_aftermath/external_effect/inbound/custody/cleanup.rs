@@ -1,6 +1,7 @@
 //! Explicit bounded reclamation after terminal owner handoff and signed expiry.
 
-use super::WorthQueryInboundCustody;
+use super::{MessageKey, WorthQueryInboundCustody};
+use crate::domain_computation::application_aftermath::dispatch_journal::QueryInboundMessageKey;
 use crate::domain_computation::application_aftermath::ExternalEffectCorrelationIdentity;
 use worth_runtime_world::facade::CompositeCommitIdentity;
 
@@ -35,6 +36,12 @@ impl WorthQueryInboundCleanupReport {
 }
 
 impl WorthQueryInboundCustody {
+    pub(in crate::domain_computation) fn recorded_message_for_correlation(
+        &self,
+        correlation: &ExternalEffectCorrelationIdentity,
+    ) -> Option<QueryInboundMessageKey> {
+        Some(self.by_correlation.get(correlation)?.recorded())
+    }
     /// Compact signed meaning is independently bounded by its admitted slot.
     /// The transport terminal has no signed expiry, so only this slot turns over.
     pub(in crate::domain_computation) fn eligible_expired_compact_terminals(
@@ -43,6 +50,7 @@ impl WorthQueryInboundCustody {
         now_unix_seconds: u64,
         maximum_work: usize,
     ) -> Vec<(
+        QueryInboundMessageKey,
         ExternalEffectCorrelationIdentity,
         CompositeCommitIdentity,
         CompositeCommitIdentity,
@@ -64,6 +72,7 @@ impl WorthQueryInboundCustody {
                     .get(message)
                     .expect("compact expiry index selects retained signed meaning");
                 selected.push((
+                    message.recorded(),
                     compact.correlation,
                     compact.original_world.clone(),
                     compact.completion_world.clone(),
@@ -82,20 +91,20 @@ impl WorthQueryInboundCustody {
         operation: &str,
         now_unix_seconds: u64,
         selected: &[(
+            QueryInboundMessageKey,
             ExternalEffectCorrelationIdentity,
             CompositeCommitIdentity,
             CompositeCommitIdentity,
         )],
     ) -> WorthQueryInboundCleanupReport {
         let mut report = WorthQueryInboundCleanupReport::default();
-        for (correlation, original, completion) in selected {
-            let Some(message) = self.by_correlation.get(correlation).cloned() else {
-                continue;
-            };
+        for (key, correlation, original, completion) in selected {
+            let message = MessageKey::from_recorded(key);
             let Some(compact) = self.compact_terminal_messages.get(&message) else {
                 continue;
             };
-            if compact.operation != operation
+            if &compact.correlation != correlation
+                || compact.operation != operation
                 || compact.expiry >= now_unix_seconds
                 || &compact.original_world != original
                 || &compact.completion_world != completion
@@ -121,7 +130,9 @@ impl WorthQueryInboundCustody {
                 .compact_terminal_messages
                 .remove(&message)
                 .expect("selected compact signed meaning remains retained");
-            assert_eq!(self.by_correlation.remove(correlation), Some(message));
+            if self.by_correlation.get(correlation) == Some(&message) {
+                self.by_correlation.remove(correlation);
+            }
             let usage = self
                 .usage_by_operation
                 .get_mut(operation)
@@ -218,6 +229,14 @@ impl WorthQueryInboundCustody {
                 .expect("expiry index selects retained accepted occurrence");
             let terminal = entry.terminal.as_ref().expect("only terminal is indexed");
             assert!(!entry.terminal_release_pending && terminal.delivery_settled());
+            let durable = entry
+                .accepted
+                .owner()
+                .committed_product_publication()
+                .product_branch()
+                .owner_identity()
+                .durable()
+                .is_some();
             assert_eq!(entry.accepted.operation(), operation);
             assert_eq!(self.by_correlation.remove(correlation), Some(message));
             let usage = self
@@ -234,6 +253,13 @@ impl WorthQueryInboundCustody {
                 .expect("bytes charged exactly once");
             report.reclaimed += 1;
             report.released_bytes += entry.charged_bytes;
+            if durable {
+                self.retired_message_terminals.push(
+                    entry
+                        .terminal
+                        .expect("the actual terminal retires at close"),
+                );
+            }
         }
         report
     }

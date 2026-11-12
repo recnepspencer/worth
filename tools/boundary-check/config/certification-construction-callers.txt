@@ -217,6 +217,7 @@ query-home-preparation workspaces/worth-store/crates/worth-store-court-applicati
 query-home-preparation workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/query_readmission/native_artifacts/successor_compilation.rs
 query-home-retirement workspaces/worth-query/crates/worth-query-host/src/application_home/close/retirement.rs
 query-registered-native workspaces/worth-query/crates/worth-query-execution/src/domain_computation/execution_runtime/product_world/source_owner/attachment.rs
+query-world-commit-preparation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_runtime/inbound_publication/completion_publication.rs
 query-world-commit-preparation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/provider/application_attempt_state/commit_preparation/relational_commit/commit_execution.rs
 query-world-commit-preparation workspaces/worth-query/crates/worth-query-host/src/application_home/transition/publication.rs
 query-world-commit-preparation workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_indexes/promotion.rs

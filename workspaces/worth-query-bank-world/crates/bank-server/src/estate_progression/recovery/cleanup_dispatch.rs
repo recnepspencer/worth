@@ -22,9 +22,9 @@ impl BankIdentityRuntime {
         &self,
         receipt: &WorthQueryApplicationManagedCleanupReceipt,
     ) -> Result<BankCommitRecoveryHandle, BankRecoveryDenial> {
-        self.application_runtime()
-            .mint_cleanup_recovery_handle(receipt)
-            .map(|query| BankCommitRecoveryHandle { query })
-            .map_err(BankRecoveryDenial::from_query)
+        self.application_runtime().with_host_advancement(|phase| {
+            self.application_runtime().mint_cleanup_recovery_handle(&phase, receipt)
+                .map(|query| BankCommitRecoveryHandle { query }).map_err(BankRecoveryDenial::from_query)
+        }).map_err(|cause| BankRecoveryDenial::from_query(worth_query_host::facade::primary_graph::WorthQueryRecoveryHandleDenial::new(worth_query_host::facade::primary_graph::WorthQueryRecoveryHandleDenialKind::CompletionExecutionRequest(cause))))?
     }
 }

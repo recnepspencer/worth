@@ -63,7 +63,13 @@ impl WorthQueryRecoveryHandleBinding {
 impl WorthQueryRecoveryHandleBinding {
     #[doc(hidden)]
     pub fn retained_governed_input_for_test(&self) -> &Option<WorthQueryRetainedGovernedInput> {
-        &self.retained_governed_input
+        match &self.input_custody {
+            RecoveryInputCustody::Performed {
+                retained_governed_input,
+                ..
+            } => retained_governed_input,
+            RecoveryInputCustody::Recorded { .. } => &None,
+        }
     }
 }
 
@@ -141,7 +147,15 @@ impl WorthQueryRecoveryHandleBinding {
     pub fn retained_governed_input_mut_for_test(
         &mut self,
     ) -> &mut Option<WorthQueryRetainedGovernedInput> {
-        &mut self.retained_governed_input
+        match &mut self.input_custody {
+            RecoveryInputCustody::Performed {
+                retained_governed_input,
+                ..
+            } => retained_governed_input,
+            RecoveryInputCustody::Recorded { .. } => {
+                panic!("recorded source has no mutable performed input")
+            }
+        }
     }
 }
 

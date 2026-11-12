@@ -34,11 +34,10 @@ impl BankIdentityRuntime {
         &self,
         receipt: &BankCommitReceipt,
     ) -> Result<BankCommitRecoveryHandle, BankRecoveryDenial> {
-        receipt
-            .recovery_evidence()
-            .mint_recovery_handle(self.application_runtime())
-            .map(|query| BankCommitRecoveryHandle { query })
-            .map_err(BankRecoveryDenial::from_query)
+        self.application_runtime().with_host_advancement(|phase| {
+            receipt.recovery_evidence().mint_recovery_handle(&phase, self.application_runtime())
+                .map(|query| BankCommitRecoveryHandle { query }).map_err(BankRecoveryDenial::from_query)
+        }).map_err(|cause| BankRecoveryDenial::from_query(worth_query_host::facade::primary_graph::WorthQueryRecoveryHandleDenial::new(worth_query_host::facade::primary_graph::WorthQueryRecoveryHandleDenialKind::CompletionExecutionRequest(cause))))?
     }
 
     pub(super) fn admit_commit_recovery_effect(
@@ -159,7 +158,7 @@ impl BankIdentityRuntime {
                     .take()
                     .expect("fresh admission takes original owner once");
                 Ok::<_, BankEstateProgressionDenial>(
-                    match dispose_recovery_handle(handle.query, &authority) {
+                    match dispose_recovery_handle(&phase, handle.query, &authority) {
                         Ok(disposal) => Ok(BankRecoveryDisposalReceipt::new(
                             BankRecoveryTransitionReceipt::new(operation),
                             disposal,
@@ -204,8 +203,8 @@ impl BankIdentityRuntime {
         let operation = handle.installed_operation().to_owned();
         let authority =
             self.admit_commit_recovery_effect(&phase, handle.query(), principal, action, request)?;
-        reconcile_recovery_handle(handle.query, &authority)
-            .map_err(BankEstateProgressionDenial::from_recovery)?;
+        reconcile_recovery_handle(&phase, handle.query, &authority)
+            .map_err(BankEstateProgressionDenial::from_recovery_transition)?;
         Ok(BankRecoveryTransitionReceipt::new(operation))
 
         }).map_err(|cause| BankEstateProgressionDenial::ApplicationEntry(Box::new(worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause))))?
@@ -224,8 +223,8 @@ impl BankIdentityRuntime {
         let operation = handle.installed_operation().to_owned();
         let authority =
             self.admit_commit_recovery_effect(&phase, handle.query(), principal, action, request)?;
-        compensate_recovery_handle(handle.query, &authority)
-            .map_err(BankEstateProgressionDenial::from_recovery)?;
+        compensate_recovery_handle(&phase, handle.query, &authority)
+            .map_err(BankEstateProgressionDenial::from_recovery_transition)?;
         Ok(BankRecoveryTransitionReceipt::new(operation))
 
         }).map_err(|cause| BankEstateProgressionDenial::ApplicationEntry(Box::new(worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause))))?
@@ -264,10 +263,20 @@ impl BankIdentityRuntime {
         &self,
         handle: BankCommitRecoveryHandle,
         decision: BankRecoveryExpiryDecision,
-    ) -> Result<BankRecoveryTransitionReceipt, BankRecoveryDenial> {
+    ) -> Result<BankRecoveryTransitionReceipt, crate::BankRecoveryTransitionDenial> {
         let operation = handle.installed_operation().to_owned();
-        expire_recovery_handle(handle.query, &decision.query)
-            .map_err(BankRecoveryDenial::from_query)?;
-        Ok(BankRecoveryTransitionReceipt::new(operation))
+        let mut owned = Some(handle);
+        match self.application_runtime().with_host_advancement(|phase| {
+            let handle = owned.take().expect("phase takes the original once");
+            expire_recovery_handle(&phase, handle.query, &decision.query)
+                .map(|_| BankRecoveryTransitionReceipt::new(operation))
+                .map_err(crate::BankRecoveryTransitionDenial::from_query)
+        }) {
+            Ok(result) => result,
+            Err(cause) => Err(crate::BankRecoveryTransitionDenial::from_query(worth_query_host::facade::primary_graph::WorthQueryRecoveryTransitionDenial::Retained {
+                denial: worth_query_host::facade::primary_graph::WorthQueryRecoveryHandleDenial::new(worth_query_host::facade::primary_graph::WorthQueryRecoveryHandleDenialKind::CompletionExecutionRequest(cause)),
+                handle: Box::new(owned.take().expect("refused opening retains original").query),
+            })),
+        }
     }
 }

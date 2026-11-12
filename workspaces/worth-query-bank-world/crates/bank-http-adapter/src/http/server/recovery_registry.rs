@@ -162,8 +162,16 @@ impl BankHttpRecoveryRegistry {
                         .handle
                         .take()
                         .expect("evaluated live recovery handle");
-                    let _ = runtime.expire_commit_recovery(handle, decision);
-                    false
+                    match runtime.expire_commit_recovery(handle, decision) {
+                        Ok(_) => false,
+                        Err(refused) => {
+                            let (_, retained) = refused.into_parts();
+                            record.handle = retained;
+                            // A refused durable terminal still belongs to this
+                            // transport slot; only acknowledged expiry removes it.
+                            record.handle.is_some()
+                        }
+                    }
                 }
                 Ok(BankRecoveryExpiryEvaluation::Current) | Err(_) => true,
             }
