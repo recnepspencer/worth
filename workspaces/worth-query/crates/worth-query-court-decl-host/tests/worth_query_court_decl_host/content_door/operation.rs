@@ -57,16 +57,12 @@ impl ApplicationDeclaredOperation<Schema> for Change {
     fn declare_access(
         schema: ApplicationSchemaDeclarationBuilder<Schema>,
     ) -> ApplicationSchemaDeclarationBuilder<Schema> {
-        schema
+        shared_reads::change(schema)
             .operation_projection_work_budget(Change::reference(), 32)
-            .operation_read_field(Change::reference(), Key::at("Key"))
             .operation_read_field(Change::reference(), Values::at("Values"))
-            .operation_read_field(Change::reference(), UnboundValues::at("UnboundValues"))
             .operation_read_field(Change::reference(), OptionalValues::at("OptionalValues"))
             .operation_write(Change::reference(), OptionalValues::at("OptionalValues"))
             .operation_remove_aspect(Change::reference(), Samples::reference())
-            .operation_read_field(Change::reference(), OtherValues::at("OtherValues"))
-            .operation_read_field(Change::reference(), VersionedValues::at("VersionedValues"))
             .operation_write(Change::reference(), OtherValues::at("OtherValues"))
             .operation_write(Change::reference(), VersionedValues::at("VersionedValues"))
             .operation_write(Change::reference(), Key::at("Key"))

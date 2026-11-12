@@ -8,7 +8,9 @@ use crate::application_schema::{
     ApplicationSchemaMember as Member,
 };
 use std::any::TypeId;
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
+mod membership;
+use membership::member_key;
 
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub(crate) struct RecordAccess {
@@ -87,6 +89,10 @@ pub(in crate::application_schema) fn expand_record_access(
     members: &mut Vec<Member>,
     contributions: &mut [crate::application_schema::contribution::AuthoredApplicationSchemaContribution],
 ) -> Result<(), Denial> {
+    let mut indexed_members = members
+        .iter()
+        .filter_map(member_key)
+        .collect::<BTreeSet<_>>();
     let mut seen = BTreeSet::new();
     for request in requests {
         if !seen.insert(request) {
@@ -115,7 +121,7 @@ pub(in crate::application_schema) fn expand_record_access(
                             .any(|case| case.marker() == request.marker)
                     })
             });
-        let mut expansion = Vec::new();
+        let mut expansion = BTreeMap::new();
         if request.write {
             let aspect = selected.ok_or_else(|| request.refusal())?;
             columns(&mut expansion, request, aspect);
@@ -159,11 +165,16 @@ pub(in crate::application_schema) fn expand_record_access(
                 selected.ok_or_else(|| request.refusal())?,
             );
         }
+        let expansion = expansion.into_values().collect::<Vec<_>>();
         for contribution in contributions.iter_mut() {
             contribution.expand_record(request, &expansion);
         }
         for member in expansion {
-            insert(members, member);
+            if indexed_members
+                .insert(member_key(&member).expect("expanded access has a field or aspect locus"))
+            {
+                members.push(member);
+            }
         }
     }
     // A scalar write also carries the SDK's structural parent column. The
@@ -231,13 +242,21 @@ pub(in crate::application_schema) fn expand_record_access(
             for contribution in contributions.iter_mut() {
                 contribution.expand_member(&source, &member);
             }
-            insert(members, member);
+            if indexed_members
+                .insert(member_key(&member).expect("expanded access has a field or aspect locus"))
+            {
+                members.push(member);
+            }
         }
     }
     Ok(())
 }
 
-fn columns(members: &mut Vec<Member>, request: &RecordAccess, aspect: &AspectDefinition) {
+fn columns(
+    members: &mut BTreeMap<membership::MemberKey, Member>,
+    request: &RecordAccess,
+    aspect: &AspectDefinition,
+) {
     for field in &aspect.fields {
         let locus = field.recipe.locus();
         let member = if request.write {
@@ -263,8 +282,9 @@ fn columns(members: &mut Vec<Member>, request: &RecordAccess, aspect: &AspectDef
     }
 }
 
-fn insert(members: &mut Vec<Member>, member: Member) {
-    if !members.contains(&member) {
-        members.push(member);
-    }
+fn insert(members: &mut BTreeMap<membership::MemberKey, Member>, member: Member) {
+    members.insert(
+        member_key(&member).expect("expanded access has a field or aspect locus"),
+        member,
+    );
 }

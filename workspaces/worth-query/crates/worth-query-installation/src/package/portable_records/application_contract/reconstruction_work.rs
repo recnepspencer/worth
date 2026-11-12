@@ -224,6 +224,10 @@ fn observe_graph_read(
 ) {
     work.observe_fixed(1);
     match scope {
+        WorthQueryPortableOperationGraphReadScope::SharedDecisionRead { schema, identity } => {
+            work.observe_text(schema);
+            work.observe_text(identity);
+        }
         WorthQueryPortableOperationGraphReadScope::DerivedSource { schema, relation } => {
             work.observe_fixed(1); // Closed transport version.
             work.observe_text(schema);

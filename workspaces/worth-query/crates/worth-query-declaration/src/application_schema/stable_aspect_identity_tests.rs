@@ -84,7 +84,7 @@ fn canonical_schema_current_identity_contains_all_description_axes() {
     let sequence = declaration.identity().canonical_basis().payload();
     assert_eq!(
         sequence.version().as_str(),
-        "worth-query-application-schema-v18"
+        "worth-query-application-schema-v19"
     );
     let (AspectIdentity(aspect_identity), AspectContractRevision(aspect_revision)) =
         aspect_contract(declaration.erased());

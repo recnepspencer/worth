@@ -136,8 +136,8 @@ pub(crate) fn install_application_aftermath(
     };
     let binding = operation.binding();
     let operation_slot = operation.operation();
-    let declared_reads =
-        OperationDeclaredPreImageReads::from_targets(operation.portable_decision_reads());
+    let decision_reads = operation.portable_decision_reads();
+    let declared_reads = OperationDeclaredPreImageReads::from_targets(decision_reads.iter());
     let external_effect = operation.external_effect();
     let lowering_catalog = derived_lowering_catalog(binding, portable)?;
     let compatibility_generation = binding.generation();

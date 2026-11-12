@@ -46,6 +46,7 @@ impl DeclaredApplicationMemberMarker {
 /// owning [`super::ApplicationSchema::declaration`] implementation.
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct ApplicationSchemaMemberProvenance {
+    pub(super) decision_read_scopes: std::collections::BTreeMap<TypeId, String>,
     pub(super) fragments: super::fragment::provenance::FragmentProvenance,
     entities: Vec<(String, TypeId)>,
     field_bindings: Vec<ApplicationFieldBindingRecipe>,
@@ -94,7 +95,8 @@ impl ApplicationSchemaMemberProvenance {
     }
     #[doc(hidden)]
     pub fn is_empty(&self) -> bool {
-        self.field_bindings.is_empty()
+        self.decision_read_scopes.is_empty()
+            && self.field_bindings.is_empty()
             && self.content_bindings.is_empty()
             && self.content_fields.is_empty()
             && self.entities.is_empty()

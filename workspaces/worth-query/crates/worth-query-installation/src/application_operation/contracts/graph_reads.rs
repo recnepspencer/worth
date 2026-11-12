@@ -16,8 +16,13 @@ pub(crate) fn install_portable_graph_reads(
     reads: &[WorthQueryPortableOperationGraphReadScope],
 ) -> Result<WorthQueryOperationGraphReadContract, ()> {
     let mut scopes = Vec::with_capacity(reads.len());
+    let mut roles = Vec::new();
     for read in reads {
         let scope = match read {
+            WorthQueryPortableOperationGraphReadScope::SharedDecisionRead { identity, .. } => {
+                roles.push(catalog.shared_decision_reads(identity).ok_or(())?);
+                continue;
+            }
             WorthQueryPortableOperationGraphReadScope::DerivedSource { relation, .. } => {
                 WorthQueryOperationGraphReadScope::DerivedSource(
                     crate::domain_operation::WorthQueryOperationDerivedSourceReadScope::new(
@@ -48,6 +53,9 @@ pub(crate) fn install_portable_graph_reads(
                 ..
             } => {
                 let installed = catalog.aspect(entity, aspect.as_str()).ok_or(())?;
+                if mask.paths().iter().any(|path| path.fields().len() != 1) {
+                    return Err(());
+                }
                 if installed.contract() != contract {
                     return Err(());
                 }
@@ -79,12 +87,13 @@ pub(crate) fn install_portable_graph_reads(
         };
         scopes.push(scope);
     }
-    Ok(WorthQueryOperationGraphReadContract::Declared {
-        roles: vec![WorthQueryOperationGraphReadRole::new(
-            "primary".to_owned(),
-            WorthQueryOperationGraphParticipation::PrimaryLogicalGraph,
-            WorthQueryOperationGraphAccess::Project,
-            scopes,
-        )],
-    })
+    // Touch and invariant contracts retain the primary graph participation
+    // even when all of its read contents come from shared leaves.
+    roles.push(WorthQueryOperationGraphReadRole::new(
+        "primary".to_owned(),
+        WorthQueryOperationGraphParticipation::PrimaryLogicalGraph,
+        WorthQueryOperationGraphAccess::Project,
+        scopes,
+    ));
+    Ok(WorthQueryOperationGraphReadContract::Declared { roles })
 }

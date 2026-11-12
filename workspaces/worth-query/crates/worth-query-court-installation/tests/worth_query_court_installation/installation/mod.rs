@@ -1,3 +1,4 @@
+mod decision_read_scopes;
 pub(crate) mod installation_contracts;
 
 pub(crate) mod aspect_native_identity;

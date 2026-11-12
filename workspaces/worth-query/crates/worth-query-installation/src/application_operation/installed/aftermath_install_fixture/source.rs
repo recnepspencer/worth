@@ -53,8 +53,8 @@ impl super::super::WorthQueryOperationAftermathInstallationSource
         &self.operation
     }
 
-    fn portable_decision_reads(&self) -> &[ApplicationOperationDecisionReadTarget] {
-        &self.decision_reads
+    fn portable_decision_reads(&self) -> Vec<ApplicationOperationDecisionReadTarget> {
+        self.decision_reads.clone()
     }
 
     fn external_effect(&self) -> &InstalledExternalEffectContract {

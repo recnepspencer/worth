@@ -1,7 +1,9 @@
+mod authorization_path;
 use super::authorization_policy::ApplicationAuthorizationPath;
 use super::capability_identifier_validation::validate_capability_identifiers;
 use super::declaration_denial::ApplicationSchemaDeclarationDenial;
 use super::schema_member::ApplicationSchemaMember;
+pub(super) use authorization_path::validate_authorization_path;
 
 mod application_query;
 mod field_path;
@@ -44,6 +46,18 @@ pub(super) fn validate_member_identifiers(
 ) -> Result<(), ApplicationSchemaDeclarationDenial> {
     for member in members {
         match member {
+            ApplicationSchemaMember::DecisionReadScope { definition } => {
+                for target in definition.targets() {
+                    validate_decision_read_target_identifiers(target)?;
+                }
+                for relation in definition.derived_relations() {
+                    validate_simple_identifier(relation)?;
+                }
+            }
+            ApplicationSchemaMember::OperationDecisionReadScope { operation, scope } => {
+                validate_simple_identifier(operation)?;
+                validate_simple_identifier(scope)?;
+            }
             ApplicationSchemaMember::ContentFormat { declaration } => {
                 worth_foundational::facade::ContentFormat::new(
                     &declaration.name,
@@ -369,24 +383,6 @@ pub(super) fn validate_portable_type_identifier(
     } else {
         Err(ApplicationSchemaDeclarationDenial::InvalidIdentifier)
     }
-}
-
-pub(super) fn validate_authorization_path(
-    path: &ApplicationAuthorizationPath,
-) -> Result<(), ApplicationSchemaDeclarationDenial> {
-    validate_simple_identifier(path.principal_entity())?;
-    validate_simple_identifier(path.scope_entity())?;
-    for traversal in path.traversals() {
-        validate_simple_identifier(traversal.relation())?;
-        validate_simple_identifier(traversal.from())?;
-        validate_simple_identifier(traversal.to())?;
-    }
-    for predicate in path.predicates() {
-        validate_simple_identifier(predicate.entity())?;
-        validate_simple_identifier(predicate.aspect())?;
-        validate_field_identifier(predicate.field())?;
-    }
-    Ok(())
 }
 
 fn validate_identifiers<'a>(

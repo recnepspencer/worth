@@ -9,6 +9,7 @@ mod authority;
 mod authority_validation;
 mod conditional_application_operation;
 mod construction;
+mod decision_read_scopes;
 mod denial;
 mod index_identity;
 mod rebuild_report;

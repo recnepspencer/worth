@@ -20,7 +20,8 @@ pub(super) fn revocation_programs_are_framework_owned(
         .collect::<BTreeSet<_>>();
     members.iter().all(|member| match member {
         ApplicationSchemaMember::OperationProgram { operation, .. }
-        | ApplicationSchemaMember::OperationDecisionRead { operation, .. } => {
+        | ApplicationSchemaMember::OperationDecisionRead { operation, .. }
+        | ApplicationSchemaMember::OperationDecisionReadScope { operation, .. } => {
             !operations.contains(operation.as_str())
         }
         _ => true,

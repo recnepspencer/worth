@@ -52,11 +52,8 @@ pub(super) fn validate(operation: &str, body: &Body, members: &[Member]) -> Resu
     };
     for field in creation.fields() {
         let target = comparison_read(field);
-        if !members.iter().any(|member| {
-            matches!(member,
-            Member::OperationDecisionRead { operation: declared, target: read }
-                if declared == operation && read == &target)
-        }) {
+        if !crate::application_schema::operation_declares_decision_read(members, operation, &target)
+        {
             return Err(Denial::decision_read_body_dependency(operation));
         }
     }

@@ -54,6 +54,23 @@ fn application_cannot_redeclare_revocation_reads_or_effects() {
         Err(ApplicationSchemaDeclarationDenial::InvalidApplicationCapability)
     );
 
+    let definition =
+        crate::application_schema::ApplicationDecisionReadScopeMeaning::from_untrusted_parts(
+            vec![field_read("Status")],
+            Vec::new(),
+        )
+        .unwrap();
+    let mut with_shared_read = revocation_members(2);
+    with_shared_read.push(ApplicationSchemaMember::OperationDecisionReadScope {
+        operation: "Revoke".to_owned(),
+        scope: definition.identity().to_owned(),
+    });
+    with_shared_read.push(ApplicationSchemaMember::DecisionReadScope { definition });
+    assert_eq!(
+        build_from_members(with_shared_read),
+        Err(ApplicationSchemaDeclarationDenial::InvalidApplicationCapability)
+    );
+
     let mut with_effect = revocation_members(2);
     with_effect.push(ApplicationSchemaMember::OperationProgram {
         operation: "Revoke".to_owned(),

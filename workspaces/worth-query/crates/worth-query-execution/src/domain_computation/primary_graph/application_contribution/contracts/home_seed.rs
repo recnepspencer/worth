@@ -84,6 +84,8 @@ fn requires_resource_nodes(member: &ApplicationSchemaMember) -> bool {
         | OperationProgram { .. }
         | OperationBody { .. }
         | OperationDecisionRead { .. }
+        | DecisionReadScope { .. }
+        | OperationDecisionReadScope { .. }
         | OperationMutationPrecondition { .. }
         | OperationProjectionWorkBudget { .. }
         | OperationExternalEffect { .. }

@@ -72,6 +72,13 @@ pub enum ApplicationOperationDecisionReadTarget {
 
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub enum ApplicationSchemaMember {
+    DecisionReadScope {
+        definition: super::ApplicationDecisionReadScopeMeaning,
+    },
+    OperationDecisionReadScope {
+        operation: String,
+        scope: String,
+    },
     ContentFormat {
         declaration: super::ApplicationContentFormatDeclaration,
     },

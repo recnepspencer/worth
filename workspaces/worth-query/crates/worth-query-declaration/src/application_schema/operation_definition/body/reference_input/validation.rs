@@ -53,7 +53,11 @@ pub(in crate::application_schema::operation_definition::body) fn validate(
             return Err(Denial::program_body_dependency(operation));
         }
         for read in reference.decision_reads() {
-            if !members.iter().any(|member|matches!(member,Member::OperationDecisionRead{operation:declared,target} if declared==operation && target==&read)) {return Err(Denial::decision_read_body_dependency(operation));}
+            if !crate::application_schema::operation_declares_decision_read(
+                members, operation, &read,
+            ) {
+                return Err(Denial::decision_read_body_dependency(operation));
+            }
         }
         for target in reference.program_targets() {
             if !members.iter().any(|member|matches!(member,Member::OperationProgram{operation:declared,target:declared_target} if declared==operation && declared_target==&target)) {return Err(Denial::program_body_dependency(operation));}

@@ -5,6 +5,20 @@ use super::{
     ApplicationSchemaMember,
 };
 
+mod identity;
+mod reference;
+mod resolution;
+pub(crate) use resolution::operation_declares_decision_read;
+mod scope;
+#[cfg(test)]
+mod tests;
+pub use reference::ApplicationDecisionReadScopeRef;
+pub use resolution::{
+    application_decision_read_scope_physical_targets, application_operation_decision_read_targets,
+    application_operation_derived_read_relations,
+};
+pub use scope::{ApplicationDecisionReadScopeDefinition, ApplicationDecisionReadScopeMeaning};
+
 impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
     /// Declares the exact managed Parent binding available to this operation's decision.
     /// Installation requires its scope mapping to match the mutation binding.

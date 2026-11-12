@@ -17,6 +17,27 @@ pub(crate) fn declaration() -> ErasedApplicationSchemaDeclaration {
     graph::extend(&mut members);
     history::extend(&mut members);
     operation::extend(&mut members);
+    let entity = members
+        .iter()
+        .find_map(|member| match member {
+            ApplicationSchemaMember::Entity { entity } => Some(entity.clone()),
+            _ => None,
+        })
+        .expect("the complete fixture declares entities");
+    let definition = ApplicationDecisionReadScopeMeaning::from_untrusted_parts(
+        vec![ApplicationOperationDecisionReadTarget::Entity { entity }],
+        Vec::new(),
+    )
+    .unwrap();
+    members.push(ApplicationSchemaMember::Operation {
+        operation: "SharedBudgetRead".into(),
+        input_type: portable("worth.rust.unit"),
+    });
+    members.push(ApplicationSchemaMember::OperationDecisionReadScope {
+        operation: "SharedBudgetRead".into(),
+        scope: definition.identity().into(),
+    });
+    members.push(ApplicationSchemaMember::DecisionReadScope { definition });
     members.sort();
     members.dedup();
     validate_portable_application_schema_freshly(

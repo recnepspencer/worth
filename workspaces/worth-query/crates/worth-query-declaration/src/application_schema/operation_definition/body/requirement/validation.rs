@@ -53,9 +53,15 @@ pub(in crate::application_schema::operation_definition::body) fn validate_requir
                     super::super::principal_validation::PrincipalSourceContract { scope, mutation_binding, principal_binding, field, binding, scalar_family: *scalar_family }.is_declared_for(operation, members)
                 },
             };
-        if !bound || !operand.source().decision_reads().iter().all(|read| members.iter().any(|member| {
-                matches!(member, Member::OperationDecisionRead { operation: declared, target } if declared == operation && target == read)
-            })) { return Err(Denial::decision_read_body_dependency(operation)); }
+        if !bound
+            || !operand.source().decision_reads().iter().all(|read| {
+                crate::application_schema::operation_declares_decision_read(
+                    members, operation, read,
+                )
+            })
+        {
+            return Err(Denial::decision_read_body_dependency(operation));
+        }
     }
     Ok(())
 }

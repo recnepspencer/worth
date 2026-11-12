@@ -104,6 +104,7 @@ impl WorthQueryPortableNativeAspectContractRecord {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryPortableOperationGraphReadScope {
+    SharedDecisionRead { schema: String, identity: String },
     DerivedSource {
         schema: String,
         relation: String,
@@ -134,6 +135,7 @@ pub enum WorthQueryPortableOperationGraphReadScope {
 impl WorthQueryPortableOperationGraphReadScope {
     pub fn schema(&self) -> &str {
         match self {
+            Self::SharedDecisionRead { schema, .. } => schema,
             Self::Components { schema, .. } | Self::DerivedSource { schema, .. } => schema,
             Self::Entity { schema, .. }
             | Self::NativeProjection { schema, .. }

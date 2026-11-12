@@ -175,7 +175,7 @@ fn validate_overlap_basis(
     if overlap.touches() != touches.scopes()
         || reads.clone().count() != overlap.reads().len()
         || !reads
-            .zip(overlap.reads())
+            .zip(overlap.reads().iter())
             .all(|(left, right)| left == right)
     {
         return Err(());
