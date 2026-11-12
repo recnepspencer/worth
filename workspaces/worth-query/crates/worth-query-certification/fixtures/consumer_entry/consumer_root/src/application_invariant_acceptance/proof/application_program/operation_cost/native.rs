@@ -108,7 +108,7 @@ pub(super) fn run(fanout: usize, unrelated: usize) -> Sample {
         .unwrap();
     drop(settlement); // Local settled references release after actual collection discharge.
     let cleanup = closing.finish(&runtime);
-    assert!(released.managed_cleanup_receipt().is_none());
+    assert!(released.managed_cleanup_receipts().is_empty());
     assert_eq!(released.retired_component_count(), 0);
     assert_eq!(
         request.retain_current_read().unwrap().selected_commit(),
