@@ -1,5 +1,6 @@
 //! Post-receipt delivery/recovery observes the existing publication in every leg.
 use super::*;
+use worth_relational::facade::inspection::observe_maintenance_work;
 fn exercise(worker: bool, cold: bool) {
     let _execution = WorthQueryExecutionObservation::install_on_this_thread();
     let limits = if worker {
@@ -37,32 +38,55 @@ fn exercise(worker: bool, cold: bool) {
     let mut original = done
         .start_required_outputs(&host, &request, WorthQueryOutputDemandControls::default())
         .unwrap_or_else(|cause| panic!("{:?}", cause.denial()));
-    host.delay_next_output_readiness_delivery_for_test();
-    assert!(matches!(
+    // D1717: Stable adoption has no effectful delivery to interrupt. Its
+    // original receipt remains descriptive recovery evidence, not new work.
+    let (progress, delivery) = observe_maintenance_work(8, || {
         original
             .required_output_mut()
             .advance(&host, &request)
-            .unwrap(),
-        WorthQueryDiscoveredProgramOutputProgress::Pending
-    ));
-    let mut recovered = request
-        .advanced()
-        .recover_discovered_required_outputs::<program::Program, program::Tree>(
-            &host,
-            &receipt,
-            WorthQueryOutputDemandControls::default(),
-        )
-        .unwrap_or_else(|cause| panic!("{cause:?}"));
-    let mut settled = false;
-    for _ in 0..128 {
-        if let WorthQueryDiscoveredProgramOutputProgress::Settled(result) =
-            recovered.advance(&host, &request).unwrap()
-        {
-            assert_eq!(result.root_outputs().count(), 2);
-            settled = true;
-            break;
+            .unwrap()
+    });
+    let WorthQueryDiscoveredProgramOutputProgress::Settled(settlement) = progress else {
+        panic!("the already-current Stable roots settle immediately");
+    };
+    assert_eq!(settlement.root_outputs().count(), 2);
+    assert!(settlement
+        .root_outputs()
+        .all(|(_, root)| root.application_commit_receipt().is_none()));
+    assert_eq!(
+        delivery.published_rows.len() + delivery.omitted_publications,
+        0
+    );
+    assert_eq!(
+        host.producer_contacts_on_this_thread_for_test(),
+        contacts + 4
+    );
+    assert_eq!(courts::native_head(&host), head);
+    let ((recovered, settled), recovery) = observe_maintenance_work(8, || {
+        let mut recovered = request
+            .advanced()
+            .recover_discovered_required_outputs::<program::Program, program::Tree>(
+                &host,
+                &receipt,
+                WorthQueryOutputDemandControls::default(),
+            )
+            .unwrap_or_else(|cause| panic!("{cause:?}"));
+        let mut settled = false;
+        for _ in 0..128 {
+            if let WorthQueryDiscoveredProgramOutputProgress::Settled(result) =
+                recovered.advance(&host, &request).unwrap()
+            {
+                assert_eq!(result.root_outputs().count(), 2);
+                settled = true;
+                break;
+            }
         }
-    }
+        (recovered, settled)
+    });
+    assert_eq!(
+        recovery.published_rows.len() + recovery.omitted_publications,
+        0
+    );
     assert!(settled);
     assert_eq!(
         host.producer_contacts_on_this_thread_for_test(),
@@ -123,11 +147,11 @@ fn exercise(worker: bool, cold: bool) {
     assert_eq!(courts::native_head(&host), head);
 }
 #[test]
-fn interrupted_discovered_delivery_recovers_without_producers_or_commits() {
+fn settled_discovered_delivery_recovers_without_producers_or_commits() {
     exercise(false, false)
 }
 #[test]
-fn worker_only_interrupted_discovered_delivery_recovers_without_producers_or_commits() {
+fn worker_only_settled_discovered_delivery_recovers_without_producers_or_commits() {
     exercise(true, false)
 }
 #[test]
