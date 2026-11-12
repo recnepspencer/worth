@@ -97,7 +97,9 @@ fn exercise(worker: bool, cold: bool) {
         contacts + 4
     );
     assert_eq!(courts::native_head(&host), head);
-    // Even with the original handle retained, completion closes the source.
+    drop(recovered);
+    drop(original);
+    // With both handles released, only the original receipt remains.
     // This lawful negative distinguishes a receipt from active source custody.
     let closed = request
         .advanced()
@@ -109,17 +111,18 @@ fn exercise(worker: bool, cold: bool) {
     let Err(WorthQueryRequiredOutputPreparationDenial::DemandExecution(denial)) = closed else {
         panic!("a completed source cannot be reopened by its receipt alone")
     };
-    assert!(matches!(
-        denial.kind(),
-        WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable
-    ));
+    assert!(
+        matches!(
+            denial.kind(),
+            WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable
+        ),
+        "{denial:?}"
+    );
     assert_eq!(
         host.producer_contacts_on_this_thread_for_test(),
         contacts + 4
     );
     assert_eq!(courts::native_head(&host), head);
-    drop(recovered);
-    drop(original);
     if cold {
         let checkpoint = super::super::super::failure::checkpoint(&host);
         drop(request);
