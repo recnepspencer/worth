@@ -23,17 +23,30 @@ pub(super) fn assert_reopened_ready(application: &host::OutputHost, expected: u6
         std::process::id(),
         NEXT.fetch_add(1, Ordering::Relaxed)
     ));
+    let origin = checkpoint
+        .capture_origin()
+        .expect("actual capture issued Native and World origin");
     std::fs::write(&path, checkpoint.bytes()).unwrap();
     let bytes = std::fs::read(&path).unwrap();
     std::fs::remove_file(&path).unwrap();
-    let cold: host::OutputHost = in_memory_rostered_program_from_checkpoint(
+    let restored_checkpoint = application
+        .with_host_advancement(|phase| {
+            let execution = phase
+                .checked_execution_request_for(application.runtime().product_runtime())
+                .unwrap();
+            WorthQueryApplicationCheckpoint::from_untrusted_bytes(bytes.into_boxed_slice())
+                .with_capture_origin(origin, &execution)
+        })
+        .unwrap()
+        .expect("disk bytes retain their actual captured Native and World origin");
+    let cold: host::OutputHost = WorthQueryInterimCheckpointRestore::rostered_program(
         program::validated::<OutputProgram>(),
-        WorthQueryApplicationProgramRoster::new().support(program::validated::<program::Program>()),
+        host::roster().support(program::validated::<program::Program>()),
         NumericSchema::declaration().unwrap(),
         ((),),
         ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID")).unwrap(),
         host::installation_limits(),
-        WorthQueryApplicationCheckpoint::from_untrusted_bytes(bytes.into_boxed_slice()),
+        restored_checkpoint,
     )
     .expect("ordinary edit reopens from actual disk bytes without a new origin");
     assert_eq!(host::read(&cold), rows);
