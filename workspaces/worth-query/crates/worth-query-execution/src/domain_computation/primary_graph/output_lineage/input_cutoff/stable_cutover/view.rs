@@ -80,6 +80,14 @@ impl PublishedStableLineage {
     {
         self.recorded().checkpoint_source_facts()
     }
+    /// Borrow the already sealed output expectations from the selected row.
+    /// Capture must carry these alongside producer facts, never reread a new
+    /// head to reconstruct what the original output expected.
+    pub(in crate::domain_computation::primary_graph) fn checkpoint_output_witness(
+        &self,
+    ) -> Option<&super::super::super::SealedNativeOutputWitness> {
+        self.recorded().native_output_witness()
+    }
     pub(in crate::domain_computation::primary_graph) fn observation(
         &self,
     ) -> &ProductBranchObservation {
