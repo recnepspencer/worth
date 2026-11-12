@@ -61,11 +61,7 @@ impl WorthQueryCompiledApplicationOperationContracts {
             invariant_execution.require_model_ownership();
         }
         let overlap_index = WorthQueryOperationReadTouchOverlapIndex::new(
-            graph_reads
-                .roles()
-                .iter()
-                .flat_map(|role| role.read_scopes().iter().cloned())
-                .collect(),
+            graph_reads.roles().to_vec(),
             signing_lifecycle.publication_touches.scopes().to_vec(),
         );
         let decision_facts = application_decision_fact_contract(authorization_fact_count);

@@ -2,6 +2,16 @@ use super::ApplicationOperationDependencyLocus;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum ApplicationSchemaDeclarationDenial {
+    ConflictingDecisionReadScope {
+        scope: String,
+    },
+    UndeclaredDecisionReadScope {
+        scope: String,
+    },
+    MissingDecisionReadScope {
+        operation: String,
+        scope: String,
+    },
     InvalidCorrectionMechanism {
         correction: String,
         cause: crate::application_aftermath::DeclaredCorrectionMechanismDenial,

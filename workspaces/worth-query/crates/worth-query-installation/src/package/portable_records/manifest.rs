@@ -5,7 +5,7 @@ use crate::package::WorthQueryPortableDomainPackageIdentity;
 use super::WorthQueryPortablePackageRecordFamily;
 
 pub const WORTH_QUERY_PORTABLE_PACKAGE_MANIFEST_VERSION: WorthQueryPortablePackageManifestVersion =
-    WorthQueryPortablePackageManifestVersion::new(1);
+    WorthQueryPortablePackageManifestVersion::new(2);
 
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct WorthQueryPortablePackageManifestVersion(u16);

@@ -18,7 +18,11 @@ pub(in crate::application_schema::operation_definition::body) fn validate(
             || !rule.program_targets().iter().all(|expected|members.iter().any(|member|matches!(member,Member::OperationProgram{operation:declared,target} if declared==operation && target==expected))) {
             return Err(Denial::program_body_dependency(operation));
         }
-        if !rule.decision_reads().iter().all(|expected|members.iter().any(|member|matches!(member,Member::OperationDecisionRead{operation:declared,target} if declared==operation && target==expected))) {
+        if !rule.decision_reads().iter().all(|expected| {
+            crate::application_schema::operation_declares_decision_read(
+                members, operation, expected,
+            )
+        }) {
             return Err(Denial::decision_read_body_dependency(operation));
         }
     }

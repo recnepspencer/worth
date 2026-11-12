@@ -26,6 +26,8 @@ pub mod release_envelope;
 pub mod release_envelope_fixture;
 #[path = "archive_protocol/repository_contract.rs"]
 pub mod repository_contract;
+#[path = "archive_protocol/shared_decision_reads.rs"]
+pub mod shared_decision_reads;
 #[path = "archive_protocol/signing_payload.rs"]
 pub mod signing_payload;
 

@@ -39,7 +39,7 @@ pub const RETAINED_RECORD_SEVENTEEN_MINIMAL_ARCHIVE_HEX: &str =
 pub const LEGACY_CANONICAL_POLICY_MINIMAL_ARCHIVE_HEX: &str =
     include_str!("archive_stream/archive_v2_record_v18.hex");
 pub const VERSION_TWO_MINIMAL_ARCHIVE_HEX: &str =
-    include_str!("archive_stream/archive_v2_record_v18_policy_v2.hex");
+    include_str!("archive_stream/archive_v2_record_v19.hex");
 
 pub fn frame_ranges(bytes: &[u8]) -> Vec<Range<usize>> {
     let mut ranges = Vec::new();

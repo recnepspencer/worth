@@ -353,3 +353,5 @@ fn denial(
 }
 
 mod court_doors_for_test;
+#[cfg(test)]
+mod package_composition_tests;

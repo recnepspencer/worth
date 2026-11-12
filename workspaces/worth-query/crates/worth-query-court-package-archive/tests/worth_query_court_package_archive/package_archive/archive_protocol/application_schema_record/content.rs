@@ -36,7 +36,7 @@ fn reconstruct(bytes: &[u8]) -> WorthQueryPortablePackageReconstructionCandidate
 }
 #[test]
 fn content_schema_frozen_format_and_field_reference_roundtrip_without_executable_authority() {
-    let bytes = decode_hex(CONTENT_SCHEMA_HEX);
+    let bytes = current_frame();
     let candidate = reconstruct(&bytes);
     let view = candidate
         .views()
@@ -87,7 +87,7 @@ fn content_schema_frozen_format_and_field_reference_roundtrip_without_executable
 }
 #[test]
 fn content_schema_unknown_format_or_non_ascii_name_cannot_be_readmitted() {
-    let bytes = decode_hex(CONTENT_SCHEMA_HEX);
+    let bytes = current_frame();
     for mutate in [0, 1] {
         let mut changed = bytes.clone();
         if mutate == 0 {
@@ -110,4 +110,11 @@ fn content_schema_unknown_format_or_non_ascii_name_cannot_be_readmitted() {
         };
         assert!(validate_portable_application_schema_freshly(record.clone()).is_err());
     }
+}
+
+fn current_frame() -> Vec<u8> {
+    let mut bytes = decode_hex(CONTENT_SCHEMA_HEX);
+    assert_eq!(&bytes[..2], &18_u16.to_be_bytes());
+    bytes[..2].copy_from_slice(&19_u16.to_be_bytes());
+    bytes
 }

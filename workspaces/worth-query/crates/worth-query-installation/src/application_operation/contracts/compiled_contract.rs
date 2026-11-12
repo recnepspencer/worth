@@ -51,11 +51,11 @@ pub struct WorthQueryCompiledApplicationOperationContracts {
 impl WorthQueryCompiledApplicationOperationContracts {
     /// Exact Parent bindings declared by this operation; these describe reads,
     /// while each invocation still admits its current principal and Source.
-    pub fn managed_index_reads(
-        &self,
-    ) -> &[worth_query_declaration::facade::application_query::ApplicationQueryBindingReference]
-    {
-        &self.managed_index_reads
+    pub fn managed_index_reads(&self) -> super::WorthQueryOperationManagedIndexReadView<'_> {
+        super::WorthQueryOperationManagedIndexReadView::new(
+            &self.managed_index_reads,
+            self.graph_reads.roles(),
+        )
     }
     /// Native publication closure; it does not enlarge a product handler's writer contract.
     pub fn publication_touches(&self) -> &WorthQueryOperationTouchContract {

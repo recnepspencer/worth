@@ -6,10 +6,12 @@ use worth_query_installation::facade::{
     ApplicationSchemaMember, ErasedApplicationSchemaDeclaration,
 };
 
+mod scope_fields;
 type EntityFields = BTreeMap<String, BTreeMap<String, BTreeSet<String>>>;
 #[derive(Debug)]
 pub(super) struct WorthQueryAuthorizationSelectors {
     fields: BTreeMap<String, EntityFields>,
+    shared_fields: scope_fields::SharedSelectorFields,
 }
 impl WorthQueryAuthorizationSelectors {
     pub(super) fn lower(schema: &ErasedApplicationSchemaDeclaration) -> Self {
@@ -21,37 +23,9 @@ impl WorthQueryAuthorizationSelectors {
         }
         for member in schema.members() {
             match member {
-                ApplicationSchemaMember::OperationDecisionRead {
-                    operation,
-                    target:
-                        ApplicationOperationDecisionReadTarget::Field {
-                            entity,
-                            aspect,
-                            field,
-                        },
-                } => {
+                ApplicationSchemaMember::OperationDecisionRead { operation, target } => {
                     if let Some(selected) = fields.get_mut(operation) {
-                        insert(selected, entity, aspect, field);
-                    }
-                }
-                ApplicationSchemaMember::OperationDecisionRead {
-                    operation,
-                    target: ApplicationOperationDecisionReadTarget::Entity { entity },
-                } => {
-                    if let Some(selected) = fields.get_mut(operation) {
-                        for member in schema.members() {
-                            if let ApplicationSchemaMember::Field {
-                                entity: field_entity,
-                                aspect,
-                                field,
-                                equality_queryable: true,
-                                ..
-                            } = member
-                                && field_entity == entity
-                            {
-                                insert(selected, entity, aspect, field);
-                            }
-                        }
+                        scope_fields::insert_target(schema.members(), selected, target);
                     }
                 }
                 ApplicationSchemaMember::ApplicationMutation { description } => {
@@ -125,7 +99,11 @@ impl WorthQueryAuthorizationSelectors {
                 _ => {}
             }
         }
-        Self { fields }
+        let shared_fields = scope_fields::lower(schema.members(), &fields);
+        Self {
+            fields,
+            shared_fields,
+        }
     }
 }
 fn insert(selected: &mut EntityFields, entity: &str, aspect: &str, field: &str) {
@@ -147,11 +125,22 @@ impl WorthQueryPrimaryGraphLayout {
         self.authorization_selectors
             .fields
             .get(operation)
-            .is_some_and(|fields| {
-                fields
-                    .get(entity)
-                    .and_then(|aspects| aspects.get(aspect))
-                    .is_some_and(|fields| fields.contains(field))
-            })
+            .is_some_and(|fields| contains(fields, entity, aspect, field))
+            || self
+                .authorization_selectors
+                .shared_fields
+                .get(operation)
+                .is_some_and(|scopes| {
+                    scopes
+                        .iter()
+                        .any(|fields| contains(fields, entity, aspect, field))
+                })
     }
+}
+
+fn contains(fields: &EntityFields, entity: &str, aspect: &str, field: &str) -> bool {
+    fields
+        .get(entity)
+        .and_then(|aspects| aspects.get(aspect))
+        .is_some_and(|fields| fields.contains(field))
 }

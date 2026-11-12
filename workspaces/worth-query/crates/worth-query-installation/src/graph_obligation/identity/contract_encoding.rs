@@ -74,8 +74,12 @@ pub(super) fn encode_contract<'a>(
                 format!("{prefix}.semantic-read-count"),
                 role.read_scopes().len(),
             )?;
-            for (read_index, read) in role.read_scopes().iter().enumerate() {
-                encode_read_scope(basis, table, &format!("{prefix}.read[{read_index}]"), read)?;
+            if let Some(identity) = role.shared_scope_identity() {
+                basis.text(format!("{prefix}.shared-scope"), identity)?;
+            } else {
+                for (read_index, read) in role.read_scopes().iter().enumerate() {
+                    encode_read_scope(basis, table, &format!("{prefix}.read[{read_index}]"), read)?;
+                }
             }
         }
         WorthQueryInstalledGraphObligationContract::PrincipalAuthorization => {

@@ -20,19 +20,6 @@ where
     Schema: ApplicationSchema,
 {
     #[doc(hidden)]
-    pub fn compose_package_for_test(
-        &self,
-        package: WorthQueryPortableDomainPackage,
-    ) -> WorthQueryPortableDomainPackage {
-        Self::compose_package(self, package)
-    }
-}
-
-impl<Schema> WorthQueryApplicationContractCatalog<Schema>
-where
-    Schema: ApplicationSchema,
-{
-    #[doc(hidden)]
     pub fn validate_for_test(&self) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
         Self::validate(self)
     }

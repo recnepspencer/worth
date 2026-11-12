@@ -65,7 +65,9 @@ pub(crate) trait WorthQueryOperationAftermathInstallationSource:
 
     fn portable_decision_reads(
         &self,
-    ) -> &[worth_query_declaration::facade::application_schema::ApplicationOperationDecisionReadTarget];
+    ) -> Vec<
+        worth_query_declaration::facade::application_schema::ApplicationOperationDecisionReadTarget,
+    >;
 
     fn external_effect(&self) -> &crate::application_aftermath::InstalledExternalEffectContract;
 

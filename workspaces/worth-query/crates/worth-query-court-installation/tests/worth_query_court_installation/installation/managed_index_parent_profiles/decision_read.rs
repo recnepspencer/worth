@@ -4,6 +4,8 @@ use std::marker::PhantomData;
 use worth_query_declaration::facade::{application_operation::*, application_schema::*};
 
 pub struct DecisionOperation;
+pub struct ParentReads;
+impl OperationReads<DecisionOperation> for ParentReads {}
 impl<S: ModelSchema> ApplicationOperationMarkerIdentity<S> for DecisionOperation {
     type InputBinding = ParametersBinding;
     const IDENTIFIER: &'static str = "DecisionOperation";
@@ -72,7 +74,11 @@ pub(super) fn declare<S: ModelSchema>(
     schema: ApplicationSchemaDeclarationBuilder<S>,
 ) -> ApplicationSchemaDeclarationBuilder<S> {
     let operation = ApplicationOperationRef::<S, DecisionOperation, ()>::from_declaration();
+    let scope = ApplicationDecisionReadScopeDefinition::<S, ParentReads>::new()
+        .managed_index::<ParentBinding<S>>();
+    let reference = scope.reference().expect("fixed Parent scope");
     let schema = schema
+        .decision_read_scope(scope)
         .operation(
             operation
                 .definition()
@@ -81,7 +87,7 @@ pub(super) fn declare<S: ModelSchema>(
                 .finish(),
         )
         .operation_read_field(operation, principal_identity::<S>())
-        .operation_managed_index_read::<ParentBinding<S>, _, _>(operation);
+        .operation_decision_read_scope(operation, reference);
     if S::MODE == 4 {
         schema.application_mutation_binding::<FieldDecision<S>>()
     } else {

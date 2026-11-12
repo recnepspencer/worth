@@ -228,6 +228,13 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
         self
     }
 
+    pub(super) fn has_decision_read_scope(
+        &self,
+        meaning: &super::ApplicationDecisionReadScopeMeaning,
+    ) -> bool {
+        self.members.iter().any(|member| matches!(member, ApplicationSchemaMember::DecisionReadScope { definition } if definition == meaning))
+    }
+
     pub(super) fn push_member_in_place(&mut self, member: ApplicationSchemaMember) {
         self.members.push(member);
     }

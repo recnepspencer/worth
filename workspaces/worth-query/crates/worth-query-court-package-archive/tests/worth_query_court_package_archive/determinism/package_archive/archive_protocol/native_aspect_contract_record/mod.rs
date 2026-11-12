@@ -30,9 +30,9 @@ fn native_aspect_frame_is_deterministic_exact_and_freshly_readmitted() {
     let limits = WorthQueryPackageArchiveLimits::DEFAULT;
     let first = encode_record_frame(native, limits).unwrap();
     assert_eq!(encode_record_frame(native, limits).unwrap(), first);
-    assert_eq!(encode_hex(&first), VERSION_EIGHTEEN_NATIVE_ASPECT_HEX);
+    assert_eq!(encode_hex(&first), VERSION_NINETEEN_NATIVE_ASPECT_HEX);
     assert_eq!(u16::from_be_bytes(first[2..4].try_into().unwrap()), 11);
-    let frozen = decode_hex(VERSION_EIGHTEEN_NATIVE_ASPECT_HEX);
+    let frozen = decode_hex(VERSION_NINETEEN_NATIVE_ASPECT_HEX);
     let decoded = WorthQueryPackageArchiveRecordDecoder::new(limits)
         .decode_frame(&frozen)
         .unwrap();

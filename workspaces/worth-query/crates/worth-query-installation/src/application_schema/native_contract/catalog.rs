@@ -50,6 +50,8 @@ impl WorthQueryInstalledApplicationSchemaContractCatalogCounters {
 /// Sealed installed native contracts for one exact application schema binding.
 #[derive(Clone, Debug)]
 pub struct WorthQueryInstalledApplicationSchemaContractCatalog {
+    pub(crate) shared_decision_reads:
+        BTreeMap<String, crate::domain_operation::WorthQueryOperationGraphReadRole>,
     contracts: NativeContractsByOwner,
     maximum_aspect_identity: Option<AspectIdentity>,
     counters: WorthQueryInstalledApplicationSchemaContractCatalogCounters,
@@ -64,6 +66,7 @@ impl WorthQueryInstalledApplicationSchemaContractCatalog {
         canonical_work: WorthQueryCanonicalWorkEvidence,
     ) -> Self {
         Self {
+            shared_decision_reads: BTreeMap::new(),
             contracts,
             maximum_aspect_identity,
             counters,
@@ -77,6 +80,13 @@ impl WorthQueryInstalledApplicationSchemaContractCatalog {
         aspect: &str,
     ) -> Option<&WorthQueryInstalledApplicationAspectContract> {
         self.aspect_for_owner(ApplicationFieldBindingOwnerKind::Entity, entity, aspect)
+    }
+
+    pub(crate) fn shared_decision_reads(
+        &self,
+        identity: &str,
+    ) -> Option<crate::domain_operation::WorthQueryOperationGraphReadRole> {
+        self.shared_decision_reads.get(identity).cloned()
     }
 
     pub fn relation_aspect(

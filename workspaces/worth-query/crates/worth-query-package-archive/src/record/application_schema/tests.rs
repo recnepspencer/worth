@@ -2,6 +2,7 @@ mod canonical_contract;
 mod component_scope;
 mod component_set;
 mod correction_binding;
+mod decision_read_scope;
 mod derived_relation;
 mod document_history;
 mod fixture;

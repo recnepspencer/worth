@@ -326,6 +326,61 @@ includes a passing capability example and an undeclared-member compile refusal.
 ---
 
 
+#### Share reads, then use installed contracts
+
+When several operations read the same facts, declare those contents once with
+`ApplicationDecisionReadScopeDefinition<Schema, Scope>`. In the compiled
+[workflow declaration](../workspaces/worth-query/crates/worth-query-testkit-certification/src/certification/program_example_authority/product_workflow_support/schema/decision_reads.rs),
+`ExecuteTemporal` and `AmendTemporal` share identity, revision and lifecycle
+fields. Their different field reads, writes and effects remain on each operation.
+
+1. Give the scope marker `OperationReads<Operation>` for each operation that
+   uses it. Register the definition with `schema.decision_read_scope(...)`,
+   then resolve `schema.decision_read_scope_reference::<Scope>()`. This resolves
+   already authored content; it does not rebuild the field list per operation.
+2. Attach that reference with `operation_decision_read_scope(operation, reference)`.
+   Inline and shared grants form an exact union. A marker name grants nothing;
+   reordered contents and renamed Rust markers preserve identity, while changed
+   contents change it. Existing dependency closure and precondition reads still
+   apply. This grants no extra write, relation or entity access.
+3. Install through the ordinary program entry. Provider setup uses
+   `setup.managed_index::<Index, _>(provider)` for an index the application actually
+   declares. Its typed accessor is
+   `installed.installed_managed_index::<Index>()`, also reachable through
+   `runtime.installed_schema()`. It returns
+   `WorthQueryApplicationQueryInstallationDenial`: handle a genuinely optional
+   absence via `InvalidManagedIndexDefinition`; propagate incompatible meaning
+   (`ManagedIndexBindingMeaningChanged`). Do not treat every refusal as absence.
+4. When that index needs initial Source construction, call
+   `graph.initialize_managed_index::<Index>(phase)` before seeding, inside the
+   fresh unpublished bootstrap closure. It selects the actual receiving
+   `(Schema, Index)` provider. A lookup leaf or equal description from another
+   installation grants no construction or READ permission. The
+   [compiled setup consumer](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/refusing/host.rs)
+   demonstrates initialization; its
+   [focused journey](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/refusing/court.rs)
+   covers wrong bindings and consumption of one seed attempt. The temporal
+   workflow has no managed index and needs no artificial setup step.
+5. Inspect the installed package with `runtime.export_domain_package(owner, limits)`.
+   Use `WorthQueryPortablePackageExportLimits::DEFAULT` or narrower limits.
+   This exports the actual retained package, including contributions, rather
+   than recomposing a second package from a schema. Unknown owners return
+   `WorthQueryInstalledPackageExportDenial::DomainNotInstalled`; SDK export
+   refusals retain their typed cause in `Export`.
+
+The ordinary workflow's [compiled installed-package helper](../workspaces/worth-query/crates/worth-query-certification/examples/ordinary_product_workflow/installed_package.rs)
+gets its expected identity from the installed schema binding, independently of
+the exported manifest. It uses SDK `begin`, `push_record`, `close`, `materialize`
+and `validate_freshly` to compare reconstructed meaning to that expectation.
+Records and validated descriptions supply no installation or execution authority.
+Import these contracts through `worth_query_decl::facade` and
+`worth_query_host::facade::domain`; no raw runtime or court door is needed.
+
+Run the existing `ordinary_product_workflow` example for shared authoring,
+production install, actual export/readmission and ordinary operation execution.
+`advanced_product_branching` uses the same declaration and preserves its branch
+journey. Both are existing targets in `workspaces/worth-query/Cargo.toml`.
+
 ### Inline opaque values
 
 `ScalarAspectType::InlineBytes` carries the complete canonical representation of
@@ -2196,6 +2251,12 @@ Borrow `WorthQueryProgramApplicationRuntime` from `home.runtime()`. It dereferen
 application runtime, so `request(..)`, `discovery()`, `current_world()`,
 `installed_schema()`, `branches()`, and `conditional::<T>()` are all available
 on it.
+
+For installed contract inspection, call
+`runtime.installed_schema().installed_managed_index::<Index>()` or
+`runtime.export_domain_package(owner, limits)`. Follow the
+[joined authoring/setup/export walkthrough](#share-reads-then-use-installed-contracts)
+for typed failures, fresh bootstrap custody and separate record readmission.
 
 The following branch, output and managed-resource capabilities use MemoryOnly.
 Durable branch creation remains pending. For an isolated branch from a selection already admitted in a host advancement,

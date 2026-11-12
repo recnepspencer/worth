@@ -1,4 +1,5 @@
 mod coupled_outputs;
+mod decision_read_scope;
 use crate::application_schema::canonical_basis::ApplicationSchemaCanonicalBasis;
 use crate::application_schema::ApplicationSchemaMember;
 
@@ -30,6 +31,10 @@ pub(super) fn append_member(
 ) {
     let prefix = format!("member[{index}]");
     match member {
+        ApplicationSchemaMember::DecisionReadScope { .. }
+        | ApplicationSchemaMember::OperationDecisionReadScope { .. } => {
+            decision_read_scope::append(basis, &prefix, member)
+        }
         ApplicationSchemaMember::ContentFormat { declaration } => {
             basis.text(format!("{prefix}.kind"), "content-format");
             basis.text(

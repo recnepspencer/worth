@@ -175,7 +175,7 @@ pub(super) fn decode(
             posture: read_source_control(reader.take::<1>()?[0])?,
         },
         tag @ (7 | 8) => QueryDispatchRecord::Recovery(recovery::decode(tag, home, &mut reader)?),
-        tag @ (3 | 4 | 5 | 6) => QueryDispatchRecord::Inbound(inbound::decode(tag, &mut reader)?),
+        tag @ (3..=6) => QueryDispatchRecord::Inbound(inbound::decode(tag, &mut reader)?),
         _ => return Err(Denial::MalformedFrame),
     };
     if !reader.0.is_empty() {
