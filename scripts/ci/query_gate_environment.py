@@ -54,6 +54,42 @@ def verification_identity(root, output, workspaces):
     return next(iter(identities.values())) if len(identities) == 1 else None
 
 
+def require_normal_identity(root, output, expected, commands, suites):
+    """Bind this run to existing compiler-input owners; no execution reuse."""
+    expected = require_build_identity(expected).lower()
+    required = set()
+    if any(suite != 'root-doc' for suite in suites):
+        issued = verification_identity(root, Path(output) / 'test-cost', ['root'])
+        if issued is None or issued.lower() != expected:
+            raise ValueError('normal native build identity differs or is missing')
+        required.add('test-cost/root/build/binaries-build-units.json')
+    if 'root-doc' in suites:
+        required.add('test-cost/root/documentation/doctests-units.json')
+    from unit_plan import command_for
+    from logs import json_objects
+    for rows in commands.values():
+        required.update(label + '-units.json' for label, argv in rows if command_for(argv) is not None)
+    paths = set(Path(output).rglob('*-units.json'))
+    if not {Path(output)/name for name in required} <= paths:
+        raise ValueError('normal compiler-input artifact is missing')
+    for path in paths:
+        try:
+            value = json.loads(path.read_text(encoding='utf-8'))
+            contract = value['contract']
+            identity = require_build_identity(
+                contract['compiler_inputs']['environment']['WORTH_IMPLEMENTATION_BUILD_ID'])
+            if (type(value.get('schema')) is not int or value['schema'] != 1 or
+                    value.get('type') != 'compiler-unit-plan' or identity.lower() != expected):
+                raise ValueError('normal compiler build identity differs')
+            log = path.with_name(path.name.removesuffix('-units.json') + '.log')
+            invocations = [row for row in json_objects(log.read_text(encoding='utf-8'))
+                           if row.get('type') == 'cargo-invocation' and 'compiler_contract' in row]
+            if len(invocations) != 1 or invocations[0]['compiler_contract'] != contract:
+                raise ValueError('normal compiler invocation differs from its declared inputs')
+        except (KeyError, TypeError, AttributeError) as error:
+            raise ValueError('normal compiler identity is missing') from error
+
+
 def environment(root):
     # Gate.plan may reuse an issued verification input before any Cargo work.
     env = application_build_environment(os.environ)

@@ -7,7 +7,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from query_gate_environment import require_build_identity, verification_identity
+from query_gate_environment import require_build_identity, verification_identity, require_normal_identity
 from workspace import WORKSPACES
 
 
@@ -26,10 +26,23 @@ def receipt(root, output, workspace, identity=FIRST):
     path = output/workspace/'build/binaries-build-units.json'
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(value), encoding='utf-8')
+    path.with_name('binaries-build.log').write_text(json.dumps(
+        dict(type='cargo-invocation', compiler_contract=value['contract'])))
     return path, value
 
 
 class VerificationArtifactIdentityTests(unittest.TestCase):
+    def test_normal_no_doc_and_source_only_modes_do_not_require_unrequested_compilation(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve(); output = root/'out'
+            require_normal_identity(root, output, FIRST, {}, [])
+            receipt(root, output/'test-cost', 'root')
+            require_normal_identity(root, output, FIRST, {}, ['execution'])
+            with self.assertRaisesRegex(ValueError, 'artifact is missing'):
+                require_normal_identity(root, output, FIRST, {}, ['execution', 'root-doc'])
+            with self.assertRaisesRegex(ValueError, 'identity differs'):
+                require_normal_identity(root, output, SECOND, {}, ['execution'])
+
     def test_uuid_case_variants_are_coherent_and_one_artifact_keeps_its_issued_spelling(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve(); output = root/'out'

@@ -1,5 +1,7 @@
 """Committed-Git driver/consumer protocol with injected command effects, no Cargo."""
 import contextlib
+import copy
+import hashlib
 import io
 import json
 from pathlib import Path
@@ -12,6 +14,25 @@ from query_gate_normal import compile_plan, command_plan, assert_unchanged
 from query_gate_cli import run_normal
 from landing_plan import assess_normal
 import test_query_gate_normal as fixtures
+
+
+def rebind_artifacts(output, summary):
+    summary = copy.deepcopy(summary)
+    summary['artifacts'] = {p.relative_to(output).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
+                            for p in output.rglob('*') if p.is_file() and p.name != 'summary.json'}
+    (output/'summary.json').write_text(json.dumps(summary))
+
+
+def compiler_contract(output, path, repository, environment, command):
+    # Inject the existing capture shape; no compiler or graph execution is claimed.
+    from unit_plan import inputs
+    value = dict(schema=1, type='compiler-unit-plan', units=[],
+                 graph=dict(version=1, units=[], roots=[]),
+                 contract=inputs(command, repository, environment))
+    path = output/path; path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(value))
+    path.with_name(path.name.removesuffix('-units.json')+'.log').write_text(json.dumps(
+        dict(type='cargo-invocation', command=command, compiler_contract=value['contract'])))
 
 
 class NormalProtocolTests(unittest.TestCase):
@@ -59,6 +80,11 @@ class NormalProtocolTests(unittest.TestCase):
         self.assertEqual(result['workspace_coverage'], {})
         self.assertIn('NO RUST COURT', result['label'])
         summary = json.loads((output / 'summary.json').read_text())
+        changed = dict(summary, application_build='067dcfd0-0f4d-4ffb-b80e-7e3a37012372')
+        (output/'summary.json').write_text(json.dumps(changed))
+        with self.assertRaises(ValueError):
+            assess_normal(self.root, output, plan['source']['commit'], self.base)
+        (output/'summary.json').write_text(json.dumps(summary))
         self.assertNotIn('normal-clippy', summary['requested_suites'])
         with self.assertRaisesRegex(ValueError, 'fresh output'):
             run_normal(query_gate, output, plan)
@@ -115,7 +141,7 @@ class NormalProtocolTests(unittest.TestCase):
         from test_query_gate_cost import binary
         plan = self.prepare(rust=True)
         real_gate = query_gate.Gate
-        for mutation in (None, 'failed', 'missing', 'extra', 'repeated'):
+        for mutation in (None, 'empty-docs', 'failed', 'missing', 'extra', 'repeated'):
             with self.subTest(mutation=mutation):
                 output = self.root / ('target/native-' + str(mutation))
                 class Runner:
@@ -141,10 +167,16 @@ class NormalProtocolTests(unittest.TestCase):
                                       '\n'.join(json.dumps(r) for r in events))
                     snippets = [dict(binary=name+'::doc', test='src/lib.rs (line 1)', ignored=False)
                                 for name in documentation_packages]
+                    if mutation == 'empty-docs': snippets = []
                     docs = out/'doctests.log'
                     docs.write_text('Command: ["cargo", "test", "--doc"]\n'+'\n'.join(
                         json.dumps(dict(type='test', event='ok', name=r['binary']+'$'+r['test'])) for r in snippets))
                     cargo_runner.logs += [native, docs]
+                    compiler_contract(output, 'test-cost/root/build/binaries-build-units.json',
+                        self.root, cargo_runner.environment, ['cargo', 'nextest', 'list',
+                        '--manifest-path', str(self.root/'Cargo.toml'), '--list-type', 'binaries-only'])
+                    compiler_contract(output, 'test-cost/root/documentation/doctests-units.json',
+                        self.root, cargo_runner.environment, ['cargo', 'test', '--doc'])
                     return dict(documentation=dict(status='pass', exit_code=0,
                                                    selections=snippets, inventory=snippets))
                 def factory(out, affected):
@@ -152,19 +184,69 @@ class NormalProtocolTests(unittest.TestCase):
                     gate.cost = CostGate(self.root, out/'test-cost', gate.env, execute, Runner, affected=affected)
                     def command(label, argv):
                         (out/(label+'.log')).write_text('injected command effect')
+                        if argv[:2] == ['cargo', 'clippy']:
+                            compiler_contract(output, label+'-units.json', self.root, gate.env, argv)
                         return dict(name=label, argv=argv, exit=0, log=label+'.log')
                     gate.command = command
                     return gate
                 with patch.object(query_gate, 'ROOT', self.root), patch.object(query_gate, 'Gate', factory), \
                         contextlib.redirect_stdout(io.StringIO()):
                     code = run_normal(query_gate, output, plan)
-                self.assertEqual(code, 0 if mutation is None else 1)
-                if mutation is None:
+                self.assertEqual(code, 0 if mutation in (None, 'empty-docs') else 1)
+                if mutation in (None, 'empty-docs'):
                     assessed = assess_normal(self.root, output, plan['source']['commit'], self.base)
                     self.assertEqual(assessed['workspace_coverage'], {'root':'partial'})
+                    if mutation is None: self.check_assessment_refusals(output, plan)
                 else:
                     with self.assertRaises(ValueError):
                         assess_normal(self.root, output, plan['source']['commit'], self.base)
+
+    def check_assessment_refusals(self, output, plan):
+        summary = json.loads((output/'summary.json').read_text())
+        def assess():
+            return assess_normal(self.root, output, plan['source']['commit'], self.base)
+        for suite in ('execution', 'root-doc'):
+            path = output/(suite+'.json'); original = path.read_text(); value = json.loads(original)
+            for key in ('tests', 'passed', 'ignored', 'failed', 'missing', 'names', 'chunks',
+                        'logs', 'failure', 'no_tests'):
+                changed = copy.deepcopy(value); del changed[key]
+                path.write_text(json.dumps(changed)); rebind_artifacts(output, summary)
+                with self.subTest(suite=suite, missing=key), self.assertRaises(ValueError):
+                    assess()
+            if suite == 'root-doc':
+                changed = copy.deepcopy(value); del changed['coverage']['documentation']
+                path.write_text(json.dumps(changed)); rebind_artifacts(output, summary)
+                with self.assertRaises(ValueError): assess()
+            for key, replacement in (('application_build', '067dcfd0-0f4d-4ffb-b80e-7e3a37012372'),
+                                     ('passed', True), ('chunks', []), ('names', [])):
+                changed = dict(value); changed[key] = replacement
+                path.write_text(json.dumps(changed)); rebind_artifacts(output, summary)
+                with self.subTest(suite=suite, changed=key), self.assertRaises(ValueError): assess()
+            path.write_text(original)
+        rebind_artifacts(output, summary)
+        for identity in ('067dcfd0-0f4d-4ffb-b80e-7e3a37012372', 'invalid'):
+            changed = dict(summary, application_build=identity)
+            (output/'summary.json').write_text(json.dumps(changed))
+            with self.assertRaises(ValueError): assess()
+        for path in output.rglob('*-units.json'):
+            original = path.read_text(); changed = json.loads(original)
+            changed['contract']['compiler_inputs']['environment']['WORTH_IMPLEMENTATION_BUILD_ID'] = (
+                '067dcfd0-0f4d-4ffb-b80e-7e3a37012372')
+            path.write_text(json.dumps(changed)); rebind_artifacts(output, summary)
+            with self.subTest(identity=path.name), self.assertRaises(ValueError): assess()
+            path.write_text(original)
+            log = path.with_name(path.name.removesuffix('-units.json')+'.log')
+            original_log = log.read_text(); event = json.loads(original_log)
+            event['compiler_contract']['compiler_inputs']['environment']['WORTH_IMPLEMENTATION_BUILD_ID'] = (
+                '067dcfd0-0f4d-4ffb-b80e-7e3a37012372')
+            log.write_text(json.dumps(event)); rebind_artifacts(output, summary)
+            with self.subTest(invocation=log.name), self.assertRaises(ValueError): assess()
+            log.write_text(original_log)
+            path.unlink(); rebind_artifacts(output, summary)
+            with self.subTest(missing_artifact=path.name), self.assertRaises(ValueError): assess()
+            path.write_text(original)
+        rebind_artifacts(output, summary)
+        assess()
 
     def test_original_compiler_overrides_refuse_before_commands(self):
         from lane_environment import LaneEnvironmentRefusal

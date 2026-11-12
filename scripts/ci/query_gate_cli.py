@@ -91,6 +91,8 @@ def run_normal(driver, output, plan):
             (output / (name + '.json')).write_text(json.dumps(result, indent=2) + '\n', encoding='utf-8')
         else:
             result = gate.run(name)
+        result['application_build'] = gate.env['WORTH_IMPLEMENTATION_BUILD_ID']
+        (output / (name + '.json')).write_text(json.dumps(result, indent=2) + '\n', encoding='utf-8')
         results.append(result)
         print('GATE', json.dumps({key: value for key, value in result.items()
                                  if key not in ('chunks', 'commands', 'binaries', 'normal_plan')}), flush=True)

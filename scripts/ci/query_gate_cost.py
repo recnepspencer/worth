@@ -37,6 +37,34 @@ def governed(suite):
            TEST_SUITES[suite][0] in ('root', 'query', 'bank') and not suite.endswith('-scale'))
 
 
+def validate_result(row):
+    """Require CostGate's selected and observed facts, including lawful empty suites."""
+    suite = row['suite']
+    counts = ('tests', 'passed', 'ignored')
+    lists = ('failed', 'missing', 'names', 'chunks', 'logs')
+    if (any(type(row.get(key)) is not int or row[key] < 0 for key in counts) or
+            any(not isinstance(row.get(key), list) for key in lists) or
+            'failure' not in row or row['failure'] is not None or
+            row.get('no_tests') is not False or row['failed'] or row['missing'] or
+            row['passed'] != row['tests'] or row.get('workspace') != workspace_of(suite)):
+        raise GateSelectionFailure('incomplete CostGate result: ' + suite)
+    names, chunks = row['names'], row['chunks']
+    if (any(not isinstance(name, str) or '$' not in name for name in names) or
+            len(names) != row['tests'] or len(set(names)) != len(names) or
+            len(chunks) != row['tests'] or
+            any(not isinstance(case, dict) or case.get('event') != 'ok' or
+                case.get('name') != f'{case.get("binary")}${case.get("test")}' or
+                not isinstance(case.get('log'), str) for case in chunks) or
+            sorted(case['name'] for case in chunks) != sorted(names) or
+            row['logs'] != sorted({case['log'] for case in chunks}) or
+            (not names and not row['ignored'] and suite not in CATEGORY_SUITES and suite not in DOC_SUITES)):
+        raise GateSelectionFailure('inconsistent CostGate observations: ' + suite)
+    coverage = row.get('coverage', {})
+    if (not isinstance(coverage, dict) or coverage.get('status') != 'partial' or
+            (suite in DOC_SUITES and coverage.get('documentation') != 'observed')):
+        raise GateSelectionFailure('incomplete CostGate coverage: ' + suite)
+
+
 def descriptor(binary, suite):
     try:
         kind = suite['kind']

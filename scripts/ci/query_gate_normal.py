@@ -11,7 +11,8 @@ from query_gate_courts import COURT_OWNERS, TEST_SUITES, CATEGORY_SUITES, landin
 TOOLING = {
     'scripts/ci/query_gate.py', 'scripts/ci/query_gate_selection.py',
     'scripts/ci/query_gate_cost.py', 'scripts/ci/query_gate_normal.py',
-    'scripts/ci/query_gate_cli.py', 'scripts/test_cost/doc_contracts.py',
+    'scripts/ci/query_gate_cli.py', 'scripts/ci/query_gate_environment.py',
+    'scripts/test_cost/doc_contracts.py',
     'scripts/test_cost/run_lane.py', 'scripts/test_cost/landing_plan.py',
     'scripts/prepare-constitution-hook.ps1',
 }

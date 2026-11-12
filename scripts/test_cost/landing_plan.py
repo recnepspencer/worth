@@ -314,7 +314,8 @@ def assess_normal(repository, output, expected_commit, expected_base):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'ci'))
     import query_gate
     from query_gate_normal import compile_plan, command_plan, assert_unchanged
-    from query_gate_environment import require_build_identity
+    from query_gate_environment import require_build_identity, require_normal_identity
+    from query_gate_cost import validate_result
     repository, output = Path(repository).resolve(), Path(output).resolve()
     plan = compile_plan(repository, expected_base)
     if plan['source']['commit'] != expected_commit:
@@ -336,20 +337,21 @@ def assess_normal(repository, output, expected_commit, expected_base):
                  for p in output.rglob('*') if p.is_file() and p != output / 'summary.json'}
     if artifacts != summary.get('artifacts'):
         raise ValueError('normal run output is missing, foreign or changed')
+    require_normal_identity(repository, output, summary['application_build'], commands, plan['suites'])
     for suite in required:
         row = json.loads((output / (suite + '.json')).read_text(encoding='utf-8'))
         if row.get('suite') != suite or row.get('ok') is not True or row.get('normal_plan') != plan:
             raise ValueError('required normal result missing or failed: ' + suite)
+        if row.get('application_build') != summary['application_build']:
+            raise ValueError('normal result build identity differs: ' + suite)
         if suite in commands:
             actual = row.get('commands', [])
             if [(r.get('name'), r.get('argv')) for r in actual] != [tuple(r) for r in commands[suite]]:
                 raise ValueError('normal command coverage differs: ' + suite)
             if any(r.get('exit') != 0 for r in actual):
                 raise ValueError('normal command failed: ' + suite)
-        elif (row.get('failure') or row.get('failed') or row.get('missing') or
-              row.get('passed') != row.get('tests') or row.get('no_tests') or
-              row.get('coverage', {}).get('status') != 'partial'):
-            raise ValueError('normal execution observations incomplete: ' + suite)
+        else:
+            validate_result(row)
     assert_unchanged(repository, plan)
     return dict(status='assessed', label=label, source=plan['source'], base=plan['base'],
                 workspace_coverage=coverage, push_authority=False,
