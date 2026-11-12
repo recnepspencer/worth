@@ -228,6 +228,33 @@ class DocContractTests(unittest.TestCase):
                 execute(manifest, root / 'output', Runner())
             self.assertEqual(failure.exception.kind, DocFailureKind.UNSAFE_SELECTION)
 
+    def test_scoped_execution_uses_real_library_identity_and_exact_packages(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            manifest = self.workspace(root)
+            manifest.write_text('[workspace]\nmembers=["owner", "unrelated"]\n')
+            (root/'unrelated/src').mkdir(parents=True)
+            (root/'unrelated/src/lib.rs').write_text('')
+            (root/'unrelated/Cargo.toml').write_text('[package]\nname="unrelated"\nversion="0.1.0"\n')
+            package = root/'owner/Cargo.toml'
+            package.write_text(package.read_text()+'[lib]\nname="public_api"\n')
+            calls = []
+            def runner(command, cwd, log):
+                calls.append(command)
+                text = 'Doc-tests public_api\n' + block([('src/lib.rs - contract (line 1)', 'ok')])
+                log.write_text(text)
+                return CompletedProcess(command, 0, text, '')
+            result = execute(manifest, root/'out', runner, packages=['owner-pkg'])
+            self.assertEqual(result['status'], 'pass')
+            self.assertEqual(result['inventory'][0]['binary'], 'owner-pkg::doc')
+            self.assertNotIn('--workspace', calls[0])
+            self.assertIn('--offline', calls[0])
+            self.assertEqual([calls[0][i+1] for i,a in enumerate(calls[0]) if a == '-p'], ['owner-pkg'])
+            for names in ([], ['missing'], ['owner-pkg', 'owner-pkg']):
+                with self.subTest(names=names), self.assertRaises(DocContractFailure):
+                    execute(manifest, root/'refused', runner, packages=names)
+            self.assertEqual(len(calls), 1)
+
 
 if __name__ == '__main__':
     unittest.main()

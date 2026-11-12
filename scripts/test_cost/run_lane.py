@@ -89,7 +89,7 @@ def child_environment():
 
 def execute(repository, workspace, lanes, output, profile='dev', expression=None,
             partition=None, nextest_profile='ci', cargo_runner=None, queries=None, build_only=False,
-            include_docs=False, native_selection=None):
+            include_docs=False, native_selection=None, documentation_packages=None):
     repository, output = Path(repository).resolve(), Path(output).resolve()
     selection = native_selection if native_selection is not None else getattr(queries, 'build_selection', None)
     if selection is not None and output == repository / 'target/test-cost' / workspace:
@@ -199,7 +199,9 @@ def execute(repository, workspace, lanes, output, profile='dev', expression=None
             observed = execute_standalone(program, runner, output / f'run-{log_label(lane)}-{program["target"]}-main.log', environment)
             if observed.returncode:
                 failures.append(lane + ':' + program['target'])
-    documentation = execute_documentation(manifest, output / 'documentation', runner, profile) if include_docs else None
+    doc_options = {'packages': documentation_packages} if documentation_packages is not None else {}
+    documentation = execute_documentation(manifest, output / 'documentation', runner, profile,
+                                          **doc_options) if include_docs else None
     if documentation is not None and documentation['status'] != 'pass':
         failures.append('documentation')
     complete, requested, selection_proof = complete_coverage(discovered, requested, documentation)

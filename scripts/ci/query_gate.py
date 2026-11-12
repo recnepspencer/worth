@@ -16,7 +16,6 @@ their explicit process scheduling.
 Results go to target/query-gate (or --out): <suite>.json and one log per
 build, chunk and command. The exit code is 0 only when every suite is green.
 """
-import argparse
 import json
 import os
 import shutil
@@ -32,8 +31,8 @@ from query_gate_diagnostics import failed_tests, report_failed_command
 from query_gate_environment import environment, require_build_identity, verification_identity
 from query_gate_prebuild import GatePrebuild, PrerequisiteFailure, refused_scale_suites
 from query_gate_cost import CostGate, DOC_SUITES, SUITE_ALIASES, governed
-from query_gate_selection import select_suites, workspace_coverage
 from cargo_capture import CargoRunner
+from lane_environment import validate as validate_environment
 
 from query_gate_courts import (
     BANK, BEFORE, BOUNDARY, FIXTURE, FIXTURE_PACKAGES, GROUPS, LOWER, QUERY,
@@ -156,22 +155,30 @@ ORDER += [name for name in TEST_SUITES if name.startswith(("query-", "bank-", "r
 
 
 class Gate:
-    def __init__(self, out, census=False):
+    def __init__(self, out, census=False, affected=None):
         self.out = out
+        self.affected = affected
         self.env = environment(ROOT)
         self.explicit_build_identity = os.environ.get("WORTH_IMPLEMENTATION_BUILD_ID")
+        if affected is not None:
+            validate_environment(os.environ)
+            validate_environment(self.env)
+            self.env["CARGO_NET_OFFLINE"] = "true"
+            self.env["WORTH_CONSTITUTION_ROOT"] = str(ROOT)
+            self.env["WORTH_REPO"] = str(ROOT)
+            self.explicit_build_identity = None
         if self.explicit_build_identity is not None:
             self.env["WORTH_IMPLEMENTATION_BUILD_ID"] = require_build_identity(self.explicit_build_identity)
         self.built = {}
         self.prepared = set()
         self.census = census
         self.prerequisites = GatePrebuild(ROOT, out / "prebuilt", self.env)
-        self.cost = CostGate(ROOT, out / "test-cost", self.env)
+        self.cost = CostGate(ROOT, out / "test-cost", self.env, affected=affected)
 
     def plan(self, suites):
         first_plan = not self.cost.configured
         self.cost.configure(suites)
-        if first_plan and self.explicit_build_identity is None:
+        if first_plan and self.explicit_build_identity is None and self.affected is None:
             issued = verification_identity(ROOT, self.cost.output, self.cost.groups)
             if issued is not None:
                 self.env["WORTH_IMPLEMENTATION_BUILD_ID"] = issued
@@ -192,7 +199,7 @@ class Gate:
         if code != 0:
             report_failed_command(label, code, log, text)
         return {
-            "name": label, "exit": code, "seconds": round(time.time() - started),
+            "name": label, "argv": argv, "exit": code, "seconds": round(time.time() - started),
             "results": [line for line in text if line.startswith("test result")],
             "failed": failed_tests(text), "log": log.name,
         }
@@ -339,56 +346,15 @@ class Gate:
         if governed(suite) and not self.cost.configured:
             self.plan([suite])
         result = self.tests(suite) if suite in TEST_SUITES or suite in DOC_SUITES else self.commands(suite)
+        if self.affected is not None:
+            result["normal_plan"] = self.affected
         (self.out / f"{suite}.json").write_text(json.dumps(result, indent=1),
                                                 encoding="utf-8")
         return result
 
 def main(argv=None, default_suites=None, default_out=None, allowed_suites=None):
-    parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    parser.add_argument("suites", nargs="?",
-                        help="suite names or root-landing, query-landing, bank-landing, doc")
-    parser.add_argument("--full", action="store_true", help="the complete existing gate (Root wrapper stays Root-only)")
-    parser.add_argument("--out", type=Path, default=default_out or ROOT / "target" / "query-gate")
-    parser.add_argument("--list", action="store_true", help="print suite names")
-    parser.add_argument("--census", action="store_true", help="refuse scheduled scale suites")
-    args = parser.parse_args(argv)
-    if args.list:
-        print("\n".join(allowed_suites or dict.fromkeys([*ORDER, *TEST_SUITES, *SUITE_ALIASES, *COMMAND_SUITES])))
-        return 0
-    try:
-        suites = select_suites(args.suites, args.full, default_suites, ORDER, ROOT, Path.cwd())
-    except ValueError as error:
-        parser.error(str(error))
-    unknown = [name for name in suites if name not in TEST_SUITES and name not in COMMAND_SUITES and name not in DOC_SUITES]
-    if unknown:
-        parser.error("unknown suite: " + ", ".join(unknown))
-    if len(set(suites)) != len(suites):
-        parser.error("suite repeats in the execution plan")
-    if allowed_suites is not None and any(name not in allowed_suites for name in suites):
-        parser.error("suite is outside this workspace gate")
-    if refused_scale_suites(suites, args.census):
-        parser.error("ignored scale tests are scheduled-only, outside census execution")
-    if args.census and "ui" in suites:
-        parser.error("worth-ui is excluded from census execution")
-    args.out.mkdir(parents=True, exist_ok=True)
-    gate = Gate(args.out, census=args.census)
-    gate.plan(suites)
-    red, results = [], []
-    for suite in suites:
-        result = gate.run(suite)
-        results.append(result)
-        brief = {key: value for key, value in result.items()
-                 if key not in ("chunks", "commands", "binaries")}
-        print("GATE", json.dumps(brief), flush=True)
-        if not result["ok"]:
-            red.append(suite)
-            if suite == "fmt":
-                break
-    summary = {"status": "red" if red else "green", "requested_suites": suites,
-               "workspace_coverage": workspace_coverage(suites, results)}
-    (args.out / 'summary.json').write_text(json.dumps(summary, indent=2) + '\n', encoding='utf-8')
-    print("GATE", json.dumps(summary), flush=True)
-    return 1 if red else 0
+    from query_gate_cli import main as dispatch
+    return dispatch(sys.modules[__name__], argv, default_suites, default_out, allowed_suites)
 
 
 if __name__ == "__main__":
