@@ -12,29 +12,37 @@ use worth_query_host::facade::{
     primary_graph::WorthQueryCleanupDispatchPosture as Posture,
 };
 
-fn discharged(
-    receipt: Option<
-        &worth_query_host::facade::primary_graph::WorthQueryApplicationManagedCleanupReceipt,
-    >,
+pub(super) fn discharged<'a>(
+    receipts: impl ExactSizeIterator<Item = &'a worth_query_host::facade::primary_graph::WorthQueryApplicationManagedCleanupReceipt>,
 ) -> bool {
-    receipt.is_none_or(|receipt| match receipt.dispatch_posture() {
-        Posture::NotDeclared | Posture::TerminalObserved => true,
-        Posture::Pending
-        | Posture::AttemptedUnresolved
-        | Posture::Observed
-        | Posture::DiagnosticCopy => false,
-    })
+    // An owner-issued empty slice has no managed dispatch obligations.
+    if receipts.len() == 0 {
+        return true;
+    }
+    for receipt in receipts {
+        match receipt.dispatch_posture() {
+            Posture::NotDeclared | Posture::TerminalObserved => {}
+            Posture::Pending
+            | Posture::AttemptedUnresolved
+            | Posture::Observed
+            | Posture::DiagnosticCopy => return false,
+        }
+    }
+    true
 }
 pub(super) fn may_release(
     closed: &WorthQueryClosedOperation,
     collection: Option<&WorthQueryOperationCleanupReceipt>,
 ) -> bool {
-    discharged(closed.managed_cleanup_receipt()) && collection_may_release(collection)
+    discharged(closed.managed_cleanup_receipts().iter()) && collection_may_release(collection)
 }
 pub(super) fn collection_may_release(
     collection: Option<&WorthQueryOperationCleanupReceipt>,
 ) -> bool {
-    discharged(collection.and_then(WorthQueryOperationCleanupReceipt::managed_cleanup_receipt))
+    match collection {
+        None => true,
+        Some(collection) => discharged(collection.managed_cleanup_receipts().iter()),
+    }
 }
 enum ClosedMutationCustody {
     Source(ClosedMutationSource),

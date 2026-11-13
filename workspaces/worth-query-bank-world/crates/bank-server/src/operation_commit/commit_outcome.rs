@@ -25,6 +25,9 @@ pub enum BankMutationCommitOutcome {
     ProductStale(WorthQueryProductStaleApplication),
     ProductUnpublished(WorthQueryProductUnpublishedApplication),
     NoEffect(WorthQueryApplicationNoEffectCause),
+    /// The original Query terminal retains its output effects and completed cleanup.
+    /// Absence of a Native commit receipt does not imply absence of product effects.
+    NativeUncommitted(WorthQueryApplicationUncommitted),
     Committed(BankCommitReceipt),
     RecoveredCommitted(
         worth_query_host::facade::primary_graph::WorthQueryRecoveredApplicationCommitReceipt,
@@ -50,10 +53,27 @@ pub enum BankMutationCommitOutcome {
 }
 
 impl BankMutationCommitOutcome {
+    /// Returns only Bank-projected unresolved evidence. `None` does not classify
+    /// a retained native terminal as no-effect or authorize a retry.
     pub const fn unresolved_evidence(&self) -> Option<&BankUnresolvedCommitEvidence> {
         match self {
             Self::Indeterminate(evidence) => Some(evidence),
-            _ => None,
+            Self::ProductPreparationPending(_)
+            | Self::ProductPreparationRefused(_)
+            | Self::CleanupRequired(_)
+            | Self::ProductStale(_)
+            | Self::ProductUnpublished(_)
+            | Self::NoEffect(_)
+            | Self::NativeUncommitted(_)
+            | Self::Committed(_)
+            | Self::RecoveredCommitted(_)
+            | Self::Stale { .. }
+            | Self::Cancelled
+            | Self::TimedOut
+            | Self::Denied { .. }
+            | Self::CustomInvariantDenied { .. }
+            | Self::Aborted
+            | Self::Deferred(_) => None,
         }
     }
 
@@ -83,6 +103,9 @@ impl From<WorthQueryApplicationCommitOutcome> for BankMutationCommitOutcome {
             }
             WorthQueryApplicationCommitOutcome::NoEffect(no_effect) => {
                 Self::NoEffect(no_effect.cause())
+            }
+            WorthQueryApplicationCommitOutcome::OutputAdopted(adoption) => {
+                Self::NativeUncommitted(WorthQueryApplicationUncommitted::OutputAdopted(adoption))
             }
             WorthQueryApplicationCommitOutcome::Committed(receipt) => {
                 Self::Committed(commit_receipt(receipt))

@@ -21,7 +21,9 @@ pub(in crate::http::server) fn commit_denial(
         Denial::WorkflowSettlementDenied { kind: Attempt::ContentInconsistency } => operator_denial(),
         Denial::WorkflowSettlementDenied { kind: Attempt::ExecutionRequest(cause @ (worth_query_host::facade::primary_graph::WorthQueryProviderSessionDenialKind::Content(_) | worth_query_host::facade::primary_graph::WorthQueryProviderSessionDenialKind::ContentInconsistency)) } => super::denial::pending_execution_denial(cause),
         Denial::Content(cause) => super::super::relational_execution_denial::content(cause.into()),
-        Denial::ContentInconsistency => operator_denial(),
+        Denial::ContentInconsistency
+        | Denial::CoupledRefusalWithoutSubject
+        | Denial::RequiredOutputPreparationMissing => operator_denial(),
         Denial::OriginalEffectReleased => BankHttpDenial::new(BankHttpDenialKind::OriginalEffectReleased, BankHttpNextAction::ContactOperator),
         Denial::IdempotencyPreparationBusy => BankHttpDenial::new(BankHttpDenialKind::Unavailable, BankHttpNextAction::Retry),
         Denial::DomainValueRejected => BankHttpDenial::new(BankHttpDenialKind::MalformedRequest, BankHttpNextAction::CorrectRequest),

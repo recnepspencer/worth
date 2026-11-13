@@ -13,6 +13,7 @@ pub(super) fn admit<Schema: ApplicationSchema>(
     if !runtime.is_directory_home() {
         return Ok(());
     }
+    // Correction preparation never uses original-only declaration admission.
     runtime
         .admit_directory_correction_shape(
             source.occurrence().aftermath(),

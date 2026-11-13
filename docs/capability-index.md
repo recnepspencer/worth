@@ -1026,7 +1026,15 @@ operations refuse their corresponding custody family before handler contact.
 Their Memory APIs do not establish durable continuation.
 
 Retaining an original operation owner refuses `OriginalOperationDescription`.
-Durable relation pre-images, compensation, authored/output material, coupled-output
+A supplied-handler operation with no executable body or correction binding may
+execute and recover its original external emission when its installed emission
+ceiling, external dispatch/inbound contract, reconcilable aftermath and actual
+supplier/derived custody requirements are supported. This admits the declared
+compensation/reconciliation posture, not a compensation action, historical
+correction authority or a durable source-operation owner. Typed realized-payload,
+outbox, canonical-terminal and same-original recovery checks still apply.
+
+Durable relation pre-images, correction-bound compensation, authored/output material, coupled-output
 corrections and reapplication refuse with named
 `UnsupportedCorrectionRelationPreimage`, `UnsupportedCorrectionCompensation`,
 `UnsupportedCorrectionOutputMaterial`, `UnsupportedCorrectionCoupledOutputs` and

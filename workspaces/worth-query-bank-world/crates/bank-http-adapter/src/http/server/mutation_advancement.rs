@@ -203,8 +203,10 @@ pub(super) async fn execute<A: BankHttpApplicationAuthenticator>(
                             sequence: command.sequence,
                             retired_component_count: receipt.retired_component_count(),
                             managed: receipt
-                                .managed_cleanup_receipt()
-                                .map(super::cleanup_description::describe),
+                                .managed_cleanup_receipts()
+                                .iter()
+                                .map(super::cleanup_description::describe)
+                                .collect(),
                         };
                         record.released_cleanup = Some(receipt);
                         outcome

@@ -156,7 +156,8 @@ pub enum BankHttpMutationOutcome {
         custody_id: String,
         sequence: u64,
         posture: BankHttpMutationPosture,
-        cleanup: Option<BankHttpNativeCleanupFailureDescription>,
+        /// Every original failure in owner order; an empty array reports no failures.
+        cleanup: Vec<BankHttpNativeCleanupFailureDescription>,
     },
     Refused {
         request_id: String,
@@ -212,7 +213,8 @@ pub enum BankHttpMutationOutcome {
         custody_id: String,
         sequence: u64,
         retired_component_count: usize,
-        managed: Option<BankHttpNativeCleanupDescription>,
+        /// Descriptions of every released receipt; the original collection stays owned.
+        managed: Vec<BankHttpNativeCleanupDescription>,
     },
     CleanupReleased {
         request_id: String,

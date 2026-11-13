@@ -111,8 +111,9 @@ impl CapabilityRevocationCustody {
             Self::Active(command) => CustodyDescription::Pending(
                 command.posture().into(),
                 command
-                    .managed_cleanup_failure()
-                    .map(super::cleanup_description::failure),
+                    .managed_cleanup_failures()
+                    .map(super::cleanup_description::failure)
+                    .collect(),
             ),
             Self::Terminal(_) => CustodyDescription::Terminal,
             Self::Closed(_) | Self::ClosedWithoutCompletion(_) => CustodyDescription::Closed,
