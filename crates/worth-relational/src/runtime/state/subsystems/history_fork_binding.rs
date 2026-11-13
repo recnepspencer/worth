@@ -136,7 +136,19 @@ impl RelationalForkOwnerBinding {
         &self,
         cell: &RelationalBranchReferenceCell,
         root: &Arc<crate::branch::RelationalBranchRoot>,
+        source_root: &Arc<crate::branch::RelationalBranchRoot>,
     ) -> Result<(), RelationalRetentionAcquisitionDenial> {
+        // The controlled fork shares operational custody, not just canonical
+        // coordinates. Keep the image alive until the new head owns its Arc.
+        let publication_bases = crate::history::retention::PublicationBasisImage::at_for_owner(
+            source_root,
+            &self.retention,
+        );
+        if !Arc::ptr_eq(root, source_root) {
+            root.publication_bases
+                .set(Arc::downgrade(&publication_bases))
+                .map_err(|_| RelationalRetentionAcquisitionDenial::BindingMismatch)?;
+        }
         let obligation = self.retention.install_head(cell.identity().clone(), root)?;
         cell.head_retention()
             .install(obligation)
