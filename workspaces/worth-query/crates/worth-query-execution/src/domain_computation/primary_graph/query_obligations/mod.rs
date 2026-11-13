@@ -19,10 +19,15 @@ mod generation;
 mod ledger;
 mod medium;
 mod originals;
+mod output_custody;
 mod program_support;
 pub use generation::QueryObligationPublicationGenerations;
 pub use ledger::QueryObligationLedger;
 pub use medium::*;
+pub use output_custody::{
+    QueryAcceptedOutputRecord, QueryOutputDemandObligation, QueryOutputDemandRecord,
+    QueryOutputSourceObligation, QueryOutputSourceRecord,
+};
 pub use program_support::{QueryProgramSupportObligation, QueryProgramSupportRecord};
 
 pub const QUERY_OBLIGATION_FRAME_MAX_BYTES: u64 = 16 * 1024;
@@ -37,6 +42,19 @@ pub use managed_cleanup::{
 pub enum QueryObligationRecord {
     ProgramSupport(QueryProgramSupportRecord),
     ManagedCleanup(QueryManagedCleanupRecord),
+    OutputSource(QueryOutputSourceRecord),
+    OutputDemand(QueryOutputDemandRecord),
+    AcceptedOutput(QueryAcceptedOutputRecord),
+}
+impl From<QueryOutputSourceRecord> for QueryObligationRecord {
+    fn from(record: QueryOutputSourceRecord) -> Self {
+        Self::OutputSource(record)
+    }
+}
+impl From<QueryOutputDemandRecord> for QueryObligationRecord {
+    fn from(record: QueryOutputDemandRecord) -> Self {
+        Self::OutputDemand(record)
+    }
 }
 impl From<QueryProgramSupportRecord> for QueryObligationRecord {
     fn from(record: QueryProgramSupportRecord) -> Self {
@@ -125,4 +143,10 @@ pub enum QueryObligationDenial {
     PublicationUnresolved,
     Storage(String),
     Execution(worth_execution::WorkCeilingDenial),
+}
+
+impl From<QueryAcceptedOutputRecord> for QueryObligationRecord {
+    fn from(record: QueryAcceptedOutputRecord) -> Self {
+        Self::AcceptedOutput(record)
+    }
 }

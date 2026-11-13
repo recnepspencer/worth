@@ -147,7 +147,7 @@ impl WorthQueryOutputDemandNotifications {
     }
 }
 
-impl WorthQueryPerformedOutputDemandSource {
+impl WorthQueryRetainedOutputDemandSource {
     #[doc(hidden)]
     pub fn new_for_test(
         receipt: crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
@@ -158,8 +158,8 @@ impl WorthQueryPerformedOutputDemandSource {
         output_source_identity: Option<SourceEpoch>,
     ) -> Self {
         Self {
-            receipt,
-            change,
+            receipt: receipt.into(),
+            change: Some(change),
             observation,
             output_source_identity,
         }
@@ -173,12 +173,12 @@ impl WorthQueryCompletedOutputDemand {
     }
 }
 
-impl WorthQueryPerformedOutputDemandSource {
+impl WorthQueryRetainedOutputDemandSource {
     #[doc(hidden)]
     pub fn change_for_test(&self) -> &Arc<
         crate::domain_computation::execution_runtime::product_world::WorthQueryPerformedRelationalProductChange,
     >{
-        &self.change
+        self.change.as_ref().expect("performed test source")
     }
 }
 
@@ -189,12 +189,14 @@ impl DemandRegistryState {
     }
 }
 
-impl WorthQueryPerformedOutputDemandSource {
+impl WorthQueryRetainedOutputDemandSource {
     #[doc(hidden)]
     pub fn receipt_for_test(
         &self,
     ) -> &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt {
-        &self.receipt
+        self.receipt
+            .retained_receipt()
+            .expect("performed test source")
     }
 }
 
@@ -273,6 +275,7 @@ impl WorthQueryReadmittedAcceptedOutput {
         >,
     ) -> Self {
         Self {
+            observation: None,
             checkpoint,
             correspondence,
         }

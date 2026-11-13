@@ -12,8 +12,7 @@ use worth_query_execution::facade::application_contribution::{
 };
 use worth_query_execution::facade::application_installation::WorthQueryProgramApplicationRuntime;
 use worth_query_execution::facade::primary_graph::{
-    WorthQueryApplicationCommitReceipt, WorthQueryApplicationDiscoveredOutputConnection,
-    WorthQueryApplicationProjection,
+    WorthQueryApplicationDiscoveredOutputConnection, WorthQueryApplicationProjection,
 };
 
 use super::{Discovery, RootConnection, WorthQueryDiscoveredProgramOutputHandle};
@@ -54,7 +53,7 @@ where
     pub(in crate::application_entry) fn recover_discovered_required_outputs<Program, Root>(
         &self,
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
-        receipt: &WorthQueryApplicationCommitReceipt,
+        receipt: worth_query_execution::facade::primary_graph::WorthQueryOutputSourceReplay<'_>,
         controls: WorthQueryOutputDemandControls,
     ) -> Result<
         WorthQueryDiscoveredProgramOutputHandle<Schema, Program, Root>,
@@ -90,7 +89,7 @@ where
                 self.recover_discovered_required_outputs_in_advancement(
                     &phase,
                     application,
-                    worth_query_execution::facade::primary_graph::WorthQueryOutputSourceReplay::Retained(receipt),
+                    receipt,
                     controls,
                 )
             })

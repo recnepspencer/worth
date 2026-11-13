@@ -1,5 +1,5 @@
 //! The rejecting producer's declared domain value, beside its diagnostic text.
-use super::WorthQueryOutputDemandDenial;
+use super::{WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind};
 use crate::domain_computation::primary_graph::application_contribution::producer::{
     WorthQueryProducerDenialDecodeDenial, WorthQueryProducerDenialValue,
 };
@@ -9,7 +9,7 @@ use worth_query_declaration::facade::application_schema::ApplicationReadableScal
 /// together in one box, so the demand denial stays as small as one without it.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(super) struct ProducerDomainDenial {
-    pub(super) reason: Option<&'static str>,
+    pub(super) reason: Option<std::borrow::Cow<'static, str>>,
     pub(super) value: WorthQueryProducerDenialValue,
 }
 
@@ -39,6 +39,35 @@ impl WorthQueryOutputDemandDenial {
         self.domain.as_deref().map_or(0, |domain| {
             (std::mem::size_of_val(domain) as u64)
                 .saturating_add(domain.value.owned_capacity_bytes())
+                .saturating_add(match &domain.reason {
+                    Some(std::borrow::Cow::Owned(reason)) => reason.capacity() as u64,
+                    _ => 0,
+                })
         })
+    }
+}
+
+impl WorthQueryOutputDemandDenial {
+    /// Domain-owned diagnostic words, when the rejected producer supplies them.
+    /// These words do not replace the typed denial kind or confer authority.
+    pub fn domain_reason(&self) -> Option<&str> {
+        self.domain
+            .as_ref()
+            .and_then(|domain| domain.reason.as_deref())
+    }
+    pub(in crate::domain_computation::primary_graph) fn producer_domain_denied(
+        subject: impl Into<std::borrow::Cow<'static, str>>,
+        reason: Option<&'static str>,
+        value: crate::domain_computation::primary_graph::application_contribution::producer::WorthQueryProducerDenialValue,
+    ) -> Self {
+        let mut denial = Self::new(
+            WorthQueryOutputDemandDenialKind::ProducerDomainDenied,
+            subject,
+        );
+        denial.domain = Some(Box::new(ProducerDomainDenial {
+            reason: reason.map(Into::into),
+            value,
+        }));
+        denial
     }
 }

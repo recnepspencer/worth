@@ -87,7 +87,7 @@ where
         >,
     ) -> Result<
         (
-            worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt,
+            worth_query_execution::facade::primary_graph::WorthQueryOutputSourceEvidence,
             super::WorthQueryApplicationProgramDemandHandle<Schema, Program, Demand>,
             std::sync::Arc<
                 worth_query_execution::facade::primary_graph::WorthQueryApplicationReadObservation,
@@ -140,6 +140,7 @@ where
             .map_err(WorthQueryApplicationOutputDemandDenial::Demand)?;
         application
             .ensure_recovered_program_root_source_bound::<Root>(
+                phase,
                 &worth_query_execution::publication_boundary::program_publication_access(),
                 &prepared,
                 &source_result,

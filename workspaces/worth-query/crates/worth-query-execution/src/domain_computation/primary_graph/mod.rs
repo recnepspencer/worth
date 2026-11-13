@@ -30,11 +30,11 @@ pub(in crate::domain_computation) use application_output_demand::RequiredOutputE
 pub use application_output_demand::WorthQueryCompletedReadOutputs;
 pub use application_output_demand::WorthQueryCompletedRequiredOutputs;
 pub use application_output_demand::WorthQueryFulfilledRequiredRoot;
-pub use application_output_demand::WorthQueryOutputSourceReplay;
 pub use application_output_demand::WorthQueryRecoveredProducerPublication;
 pub use application_output_demand::{
     WorthQueryCompletedOriginalReadOutputs, WorthQueryOriginalReadOutputDenial,
 };
+pub use application_output_demand::{WorthQueryOutputSourceEvidence, WorthQueryOutputSourceReplay};
 mod application_program;
 pub(crate) mod application_query;
 pub(crate) mod application_resource;
@@ -253,3 +253,5 @@ pub use derived_source::DerivedSourceObservation;
 #[cfg(test)]
 #[path = "mod_inline_type_budget.rs"]
 pub(crate) mod inline_type_budget;
+
+pub use application_output_demand::WorthQueryOutputDiscoveryRecipe;

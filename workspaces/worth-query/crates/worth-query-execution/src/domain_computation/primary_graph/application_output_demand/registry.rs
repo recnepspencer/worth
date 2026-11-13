@@ -12,19 +12,19 @@ pub type SourceEpoch =
     crate::domain_computation::primary_graph::application_query::WorthQueryObservedSourceEpoch;
 
 #[derive(Clone)]
-pub struct WorthQueryPerformedOutputDemandSource {
+pub struct WorthQueryRetainedOutputDemandSource {
     pub(in crate::domain_computation::primary_graph) receipt:
-        crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
-    pub(in crate::domain_computation::primary_graph) change: Arc<
+        super::WorthQueryOutputSourceEvidence,
+    pub(in crate::domain_computation::primary_graph) change: Option<Arc<
         crate::domain_computation::execution_runtime::product_world::WorthQueryPerformedRelationalProductChange,
-    >,
+    >>,
     pub(in crate::domain_computation::primary_graph) observation:
         worth_runtime_world::facade::ProductBranchObservation,
     pub(in crate::domain_computation::primary_graph) output_source_identity: Option<SourceEpoch>,
 }
 
 pub struct DiscoveredSourceRecovery {
-    receipt: crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
+    receipt: super::WorthQueryOutputSourceEvidence,
     observation: worth_runtime_world::facade::ProductBranchObservation,
     discovery: Arc<dyn std::any::Any + Send + Sync>,
 }
@@ -33,7 +33,7 @@ pub struct SourceCustody {
     cleanup: cleanup::CustodyCleanupLinks,
     occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
     root_kind: PreparedOutputRootKind,
-    source: Option<WorthQueryPerformedOutputDemandSource>,
+    source: Option<WorthQueryRetainedOutputDemandSource>,
     discovery: Option<DiscoveredSourceRecovery>,
     bound_sources: Option<Vec<BoundOutputSource>>,
     consumed_sources: Vec<SourceEpoch>,
@@ -266,7 +266,7 @@ pub struct DemandRecord {
         Option<crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding>,
     source_commits: Vec<worth_runtime_world::facade::CompositeCommitIdentity>,
     state: DemandState,
-    performed_source: Option<WorthQueryPerformedOutputDemandSource>,
+    performed_source: Option<WorthQueryRetainedOutputDemandSource>,
     readmission_source: Option<Arc<source_readmission::RequiredOutputReadmission>>,
     successor_of: Option<succession::Succession>,
     /// A terminal stop met while certifying or refreshing this row as required
@@ -347,6 +347,8 @@ pub struct WorthQueryOutputDemandInterest {
 
 #[derive(Clone)]
 pub struct WorthQueryReadmittedAcceptedOutput {
+    pub(in crate::domain_computation::primary_graph) observation:
+        Option<worth_runtime_world::facade::ProductBranchObservation>,
     pub checkpoint: WorthQueryAcceptedOutputCheckpointIdentity,
     pub(in crate::domain_computation::primary_graph) correspondence: std::sync::Arc<
         crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence,

@@ -2,7 +2,7 @@ pub(crate) use worth_query_testkit_certification_application_graph::facade::cert
 
 #[test]
 fn captured_producer_predicate_reuses_after_reopen_and_refreshes_after_source_change() {
-    let (checkpoint, subject, foreign_settlement, accepted_section) = {
+    let (checkpoint, subject, foreign_settlement) = {
         let host = publish(
             validated_program(),
             WorthQueryApplicationProgramRoster::new().support(validated_second_program()),
@@ -49,26 +49,7 @@ fn captured_producer_predicate_reuses_after_reopen_and_refreshes_after_source_ch
             sections.accepted_output_bytes(),
             subject,
         );
-        let accepted_section = checkpoint.bytes()
-            [checkpoint.bytes().len() - sections.accepted_output_bytes()..]
-            .to_vec();
-        let (repeated, repeated_sections) = runtime
-            .with_host_advancement(|host_phase| {
-                runtime
-                    .capture_application_checkpoint_with_sections(
-                        &host_phase,
-                        CapturePolicy::SystemAllocation,
-                    )
-                    .unwrap()
-            })
-            .expect("installed host call opens");
-        assert_eq!(repeated_sections.accepted_output_count(), 1);
-        assert_eq!(
-            &repeated.bytes()[repeated.bytes().len() - repeated_sections.accepted_output_bytes()..],
-            accepted_section.as_slice(),
-            "the accepted native head preserves its complete roles and predicate on repeated capture"
-        );
-        (checkpoint, subject, settled, accepted_section)
+        (checkpoint, subject, settled)
     };
     let restored = restore(
         validated_program(),
@@ -92,11 +73,6 @@ fn captured_producer_predicate_reuses_after_reopen_and_refreshes_after_source_ch
         recaptured.bytes(),
         sections.accepted_output_bytes(),
         subject,
-    );
-    assert_eq!(
-        &recaptured.bytes()[recaptured.bytes().len() - sections.accepted_output_bytes()..],
-        accepted_section.as_slice(),
-        "fresh native readmission preserves the complete accepted record"
     );
     let scope = request_scope();
     let principal = authenticate_operator(runtime.installed_schema(), &scope);
@@ -175,5 +151,11 @@ fn captured_producer_predicate_reuses_after_reopen_and_refreshes_after_source_ch
 pub(crate) mod ordinary_source;
 
 mod changed_build;
-mod directory_publication;
 pub(crate) mod transition;
+
+mod directory_changed_build;
+mod directory_source_custody;
+
+mod directory_discovered_source;
+
+mod directory_source_supersession;

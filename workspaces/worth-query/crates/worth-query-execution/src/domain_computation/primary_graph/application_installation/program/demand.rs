@@ -160,6 +160,7 @@ where
 
     pub fn ensure_recovered_program_root_source_bound<Root>(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
         _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         prepared: &WorthQueryPreparedRequiredOutputSource,
         source: &WorthQueryApplicationOutputDemandSource<
@@ -180,7 +181,7 @@ where
         }
         self.backing
             .runtime()
-            .ensure_recovered_output_source_bound(prepared, source)
+            .ensure_recovered_output_source_bound(phase, prepared, source)
     }
 
     pub fn validate_recovered_program_root_currentness<Root>(
@@ -214,6 +215,7 @@ where
 
     pub fn bind_prepared_program_root_source<Root>(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
         _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         prepared: &WorthQueryPreparedRequiredOutputSource,
         source: &WorthQueryApplicationOutputDemandSource<
@@ -234,7 +236,7 @@ where
         }
         self.backing
             .runtime()
-            .bind_prepared_output_source(prepared, source)
+            .bind_prepared_output_source(phase, prepared, source)
     }
 
     pub fn recover_program_root_output<Root>(
@@ -250,7 +252,7 @@ where
             SourceValue<Schema, WorthQueryProgramRootDemand<Schema, Root>>,
         >,
         limits: crate::domain_computation::execution_runtime::WorthQueryOutputDemandLimits,
-        source_receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
+        source_receipt: &crate::domain_computation::primary_graph::WorthQueryOutputSourceEvidence,
     ) -> Result<
         WorthQueryAdmittedProgramOutput<Schema, Program, WorthQueryProgramRootDemand<Schema, Root>>,
         WorthQueryOutputDemandDenial,

@@ -15,7 +15,8 @@ use worth_query_declaration::facade::application_operation::{
     ApplicationMutationBinding, ApplicationMutationScopeBinding,
 };
 use worth_query_declaration::facade::application_program::{
-    ApplicationOutputGraphShape, ApplicationProgramDefinition, ApplicationProgramOutputsShape,
+    ApplicationConnectionShape, ApplicationOutputGraphShape, ApplicationProgramDefinition,
+    ApplicationProgramOutputsShape,
 };
 
 use super::super::{WorthQueryProgramApplicationRuntime, WorthQuerySelectedProgramOwner};
@@ -125,6 +126,7 @@ where
             program,
             idempotency,
             causality,
+            <Root as ApplicationOutputGraphShape<Schema>>::RootConnection::declaration().identity(),
             ProgramOutputSourcePayload::Required(root),
             allocation_policy,
         )
@@ -187,6 +189,7 @@ where
             program,
             idempotency,
             crate::domain_computation::application_aftermath::ApplicationCommitCausality::Ordinary,
+            <Root as ApplicationOutputGraphShape<Schema>>::RootConnection::declaration().identity(),
             ProgramOutputSourcePayload::Discovered { root, discovery },
             allocation_policy,
         )

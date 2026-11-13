@@ -1,9 +1,6 @@
 //! Retrospective custody of the root that fulfilled a performed source.
 use super::WorthQueryOutputSettlementPosture;
-use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationCommitReceipt, WorthQueryApplicationIdempotencyBinding,
-    WorthQueryApplicationReadObservation,
-};
+use crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation;
 use std::sync::Arc;
 
 /// The actual required demand fulfilled the source's obligation at this output
@@ -37,7 +34,7 @@ use std::sync::Arc;
 pub struct WorthQueryFulfilledRequiredRoot {
     pub(super) source: worth_runtime_world::facade::ProductBranchObservation,
     pub(super) output: Arc<WorthQueryApplicationReadObservation>,
-    pub(super) source_intent: WorthQueryApplicationIdempotencyBinding,
+    pub(super) source_intent: ([u8; 32], String),
     pub(super) posture: WorthQueryOutputSettlementPosture,
     pub(super) _memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
@@ -56,10 +53,8 @@ impl WorthQueryFulfilledRequiredRoot {
     pub fn posture(&self) -> WorthQueryOutputSettlementPosture {
         self.posture
     }
-    pub fn matches_source(&self, receipt: &WorthQueryApplicationCommitReceipt) -> bool {
-        receipt.idempotency_binding() == self.source_intent
-            && receipt
-                .committed_product_publication()
-                .is_selected_at(&self.source)
+    pub fn matches_source(&self, source: impl Into<super::WorthQueryOutputSourceEvidence>) -> bool {
+        let source = source.into();
+        source.subject() == self.source_intent && source.is_selected_at(&self.source)
     }
 }

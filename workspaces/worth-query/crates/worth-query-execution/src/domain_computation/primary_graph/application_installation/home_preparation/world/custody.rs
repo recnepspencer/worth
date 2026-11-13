@@ -155,6 +155,9 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
                     })
                 }
             };
+        if let Err(cause) = crate::domain_computation::primary_graph::application_installation::checkpoint_lineage::readmit_journal(self.runtime.runtime(), &originals, execution) {
+            return Err(QueryHomeCustodyReadmissionRefused { query: self, cause: QueryHomeCustodyReadmissionDenial::ProgramSupport(cause) });
+        }
         if let Err(cause) =
             support.bind_original_meaning_receiver(&self.runtime.runtime().runtime.primary_provider)
         {

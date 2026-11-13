@@ -2,6 +2,7 @@ mod cancellation;
 mod checkpoint_custody;
 pub(super) use checkpoint_custody::CheckpointPrerequisiteClaims;
 mod consumed_predecessors;
+mod durable_membership;
 mod evidence_handoff;
 mod prerequisite_capacity;
 mod prerequisite_denials;

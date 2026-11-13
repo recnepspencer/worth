@@ -154,6 +154,45 @@ impl QueryObligationHistory {
         originals: &WorldProgramActivationHistory,
         material: &MaterialPublication<'_>,
     ) -> Result<Vec<ProgramSupportObligationIdentity>, QueryObligationDenial> {
+        for row in ledger.output.sources.values() {
+            let original = originals
+                .recorded_entry(row.commit)
+                .ok_or(QueryObligationDenial::ObligationSubjectMismatch)?;
+            if original.branch().name() != row.branch
+                || original.incarnation().ordinal() != row.lifecycle
+                || original.generation().get() != row.generation
+                || &original.recorded_revision() != row.revision.bytes()
+            {
+                return Err(QueryObligationDenial::ObligationSubjectMismatch);
+            }
+        }
+        let revisions = ledger
+            .output
+            .sources
+            .values()
+            .map(|row| row.revision)
+            .chain(
+                ledger
+                    .output
+                    .demands
+                    .values()
+                    .filter(|row| !ledger.output.completed.contains(&row.acquire_position))
+                    .map(|row| row.revision),
+            );
+        for revision in revisions {
+            if !entries
+                .keys()
+                .any(|known| known.as_bytes() == revision.bytes())
+            {
+                return Err(QueryObligationDenial::UnrosteredProgram(revision));
+            }
+            if !matches!(
+                ledger.status(&revision),
+                Some(ProgramSupportStatus::Active | ProgramSupportStatus::Retiring)
+            ) {
+                return Err(QueryObligationDenial::SupportUnavailable);
+            }
+        }
         let mut terminal = ledger
             .released_original_interpretations(originals)?
             .into_iter()

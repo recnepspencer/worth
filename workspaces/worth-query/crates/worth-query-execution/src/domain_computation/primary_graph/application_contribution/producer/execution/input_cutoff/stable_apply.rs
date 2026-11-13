@@ -35,6 +35,7 @@ where
     // Registry preparation is outside both lineage and Product guards.
     let mut prerequisites = required_output
         .prepare_prerequisites(publication.consumed_outputs().iter(), source_owner)?;
+    prerequisites.record_durable_prerequisites(execution, &handle.output_lineage)?;
     prerequisites.reserve_identity(publication.identity())?;
     let registration = publication.prepare_current_registration(source_owner, prerequisites.work_membership())
         .map_err(|stop| match stop {

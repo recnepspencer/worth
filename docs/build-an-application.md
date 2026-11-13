@@ -2022,11 +2022,24 @@ supply and embed their own fresh UUID. Tests use explicit fixture identities.
 
 A journal-only Directory Home with the same supported program/schema opens under
 a new build UUID. Authored binding and durable history remain intact; the
-initializer does not run and nothing regenerates eagerly. Ordinary producer execution is admitted when it creates no mandatory prerequisite
-custody. Consuming an upstream output still requires durable admission before
-publication, even when that output is already current. Accepted-output reuse
-after reopen and regeneration under a changed build remain Phase 6 work; they
-are not yet a promise of this Directory lane.
+initializer does not run and nothing regenerates eagerly. Accepted producer outputs
+retain their original correspondence and dependency facts. Same-build demand
+verifies those facts before reuse. A changed build makes incompatible output
+stale; the normal demand and settlement owners regenerate it only when demanded,
+keeping its authored entity identities.
+
+Required demand records, performed-source obligations, consumed prerequisites and
+source custody use `query.obligations`. After reopening, recover the original
+keyed source receipt and pass it to `request.advanced().recover_required_outputs`
+(or `recover_discovered_outputs`). The recorded receipt supplies original data;
+fresh authentication, scope and World observation supply authority. A live receipt
+from an earlier Home is not readmitted. Completing the source/output tree records
+its discharge, so another reopen cannot resurrect completed custody. Producer
+domain denials retain their declared value data rather than rerunning the producer.
+
+These are graceful or quiescent reopen guarantees. Oversize obligation records
+receive the existing typed `MalformedFrame` refusal at the 16 KiB frame boundary;
+larger provenance support and crash/fault certification belong to track C.
 
 ### One process execution service
 

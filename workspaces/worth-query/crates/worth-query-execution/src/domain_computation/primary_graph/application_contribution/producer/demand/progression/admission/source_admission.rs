@@ -146,12 +146,16 @@ where
                 admission_kind,
                 restored.clone(),
                 &readmitted.settlement,
-                performed_source.as_ref(),
+                // Recovery owes completion to the same actual original source.
+                // The registry's existing join validates that source custody
+                // and installs its performed-obligation link for restored Ready.
+                performed_source.as_ref().or(expected_source_commit),
             )?;
             if newly_adopted {
                 self.record_restored_output(execution, source_scope, &readmitted)?;
             }
             let observed_source = observed_source.install(&interest, installed_entry.clone())?;
+            self.prepare_demand_recording(execution, &interest, &observed_source)?;
             return Ok(WorthQueryAdmittedOutputDemand {
                 runtime_authority: self.runtime.authority_identity().as_u64(),
                 schema_binding: self.installed_schema.binding_identity(),
@@ -207,6 +211,7 @@ where
         // Rejoin the posture of the authenticated accepted row.
         selected.applicability = interest.key().applicability();
         let observed_source = observed_source.install(&interest, installed_entry.clone())?;
+        self.prepare_demand_recording(execution, &interest, &observed_source)?;
         crate::domain_computation::primary_graph::application_output_demand::observe_stable_join_admission(join_pause);
         Ok(WorthQueryAdmittedOutputDemand {
             runtime_authority: self.runtime.authority_identity().as_u64(),

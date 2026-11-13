@@ -8,6 +8,7 @@ pub struct QueryObligationLedger {
     payload_digest: [u8; 32],
     publication_generation: u64,
     pub(super) cleanup: managed_cleanup::fold::ManagedCleanupFold,
+    pub(super) output: output_custody::fold::OutputCustodyFold,
     statuses: BTreeMap<CanonicalDigestId, ProgramSupportStatus>,
     obligations: BTreeMap<ProgramSupportObligationIdentity, QueryProgramSupportObligation>,
 }
@@ -20,6 +21,7 @@ impl QueryObligationLedger {
             payload_digest: [0; 32],
             publication_generation: 0,
             cleanup: managed_cleanup::fold::ManagedCleanupFold::default(),
+            output: output_custody::fold::OutputCustodyFold::default(),
             statuses: BTreeMap::new(),
             obligations: BTreeMap::new(),
         }
@@ -49,7 +51,8 @@ impl QueryObligationLedger {
         self.obligations.values()
     }
     pub fn counts(&self, revision: &CanonicalDigestId) -> (usize, usize) {
-        self.obligations
+        let (interpretations, custody) = self
+            .obligations
             .values()
             .filter(|row| row.source == *revision || row.target == *revision)
             .fold((0, 0), |(interpretations, custody), row| match row.kind {
@@ -57,7 +60,8 @@ impl QueryObligationLedger {
                     (interpretations + 1, custody)
                 }
                 ProgramSupportObligationKind::BranchAdoption => (interpretations, custody + 1),
-            })
+            });
+        (interpretations, custody + self.output.count(revision))
     }
     /// Descriptive membership of a prepared change, never publication authority.
     pub fn record_mentions_revision(
@@ -65,6 +69,42 @@ impl QueryObligationLedger {
         record: &QueryObligationRecord,
         revision: &CanonicalDigestId,
     ) -> bool {
+        match record {
+            QueryObligationRecord::AcceptedOutput(_) => return false,
+            QueryObligationRecord::OutputSource(QueryOutputSourceRecord::Retain(row)) => {
+                return row.revision == *revision
+            }
+            QueryObligationRecord::OutputSource(
+                QueryOutputSourceRecord::Discharge { commit }
+                | QueryOutputSourceRecord::Bind { commit, .. },
+            ) => {
+                return self
+                    .output
+                    .sources
+                    .get(commit)
+                    .is_some_and(|row| row.revision == *revision)
+            }
+            QueryObligationRecord::OutputDemand(QueryOutputDemandRecord::Retain(row)) => {
+                return row.revision == *revision
+            }
+            QueryObligationRecord::OutputDemand(
+                QueryOutputDemandRecord::Discharge { acquire_position }
+                | QueryOutputDemandRecord::DomainDenied {
+                    acquire_position, ..
+                }
+                | QueryOutputDemandRecord::Links {
+                    acquire_position, ..
+                },
+            ) => {
+                return self
+                    .output
+                    .demands
+                    .get(acquire_position)
+                    .is_some_and(|row| row.revision == *revision)
+            }
+            QueryObligationRecord::ProgramSupport(_) | QueryObligationRecord::ManagedCleanup(_) => {
+            }
+        }
         let QueryObligationRecord::ProgramSupport(record) = record else {
             return false;
         };
@@ -102,13 +142,17 @@ impl QueryObligationLedger {
                 .ok_or(QueryObligationDenial::IdentityExhausted)?,
         )?;
         let generation = generations.allocate(self)?;
-        Ok(super::codec::encode(
+        let frame = super::codec::encode(
             self.home,
             self.position + 1,
             self.digest,
             generation,
             record,
-        ))
+        );
+        if frame.bytes().len() as u64 > QUERY_OBLIGATION_FRAME_MAX_BYTES {
+            return Err(QueryObligationDenial::MalformedFrame);
+        }
+        Ok(frame)
     }
     /// Readmission never treats matching content as live publication authority.
     pub fn readmit(&mut self, frame: QueryObligationFrame) -> Result<(), QueryObligationDenial> {
@@ -126,8 +170,21 @@ impl QueryObligationLedger {
         self.validate(&frame.record, frame.position)?;
         let payload_digest = frame.payload_digest();
         match frame.record {
+            QueryObligationRecord::AcceptedOutput(row) => {
+                self.output.accepted.insert(
+                    (
+                        row.branch.clone(),
+                        row.producer.clone(),
+                        row.scope,
+                        row.partition,
+                    ),
+                    row,
+                );
+            }
             QueryObligationRecord::ProgramSupport(record) => self.apply_support(record),
             QueryObligationRecord::ManagedCleanup(record) => self.cleanup.apply(record),
+            QueryObligationRecord::OutputSource(record) => self.output.apply_source(record),
+            QueryObligationRecord::OutputDemand(record) => self.output.apply_demand(record),
         }
         self.position = frame.position;
         self.digest = frame.digest;
@@ -159,11 +216,41 @@ impl QueryObligationLedger {
         position: u64,
     ) -> Result<(), QueryObligationDenial> {
         match record {
+            QueryObligationRecord::AcceptedOutput(row) => {
+                if row.commit.owner().home() != self.home {
+                    return Err(QueryObligationDenial::ForeignHome);
+                }
+                if row.branch.is_empty() || row.producer.is_empty() || row.payload.is_empty() {
+                    return Err(QueryObligationDenial::MalformedFrame);
+                }
+                Ok(())
+            }
             QueryObligationRecord::ProgramSupport(record) => {
                 self.validate_support(record, position)
             }
             QueryObligationRecord::ManagedCleanup(record) => {
                 self.cleanup.validate(record, self.home, position)
+            }
+            QueryObligationRecord::OutputSource(record) => {
+                self.output.validate_source(record, self.home)?;
+                if let QueryOutputSourceRecord::Retain(row) = record
+                    && self.status(&row.revision) != Some(ProgramSupportStatus::Active)
+                {
+                    return Err(QueryObligationDenial::SupportUnavailable);
+                }
+                Ok(())
+            }
+            QueryObligationRecord::OutputDemand(record) => {
+                self.output.validate_demand(record, self.home, position)?;
+                if let QueryOutputDemandRecord::Retain(row) = record {
+                    match self.status(&row.revision) {
+                        Some(ProgramSupportStatus::Active) => {}
+                        Some(ProgramSupportStatus::Retiring)
+                            if !row.performed_sources.is_empty() => {}
+                        _ => return Err(QueryObligationDenial::SupportUnavailable),
+                    }
+                }
+                Ok(())
             }
         }
     }

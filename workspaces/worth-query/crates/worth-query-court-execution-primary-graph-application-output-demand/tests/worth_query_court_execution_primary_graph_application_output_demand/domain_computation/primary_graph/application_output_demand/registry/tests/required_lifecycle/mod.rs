@@ -1,9 +1,8 @@
-use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::application_attempt::compare_and_commit::commit_receipt::certification::CertificationWorthQueryApplicationCommitReceiptForTest;
 use crate::domain_computation::primary_graph::application_output_demand::registry::tests::*;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::BoundOutputSource;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::source_custody::PreparedOutputRootKind;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputCheckpoint;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryPerformedOutputDemandSource;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryRetainedOutputDemandSource;
 use worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId as TypeId;
 
 #[test]
@@ -123,7 +122,7 @@ fn performed_source_obligation_survives_handle_close_until_occurrence_retirement
     let preparation = registry.begin_source_preparation_for_test(occurrence);
     registry
         .retain_performed_source_for_test(
-            WorthQueryPerformedOutputDemandSource::new_for_test(
+            WorthQueryRetainedOutputDemandSource::new_for_test(
                 receipt,
                 Arc::new(change),
                 observation,
@@ -178,9 +177,7 @@ fn performed_source_obligation_survives_handle_close_until_occurrence_retirement
 #[test]
 fn settlement_releases_only_the_ready_authority_it_accepted() {
     let receipt = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::recoverable_commit_support::committed_recoverable_application();
-    let replacement = receipt
-        .clone()
-        .with_provider_runtime_instance_id_for_test(u64::MAX);
+    let replacement = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::recoverable_commit_support::committed_recoverable_application();
     let output = key("ready-replaced", 1, 1);
     let expected = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryAcceptedOutputAuthority::Committed(receipt);
     let actual = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryAcceptedOutputAuthority::Committed(replacement.clone());

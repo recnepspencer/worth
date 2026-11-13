@@ -55,10 +55,9 @@ pub const fn directory_family_support(family: DurableStateFamily) -> DirectoryFa
         | BridgeDiagnosticRetention => DirectoryFamilySupport::Supported(5),
         BridgeOwnedAsyncDefinitions => DirectoryFamilySupport::RefusedUntil(7),
         ProgramSupportLifecycle => DirectoryFamilySupport::Supported(6),
+        OutputDemandRecords | OutputSourceCustody => DirectoryFamilySupport::Supported(6),
         BranchAdoptionRecovery
         | StoppedBranchSetAdoption
-        | OutputDemandRecords
-        | OutputSourceCustody
         | PerformedSourcePreparation
         | ProgramOutputReadCustody => DirectoryFamilySupport::RefusedUntil(6),
         // The logical cleanup stays in Query's one journal. Native resources

@@ -10,11 +10,14 @@ use worth_query_installation::facade::{
 };
 
 use worth_foundational::facade::ProgramSupportStatus;
+mod accepted_output;
 mod durable_retirement;
 mod interpretation_membership;
 mod original_expiry;
 mod original_readmission;
 mod original_transfer;
+mod output_demand;
+mod output_source;
 use interpretation_membership::InterpretationMembership;
 mod journal_publication;
 mod journal_readmission;
@@ -41,6 +44,7 @@ struct SupportEntryState {
 }
 
 struct QueryObligationState {
+    pending_output_discharges: std::collections::BTreeSet<std::num::NonZeroU64>,
     entries: BTreeMap<ApplicationProgramRevision, SupportEntryState>,
     journal: Option<QueryObligationJournalState>,
 }
@@ -72,6 +76,7 @@ impl QueryObligationHistory {
             .collect();
         Self {
             state: Arc::new(Mutex::new(QueryObligationState {
+                pending_output_discharges: Default::default(),
                 entries,
                 journal: None,
             })),

@@ -14,6 +14,12 @@ mod capture;
 pub(in crate::domain_computation::primary_graph) enum CapturedSynchronousOutputs {
     Prepared {
         root: Box<dyn std::any::Any + Send>,
+        source_recipe: Option<
+            Result<
+                Vec<u8>,
+                crate::domain_computation::primary_graph::query_obligations::QueryObligationDenial,
+            >,
+        >,
         _memory: Option<worth_execution::ExecutionMemoryReservation>,
     },
     Refused(retention::CaptureRefusal),
@@ -122,4 +128,20 @@ fn checkpoint(
         .map_err(denied)?
         .0
         .map_err(|cause| denied(worth_execution::WorkCeilingDenial::Stopped(cause)))
+}
+
+impl CapturedSynchronousOutputs {
+    pub(in crate::domain_computation::primary_graph) fn source_recipe(
+        &self,
+    ) -> Option<
+        &Result<
+            Vec<u8>,
+            crate::domain_computation::primary_graph::query_obligations::QueryObligationDenial,
+        >,
+    > {
+        match self {
+            Self::Prepared { source_recipe, .. } => source_recipe.as_ref(),
+            Self::Refused(_) => None,
+        }
+    }
 }

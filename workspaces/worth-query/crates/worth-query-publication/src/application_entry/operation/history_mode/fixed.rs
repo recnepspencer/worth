@@ -230,6 +230,7 @@ where
     fn recording_source_at<'a>(completed: &'a C<S, I, P, R, A>, phase:&WorthQueryAdvancementPhase<'_>, request:&WorthQueryApplicationRequest<'_, '_, '_, S>, observation:&crate::application_entry::WorthQueryApplicationReadObservation) -> Result<Option<HistoryRecordingSource<'a>>,WorthQueryHistoryEditDenial> {
         let settlement=completed.settlement();
         let Some(source)=settlement.performed_source() else {return Ok(None)};
+        let receipt = source.receipt().retained_receipt().ok_or(WorthQueryHistoryEditDenial::NotReady)?;
         let current=WorthQueryApplicationRequest {application:request.application,principal:request.principal,scope:request.scope,branch:completed.branch()};
         // The original completed observation proposes a basis. Only Native's
         // complete-set validation can qualify it; neither ordinal nor latest
@@ -238,10 +239,10 @@ where
         let selected=completed.delivery.selected_action_at(&retained,phase)
             .map_err(WorthQueryHistoryEditDenial::Delivery)?;
         let qualified=selected.qualify_completed_required_outputs(phase,&worth_query_execution::publication_boundary::program_publication_access(),request.scope,
-            source.receipt(),source.root_fulfillment(),settlement.root_settlement().retained_settlement(),
+            receipt,source.root_fulfillment(),settlement.root_settlement().retained_settlement(),
             settlement.retained_settlements().skip(1),settlement.dependencies.as_ref())
             .map_err(WorthQueryHistoryEditDenial::OutputQualification)?;
-        Ok(Some(HistoryRecordingSource::RequiredOutputs {source:source.receipt(),completed:qualified}))
+        Ok(Some(HistoryRecordingSource::RequiredOutputs {source:receipt,completed:qualified}))
     }
     fn close_operation(
         operation: O<S, I, P, R, A>,

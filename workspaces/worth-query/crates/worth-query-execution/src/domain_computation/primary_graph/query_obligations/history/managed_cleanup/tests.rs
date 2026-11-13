@@ -27,6 +27,7 @@ fn managed_cleanup_acknowledgment_survives_a_later_release_no_effect() {
     }).unwrap();
     let history = Arc::new(QueryObligationHistory {
         state: Arc::new(Mutex::new(QueryObligationState {
+            pending_output_discharges: Default::default(),
             entries: BTreeMap::new(),
             journal: Some(journal),
         })),
@@ -64,6 +65,7 @@ fn unacknowledged_retention_no_effect_refuses_acknowledgment() {
     let identity = ManagedCleanupObligationIdentity::from_recorded(home, std::num::NonZeroU64::MIN);
     let history = Arc::new(QueryObligationHistory {
         state: Arc::new(Mutex::new(QueryObligationState {
+            pending_output_discharges: Default::default(),
             entries: BTreeMap::new(),
             journal: Some(QueryObligationJournalState::from_ledger(
                 QueryObligationLedger::empty(home),

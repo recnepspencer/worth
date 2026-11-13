@@ -43,12 +43,55 @@ where
 {
     pub fn complete_program_output_source(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
         _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
-        receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
-    ) {
+        source: impl Into<crate::domain_computation::primary_graph::WorthQueryOutputSourceEvidence>,
+    ) -> Result<(), crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial> {
+        use crate::domain_computation::primary_graph::{
+            WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind as Kind,
+        };
+        let receipt = source.into();
+        let execution = phase
+            .execution_request_for(&self.runtime().runtime.product_runtime)
+            .map_err(|cause| {
+                WorthQueryOutputDemandDenial::new(
+                    Kind::ExecutionRequest(cause.into()),
+                    "source completion",
+                )
+            })?;
+        if let Some(owner) = receipt.source_commit().owner_identity().durable() {
+            let commit = worth_foundational::facade::DurableCompositeCommitIdentity::from_recorded(
+                owner,
+                receipt.source_commit().ordinal(),
+            );
+            self.runtime()
+                .installed_program_support()
+                .ok_or_else(|| {
+                    WorthQueryOutputDemandDenial::new(
+                        Kind::ForeignSource,
+                        "source support unavailable",
+                    )
+                })?
+                .lifecycle()
+                .flush_output_discharges(&execution)
+                .and_then(|()| {
+                    self.runtime()
+                        .installed_program_support()
+                        .expect("same support")
+                        .lifecycle()
+                        .discharge_output_source(&execution, commit)
+                })
+                .map_err(|cause| {
+                    WorthQueryOutputDemandDenial::new(
+                        Kind::ObligationPublication(cause),
+                        "source completion",
+                    )
+                })?;
+        }
         self.backing
             .runtime()
-            .complete_prepared_output_source(receipt);
+            .complete_prepared_output_source(&receipt);
+        Ok(())
     }
 
     pub fn recover_discovered_program_source<Root>(
@@ -58,10 +101,12 @@ where
         selector: crate::domain_computation::primary_graph::WorthQueryOutputSourceReplay<'_>,
     ) -> Result<
         (
-            crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
-            <RootConnection<Schema, Root> as WorthQueryApplicationDiscoveredOutputConnection<
-                Schema,
-            >>::Discovery,
+            crate::domain_computation::primary_graph::WorthQueryOutputSourceEvidence,
+            crate::domain_computation::primary_graph::WorthQueryOutputDiscoveryRecipe<
+                <RootConnection<Schema, Root> as WorthQueryApplicationDiscoveredOutputConnection<
+                    Schema,
+                >>::Discovery,
+            >,
             std::sync::Arc<
                 crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation,
             >,
@@ -81,7 +126,8 @@ where
             ));
         }
         let receipt = self.backing.runtime().resolve_output_source_replay(phase, selector,
-            crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind::Discovered(TypeId::of::<Root>()))?;
+            crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind::Discovered(TypeId::of::<Root>()),
+            RootConnectionRef::<Schema, Root>::declaration().identity())?;
         let (discovery, observation, prepared) = self.backing.runtime().recover_discovered_output_source::<
             <RootConnection<Schema, Root> as WorthQueryApplicationDiscoveredOutputConnection<Schema>>::Discovery,
         >(&receipt, TypeId::of::<Root>())?;
@@ -108,6 +154,7 @@ where
         >,
         idempotency: crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding,
         causality: crate::domain_computation::application_aftermath::ApplicationCommitCausality,
+        root_identity: &'static str,
         payload: recovery::ProgramOutputSourcePayload,
         allocation_policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> ProgramSourceCommit
@@ -141,9 +188,19 @@ where
         let idempotency = correction
             .as_ref()
             .map_or(idempotency, |command| command.bind(idempotency));
+        let discovery_recipe = match program.synchronous_outputs.iter().find_map(|root| root.source_recipe()) {
+            Some(Ok(value)) => Some(value.clone()),
+            None => None,
+            Some(Err(_)) => return Ok((crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome::Denied(crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::required_output_preparation_missing(Source::IDENTITY)),None,None)),
+        };
         let pending = WorthQueryUnpublishedProgramOutputSource {
             correction,
             runtime_authority: self.backing.runtime().runtime.authority_identity().as_u64(),
+            revision: worth_foundational::facade::CanonicalDigestId::new(
+                *presented.revision().as_bytes(),
+            ),
+            root_identity,
+            discovery_recipe,
             program: selected_program,
             binding: TypeId::of::<Source>(),
             idempotency,
@@ -165,7 +222,7 @@ where
                 let descriptive = receipt.clone();
                 let carrier = WorthQueryRecoveredProgramOutputSource::from_committed(&mut receipt);
                 let prepared = match self.promote_program_output_source(
-                    access, pending, carrier, receipt,
+                    phase, access, pending, carrier, receipt,
                 ) {
                     Ok(prepared) => prepared,
                     Err((denial, source, carrier)) => {

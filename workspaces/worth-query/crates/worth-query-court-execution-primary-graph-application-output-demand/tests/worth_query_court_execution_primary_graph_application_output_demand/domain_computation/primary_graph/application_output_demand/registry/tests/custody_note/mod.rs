@@ -115,14 +115,10 @@ pub fn fixture(
 
 #[test]
 fn registry_custody_note_survives_a_held_drain_and_claim_transfer() {
-    let receipt = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::walk_bounds::receipt_batch().remove(0);
+    let receipt = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::recoverable_commit_support::committed_recoverable_application();
     let ready = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::closed_retirement::ready();
-    let (registry, owner, dependent, newest) = fixture(
-        &receipt,
-        &ready,
-        0,
-        worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::source_custody::real_scope_and_occurrence().0,
-    );
+    let (registry, owner, dependent, newest) =
+        fixture(&receipt, &ready, 0, receipt.principal_scope().scope());
     let commit = receipt.committed_product_publication().composite_commit();
     drop(owner);
     (*registry.state_for_test())
@@ -149,7 +145,7 @@ fn registry_custody_note_survives_a_held_drain_and_claim_transfer() {
     );
     state.drain_next_foreign_custody_for_test();
     assert!(!state.source_custody.contains_key(commit));
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::post_commit::custody_reader::resolve_before_binding(&mut state, &receipt);
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::post_commit::custody_reader::resolve_before_binding(&mut state, commit);
     assert!(
         !state.pending_custody_prune_for_test(),
         "binding cannot see the pruned newer source"
