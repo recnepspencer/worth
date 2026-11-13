@@ -237,7 +237,7 @@ pub(crate) fn bank_application_limits() -> WorthQueryApplicationLimits {
     application_limits(super::product_world_resources::bank_product_world_resources())
 }
 
-fn application_limits(
+pub(super) fn application_limits(
     resources: worth_query_host::facade::runtime::WorthQueryProductWorldResources,
 ) -> WorthQueryApplicationLimits {
     let queries = WorthQueryApplicationQueryResourceProfile::new(
@@ -250,7 +250,7 @@ fn application_limits(
     )
 }
 
-fn bind_principals(
+pub(super) fn bind_principals(
     graph: &mut WorthQueryPrimaryGraphBootstrap<BankSchema>,
     installed: &WorthQueryInstalledApplicationSchema<BankSchema>,
     seeds: Vec<PreparedBankPrincipalSeed>,
@@ -272,7 +272,7 @@ fn bind_principals(
     Ok(())
 }
 
-fn bind_world_truth(
+pub(super) fn bind_world_truth(
     graph: &mut WorthQueryPrimaryGraphBootstrap<BankSchema>,
     world: Option<&BankGraphSeed>,
 ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
@@ -289,7 +289,7 @@ fn bind_world_truth(
     crate::graph_bootstrap::bind_program_deployment_grants(graph, &world.deployment_grants)
 }
 
-fn resolve_installed_principal_binding(
+pub(super) fn resolve_installed_principal_binding(
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<BankSchema>,
 ) -> Result<InstalledBankPrincipalBinding, BankIdentityRuntimeBuildError> {
     runtime

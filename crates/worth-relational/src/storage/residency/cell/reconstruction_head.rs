@@ -41,8 +41,8 @@ impl RelationalRegionResidency {
                     .backing
                     .as_ref()
                     .ok_or_else(|| self.failure(Cause::SourceUnavailable))?;
-                // No serving-state transition and no raw-head cache retention:
-                // the oracle drops this authenticated input after its read.
+                // Reuse only this original cell's authenticated input, without
+                // publishing serving residency or trusting derived indexes.
                 let source = {
                     let state = self.state.lock().unwrap_or_else(|error| error.into_inner());
                     state
@@ -52,7 +52,9 @@ impl RelationalRegionResidency {
                         .cloned()
                         .ok_or_else(|| self.failure(Cause::SourceUnavailable))?
                 };
-                region_load::load_head(cold, &source, execution, 1 << 30)?
+                cell_load_cache::load(&self.raw_head, self.partition_id, || {
+                    region_load::load_head(cold, &source, execution, 1 << 30)
+                })?
             }
         };
         Ok(ReconstructedRegionHead {

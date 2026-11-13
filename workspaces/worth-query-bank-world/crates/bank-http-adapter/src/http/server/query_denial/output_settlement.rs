@@ -55,7 +55,8 @@ pub(super) fn output_settlement(kind: BankApplicationOutputSettlementDenialKind)
         Settlement::RequestAuthorization(kind) => authorization_denial(kind),
         Settlement::Cancelled => cancelled(),
         Settlement::TimedOut => deadline(),
-        Settlement::ProducerDomainDenied => malformed(),
+        Settlement::ProducerDomainDenied | Settlement::DiscoveryConnection(_) => malformed(),
+        Settlement::ConflictingIntent { .. } | Settlement::AuthoredStageRefused { .. } => operator(),
         Settlement::Superseded
         | Settlement::PublicationStale
         | Settlement::ForeignSource
@@ -63,7 +64,9 @@ pub(super) fn output_settlement(kind: BankApplicationOutputSettlementDenialKind)
         | Settlement::ForeignSettlement
         | Settlement::RetainedBasisUnavailable
         | Settlement::Closed => stale(),
-        Settlement::WorkBudgetExceeded
+        Settlement::ProducerRouteRoundBudgetExceeded { .. }
+        | Settlement::ProducerAttemptRoundBudgetExceeded { .. }
+        | Settlement::WorkBudgetExceeded
         | Settlement::RetentionBudgetExceeded
         | Settlement::PublicationCapacityExceeded => exhausted(),
         Settlement::MissingApplicableProducer

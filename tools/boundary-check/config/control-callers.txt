@@ -1987,3 +1987,6 @@ workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crat
 
 # D1639: focused Native regression for cold applied-pin dictionary custody.
 crates/worth-relational/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/coupled_producers/cold_candidate_pin.rs
+
+# Quiescent full-Bank Home retirement retains only genuine executable/source owners.
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query-bank-world/crates/worth-query-bank-court-external-rail-server/tests/worth_query_bank_court_external_rail_server/server/ordinary_mutations/recorded_correction/retained/producer_retirement.rs

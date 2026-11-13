@@ -145,16 +145,6 @@ macro_rules! custody {
                     _ => None,
                 }
             }
-            fn cleanup_failure(
-                &self,
-            ) -> Option<&worth_query_host::facade::primary_graph::WorthQueryMutationCleanupFailure>
-            {
-                match self {
-                    Self::Active(owner) => owner.managed_cleanup_failure(),
-                    Self::Terminal(owner) => owner.managed_cleanup_failure(),
-                    _ => None,
-                }
-            }
             fn describe(
                 &self,
                 id: &str,
@@ -169,9 +159,10 @@ macro_rules! custody {
                         custody_id,
                         sequence,
                         posture: owner.posture().into(),
-                        cleanup: self
-                            .cleanup_failure()
-                            .map(super::cleanup_description::failure),
+                        cleanup: owner
+                            .managed_cleanup_failures()
+                            .map(super::cleanup_description::failure)
+                            .collect(),
                     },
                     Self::Terminal(_) => BankHttpMutationOutcome::Terminal {
                         request_id,

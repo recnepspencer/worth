@@ -13,6 +13,25 @@ pub(super) fn admit<Schema: ApplicationSchema>(
     if !runtime.is_directory_home() {
         return Ok(());
     }
+    // The selected occurrence retains installed source meaning and genuine
+    // program membership. H9-A's no-binding original-only shape is never enough.
+    let association = source
+        .occurrence()
+        .disclosure()
+        .map(|value| value.association());
+    if let Some(binding) = association {
+        if source.occurrence().original_binding() != Some(binding.source_type())
+            || !source
+                .occurrence()
+                .original_program()
+                .is_some_and(|program| {
+                    program.declares_binding(binding.source_type())
+                        && program.declares_binding(binding.inverse_type())
+                })
+        {
+            return Err(Denial::UnsupportedSourceMeaning);
+        }
+    }
     runtime
         .admit_directory_correction_shape(
             source.occurrence().aftermath(),

@@ -12,8 +12,8 @@ use bank_domain::schema::{
 use worth_query_host::facade::{
     admission::authenticated_principal::WorthQueryRequestScope,
     application_entry::{
-        WorthQueryApplicationCorrectionDenial, WorthQueryCorrectionHistoryLimits,
-        WorthQueryOperationCorrectionPreparation,
+        WorthQueryApplicationCorrectionDenial, WorthQueryApplicationRequestExt,
+        WorthQueryCorrectionHistoryLimits, WorthQueryOperationCorrectionPreparation,
     },
     primary_graph::WorthQueryCorrectionSourceCoordinates,
 };
@@ -97,15 +97,46 @@ impl BankIdentityRuntime {
         key: &str,
         limits: WorthQueryCorrectionHistoryLimits,
     ) -> Result<BankSendMoneyCorrectionPreparation<'a>, WorthQueryApplicationCorrectionDenial> {
-        let request = self.request(principal, scope);
-        let selected = request.corrections().select_coordinates(source, limits)?;
-        request
-            .corrections()
-            .reverse(&selected)
-            .idempotency(key)
-            .limits(limits)
-            .prepare_operation::<ReverseSentMoney, BankApplication, ReverseJournalAction>(
-                self.application_program(),
-            )
+        prepare_send_money_correction(
+            self.application_program(),
+            principal,
+            scope,
+            source,
+            key,
+            limits,
+        )
     }
+}
+
+pub(crate) fn prepare_send_money_correction<'a, Program>(
+    application: &'a worth_query_host::facade::application_installation::WorthQueryProgramApplicationRuntime<BankSchema, Program>,
+    principal: &BankAuthenticatedPrincipal,
+    scope: &WorthQueryRequestScope,
+    source: &WorthQueryCorrectionSourceCoordinates,
+    key: &str,
+    limits: WorthQueryCorrectionHistoryLimits,
+) -> Result<
+    WorthQueryOperationCorrectionPreparation<
+        'a,
+        BankSchema,
+        ReverseJournalMutationBinding,
+        Program,
+        ReverseJournalAction,
+    >,
+    WorthQueryApplicationCorrectionDenial,
+>
+where
+    Program:
+        worth_query_host::facade::declaration::application_program::ApplicationProgramDefinition<
+            BankSchema,
+        >,
+{
+    let request = application.request(principal.external(), scope);
+    let selected = request.corrections().select_coordinates(source, limits)?;
+    request
+        .corrections()
+        .reverse(&selected)
+        .idempotency(key)
+        .limits(limits)
+        .prepare_operation::<ReverseSentMoney, Program, ReverseJournalAction>(application)
 }

@@ -41,6 +41,13 @@ pub(super) fn install_payment_decision_reads(
     install_payment_operation_budgets(schema)
 }
 
+pub(super) fn install_recorded_money_decision_reads(
+    schema: ApplicationSchemaDeclarationBuilder<BankSchema>,
+) -> ApplicationSchemaDeclarationBuilder<BankSchema> {
+    let schema = install_money_movement_reads(schema);
+    install_reversal_budget(install_money_movement_budgets(schema))
+}
+
 fn install_account_creation_reads(
     schema: ApplicationSchemaDeclarationBuilder<BankSchema>,
 ) -> ApplicationSchemaDeclarationBuilder<BankSchema> {
@@ -185,7 +192,7 @@ fn install_account_operation_budgets(
 fn install_payment_operation_budgets(
     schema: ApplicationSchemaDeclarationBuilder<BankSchema>,
 ) -> ApplicationSchemaDeclarationBuilder<BankSchema> {
-    schema
+    let schema = schema
         .operation_read_field(
             ApprovedBusinessPaymentAuthoringOperation::reference(),
             PaymentIdentityField::at("PaymentIdentityField"),
@@ -201,11 +208,8 @@ fn install_payment_operation_budgets(
         .operation_read_field(
             ApprovedBusinessPaymentAdvanceOperation::reference(),
             PaymentIdentityField::at("PaymentIdentityField"),
-        )
-        .operation_projection_work_budget(ApplyOpeningFundingOperation::reference(), 4_096)
-        .operation_projection_work_budget(DepositOperation::reference(), 4_096)
-        .operation_projection_work_budget(WithdrawOperation::reference(), 4_096)
-        .operation_projection_work_budget(SendMoneyOperation::reference(), 8_192)
+        );
+    let schema = install_money_movement_budgets(schema)
         .operation_projection_work_budget(InitiateBusinessPaymentOperation::reference(), 8_192)
         .operation_projection_work_budget(
             ApprovedBusinessPaymentAuthoringOperation::reference(),
@@ -224,6 +228,22 @@ fn install_payment_operation_budgets(
             1_024,
         )
         .operation_projection_work_budget(ApprovePaymentOperation::reference(), 8_192)
-        .operation_projection_work_budget(RejectPaymentOperation::reference(), 512)
-        .operation_projection_work_budget(ReverseJournalOperation::reference(), 8_192)
+        .operation_projection_work_budget(RejectPaymentOperation::reference(), 512);
+    install_reversal_budget(schema)
+}
+
+fn install_money_movement_budgets(
+    schema: ApplicationSchemaDeclarationBuilder<BankSchema>,
+) -> ApplicationSchemaDeclarationBuilder<BankSchema> {
+    schema
+        .operation_projection_work_budget(ApplyOpeningFundingOperation::reference(), 4_096)
+        .operation_projection_work_budget(DepositOperation::reference(), 4_096)
+        .operation_projection_work_budget(WithdrawOperation::reference(), 4_096)
+        .operation_projection_work_budget(SendMoneyOperation::reference(), 8_192)
+}
+
+fn install_reversal_budget(
+    schema: ApplicationSchemaDeclarationBuilder<BankSchema>,
+) -> ApplicationSchemaDeclarationBuilder<BankSchema> {
+    schema.operation_projection_work_budget(ReverseJournalOperation::reference(), 8_192)
 }

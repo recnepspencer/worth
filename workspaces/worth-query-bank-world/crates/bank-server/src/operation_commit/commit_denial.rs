@@ -50,6 +50,8 @@ pub enum BankCommitDenialKind {
     CorrectionIdentityMismatch,
     OperationBodyExecutionRequired,
     UnobservedWrite,
+    CoupledRefusalWithoutSubject,
+    RequiredOutputPreparationMissing,
     SignedCreationAuthentication {
         kind: WorthQueryAuthenticationEventDenial,
     },
@@ -106,6 +108,10 @@ pub(crate) const fn denial_kind(
     use WorthQueryApplicationCommitDenialKind as Query;
     match kind {
         Query::ContentInconsistency => BankCommitDenialKind::ContentInconsistency,
+        Query::CoupledRefusalWithoutSubject => BankCommitDenialKind::CoupledRefusalWithoutSubject,
+        Query::RequiredOutputPreparationMissing => {
+            BankCommitDenialKind::RequiredOutputPreparationMissing
+        }
         Query::Content(cause) => BankCommitDenialKind::Content(cause),
         Query::OriginalEffectReleased => BankCommitDenialKind::OriginalEffectReleased,
         Query::IdempotencyPreparationBusy => BankCommitDenialKind::IdempotencyPreparationBusy,

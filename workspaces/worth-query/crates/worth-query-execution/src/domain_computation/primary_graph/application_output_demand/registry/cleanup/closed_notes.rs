@@ -94,6 +94,12 @@ struct ClosedOrder {
     len: usize,
 }
 impl ClosedCleanupQueue {
+    pub(in super::super) fn is_quiescent(&self) -> bool {
+        self.0
+            .try_lock()
+            .is_ok_and(|order| order.len == 0 && order.first.is_none())
+    }
+
     pub(in super::super) fn len(&self) -> usize {
         self.0.lock().unwrap().len
     }

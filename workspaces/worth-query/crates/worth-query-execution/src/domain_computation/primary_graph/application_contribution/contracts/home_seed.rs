@@ -29,9 +29,8 @@ fn admit_declared_seed(
 ) -> Result<(), WorthQueryDurableStateAdmissionDenial> {
     let requirements = [
         (has_producers, Family::SignalNodeDefinitions),
-        // Installed producers block Home retirement until producer custody exists,
-        // so a Directory Home with producers would open but never close.
-        (has_producers, Family::ProducerCleanupCustody),
+        // Cold producer definitions retire with the original inert Home payload.
+        // Actual demand/source/cleanup custody must pass consuming preflight.
         (has_conditionals, Family::BridgeConditionalDefinitions),
         (
             declaration.members().iter().any(requires_resource_nodes),

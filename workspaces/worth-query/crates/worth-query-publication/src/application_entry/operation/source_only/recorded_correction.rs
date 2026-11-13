@@ -4,7 +4,6 @@ use worth_query_declaration::facade::application_operation::{
     ApplicationMutationAdmissionBinding, ApplicationMutationInputScope,
     ApplicationOwnedMutationIdentities,
 };
-use worth_query_execution::publication_boundary::recorded_correction::WorthQueryCorrectionIntent;
 
 impl<S, B, P, A, M> WorthQuerySourceOnlyOperation<S, WorthQueryCapturedMutationInput<S, B>, P, A, M>
 where
@@ -16,11 +15,46 @@ where
     A: ApplicationAction<S, B>,
     M: WorthQuerySourceDeliveryMode,
 {
-    pub(in crate::application_entry) fn retain_recorded_correction(
+    pub(in crate::application_entry) fn retain_prepared_correction(
         runtime: &WorthQueryProgramApplicationRuntime<S, P>,
         branch: worth_query_execution::facade::product::WorthQueryProductBranch,
         identities: &ApplicationOwnedMutationIdentities<S, B>,
-        correction: WorthQueryCorrectionIntent,
+        prepared: &worth_query_execution::publication_boundary::recorded_correction::WorthQueryPreparedCorrectionSource,
+    ) -> Result<Self, WorthQueryOperationConstructionDenial> {
+        Self::retain_correction(runtime, branch, identities, prepared.intent())
+    }
+
+    pub(in crate::application_entry) fn retain_replayed_correction(
+        runtime: &WorthQueryProgramApplicationRuntime<S, P>,
+        branch: worth_query_execution::facade::product::WorthQueryProductBranch,
+        identities: &ApplicationOwnedMutationIdentities<S, B>,
+        replay: crate::application_entry::WorthQueryApplicationMutationOutcome<
+            B::Denial,
+            B::Result,
+        >,
+        intent: worth_query_execution::publication_boundary::recorded_correction::WorthQueryCorrectionIntent,
+    ) -> Result<
+        super::advancement::Advance<S, WorthQueryCapturedMutationInput<S, B>, P, A, M>,
+        WorthQueryOperationConstructionDenial,
+    >
+    where
+        B: ApplicationMutationAdmissionBinding<S>,
+        B::Admission:
+            crate::application_entry::mutation::authorization::WorthQueryBindingAdmission<S, B>,
+        B::Input: Send + Sync,
+        B::ScopeBinding: ApplicationMutationScopeResolution<S, B::PrincipalIdentity>,
+    {
+        let operation = Self::retain_correction(runtime, branch, identities, intent)?;
+        Ok(operation.accept_recorded_publication(
+            WorthQueryApplicationRetainedMutationOutcome::Other(replay),
+        ))
+    }
+
+    fn retain_correction(
+        runtime: &WorthQueryProgramApplicationRuntime<S, P>,
+        branch: worth_query_execution::facade::product::WorthQueryProductBranch,
+        identities: &ApplicationOwnedMutationIdentities<S, B>,
+        correction: worth_query_execution::publication_boundary::recorded_correction::WorthQueryCorrectionIntent,
     ) -> Result<Self, WorthQueryOperationConstructionDenial> {
         let input = identities.borrow().encoded_input();
         let description = WorthQueryOperationDescription {
@@ -33,9 +67,13 @@ where
             branch,
             history: None,
         };
-        let mut operation = Self::construct(description, runtime).map_err(|(_, cause)| cause)?;
-        operation.admission.recorded_correction = Some(correction);
-        Ok(operation)
+        WorthQuerySourceOperationAdmission::construct_with_correction(
+            description,
+            runtime,
+            Some(correction),
+        )
+        .map(Self::from_admission)
+        .map_err(|(_, cause)| cause)
     }
 }
 

@@ -3,6 +3,31 @@ mod correction_shape;
 use super::WorthQueryProductRuntime;
 use worth_foundational::facade::DurableStateFamily;
 
+/// Installed-use distinction; neither variant carries execution authority.
+pub(in crate::domain_computation) enum DirectoryCorrectionShapeUse<'a> {
+    OriginalExecution(
+        &'a worth_query_installation::facade::WorthQueryCompiledApplicationOperationContracts,
+    ),
+    CorrectionPreparation,
+}
+
+/// Requirements to finish at the actual operation admission owner.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(in crate::domain_computation) enum DirectoryCorrectionShapeAdmission {
+    ExistingShape,
+    ExternalOriginalRecoveryOnly,
+    NativeRecordedCorrection,
+}
+
+impl DirectoryCorrectionShapeAdmission {
+    pub(in crate::domain_computation) fn requires_external_original_custody(self) -> bool {
+        match self {
+            Self::ExistingShape | Self::NativeRecordedCorrection => false,
+            Self::ExternalOriginalRecoveryOnly => true,
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryDurableStateAdmissionDenial {
     PolicyUnavailable,

@@ -230,14 +230,21 @@ where
             WorthQueryOperationConstructionDenial,
         ),
     > {
-        WorthQuerySourceOperationAdmission::construct(description, runtime).map(|admission| Self {
+        WorthQuerySourceOperationAdmission::construct(description, runtime)
+            .map(Self::from_admission)
+    }
+
+    pub(super) fn from_admission(
+        admission: WorthQuerySourceOperationAdmission<S, I, P, A, Mode>,
+    ) -> Self {
+        Self {
             admission,
             cleanup: Default::default(),
             state: SourceState::<S, I>::Initial,
             keyed_terminal: None,
             guarded_abort: None,
             completion_handoff: None,
-        })
+        }
     }
 }
 

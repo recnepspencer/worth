@@ -101,6 +101,20 @@ where
             WorthQueryOperationConstructionDenial,
         ),
     > {
+        Self::construct_with_correction(description, runtime, None)
+    }
+
+    pub(super) fn construct_with_correction(
+        description: WorthQueryOperationDescription<S, I>,
+        runtime: &WorthQueryProgramApplicationRuntime<S, P>,
+        correction: Option<worth_query_execution::publication_boundary::recorded_correction::WorthQueryCorrectionIntent>,
+    ) -> Result<
+        Self,
+        (
+            WorthQueryOperationDescription<S, I>,
+            WorthQueryOperationConstructionDenial,
+        ),
+    > {
         if !runtime
             .runtime()
             .product_runtime()
@@ -109,16 +123,6 @@ where
             return Err((
                 description,
                 WorthQueryOperationConstructionDenial::ForeignRuntime,
-            ));
-        }
-        if let Err(cause) = runtime
-            .runtime()
-            .product_runtime()
-            .admit_retained_original_operation_owner()
-        {
-            return Err((
-                description,
-                WorthQueryOperationConstructionDenial::DurableStateAdmission(cause),
             ));
         }
         let installed_action = match runtime
@@ -141,12 +145,34 @@ where
                 WorthQueryOperationConstructionDenial::RequiredOutputSource,
             ));
         }
+        let binding = match runtime.runtime().installed_schema().installed_mutation_binding::<I::Binding>() {
+            Ok(binding) => binding,
+            Err(_) => return Err((description, WorthQueryOperationConstructionDenial::DurableStateAdmission(
+                worth_query_execution::facade::product::WorthQueryDurableStateAdmissionDenial::UnsupportedCorrectionCompensation))),
+        };
+        let product = runtime.runtime().product_runtime();
+        let admission = if !Mode::RETAIN_COMMIT {
+            product.admit_retained_original_operation_owner()
+        } else if correction.is_some() {
+            product.admit_native_correction_inverse(binding.operation().contracts())
+        } else {
+            product.admit_native_correction_source_owner(
+                binding.operation().contracts(),
+                binding.correction_binding(),
+            )
+        };
+        if let Err(cause) = admission {
+            return Err((
+                description,
+                WorthQueryOperationConstructionDenial::DurableStateAdmission(cause),
+            ));
+        }
         Ok(Self {
             runtime: runtime.clone(),
             description,
             installed_action: installed_action.clone(),
             workflow: None,
-            recorded_correction: None,
+            recorded_correction: correction,
             marker: std::marker::PhantomData,
         })
     }

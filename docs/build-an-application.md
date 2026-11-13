@@ -8291,6 +8291,33 @@ publication or recovery authority. Owning source completion exposes recorded
 evidence through `recorded_receipt()` and already-held live evidence through
 `live_receipt()`; keep its publication and cleanup obligations until lawful close.
 
+Bank exposes this composition through `bank_application_home(location, seed)`
+using the full static `BankSchema`, `BankApplication` and actual P1/P2 roster.
+The borrowed `BankHomeRuntime::attach(home.runtime())` authenticates afresh and
+uses the shared `prepare_send_money_correction` command. The generic Home seeds
+only first creation; reopening uses its existing state, declaration and bound
+validated revisions without eagerly attaching workflow execution. Genuine full
+providers, account/estate resources, principal binding, index and invariant
+remain installed. Quiescent nonempty producer definitions retire intact into
+the original inert Home payload for explicit reclaim. Consuming preflight
+requires exclusive entry/executor owners and discharged output custody;
+executable aliases, source preparation or unsettled work refuse Busy. This does
+not admit activated producer, async or workflow execution. Existing Memory and
+workflow APIs retain their identities and behavior.
+
+For the native retained correction journey, acquire the source commit selection
+before closing its Fresh owner and before another mutation. Prepare under
+current teller disclosure, publish the inverse and lawfully close that same
+Fresh inverse. Release every old alias and lease before graceful Home close;
+do not publish an intervening mutation between lease release and close. After
+reopen, obtain fresh authorization and real source/inverse selections before
+exact-source/key replay. Replay returns a new acting owner of the same recorded
+inverse; after one ordinary dependency edit, advance that owner for Recorded
+delivery and close it. Keep the current selections until delivery ends. Missing
+history/material, foreign identities and Busy remain typed refusals. This
+ordered graceful contract does not persist pending owners, issue authority from
+receipt data, or admit actual external compensation.
+
 Treat `ProductPreparationPending` as original custody. Keep the returned
 terminal and business key; duplicate requests must observe that custody rather
 than invoke the handler again. `try_into_recovery()` is an explicit unbudgeted

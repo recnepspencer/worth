@@ -3,6 +3,17 @@ use super::*;
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     #[doc(hidden)]
+    pub fn installed_producers_for_test(
+        &self,
+    ) -> &super::super::application_contribution::WorthQueryInstalledApplicationProducerRegistry<
+        Schema,
+    > {
+        &self.installed_producers
+    }
+}
+
+impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+    #[doc(hidden)]
     pub fn installed_schema_for_test(&self) -> &WorthQueryInstalledApplicationSchema<Schema> {
         &self.installed_schema
     }

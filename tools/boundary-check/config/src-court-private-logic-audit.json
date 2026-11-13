@@ -1636,6 +1636,24 @@
       ],
       "audit": "Root exact owner-child ruling: reuses the existing genuine durable Native fixture and original request. Private root/schema pointer and producer-input observations cannot be moved to an external court without adding authority/observer reach. No new Runtime factory, source replacement, recovered-authority constructor, Complete promotion or physical Closed claim. Real filesystem Store/Host composition is proved separately.",
       "private_subject": "Real selected Empty checkpoint is not fresh source evidence even with no canonical/transition tail."
+    },
+    {
+      "source": "crates/worth-relational/src/storage/residency/region_fixture.rs",
+      "test": "storage::residency::tests::reconstructed_heads_reuse_original_custody_without_serving_and_retire_it",
+      "constructors": [
+        "region_fixture::region_with_history"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling, 2026-11-13. Exact helper/caller pair: region_fixture::region_with_history -> storage::residency::tests::reconstructed_heads_reuse_original_custody_without_serving_and_retire_it. The pre-existing runtime factory now carries the same original RelationalRuntime into genuine checkpoint capture; no new Runtime/request factory, construction audience, sibling-test admission or general fixture permission. A public court would need new production test doors/extraction machinery over these private internals; dropping retirement evidence would lose the cache-lifecycle requirement. Neither is proportionate.",
+      "private_subject": "Original-cell RawHead backing identity, no serving residency or leases, actual private NativeRegionSourceRetirement over original selected-directory member custody, explicit retirement/disarm/reclaim, and physical availability after retirement. Genuine checkpoint/member/read owners are required to avoid unsupported or fabricated fixture authority."
+    },
+    {
+      "source": "crates/worth-relational/src/storage/residency/region_fixture/checkpoint_inputs.rs",
+      "test": "storage::residency::tests::reconstructed_heads_reuse_original_custody_without_serving_and_retire_it",
+      "constructors": [
+        "checkpoint_inputs::readmit"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling, 2026-11-13. Exact helper/caller pair: checkpoint_inputs::readmit -> storage::residency::tests::reconstructed_heads_reuse_original_custody_without_serving_and_retire_it. The constructors inventory names this helper, not a new request constructor: ExecutionRequest is borrowed only. The helper uses the same original runtime and request for genuine native checkpoint capture, selected-directory readmission and retirement with actual immutable selected-read/member inputs and original source/history-directory Arc identities. No new Runtime/request factory, construction audience, sibling-test admission or general fixture permission. Moving the private observations to a public court requires disproportionate production test doors/extraction machinery; dropping retirement evidence loses the cache-lifecycle requirement.",
+      "private_subject": "Original-cell RawHead backing identity, no serving residency or leases, actual private NativeRegionSourceRetirement over original selected-directory member custody, explicit retirement/disarm/reclaim, and physical availability after retirement. Genuine checkpoint/member/read owners are required to avoid unsupported or fabricated fixture authority."
     }
   ]
 }

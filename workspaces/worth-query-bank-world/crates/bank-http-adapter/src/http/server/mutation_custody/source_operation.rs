@@ -145,8 +145,8 @@ macro_rules! custody {
                     Self::Active(operation) => CustodyDescription::Pending(
                         operation.posture().into(),
                         operation
-                            .managed_cleanup_failure()
-                            .map(super::cleanup_description::failure),
+                            .managed_cleanup_failures()
+                            .map(super::cleanup_description::failure).collect(),
                     ),
                     Self::Terminal(_) => CustodyDescription::Terminal,
                     Self::Closed(_) | Self::ClosedWithoutCompletion(_) => CustodyDescription::Closed,

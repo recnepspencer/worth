@@ -76,17 +76,12 @@ pub(crate) fn install_estate_ability_policies(
 pub(crate) fn install_payment_ability_policies(
     schema: ApplicationSchemaDeclarationBuilder<BankSchema>,
 ) -> ApplicationSchemaDeclarationBuilder<BankSchema> {
-    schema
-        .ability_policy(
-            ViewPayment::reference(),
-            AccountVisibilityPolicy::reference(),
-            payment_view_paths(),
-        )
-        .ability_policy(
-            SendPersonalFunds::reference(),
-            AccountMutationScopePolicy::reference(),
-            account_send_paths(),
-        )
+    let schema = schema.ability_policy(
+        ViewPayment::reference(),
+        AccountVisibilityPolicy::reference(),
+        payment_view_paths(),
+    );
+    install_send_money_ability_policy(schema)
         .ability_policy(
             InitiateBusinessFunds::reference(),
             AccountMutationScopePolicy::reference(),
@@ -97,6 +92,16 @@ pub(crate) fn install_payment_ability_policies(
             DistinctApproverPolicy::reference(),
             approval_paths(),
         )
+}
+
+pub(crate) fn install_send_money_ability_policy(
+    schema: ApplicationSchemaDeclarationBuilder<BankSchema>,
+) -> ApplicationSchemaDeclarationBuilder<BankSchema> {
+    schema.ability_policy(
+        SendPersonalFunds::reference(),
+        AccountMutationScopePolicy::reference(),
+        account_send_paths(),
+    )
 }
 
 fn employee_path(role: EmployeeRole) -> ApplicationAuthorizationPath {
