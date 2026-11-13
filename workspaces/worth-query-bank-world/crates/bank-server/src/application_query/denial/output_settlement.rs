@@ -3,6 +3,15 @@ use super::*;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum BankApplicationOutputSettlementDenialKind {
+    ConflictingIntent {
+        target: worth_query_host::facade::primary_graph::RecordRef,
+        earlier: usize,
+        later: usize,
+    },
+    AuthoredStageRefused {
+        ordinal: usize,
+        binding: &'static str,
+    },
     DurableStateAdmission(worth_query_host::facade::product::WorthQueryDurableStateAdmissionDenial),
     WorldRecovery(worth_query_host::facade::primary_graph::RuntimeWorldRecoveryDenial),
     RecoveryPublication(worth_query_host::facade::primary_graph::NoEffectCause),
@@ -31,6 +40,9 @@ pub enum BankApplicationOutputSettlementDenialKind {
     AmbiguousApplicableProducer,
     ProducerUnavailable,
     ProducerDomainDenied,
+    DiscoveryConnection(
+        Box<worth_query_host::facade::primary_graph::WorthQueryRequiredOutputConnectionDenial>,
+    ),
     RequestAuthorization(BankAuthorizationDenialKind),
     ProductSelection(BankProductSelectionDenialKind),
     SchedulingRejected,
@@ -41,6 +53,16 @@ pub enum BankApplicationOutputSettlementDenialKind {
     Cancelled,
     TimedOut,
     WorkBudgetExceeded,
+    ProducerRouteRoundBudgetExceeded {
+        source: worth_query_host::facade::application_invariants::EntityId,
+        started: usize,
+        limit: usize,
+    },
+    ProducerAttemptRoundBudgetExceeded {
+        source: worth_query_host::facade::application_invariants::EntityId,
+        started: usize,
+        limit: usize,
+    },
     RetentionBudgetExceeded,
     PublicationCapacityExceeded,
     ForeignDemand,
@@ -59,6 +81,12 @@ impl From<WorthQueryOutputDemandDenialKind> for BankApplicationOutputSettlementD
         use BankApplicationOutputSettlementDenialKind as Bank;
         use WorthQueryOutputDemandDenialKind as Query;
         match kind {
+            Query::ConflictingIntent { target, earlier, later } => {
+                Bank::ConflictingIntent { target, earlier, later }
+            }
+            Query::AuthoredStageRefused { ordinal, binding } => {
+                Bank::AuthoredStageRefused { ordinal, binding }
+            }
             Query::WorldRecovery(cause) => Bank::WorldRecovery(cause),
             Query::RecoveryPublication(cause) => Bank::RecoveryPublication(cause),
             Query::PublicationReceipt(cause) => Bank::PublicationReceipt(cause),
@@ -87,6 +115,7 @@ impl From<WorthQueryOutputDemandDenialKind> for BankApplicationOutputSettlementD
             Query::AmbiguousApplicableProducer => Bank::AmbiguousApplicableProducer,
             Query::ProducerUnavailable => Bank::ProducerUnavailable,
             Query::ProducerDomainDenied => Bank::ProducerDomainDenied,
+            Query::DiscoveryConnection(cause) => Bank::DiscoveryConnection(cause),
             Query::RequestAuthorization(kind) => Bank::RequestAuthorization(authorization(worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizationDenialKind::Refused(kind))),
             Query::ProductSelection(refusal) => Bank::ProductSelection(product_selection(worth_query_host::facade::primary_graph::WorthQueryProductBranchAdmissionDenial::Refused(refusal))),
             Query::SchedulingRejected => Bank::SchedulingRejected,
@@ -97,6 +126,12 @@ impl From<WorthQueryOutputDemandDenialKind> for BankApplicationOutputSettlementD
             Query::Cancelled => Bank::Cancelled,
             Query::TimedOut => Bank::TimedOut,
             Query::WorkBudgetExceeded => Bank::WorkBudgetExceeded,
+            Query::ProducerRouteRoundBudgetExceeded { source, started, limit } => {
+                Bank::ProducerRouteRoundBudgetExceeded { source, started, limit }
+            }
+            Query::ProducerAttemptRoundBudgetExceeded { source, started, limit } => {
+                Bank::ProducerAttemptRoundBudgetExceeded { source, started, limit }
+            }
             Query::RetentionBudgetExceeded => Bank::RetentionBudgetExceeded,
             Query::PublicationCapacityExceeded => Bank::PublicationCapacityExceeded,
             Query::ForeignDemand => Bank::ForeignDemand,

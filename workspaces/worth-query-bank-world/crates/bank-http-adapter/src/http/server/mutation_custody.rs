@@ -86,7 +86,7 @@ pub(super) enum SourceMutationCustody {
 pub(super) enum CustodyDescription {
     Pending(
         super::super::protocol::BankHttpMutationPosture,
-        Option<super::super::protocol::BankHttpNativeCleanupFailureDescription>,
+        Vec<super::super::protocol::BankHttpNativeCleanupFailureDescription>,
     ),
     Completed {
         recovered: bool,

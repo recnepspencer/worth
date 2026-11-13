@@ -37,10 +37,11 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .installed_mutation_binding::<Binding>()
             .map_err(Denial::DurableBindingAdmission)?;
         self.admit_directory_recovery_custody(installed.operation().contracts().aftermath())?;
-        self.runtime
+        let shape = self
+            .runtime
             .product_runtime
-            .admit_directory_correction_shape(
-                installed.operation().contracts().aftermath(),
+            .admit_directory_original_shape(
+                installed.operation().contracts(),
                 installed.correction_binding(),
             )
             .map_err(Denial::DurableStateAdmission)?;
@@ -59,11 +60,14 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         for &capability in declared {
             require_capability(capability)?;
         }
-        if Binding::REQUIRES_WORKFLOW_AUTHORITY
+        let workflow = Binding::REQUIRES_WORKFLOW_AUTHORITY
             || Binding::WORKFLOW_CONTROL
-            || Binding::workflow_execution_requirements().is_applicable()
-        {
+            || Binding::workflow_execution_requirements().is_applicable();
+        if workflow {
             require_capability(Capability::WorkflowExecution)?;
+        }
+        if shape.requires_external_original_custody() {
+            self.admit_external_original_requirements(declared, workflow)?;
         }
         if installed
             .operation()
@@ -83,6 +87,39 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         }
         if installed.correction_binding().is_some() {
             require_capability(Capability::RetainedCorrectionMaterial)?;
+        }
+        Ok(())
+    }
+
+    fn admit_external_original_requirements(
+        &self,
+        declared: &[Capability],
+        workflow: bool,
+    ) -> Result<(), Denial> {
+        if workflow
+            || ![
+                Capability::ExternalEmission,
+                Capability::ExternalDispatch,
+                Capability::InboundCompletion,
+            ]
+            .iter()
+            .all(|capability| declared.contains(capability))
+        {
+            return Err(Denial::DurableStateAdmission(
+                DurableDenial::UnsupportedCorrectionCompensation,
+            ));
+        }
+        for capability in [
+            Capability::ExternalEmission,
+            Capability::ExternalDispatch,
+            Capability::InboundCompletion,
+            Capability::RecoveryCustody,
+            Capability::RetainedCorrectionMaterial,
+        ] {
+            self.runtime
+                .product_runtime
+                .admit_directory_capability(capability)
+                .map_err(Denial::DurableStateAdmission)?;
         }
         Ok(())
     }
