@@ -42,6 +42,20 @@ pub struct CapturedAuthoredEditStage<S> {
         worth_query_declaration::facade::application_schema::ApplicationSchemaBindingIdentity,
     pub(in crate::domain_computation::primary_graph::application_contribution) producers:
         Vec<ProducerDependencyScopes>,
+    pub(in crate::domain_computation::primary_graph::application_contribution) producer_connections:
+        Vec<(std::any::TypeId, std::any::TypeId)>,
+    pub(in crate::domain_computation::primary_graph::application_contribution) producer_barrier:
+        Vec<String>,
+    pub(in crate::domain_computation::primary_graph::application_contribution) required: Option<
+        Arc<
+            dyn Fn(
+                    &worth_execution::ExecutionRequest<'_, '_>,
+                )
+                    -> super::super::producer::synchronous_outputs::CapturedSynchronousOutputs
+                + Send
+                + Sync,
+        >,
+    >,
     pub(in crate::domain_computation::primary_graph) contracts:
         worth_query_installation::facade::WorthQueryOperationReadTouchOverlapIndex,
 }
@@ -57,6 +71,9 @@ impl<S> Clone for CapturedAuthoredEditStage<S> {
             queries: self.queries.clone(),
             schema: self.schema.clone(),
             producers: self.producers.clone(),
+            producer_connections: self.producer_connections.clone(),
+            producer_barrier: self.producer_barrier.clone(),
+            required: self.required.clone(),
         }
     }
 }
@@ -100,18 +117,6 @@ type Admit<S, B> = dyn Fn(
     ) -> Result<AuthoredEditStageAdmission<S, B>, WorthQueryOutputDemandDenial>
     + Send
     + Sync;
-type Seed<S, B> = dyn Fn(&worth_execution::ExecutionRequest<'_, '_>, StageProgram<S, B>) -> StageProgram<S, B>
-    + Send
-    + Sync;
-pub(super) type StageProgram<S, B> =
-    WorthQueryApplicationEffectProgram<
-        S,
-        <B as ApplicationMutationBinding<S>>::Operation,
-        <B as ApplicationMutationBinding<S>>::Input,
-        <<B as ApplicationMutationBinding<S>>::ScopeBinding as ApplicationMutationScopeBinding<
-            S,
-        >>::Scope,
-    >;
 pub(super) struct TypedStage<S: ApplicationSchema, B: ApplicationMutationBinding<S>> {
     pub(super) key: Arc<ApplicationEditEnvelopeKey<B::IdempotencyKey>>,
     pub(super) input: ApplicationEncodedInput<B::InputBinding>,
@@ -119,7 +124,6 @@ pub(super) struct TypedStage<S: ApplicationSchema, B: ApplicationMutationBinding
     pub(super) source: worth_relational::facade::identity::EntityId,
     pub(super) principal: WorthQueryAuthenticatedExternalPrincipal<S>,
     pub(super) admit: Box<Admit<S, B>>,
-    pub(super) seed: Box<Seed<S, B>>,
     pub(super) result: Arc<std::sync::Mutex<Option<Box<dyn Any + Send>>>>,
 }
 impl<S: ApplicationSchema> CapturedAuthoredEditStage<S> {
@@ -135,10 +139,6 @@ impl<S: ApplicationSchema> CapturedAuthoredEditStage<S> {
                 &AuthoredEditStageContext<'_, '_, '_, S>,
             )
                 -> Result<AuthoredEditStageAdmission<S, B>, WorthQueryOutputDemandDenial>
-            + Send
-            + Sync
-            + 'static,
-        seed: impl Fn(&worth_execution::ExecutionRequest<'_, '_>, StageProgram<S, B>) -> StageProgram<S, B>
             + Send
             + Sync
             + 'static,
@@ -190,6 +190,9 @@ impl<S: ApplicationSchema> CapturedAuthoredEditStage<S> {
             queries,
             schema,
             producers: Vec::new(),
+            producer_connections: Vec::new(),
+            producer_barrier: Vec::new(),
+            required: None,
             identity,
             binding: B::IDENTITY,
             executor: Arc::new(TypedStage::<S, B> {
@@ -199,7 +202,6 @@ impl<S: ApplicationSchema> CapturedAuthoredEditStage<S> {
                 source,
                 principal,
                 admit: Box::new(admit),
-                seed: Box::new(seed),
                 result,
             }),
         })

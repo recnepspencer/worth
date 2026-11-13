@@ -18,7 +18,10 @@ pub(super) fn prepare_members(
     before: &SnapshotHandle,
     policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
 ) -> Result<(), Denial> {
-    let complete = if members.is_empty() && root.candidate_read_support().is_empty() {
+    let complete = if members.is_empty()
+        && root.candidate_read_support().is_empty()
+        && root.coupled_after_own().is_none()
+    {
         None
     } else {
         Some(
@@ -28,41 +31,53 @@ pub(super) fn prepare_members(
                 .expect("Native retained genuine coupled proposal read custody"),
         )
     };
-    if !root.candidate_read_support().is_empty() {
-        support::require_read_support(
-            execution,
-            provider,
-            root,
-            before,
-            complete.as_ref().expect("actual edit query candidate"),
-        )
-        .map_err(Denial::CoupledSupport)?;
+    if let Some(complete) = &complete {
+        if root.coupled_after_own().is_some() {
+            let scope = root.affinity().operation_scope().scope();
+            let source = worth_relational::facade::identity::EntityId::new(
+                worth_relational::facade::identity::PartitionId::new(scope.partition_id()),
+                scope.local_slot(),
+                scope.generation(),
+            );
+            support::require(
+                execution, provider, root, before, complete, source, None, 0, members,
+            )
+            .map_err(Denial::CoupledSupport)?;
+        }
+        support::require_read_support(execution, provider, root, before, complete, members)
+            .map_err(Denial::CoupledSupport)?;
+        for member in members.iter() {
+            let source = member.source();
+            let owned = member.owned.as_ref().expect("atomic group extraction");
+            support::require(
+                execution,
+                provider,
+                &owned.attempt,
+                before,
+                complete,
+                source,
+                owned
+                    .commit
+                    .as_ref()
+                    .and_then(|prepared| prepared.rebase.as_ref()),
+                member.position,
+                members,
+            )
+            .map_err(Denial::CoupledSupport)?;
+            support::require_read_support(
+                execution,
+                provider,
+                &owned.attempt,
+                before,
+                complete,
+                members,
+            )
+            .map_err(Denial::CoupledSupport)?;
+        }
     }
     for member in members {
-        let source = member.source();
         let producer = member.producer_route().is_some();
         let owned = member.owned.as_mut().expect("atomic group extraction");
-        support::require(
-            execution,
-            provider,
-            &owned.attempt,
-            before,
-            complete.as_ref().expect("coupled complete image"),
-            source,
-            owned
-                .commit
-                .as_ref()
-                .and_then(|prepared| prepared.rebase.as_ref()),
-        )
-        .map_err(Denial::CoupledSupport)?;
-        support::require_read_support(
-            execution,
-            provider,
-            &owned.attempt,
-            before,
-            complete.as_ref().expect("actual member query candidate"),
-        )
-        .map_err(Denial::CoupledSupport)?;
         let prepared = owned
             .commit
             .as_mut()

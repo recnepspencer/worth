@@ -142,14 +142,19 @@ implementation belong to pub-core and are excluded from this change.
 
 ## Completion and exclusions
 
-The envelope is explicit at the request boundary. Its intended call shape is
-`request.advanced().edit().mutate(source_intent).seal(document_intent)` followed
-by one idempotency key and `execute_in_program`. The concrete types remain
-owned by Publication and Query; each stage retains its own installed binding
-and independently admitted current authority. Authored stages, including the
-seal, prepare before derived discovery, so producers observe the final authored
-generation and name frontier. A stage token may expose a typed result only from
-the committed envelope that issued it. No transaction or success is ambient.
+The envelope is explicit at the request boundary:
+`request.edit_envelope().stage::<Root, _>(intent)` followed by one
+`.idempotency(key)` and `execute_performed::<Program>`. Publication and Query
+retain each stage's installed binding and independently admitted current-C
+authority. The admitted declared-scope graph interleaves required producer waves
+and later authored stages on one actual candidate D. A genuine authored prefix
+is required; producer work before every authored handler still refuses typed as
+`StageAfterProducer`. A final generation/frontier comparison is ordinary
+application-authored content, with no platform seal API. Final support is checked
+before the one publication, without rerunning an effectful route. A stage token
+exposes a typed result only from its own live committed envelope. Canonical
+replay supplies the original receipt, not reconstructed live stage results;
+adoption reads committed content through Query.
 
 For fixed or discovered required outputs, the existing source-retention entry
 already has the concrete graph and source mapping before publication. That is

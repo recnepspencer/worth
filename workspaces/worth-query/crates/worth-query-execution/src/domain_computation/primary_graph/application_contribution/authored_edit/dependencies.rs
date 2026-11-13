@@ -13,6 +13,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution) struc
 {
     pub identity: String,
     pub family: &'static str,
+    pub family_type: std::any::TypeId,
     pub contract: WorthQueryOperationReadTouchOverlapIndex,
     pub queries: Vec<DeclaredQueryRead>,
 }
@@ -48,23 +49,38 @@ impl<S: ApplicationSchema> CapturedAuthoredEditStage<S> {
     pub fn with_required_output_dependencies<B, D, E>(
         mut self,
         application: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+        demand: D,
+        position: worth_query_declaration::facade::application_program::ApplicationConnectionDeclaration,
+        order: worth_query_declaration::facade::application_program::ApplicationProgramConnectionOrder,
     ) -> Result<Self, WorthQueryOutputDemandDenial>
     where
         B: ApplicationMutationBinding<S>,
-        D: WorthQueryApplicationOutputDemand<S>,
-        E: super::super::producer::synchronous_outputs::SynchronousOutputEdges<S, D>,
-    {
+        D: WorthQueryApplicationOutputDemand<S> + Clone + Send + Sync,
+        E: super::super::producer::synchronous_outputs::SynchronousOutputEdges<S, D> + 'static,
+        super::super::producer::synchronous_outputs::source::SourceInput<S, D>: worth_query_declaration::facade::application_query::ApplicationQueryIntent<S, Binding = super::super::producer::synchronous_outputs::source::Source<S, D>>,
+        <super::super::producer::synchronous_outputs::source::Source<S, D> as worth_query_declaration::facade::application_query::ApplicationQueryBinding<S>>::ScopeBinding: worth_query_declaration::facade::application_query::ApplicationQueryScopeResolution<S, <super::super::producer::synchronous_outputs::source::Source<S, D> as worth_query_declaration::facade::application_query::ApplicationQueryBinding<S>>::PrincipalIdentity>,
+{
         let mut families = declared_families::<S, B>();
-        families
-            .push(crate::equality_type_id::EqualityTypeId::of::<D::OutputFamily>().into_external());
-        E::declared_families(&mut |family| {
+        let root = crate::equality_type_id::EqualityTypeId::of::<D::OutputFamily>().into_external();
+        families.push(root);
+        E::declared_families(root, &mut |parent, family| {
             if !families.contains(&family) {
                 families.push(family);
             }
+            self.producer_connections.push((parent, family));
         });
         self.producers = application
             .installed_producers
             .declared_dependency_scopes(application, &families)?;
+        self.required = Some(std::sync::Arc::new(move |execution| {
+            super::super::producer::synchronous_outputs::CapturedSynchronousOutputs::fixed::<S, D, E>(
+                execution,
+                position.identity(),
+                demand.clone(),
+                position.clone(),
+                &order,
+            )
+        }));
         Ok(self)
     }
 }

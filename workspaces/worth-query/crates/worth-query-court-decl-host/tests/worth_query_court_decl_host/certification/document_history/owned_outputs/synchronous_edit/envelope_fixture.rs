@@ -101,13 +101,16 @@ part!(after_producer, PatchEnvelopeAfterProducer, "owned-outputs.edit-envelope.a
 pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
-    after_producer::declare(cyclic::declare(dependent::declare(calibration::declare(
-        cap::declare(member::declare(model::declare(schema))),
-    ))))
+    super::interleaved::declare(after_producer::declare(cyclic::declare(
+        dependent::declare(calibration::declare(cap::declare(member::declare(
+            model::declare(schema),
+        )))),
+    )))
 }
 pub fn install(
     setup: &mut WorthQueryApplicationContributionSetup<'_, Schema>,
 ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+    super::interleaved::install(setup)?;
     setup.handler::<model::Binding, _>(model::Handler)?;
     setup.handler::<member::Binding, _>(member::Handler)?;
     setup.handler::<cap::Binding, _>(cap::Handler)?;

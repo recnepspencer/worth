@@ -95,9 +95,8 @@ where
                 })().map_err(|cause| stage_admission_refusal::<S, I::Binding>(&worth_query_execution::publication_boundary::program_publication_access(), ordinal, format!("stage admission: {cause:?}")))?;
                 Ok(AuthoredEditStageAdmission::new(prepared.admission, prepared.principal_identity))
             },
-            move |execution, program| program.with_synchronous_required_outputs::<Connection<S, R>, R::Dependents>(&worth_query_execution::publication_boundary::program_publication_access(), execution, demand.clone(), R::RootConnection::declaration(), &order),
             value,
-        ).and_then(|stage| stage.with_required_output_dependencies::<I::Binding, Demand<S, R>, R::Dependents>(context.application)).map_err(|cause| Failure::Mutation(WorthQueryApplicationRequestMutationDenial::Handler(MutationHandlerExecutionDenial::Handler(HandlerExecutionDenial::new(cause)))))
+        ).and_then(|stage| stage.with_required_output_dependencies::<I::Binding, Demand<S, R>, R::Dependents>(context.application, demand, R::RootConnection::declaration(), order)).map_err(|cause| Failure::Mutation(WorthQueryApplicationRequestMutationDenial::Handler(MutationHandlerExecutionDenial::Handler(HandlerExecutionDenial::new(cause)))))
     }
     fn execute_prefix(
         &self,
