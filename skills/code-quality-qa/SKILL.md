@@ -15,6 +15,31 @@ against `composition_laws.md`, `domain_structure_laws.md`, the governing
 specification, and the Composition and Architecture sections of
 `docs/coding-guidelines/qa_review_guide.md`.
 
+## Review purpose and scope
+
+Read the task repository's REVIEW.md. Review is an assessment, not a requirement
+to produce corrections. "No material in-scope findings" is a fully successful
+outcome. Report supported defects; do not manufacture improvements to
+demonstrate thoroughness or suppress a real defect to return a clean verdict.
+
+A blocking finding must identify the affected requirement, credible trigger,
+concrete consequence and smallest coherent correction. Optional improvements
+do not block completion. Follow additional owners only when needed to establish
+or correct that consequence; stop when the assigned review is complete.
+
+## Proportionate engineering
+
+Would an experienced engineer choose this design to solve the actual
+requirement if no AI-generated plan, review checklist or inherited test
+demanded it? Prefer established facilities, clear ownership and proportionate
+complexity. Additional mechanisms must earn their implementation, maintenance
+and iteration cost through a concrete need.
+
+Judge the actual responsibility, consumer and tradeoff rather than a company's
+reputation or an "enterprise grade" label. Unfamiliar or complex code is not
+itself a defect. Explain what is unnecessary and why; do not turn this question
+into speculative redesign, cosmetic cleanup or another mandatory framework.
+
 ## Establish task scope
 
 Identify files changed by the current task and the directly affected parent,

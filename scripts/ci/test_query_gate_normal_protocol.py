@@ -13,6 +13,8 @@ import query_gate
 from query_gate_normal import compile_plan, command_plan, assert_unchanged
 from query_gate_cli import run_normal
 from landing_plan import assess_normal
+from measured_slots import load as load_slots, retain as retain_slots
+from run_lane import retain_recommendations
 import test_query_gate_normal as fixtures
 
 
@@ -40,6 +42,16 @@ class NormalProtocolTests(unittest.TestCase):
     git = fixtures.NormalSourceTests.git
     write = fixtures.NormalSourceTests.write
     commit = fixtures.NormalSourceTests.commit
+    def cpu_capture(self, path, cpu, slots=8):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        event = dict(type='test-cost-cpu', binary='court', test='contract::case',
+                     cpu_seconds=cpu, wall_seconds=2, reserved_slots=slots, exit=0, accounting='complete')
+        path.write_text('Command: ["python", "phase_telemetry.py"]\n'
+            f'Working directory: {self.root}\nHEAD: {self.git("rev-parse", "HEAD")}\n'
+            f'Git status --short empty: {not bool(self.git("status", "--short"))}\nStart: 2026-01-01T00:00:00+00:00\n'
+            'End: 2026-01-01T00:00:02+00:00\nExit code: 0\n'+json.dumps(event))
+        return [event]
+
     def prepare(self, rust=False):
         self.write('.gitignore', '__pycache__/\ntarget/\n')
         self.commit()
@@ -139,6 +151,11 @@ class NormalProtocolTests(unittest.TestCase):
     def test_real_cost_owner_positive_and_failed_missing_extra_repeated_outcomes(self):
         from query_gate_cost import CostGate
         from test_query_gate_cost import binary
+        self.write('.gitignore', '__pycache__/\ntarget/\n')
+        committed = self.root/'scripts/test_cost/slots/root'
+        seed = self.root/'target/seed-telemetry.log'
+        retain_slots(committed, self.cpu_capture(seed, 6), self.git('rev-parse', 'HEAD'), seed)
+        original_policy = {p.name: p.read_bytes() for p in committed.iterdir()}
         plan = self.prepare(rust=True)
         real_gate = query_gate.Gate
         for mutation in (None, 'empty-docs', 'failed', 'missing', 'extra', 'repeated'):
@@ -148,7 +165,7 @@ class NormalProtocolTests(unittest.TestCase):
                     def __init__(self, repository, environment):
                         self.environment, self.logs = environment, []
                 def execute(repository, workspace, lanes, out, cargo_runner, queries,
-                            include_docs, documentation_packages):
+                            include_docs, documentation_packages, recommendation_directory=None):
                     self.assertEqual(documentation_packages, plan['doc_packages'])
                     discovered = {'rust-suites': {
                         'owner': binary('worth-execution', 'lib', [('owner_case', False)]),
@@ -177,6 +194,11 @@ class NormalProtocolTests(unittest.TestCase):
                         '--manifest-path', str(self.root/'Cargo.toml'), '--list-type', 'binaries-only'])
                     compiler_contract(output, 'test-cost/root/documentation/doctests-units.json',
                         self.root, cargo_runner.environment, ['cargo', 'test', '--doc'])
+                    telemetry = out/'telemetry.log'
+                    self.cpu_capture(telemetry, 1, slots=3)
+                    destination = recommendation_directory or committed
+                    retain_recommendations(out, destination, telemetry, plan['source']['commit'], {},
+                                           {'court\ncontract::case'})
                     return dict(documentation=dict(status='pass', exit_code=0,
                                                    selections=snippets, inventory=snippets))
                 def factory(out, affected):
@@ -193,6 +215,10 @@ class NormalProtocolTests(unittest.TestCase):
                         contextlib.redirect_stdout(io.StringIO()):
                     code = run_normal(query_gate, output, plan)
                 self.assertEqual(code, 0 if mutation in (None, 'empty-docs') else 1)
+                self.assertEqual(original_policy, {p.name: p.read_bytes() for p in committed.iterdir()})
+                self.assertEqual(load_slots(committed), {'court\ncontract::case': 3})
+                self.assertEqual(load_slots(output/'test-cost/root/run-local-recommendations'),
+                                 {'court\ncontract::case': 1})
                 if mutation in (None, 'empty-docs'):
                     assessed = assess_normal(self.root, output, plan['source']['commit'], self.base)
                     self.assertEqual(assessed['workspace_coverage'], {'root':'partial'})
@@ -247,6 +273,10 @@ class NormalProtocolTests(unittest.TestCase):
             path.write_text(original)
         rebind_artifacts(output, summary)
         assess()
+        policy = self.root/'scripts/test_cost/slots/root/index.json'
+        original_policy = policy.read_text(); policy.write_text(original_policy+'\n')
+        with self.assertRaisesRegex(ValueError, 'clean committed source'): assess()
+        policy.write_text(original_policy)
 
     def test_original_compiler_overrides_refuse_before_commands(self):
         from lane_environment import LaneEnvironmentRefusal

@@ -17,6 +17,25 @@ def binary(package, kind, names, harness=True):
 
 
 class SharedGateSelectionTests(unittest.TestCase):
+    def test_only_affected_normal_supplies_a_run_local_recommendation_destination(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root=Path(temporary)
+            for affected in (None,{'packages':['worth-execution'],'doc_packages':['worth-execution'],
+                                   'required_courts':[]}):
+                calls=[]
+                def execution(repository,workspace,lanes,output,**options):
+                    calls.append(output)
+                    if affected is None:
+                        self.assertNotIn('recommendation_directory',options)
+                    else:
+                        self.assertEqual(options['recommendation_directory'],output/'run-local-recommendations')
+                    raise ValueError('stop at the injected native boundary')
+                class Runner:
+                    def __init__(self,*args):self.logs=[]
+                gate=CostGate(root,root/'out',{},execution,Runner,affected=affected)
+                gate.configure(['execution']);gate.run('execution')
+                self.assertEqual(calls,[root/'out/root'])
+
     def test_owner_suite_selects_its_library_before_native_build_and_keeps_scope_partial(self):
         metadata = {'workspace_members': ['owner', 'court'], 'packages': [
             {'id': 'owner', 'name': 'worth-query-execution', 'targets': [
