@@ -104,3 +104,5 @@ impl WorthQueryProductRuntime {
         self.owner.owner_identity().durable().is_some()
     }
 }
+
+mod court_doors_for_test;

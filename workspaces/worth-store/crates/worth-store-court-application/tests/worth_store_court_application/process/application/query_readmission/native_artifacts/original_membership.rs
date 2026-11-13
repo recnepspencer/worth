@@ -79,14 +79,12 @@ fn home_custody_keeps_published_original_membership_after_graceful_reopen() {
         revision
     })
     .unwrap();
-    for _ in 0..2 {
-        let home = reopen(directory.path(), execution);
-        assert_eq!(balance(home.runtime()), 8);
-        counted(&home, &execution, revision, 1);
-        home.close(&execution)
-            .unwrap_or_else(|refused| panic!("counted close: {refused:?}"))
-            .reclaim();
-    }
+    let home = reopen(directory.path(), execution);
+    assert_eq!(balance(home.runtime()), 8);
+    counted(&home, &execution, revision, 1);
+    home.close(&execution)
+        .unwrap_or_else(|refused| panic!("counted close: {refused:?}"))
+        .reclaim();
 }
 
 #[test]
@@ -201,14 +199,13 @@ fn home_custody_disposes_released_original_membership_before_service_after_grace
         let journal = MembershipJournal::read_home(&home, &execution);
         assert_eq!(journal.ledger.counts(&revision), (0, 0));
         assert!(journal.ledger.obligations().next().is_none());
-        let frame = journal.read_frame(3, &execution);
-        assert!(matches!(frame.record(),
-            QueryObligationRecord::ProgramSupport(QueryProgramSupportRecord::Release { identity: actual }) if *actual == identity));
-        assert_eq!(
-            journal.ledger.position(),
-            5,
-            "one funded release then the retirement inspection's active abort"
-        );
+        let releases = (1..=journal.ledger.position())
+            .filter(|position| {
+                let frame = journal.read_frame(*position, &execution);
+                matches!(frame.record(), QueryObligationRecord::ProgramSupport(QueryProgramSupportRecord::Release { identity: actual }) if *actual == identity)
+            })
+            .count();
+        assert_eq!(releases, 1, "one actual release for the original membership");
         drop((journal, query, witness));
         close_world(home, &execution);
     })

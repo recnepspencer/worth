@@ -1,4 +1,4 @@
-//! Pure count conservation; no physical publication authority is manufactured.
+//! Local grant and membership-marker transitions; no physical publication claim.
 use super::*;
 use worth_foundational::facade::HomeIdentity;
 fn identity() -> ProgramSupportObligationIdentity {
@@ -8,20 +8,18 @@ fn identity() -> ProgramSupportObligationIdentity {
     )
 }
 #[test]
-fn committed_transfer_replaces_local_custody_without_double_counting() {
+fn committed_transfer_releases_its_local_grant_only_once() {
     let mut local = 1;
     let mut membership = InterpretationMembership::Local;
     membership.begin().unwrap();
     membership.validate_pending(local).unwrap();
     // Only the production authenticated fold can call this state transition.
     membership.committed(&mut local, identity());
-    let durable = 1;
-    assert_eq!(local + durable, 1);
+    assert_eq!(local, 0);
     membership.abandon(&mut local);
     assert_eq!(
-        local + durable,
-        1,
-        "cache Drop cannot discharge durable custody"
+        local, 0,
+        "a committed transfer cannot release its local grant twice"
     );
     assert!(matches!(membership, InterpretationMembership::Durable(id) if id == identity()));
 }

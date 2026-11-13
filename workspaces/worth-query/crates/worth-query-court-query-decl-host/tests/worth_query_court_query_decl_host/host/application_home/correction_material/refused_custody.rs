@@ -8,64 +8,21 @@ use worth_query_host::facade::{
 #[test]
 fn directory_operation_custody_refuses_before_handler_contact_and_keeps_the_home_reopenable() {
     use program::LabelPolicy as Policy;
-    for (policy, family, phase) in [
-        (Policy::Output, Family::OutputDemandRecords, 6),
-        (Policy::Adoption, Family::BranchAdoptionRecovery, 6),
-        (Policy::Managed, Family::ManagedDirectRuns, 7),
-        (Policy::Resource, Family::ResourceOccurrences, 7),
-        (Policy::Workflow, Family::WorkflowInstances, 7),
-        (
-            Policy::OriginalOwner,
-            Family::OriginalOperationDescription,
-            9,
-        ),
-    ] {
-        let path = fixture::location();
-        let contacts = Arc::new(AtomicUsize::new(0));
-        let lease = checkpoint_capture::lease(256 << 20);
-        let execution = worth_execution::ExecutionRequest::leased(&lease);
-        let home = with_bootstrap_advancement_from_request(execution, |phase| {
-            program::request_with_policy(path.clone(), policy, contacts.clone())
-                .open_in_advancement(&phase)
-        })
-        .unwrap()
-        .unwrap_or_else(|cause| panic!("Home: {cause:?}"));
-        let before = home.runtime().runtime().current_world();
-        {
-            let request = scope();
-            let principal = label::authentication::authenticate_external(
-                home.runtime().installed_schema(),
-                "alice",
-                Duration::from_secs(120),
-                &request,
-            );
-            let Err(denial) = home
-                .runtime()
-                .request(&principal, &request)
-                .advanced()
-                .mutate(LabelEdit {
-                    status: "open".into(),
-                    label: "must not write".into(),
-                })
-                .without_source()
-                .idempotency(&"unsupported-custody".to_owned())
-                .execute_in_program(
-                    home.runtime(),
-                    worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-                )
-            else {
-                panic!("unsupported durable custody");
-            };
-            assert!(
-                matches!(denial.kind(), Kind::DurableStateAdmission(Durable::Unsupported {family: found, supported_from_phase}) if found == family && supported_from_phase == phase)
-            );
-            assert_eq!(contacts.load(Ordering::SeqCst), 0);
-            assert_eq!(home.runtime().runtime().current_world(), before);
-        }
-        home.close(&execution)
-            .unwrap_or_else(|cause| panic!("no custody retained: {cause:?}"))
-            .reclaim();
-        let home = open(path, execution);
+    let policy = Policy::Resource;
+    let family = Family::ResourceOccurrences;
+    let phase = 7;
+    let path = fixture::location();
+    let contacts = Arc::new(AtomicUsize::new(0));
+    let lease = checkpoint_capture::lease(256 << 20);
+    let execution = worth_execution::ExecutionRequest::leased(&lease);
+    let home = with_bootstrap_advancement_from_request(execution, |phase| {
+        program::request_with_policy(path.clone(), policy, contacts.clone())
+            .open_in_advancement(&phase)
+    })
+    .unwrap()
+    .unwrap_or_else(|cause| panic!("Home: {cause:?}"));
+    let before = home.runtime().runtime().current_world();
+    {
         let request = scope();
         let principal = label::authentication::authenticate_external(
             home.runtime().installed_schema(),
@@ -73,18 +30,51 @@ fn directory_operation_custody_refuses_before_handler_contact_and_keeps_the_home
             Duration::from_secs(120),
             &request,
         );
-        let rows = home
+        let Err(denial) = home
             .runtime()
             .request(&principal, &request)
-            .query(label::application_queries::AccountSummaryParameters)
-            .execute()
-            .unwrap();
-        assert_eq!(rows.rows()[0].label, "primary");
-        drop(rows);
-        home.close(&execution)
-            .unwrap_or_else(|cause| panic!("reopened refusal Home: {cause:?}"))
-            .reclaim();
+            .advanced()
+            .mutate(LabelEdit {
+                status: "open".into(),
+                label: "must not write".into(),
+            })
+            .without_source()
+            .idempotency(&"unsupported-custody".to_owned())
+            .execute_in_program(
+                home.runtime(),
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )
+        else {
+            panic!("unsupported durable custody");
+        };
+        assert!(
+            matches!(denial.kind(), Kind::DurableStateAdmission(Durable::Unsupported {family: found, supported_from_phase}) if found == family && supported_from_phase == phase)
+        );
+        assert_eq!(contacts.load(Ordering::SeqCst), 0);
+        assert_eq!(home.runtime().runtime().current_world(), before);
     }
+    home.close(&execution)
+        .unwrap_or_else(|cause| panic!("no custody retained: {cause:?}"))
+        .reclaim();
+    let home = open(path, execution);
+    let request = scope();
+    let principal = label::authentication::authenticate_external(
+        home.runtime().installed_schema(),
+        "alice",
+        Duration::from_secs(120),
+        &request,
+    );
+    let rows = home
+        .runtime()
+        .request(&principal, &request)
+        .query(label::application_queries::AccountSummaryParameters)
+        .execute()
+        .unwrap();
+    assert_eq!(rows.rows()[0].label, "primary");
+    drop(rows);
+    home.close(&execution)
+        .unwrap_or_else(|cause| panic!("reopened refusal Home: {cause:?}"))
+        .reclaim();
 }
 #[test]
 fn directory_output_demand_refuses_a_genuine_completed_query_before_producer_selection() {

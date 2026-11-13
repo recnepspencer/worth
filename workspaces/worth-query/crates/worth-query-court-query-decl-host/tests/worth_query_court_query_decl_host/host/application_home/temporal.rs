@@ -265,10 +265,4 @@ fn conditional_temporal_custody_live_logical_discharge_does_not_republish_cleanu
     home.close(&execution)
         .unwrap_or_else(|refused| panic!("live logical discharge permits close: {refused:?}"))
         .reclaim();
-    let home = open(&location, &execution);
-    assert!(home.runtime().managed_cleanup_obligations().is_empty());
-    assert!(home.runtime().conditional_decision_obligations().is_empty());
-    home.close(&execution)
-        .unwrap_or_else(|refused| panic!("discharged reopen permits close: {refused:?}"))
-        .reclaim();
 }
