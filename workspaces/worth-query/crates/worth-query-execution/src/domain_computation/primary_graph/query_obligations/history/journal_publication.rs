@@ -3,37 +3,37 @@ use super::*;
 use journal::*;
 use worth_execution::ExecutionRequest;
 
-pub(super) struct SupportJournalPublication<'a> {
-    lifecycle: &'a WorthQueryProgramSupportLifecycle,
+pub(super) struct QueryObligationPublication<'a> {
+    lifecycle: &'a QueryObligationHistory,
     _driver: std::sync::MutexGuard<'a, ()>,
 }
 
-impl WorthQueryProgramSupportLifecycle {
+impl QueryObligationHistory {
     pub(super) fn lock_publication(
         &self,
-    ) -> Result<SupportJournalPublication<'_>, QueryProgramSupportDenial> {
+    ) -> Result<QueryObligationPublication<'_>, QueryObligationDenial> {
         match self.publication_driver.try_lock() {
-            Ok(guard) => Ok(SupportJournalPublication {
+            Ok(guard) => Ok(QueryObligationPublication {
                 lifecycle: self,
                 _driver: guard,
             }),
-            Err(std::sync::TryLockError::Poisoned(cause)) => Ok(SupportJournalPublication {
+            Err(std::sync::TryLockError::Poisoned(cause)) => Ok(QueryObligationPublication {
                 lifecycle: self,
                 _driver: cause.into_inner(),
             }),
             Err(std::sync::TryLockError::WouldBlock) => {
-                Err(QueryProgramSupportDenial::PublicationPending)
+                Err(QueryObligationDenial::PublicationPending)
             }
         }
     }
 }
-impl SupportJournalPublication<'_> {
+impl QueryObligationPublication<'_> {
     /// This carrier owns the original driver, never the token-state lock.
     pub(super) fn finish_pending(
         &self,
         medium: &dyn QueryObligationsMedium,
         request: &ExecutionRequest<'_, '_>,
-    ) -> Result<(), QueryProgramSupportDenial> {
+    ) -> Result<(), QueryObligationDenial> {
         let Some(frame) = self
             .lifecycle
             .state()
@@ -73,17 +73,17 @@ impl SupportJournalPublication<'_> {
                         .as_mut()
                         .expect("original pending journal")
                         .pending = None;
-                    return Err(QueryProgramSupportDenial::PublicationNoEffect);
+                    return Err(QueryObligationDenial::PublicationNoEffect);
                 }
                 QueryObligationPublicationOutcome::Pending => {
                     request
                         .consult()
-                        .map_err(QueryProgramSupportDenial::Execution)?;
+                        .map_err(QueryObligationDenial::Execution)?;
                     std::thread::yield_now();
                 }
                 QueryObligationPublicationOutcome::Refused(cause) => return Err(cause),
                 QueryObligationPublicationOutcome::Unresolved => {
-                    return Err(QueryProgramSupportDenial::PublicationUnresolved)
+                    return Err(QueryObligationDenial::PublicationUnresolved)
                 }
             }
         }
@@ -91,31 +91,31 @@ impl SupportJournalPublication<'_> {
     fn admit_subject(
         subject: &worth_proof::HomeQueryObligationSubject,
         medium: &dyn QueryObligationsMedium,
-        frame: &QueryProgramSupportFrame,
-    ) -> Result<(), QueryProgramSupportDenial> {
+        frame: &QueryObligationFrame,
+    ) -> Result<(), QueryObligationDenial> {
         subject
             .admit_to(medium.authority())
             .map_err(|cause| match cause {
                 worth_proof::HomeIncarnationDenial::ForeignHome => {
-                    QueryProgramSupportDenial::ForeignHome
+                    QueryObligationDenial::ForeignHome
                 }
                 worth_proof::HomeIncarnationDenial::StaleIncarnation => {
-                    QueryProgramSupportDenial::StaleIncarnation
+                    QueryObligationDenial::StaleIncarnation
                 }
             })?;
         if subject.position() != frame.position()
             || subject.payload_digest() != frame.payload_digest()
         {
-            return Err(QueryProgramSupportDenial::PrefixMismatch);
+            return Err(QueryObligationDenial::PrefixMismatch);
         }
         Ok(())
     }
     fn cutover(
         &self,
-        frame: QueryProgramSupportFrame,
+        frame: QueryObligationFrame,
         proof: worth_proof::DurablyCommitted<worth_proof::CommittedHomeQueryObligation>,
         medium: &dyn QueryObligationsMedium,
-    ) -> Result<(), QueryProgramSupportDenial> {
+    ) -> Result<(), QueryObligationDenial> {
         proof.consume(|publication| {
             Self::admit_subject(publication.subject(), medium, &frame)?;
             let mut state = self.lifecycle.state();
@@ -141,9 +141,11 @@ impl SupportJournalPublication<'_> {
             {
                 transfer.committed(&mut state);
             }
-            if let QueryProgramSupportRecord::Status {
-                revision, after, ..
-            } = frame.record()
+            if let QueryObligationRecord::ProgramSupport(QueryProgramSupportRecord::Status {
+                revision,
+                after,
+                ..
+            }) = frame.record()
                 && let Some((_, entry)) = state
                     .entries
                     .iter_mut()
@@ -162,16 +164,24 @@ impl SupportJournalPublication<'_> {
     pub(super) fn publish(
         &self,
         medium: &dyn QueryObligationsMedium,
-        record: QueryProgramSupportRecord,
+        record: impl Into<QueryObligationRecord>,
         request: &ExecutionRequest<'_, '_>,
-    ) -> Result<(), QueryProgramSupportDenial> {
+    ) -> Result<(), QueryObligationDenial> {
+        self.publish_record(medium, record.into(), request)
+    }
+    fn publish_record(
+        &self,
+        medium: &dyn QueryObligationsMedium,
+        record: QueryObligationRecord,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<(), QueryObligationDenial> {
         self.finish_pending(medium, request)?;
         {
             let mut state = self.lifecycle.state();
             state
                 .journal
                 .as_mut()
-                .ok_or(QueryProgramSupportDenial::SupportUnavailable)?
+                .ok_or(QueryObligationDenial::SupportUnavailable)?
                 .prepare_pending(record)?;
         }
         self.finish_pending(medium, request)

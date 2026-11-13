@@ -6,7 +6,7 @@ use worth_query_execution::facade::application_home_integration::{
     QueryDispatchMedium, QueryHomeCustodyReadmissionDenial,
 };
 use worth_query_execution::facade::correction_material::QueryCorrectionsMedium;
-use worth_query_execution::facade::program_support::QueryObligationsMedium;
+use worth_query_execution::facade::query_obligations::QueryObligationsMedium;
 
 /// Custody from an opening that has not completed D8 service admission.
 ///

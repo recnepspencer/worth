@@ -8,7 +8,7 @@ pub enum QueryObligationPublicationOutcome {
     Pending,
     Committed(worth_proof::DurablyCommitted<worth_proof::CommittedHomeQueryObligation>),
     ProvenNoEffect(worth_proof::NoEffectHomeQueryObligation),
-    Refused(QueryProgramSupportDenial),
+    Refused(QueryObligationDenial),
     Unresolved,
 }
 
@@ -22,14 +22,14 @@ pub trait QueryObligationsMedium: std::fmt::Debug + Send + Sync {
         &self,
         request: &ExecutionRequest<'_, '_>,
         position: u64,
-    ) -> Result<Option<Vec<u8>>, QueryProgramSupportDenial>;
+    ) -> Result<Option<Vec<u8>>, QueryObligationDenial>;
     fn advance_publication(
         &self,
         request: &ExecutionRequest<'_, '_>,
-        frame: &QueryProgramSupportFrame,
+        frame: &QueryObligationFrame,
     ) -> QueryObligationPublicationOutcome;
     fn acknowledge_no_effect(
         &self,
         proof: worth_proof::NoEffectHomeQueryObligation,
-    ) -> Result<(), QueryProgramSupportDenial>;
+    ) -> Result<(), QueryObligationDenial>;
 }

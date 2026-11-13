@@ -1,6 +1,10 @@
-use super::*;
 use std::num::NonZeroU64;
+use worth_foundational::facade::{
+    CanonicalDigestId, DurableCompositePublicationAttemptIdentity, HomeIdentity,
+    ProgramSupportObligationIdentity, ProgramSupportObligationKind, ProgramSupportStatus,
+};
 use worth_foundational::facade::{DurableWorldOwnerIdentity, WorldOwnerSlotIdentity};
+use worth_query_execution::facade::query_obligations::*;
 fn original(home: HomeIdentity, ordinal: u64) -> DurableCompositePublicationAttemptIdentity {
     DurableCompositePublicationAttemptIdentity::from_recorded(
         DurableWorldOwnerIdentity::from_recorded(home, WorldOwnerSlotIdentity::from_recorded(0)),
@@ -14,23 +18,23 @@ fn revision(byte: u8) -> CanonicalDigestId {
     CanonicalDigestId::new([byte; 32])
 }
 fn prepare(
-    ledger: &QueryProgramSupportLedger,
+    ledger: &QueryObligationLedger,
     record: QueryProgramSupportRecord,
-) -> Result<QueryProgramSupportFrame, QueryProgramSupportDenial> {
-    let mut generations = QueryProgramSupportPublicationGenerations::from_journal(ledger);
+) -> Result<QueryObligationFrame, QueryObligationDenial> {
+    let mut generations = QueryObligationPublicationGenerations::from_journal(ledger);
     ledger.prepare(record, &mut generations)
 }
-fn append(ledger: &mut QueryProgramSupportLedger, record: QueryProgramSupportRecord) -> Vec<u8> {
+fn append(ledger: &mut QueryObligationLedger, record: QueryProgramSupportRecord) -> Vec<u8> {
     let frame = prepare(ledger, record).unwrap();
     let bytes = frame.bytes().to_vec();
     ledger
-        .readmit(QueryProgramSupportFrame::readmit(&bytes).unwrap())
+        .readmit(QueryObligationFrame::readmit(&bytes).unwrap())
         .unwrap();
     bytes
 }
 #[test]
 fn acknowledged_obligation_membership_derives_counts_and_requires_explicit_release() {
-    let mut ledger = QueryProgramSupportLedger::empty(home(1));
+    let mut ledger = QueryObligationLedger::empty(home(1));
     let source = revision(1);
     let target = revision(2);
     let mut prefix = vec![append(
@@ -55,9 +59,9 @@ fn acknowledged_obligation_membership_derives_counts_and_requires_explicit_relea
     ));
     assert_eq!(ledger.counts(&source), (0, 1));
     assert_eq!(ledger.counts(&target), (0, 1));
-    let mut cold = QueryProgramSupportLedger::empty(home(1));
+    let mut cold = QueryObligationLedger::empty(home(1));
     for bytes in prefix {
-        cold.readmit(QueryProgramSupportFrame::readmit(&bytes).unwrap())
+        cold.readmit(QueryObligationFrame::readmit(&bytes).unwrap())
             .unwrap();
     }
     assert_eq!(cold.counts(&source), (0, 1));
@@ -74,19 +78,19 @@ fn acknowledged_obligation_membership_derives_counts_and_requires_explicit_relea
     });
     assert_eq!(
         prepare(&ledger, duplicate),
-        Err(QueryProgramSupportDenial::DuplicateObligation)
+        Err(QueryObligationDenial::DuplicateObligation)
     );
     append(&mut ledger, QueryProgramSupportRecord::Release { identity });
     assert_eq!(ledger.counts(&source), (0, 0));
     assert_eq!(ledger.counts(&target), (0, 0));
     assert_eq!(
         prepare(&ledger, QueryProgramSupportRecord::Release { identity }),
-        Err(QueryProgramSupportDenial::UnknownObligation)
+        Err(QueryObligationDenial::UnknownObligation)
     );
 }
 #[test]
 fn same_program_obligations_count_once_and_retirement_requires_no_durable_users() {
-    let mut ledger = QueryProgramSupportLedger::empty(home(1));
+    let mut ledger = QueryObligationLedger::empty(home(1));
     let source = revision(1);
     append(
         &mut ledger,
@@ -122,7 +126,7 @@ fn same_program_obligations_count_once_and_retirement_requires_no_durable_users(
                 after: ProgramSupportStatus::Retired
             }
         ),
-        Err(QueryProgramSupportDenial::SupportUnavailable)
+        Err(QueryObligationDenial::SupportUnavailable)
     );
     append(&mut ledger, QueryProgramSupportRecord::Release { identity });
     append(
@@ -143,12 +147,12 @@ fn same_program_obligations_count_once_and_retirement_requires_no_durable_users(
                 after: ProgramSupportStatus::Active
             }
         ),
-        Err(QueryProgramSupportDenial::IllegalStatusTransition)
+        Err(QueryObligationDenial::IllegalStatusTransition)
     );
 }
 #[test]
 fn cold_readmission_preserves_retiring_and_retired_without_reinstalling_active() {
-    let mut ledger = QueryProgramSupportLedger::empty(home(1));
+    let mut ledger = QueryObligationLedger::empty(home(1));
     let source = revision(1);
     let mut prefix = vec![append(
         &mut ledger,
@@ -162,9 +166,9 @@ fn cold_readmission_preserves_retiring_and_retired_without_reinstalling_active()
             after: ProgramSupportStatus::Retiring,
         },
     ));
-    let mut cold = QueryProgramSupportLedger::empty(home(1));
+    let mut cold = QueryObligationLedger::empty(home(1));
     for bytes in &prefix {
-        cold.readmit(QueryProgramSupportFrame::readmit(bytes).unwrap())
+        cold.readmit(QueryObligationFrame::readmit(bytes).unwrap())
             .unwrap();
     }
     assert_eq!(cold.status(&source), Some(ProgramSupportStatus::Retiring));
@@ -176,7 +180,7 @@ fn cold_readmission_preserves_retiring_and_retired_without_reinstalling_active()
             after: ProgramSupportStatus::Retired,
         },
     );
-    cold.readmit(QueryProgramSupportFrame::readmit(&bytes).unwrap())
+    cold.readmit(QueryObligationFrame::readmit(&bytes).unwrap())
         .unwrap();
     assert_eq!(cold.status(&source), Some(ProgramSupportStatus::Retired));
     assert_eq!(cold.digest(), ledger.digest());
@@ -185,12 +189,12 @@ fn cold_readmission_preserves_retiring_and_retired_without_reinstalling_active()
             &cold,
             QueryProgramSupportRecord::Install { revision: source }
         ),
-        Err(QueryProgramSupportDenial::DuplicateProgram)
+        Err(QueryObligationDenial::DuplicateProgram)
     );
 }
 #[test]
 fn support_frames_refuse_damage_foreign_home_and_wrong_prefix_with_typed_causes() {
-    let ledger = QueryProgramSupportLedger::empty(home(1));
+    let ledger = QueryObligationLedger::empty(home(1));
     let frame = prepare(
         &ledger,
         QueryProgramSupportRecord::Install {
@@ -201,25 +205,25 @@ fn support_frames_refuse_damage_foreign_home_and_wrong_prefix_with_typed_causes(
     let mut bytes = frame.bytes().to_vec();
     bytes[50] ^= 1;
     assert_eq!(
-        QueryProgramSupportFrame::readmit(&bytes),
-        Err(QueryProgramSupportDenial::Checksum)
+        QueryObligationFrame::readmit(&bytes),
+        Err(QueryObligationDenial::Checksum)
     );
-    let mut foreign = QueryProgramSupportLedger::empty(home(2));
+    let mut foreign = QueryObligationLedger::empty(home(2));
     assert_eq!(
         foreign.readmit(frame.clone()),
-        Err(QueryProgramSupportDenial::ForeignHome)
+        Err(QueryObligationDenial::ForeignHome)
     );
-    let mut cold = QueryProgramSupportLedger::empty(home(1));
+    let mut cold = QueryObligationLedger::empty(home(1));
     cold.readmit(frame.clone()).unwrap();
     assert_eq!(
         cold.readmit(frame),
-        Err(QueryProgramSupportDenial::PrefixMismatch)
+        Err(QueryObligationDenial::PrefixMismatch)
     );
 }
 #[test]
 fn a_checksummed_unknown_version_or_trailing_field_never_enters_the_ledger() {
     use sha2::{Digest, Sha256};
-    let ledger = QueryProgramSupportLedger::empty(home(1));
+    let ledger = QueryObligationLedger::empty(home(1));
     let frame = prepare(
         &ledger,
         QueryProgramSupportRecord::Install {
@@ -229,12 +233,12 @@ fn a_checksummed_unknown_version_or_trailing_field_never_enters_the_ledger() {
     .unwrap();
     let mut bytes = frame.bytes().to_vec();
     bytes.truncate(bytes.len() - 32);
-    bytes[8..12].copy_from_slice(&2u32.to_le_bytes());
+    bytes[8..12].copy_from_slice(&1u32.to_le_bytes());
     let hash: [u8; 32] = Sha256::digest(&bytes).into();
     bytes.extend_from_slice(&hash);
     assert_eq!(
-        QueryProgramSupportFrame::readmit(&bytes),
-        Err(QueryProgramSupportDenial::UnsupportedVersion(2))
+        QueryObligationFrame::readmit(&bytes),
+        Err(QueryObligationDenial::UnsupportedVersion(1))
     );
     let mut bytes = frame.bytes().to_vec();
     bytes.truncate(bytes.len() - 32);
@@ -242,14 +246,14 @@ fn a_checksummed_unknown_version_or_trailing_field_never_enters_the_ledger() {
     let hash: [u8; 32] = Sha256::digest(&bytes).into();
     bytes.extend_from_slice(&hash);
     assert_eq!(
-        QueryProgramSupportFrame::readmit(&bytes),
-        Err(QueryProgramSupportDenial::MalformedFrame)
+        QueryObligationFrame::readmit(&bytes),
+        Err(QueryObligationDenial::MalformedFrame)
     );
 }
 
 #[test]
 fn prepared_support_records_name_only_the_affected_revisions() {
-    let mut ledger = QueryProgramSupportLedger::empty(home(1));
+    let mut ledger = QueryObligationLedger::empty(home(1));
     let a = revision(1);
     let b = revision(2);
     let unrelated = revision(3);
@@ -277,13 +281,13 @@ fn prepared_support_records_name_only_the_affected_revisions() {
         original: original(home(1), 0),
     });
     for revision in [a, b] {
-        assert!(ledger.record_mentions_revision(&acquire, &revision));
+        assert!(ledger.record_mentions_revision(&acquire.clone().into(), &revision));
     }
-    assert!(!ledger.record_mentions_revision(&acquire, &unrelated));
+    assert!(!ledger.record_mentions_revision(&acquire.clone().into(), &unrelated));
     append(&mut ledger, acquire);
     let release = QueryProgramSupportRecord::Release { identity };
     for revision in [a, b] {
-        assert!(ledger.record_mentions_revision(&release, &revision));
+        assert!(ledger.record_mentions_revision(&release.clone().into(), &revision));
     }
-    assert!(!ledger.record_mentions_revision(&release, &unrelated));
+    assert!(!ledger.record_mentions_revision(&release.clone().into(), &unrelated));
 }

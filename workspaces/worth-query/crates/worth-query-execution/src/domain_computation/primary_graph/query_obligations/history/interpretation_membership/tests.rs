@@ -65,15 +65,15 @@ fn a_transfer_without_local_custody_refuses_before_the_fold() {
     let mut membership = InterpretationMembership::Local;
     assert_eq!(
         membership.validate_pending(1),
-        Err(QueryProgramSupportDenial::ObligationSubjectMismatch)
+        Err(QueryObligationDenial::ObligationSubjectMismatch)
     );
     membership.begin().unwrap();
     assert_eq!(
         membership.validate_pending(0),
-        Err(QueryProgramSupportDenial::ObligationSubjectMismatch)
+        Err(QueryObligationDenial::ObligationSubjectMismatch)
     );
     assert_eq!(
         membership.begin(),
-        Err(QueryProgramSupportDenial::ObligationSubjectMismatch)
+        Err(QueryObligationDenial::ObligationSubjectMismatch)
     );
 }

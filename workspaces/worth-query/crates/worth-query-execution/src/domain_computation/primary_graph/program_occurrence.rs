@@ -24,15 +24,15 @@ mod original_meaning;
 pub(crate) mod presented_program;
 pub(in crate::domain_computation) use original_meaning::OriginalProgramMeaning;
 pub(crate) mod revision_rendering;
-pub(crate) mod support_lifecycle;
+use crate::domain_computation::primary_graph::query_obligations::history;
 
 pub(in crate::domain_computation::primary_graph) use activation_cell::WorthQueryProgramActivationCell;
-pub(in crate::domain_computation::primary_graph) use presented_program::WorthQueryPresentedProgram;
-pub(in crate::domain_computation::primary_graph) use revision_rendering::program_revision_rendering;
-pub use support_lifecycle::WorthQueryProgramSupportRetirementReceipt;
-pub(in crate::domain_computation::primary_graph) use support_lifecycle::{
+pub use history::WorthQueryProgramSupportRetirementReceipt;
+pub(in crate::domain_computation::primary_graph) use history::{
     WorthQueryProgramSupportCustody, WorthQueryProgramSupportInterpretation,
 };
+pub(in crate::domain_computation::primary_graph) use presented_program::WorthQueryPresentedProgram;
+pub(in crate::domain_computation::primary_graph) use revision_rendering::program_revision_rendering;
 
 /// The program support one published application runtime retains.
 pub struct WorthQueryInstalledProgramSupport<Schema> {
@@ -40,7 +40,7 @@ pub struct WorthQueryInstalledProgramSupport<Schema> {
     roster: Arc<WorthQueryProgramSupportRoster<Schema>>,
     renderings: Box<[AspectValue]>,
     activation: WorthQueryProgramActivationCell,
-    lifecycle: Arc<support_lifecycle::WorthQueryProgramSupportLifecycle>,
+    lifecycle: Arc<history::QueryObligationHistory>,
     pub(in crate::domain_computation::primary_graph) adoption_admissions:
         std::collections::BTreeMap<
             ApplicationProgramRevision,
@@ -62,9 +62,7 @@ impl<Schema> WorthQueryInstalledProgramSupport<Schema> {
             .collect();
         Self {
             native_programs: Box::new([]),
-            lifecycle: Arc::new(
-                support_lifecycle::WorthQueryProgramSupportLifecycle::installed(&roster),
-            ),
+            lifecycle: Arc::new(history::QueryObligationHistory::installed(&roster)),
             adoption_admissions: std::collections::BTreeMap::new(),
             roster,
             renderings,
@@ -234,11 +232,19 @@ impl<Schema> WorthQueryInstalledProgramSupport<Schema> {
     pub(in crate::domain_computation::primary_graph) fn bind_original_meaning_receiver(
         &self,
         receiver: &super::provider::WorthQueryPrimaryGraphProvider,
-    ) -> Result<(), support_lifecycle::journal::QueryProgramSupportDenial> {
+    ) -> Result<
+        (),
+        crate::domain_computation::primary_graph::query_obligations::QueryObligationDenial,
+    > {
         receiver.bind_original_meaning_support(&self.lifecycle)
     }
 
-    pub fn lifecycle(&self) -> &support_lifecycle::WorthQueryProgramSupportLifecycle {
+    pub(in crate::domain_computation::primary_graph) fn obligation_history(
+        &self,
+    ) -> Arc<history::QueryObligationHistory> {
+        Arc::clone(&self.lifecycle)
+    }
+    pub fn lifecycle(&self) -> &history::QueryObligationHistory {
         &self.lifecycle
     }
 

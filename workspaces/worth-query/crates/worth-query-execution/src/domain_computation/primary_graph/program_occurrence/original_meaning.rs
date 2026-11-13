@@ -12,14 +12,14 @@ impl<Schema> WorthQueryInstalledProgramSupport<Schema> {
         original: &worth_runtime_world::facade::WorldOriginalStateObservation<'_>,
     ) -> Result<
         Arc<OriginalProgramMeaning>,
-        super::support_lifecycle::journal::QueryProgramSupportDenial,
+        crate::domain_computation::primary_graph::query_obligations::QueryObligationDenial,
     > {
         let program = self
             .native_programs
             .iter()
             .find(|program| program.revision().as_bytes() == original.program_revision().bytes())
             .ok_or(
-                super::support_lifecycle::journal::QueryProgramSupportDenial::SupportUnavailable,
+                crate::domain_computation::primary_graph::query_obligations::QueryObligationDenial::SupportUnavailable,
             )?;
         let interpretation = self
             .lifecycle
@@ -48,10 +48,13 @@ impl<Schema> WorthQueryInstalledProgramSupport<Schema> {
 impl OriginalProgramMeaning {
     pub(in crate::domain_computation::primary_graph) fn acknowledge_membership(
         &self,
-        receiver: &super::support_lifecycle::WorthQueryProgramSupportLifecycle,
+        receiver: &crate::domain_computation::primary_graph::query_obligations::history::QueryObligationHistory,
         opened: &worth_runtime_world::facade::WorldOpenedPublicationAttempt,
         request: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<(), super::support_lifecycle::journal::QueryProgramSupportDenial> {
+    ) -> Result<
+        (),
+        crate::domain_computation::primary_graph::query_obligations::QueryObligationDenial,
+    > {
         receiver.transfer_original_interpretation(&self.interpretation, opened, request)
     }
 

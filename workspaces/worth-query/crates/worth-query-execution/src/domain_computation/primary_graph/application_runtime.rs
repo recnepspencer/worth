@@ -337,6 +337,7 @@ impl WorthQueryApplicationLiveDeliveryCloseReceipt {
 }
 
 mod candidate_input_observation;
+mod managed_cleanup;
 
 mod operation_input_capture;
 pub use operation_input_capture::WorthQueryOperationInputCaptureDenial;

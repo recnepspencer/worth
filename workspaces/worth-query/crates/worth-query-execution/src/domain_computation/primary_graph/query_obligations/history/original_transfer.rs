@@ -14,29 +14,31 @@ pub(super) struct PendingInterpretationTransfer {
 impl PendingInterpretationTransfer {
     pub(super) fn validate(
         &self,
-        state: &SupportLifecycleState,
-        frame: &QueryProgramSupportFrame,
-    ) -> Result<(), QueryProgramSupportDenial> {
-        let QueryProgramSupportRecord::Acquire(row) = frame.record() else {
-            return Err(QueryProgramSupportDenial::ObligationSubjectMismatch);
+        state: &QueryObligationState,
+        frame: &QueryObligationFrame,
+    ) -> Result<(), QueryObligationDenial> {
+        let QueryObligationRecord::ProgramSupport(QueryProgramSupportRecord::Acquire(row)) =
+            frame.record()
+        else {
+            return Err(QueryObligationDenial::ObligationSubjectMismatch);
         };
         if row.identity != self.identity
             || row.kind != ProgramSupportObligationKind::OriginalInterpretation
             || row.source.bytes() != self.revision.as_bytes()
             || row.target != row.source
         {
-            return Err(QueryProgramSupportDenial::ObligationSubjectMismatch);
+            return Err(QueryObligationDenial::ObligationSubjectMismatch);
         }
         let entry = state
             .entries
             .get(&self.revision)
-            .ok_or(QueryProgramSupportDenial::SupportUnavailable)?;
+            .ok_or(QueryObligationDenial::SupportUnavailable)?;
         self.membership
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .validate_pending(entry.retained_interpretations)
     }
-    pub(super) fn committed(self, state: &mut SupportLifecycleState) {
+    pub(super) fn committed(self, state: &mut QueryObligationState) {
         self.membership
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
@@ -49,7 +51,7 @@ impl PendingInterpretationTransfer {
                 self.identity,
             );
     }
-    pub(super) fn no_effect(self, state: &mut SupportLifecycleState) {
+    pub(super) fn no_effect(self, state: &mut QueryObligationState) {
         self.membership
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
@@ -62,38 +64,38 @@ impl PendingInterpretationTransfer {
             );
     }
 }
-impl WorthQueryProgramSupportLifecycle {
+impl QueryObligationHistory {
     pub(in crate::domain_computation::primary_graph) fn transfer_original_interpretation(
         &self,
         token: &WorthQueryProgramSupportInterpretation,
         opened: &WorldOpenedPublicationAttempt,
         request: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<(), QueryProgramSupportDenial> {
+    ) -> Result<(), QueryObligationDenial> {
         if !Arc::ptr_eq(&self.state, &token.state)
             || opened.program_revision().bytes() != token.revision.as_bytes()
         {
-            return Err(QueryProgramSupportDenial::ObligationSubjectMismatch);
+            return Err(QueryObligationDenial::ObligationSubjectMismatch);
         }
         let medium = self
             .medium
             .get()
-            .ok_or(QueryProgramSupportDenial::SupportUnavailable)?;
+            .ok_or(QueryObligationDenial::SupportUnavailable)?;
         let original = opened.association().attempt();
         if original.owner().home() != medium.home() {
-            return Err(QueryProgramSupportDenial::ForeignHome);
+            return Err(QueryObligationDenial::ForeignHome);
         }
         opened
             .attempt_identity()
             .owner_identity()
             .home_incarnation_fence()
-            .ok_or(QueryProgramSupportDenial::ForeignHome)?
+            .ok_or(QueryObligationDenial::ForeignHome)?
             .admit(medium.incarnation().fence())
             .map_err(|cause| match cause {
                 worth_proof::HomeIncarnationDenial::ForeignHome => {
-                    QueryProgramSupportDenial::ForeignHome
+                    QueryObligationDenial::ForeignHome
                 }
                 worth_proof::HomeIncarnationDenial::StaleIncarnation => {
-                    QueryProgramSupportDenial::StaleIncarnation
+                    QueryObligationDenial::StaleIncarnation
                 }
             })?;
         let driver = self.lock_publication()?;
@@ -115,30 +117,30 @@ impl WorthQueryProgramSupportLifecycle {
                                 .obligations()
                                 .find(|row| row.identity == *identity)
                         })
-                        .ok_or(QueryProgramSupportDenial::UnknownObligation)?;
+                        .ok_or(QueryObligationDenial::UnknownObligation)?;
                     return if row.original == original && row.source == opened.program_revision() {
                         Ok(())
                     } else {
-                        Err(QueryProgramSupportDenial::ObligationSubjectMismatch)
+                        Err(QueryObligationDenial::ObligationSubjectMismatch)
                     };
                 }
                 InterpretationMembership::Local => {}
                 InterpretationMembership::Pending
                 | InterpretationMembership::AbandonedPending
                 | InterpretationMembership::Disposed => {
-                    return Err(QueryProgramSupportDenial::ObligationSubjectMismatch)
+                    return Err(QueryObligationDenial::ObligationSubjectMismatch)
                 }
             }
             let journal = state
                 .journal
                 .as_mut()
-                .ok_or(QueryProgramSupportDenial::SupportUnavailable)?;
+                .ok_or(QueryObligationDenial::SupportUnavailable)?;
             let position = journal
                 .ledger
                 .position()
                 .checked_add(1)
                 .and_then(std::num::NonZeroU64::new)
-                .ok_or(QueryProgramSupportDenial::IdentityExhausted)?;
+                .ok_or(QueryObligationDenial::IdentityExhausted)?;
             let identity = ProgramSupportObligationIdentity::from_recorded(medium.home(), position);
             let revision = CanonicalDigestId::new(*token.revision.as_bytes());
             journal.prepare_pending(QueryProgramSupportRecord::Acquire(

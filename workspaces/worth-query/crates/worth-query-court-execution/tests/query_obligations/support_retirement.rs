@@ -1,13 +1,17 @@
 //! Value admission for an existing original grant while its support retires.
-use super::*;
 use std::num::NonZeroU64;
+use worth_foundational::facade::{
+    CanonicalDigestId, DurableCompositePublicationAttemptIdentity, HomeIdentity,
+    ProgramSupportObligationIdentity, ProgramSupportObligationKind, ProgramSupportStatus,
+};
 use worth_foundational::facade::{DurableWorldOwnerIdentity, WorldOwnerSlotIdentity};
+use worth_query_execution::facade::query_obligations::*;
 #[test]
 fn retiring_support_accepts_existing_original_transfers_but_not_new_adoptions() {
     let home = HomeIdentity::from_observed_bytes([1; 16]).unwrap();
     let revision = CanonicalDigestId::new([2; 32]);
-    let mut ledger = QueryProgramSupportLedger::empty(home);
-    let mut generations = QueryProgramSupportPublicationGenerations::from_journal(&ledger);
+    let mut ledger = QueryObligationLedger::empty(home);
+    let mut generations = QueryObligationPublicationGenerations::from_journal(&ledger);
     for record in [
         QueryProgramSupportRecord::Install { revision },
         QueryProgramSupportRecord::Status {
@@ -48,7 +52,7 @@ fn retiring_support_accepts_existing_original_transfers_but_not_new_adoptions() 
             QueryProgramSupportRecord::Acquire(adoption),
             &mut generations
         ),
-        Err(QueryProgramSupportDenial::SupportUnavailable)
+        Err(QueryObligationDenial::SupportUnavailable)
     );
     ledger.readmit(frame).unwrap();
     assert_eq!(ledger.counts(&revision), (1, 0));
@@ -61,6 +65,6 @@ fn retiring_support_accepts_existing_original_transfers_but_not_new_adoptions() 
             },
             &mut generations
         ),
-        Err(QueryProgramSupportDenial::SupportUnavailable)
+        Err(QueryObligationDenial::SupportUnavailable)
     );
 }

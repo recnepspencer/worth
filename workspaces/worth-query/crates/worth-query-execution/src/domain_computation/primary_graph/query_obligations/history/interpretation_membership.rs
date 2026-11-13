@@ -1,5 +1,5 @@
 //! Local grant conservation while the same original acquire is unresolved.
-use super::journal::QueryProgramSupportDenial;
+use super::journal::QueryObligationDenial;
 use worth_foundational::facade::ProgramSupportObligationIdentity;
 
 pub(super) enum InterpretationMembership {
@@ -10,25 +10,25 @@ pub(super) enum InterpretationMembership {
     Disposed,
 }
 impl InterpretationMembership {
-    pub(super) fn begin(&mut self) -> Result<(), QueryProgramSupportDenial> {
+    pub(super) fn begin(&mut self) -> Result<(), QueryObligationDenial> {
         match self {
             Self::Local => {
                 *self = Self::Pending;
                 Ok(())
             }
             Self::Pending | Self::AbandonedPending | Self::Durable(_) | Self::Disposed => {
-                Err(QueryProgramSupportDenial::ObligationSubjectMismatch)
+                Err(QueryObligationDenial::ObligationSubjectMismatch)
             }
         }
     }
-    pub(super) fn validate_pending(&self, local: usize) -> Result<(), QueryProgramSupportDenial> {
+    pub(super) fn validate_pending(&self, local: usize) -> Result<(), QueryObligationDenial> {
         match self {
             Self::Pending | Self::AbandonedPending if local > 0 => Ok(()),
             Self::Local
             | Self::Pending
             | Self::AbandonedPending
             | Self::Durable(_)
-            | Self::Disposed => Err(QueryProgramSupportDenial::ObligationSubjectMismatch),
+            | Self::Disposed => Err(QueryObligationDenial::ObligationSubjectMismatch),
         }
     }
     pub(super) fn committed(
