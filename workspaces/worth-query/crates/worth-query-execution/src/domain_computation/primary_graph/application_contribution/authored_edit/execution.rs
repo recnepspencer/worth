@@ -1,5 +1,5 @@
 //! Each retry creates real C admission and reads D through the shared handler path.
-use super::capture::{StageProgram, TypedStage};
+use super::capture::TypedStage;
 use super::*;
 use crate::domain_computation::primary_graph::application_attempt::{
     self, CommitPreparedCoupledWriter, InspectedAuthoredApplication, InspectedCoupledWriter,
@@ -119,7 +119,6 @@ where
             }
         };
         let (program, result) = completed.into_parts();
-        let program: StageProgram<S, B> = (self.seed)(execution, program);
         let binding =
             WorthQueryApplicationIdempotencyBinding::for_authored_stage_identities(&identities)
                 .expect("canonical stage identities");

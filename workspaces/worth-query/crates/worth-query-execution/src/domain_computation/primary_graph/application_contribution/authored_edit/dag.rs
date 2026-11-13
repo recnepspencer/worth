@@ -40,7 +40,7 @@ pub struct DeclaredEditScopeCycle {
 pub enum DeclaredEditOrderRefusal {
     Cycle(DeclaredEditScopeCycle),
     Execution(WorthQueryApplicationAttemptDenial),
-    /// Authored stages after a producer wave require phase 2.3's qualification.
+    /// This entry requires a genuine authored prefix before any producer wave.
     StageAfterProducer(DeclaredEditDependency),
 }
 struct Node<'a> {
@@ -85,7 +85,7 @@ fn overlap(
 }
 pub fn order_authored_stages<S>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    stages: &[CapturedAuthoredEditStage<S>],
+    stages: &mut [CapturedAuthoredEditStage<S>],
 ) -> Result<Vec<usize>, DeclaredEditOrderRefusal> {
     let Some(first) = stages.first() else {
         return Ok(Vec::new());
@@ -121,9 +121,32 @@ pub fn order_authored_stages<S>(
                 continue;
             }
             if let Some(dependency) = overlap(reads, writes, &first.schema) {
-                edges.push((writer, reader, dependency));
+                edges.push((writer, reader, Some(dependency)));
                 incoming[reader] += 1;
             }
+        }
+    }
+    for (parent, child) in stages.iter().flat_map(|stage| &stage.producer_connections) {
+        let family_node = |kind: &std::any::TypeId| {
+            let family = stages
+                .iter()
+                .flat_map(|stage| &stage.producers)
+                .find(|producer| producer.family_type == *kind)?
+                .family;
+            nodes.iter().position(|node| {
+                matches!(&node.subject,
+                DeclaredEditParticipant::Producer { family: actual, .. } if actual == family)
+            })
+        };
+        if let (Some(parent), Some(child)) = (family_node(parent), family_node(child))
+            && parent != child
+            && !edges
+                .iter()
+                .any(|(from, to, _)| *from == parent && *to == child)
+        {
+            checkpoint(execution)?;
+            edges.push((parent, child, None));
+            incoming[child] += 1;
         }
     }
     let mut order = Vec::new();
@@ -141,7 +164,7 @@ pub fn order_authored_stages<S>(
         let overlaps = cycle
             .iter()
             .zip(cycle.iter().cycle().skip(1))
-            .map(|(writer, reader)| {
+            .filter_map(|(writer, reader)| {
                 edges
                     .iter()
                     .find(|(from, to, _)| from == writer && to == reader)
@@ -161,16 +184,32 @@ pub fn order_authored_stages<S>(
             overlaps,
         }));
     }
-    if let Some((_, _, dependency)) = edges
-        .into_iter()
-        .find(|(writer, reader, _)| *writer >= stages.len() && *reader < stages.len())
-    {
+    if order.first().is_some_and(|first| *first >= stages.len()) {
+        let dependency = edges
+            .iter()
+            .find_map(|(writer, reader, dependency)| {
+                (*writer >= stages.len() && *reader < stages.len())
+                    .then(|| dependency.clone())
+                    .flatten()
+            })
+            .expect(
+                "a producer precedes every authored stage only through a declared read dependency",
+            );
         return Err(DeclaredEditOrderRefusal::StageAfterProducer(dependency));
     }
-    Ok(order
-        .into_iter()
-        .filter(|ordinal| *ordinal < stages.len())
-        .collect())
+    let mut families = Vec::new();
+    let mut authored = Vec::new();
+    for ordinal in order {
+        match &nodes[ordinal].subject {
+            DeclaredEditParticipant::Stage(_) => authored.push((ordinal, families.clone())),
+            DeclaredEditParticipant::Producer { family, .. } => families.push(family.clone()),
+        }
+    }
+    drop(nodes);
+    for (ordinal, barrier) in &authored {
+        stages[*ordinal].producer_barrier = barrier.clone();
+    }
+    Ok(authored.into_iter().map(|(ordinal, _)| ordinal).collect())
 }
 
 fn checkpoint(

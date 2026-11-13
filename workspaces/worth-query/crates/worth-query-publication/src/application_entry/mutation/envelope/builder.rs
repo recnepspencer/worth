@@ -133,7 +133,7 @@ where
                             WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause),
                         ))
                         .map_err(envelope_failure)?,
-                    &captured,
+                    &mut captured,
                 );
                 let order = match order {
                     Ok(order) => order,

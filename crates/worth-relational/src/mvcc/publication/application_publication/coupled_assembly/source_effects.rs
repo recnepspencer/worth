@@ -1,4 +1,4 @@
-//! Immutable diagnostic effects of the actual applied authored prefix.
+//! Immutable descriptive effects of exactly the actual authored appends.
 use super::*;
 use crate::authority::mutation::FoundationalPatchFragment;
 use crate::publication::patch::data::PublishedAuthoritativeRecordPatch;
@@ -27,6 +27,7 @@ impl RelationalCoupledAuthoredSourceEffects {
     pub(super) fn capture(
         execution: &ExecutionRequest<'_, '_>,
         fragments: &[FoundationalPatchFragment],
+        ranges: impl Iterator<Item = std::ops::Range<usize>> + Clone,
     ) -> Result<Self, TransactionCommitError> {
         execution
             .run_native_with_checkpoint(|context| {
@@ -35,13 +36,15 @@ impl RelationalCoupledAuthoredSourceEffects {
                         crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow,
                     )
                 };
-                let mut bytes = (fragments.len() as u64)
+                let count = ranges.clone().map(|range| range.len()).sum::<usize>();
+                let selected = || ranges.clone().flat_map(|range| fragments[range].iter());
+                let mut bytes = (count as u64)
                     .checked_mul(size_of::<PublishedAuthoritativeRecordPatch>() as u64)
                     .and_then(|n| {
                         n.checked_add((size_of::<Backing>() + 2 * size_of::<usize>()) as u64)
                     })
                     .ok_or_else(overflow)?;
-                for fragment in fragments {
+                for fragment in selected() {
                     checkpoint(context, 1).map_err(custody::execution_stop)?;
                     bytes = bytes
                         .checked_add(fragment.published_record_owned_allocation_capacity_bytes())
@@ -55,12 +58,12 @@ impl RelationalCoupledAuthoredSourceEffects {
                     custody::execution_stop(crate::execution::denial::lease_denial(cause))
                 })?;
                 let mut patches = Vec::new();
-                patches.try_reserve_exact(fragments.len()).map_err(|_| {
+                patches.try_reserve_exact(count).map_err(|_| {
                     custody::execution_stop(
                         crate::execution::RelationalExecutionDenialCause::AllocationFailed,
                     )
                 })?;
-                for fragment in fragments {
+                for fragment in selected() {
                     checkpoint(
                         context,
                         fragment

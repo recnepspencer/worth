@@ -12,7 +12,7 @@ pub struct SynchronousOutputWave<S: ApplicationSchema> {
     storage: Option<worth_execution::ExecutionMemoryReservation>,
 }
 impl<S: ApplicationSchema> SynchronousOutputWave<S> {
-    pub(super) fn new() -> Self {
+    pub(in crate::domain_computation::primary_graph::application_contribution) fn new() -> Self {
         Self {
             tasks: Vec::new(),
             storage: None,
@@ -112,19 +112,31 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
         self.storage = memory;
         Ok(())
     }
-    pub(super) fn drive(
-        mut self,
+    pub(in crate::domain_computation::primary_graph::application_contribution) fn drive(
+        &mut self,
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
         candidate: &mut RelationalAuthoredCoupledCandidate<'_>,
+        allowed: Option<&[String]>,
     ) -> Result<(), SynchronousOutputFailure> {
         while !self.tasks.is_empty() {
             let mut rank = usize::MAX;
             for task in &self.tasks {
                 context.checkpoint(task.subject)?;
-                rank = rank.min(task.rank);
+                if allowed.is_none_or(|families| {
+                    families.iter().any(|family| family == task.tree.family())
+                }) {
+                    rank = rank.min(task.rank);
+                }
+            }
+            if rank == usize::MAX {
+                break;
             }
             for task in &mut self.tasks {
-                if task.rank == rank {
+                if task.rank == rank
+                    && allowed.is_none_or(|families| {
+                        families.iter().any(|family| family == task.tree.family())
+                    })
+                {
                     task.parent = task.tree.prepare(context, candidate)?;
                 }
             }
@@ -133,7 +145,11 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
                 .map_err(CoupledSourceReadStop::from)?;
             let mut next = Self::new();
             for task in self.tasks.drain(..) {
-                if task.rank != rank {
+                if task.rank != rank
+                    || !allowed.is_none_or(|families| {
+                        families.iter().any(|family| family == task.tree.family())
+                    })
+                {
                     next.reserve_slot(context, task.subject)?;
                     next.tasks.push(task);
                     continue;
@@ -143,7 +159,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
                     task.tree.discover(context, &parent, &mut next)?;
                 }
             }
-            self = next;
+            *self = next;
         }
         Ok(())
     }

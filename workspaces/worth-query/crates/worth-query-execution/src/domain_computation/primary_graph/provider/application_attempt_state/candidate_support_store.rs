@@ -30,11 +30,28 @@ impl WorthQueryPrimaryGraphApplicationAttemptStore {
     }
 }
 impl super::super::WorthQueryPrimaryGraphProvider {
+    pub(in crate::domain_computation::primary_graph) fn retain_authored_prefix_after_own(
+        &self,
+        root: &WorthQueryProviderSessionTerminalBinding,
+        identity: worth_query_declaration::facade::application_operation::ApplicationEditStageIdentity,
+        binding: &'static str,
+        pin: worth_relational::facade::runtime::RelationalPinnedRead<
+            worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
+        >,
+    ) -> Result<(), Denial> {
+        self.attempts
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+            .query_support_root(root)?
+            .replace_authored_prefix_after_own(identity, binding, pin);
+        Ok(())
+    }
     pub(in crate::domain_computation::primary_graph) fn retain_candidate_read_support(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         root: &WorthQueryProviderSessionTerminalBinding,
         source: EntityId,
+        position: usize,
         support: CandidateReadSupport,
     ) -> Result<(), Denial> {
         if self
@@ -51,7 +68,7 @@ impl super::super::WorthQueryPrimaryGraphProvider {
             .lock()
             .unwrap_or_else(|p| p.into_inner())
             .query_support_root(root)?
-            .retain_candidate_read_support(execution, source, support)
+            .retain_candidate_read_support(execution, source, position, support)
     }
     pub(in crate::domain_computation::primary_graph) fn reset_candidate_read_support(
         &self,

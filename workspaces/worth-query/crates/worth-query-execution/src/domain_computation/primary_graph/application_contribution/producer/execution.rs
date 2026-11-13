@@ -157,7 +157,7 @@ where
             identity: self.source_query.identity().into(),
             contract: self.source_query.query().read_graph().clone(),
         });
-        Ok(super::super::authored_edit::ProducerDependencyScopes { identity: Binding::IDENTITY.into(), family: <Binding::OutputFamily as worth_query_declaration::facade::application_program::WorthQueryProducerOutputFamily<Schema>>::IDENTITY, contract: self.mutation.operation().contracts().read_touch_overlap().clone(), queries })
+        Ok(super::super::authored_edit::ProducerDependencyScopes { identity: Binding::IDENTITY.into(), family: <Binding::OutputFamily as worth_query_declaration::facade::application_program::WorthQueryProducerOutputFamily<Schema>>::IDENTITY, family_type: crate::equality_type_id::EqualityTypeId::of::<Binding::OutputFamily>().into_external(), contract: self.mutation.operation().contracts().read_touch_overlap().clone(), queries })
     }
     fn supports_history_group(&self) -> bool {
         use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;

@@ -48,9 +48,11 @@ pub(in crate::domain_computation::primary_graph) struct CoupledApplicationAssemb
 struct AuthoredWriter<'run, S> {
     capture: crate::domain_computation::primary_graph::application_contribution::authored_edit::CapturedAuthoredEditStage<S>,
     physical: usize,
+    position: usize,
     stage: Option<CoupledWriterStage<'run>>,
 }
 struct CoupledWriter<'run, S> {
+    position: usize,
     producer: std::sync::Arc<registry::InstalledProducerProvider<S>>,
     stage: Option<CoupledWriterStage<'run>>,
     meaning: worth_relational::facade::mvcc::RequiredOutputPublicationMeaning,
@@ -66,6 +68,9 @@ enum CoupledWriterStage<'run> {
     ),
 }
 impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run, 'phase, S> {
+    fn applied_position(&self) -> usize {
+        self.authored.borrow().len() + self.writers.borrow().len()
+    }
     pub(in crate::domain_computation::primary_graph) fn new(
         phase: &'run WorthQueryAdvancementPhase<'phase>,
         coordination: &'a crate::domain_computation::primary_graph::provider::WorthQueryApplicationBranchCommitCoordination<'a>,
@@ -108,6 +113,7 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
                 execution,
                 &self.root_session,
                 source,
+                self.applied_position(),
                 crate::domain_computation::primary_graph::provider::CandidateReadSupport::Query(
                     support,
                 ),
@@ -128,6 +134,7 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
                 execution,
                 &self.root_session,
                 parent.source(),
+                self.applied_position(),
                 crate::domain_computation::primary_graph::provider::CandidateReadSupport::Parent(
                     parent,
                 ),

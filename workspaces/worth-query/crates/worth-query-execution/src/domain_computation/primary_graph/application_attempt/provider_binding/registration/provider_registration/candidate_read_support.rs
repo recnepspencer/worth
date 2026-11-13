@@ -7,7 +7,7 @@ use crate::domain_computation::primary_graph::{
 use worth_relational::facade::identity::EntityId;
 #[derive(Default)]
 pub(super) struct CandidateReadSupports {
-    values: Vec<(EntityId, CandidateReadSupport)>,
+    values: Vec<(EntityId, usize, CandidateReadSupport)>,
     storage: Option<worth_execution::ExecutionMemoryReservation>,
 }
 impl CandidateReadSupports {
@@ -15,6 +15,7 @@ impl CandidateReadSupports {
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         source: EntityId,
+        position: usize,
         support: CandidateReadSupport,
     ) -> Result<(), Denial> {
         let subject = support.subject();
@@ -39,7 +40,7 @@ impl CandidateReadSupports {
                 .ok_or_else(capacity)?
                 .max(1);
             let bytes = next
-                .checked_mul(std::mem::size_of::<(EntityId, CandidateReadSupport)>())
+                .checked_mul(std::mem::size_of::<(EntityId, usize, CandidateReadSupport)>())
                 .and_then(|bytes| u64::try_from(bytes).ok())
                 .ok_or_else(capacity)?;
             let memory = execution
@@ -71,7 +72,7 @@ impl CandidateReadSupports {
             self.values = replacement;
             self.storage = memory;
         }
-        self.values.push((source, support));
+        self.values.push((source, position, support));
         Ok(())
     }
 }
@@ -80,17 +81,18 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         source: EntityId,
+        position: usize,
         support: CandidateReadSupport,
     ) -> Result<(), Denial> {
         self.candidate_read_support
-            .retain(execution, source, support)
+            .retain(execution, source, position, support)
     }
     pub(in crate::domain_computation::primary_graph) fn reset_candidate_read_support(&mut self) {
         self.candidate_read_support = CandidateReadSupports::default();
     }
     pub(in crate::domain_computation::primary_graph) fn candidate_read_support(
         &self,
-    ) -> &[(EntityId, CandidateReadSupport)] {
+    ) -> &[(EntityId, usize, CandidateReadSupport)] {
         &self.candidate_read_support.values
     }
 }

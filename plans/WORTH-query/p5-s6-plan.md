@@ -1,6 +1,6 @@
 # P5 CP3 plan: S6 read-your-writes edit envelope
 
-Approved with changes (D1588; review `orchestration/reviews/pubquery-cp3-plan-review.md`, 8 binding changes, all taken in below). CP3 lands as two landings, L1 and L2. Each has its own header and its own review (two rounds at most). All 22 P5 mutants stay required (D1397); the S6 subset M-S1..M-S5 is mapped in section 6.
+Approved with changes (D1588; review `orchestration/reviews/pubquery-cp3-plan-review.md`, 8 binding changes, all taken in below). L1 landed with its retained certification. L2 completes that existing envelope. Current REVIEW/qa-tests scheduling governs implementation evidence: use the bounded ordinary journey and directly affected controls in the Phase 3 completion Plan, reuse valid results, and recheck corrections only. The historical 22-mutant and hot/worker portfolios below record their original scope; they are not fresh execution mandates.
 
 ## L1 header: authored stages, envelope entry, slots, keys, receipt, DAG
 
@@ -20,7 +20,7 @@ Approved with changes (D1588; review `orchestration/reviews/pubquery-cp3-plan-re
 - **Requires:** L1 landed and certified; the same B3 ruling; the existing final-support owner (`Q/provider/application_attempt_state/commit_preparation/relational_commit/commit_execution/coupled/support.rs:91-104`, `CoupledReadSupportChanged`).
 - **Establishes:** Phase 8 (proprietary #93) may rely on one envelope covering edit, dependents and seal, with one key, one receipt carrying the seal stage's typed result, and typed refusals that name their subject and publish nothing. It may **not** assume a verification run (3b, public #137), more than one effectful round per route (#119, #115), a multi-program envelope, or that a later stage may change data an earlier participant read (refused typed, section 4).
 - **Not in parallel with:** as L1.
-- **Closes when:** every section 6 row is green with its mutant, including M-S2, M-S4 and M-S5; commits per edit are counted at 3 and 12 dependents; the capability index's row (now `capability-index.md:510`, "General demand continuations and the seal envelope remain in P5/S6") states the entry; `synchronous-edit-publication.md:150-152` is edited for B3; and the work is on public master (section 7).
+- **Closes when:** the required L2 behavior has sufficient focused affected evidence, including one coherent ordinary journey at 3 and 12 dependents and affected atomic refusal, seal, support and replay controls; docs and the compiling public consumer describe that entry; the settled implementation receives its required boundary review and reaches public master (section 7). A broad gate, blanket mutant campaign or duplicate hot/worker matrix is not a prerequisite.
 
 Paths: N = `crates/worth-relational/src`; NC = `N/mvcc/publication/application_publication/coupled_assembly`; Q = `workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph`; P = `workspaces/worth-query/crates/worth-query-publication/src/application_entry`.
 
@@ -36,6 +36,12 @@ Paths: N = `crates/worth-relational/src`; NC = `N/mvcc/publication/application_p
   - **One refusal slot, cleared per assembly:** `DeclaredProducerAssembly` keeps one `denial` slot (`Q/application_contribution/producer/coupled_assembly.rs:37`). The caller maps a missing denial to the generic uncommitted outcome, with no subject (`Q/application_attempt/provider_execution/phase/prepared/running/progression/registered.rs:231-234`).
 
 ## 2. Envelope shape
+
+The entry requires a genuine authored prefix. Phase 3 adds A → wave → B;
+producer execution before every authored handler is not promised. A prefix-free
+producer-dependent request retains the existing typed `StageAfterProducer`
+refusal; neither a synthetic no-op stage nor an empty transaction substitutes
+for actual authored admission.
 
 ```text
 envelope (one key, one Native commit, one receipt with per-stage results):
@@ -135,9 +141,9 @@ no kernel fallback or new admission authority.
 | 18 | B re-demands an untouched A-wave route | 0 contacts, 0 extra commits | the route re-run | L2 |
 | 19 | Commits per edit do not grow | 3 and 12 dependents: 1 commit each, counted with the all-branch counter (`reconciliation/commit_count.rs:100-140`, `synchronous_edit/courts.rs:64-68`) | a commit per dependent | L2 |
 
-- Every court runs hot and worker-only. Row 11 is the one cold court.
-- Mutants: commit first, inject, `git checkout --`, `git diff --exit-code`.
-- The other 17 P5 mutants (D1397) keep passing through the existing CP2a/CP2b courts; each landing's handoff lists them with their status.
+- Historical L1 hot/worker, cold and mutation evidence retains its actual certified scope. Current L2 execution uses the bounded ordinary journey and causally affected controls, without replaying that portfolio.
+- An additional sensitivity probe needs a concrete unresolved defect it could distinguish; no fixed mutant quota or extra certification round applies.
+- Reuse the accepted CP2a/CP2b/Native/replay evidence for unchanged contracts and report only checks actually performed on the new source.
 
 ## 7. Public ref at close
 

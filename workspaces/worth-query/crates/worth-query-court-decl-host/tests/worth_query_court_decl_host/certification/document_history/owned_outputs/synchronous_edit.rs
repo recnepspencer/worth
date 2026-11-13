@@ -112,6 +112,7 @@ mod convergent;
 mod fresh_custody;
 
 mod envelope_identity;
+pub(super) mod interleaved;
 
 pub(super) mod envelope_fixture;
 
