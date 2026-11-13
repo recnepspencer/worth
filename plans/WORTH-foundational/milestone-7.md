@@ -700,13 +700,13 @@ Phase 8 is complete only when:
 - the public surface is history-safe
 - later adopters do not need code archaeology to discover the meaning surface
 
-### Phase 9: `feature-doc-writer` Closeout And Crate-Docs Registration
+### Phase 9: Feature Documentation Closeout And Crate-Docs Registration
 
 Only after the feature seams are fully implemented and verified should the
 milestone run the final documentation closeout. This phase exists so the docs
 are not treated as optional polish or one large catch-all narrative page.
 
-This phase must explicitly use the `feature-doc-writer` skill and must produce
+This phase must produce
 crate-facing docs that are organized by category folder, with one document per
 real feature seam.
 
@@ -741,8 +741,7 @@ crates/worth-foundational/docs/
 
 Phase 9 is complete only when:
 
-- the `feature-doc-writer` pass has been run against the shipped Milestone 7
-  surface
+- the documentation has been checked against the shipped Milestone 7 surface
 - the docs live in a category folder rather than a flat pile
 - each real feature seam has exactly one primary documentation home
 - the docs are linked into the crate-facing documentation surface

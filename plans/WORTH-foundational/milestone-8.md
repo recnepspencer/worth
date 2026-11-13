@@ -880,7 +880,7 @@ Phase 7 is complete only when:
 
 This is the terminal implementation-delivery phase. The implementation is not
 complete until the shipped surface has been turned into real crate-facing docs
-through the `feature-doc-writer` skill and integrated into the crate’s
+and integrated into the crate’s
 documentation tree in the final published shape.
 
 This phase exists to prevent the common failure mode where the milestone closes
@@ -888,7 +888,7 @@ with strong internals and readiness artifacts but without a durable
 documentation system that future adopters can actually use. The engineer should
 treat this as product-surface delivery, not optional cleanup.
 
-Work this phase in strict order. First, run the `feature-doc-writer` skill
+Work this phase in strict order. First, write the feature documentation
 against the final shipped Milestone 8 surface rather than against the spec.
 Second, create category folders under
 `crates/worth-foundational/docs/` so the documentation tree is organized by
@@ -918,7 +918,7 @@ folders by category, and each real feature gets one primary document.
 
 Phase 8 is complete only when:
 
-- the `feature-doc-writer` skill has been used for the final feature-doc pass
+- the final feature documentation has been checked against the shipped surface
 - the docs live under crate-doc category folders rather than a flat directory
 - each real feature seam has exactly one primary feature document
 - the landing pages and feature docs are linked into the crate’s documentation

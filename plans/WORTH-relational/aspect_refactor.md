@@ -359,8 +359,8 @@ Follow **Foundational Usage Rules** and the foundational docs. Non-negotiables:
 
 ## Testing Rule (Refactor Override)
 
-This refactor **overrides** the usual "test after every batch" habit from
-`implementation-batch`.
+This refactor uses one focused verification pass at the end of each coherent
+batch.
 
 - **Do not run tests** until the full planned batch for the turn is implemented.
 - Expect compile breaks and widespread test failure mid-batch. Keep going.
@@ -376,8 +376,7 @@ This refactor **overrides** the usual "test after every batch" habit from
 2. Read this file.
 3. Immediately read `crates/worth-foundational/docs/aspect-contracts-values-and-authoritative-state/README.md`.
 4. Immediately read any sibling foundational pages the batch will rely on.
-5. Only after that, read the `implementation-batch` skill and write a batch
-   plan (template below).
+5. Only after that, write a batch plan (template below).
 6. Read the `code-quality-qa` skill.
 7. Implement the batch without running tests until the batch is complete.
 8. Apply `code-quality-qa` to touched production code before ending the turn.

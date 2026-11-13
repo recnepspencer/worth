@@ -64,9 +64,9 @@ or complex code is not itself a defect; explain what is unnecessary and why.
 ## Required platform review skills
 
 Read skills/qa-loop/SKILL.md, skills/qa-tests/SKILL.md and
-skills/code-quality-qa/SKILL.md. Use implementation-batch for new implementation
-slices. CAD kernel reviews use cad-qa-loop and cad-qa-tests instead of the generic
-pair; code-quality-qa remains shared.
+skills/code-quality-qa/SKILL.md. Apply code-quality-qa after behaviour and test QA.
+CAD kernel reviews use cad-qa-loop and cad-qa-tests instead of the generic pair;
+code-quality-qa remains shared.
 
 The CAD skills use the public skill bodies with CAD kernel addenda. Dedicated
 kernel suite simplification uses

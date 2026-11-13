@@ -1,152 +1,68 @@
 ---
 name: code-quality-qa
-description: Review and correct WORTH code composition and domain topology within the current task's causal scope. Use when auditing responsibility, placement, naming, facades, module boundaries, future insertion, or repository size and function advisories without absorbing unrelated dirty-worktree debt.
+description: "Review and correct the structure of a change: ownership,
+  placement, naming, module boundaries and size. Use after behaviour and
+  test QA, on platform or CAD work."
 ---
 
 # Code Quality QA
 
-This skill is shared by public platform and CAD kernel work. For kernel
-behavior and test QA, pair it with cad-qa-loop and cad-qa-tests; for public
-platform work, pair it with qa-loop and qa-tests. Read the task repository's
-REVIEW.md and current domain laws; do not infer CAD ownership from platform code.
+Review whether the structure of this change matches its meaning. "No
+material findings" is a fully successful outcome. Structure serves the code
+that exists and the successors the specification names, nothing further.
 
-Review whether the change's physical structure preserves its meaning. Judge
-against `composition_laws.md`, `domain_structure_laws.md`, the governing
-specification, and the Composition and Architecture sections of
-`docs/coding-guidelines/qa_review_guide.md`.
+## Scope
 
-## Review purpose and scope
+The files this task changed, plus the parents, facades and consumers needed
+to judge them. A violation this task introduced or touched is a finding. A
+violation that was already there is reported as debt and left alone.
 
-Read the task repository's REVIEW.md. Review is an assessment, not a requirement
-to produce corrections. "No material in-scope findings" is a fully successful
-outcome. Report supported defects; do not manufacture improvements to
-demonstrate thoroughness or suppress a real defect to return a clean verdict.
+Run `python scripts/quality/scrutinize_rust_functions.py --dirty .` where it
+exists and inspect the candidates inside this scope.
 
-A blocking finding must identify the affected requirement, credible trigger,
-concrete consequence and smallest coherent correction. Optional improvements
-do not block completion. Follow additional owners only when needed to establish
-or correct that consequence; stop when the assigned review is complete.
+## What counts as a finding
 
-## Proportionate engineering
+A finding names the rule broken and one concrete cost: an edit that would
+have to touch unrelated places, or something a reader would get wrong. With
+no concrete cost it is taste, and it is not a finding. Unfamiliar or complex
+code is not a defect.
 
-Would an experienced engineer choose this design to solve the actual
-requirement if no AI-generated plan, review checklist or inherited test
-demanded it? Prefer established facilities, clear ownership and proportionate
-complexity. Additional mechanisms must earn their implementation, maintenance
-and iteration cost through a concrete need.
+## Rules
 
-Judge the actual responsibility, consumer and tradeoff rather than a company's
-reputation or an "enterprise grade" label. Unfamiliar or complex code is not
-itself a defect. Explain what is unnecessary and why; do not turn this question
-into speculative redesign, cosmetic cleanup or another mandatory framework.
+- A module, file or type owns one idea, and its name says which. A name that
+  hides what is inside, or promises more than is there, is a finding.
+- Logic lives in the narrowest place that owns it. Stable meaning does not
+  depend on volatile mechanism.
+- A facade re-exports. It does not implement or decide.
+- An orchestrating function reads as named steps. Decisions, effects and
+  failure handling are not buried in a body that mixes levels.
+- A responsibility can be added or removed in one obvious place.
+- Files stay within 400 lines. A function over 60 lines or with five or
+  more arguments gets a look; size alone is not a defect. Do not split a
+  file into fragments just to meet the number.
+- A change does not widen the compile or link closure of normal edits:
+  no heavy dependency, generic instantiation or test world pulled into a
+  crate that did not need it.
 
-## Establish task scope
+## Remove
 
-Identify files changed by the current task and the directly affected parent,
-child, facade, consumer, and dependency modules needed to judge ownership.
-Distinguish that scope from unrelated pre-existing staged, unstaged, renamed, or
-untracked user work. Do not expand the task merely because the worktree is large
-or dirty.
+- A trait, interface or generic with one implementation and no named
+  successor.
+- A layer that only forwards.
+- Configuration nobody sets, and extension points for unnamed future work.
+- Resource bookkeeping in ordinary domain APIs (counters, budgets, quotes,
+  ledgers) without a stated requirement or a measured failure. Moving or
+  renaming it does not justify it.
 
-Run repository composition, function, and line-cap tools required by local
-instructions. Classify their findings by causal scope. A structural violation
-introduced, modified, or made relevant by the current task blocks completion;
-an unrelated pre-existing violation is reported as repository debt.
+## Correcting
 
-In WORTH Rust worktrees, use
-`python scripts/quality/scrutinize_rust_functions.py --dirty .` when available,
-then inspect every reported candidate that belongs to the task's causal scope.
-Apply the 400-line limit as required by repository rules. Functions over 60
-lines or with five or more explicit arguments require judgment but are not
-defects by size alone.
+- Correct by moving, renaming, merging or deleting. Do not add structure to
+  fix structure.
+- Corrections do not change behaviour and do not go beyond the findings.
+- Build once, after the structure has settled, at the smallest meaningful
+  scope.
 
-## Remove resource bookkeeping from ordinary domain APIs
+## Report
 
-Treat mandatory work counters, candidate budgets, retained-byte estimates,
-mutation quotes, reservation ledgers, and per-publisher field/link/copy byte
-accounting as unnecessary API and maintenance burden unless an explicit product
-requirement or measured resource failure establishes their need. In the affected
-path, prefer deleting that burden over improving its precision or packaging.
-A typed quote, shared calculator, or framework-owned ledger still needs the same
-justification; moving accounting does not make it necessary.
-
-Ordinary domain callers should express intent and publish valid changes without
-predicting resource bills. Preserve authority, validity, currentness, atomicity,
-checked sizes, cancellation, and ordinary allocation failure handling directly.
-Do not infer that these correctness guarantees require resource pre-admission.
-Distinguish semantic counts, revisions, and termination logic from bookkeeping
-that exists only to enforce a budget.
-
-Prioritize coherent authoring boundaries, local invalidation/reuse, partitioning,
-and useful parallelism over speculative resource infrastructure. Do not promote
-accounting to a foundational prerequisite merely because existing code or tests
-already use it. When removal is requested, simplify the affected API and update
-its consumers and tests coherently, preserving unrelated work and accepted
-functional evidence. Avoid compatibility shims, renamed counters, replacement
-accounting frameworks, and an unrelated repository-wide cleanup campaign.
-
-## Independent review
-
-Use the structural reviewer selected by the user or repository. Do not hard-code
-a model or require a new instance after every edit. Give the reviewer the
-relevant laws, specification, current diff, task-scoped file inventory,
-destination topology, and enforcement results. A persistent reviewer must
-inspect the final diff before clearing the change.
-
-Verify reviewer findings directly. If required outside review is unavailable,
-report that limitation without treating the primary pass as independent.
-
-## Review lenses
-
-- **Destination topology:** Expected successors enter without authority
-  reversal, bucket growth, or unrelated relocation.
-- **Semantic responsibility:** Each directory, file, type, and function owns a
-  predictable idea at its visibility radius.
-- **Composition:** Orchestrators read as named semantic steps; decisions,
-  effects, and failure paths are not hidden in mixed-level bodies.
-- **Placement:** Logic lives at the narrowest honest semantic radius, and stable
-  meaning owns volatile mechanisms.
-- **Naming:** Names predict contents, exclusions, authority, phase, and truth
-  status without archaeology.
-- **Boundary honesty:** Facades aggregate rather than implement, and dependency
-  direction preserves authority.
-- **Compile locality:** Dependencies, generic instantiations, test worlds,
-  harnesses and crate placement preserve economical normal edits. Inspect
-  compile and link closure rather than considering only test runtime.
-- **Deletion and extension:** Adding or removing a responsibility has an obvious
-  location and does not require unrelated edits.
-- **Size discipline:** Task-scoped files satisfy repository limits and are not
-  split into dishonest fragments merely to satisfy a number.
-
-Keep the pass structural. Follow semantic, performance, or test defects only
-when structure conceals or causes them.
-
-## Correct and complete
-
-Correct responsibility and topology rather than shuffling lines. Search the
-affected semantic family for the same structural defect and verify compilation
-and required repository enforcement after the structure stabilizes.
-
-Review is complete when the task-scoped structure is coherent, required limits
-and checks pass, the assigned reviewer has inspected the final diff, and no
-known in-scope structural defect remains. Report unrelated repository debt as a
-caveat rather than silently absorbing or fixing it.
-
-## Compile time is sacred
-
-During ordinary development, slice review and routine landing, use cheap source
-checks and the smallest meaningful compilation and test scope. Include compile,
-link and fixture construction cost when selecting evidence; test runtime alone
-does not describe its cost.
-
-Expensive gates belong at milestone completion, release verification or nightly
-jobs. They are not prerequisites for every edit, review, commit or slice landing.
-Do not expand automatically to all reverse dependencies or workspace CI.
-
-A concrete suspected defect may require an expensive focused reproducer. Name
-the uncertainty and why cheaper evidence cannot resolve it; this does not
-authorize a full gate. Do not invent a scheduling job by invoking this policy.
-
-Reuse valid evidence and rerun checks when a correction affects what they
-establish. Three QA lenses do not imply three builds, test runs or reviewers.
-Report deferred verification honestly; a focused pass is not a full gate pass.
+Findings with their rule and cost, corrections made, debt left alone,
+commands actually run.
