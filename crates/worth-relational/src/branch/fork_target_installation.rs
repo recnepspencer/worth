@@ -36,7 +36,7 @@ impl RelationalForkPort {
         self.owner
             .bind_target_basis_registry_metrics(&mut target.target_cell);
         self.owner
-            .install_head(&target.target_cell, &target_root)
+            .install_head(&target.target_cell, &target_root, &target.source_root)
             .map_err(map_retention_denial)?;
         let basis = if return_basis {
             let descriptor = crate::branch::descriptor_for_cell(&target.target_cell, &target_root)
