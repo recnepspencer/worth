@@ -68,6 +68,11 @@ skills/code-quality-qa/SKILL.md. Use implementation-batch for new implementation
 slices. CAD kernel reviews use cad-qa-loop and cad-qa-tests instead of the generic
 pair; code-quality-qa remains shared.
 
+The CAD skills use the public skill bodies with CAD kernel addenda. Dedicated
+kernel suite simplification uses
+[cad-test-suite-simplify](skills/cad-test-suite-simplify/SKILL.md), rather than
+adding a simplification pass to ordinary production reviews.
+
 ## Platform ownership
 
 Public WORTH owns snapshot consistency, dependency tracking, currentness,
