@@ -13,7 +13,6 @@ pub(in super::super::super) enum LabelPolicy {
     Resource,
     Conditional,
     Temporal,
-    Workflow,
     OriginalOwner,
 }
 pub(super) fn install(
@@ -29,7 +28,6 @@ pub(super) fn install(
         LabelPolicy::Resource => setup.handler::<LabelBinding, _>(ResourceHandler(contacts)),
         LabelPolicy::Conditional => setup.handler::<LabelBinding, _>(ConditionalHandler(contacts)),
         LabelPolicy::Temporal => setup.handler::<LabelBinding, _>(TemporalHandler(contacts)),
-        LabelPolicy::Workflow => setup.handler::<LabelBinding, _>(WorkflowHandler(contacts)),
         LabelPolicy::OriginalOwner => {
             setup.handler::<LabelBinding, _>(OriginalOwnerHandler(contacts))
         }
@@ -149,28 +147,6 @@ struct TemporalHandler(Arc<AtomicUsize>);
 impl OperationHandler<IdentityExecutionSchema, LabelBinding> for TemporalHandler {
     fn declared_durable_capabilities() -> Option<&'static [Capability]> {
         Some(&[Capability::TemporalExecution])
-    }
-    fn decide(
-        &self,
-        input: &LabelEdit,
-        reader: &mut DecisionReader<'_, '_, '_, IdentityExecutionSchema, LabelBinding>,
-    ) -> HandlerResult<LabelEdit, LabelEdit> {
-        self.0.fetch_add(1, Ordering::SeqCst);
-        LabelHandler.decide(input, reader)
-    }
-    fn build_candidate(
-        &self,
-        input: &LabelEdit,
-        decision: LabelEdit,
-        writer: &mut CandidateWriter<'_, IdentityExecutionSchema, LabelBinding>,
-    ) -> HandlerResult<LabelEdit, LabelEdit> {
-        LabelHandler.build_candidate(input, decision, writer)
-    }
-}
-struct WorkflowHandler(Arc<AtomicUsize>);
-impl OperationHandler<IdentityExecutionSchema, LabelBinding> for WorkflowHandler {
-    fn declared_durable_capabilities() -> Option<&'static [Capability]> {
-        Some(&[Capability::WorkflowExecution])
     }
     fn decide(
         &self,

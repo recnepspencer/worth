@@ -246,3 +246,5 @@ mod program_transition;
 mod transition_required;
 
 mod signing_owner_retirement;
+
+mod workflow_durability;

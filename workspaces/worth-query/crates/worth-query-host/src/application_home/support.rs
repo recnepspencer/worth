@@ -61,6 +61,19 @@ pub const fn directory_family_support(family: DurableStateFamily) -> DirectoryFa
         | OutputSourceCustody
         | PerformedSourcePreparation
         | ProgramOutputReadCustody => DirectoryFamilySupport::RefusedUntil(6),
+        WorkflowLineages
+        | WorkflowDefinitions
+        | WorkflowNodes
+        | WorkflowConnections
+        | WorkflowInstances
+        | WorkflowTransitions
+        | WorkflowProposals
+        | WorkflowProposalCoverage
+        | WorkflowAssessmentEvidence
+        | WorkflowEvidenceDependencies
+        | WorkflowApprovals
+        | WorkflowOperationOutputs
+        | WorkflowCapturedInputs => DirectoryFamilySupport::Supported(7),
         SignalOwnedAsyncCustody
         | SignalOwnedAsyncQueue
         | BridgeManagedTemporalIntents
@@ -83,19 +96,6 @@ pub const fn directory_family_support(family: DurableStateFamily) -> DirectoryFa
         | ManagedRestoreRecovery
         | DirectTerminalCleanup
         | WorkflowTerminalCleanup
-        | WorkflowLineages
-        | WorkflowDefinitions
-        | WorkflowNodes
-        | WorkflowConnections
-        | WorkflowInstances
-        | WorkflowTransitions
-        | WorkflowProposals
-        | WorkflowProposalCoverage
-        | WorkflowAssessmentEvidence
-        | WorkflowEvidenceDependencies
-        | WorkflowApprovals
-        | WorkflowOperationOutputs
-        | WorkflowCapturedInputs
         | SourceOperationCustody
         | OperationCleanupCustody
         | BankManagedCleanup

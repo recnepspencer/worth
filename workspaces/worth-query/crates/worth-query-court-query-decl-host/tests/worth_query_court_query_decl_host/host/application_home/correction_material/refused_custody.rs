@@ -15,7 +15,6 @@ fn directory_operation_custody_refuses_before_handler_contact_and_keeps_the_home
         (Policy::Resource, Family::ResourceOccurrences, 7),
         (Policy::Conditional, Family::ConditionalDecisions, 7),
         (Policy::Temporal, Family::ConditionalDecisions, 7),
-        (Policy::Workflow, Family::WorkflowInstances, 7),
         (
             Policy::OriginalOwner,
             Family::OriginalOperationDescription,
