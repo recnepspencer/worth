@@ -7,7 +7,7 @@ use worth_proof::CustodyReadmitted;
 pub enum QueryHomeCustodyReadmissionDenial {
     RecoveryClaim(crate::domain_computation::application_aftermath::WorthQueryRecoveryHandleDenial),
     CorrectionMaterial(crate::facade::correction_material::QueryCorrectionMaterialDenial),
-    ProgramSupport(crate::facade::program_support::QueryProgramSupportDenial),
+    ProgramSupport(crate::facade::query_obligations::QueryObligationDenial),
     Activation(super::QueryHomeProgramActivationDenial),
     ProgramHistorySource(
         RuntimeWorldServiceDenial<worth_runtime_world::facade::WorldReadmissionDenial>,
@@ -47,7 +47,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
     pub fn readmit_custody(
         mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        obligations: std::sync::Arc<dyn crate::facade::program_support::QueryObligationsMedium>,
+        obligations: std::sync::Arc<dyn crate::facade::query_obligations::QueryObligationsMedium>,
         material: std::sync::Arc<dyn crate::facade::correction_material::QueryCorrectionsMedium>,
         dispatch: std::sync::Arc<
             dyn crate::domain_computation::application_aftermath::dispatch_journal::QueryDispatchMedium,
@@ -64,7 +64,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
             return Err(QueryHomeCustodyReadmissionRefused {
                 query: self,
                 cause: QueryHomeCustodyReadmissionDenial::ProgramSupport(
-                    crate::facade::program_support::QueryProgramSupportDenial::ForeignHome,
+                    crate::facade::query_obligations::QueryObligationDenial::ForeignHome,
                 ),
             });
         }
@@ -72,7 +72,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
             return Err(QueryHomeCustodyReadmissionRefused {
                 query: self,
                 cause: QueryHomeCustodyReadmissionDenial::ProgramSupport(
-                    crate::facade::program_support::QueryProgramSupportDenial::ForeignHome,
+                    crate::facade::query_obligations::QueryObligationDenial::ForeignHome,
                 ),
             });
         };
@@ -80,7 +80,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
             return Err(QueryHomeCustodyReadmissionRefused {
                 query: self,
                 cause: QueryHomeCustodyReadmissionDenial::ProgramSupport(
-                    crate::facade::program_support::QueryProgramSupportDenial::StaleIncarnation,
+                    crate::facade::query_obligations::QueryObligationDenial::StaleIncarnation,
                 ),
             });
         }
@@ -89,7 +89,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
             return Err(QueryHomeCustodyReadmissionRefused {
                 query: self,
                 cause: QueryHomeCustodyReadmissionDenial::ProgramSupport(
-                    crate::facade::program_support::QueryProgramSupportDenial::SupportUnavailable,
+                    crate::facade::query_obligations::QueryObligationDenial::SupportUnavailable,
                 ),
             });
         };
@@ -172,7 +172,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
             return Err(QueryHomeCustodyReadmissionRefused {
                 query: self,
                 cause: QueryHomeCustodyReadmissionDenial::ProgramSupport(
-                    crate::facade::program_support::QueryProgramSupportDenial::PrefixMismatch,
+                    crate::facade::query_obligations::QueryObligationDenial::PrefixMismatch,
                 ),
             });
         }

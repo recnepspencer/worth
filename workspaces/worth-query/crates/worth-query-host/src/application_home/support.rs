@@ -61,12 +61,20 @@ pub const fn directory_family_support(family: DurableStateFamily) -> DirectoryFa
         | OutputSourceCustody
         | PerformedSourcePreparation
         | ProgramOutputReadCustody => DirectoryFamilySupport::RefusedUntil(6),
-        SignalOwnedAsyncCustody
+        // The logical cleanup stays in Query's one journal. Native resources
+        // must have an actual live release before graceful Home handoff.
+        PendingApplicationCleanup => DirectoryFamilySupport::Supported(7),
+        ProducerCleanupCustody
+        | OperationCleanupCustody
+        | SourceOperationCustody
+        | FixedOperationCustody
+        | BankManagedCleanup
+        | HttpNativeCleanup
+        | DirectTerminalCleanup
+        | SignalOwnedAsyncCustody
         | SignalOwnedAsyncQueue
         | BridgeManagedTemporalIntents
         | BridgeOwnedAsyncCustody
-        | PendingApplicationCleanup
-        | ProducerCleanupCustody
         | ConditionalDecisions
         | RetainedConditionalCleanup
         | TemporalIdempotency
@@ -81,7 +89,6 @@ pub const fn directory_family_support(family: DurableStateFamily) -> DirectoryFa
         | DirectYieldRecovery
         | WorkflowYieldRecovery
         | ManagedRestoreRecovery
-        | DirectTerminalCleanup
         | WorkflowTerminalCleanup
         | WorkflowLineages
         | WorkflowDefinitions
@@ -96,13 +103,8 @@ pub const fn directory_family_support(family: DurableStateFamily) -> DirectoryFa
         | WorkflowApprovals
         | WorkflowOperationOutputs
         | WorkflowCapturedInputs
-        | SourceOperationCustody
-        | OperationCleanupCustody
-        | BankManagedCleanup
-        | HttpNativeCleanup
         | UiPresentationCustody
         | CapturedExternalInput
-        | FixedOperationCustody
         | SignalResourceRequestCustody => DirectoryFamilySupport::RefusedUntil(7),
         RecoveryClaims | RecoveryClaimDispositions | RecoveryHandleCustody | BankRecoveryClaim => {
             DirectoryFamilySupport::Supported(8)

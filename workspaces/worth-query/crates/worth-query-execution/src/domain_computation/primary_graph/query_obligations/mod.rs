@@ -1,6 +1,6 @@
 //! Query owns the strict obligation history; Store transports opaque frames.
 //!
-//! Unlanded version-one format: each frame includes a nonzero local publication
+//! Current version-two format with explicit family routing: each frame includes a nonzero local publication
 //! generation. A resumed original keeps identical bytes. A new logical publish
 //! after proven no-effect allocates another generation at the same next position.
 //! Gaps are valid; committed generations strictly increase. This is correlation,
@@ -19,53 +19,47 @@ mod generation;
 mod ledger;
 mod medium;
 mod originals;
-pub use generation::QueryProgramSupportPublicationGenerations;
-pub use ledger::QueryProgramSupportLedger;
+mod program_support;
+pub use generation::QueryObligationPublicationGenerations;
+pub use ledger::QueryObligationLedger;
 pub use medium::*;
-#[cfg(test)]
-mod tests;
-#[cfg(test)]
-mod transfer_status_tests;
+pub use program_support::{QueryProgramSupportObligation, QueryProgramSupportRecord};
 
-pub const QUERY_PROGRAM_SUPPORT_FRAME_MAX_BYTES: u64 = 214;
+pub const QUERY_OBLIGATION_FRAME_MAX_BYTES: u64 = 16 * 1024;
+pub(crate) mod history;
+mod managed_cleanup;
+pub use managed_cleanup::{
+    QueryManagedCleanupObligation, QueryManagedCleanupOriginal, QueryManagedCleanupRecord,
+    QueryManagedCleanupRelease,
+};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct QueryProgramSupportObligation {
-    pub identity: ProgramSupportObligationIdentity,
-    pub kind: ProgramSupportObligationKind,
-    pub source: CanonicalDigestId,
-    pub target: CanonicalDigestId,
-    /// The actual World attempt identity. Recorded DATA is never a live grant.
-    pub original: DurableCompositePublicationAttemptIdentity,
+pub enum QueryObligationRecord {
+    ProgramSupport(QueryProgramSupportRecord),
+    ManagedCleanup(QueryManagedCleanupRecord),
+}
+impl From<QueryProgramSupportRecord> for QueryObligationRecord {
+    fn from(record: QueryProgramSupportRecord) -> Self {
+        Self::ProgramSupport(record)
+    }
+}
+impl From<QueryManagedCleanupRecord> for QueryObligationRecord {
+    fn from(record: QueryManagedCleanupRecord) -> Self {
+        Self::ManagedCleanup(record)
+    }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub enum QueryProgramSupportRecord {
-    Install {
-        revision: CanonicalDigestId,
-    },
-    Status {
-        revision: CanonicalDigestId,
-        before: ProgramSupportStatus,
-        after: ProgramSupportStatus,
-    },
-    Acquire(QueryProgramSupportObligation),
-    Release {
-        identity: ProgramSupportObligationIdentity,
-    },
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct QueryProgramSupportFrame {
+pub struct QueryObligationFrame {
     home: HomeIdentity,
     position: u64,
     predecessor: [u8; 32],
     generation: std::num::NonZeroU64,
-    record: QueryProgramSupportRecord,
+    record: QueryObligationRecord,
     bytes: Vec<u8>,
     digest: [u8; 32],
 }
-impl QueryProgramSupportFrame {
+impl QueryObligationFrame {
     pub fn bytes(&self) -> &[u8] {
         &self.bytes
     }
@@ -85,16 +79,16 @@ impl QueryProgramSupportFrame {
     pub const fn home(&self) -> HomeIdentity {
         self.home
     }
-    pub const fn record(&self) -> &QueryProgramSupportRecord {
+    pub const fn record(&self) -> &QueryObligationRecord {
         &self.record
     }
-    pub fn readmit(bytes: &[u8]) -> Result<Self, QueryProgramSupportDenial> {
+    pub fn readmit(bytes: &[u8]) -> Result<Self, QueryObligationDenial> {
         codec::decode(bytes)
     }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub enum QueryProgramSupportDenial {
+pub enum QueryObligationDenial {
     UnsupportedVersion(u32),
     MalformedFrame,
     Checksum,
@@ -111,6 +105,12 @@ pub enum QueryProgramSupportDenial {
     UnknownObligation,
     DuplicateObligation,
     AdoptionReadmissionRequired,
+    CleanupReleaseUnrecorded {
+        identity: worth_foundational::facade::ManagedCleanupObligationIdentity,
+    },
+    CleanupInconsistent {
+        identity: worth_foundational::facade::ManagedCleanupObligationIdentity,
+    },
     MissingOriginalInterpretationSource {
         identity: ProgramSupportObligationIdentity,
     },

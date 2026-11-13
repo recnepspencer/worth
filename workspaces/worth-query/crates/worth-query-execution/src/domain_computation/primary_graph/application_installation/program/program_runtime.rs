@@ -339,7 +339,7 @@ where
 /// A retirement's inventory denial or the exact request that stopped reading it.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryProgramSupportRetirementFailure {
-    Durability(super::super::super::program_occurrence::support_lifecycle::journal::QueryProgramSupportDenial),
+    Durability(super::super::super::query_obligations::QueryObligationDenial),
     Policy(worth_query_installation::facade::WorthQueryProgramSupportRetirementDenial),
     ReadExecution {
         stop: Result<

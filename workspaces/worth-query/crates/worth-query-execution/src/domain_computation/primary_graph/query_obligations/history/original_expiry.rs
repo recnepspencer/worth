@@ -3,7 +3,7 @@ use super::*;
 use crate::domain_computation::primary_graph::retained_correction::MaterialPublication;
 use journal::*;
 use worth_foundational::facade::ProgramSupportObligationKind;
-impl WorthQueryProgramSupportLifecycle {
+impl QueryObligationHistory {
     pub(in crate::domain_computation::primary_graph) fn dispose_expired_interpretations(
         &self,
         material: &MaterialPublication<'_>,
@@ -13,7 +13,7 @@ impl WorthQueryProgramSupportLifecycle {
         let medium = self
             .medium
             .get()
-            .ok_or(QueryProgramSupportDenial::SupportUnavailable)?;
+            .ok_or(QueryObligationDenial::SupportUnavailable)?;
         material.admit_obligation_scope(medium.as_ref())?;
         let driver = self.lock_publication()?;
         driver.finish_pending(medium.as_ref(), request)?;
@@ -22,7 +22,7 @@ impl WorthQueryProgramSupportLifecycle {
             let ledger = &state
                 .journal
                 .as_ref()
-                .ok_or(QueryProgramSupportDenial::SupportUnavailable)?
+                .ok_or(QueryObligationDenial::SupportUnavailable)?
                 .ledger;
             ledger
                 .obligations()

@@ -1,10 +1,10 @@
 //! Lend an admitted original membership; never acquire a second local use.
 use super::*;
-use journal::QueryProgramSupportDenial as Denial;
+use journal::QueryObligationDenial as Denial;
 use worth_foundational::facade::ProgramSupportObligationKind;
 
-impl WorthQueryProgramSupportLifecycle {
-    pub(in crate::domain_computation::primary_graph::program_occurrence) fn readmit_original_interpretation(
+impl QueryObligationHistory {
+    pub(in crate::domain_computation::primary_graph) fn readmit_original_interpretation(
         &self,
         revision: &ApplicationProgramRevision,
         original: &worth_runtime_world::facade::WorldOriginalStateObservation<'_>,

@@ -10,7 +10,7 @@ use worth_foundational::facade::{
 };
 use worth_runtime_world::facade::WorldProgramActivationHistory;
 
-impl WorthQueryProgramSupportLifecycle {
+impl QueryObligationHistory {
     pub(in crate::domain_computation::primary_graph) fn readmit_journal(
         &self,
         medium: Arc<dyn QueryObligationsMedium>,
@@ -19,7 +19,7 @@ impl WorthQueryProgramSupportLifecycle {
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<worth_proof::AdmittedHomeQueryObligations, WorthQueryCorrectionRetentionDenial>
     {
-        use QueryProgramSupportDenial as Denial;
+        use QueryObligationDenial as Denial;
         material.admit_obligation_scope(medium.as_ref())?;
         let driver = self.lock_publication()?;
         let medium = if let Some(installed) = self.medium.get() {
@@ -34,7 +34,7 @@ impl WorthQueryProgramSupportLifecycle {
                 })?;
             Arc::clone(installed)
         } else {
-            let mut ledger = QueryProgramSupportLedger::empty(medium.home());
+            let mut ledger = QueryObligationLedger::empty(medium.home());
             while let Some(bytes) = medium.read_frame(
                 request,
                 ledger
@@ -43,7 +43,7 @@ impl WorthQueryProgramSupportLifecycle {
                     .ok_or(Denial::IdentityExhausted)?,
             )? {
                 request.consult().map_err(Denial::Execution)?;
-                ledger.readmit(QueryProgramSupportFrame::readmit(&bytes)?)?;
+                ledger.readmit(QueryObligationFrame::readmit(&bytes)?)?;
             }
             // Joined originals retain their durable counts. Adoption's owning
             // consumer remains a separate admission requirement.
@@ -59,7 +59,7 @@ impl WorthQueryProgramSupportLifecycle {
             self.medium
                 .set(Arc::clone(&medium))
                 .map_err(|_| Denial::SupportUnavailable)?;
-            state.journal = Some(SupportJournalState::from_ledger(ledger));
+            state.journal = Some(QueryObligationJournalState::from_ledger(ledger));
             medium
         };
         driver.finish_pending(medium.as_ref(), request)?;
@@ -137,10 +137,10 @@ impl WorthQueryProgramSupportLifecycle {
     }
     fn join_original_interpretations(
         &self,
-        ledger: &QueryProgramSupportLedger,
+        ledger: &QueryObligationLedger,
         originals: &WorldProgramActivationHistory,
         material: &MaterialPublication<'_>,
-    ) -> Result<Vec<ProgramSupportObligationIdentity>, QueryProgramSupportDenial> {
+    ) -> Result<Vec<ProgramSupportObligationIdentity>, QueryObligationDenial> {
         Self::join_original_interpretations_with_roster(
             ledger,
             &self.state().entries,
@@ -149,11 +149,11 @@ impl WorthQueryProgramSupportLifecycle {
         )
     }
     fn join_original_interpretations_with_roster(
-        ledger: &QueryProgramSupportLedger,
+        ledger: &QueryObligationLedger,
         entries: &BTreeMap<ApplicationProgramRevision, SupportEntryState>,
         originals: &WorldProgramActivationHistory,
         material: &MaterialPublication<'_>,
-    ) -> Result<Vec<ProgramSupportObligationIdentity>, QueryProgramSupportDenial> {
+    ) -> Result<Vec<ProgramSupportObligationIdentity>, QueryObligationDenial> {
         let mut terminal = ledger
             .released_original_interpretations(originals)?
             .into_iter()
@@ -161,7 +161,7 @@ impl WorthQueryProgramSupportLifecycle {
         for row in ledger.obligations() {
             match row.kind {
                 ProgramSupportObligationKind::BranchAdoption => {
-                    return Err(QueryProgramSupportDenial::AdoptionReadmissionRequired)
+                    return Err(QueryObligationDenial::AdoptionReadmissionRequired)
                 }
                 ProgramSupportObligationKind::OriginalInterpretation => {
                     if row.source == row.target
@@ -174,7 +174,7 @@ impl WorthQueryProgramSupportLifecycle {
                             .keys()
                             .any(|revision| revision.as_bytes() == row.source.bytes())
                     {
-                        return Err(QueryProgramSupportDenial::UnrosteredProgram(row.source));
+                        return Err(QueryObligationDenial::UnrosteredProgram(row.source));
                     }
                 }
             }

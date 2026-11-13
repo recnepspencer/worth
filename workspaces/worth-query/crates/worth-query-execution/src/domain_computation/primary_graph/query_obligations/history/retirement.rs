@@ -1,7 +1,7 @@
 //! One retained retirement claim; durable status changes require its receiver.
 use super::*;
 pub struct WorthQueryProgramSupportRetirementAttempt {
-    pub(super) state: Arc<Mutex<SupportLifecycleState>>,
+    pub(super) state: Arc<Mutex<QueryObligationState>>,
     pub(super) revision: ApplicationProgramRevision,
     pub(super) finished: bool,
 }

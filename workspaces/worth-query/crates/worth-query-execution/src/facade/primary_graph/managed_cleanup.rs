@@ -9,3 +9,9 @@ pub use crate::domain_computation::{
     WorthQueryManagedRunCleanupFailureKind, WorthQueryMutationCleanupFailure,
     WorthQueryMutationCleanupFailureKind,
 };
+
+pub use crate::domain_computation::primary_graph::query_obligations::{
+    QueryManagedCleanupObligation, QueryManagedCleanupOriginal, QueryManagedCleanupRelease,
+    QueryObligationDenial,
+};
+pub use worth_foundational::facade::ManagedCleanupObligationIdentity;

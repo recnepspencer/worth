@@ -5,7 +5,7 @@ use std::num::NonZeroU64;
 use worth_foundational::facade::{
     BoundaryProtocolVersion, DurableWorldOwnerIdentity, WorldOwnerSlotIdentity,
 };
-const VERSION: BoundaryProtocolVersion = BoundaryProtocolVersion::new(1);
+const VERSION: BoundaryProtocolVersion = BoundaryProtocolVersion::new(2);
 const MAGIC: &[u8; 8] = b"WQOBL001";
 
 pub(super) fn encode(
@@ -13,8 +13,8 @@ pub(super) fn encode(
     position: u64,
     predecessor: [u8; 32],
     generation: NonZeroU64,
-    record: QueryProgramSupportRecord,
-) -> QueryProgramSupportFrame {
+    record: QueryObligationRecord,
+) -> QueryObligationFrame {
     let mut bytes = Vec::new();
     bytes.extend_from_slice(MAGIC);
     bytes.extend_from_slice(&VERSION.get().to_le_bytes());
@@ -23,6 +23,29 @@ pub(super) fn encode(
     bytes.extend_from_slice(&predecessor);
     bytes.extend_from_slice(&generation.get().to_le_bytes());
     match &record {
+        QueryObligationRecord::ProgramSupport(record) => {
+            bytes.push(0);
+            encode_support(&mut bytes, record);
+        }
+        QueryObligationRecord::ManagedCleanup(record) => {
+            bytes.push(1);
+            managed_cleanup::codec::encode(&mut bytes, record);
+        }
+    }
+    let digest: [u8; 32] = Sha256::digest(&bytes).into();
+    bytes.extend_from_slice(&digest);
+    QueryObligationFrame {
+        home,
+        position,
+        predecessor,
+        generation,
+        record,
+        bytes,
+        digest,
+    }
+}
+fn encode_support(bytes: &mut Vec<u8>, record: &QueryProgramSupportRecord) {
+    match record {
         QueryProgramSupportRecord::Install { revision } => {
             bytes.push(0);
             bytes.extend_from_slice(revision.bytes());
@@ -55,17 +78,6 @@ pub(super) fn encode(
             bytes.extend_from_slice(&identity.acquire_position().get().to_le_bytes());
         }
     }
-    let digest: [u8; 32] = Sha256::digest(&bytes).into();
-    bytes.extend_from_slice(&digest);
-    QueryProgramSupportFrame {
-        home,
-        position,
-        predecessor,
-        generation,
-        record,
-        bytes,
-        digest,
-    }
 }
 fn status(value: ProgramSupportStatus) -> u8 {
     match value {
@@ -74,28 +86,28 @@ fn status(value: ProgramSupportStatus) -> u8 {
         ProgramSupportStatus::Retired => 2,
     }
 }
-fn read_status(value: u8) -> Result<ProgramSupportStatus, QueryProgramSupportDenial> {
+fn read_status(value: u8) -> Result<ProgramSupportStatus, QueryObligationDenial> {
     match value {
         0 => Ok(ProgramSupportStatus::Active),
         1 => Ok(ProgramSupportStatus::Retiring),
         2 => Ok(ProgramSupportStatus::Retired),
-        _ => Err(QueryProgramSupportDenial::MalformedFrame),
+        _ => Err(QueryObligationDenial::MalformedFrame),
     }
 }
-struct Reader<'a>(&'a [u8]);
+pub(super) struct Reader<'a>(pub(super) &'a [u8]);
 impl Reader<'_> {
-    fn take<const N: usize>(&mut self) -> Result<[u8; N], QueryProgramSupportDenial> {
+    pub(super) fn take<const N: usize>(&mut self) -> Result<[u8; N], QueryObligationDenial> {
         let (head, rest) = self
             .0
             .split_at_checked(N)
-            .ok_or(QueryProgramSupportDenial::MalformedFrame)?;
+            .ok_or(QueryObligationDenial::MalformedFrame)?;
         self.0 = rest;
         Ok(head.try_into().expect("exact checked width"))
     }
 }
-pub(super) fn decode(bytes: &[u8]) -> Result<QueryProgramSupportFrame, QueryProgramSupportDenial> {
-    use QueryProgramSupportDenial as Denial;
-    if bytes.len() as u64 > QUERY_PROGRAM_SUPPORT_FRAME_MAX_BYTES {
+pub(super) fn decode(bytes: &[u8]) -> Result<QueryObligationFrame, QueryObligationDenial> {
+    use QueryObligationDenial as Denial;
+    if bytes.len() as u64 > QUERY_OBLIGATION_FRAME_MAX_BYTES {
         return Err(Denial::MalformedFrame);
     }
     let (payload, checksum) = bytes
@@ -123,6 +135,33 @@ pub(super) fn decode(bytes: &[u8]) -> Result<QueryProgramSupportFrame, QueryProg
     let generation =
         NonZeroU64::new(u64::from_le_bytes(reader.take()?)).ok_or(Denial::MalformedFrame)?;
     let record = match reader.take::<1>()?[0] {
+        0 => QueryObligationRecord::ProgramSupport(read_support(&mut reader, home)?),
+        1 => QueryObligationRecord::ManagedCleanup(managed_cleanup::codec::decode(
+            &mut reader,
+            home,
+        )?),
+        _ => return Err(Denial::MalformedFrame),
+    };
+    if !reader.0.is_empty() {
+        return Err(Denial::MalformedFrame);
+    }
+    Ok(QueryObligationFrame {
+        home,
+        position,
+        predecessor,
+        generation,
+        record,
+        bytes: bytes.to_vec(),
+        digest,
+    })
+}
+
+fn read_support(
+    reader: &mut Reader<'_>,
+    home: HomeIdentity,
+) -> Result<QueryProgramSupportRecord, QueryObligationDenial> {
+    use QueryObligationDenial as Denial;
+    Ok(match reader.take::<1>()?[0] {
         0 => QueryProgramSupportRecord::Install {
             revision: CanonicalDigestId::new(reader.take()?),
         },
@@ -164,17 +203,5 @@ pub(super) fn decode(bytes: &[u8]) -> Result<QueryProgramSupportFrame, QueryProg
             ),
         },
         _ => return Err(Denial::MalformedFrame),
-    };
-    if !reader.0.is_empty() {
-        return Err(Denial::MalformedFrame);
-    }
-    Ok(QueryProgramSupportFrame {
-        home,
-        position,
-        predecessor,
-        generation,
-        record,
-        bytes: bytes.to_vec(),
-        digest,
     })
 }

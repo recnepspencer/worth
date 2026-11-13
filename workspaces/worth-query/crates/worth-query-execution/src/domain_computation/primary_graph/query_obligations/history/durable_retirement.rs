@@ -5,7 +5,7 @@ use journal::*;
 use worth_execution::ExecutionRequest;
 use worth_foundational::facade::CanonicalDigestId;
 
-impl WorthQueryProgramSupportLifecycle {
+impl QueryObligationHistory {
     pub(in crate::domain_computation::primary_graph) fn begin_retirement_in_request(
         &self,
         request: &ExecutionRequest<'_, '_>,

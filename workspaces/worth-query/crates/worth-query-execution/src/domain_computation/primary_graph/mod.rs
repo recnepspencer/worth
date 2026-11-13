@@ -142,6 +142,7 @@ pub use product_operation::WorthQueryHistoryOutputControlDenial;
 pub use product_operation::WorthQueryHistoryOutputReadDenial;
 pub use product_operation::WorthQueryHistoryRootOutputRead;
 pub(crate) mod program_occurrence;
+pub(crate) mod query_obligations;
 pub(in crate::domain_computation) use program_occurrence::OriginalProgramMeaning;
 pub(crate) mod provider;
 pub(crate) mod retained_correction;

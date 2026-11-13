@@ -1,16 +1,17 @@
 //! Fold acknowledged identities and statuses; counts are derived membership.
 use super::*;
 #[derive(Clone, Debug)]
-pub struct QueryProgramSupportLedger {
+pub struct QueryObligationLedger {
     home: HomeIdentity,
     position: u64,
     digest: [u8; 32],
     payload_digest: [u8; 32],
     publication_generation: u64,
+    pub(super) cleanup: managed_cleanup::fold::ManagedCleanupFold,
     statuses: BTreeMap<CanonicalDigestId, ProgramSupportStatus>,
     obligations: BTreeMap<ProgramSupportObligationIdentity, QueryProgramSupportObligation>,
 }
-impl QueryProgramSupportLedger {
+impl QueryObligationLedger {
     pub fn empty(home: HomeIdentity) -> Self {
         Self {
             home,
@@ -18,6 +19,7 @@ impl QueryProgramSupportLedger {
             digest: [0; 32],
             payload_digest: [0; 32],
             publication_generation: 0,
+            cleanup: managed_cleanup::fold::ManagedCleanupFold::default(),
             statuses: BTreeMap::new(),
             obligations: BTreeMap::new(),
         }
@@ -60,9 +62,12 @@ impl QueryProgramSupportLedger {
     /// Descriptive membership of a prepared change, never publication authority.
     pub fn record_mentions_revision(
         &self,
-        record: &QueryProgramSupportRecord,
+        record: &QueryObligationRecord,
         revision: &CanonicalDigestId,
     ) -> bool {
+        let QueryObligationRecord::ProgramSupport(record) = record else {
+            return false;
+        };
         match record {
             QueryProgramSupportRecord::Install { revision: affected }
             | QueryProgramSupportRecord::Status {
@@ -80,14 +85,21 @@ impl QueryProgramSupportLedger {
     /// Preflight returns descriptive bytes only. It changes no admitted state.
     pub fn prepare(
         &self,
-        record: QueryProgramSupportRecord,
-        generations: &mut QueryProgramSupportPublicationGenerations,
-    ) -> Result<QueryProgramSupportFrame, QueryProgramSupportDenial> {
+        record: impl Into<QueryObligationRecord>,
+        generations: &mut QueryObligationPublicationGenerations,
+    ) -> Result<QueryObligationFrame, QueryObligationDenial> {
+        self.prepare_record(record.into(), generations)
+    }
+    fn prepare_record(
+        &self,
+        record: QueryObligationRecord,
+        generations: &mut QueryObligationPublicationGenerations,
+    ) -> Result<QueryObligationFrame, QueryObligationDenial> {
         self.validate(
             &record,
             self.position
                 .checked_add(1)
-                .ok_or(QueryProgramSupportDenial::IdentityExhausted)?,
+                .ok_or(QueryObligationDenial::IdentityExhausted)?,
         )?;
         let generation = generations.allocate(self)?;
         Ok(super::codec::encode(
@@ -99,11 +111,8 @@ impl QueryProgramSupportLedger {
         ))
     }
     /// Readmission never treats matching content as live publication authority.
-    pub fn readmit(
-        &mut self,
-        frame: QueryProgramSupportFrame,
-    ) -> Result<(), QueryProgramSupportDenial> {
-        use QueryProgramSupportDenial as Denial;
+    pub fn readmit(&mut self, frame: QueryObligationFrame) -> Result<(), QueryObligationDenial> {
+        use QueryObligationDenial as Denial;
         if frame.home != self.home {
             return Err(Denial::ForeignHome);
         }
@@ -117,6 +126,17 @@ impl QueryProgramSupportLedger {
         self.validate(&frame.record, frame.position)?;
         let payload_digest = frame.payload_digest();
         match frame.record {
+            QueryObligationRecord::ProgramSupport(record) => self.apply_support(record),
+            QueryObligationRecord::ManagedCleanup(record) => self.cleanup.apply(record),
+        }
+        self.position = frame.position;
+        self.digest = frame.digest;
+        self.payload_digest = payload_digest;
+        self.publication_generation = frame.generation.get();
+        Ok(())
+    }
+    fn apply_support(&mut self, record: QueryProgramSupportRecord) {
+        match record {
             QueryProgramSupportRecord::Install { revision } => {
                 self.statuses.insert(revision, ProgramSupportStatus::Active);
             }
@@ -132,18 +152,27 @@ impl QueryProgramSupportLedger {
                 self.obligations.remove(&identity);
             }
         }
-        self.position = frame.position;
-        self.digest = frame.digest;
-        self.payload_digest = payload_digest;
-        self.publication_generation = frame.generation.get();
-        Ok(())
     }
     fn validate(
         &self,
+        record: &QueryObligationRecord,
+        position: u64,
+    ) -> Result<(), QueryObligationDenial> {
+        match record {
+            QueryObligationRecord::ProgramSupport(record) => {
+                self.validate_support(record, position)
+            }
+            QueryObligationRecord::ManagedCleanup(record) => {
+                self.cleanup.validate(record, self.home, position)
+            }
+        }
+    }
+    fn validate_support(
+        &self,
         record: &QueryProgramSupportRecord,
         position: u64,
-    ) -> Result<(), QueryProgramSupportDenial> {
-        use QueryProgramSupportDenial as Denial;
+    ) -> Result<(), QueryObligationDenial> {
+        use QueryObligationDenial as Denial;
         match record {
             QueryProgramSupportRecord::Install { revision } => {
                 if self.statuses.contains_key(revision) {

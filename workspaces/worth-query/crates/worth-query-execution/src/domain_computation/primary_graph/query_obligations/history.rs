@@ -1,4 +1,5 @@
-pub(crate) mod journal;
+//! One serialized Query obligation history and its admitted program-support membership.
+use crate::domain_computation::primary_graph::query_obligations as journal;
 use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 
@@ -17,8 +18,9 @@ mod original_transfer;
 use interpretation_membership::InterpretationMembership;
 mod journal_publication;
 mod journal_readmission;
+pub(in crate::domain_computation::primary_graph) mod managed_cleanup;
 mod publication_allocation;
-use publication_allocation::SupportJournalState;
+use publication_allocation::QueryObligationJournalState;
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryProgramSupportRetirementReceipt {
     inventory: WorthQueryProgramSupportRetirementInventory,
@@ -38,19 +40,21 @@ struct SupportEntryState {
     retirement_claimed: bool,
 }
 
-struct SupportLifecycleState {
+struct QueryObligationState {
     entries: BTreeMap<ApplicationProgramRevision, SupportEntryState>,
-    journal: Option<SupportJournalState>,
+    journal: Option<QueryObligationJournalState>,
 }
 
-pub struct WorthQueryProgramSupportLifecycle {
-    state: Arc<Mutex<SupportLifecycleState>>,
+pub struct QueryObligationHistory {
+    state: Arc<Mutex<QueryObligationState>>,
     medium: std::sync::OnceLock<Arc<dyn journal::QueryObligationsMedium>>,
     publication_driver: Mutex<()>,
 }
 
-impl WorthQueryProgramSupportLifecycle {
-    pub(super) fn installed<Schema>(roster: &WorthQueryProgramSupportRoster<Schema>) -> Self {
+impl QueryObligationHistory {
+    pub(in crate::domain_computation::primary_graph) fn installed<Schema>(
+        roster: &WorthQueryProgramSupportRoster<Schema>,
+    ) -> Self {
         let entries = roster
             .entries()
             .iter()
@@ -67,7 +71,7 @@ impl WorthQueryProgramSupportLifecycle {
             })
             .collect();
         Self {
-            state: Arc::new(Mutex::new(SupportLifecycleState {
+            state: Arc::new(Mutex::new(QueryObligationState {
                 entries,
                 journal: None,
             })),
@@ -76,13 +80,13 @@ impl WorthQueryProgramSupportLifecycle {
         }
     }
 
-    fn state(&self) -> std::sync::MutexGuard<'_, SupportLifecycleState> {
+    fn state(&self) -> std::sync::MutexGuard<'_, QueryObligationState> {
         self.state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
     }
     fn pending_affects(
-        state: &SupportLifecycleState,
+        state: &QueryObligationState,
         revision: &ApplicationProgramRevision,
     ) -> bool {
         state.journal.as_ref().is_some_and(|journal| {
@@ -95,7 +99,10 @@ impl WorthQueryProgramSupportLifecycle {
         })
     }
 
-    pub(super) fn is_active(&self, revision: &ApplicationProgramRevision) -> bool {
+    pub(in crate::domain_computation::primary_graph) fn is_active(
+        &self,
+        revision: &ApplicationProgramRevision,
+    ) -> bool {
         self.state.lock().ok().is_some_and(|state| {
             !Self::pending_affects(&state, revision)
                 && state.entries.get(revision).is_some_and(|entry| {
@@ -104,7 +111,7 @@ impl WorthQueryProgramSupportLifecycle {
         })
     }
 
-    pub(super) fn retain_interpretation(
+    pub(in crate::domain_computation::primary_graph) fn retain_interpretation(
         &self,
         revision: &ApplicationProgramRevision,
     ) -> Option<WorthQueryProgramSupportInterpretation> {
@@ -116,7 +123,7 @@ impl WorthQueryProgramSupportLifecycle {
         })
     }
 
-    pub(super) fn retain_custody(
+    pub(in crate::domain_computation::primary_graph) fn retain_custody(
         &self,
         source: &ApplicationProgramRevision,
         target: &ApplicationProgramRevision,
@@ -151,7 +158,7 @@ impl WorthQueryProgramSupportLifecycle {
     }
 
     fn release(
-        state: &Arc<Mutex<SupportLifecycleState>>,
+        state: &Arc<Mutex<QueryObligationState>>,
         revision: &ApplicationProgramRevision,
         usage: SupportUse,
     ) {
@@ -190,8 +197,8 @@ impl WorthQueryProgramSupportLifecycle {
         Self::claim_retirement(&mut state, &self.state, revision)
     }
     fn claim_retirement(
-        state: &mut SupportLifecycleState,
-        owner: &Arc<Mutex<SupportLifecycleState>>,
+        state: &mut QueryObligationState,
+        owner: &Arc<Mutex<QueryObligationState>>,
         revision: &ApplicationProgramRevision,
     ) -> Result<WorthQueryProgramSupportRetirementAttempt, WorthQueryProgramSupportRetirementDenial>
     {
@@ -233,7 +240,7 @@ enum SupportUse {
 
 pub struct WorthQueryProgramSupportInterpretation {
     membership: Arc<Mutex<InterpretationMembership>>,
-    state: Arc<Mutex<SupportLifecycleState>>,
+    state: Arc<Mutex<QueryObligationState>>,
     revision: ApplicationProgramRevision,
 }
 
@@ -266,7 +273,7 @@ impl Drop for WorthQueryProgramSupportInterpretation {
 }
 
 pub(in crate::domain_computation::primary_graph) struct WorthQueryProgramSupportCustody {
-    state: Arc<Mutex<SupportLifecycleState>>,
+    state: Arc<Mutex<QueryObligationState>>,
     source: ApplicationProgramRevision,
     target: Option<ApplicationProgramRevision>,
 }
@@ -283,9 +290,9 @@ impl std::fmt::Debug for WorthQueryProgramSupportCustody {
 
 impl Drop for WorthQueryProgramSupportCustody {
     fn drop(&mut self) {
-        WorthQueryProgramSupportLifecycle::release(&self.state, &self.source, SupportUse::Custody);
+        QueryObligationHistory::release(&self.state, &self.source, SupportUse::Custody);
         if let Some(target) = &self.target {
-            WorthQueryProgramSupportLifecycle::release(&self.state, target, SupportUse::Custody);
+            QueryObligationHistory::release(&self.state, target, SupportUse::Custody);
         }
     }
 }
