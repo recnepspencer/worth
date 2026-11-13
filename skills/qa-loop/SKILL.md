@@ -13,6 +13,31 @@ Read the repository instructions, governing specification, and `docs/coding-guid
 
 Check consequential implementation claims using plausible inputs, boundary conditions, and execution sequences. Build a compact risk matrix connecting claims and invariants to failure cases and distinguishing evidence. Prioritize authority, correctness, recovery, and performance risks, including interactions between them. Reuse adequate evidence and investigate concrete uncertainty; avoid exhaustive combinations, speculative concerns, and repeated review without new evidence.
 
+## Review purpose and scope
+
+Read the task repository's REVIEW.md. Review is an assessment, not a requirement
+to produce corrections. "No material in-scope findings" is a fully successful
+outcome. Report supported defects; do not manufacture improvements to
+demonstrate thoroughness or suppress a real defect to return a clean verdict.
+
+A blocking finding must identify the affected requirement, credible trigger,
+concrete consequence and smallest coherent correction. Optional improvements
+do not block completion. Follow additional owners only when needed to establish
+or correct that consequence; stop when the assigned review is complete.
+
+## Proportionate engineering
+
+Would an experienced engineer choose this design to solve the actual
+requirement if no AI-generated plan, review checklist or inherited test
+demanded it? Prefer established facilities, clear ownership and proportionate
+complexity. Additional mechanisms must earn their implementation, maintenance
+and iteration cost through a concrete need.
+
+Judge the actual responsibility, consumer and tradeoff rather than a company's
+reputation or an "enterprise grade" label. Unfamiliar or complex code is not
+itself a defect. Explain what is unnecessary and why; do not turn this question
+into speculative redesign, cosmetic cleanup or another mandatory framework.
+
 ## Remove speculative resource accounting
 
 Ordinary modeling and publication must not require work counters, candidate

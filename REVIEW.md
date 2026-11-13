@@ -33,11 +33,21 @@ Judge whether the work is needed before judging how thoroughly it is built.
   validation or broader testing without a concrete in-scope consequence.
 - Separate necessary corrections from optional follow-ups. A suggestion
   does not become a landing blocker merely because a reviewer proposed it.
-- "No changes needed" is a successful review. Do not manufacture findings.
+- "No material in-scope findings" is a fully successful outcome. Review is an
+  assessment, not a requirement to produce corrections. Do not manufacture
+  improvements or suppress a real defect to return a clean verdict.
 - Stop when the required behavior and proportionate evidence are complete.
 
 For each blocker, explain the consequence and smallest coherent correction.
 If necessity is uncertain, identify the missing fact before prescribing work.
+
+Would an experienced engineer choose this design to solve the actual
+requirement if no AI-generated plan, review checklist or inherited test
+demanded it? Prefer established facilities, clear ownership and proportionate
+complexity. Additional mechanisms must earn their implementation, maintenance
+and iteration cost through a concrete need. Judge the actual consumer and
+tradeoff, not a company's reputation or an "enterprise grade" label. Unfamiliar
+or complex code is not itself a defect; explain what is unnecessary and why.
 
 ## Required platform review skills
 
