@@ -127,6 +127,15 @@ where
                 {
                     return Ok(WorthQueryEditEnvelopeOutcome::AdmissionBasisChanged(stage.subject()));
                 }
+                let admissions = captured.clone();
+                with_resolved_edit_envelope(
+                    &worth_query_execution::publication_boundary::program_publication_access(),
+                    &phase, context.application, &admissions, intent,
+                    |resolution| {
+                        let unseen = match resolution {
+                            AuthoredEnvelopeResolution::Recorded(resolution) => return super::replay::recorded(resolution).map_err(envelope_failure),
+                            AuthoredEnvelopeResolution::Unseen(unseen) => unseen,
+                        };
                 let order = worth_query_execution::publication_boundary::authored_edit::order_authored_stages(
                     &phase.checked_execution_request_for(context.application.product_runtime())
                         .map_err(|cause| crate::application_entry::WorthQueryPerformedMutationExecutionDenial::Mutation(
@@ -134,9 +143,11 @@ where
                         ))
                         .map_err(envelope_failure)?,
                     &mut captured,
+                    &phase, context.application, &unseen,
                 );
                 let order = match order {
                     Ok(order) => order,
+                    Err(DeclaredEditOrderRefusal::Planning(cause)) => return Err(envelope_failure(crate::application_entry::WorthQueryPerformedMutationExecutionDenial::Mutation(WorthQueryApplicationRequestMutationDenial::Handler(MutationHandlerExecutionDenial::Handler(HandlerExecutionDenial::new(cause)))))),
                     Err(DeclaredEditOrderRefusal::Execution(cause)) => return Err(envelope_failure(
                         crate::application_entry::WorthQueryPerformedMutationExecutionDenial::Mutation(
                             WorthQueryApplicationRequestMutationDenial::Handler(
@@ -150,10 +161,12 @@ where
                 let prefix = order[0];
                 let secondary = order.iter().map(|ordinal| captured[*ordinal].clone()).collect();
                 entries[prefix].execute_prefix(
-                    &context, program, &phase, &key, prefix, intent, secondary, values, self.envelope.brand,
+                    &context, program, &phase, &key, prefix, &unseen, intent, secondary, values, self.envelope.brand,
                 ).map_err(|cause| WorthQueryEditEnvelopeExecutionDenial::stage(
                     prefix, entries[prefix].binding(), cause,
                 ))
+                    },
+                ).map_err(|cause| envelope_failure(crate::application_entry::WorthQueryPerformedMutationExecutionDenial::Mutation(WorthQueryApplicationRequestMutationDenial::Idempotency(cause))))?
             },
         ).unwrap_or_else(|cause| Err(envelope_failure(
             crate::application_entry::WorthQueryPerformedMutationExecutionDenial::Mutation(

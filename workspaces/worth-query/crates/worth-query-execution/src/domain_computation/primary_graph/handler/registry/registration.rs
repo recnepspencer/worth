@@ -64,6 +64,7 @@ impl PendingMutationHandler {
         Handler: OperationHandler<Schema, Binding>,
     {
         Self {
+            candidate_planning: Handler::supports_candidate_planning(),
             identity: Binding::IDENTITY,
             handler_identity: Binding::HANDLER_IDENTITY.to_owned(),
             decision_type: TypeId::of::<Binding::Decision>(),

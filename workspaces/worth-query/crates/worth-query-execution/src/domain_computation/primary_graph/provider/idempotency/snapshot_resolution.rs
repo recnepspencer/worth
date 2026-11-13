@@ -7,10 +7,7 @@ use super::{
     WorthQueryProductIdempotencyAffinity, WorthQueryProviderIdempotencyResolution,
     WorthQueryProviderIdempotencyResolutionDenial,
 };
-use crate::domain_computation::primary_graph::application_attempt::{
-    WorthQueryApplicationCommitOutcomeIdentity, WorthQueryApplicationIdempotencyBinding,
-    WorthQueryRecordedIntentMatch,
-};
+use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitOutcomeIdentity;
 use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider;
 use crate::domain_computation::primary_graph::schema_layout::WorthQueryProviderIdempotencyLayout;
 pub(in crate::domain_computation::primary_graph::provider) mod original_binding;
@@ -32,9 +29,10 @@ pub fn resolve_at_snapshot(
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     layout: &WorthQueryProviderIdempotencyLayout,
     product: &crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding,
-    binding: WorthQueryApplicationIdempotencyBinding,
+    candidates: &super::super::super::application_attempt::idempotency::envelope_candidates::EnvelopeCandidates<'_>,
 ) -> Result<WorthQueryProviderIdempotencyResolution, WorthQueryProviderIdempotencyResolutionDenial>
 {
+    let binding = candidates.first();
     let context = WorthQueryIdempotencySnapshotContext {
         provider,
         runtime,
@@ -60,15 +58,11 @@ pub fn resolve_at_snapshot(
     if receipt.idempotency_key_identity() != binding.key_identity() {
         return Err(WorthQueryProviderIdempotencyResolutionDenial::Unavailable);
     }
-    match binding.match_recorded_intent(receipt.recorded_intent())? {
-        WorthQueryRecordedIntentMatch::Same => {
-            Ok(WorthQueryProviderIdempotencyResolution::Readmitted(receipt))
-        }
-        WorthQueryRecordedIntentMatch::Drift => Ok(WorthQueryProviderIdempotencyResolution::Drift),
-        WorthQueryRecordedIntentMatch::Unverifiable => {
-            Err(WorthQueryProviderIdempotencyResolutionDenial::RecordedIntentUnverifiable)
-        }
-    }
+    Ok(if candidates.match_text(receipt.recorded_intent())? {
+        WorthQueryProviderIdempotencyResolution::Readmitted(receipt)
+    } else {
+        WorthQueryProviderIdempotencyResolution::Drift
+    })
 }
 
 struct WorthQueryIdempotencySnapshotContext<'a> {

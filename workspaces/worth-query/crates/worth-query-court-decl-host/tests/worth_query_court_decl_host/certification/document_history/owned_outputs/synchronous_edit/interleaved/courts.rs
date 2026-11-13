@@ -5,6 +5,7 @@ use worth_query_host::facade::{
 };
 use worth_relational::facade::inspection::observe_maintenance_work;
 type Host = WorthQueryProgramApplicationRuntime<Schema, Program>;
+mod instance_replay;
 fn host(
     second_derivation: Option<fn(u64) -> u64>,
     child_derivation: Option<fn(u64) -> u64>,
@@ -358,4 +359,9 @@ fn same_binding_disjoint_sources_with_a_real_dependent() {
             .unwrap();
         assert_eq!(output.rows()[0].value, value * 10);
     }
+    let contacts = host.producer_contacts_on_this_thread_for_test();
+    let head = super::super::courts::native_head(&host);
+    instance_replay::verify(&host, receipt.receipt());
+    assert_eq!(host.producer_contacts_on_this_thread_for_test(), contacts);
+    assert_eq!(super::super::courts::native_head(&host), head);
 }

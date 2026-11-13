@@ -1,6 +1,7 @@
 //! Installed declarations decide order; source IDs never prove independence.
 use super::*;
 mod cycle;
+mod independent_prefix;
 use worth_query_installation::facade::{
     WorthQueryOperationGraphReadScope, WorthQueryOperationReadTouchOverlapIndex,
     WorthQueryOperationTouchScope,
@@ -39,6 +40,7 @@ pub struct DeclaredEditScopeCycle {
 #[derive(Debug)]
 pub enum DeclaredEditOrderRefusal {
     Cycle(DeclaredEditScopeCycle),
+    Planning(WorthQueryOutputDemandDenial),
     Execution(WorthQueryApplicationAttemptDenial),
     /// This entry requires a genuine authored prefix before any producer wave.
     StageAfterProducer(DeclaredEditDependency),
@@ -86,7 +88,13 @@ fn overlap(
 pub fn order_authored_stages<S>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     stages: &mut [CapturedAuthoredEditStage<S>],
-) -> Result<Vec<usize>, DeclaredEditOrderRefusal> {
+    phase: &WorthQueryAdvancementPhase<'_>,
+    application: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+    unseen: &UnseenAuthoredEnvelope<'_>,
+) -> Result<Vec<usize>, DeclaredEditOrderRefusal>
+where
+    S: worth_query_installation::facade::ApplicationSchema,
+{
     let Some(first) = stages.first() else {
         return Ok(Vec::new());
     };
@@ -148,6 +156,18 @@ pub fn order_authored_stages<S>(
             edges.push((parent, child, None));
             incoming[child] += 1;
         }
+    }
+    independent_prefix::refine(
+        execution,
+        stages,
+        &nodes,
+        &mut edges,
+        &AuthoredEditStageContext { phase, application },
+        unseen,
+    )?;
+    incoming.fill(0);
+    for (_, reader, _) in &edges {
+        incoming[*reader] += 1;
     }
     let mut order = Vec::new();
     while let Some(next) = incoming.iter().enumerate().find_map(|(ordinal, incoming)| {

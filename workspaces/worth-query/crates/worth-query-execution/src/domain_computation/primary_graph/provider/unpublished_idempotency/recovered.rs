@@ -4,7 +4,6 @@ use super::super::idempotency::{
     WorthQueryProviderIdempotencyResolutionDenial as Denial,
 };
 use super::*;
-use crate::domain_computation::primary_graph::application_attempt::WorthQueryRecordedIntentMatch;
 use worth_runtime_world::facade::WorldReleasedOriginal;
 
 pub(super) enum OriginalFate {
@@ -166,11 +165,12 @@ impl super::super::WorthQueryPrimaryGraphProvider {
         });
         prepared.map_err(|cause| crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenial::from_provider(cause).kind())
     }
-    pub(in crate::domain_computation::primary_graph) fn resolve_recovered_application_idempotency(
+    pub(in crate::domain_computation::primary_graph) fn resolve_recovered_envelope_idempotency(
         &self,
         product: &WorthQueryProductIdempotencyAffinity,
-        binding: WorthQueryApplicationIdempotencyBinding,
+        candidates: &super::envelope_resolution::EnvelopeCandidates<'_>,
     ) -> Result<Option<WorthQueryProviderIdempotencyResolution>, Denial> {
+        let binding = candidates.first();
         let store = self
             .unpublished_idempotency
             .lock()
@@ -180,8 +180,8 @@ impl super::super::WorthQueryPrimaryGraphProvider {
             return Ok(None);
         };
         Ok(Some(
-            match binding.match_recorded_intent(&entry.binding.binding.intent)? {
-                WorthQueryRecordedIntentMatch::Same => match &entry.fate {
+            match candidates.match_text(&entry.binding.binding.intent)? {
+                true => match &entry.fate {
                     OriginalFate::Unpublished(handle) => {
                         WorthQueryProviderIdempotencyResolution::RecoveredUnpublished {
                             handle: handle.clone(),
@@ -196,12 +196,7 @@ impl super::super::WorthQueryPrimaryGraphProvider {
                         )
                     }
                 },
-                WorthQueryRecordedIntentMatch::Drift => {
-                    WorthQueryProviderIdempotencyResolution::Drift
-                }
-                WorthQueryRecordedIntentMatch::Unverifiable => {
-                    return Err(Denial::RecordedIntentUnverifiable)
-                }
+                false => WorthQueryProviderIdempotencyResolution::Drift,
             },
         ))
     }

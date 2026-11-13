@@ -86,6 +86,7 @@ pub trait EditEntry<S: ApplicationSchema, P: ApplicationProgramDefinition<S>, K>
         phase: &WorthQueryAdvancementPhase<'_>,
         key: &Arc<ApplicationEditEnvelopeKey<K>>,
         ordinal: usize,
+        unseen: &UnseenAuthoredEnvelope<'_>,
         intent: ApplicationEditIntentIdentity,
         stages: Vec<CapturedAuthoredEditStage<S>>,
         values: Vec<StageValue>,

@@ -28,6 +28,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             idempotency,
             causality,
             allocation_policy,
+            None,
         )
     }
 

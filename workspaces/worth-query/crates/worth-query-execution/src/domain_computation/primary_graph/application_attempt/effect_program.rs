@@ -1,5 +1,6 @@
 mod aspect_removal;
 mod body_external_emission;
+pub(in crate::domain_computation::primary_graph) mod candidate_planning;
 mod case_transition;
 mod conditional_definition;
 mod content;

@@ -139,10 +139,12 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             <B::ScopeBinding as ApplicationMutationScopeBinding<S>>::Scope,
         >,
         before: &crate::basis::WorthQueryProductBranchLease,
-        before_pin: &worth_relational::facade::runtime::RelationalPinnedRead,
-        candidate: &worth_relational::facade::runtime::RelationalPinnedRead<
-            worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
-        >,
+        applied: Option<(
+            &worth_relational::facade::runtime::RelationalPinnedRead,
+            &worth_relational::facade::runtime::RelationalPinnedRead<
+                worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
+            >,
+        )>,
         coordination: &crate::domain_computation::primary_graph::provider::WorthQueryApplicationBranchCommitCoordination<'_>,
         allocation: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> WorthQueryMutationHandlerExecutionReport<
@@ -192,7 +194,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             principal_identity,
             Some(&access),
             admission,
-            Some((before_pin, candidate)),
+            applied,
             || {},
             allocation,
         ) {

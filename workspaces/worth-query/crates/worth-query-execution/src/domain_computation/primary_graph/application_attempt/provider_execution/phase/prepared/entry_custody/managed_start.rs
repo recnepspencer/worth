@@ -17,6 +17,7 @@ impl<Schema: ApplicationSchema, Operation, Input, Scope>
         idempotency: WorthQueryApplicationIdempotencyBinding,
         elevation_currentness: Option<WorthQueryElevationCommitCurrentness>,
         aftermath_causality: Option<WorthQueryPendingAftermathCausality>,
+        coordination: Option<&crate::domain_computation::primary_graph::provider::WorthQueryApplicationBranchCommitCoordination<'_>>,
     ) -> Result<
         super::super::running::completion_storage::PhaseStorage<
             super::super::running::WorthQueryRunningApplicationCommit<
@@ -33,15 +34,17 @@ impl<Schema: ApplicationSchema, Operation, Input, Scope>
     {
         let application = self.application;
         let phase = self.phase;
-        let prepared = match prepare_application_commit(
-            execution,
-            WorthQueryApplicationCommitPreparationRequest::new(
-                self,
-                idempotency,
-                elevation_currentness,
-                aftermath_causality,
-            ),
-        ) {
+        let request = WorthQueryApplicationCommitPreparationRequest::new(
+            self,
+            idempotency,
+            elevation_currentness,
+            aftermath_causality,
+        );
+        let request = match coordination {
+            Some(held) => request.under_coordination(held),
+            None => request,
+        };
+        let prepared = match prepare_application_commit(execution, request) {
             WorthQueryApplicationCommitPreparation::Ready(prepared) => prepared,
             WorthQueryApplicationCommitPreparation::Terminal(outcome) => return Err(outcome),
         };
