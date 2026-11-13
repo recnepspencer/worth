@@ -20,9 +20,10 @@ impl UnseenAuthoredEnvelope<'_> {
         &self,
         binding: WorthQueryApplicationIdempotencyBinding,
     ) -> bool {
-        self.bindings
-            .iter()
-            .any(|candidate| candidate.has_same_intent(binding))
+        self.bindings.iter().any(|candidate| {
+            candidate.canonical_key() == binding.canonical_key()
+                && candidate.has_same_intent(binding)
+        })
     }
 }
 pub enum AuthoredEnvelopeResolution<'a> {

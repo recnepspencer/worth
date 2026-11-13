@@ -52,12 +52,12 @@ impl WorthQueryPrimaryGraphProvider {
             }
             if let Some(Some(recorded)) = self.inspect_pending_application_idempotency(
                 product.observation().lifecycle_incarnation())
-                && !candidates.matches(recorded)?
             {
                 if recorded.key_identity() == binding.key_identity() {
-                    return Ok(WorthQueryProviderIdempotencyResolution::Drift);
-                }
-                if recorded.correction_identity().is_some() {
+                    if !candidates.matches(recorded)? {
+                        return Ok(WorthQueryProviderIdempotencyResolution::Drift);
+                    }
+                } else if recorded.correction_identity().is_some() {
                     return Ok(WorthQueryProviderIdempotencyResolution::Unpublished);
                 }
             }

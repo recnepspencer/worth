@@ -238,6 +238,8 @@ impl<S, O, I, E> WorthQueryApplicationEffectProgram<S, O, I, E> {
         if !self.authored_stages.is_empty()
             || !self.synchronous_outputs.is_empty()
             || self.conditional_definition.is_some()
+            || self.output_currentness_facts.is_some()
+            || reads.postcondition_carry.is_some()
             || !self.content_attachments.is_empty()
             || reads.workflow_authority_binding.is_some()
             || reads.workflow_birth_binding.is_some()
