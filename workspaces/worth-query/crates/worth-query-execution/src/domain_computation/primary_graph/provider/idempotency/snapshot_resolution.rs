@@ -8,6 +8,7 @@ use super::{
     WorthQueryProviderIdempotencyResolutionDenial,
 };
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitOutcomeIdentity;
+use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding;
 use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider;
 use crate::domain_computation::primary_graph::schema_layout::WorthQueryProviderIdempotencyLayout;
 pub(in crate::domain_computation::primary_graph::provider) mod original_binding;

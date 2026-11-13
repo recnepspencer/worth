@@ -2,6 +2,7 @@
 use super::*;
 use crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload;
 use crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact as Fact;
+use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::identity::{EntityId, KindId};
 #[derive(Clone)]
 pub(in crate::domain_computation::primary_graph) struct CandidateFootprint(Arc<Footprint>);
