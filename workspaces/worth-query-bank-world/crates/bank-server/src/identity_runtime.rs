@@ -1,4 +1,6 @@
 mod advancement;
+mod home;
+pub use home::{bank_application_home, BankHomeRuntime};
 mod workflow_binding;
 use std::collections::BTreeSet;
 pub use workflow_binding::BankIdentityRuntimeWorkflowBinding;
@@ -23,8 +25,7 @@ use bank_domain::schema::{
     ExternalPrincipalMapping, Principal,
 };
 use worth_query_host::facade::admission::authenticated_principal::{
-    admit_authentication_adapter, WorthQueryAuthenticationAdapter,
-    WorthQueryAuthenticationAdapterAdmission, WorthQueryAuthenticationAudience,
+    WorthQueryAuthenticationAdapter, WorthQueryAuthenticationAudience,
     WorthQueryAuthenticationMethod, WorthQueryRequestScope,
 };
 use worth_query_host::facade::application_entry::{
@@ -196,63 +197,28 @@ impl BankIdentityRuntime {
         )
     }
 
-    pub fn admit_authentication_adapter<Adapter>(
+    pub fn admit_authentication_adapter<Adapter: WorthQueryAuthenticationAdapter>(
         &self,
         configuration: BankAuthenticationConfiguration,
         adapter: Adapter,
-    ) -> Result<BankAuthenticationBoundary<Adapter>, BankAuthenticationBoundaryBuildError>
-    where
-        Adapter: WorthQueryAuthenticationAdapter,
-    {
-        admit_authentication_adapter(
-            self.runtime.installed_schema(),
-            WorthQueryAuthenticationAdapterAdmission::new(
-                configuration.audience,
-                configuration.method,
-                worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system(),
-            ),
-            adapter,
-        )
-        .map(BankAuthenticationBoundary::new)
-        .map_err(BankAuthenticationBoundaryBuildError)
+    ) -> Result<BankAuthenticationBoundary<Adapter>, BankAuthenticationBoundaryBuildError> {
+        home::admit_authentication_adapter(self.application_runtime(), configuration, adapter)
     }
 
-    pub async fn authenticate_with<Adapter>(
+    pub async fn authenticate_with<Adapter: WorthQueryAuthenticationAdapter>(
         &self,
-
         authentication: &BankAuthenticationBoundary<Adapter>,
         credential: Adapter::Credential,
         scope: &WorthQueryRequestScope,
-    ) -> Result<BankAuthenticatedPrincipal, BankPrincipalAdmissionError>
-    where
-        Adapter: WorthQueryAuthenticationAdapter,
-    {
-        let external = authentication
-            .authenticate(credential, scope)
-            .await
-            .map_err(BankPrincipalAdmissionError::Authentication)?;
-        self.application_runtime()
-            .with_application_advancement(scope, |phase| {
-                let selected = self
-                    .select_current_product(&phase)
-                    .map_err(BankPrincipalAdmissionError::ProductSelection)?;
-                let query = selected
-                    .resolve_authenticated_principal(
-                        &phase,
-                        &self.binding,
-                        &external,
-                        scope,
-                        WorthQueryPrincipalResolutionMode::Ordinary,
-                    )
-                    .map_err(BankPrincipalAdmissionError::Resolution)?;
-                let principal_id = *query.principal_identity();
-                Ok(BankAuthenticatedPrincipal::new(
-                    principal_id,
-                    external,
-                    query,
-                ))
-            })
-            .map_err(BankPrincipalAdmissionError::ExecutionRequest)?
+    ) -> Result<BankAuthenticatedPrincipal, BankPrincipalAdmissionError> {
+        home::authenticate_with(
+            self.application_runtime(),
+            &self.binding,
+            authentication,
+            credential,
+            scope,
+        )
+        .await
     }
 
     pub fn validate(

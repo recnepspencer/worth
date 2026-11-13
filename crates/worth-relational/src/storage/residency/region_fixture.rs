@@ -103,6 +103,7 @@ impl RelationalDurableColdSource for CountedSource {
 }
 
 pub(super) struct RegionFixture {
+    pub(super) runtime: crate::runtime::RelationalRuntime,
     pub(super) cell: Arc<RelationalRegionResidency>,
     pub(super) cold: RelationalColdRegion,
     pub(super) source: Arc<CountedSource>,
@@ -219,6 +220,7 @@ pub(super) fn region_with_history() -> RegionFixture {
             + partition.relation_arena.lifecycle_counts().unavailable,
     };
     RegionFixture {
+        runtime,
         cell: RelationalRegionResidency::cold(cold.clone()).unwrap(),
         cold,
         source,

@@ -16,12 +16,13 @@ pub(in crate::domain_computation) enum DirectoryCorrectionShapeUse<'a> {
 pub(in crate::domain_computation) enum DirectoryCorrectionShapeAdmission {
     ExistingShape,
     ExternalOriginalRecoveryOnly,
+    NativeRecordedCorrection,
 }
 
 impl DirectoryCorrectionShapeAdmission {
     pub(in crate::domain_computation) fn requires_external_original_custody(self) -> bool {
         match self {
-            Self::ExistingShape => false,
+            Self::ExistingShape | Self::NativeRecordedCorrection => false,
             Self::ExternalOriginalRecoveryOnly => true,
         }
     }

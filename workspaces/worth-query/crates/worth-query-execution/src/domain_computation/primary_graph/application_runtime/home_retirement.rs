@@ -90,7 +90,11 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         self.mutation_handlers.preflight_home_retirement(request)?;
         self.conditional_cleanup
             .preflight_home_retirement(request)?;
-        self.installed_producers.preflight_home_retirement()?;
+        if !self.installed_producers.is_empty() {
+            self.installed_producers
+                .preflight_home_retirement(request)?;
+            self.runtime.output_demands.preflight_home_retirement()?;
+        }
         self.installed_conditionals
             .preflight_home_retirement(self.runtime.bridge.conditional_owner())?;
         // Every recorded attempt owns its one durable observation before close.

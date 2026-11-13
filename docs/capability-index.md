@@ -1067,7 +1067,20 @@ do not mint that image. An application checkpoint alone does not reconstruct a
 live correction handle. Directory Homes admit retained correction DATA from
 `query.corrections` against protected World originals and Native bindings; fresh
 coordinate selection still requires retained history. Missing history remains an
-explicit refusal. A decoded or cold Native envelope without its admitted historical
+explicit refusal. Bank’s `bank_application_home` attachment reuses the generic
+Home with full static `BankSchema`, `BankApplication`, actual main/P1/P2 revisions,
+full providers, principal binding, account index and invariant. It does not
+attach workflow execution eagerly. Quiescent installed producers retire intact
+for explicit reclaim only after exclusive executable ownership and authoritative
+output-custody preflight; live aliases or undischarged work remain Busy. Activated
+producer/async/workflow families retain their unsupported boundaries. Its
+native scalar-output compensation subset uses current teller disclosure and
+genuine Prepared/Replay custody for the retained inverse owner; it does not
+admit authored content, coupled outputs or external compensation. Retain the
+source history before closing Fresh and moving the head. After lawful inverse
+close and graceful Home reopen, reacquire source and inverse history before
+exact-key replay or another dependency edit. Descriptive receipts and decoded
+coordinates never replace those current-owner selections. A decoded or cold Native envelope without its admitted historical
 content directory returns HistoryNotResident. A dangling identity in an admitted
 directory still returns MissingContent. K1c's bounded-cost courts measure complete frames at 1/2/4 MiB
 and local reads/edits against 100/1,000/10,000 unrelated retained entries;

@@ -119,7 +119,8 @@ pub use estate_progression::{
 };
 pub use external_effect_transport::BankExternalEffectTransportDenial;
 pub use identity_runtime::{
-    BankAuthenticationConfiguration, BankIdentityRuntime, BankIdentityRuntimeWorkflowBinding,
+    bank_application_home, BankAuthenticationConfiguration, BankHomeRuntime, BankIdentityRuntime,
+    BankIdentityRuntimeWorkflowBinding,
 };
 pub use inbound_completion::{
     BankEstateRailCompletionInstallationDenial, BankEstateRailCompletionRoute,

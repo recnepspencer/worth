@@ -65,3 +65,58 @@ pub(super) fn classify(
     // only says MAY emit. Existing typed candidate/outbox gates require the real payload.
     Ok(Admission::ExternalOriginalRecoveryOnly)
 }
+
+/// Native scalar-output compensation is distinct from external original recovery.
+pub(super) fn classify_native(
+    aftermath: &WorthQueryInstalledAftermathContract,
+    binding: &worth_query_installation::facade::InstalledCorrectionBinding,
+    usage: Use<'_>,
+) -> Result<Admission, Denial> {
+    let declaration = binding.declaration();
+    if let Use::OriginalExecution(contracts) = usage {
+        if contracts.body().is_some()
+            || contracts.aftermath() != Some(aftermath)
+            || !matches!(
+                contracts.external_effect(),
+                InstalledExternalEffectContract::None
+            )
+        {
+            return Err(Denial::UnsupportedCorrectionCompensation);
+        }
+    }
+    if aftermath.authority() != InstalledCorrectionAuthority::RuntimeAlone
+        || aftermath.published_posture() != PublishedAftermathPosture::Compensatable
+        || aftermath.recovery()
+            != (InstalledAftermathRecoveryContract::Admissible {
+                posture: PublishedAftermathPosture::Compensatable,
+            })
+        || aftermath.correction_disclosure().is_none()
+        || aftermath.reconciliation().is_some()
+        || !matches!(
+            aftermath.external_effect(),
+            worth_query_installation::facade::InstalledExternalEffectPosture::None
+        )
+    {
+        return Err(Denial::UnsupportedCorrectionCompensation);
+    }
+    let Some(InstalledCorrectionMechanism::Compensation(mechanism)) = aftermath.mechanism() else {
+        return Err(Denial::UnsupportedCorrectionCompensation);
+    };
+    if mechanism.compensating_operation_slot() != declaration.inverse().operation() {
+        return Err(Denial::UnsupportedCorrectionCompensation);
+    }
+    if !declaration.coupled_outputs().is_empty() {
+        return Err(Denial::UnsupportedCorrectionCoupledOutputs);
+    }
+    if declaration.authored_identity().is_some()
+        || declaration.source_output_fields().is_empty()
+        || declaration.source_output_fields().iter().any(|field| {
+            let field = field.parts();
+            &field.source_binding != declaration.source().binding_identity()
+                || field.content_format.is_some()
+        })
+    {
+        return Err(Denial::UnsupportedCorrectionOutputMaterial);
+    }
+    Ok(Admission::NativeRecordedCorrection)
+}
