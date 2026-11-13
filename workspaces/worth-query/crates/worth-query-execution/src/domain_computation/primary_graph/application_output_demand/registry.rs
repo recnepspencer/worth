@@ -239,7 +239,7 @@ pub enum DemandAdmissionKind {
 }
 
 impl DemandAdmissionKind {
-    const fn is_required(self) -> bool {
+    pub(in crate::domain_computation::primary_graph) const fn is_required(self) -> bool {
         !matches!(self, Self::Ordinary)
     }
 }

@@ -711,6 +711,11 @@ graceful reopen and in a fresh process. Durable adoption recovery and its
 branch-set resume remain separate work; this retirement journey does not
 claim they are installed.
 
+Ordinary optional producer execution in a Directory Home uses the actual
+readmitted Signal branch's allocation registry. Mandatory prerequisite promotion
+still requires durable admission before publication. Cold accepted-output reuse
+and changed-build regeneration remain unfinished Phase 6 work.
+
 ## Denials
 
 ### Single-branch adoption preparation

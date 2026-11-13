@@ -75,14 +75,7 @@ pub(super) fn prepare<A: ApplicationSchemaComposition, AP, B: ApplicationSchemaC
     let (budgets, clock, policy, execution, _conditionals) = after.home_world_resources();
     let source = match prepare_query_home_source(
         home.share(),
-        ApplicationHomeWorldDefinition::new(
-            bridge,
-            "primary-application-source",
-            budgets,
-            clock,
-            policy,
-            execution,
-        ),
+        ApplicationHomeWorldDefinition::new(bridge, "primary", budgets, clock, policy, execution),
         &request,
     ) {
         Ok(source) => source,

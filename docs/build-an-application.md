@@ -2022,9 +2022,11 @@ supply and embed their own fresh UUID. Tests use explicit fixture identities.
 
 A journal-only Directory Home with the same supported program/schema opens under
 a new build UUID. Authored binding and durable history remain intact; the
-initializer does not run and nothing regenerates eagerly. Producers are not
-supported in this Directory lane. Accepted-output reuse and regeneration on demand
-are Phase 6 behavior, not a promise of rebuild admission.
+initializer does not run and nothing regenerates eagerly. Ordinary producer execution is admitted when it creates no mandatory prerequisite
+custody. Consuming an upstream output still requires durable admission before
+publication, even when that output is already current. Accepted-output reuse
+after reopen and regeneration under a changed build remain Phase 6 work; they
+are not yet a promise of this Directory lane.
 
 ### One process execution service
 

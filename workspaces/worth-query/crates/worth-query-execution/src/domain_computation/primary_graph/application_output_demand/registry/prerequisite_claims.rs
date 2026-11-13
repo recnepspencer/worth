@@ -45,6 +45,14 @@ impl RequiredOutputDemandContext {
             // committed. Its token and queue link were admitted with the row.
         }
         let count = inputs.len();
+        if count != 0 {
+            self.prerequisite_admission.map_err(|cause| {
+                WorthQueryOutputDemandDenial::new(
+                    WorthQueryOutputDemandDenialKind::DurableStateAdmission(cause),
+                    "consumed output promotion requires durable prerequisite custody",
+                )
+            })?;
+        }
         let mut predecessors = Vec::new();
         predecessors
             .try_reserve_exact(count)
