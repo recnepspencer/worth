@@ -11,11 +11,14 @@ where
 {
     pub(super) fn envelope_product(
         &self,
-        context: &AuthoredEditStageContext<'_, '_, '_, S>,
+        _context: &AuthoredEditStageContext<'_, '_, '_, S>,
     ) -> Result<crate::basis::WorthQueryProductBranchLease, Denial> {
-        let admitted = (self.admit)(context).map_err(|_| Denial::foreign_admission())?;
+        let retained = self
+            .original_admission
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let admitted = &*retained;
         admitted
-            .operation
             .graph_work()
             .mutation_product()
             .map(|product| product.retained_clone())
@@ -28,12 +31,15 @@ where
         intent: worth_query_declaration::facade::application_operation::ApplicationEditIntentIdentity,
         next: &mut dyn FnMut(WorthQueryApplicationIdempotencyBinding) -> Result<Resolution, Denial>,
     ) -> Result<Resolution, Denial> {
-        let admitted = (self.admit)(context).map_err(|_| Denial::foreign_admission())?;
-        if admitted.operation.scope_entity_id() != self.source {
+        let retained = self
+            .original_admission
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let admitted = &*retained;
+        if admitted.scope_entity_id() != self.source {
             return Err(Denial::foreign_admission());
         }
         if admitted
-            .operation
             .graph_work()
             .mutation_product()
             .is_none_or(|product| product.observation() != &self.before)
@@ -46,14 +52,14 @@ where
             .map_err(|_| Denial::foreign_admission())?;
         let binding = WorthQueryApplicationIdempotencyBinding::for_mutation_identities(&identities)
             .bind_edit_envelope(&intent)
-            .bind_admission(&admitted.operation);
+            .bind_admission(admitted);
         let execution = context
             .phase
             .checked_execution_request_for(context.application.product_runtime())
             .map_err(|_| Denial::foreign_admission())?;
         let proof = context
             .application
-            .authorize_idempotency_inspection(&execution, &admitted.operation, coordination)
+            .authorize_idempotency_inspection(&execution, admitted, coordination)
             .map_err(Denial::from_authorization)?;
         proof
             .govern((), |()| next(binding))

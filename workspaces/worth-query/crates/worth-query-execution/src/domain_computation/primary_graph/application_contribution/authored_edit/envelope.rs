@@ -40,7 +40,12 @@ pub fn with_resolved_edit_envelope<S: ApplicationSchema, R>(
     proceed: impl FnOnce(AuthoredEnvelopeResolution<'_>) -> R,
 ) -> Result<R, Denial> {
     let first = stages.first().ok_or_else(Denial::foreign_admission)?;
-    if stages.iter().any(|stage| !stage.same_admitted_basis(first)) {
+    if stages.iter().enumerate().any(|(index, stage)| {
+        !stage.same_admitted_basis(first)
+            || stages[..index]
+                .iter()
+                .any(|earlier| earlier.identity == stage.identity)
+    }) {
         return Err(Denial::foreign_admission());
     }
     let context = AuthoredEditStageContext { phase, application };

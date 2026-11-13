@@ -137,7 +137,7 @@ where
                 ordinal: self.ordinal,
                 binding: B::IDENTITY,
             },
-            detail,
+            detail.into(),
         )
     }
     pub(super) fn take_prefix_candidate(

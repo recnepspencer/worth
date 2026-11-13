@@ -46,28 +46,16 @@ where
             Ok(presented) => presented,
             Err(cause) => return WorthQueryApplicationCommitOutcome::Denied(cause),
         };
-        if !program.is_admitted_envelope_prefix(unseen, idempotency) {
-            return WorthQueryApplicationCommitOutcome::Denied(
-                WorthQueryApplicationCommitDenial::idempotency_intent_drift(),
-            );
-        }
-        if let Err(outcome) = self.runtime().require_program_incarnation(&program) {
-            return outcome;
-        }
-        let entry = match self
-            .runtime()
-            .validate_commit_program_in_advancement(phase, program)
-        {
-            Ok(entry) => entry,
-            Err(outcome) => return outcome,
-        };
-        entry.compare_and_commit_application_for_required_output_source(
+        self.runtime()
+            .compare_and_commit_application_in_edit_envelope(
             &execution,
+            phase,
             &presented,
+            program,
             idempotency,
+            unseen,
             crate::domain_computation::application_aftermath::ApplicationCommitCausality::Ordinary,
             allocation,
-            Some(unseen.coordination),
         )
     }
 }

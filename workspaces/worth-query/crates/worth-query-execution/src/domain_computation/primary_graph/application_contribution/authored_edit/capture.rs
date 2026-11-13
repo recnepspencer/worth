@@ -144,6 +144,7 @@ type Admit<S, B> = dyn Fn(
     + Send
     + Sync;
 pub(super) struct TypedStage<S: ApplicationSchema, B: ApplicationMutationBinding<S>> {
+    pub(super) original_admission: std::sync::Mutex<AuthoredEditStageOperation<S, B>>,
     pub(super) planning: std::sync::Mutex<super::planning::StagePlanning<S, B>>,
     pub(super) before: worth_runtime_world::facade::ProductBranchObservation,
     pub(super) key: Arc<ApplicationEditEnvelopeKey<B::IdempotencyKey>>,
@@ -224,6 +225,7 @@ impl<S: ApplicationSchema> CapturedAuthoredEditStage<S> {
             identity,
             binding: B::IDENTITY,
             executor: Arc::new(TypedStage::<S, B> {
+                original_admission: std::sync::Mutex::new(admitted.operation),
                 planning: std::sync::Mutex::new(super::planning::StagePlanning::default()),
                 before,
                 key,

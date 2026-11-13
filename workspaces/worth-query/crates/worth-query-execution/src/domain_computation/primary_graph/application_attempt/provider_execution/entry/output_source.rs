@@ -15,6 +15,67 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     where
         Input: Clone + Send + Sync + 'static,
     {
+        self.compare_and_commit_required_source_under_coordination(
+            execution,
+            phase,
+            presented,
+            program,
+            idempotency,
+            causality,
+            allocation_policy,
+            None,
+        )
+    }
+    pub(in crate::domain_computation::primary_graph) fn compare_and_commit_application_in_edit_envelope<
+        Operation,
+        Input,
+        Scope,
+    >(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
+        presented: &WorthQueryPresentedProgram<'_>,
+        program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
+        idempotency: WorthQueryApplicationIdempotencyBinding,
+        unseen: &crate::domain_computation::primary_graph::application_contribution::authored_edit::UnseenAuthoredEnvelope<'_>,
+        causality: ApplicationCommitCausality,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+    ) -> WorthQueryApplicationCommitOutcome
+    where
+        Input: Clone + Send + Sync + 'static,
+    {
+        if !program.is_admitted_envelope_prefix(unseen, idempotency) {
+            return WorthQueryApplicationCommitOutcome::Denied(
+                WorthQueryApplicationCommitDenial::idempotency_intent_drift(),
+            );
+        }
+        self.compare_and_commit_required_source_under_coordination(
+            execution,
+            phase,
+            presented,
+            program,
+            idempotency,
+            causality,
+            allocation_policy,
+            Some(unseen.coordination),
+        )
+    }
+    fn compare_and_commit_required_source_under_coordination<Operation, Input, Scope>(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
+        presented: &WorthQueryPresentedProgram<'_>,
+        program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
+        idempotency: WorthQueryApplicationIdempotencyBinding,
+        causality: ApplicationCommitCausality,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+        coordination: Option<&crate::domain_computation::primary_graph::provider::WorthQueryApplicationBranchCommitCoordination<'_>>,
+    ) -> WorthQueryApplicationCommitOutcome
+    where
+        Input: Clone + Send + Sync + 'static,
+    {
         if let Err(outcome) = self.require_program_incarnation(&program) {
             return outcome;
         }
@@ -28,7 +89,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             idempotency,
             causality,
             allocation_policy,
-            None,
+            coordination,
         )
     }
 

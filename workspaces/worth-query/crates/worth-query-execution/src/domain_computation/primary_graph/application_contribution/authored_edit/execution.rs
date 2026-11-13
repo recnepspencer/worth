@@ -117,23 +117,23 @@ where
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .candidate
             .take();
-        let report = if let Some((completed, work)) = planned {
-            crate::domain_computation::primary_graph::WorthQueryMutationHandlerExecutionReport::new(
-                Ok(HandlerResult::Completed(completed)),
-                work,
-            )
+        let outcome = if let Some((completed, _work)) = planned {
+            Ok(HandlerResult::Completed(completed))
         } else {
-            context.application.execute_authored_stage_handler::<B>(
-                context.phase,
-                &identities,
-                &admission.principal,
-                &self.principal,
-                admission.operation,
-                before,
-                Some((before_pin, candidate)),
-                coordination,
-                execution.allocation_policy(),
-            )
+            context
+                .application
+                .execute_authored_stage_handler::<B>(
+                    context.phase,
+                    &identities,
+                    &admission.principal,
+                    &self.principal,
+                    admission.operation,
+                    before,
+                    Some((before_pin, candidate)),
+                    coordination,
+                    execution.allocation_policy(),
+                )
+                .into_outcome()
         };
         let stopped_stage = |cause| {
             self.result
@@ -148,8 +148,7 @@ where
                 });
             refuse("stage execution refused".into())
         };
-        let completed = match report
-            .into_outcome()
+        let completed = match outcome
             .map_err(|cause| stopped_stage(AuthoredStageExecutionCause::Request(cause)))?
         {
             HandlerResult::Completed(completed) => completed,
