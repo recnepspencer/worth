@@ -1,7 +1,7 @@
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use std::sync::{Arc, Mutex, MutexGuard};
 
-use worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly;
+use worth_runtime_bridge::facade::BridgeConditionalExecutionView;
 
 use super::{
     ConditionalClockLease, ErasedClockObservationOutcome, WorthQueryConditionalTruthBasis,
@@ -37,10 +37,18 @@ impl<Schema> WorthQueryConditionalOperationCell<Schema> {
         Arc::ptr_eq(&self.lease, lease)
     }
 
-    pub(in crate::domain_computation::primary_graph) fn operation_anchor(
+    pub(in crate::domain_computation::primary_graph) fn admit_operation_binding(
         &self,
-    ) -> Arc<worth_runtime_bridge::facade::BridgeInstalledConditionalLowering> {
-        self.lock_operation().operation_anchor()
+        view: &BridgeConditionalExecutionView<'_>,
+        basis: &worth_signal::facade::branch::AdmittedSignalBranchBasis,
+    ) -> Result<
+        (
+            worth_runtime_bridge::facade::BridgeConditionalSignalBasisBinding,
+            bool,
+        ),
+        worth_runtime_bridge::facade::BridgeConditionalDenial,
+    > {
+        self.lock_operation().admit_operation_binding(view, basis)
     }
 
     pub(in crate::domain_computation::primary_graph) fn lock_operation(
@@ -56,7 +64,7 @@ impl<Schema> WorthQueryConditionalOperationCell<Schema> {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
 
-        bridge: &BridgeSealedRuntimeAssembly,
+        bridge: &BridgeConditionalExecutionView<'_>,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         truth: &WorthQueryConditionalTruthBasis,
     ) -> ErasedClockObservationOutcome {
@@ -73,7 +81,7 @@ impl<Schema> WorthQueryConditionalOperationCell<Schema> {
     pub(in crate::domain_computation::primary_graph::conditional_operation) fn admit_product_binding(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        bridge: &BridgeSealedRuntimeAssembly,
+        bridge: &BridgeConditionalExecutionView<'_>,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         truth: &WorthQueryConditionalTruthBasis,
     ) -> Result<(), super::super::installation::WorthQueryConditionalRuntimeInstallationDenial>

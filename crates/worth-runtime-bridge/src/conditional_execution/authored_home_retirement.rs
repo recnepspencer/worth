@@ -62,7 +62,12 @@ impl BridgeReadmittedAuthoredAssembly {
                         | BranchPosture::Pending { .. }
                         | BranchPosture::ReadmissionRequired { .. } => return Err(Denial::Busy),
                     }
-                    if Arc::strong_count(&state.lowerings) != 1
+                    if !state
+                        .managed_clock_lanes
+                        .try_lock()
+                        .map_err(|_| Denial::Busy)?
+                        .is_empty()
+                        || Arc::strong_count(&state.lowerings) != 1
                         || Arc::strong_count(&state.declarations) != 1
                         || Arc::strong_count(&state.source_owner) != 1
                     {
@@ -163,6 +168,7 @@ impl BridgeReadmittedAuthoredAssembly {
             bridge,
             _memory: programme_memory,
             installation: _,
+            conditional_evaluation_budget: _,
         } = Arc::try_unwrap(program)
             .unwrap_or_else(|_| unreachable!("checked holders leave the original programme"));
         *prepared.state = Some(RetiringAuthoredState {

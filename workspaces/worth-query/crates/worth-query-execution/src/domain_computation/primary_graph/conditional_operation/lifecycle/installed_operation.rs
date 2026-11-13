@@ -1,5 +1,6 @@
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use std::{collections::BTreeMap, sync::Arc};
+use worth_runtime_bridge::facade::BridgeConditionalExecutionView;
 
 use worth_runtime_bridge::facade::{
     BridgeInstalledConditionalLowering, BridgeManagedClockBinding, BridgeSealedRuntimeAssembly,
@@ -17,6 +18,11 @@ use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationR
 
 pub trait WorthQueryInstalledConditionalOperation<Schema>: Send {
     fn binding_identity(&self) -> &str;
+    fn handoff_to_home(
+        &mut self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    ) -> Result<(), crate::domain_computation::primary_graph::WorthQueryHomeRetirementDenial>;
 
     fn pending_managed_cleanup(
         &self,
@@ -32,9 +38,23 @@ pub trait WorthQueryInstalledConditionalOperation<Schema>: Send {
 
     fn clock_lease(&self) -> Arc<ConditionalClockLease>;
 
-    fn operation_anchor(&self) -> Arc<BridgeInstalledConditionalLowering>;
+    fn admit_operation_binding(
+        &self,
+        view: &BridgeConditionalExecutionView<'_>,
+        basis: &worth_signal::facade::branch::AdmittedSignalBranchBasis,
+    ) -> Result<
+        (
+            worth_runtime_bridge::facade::BridgeConditionalSignalBasisBinding,
+            bool,
+        ),
+        worth_runtime_bridge::facade::BridgeConditionalDenial,
+    >;
+    fn admit_authored_route(
+        &mut self,
+        fresh: &worth_runtime_bridge::facade::BridgeFreshAuthoredBindings,
+    ) -> Result<(), worth_runtime_bridge::facade::BridgeAuthoredReadmissionDenial>;
 
-    fn selected_lowering(&self) -> Arc<BridgeInstalledConditionalLowering>;
+    fn selected_lowering(&self) -> Option<Arc<BridgeInstalledConditionalLowering>>;
 
     fn retain_direct_delivery(
         &mut self,
@@ -46,7 +66,7 @@ pub trait WorthQueryInstalledConditionalOperation<Schema>: Send {
     fn select_product_binding(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        bridge: &BridgeSealedRuntimeAssembly,
+        bridge: &BridgeConditionalExecutionView<'_>,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         truth: &WorthQueryConditionalTruthBasis,
     ) -> Result<(), WorthQueryConditionalRuntimeInstallationDenial>;
@@ -87,7 +107,7 @@ pub trait WorthQueryInstalledConditionalOperation<Schema>: Send {
         &mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
 
-        bridge: &BridgeSealedRuntimeAssembly,
+        bridge: &BridgeConditionalExecutionView<'_>,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         truth: &WorthQueryConditionalTruthBasis,
     ) -> ErasedClockObservationOutcome;
@@ -146,8 +166,8 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryInstalledTempo
         Arc<()>,
     pub(in crate::domain_computation::primary_graph::conditional_operation) definition:
         Arc<super::super::definition::WorthQueryTemporalOperationDefinition<Binding, Reconstruction, Execution>>,
-    pub(in crate::domain_computation::primary_graph::conditional_operation) bootstrap_lowering:
-        Arc<BridgeInstalledConditionalLowering>,
+    pub(in crate::domain_computation::primary_graph::conditional_operation) bootstrap_route:
+        super::super::installation::route_binding::InstalledConditionalRoute,
     pub(in crate::domain_computation::primary_graph::conditional_operation) active_affinity:
         Option<super::evaluation_affinity::WorthQueryConditionalEvaluationAffinity>,
     pub(in crate::domain_computation::primary_graph::conditional_operation) managed_clock:

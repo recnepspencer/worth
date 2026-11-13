@@ -94,6 +94,8 @@ pub(in crate::conditional_execution) struct PreparedDefinition {
     pub(in crate::conditional_execution) provider_admission:crate::conditional_execution::provider_admission::BridgeConditionalProviderAdmission,
 }
 pub(in crate::conditional_execution) struct Program {
+    pub(in crate::conditional_execution) conditional_evaluation_budget:
+        worth_signal::facade::runtime::SignalConditionalEvaluationBudget,
     pub(in crate::conditional_execution) bridge: RuntimeBridge,
     pub(in crate::conditional_execution) installation:
         worth_proof::BridgeProgramInstallationBinding,
@@ -104,6 +106,7 @@ impl Program {
     pub(in crate::conditional_execution) fn new(
         bridge: RuntimeBridge,
         installation: worth_proof::BridgeProgramInstallationBinding,
+        conditional_evaluation_budget: worth_signal::facade::runtime::SignalConditionalEvaluationBudget,
         execution: &ExecutionRequest<'_, '_>,
     ) -> Result<Arc<Self>, BridgeAuthoredReadmissionDenial> {
         let bytes =
@@ -116,6 +119,7 @@ impl Program {
         Ok(Arc::new(Self {
             bridge,
             installation,
+            conditional_evaluation_budget,
             _memory: memory,
         }))
     }

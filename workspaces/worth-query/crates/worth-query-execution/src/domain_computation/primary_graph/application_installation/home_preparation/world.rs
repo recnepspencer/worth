@@ -211,6 +211,7 @@ where
             producer_routes,
             readiness_routes,
             definition_routes,
+            operations,
         } = self;
         let home_attachment::HomeApplicationServices {
             provider,
@@ -242,6 +243,7 @@ where
             readiness_routes,
             definition_routes,
         );
+        application.conditional_cleanup.operations = std::sync::Mutex::new(operations);
         application.program_support = Some(
             super::super::super::program_occurrence::WorthQueryInstalledProgramSupport::installed(
                 state.support.roster,

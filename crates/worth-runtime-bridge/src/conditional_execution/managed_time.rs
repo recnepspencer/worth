@@ -9,6 +9,7 @@ pub use due_buffer::{BridgeManagedDueWakeBuffer, BridgeManagedDueWakeIntoIter};
 mod installation;
 mod intent_reconciliation;
 mod lifecycle;
+pub(in crate::conditional_execution) use lifecycle::revoke_clock_lanes;
 mod quarantine;
 #[cfg(test)]
 pub(super) mod quarantine_tests;

@@ -66,6 +66,7 @@ impl BridgeConditionalRuntimeBuilder {
         parts: super::BridgeManagedClockInstallationParts<'_>,
     ) -> Result<super::BridgeManagedClockBinding, super::BridgeManagedTemporalDenial> {
         self.runtime
+            .execution_view()
             .require_managed_clock_lowering(parts.lowering)?;
         let declaration = super::managed_time::BridgeManagedClockDeclaration::admit(
             self.runtime.bridge.signal_runtime_key,

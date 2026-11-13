@@ -63,7 +63,11 @@ pub const fn directory_family_support(family: DurableStateFamily) -> DirectoryFa
         | ProgramOutputReadCustody => DirectoryFamilySupport::RefusedUntil(6),
         // The logical cleanup stays in Query's one journal. Native resources
         // must have an actual live release before graceful Home handoff.
-        PendingApplicationCleanup => DirectoryFamilySupport::Supported(7),
+        PendingApplicationCleanup
+        | ConditionalDecisions
+        | RetainedConditionalCleanup
+        | TemporalIdempotency
+        | BridgeManagedTemporalIntents => DirectoryFamilySupport::Supported(7),
         ProducerCleanupCustody
         | OperationCleanupCustody
         | SourceOperationCustody
@@ -73,11 +77,7 @@ pub const fn directory_family_support(family: DurableStateFamily) -> DirectoryFa
         | DirectTerminalCleanup
         | SignalOwnedAsyncCustody
         | SignalOwnedAsyncQueue
-        | BridgeManagedTemporalIntents
         | BridgeOwnedAsyncCustody
-        | ConditionalDecisions
-        | RetainedConditionalCleanup
-        | TemporalIdempotency
         | ResourceOccurrences
         | ResourceIngress
         | OwnedAsyncCustody

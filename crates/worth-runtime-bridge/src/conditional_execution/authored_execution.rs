@@ -11,9 +11,18 @@ pub struct BridgeAuthoredConditionalExecution<'a> {
     program: Arc<Program>,
     lowerings: Arc<RwLock<lowering_registry::BridgeConditionalLoweringRegistry>>,
     retention: Arc<retention::BridgeRetentionLedger>,
+    allocations: crate::correspondence::SharedCorrespondenceAllocationRegistry,
     source_owner: Arc<worth_proof::ConditionalSourceObservationOwner>,
     declarations: Arc<RwLock<authored_declaration::DeclarationIndex>>,
     graph_instance_id: u64,
+    managed_clock_lanes: Arc<
+        std::sync::Mutex<
+            std::collections::BTreeMap<
+                Arc<str>,
+                Arc<std::sync::Mutex<managed_time::BridgeManagedClockLane>>,
+            >,
+        >,
+    >,
     _backing: Arc<Backing>,
 }
 impl BridgeReadmittedAuthoredAssembly {
@@ -28,9 +37,11 @@ impl BridgeReadmittedAuthoredAssembly {
             program: Arc::clone(&self.program),
             lowerings: Arc::clone(&serving.lowerings),
             retention: Arc::clone(&serving.retention),
+            allocations: Arc::clone(&serving._allocations),
             source_owner: Arc::clone(&serving.source_owner),
             declarations: Arc::clone(&serving.declarations),
             graph_instance_id: serving.graph_instance_id,
+            managed_clock_lanes: Arc::clone(&serving.managed_clock_lanes),
             _backing: Arc::clone(&serving._backing),
         })
     }
@@ -41,39 +52,20 @@ impl BridgeAuthoredConditionalExecution<'_> {
         declaration: &BridgeAuthoredConditionalDeclaration,
         basis: &worth_signal::facade::branch::AdmittedSignalBranchBasis,
     ) -> Result<BridgeConditionalSignalBasisBinding, BridgeConditionalDenial> {
-        if self
-            .program
-            .installation
-            .admit(&declaration.installation)
-            .is_err()
-        {
-            return Err(BridgeConditionalDenial::new(
-                BridgeConditionalDenialKind::StaleLowering,
-                "conditional declaration belongs to another installed programme",
-            ));
-        }
-        let lowering = self
-            .declarations
-            .read()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .get(&declaration.key)
-            .cloned()
-            .ok_or_else(|| {
-                BridgeConditionalDenial::new(
-                    BridgeConditionalDenialKind::StaleLowering,
-                    "conditional declaration has no recovered branch definition",
-                )
-            })?;
         self.view()
-            .admit_exact_conditional_signal_basis(&lowering, basis)
+            .admit_declaration_signal_basis(declaration, basis)
     }
 
-    fn view(&self) -> execution_view::BridgeConditionalExecutionView<'_> {
+    pub fn view(&self) -> execution_view::BridgeConditionalExecutionView<'_> {
         execution_view::BridgeConditionalExecutionView {
             bridge: &self.program.bridge,
+            correspondence_allocations: &self.allocations,
+            managed_clock_lanes: &self.managed_clock_lanes,
+            declaration_scope: Some((&self.program.installation, &self.declarations)),
             retention: &self.retention,
             conditional_lowerings: &self.lowerings,
             signal_graph_instance_id: self.graph_instance_id,
+            conditional_evaluation_budget: self.program.conditional_evaluation_budget,
             source_owner: Some(&self.source_owner),
             durable_owner: Some(self.signal),
         }

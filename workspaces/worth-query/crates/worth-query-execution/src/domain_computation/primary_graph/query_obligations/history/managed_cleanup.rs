@@ -202,11 +202,79 @@ impl QueryObligationHistory {
             .medium
             .get()
             .ok_or(QueryObligationDenial::SupportUnavailable)?;
-        self.lock_publication()?.publish(
-            medium.as_ref(),
-            QueryManagedCleanupRecord::Discharge { identity },
-            request,
-        )
+        if identity.home() != medium.home() {
+            return Err(QueryObligationDenial::ForeignHome);
+        }
+        let driver = self.lock_publication()?;
+        // Settling the last pending frame can remove this very subject. Capture
+        // acknowledged membership before settlement, while holding its driver.
+        let known_before_settlement = !self.managed_cleanup_is_discharged(identity);
+        driver.finish_pending(medium.as_ref(), request)?;
+        let decisions = self
+            .conditional_decisions()
+            .into_iter()
+            .filter(|row| row.posture == QueryConditionalPosture::CleanupRequired(identity))
+            .collect::<Vec<_>>();
+        if self
+            .managed_cleanup_obligations()
+            .iter()
+            .any(|row| row.identity == identity)
+        {
+            driver.publish(
+                medium.as_ref(),
+                QueryManagedCleanupRecord::Discharge { identity },
+                request,
+            )?;
+        } else if decisions.is_empty() && !known_before_settlement {
+            return Err(QueryObligationDenial::UnknownObligation);
+        }
+        // A retry after the shared discharge resumes only its remaining
+        // conditional association. This disposes custody, never business fate.
+        for row in decisions {
+            driver.publish(
+                medium.as_ref(),
+                QueryConditionalDecisionRecord::Finish {
+                    key: row.key,
+                    intent: row.intent,
+                },
+                request,
+            )?;
+        }
+        Ok(())
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn settle_managed_cleanup_discharge(
+        &self,
+        request: &ExecutionRequest<'_, '_>,
+        identity: ManagedCleanupObligationIdentity,
+    ) -> Result<bool, QueryObligationDenial> {
+        let medium = self
+            .medium
+            .get()
+            .ok_or(QueryObligationDenial::SupportUnavailable)?;
+        self.lock_publication()?
+            .finish_pending(medium.as_ref(), request)?;
+        Ok(self.managed_cleanup_is_discharged(identity))
+    }
+
+    /// Only an original retained live owner may consume this absence as its
+    /// acknowledged logical discharge; it is not fresh resource-release proof.
+    pub(in crate::domain_computation::primary_graph) fn managed_cleanup_is_discharged(
+        &self,
+        identity: ManagedCleanupObligationIdentity,
+    ) -> bool {
+        let state = self.state();
+        let Some(journal) = &state.journal else {
+            return false;
+        };
+        !journal
+            .ledger
+            .managed_cleanup()
+            .any(|row| row.identity == identity)
+            && !journal
+                .ledger
+                .conditional_decisions()
+                .any(|row| row.posture == QueryConditionalPosture::CleanupRequired(identity))
     }
 
     pub(in crate::domain_computation::primary_graph) fn preflight_managed_cleanup_close(

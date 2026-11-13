@@ -37,6 +37,7 @@ pub enum WorthQueryCleanupDispatchPosture {
 #[must_use = "retain remaining original dispatch/recovery custody"]
 pub struct WorthQueryApplicationManagedCleanupReceipt {
     native: WorthQueryDirectRunCleanupReceipt,
+    obligation: Option<worth_foundational::facade::ManagedCleanupObligationIdentity>,
     pub(in crate::domain_computation) original: Option<RetainedOriginalCleanupCommit>,
     pub(in crate::domain_computation) posture: WorthQueryCleanupDispatchPosture,
     pub(in crate::domain_computation) dispatch: Option<WorthQueryExternalEffectDispatch>,
@@ -45,6 +46,7 @@ impl WorthQueryApplicationManagedCleanupReceipt {
     pub(super) fn new(
         native: WorthQueryDirectRunCleanupReceipt,
         original: Option<RetainedOriginalCleanupCommit>,
+        obligation: Option<worth_foundational::facade::ManagedCleanupObligationIdentity>,
     ) -> Self {
         let posture = if original
             .as_ref()
@@ -56,6 +58,7 @@ impl WorthQueryApplicationManagedCleanupReceipt {
         };
         Self {
             native,
+            obligation,
             original,
             posture,
             dispatch: None,
@@ -63,6 +66,11 @@ impl WorthQueryApplicationManagedCleanupReceipt {
     }
     pub fn inspection(&self) -> &WorthQueryDirectRunCleanupInspection {
         self.native.inspection()
+    }
+    pub fn obligation_identity(
+        &self,
+    ) -> Option<worth_foundational::facade::ManagedCleanupObligationIdentity> {
+        self.obligation
     }
     pub fn dispatch_posture(&self) -> WorthQueryCleanupDispatchPosture {
         self.posture
@@ -75,6 +83,7 @@ impl Clone for WorthQueryApplicationManagedCleanupReceipt {
     fn clone(&self) -> Self {
         Self {
             native: self.native.clone(),
+            obligation: self.obligation,
             original: None,
             posture: WorthQueryCleanupDispatchPosture::DiagnosticCopy,
             dispatch: self.dispatch.clone(),
@@ -92,6 +101,7 @@ impl std::fmt::Debug for WorthQueryApplicationManagedCleanupReceipt {
 impl PartialEq for WorthQueryApplicationManagedCleanupReceipt {
     fn eq(&self, other: &Self) -> bool {
         self.native == other.native
+            && self.obligation == other.obligation
             && self.posture == other.posture
             && self.dispatch == other.dispatch
     }

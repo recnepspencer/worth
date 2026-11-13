@@ -5,12 +5,26 @@ use super::{
 };
 use std::sync::{Arc, RwLock};
 
-pub(super) struct BridgeConditionalExecutionView<'a> {
+pub struct BridgeConditionalExecutionView<'a> {
+    pub(super) correspondence_allocations:
+        &'a crate::correspondence::SharedCorrespondenceAllocationRegistry,
     pub(super) bridge: &'a crate::facade::RuntimeBridge,
+    pub(super) managed_clock_lanes: &'a std::sync::Mutex<
+        std::collections::BTreeMap<
+            Arc<str>,
+            Arc<std::sync::Mutex<super::managed_time::BridgeManagedClockLane>>,
+        >,
+    >,
+    pub(super) declaration_scope: Option<(
+        &'a worth_proof::BridgeProgramInstallationBinding,
+        &'a Arc<RwLock<super::authored_declaration::DeclarationIndex>>,
+    )>,
     pub(super) retention: &'a Arc<super::retention::BridgeRetentionLedger>,
     pub(super) conditional_lowerings:
         &'a Arc<RwLock<super::lowering_registry::BridgeConditionalLoweringRegistry>>,
     pub(super) signal_graph_instance_id: u64,
+    pub(super) conditional_evaluation_budget:
+        worth_signal::facade::runtime::SignalConditionalEvaluationBudget,
     pub(super) source_owner: Option<&'a worth_proof::ConditionalSourceObservationOwner>,
     pub(super) durable_owner:
         Option<&'a worth_signal::facade::durability::SignalDurableOwner<(), (), (), (), ()>>,
@@ -19,9 +33,13 @@ impl BridgeOwnedSignalRuntime {
     pub(super) fn execution_view(&self) -> BridgeConditionalExecutionView<'_> {
         BridgeConditionalExecutionView {
             bridge: &self.bridge,
+            correspondence_allocations: &self.bridge.correspondence_allocations,
+            managed_clock_lanes: &self.managed_clock_lanes,
+            declaration_scope: None,
             retention: &self.retention,
             conditional_lowerings: &self.conditional_lowerings,
             signal_graph_instance_id: self.signal_graph_instance_id,
+            conditional_evaluation_budget: self.conditional_evaluation_budget,
             source_owner: self
                 .signal_services
                 .as_ref()
@@ -31,6 +49,12 @@ impl BridgeOwnedSignalRuntime {
     }
 }
 impl BridgeConditionalExecutionView<'_> {
+    pub const fn conditional_evaluation_budget(
+        &self,
+    ) -> worth_signal::facade::runtime::SignalConditionalEvaluationBudget {
+        self.conditional_evaluation_budget
+    }
+
     pub(super) fn source_owner(
         &self,
     ) -> Result<&worth_proof::ConditionalSourceObservationOwner, BridgeConditionalDenial> {
@@ -90,5 +114,37 @@ impl BridgeConditionalExecutionView<'_> {
                 "conditional lowering lost its issued port",
             )
         })
+    }
+}
+
+impl BridgeConditionalExecutionView<'_> {
+    pub fn admit_declaration_signal_basis(
+        &self,
+        declaration: &super::BridgeAuthoredConditionalDeclaration,
+        basis: &worth_signal::facade::branch::AdmittedSignalBranchBasis,
+    ) -> Result<super::BridgeConditionalSignalBasisBinding, BridgeConditionalDenial> {
+        let (installation, declarations) = self.declaration_scope.ok_or_else(|| {
+            BridgeConditionalDenial::operation_route_refused(
+                "authored declaration requires its authored receiver",
+            )
+        })?;
+        if installation.admit(&declaration.installation).is_err() {
+            return Err(BridgeConditionalDenial::new(
+                BridgeConditionalDenialKind::StaleLowering,
+                "conditional declaration belongs to another installed programme",
+            ));
+        }
+        let lowering = declarations
+            .read()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .get(&declaration.key)
+            .cloned()
+            .ok_or_else(|| {
+                BridgeConditionalDenial::new(
+                    BridgeConditionalDenialKind::StaleLowering,
+                    "conditional declaration has no recovered branch definition",
+                )
+            })?;
+        self.admit_exact_conditional_signal_basis(&lowering, basis)
     }
 }

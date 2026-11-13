@@ -67,7 +67,12 @@ impl BridgeConditionalRuntimeBuilder {
                     crate::conditional_execution::BridgeAuthoredSectionDenial::Request(cause),
                 )
             })?;
-        let program = Program::new(template, self.program_owner.binding(), execution)?;
+        let program = Program::new(
+            template,
+            self.program_owner.binding(),
+            self.runtime.conditional_evaluation_budget,
+            execution,
+        )?;
         let mut installation = Box::new(Installation {
             program,
             bindings,
@@ -304,6 +309,7 @@ pub(in crate::conditional_execution) fn finish(
             graph_instance_id: prepared.graph_instance_id,
             signal_branch: branch,
             retention: ledger,
+            managed_clock_lanes: Arc::new(std::sync::Mutex::new(std::collections::BTreeMap::new())),
             _backing: prepared.backing,
         })),
     }))

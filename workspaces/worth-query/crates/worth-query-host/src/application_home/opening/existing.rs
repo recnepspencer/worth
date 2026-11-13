@@ -90,14 +90,8 @@ where
         Err(cause) => return Err(Refused::ExistingBridgeDefinition { query, home, cause }),
     };
     let (budgets, clock, policy, execution, _conditionals) = query.home_world_resources();
-    let definition = ApplicationHomeWorldDefinition::new(
-        bridge,
-        "primary-application-source",
-        budgets,
-        clock,
-        policy,
-        execution,
-    );
+    let definition =
+        ApplicationHomeWorldDefinition::new(bridge, "primary", budgets, clock, policy, execution);
     let source = match prepare_query_home_source(home.share(), definition, &request) {
         Ok(source) => source,
         Err(home) => return Err(Refused::ExistingWorldSourcePreparation { query, home }),

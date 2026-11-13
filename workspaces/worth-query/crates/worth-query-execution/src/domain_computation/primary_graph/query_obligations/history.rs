@@ -10,6 +10,7 @@ use worth_query_installation::facade::{
 };
 
 use worth_foundational::facade::ProgramSupportStatus;
+mod conditional_decision;
 mod durable_retirement;
 mod interpretation_membership;
 mod original_expiry;

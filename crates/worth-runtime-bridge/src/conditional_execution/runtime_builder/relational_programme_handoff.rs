@@ -158,6 +158,7 @@ impl BridgeReadmittedAuthoredAssembly {
         self.program = Arc::new(Program {
             bridge: template,
             installation: builder.program_owner.binding(),
+            conditional_evaluation_budget: builder.runtime.conditional_evaluation_budget,
             _memory: program_memory,
         });
         for (projection, retention, memory) in prepared {

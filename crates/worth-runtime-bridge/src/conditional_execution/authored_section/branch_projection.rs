@@ -66,6 +66,14 @@ pub(in crate::conditional_execution) struct ReadmittedBranch {
     pub(in crate::conditional_execution) signal_branch:
         worth_signal::facade::branch::SignalBranchIdentity,
     pub(in crate::conditional_execution) retention: Arc<BridgeRetentionLedger>,
+    pub(in crate::conditional_execution) managed_clock_lanes: Arc<
+        Mutex<
+            std::collections::BTreeMap<
+                Arc<str>,
+                Arc<Mutex<crate::conditional_execution::managed_time::BridgeManagedClockLane>>,
+            >,
+        >,
+    >,
     pub(in crate::conditional_execution) _backing: Arc<backing::Backing>,
 }
 #[derive(Debug)]
@@ -211,6 +219,7 @@ impl BridgeAuthoredBranchView<'_> {
 }
 impl Drop for ReadmittedBranch {
     fn drop(&mut self) {
+        crate::conditional_execution::managed_time::revoke_clock_lanes(&self.managed_clock_lanes);
         self.retention.close();
         for lowering in self
             .lowerings

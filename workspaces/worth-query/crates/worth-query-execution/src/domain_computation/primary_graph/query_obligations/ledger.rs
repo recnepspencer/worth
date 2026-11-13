@@ -8,6 +8,7 @@ pub struct QueryObligationLedger {
     payload_digest: [u8; 32],
     publication_generation: u64,
     pub(super) cleanup: managed_cleanup::fold::ManagedCleanupFold,
+    pub(super) conditional: BTreeMap<[u8; 32], QueryConditionalDecision>,
     statuses: BTreeMap<CanonicalDigestId, ProgramSupportStatus>,
     obligations: BTreeMap<ProgramSupportObligationIdentity, QueryProgramSupportObligation>,
 }
@@ -20,6 +21,7 @@ impl QueryObligationLedger {
             payload_digest: [0; 32],
             publication_generation: 0,
             cleanup: managed_cleanup::fold::ManagedCleanupFold::default(),
+            conditional: BTreeMap::new(),
             statuses: BTreeMap::new(),
             obligations: BTreeMap::new(),
         }
@@ -39,6 +41,7 @@ impl QueryObligationLedger {
     pub const fn home(&self) -> HomeIdentity {
         self.home
     }
+
     pub fn status(&self, revision: &CanonicalDigestId) -> Option<ProgramSupportStatus> {
         self.statuses.get(revision).copied()
     }
@@ -128,6 +131,7 @@ impl QueryObligationLedger {
         match frame.record {
             QueryObligationRecord::ProgramSupport(record) => self.apply_support(record),
             QueryObligationRecord::ManagedCleanup(record) => self.cleanup.apply(record),
+            QueryObligationRecord::ConditionalDecision(record) => self.apply_conditional(record),
         }
         self.position = frame.position;
         self.digest = frame.digest;
@@ -135,6 +139,7 @@ impl QueryObligationLedger {
         self.publication_generation = frame.generation.get();
         Ok(())
     }
+
     fn apply_support(&mut self, record: QueryProgramSupportRecord) {
         match record {
             QueryProgramSupportRecord::Install { revision } => {
@@ -159,6 +164,7 @@ impl QueryObligationLedger {
         position: u64,
     ) -> Result<(), QueryObligationDenial> {
         match record {
+            QueryObligationRecord::ConditionalDecision(record) => self.validate_conditional(record),
             QueryObligationRecord::ProgramSupport(record) => {
                 self.validate_support(record, position)
             }

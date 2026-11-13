@@ -5,6 +5,12 @@ use worth_foundational::facade::ManagedCleanupObligationIdentity;
 use worth_query_installation::facade::ApplicationSchema;
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+    /// Pending conditional continuation DATA; execution still needs fresh admission.
+    pub fn conditional_decision_obligations(&self) -> Vec<QueryConditionalDecision> {
+        self.installed_program_support()
+            .map(|support| support.lifecycle().conditional_decisions())
+            .unwrap_or_default()
+    }
     pub fn managed_cleanup_obligations(&self) -> Vec<QueryManagedCleanupObligation> {
         self.installed_program_support()
             .map(|support| support.lifecycle().managed_cleanup_obligations())

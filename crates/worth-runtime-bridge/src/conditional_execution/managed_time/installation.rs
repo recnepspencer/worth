@@ -4,9 +4,11 @@ use super::{
     BridgeManagedClockBinding, BridgeManagedClockInstallationParts, BridgeManagedTemporalDenial,
     BridgeManagedTemporalDenialKind,
 };
-use crate::conditional_execution::{BridgeInstalledConditionalLowering, BridgeOwnedSignalRuntime};
+use crate::conditional_execution::{
+    execution_view::BridgeConditionalExecutionView, BridgeInstalledConditionalLowering,
+};
 
-impl BridgeOwnedSignalRuntime {
+impl BridgeConditionalExecutionView<'_> {
     pub fn install_managed_clock(
         &self,
         parts: BridgeManagedClockInstallationParts<'_>,

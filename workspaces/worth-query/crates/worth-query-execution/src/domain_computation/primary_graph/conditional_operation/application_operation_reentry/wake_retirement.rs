@@ -1,10 +1,11 @@
 use std::collections::BTreeMap;
+use worth_runtime_bridge::facade::BridgeConditionalExecutionView;
 
 use worth_query_installation::facade::WorthQueryTemporalIntentCandidate;
 use worth_runtime_bridge::facade::{
     BridgeConditionalDecisionEvidence, BridgeManagedClockBinding,
     BridgeManagedTemporalIntentLifecycle, BridgeManagedTemporalIntentReconciliation,
-    BridgeManagedTemporalIntentReconciliationParts, BridgeSealedRuntimeAssembly,
+    BridgeManagedTemporalIntentReconciliationParts,
 };
 
 use super::super::{
@@ -17,7 +18,7 @@ use super::WorthQueryTemporalReentryCounts;
 
 #[allow(clippy::too_many_arguments)]
 pub(super) fn complete_wake<Clock, Input>(
-    bridge: &BridgeSealedRuntimeAssembly,
+    bridge: &BridgeConditionalExecutionView<'_>,
     clock: &BridgeManagedClockBinding,
     candidates: &mut BTreeMap<String, WorthQueryReconstructedTemporalIntent<Clock, Input>>,
     wake: &mut WorthQueryRetainedConditionalWake,
@@ -43,7 +44,7 @@ pub(super) fn complete_wake<Clock, Input>(
 
 #[allow(clippy::too_many_arguments)]
 pub(super) fn retire_obsolete<Clock, Input>(
-    bridge: &BridgeSealedRuntimeAssembly,
+    bridge: &BridgeConditionalExecutionView<'_>,
     clock: &BridgeManagedClockBinding,
     candidates: &mut BTreeMap<String, WorthQueryReconstructedTemporalIntent<Clock, Input>>,
     wake: &mut WorthQueryRetainedConditionalWake,
@@ -76,7 +77,7 @@ pub(super) fn wake_matches_candidate<Clock, Input>(
 }
 
 fn retire_committed_wake(
-    bridge: &BridgeSealedRuntimeAssembly,
+    bridge: &BridgeConditionalExecutionView<'_>,
     clock: &BridgeManagedClockBinding,
     wake: &WorthQueryRetainedConditionalWake,
 ) -> Result<(), super::super::WorthQueryConditionalReentryFailure> {

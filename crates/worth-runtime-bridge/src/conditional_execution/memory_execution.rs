@@ -56,18 +56,6 @@ impl BridgeOwnedSignalRuntime {
             .admit_conditional_evaluation(request, execution)
     }
 
-    pub(super) fn admit_conditional_evaluation_with_record(
-        &self,
-        request: BridgeConditionalEvaluationAdmissionRequest<'_>,
-        managed_source_record: Option<
-            crate::relational_source::identity_parts::RelationalBridgeRecordIdentityParts,
-        >,
-        execution: worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<BridgeConditionalEvaluationSession, BridgeConditionalDenial> {
-        self.execution_view()
-            .admit_conditional_evaluation_with_record(request, managed_source_record, execution)
-    }
-
     pub(super) fn require_live_installed_lowering(
         &self,
         lowering: &std::sync::Arc<super::BridgeInstalledConditionalLowering>,

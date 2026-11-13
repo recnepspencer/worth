@@ -1,4 +1,7 @@
 //! Primary Graph application contracts.
+pub use crate::domain_computation::primary_graph::query_obligations::{
+    QueryConditionalDecision, QueryConditionalPosture,
+};
 mod correction;
 pub use correction::*;
 mod managed_index;

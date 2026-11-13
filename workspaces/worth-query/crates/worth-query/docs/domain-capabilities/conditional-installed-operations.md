@@ -210,6 +210,32 @@ Absence is explicit, and a present value exposes only the declared projection
 mask through `scalar()` or `field(...)`; the complete source aspect is not a
 host-visible escape hatch.
 
+#### Directory close and reopen
+
+Install temporal providers with `bind_authored_host_predicate_provider`, then
+bind the reconstruction query and temporal operation through the ordinary
+contribution installation. Supply fresh provider and clock services at open.
+Graceful close releases the original live clock leases; reopen reacquires them.
+Eligible, suppressed, deferred and backpressured wakes are derived again from
+Relational intent data and host time.
+
+`conditional_decision_obligations()` exposes retained retry, commit-retry,
+product-stale and cleanup postures with their original temporal key and intent.
+Retry uses the ordinary `conditional_clock(...).observe(...)` door and fresh
+application admission. A cleanup posture references its managed cleanup
+obligation. `discharge_managed_cleanup(...)` disposes the logical cleanup and
+its conditional association only after actual live release was recorded;
+it does not change the original business result. A failed live release
+refuses close and retains its original owner.
+
+The directory temporal key uses Home identity, World owner slot, branch and
+branch incarnation, stable definition identity and the host idempotency
+relation. Per-process runtime identity is used only for process-local execution.
+The commit advances the durable intent revision and lifecycle together with its
+effect, so loss of its response cannot create another occurrence after reopen.
+Other retained decision kinds continue to refuse graceful handoff until their
+own durable consuming route is available.
+
 #### Temporal identity and canonical work
 
 The host does not invent a binding identifier or idempotency hash. Query first
@@ -225,8 +251,9 @@ the base binding work. `WorthQueryConditionalRuntimeInspection::installation_can
 reports the combined binding and runtime-qualification work.
 
 When an eligible wake reaches fresh application admission, Query prepares the
-idempotency key and intent identity from the runtime binding plus the current
-authoritative intent identity, revision, input, and host idempotency value.
+idempotency key from the applicable process-local or durable Home scope. The
+intent identity includes the current authoritative identity, revision and input;
+the key also includes the host idempotency value.
 `WorthQueryConditionalExecutionProvenance::canonical_work()` reports that work
 in the admission phase. Compare-and-commit consumes the prepared binding;
 no later phase of that attempt hashes the same meaning again. A subsequent

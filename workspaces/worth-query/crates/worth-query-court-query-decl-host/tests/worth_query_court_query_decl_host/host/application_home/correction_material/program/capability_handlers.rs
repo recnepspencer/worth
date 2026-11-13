@@ -11,8 +11,6 @@ pub(in super::super::super) enum LabelPolicy {
     Adoption,
     Managed,
     Resource,
-    Conditional,
-    Temporal,
     Workflow,
     OriginalOwner,
 }
@@ -27,8 +25,6 @@ pub(super) fn install(
         LabelPolicy::Adoption => setup.handler::<LabelBinding, _>(AdoptionHandler(contacts)),
         LabelPolicy::Managed => setup.handler::<LabelBinding, _>(ManagedHandler(contacts)),
         LabelPolicy::Resource => setup.handler::<LabelBinding, _>(ResourceHandler(contacts)),
-        LabelPolicy::Conditional => setup.handler::<LabelBinding, _>(ConditionalHandler(contacts)),
-        LabelPolicy::Temporal => setup.handler::<LabelBinding, _>(TemporalHandler(contacts)),
         LabelPolicy::Workflow => setup.handler::<LabelBinding, _>(WorkflowHandler(contacts)),
         LabelPolicy::OriginalOwner => {
             setup.handler::<LabelBinding, _>(OriginalOwnerHandler(contacts))
@@ -105,50 +101,6 @@ struct ResourceHandler(Arc<AtomicUsize>);
 impl OperationHandler<IdentityExecutionSchema, LabelBinding> for ResourceHandler {
     fn declared_durable_capabilities() -> Option<&'static [Capability]> {
         Some(&[Capability::ResourceRequest])
-    }
-    fn decide(
-        &self,
-        input: &LabelEdit,
-        reader: &mut DecisionReader<'_, '_, '_, IdentityExecutionSchema, LabelBinding>,
-    ) -> HandlerResult<LabelEdit, LabelEdit> {
-        self.0.fetch_add(1, Ordering::SeqCst);
-        LabelHandler.decide(input, reader)
-    }
-    fn build_candidate(
-        &self,
-        input: &LabelEdit,
-        decision: LabelEdit,
-        writer: &mut CandidateWriter<'_, IdentityExecutionSchema, LabelBinding>,
-    ) -> HandlerResult<LabelEdit, LabelEdit> {
-        LabelHandler.build_candidate(input, decision, writer)
-    }
-}
-struct ConditionalHandler(Arc<AtomicUsize>);
-impl OperationHandler<IdentityExecutionSchema, LabelBinding> for ConditionalHandler {
-    fn declared_durable_capabilities() -> Option<&'static [Capability]> {
-        Some(&[Capability::ConditionalExecution])
-    }
-    fn decide(
-        &self,
-        input: &LabelEdit,
-        reader: &mut DecisionReader<'_, '_, '_, IdentityExecutionSchema, LabelBinding>,
-    ) -> HandlerResult<LabelEdit, LabelEdit> {
-        self.0.fetch_add(1, Ordering::SeqCst);
-        LabelHandler.decide(input, reader)
-    }
-    fn build_candidate(
-        &self,
-        input: &LabelEdit,
-        decision: LabelEdit,
-        writer: &mut CandidateWriter<'_, IdentityExecutionSchema, LabelBinding>,
-    ) -> HandlerResult<LabelEdit, LabelEdit> {
-        LabelHandler.build_candidate(input, decision, writer)
-    }
-}
-struct TemporalHandler(Arc<AtomicUsize>);
-impl OperationHandler<IdentityExecutionSchema, LabelBinding> for TemporalHandler {
-    fn declared_durable_capabilities() -> Option<&'static [Capability]> {
-        Some(&[Capability::TemporalExecution])
     }
     fn decide(
         &self,

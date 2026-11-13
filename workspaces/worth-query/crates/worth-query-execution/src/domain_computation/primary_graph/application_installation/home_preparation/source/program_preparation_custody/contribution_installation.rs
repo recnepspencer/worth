@@ -69,19 +69,11 @@ impl<S: ApplicationSchemaComposition, P> HomeProgramInstallationCustody<S, P> {
                 .expect("same installation")
                 .into_home_program_parts(),
         );
-        if !self
-            .parts
-            .as_ref()
-            .expect("original installation parts")
-            .bindings
-            .is_empty()
-        {
-            return Err(D::TemporalFamilyNotReadmitted);
-        }
         let parts = self
             .parts
             .take()
             .expect("same supported installation parts");
+        self.temporal_pending = parts.bindings;
         self.readiness = parts.output_readiness;
         self.definition_pending = parts.definitions;
         let ApplicationRuntimePublication {
@@ -99,6 +91,33 @@ impl<S: ApplicationSchemaComposition, P> HomeProgramInstallationCustody<S, P> {
             installed: installed_schema,
         });
         self.core.clock = Some(authorization_clock);
+        Ok(())
+    }
+    pub(in crate::domain_computation::primary_graph::application_installation::home_preparation::source) fn install_temporal_bindings(
+        &mut self,
+    ) -> Result<(), D> {
+        let meaning = self
+            .meaning
+            .as_ref()
+            .expect("same installed runtime meaning");
+        let services = self.services.as_ref().expect("same prepared services");
+        let cursor = services
+            .provider
+            .graph
+            .source_owner
+            .invalidation_owner
+            .latest_position();
+        self.operations = Some(crate::domain_computation::primary_graph::conditional_operation::install_pending_bindings(
+            std::mem::take(&mut self.temporal_pending),
+            self.builder.as_mut().expect("same authored programme builder"),
+            &services.participation,
+            cursor,
+            meaning.runtime.authority_identity().as_u64(),
+            meaning.runtime.installed_packages().runtime_ordinal(),
+            meaning.runtime.installed_packages().generation().ordinal(),
+            services.participation.provider_identity(),
+            crate::domain_computation::primary_graph::application_branch::PRIMARY_APPLICATION_BRANCH,
+        ).map_err(|cause| D::Conditional(Box::new(cause)))?);
         Ok(())
     }
     pub(in crate::domain_computation::primary_graph::application_installation::home_preparation::source) fn prepare_services(

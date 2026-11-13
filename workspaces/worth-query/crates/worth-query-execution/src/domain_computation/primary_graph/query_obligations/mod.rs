@@ -15,6 +15,10 @@ use worth_foundational::facade::{
     ProgramSupportObligationIdentity, ProgramSupportObligationKind, ProgramSupportStatus,
 };
 mod codec;
+mod conditional_decision;
+pub use conditional_decision::{
+    QueryConditionalDecision, QueryConditionalDecisionRecord, QueryConditionalPosture,
+};
 mod generation;
 mod ledger;
 mod medium;
@@ -37,10 +41,16 @@ pub use managed_cleanup::{
 pub enum QueryObligationRecord {
     ProgramSupport(QueryProgramSupportRecord),
     ManagedCleanup(QueryManagedCleanupRecord),
+    ConditionalDecision(QueryConditionalDecisionRecord),
 }
 impl From<QueryProgramSupportRecord> for QueryObligationRecord {
     fn from(record: QueryProgramSupportRecord) -> Self {
         Self::ProgramSupport(record)
+    }
+}
+impl From<QueryConditionalDecisionRecord> for QueryObligationRecord {
+    fn from(record: QueryConditionalDecisionRecord) -> Self {
+        Self::ConditionalDecision(record)
     }
 }
 impl From<QueryManagedCleanupRecord> for QueryObligationRecord {
@@ -106,6 +116,10 @@ pub enum QueryObligationDenial {
     DuplicateObligation,
     AdoptionReadmissionRequired,
     CleanupReleaseUnrecorded {
+        identity: worth_foundational::facade::ManagedCleanupObligationIdentity,
+    },
+    ConditionalCleanupPending {
+        key: [u8; 32],
         identity: worth_foundational::facade::ManagedCleanupObligationIdentity,
     },
     CleanupInconsistent {

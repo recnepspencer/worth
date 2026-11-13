@@ -31,6 +31,8 @@ pub enum WorthQueryHomeRetirementDenial {
     RecoveryCustody(crate::domain_computation::application_aftermath::WorthQueryRecoveryHandleDenial),
     CorrectionRetention(super::super::WorthQueryCorrectionRetentionDenial),
     ManagedCleanup(super::super::query_obligations::QueryObligationDenial),
+    ConditionalClock(worth_runtime_bridge::facade::BridgeManagedTemporalDenialKind),
+    ConditionalBinding(worth_runtime_bridge::facade::BridgeConditionalDenialKind),
     CorrectionMaterial(crate::facade::correction_material::QueryCorrectionMaterialDenial),
     Busy(WorthQueryHomeRetirementOwner),
     Unsupported(WorthQueryHomeRetirementOwner),
@@ -88,6 +90,13 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .map_err(WorthQueryHomeRetirementDenial::Execution)?;
         self.settle_recovery_custody(request)
             .map_err(WorthQueryHomeRetirementDenial::RecoveryCustody)?;
+        let operations = self
+            .conditional_cleanup
+            .operations
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .snapshot();
+        operations.handoff_to_home(request, self)?;
         if let Some(support) = self.installed_program_support() {
             support
                 .lifecycle()
@@ -320,6 +329,7 @@ impl<Schema: ApplicationSchema> RetiringPrimaryGraphRuntime<Schema> {
                     .consult()
                     .map_err(WorthQueryHomeRetirementDenial::Execution)?;
                 self.runtime.installed_conditionals = Default::default();
+                self.runtime.release_query_conditional_bindings();
                 Progress::Complete
             }
             QueryRetirementStage::Bridge => self.runtime.runtime.bridge.advance_home_retirement(

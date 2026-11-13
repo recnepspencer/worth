@@ -1,6 +1,6 @@
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use worth_runtime_bridge::facade::{
-    BridgeConditionalSignalBasisBinding, BridgeSealedRuntimeAssembly,
+    BridgeConditionalExecutionView, BridgeConditionalSignalBasisBinding,
 };
 
 use super::{
@@ -14,7 +14,7 @@ pub(super) struct AuthoritativeClockWork<'a, Schema> {
         &'a crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<
             Schema,
         >,
-    pub(super) bridge: &'a BridgeSealedRuntimeAssembly,
+    pub(super) bridge: &'a BridgeConditionalExecutionView<'a>,
     pub(super) signal_basis: &'a BridgeConditionalSignalBasisBinding,
     pub(super) relational_branch: &'a worth_relational::facade::history::BranchId,
     pub(super) relational_commit_ceiling: Option<worth_relational::facade::history::CommitId>,

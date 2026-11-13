@@ -1,5 +1,6 @@
 //! Query-owned support obligation artifacts and trusted Home transport.
 pub use crate::domain_computation::primary_graph::query_obligations::{
+    QueryConditionalDecision, QueryConditionalDecisionRecord, QueryConditionalPosture,
     QueryManagedCleanupObligation, QueryManagedCleanupOriginal, QueryManagedCleanupRecord,
     QueryManagedCleanupRelease, QueryObligationDenial, QueryObligationFrame, QueryObligationLedger,
     QueryObligationPublicationGenerations, QueryObligationPublicationOutcome,

@@ -28,6 +28,7 @@ pub(in crate::domain_computation::primary_graph::application_installation::home_
         WorthQueryInstalledApplicationConditionalRegistry<Schema>,
     pub(in crate::domain_computation::primary_graph::application_installation::home_preparation) producer_routes:
         WorthQueryInstalledOutputProducerRoutes,
+    pub(in crate::domain_computation::primary_graph::application_installation::home_preparation) operations: crate::domain_computation::primary_graph::conditional_operation::lifecycle::WorthQueryConditionalOperationRegistry<Schema>,
     pub(in crate::domain_computation::primary_graph::application_installation::home_preparation) definition_routes: crate::domain_computation::primary_graph::conditional_operation::definition_declarations::ConditionalDefinitionDeclarations,
     pub(in crate::domain_computation::primary_graph::application_installation::home_preparation) readiness_routes:
         WorthQueryInstalledOutputReadinessRoutes,
@@ -105,6 +106,7 @@ pub(in crate::domain_computation::primary_graph::application_installation::home_
             BridgeConditionalRuntimeBuilder::with_owned_signal_graph(ctx.ordinary.clone(), budget)
                 .map_err(|cause| D::Bridge(Box::new(cause)))?,
         ));
+        ctx.install_temporal_bindings()?;
         let services = ctx.services.as_ref().expect("actual prepared services");
         let builder = ctx.builder.as_mut().expect("actual programme builder");
         let producers = ctx
@@ -154,6 +156,7 @@ pub(in crate::domain_computation::primary_graph::application_installation::home_
                 ctx.definition_routes
                     .as_mut()
                     .expect("actual authored definition declarations"),
+                ctx.operations.as_ref().expect("actual temporal routes"),
             )
             .map_err(|cause| D::Authored(Box::new(cause)))?;
         Ok(())

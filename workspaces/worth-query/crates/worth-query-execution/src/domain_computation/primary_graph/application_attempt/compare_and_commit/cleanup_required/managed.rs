@@ -187,6 +187,20 @@ impl WorthQueryApplicationManagedCleanup {
             }
         }
     }
+    pub(in crate::domain_computation::primary_graph) fn retry_for_home(
+        mut self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<super::super::WorthQueryApplicationManagedCleanupReceipt, Self> {
+        let admission = request
+            .consult()
+            .map_err(QueryObligationDenial::Execution)
+            .and_then(|_| self.ensure_durable(request));
+        if let Err(cause) = admission {
+            self.state_mut().journal_denial = Some(cause);
+            return Err(self);
+        }
+        self.release_and_record(request)
+    }
     fn release_and_record(
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -227,8 +241,13 @@ impl WorthQueryApplicationManagedCleanup {
                         });
                     }
                 }
-                let receipt =
-                    super::super::WorthQueryApplicationManagedCleanupReceipt::new(native, original);
+                let receipt = super::super::WorthQueryApplicationManagedCleanupReceipt::new(
+                    native,
+                    original,
+                    publication
+                        .as_ref()
+                        .map(ManagedCleanupPublication::identity),
+                );
                 drop(state);
                 drop(return_owner);
                 Ok(receipt)

@@ -23,6 +23,10 @@ pub(super) fn encode(
     bytes.extend_from_slice(&predecessor);
     bytes.extend_from_slice(&generation.get().to_le_bytes());
     match &record {
+        QueryObligationRecord::ConditionalDecision(record) => {
+            bytes.push(16);
+            conditional_decision::codec::encode(&mut bytes, record);
+        }
         QueryObligationRecord::ProgramSupport(record) => {
             bytes.push(0);
             encode_support(&mut bytes, record);
@@ -137,6 +141,10 @@ pub(super) fn decode(bytes: &[u8]) -> Result<QueryObligationFrame, QueryObligati
     let record = match reader.take::<1>()?[0] {
         0 => QueryObligationRecord::ProgramSupport(read_support(&mut reader, home)?),
         1 => QueryObligationRecord::ManagedCleanup(managed_cleanup::codec::decode(
+            &mut reader,
+            home,
+        )?),
+        16 => QueryObligationRecord::ConditionalDecision(conditional_decision::codec::decode(
             &mut reader,
             home,
         )?),
