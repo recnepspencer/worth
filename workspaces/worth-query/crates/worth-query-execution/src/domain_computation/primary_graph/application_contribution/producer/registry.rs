@@ -66,7 +66,7 @@ pub struct DeclaredProducerBinding
     pub(in crate::domain_computation::primary_graph::application_contribution) installed_output_equivalence:
         Option<Arc<super::output_equivalence_contract::InstalledProducerOutputEquivalence>>,
     pub(in crate::domain_computation::primary_graph::application_contribution) predecessor_reads: Option<Vec<super::observation_reads::ProducerObservationReadMeaning>>,
-    pub(in crate::domain_computation::primary_graph::application_contribution) original_reads: Option<Vec<super::original_reads::ProducerObservationReadMeaning>>,
+    pub(in crate::domain_computation::primary_graph::application_contribution) original_reads: Option<Vec<super::observation_reads::ProducerObservationReadMeaning>>,
     pub(in crate::domain_computation::primary_graph::application_contribution) input_reuse:
         Option<super::WorthQueryProducerInputReuseContract>,
     pub(in crate::domain_computation::primary_graph::application_contribution) binding_type: TypeId,
