@@ -11,6 +11,8 @@ pub struct RelationalCoupledAuthoredPublication {
     pub(crate) binding: Arc<BoundAuthoredCoupling>,
     pub(crate) source_effects: RelationalCoupledAuthoredSourceEffects,
     pub(crate) authored_records: Vec<crate::transactions::data::RecordRef>,
+    // This prefix of the same retained vector is fixed before any other writer.
+    pub(crate) authored_prefix_records: usize,
     pub(crate) authored_commands: Arc<crate::mvcc::OwnedNormalizedPlan>,
     pub(crate) parts: Vec<CoupledPublicationPart>,
     pub(crate) stages: Vec<CoupledAuthoredStagePart>,
@@ -100,6 +102,7 @@ pub(crate) fn prepare_coupled_candidate(
         ),
     )?;
     let mut authored_records = mutation.outcome.effect.publication.changed_records.clone();
+    let authored_prefix_records = authored_records.len();
     let authored_prefix = 0..mutation.outcome.effect.publication.patch_fragments.len();
     writer_custody::require(
         execution,
@@ -212,6 +215,7 @@ pub(crate) fn prepare_coupled_candidate(
                 binding: Arc::clone(&binding),
                 source_effects,
                 authored_records,
+                authored_prefix_records,
                 authored_commands,
                 parts,
                 stages,

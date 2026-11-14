@@ -115,10 +115,10 @@ pub use managed_computation::{
 pub use manifest::ApplicationProgramManifest;
 pub use output_graph::{
     ApplicationConnectionShape, ApplicationDemandOutputGraph, ApplicationDiscoveredOutputGraph,
-    ApplicationDiscoveredOutputRoot, ApplicationFixedOutputRoot, ApplicationOutputChildrenShape,
-    ApplicationOutputEdge, ApplicationOutputEdgeShape, ApplicationOutputEdgesShape,
-    ApplicationOutputGraph, ApplicationOutputGraphShape, ApplicationOutputLeaf,
-    ApplicationRequiredOutputRoot,
+    ApplicationDiscoveredOutputRoot, ApplicationFixedOutputRoot, ApplicationOccurrenceConnections,
+    ApplicationOutputChildrenShape, ApplicationOutputEdge, ApplicationOutputEdgeShape,
+    ApplicationOutputEdgesShape, ApplicationOutputGraph, ApplicationOutputGraphShape,
+    ApplicationOutputLeaf, ApplicationOutputOccurrences, ApplicationRequiredOutputRoot,
 };
 pub use output_posture::{ApplicationNoOutputGraph, ApplicationProgramOutputShape};
 pub use program::{

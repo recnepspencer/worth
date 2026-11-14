@@ -21,6 +21,7 @@ mod envelope;
 mod envelope_admission;
 mod execution;
 mod planning;
+mod positioned;
 pub use dependencies::DeclaredQueryRead;
 pub(in crate::domain_computation::primary_graph::application_contribution) use dependencies::{
     managed_reads, ProducerDependencyScopes,

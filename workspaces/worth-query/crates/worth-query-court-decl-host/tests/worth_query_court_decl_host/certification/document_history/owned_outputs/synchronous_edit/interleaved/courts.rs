@@ -5,7 +5,9 @@ use worth_query_host::facade::{
 };
 use worth_relational::facade::inspection::observe_maintenance_work;
 type Host = WorthQueryProgramApplicationRuntime<Schema, Program>;
+mod correction;
 mod instance_replay;
+mod positioned;
 fn host(
     second_derivation: Option<fn(u64) -> u64>,
     child_derivation: Option<fn(u64) -> u64>,

@@ -4531,6 +4531,68 @@ rules using the actual producer antecedent, including after repeated Native-only
 restore/retire cycles. Restoration grants no producer readiness or replayable
 producer-input contract.
 
+### Runtime cohorts and positioned authored execution
+
+For a runtime-length list in one installed program, use
+`request.edit_envelope().idempotency(key).runtime_stages(&program)` and
+`push_stage::<RequiredRoot, _>(intent)`. Each append retains its nominal binding
+and returns the same branded, original-ordinal result token as the static
+builder. Inputs are encoded and admitted at execution in the existing funded
+request; collecting the list does not run handlers. Call `execute_performed`
+once. The static `stage` builder remains available and unchanged in meaning.
+
+The default mode retains declared dependency ordering and the bounded pure
+candidate-planning contract below. An application that promises an authored
+sequence explicitly selects `ordered_authored()` **before appending**. This
+binds that mode and the complete original sequence into the whole intent under
+the same key. Mode changes and reordered requests therefore drift before
+handlers. Each position consumes its original nominal C admission once and
+reads the genuine pre-stage D image as data; an earlier-created reference is
+not a Current grant. Later invalidation of an earlier read still refuses at
+final support validation. Native same-record writer conflicts are unchanged.
+
+Only roots returned by positions already applied enter the shared wave. A
+later position that reads those outputs waits at the actual producer barrier;
+a future reference is unavailable, not permission to reorder the caller or run
+an effectful handler again. A genuine prefix is required. Final generation or
+frontier advancement is an ordinary declared action in this same envelope,
+not another publication or a new public seal capability.
+
+A recorded corrective request has the same collection entry:
+`reverse(&source).idempotency(key).limits(limits)` followed by
+`edit_envelope::<Correction, Program, RequiredRoot>(&program)`. Reapplication
+has the corresponding entry. Source disclosure, original input derivation and
+nominal admission precede the whole-envelope replay lookup; inverse handlers
+run only for genuine Unseen. Append the ordinary final Edit to that returned
+runtime envelope. Its one commit retains the actual corrective prefix and
+original causality; later authored/producer changes cannot satisfy its inverse.
+A recovered request returns the authentic original receipt, not live stage
+results. Pending/recovery/drift classification remains the whole-key owner's.
+
+### Repeated-family required outputs
+
+Use `ApplicationOutputOccurrences<(Connection, ...)>` as the dependents of the
+existing output graph when a closed installed component has repeated-family
+instances. Unmarked static trees still reject declaration cycles. Each member
+implements `WorthQueryApplicationPrerequisiteOutputConnection`: its typed
+prerequisite query, sealed result-relation selector (`prerequisite_rows`), row
+binding, target-to-query mapping and one parent-demand mapping per row. Query
+drains **every** selected row; the application cannot submit a truncated list.
+The query must describe actual predecessor/operand sources without requiring
+geometry that has not yet been produced.
+
+The existing output wave closes the actual frontier, authenticates complete
+source generation/family/binding/parameter partitions, and prepares every real
+parent before projecting and executing its dependent source. Shared occurrences
+coalesce; actual cycles, absent required parents and invalidated support refuse.
+Installed ports, current C READ, genuine D data, Prepared/Verified Parent custody,
+existing producer round/allocation bounds and after-own/final support remain in
+force. Neither distinct source IDs nor a proposed descriptor constitutes proof.
+The existing interleaved cabinet courts demonstrate positioned Creates, a real
+inter-position producer, repeated predecessor plus foreign input, and a genuine
+recorded inverse followed by ordinary authoring. CAD numerical reuse and the
+private whole-stage/final-body translation remain their own consumer work.
+
 ### Independent authored prefixes
 
 `OperationHandler::supports_candidate_planning()` defaults to false. Opt in

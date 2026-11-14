@@ -2,8 +2,8 @@
 
 mod envelope;
 pub use envelope::{
-    ApplicationEditEnvelopeKey, ApplicationEditIntentIdentity, ApplicationEditStageIdentity,
-    ApplicationEditStageIntent,
+    ApplicationEditEnvelopeKey, ApplicationEditEnvelopeOrder, ApplicationEditIntentIdentity,
+    ApplicationEditStageIdentity, ApplicationEditStageIntent,
 };
 mod owned;
 pub use owned::{ApplicationEncodedMutationKey, ApplicationOwnedMutationIdentities};
