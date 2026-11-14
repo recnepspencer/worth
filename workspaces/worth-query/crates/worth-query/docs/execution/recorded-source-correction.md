@@ -70,6 +70,41 @@ identity. A decoding or identity refusal remains typed as
 `OriginalInputDecode`; replacement input is never substituted. These factories
 construct DATA; fresh action admission governs its use.
 
+### Capture changed optional fields on a preserved output
+
+`DeclaredPreImageDemand::new` is strict: every demanded field must have an
+original value observation and be mutated on one unique common record. For an
+operation that changes only some optional fields of an existing record, use
+`changed_fields_for_output(Role::DESCRIPTOR, eligible_loci, maximum_encoded_bytes)`.
+The role must be the source binding's genuine exactly-one Preserve output; all
+eligible fields belong to that entity and retain their ordinary read grants.
+This does not declare a create/delete lifecycle. Complete authored retirement
+capture remains a separate contract.
+
+The eligible vocabulary is an upper bound, not an instruction to write every
+field. Query enumerates it against the validated Native mutation at the exact
+output record. Changed fields require authorized original observations; missing
+or contradictory observations refuse before commit. A merely read field outside
+that mutation remains uncaptured. Whole-aspect writes cover their fields under
+Native's existing footprint semantics; this is not a value-difference detector.
+Existing `.with_relations(...)` retains the actual changed endpoints under its
+original observation, visibility and byte-bound rules.
+
+Derive a sparse restoring intent from
+`preimage.field_state_for_output(&Role::DESCRIPTOR, &locus)`. Its
+`ApplicationCorrectionFieldPreImage` distinguishes `Value`, `AbsentField`,
+`AbsentAspect` and `Uncaptured`. Authenticated absence restores removal; an
+uncaptured field supplies no original truth and must not be cleared or filled
+from a current read. These historical data grant no current read/write target.
+The inverse still acquires ordinary targets and passes current admission.
+
+The changed-field selection has distinct canonical/archive meaning. Its retained
+capture uses an explicit version-2 material envelope for absence and exact-target
+data; version-1 strict capture bytes retain their original interpretation.
+Existing Directory restrictions, including unsupported relation material and
+reapplication, continue to return their typed refusals. This capability does not
+expand those Directory routes.
+
 Bindings with `RETAIN_CANONICAL_INPUT` enabled share the stream captured by the
 original identity pass. Otherwise retention explicitly encodes the held value
 again and verifies its original identity. Request identity and its derivation

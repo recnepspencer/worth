@@ -144,6 +144,14 @@ fn append_mechanism(
                 format!("{prefix}.preimage-byte-bound"),
                 inverse.preimage_demand().maximum_encoded_bytes(),
             );
+            if let Some(output) = inverse.preimage_demand().changed_output() {
+                basis.text(
+                    format!("{prefix}.preimage-selection"),
+                    "changed-output-fields",
+                );
+                basis.text(format!("{prefix}.preimage-output-role"), output.role());
+                basis.text(format!("{prefix}.preimage-output-entity"), output.entity());
+            }
             for (index, locus) in inverse.preimage_demand().loci().iter().enumerate() {
                 basis.text(format!("{prefix}.preimage-{index}.entity"), locus.entity());
                 basis.text(format!("{prefix}.preimage-{index}.aspect"), locus.aspect());

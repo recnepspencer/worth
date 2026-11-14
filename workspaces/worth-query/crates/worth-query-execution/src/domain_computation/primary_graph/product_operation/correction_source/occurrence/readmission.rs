@@ -118,6 +118,7 @@ impl HomeCorrectionOccurrence {
             request,
         )
         .map_err(|_| Denial::SemanticMaterialUnavailable)?;
+        changed_fields::validate(capture, &aftermath, &correspondence)?;
         Ok(Arc::new(Self {
             material,
             binding: descriptor.binding_type(),
@@ -130,3 +131,5 @@ impl HomeCorrectionOccurrence {
         }))
     }
 }
+
+mod changed_fields;

@@ -65,3 +65,65 @@ fn relation_preimage_archive_retains_kind_and_both_endpoint_axes() {
         "old recorded-inverse fields retain their exact wire encoding"
     );
 }
+
+#[test]
+fn changed_fields_archive_keeps_its_exact_output_distinct_from_strict_capture() {
+    for relations in [
+        vec![],
+        vec![PortablePreImageRelationLocus::from_untrusted_fields(
+            "PreviousStage".into(),
+            "Stage".into(),
+            "Stage".into(),
+        )],
+    ] {
+        let ApplicationSchemaMember::OperationAftermath {
+            operation,
+            contract,
+        } = member(relations)
+        else {
+            unreachable!()
+        };
+        let Some(PortableCorrectionMechanism::RecordedInverse(inverse)) = contract.mechanism()
+        else {
+            unreachable!()
+        };
+        let changed = PortableRecordedInverse::from_untrusted_fields(
+            inverse.inverse_operation_slot().to_owned(),
+            inverse.lowering_correspondence().clone(),
+            inverse.postcondition().clone(),
+            inverse
+                .preimage_demand()
+                .clone()
+                .with_untrusted_changed_output(PortableChangedFieldOutput::from_untrusted_fields(
+                    "owner-role".into(),
+                    "Stage".into(),
+                )),
+        );
+        let original = ApplicationSchemaMember::OperationAftermath {
+            operation,
+            contract: PortableApplicationAftermathContract::from_untrusted_fields(
+                DeclaredCorrectionAuthority::RuntimeAlone,
+                Some(PortableCorrectionMechanism::RecordedInverse(changed)),
+                None,
+            ),
+        };
+        let bytes = encode_member(&original);
+        assert_eq!(decode_member(&bytes), original);
+        assert_eq!(encode_member(&decode_member(&bytes)), bytes);
+        let offset = bytes
+            .windows(10)
+            .position(|part| part == b"owner-role")
+            .unwrap();
+        let tag = u16::from_be_bytes(bytes[offset - 6..offset - 4].try_into().unwrap());
+        assert!(
+            matches!(tag, 4 | 5),
+            "sparse selection cannot reuse a strict mechanism tag"
+        );
+        let mut unknown = bytes;
+        unknown[offset - 6..offset - 4].copy_from_slice(&6u16.to_be_bytes());
+        assert_eq!(
+            try_decode_member(&unknown).unwrap_err().kind(),
+            crate::facade::WorthQueryPackageArchiveDenialKind::UnsupportedRecordVariant
+        );
+    }
+}
