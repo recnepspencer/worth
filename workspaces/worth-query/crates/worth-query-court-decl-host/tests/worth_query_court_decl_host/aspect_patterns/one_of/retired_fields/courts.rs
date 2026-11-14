@@ -149,7 +149,10 @@ fn complete_retired_root_restores_value_field_absence_and_aspect_absence_then_re
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.runtime().request(&principal, &scope);
     let limits = WorthQueryCorrectionHistoryLimits::new(None, std::num::NonZeroUsize::MIN);
-    let selected = request.corrections().select(&source, limits).unwrap();
+    let selected = request
+        .corrections()
+        .select_recorded(&source.correction_source(), limits)
+        .unwrap();
     let page = request
         .corrections()
         .alternatives(&selected, limits, std::num::NonZeroUsize::MIN)
