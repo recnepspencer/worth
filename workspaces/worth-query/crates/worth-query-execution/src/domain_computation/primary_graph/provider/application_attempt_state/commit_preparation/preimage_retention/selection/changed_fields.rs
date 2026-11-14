@@ -65,8 +65,8 @@ pub(in super::super) fn retain_changed_fields<'a>(
             };
             (*id == target
                 && *kind == field.entity_kind
-                && projection_admits(read_scope, locator)
-                && locus_matches(read_scope, locator, locus))
+                && projection_admits(read_scope.as_ref(), locator)
+                && locus_matches(read_scope.as_ref(), locator, locus))
             .then_some((read_scope, fact.as_ref()))
         });
         let (read_scope, fact) = matched.next().ok_or(Denial::MissingDemandedField)?;
