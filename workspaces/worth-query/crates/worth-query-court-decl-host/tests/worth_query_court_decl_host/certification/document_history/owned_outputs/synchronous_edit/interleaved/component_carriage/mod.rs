@@ -140,57 +140,69 @@ impl ApplicationProgramDefinition<Schema> for Program {
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("owned-outputs.complete-component");
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
-        let mut specs = hierarchy::Program::feature_specs();
-        specs[0] = entry::envelope_actions::<
+        fixture_features::<
             fixture::Delivery<Tree>,
             fixture::Delivery<MemberTree>,
-            Completion,
-            Completion,
-            Completion,
-            Completion,
             fixture::Delivery<AfterTree>,
-        >(entry::entry_builder::<Completion, Completion, Completion>())
-        .finish();
-        specs
+        >()
     }
 }
+type FragmentedTree = ApplicationOutputGraph<
+    Root,
+    (
+        ApplicationOutputOccurrences<(PreviousConnection,)>,
+        ApplicationOutputOccurrences<(ForeignConnection,)>,
+    ),
+>;
 struct Fragmented;
 impl ApplicationProgramDefinition<Schema> for Fragmented {
     type Contributions = (Contribution,);
-    type Outputs = ApplicationProgramOutputs<
-        ApplicationOutputGraph<
-            Root,
-            (
-                ApplicationOutputOccurrences<(PreviousConnection,)>,
-                ApplicationOutputOccurrences<(ForeignConnection,)>,
-            ),
-        >,
-    >;
+    type Outputs = ApplicationProgramOutputs<FragmentedTree>;
     type Rules = ApplicationRuleLeaf;
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("owned-outputs.fragmented-component");
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
-        Program::feature_specs()
+        fixture_features::<fixture::Delivery<FragmentedTree>, Completion, Completion>()
     }
 }
+type DuplicateTree = ApplicationOutputGraph<
+    Root,
+    (
+        Edges,
+        ApplicationOutputEdge<StaticConnection, ApplicationOutputLeaf>,
+    ),
+>;
 struct DuplicateTail;
 impl ApplicationProgramDefinition<Schema> for DuplicateTail {
     type Contributions = (Contribution,);
-    type Outputs = ApplicationProgramOutputs<
-        ApplicationOutputGraph<
-            Root,
-            (
-                Edges,
-                ApplicationOutputEdge<StaticConnection, ApplicationOutputLeaf>,
-            ),
-        >,
-    >;
+    type Outputs = ApplicationProgramOutputs<DuplicateTree>;
     type Rules = ApplicationRuleLeaf;
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("owned-outputs.duplicate-tail");
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
-        Program::feature_specs()
+        fixture_features::<fixture::Delivery<DuplicateTree>, Completion, Completion>()
     }
+}
+fn fixture_features<ModelDelivery, MemberDelivery, AfterDelivery>() -> Vec<ApplicationFeatureSpec>
+where
+    ModelDelivery: ApplicationActionDelivery<Schema, fixture::model::Binding>,
+    MemberDelivery: ApplicationActionDelivery<Schema, fixture::member::Binding>,
+    AfterDelivery: ApplicationActionDelivery<Schema, fixture::after_producer::Binding>,
+{
+    let mut specs = hierarchy::Program::feature_specs();
+    specs[0] = entry::envelope_actions::<
+        ModelDelivery,
+        MemberDelivery,
+        Completion,
+        Completion,
+        Completion,
+        Completion,
+        AfterDelivery,
+    >(entry::entry_builder::<Completion, Completion, Completion>())
+    .action::<created::Binding, Completion>()
+    .finish_action()
+    .finish();
+    specs
 }
 pub(super) fn seed(
     graph: &mut WorthQueryPrimaryGraphBootstrap<Schema>,
