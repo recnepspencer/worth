@@ -52,6 +52,7 @@ fn read_seal(host: &Host) -> reading::State {
         .clone()
 }
 fn exercise(count: u64) {
+    let _observation = worth_query_host::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let host = host(None, None);
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
