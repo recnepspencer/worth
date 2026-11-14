@@ -22,3 +22,6 @@ mod restore_recovery;
 
 #[path = "query_obligations/resource.rs"]
 mod resource;
+
+#[path = "query_obligations/original_operation.rs"]
+mod original_operation;

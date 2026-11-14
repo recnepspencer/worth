@@ -23,6 +23,9 @@ where
         worth_query_declaration::facade::application_program::ApplicationActionDeclaration,
     pub(super) description: WorthQueryOperationDescription<Schema, Intent>,
     pub(super) state: FixedState<Schema, Intent, Program, Root>,
+    pub(super) readmitted_recovery: Option<
+        worth_query_execution::facade::domain_computation::WorthQueryProductUnpublishedRecovery,
+    >,
     pub(super) initial_cause:
         Option<worth_query_execution::facade::runtime::ProductUnpublishedCause>,
     pub(super) recovered: Option<
@@ -152,6 +155,7 @@ pub enum WorthQueryOperationAdvance<Operation, Settled, Terminal> {
 #[derive(Debug)]
 /// Explains a refused or terminal advancement without releasing its native obligations.
 pub enum WorthQueryOperationAdvanceDenial {
+    Original(worth_query_execution::publication_boundary::original_operation::WorthQueryOriginalOperationDenial),
     FreshRequestMismatch,
     Execution(worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial),
     Mutation(WorthQueryPerformedMutationExecutionDenial),

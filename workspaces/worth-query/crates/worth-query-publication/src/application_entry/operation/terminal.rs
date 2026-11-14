@@ -238,7 +238,15 @@ where
                 Ok(WorthQueryClosedOperation::from_cleanup(receipt))
             });
         match result {
-            Ok(Ok(closed)) => Ok(closed.with_output_unavailable(self.take_output_unavailable())),
+            Ok(Ok(closed)) => {
+                if let Err(cause) = self.operation.description.discharge_original(request) {
+                    self.operation
+                        .cleanup
+                        .retain_release_receipt(closed.into_cleanup());
+                    return Err(cause);
+                }
+                Ok(closed.with_output_unavailable(self.take_output_unavailable()))
+            }
             Ok(Err(denial)) => Err(denial),
             Err(denial) => Err(WorthQueryOperationCloseDenial::Execution(denial)),
         }

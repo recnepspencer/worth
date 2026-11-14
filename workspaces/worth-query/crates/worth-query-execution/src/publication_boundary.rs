@@ -215,3 +215,15 @@ pub mod authored_edit {
         DeclaredQueryRead, RetainedAuthoredStageResult, UnseenAuthoredEnvelope,
     };
 }
+
+pub mod original_operation {
+    pub use crate::domain_computation::primary_graph::application_query::observed_source::{
+        WorthQueryOriginalSourceData, WorthQueryReadmittedOriginalSource,
+    };
+    pub use crate::domain_computation::primary_graph::query_obligations::{
+        QueryOriginalOperationData, QueryOriginalOperationPosition,
+    };
+    pub use crate::domain_computation::primary_graph::{
+        WorthQueryOriginalOperationDenial, WorthQueryOriginalOperationOwner,
+    };
+}

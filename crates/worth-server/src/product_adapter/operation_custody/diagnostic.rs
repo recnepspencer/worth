@@ -129,6 +129,7 @@ fn authorization(cause: &WorthQueryOperationAuthorizationDenial) -> WorthServerS
 pub(super) fn refusal(cause: &WorthQuerySourceOnlyDenial) -> WorthServerSourceDiagnostic {
     use WorthQuerySourceOnlyDenial::*;
     let (category, code) = match cause {
+        Original(cause) => return original(cause),
         Mutation(cause) => return mutation(cause),
         Execution(_) => (WorthServerSourceDiagnosticCategory::Execution, "execution"),
         Recovery(_) => (WorthServerSourceDiagnosticCategory::Recovery, "recovery"),
@@ -140,6 +141,7 @@ pub(super) fn refusal(cause: &WorthQuerySourceOnlyDenial) -> WorthServerSourceDi
 pub(super) fn cleanup(cause: &WorthQueryOperationCloseDenial) -> WorthServerSourceDiagnostic {
     use WorthQueryOperationCloseDenial::*;
     let code = match cause {
+        Original(cause) => return original(cause),
         HistoryGroup(_) => "history_group",
         OutputRead(_) => "output_read",
         FreshRequestMismatch => "fresh_request_mismatch",
@@ -229,4 +231,20 @@ fn authorization_code(reason: WorthQueryOperationAuthorizationRefusalKind) -> &'
         InconsistentDecision => "inconsistent_decision",
         PermissionDenied => "permission_denied",
     }
+}
+
+fn original(cause: &WorthQueryOriginalOperationDenial) -> WorthServerSourceDiagnostic {
+    use WorthQueryOriginalOperationDenial::*;
+    let code = match cause {
+        OwnershipMaterialUnavailable => "ownership_material_unavailable",
+        StaleIncarnation => "stale_incarnation",
+        ForeignHome => "foreign_home",
+        Principal(_) => "principal_resolution",
+        Scope(_) => "scope_resolution",
+        QueryAdmission(_) => "query_admission",
+        QueryExecution(_) => "query_execution",
+        Execution(_) => "execution",
+        Obligation(_) => "original_obligation",
+    };
+    WorthServerSourceDiagnostic::new(WorthServerSourceDiagnosticCategory::Recovery, code)
 }

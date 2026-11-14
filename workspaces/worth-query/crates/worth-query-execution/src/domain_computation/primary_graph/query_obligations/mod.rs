@@ -14,6 +14,11 @@ use worth_foundational::facade::{
     CanonicalDigestId, DurableCompositePublicationAttemptIdentity, HomeIdentity,
     ProgramSupportObligationIdentity, ProgramSupportObligationKind, ProgramSupportStatus,
 };
+mod original_operation;
+pub use original_operation::{
+    QueryOriginalOperationData, QueryOriginalOperationObligation, QueryOriginalOperationPosition,
+    QueryOriginalOperationRecord,
+};
 mod adoption;
 pub use adoption::{
     QueryAdoptionPerformedDescription, QueryAdoptionRecord, QueryBranchAdoptionObligation,
@@ -66,6 +71,7 @@ pub use managed_cleanup::{
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum QueryObligationRecord {
+    OriginalOperation(QueryOriginalOperationRecord),
     Adoption(QueryAdoptionRecord),
     ProgramSupport(QueryProgramSupportRecord),
     ManagedCleanup(QueryManagedCleanupRecord),
@@ -218,5 +224,11 @@ impl From<QueryOwnedAsyncRecord> for QueryObligationRecord {
 impl From<QueryManagedRunRecord> for QueryObligationRecord {
     fn from(record: QueryManagedRunRecord) -> Self {
         Self::ManagedRun(record)
+    }
+}
+
+impl From<QueryOriginalOperationRecord> for QueryObligationRecord {
+    fn from(record: QueryOriginalOperationRecord) -> Self {
+        Self::OriginalOperation(record)
     }
 }

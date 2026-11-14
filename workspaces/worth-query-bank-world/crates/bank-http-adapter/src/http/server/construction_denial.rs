@@ -12,6 +12,7 @@ pub(super) fn construction<I: ApplicationMutationIntent<bank_domain::schema::Ban
 ) -> BankHttpDenial {
     match &refusal {
         bank_server::BankOperationConstructionRefusal::Capture(owner) => capture(owner.denial()),
+        bank_server::BankOperationConstructionRefusal::Declaration { denial: worth_query_host::facade::application_entry::WorthQueryOperationConstructionDenial::Original(cause), .. } => super::mutation_refusal::original(cause),
         bank_server::BankOperationConstructionRefusal::Declaration { .. } => {
             super::mutation_refusal::denial(Kind::InternalDenied)
         }

@@ -13,6 +13,15 @@ pub struct WorthQueryOperationCleanupReceipt {
     retired_component_count: usize,
 }
 impl WorthQueryOperationCleanupReceipt {
+    pub(super) fn from_released_parts(
+        managed: Vec<worth_query_execution::facade::primary_graph::WorthQueryApplicationManagedCleanupReceipt>,
+        retired_component_count: usize,
+    ) -> Self {
+        Self {
+            managed,
+            retired_component_count,
+        }
+    }
     /// The actual native release evidence for every discharged managed owner.
     /// Lends each actual remaining dispatch/recovery owner without copying custody.
     pub fn managed_cleanup_receipts_mut(&mut self) -> &mut [worth_query_execution::facade::primary_graph::WorthQueryApplicationManagedCleanupReceipt]{
@@ -217,6 +226,11 @@ impl WorthQueryOperationCleanup {
             self.pending.push(pending);
         }
         Ok(())
+    }
+    /// A later logical-discharge refusal returns these actual release outcomes to this collection.
+    pub(super) fn retain_release_receipt(&mut self, receipt: WorthQueryOperationCleanupReceipt) {
+        self.managed_receipts = receipt.managed;
+        self.retired_component_count = receipt.retired_component_count;
     }
     pub fn close_in_advancement<S: ApplicationSchema>(
         &mut self,

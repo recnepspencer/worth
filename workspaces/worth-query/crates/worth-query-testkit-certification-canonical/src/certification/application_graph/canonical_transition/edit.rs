@@ -5,7 +5,7 @@ pub use worth_query_host::facade::{
     primary_graph::*,
     *,
 };
-#[derive(Clone, Debug, worth_foundational::facade::WorthValue)]
+#[derive(Clone, Debug, serde::Deserialize, worth_foundational::facade::WorthValue)]
 pub struct Input {
     pub identity: String,
     pub value: NestedValue,
@@ -76,6 +76,10 @@ impl ApplicationMutationIntent<CanonicalSchema> for Input {
 }
 pub struct Handler;
 impl OperationHandler<CanonicalSchema, EditBinding> for Handler {
+    fn declared_durable_capabilities() -> Option<&'static [WorthQueryOperationDurableCapability]> {
+        Some(&[WorthQueryOperationDurableCapability::RelationalMutation])
+    }
+
     fn decide(
         &self,
         input: &Input,

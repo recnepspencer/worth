@@ -27,6 +27,9 @@ where
             crate::application_entry::WorthQueryOperationCloseDenial,
         ),
     > {
+        if let Err(cause) = self.admission.description.admit_original_discharge() {
+            return Err((self, cause));
+        }
         let prepared = match &mut self.state {
             SourceState::<S, I>::Unpublished(recovery) => {
                 self.cleanup.retain_original_recovery(recovery.clone())
@@ -84,10 +87,20 @@ where
             Ok(())
         });
         match outcome {
-            Ok(Ok(())) => Ok(self
-                .closed
-                .take()
-                .expect("actual original cleanup completed")),
+            Ok(Ok(())) => {
+                if let Err(cause) = self
+                    .operation
+                    .admission
+                    .description
+                    .discharge_original(request)
+                {
+                    return Err((self, cause));
+                }
+                Ok(self
+                    .closed
+                    .take()
+                    .expect("actual original cleanup completed"))
+            }
             Ok(Err(cause)) => Err((self, cause)),
             Err(cause) => Err((self, Denial::Execution(cause))),
         }

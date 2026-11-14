@@ -1,5 +1,6 @@
 //! Consuming Home admission reclaims idle caches and checks live output custody.
 use super::*;
+mod durable_cache;
 use crate::domain_computation::primary_graph::{
     WorthQueryHomeRetirementDenial as Denial, WorthQueryHomeRetirementOwner as Owner,
 };
@@ -7,7 +8,8 @@ use crate::domain_computation::primary_graph::{
 impl WorthQueryOutputDemandRegistry {
     /// Closed answers and stale scheduling hints carry no live demand.
     pub(in crate::domain_computation::primary_graph) fn reclaim_home_retirement_cache(
-        &self,
+        &mut self,
+        history: Option<&crate::domain_computation::primary_graph::query_obligations::history::QueryObligationHistory>,
         request: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<(), Denial> {
         loop {
@@ -17,6 +19,9 @@ impl WorthQueryOutputDemandRegistry {
                 .map_err(|_| Denial::Busy(Owner::InstalledProducers))?
             {
                 continue;
+            }
+            if let Some(history) = history {
+                self.release_durable_home_cache(history)?;
             }
             let queue = self
                 .state

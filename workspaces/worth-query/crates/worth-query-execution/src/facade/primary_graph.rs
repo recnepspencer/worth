@@ -4,6 +4,7 @@ pub use crate::domain_computation::primary_graph::query_obligations::{
     QueryManagedRunObligation, QueryManagedRunPosture, QueryManagedRunRecovery,
     QueryManagedRunResources,
 };
+pub use crate::domain_computation::primary_graph::WorthQueryOriginalOperationDenial;
 mod correction;
 pub use correction::*;
 mod managed_index;

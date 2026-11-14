@@ -21,6 +21,8 @@ pub struct QueryObligationLedger {
         BTreeMap<worth_foundational::facade::OwnedAsyncObligationIdentity, QueryResourceObligation>,
     pub(super) adoption: adoption::fold::AdoptionFold,
     pub(super) output: output_custody::fold::OutputCustodyFold,
+    pub(super) original_operations:
+        BTreeMap<ProgramSupportObligationIdentity, QueryOriginalOperationObligation>,
     statuses: BTreeMap<CanonicalDigestId, ProgramSupportStatus>,
     obligations: BTreeMap<ProgramSupportObligationIdentity, QueryProgramSupportObligation>,
 }
@@ -39,6 +41,7 @@ impl QueryObligationLedger {
             resources: BTreeMap::new(),
             adoption: adoption::fold::AdoptionFold::default(),
             output: output_custody::fold::OutputCustodyFold::default(),
+            original_operations: BTreeMap::new(),
             statuses: BTreeMap::new(),
             obligations: BTreeMap::new(),
         }
@@ -81,7 +84,14 @@ impl QueryObligationLedger {
             });
         (
             interpretations,
-            custody + self.output.count(revision) + self.adoption.count(revision),
+            custody
+                + self.output.count(revision)
+                + self.adoption.count(revision)
+                + self
+                    .original_operations
+                    .values()
+                    .filter(|row| row.data.revision == *revision.bytes())
+                    .count(),
         )
     }
     /// Descriptive membership of a prepared change, never publication authority.
@@ -91,6 +101,18 @@ impl QueryObligationLedger {
         revision: &CanonicalDigestId,
     ) -> bool {
         match record {
+            QueryObligationRecord::OriginalOperation(record) => {
+                return match record {
+                    QueryOriginalOperationRecord::Retain(row) => {
+                        row.data.revision == *revision.bytes()
+                    }
+                    QueryOriginalOperationRecord::Advance { identity, .. }
+                    | QueryOriginalOperationRecord::Discharge { identity } => self
+                        .original_operations
+                        .get(identity)
+                        .is_some_and(|row| row.data.revision == *revision.bytes()),
+                }
+            }
             QueryObligationRecord::Adoption(record) => {
                 return self.adoption.mentions(record, revision)
             }
@@ -198,6 +220,9 @@ impl QueryObligationLedger {
         self.validate(&frame.record, frame.position)?;
         let payload_digest = frame.payload_digest();
         match frame.record {
+            QueryObligationRecord::OriginalOperation(record) => {
+                self.apply_original_operation(record)
+            }
             QueryObligationRecord::Resource(record) => self.apply_resource(record),
             QueryObligationRecord::OwnedAsync(record) => self.apply_owned_async(record),
             QueryObligationRecord::ManagedRun(record) => self.apply_managed_run(record),
@@ -232,6 +257,9 @@ impl QueryObligationLedger {
         position: u64,
     ) -> Result<(), QueryObligationDenial> {
         match record {
+            QueryObligationRecord::OriginalOperation(record) => {
+                self.validate_original_operation(record, position)
+            }
             QueryObligationRecord::Resource(record) => self.validate_resource(record, position),
             QueryObligationRecord::OwnedAsync(record) => {
                 self.validate_owned_async(record, position)

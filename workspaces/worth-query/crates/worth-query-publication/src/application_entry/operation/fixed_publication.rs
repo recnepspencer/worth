@@ -44,6 +44,9 @@ where
         request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
     ) -> FixedAdvance<Schema, Intent, Program, Root, Action> {
         debug_assert!(matches!(self.state, FixedState::Initial));
+        if self.description.original.as_ref().is_some_and(|original| original.readmission) {
+            return self.readmit_original_in_phase(phase, request);
+        }
         let progress = {
             let execution = match phase
                 .checked_execution_request_for(self.runtime.runtime().product_runtime())
@@ -56,6 +59,14 @@ where
                     }
                 }
             };
+            if let Some(original) = &mut self.description.original {
+                if let Err(cause) = original.mark(
+                    phase, request.application,
+                    worth_query_execution::publication_boundary::original_operation::QueryOriginalOperationPosition::Resolving,
+                ) {
+                    return Advance::Refused { operation: self, denial: Denial::Original(cause) };
+                }
+            }
             let mut work = worth_query_execution::facade::primary_graph::WorthQueryMutationHandlerWork::NotStarted;
             let outcome = self
                 .description
@@ -66,9 +77,17 @@ where
                     &mut work,
                     execution.allocation_policy(),
                 );
-            let mut outcome=outcome;
-            while let Ok(WorthQueryApplicationPerformedMutationOutcome::CleanupRequired{cleanup,outcome:inner})=outcome {
-                self.cleanup.absorb_managed(&self.runtime,cleanup);outcome=Ok(*inner);
+            let mut outcome = outcome;
+            while let Ok(WorthQueryApplicationPerformedMutationOutcome::CleanupRequired { cleanup, outcome: inner }) = outcome {
+                self.cleanup.absorb_managed(&self.runtime, cleanup);
+                outcome = Ok(*inner);
+            }
+            if outcome.is_err() {
+                if let Some(original) = &mut self.description.original {
+                    if let Err(cause) = original.mark(phase, request.application, worth_query_execution::publication_boundary::original_operation::QueryOriginalOperationPosition::Initial) {
+                        return Advance::Refused { operation: self, denial: Denial::Original(cause) };
+                    }
+                }
             }
             match outcome {
                 Ok(WorthQueryApplicationPerformedMutationOutcome::CleanupRequired { .. }) => unreachable!("all actual cleanup wrappers were drained"),

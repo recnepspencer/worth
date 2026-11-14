@@ -125,9 +125,12 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         self.conditional_cleanup
             .preflight_home_retirement(request)?;
         if !self.installed_producers.is_empty() {
+            let history = self
+                .installed_program_support()
+                .map(|support| support.obligation_history());
             self.runtime
                 .output_demands
-                .reclaim_home_retirement_cache(request)?;
+                .reclaim_home_retirement_cache(history.as_deref(), request)?;
             self.installed_producers
                 .preflight_home_retirement(request)?;
             self.runtime.output_demands.preflight_home_retirement()?;

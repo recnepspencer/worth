@@ -9,6 +9,7 @@ description = "Derived Query publication and decision-evidence authority."
 publish = false
 
 [dependencies]
+rmp-serde = "1"
 serde = "1"
 sha2 = "0.10"
 worth-execution = { path = "../../../../crates/worth-execution" }

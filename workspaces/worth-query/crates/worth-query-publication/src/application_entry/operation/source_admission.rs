@@ -137,6 +137,9 @@ where
                 ));
             }
         };
+        if let Err(cause) = description.admit_original_action(&installed_action) {
+            return Err((description, cause));
+        }
         if installed_action.required_output_source()
             || runtime.owns_output_source(std::any::TypeId::of::<I::Binding>())
         {
@@ -150,8 +153,15 @@ where
             Err(_) => return Err((description, WorthQueryOperationConstructionDenial::DurableStateAdmission(
                 worth_query_execution::facade::product::WorthQueryDurableStateAdmissionDenial::UnsupportedCorrectionCompensation))),
         };
+        if correction.is_none() {
+            if let Err(cause) = description.admit_original_retention(runtime) {
+                return Err((description, cause));
+            }
+        }
         let product = runtime.runtime().product_runtime();
-        let admission = if !Mode::RETAIN_COMMIT {
+        let admission = if description.original.is_some() {
+            Ok(())
+        } else if !Mode::RETAIN_COMMIT {
             product.admit_retained_original_operation_owner()
         } else if correction.is_some() {
             product.admit_native_correction_inverse(binding.operation().contracts())

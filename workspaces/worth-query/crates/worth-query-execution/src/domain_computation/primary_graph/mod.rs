@@ -255,3 +255,6 @@ pub use derived_source::DerivedSourceObservation;
 pub(crate) mod inline_type_budget;
 
 pub use application_output_demand::WorthQueryOutputDiscoveryRecipe;
+
+mod original_operation;
+pub use original_operation::{WorthQueryOriginalOperationDenial, WorthQueryOriginalOperationOwner};

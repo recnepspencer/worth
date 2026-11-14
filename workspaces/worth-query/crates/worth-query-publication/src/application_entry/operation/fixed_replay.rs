@@ -37,6 +37,73 @@ where
             Demand<Schema, Root>,
         >,
 {
+    pub(super) fn readmit_original_in_phase(
+        mut self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
+    ) -> FixedAdvance<Schema, Intent, Program, Root, Action> {
+        use worth_query_execution::facade::primary_graph::{
+            WorthQueryApplicationIdempotencyResolution as Resolution,
+            WorthQueryManagedApplicationRecoveryOutcome as Recovery,
+        };
+        let result = (|| {
+            let mut native = self.description.request_view(request, &self.installed_action);
+            let prepared = native.authorize_fixed_source::<Program, Root>(phase, &self.runtime, None)?;
+            if self.readmitted_recovery.is_none() {
+                let resolution = native.read_recovery_idempotency(phase, &prepared)?.into_resolution();
+                match resolution {
+                    Resolution::ProductUnpublished(partial) => {
+                        self.readmitted_recovery = Some(partial.into_recovery());
+                    }
+                    resolution => return Ok(Ok(resolution)),
+                }
+            }
+            let recovery = self.readmitted_recovery.as_ref().expect("actual native partial retained");
+            let outcome = request.application.recover_admitted_unpublished_application_in_advancement(
+                phase, recovery, &prepared.admission, prepared.idempotency,
+            ).map_err(WorthQueryApplicationRecoveryRequestDenial::Recovery)?;
+            Ok(Err(outcome))
+        })();
+        match result {
+            Err(cause) => Advance::Refused { operation: self, denial: Denial::Recovery(cause) },
+            Ok(Err(Recovery::Performed(performed))) => {
+                self.readmitted_recovery = None;
+                self.recovered = Some(performed);
+                Advance::Progress { operation: self, progress: Progress::SourceReplayObserved }
+            }
+            Ok(Err(Recovery::ProductUnpublished { next, prior_cleanup_failure })) => {
+                self.cleanup.absorb_release_failure(prior_cleanup_failure);
+                self.readmitted_recovery = Some(next);
+                Advance::Progress { operation: self, progress: Progress::SourceReplayObserved }
+            }
+            Ok(Err(Recovery::NoEffect)) => Advance::Refused {
+                operation: self,
+                denial: Denial::Original(worth_query_execution::publication_boundary::original_operation::WorthQueryOriginalOperationDenial::OwnershipMaterialUnavailable),
+            },
+            Ok(Ok(Resolution::RecoveredCommitted(receipt))) => {
+                let access = worth_query_execution::publication_boundary::program_publication_access();
+                if self.recovered.as_ref().is_some_and(|performed|
+                    !performed.matches_original_receipt(&access, &receipt)) {
+                    return Advance::Refused { operation: self, denial: Denial::RecoveryCarrierUnavailable };
+                }
+                self.state = FixedState::ReplayRecorded(receipt);
+                self.description.original.as_mut().expect("readmitted original").readmission = false;
+                Advance::Progress { operation: self, progress: Progress::SourceReplayObserved }
+            }
+            Ok(Ok(Resolution::Unseen)) => Advance::Refused {
+                operation: self,
+                denial: Denial::Original(worth_query_execution::publication_boundary::original_operation::WorthQueryOriginalOperationDenial::OwnershipMaterialUnavailable),
+            },
+            Ok(Ok(Resolution::ReleasedOriginal(original))) => Advance::Refused {
+                operation: self,
+                denial: Denial::Recovery(WorthQueryApplicationRecoveryRequestDenial::ReleasedOriginal(original)),
+            },
+            Ok(Ok(Resolution::IntentDrift | Resolution::ProductPreparationPending(_) | Resolution::ProductUnpublished(_))) => {
+                Advance::Refused { operation: self, denial: Denial::RecoveryCarrierUnavailable }
+            }
+        }
+    }
+
     pub(super) fn advance_replay_in_phase(
         mut self,
         phase: &WorthQueryAdvancementPhase<'_>,

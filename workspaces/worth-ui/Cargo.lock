@@ -4870,6 +4870,7 @@ dependencies = [
 name = "worth-query-publication"
 version = "0.1.0"
 dependencies = [
+ "rmp-serde",
  "serde",
  "sha2",
  "worth-execution",

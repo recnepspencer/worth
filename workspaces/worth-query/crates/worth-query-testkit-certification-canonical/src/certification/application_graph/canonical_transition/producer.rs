@@ -77,6 +77,10 @@ impl ApplicationMutationIntent<CanonicalSchema> for Input {
 }
 pub struct Handler;
 impl OperationHandler<CanonicalSchema, ProduceBinding> for Handler {
+    fn declared_durable_capabilities() -> Option<&'static [WorthQueryOperationDurableCapability]> {
+        Some(&[WorthQueryOperationDurableCapability::RelationalMutation])
+    }
+
     fn decide(
         &self,
         input: &Input,

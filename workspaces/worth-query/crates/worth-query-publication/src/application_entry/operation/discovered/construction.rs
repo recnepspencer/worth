@@ -32,12 +32,8 @@ where
         {
             return Err((description, Denial::ForeignRuntime));
         }
-        if let Err(cause) = runtime
-            .runtime()
-            .product_runtime()
-            .admit_retained_original_operation_owner()
-        {
-            return Err((description, Denial::DurableStateAdmission(cause)));
+        if let Err(cause) = description.admit_original_retention(runtime) {
+            return Err((description, cause));
         }
         let installed_action = match runtime
             .installed_program()
@@ -46,6 +42,9 @@ where
             Ok(action) => action,
             Err(denial) => return Err((description, Denial::Action(denial))),
         };
+        if let Err(cause) = description.admit_original_action(&installed_action) {
+            return Err((description, cause));
+        }
         if !installed_action.required_output_source()
             || installed_action
                 .delivery()
@@ -75,6 +74,7 @@ where
             return Err((description, Denial::Query(denial)));
         }
         Ok(Self {
+            readmitted_recovery: None,
             runtime: runtime.clone(),
             installed_action: installed_action.clone(),
             description,

@@ -43,6 +43,9 @@ where
 {
     pub(super) installed_action: ApplicationActionDeclaration,
     pub(super) description: WorthQueryOperationDescription<S, I>,
+    pub(super) readmitted_recovery: Option<
+        worth_query_execution::facade::domain_computation::WorthQueryProductUnpublishedRecovery,
+    >,
     pub(super) initial_cause:
         Option<worth_query_execution::facade::runtime::ProductUnpublishedCause>,
     pub(super) result: Option<<I::Binding as ApplicationMutationBinding<S>>::Result>,

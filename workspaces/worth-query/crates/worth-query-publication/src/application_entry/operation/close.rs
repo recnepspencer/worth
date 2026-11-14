@@ -4,6 +4,7 @@ use super::*;
 #[derive(Debug)]
 /// Explains why lawful close could not discharge the retained native cleanup obligations.
 pub enum WorthQueryOperationCloseDenial {
+    Original(worth_query_execution::publication_boundary::original_operation::WorthQueryOriginalOperationDenial),
     FreshRequestMismatch,
     /// Deferred correction custody cannot enter the fixed facade until this issue lands.
     DeferredFixedCompletionUnsupported { issue: &'static str },
@@ -48,6 +49,12 @@ pub(super) fn terminal_outcome_can_close<D, R>(
 }
 
 impl WorthQueryClosedOperation {
+    pub(super) fn into_cleanup(self) -> WorthQueryOperationCleanupReceipt {
+        WorthQueryOperationCleanupReceipt::from_released_parts(
+            self.managed,
+            self.retired_component_count,
+        )
+    }
     pub(in crate::application_entry) fn from_cleanup(
         receipt: WorthQueryOperationCleanupReceipt,
     ) -> Self {
@@ -128,6 +135,17 @@ where
     }
 
     fn close_native(
+        &mut self,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
+    ) -> Result<WorthQueryClosedOperation, WorthQueryOperationCloseDenial> {
+        let closed = self.release_native_cleanup(request)?;
+        if let Err(cause) = self.delivery.description.discharge_original(request) {
+            self.cleanup.retain_release_receipt(closed.into_cleanup());
+            return Err(cause);
+        }
+        Ok(closed)
+    }
+    pub(super) fn release_native_cleanup(
         &mut self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
     ) -> Result<WorthQueryClosedOperation, WorthQueryOperationCloseDenial> {
