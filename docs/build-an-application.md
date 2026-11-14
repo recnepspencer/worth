@@ -8527,3 +8527,28 @@ ordinary Bank courts and is not supplied by this all-accounts index.
 A settled producer's `outputs_of::<Contract>()` reports the roles in that route's canonical Native publication. A shrink may also require Retire witnesses for publications owned by the deleted children. Those witnesses are admission evidence, and are exposed separately through `root_settlement().closure_evidence_of::<Contract>()` and its typed `family_entries::<Family>()`. A closure entry describes a retired identity; it is not an output-role entity and grants no current identity or producer custody. Only the canonical roles participate in producer correspondence and cold readmission. The closure evidence describes this host's performed admission and adds no durable replay obligation. A program may refresh a producer again before it delivers its final root settlement. Each publication has its own correspondence and evidence; the final settlement does not accumulate witnesses from earlier publications in that wave.
 
 Source-scope-owned output cannot be physically suspended independently. The ordinary suspension door refuses `OwnedPublicationRequiresCascade` before publication; the output remains readable and its producer remains settled. Independent output retains the ordinary suspension and exact rematerialization path.
+
+### Authored envelope stages without required outputs
+
+Use `ApplicationNoOutputGraph` as the output choice for an ordinary authored
+stage that has no required output of its own: `push_stage::<ApplicationNoOutputGraph, _>(intent)`
+(or static `stage::<ApplicationNoOutputGraph, _>`). The same explicit choice works
+for correction/reapplication `edit_envelope::<C, Program, ApplicationNoOutputGraph>`.
+An action can still create or retire real typed Native rows; this choice means
+it has no demanded geometry graph, not that its effects are absent.
+
+The initial and selected installed programs must both own the ordinary action.
+A binding declared as a required-output source cannot omit that obligation by
+choosing no graph. Real roots on other stages still run before a final authored
+stage that reads them. Every stage retains nominal admission, complete original
+input/mode/order/graph intent, actual pre-stage data and final support, one
+commit and the same original-receipt replay. A deleted object is not a root;
+do not invent an empty producer or a replacement object to seal its retirement.
+
+Runtime `stage_token::<Binding>(ordinal)` describes only a captured stage of
+that request, including a genuine corrective prefix at ordinal zero. A wrong
+binding or absent ordinal returns `None`. Use that branded token for the live
+result, stage receipt or typed domain denial; recovered receipts do not recreate
+results. After projecting a stage denial's identity and typed cause, consume
+`into_commit_outcome()` to transfer its original uncommitted cleanup/recovery
+owner. A domain refusal before a transaction begins has no such owner.

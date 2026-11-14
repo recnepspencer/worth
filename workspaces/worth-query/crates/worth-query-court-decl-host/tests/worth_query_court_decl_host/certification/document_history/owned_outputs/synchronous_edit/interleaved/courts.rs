@@ -5,6 +5,7 @@ use worth_query_host::facade::{
 };
 use worth_relational::facade::inspection::observe_maintenance_work;
 type Host = WorthQueryProgramApplicationRuntime<Schema, Program>;
+mod authored_only;
 mod correction;
 mod instance_replay;
 mod positioned;
@@ -32,7 +33,7 @@ macro_rules! edit {
                 value: 8,
                 key_derived_target: false,
             })
-            .stage::<program::SealTree, _>(seal::Intent {
+            .stage::<ApplicationNoOutputGraph, _>(seal::Intent {
                 generation: $generation,
                 frontier: $frontier,
                 dependent: $count * 10 + 7,
@@ -51,6 +52,7 @@ fn read_seal(host: &Host) -> reading::State {
         .clone()
 }
 fn exercise(count: u64) {
+    let _observation = worth_query_host::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let host = host(None, None);
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
@@ -206,13 +208,12 @@ fn authored_and_derived_stages_share_one_commit_at_both_dependent_counts() {
 }
 fn refuses(
     second: Option<fn(u64) -> u64>,
-    child: Option<fn(u64) -> u64>,
     generation: u64,
     frontier: u64,
     expected_seal: Option<seal::Denial>,
     producer: &str,
 ) {
-    let host = host(second, child);
+    let host = host(second, None);
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.request(&principal, &scope);
@@ -272,18 +273,9 @@ fn refuses(
 }
 #[test]
 fn later_producer_and_seal_refusals_publish_no_prefix() {
-    refuses(Some(|_| u64::MAX), None, 1, 4, None, "second");
-    refuses(None, Some(|_| u64::MAX), 1, 4, None, "child");
-    // The bad seal wins even when its required derived tail would also refuse.
-    refuses(
-        None,
-        Some(|_| u64::MAX),
-        2,
-        4,
-        Some(seal::Denial::GenerationChanged),
-        "",
-    );
-    refuses(None, None, 1, 5, Some(seal::Denial::FrontierChanged), "");
+    refuses(Some(|_| u64::MAX), 1, 4, None, "second");
+    refuses(None, 2, 4, Some(seal::Denial::GenerationChanged), "");
+    refuses(None, 1, 5, Some(seal::Denial::FrontierChanged), "");
 }
 
 #[test]

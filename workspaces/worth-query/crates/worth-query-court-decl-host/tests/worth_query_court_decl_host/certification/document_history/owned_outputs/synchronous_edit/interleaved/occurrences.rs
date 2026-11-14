@@ -67,7 +67,7 @@ impl WorthQueryApplicationPrerequisiteOutputConnection<Schema> for Previous {
 pub struct Program;
 impl ApplicationProgramDefinition<Schema> for Program {
     type Contributions = (Contribution,);
-    type Outputs = ApplicationProgramOutputs<(Tree, (program::ProducedTree, program::SealTree))>;
+    type Outputs = ApplicationProgramOutputs<(Tree, program::ProducedTree)>;
     type Rules = ApplicationRuleLeaf;
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("owned-outputs.occurrence-history");

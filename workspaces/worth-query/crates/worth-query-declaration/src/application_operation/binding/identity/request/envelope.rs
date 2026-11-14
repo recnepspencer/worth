@@ -141,7 +141,7 @@ impl ApplicationEditStageIntent {
     where
         S: ApplicationSchema,
         B: ApplicationMutationBinding<S>,
-        R: crate::application_program::ApplicationOutputGraphShape<S>,
+        R: crate::application_program::ApplicationProgramOutputShape<S>,
     {
         let root = R::connections()
             .into_iter()

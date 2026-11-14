@@ -111,41 +111,10 @@ pub type ProducedTree = ApplicationOutputGraph<
     ProducedConnection,
     ApplicationOutputEdge<ChildConnection, ApplicationOutputLeaf>,
 >;
-pub struct SealRoot;
-impl ApplicationConnectionIdentity for SealRoot {
-    const IDENTITY: &'static str = "interleaved.seal-root";
-}
-impl ApplicationOccurrenceConnectionBinding<Schema, base::Entry, hierarchy::Child> for SealRoot {}
-pub type SealConnection = ApplicationConnectionRef<
-    Schema,
-    base::Entry,
-    base::EntryOutput,
-    hierarchy::Child,
-    hierarchy::SeedInput,
-    SealRoot,
->;
-pub type SealTree = ApplicationOutputGraph<SealConnection, ApplicationOutputLeaf>;
-impl WorthQueryApplicationRequiredOutputConnection<Schema> for SealRoot {
-    type Source = seal::Binding;
-    type Demand = child::Demand;
-    const IDENTITY: &'static str = <Self as ApplicationConnectionIdentity>::IDENTITY;
-    fn demand_from_source(
-        _: &seal::Intent,
-    ) -> Result<Self::Demand, WorthQueryRequiredOutputConnectionDenial> {
-        Ok(child::Demand("m".into()))
-    }
-}
-impl WorthQueryApplicationRequiredOutputSource<Schema, SealRoot> for seal::Binding {
-    fn demand_from_source(
-        _: &seal::Intent,
-    ) -> Result<child::Demand, WorthQueryRequiredOutputConnectionDenial> {
-        Ok(child::Demand("m".into()))
-    }
-}
 pub struct Program;
 impl ApplicationProgramDefinition<Schema> for Program {
     type Contributions = (Contribution,);
-    type Outputs = ApplicationProgramOutputs<(ModelTree, (ProducedTree, SealTree))>;
+    type Outputs = ApplicationProgramOutputs<(ModelTree, ProducedTree)>;
     type Rules = ApplicationRuleLeaf;
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("owned-outputs.interleaved");

@@ -46,6 +46,16 @@ pub(in crate::domain_computation::primary_graph::application_contribution) fn ma
         .collect()
 }
 impl<S: ApplicationSchema> CapturedAuthoredEditStage<S> {
+    pub fn with_declared_output_dependencies<B: ApplicationMutationBinding<S>>(
+        mut self,
+        application: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+    ) -> Result<Self, WorthQueryOutputDemandDenial> {
+        self.producers = application
+            .installed_producers
+            .declared_dependency_scopes(application, &declared_families::<S, B>())?;
+        Ok(self)
+    }
+
     pub fn with_required_output_dependencies<B, D, E>(
         mut self,
         application: &WorthQueryPrimaryGraphApplicationRuntime<S>,
