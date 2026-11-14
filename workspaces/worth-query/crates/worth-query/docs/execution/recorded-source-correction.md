@@ -98,12 +98,40 @@ uncaptured field supplies no original truth and must not be cleared or filled
 from a current read. These historical data grant no current read/write target.
 The inverse still acquires ordinary targets and passes current admission.
 
-The changed-field selection has distinct canonical/archive meaning. Its retained
-capture uses an explicit version-2 material envelope for absence and exact-target
-data; version-1 strict capture bytes retain their original interpretation.
-Existing Directory restrictions, including unsupported relation material and
-reapplication, continue to return their typed refusals. This capability does not
-expand those Directory routes.
+Field selection has distinct canonical/archive meaning. The current retained
+material grammar records its mode, exact output and original absence explicitly.
+Recreate development artifacts from older grammars; there is no historical-format
+adapter. Existing Directory restrictions, including unsupported relation material
+and reapplication, continue to return typed refusals.
+
+### Capture complete optional fields of a retired output
+
+Use `DeclaredPreImageDemand::retired_fields_for_output(Retired::DESCRIPTOR,
+complete_loci, maximum_encoded_bytes)` with a genuine exactly-one Retire output
+and its primary `restore_retired` authored correction. Include its logical key
+and every required source field in the explicit finite vocabulary. Installation
+requires that output's actual Delete lifecycle and inverse Create correspondence;
+a Preserve or Create output, another entity, optional role or unrelated authored
+family cannot select this mode. A coanchor is neither required nor fabricated.
+
+Every declared locus needs its authorized original value or authenticated field /
+aspect absence on the exact retired full generational identity. This captures
+all declared loci, including optional fields that were absent. Same-kind
+collateral observations cannot supply missing root truth. Missing or contradictory
+observations refuse before publication under the installed bounds. `new` remains
+strict value-only common-record selection; `changed_fields_for_output` remains
+sparse Preserve selection. Relation endpoint retention is unchanged.
+
+Derive a complete restoring image through `field_state_for_output` on that Retire
+role. `Uncaptured` is an error for a complete image, never absence. Allocate and
+initialize the lawful successor from those recorded states, and consume its
+issued Create output. Historical data does not grant a current mutation target.
+A recorded reverse that retires a restored successor uses its actual prepared
+Create-to-Retire correspondence, not the earlier deleted generation. Inverse
+Create does not recapture deleted fields; original reapplication uses ordinary
+source admission and existing lineage. Current-version Undo, reapply and recovery
+remain supported through their declared routes; Directory restrictions are not
+expanded by this selection.
 
 Bindings with `RETAIN_CANONICAL_INPUT` enabled share the stream captured by the
 original identity pass. Otherwise retention explicitly encodes the held value

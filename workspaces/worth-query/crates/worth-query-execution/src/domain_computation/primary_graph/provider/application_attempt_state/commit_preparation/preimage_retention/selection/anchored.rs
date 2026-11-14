@@ -122,7 +122,7 @@ pub(in super::super) fn retain_from_authored_anchors<'fact>(
         retained: WorthQueryRetainedPreImage::from_retention_seal(WorthQueryRetainedPreImageSeal {
             fields,
             absences: Vec::new(),
-            changed_output: None,
+            output_fields: None,
             total_encoded_bytes: total,
         }),
         candidates_materialized: candidates.len(),

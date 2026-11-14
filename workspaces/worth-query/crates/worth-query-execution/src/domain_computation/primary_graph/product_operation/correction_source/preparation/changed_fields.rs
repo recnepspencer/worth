@@ -18,7 +18,7 @@ impl WorthQueryPreparedCorrectionSource {
             return Ok(None);
         };
         let demand = inverse.preimage_demand();
-        let Some(output) = demand.changed_output() else {
+        let Some(output) = demand.output_fields().filter(|output| output.capture() == worth_query_declaration::facade::application_aftermath::PreImageOutputFieldCapture::ChangedPreserved) else {
             return Ok(None);
         };
         let mut roles = original.correspondence().native_witness_roles().filter(

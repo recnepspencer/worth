@@ -10,7 +10,7 @@ use worth_relational::facade::identity::KindId;
 use worth_relational::facade::transactions::RecordRef;
 mod presence;
 pub(in crate::domain_computation) use presence::{
-    RetainedChangedFieldOutput, RetainedPreImageAbsence, RetainedPreImageAbsenceKind,
+    RetainedOutputFields, RetainedPreImageAbsence, RetainedPreImageAbsenceKind,
 };
 
 /// One retained field pre-image bound into the strengthened commit receipt.
@@ -56,7 +56,7 @@ impl WorthQueryRetainedPreImageField {
 pub struct WorthQueryRetainedPreImage {
     fields: Vec<WorthQueryRetainedPreImageField>,
     absences: Vec<RetainedPreImageAbsence>,
-    changed_output: Option<RetainedChangedFieldOutput>,
+    output_fields: Option<RetainedOutputFields>,
     relations: Option<std::sync::Arc<super::retained_relations::RetainedRelations>>,
     total_encoded_bytes: usize,
     content: worth_relational::facade::content::RelationalContentAttachments,
@@ -161,10 +161,8 @@ impl WorthQueryRetainedPreImage {
         &self.absences
     }
 
-    pub(in crate::domain_computation) fn changed_output(
-        &self,
-    ) -> Option<&RetainedChangedFieldOutput> {
-        self.changed_output.as_ref()
+    pub(in crate::domain_computation) fn output_fields(&self) -> Option<&RetainedOutputFields> {
+        self.output_fields.as_ref()
     }
 
     pub(in crate::domain_computation) fn original_field_state(
@@ -231,7 +229,7 @@ impl WorthQueryRetainedPreImage {
     pub(crate) fn from_retention_seal(
         seal: crate::domain_computation::primary_graph::WorthQueryRetainedPreImageSeal,
     ) -> Self {
-        let (fields, absences, changed_output, total_encoded_bytes) = seal.into_parts();
+        let (fields, absences, output_fields, total_encoded_bytes) = seal.into_parts();
         let fields = fields
             .into_iter()
             .map(|field| {
@@ -250,7 +248,7 @@ impl WorthQueryRetainedPreImage {
         Self {
             fields,
             absences,
-            changed_output,
+            output_fields,
             relations: None,
             total_encoded_bytes,
             content: Default::default(),
@@ -292,7 +290,7 @@ impl PartialEq for WorthQueryRetainedPreImage {
     fn eq(&self, other: &Self) -> bool {
         self.fields == other.fields
             && self.absences == other.absences
-            && self.changed_output == other.changed_output
+            && self.output_fields == other.output_fields
             && self.total_encoded_bytes == other.total_encoded_bytes
     }
 }

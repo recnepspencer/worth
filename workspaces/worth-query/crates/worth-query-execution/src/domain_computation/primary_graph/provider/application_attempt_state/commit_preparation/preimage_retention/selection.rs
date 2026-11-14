@@ -37,7 +37,7 @@ pub(crate) struct WorthQueryRetainedPreImageFieldSeal {
 pub(crate) struct WorthQueryRetainedPreImageSeal {
     fields: Vec<WorthQueryRetainedPreImageFieldSeal>,
     absences: Vec<crate::domain_computation::application_aftermath::retained_preimage::RetainedPreImageAbsence>,
-    changed_output: Option<crate::domain_computation::application_aftermath::retained_preimage::RetainedChangedFieldOutput>,
+    output_fields: Option<crate::domain_computation::application_aftermath::retained_preimage::RetainedOutputFields>,
     total_encoded_bytes: usize,
 }
 
@@ -173,7 +173,7 @@ pub fn retain_matching(
             WorthQueryRetainedPreImageSeal {
                 fields: Vec::new(),
                 absences: Vec::new(),
-                changed_output: None,
+                output_fields: None,
                 total_encoded_bytes: 0,
             },
         ));
@@ -205,7 +205,7 @@ pub fn retain_matching(
         WorthQueryRetainedPreImageSeal {
             fields,
             absences: Vec::new(),
-            changed_output: None,
+            output_fields: None,
             total_encoded_bytes: total,
         },
     ))
@@ -307,13 +307,13 @@ impl WorthQueryRetainedPreImageSeal {
     pub(in crate::domain_computation) fn into_parts(self) -> (
         Vec<WorthQueryRetainedPreImageFieldSeal>,
         Vec<crate::domain_computation::application_aftermath::retained_preimage::RetainedPreImageAbsence>,
-        Option<crate::domain_computation::application_aftermath::retained_preimage::RetainedChangedFieldOutput>,
+        Option<crate::domain_computation::application_aftermath::retained_preimage::RetainedOutputFields>,
         usize,
     ){
         (
             self.fields,
             self.absences,
-            self.changed_output,
+            self.output_fields,
             self.total_encoded_bytes,
         )
     }
@@ -343,6 +343,6 @@ impl WorthQueryRetainedPreImageFieldSeal {
 
 mod anchored;
 pub(super) use anchored::retain_from_authored_anchors;
-mod changed_fields;
-pub(super) use changed_fields::retain_changed_fields;
+mod output_fields;
+pub(super) use output_fields::retain_output_fields;
 mod court_doors_for_test;

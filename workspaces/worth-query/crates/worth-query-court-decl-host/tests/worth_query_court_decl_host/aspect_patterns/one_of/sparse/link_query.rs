@@ -5,6 +5,7 @@ use super::*;
 pub struct Row {
     pub targets: Vec<String>,
     pub annotation: Option<u64>,
+    pub note: Option<u64>,
 }
 pub struct Parameters;
 worth_query_structured_value_binding!(pub ParametersBinding for Parameters {identity: "native-record-patterns.sparse.link-parameters.v1"});
@@ -15,6 +16,11 @@ worth_query_portable_type!(AnnotationSlot => "native-record-patterns.sparse.anno
 fn annotation(
 ) -> ApplicationQueryOptionalAspectFieldRef<Query, AnnotationSlot, Schema, AnnotationValue> {
     ApplicationQueryOptionalAspectFieldRef::new("annotation", AnnotationValue::at("Value"))
+}
+pub struct NoteSlot;
+worth_query_portable_type!(NoteSlot => "native-record-patterns.sparse.note-slot.v1");
+fn note() -> ApplicationQueryOptionalAspectFieldRef<Query, NoteSlot, Schema, AnnotationNote> {
+    ApplicationQueryOptionalAspectFieldRef::new("note", AnnotationNote::at("Note"))
 }
 pub struct Links;
 pub struct TargetKey;
@@ -46,6 +52,7 @@ pub fn definition() -> ApplicationQueryDefinitionBuilder<Schema, Query, Paramete
             Record::reference(),
         )
         .optional_aspect_field(annotation())
+        .optional_aspect_field(note())
         .relation(links(), child)
         .build();
     ApplicationQueryDefinitionBuilder::declare(Query::reference())
@@ -63,7 +70,9 @@ impl WorthQueryApplicationProjection<Schema, Query> for Row {
         row: &WorthQueryApplicationProjectionRow<'_, Schema, Query>,
     ) -> Result<Self, WorthQueryApplicationProjectionDenial> {
         Ok(Self {
-            annotation: row.optional_aspect_field(annotation())?,
+            annotation: row
+                .optional_aspect_field(annotation())
+                .optional_aspect_field(note())?,
             targets: row
                 .many(links())?
                 .iter()

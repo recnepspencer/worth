@@ -1,7 +1,7 @@
-//! Capture each changed eligible locus on the authenticated preserved output.
+//! Capture selected original field truth on one authenticated output.
 use super::*;
 use crate::domain_computation::application_aftermath::retained_preimage::{
-    RetainedChangedFieldOutput, RetainedPreImageAbsence, RetainedPreImageAbsenceKind,
+    RetainedOutputFields, RetainedPreImageAbsence, RetainedPreImageAbsenceKind,
 };
 use crate::domain_computation::primary_graph::{
     application_attempt::WorthQueryApplicationObservedFact as Fact, WorthQueryPrimaryGraphLayout,
@@ -9,7 +9,7 @@ use crate::domain_computation::primary_graph::{
 
 /// O(L * (F + M)) for eligible loci L, admitted facts F and footprint membership M.
 /// A missing changed locus is an error, never inferred original absence.
-pub(in super::super) fn retain_changed_fields<'a>(
+pub(in super::super) fn retain_output_fields<'a>(
     demand: &InstalledPreImageDemand,
     facts: impl Iterator<Item = &'a WorthQueryPrimaryGraphApplicationDecisionFact>,
     mutation: &ValidatedMutationFootprint,
@@ -21,10 +21,8 @@ pub(in super::super) fn retain_changed_fields<'a>(
     let record = RecordRef::Entity(target);
     let mut fields = Vec::new();
     let mut absences = Vec::new();
-    let output = demand
-        .changed_output()
-        .ok_or(Denial::MissingDemandedField)?;
-    let mut total = 17usize
+    let output = demand.output_fields().ok_or(Denial::MissingDemandedField)?;
+    let mut total = 18usize
         .checked_add(output.role().len())
         .and_then(|n| n.checked_add(output.entity().len()))
         .ok_or(Denial::ExceedsByteBound)?;
@@ -36,6 +34,9 @@ pub(in super::super) fn retain_changed_fields<'a>(
             .field(locus.entity(), locus.aspect(), locus.field())
             .ok_or(Denial::MissingDemandedField)?;
         if !mutation.mutates_field(&record, &field.locator) {
+            if output.capture() == worth_query_declaration::facade::application_aftermath::PreImageOutputFieldCapture::CompleteRetired {
+                return Err(Denial::MissingDemandedField);
+            }
             continue;
         }
         let mut matched = facts.iter().filter_map(|fact| {
@@ -118,6 +119,21 @@ pub(in super::super) fn retain_changed_fields<'a>(
             _ => return Err(Denial::MissingDemandedField),
         }
     }
+    // An absent aspect cannot simultaneously supply a field value or field absence.
+    for absent in &absences {
+        if matches!(absent.kind, RetainedPreImageAbsenceKind::Aspect)
+            && (fields.iter().any(|field| {
+                field.locus.entity() == absent.locus.entity()
+                    && field.locus.aspect() == absent.locus.aspect()
+            }) || absences.iter().any(|field| {
+                matches!(field.kind, RetainedPreImageAbsenceKind::Field)
+                    && field.locus.entity() == absent.locus.entity()
+                    && field.locus.aspect() == absent.locus.aspect()
+            }))
+        {
+            return Err(Denial::AmbiguousDemandedField);
+        }
+    }
     if fields.is_empty() && absences.is_empty() && demand.relations().is_empty() {
         return Err(Denial::NoMutatedRecord);
     }
@@ -126,9 +142,9 @@ pub(in super::super) fn retain_changed_fields<'a>(
             fields,
             absences,
             total_encoded_bytes: total,
-            changed_output: Some(RetainedChangedFieldOutput {
+            output_fields: Some(RetainedOutputFields {
                 output: demand
-                    .changed_output()
+                    .output_fields()
                     .ok_or(Denial::MissingDemandedField)?
                     .clone(),
                 target,

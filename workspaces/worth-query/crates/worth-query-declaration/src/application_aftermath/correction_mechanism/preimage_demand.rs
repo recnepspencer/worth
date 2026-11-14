@@ -7,7 +7,10 @@ pub struct DeclaredPreImageDemand<Schema> {
     relations: Vec<super::DeclaredPreImageRelationLocus<Schema>>,
     maximum_encoded_bytes: usize,
     created_entity: bool,
-    changed_output: Option<crate::application_operation::ApplicationMutationOutputRoleDescriptor>,
+    output_fields: Option<(
+        super::PreImageOutputFieldCapture,
+        crate::application_operation::ApplicationMutationOutputRoleDescriptor,
+    )>,
 }
 
 impl<Schema> DeclaredPreImageDemand<Schema> {
@@ -17,7 +20,7 @@ impl<Schema> DeclaredPreImageDemand<Schema> {
             relations: Vec::new(),
             maximum_encoded_bytes: 0,
             created_entity: true,
-            changed_output: None,
+            output_fields: None,
         }
     }
     /// Records a demand expression; operation association checks its bounds.
@@ -30,7 +33,7 @@ impl<Schema> DeclaredPreImageDemand<Schema> {
             relations: Vec::new(),
             maximum_encoded_bytes,
             created_entity: false,
-            changed_output: None,
+            output_fields: None,
         }
     }
 
@@ -43,7 +46,19 @@ impl<Schema> DeclaredPreImageDemand<Schema> {
         maximum_encoded_bytes: usize,
     ) -> Self {
         let mut demand = Self::new(loci, maximum_encoded_bytes);
-        demand.changed_output = Some(output);
+        demand.output_fields = Some((super::PreImageOutputFieldCapture::ChangedPreserved, output));
+        demand
+    }
+
+    /// Retain every declared field's original value or authenticated absence on
+    /// one actual retired output. Installation requires its authored lifecycle.
+    pub fn retired_fields_for_output(
+        output: crate::application_operation::ApplicationMutationOutputRoleDescriptor,
+        loci: impl IntoIterator<Item = DeclaredPreImageLocus<Schema>>,
+        maximum_encoded_bytes: usize,
+    ) -> Self {
+        let mut demand = Self::new(loci, maximum_encoded_bytes);
+        demand.output_fields = Some((super::PreImageOutputFieldCapture::CompleteRetired, output));
         demand
     }
 
@@ -66,12 +81,9 @@ impl<Schema> DeclaredPreImageDemand<Schema> {
     }
 
     pub(crate) fn validate(&self) -> Result<(), DeclaredPreImageDemandDenial> {
-        if let Some(output) = self.changed_output {
-            use crate::application_operation::{
-                ApplicationMutationOutputPosture as Posture,
-                ApplicationMutationOutputRoleCardinality as Cardinality,
-            };
-            if output.posture() != Posture::Preserve
+        if let Some((capture, output)) = self.output_fields {
+            use crate::application_operation::ApplicationMutationOutputRoleCardinality as Cardinality;
+            if output.posture() != capture.posture()
                 || output.cardinality() != Cardinality::ExactlyOne
                 || self.loci.is_empty()
                 || self
@@ -79,7 +91,7 @@ impl<Schema> DeclaredPreImageDemand<Schema> {
                     .iter()
                     .any(|locus| locus.entity() != output.entity())
             {
-                return Err(DeclaredPreImageDemandDenial::InvalidChangedFieldOutput);
+                return Err(DeclaredPreImageDemandDenial::InvalidOutputFieldCapture);
             }
         }
         if self.created_entity {
@@ -119,10 +131,11 @@ impl<Schema> DeclaredPreImageDemand<Schema> {
 
     pub(super) fn into_portable(self) -> PortablePreImageDemand {
         PortablePreImageDemand {
-            changed_output: self.changed_output.map(|output| {
-                super::PortableChangedFieldOutput::from_untrusted_fields(
+            output_fields: self.output_fields.map(|(capture, output)| {
+                super::PortablePreImageFieldOutput::from_untrusted_fields(
                     output.name().to_owned(),
                     output.entity().to_owned(),
+                    capture,
                 )
             }),
             loci: self
@@ -167,7 +180,7 @@ impl<Schema> Clone for DeclaredPreImageDemand<Schema> {
             relations: self.relations.clone(),
             maximum_encoded_bytes: self.maximum_encoded_bytes,
             created_entity: self.created_entity,
-            changed_output: self.changed_output,
+            output_fields: self.output_fields,
         }
     }
 }
@@ -180,7 +193,7 @@ impl<Schema> fmt::Debug for DeclaredPreImageDemand<Schema> {
             .field("relations", &self.relations)
             .field("maximum_encoded_bytes", &self.maximum_encoded_bytes)
             .field("created_entity", &self.created_entity)
-            .field("changed_output", &self.changed_output)
+            .field("output_fields", &self.output_fields)
             .finish()
     }
 }
@@ -191,7 +204,7 @@ impl<Schema> PartialEq for DeclaredPreImageDemand<Schema> {
             && self.relations == other.relations
             && self.maximum_encoded_bytes == other.maximum_encoded_bytes
             && self.created_entity == other.created_entity
-            && self.changed_output == other.changed_output
+            && self.output_fields == other.output_fields
     }
 }
 
@@ -210,14 +223,14 @@ impl<Schema> Ord for DeclaredPreImageDemand<Schema> {
             &self.relations,
             self.maximum_encoded_bytes,
             self.created_entity,
-            self.changed_output,
+            self.output_fields,
         )
             .cmp(&(
                 &other.loci,
                 &other.relations,
                 other.maximum_encoded_bytes,
                 other.created_entity,
-                other.changed_output,
+                other.output_fields,
             ))
     }
 }
@@ -228,5 +241,5 @@ pub enum DeclaredPreImageDemandDenial {
     EmptyLocusAxis,
     ZeroByteBound,
     DuplicateLocus,
-    InvalidChangedFieldOutput,
+    InvalidOutputFieldCapture,
 }

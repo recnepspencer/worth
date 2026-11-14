@@ -47,7 +47,7 @@ fn capture(ledger: &MaterialCatalog) -> MaterialRecord {
             scope: Some(scope()),
             disclosure: None,
             preimage: Some(Vec::new()),
-            changed_fields: None,
+            output_fields: None,
             content: Default::default(),
         }),
     }
@@ -232,23 +232,21 @@ fn pin_owners_cannot_be_replaced_without_the_prepared_to_publication_handoff() {
 mod terminal;
 
 #[test]
-fn changed_fields_capture_retains_explicit_absence_across_the_material_roundtrip() {
+fn output_fields_capture_retains_mode_and_absence_across_the_material_roundtrip() {
     use super::super::record::{
-        RecordedAbsenceKind, RecordedChangedFields, RecordedPreImageAbsence,
+        RecordedAbsenceKind, RecordedFieldCapture, RecordedOutputFields, RecordedPreImageAbsence,
     };
     let ledger = catalog();
     let mut record = capture(&ledger);
-    let strict = record.encode().unwrap();
-    let strict_body: serde_json::Value = serde_json::from_slice(&strict).unwrap();
-    assert_eq!(strict_body["version"], 1);
-    assert!(!String::from_utf8(strict.clone())
-        .unwrap()
-        .contains("changed_fields"));
+    let strict: serde_json::Value = serde_json::from_slice(&record.encode().unwrap()).unwrap();
+    assert_eq!(strict["version"], 3);
+    assert!(strict["body"]["material"]["output_fields"].is_null());
     let MaterialRecord::Capture { material } = &mut record else {
         unreachable!()
     };
-    material.changed_fields = Some(RecordedChangedFields {
-        role: "kept-record".into(),
+    material.output_fields = Some(RecordedOutputFields {
+        capture: RecordedFieldCapture::ChangedPreserved,
+        role: "selected-record".into(),
         entity: "Record".into(),
         target: entity(),
         absences: vec![RecordedPreImageAbsence {
@@ -264,62 +262,53 @@ fn changed_fields_capture_retains_explicit_absence_across_the_material_roundtrip
             absence: RecordedAbsenceKind::Aspect,
         }],
     });
-    let changed = material.changed_fields.as_mut().unwrap();
-    let mut absent_field = changed.absences[0].clone();
+    let output = material.output_fields.as_mut().unwrap();
+    let mut absent_field = output.absences[0].clone();
+    absent_field.aspect = "Present".into();
     absent_field.field = "optional-field".into();
+    absent_field.location.aspect = "Present".into();
     absent_field.location.fields = vec!["optional-field".into()];
     absent_field.absence = RecordedAbsenceKind::Field;
-    changed.absences.push(absent_field);
-    let valid = record.clone();
+    output.absences.push(absent_field);
+    for mode in [
+        RecordedFieldCapture::ChangedPreserved,
+        RecordedFieldCapture::CompleteRetired,
+    ] {
+        if let MaterialRecord::Capture { material } = &mut record {
+            material.output_fields.as_mut().unwrap().capture = mode;
+        }
+        let encoded = record.encode().unwrap();
+        let frame = QueryCorrectionMaterialFrame::prepare(
+            ledger.home,
+            NonZeroU64::MIN,
+            [0; 32],
+            NonZeroU64::MIN,
+            RetentionClass::MandatoryObligation,
+            &encoded,
+        )
+        .unwrap();
+        assert_eq!(MaterialRecord::decode(&frame).unwrap(), record);
+        let cold = QueryCorrectionMaterialFrame::readmit(frame.bytes().to_vec()).unwrap();
+        assert_eq!(MaterialRecord::decode(&cold).unwrap(), record);
+    }
+    let mut contradictory = record.clone();
+    if let MaterialRecord::Capture { material } = &mut contradictory {
+        let output = material.output_fields.as_mut().unwrap();
+        output.absences[1].aspect = "Optional".into();
+        output.absences[1].location.aspect = "Optional".into();
+    }
+    assert_eq!(
+        contradictory.encode(),
+        Err(Denial::MalformedFrame),
+        "one original aspect cannot be absent and contain an absent field"
+    );
     if let MaterialRecord::Capture { material } = &mut record {
-        let changed = material.changed_fields.as_mut().unwrap();
-        changed.absences.push(changed.absences[0].clone());
+        let output = material.output_fields.as_mut().unwrap();
+        output.absences.push(output.absences[0].clone());
     }
     assert_eq!(
         record.encode(),
         Err(Denial::MalformedFrame),
-        "contradictory/repeated presence has no canonical retained record"
-    );
-    record = valid;
-    let encoded = record.encode().unwrap();
-    let mut body: serde_json::Value = serde_json::from_slice(&encoded).unwrap();
-    assert_eq!(body["version"], 2);
-    let frame = QueryCorrectionMaterialFrame::prepare(
-        ledger.home,
-        NonZeroU64::MIN,
-        [0; 32],
-        NonZeroU64::MIN,
-        RetentionClass::MandatoryObligation,
-        &encoded,
-    )
-    .unwrap();
-    assert_eq!(MaterialRecord::decode(&frame).unwrap(), record);
-    let decoded = MaterialRecord::decode(
-        &QueryCorrectionMaterialFrame::readmit(frame.bytes().to_vec()).unwrap(),
-    )
-    .unwrap();
-    assert_eq!(decoded, record);
-    body["version"] = serde_json::json!(1);
-    let forged_legacy = QueryCorrectionMaterialFrame::prepare(
-        ledger.home,
-        NonZeroU64::MIN,
-        [0; 32],
-        NonZeroU64::MIN,
-        RetentionClass::MandatoryObligation,
-        &serde_json::to_vec(&body).unwrap(),
-    )
-    .unwrap();
-    assert_eq!(
-        MaterialRecord::decode(&forged_legacy),
-        Err(Denial::MalformedFrame),
-        "legacy material cannot acquire authenticated absence by adding a default field"
-    );
-    if let MaterialRecord::Capture { material } = &mut record {
-        material.changed_fields = None;
-    }
-    assert_eq!(
-        record.encode().unwrap(),
-        strict,
-        "strict producer bytes are unchanged"
+        "repeated or conflicting field truth has no canonical material record"
     );
 }

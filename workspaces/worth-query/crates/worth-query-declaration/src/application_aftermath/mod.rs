@@ -47,8 +47,9 @@ pub use correction_mechanism::{
     DeclaredCompensation, DeclaredCorrectionMechanism, DeclaredCorrectionMechanismDenial,
     DeclaredLoweringCorrespondenceRef, DeclaredPreImageDemand, DeclaredPreImageDemandDenial,
     DeclaredPreImageLocus, DeclaredPreImageRelationLocus, DeclaredRecordedInverse,
-    PortableChangedFieldOutput, PortableCorrectionMechanism, PortablePreImageDemand,
+    PortableCorrectionMechanism, PortablePreImageDemand, PortablePreImageFieldOutput,
     PortablePreImageLocus, PortablePreImageRelationLocus, PortableRecordedInverse,
+    PreImageOutputFieldCapture,
 };
 pub use postcondition::DeclaredAftermathPostcondition;
 pub use reconciliation::DeclaredReconciliationProcedure;

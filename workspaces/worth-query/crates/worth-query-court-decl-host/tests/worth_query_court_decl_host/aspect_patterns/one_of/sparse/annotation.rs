@@ -15,14 +15,17 @@ impl Annotation {
 }
 pub struct AnnotationRow {
     pub value: u64,
+    pub note: Option<u64>,
 }
 impl fragment::Record<AnnotationRow> for PatternModelBindings {
     fn record() -> impl Shape<AnnotationRow, Self> {
-        fragment::field("Value", |row: &AnnotationRow| row.value).build(
-            |value, _: &mut ValueDecodeAdmission<'_>| {
-                Ok::<_, std::convert::Infallible>(AnnotationRow { value })
-            },
-        )
+        fragment::field("Value", |row: &AnnotationRow| row.value)
+            .and("Note", |row: &AnnotationRow| row.note)
+            .build(|value, note, _: &mut ValueDecodeAdmission<'_>| {
+                Ok::<_, std::convert::Infallible>(AnnotationRow { value, note })
+            })
     }
 }
 pub type AnnotationValue = FieldSelection<PatternModel, Record, Annotation, u64>;
+
+pub type AnnotationNote = FieldSelection<PatternModel, Record, Annotation, u64>;
