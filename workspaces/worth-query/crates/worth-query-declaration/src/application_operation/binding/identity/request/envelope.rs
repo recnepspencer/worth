@@ -135,6 +135,7 @@ struct EditConnectionIntent {
     required: bool,
     exports: bool,
     demand_only: bool,
+    discovered_root: bool,
 }
 impl ApplicationEditStageIntent {
     pub fn new<S, B, R>(input: &ApplicationEncodedInput<B::InputBinding>) -> Self
@@ -156,6 +157,7 @@ impl ApplicationEditStageIntent {
                 required: connection.target_required(),
                 exports: connection.exports_across_instances(),
                 demand_only: connection.is_demand_only_root(),
+                discovered_root: connection.is_discovered_root(),
             })
             .collect();
         Self {
@@ -173,7 +175,7 @@ impl<Key: Serialize> ApplicationEditEnvelopeKey<Key> {
         stages: &[ApplicationEditStageIntent],
     ) -> Result<ApplicationEditIntentIdentity, ApplicationValueEncodeDenial> {
         super::super::canonical_identity(
-            "worth-query.edit-envelope-intent.v1",
+            "worth-query.edit-envelope-intent.v2",
             &self.namespace,
             &(self.canonical.identity, order, stages),
         )

@@ -20,7 +20,9 @@ pub struct ApplicationDemandOutputGraph<RootConnection, Dependents> {
     marker: PhantomData<fn() -> (RootConnection, Dependents)>,
 }
 
-/// A performed action whose required root outputs are discovered at its retained commit.
+/// A performed action whose roots are discovered from its authored result.
+/// Runtime envelopes discover at the actual appended candidate; standalone
+/// delivery retains the committed source until its discovered outputs settle.
 pub struct ApplicationDiscoveredOutputGraph<RootConnection, Dependents> {
     marker: PhantomData<fn() -> (RootConnection, Dependents)>,
 }

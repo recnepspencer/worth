@@ -48,7 +48,7 @@ pub struct WorthQueryPreparedCorrectionSource {
     target_parent: RelationalCommitReceipt,
     target_branch: BranchId,
     intent: WorthQueryCorrectionIntent,
-    required_root: Option<crate::equality_type_id::EqualityTypeId>,
+    required_root: Option<PreparedOutputRootKind>,
     target_program: crate::domain_computation::primary_graph::program_occurrence::WorthQueryProgramSupportInterpretation,
 }
 
@@ -351,10 +351,7 @@ impl WorthQueryPreparedCorrectionSource {
     pub(crate) fn matches_input(&self, identity: &[u8; 32]) -> bool {
         self.action_input == *identity
     }
-    pub(crate) fn requires_root(
-        &self,
-        root: Option<crate::equality_type_id::EqualityTypeId>,
-    ) -> bool {
+    pub(crate) fn requires_root(&self, root: Option<PreparedOutputRootKind>) -> bool {
         self.required_root == root
     }
 
