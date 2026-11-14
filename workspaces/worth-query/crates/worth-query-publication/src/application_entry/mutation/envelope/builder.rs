@@ -7,13 +7,13 @@ pub struct WithEditStage<Previous, Root, Intent> {
     pub(super) marker: PhantomData<fn() -> Root>,
 }
 pub struct WorthQueryEditEnvelope<'a, S, Stages> {
-    context: EnvelopeContext<'a, S>,
-    stages: Stages,
-    brand: Arc<()>,
+    pub(super) context: EnvelopeContext<'a, S>,
+    pub(super) stages: Stages,
+    pub(super) brand: Arc<()>,
 }
 pub struct WorthQueryKeyedEditEnvelope<'a, S, Stages, Key> {
-    envelope: WorthQueryEditEnvelope<'a, S, Stages>,
-    key: Key,
+    pub(super) envelope: WorthQueryEditEnvelope<'a, S, Stages>,
+    pub(super) key: Key,
 }
 impl<'a, S: ApplicationSchema> WorthQueryApplicationRequest<'a, 'a, 'a, S> {
     pub fn edit_envelope(&self) -> WorthQueryEditEnvelope<'a, S, NoEditStages> {
@@ -23,6 +23,8 @@ impl<'a, S: ApplicationSchema> WorthQueryApplicationRequest<'a, 'a, 'a, S> {
                 principal: self.principal,
                 scope: self.scope,
                 branch: self.branch,
+                order: ApplicationEditEnvelopeOrder::DeclaredDependencies,
+                correction: None,
             },
             stages: NoEditStages,
             brand: Arc::new(()),
@@ -82,10 +84,33 @@ where
         Stages: entry::CaptureEditStages<S, Program, Key>,
         Key: serde::Serialize + Send + Sync + 'static,
     {
+        self.execute_with_front(program, allocation, |_, _, _, _, _| Ok(None))
+    }
+
+    pub(in crate::application_entry) fn execute_with_front<Program>(
+        self,
+        program: &WorthQueryProgramApplicationRuntime<S, Program>,
+        allocation: ExecutionAllocationPolicy<'_, '_>,
+        front: impl FnOnce(
+            &mut EnvelopeContext<'_, S>,
+            &WorthQueryProgramApplicationRuntime<S, Program>,
+            &WorthQueryAdvancementPhase<'_>,
+            &Arc<ApplicationEditEnvelopeKey<Key>>,
+            &mut Vec<Box<dyn entry::EditEntry<S, Program, Key>>>,
+        ) -> Result<
+            Option<WorthQueryEditEnvelopeOutcome>,
+            WorthQueryEditEnvelopeExecutionDenial,
+        >,
+    ) -> Result<WorthQueryEditEnvelopeOutcome, WorthQueryEditEnvelopeExecutionDenial>
+    where
+        Program: ApplicationProgramDefinition<S>,
+        Stages: entry::CaptureEditStages<S, Program, Key>,
+        Key: serde::Serialize + Send + Sync + 'static,
+    {
         let envelope_failure = |cause| {
             WorthQueryEditEnvelopeExecutionDenial::envelope(Program::IDENTITY.as_str(), cause)
         };
-        let context = self.envelope.context;
+        let mut context = self.envelope.context;
         context.application.with_funded_application_advancement(
             context.scope,
             allocation,
@@ -100,12 +125,15 @@ where
                         .map_err(envelope_failure)?,
                 );
                 let mut entries = Vec::new();
-                self.envelope.stages.capture(&context, program, &key, &mut entries)?;
+                if let Some(outcome) = front(&mut context, program, &phase, &key, &mut entries)? {
+                    return Ok(outcome);
+                }
+                self.envelope.stages.capture(&mut entries)?;
                 if entries.is_empty() {
                     return Ok(WorthQueryEditEnvelopeOutcome::Empty);
                 }
                 let intents = entries.iter().map(|entry| entry.intent()).collect::<Vec<_>>();
-                let intent = key.intent(&intents)
+                let intent = key.intent(context.order, &intents)
                     .map_err(|cause| crate::application_entry::WorthQueryPerformedMutationExecutionDenial::Mutation(
                         WorthQueryApplicationRequestMutationDenial::Identity(
                             ApplicationMutationIdentityDenial::Input(cause),

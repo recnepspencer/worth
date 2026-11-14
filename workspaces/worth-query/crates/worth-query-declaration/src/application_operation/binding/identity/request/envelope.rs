@@ -96,11 +96,23 @@ impl<Key: Serialize> ApplicationEditEnvelopeKey<Key> {
 
 /// Canonical intent of the complete ordered stage list. The input and root
 /// names come from the same nominal bindings that execute each stage.
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
+pub enum ApplicationEditEnvelopeOrder {
+    DeclaredDependencies,
+    OrderedAuthored,
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct ApplicationEditIntentIdentity([u8; 32]);
+pub struct ApplicationEditIntentIdentity {
+    identity: [u8; 32],
+    order: ApplicationEditEnvelopeOrder,
+}
 impl ApplicationEditIntentIdentity {
     pub const fn identity(&self) -> &[u8; 32] {
-        &self.0
+        &self.identity
+    }
+    pub const fn order(&self) -> ApplicationEditEnvelopeOrder {
+        self.order
     }
 }
 
@@ -154,16 +166,21 @@ impl ApplicationEditStageIntent {
     }
 }
 impl<Key: Serialize> ApplicationEditEnvelopeKey<Key> {
+    /// One full intent binds the explicit execution mode and original stage order.
     pub fn intent(
         &self,
+        order: ApplicationEditEnvelopeOrder,
         stages: &[ApplicationEditStageIntent],
     ) -> Result<ApplicationEditIntentIdentity, ApplicationValueEncodeDenial> {
         super::super::canonical_identity(
             "worth-query.edit-envelope-intent.v1",
             &self.namespace,
-            &(self.canonical.identity, stages),
+            &(self.canonical.identity, order, stages),
         )
-        .map(|canonical| ApplicationEditIntentIdentity(canonical.identity))
+        .map(|canonical| ApplicationEditIntentIdentity {
+            identity: canonical.identity,
+            order,
+        })
         .map_err(|_| {
             super::super::rejected(
                 crate::portable_identity::WorthQueryPortableTypeIdentity::declared(

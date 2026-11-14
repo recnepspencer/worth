@@ -13,6 +13,16 @@ Leave unaffected tests alone. When an affected fixture obstructs the change or
 makes its certification fragile, simplify or replace it within the task. Defer
 unrelated suite improvements.
 
+## Preproduction
+
+WORTH is not in production. Do not preserve obsolete APIs, stored formats,
+fixtures or golden bytes for backward compatibility. Within the change's
+scope, delete displaced implementations, adapters, migrations and
+compatibility-only tests; use one current representation. Recreate development
+artifacts instead of migrating them. Preserve required current-version replay,
+undo and recovery behavior. Add backward compatibility only when the user
+explicitly requests it.
+
 ## When a test fails after your change, classify it first
 
 1. The change intentionally alters the contract: update obsolete expectations.

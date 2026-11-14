@@ -21,6 +21,18 @@ pub(super) trait RequiredTree<S: ApplicationSchema>: Send + 'static {
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
         wave: &mut SynchronousOutputWave<S>,
     ) -> Result<(), SynchronousOutputFailure>;
+    fn occurrence(
+        &self,
+        context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        candidate: &RelationalAuthoredCoupledCandidate<'_>,
+    ) -> Result<Option<occurrences::OccurrenceKey>, SynchronousOutputFailure>;
+    fn prerequisites(
+        &self,
+        context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        pin: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
+        source: worth_relational::facade::identity::EntityId,
+        next: &mut SynchronousOutputWave<S>,
+    ) -> Result<(), SynchronousOutputFailure>;
     fn prepare(
         &self,
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
@@ -78,6 +90,59 @@ where
                 })
             },
         )
+    }
+    fn occurrence(
+        &self,
+        context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        candidate: &RelationalAuthoredCoupledCandidate<'_>,
+    ) -> Result<Option<occurrences::OccurrenceKey>, SynchronousOutputFailure> {
+        if !E::occurrence_component() {
+            return Ok(None);
+        }
+        let demand = source::capture::<S, D>(self.connection, self.demand.clone());
+        let principal = context.owner.principal.ok_or_else(|| {
+            occurrences::refusal(self.connection, "current principal unavailable")
+        })?;
+        let reader = context
+            .owner
+            .application
+            .installed_producers
+            .declared_coupled_source(&demand)
+            .map_err(CoupledSourceReadStop::from)?;
+        let route = reader.coupled_executor().read_coupled_source(
+            context.execution,
+            context.owner.application,
+            principal,
+            context.owner.request,
+            context.owner.before,
+            context.before,
+            &demand,
+            candidate,
+            true,
+        )?;
+        match route {
+            super::super::execution::CoupledSourceRead::Route { scope, partition } => {
+                Ok(Some(occurrences::OccurrenceKey {
+                    family: demand.family,
+                    source_binding: demand.source_binding_type,
+                    scope,
+                    partition,
+                }))
+            }
+            _ => Err(occurrences::refusal(
+                self.connection,
+                "route-only source returned a result",
+            )),
+        }
+    }
+    fn prerequisites(
+        &self,
+        context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        pin: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
+        source: worth_relational::facade::identity::EntityId,
+        next: &mut SynchronousOutputWave<S>,
+    ) -> Result<(), SynchronousOutputFailure> {
+        E::prerequisites(context, pin, source, &self.demand, next)
     }
     fn prepare(
         &self,

@@ -150,19 +150,97 @@ impl ApplicationProgramDefinition<Schema> for Program {
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("owned-outputs.interleaved");
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
-        let mut specs = hierarchy::Program::feature_specs();
-        specs[0] = base::entry_spec_with_envelope_deliveries::<
-            Completion,
-            Completion,
-            fixture::Delivery<ModelTree>,
-            Completion,
-            fixture::Delivery<ModelTree>,
-            Completion,
-            Completion,
-            Completion,
-            Completion,
-            Completion,
-        >();
-        specs
+        feature_specs::<Completion>()
+    }
+}
+// The real retirement journey returns an installed root as well as its final
+// authored Edit. Existing completion-only retirement callers keep their route.
+pub struct RetirementProgram;
+impl ApplicationProgramDefinition<Schema> for RetirementProgram {
+    type Contributions = (Contribution,);
+    type Outputs = ApplicationProgramOutputs<(ModelTree, (ProducedTree, OwnedMemberTree))>;
+    type Rules = ApplicationRuleLeaf;
+    const IDENTITY: ApplicationProgramIdentity =
+        ApplicationProgramIdentity::new("owned-outputs.interleaved-retirement");
+    fn feature_specs() -> Vec<ApplicationFeatureSpec> {
+        feature_specs::<fixture::Delivery<ModelTree>>()
+    }
+}
+pub struct OwnedMemberRoot;
+impl ApplicationConnectionIdentity for OwnedMemberRoot {
+    const IDENTITY: &'static str = "interleaved.owned-member-root";
+}
+impl ApplicationOccurrenceConnectionBinding<Schema, base::Entry, hierarchy::Child>
+    for OwnedMemberRoot
+{
+}
+pub type OwnedMemberTree = ApplicationDemandOutputGraph<
+    ApplicationConnectionRef<
+        Schema,
+        base::Entry,
+        base::EntryOutput,
+        hierarchy::Child,
+        hierarchy::SeedInput,
+        OwnedMemberRoot,
+    >,
+    ApplicationOutputLeaf,
+>;
+impl WorthQueryApplicationRequiredOutputConnection<Schema> for OwnedMemberRoot {
+    type Source = downstream::initial::Binding;
+    type Demand = downstream::Demand;
+    const IDENTITY: &'static str = <Self as ApplicationConnectionIdentity>::IDENTITY;
+    fn demand_from_source(
+        input: &downstream::initial::Input,
+    ) -> Result<Self::Demand, WorthQueryRequiredOutputConnectionDenial> {
+        Ok(downstream::Demand(input.0.key.clone()))
+    }
+}
+fn feature_specs<
+    Retire: ApplicationActionDelivery<Schema, super::super::super::authored_member::retire::Binding>,
+>() -> Vec<ApplicationFeatureSpec> {
+    let mut specs = hierarchy::Program::feature_specs();
+    specs[0] = base::envelope_actions::<
+        fixture::Delivery<ModelTree>,
+        Completion,
+        fixture::Delivery<ModelTree>,
+        Completion,
+        Completion,
+        Completion,
+        Completion,
+    >(base::entry_builder_with_retirement::<
+        Completion,
+        Completion,
+        fixture::Delivery<ModelTree>,
+        Retire,
+    >())
+    .action::<created::Binding, fixture::Delivery<ModelTree>>()
+    .finish_action()
+    .finish();
+    specs
+}
+
+impl WorthQueryApplicationRequiredOutputSource<Schema, ModelRoot> for created::Binding {
+    fn demand_from_source(
+        _: &created::Intent,
+    ) -> Result<first::Demand, WorthQueryRequiredOutputConnectionDenial> {
+        Ok(first::Demand("a".into()))
+    }
+}
+impl WorthQueryApplicationRequiredOutputSource<Schema, ModelRoot>
+    for super::super::super::authored_member::restore::Binding
+{
+    fn demand_from_source(
+        _: &super::super::super::authored_member::restore::Intent,
+    ) -> Result<first::Demand, WorthQueryRequiredOutputConnectionDenial> {
+        Ok(first::Demand("a".into()))
+    }
+}
+impl WorthQueryApplicationRequiredOutputSource<Schema, ModelRoot>
+    for super::super::super::authored_member::retire::Binding
+{
+    fn demand_from_source(
+        _: &super::super::super::authored_member::retire::Intent,
+    ) -> Result<first::Demand, WorthQueryRequiredOutputConnectionDenial> {
+        Ok(first::Demand("a".into()))
     }
 }

@@ -16,6 +16,19 @@ where
     B::Result: Send,
     B::Denial: Send,
 {
+    fn order_authored(&self) {
+        self.ordered
+            .store(true, std::sync::atomic::Ordering::Relaxed);
+    }
+    fn bind_correction(
+        &self,
+        intent: crate::domain_computation::primary_graph::WorthQueryCorrectionIntent,
+    ) {
+        *self
+            .correction
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner) = Some(intent);
+    }
     fn product(
         &self,
         context: &AuthoredEditStageContext<'_, '_, '_, S>,
@@ -101,7 +114,7 @@ where
                 Ok(_) => denial,
             }
         };
-        let admission = (self.admit)(context)?;
+        let admission = self.execution_admission(context)?;
         if admission.operation.scope_entity_id() != self.source {
             return Err(refuse(
                 "the admitted stage source changed before candidate execution".into(),

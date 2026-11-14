@@ -77,6 +77,48 @@ impl ValidatedRelationalProposal {
         members: &[RecordedMemberRestoration<'_>],
         member_kinds: &[KindId],
     ) -> Result<ValidatedRelationMutationFootprint, TransactionCommitError> {
+        self.project_relation_mutations(execution, kinds, members, member_kinds, false)
+    }
+    /// The actual root writer's inverse material, excluding every later stage
+    /// and producer. The range is Native-issued, never a caller-supplied subset.
+    /// An uncoupled proposal is its whole root; a genuine empty root stays empty.
+    pub fn authored_prefix_relation_mutation_footprint(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        kinds: &[KindId],
+        members: &[RecordedMemberRestoration<'_>],
+        member_kinds: &[KindId],
+    ) -> Result<ValidatedRelationMutationFootprint, TransactionCommitError> {
+        self.project_relation_mutations(execution, kinds, members, member_kinds, true)
+    }
+    fn project_relation_mutations(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        kinds: &[KindId],
+        members: &[RecordedMemberRestoration<'_>],
+        member_kinds: &[KindId],
+        prefix_only: bool,
+    ) -> Result<ValidatedRelationMutationFootprint, TransactionCommitError> {
+        let prefix_records = if prefix_only {
+            match self
+                .state
+                .required_output_publication
+                .as_ref()
+                .map(|a| &a.publication)
+            {
+                Some(crate::mvcc::RequiredOutputPublication::CoupledAuthored { group }) => Some(
+                    group
+                        .authored_records
+                        .get(..group.authored_prefix_records)
+                        .ok_or_else(|| {
+                            crate::mvcc::origin_denial("coupled authored root range unavailable")
+                        })?,
+                ),
+                _ => None,
+            }
+        } else {
+            None
+        };
         let fragments = &self
             .state
             .proposed_mutation
@@ -89,15 +131,40 @@ impl ValidatedRelationalProposal {
             .required_output_publication
             .as_ref()
             .and_then(|admission| admission.publication.authored_restoration());
-        let anchors = restoration.map_or(0, |restoration| {
-            restoration
-                .retirement
-                .authored_source_retirement()
-                .expect("Native restoration")
-                .co_anchors
-                .len()
-                + 1
-        });
+        let corrective_root = if prefix_only {
+            self.state
+                .required_output_publication
+                .as_ref()
+                .and_then(|admission| match &admission.publication {
+                    crate::mvcc::RequiredOutputPublication::CoupledAuthored { group } => group
+                        .binding
+                        .owners
+                        .corrective_root
+                        .as_ref()
+                        .map(|(_, targets)| targets.elements()),
+                    _ => None,
+                })
+        } else {
+            None
+        };
+        let anchors = corrective_root.map_or_else(
+            || {
+                restoration.map_or(0, |restoration| {
+                    restoration
+                        .retirement
+                        .authored_source_retirement()
+                        .expect("Native restoration")
+                        .co_anchors
+                        .len()
+                        + 1
+                })
+            },
+            |targets| targets.len(),
+        );
+        // Both routes enter the same allocation resolution and root-membership
+        // projection. The binder already refused conflict with a real plan.
+        let anchor_targets =
+            corrective_root.or_else(|| restoration.map(|plan| plan.entities.as_slice()));
         let restored_capacity = anchors.checked_add(members.len()).ok_or_else(|| {
             stop(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow)
         })?;
@@ -139,16 +206,30 @@ impl ValidatedRelationalProposal {
             })?;
         let mut member_refusal = None;
         execution.run_native_with_checkpoint(|context| {
-            if let Some(restoration) = restoration {
-                for (original, target) in restoration.entities.iter().take(anchors) {
+            if let Some(targets) = anchor_targets {
+                for (original, target) in targets.iter().take(anchors) {
                     let created = &self.state.proposed_mutation.outcome.created_entities;
                     checkpoint(context, created.resolve_work_bound(target).ok_or_else(|| stop(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow))?).map_err(stop)?;
                     let actual = created.resolve(target).ok_or_else(|| crate::mvcc::origin_denial("authored inverse anchor has no actual allocation"))?;
+                    if let Some(root) = prefix_records {
+                        checkpoint(context, root.len() as u64).map_err(stop)?;
+                        if !root.contains(&RecordRef::Entity(actual)) {
+                            return Err(crate::mvcc::origin_denial("restoration anchor is outside the actual authored root"));
+                        }
+                    }
+                    checkpoint(context, restored_entities.len() as u64).map_err(stop)?;
+                    if restored_entities.iter().any(|(known, allocated)| known == original || *allocated == actual) {
+                        return Err(crate::mvcc::origin_denial("ambiguous actual authored root correspondence"));
+                    }
                     restored_entities.push((*original, actual));
                 }
             }
             for fragment in fragments {
                 checkpoint(context, 1).map_err(stop)?;
+                if let Some(root) = prefix_records {
+                    checkpoint(context, root.len() as u64).map_err(stop)?;
+                    if !root.contains(&fragment.target) { continue; }
+                }
                 if !(members.is_empty() && member_kinds.is_empty())
                     && let RecordRef::Entity(entity) = fragment.target
                     && fragment.structural_change == crate::publication::patch::data::RecordStructuralChange::Created {

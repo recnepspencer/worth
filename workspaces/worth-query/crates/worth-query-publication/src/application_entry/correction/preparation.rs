@@ -10,6 +10,8 @@ use worth_query_declaration::facade::{
 use worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase;
 mod binding;
 mod candidate;
+mod envelope;
+mod envelope_reapplication;
 mod operation;
 mod reapplication;
 mod required_output;

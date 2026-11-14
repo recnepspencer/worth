@@ -12,9 +12,9 @@ This ledger lists existing court assertions CP3 changed and any typed-error or s
 
 ### Stored format
 
-- The one addition is `CanonicalCoupledAuthoredSources::Stages(Vec<EntityId>)`, appended last in the enum. No existing variant, field or tag changes, so existing stores decode unchanged.
-- The Native cold court reopens a `Stages` record (`coupled_producers/stages.rs`).
-- The header refuses a recorded list shorter than two, before any other reading. The court `coupled_producers/stages.rs::a_recorded_stage_list_shorter_than_two_refuses_before_any_reading` re-validates a genuine recorded edit envelope with its list cut to zero and one source (door `CommitPublication::validate_stage_list_cut_for_test`) (D1594; closes public #140). A first in-crate version broke the source-court topology rule (BC9002) and was moved.
+- Current canonical storage has only Edit, Retirement and Restoration with their actual consumed source sequences. Artifact version9 replaces the development grammar; old saved encodings are not supported or migrated.
+- Current encode/readmission retains the genuine source kind and ordered repeated scopes. Existing actual history/checkpoint and private codec owner controls establish that behavior.
+- The current Edit source grammar contains one actual prefix followed by zero or more consumed later sources. An empty list refuses before readmission; one source is valid. The displaced Stages-only minimum-two court and its public cut-list test door are removed. The existing current codec unit owner checks empty-prefix refusal without constructing an extra publication or retaining an obsolete format API.
 
 ### Producer-path numbering
 
@@ -25,7 +25,7 @@ This ledger lists existing court assertions CP3 changed and any typed-error or s
 
 - `an_authored_stage_reads_the_candidate_and_commits_with_the_prefix_once`, with and without an owned producer. It checks:
   - the rows equal a plain-commit oracle;
-  - the recorded `Stages` sources;
+  - the actual recorded Edit sources;
   - the authored effects are the prefix's and the stage's only;
   - each stage's touches project from its own commands (`authored_stage_mutation_touches`; L1a review round 1 blocker);
   - a cold reopen (mixed case).
