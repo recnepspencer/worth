@@ -168,7 +168,7 @@ fn an_ordinary_recorded_intent_keeps_its_pre_envelope_bytes() {
             "edit",
         )
         .unwrap();
-    let envelope = request.bind_edit_envelope(&key.intent(&[]).unwrap());
+    let envelope = request.bind_edit_envelope(&key.intent(worth_query_declaration::facade::application_operation::ApplicationEditEnvelopeOrder::DeclaredDependencies, &[]).unwrap());
     assert!(envelope.intent_text().contains(":edit-envelope="));
     assert_eq!(
         envelope.match_recorded_intent(&envelope.intent_text()),
