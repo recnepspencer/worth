@@ -302,7 +302,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             execution,
             projection,
             move |runtime, identities, decision, projection| {
-                let outcome = (|| {
+                let mut outcome = (|| {
                     let decision = match decision {
                         HandlerResult::Completed(decision) => decision,
                         HandlerResult::DomainDenied(denial) => {
@@ -341,6 +341,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                         runtime.installed_schema().value_bindings(),
                     )
                 })();
+                if let Ok(HandlerResult::Completed(completed)) = &mut outcome {
+                    completed.record_planning_context(context_use);
+                }
                 WorthQueryMutationHandlerExecutionReport::new(
                     outcome,
                     WorthQueryMutationHandlerWork::captured(work, handler_contacted),

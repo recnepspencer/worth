@@ -34,6 +34,8 @@ impl InstalledLoweringCorrespondenceRef {
 /// Installed pre-image demand bound by the operation's declared reads.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct InstalledPreImageDemand {
+    changed_output:
+        Option<worth_query_declaration::facade::application_aftermath::PortableChangedFieldOutput>,
     loci: Vec<InstalledPreImageLocus>,
     relations: Vec<super::InstalledPreImageRelationLocus>,
     maximum_encoded_bytes: usize,
@@ -42,6 +44,7 @@ pub struct InstalledPreImageDemand {
 impl InstalledPreImageDemand {
     pub(crate) fn from_portable(portable: &PortablePreImageDemand) -> Self {
         Self {
+            changed_output: portable.changed_output().cloned(),
             loci: portable
                 .loci()
                 .iter()
@@ -58,6 +61,13 @@ impl InstalledPreImageDemand {
 
     pub fn relations(&self) -> &[super::InstalledPreImageRelationLocus] {
         &self.relations
+    }
+
+    pub fn changed_output(
+        &self,
+    ) -> Option<&worth_query_declaration::facade::application_aftermath::PortableChangedFieldOutput>
+    {
+        self.changed_output.as_ref()
     }
 
     /// True when the inverse demands no prior truth at all: neither a field

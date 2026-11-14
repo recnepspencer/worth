@@ -1,5 +1,5 @@
 //! Each retry creates real C admission and reads D through the shared handler path.
-use super::capture::{StageProgram, TypedStage};
+use super::capture::TypedStage;
 use super::*;
 use crate::domain_computation::primary_graph::application_attempt::{
     self, CommitPreparedCoupledWriter, InspectedAuthoredApplication, InspectedCoupledWriter,
@@ -16,6 +16,65 @@ where
     B::Result: Send,
     B::Denial: Send,
 {
+    fn order_authored(&self) {
+        self.ordered
+            .store(true, std::sync::atomic::Ordering::Relaxed);
+    }
+    fn bind_correction(
+        &self,
+        intent: crate::domain_computation::primary_graph::WorthQueryCorrectionIntent,
+    ) {
+        *self
+            .correction
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner) = Some(intent);
+    }
+    fn product(
+        &self,
+        context: &AuthoredEditStageContext<'_, '_, '_, S>,
+    ) -> Result<crate::basis::WorthQueryProductBranchLease, super::envelope::Denial> {
+        self.envelope_product(context)
+    }
+    fn plan(
+        &self,
+        context: &AuthoredEditStageContext<'_, '_, '_, S>,
+        unseen: &UnseenAuthoredEnvelope<'_>,
+    ) -> Result<(), WorthQueryOutputDemandDenial> {
+        self.plan_candidate(context, unseen)
+    }
+    fn footprint(&self) -> Option<super::planning::Footprint> {
+        self.planning
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .support
+            .clone()
+    }
+    fn discard_plan(&self) {
+        *self
+            .planning
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner) = Default::default();
+    }
+    fn prefix_candidate(
+        &self,
+        context: &AuthoredEditStageContext<'_, '_, '_, S>,
+        unseen: &UnseenAuthoredEnvelope<'_>,
+    ) -> Result<Box<dyn Any + Send>, WorthQueryOutputDemandDenial> {
+        self.take_prefix_candidate(context, unseen)
+            .map(|candidate| Box::new(candidate) as Box<dyn Any + Send>)
+    }
+    fn govern_envelope(
+        &self,
+        context: &AuthoredEditStageContext<'_, '_, '_, S>,
+        coordination: &crate::domain_computation::primary_graph::provider::WorthQueryApplicationBranchCommitCoordination<'_>,
+        intent: worth_query_declaration::facade::application_operation::ApplicationEditIntentIdentity,
+        next: &mut dyn FnMut(
+            WorthQueryApplicationIdempotencyBinding,
+        )
+            -> Result<super::envelope::Resolution, super::envelope::Denial>,
+    ) -> Result<super::envelope::Resolution, super::envelope::Denial> {
+        self.inspect_envelope(context, coordination, intent, next)
+    }
     fn prepare<'run>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -55,7 +114,7 @@ where
                 Ok(_) => denial,
             }
         };
-        let admission = (self.admit)(context)?;
+        let admission = self.execution_admission(context)?;
         if admission.operation.scope_entity_id() != self.source {
             return Err(refuse(
                 "the admitted stage source changed before candidate execution".into(),
@@ -65,18 +124,30 @@ where
             .key
             .stage_with_encoded_input::<S, B>(&self.input, self.ordinal)
             .map_err(|cause| refuse(format!("stage identity: {cause:?}")))?;
-        let report = context.application.execute_authored_stage_handler::<B>(
-            context.phase,
-            &identities,
-            &admission.principal,
-            &self.principal,
-            admission.operation,
-            before,
-            before_pin,
-            candidate,
-            coordination,
-            execution.allocation_policy(),
-        );
+        let planned = self
+            .planning
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .candidate
+            .take();
+        let outcome = if let Some((completed, _work)) = planned {
+            Ok(HandlerResult::Completed(completed))
+        } else {
+            context
+                .application
+                .execute_authored_stage_handler::<B>(
+                    context.phase,
+                    &identities,
+                    &admission.principal,
+                    &self.principal,
+                    admission.operation,
+                    before,
+                    Some((before_pin, candidate)),
+                    coordination,
+                    execution.allocation_policy(),
+                )
+                .into_outcome()
+        };
         let stopped_stage = |cause| {
             self.result
                 .lock()
@@ -90,8 +161,7 @@ where
                 });
             refuse("stage execution refused".into())
         };
-        let completed = match report
-            .into_outcome()
+        let mut completed = match outcome
             .map_err(|cause| stopped_stage(AuthoredStageExecutionCause::Request(cause)))?
         {
             HandlerResult::Completed(completed) => completed,
@@ -118,8 +188,22 @@ where
                 return Err(stopped_stage(AuthoredStageExecutionCause::Handler(cause)))
             }
         };
+        if let Some(expected) = self.footprint() {
+            if completed
+                .candidate_footprint(execution)
+                .map_err(|cause| refuse(format!("candidate footprint: {cause:?}")))?
+                .as_ref()
+                != Some(&expected)
+            {
+                return Err(refuse(
+                    "the cold candidate changed its admitted footprint".into(),
+                ));
+            }
+            completed
+                .require_planned_support(context.application, execution, Some(candidate))
+                .map_err(|cause| refuse(format!("planned authored support: {cause:?}")))?;
+        }
         let (program, result) = completed.into_parts();
-        let program: StageProgram<S, B> = (self.seed)(execution, program);
         let binding =
             WorthQueryApplicationIdempotencyBinding::for_authored_stage_identities(&identities)
                 .expect("canonical stage identities");

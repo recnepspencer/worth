@@ -99,8 +99,18 @@ impl WorthQueryApplicationSnapshotLease {
             worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
         >,
     ) -> Self {
-        self.applied_projection = Some(pin);
+        self.retain_applied_projection(pin);
         self
+    }
+    /// Retain genuine applied decision data without changing the authorization lease.
+    /// This does not supply an applied Source qualification or Current authority.
+    pub(super) fn retain_applied_projection(
+        &mut self,
+        pin: worth_relational::facade::runtime::RelationalPinnedRead<
+            worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
+        >,
+    ) {
+        self.applied_projection = Some(pin);
     }
     pub(in crate::domain_computation::primary_graph) fn bind_applied_source_projection(
         &mut self,

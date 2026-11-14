@@ -95,12 +95,40 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     where
         Value: super::super::WorthQueryApplicationProjection<Schema, Query>,
     {
+        self.project_applied_source_plan_as::<Query, Parameters, Value, Value, Principal, PrincipalIdentity, Scope>(execution, plan, candidate)
+    }
+    pub(in crate::domain_computation::primary_graph) fn project_applied_source_plan_as<
+        Query,
+        Parameters,
+        Value,
+        Projected,
+        Principal,
+        PrincipalIdentity,
+        Scope,
+    >(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        plan: WorthQueryAdmittedApplicationQueryPlan<
+            '_,
+            Schema,
+            Query,
+            Parameters,
+            Value,
+            Principal,
+            PrincipalIdentity,
+            Scope,
+        >,
+        candidate: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
+    ) -> Result<AppliedQuerySource<Query, Projected>, Stop>
+    where
+        Projected: super::super::WorthQueryApplicationProjection<Schema, Query>,
+    {
         let graph = self
             .runtime
             .primary_graph()
             .ok_or(Stop::Native(Cause::ExpectedIdentitiesNotCanonical))?;
         let request = plan.controls.request_scope();
-        let projected = applied_source::read_applied_source::<Schema, Query, Value>(
+        let projected = applied_source::read_applied_source::<Schema, Query, Projected>(
             execution,
             &ValueDecodeState::new(self.installed_schema.value_bindings().clone()),
             candidate,

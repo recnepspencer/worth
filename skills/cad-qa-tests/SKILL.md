@@ -1,112 +1,98 @@
 ---
 name: cad-qa-tests
-description: Review and correct WORTH CAD kernel tests for credible CAD consequences, independent domain references, real public integration and economical compilation. Use for proprietary CAD test QA; platform contract tests use qa-tests.
+description: Use when tests fail or need review during a CAD kernel production
+  code change, or when asked to review CAD kernel test quality.
 ---
 
 # CAD QA Tests
 
-Read the governing CAD specification, relevant production code, REVIEW.md,
-cad/docs/cad-laws.md, TESTING.md and applicable testing and iteration laws.
-Trace setup, action, observation and teardown; test names and green results
-are claims to inspect.
+The production change is the work. Tests are evidence for it. Code is cheap;
+certification (builds, slow suites, snapshot regeneration, review) is not.
 
-## Review purpose and scope
+Leave unaffected tests alone. When an affected fixture obstructs the change or
+makes its certification fragile, simplify or replace it within the task. Defer
+unrelated suite improvements.
 
-Read the task repository's REVIEW.md. Review is an assessment, not a requirement
-to produce corrections. "No material in-scope findings" is a fully successful
-outcome. Report supported defects; do not manufacture improvements to
-demonstrate thoroughness or suppress a real defect to return a clean verdict.
+## Preproduction
 
-A blocking finding must identify the affected requirement, credible trigger,
-concrete consequence and smallest coherent correction. Optional improvements
-do not block completion. Follow additional owners only when needed to establish
-or correct that consequence; stop when the assigned review is complete.
+WORTH is not in production. Do not preserve obsolete APIs, stored formats,
+fixtures or golden bytes for backward compatibility. Within the change's
+scope, delete displaced implementations, adapters, migrations and
+compatibility-only tests; use one current representation. Recreate development
+artifacts instead of migrating them. Preserve required current-version replay,
+undo and recovery behavior. Add backward compatibility only when the user
+explicitly requests it.
 
-## Proportionate engineering
+## When a test fails after your change, classify it first
 
-Would an experienced engineer choose this design to solve the actual
-requirement if no AI-generated plan, review checklist or inherited test
-demanded it? Prefer established facilities, clear ownership and proportionate
-complexity. Additional mechanisms must earn their implementation, maintenance
-and iteration cost through a concrete need.
+1. The change intentionally alters the contract: update obsolete expectations.
+   Stop only for a contradiction or a decision nobody has made.
+2. The change unintentionally violates the contract: fix the production code.
+3. The test reaches into internals and behavior is unchanged: make the smallest
+   coherent correction, or delete it if another test protects the same behavior
+   through the appropriate public interface.
+4. A fixture broke, or the test failed in setup: make the smallest correction
+   that removes the cause. If the correction preserves the cause of recurring
+   breakage, replace the affected fixture with a simpler direct test. Complete
+   removal of displaced support code while preserving relevant guarantees.
 
-Judge the actual responsibility, consumer and tradeoff rather than a company's
-reputation or an "enterprise grade" label. Unfamiliar or complex code is not
-itself a defect. Explain what is unnecessary and why; do not turn this question
-into speculative redesign, cosmetic cleanup or another mandatory framework.
+## New and replacement tests
 
-## Test CAD meaning through the real platform
+- Use the smallest set covering distinct failure mechanisms. Reuse existing
+  protection; add a regression test when the bug would otherwise escape.
+- Name the defect each test would catch and justify expectations independently
+  of the behavior under test. If you cannot, do not write it.
+- Keep setup, action, and observation clear. Existing factories and small local
+  setup functions are appropriate. Avoid new fixture frameworks and unnecessary
+  abstraction.
+- Prefer the real object when it is fast and deterministic.
+- Avoid tests that restate the implementation, assert incidental argument
+  passing or formatting, or duplicate another. Protocol arguments and byte
+  formats remain valid subjects when contractual.
+- Ensure setup reaches the intended action and observation. Consider affected
+  error paths.
 
-Public WORTH owns snapshot consistency, dependency tracking, currentness,
-invalidation, safe publication and recovery. Proprietary tests consume these
-guarantees and observe CAD consequences.
+## Cost
 
-Reject private algorithms and oracles that reconstruct or reprove public
-machinery. A suspected platform defect gets a reproducer at its public owner.
-Do not require a private reference transaction engine, freshness registry,
-dependency model, publication checker or recovery certifier.
+- Use the cheapest sufficient affected evidence. Include compile, link, and
+  setup cost. Expensive verification needs a concrete unresolved concern or an
+  explicit repository requirement. Batch necessary expensive work and reuse
+  valid results. Remove incidental snapshot churn when practical.
+- Derived values are not automatically harmless golden changes. Confirm that
+  the protected guarantees remain correct; retain independent known-answer and
+  contractual byte checks. Explain intentional expectation changes.
+- After two failed attempts at the same test, diagnose the cause or change
+  approach. Stop and report only when a concrete blocker remains.
+- Stop when affected behavior is protected and required checks pass, with no
+  known material in-scope defect remaining. Do not tidy unrelated tests or add
+  certification machinery to certify the tests themselves.
 
-Independent expectations for geometry, topology, units, frames, tolerances,
-naming and CAD domain meaning remain appropriate. Compute expectations
-independently of the disputed CAD implementation without duplicating platform
-semantics.
+## Report
 
-## Choose the smallest honest fixture
+Report material test changes and removals, changed or skipped assertions,
+checks actually run, and concrete limitations. Do not weaken required protection
+merely to regain green.
 
-Preserve the authority, identity, relationships and revisions relevant to the
-claim. Use real public integration when the claim crosses that boundary;
-use focused domain fixtures when it does not. A fixture must reach the intended
-assertion rather than counterfeit success through setup or routing failure.
+## CAD kernel
 
-Check affected authoring transitions and their meaningful positive and refusal
-cases. Integration courts observe the kernel's correct response to the public
-contract; they do not certify public atomicity or recovery from a second model.
+A CAD test proves the CAD consequence of the change under review. Apply one
+test to every test: could this fail without any kernel code being wrong? If
+yes, it is testing the platform. Remove it, or move it to a reproducer at
+the platform's public owner.
 
-Golden updates need a semantic explanation and real output. Do not bless a
-changed transcript merely to regain green tests.
-
-## Evidence and iteration economy
-
-Before adding installed worlds or heavy dependencies, inspect the compilation
-and link closure and choose the narrowest existing honest court surface.
-Keep installed applications out of production unit builds. Avoid a new test
-binary per scenario and redundant fixture worlds.
-
-Distinguish domain tests, installed integration, external CAD oracles, cost
-courts and recovery journeys. A test-only audit's cost does not establish a
-production read's cost. Broad matrices, expensive mutation campaigns, fuzz,
-soak and full gates belong at milestones or nightly verification.
-
-Mutation probes and fault injection are optional when sensitivity is ambiguous
-or the affected risk needs them. Do not build a second evidence ledger or
-require tests that merely certify other tests. Resource-exhaustion matrices
-need an explicit admission requirement or a measured failure; hypothetical
-exhaustion does not justify speculative CAD resource accounting.
-
-Repair production defects at the production owner and fixture defects in the
-fixture. Remove obsolete assertions coherently when their mechanism is deleted.
-Reuse accepted evidence; rerun the checks affected by a correction.
-
-Use the selected independent reviewer and inspect the final production and
-test diff. Report material findings, corrections, commands actually run,
-deferred checks and the limits of each claim. Apply this skill with
-cad-qa-loop and shared code-quality-qa, not as an extra generic QA pass.
-
-## Compile time is sacred
-
-During ordinary development, slice review and routine landing, use cheap source
-checks and the smallest meaningful compilation and test scope. Include compile,
-link and fixture construction cost when selecting evidence; test runtime alone
-does not describe its cost.
-
-Expensive gates belong at milestone completion, release verification or nightly
-jobs. They are not prerequisites for every edit, review, commit or slice landing.
-Do not expand automatically to all reverse dependencies or workspace CI.
-
-A concrete suspected defect may require an expensive focused reproducer. Name
-the uncertainty and why cheaper evidence cannot resolve it; this does not
-authorize a full gate. Do not invent a scheduling job by invoking this policy.
-
-Reuse valid evidence and rerun checks when a correction affects what they
-establish. Three QA lenses do not imply three builds, test runs or reviewers.
-Report deferred verification honestly; a focused pass is not a full gate pass.
+- Assert the CAD result that follows from a platform guarantee, not the
+  guarantee itself. Do not rebuild platform machinery in a test or fixture.
+- Expected values come from a source independent of the code in dispute: an
+  analytic result, a hand-computed value or an external CAD oracle. Known
+  answers, not a second solver written in the test.
+- No test-local epsilon. Compare exactly, against the declared tolerance
+  policy, or against a bound the test states.
+- Inputs enter through the production admission the claim depends on. A
+  typed dimension is admitted as typed, not built from a float.
+- A test proves its claim only at the boundary it exercises. Name it for
+  what it observes.
+- A refusal test asserts the typed outcome, not merely that something failed.
+- Byte and digest reproduction is the determinism court's claim. Elsewhere
+  they are derived values: assert meaning.
+- Before adding an installed world, inspect the compile and link closure and
+  use the narrowest existing surface. No new test binary per scenario.

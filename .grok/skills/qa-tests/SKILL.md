@@ -1,109 +1,74 @@
 ---
 name: qa-tests
-description: Review and correct WORTH tests and test harnesses for honest, proportionate evidence. Use when auditing fixture realism, boundary claims, oracle independence, adversarial value, redundancy, compile cost, or whether tests adequately protect a specification.
+description: Use when tests fail or need review during a production code change, or when asked to review public WORTH test quality.
 ---
 
 # QA Tests
 
-Review whether the tests are credible evidence for the behavior they claim to
-protect. Test adequacy is a code-review judgment; tests do not need a second
-evidence system that certifies their adequacy.
+The production change is the work. Tests are evidence for it. Code is cheap;
+certification (builds, slow suites, snapshot regeneration, review) is not.
+CAD kernel tests use cad-qa-tests.
 
-Read the governing specification, relevant production code,
-`docs/coding-guidelines/testing_laws.md`, and
-`docs/coding-guidelines/qa_review_guide.md`. Trace setup, action, observation,
-and teardown rather than trusting test names.
+Leave unaffected tests alone. When an affected fixture obstructs the change or
+makes its certification fragile, simplify or replace it within the task. Defer
+unrelated suite improvements.
 
-## Test behavior, not speculative resource budgets
+## Preproduction
 
-Do not require work-counter, candidate-budget, retained-byte, mutation-quote,
-reservation-ledger, or one-byte-short exhaustion matrices for ordinary modeling
-and publication. Such tests need an explicit resource-admission product
-requirement or a measured resource failure that actually needs accounting.
-Hypothetical exhaustion and a desire for more complete accounting do not qualify.
-Do not expand these suites or make them a milestone gate by default.
+WORTH is not in production. Do not preserve obsolete APIs, stored formats,
+fixtures or golden bytes for backward compatibility. Within the change's
+scope, delete displaced implementations, adapters, migrations and
+compatibility-only tests; use one current representation. Recreate development
+artifacts instead of migrating them. Preserve required current-version replay,
+undo and recovery behavior. Add backward compatibility only when the user
+explicitly requests it.
 
-When unnecessary accounting is removed, remove or rewrite its causally affected
-tests rather than preserving the mechanism to satisfy old assertions. Retain
-meaningful evidence for geometry, currentness/invalidation, authority, atomic
-publication, cancellation, and ordinary failure handling. Include a focused
-positive case showing the real authoring operation succeeds without a caller
-supplying resource estimates or an arbitrary work ceiling; do not replace this
-with another bookkeeping certification system.
+## When a test fails after your change, classify it first
 
-Measure iteration cost and investigate actual bottlenecks. Favor focused tests
-of invalidation, reuse, partition independence, and concurrency when affected.
-Semantic cardinalities, revisions, termination conditions, checked arithmetic,
-and simple diagnostics are not speculative admission accounting. Preserve them
-when they serve real correctness or diagnosis. Reuse accepted evidence and
-avoid broad exhaustion campaigns or repeated full builds after each edit.
+1. The change intentionally alters the contract: update obsolete expectations.
+   Stop only for a contradiction or a decision nobody has made.
+2. The change unintentionally violates the contract: fix the production code.
+3. The test reaches into internals and behavior is unchanged: make the smallest
+   coherent correction, or delete it if another test protects the same behavior
+   through the appropriate public interface.
+4. A fixture broke, or the test failed in setup: make the smallest correction
+   that removes the cause. If the correction preserves the cause of recurring
+   breakage, replace the affected fixture with a simpler direct test. Complete
+   removal of displaced support code while preserving relevant guarantees.
 
-## Choose the execution lane
+## New and replacement tests
 
-- **Focused:** the reproducer, affected owner tests, and the smallest honest
-  boundary smoke during development.
-- **CI:** the accepted requirement tests and mandatory repository gates for the
-  final change.
-- **Scheduled:** expensive mutation, fuzz, soak, compatibility, maximum-scale,
-  destructive-recovery, and environment-specific suites.
+- Use the smallest set covering distinct failure mechanisms. Reuse existing
+  protection; add a regression test when the bug would otherwise escape.
+- Name the defect each test would catch and justify expectations independently
+  of the behavior under test. If you cannot, do not write it.
+- Keep setup, action, and observation clear. Existing factories and small local
+  setup functions are appropriate. Avoid new fixture frameworks and unnecessary
+  abstraction.
+- Prefer the real object when it is fast and deterministic.
+- Avoid tests that restate the implementation, assert incidental argument
+  passing or formatting, or duplicate another. Protocol arguments and byte
+  formats remain valid subjects when contractual.
+- Ensure setup reaches the intended action and observation. Consider affected
+  error paths.
 
-Run an expensive lane during ordinary development only when it is the actual
-reproducer or materially affected evidence. Run cheap discovery, configuration,
-fixture, exact-name, and harness checks before expensive worlds.
+## Cost
 
-## Independent review
+- Use the cheapest sufficient affected evidence. Include compile, link, and
+  setup cost. Expensive verification needs a concrete unresolved concern or an
+  explicit repository requirement. Batch necessary expensive work and reuse
+  valid results. Remove incidental snapshot churn when practical.
+- Derived values are not automatically harmless golden changes. Confirm that
+  the protected guarantees remain correct; retain independent known-answer and
+  contractual byte checks. Explain intentional expectation changes.
+- After two failed attempts at the same test, diagnose the cause or change
+  approach. Stop and report only when a concrete blocker remains.
+- Stop when affected behavior is protected and required checks pass, with no
+  known material in-scope defect remaining. Do not tidy unrelated tests or add
+  certification machinery to certify the tests themselves.
 
-Use the test reviewer selected by the user or repository. Do not hard-code a
-review model or require a fresh instance after every correction. A persistent
-reviewer may follow the work but must inspect the final production and test diff
-and current results before clearing it.
+## Report
 
-Give the reviewer the specification, relevant laws, current diff, fixtures,
-harnesses, assertions, production boundary, commands, results, timings, and
-known environment constraints. Verify every finding directly.
-
-Minimize ceremony and maximize pragmatic progress without relaxing substantive
-review standards. Strictness belongs in correctness and evidence, not
-coordination artifacts. Review the living branch and current diff; after a
-finding, the same implementer corrects it and the same reviewer rechecks only
-the correction and causally affected evidence. Do not create SHA checkpoints,
-detached review snapshots, replacement worktrees, approval ledgers, or restart
-the full review unless the correction invalidates earlier conclusions.
-
-## Review lenses
-
-- **World honesty:** Authority, identity, relationships, revisions, and state
-  relevant to the claim have credible causal provenance.
-- **Boundary honesty:** Integration and end-to-end labels match the real
-  production boundaries exercised.
-- **Oracle independence:** Expected results do not merely repeat the disputed
-  production semantics.
-- **Intended-cause failure:** Setup, routing, rejection, cleanup, and
-  observation failures cannot counterfeit the expected result.
-- **Risk pressure:** Denial, cancellation, exhaustion, concurrency, recovery,
-  migration, and partial effects are tested when the production risk warrants
-  them.
-- **Proof economy:** Each test or parameterized family contributes meaningful,
-  nonredundant evidence at an appropriate boundary.
-- **Harness integrity:** Test support preserves relevant production invariants
-  without introducing a test-only authority path.
-- **Cost honesty:** Targets, compiler sessions, setup, external startup,
-  retries, and retained artifacts are proportionate to the evidence produced.
-
-Mutation probes, negative twins, and fault injection are optional tools for
-high-risk or ambiguous claims. Do not require them when a test's sensitivity is
-already clear. Do not expand test support into a compiler, API analyzer, source
-fingerprint system, or proof ledger to guard hypothetical future mistakes.
-
-## Correct and complete
-
-Fix production defects in production. Repair fixture provenance and harness
-boundaries before adding assertions. Consolidate redundant scenarios and
-compiler sessions instead of accumulating green artifacts.
-
-After correction, rerun the affected evidence and confirm the test reaches the
-intended behavior. Review is complete when the relevant tests are honest,
-appropriately scoped, reasonably economical, pass on the final change, and the
-assigned reviewer finds them adequate. Report material findings, corrections,
-tests run, expensive or environment-dependent checks not run, and accepted
-residual risk.
+Report material test changes and removals, changed or skipped assertions,
+checks actually run, and concrete limitations. Do not weaken required protection
+merely to regain green.

@@ -66,6 +66,10 @@ pub(in crate::domain_computation::primary_graph::application_contribution) struc
 }
 
 pub(in crate::domain_computation::primary_graph::application_contribution) enum CoupledSourceRead {
+    Route {
+        scope: worth_relational::facade::identity::EntityId,
+        partition: [u8; 32],
+    },
     Retiring,
     Prepared(usize),
     Verified(super::super::VerifiedAppliedParent),
@@ -82,6 +86,7 @@ pub(super) fn read<Schema, Binding>(
     before_pin: &RelationalPinnedRead,
     demand: &DeclaredCoupledOutputDemand,
     assembly: &worth_relational::facade::mvcc::RelationalAuthoredCoupledCandidate<'_>,
+    route_only: bool,
 ) -> Result<CoupledSourceRead, CoupledSourceReadStop>
 where
     Schema: ApplicationSchema,
@@ -156,7 +161,7 @@ where
                 execution, runtime, 0, || Ok(parameters),
             ).map_err(CoupledSourceReadStop::capture)?;
             return created::read(installed, execution, runtime, external, request, selected, before_pin,
-                &candidate, &arguments.value, &captured, cause, assembly, demand);
+                &candidate, &arguments.value, &captured, cause, assembly, demand, route_only);
 
         }
         Err(cause) => return Err(scope_rejected(Binding::IDENTITY, cause).into()),
@@ -176,6 +181,12 @@ where
         .map_err(|cause| query_admission_denied(Binding::IDENTITY, cause))?;
     let partition = *plan.parameter_binding_identity().bytes();
     let root = scope.entity_id();
+    if route_only {
+        return Ok(CoupledSourceRead::Route {
+            scope: root,
+            partition,
+        });
+    }
     if demand.reuse_prepared
         && let Some(index) =
             assembly.prepared_route_index(execution, demand.family, root, &partition)?

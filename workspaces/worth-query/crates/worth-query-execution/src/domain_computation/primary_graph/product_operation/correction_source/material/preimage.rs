@@ -26,6 +26,45 @@ impl DisclosedPreImage<'_> {
     }
 }
 impl<S> ApplicationCorrectionPreImage<S> for DisclosedPreImage<'_> {
+    fn field_state_for_output(
+        &self,
+        role: &worth_query_declaration::facade::application_operation::ApplicationMutationOutputRoleDescriptor,
+        locus: &DeclaredPreImageLocus<S>,
+    ) -> worth_query_declaration::facade::application_aftermath::ApplicationCorrectionFieldPreImage<'_>{
+        use worth_query_declaration::facade::application_aftermath::ApplicationCorrectionFieldPreImage as State;
+        if role.entity() != locus.entity() {
+            return State::Uncaptured;
+        }
+        let mut roles =
+            self.outputs()
+                .native_witness_roles()
+                .filter(|(name, posture, entity, _)| {
+                    *name == role.name() && *posture == role.posture() && *entity == role.entity()
+                });
+        let Some((_, _, _, original)) = roles.next() else {
+            return State::Uncaptured;
+        };
+        if roles.next().is_some() {
+            return State::Uncaptured;
+        }
+        let Some(aspect) = worth_foundational::facade::AspectKey::new(locus.aspect()) else {
+            return State::Uncaptured;
+        };
+        let Some(field) = worth_foundational::facade::FieldKey::new(locus.field()) else {
+            return State::Uncaptured;
+        };
+        let locator = worth_foundational::facade::AspectFieldLocator::new(
+            worth_foundational::facade::LocatorAuthority::Planned,
+            aspect,
+            worth_foundational::facade::CanonicalFieldPath::single(field),
+        );
+        match self {
+            Self::Retained(value) => value.preimage_state_key(original, locus.entity(), &locator),
+            Self::Captured(_) => self.retained().map_or(State::Uncaptured, |image| {
+                image.original_field_state(original, locus.entity(), &locator)
+            }),
+        }
+    }
     fn family_member_suffix(
         &self,
         family: &worth_query_declaration::facade::application_operation::ApplicationMutationOutputRoleFamilyDescriptor,

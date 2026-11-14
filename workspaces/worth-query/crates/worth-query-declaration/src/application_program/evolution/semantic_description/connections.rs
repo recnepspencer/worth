@@ -5,6 +5,18 @@ pub(super) fn append_connections(
     connections: &[ApplicationConnectionDeclaration],
 ) {
     for connection in connections {
+        if connection.is_occurrence_component() {
+            facts.push(fact(
+                ApplicationSemanticFamily::Connections,
+                framed_parts(&[
+                    connection.source_instance(),
+                    connection.target_instance(),
+                    connection.identity(),
+                    "output-occurrences",
+                ]),
+                framed_fields([("ordering", "admitted-prerequisites".to_owned())]),
+            ));
+        }
         if connection.is_demand_only_root() {
             facts.push(fact(
                 ApplicationSemanticFamily::Connections,

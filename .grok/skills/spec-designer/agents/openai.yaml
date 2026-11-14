@@ -1,4 +1,4 @@
 interface:
   display_name: "Spec Designer"
-  short_description: "Design proof-driven WORTH milestone specifications"
-  default_prompt: "Use $spec-designer to design a WORTH milestone specification from its roadmap position and real implementation boundary."
+  short_description: "Design specs in focused passes with proportionate evidence"
+  default_prompt: "Use $spec-designer to design this WORTH specification in focused passes: ground the phases, design APIs and authority, then read the testing laws and write the phase matrices. Scale detail and evidence to the actual risks."

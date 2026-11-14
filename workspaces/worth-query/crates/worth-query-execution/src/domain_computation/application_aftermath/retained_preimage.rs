@@ -8,6 +8,10 @@ use worth_foundational::facade::{AspectFieldLocator, AspectValue, CanonicalField
 use worth_query_installation::facade::InstalledPreImageLocus;
 use worth_relational::facade::identity::KindId;
 use worth_relational::facade::transactions::RecordRef;
+mod presence;
+pub(in crate::domain_computation) use presence::{
+    RetainedChangedFieldOutput, RetainedPreImageAbsence, RetainedPreImageAbsenceKind,
+};
 
 /// One retained field pre-image bound into the strengthened commit receipt.
 #[derive(Clone, Eq, PartialEq)]
@@ -51,6 +55,8 @@ impl WorthQueryRetainedPreImageField {
 #[derive(Clone)]
 pub struct WorthQueryRetainedPreImage {
     fields: Vec<WorthQueryRetainedPreImageField>,
+    absences: Vec<RetainedPreImageAbsence>,
+    changed_output: Option<RetainedChangedFieldOutput>,
     relations: Option<std::sync::Arc<super::retained_relations::RetainedRelations>>,
     total_encoded_bytes: usize,
     content: worth_relational::facade::content::RelationalContentAttachments,
@@ -151,6 +157,44 @@ impl WorthQueryRetainedPreImage {
         &self.fields
     }
 
+    pub(in crate::domain_computation) fn absences(&self) -> &[RetainedPreImageAbsence] {
+        &self.absences
+    }
+
+    pub(in crate::domain_computation) fn changed_output(
+        &self,
+    ) -> Option<&RetainedChangedFieldOutput> {
+        self.changed_output.as_ref()
+    }
+
+    pub(in crate::domain_computation) fn original_field_state(
+        &self,
+        target: worth_relational::facade::identity::EntityId,
+        entity: &str,
+        locator: &AspectFieldLocator,
+    ) -> worth_query_declaration::facade::application_aftermath::ApplicationCorrectionFieldPreImage<'_>{
+        use worth_query_declaration::facade::application_aftermath::ApplicationCorrectionFieldPreImage as State;
+        let record = RecordRef::Entity(target);
+        if let Some(field) = self.fields.iter().find(|field| {
+            field.target_record() == &record
+                && field.locus().entity() == entity
+                && field.locator() == locator
+        }) {
+            return State::Value(field.value());
+        }
+        self.absences
+            .iter()
+            .find(|field| {
+                field.target == record
+                    && field.locus.entity() == entity
+                    && &field.locator == locator
+            })
+            .map_or(State::Uncaptured, |field| match field.kind {
+                RetainedPreImageAbsenceKind::Field => State::AbsentField,
+                RetainedPreImageAbsenceKind::Aspect => State::AbsentAspect,
+            })
+    }
+
     pub const fn total_encoded_bytes(&self) -> usize {
         self.total_encoded_bytes
     }
@@ -187,7 +231,7 @@ impl WorthQueryRetainedPreImage {
     pub(crate) fn from_retention_seal(
         seal: crate::domain_computation::primary_graph::WorthQueryRetainedPreImageSeal,
     ) -> Self {
-        let (fields, total_encoded_bytes) = seal.into_parts();
+        let (fields, absences, changed_output, total_encoded_bytes) = seal.into_parts();
         let fields = fields
             .into_iter()
             .map(|field| {
@@ -205,6 +249,8 @@ impl WorthQueryRetainedPreImage {
             .collect();
         Self {
             fields,
+            absences,
+            changed_output,
             relations: None,
             total_encoded_bytes,
             content: Default::default(),
@@ -244,7 +290,10 @@ pub fn demanded_field_slot(path: &CanonicalFieldPath) -> Option<&FieldKey> {
 // admission; ordinary receipt equality must not traverse its retained bytes.
 impl PartialEq for WorthQueryRetainedPreImage {
     fn eq(&self, other: &Self) -> bool {
-        self.fields == other.fields && self.total_encoded_bytes == other.total_encoded_bytes
+        self.fields == other.fields
+            && self.absences == other.absences
+            && self.changed_output == other.changed_output
+            && self.total_encoded_bytes == other.total_encoded_bytes
     }
 }
 impl Eq for WorthQueryRetainedPreImage {}

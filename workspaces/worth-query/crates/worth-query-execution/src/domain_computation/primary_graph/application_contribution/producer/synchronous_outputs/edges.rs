@@ -42,14 +42,19 @@ where
             <source::Source<S, Child<S, C>> as ApplicationQueryBinding<S>>::PrincipalIdentity,
         >,
 {
-    fn declared_families(visit: &mut impl FnMut(std::any::TypeId)) {
-        visit(
-            crate::equality_type_id::EqualityTypeId::of::<
-                <Child<S, C> as WorthQueryApplicationOutputDemand<S>>::OutputFamily,
-            >()
-            .into_external(),
-        );
-        E::declared_families(visit);
+    fn occurrence_families(visit: &mut impl FnMut(std::any::TypeId)) {
+        E::occurrence_families(visit);
+    }
+    fn declared_families(
+        parent: std::any::TypeId,
+        visit: &mut impl FnMut(std::any::TypeId, std::any::TypeId),
+    ) {
+        let child = crate::equality_type_id::EqualityTypeId::of::<
+            <Child<S, C> as WorthQueryApplicationOutputDemand<S>>::OutputFamily,
+        >()
+        .into_external();
+        visit(parent, child);
+        E::declared_families(child, visit);
     }
     fn assemble(
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
@@ -93,9 +98,29 @@ where
     L: SynchronousOutputEdges<S, D>,
     R: SynchronousOutputEdges<S, D>,
 {
-    fn declared_families(visit: &mut impl FnMut(std::any::TypeId)) {
-        L::declared_families(visit);
-        R::declared_families(visit);
+    fn occurrence_component() -> bool {
+        L::occurrence_component() || R::occurrence_component()
+    }
+    fn occurrence_families(visit: &mut impl FnMut(std::any::TypeId)) {
+        L::occurrence_families(visit);
+        R::occurrence_families(visit);
+    }
+    fn prerequisites(
+        context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        pin: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
+        source: worth_relational::facade::identity::EntityId,
+        demand: &D,
+        next: &mut SynchronousOutputWave<S>,
+    ) -> Result<(), SynchronousOutputFailure> {
+        L::prerequisites(context, pin, source, demand, next)?;
+        R::prerequisites(context, pin, source, demand, next)
+    }
+    fn declared_families(
+        parent: std::any::TypeId,
+        visit: &mut impl FnMut(std::any::TypeId, std::any::TypeId),
+    ) {
+        L::declared_families(parent, visit);
+        R::declared_families(parent, visit);
     }
     fn assemble(
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,

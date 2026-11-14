@@ -1,5 +1,18 @@
 //! Read proposed sources and retain actual writers before final group validation.
 use super::*;
+use crate::domain_computation::primary_graph::application_attempt::coupled_outputs::DeclaredCoupledOutputDemand;
+enum PendingOutputDemand<'a> {
+    Prefix(&'a DeclaredCoupledOutputDemand),
+    Stage(DeclaredCoupledOutputDemand),
+}
+impl PendingOutputDemand<'_> {
+    fn demand(&self) -> &DeclaredCoupledOutputDemand {
+        match self {
+            Self::Prefix(demand) => demand,
+            Self::Stage(demand) => demand,
+        }
+    }
+}
 impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run, 'phase, S> {
     pub(super) fn prepare(
         &self,
@@ -19,29 +32,144 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
             pin.map_err(|cause| WorthQueryOutputDemandDenial::new(WorthQueryOutputDemandDenialKind::ForeignSource, format!("coupled before pin: {cause:?}")))
         })?;
-        let stage_demands = self.prepare_authored(execution, &before_pin, candidate)?;
-        for demands in &stage_demands {
-            if let Some(cause) = demands.take_failure() {
-                return Err(CoupledSourceReadStop::capture(cause));
-            }
-            for demand in &demands.values {
+        self.require_authored_basis()?;
+        if self.all_stage_captures().is_empty() {
+            for demand in &self.demands.values {
                 self.prepare_one(execution, &before_pin, demand, candidate)?;
             }
+            let roots = self.demands.synchronous.iter().collect::<Vec<_>>();
+            return synchronous_outputs::CapturedSynchronousOutputs::assemble(
+                &roots,
+                self,
+                execution,
+                &before_pin,
+                candidate,
+            );
         }
-        for demand in &self.demands.values {
-            self.prepare_one(execution, &before_pin, demand, candidate)?;
+        if let Some(prefix) = self.all_stage_captures().first() {
+            let pin = candidate.pin_source(execution)?;
+            self.application
+                .runtime
+                .primary_provider
+                .retain_authored_prefix_after_own(
+                    &self.root_session,
+                    prefix.identity,
+                    prefix.binding,
+                    pin,
+                )
+                .map_err(CoupledSourceReadStop::capture)?;
         }
-        let roots = std::iter::once(&self.demands.synchronous)
-            .chain(stage_demands.iter().map(|demands| &demands.synchronous))
-            .flat_map(|roots| roots.iter())
+        let positioned = self
+            .all_stage_captures()
+            .first()
+            .is_some_and(|stage| stage.ordered);
+        let captured = self
+            .stage_captures()
+            .iter()
+            .filter(|_| !positioned)
+            .filter_map(|stage| stage.required.as_ref())
+            .map(|capture| capture(execution))
             .collect::<Vec<_>>();
-        synchronous_outputs::CapturedSynchronousOutputs::assemble(
+        let roots = self
+            .demands
+            .synchronous
+            .iter()
+            .chain(captured.iter())
+            .collect::<Vec<_>>();
+        let mut wave = synchronous_outputs::SynchronousOutputWave::new();
+        let mut order = synchronous_outputs::CapturedSynchronousOutputs::seed(
             &roots,
             self,
             execution,
             &before_pin,
             candidate,
+            &mut wave,
         )?;
+        let mut stage_demands = Vec::new();
+        let mut pending = self
+            .demands
+            .values
+            .iter()
+            .map(PendingOutputDemand::Prefix)
+            .collect::<Vec<_>>();
+        for (physical, capture) in self.stage_captures().iter().enumerate() {
+            self.prepare_pending(
+                execution,
+                &before_pin,
+                candidate,
+                &mut pending,
+                Some(&capture.producer_barrier),
+            )?;
+            if let Some(order) = &order {
+                let context = synchronous_outputs::SynchronousOutputAssembly {
+                    owner: self,
+                    execution,
+                    before: &before_pin,
+                    order,
+                };
+                wave.drive(&context, candidate, Some(&capture.producer_barrier))
+                    .map_err(|cause| cause.0)?;
+            }
+            let mut demands = self.prepare_stage(execution, &before_pin, candidate, physical)?;
+            if let Some(cause) = demands.take_failure() {
+                return Err(CoupledSourceReadStop::capture(cause));
+            }
+            if positioned && let Some(required) = &capture.required {
+                // Only this actual append makes its required root available.
+                demands.synchronous.push(required(execution));
+            }
+            pending.extend(demands.values.drain(..).map(PendingOutputDemand::Stage));
+            let roots = demands.synchronous.iter().collect::<Vec<_>>();
+            if let Some(next_order) = synchronous_outputs::CapturedSynchronousOutputs::seed(
+                &roots,
+                self,
+                execution,
+                &before_pin,
+                candidate,
+                &mut wave,
+            )? {
+                order = Some(next_order);
+            }
+            stage_demands.push(demands);
+        }
+        self.prepare_pending(execution, &before_pin, candidate, &mut pending, None)?;
+        if let Some(order) = &order {
+            let context = synchronous_outputs::SynchronousOutputAssembly {
+                owner: self,
+                execution,
+                before: &before_pin,
+                order,
+            };
+            wave.drive(&context, candidate, None)
+                .map_err(|cause| cause.0)?;
+        }
+        Ok(())
+    }
+    fn prepare_pending(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        before: &worth_relational::facade::runtime::RelationalPinnedRead,
+        candidate: &mut RelationalAuthoredCoupledCandidate<'_>,
+        pending: &mut Vec<PendingOutputDemand<'_>>,
+        allowed: Option<&[String]>,
+    ) -> Result<(), CoupledSourceReadStop> {
+        let mut position = 0;
+        while position < pending.len() {
+            if allowed.is_none_or(|families| {
+                families
+                    .iter()
+                    .any(|family| family == pending[position].demand().family)
+            }) {
+                self.prepare_one(
+                    execution,
+                    before,
+                    pending.remove(position).demand(),
+                    candidate,
+                )?;
+            } else {
+                position += 1;
+            }
+        }
         Ok(())
     }
     pub(in crate::domain_computation::primary_graph::application_contribution) fn prepare_one(
@@ -68,8 +196,10 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             before_pin,
             demand,
             candidate,
+            false,
         )?;
         let source = match source {
+            execution::CoupledSourceRead::Route { .. } => unreachable!("ordinary source read"),
             execution::CoupledSourceRead::Retiring => return Ok(None),
             execution::CoupledSourceRead::Prepared(index) => {
                 let writers = self.writers.borrow();
@@ -135,7 +265,9 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             .producing_meaning()
             .expect("installed producer participant");
         let source_scope = meaning.source_scope;
+        let position = self.applied_position() + 1;
         self.writers.borrow_mut().push(CoupledWriter {
+            position,
             producer: std::sync::Arc::clone(producer),
             stage: Some(CoupledWriterStage::Inspected(writer)),
             meaning: meaning.clone(),

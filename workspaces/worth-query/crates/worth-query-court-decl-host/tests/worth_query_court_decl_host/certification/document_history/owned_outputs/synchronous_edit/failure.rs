@@ -39,6 +39,7 @@ fn refuses_without_effect(worker: bool) {
             reconciliation_emission: false,
             envelope_records: false,
             second_derivation: Some(second_refuses),
+            ..Default::default()
         },
     );
     let scope = request_scope();

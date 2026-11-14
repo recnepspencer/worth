@@ -34,7 +34,10 @@ impl ApplicationMutationOutputContract<Schema> for Outputs {
     const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] =
         &[<Restored as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR];
 }
-pub struct Handler;
+pub struct Handler {
+    // Only a deliberately faulty installed handler in the inverse boundary court.
+    pub wrong_key: bool,
+}
 impl OperationHandler<Schema, Binding> for Handler {
     fn decide(
         &self,
@@ -57,9 +60,14 @@ impl OperationHandler<Schema, Binding> for Handler {
     ) -> HandlerResult<member_edit::Edited, member_edit::Denial> {
         let result = (|| {
             let model = writer.projected_entity(&model)?;
-            let key = WorthQueryApplicationEntityKey::new(input.key.clone()).unwrap();
+            let actual_key = if self.wrong_key {
+                "wrong-inverse-member".to_owned()
+            } else {
+                input.key.clone()
+            };
+            let key = WorthQueryApplicationEntityKey::new(actual_key.clone()).unwrap();
             let member = writer.create_entity_in_context(&model, Member::reference(), key)?;
-            writer.initialize_field(&member, MemberKey::at("MemberKey"), input.key.clone())?;
+            writer.initialize_field(&member, MemberKey::at("MemberKey"), actual_key)?;
             writer.initialize_field(&member, MemberValue::at("MemberValue"), input.value)?;
             writer.create_output::<Restored>(&member)?;
             writer.link(

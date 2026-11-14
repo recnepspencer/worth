@@ -1,10 +1,31 @@
 # P5 CP3 plan: S6 read-your-writes edit envelope
 
-Approved with changes (D1588; review `orchestration/reviews/pubquery-cp3-plan-review.md`, 8 binding changes, all taken in below). CP3 lands as two landings, L1 and L2. Each has its own header and its own review (two rounds at most). All 22 P5 mutants stay required (D1397); the S6 subset M-S1..M-S5 is mapped in section 6.
+Approved with changes (D1588; review `orchestration/reviews/pubquery-cp3-plan-review.md`, 8 binding changes, all taken in below). L1 landed with its retained certification. L2 completes that existing envelope. Current REVIEW/qa-tests scheduling governs implementation evidence: use the bounded ordinary journey and directly affected controls in the Phase 3 completion Plan, reuse valid results, and recheck corrections only. The historical 22-mutant and hot/worker portfolios below record their original scope; they are not fresh execution mandates.
+
+## Current bounded record-instance extension
+
+Phase4 retains L1/L2 behavior and narrows only an earned independent authored
+prefix: explicit default-false installed pure-handler opt-in, complete sealed
+reads plus the finished existing-record scalar/aspect effect program, monotone
+conservative pruning, actual pre-stage support validation and one-use program
+consumption. Whole-envelope authenticated replay/drift precedes planning and
+retains every original prefix identity slot. Unseen execution keeps the existing
+branch commit coordination through ordinary commit-time validation.
+
+Producer and opaque/unsupported/creation/deletion/relation/external/nested
+categories remain conservative. Neither a distinct source ID nor observed
+selected rows alone proves independence. A genuine authored prefix remains
+required; prefix-free requests still refuse. Phase5 owns the actual CAD realized
+foreign-output input mapping; a demand-only leaf Body tree is not made valid by
+a marker swap. The existing disjoint-source/dependent court and directly
+affected replay/cycle/conflict/support controls are the finite evidence, with
+valid Phase3 results reused. The historical L1 conservative-refusal and
+hot/worker/mutant descriptions below are history, not blanket current promises
+or new execution mandates.
 
 ## L1 header: authored stages, envelope entry, slots, keys, receipt, DAG
 
-- **Usable result:** a multi-step authored edit with several required roots of one program is one Native commit with one envelope key and one receipt, and the receipt carries each authored stage's typed result. Counted on the cabinet-shaped fixture at 1 and 4 authored stages: 1 commit at both. Today each authored step is its own entry and commit (the product's source commits, `worth-cad-runtime/src/runtime/installed/run.rs:104-155`). Stored format: L1 adds one variant, `CanonicalCoupledAuthoredSources::Stages`, and changes no existing one; old stores decode unchanged (D1590), and the variant has its cold court (row 11).
+- **Usable result:** a multi-step authored edit with several required roots of one program is one Native commit with one envelope key and one receipt, and the receipt carries each authored stage's typed result. Counted on the cabinet-shaped fixture at 1 and 4 authored stages: 1 commit at both. Today each authored step is its own entry and commit (the product's source commits, `worth-cad-runtime/src/runtime/installed/run.rs:104-155`). Current storage uses the three semantic source kinds and actual consumed order described below; development artifacts are recreated, not migrated.
 - **Requires:**
   - the Phase 1 base merge of public `5034b49b25` into `4058790f09`, committed with green Phase 1 courts (D1585);
   - D1397 B3 (`orchestration/log/orchestration-log-2026-11-07.md`, D1397 rulings: read-your-writes inside the transaction, DAG order, typed cycle);
@@ -14,13 +35,48 @@ Approved with changes (D1588; review `orchestration/reviews/pubquery-cp3-plan-re
 - **Not in parallel with:** another writer in `NC/` or in `Q/application_contribution/producer/{coupled_assembly,synchronous_outputs}`, `Q/application_attempt/coupled_outputs.rs` or `P/mutation/performed/`; Phase 4 (#131) if it touches `authority/commit/pipeline/publication_execution.rs` (decided at #131's plan review); the parked 3b branch.
 - **Closes when:** the L1 rows of section 6 are green with their mutants (M-S1, M-S3, stage cycle, mixed cycle, subject-less refusal, refusing authored stage), the cold-reopen court for the new part variant passes, and commits per edit are counted at 1 and 4 authored stages.
 
+## Phase 5 consumer extension of the landed envelope
+
+The default static/DAG entry and historical L1/L2 results below retain their
+scope. Runtime-length CAD cohorts use the same typed Publication envelope,
+with explicit positioned authored semantics when the product promises order,
+canonical whole-key replay before handlers, genuine pre-stage data and final
+support. Repeated-family histories use the closed installed occurrence
+component in the existing wave, not a private refresh graph or SourceID edge
+exemption. Corrective authoring retains a genuine inverse root and appends its
+ordinary final Edit before the one commit; only that real root satisfies the
+recorded inverse. See [current authoring DX](../../docs/build-an-application.md#runtime-cohorts-and-positioned-authored-execution).
+
+A genuinely producing later authored stage retains usable corrective history.
+Native has one current representation with three semantic kinds: `Edit` stores
+its nonempty prefix-first consumed source sequence; `Retirement` and
+`Restoration` store their genuine prefix event and consumed later-source
+sequence. Zero, one and multiple later stages use that same shape; repeated
+scopes remain ordered data. Live and historical selection retain exact owners,
+predecessors, genuine source authority and corrective participant restrictions.
+Canonical artifact format9 supports only this current grammar. Other versions
+and unknown meanings refuse before effects. Development artifacts from older
+formats are recreated; no compatibility reader, migration, downgrade or
+old-byte guarantee is required. CHK22, outer protocols and Original-root-v4
+identity domains are otherwise unchanged. Whole intent uses one encoding of
+the actual key, explicit execution mode and complete original stage list;
+default unordered behavior remains, with current replay and mode/order/input
+drift before handlers.
+
+Current affected evidence is the bounded ordinary runtime/ordered/correction
+and occurrence journeys plus their necessary refusal/replay/support controls.
+Historical portfolio, hot/worker and mutant runs below are not a new campaign
+or completion prerequisite. Public prerequisite completion alone does not
+close Phase 5: the real private full-stage and final-body consumer must adopt
+one landed SDK and remove its private ordering/currentness fallbacks.
+
 ## L2 header: stage B after waves, final qualification, seal-shaped stage
 
 - **Usable result:** an edit, its dependents and its seal are one transaction. A CAD edit can then be one commit where today it is S + P + 1, at least 3 and at least 9 in the product (`transaction.rs:3-122`, `run.rs:104-155`, `document.rs:31-103`). Counted on the cabinet-shaped fixture at 3 and 12 dependents: 1 commit at both. A healthy envelope whose producers are all current makes 0 producer contacts and 1 commit, with the seal folded in.
 - **Requires:** L1 landed and certified; the same B3 ruling; the existing final-support owner (`Q/provider/application_attempt_state/commit_preparation/relational_commit/commit_execution/coupled/support.rs:91-104`, `CoupledReadSupportChanged`).
 - **Establishes:** Phase 8 (proprietary #93) may rely on one envelope covering edit, dependents and seal, with one key, one receipt carrying the seal stage's typed result, and typed refusals that name their subject and publish nothing. It may **not** assume a verification run (3b, public #137), more than one effectful round per route (#119, #115), a multi-program envelope, or that a later stage may change data an earlier participant read (refused typed, section 4).
 - **Not in parallel with:** as L1.
-- **Closes when:** every section 6 row is green with its mutant, including M-S2, M-S4 and M-S5; commits per edit are counted at 3 and 12 dependents; the capability index's row (now `capability-index.md:510`, "General demand continuations and the seal envelope remain in P5/S6") states the entry; `synchronous-edit-publication.md:150-152` is edited for B3; and the work is on public master (section 7).
+- **Closes when:** the required L2 behavior has sufficient focused affected evidence, including one coherent ordinary journey at 3 and 12 dependents and affected atomic refusal, seal, support and replay controls; docs and the compiling public consumer describe that entry; the settled implementation receives its required boundary review and reaches public master (section 7). A broad gate, blanket mutant campaign or duplicate hot/worker matrix is not a prerequisite.
 
 Paths: N = `crates/worth-relational/src`; NC = `N/mvcc/publication/application_publication/coupled_assembly`; Q = `workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph`; P = `workspaces/worth-query/crates/worth-query-publication/src/application_entry`.
 
@@ -36,6 +92,12 @@ Paths: N = `crates/worth-relational/src`; NC = `N/mvcc/publication/application_p
   - **One refusal slot, cleared per assembly:** `DeclaredProducerAssembly` keeps one `denial` slot (`Q/application_contribution/producer/coupled_assembly.rs:37`). The caller maps a missing denial to the generic uncommitted outcome, with no subject (`Q/application_attempt/provider_execution/phase/prepared/running/progression/registered.rs:231-234`).
 
 ## 2. Envelope shape
+
+The entry requires a genuine authored prefix. Phase 3 adds A → wave → B;
+producer execution before every authored handler is not promised. A prefix-free
+producer-dependent request retains the existing typed `StageAfterProducer`
+refusal; neither a synthetic no-op stage nor an empty transaction substitutes
+for actual authored admission.
 
 ```text
 envelope (one key, one Native commit, one receipt with per-stage results):
@@ -135,9 +197,9 @@ no kernel fallback or new admission authority.
 | 18 | B re-demands an untouched A-wave route | 0 contacts, 0 extra commits | the route re-run | L2 |
 | 19 | Commits per edit do not grow | 3 and 12 dependents: 1 commit each, counted with the all-branch counter (`reconciliation/commit_count.rs:100-140`, `synchronous_edit/courts.rs:64-68`) | a commit per dependent | L2 |
 
-- Every court runs hot and worker-only. Row 11 is the one cold court.
-- Mutants: commit first, inject, `git checkout --`, `git diff --exit-code`.
-- The other 17 P5 mutants (D1397) keep passing through the existing CP2a/CP2b courts; each landing's handoff lists them with their status.
+- Historical L1 hot/worker, cold and mutation evidence retains its actual certified scope. Current L2 execution uses the bounded ordinary journey and causally affected controls, without replaying that portfolio.
+- An additional sensitivity probe needs a concrete unresolved defect it could distinguish; no fixed mutant quota or extra certification round applies.
+- Reuse the accepted CP2a/CP2b/Native/replay evidence for unchanged contracts and report only checks actually performed on the new source.
 
 ## 7. Public ref at close
 
@@ -178,7 +240,7 @@ no kernel fallback or new admission authority.
 - **The first DAG-ordered stage is the authored prefix.** It is the transaction's first merged plan (`commit_plan.rs:68-76`). Stages 2..k are the new Native part kind. `CoupledPublicationPart.publication` becomes producer-or-authored-stage. Authored stages use a writer custody arm with `AuthoredPrefix`'s meaning and their own part ordinal. The producer-only checks (`part.rs:22-42`, `completion.rs:133-146`, `coupled_authored.rs:138-142`) skip authored stages.
 - **Stage handlers read the candidate.** A stage after the first runs its handler with C authorization and D data at the current candidate pin, through the provider-session read the producers use (`coupled_source::read`). This is L1's one new Query read mechanism.
 - **API.** An envelope request takes `.stage::<Root, _>(intent)` (Rust infers the concrete intent type) per authored stage, then `.idempotency(..)` and `execute_performed::<Program>`. Each stage names its root of the one program. The roots seed one wave (`synchronous_outputs/capture.rs:144-171` becomes a collection).
-- **Durable shape.** The new variant is `CanonicalCoupledAuthoredSources::Stages`, beside `Edit` (`coupled_authored.rs:12-17`), and is courted cold (row 11). An envelope with no producer participant commits through the existing `install_empty` path.
+- **Durable shape.** The current Edit kind retains the complete prefix-first consumed source sequence. Genuine Retirement/Restoration retain their own prefix event plus later sources. An envelope with no producer participant uses the actual standalone source behavior through `install_empty`; it does not invent a coupled event.
 
 ## 11. L1 lands as L1a (Native) and L1b (Query) (2026-11-10, lane decision: land small)
 
@@ -191,7 +253,7 @@ L1 as a single landing would combine a stored-format addition with a new generic
   - Each stage's touches project from its own commands (`authored_stage_mutation_touches`).
   - The canonical event records the stage sources (`CommitPublication::coupled_authored_stage_sources`).
   - Commits per envelope: 1 (Native court).
-  - Stored format: adds the variant `CanonicalCoupledAuthoredSources::Stages`, appended last, and changes no existing one.
+  - Stored format: use only the current Native artifact grammar; recreate obsolete development artifacts. Current replay, undo, recovery and exact source meaning remain required.
 - **Requires:**
   - merge `d39fc1fd21`;
   - plan `b9ae180743` (D1588, D1590);

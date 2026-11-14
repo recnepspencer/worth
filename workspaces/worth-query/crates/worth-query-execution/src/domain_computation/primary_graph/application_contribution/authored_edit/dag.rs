@@ -1,6 +1,8 @@
 //! Installed declarations decide order; source IDs never prove independence.
 use super::*;
 mod cycle;
+mod independent_prefix;
+mod positioned;
 use worth_query_installation::facade::{
     WorthQueryOperationGraphReadScope, WorthQueryOperationReadTouchOverlapIndex,
     WorthQueryOperationTouchScope,
@@ -39,8 +41,9 @@ pub struct DeclaredEditScopeCycle {
 #[derive(Debug)]
 pub enum DeclaredEditOrderRefusal {
     Cycle(DeclaredEditScopeCycle),
+    Planning(WorthQueryOutputDemandDenial),
     Execution(WorthQueryApplicationAttemptDenial),
-    /// Authored stages after a producer wave require phase 2.3's qualification.
+    /// This entry requires a genuine authored prefix before any producer wave.
     StageAfterProducer(DeclaredEditDependency),
 }
 struct Node<'a> {
@@ -85,11 +88,19 @@ fn overlap(
 }
 pub fn order_authored_stages<S>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    stages: &[CapturedAuthoredEditStage<S>],
-) -> Result<Vec<usize>, DeclaredEditOrderRefusal> {
+    stages: &mut [CapturedAuthoredEditStage<S>],
+    phase: &WorthQueryAdvancementPhase<'_>,
+    application: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+    unseen: &UnseenAuthoredEnvelope<'_>,
+) -> Result<Vec<usize>, DeclaredEditOrderRefusal>
+where
+    S: worth_query_installation::facade::ApplicationSchema,
+{
     let Some(first) = stages.first() else {
         return Ok(Vec::new());
     };
+    let positioned = unseen.intent.order()
+        == worth_query_declaration::facade::application_operation::ApplicationEditEnvelopeOrder::OrderedAuthored;
     let mut nodes = stages
         .iter()
         .map(|stage| Node {
@@ -112,6 +123,16 @@ pub fn order_authored_stages<S>(
             nodes.push(Node { subject: DeclaredEditParticipant::Producer { family: producer.family.into(), implementations: vec![producer.identity.clone()] }, contracts: vec![&producer.contract], queries: producer.queries.iter().collect() });
         }
     }
+    if positioned {
+        let barriers = positioned::barriers(execution, stages, &nodes)?;
+        drop(nodes);
+        for (stage, barrier) in stages.iter_mut().zip(barriers) {
+            stage.producer_barrier = barrier;
+            stage.ordered = true;
+            stage.executor.order_authored();
+        }
+        return Ok((0..stages.len()).collect());
+    }
     let mut edges = Vec::new();
     let mut incoming = vec![0usize; nodes.len()];
     for (writer, writes) in nodes.iter().enumerate() {
@@ -121,10 +142,45 @@ pub fn order_authored_stages<S>(
                 continue;
             }
             if let Some(dependency) = overlap(reads, writes, &first.schema) {
-                edges.push((writer, reader, dependency));
+                edges.push((writer, reader, Some(dependency)));
                 incoming[reader] += 1;
             }
         }
+    }
+    for (parent, child) in stages.iter().flat_map(|stage| &stage.producer_connections) {
+        let family_node = |kind: &std::any::TypeId| {
+            let family = stages
+                .iter()
+                .flat_map(|stage| &stage.producers)
+                .find(|producer| producer.family_type == *kind)?
+                .family;
+            nodes.iter().position(|node| {
+                matches!(&node.subject,
+                DeclaredEditParticipant::Producer { family: actual, .. } if actual == family)
+            })
+        };
+        if let (Some(parent), Some(child)) = (family_node(parent), family_node(child))
+            && parent != child
+            && !edges
+                .iter()
+                .any(|(from, to, _)| *from == parent && *to == child)
+        {
+            checkpoint(execution)?;
+            edges.push((parent, child, None));
+            incoming[child] += 1;
+        }
+    }
+    independent_prefix::refine(
+        execution,
+        stages,
+        &nodes,
+        &mut edges,
+        &AuthoredEditStageContext { phase, application },
+        unseen,
+    )?;
+    incoming.fill(0);
+    for (_, reader, _) in &edges {
+        incoming[*reader] += 1;
     }
     let mut order = Vec::new();
     while let Some(next) = incoming.iter().enumerate().find_map(|(ordinal, incoming)| {
@@ -141,7 +197,7 @@ pub fn order_authored_stages<S>(
         let overlaps = cycle
             .iter()
             .zip(cycle.iter().cycle().skip(1))
-            .map(|(writer, reader)| {
+            .filter_map(|(writer, reader)| {
                 edges
                     .iter()
                     .find(|(from, to, _)| from == writer && to == reader)
@@ -161,16 +217,32 @@ pub fn order_authored_stages<S>(
             overlaps,
         }));
     }
-    if let Some((_, _, dependency)) = edges
-        .into_iter()
-        .find(|(writer, reader, _)| *writer >= stages.len() && *reader < stages.len())
-    {
+    if order.first().is_some_and(|first| *first >= stages.len()) {
+        let dependency = edges
+            .iter()
+            .find_map(|(writer, reader, dependency)| {
+                (*writer >= stages.len() && *reader < stages.len())
+                    .then(|| dependency.clone())
+                    .flatten()
+            })
+            .expect(
+                "a producer precedes every authored stage only through a declared read dependency",
+            );
         return Err(DeclaredEditOrderRefusal::StageAfterProducer(dependency));
     }
-    Ok(order
-        .into_iter()
-        .filter(|ordinal| *ordinal < stages.len())
-        .collect())
+    let mut families = Vec::new();
+    let mut authored = Vec::new();
+    for ordinal in order {
+        match &nodes[ordinal].subject {
+            DeclaredEditParticipant::Stage(_) => authored.push((ordinal, families.clone())),
+            DeclaredEditParticipant::Producer { family, .. } => families.push(family.clone()),
+        }
+    }
+    drop(nodes);
+    for (ordinal, barrier) in &authored {
+        stages[*ordinal].producer_barrier = barrier.clone();
+    }
+    Ok(authored.into_iter().map(|(ordinal, _)| ordinal).collect())
 }
 
 fn checkpoint(

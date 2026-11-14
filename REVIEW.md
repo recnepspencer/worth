@@ -19,6 +19,18 @@ same final diff. Three lenses do not require three reviewers or builds.
 Hosted code review does not execute skills or commands; apply the substantive
 review rules here and do not claim execution that did not occur.
 
+Use [qa-tests](skills/qa-tests/SKILL.md) for test failures and test-quality
+review during production changes. Leave unaffected tests alone; simplify or
+replace an affected fixture when it obstructs the change or makes certification
+fragile.
+
+Use [test-suite-simplify](skills/test-suite-simplify/SKILL.md) when asked to
+reduce the cost or fragility of an existing suite, fixture, snapshot or
+verification step. This is a separate simplification workflow, not an additional
+mandatory pass during production changes. Review removed test families against
+the guarantees preserved and their replacements, or why no current guarantee
+remained. Judge success by reduced recurring certification work.
+
 ## Necessity and scope
 
 Judge whether the work is needed before judging how thoroughly it is built.
@@ -52,9 +64,14 @@ or complex code is not itself a defect; explain what is unnecessary and why.
 ## Required platform review skills
 
 Read skills/qa-loop/SKILL.md, skills/qa-tests/SKILL.md and
-skills/code-quality-qa/SKILL.md. Use implementation-batch for new implementation
-slices. CAD kernel reviews use cad-qa-loop and cad-qa-tests instead of the generic
-pair; code-quality-qa remains shared.
+skills/code-quality-qa/SKILL.md. Apply code-quality-qa after behaviour and test QA.
+CAD kernel reviews use cad-qa-loop and cad-qa-tests instead of the generic pair;
+code-quality-qa remains shared.
+
+The CAD skills use the public skill bodies with CAD kernel addenda. Dedicated
+kernel suite simplification uses
+[cad-test-suite-simplify](skills/cad-test-suite-simplify/SKILL.md), rather than
+adding a simplification pass to ordinary production reviews.
 
 ## Platform ownership
 

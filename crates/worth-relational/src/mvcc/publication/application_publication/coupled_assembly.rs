@@ -115,8 +115,8 @@ pub struct RelationalAuthoredCoupledCandidate<'a> {
     pub(crate) binding: &'a BoundAuthoredCoupling,
     pub(crate) parts: Vec<CoupledPublicationPart>,
     pub(crate) stages: Vec<CoupledAuthoredStagePart>,
-    /// Patch fragments written by the authored writer: the prefix and stages.
-    authored_fragments: usize,
+    /// Exact applied prefix; later authored stages retain their own spans.
+    authored_prefix: std::ops::Range<usize>,
     continuation: continuation::ContinuationState,
     fresh_records: net_plan::CreatorCustody,
     authored_writes: authored_writes::AuthoredWrites,
@@ -135,6 +135,7 @@ pub(crate) struct CoupledPublicationPart {
 /// One later authored stage applied over the candidate pin under the authored
 /// writer's custody. It is never a producer posture and owns no output route.
 pub(crate) struct CoupledAuthoredStagePart {
+    pub(crate) fragments: std::ops::Range<usize>,
     pub(crate) roles: Vec<RequiredOutputRoleTarget>,
     pub(crate) output_ids: worth_execution::ExecutionArray<crate::identity::data::EntityId>,
     pub(crate) source: crate::identity::data::EntityId,

@@ -1,114 +1,107 @@
 ---
 name: cad-qa-loop
-description: Review and correct WORTH CAD kernel behavior against CAD meaning, engineering laws and the public platform contract. Use for kernel implementation QA; public platform implementations use qa-loop.
+description: Review and correct a WORTH CAD kernel implementation against its
+  governing specification or plan, with the CAD kernel addendum.
 ---
 
 # CAD QA Loop
 
-Review the final slice against its governing specification, repository
-instructions, CAD laws and relevant numerical, testing and iteration laws.
-In worth-proprietary, start with AGENTS.md, REVIEW.md, AI_README.md and
-cad/docs/cad-laws.md. Resolve current documents from that checkout; inspect
-supersession notices rather than substituting a different worktree's contracts.
+The governing specification or plan is the only authority for behaviour. Do
+not consult other documents to find requirements. "No material findings" is
+a fully successful outcome.
 
-## Review purpose and scope
+## Preproduction
 
-Read the task repository's REVIEW.md. Review is an assessment, not a requirement
-to produce corrections. "No material in-scope findings" is a fully successful
-outcome. Report supported defects; do not manufacture improvements to
-demonstrate thoroughness or suppress a real defect to return a clean verdict.
+WORTH is not in production. Do not preserve obsolete APIs, stored formats,
+fixtures or golden bytes for backward compatibility. Within the change's
+scope, delete displaced implementations, adapters, migrations and
+compatibility-only tests; use one current representation. Recreate development
+artifacts instead of migrating them. Preserve required current-version replay,
+undo and recovery behavior. Add backward compatibility only when the user
+explicitly requests it.
 
-A blocking finding must identify the affected requirement, credible trigger,
-concrete consequence and smallest coherent correction. Optional improvements
-do not block completion. Follow additional owners only when needed to establish
-or correct that consequence; stop when the assigned review is complete.
+## Check in two directions
 
-## Proportionate engineering
+Missing: for each behaviour the specification states, read the code path
+that implements it. Then trace what happens when it fails: invalid input,
+an error partway through, an empty or maximal case, an out-of-order or
+repeated call. Read the path; do not infer it from names, comments or
+passing tests.
 
-Would an experienced engineer choose this design to solve the actual
-requirement if no AI-generated plan, review checklist or inherited test
-demanded it? Prefer established facilities, clear ownership and proportionate
-complexity. Additional mechanisms must earn their implementation, maintenance
-and iteration cost through a concrete need.
+Excess: for each mechanism in the diff, find the requirement it serves. If
+there is none, it is a finding: abstractions, configuration, counters,
+budgets, defensive checks for states that cannot occur, and generality
+nobody asked for. Resource accounting needs a stated requirement or a
+measured failure.
 
-Judge the actual responsibility, consumer and tradeoff rather than a company's
-reputation or an "enterprise grade" label. Unfamiliar or complex code is not
-itself a defect. Explain what is unnecessary and why; do not turn this question
-into speculative redesign, cosmetic cleanup or another mandatory framework.
+## What counts as a finding
 
-## The kernel does not reestablish trust
+A finding names four things:
 
-Public WORTH owns snapshot consistency, dependency tracking, currentness,
-invalidation, safe publication and recovery guarantees. The kernel owns CAD
-meaning: geometry, topology rules and domain invariants declared through the
-platform.
+1. the specification clause affected;
+2. a concrete trigger reachable through the public interface;
+3. the consequence;
+4. the smallest coherent correction.
 
-Consume a successful public operation according to its declared contract.
-Reject private reconstruction or revalidation of those guarantees, including
-inside proprietary tests and reference oracles. Investigate an apparent public
-failure at its supported boundary; fix the public contract or implementation
-in public WORTH. Do not prescribe a private fallback or parallel infrastructure.
+Without a concrete trigger it is not a finding. Unfamiliar or complex code is
+not a defect. Optional improvements are reported and do not block.
 
-Review CAD invariants at the owner that constructs or admits their facts.
-Successful publication must not be followed by a newly discoverable domain
-refusal during Session adoption. Distinguish CAD meaning from platform safety;
-moving a public recheck before the seal does not make it a CAD invariant.
+If the specification is silent on a failure the code can reach, report a
+specification gap with the trigger. Do not invent the requirement.
 
-## Trace CAD consequences
+## Correcting
 
-Follow authored inputs through their numerical owner, units, frames, parameter
-domains, tolerance provenance, geometry, topology and affected consumers.
-Shared arithmetic and numerical primitives stay at their established owners.
-Do not promote tessellation, display approximations or legacy proxies into
-authoritative geometry.
+- Fix the cause at the code that owns it. A guard, a special case or a green
+  reproducer does not close a cause that survives.
+- Scope follows causal necessity. Leave unrelated code alone and list
+  unrelated debt separately.
+- A correction that removes excess also removes its tests and contracts. Do
+  not keep it under a new name.
 
-Inspect the real affected authoring transitions: create, edit, regenerate,
-correct, delete or undo as relevant. Consider failed preparation, cancellation
-and adoption where the change affects them. Test the kernel's use and CAD
-consequences of the public contract without independently reproving the public
-transaction or recovery machinery.
+## Stopping
 
-Scope follows causal necessity. Inspect the owners, consumers and tests needed
-to judge the slice; preserve unrelated work and report unrelated debt separately.
-A test-only audit path is not a production performance path. Trace callers
-before assigning a performance defect or milestone blocker.
+- Make one pass. Review again only what a correction touched.
+- Do not add rounds to look for more.
+- Escalate a contradiction in the specification, a product choice that
+  cannot be discovered, or an action beyond your authority, with evidence
+  and options.
 
-## Correct and close
+## Cost
 
-Use plausible inputs and concrete failure sequences. Each material finding
-names its location, trigger, consequence, evidence, owning contract or law,
-correction and distinguishing verification. Separate observations from inference.
+- Use cheap source checks and the smallest meaningful build and test scope.
+  Count compile, link and fixture construction.
+- Full gates, broad matrices and reverse-dependency builds are milestone or
+  nightly work, not a condition of clearing a review.
+- Reuse valid evidence; rerun only what a correction affects.
 
-Restore the invariant at its rightful owner and remove displaced competing
-mechanisms. Do not preserve speculative work budgets, reservation ledgers or
-resource estimates in ordinary CAD APIs without an explicit product requirement
-or a measured failure requiring that remedy. Preserve checked arithmetic,
-semantic counts, authority, CAD validity and ordinary failure handling.
+## Report
 
-Apply cad-qa-tests and the shared code-quality-qa to the same final slice.
-Do not also run generic qa-loop and qa-tests for the same kernel responsibility.
-Follow the authorized independent reviewer arrangement; a read-only reviewer
-reports findings and the implementer makes corrections.
+Findings with their four parts, corrections made, commands actually run,
+specification gaps, and deferred checks.
 
-Stop when no supported material in-scope finding remains and required focused
-verification is complete. Report corrections, actual checks, unrun milestone
-or nightly checks and limitations. Do not add rounds without new evidence.
+## CAD kernel
 
-## Compile time is sacred
+The kernel is a consumer of the platform. The platform owns snapshot
+consistency, dependency tracking, currentness, invalidation, safe
+publication and recovery.
 
-During ordinary development, slice review and routine landing, use cheap source
-checks and the smallest meaningful compilation and test scope. Include compile,
-link and fixture construction cost when selecting evidence; test runtime alone
-does not describe its cost.
+- Kernel code that re-establishes any of those is excess: a private
+  freshness check, dependency tracker, invalidation, publication validator
+  or recovery certifier. Remove it.
+- If a platform guarantee is missing or broken, report it against the
+  platform. Do not compensate in the kernel.
 
-Expensive gates belong at milestone completion, release verification or nightly
-jobs. They are not prerequisites for every edit, review, commit or slice landing.
-Do not expand automatically to all reverse dependencies or workspace CI.
+When tracing failures, add three CAD cases: degenerate input, an unsupported
+geometry combination, and a numerical result that cannot be decided. Each
+must end in a typed outcome, never a guessed sign, a silent approximation or
+a partial body.
 
-A concrete suspected defect may require an expensive focused reproducer. Name
-the uncertainty and why cheaper evidence cannot resolve it; this does not
-authorize a full gate. Do not invent a scheduling job by invoking this policy.
+Findings regardless of what the specification says:
 
-Reuse valid evidence and rerun checks when a correction affects what they
-establish. Three QA lenses do not imply three builds, test runs or reviewers.
-Report deferred verification honestly; a focused pass is not a full gate pass.
+- a private epsilon, decimal conversion, solver or precision escalation
+  outside its numerical owner;
+- an authored value passed through floating point;
+- proximity used to weld, connect, merge or declare tangency;
+- validation that moves, closes, flips or discards anything;
+- a decision, stored value, name or hash that depends on hash iteration
+  order, thread completion order or a library transcendental.

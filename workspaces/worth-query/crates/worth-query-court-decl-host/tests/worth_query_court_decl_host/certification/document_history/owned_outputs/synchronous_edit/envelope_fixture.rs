@@ -11,7 +11,7 @@ pub struct StageResult {
 }
 worth_query_structured_value_binding!(pub StageResultBinding for StageResult { identity: "owned-outputs.edit-envelope.stage-result.v1" });
 macro_rules! part {
-    ($module:ident, $operation:ident, $identity:literal, $entity:ident, $key:ident, $key_name:literal, $value:ident, $value_name:literal $(, reads $other_key:ident at $other_key_name:literal, $other_value:ident at $other_value_name:literal, lookup $lookup:literal)?) => { pub mod $module {
+    ($module:ident, $operation:ident, $identity:literal, $entity:ident, $key:ident, $key_name:literal, $value:ident, $value_name:literal $(, candidate_planning $planning:literal)? $(, reads $other_key:ident at $other_key_name:literal, $other_value:ident at $other_value_name:literal, lookup $lookup:literal)?) => { pub mod $module {
         use super::*;
         #[derive(Clone, Debug, WorthValue)]
         #[worth_value(crate = "worth_query_decl::facade::application_schema")]
@@ -29,6 +29,7 @@ macro_rules! part {
         pub struct Decision { target: WorthQueryInvariantMutationTarget<Schema, $entity>, result: StageResult }
         pub struct Handler;
         impl OperationHandler<Schema, Binding> for Handler {
+            fn supports_candidate_planning() -> bool { false $(|| $planning)? }
             fn decide(&self, input: &Intent, reader: &mut DecisionReader<'_, '_, '_, Schema, Binding>) -> HandlerResult<Decision, Denial> {
                 if input.value > 1000 { return HandlerResult::DomainDenied(Denial::ValueOutOfRange); }
                 let result = (|| {
@@ -63,7 +64,7 @@ part!(
     ModelKey,
     "ModelKey",
     ModelValue,
-    "ModelValue"
+    "ModelValue", candidate_planning true
 );
 part!(
     member,
@@ -101,13 +102,16 @@ part!(after_producer, PatchEnvelopeAfterProducer, "owned-outputs.edit-envelope.a
 pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
-    after_producer::declare(cyclic::declare(dependent::declare(calibration::declare(
-        cap::declare(member::declare(model::declare(schema))),
-    ))))
+    super::interleaved::declare(after_producer::declare(cyclic::declare(
+        dependent::declare(calibration::declare(cap::declare(member::declare(
+            model::declare(schema),
+        )))),
+    )))
 }
 pub fn install(
     setup: &mut WorthQueryApplicationContributionSetup<'_, Schema>,
 ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+    super::interleaved::install(setup)?;
     setup.handler::<model::Binding, _>(model::Handler)?;
     setup.handler::<member::Binding, _>(member::Handler)?;
     setup.handler::<cap::Binding, _>(cap::Handler)?;

@@ -55,6 +55,21 @@ impl StepRefusal for PerformedDenial {
     fn execution_stop(&self) -> bool {
         match self {
             Self::Mutation(denial) => denial.execution_stop(),
+            Self::Correction(denial) => {
+                use crate::application_entry::WorthQueryApplicationCorrectionDenial as Correction;
+                match denial.as_ref() {
+                    Correction::Mutation(cause) => cause.execution_stop(),
+                    Correction::RequiredOutputs(cause) => cause.execution_stop(),
+                    Correction::ExecutionRequest(_) => true,
+                    Correction::SourceBindingUnavailable
+                    | Correction::RecordedOutcomeUnavailable
+                    | Correction::SourceOperation(_)
+                    | Correction::ProgramOwner(_)
+                    | Correction::ProductSelection(_)
+                    | Correction::Source(_)
+                    | Correction::Derivation(_) => false,
+                }
+            }
             Self::Action(_)
             | Self::ForeignProgram
             | Self::UndeclaredOutputRoot

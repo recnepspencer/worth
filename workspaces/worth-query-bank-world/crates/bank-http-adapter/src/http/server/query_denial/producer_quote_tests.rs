@@ -43,3 +43,37 @@ fn ordinary_output_failures_preserve_recovery_actions() {
         BankHttpDenial::new(Kind::Unavailable, Next::Retry)
     );
 }
+
+// Descriptive denial inputs exercise only the Query-to-Bank and HTTP projections.
+#[test]
+fn required_output_structure_denials_preserve_source_and_terminal_posture() {
+    use worth_query_host::facade::{
+        home_program_transition::{EntityId, PartitionId},
+        primary_graph::WorthQueryOutputDemandDenialKind as Query,
+    };
+    use BankApplicationOutputSettlementDenialKind as Bank;
+
+    let source = EntityId::new(PartitionId::new(1), 0, 1);
+    for (query, expected) in [
+        (
+            Query::CyclicRequiredOutputOccurrences { source },
+            Bank::CyclicRequiredOutputOccurrences { source },
+        ),
+        (
+            Query::RequiredOutputParentUnavailable { source },
+            Bank::RequiredOutputParentUnavailable { source },
+        ),
+    ] {
+        let bank = Bank::from(query);
+        assert_eq!(bank, expected);
+        let answer = query_denial(BankApplicationQueryDenial::OutputSettlement(bank));
+        assert_eq!(
+            answer,
+            BankHttpDenial::new(Kind::InternalDenied, Next::None)
+        );
+        assert_eq!(
+            super::super::routes::response_status(answer.kind),
+            axum::http::StatusCode::INTERNAL_SERVER_ERROR
+        );
+    }
+}

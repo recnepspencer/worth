@@ -267,10 +267,18 @@ pub(super) fn entry_spec_with_member_delivery<
     with_envelope_completion_actions(entry_builder::<Delivery, MemberDelivery, Completion>())
         .finish()
 }
-fn entry_builder<
+pub(super) fn entry_builder<
     Delivery: ApplicationActionDelivery<Schema, edit::Binding>,
     MemberDelivery: ApplicationActionDelivery<Schema, member_edit::Binding>,
     RestoreDelivery: ApplicationActionDelivery<Schema, authored_member::restore::Binding>,
+>() -> ApplicationFeatureSpecBuilder<Schema, ApplicationRootComposition, Entry> {
+    entry_builder_with_retirement::<Delivery, MemberDelivery, RestoreDelivery, Completion>()
+}
+pub(super) fn entry_builder_with_retirement<
+    Delivery: ApplicationActionDelivery<Schema, edit::Binding>,
+    MemberDelivery: ApplicationActionDelivery<Schema, member_edit::Binding>,
+    RestoreDelivery: ApplicationActionDelivery<Schema, authored_member::restore::Binding>,
+    RetireDelivery: ApplicationActionDelivery<Schema, authored_member::retire::Binding>,
 >() -> ApplicationFeatureSpecBuilder<Schema, ApplicationRootComposition, Entry> {
     ApplicationFeatureSpec::root::<Schema, Entry>()
         .provides::<EntryOutput>()
@@ -286,7 +294,7 @@ fn entry_builder<
         .finish_action()
         .action::<member_edit::Binding, MemberDelivery>()
         .finish_action()
-        .action::<authored_member::retire::Binding, Completion>()
+        .action::<authored_member::retire::Binding, RetireDelivery>()
         .finish_action()
         .action::<authored_member::restore::Binding, RestoreDelivery>()
         .finish_action()
@@ -332,7 +340,7 @@ pub(super) fn with_envelope_completion_actions(
         Completion,
     >(entry)
 }
-fn envelope_actions<
+pub(super) fn envelope_actions<
     ModelPart: ApplicationActionDelivery<Schema, synchronous_edit::envelope_fixture::model::Binding>,
     MemberPart: ApplicationActionDelivery<Schema, synchronous_edit::envelope_fixture::member::Binding>,
     CapPart: ApplicationActionDelivery<Schema, synchronous_edit::envelope_fixture::cap::Binding>,
@@ -344,6 +352,10 @@ fn envelope_actions<
     entry: ApplicationFeatureSpecBuilder<Schema, ApplicationRootComposition, Entry>,
 ) -> ApplicationFeatureSpecBuilder<Schema, ApplicationRootComposition, Entry> {
     entry
+        .action::<synchronous_edit::interleaved::dependent::Binding, Completion>()
+        .finish_action()
+        .action::<synchronous_edit::interleaved::seal::Binding, Completion>()
+        .finish_action()
         .action::<synchronous_edit::envelope_fixture::model::Binding, ModelPart>()
         .finish_action()
         .action::<synchronous_edit::envelope_fixture::member::Binding, MemberPart>()

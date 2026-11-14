@@ -12,6 +12,7 @@ use std::sync::Arc;
 use worth_foundational::facade::{AspectFieldLocator, AspectValue};
 use worth_query_installation::facade::WorthQueryInstalledAftermathContract;
 use worth_relational::facade::history::RelationalCommitReceipt;
+mod presence;
 mod readmission;
 
 #[derive(Clone)]

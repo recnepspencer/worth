@@ -11,6 +11,8 @@ pub struct RelationalCoupledAuthoredPublication {
     pub(crate) binding: Arc<BoundAuthoredCoupling>,
     pub(crate) source_effects: RelationalCoupledAuthoredSourceEffects,
     pub(crate) authored_records: Vec<crate::transactions::data::RecordRef>,
+    // This prefix of the same retained vector is fixed before any other writer.
+    pub(crate) authored_prefix_records: usize,
     pub(crate) authored_commands: Arc<crate::mvcc::OwnedNormalizedPlan>,
     pub(crate) parts: Vec<CoupledPublicationPart>,
     pub(crate) stages: Vec<CoupledAuthoredStagePart>,
@@ -100,7 +102,8 @@ pub(crate) fn prepare_coupled_candidate(
         ),
     )?;
     let mut authored_records = mutation.outcome.effect.publication.changed_records.clone();
-    let authored_fragments = mutation.outcome.effect.publication.patch_fragments.len();
+    let authored_prefix_records = authored_records.len();
+    let authored_prefix = 0..mutation.outcome.effect.publication.patch_fragments.len();
     writer_custody::require(
         execution,
         &binding.owners,
@@ -127,7 +130,7 @@ pub(crate) fn prepare_coupled_candidate(
         binding: &binding,
         parts: Vec::new(),
         stages: Vec::new(),
-        authored_fragments,
+        authored_prefix,
         continuation: continuation::ContinuationState::default(),
         fresh_records,
         authored_writes,
@@ -149,17 +152,18 @@ pub(crate) fn prepare_coupled_candidate(
     let RelationalAuthoredCoupledCandidate {
         parts,
         stages,
-        authored_fragments,
+        authored_prefix,
         ..
     } = candidate;
     if let Some(missing) = binding.owners.stages.get(stages.len()) {
         return Err(part::reject(Cause::MissingAuthoredStage, *missing).into());
     }
-    // Every authored stage applies before any producer part, so the authored
-    // writer's patches are exactly this applied prefix of the candidate's.
+    // Select actual authored appends before final patch composition. Producer
+    // fragments between authored stages never become authored source effects.
     let source_effects = RelationalCoupledAuthoredSourceEffects::capture(
         execution,
-        &mutation.outcome.effect.publication.patch_fragments[..authored_fragments],
+        &mutation.outcome.effect.publication.patch_fragments,
+        std::iter::once(authored_prefix).chain(stages.iter().map(|stage| stage.fragments.clone())),
     )?;
     for stage in &stages {
         authored_records.extend_from_slice(&stage.records);
@@ -211,6 +215,7 @@ pub(crate) fn prepare_coupled_candidate(
                 binding: Arc::clone(&binding),
                 source_effects,
                 authored_records,
+                authored_prefix_records,
                 authored_commands,
                 parts,
                 stages,

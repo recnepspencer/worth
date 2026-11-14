@@ -92,7 +92,7 @@ impl WorthQueryApplicationIdempotencyResolutionDenial {
         }
     }
 
-    pub(super) const fn foreign_admission() -> Self {
+    pub(in crate::domain_computation::primary_graph) const fn foreign_admission() -> Self {
         Self {
             kind: WorthQueryApplicationIdempotencyResolutionDenialKind::ForeignAdmission,
             authorization: None,

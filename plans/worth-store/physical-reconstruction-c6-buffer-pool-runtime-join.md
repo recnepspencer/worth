@@ -1217,7 +1217,7 @@ The phase that stabilizes each public surface writes or revises:
    - keep the normal command direct and avoid generated reports or mutation
      registries.
 
-The feature-facing guide must be written with the `feature-doc-writer` skill
+The feature-facing guide must be written
 after the public API is real. Documentation claims are verified against
 compiled examples and executed counters; prose may not describe planned APIs
 as shipped.

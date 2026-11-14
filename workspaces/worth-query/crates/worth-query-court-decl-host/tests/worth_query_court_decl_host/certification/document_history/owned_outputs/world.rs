@@ -7,10 +7,13 @@ pub type Document<'a> = WorthQueryApplicationHistoryDocument<'a, Schema, History
 #[derive(Clone, Copy, Default)]
 pub struct Configuration {
     pub second_derivation: Option<fn(u64) -> u64>,
+    pub child_derivation: Option<fn(u64) -> u64>,
     pub reconciliation_indices: bool,
     pub reconciliation_peer_caps: bool,
     pub reconciliation_emission: bool,
     pub envelope_records: bool,
+    pub interleaved_records: bool,
+    pub wrong_inverse_member: bool,
 }
 impl WorthQueryApplicationContribution<Schema> for Contribution {
     type Configuration = Configuration;
@@ -46,7 +49,11 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
             configuration.reconciliation_emission,
         )?;
         setup.handler::<authored_member::retire::Binding, _>(authored_member::retire::Handler)?;
-        setup.handler::<authored_member::restore::Binding, _>(authored_member::restore::Handler)?;
+        setup.handler::<authored_member::restore::Binding, _>(
+            authored_member::restore::Handler {
+                wrong_key: configuration.wrong_inverse_member,
+            },
+        )?;
         setup.handler::<edit::Binding, _>(edit::Handler)?;
         setup.handler::<synchronous_edit::new_source::restricted::Binding, _>(
             synchronous_edit::new_source::restricted::Handler,
@@ -73,7 +80,10 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
             Some(derive) => second::install_with_derivation(setup, derive)?,
             None => second::install(setup)?,
         }
-        child::install(setup)?;
+        match configuration.child_derivation {
+            Some(derive) => child::install_with_derivation(setup, derive)?,
+            None => child::install(setup)?,
+        }
         restricted::install(setup)?;
         upstream::install(setup)?;
         downstream::install(setup)?;
@@ -188,6 +198,9 @@ where
             seed(graph, installed, initial_value, other_value)?;
             if configuration.envelope_records {
                 synchronous_edit::envelope_fixture::seed(graph)?;
+            }
+            if configuration.interleaved_records {
+                synchronous_edit::interleaved::seed(graph)?;
             }
             if configuration.reconciliation_peer_caps {
                 synchronous_edit::reconciliation::peer_caps::seed(graph)?;

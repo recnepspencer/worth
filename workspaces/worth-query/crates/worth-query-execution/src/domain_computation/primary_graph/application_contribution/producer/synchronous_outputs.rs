@@ -35,8 +35,9 @@ mod root;
 pub use discovered::SynchronousDiscoveredOutputRoot;
 mod discovery;
 mod edges;
+mod occurrences;
 pub(in crate::domain_computation::primary_graph::application_contribution) mod rounds;
-mod source;
+pub(in crate::domain_computation::primary_graph::application_contribution) mod source;
 mod wave;
 pub use rounds::default_producer_round_bounds;
 pub use wave::SynchronousOutputWave;
@@ -61,17 +62,22 @@ impl AppliedOutputParent {
         Self { pin, source }
     }
 }
-pub struct SynchronousOutputFailure(CoupledSourceReadStop);
+pub struct SynchronousOutputFailure(
+    pub(in crate::domain_computation::primary_graph::application_contribution) CoupledSourceReadStop,
+);
 impl From<CoupledSourceReadStop> for SynchronousOutputFailure {
     fn from(cause: CoupledSourceReadStop) -> Self {
         Self(cause)
     }
 }
 pub struct SynchronousOutputAssembly<'a, 'owner, 'run, 'phase, S: ApplicationSchema> {
-    owner: &'a CoupledApplicationAssembly<'owner, 'run, 'phase, S>,
-    execution: &'a worth_execution::ExecutionRequest<'a, 'a>,
-    before: &'a RelationalPinnedRead,
-    order:
+    pub(in crate::domain_computation::primary_graph::application_contribution) owner:
+        &'a CoupledApplicationAssembly<'owner, 'run, 'phase, S>,
+    pub(in crate::domain_computation::primary_graph::application_contribution) execution:
+        &'a worth_execution::ExecutionRequest<'a, 'a>,
+    pub(in crate::domain_computation::primary_graph::application_contribution) before:
+        &'a RelationalPinnedRead,
+    pub(in crate::domain_computation::primary_graph::application_contribution) order:
         &'a worth_query_declaration::facade::application_program::ApplicationProgramConnectionOrder,
 }
 mod sealed {
@@ -82,7 +88,23 @@ where
     S: ApplicationSchema,
     D: WorthQueryApplicationOutputDemand<S>,
 {
-    fn declared_families(visit: &mut impl FnMut(std::any::TypeId));
+    fn occurrence_families(_visit: &mut impl FnMut(std::any::TypeId)) {}
+    fn occurrence_component() -> bool {
+        false
+    }
+    fn prerequisites(
+        _context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        _pin: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
+        _source: worth_relational::facade::identity::EntityId,
+        _demand: &D,
+        _next: &mut SynchronousOutputWave<S>,
+    ) -> Result<(), SynchronousOutputFailure> {
+        Ok(())
+    }
+    fn declared_families(
+        parent: std::any::TypeId,
+        visit: &mut impl FnMut(std::any::TypeId, std::any::TypeId),
+    );
     fn assemble(
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
         parent: &AppliedOutputParent,
@@ -94,7 +116,11 @@ impl sealed::Edges for ApplicationOutputLeaf {}
 impl<S: ApplicationSchema, D: WorthQueryApplicationOutputDemand<S>> SynchronousOutputEdges<S, D>
     for ApplicationOutputLeaf
 {
-    fn declared_families(_: &mut impl FnMut(std::any::TypeId)) {}
+    fn declared_families(
+        _: std::any::TypeId,
+        _: &mut impl FnMut(std::any::TypeId, std::any::TypeId),
+    ) {
+    }
     fn assemble(
         _: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
         _: &AppliedOutputParent,

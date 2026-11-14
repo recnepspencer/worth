@@ -1268,7 +1268,6 @@ Examples of the intended shape:
 Practical rule:
 
 - documentation must be written as feature documentation, not milestone prose
-- the writing pass should explicitly use the `feature-doc-writer` skill
 - the docs must explain:
   - what the feature is
   - why you use it
