@@ -30,13 +30,22 @@ fn plain_corrective_and_reapplication_roles_share_a_rootless_final_edit() {
     let make = |value| {
         let mut edit = request.corrections().reverse(&source).idempotency("rootless-restore").limits(limits)
             .edit_envelope::<member::correction::UndoRetire, base::Program, ApplicationNoOutputGraph>(&host).unwrap().ordered_authored().unwrap();
+        let prefix = edit.stage_token::<member::restore::Binding>(0).unwrap();
+        assert!(edit.stage_token::<member::retire::Binding>(0).is_none());
+        assert!(edit.stage_token::<member::restore::Binding>(2).is_none());
         let final_edit = edit
             .push_stage::<ApplicationNoOutputGraph, _>(cap(value))
             .unwrap();
-        (edit, final_edit)
+        assert_eq!(
+            edit.stage_token::<fixture::cap::Binding>(1)
+                .unwrap()
+                .ordinal(),
+            final_edit.ordinal()
+        );
+        (edit, prefix, final_edit)
     };
     let before = super::super::super::super::courts::native_head(&host);
-    let (edit, final_edit) = make(8);
+    let (edit, prefix, final_edit) = make(8);
     let (outcome, writes) = observe_maintenance_work(16, || {
         edit.execute_performed(ExecutionAllocationPolicy::SystemAllocation)
             .unwrap()
@@ -44,6 +53,12 @@ fn plain_corrective_and_reapplication_roles_share_a_rootless_final_edit() {
     let Outcome::Committed(restored) = outcome else {
         panic!("{outcome:?}")
     };
+    let _: &super::super::super::super::super::member_edit::Edited =
+        restored.result(&prefix).unwrap();
+    assert_eq!(
+        restored.stage_receipt(&prefix).unwrap().commit_reference(),
+        restored.receipt().commit_reference()
+    );
     assert_eq!(
         (
             restored.stage_count(),
@@ -67,7 +82,7 @@ fn plain_corrective_and_reapplication_roles_share_a_rootless_final_edit() {
         .any(|row| row.key == "m" && row.value == 5));
     let current = super::super::super::super::courts::native_head(&host);
     for value in [8, 1001] {
-        let (retry, _) = make(value);
+        let (retry, _, _) = make(value);
         let (outcome, writes) = observe_maintenance_work(8, || {
             retry
                 .execute_performed(ExecutionAllocationPolicy::SystemAllocation)
@@ -112,6 +127,7 @@ fn plain_corrective_and_reapplication_roles_share_a_rootless_final_edit() {
         .unwrap()
         .ordered_authored()
         .unwrap();
+    let prefix = reapply.stage_token::<member::retire::Binding>(0).unwrap();
     let final_edit = reapply
         .push_stage::<ApplicationNoOutputGraph, _>(cap(9))
         .unwrap();
@@ -123,6 +139,12 @@ fn plain_corrective_and_reapplication_roles_share_a_rootless_final_edit() {
     let Outcome::Committed(reapplied) = outcome else {
         panic!("{outcome:?}")
     };
+    let _: &super::super::super::super::super::member_edit::Edited =
+        reapplied.result(&prefix).unwrap();
+    assert_eq!(
+        reapplied.stage_receipt(&prefix).unwrap().commit_reference(),
+        reapplied.receipt().commit_reference()
+    );
     assert_eq!(
         (
             reapplied.stage_count(),

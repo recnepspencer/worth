@@ -99,6 +99,10 @@ impl WorthQueryEditStageDomainDenial {
     pub fn commit_outcome(&self) -> Option<&WorthQueryApplicationUncommitted> {
         self.outcome.as_ref()
     }
+    /// Transfer the original cleanup/recovery owner after projecting the denial.
+    pub fn into_commit_outcome(self) -> Option<WorthQueryApplicationUncommitted> {
+        self.outcome
+    }
     pub fn identity(&self) -> &ApplicationEditStageIdentity {
         &self.failure.identity
     }
@@ -138,6 +142,10 @@ impl WorthQueryEditStageExecutionDenial {
     }
     pub fn commit_outcome(&self) -> &WorthQueryApplicationUncommitted {
         &self.outcome
+    }
+    /// Transfer the original cleanup/recovery owner after projecting the cause.
+    pub fn into_commit_outcome(self) -> WorthQueryApplicationUncommitted {
+        self.outcome
     }
 }
 

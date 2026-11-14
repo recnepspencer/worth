@@ -4,6 +4,7 @@ use super::*;
 use worth_query_host::facade::application_entry::{
     WorthQueryApplicationRequestMutationDenial, WorthQueryPerformedMutationExecutionDenial,
 };
+use worth_query_host::facade::primary_graph::WorthQueryApplicationUncommitted;
 mod corrective;
 
 fn cap(value: u64) -> fixture::cap::Intent {
@@ -16,7 +17,11 @@ fn cap(value: u64) -> fixture::cap::Intent {
 
 #[test]
 fn authored_only_commit_resolves_original_intent_but_cannot_omit_a_required_source() {
-    let host = host(None, None);
+    let required = host(None, None);
+    let host: world::Host = world::install_configured(
+        host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()), 1, None,
+        world::Configuration { envelope_records: true, ..Default::default() },
+    );
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.request(&principal, &scope);
@@ -31,10 +36,13 @@ fn authored_only_commit_resolves_original_intent_but_cannot_omit_a_required_sour
         (edit, token)
     };
     let before = super::super::super::courts::native_head(&host);
-    let mut omitted = request
+    let required_principal = authenticate_operator(required.installed_schema(), &scope);
+    let required_request = required.request(&required_principal, &scope);
+    let required_before = super::super::super::courts::native_head(&required);
+    let mut omitted = required_request
         .edit_envelope()
         .idempotency("omitted-required-source".to_owned())
-        .runtime_stages(&host);
+        .runtime_stages(&required);
     omitted
         .push_stage::<ApplicationNoOutputGraph, _>(fixture::model::Intent {
             key: "a".into(),
@@ -56,6 +64,10 @@ fn authored_only_commit_resolves_original_intent_but_cannot_omit_a_required_sour
         "{cause:?}"
     );
     assert_eq!(writes.published_rows.len() + writes.omitted_publications, 0);
+    assert_eq!(
+        super::super::super::courts::native_head(&required),
+        required_before
+    );
     assert_eq!(super::super::super::courts::native_head(&host), before);
     let (unseen, _) = make(8, "authored-only");
     assert!(matches!(
@@ -110,12 +122,18 @@ fn authored_only_commit_resolves_original_intent_but_cannot_omit_a_required_sour
                 .unwrap(),
             Outcome::IdempotencyIntentDrift
         ));
-        // The same binding/input with an actual graph is a different whole intent.
-        let drift = request
+        // Explicit positioned mode changes the complete intent under the same key.
+        let mut drift = request
             .edit_envelope()
-            .stage::<ModelTree, _>(cap(8))
             .idempotency("authored-only".to_owned())
-            .execute_performed::<Program>(&host, ExecutionAllocationPolicy::SystemAllocation)
+            .runtime_stages(&host)
+            .ordered_authored()
+            .unwrap();
+        drift
+            .push_stage::<ApplicationNoOutputGraph, _>(cap(8))
+            .unwrap();
+        let drift = drift
+            .execute_performed(ExecutionAllocationPolicy::SystemAllocation)
             .unwrap();
         assert!(
             matches!(drift, Outcome::IdempotencyIntentDrift),
@@ -124,4 +142,45 @@ fn authored_only_commit_resolves_original_intent_but_cannot_omit_a_required_sour
     });
     assert_eq!(writes.published_rows.len() + writes.omitted_publications, 0);
     assert_eq!(super::super::super::courts::native_head(&host), current);
+    // A later denial retains the actual abort owner until the caller takes it.
+    for domain in [true, false] {
+        let mut failed = request
+            .edit_envelope()
+            .idempotency(format!("authored-denial-{domain}"))
+            .runtime_stages(&host)
+            .ordered_authored()
+            .unwrap();
+        failed
+            .push_stage::<ApplicationNoOutputGraph, _>(cap(10))
+            .unwrap();
+        let mut input = cap(if domain { 1001 } else { 11 });
+        input.key_derived_target = !domain;
+        let token = failed
+            .push_stage::<ApplicationNoOutputGraph, _>(input)
+            .unwrap();
+        let (outcome, writes) = observe_maintenance_work(8, || {
+            failed
+                .execute_performed(ExecutionAllocationPolicy::SystemAllocation)
+                .unwrap()
+        });
+        let owner = match outcome {
+            Outcome::DomainDenied(denial) if domain => {
+                assert_eq!(denial.identity().ordinal(), 1);
+                assert_eq!(denial.denial(&token).unwrap(), &Denial::ValueOutOfRange);
+                denial
+                    .into_commit_outcome()
+                    .expect("a begun prefix retains its abort outcome")
+            }
+            Outcome::StageExecutionDenied(denial) if !domain => {
+                assert_eq!(denial.identity().ordinal(), 1);
+                let _original_cause = denial.cause();
+                denial.into_commit_outcome()
+            }
+            other => panic!("{other:?}"),
+        };
+        // Ownership transfers without reclassifying the Native abort outcome.
+        let _original_uncommitted: WorthQueryApplicationUncommitted = owner;
+        assert_eq!(writes.published_rows.len() + writes.omitted_publications, 0);
+        assert_eq!(super::super::super::courts::native_head(&host), current);
+    }
 }

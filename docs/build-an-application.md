@@ -8544,3 +8544,11 @@ stage that reads them. Every stage retains nominal admission, complete original
 input/mode/order/graph intent, actual pre-stage data and final support, one
 commit and the same original-receipt replay. A deleted object is not a root;
 do not invent an empty producer or a replacement object to seal its retirement.
+
+Runtime `stage_token::<Binding>(ordinal)` describes only a captured stage of
+that request, including a genuine corrective prefix at ordinal zero. A wrong
+binding or absent ordinal returns `None`. Use that branded token for the live
+result, stage receipt or typed domain denial; recovered receipts do not recreate
+results. After projecting a stage denial's identity and typed cause, consume
+`into_commit_outcome()` to transfer its original uncommitted cleanup/recovery
+owner. A domain refusal before a transaction begins has no such owner.
