@@ -29,21 +29,19 @@ where
     {
         let refuse = crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::application_program_required;
         self.selected_source_owner::<B>(owner, TypeId::of::<R>())?;
-        let declared = self
-            .installed_program()
-            .action_inventory()
-            .resolve_unique_binding::<S, B>()
-            .map_err(|_| refuse())?;
-        let action = owner
-            .resolve_declared_action::<B>(declared)
-            .map_err(|_| refuse())?;
-        if !action
-            .delivery()
-            .and_then(|delivery| delivery.output())
-            .is_some_and(|output| {
-                output.is_discovered() && output.root_type() == TypeId::of::<R>().into_external()
-            })
-        {
+        let declared = self.installed_program().action_inventory();
+        let owns_delivery = declared.declarations().iter().any(|action| {
+            action.mutation_binding_type() == Some(TypeId::of::<B>().into_external())
+                && action
+                    .delivery()
+                    .and_then(|delivery| delivery.output())
+                    .is_some_and(|output| {
+                        output.is_discovered()
+                            && output.root_type() == TypeId::of::<R>().into_external()
+                    })
+                && owner.resolve_declared_action::<B>(action).is_ok()
+        });
+        if !owns_delivery {
             return Err(refuse());
         }
         Ok(())
