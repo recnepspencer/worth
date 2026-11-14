@@ -82,6 +82,9 @@ fn typed_migration_repairs_state_inside_the_adoption_publication() {
         .expect("migration and target validation must prepare atomically");
     assert!(prepared.migration().is_some());
     let performed = match prepared.publish(host.runtime(), &principal, &scope) {
+        WorthQueryBranchAdoptionPublicationOutcome::ObligationDischargePending {
+            cause, ..
+        } => panic!("unexpected journal refusal: {cause:?}"),
         WorthQueryBranchAdoptionPublicationOutcome::AuthorizationDenied { cause, .. } => {
             panic!("authorized adoption refused: {cause:?}")
         }

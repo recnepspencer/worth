@@ -130,7 +130,7 @@ impl WorthQueryOutputDemandRegistry {
                 (record.is_required()
                     || record.has_cached_ready()
                     || record.performed_source.as_ref().is_some_and(|source| {
-                        source.change.product_commit() == expected
+                        source.observation.selected_commit() == expected
                             && source.output_source_identity.as_ref() == Some(&requested_source)
                     }))
                     && record.source_commits.contains(expected)

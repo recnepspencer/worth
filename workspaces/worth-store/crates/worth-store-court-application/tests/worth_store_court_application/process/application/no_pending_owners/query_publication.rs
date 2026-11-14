@@ -3,11 +3,10 @@ use super::*;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use worth_execution::{CancellationSource, SerialMemoryBudget, SerialRequest};
-use worth_query_execution::facade::program_support::{
-    QueryObligationPublicationOutcome as Outcome, QueryObligationsMedium,
-    QueryProgramSupportDenial, QueryProgramSupportFrame, QueryProgramSupportLedger,
-    QueryProgramSupportPublicationGenerations, QueryProgramSupportRecord,
-    QUERY_PROGRAM_SUPPORT_FRAME_MAX_BYTES,
+use worth_query_execution::facade::query_obligations::{
+    QueryObligationDenial, QueryObligationFrame, QueryObligationLedger,
+    QueryObligationPublicationGenerations, QueryObligationPublicationOutcome as Outcome,
+    QueryObligationsMedium, QueryProgramSupportRecord, QUERY_OBLIGATION_FRAME_MAX_BYTES,
 };
 use worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint as Seam;
 use worth_store_testkit_application_oracle::world_home::WorldHomeFixture;
@@ -15,9 +14,9 @@ use worth_store_testkit_application_oracle::world_home::WorldHomeFixture;
 struct StoppedQueryPublication {
     fixture: Box<WorldHomeFixture>,
     medium: Arc<dyn QueryObligationsMedium>,
-    frame: QueryProgramSupportFrame,
-    ledger: QueryProgramSupportLedger,
-    generations: QueryProgramSupportPublicationGenerations,
+    frame: QueryObligationFrame,
+    ledger: QueryObligationLedger,
+    generations: QueryObligationPublicationGenerations,
     directory: tempfile::TempDir,
 }
 impl StoppedQueryPublication {
@@ -28,8 +27,8 @@ impl StoppedQueryPublication {
         let fixture = Box::new(open(directory.path(), &execution));
         drop(fixture.bootstrap_root(&execution));
         let medium = fixture.home.query_obligations_medium();
-        let ledger = QueryProgramSupportLedger::empty(fixture.home.home_identity());
-        let mut generations = QueryProgramSupportPublicationGenerations::from_journal(&ledger);
+        let ledger = QueryObligationLedger::empty(fixture.home.home_identity());
+        let mut generations = QueryObligationPublicationGenerations::from_journal(&ledger);
         let frame = ledger
             .prepare(
                 QueryProgramSupportRecord::Install {
@@ -78,7 +77,7 @@ impl StoppedQueryPublication {
             assert!(
                 matches!(
                     answer,
-                    Outcome::Refused(QueryProgramSupportDenial::Execution(_))
+                    Outcome::Refused(QueryObligationDenial::Execution(_))
                 ),
                 "{answer:?}"
             );
@@ -107,7 +106,7 @@ impl StoppedQueryPublication {
         assert_eq!(journal.head().unwrap().unwrap().position(), 1);
         assert_eq!(
             journal
-                .read(1, QUERY_PROGRAM_SUPPORT_FRAME_MAX_BYTES)
+                .read(1, QUERY_OBLIGATION_FRAME_MAX_BYTES)
                 .unwrap()
                 .into_bytes(),
             self.frame.bytes()
@@ -134,7 +133,7 @@ impl StoppedQueryPublication {
 }
 fn drive(
     medium: &dyn QueryObligationsMedium,
-    frame: &QueryProgramSupportFrame,
+    frame: &QueryObligationFrame,
     execution: &ExecutionRequest<'_, '_>,
 ) -> Outcome {
     let deadline = Instant::now() + Duration::from_secs(30);
@@ -280,8 +279,8 @@ fn a_gracefully_reopened_query_owner_can_publish_after_the_prior_no_effect() {
     assert_eq!(reopened.home.home_identity(), identity);
     assert_ne!(reopened.home.incarnation(), old_incarnation);
     let medium = reopened.home.query_obligations_medium();
-    let ledger = QueryProgramSupportLedger::empty(identity);
-    let mut generations = QueryProgramSupportPublicationGenerations::from_journal(&ledger);
+    let ledger = QueryObligationLedger::empty(identity);
+    let mut generations = QueryObligationPublicationGenerations::from_journal(&ledger);
     let fresh = ledger
         .prepare(frame.record().clone(), &mut generations)
         .unwrap();

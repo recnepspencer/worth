@@ -12,6 +12,9 @@ impl RequiredOutputReadmission {
         >,
     ) -> Self {
         Self {
+            durable: std::sync::Mutex::new(None),
+            recorded_prerequisites: std::sync::Mutex::new(None),
+            recording: std::sync::OnceLock::new(),
             source,
             producer,
             limits,

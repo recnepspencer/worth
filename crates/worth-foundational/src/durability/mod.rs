@@ -25,6 +25,8 @@ mod inbound_source_control;
 pub use dispatch_custody::DispatchAttemptIdentity;
 pub use external_effect_no_effect::ExternalEffectNoEffectCause;
 pub use inbound_source_control::InboundSourceControl;
+mod managed_cleanup;
+pub use managed_cleanup::ManagedCleanupObligationIdentity;
 mod program_support;
 mod workflow_ending_actor;
 pub use program_support::{

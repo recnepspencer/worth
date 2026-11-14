@@ -57,7 +57,7 @@ impl WorthQueryProgramCustodyDispositionInventory {
     }
 }
 
-pub(super) fn derive(
+pub(in crate::domain_computation::primary_graph::product_operation::program_adoption) fn derive(
     requirements: &WorthQueryProgramAdoptionRequirements,
 ) -> Result<
     WorthQueryProgramCustodyDispositionInventory,

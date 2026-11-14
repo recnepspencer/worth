@@ -106,7 +106,7 @@ RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Sche
         }
         if let Err(denial) = application.validate_required_program_source::<Root>(phase,
             &worth_query_execution::publication_boundary::program_publication_access(),
-            &self.prepared, &self.receipt, &self.retained_source,
+            &self.prepared, &(&self.receipt).into(), &self.retained_source,
             request.principal, request.scope, request.branch,
         ) {
             return Err((self, WorthQueryRequiredOutputPreparationDenial::Demand(crate::application_entry::WorthQueryApplicationOutputDemandDenial::Demand(denial))));
@@ -175,6 +175,7 @@ RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Sche
         let output_source = source_result.into_output_demand_source();
         if !source_bound {
             if let Err(denial) = application.bind_prepared_program_root_source::<Root>(
+                phase,
                 &worth_query_execution::publication_boundary::program_publication_access(),
                 &prepared,
                 &output_source,

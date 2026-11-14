@@ -6,19 +6,19 @@ use worth_foundational::facade::{
     CanonicalDigestId, DurableCompositePublicationAttemptIdentity,
     ProgramSupportObligationIdentity, ProgramSupportObligationKind, WorldOriginalFate,
 };
-use worth_query_execution::facade::program_support::{
-    QueryObligationPublicationOutcome as Outcome, QueryObligationsMedium,
-    QueryProgramSupportDenial as Denial, QueryProgramSupportFrame, QueryProgramSupportLedger,
-    QueryProgramSupportObligation, QueryProgramSupportPublicationGenerations,
-    QueryProgramSupportRecord as Record, QUERY_PROGRAM_SUPPORT_FRAME_MAX_BYTES,
+use worth_query_execution::facade::query_obligations::{
+    QueryObligationDenial as Denial, QueryObligationFrame, QueryObligationLedger,
+    QueryObligationPublicationGenerations, QueryObligationPublicationOutcome as Outcome,
+    QueryObligationsMedium, QueryProgramSupportObligation, QueryProgramSupportRecord as Record,
+    QUERY_OBLIGATION_FRAME_MAX_BYTES,
 };
 use worth_runtime_world::facade::*;
 
 type Fixture = worth_store_testkit_application_oracle::world_home::WorldHomeFixture;
 pub(super) struct MembershipJournal {
     medium: Arc<dyn QueryObligationsMedium>,
-    pub(super) ledger: QueryProgramSupportLedger,
-    generations: QueryProgramSupportPublicationGenerations,
+    pub(super) ledger: QueryObligationLedger,
+    generations: QueryObligationPublicationGenerations,
 }
 impl MembershipJournal {
     fn read(fixture: &Fixture, execution: &ExecutionRequest<'_, '_>) -> Self {
@@ -29,14 +29,14 @@ impl MembershipJournal {
         execution: &ExecutionRequest<'_, '_>,
     ) -> Self {
         let medium = home.query_obligations_medium();
-        let mut ledger = QueryProgramSupportLedger::empty(home.home_identity());
+        let mut ledger = QueryObligationLedger::empty(home.home_identity());
         while let Some(bytes) = medium.read_frame(execution, ledger.position() + 1).unwrap() {
-            assert!(bytes.len() as u64 <= QUERY_PROGRAM_SUPPORT_FRAME_MAX_BYTES);
+            assert!(bytes.len() as u64 <= QUERY_OBLIGATION_FRAME_MAX_BYTES);
             ledger
-                .readmit(QueryProgramSupportFrame::readmit(&bytes).unwrap())
+                .readmit(QueryObligationFrame::readmit(&bytes).unwrap())
                 .unwrap();
         }
-        let generations = QueryProgramSupportPublicationGenerations::from_journal(&ledger);
+        let generations = QueryObligationPublicationGenerations::from_journal(&ledger);
         Self {
             medium,
             ledger,
@@ -47,13 +47,13 @@ impl MembershipJournal {
         &self,
         position: u64,
         execution: &ExecutionRequest<'_, '_>,
-    ) -> QueryProgramSupportFrame {
+    ) -> QueryObligationFrame {
         let bytes = self
             .medium
             .read_frame(execution, position)
             .unwrap()
             .unwrap();
-        QueryProgramSupportFrame::readmit(&bytes).unwrap()
+        QueryObligationFrame::readmit(&bytes).unwrap()
     }
     fn publish(&mut self, record: Record, execution: &ExecutionRequest<'_, '_>) {
         let frame = self.ledger.prepare(record, &mut self.generations).unwrap();
@@ -184,8 +184,8 @@ fn original_interpretation_membership_matches_the_protected_original_after_grace
     // the actual original instead of being promoted to interpretation authority.
     let changed = CanonicalDigestId::new([0xe7; 32]);
     assert_ne!(changed, revision);
-    let mut false_ledger = QueryProgramSupportLedger::empty(fixture.home.home_identity());
-    let mut generations = QueryProgramSupportPublicationGenerations::from_journal(&false_ledger);
+    let mut false_ledger = QueryObligationLedger::empty(fixture.home.home_identity());
+    let mut generations = QueryObligationPublicationGenerations::from_journal(&false_ledger);
     let install = false_ledger
         .prepare(Record::Install { revision: changed }, &mut generations)
         .unwrap();

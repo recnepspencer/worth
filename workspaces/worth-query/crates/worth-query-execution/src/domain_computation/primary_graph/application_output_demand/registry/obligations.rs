@@ -15,12 +15,33 @@ pub(super) type ReleasedPrerequisiteResources = (
 );
 
 impl DemandRecord {
+    pub(super) fn release_framework_claim(&mut self) {
+        self.framework_required_count -= 1;
+        if self.framework_required_count == 0
+            && self.performed_obligations.is_empty()
+            && !(matches!(self.state, DemandState::Failed(_)) && !self.source_commits.is_empty())
+        {
+            if let Some(source) = &self.readmission_source {
+                source.complete_durable();
+            }
+        }
+    }
     pub(super) fn release_obligations(&mut self) {
+        if self.framework_required_count == 0
+            && !(matches!(self.state, DemandState::Failed(_)) && !self.source_commits.is_empty())
+        {
+            if let Some(source) = &self.readmission_source {
+                source.complete_durable();
+            }
+        }
         self.performed_obligations = Vec::new();
     }
 
     pub(super) fn is_required(&self) -> bool {
-        self.interests != 0
+        self.readmission_source
+            .as_ref()
+            .is_some_and(|source| source.durable_pending())
+            || self.interests != 0
             || self.required_interests != 0
             || !self.performed_obligations.is_empty()
             || self.framework_required_count != 0
@@ -133,7 +154,7 @@ impl DemandRegistryState {
                 .records
                 .get_mut(upstream.as_ref())
                 .expect("framework prerequisite record remains retained");
-            record.framework_required_count -= 1;
+            record.release_framework_claim();
             record.finish();
             self.release_claim_members(upstream, retired_members.as_deref_mut());
         }
@@ -197,7 +218,7 @@ impl DemandRegistryState {
                     .records
                     .get_mut(upstream.as_ref())
                     .expect("framework prerequisite record remains retained");
-                record.framework_required_count -= 1;
+                record.release_framework_claim();
                 record.finish();
                 self.release_claim_members(upstream, None);
             }

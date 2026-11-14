@@ -118,7 +118,7 @@ impl DemandRecord {
 
 impl DemandRecord {
     #[doc(hidden)]
-    pub fn performed_source_for_test(&self) -> &Option<WorthQueryPerformedOutputDemandSource> {
+    pub fn performed_source_for_test(&self) -> &Option<WorthQueryRetainedOutputDemandSource> {
         &self.performed_source
     }
 }
@@ -159,7 +159,7 @@ impl DemandRecord {
     #[doc(hidden)]
     pub fn performed_source_mut_for_test(
         &mut self,
-    ) -> &mut Option<WorthQueryPerformedOutputDemandSource> {
+    ) -> &mut Option<WorthQueryRetainedOutputDemandSource> {
         &mut self.performed_source
     }
 }
@@ -213,7 +213,7 @@ impl DemandRecord {
         >,
         source_commits: Vec<worth_runtime_world::facade::CompositeCommitIdentity>,
         state: DemandState,
-        performed_source: Option<WorthQueryPerformedOutputDemandSource>,
+        performed_source: Option<WorthQueryRetainedOutputDemandSource>,
         readmission_source: Option<Arc<source_readmission::RequiredOutputReadmission>>,
         successor_of: Option<succession::Succession>,
         required_stop: Option<

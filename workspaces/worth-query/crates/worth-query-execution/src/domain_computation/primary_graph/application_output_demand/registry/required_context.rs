@@ -17,6 +17,7 @@ use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
 /// key, while the registry remains the sole owner of prerequisite claims.
 pub struct RequiredOutputDemandContext {
     family: &'static str,
+    pub(super) prerequisite_admission: Result<(), crate::domain_computation::execution_runtime::product_world::WorthQueryDurableStateAdmissionDenial>,
     owner: WorthQueryOutputDemandRegistry,
     key: Arc<WorthQueryOutputDemandKey>,
     work_membership: Option<Arc<super::required_work::RequiredWorkMembership>>,
@@ -179,6 +180,7 @@ impl WorthQueryOutputDemandInterest {
     pub(in crate::domain_computation::primary_graph) fn required_context(
         &self,
         family: &'static str,
+        prerequisite_admission: Result<(), crate::domain_computation::execution_runtime::product_world::WorthQueryDurableStateAdmissionDenial>,
         source_owner: &SourceInvalidationOwner,
     ) -> Result<RequiredOutputDemandContext, WorthQueryOutputDemandDenial> {
         self.owner.drain_terminal_cleanup_admitted(source_owner)?;
@@ -203,6 +205,7 @@ impl WorthQueryOutputDemandInterest {
 
         Ok(RequiredOutputDemandContext {
             family,
+            prerequisite_admission,
             owner: self.owner.clone(),
             key,
             work_membership,

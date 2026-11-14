@@ -98,7 +98,7 @@ impl PreparedPrerequisiteClaims {
                 .records
                 .get_mut(upstream.as_ref())
                 .expect("settled prerequisite retained");
-            prior.framework_required_count -= 1;
+            prior.release_framework_claim();
             prior.finish();
             if !state.records[upstream].pending_cleanup_queued
                 && !state.defer_terminal_cleanup(upstream)

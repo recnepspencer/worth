@@ -2,6 +2,7 @@ mod cancellation;
 mod checkpoint_custody;
 pub(super) use checkpoint_custody::CheckpointPrerequisiteClaims;
 mod consumed_predecessors;
+mod durable_membership;
 mod evidence_handoff;
 mod prerequisite_capacity;
 mod prerequisite_denials;
@@ -45,6 +46,14 @@ impl RequiredOutputDemandContext {
             // committed. Its token and queue link were admitted with the row.
         }
         let count = inputs.len();
+        if count != 0 {
+            self.prerequisite_admission.map_err(|cause| {
+                WorthQueryOutputDemandDenial::new(
+                    WorthQueryOutputDemandDenialKind::DurableStateAdmission(cause),
+                    "consumed output promotion requires durable prerequisite custody",
+                )
+            })?;
+        }
         let mut predecessors = Vec::new();
         predecessors
             .try_reserve_exact(count)

@@ -63,15 +63,17 @@ fn finish_application_commit_with_delivery<Schema: ApplicationSchema>(
         Err(failure) => {
             let (evidence, original) =
                 cleanup_failure::cleanup_failed_outcome(outcome, &original_completion);
-            return WorthQueryApplicationCommitOutcome::CleanupRequired(
-                original_completion.cleanup_envelope().fill(
-                    evidence,
-                    failure,
-                    application.runtime.product_runtime.clone(),
-                    original,
-                    application.runtime.bridge.conditional_operations(),
-                ),
+            let mut retained = original_completion.cleanup_envelope().fill(
+                evidence,
+                failure,
+                application.runtime.product_runtime.clone(),
+                original,
+                application.runtime.bridge.conditional_operations(),
             );
+            if let Some(support) = application.installed_program_support() {
+                retained.retain_for_home(execution, support.obligation_history());
+            }
+            return WorthQueryApplicationCommitOutcome::CleanupRequired(retained);
         }
     };
     let committed = outcome.finish(completion).unwrap_or_else(|| {

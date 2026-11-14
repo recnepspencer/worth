@@ -13,6 +13,7 @@ pub enum BankApplicationOutputSettlementDenialKind {
         binding: &'static str,
     },
     DurableStateAdmission(worth_query_host::facade::product::WorthQueryDurableStateAdmissionDenial),
+    ObligationPublication(worth_query_host::facade::primary_graph::QueryObligationDenial),
     WorldRecovery(worth_query_host::facade::primary_graph::RuntimeWorldRecoveryDenial),
     RecoveryPublication(worth_query_host::facade::primary_graph::NoEffectCause),
     PublicationReceipt(worth_query_host::facade::primary_graph::WorthQueryApplicationIdempotencyResolutionDenialKind),
@@ -67,6 +68,12 @@ pub enum BankApplicationOutputSettlementDenialKind {
     PublicationCapacityExceeded,
     ForeignDemand,
     RequiredSuccessorStateUnavailable,
+    CyclicRequiredOutputOccurrences {
+        source: worth_query_host::facade::application_invariants::EntityId,
+    },
+    RequiredOutputParentUnavailable {
+        source: worth_query_host::facade::application_invariants::EntityId,
+    },
     ForeignSettlement,
     RetainedBasisUnavailable,
     Closed,
@@ -87,6 +94,7 @@ impl From<WorthQueryOutputDemandDenialKind> for BankApplicationOutputSettlementD
             Query::AuthoredStageRefused { ordinal, binding } => {
                 Bank::AuthoredStageRefused { ordinal, binding }
             }
+            Query::ObligationPublication(cause) => Bank::ObligationPublication(cause),
             Query::WorldRecovery(cause) => Bank::WorldRecovery(cause),
             Query::RecoveryPublication(cause) => Bank::RecoveryPublication(cause),
             Query::PublicationReceipt(cause) => Bank::PublicationReceipt(cause),
@@ -136,6 +144,12 @@ impl From<WorthQueryOutputDemandDenialKind> for BankApplicationOutputSettlementD
             Query::PublicationCapacityExceeded => Bank::PublicationCapacityExceeded,
             Query::ForeignDemand => Bank::ForeignDemand,
             Query::RequiredSuccessorStateUnavailable => Bank::RequiredSuccessorStateUnavailable,
+            Query::CyclicRequiredOutputOccurrences { source } => {
+                Bank::CyclicRequiredOutputOccurrences { source }
+            }
+            Query::RequiredOutputParentUnavailable { source } => {
+                Bank::RequiredOutputParentUnavailable { source }
+            }
             Query::ForeignSettlement => Bank::ForeignSettlement,
             Query::RetainedBasisUnavailable => Bank::RetainedBasisUnavailable,
             Query::Closed => Bank::Closed,
