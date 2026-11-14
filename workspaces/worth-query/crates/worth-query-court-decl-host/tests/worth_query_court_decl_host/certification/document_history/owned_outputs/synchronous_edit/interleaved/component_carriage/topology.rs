@@ -7,13 +7,16 @@ pub struct Topology {
     pub children: Vec<String>,
 }
 worth_query_structured_value_binding!(pub TopologyBinding for Topology { identity:"owned-outputs.component-carriage-topology-result.v1" });
-#[derive(Clone, Debug, WorthValue)]
-#[worth_value(crate = "worth_query_decl::facade::application_schema")]
-pub struct Parent {
-    pub role: String,
+#[derive(Clone, Debug)]
+pub struct PreviousParent {
     pub key: String,
 }
-worth_query_structured_value_binding!(pub ParentBinding for Parent { identity:"owned-outputs.component-carriage-parent.v1" });
+#[derive(Clone, Debug)]
+pub struct ForeignParent {
+    pub key: String,
+}
+worth_query_structured_value_binding!(pub PreviousParentBinding for PreviousParent { identity:"owned-outputs.component-previous-parent.v1" });
+worth_query_structured_value_binding!(pub ForeignParentBinding for ForeignParent { identity:"owned-outputs.component-foreign-parent.v1" });
 pub struct PreviousParents;
 pub struct ForeignParents;
 pub struct PreviousRole;
@@ -46,21 +49,23 @@ fn foreign_role() -> ApplicationQueryParameterRef<Query, ForeignRole, StringAppl
 {
     ApplicationQueryParameterRef::from_query_identifier("foreign-role")
 }
-pub struct ParentModel;
+pub struct PreviousModel;
+pub struct ForeignModel;
 pub struct Children;
 pub struct ChildModel;
-pub struct ParentKey;
+pub struct PreviousKey;
+pub struct ForeignKey;
 pub struct ChildKey;
-pub struct Role;
-worth_query_portable_type!(ParentModel=>"owned-outputs.component-carriage-parent-model");
+worth_query_portable_type!(PreviousModel=>"owned-outputs.component-carriage-previous-model");
+worth_query_portable_type!(ForeignModel=>"owned-outputs.component-carriage-foreign-model");
 worth_query_portable_type!(Children=>"owned-outputs.component-carriage-children");
 worth_query_portable_type!(ChildModel=>"owned-outputs.component-carriage-child-model");
-worth_query_portable_type!(ParentKey=>"owned-outputs.component-carriage-parent-key");
+worth_query_portable_type!(PreviousKey=>"owned-outputs.component-carriage-previous-key");
+worth_query_portable_type!(ForeignKey=>"owned-outputs.component-carriage-foreign-key");
 worth_query_portable_type!(ChildKey=>"owned-outputs.component-carriage-child-key");
-worth_query_portable_type!(Role=>"owned-outputs.component-carriage-role");
-fn parent() -> ApplicationQueryResultRelationRef<
+fn previous_parent() -> ApplicationQueryResultRelationRef<
     Query,
-    ParentModel,
+    PreviousModel,
     Schema,
     UpstreamOf,
     Member,
@@ -68,7 +73,19 @@ fn parent() -> ApplicationQueryResultRelationRef<
     ForwardResultTraversal,
     ExactlyOneResult,
 > {
-    ApplicationQueryResultRelationRef::forward_one("parent", UpstreamOf::reference())
+    ApplicationQueryResultRelationRef::forward_one("previous-parent", UpstreamOf::reference())
+}
+fn foreign_parent() -> ApplicationQueryResultRelationRef<
+    Query,
+    ForeignModel,
+    Schema,
+    UpstreamOf,
+    Member,
+    Model,
+    ForwardResultTraversal,
+    ExactlyOneResult,
+> {
+    ApplicationQueryResultRelationRef::forward_one("foreign-parent", UpstreamOf::reference())
 }
 fn children() -> ApplicationQueryResultRelationRef<
     Query,
@@ -94,22 +111,30 @@ fn child() -> ApplicationQueryResultRelationRef<
 > {
     ApplicationQueryResultRelationRef::reverse_one("dependent", ModelMember::reference())
 }
-fn parent_key() -> ApplicationQueryResultFieldRef<Query, ParentKey, Schema, ModelKey> {
-    ApplicationQueryResultFieldRef::new("parent-key", ModelKey::at("ModelKey"))
+fn previous_key() -> ApplicationQueryResultFieldRef<Query, PreviousKey, Schema, ModelKey> {
+    ApplicationQueryResultFieldRef::new("previous-key", ModelKey::at("ModelKey"))
+}
+fn foreign_key() -> ApplicationQueryResultFieldRef<Query, ForeignKey, Schema, ModelKey> {
+    ApplicationQueryResultFieldRef::new("foreign-key", ModelKey::at("ModelKey"))
 }
 fn child_key() -> ApplicationQueryResultFieldRef<Query, ChildKey, Schema, ModelKey> {
     ApplicationQueryResultFieldRef::new("child-key", ModelKey::at("ModelKey"))
 }
-fn role() -> ApplicationQueryResultFieldRef<Query, Role, Schema, MemberKey> {
-    ApplicationQueryResultFieldRef::new("role", MemberKey::at("MemberKey"))
-}
-impl WorthQueryApplicationProjection<Schema, Query> for Parent {
+impl WorthQueryApplicationProjection<Schema, Query> for PreviousParent {
     fn project(
         row: &WorthQueryApplicationProjectionRow<'_, Schema, Query>,
     ) -> Result<Self, WorthQueryApplicationProjectionDenial> {
         Ok(Self {
-            role: row.field(role())?,
-            key: row.one(parent())?.field(parent_key())?,
+            key: row.one(previous_parent())?.field(previous_key())?,
+        })
+    }
+}
+impl WorthQueryApplicationProjection<Schema, Query> for ForeignParent {
+    fn project(
+        row: &WorthQueryApplicationProjectionRow<'_, Schema, Query>,
+    ) -> Result<Self, WorthQueryApplicationProjectionDenial> {
+        Ok(Self {
+            key: row.one(foreign_parent())?.field(foreign_key())?,
         })
     }
 }
@@ -134,13 +159,22 @@ pub fn declare(
             Model::reference(),
         )
     };
-    let parent_row = || {
-        ApplicationQueryResultShapeBuilder::<Schema, Query, Member, Topology, TopologyBinding>::new(
-            Member::reference(),
-        )
-        .field(role())
-        .relation(parent(), model().field(parent_key()))
-    };
+    let previous_row = ApplicationQueryResultShapeBuilder::<
+        Schema,
+        Query,
+        Member,
+        Topology,
+        TopologyBinding,
+    >::new(Member::reference())
+    .relation(previous_parent(), model().field(previous_key()));
+    let foreign_row = ApplicationQueryResultShapeBuilder::<
+        Schema,
+        Query,
+        Member,
+        Topology,
+        TopologyBinding,
+    >::new(Member::reference())
+    .relation(foreign_parent(), model().field(foreign_key()));
     let child_row = ApplicationQueryResultShapeBuilder::<
         Schema,
         Query,
@@ -156,13 +190,13 @@ pub fn declare(
             model()
                 .relation_where_equal(
                     previous_parents(),
-                    parent_row(),
+                    previous_row,
                     MemberKey::at("MemberKey"),
                     previous_role(),
                 )
                 .relation_where_equal(
                     foreign_parents(),
-                    parent_row(),
+                    foreign_row,
                     MemberKey::at("MemberKey"),
                     foreign_role(),
                 )

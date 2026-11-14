@@ -1,7 +1,7 @@
 //! Typed previous/foreign rows and the ordinary static child discovery.
 use super::*;
 macro_rules! relation {
-    ($binding:ident, $connection:ident, $identity:literal, $port:ident, $slot:ident, $rows:ident) => {
+    ($binding:ident, $connection:ident, $identity:literal, $port:ident, $slot:ident, $rows:ident, $row:ident, $binding_type:ident) => {
         pub struct $binding;
         impl ApplicationConnectionIdentity for $binding {
             const IDENTITY: &'static str = $identity;
@@ -43,7 +43,7 @@ macro_rules! relation {
         }
         impl WorthQueryApplicationPrerequisiteOutputConnection<Schema> for $binding {
             type Prerequisites = topology::Read;
-            type PrerequisiteRow = topology::ParentBinding;
+            type PrerequisiteRow = topology::$binding_type;
             type Selection = ApplicationQueryResultRelationRef<
                 topology::Query,
                 topology::$slot,
@@ -63,7 +63,7 @@ macro_rules! relation {
                 Ok(topology::Read(target.source.clone()))
             }
             fn parent_from_prerequisite(
-                row: &topology::Parent,
+                row: &topology::$row,
             ) -> Result<Demand, WorthQueryRequiredOutputConnectionDenial> {
                 Ok(Demand {
                     source: row.key.clone(),
@@ -79,7 +79,9 @@ relation!(
     "component-carriage.previous",
     PredecessorInput,
     PreviousParents,
-    previous_parents
+    previous_parents,
+    PreviousParent,
+    PreviousParentBinding
 );
 relation!(
     Foreign,
@@ -87,7 +89,9 @@ relation!(
     "component-carriage.foreign",
     ForeignInput,
     ForeignParents,
-    foreign_parents
+    foreign_parents,
+    ForeignParent,
+    ForeignParentBinding
 );
 pub struct Static;
 impl ApplicationConnectionIdentity for Static {
