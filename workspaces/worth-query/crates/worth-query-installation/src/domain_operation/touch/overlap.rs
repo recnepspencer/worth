@@ -188,14 +188,14 @@ fn query_intersects_touch(
                 })
             })
             || query.predicates().iter().any(|read| {
-                read.field_keys().is_some_and(|(read_aspect, field)| {
-                    read.entity() == entity && read_aspect == aspect && fields.contains(field)
-                })
+                read.field().0 == entity
+                    && read.aspect_key() == aspect
+                    && fields.contains(read.field_key())
             })
             || query.ordering().iter().any(|read| {
-                read.field_keys().is_some_and(|(read_aspect, field)| {
-                    read.entity() == entity && read_aspect == aspect && fields.contains(field)
-                })
+                read.field().0 == entity
+                    && read.aspect_key() == aspect
+                    && fields.contains(read.field_key())
             })
     };
     match touch {
