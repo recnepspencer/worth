@@ -58,8 +58,6 @@ where
         B: ApplicationMutationBinding<S>,
         B::Input: Clone + Send + Sync,
         R: ApplicationOutputGraphShape<S>,
-        RootConnection<S, R>: WorthQueryApplicationRequiredOutputConnection<S>,
-        B: WorthQueryApplicationRequiredOutputSource<S, RootConnection<S, R>>,
     {
         let execution = match phase.checked_execution_request_for(self.runtime().product_runtime())
         {

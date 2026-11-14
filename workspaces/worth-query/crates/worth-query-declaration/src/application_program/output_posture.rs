@@ -21,6 +21,8 @@ pub trait ApplicationProgramOutputShape<Schema>:
 where
     Schema: ApplicationSchema,
 {
+    /// Root discovery is whole-shape meaning, not a property of a shared edge.
+    const DISCOVERED_ROOT: bool = false;
     fn connections() -> Vec<ApplicationConnectionDeclaration>;
     fn connection_types() -> Vec<std::any::TypeId>;
 }
@@ -77,6 +79,8 @@ where
     RootConnection: ApplicationConnectionShape<Schema>,
     Dependents: ApplicationOutputChildrenShape<Schema, RootConnection::TargetFeature>,
 {
+    const DISCOVERED_ROOT: bool = true;
+
     fn connections() -> Vec<ApplicationConnectionDeclaration> {
         let mut connections = vec![RootConnection::declaration()];
         Dependents::append_connections(&mut connections);

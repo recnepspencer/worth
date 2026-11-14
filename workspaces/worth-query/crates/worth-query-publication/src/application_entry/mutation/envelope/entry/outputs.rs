@@ -1,4 +1,4 @@
-//! The two declaration-owned output choices share one nominal stage executor.
+//! Declaration-owned output choices share one nominal stage executor.
 use super::*;
 use crate::application_entry::mutation::preparation::CandidateProgram;
 use std::num::NonZeroUsize;
@@ -10,7 +10,8 @@ use worth_query_declaration::facade::application_operation::{
     ApplicationMutationIdentities, ApplicationMutationInputScope,
 };
 use worth_query_declaration::facade::application_program::{
-    ApplicationNoOutputGraph, ApplicationOutputGraph, ApplicationProgramOutputShape,
+    ApplicationDiscoveredOutputGraph, ApplicationNoOutputGraph, ApplicationOutputGraph,
+    ApplicationProgramOutputShape,
 };
 use worth_query_execution::facade::application_installation::WorthQuerySelectedProgramOwner;
 use worth_query_execution::facade::primary_graph::{
@@ -25,9 +26,11 @@ use worth_query_execution::publication_boundary::recorded_correction::{
 mod sealed {
     pub trait Outputs {}
     impl<C, E> Outputs for super::ApplicationOutputGraph<C, E> {}
+    impl<C, E> Outputs for super::ApplicationDiscoveredOutputGraph<C, E> {}
     impl Outputs for super::ApplicationNoOutputGraph {}
 }
 mod authored;
+mod discovered;
 mod required;
 type Failure = crate::application_entry::WorthQueryPerformedMutationExecutionDenial;
 type SelectedSource<S, B> = Result<
@@ -38,7 +41,7 @@ type SelectedSource<S, B> = Result<
     WorthQueryCorrectionDerivationDenial,
 >;
 
-/// Execution mechanics for the existing required-graph and no-graph meanings.
+/// Shared typed execution for fixed roots, discovered roots and no graph.
 /// Consumers cannot add an output policy or supply a program presentation.
 #[doc(hidden)]
 pub trait EditStageOutputs<S, B>: sealed::Outputs + ApplicationProgramOutputShape<S>

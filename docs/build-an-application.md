@@ -4571,6 +4571,25 @@ recovery behavior. Cached input data grants no authority. Do not reconstruct
 an implicit editor default or allocated name from a later head and substitute
 it for the original canonical request.
 
+### Conditional roots in one authored envelope
+
+A Runtime/static/corrective stage may select its declared
+`ApplicationDiscoveredOutputGraph<Connection, Edges>` through the same stage
+APIs. Capture retains the recipe selected from the complete typed source input;
+its installed query runs only after that authored position appends at D, under
+current C permission. Every actual demand joins the existing wave and final
+support. A valid empty result produces no demand; missing or denied data refuses.
+The complete candidate and all later authored work still publish once.
+
+Use this shape for an action whose remaining roots depend on its actual authored
+result. A binding installed as a conditional source cannot select
+`ApplicationNoOutputGraph` just because one result has zero roots. NoGraph stays
+appropriate for ordinary actions without an installed required source. Correction
+and reapplication retain the exact installed discovered kind/root, input and
+ancestry through the normal front; neither uses a standalone postcommit carrier.
+The current full intent includes discovered posture, with one v2 identity domain;
+recreate pre-change development records instead of preserving a legacy encoder.
+
 ### Repeated-family required outputs
 
 Use `ApplicationOutputOccurrences<All>` as the dependents of the existing

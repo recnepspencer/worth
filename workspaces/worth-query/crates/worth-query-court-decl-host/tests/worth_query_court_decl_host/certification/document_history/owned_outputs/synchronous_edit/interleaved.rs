@@ -5,6 +5,7 @@ mod component_carriage;
 mod courts;
 pub(in super::super) mod created;
 pub(in super::super) mod dependent;
+mod discovered_envelope;
 mod occurrence_topology;
 mod occurrences;
 pub(in super::super) mod prerequisite_partition;

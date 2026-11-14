@@ -24,7 +24,7 @@ pub(in crate::domain_computation::primary_graph) fn derive_correction_inverse<Sc
     key: &WorthQueryCorrectionCommandKey,
     maximum_history: Option<NonZeroUsize>,
     maximum_results: NonZeroUsize,
-    required_root: Option<crate::equality_type_id::EqualityTypeId>,
+    required_root: Option<PreparedOutputRootKind>,
 ) -> Result<
     (
         ApplicationEncodedInput<<ApplicationInverseBinding<Schema, C> as ApplicationMutationBinding<Schema>>::InputBinding>,

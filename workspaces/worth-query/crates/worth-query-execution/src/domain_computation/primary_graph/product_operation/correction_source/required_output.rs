@@ -52,7 +52,9 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             key,
             maximum_history,
             maximum_results,
-            Some(crate::equality_type_id::EqualityTypeId::of::<Root>()),
+            Some(PreparedOutputRootKind::Required(
+                crate::equality_type_id::EqualityTypeId::of::<Root>(),
+            )),
         )
     }
     /// Derive one checked required-output inverse after fresh historical disclosure.
@@ -90,7 +92,9 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             key,
             maximum_history,
             maximum_results,
-            Some(crate::equality_type_id::EqualityTypeId::of::<Root>()),
+            Some(PreparedOutputRootKind::Required(
+                crate::equality_type_id::EqualityTypeId::of::<Root>(),
+            )),
         )
     }
 }
