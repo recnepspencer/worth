@@ -141,8 +141,7 @@ fn append_predicates(
         .collect::<Vec<_>>();
     predicates.sort_by_key(|predicate| {
         (
-            predicate.aspect.as_str(),
-            predicate.field.as_str(),
+            predicate.target,
             predicate.parameter,
             predicate.scalar_family.canonical_name(),
         )
@@ -150,14 +149,12 @@ fn append_predicates(
     for (index, predicate) in predicates.into_iter().enumerate() {
         let path = format!("predicate[{index}]");
         entries.extend([
-            text(format!("{path}.aspect"), predicate.aspect.as_str()),
-            text(format!("{path}.field"), predicate.field.as_str()),
             text(
                 format!("{path}.operator"),
-                if predicate.parameter.is_some() {
-                    "equal-parameter"
-                } else {
-                    "field-absent"
+                match predicate.target {
+                    crate::application_query::WorthQueryReadGraphPredicateTarget::EntityIdentity => "entity-equal-parameter",
+                    crate::application_query::WorthQueryReadGraphPredicateTarget::Field { .. } if predicate.parameter.is_some() => "equal-parameter",
+                    crate::application_query::WorthQueryReadGraphPredicateTarget::Field { .. } => "field-absent",
                 },
             ),
             text(
@@ -165,6 +162,16 @@ fn append_predicates(
                 predicate.scalar_family.canonical_name(),
             ),
         ]);
+        if let crate::application_query::WorthQueryReadGraphPredicateTarget::Field {
+            aspect,
+            field,
+        } = predicate.target
+        {
+            entries.extend([
+                text(format!("{path}.aspect"), aspect.as_str()),
+                text(format!("{path}.field"), field.as_str()),
+            ]);
+        }
         if let Some(parameter) = predicate.parameter {
             entries.push(text(format!("{path}.parameter"), parameter));
         }

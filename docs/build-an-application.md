@@ -4631,6 +4631,21 @@ family without inventing a bridge producer or a stored kind flag. Each relation
 slot is still a sealed prerequisite selector, and every selected row maps to its
 real typed Parent. Unavailable or unauthorized data is never treated as absence.
 
+For an already known physical coordinate, use
+`relation_where_entity(relation, nested, coordinate_parameter)` with an
+`ApplicationQueryParameterRef<Query, Coordinate, EntityRefApplicationValueBinding>`.
+Bind its value as the descriptive foundational `EntityId`. The query compares
+all partition, slot and generation components against actual live endpoints
+inside its admitted relation; generation zero is literal equality, not a
+wildcard. It cannot turn a foreign or retired coordinate into a lookup root,
+resolve a logical successor, or grant entity read or mutation authority.
+
+The existing query scope, READ admission and relation disclosure still govern
+row presence and count. Complete relation/endpoint support protects reuse,
+including empty results. This is a bounded traversal of that relation roster,
+not an indexed identity lookup; only matching nested rows are materialized.
+
+
 Both filters retain complete candidate adjacency and predicate-field support,
 including rows excluded from the result. Changing an excluded row can invalidate
 the observation even when the selected IDs stay the same. Use the existing

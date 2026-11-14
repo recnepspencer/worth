@@ -183,9 +183,9 @@ fn query_intersects_touch(
             .iter()
             .filter_map(|relation| relation.predicate())
             .any(|read| {
-                read.field().0 == entity
-                    && read.aspect_key() == aspect
-                    && fields.contains(read.field_key())
+                read.field_keys().is_some_and(|(read_aspect, field)| {
+                    read.entity() == entity && read_aspect == aspect && fields.contains(field)
+                })
             })
             || query.predicates().iter().any(|read| {
                 read.field().0 == entity
@@ -258,8 +258,9 @@ fn query_intersects_touch(
                         .iter()
                         .filter_map(|read| read.predicate())
                         .any(|read| {
-                            read.field().0 == write.entity()
-                                && read.aspect_key() == write.contract().key()
+                            read.field_keys().is_some_and(|(aspect, _)| {
+                                read.entity() == write.entity() && aspect == write.contract().key()
+                            })
                         }))
         }
         Touch::DeclaredDomain(_) => true,

@@ -26,6 +26,7 @@ mod admitted_tests;
 mod canonical_tests;
 mod denial;
 mod encoded_scalar;
+mod entity_ref;
 mod primitive;
 mod recipe;
 mod representation_identity;
@@ -36,6 +37,7 @@ pub use denial::{
     ApplicationValueDecodeDenial, ApplicationValueEncodeDenial, ApplicationValueValidationDenial,
 };
 pub use encoded_scalar::ApplicationEncodedScalarValue;
+pub use entity_ref::EntityRefApplicationValueBinding;
 pub use primitive::{
     BoolApplicationValueBinding, ContentRefApplicationValueBinding, I64ApplicationValueBinding,
     InternedStringApplicationValueBinding, StringApplicationValueBinding,

@@ -12,18 +12,38 @@ pub enum ApplicationQueryRelationPredicate {
         field: String,
         scalar_family: ScalarAspectType,
     },
+    EntityEqualParameter {
+        entity: String,
+        parameter: String,
+    },
 }
 
 impl ApplicationQueryRelationPredicate {
-    pub fn field(&self) -> (&str, &str, &str) {
+    pub fn field(&self) -> Option<(&str, &str, &str)> {
         match self {
-            Self::EqualParameter(predicate) => predicate.field(),
+            Self::EqualParameter(predicate) => Some(predicate.field()),
             Self::FieldAbsent {
                 entity,
                 aspect,
                 field,
                 ..
-            } => (entity, aspect, field),
+            } => Some((entity, aspect, field)),
+            Self::EntityEqualParameter { .. } => None,
+        }
+    }
+
+    pub fn entity(&self) -> &str {
+        match self {
+            Self::EqualParameter(predicate) => predicate.field().0,
+            Self::FieldAbsent { entity, .. } | Self::EntityEqualParameter { entity, .. } => entity,
+        }
+    }
+
+    pub const fn operator(&self) -> &'static str {
+        match self {
+            Self::EqualParameter(_) => "equal-parameter",
+            Self::FieldAbsent { .. } => "field-absent",
+            Self::EntityEqualParameter { .. } => "entity-equal-parameter",
         }
     }
 
@@ -31,6 +51,7 @@ impl ApplicationQueryRelationPredicate {
         match self {
             Self::EqualParameter(predicate) => Some(predicate.parameter()),
             Self::FieldAbsent { .. } => None,
+            Self::EntityEqualParameter { parameter, .. } => Some(parameter),
         }
     }
 
@@ -38,6 +59,7 @@ impl ApplicationQueryRelationPredicate {
         match self {
             Self::EqualParameter(predicate) => predicate.scalar_family(),
             Self::FieldAbsent { scalar_family, .. } => *scalar_family,
+            Self::EntityEqualParameter { .. } => ScalarAspectType::EntityRef,
         }
     }
 }
