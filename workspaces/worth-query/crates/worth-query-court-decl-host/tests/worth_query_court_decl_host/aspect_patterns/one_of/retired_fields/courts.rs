@@ -19,8 +19,10 @@ fn retired(host: &world::Host) {
             key: "record".into(),
         })
         .execute();
-    let Err(WorthQueryApplicationRequestQueryDenial::ScopeResolution(cause)) = result else {
-        panic!("retired root: {result:?}")
+    let cause = match result {
+        Err(WorthQueryApplicationRequestQueryDenial::ScopeResolution(cause)) => cause,
+        Err(other) => panic!("retired root wrong denial: {other:?}"),
+        Ok(_) => panic!("retired root still resolves"),
     };
     assert_eq!(
         cause.kind(),
@@ -142,7 +144,7 @@ fn complete_retired_root_restores_value_field_absence_and_aspect_absence_then_re
     restored(&host);
     let recovered = world::restore(world::checkpoint(&host));
     restored(&recovered);
-    drop(recovered);
+    let host = recovered;
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.runtime().request(&principal, &scope);

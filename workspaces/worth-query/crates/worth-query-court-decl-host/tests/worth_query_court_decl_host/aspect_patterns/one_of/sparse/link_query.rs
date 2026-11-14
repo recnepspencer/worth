@@ -19,8 +19,8 @@ fn annotation(
 }
 pub struct NoteSlot;
 worth_query_portable_type!(NoteSlot => "native-record-patterns.sparse.note-slot.v1");
-fn note() -> ApplicationQueryOptionalAspectFieldRef<Query, NoteSlot, Schema, AnnotationNote> {
-    ApplicationQueryOptionalAspectFieldRef::new("note", AnnotationNote::at("Note"))
+fn note() -> ApplicationQueryOptionalResultFieldRef<Query, NoteSlot, Schema, AnnotationNote> {
+    ApplicationQueryOptionalResultFieldRef::new("note", AnnotationNote::at("Note"))
 }
 pub struct Links;
 pub struct TargetKey;
@@ -52,7 +52,7 @@ pub fn definition() -> ApplicationQueryDefinitionBuilder<Schema, Query, Paramete
             Record::reference(),
         )
         .optional_aspect_field(annotation())
-        .optional_aspect_field(note())
+        .optional_field(note())
         .relation(links(), child)
         .build();
     ApplicationQueryDefinitionBuilder::declare(Query::reference())
@@ -70,9 +70,8 @@ impl WorthQueryApplicationProjection<Schema, Query> for Row {
         row: &WorthQueryApplicationProjectionRow<'_, Schema, Query>,
     ) -> Result<Self, WorthQueryApplicationProjectionDenial> {
         Ok(Self {
-            annotation: row
-                .optional_aspect_field(annotation())
-                .optional_aspect_field(note())?,
+            annotation: row.optional_aspect_field(annotation())?,
+            note: row.optional_field(note())?,
             targets: row
                 .many(links())?
                 .iter()

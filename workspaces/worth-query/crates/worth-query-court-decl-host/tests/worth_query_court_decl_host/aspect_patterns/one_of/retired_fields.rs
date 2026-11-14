@@ -1,6 +1,6 @@
 //! Complete sole-root retirement retains field absence without borrowing collateral truth.
 use super::*;
-use sparse::annotation::{Annotation, AnnotationNote, AnnotationValue};
+use sparse::annotation::{AnnotationNote, AnnotationValue};
 use worth_query_decl::facade::application_aftermath::*;
 pub mod correction;
 mod courts;
