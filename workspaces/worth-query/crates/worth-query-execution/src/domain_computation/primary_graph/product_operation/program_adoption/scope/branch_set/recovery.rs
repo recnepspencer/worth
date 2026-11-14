@@ -104,6 +104,10 @@ impl WorthQueryBranchSetAdoptionRecovery {
 /// What continuing a branch-set adoption recovery did. Returned by
 /// `recover_branch_set_adoption`.
 pub enum WorthQueryBranchSetAdoptionRecoveryOutcome {
+    ObligationDischargePending {
+        cause: crate::domain_computation::primary_graph::query_obligations::QueryObligationDenial,
+        outcome: Box<WorthQueryBranchSetAdoptionRecoveryOutcome>,
+    },
     /// The blocked branch is published, and the branch-set adoption is handed
     /// back to advance. `cleanup` reports releasing the recovery's owner
     /// custody.
@@ -150,6 +154,14 @@ pub enum WorthQueryBranchSetAdoptionRecoveryFailure {
 
 /// Why `release_branch_set_adoption_recovery` did not return a cleanup receipt.
 pub enum WorthQueryBranchSetAdoptionRecoveryReleaseFailure {
+    ObligationDischargePending {
+        cause: crate::domain_computation::primary_graph::query_obligations::QueryObligationDenial,
+        cancellation: WorthQueryBranchSetAdoptionCancellation,
+        cleanup: Result<
+            WorthQueryProductBranchOwnerCleanupReceipt,
+            WorthQueryProductBranchOwnerCleanupFailure,
+        >,
+    },
     /// The recovery record was not released; the recovery is handed back
     /// unchanged to retry.
     Recovery {
@@ -169,7 +181,7 @@ impl WorthQueryBranchSetAdoptionRecoveryReleaseFailure {
     pub fn into_recovery(self) -> Option<WorthQueryBranchSetAdoptionRecovery> {
         match self {
             Self::Recovery { recovery, .. } => Some(recovery),
-            Self::OwnerCleanup { .. } => None,
+            Self::OwnerCleanup { .. } | Self::ObligationDischargePending { .. } => None,
         }
     }
 
@@ -180,7 +192,12 @@ impl WorthQueryBranchSetAdoptionRecoveryReleaseFailure {
         WorthQueryProductBranchOwnerCleanupFailure,
     )> {
         match self {
-            Self::Recovery { .. } => None,
+            Self::Recovery { .. } | Self::ObligationDischargePending { cleanup: Ok(_), .. } => None,
+            Self::ObligationDischargePending {
+                cancellation,
+                cleanup: Err(failure),
+                ..
+            } => Some((cancellation, failure)),
             Self::OwnerCleanup {
                 cancellation,
                 failure,
@@ -278,9 +295,19 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 )
             }
         };
-        match selected
-            .recover_branch_adoption_authorized_in_advancement(phase, recovery, principal, request)
-        {
+        let recovered = selected
+            .recover_branch_adoption_authorized_in_advancement(phase, recovery, principal, request);
+        let (recovered, discharge) = match recovered {
+            Ok(WorthQueryBranchAdoptionRecoveryOutcome::ObligationDischargePending {
+                cause,
+                outcome,
+            }) => (Ok(*outcome), Some(cause)),
+            result => (result, None),
+        };
+        let result = match recovered {
+            Ok(WorthQueryBranchAdoptionRecoveryOutcome::ObligationDischargePending { .. }) => {
+                unreachable!("one native disposition is wrapped once")
+            }
             Ok(WorthQueryBranchAdoptionRecoveryOutcome::Performed {
                 adoption: performed,
                 cleanup,
@@ -316,60 +343,15 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 adoption,
                 failure,
             }),
-        }
-    }
-
-    pub fn release_branch_set_adoption_recovery(
-        &self,
-        recovery: WorthQueryBranchSetAdoptionRecovery,
-        minimum_age_ticks: u64,
-    ) -> Result<
-        (
-            WorthQueryBranchSetAdoptionCancellation,
-            WorthQueryProductBranchOwnerCleanupReceipt,
-        ),
-        WorthQueryBranchSetAdoptionRecoveryReleaseFailure,
-    > {
-        let mut retirements = OwnerCleanupRetirements::default();
-        let host = worth_execution::SerialRequest::from_memory(
-            worth_execution::SerialMemoryBudget::new(None),
-            worth_execution::CancellationToken::new(),
-            None,
-        );
-        let (branch, adoption, recovery) = recovery.into_parts();
-        match self.release_branch_adoption_custody(
-            &worth_execution::ExecutionRequest::serial(&host),
-            &mut retirements,
-            recovery,
-            minimum_age_ticks,
-        ) {
-            Ok(receipt) => Ok((cancel_unstarted(adoption), receipt)),
-            Err(WorthQueryBranchAdoptionRecoveryReleaseFailure::Recovery { denial, recovery }) => {
-                Err(
-                    WorthQueryBranchSetAdoptionRecoveryReleaseFailure::Recovery {
-                        denial,
-                        recovery: WorthQueryBranchSetAdoptionRecovery::retained(
-                            branch, adoption, recovery,
-                        ),
-                    },
-                )
-            }
-            Err(WorthQueryBranchAdoptionRecoveryReleaseFailure::OwnerCleanup(failure)) => Err(
-                WorthQueryBranchSetAdoptionRecoveryReleaseFailure::OwnerCleanup {
-                    cancellation: cancel_unstarted(adoption),
-                    failure,
-                },
-            ),
-        }
+        };
+        result.map(|outcome| match discharge {
+            Some(cause) => WorthQueryBranchSetAdoptionRecoveryOutcome::ObligationDischargePending {
+                cause,
+                outcome: Box::new(outcome),
+            },
+            None => outcome,
+        })
     }
 }
 
-fn cancel_unstarted(
-    adoption: WorthQueryPreparedBranchSetAdoption,
-) -> WorthQueryBranchSetAdoptionCancellation {
-    WorthQueryBranchSetAdoptionCancellation {
-        cancelled_branch_count: adoption.pending.len() + 1,
-        progress: adoption.progress,
-        total_selection_work_units: adoption.total_selection_work_units,
-    }
-}
+mod release;

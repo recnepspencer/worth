@@ -6,7 +6,7 @@ use std::sync::{Arc, OnceLock};
 use worth_execution::ExecutionRequest;
 use worth_foundational::facade::{HomeIdentity, HomeIncarnation};
 use worth_proof::{AdmittedHomeQueryObligations, HomeQueryObligationsOwner};
-use worth_query_execution::facade::program_support::*;
+use worth_query_execution::facade::query_obligations::*;
 use worth_store::physical_runtime::ServingPhysicalRuntime;
 
 pub(crate) struct ApplicationQueryObligations {
@@ -45,19 +45,19 @@ impl ApplicationQueryObligations {
         &self,
         proof: AdmittedHomeQueryObligations,
         request: &ExecutionRequest<'_, '_>,
-    ) -> Result<(), QueryProgramSupportDenial> {
+    ) -> Result<(), QueryObligationDenial> {
         self.owner.admit(&proof).map_err(incarnation)?;
         self.journal
             .admit_prefix(proof.position(), proof.payload_digest(), request)
             .map_err(denial)?;
         self.admitted
             .set(proof)
-            .map_err(|_| QueryProgramSupportDenial::SupportUnavailable)
+            .map_err(|_| QueryObligationDenial::SupportUnavailable)
     }
     pub(crate) fn require_admitted(
         &self,
         request: &ExecutionRequest<'_, '_>,
-    ) -> Result<(), QueryProgramSupportDenial> {
+    ) -> Result<(), QueryObligationDenial> {
         self.journal
             .require_admitted(self.admitted.get().is_some(), request)
             .map_err(denial)
@@ -77,20 +77,18 @@ impl QueryObligationsMedium for ApplicationQueryObligations {
         &self,
         request: &ExecutionRequest<'_, '_>,
         position: u64,
-    ) -> Result<Option<Vec<u8>>, QueryProgramSupportDenial> {
+    ) -> Result<Option<Vec<u8>>, QueryObligationDenial> {
         self.journal
-            .read_frame(request, position, QUERY_PROGRAM_SUPPORT_FRAME_MAX_BYTES)
+            .read_frame(request, position, QUERY_OBLIGATION_FRAME_MAX_BYTES)
             .map_err(denial)
     }
     fn advance_publication(
         &self,
         request: &ExecutionRequest<'_, '_>,
-        frame: &QueryProgramSupportFrame,
+        frame: &QueryObligationFrame,
     ) -> QueryObligationPublicationOutcome {
         if frame.home() != self.home {
-            return QueryObligationPublicationOutcome::Refused(
-                QueryProgramSupportDenial::ForeignHome,
-            );
+            return QueryObligationPublicationOutcome::Refused(QueryObligationDenial::ForeignHome);
         }
         match self
             .journal
@@ -116,7 +114,7 @@ impl QueryObligationsMedium for ApplicationQueryObligations {
     fn acknowledge_no_effect(
         &self,
         proof: worth_proof::NoEffectHomeQueryObligation,
-    ) -> Result<(), QueryProgramSupportDenial> {
+    ) -> Result<(), QueryObligationDenial> {
         proof
             .subject()
             .admit_to(&self.authority)
@@ -126,27 +124,25 @@ impl QueryObligationsMedium for ApplicationQueryObligations {
             .map_err(denial)
     }
 }
-fn incarnation(cause: worth_proof::HomeIncarnationDenial) -> QueryProgramSupportDenial {
+fn incarnation(cause: worth_proof::HomeIncarnationDenial) -> QueryObligationDenial {
     match cause {
-        worth_proof::HomeIncarnationDenial::ForeignHome => QueryProgramSupportDenial::ForeignHome,
+        worth_proof::HomeIncarnationDenial::ForeignHome => QueryObligationDenial::ForeignHome,
         worth_proof::HomeIncarnationDenial::StaleIncarnation => {
-            QueryProgramSupportDenial::StaleIncarnation
+            QueryObligationDenial::StaleIncarnation
         }
     }
 }
-fn denial(cause: QueryJournalDenial) -> QueryProgramSupportDenial {
+fn denial(cause: QueryJournalDenial) -> QueryObligationDenial {
     match cause {
-        QueryJournalDenial::PrefixMismatch => QueryProgramSupportDenial::PrefixMismatch,
-        QueryJournalDenial::IdentityExhausted => QueryProgramSupportDenial::IdentityExhausted,
-        QueryJournalDenial::OwnerUnavailable => QueryProgramSupportDenial::OwnerUnavailable,
+        QueryJournalDenial::PrefixMismatch => QueryObligationDenial::PrefixMismatch,
+        QueryJournalDenial::IdentityExhausted => QueryObligationDenial::IdentityExhausted,
+        QueryJournalDenial::OwnerUnavailable => QueryObligationDenial::OwnerUnavailable,
         QueryJournalDenial::Unavailable | QueryJournalDenial::AdmissionRequired => {
-            QueryProgramSupportDenial::SupportUnavailable
+            QueryObligationDenial::SupportUnavailable
         }
-        QueryJournalDenial::PublicationPending => QueryProgramSupportDenial::PublicationPending,
-        QueryJournalDenial::PublicationUnresolved => {
-            QueryProgramSupportDenial::PublicationUnresolved
-        }
-        QueryJournalDenial::Execution(cause) => QueryProgramSupportDenial::Execution(cause),
-        QueryJournalDenial::Storage(cause) => QueryProgramSupportDenial::Storage(cause),
+        QueryJournalDenial::PublicationPending => QueryObligationDenial::PublicationPending,
+        QueryJournalDenial::PublicationUnresolved => QueryObligationDenial::PublicationUnresolved,
+        QueryJournalDenial::Execution(cause) => QueryObligationDenial::Execution(cause),
+        QueryJournalDenial::Storage(cause) => QueryObligationDenial::Storage(cause),
     }
 }

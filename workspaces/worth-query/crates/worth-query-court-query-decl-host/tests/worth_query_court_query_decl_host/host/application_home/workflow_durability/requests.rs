@@ -165,6 +165,7 @@ pub(super) fn start(
         >,
     >,
     definition: PublishedWorkflowDefinitionRef,
+    idempotency: u64,
 ) -> (
     PublishedWorkflowInstanceRef,
     WorthQueryWorkflowInstanceDiscoveryIntent<document::schema::DocumentRetentionSchema>,
@@ -180,7 +181,7 @@ pub(super) fn start(
             },
         })
         .without_source()
-        .idempotency(&1002u64)
+        .idempotency(&idempotency)
         .prepare_workflow_instance_start(application.vocabulary(), definition)
         .unwrap();
     let original = prepared.discovery_intent();

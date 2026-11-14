@@ -11,8 +11,8 @@ use worth_query_declaration::facade::{
 use worth_query_execution::facade::{
     application_installation::WorthQueryProgramApplicationRuntime,
     primary_graph::{
-        WorthQueryApplicationCommitReceipt, WorthQueryApplicationRequiredOutputConnection,
-        WorthQueryOutputDemandDenial, WorthQueryPreparedRequiredOutputSource,
+        WorthQueryApplicationRequiredOutputConnection, WorthQueryOutputDemandDenial,
+        WorthQueryOutputSourceEvidence, WorthQueryPreparedRequiredOutputSource,
     },
 };
 
@@ -21,7 +21,7 @@ pub(super) type RequiredSourceValidator<Schema, Program> =
         &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
         &WorthQueryProgramApplicationRuntime<Schema, Program>,
         &WorthQueryPreparedRequiredOutputSource,
-        &WorthQueryApplicationCommitReceipt,
+        &WorthQueryOutputSourceEvidence,
         &WorthQueryApplicationReadObservation,
         &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
     ) -> Result<(), WorthQueryOutputDemandDenial>;
@@ -30,7 +30,7 @@ pub(super) fn validate<Schema, Program, Root>(
     phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
     application: &WorthQueryProgramApplicationRuntime<Schema, Program>,
     prepared: &WorthQueryPreparedRequiredOutputSource,
-    receipt: &WorthQueryApplicationCommitReceipt,
+    receipt: &WorthQueryOutputSourceEvidence,
     observation: &WorthQueryApplicationReadObservation,
     request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
 ) -> Result<(), WorthQueryOutputDemandDenial>

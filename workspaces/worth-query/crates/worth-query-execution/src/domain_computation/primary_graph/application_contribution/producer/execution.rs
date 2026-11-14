@@ -51,6 +51,7 @@ mod post_authorization;
 pub(crate) mod prepared_plan;
 pub(in crate::domain_computation::primary_graph) mod unpublished;
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) use prepared_plan::canonical_apply;
+mod recorded_demand;
 mod required_cue;
 mod selected;
 mod selected_public;
@@ -91,6 +92,12 @@ type Operation<Schema, Binding> =
 pub(super) trait InstalledProducerExecutor<Schema>:
     InstalledSelectedProducerExecutor<Schema> + InstalledCoupledProducerExecutor<Schema> + Send + Sync
 {
+    fn readmit_recorded_demand(
+        &self, execution: &worth_execution::ExecutionRequest<'_, '_>,
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>, request: &WorthQueryRequestScope,
+        row: &crate::domain_computation::primary_graph::query_obligations::QueryOutputDemandObligation,
+    ) -> Result<crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandInterest, WorthQueryOutputDemandDenial>;
     fn dependency_scopes(
         &self,
         application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
@@ -144,6 +151,15 @@ where
             > + 'static,
     SourceQuery<Schema, Binding>: 'static,
 {
+    fn readmit_recorded_demand(
+        &self, execution: &worth_execution::ExecutionRequest<'_, '_>, runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>, request: &WorthQueryRequestScope,
+        row: &crate::domain_computation::primary_graph::query_obligations::QueryOutputDemandObligation,
+    ) -> Result<crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandInterest, WorthQueryOutputDemandDenial>{
+        recorded_demand::readmit::<Schema, Binding>(
+            self, execution, runtime, principal, request, row,
+        )
+    }
     fn dependency_scopes(
         &self,
         application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,

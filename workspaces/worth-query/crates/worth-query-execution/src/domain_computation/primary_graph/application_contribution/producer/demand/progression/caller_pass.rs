@@ -78,9 +78,11 @@ where
         FamilySourceValue<Schema, Family>: 'static,
         FamilySourceQuery<Schema, Family>: 'static,
     {
-        self.runtime.product_runtime
+        if demand.admission_kind.is_required() {
+            self.runtime.product_runtime
             .admit_directory_capability(crate::domain_computation::primary_graph::WorthQueryOperationDurableCapability::RequiredOutputDemand)
             .map_err(|cause| denial(WorthQueryOutputDemandDenialKind::DurableStateAdmission(cause), Family::IDENTITY))?;
+        }
         let mut pass = AdvancePass::Initial;
         loop {
             let result = self.advance_caller_pass(

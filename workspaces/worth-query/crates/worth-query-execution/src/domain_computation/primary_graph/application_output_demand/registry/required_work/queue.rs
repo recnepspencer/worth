@@ -26,6 +26,15 @@ impl RequiredWorkQueue {
         }
     }
 
+    /// Inactive native observers may outlive the last queued demand.
+    pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn is_quiescent(
+        &self,
+    ) -> bool {
+        self.state
+            .lock()
+            .is_ok_and(|state| state.head.is_none() && state.tail.is_none() && state.len == 0)
+    }
+
     pub(super) fn queued_count(&self) -> usize {
         self.state
             .lock()

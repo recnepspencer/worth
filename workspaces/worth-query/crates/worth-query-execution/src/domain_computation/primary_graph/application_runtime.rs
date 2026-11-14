@@ -195,6 +195,18 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
 
     /// The immutable program support this host admitted at installation, when
     /// it admitted any.
+    /// Descriptive family classification for the product release owner. This
+    /// exposes neither program custody nor the support registry to its caller.
+    pub(in crate::domain_computation) fn is_branch_adoption_original(
+        &self,
+        effects: &worth_runtime_world::facade::WorldRecoveredUnpublishedEffects,
+    ) -> Result<bool, super::query_obligations::QueryObligationDenial> {
+        self.installed_program_support()
+            .map(|support| support.lifecycle().is_adoption_original(effects))
+            .transpose()
+            .map(|adoption| adoption.unwrap_or(false))
+    }
+
     pub(super) fn installed_program_support(
         &self,
     ) -> Option<&super::program_occurrence::WorthQueryInstalledProgramSupport<Schema>> {
@@ -337,6 +349,7 @@ impl WorthQueryApplicationLiveDeliveryCloseReceipt {
 }
 
 mod candidate_input_observation;
+mod managed_cleanup;
 
 mod operation_input_capture;
 pub use operation_input_capture::WorthQueryOperationInputCaptureDenial;

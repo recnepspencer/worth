@@ -92,14 +92,31 @@ impl AdoptionEffect<'_> {
                 })();
                 AdoptionEffectOutcome::Prepared(prepared)
             }
-            Self::Publish(prepared) => {
-                AdoptionEffectOutcome::Published(prepared.publish_in_advancement(phase, admission))
-            }
+            Self::Publish(prepared) => AdoptionEffectOutcome::Published(
+                prepared.publish_in_advancement(selected.application(), phase, admission),
+            ),
             Self::Recover(recovery) => {
                 AdoptionEffectOutcome::Recovered(selected.recover_branch_adoption_in_advancement(
                     &execution, admission, recovery, request,
                 ))
             }
+        }
+    }
+}
+
+impl AdoptionEffect<'_> {
+    pub(super) fn source_revision<Schema: ApplicationSchema>(
+        &self,
+        selected: &WorthQuerySelectedProductOperation<'_, Schema>,
+    ) -> Result<
+        ApplicationProgramRevision,
+        crate::domain_computation::primary_graph::WorthQuerySelectedProgramInspectionDenial,
+    > {
+        match self {
+            Self::Recover(recovery) => Ok(*recovery.source()),
+            _ => selected
+                .inspect_selected_program()
+                .map(|program| *program.revision()),
         }
     }
 }

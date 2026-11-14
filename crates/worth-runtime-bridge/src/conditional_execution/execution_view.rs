@@ -7,6 +7,7 @@ use std::sync::{Arc, RwLock};
 
 pub(super) struct BridgeConditionalExecutionView<'a> {
     pub(super) bridge: &'a crate::facade::RuntimeBridge,
+    pub(super) allocations: &'a crate::correspondence::SharedCorrespondenceAllocationRegistry,
     pub(super) retention: &'a Arc<super::retention::BridgeRetentionLedger>,
     pub(super) conditional_lowerings:
         &'a Arc<RwLock<super::lowering_registry::BridgeConditionalLoweringRegistry>>,
@@ -19,6 +20,7 @@ impl BridgeOwnedSignalRuntime {
     pub(super) fn execution_view(&self) -> BridgeConditionalExecutionView<'_> {
         BridgeConditionalExecutionView {
             bridge: &self.bridge,
+            allocations: &self.bridge.correspondence_allocations,
             retention: &self.retention,
             conditional_lowerings: &self.conditional_lowerings,
             signal_graph_instance_id: self.signal_graph_instance_id,

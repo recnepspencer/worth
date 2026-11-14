@@ -15,7 +15,7 @@
 
 use super::super::DemandRegistryState;
 use super::super::SourceCustody;
-use super::super::WorthQueryPerformedOutputDemandSource;
+use super::super::WorthQueryRetainedOutputDemandSource;
 
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
 
@@ -23,7 +23,7 @@ use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
 /// is released.
 pub struct ReleasedPerformedSource {
     _custody: SourceCustody,
-    _admitted: Vec<WorthQueryPerformedOutputDemandSource>,
+    _admitted: Vec<WorthQueryRetainedOutputDemandSource>,
 }
 
 impl DemandRegistryState {
@@ -60,7 +60,7 @@ impl DemandRegistryState {
             if record
                 .performed_source
                 .as_ref()
-                .is_some_and(|source| source.change.product_commit() == &commit)
+                .is_some_and(|source| source.observation.selected_commit() == &commit)
             {
                 admitted.extend(record.performed_source.take());
             }

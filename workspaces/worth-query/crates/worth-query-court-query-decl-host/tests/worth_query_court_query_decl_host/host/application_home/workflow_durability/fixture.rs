@@ -43,6 +43,7 @@ pub(super) fn open(
         authentication,
     )
 }
+#[track_caller]
 pub(super) fn close<P: 'static>(home: Home<P>) {
     let lease = checkpoint_capture::lease(256 << 20);
     home.close(&worth_execution::ExecutionRequest::leased(&lease))

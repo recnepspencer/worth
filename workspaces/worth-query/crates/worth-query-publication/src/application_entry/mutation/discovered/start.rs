@@ -187,7 +187,7 @@ where
                     phase,
                     &worth_query_execution::publication_boundary::program_publication_access(),
                     &self.prepared,
-                    &self.receipt,
+                    &(&self.receipt).into(),
                     &self.retained_source,
                     request.principal,
                     request.scope,

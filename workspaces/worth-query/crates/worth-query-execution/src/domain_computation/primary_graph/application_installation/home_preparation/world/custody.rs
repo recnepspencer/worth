@@ -7,7 +7,7 @@ use worth_proof::CustodyReadmitted;
 pub enum QueryHomeCustodyReadmissionDenial {
     RecoveryClaim(crate::domain_computation::application_aftermath::WorthQueryRecoveryHandleDenial),
     CorrectionMaterial(crate::facade::correction_material::QueryCorrectionMaterialDenial),
-    ProgramSupport(crate::facade::program_support::QueryProgramSupportDenial),
+    ProgramSupport(crate::facade::query_obligations::QueryObligationDenial),
     Activation(super::QueryHomeProgramActivationDenial),
     ProgramHistorySource(
         RuntimeWorldServiceDenial<worth_runtime_world::facade::WorldReadmissionDenial>,
@@ -47,7 +47,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
     pub fn readmit_custody(
         mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        obligations: std::sync::Arc<dyn crate::facade::program_support::QueryObligationsMedium>,
+        obligations: std::sync::Arc<dyn crate::facade::query_obligations::QueryObligationsMedium>,
         material: std::sync::Arc<dyn crate::facade::correction_material::QueryCorrectionsMedium>,
         dispatch: std::sync::Arc<
             dyn crate::domain_computation::application_aftermath::dispatch_journal::QueryDispatchMedium,
@@ -64,7 +64,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
             return Err(QueryHomeCustodyReadmissionRefused {
                 query: self,
                 cause: QueryHomeCustodyReadmissionDenial::ProgramSupport(
-                    crate::facade::program_support::QueryProgramSupportDenial::ForeignHome,
+                    crate::facade::query_obligations::QueryObligationDenial::ForeignHome,
                 ),
             });
         }
@@ -72,7 +72,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
             return Err(QueryHomeCustodyReadmissionRefused {
                 query: self,
                 cause: QueryHomeCustodyReadmissionDenial::ProgramSupport(
-                    crate::facade::program_support::QueryProgramSupportDenial::ForeignHome,
+                    crate::facade::query_obligations::QueryObligationDenial::ForeignHome,
                 ),
             });
         };
@@ -80,7 +80,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
             return Err(QueryHomeCustodyReadmissionRefused {
                 query: self,
                 cause: QueryHomeCustodyReadmissionDenial::ProgramSupport(
-                    crate::facade::program_support::QueryProgramSupportDenial::StaleIncarnation,
+                    crate::facade::query_obligations::QueryObligationDenial::StaleIncarnation,
                 ),
             });
         }
@@ -89,7 +89,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
             return Err(QueryHomeCustodyReadmissionRefused {
                 query: self,
                 cause: QueryHomeCustodyReadmissionDenial::ProgramSupport(
-                    crate::facade::program_support::QueryProgramSupportDenial::SupportUnavailable,
+                    crate::facade::query_obligations::QueryObligationDenial::SupportUnavailable,
                 ),
             });
         };
@@ -155,6 +155,9 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
                     })
                 }
             };
+        if let Err(cause) = crate::domain_computation::primary_graph::application_installation::checkpoint_lineage::readmit_journal(self.runtime.runtime(), &originals, execution) {
+            return Err(QueryHomeCustodyReadmissionRefused { query: self, cause: QueryHomeCustodyReadmissionDenial::ProgramSupport(cause) });
+        }
         if let Err(cause) =
             support.bind_original_meaning_receiver(&self.runtime.runtime().runtime.primary_provider)
         {
@@ -172,7 +175,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
             return Err(QueryHomeCustodyReadmissionRefused {
                 query: self,
                 cause: QueryHomeCustodyReadmissionDenial::ProgramSupport(
-                    crate::facade::program_support::QueryProgramSupportDenial::PrefixMismatch,
+                    crate::facade::query_obligations::QueryObligationDenial::PrefixMismatch,
                 ),
             });
         }
@@ -271,127 +274,25 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
                 })
             }
         }
+        // Empty-original release and cold custody settlement may acknowledge
+        // Query discharges after the first fold, just as dispatch does above.
+        let admission = match application
+            .installed_program_support()
+            .expect("readmitted support")
+            .lifecycle()
+            .admit_current_prefix(execution)
+        {
+            Ok(admission) => admission,
+            Err(cause) => {
+                return Err(QueryHomeCustodyReadmissionRefused {
+                    query: self,
+                    cause: QueryHomeCustodyReadmissionDenial::ProgramSupport(cause),
+                })
+            }
+        };
+        self.program_support_admission = std::sync::OnceLock::from(admission);
         Ok(CustodyReadmitted::from_owner(self))
-    }
-    fn admit_original_custody(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<(), QueryHomeCustodyReadmissionDenial> {
-        use QueryHomeCustodyReadmissionDenial as Denial;
-        let application = self.runtime.runtime();
-        let owner = &application.runtime.product_runtime.owner;
-        let snapshot = owner
-            .inspection_port()
-            .recovery_snapshot()
-            .map_err(|cause| Denial::World(RuntimeWorldServiceDenial::OwnerUnavailable(cause)))?;
-        if snapshot.reserved() != 0 || snapshot.abandoned() != 0 || snapshot.updating() != 0 {
-            return Err(Denial::UnclassifiedWorldCustody);
-        }
-        let recovery = owner.recovery_port();
-        let mut after = None;
-        loop {
-            execution.consult().map_err(Denial::Execution)?;
-            let page = owner
-                .inspection_port()
-                .recovery_page(
-                    after.as_ref(),
-                    std::num::NonZeroUsize::new(32).expect("nonzero page"),
-                )
-                .map_err(Denial::World)?;
-            for row in page.rows() {
-                match row.state() {
-                    RuntimeWorldRecoveryRecordState::Recovered => {}
-                    RuntimeWorldRecoveryRecordState::Active
-                    | RuntimeWorldRecoveryRecordState::Abandoned
-                    | RuntimeWorldRecoveryRecordState::Retained
-                    | RuntimeWorldRecoveryRecordState::Busy => {
-                        return Err(Denial::UnclassifiedWorldCustody)
-                    }
-                }
-                let effects = recovery
-                    .inspect_recovered_effects(row.handle())
-                    .map_err(Denial::Recovery)?;
-                if effects.native_receipt().is_none() {
-                    self.release_empty_original(execution, effects)?;
-                    continue;
-                }
-                if let Some((entity, completion)) = application
-                    .runtime
-                    .primary_provider
-                    .recovered_inbound_completion_row(execution, &effects)
-                    .map_err(|_| Denial::OriginalBindingUnavailable)?
-                {
-                    application
-                        .admit_recovered_inbound_completion(execution, &effects, entity, completion)
-                        .map_err(Denial::InboundCustody)?;
-                    continue;
-                }
-                application
-                    .runtime
-                    .primary_provider
-                    .admit_recovered_idempotency(execution, row.handle().clone(), &effects)
-                    .map_err(original_binding_denial)?;
-            }
-            after = page.next_after().cloned();
-            if after.is_none() {
-                break;
-            }
-        }
-        let mut after = None;
-        loop {
-            let page = recovery
-                .released_original_page(
-                    execution,
-                    after.as_ref(),
-                    std::num::NonZeroUsize::new(32).expect("nonzero page"),
-                )
-                .map_err(Denial::ReleasedSource)?;
-            for original in page.rows() {
-                if original.native_receipt().is_none() {
-                    continue;
-                }
-                if application
-                    .runtime
-                    .primary_provider
-                    .released_inbound_completion_row(execution, original)
-                    .map_err(|_| Denial::OriginalBindingUnavailable)?
-                    .is_some()
-                {
-                    // A released internal completion is not an application key
-                    // and is not canonical World completion. Accepted custody
-                    // remains retryable against its actual original outbox.
-                    continue;
-                }
-                application
-                    .runtime
-                    .primary_provider
-                    .admit_released_idempotency(execution, original)
-                    .map_err(original_binding_denial)?;
-            }
-            after = page.next_after().cloned();
-            if after.is_none() {
-                return Ok(());
-            }
-        }
     }
 }
 
-fn original_binding_denial(
-    cause: crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial,
-) -> QueryHomeCustodyReadmissionDenial {
-    use crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial as Source;
-    use QueryHomeCustodyReadmissionDenial as Denial;
-    match cause {
-        Source::ForeignAffinity => Denial::ForeignOriginalAffinity,
-        Source::RetentionCapacityExhausted | Source::RetentionIdentityExhausted => {
-            Denial::OriginalMemoryAdmission
-        }
-        Source::PreparationBusy
-        | Source::ActiveSnapshotCapacityExhausted { .. }
-        | Source::SnapshotIdentityExhausted
-        | Source::RecordedIntentUnverifiable
-        | Source::ExecutionDenied(_)
-        | Source::Unavailable
-        | Source::NativeKeyLookup { .. } => Denial::OriginalBindingUnavailable,
-    }
-}
+mod originals;

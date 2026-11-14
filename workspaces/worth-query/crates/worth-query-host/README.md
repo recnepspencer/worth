@@ -1134,3 +1134,24 @@ pending steps; it neither contacts the transport again nor grants live release
 or continuation to the old recovery handle. A new mutation may answer
 `ProductBasisStale` until the original completion is recovered. This is the
 specified `ReopenRequired` route, not a crash-recovery certification.
+
+## Recorded cleanup at the Home handoff
+
+A failed application's native cleanup is a Query obligation, distinct from the
+original business outcome. Retain its actual cleanup owner and retry it under a
+fresh advancement phase on the owning thread. A successful native release is
+recorded against the original Home-scoped obligation before close. Cleanup does
+not report that the business mutation succeeded.
+
+Inspect `home.runtime().runtime().managed_cleanup_obligations()` after reopening
+through the ordinary Directory Home opener. Each row retains the original run,
+exact failure kind, original World association when present, and recorded live
+release. Use `discharge_managed_cleanup(&phase, identity)` to discharge the
+logical cleanup; recover or retry the original business key through its ordinary
+owner. Logical discharge never reruns a handler or publishes another effect.
+
+Close refuses while any resource release remains unrecorded. If the process
+ends with such a release outstanding, reopen preserves its typed pending
+obligation; fresh empty resources cannot discharge it. That residual cold
+release protocol belongs to C3. Affinity and completion inconsistencies remain
+distinct and non-retryable.

@@ -10,6 +10,12 @@ use crate::domain_computation::primary_graph::product_operation::program_adoptio
 
 /// What publishing a prepared branch adoption did. Returned by `publish`.
 pub enum WorthQueryBranchAdoptionPublicationOutcome {
+    /// The native disposition is exact; durable support custody still needs its
+    /// acknowledgement. The carried disposition must never be repeated.
+    ObligationDischargePending {
+        cause: crate::domain_computation::primary_graph::query_obligations::QueryObligationDenial,
+        outcome: Box<WorthQueryBranchAdoptionPublicationOutcome>,
+    },
     /// Fresh capability admission refused; the native reservation remains owned.
     AuthorizationDenied {
         cause: super::super::authorization::WorthQueryProgramAdoptionAuthorizationDenial,
@@ -71,6 +77,7 @@ impl WorthQueryPreparedBranchAdoption {
         Scope,
     >(
         self,
+        application: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         admission: crate::domain_computation::authorization::WorthQueryAdmittedApplicationOperation<
             Schema,
@@ -85,6 +92,7 @@ impl WorthQueryPreparedBranchAdoption {
         let execution = phase
             .request_for_owner(self.owner_identity)
             .expect("the adoption call opened on its retained owner identity");
+        let durable = self.publication.durable_attempt();
         let Self {
             source,
             target,
@@ -97,7 +105,7 @@ impl WorthQueryPreparedBranchAdoption {
             support_custody,
             ..
         } = self;
-        match publication.execute(execution) {
+        let outcome = match publication.execute(execution) {
             Ok(PublicationOutcome::Performed(performed)) => {
                 WorthQueryBranchAdoptionPublicationOutcome::Performed(
                     WorthQueryPerformedBranchAdoption::new(
@@ -136,6 +144,22 @@ Err(PublicationDenial::Stopped(stop)) => {
                     ),
                 )
             }
+        };
+        if !matches!(
+            &outcome,
+            WorthQueryBranchAdoptionPublicationOutcome::ProductUnpublished(_)
+        ) {
+            if let Some(attempt) = durable {
+                let result = application
+                    .installed_program_support()
+                    .expect("retained support owner")
+                    .lifecycle()
+                    .release_branch_adoption(&execution, attempt);
+                if let Err(cause) = result {
+                    return WorthQueryBranchAdoptionPublicationOutcome::ObligationDischargePending {cause,outcome:Box::new(outcome)};
+                }
+            }
         }
+        outcome
     }
 }

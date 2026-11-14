@@ -24,6 +24,9 @@ fn a_start_between_preparation_and_publication_stales_the_adoption() {
         &scope,
     );
     match prepared.publish(application.runtime(), &principal, &scope) {
+        WorthQueryBranchAdoptionPublicationOutcome::ObligationDischargePending {
+            cause, ..
+        } => panic!("unexpected journal refusal: {cause:?}"),
         WorthQueryBranchAdoptionPublicationOutcome::AuthorizationDenied { cause, .. } => {
             panic!("authorized adoption refused: {cause:?}")
         }

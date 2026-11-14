@@ -90,7 +90,7 @@ fn each_unadmitted_journal_entry_refuses_admission_and_returns_the_same_home() {
             .err()
             .expect("a genuine reserved journal entry must refuse admission");
         if name == "query.obligations" {
-            assert!(matches!(refused.reason(), Denial::QueryObligations(worth_query_execution::facade::program_support::QueryProgramSupportDenial::SupportUnavailable)));
+            assert!(matches!(refused.reason(), Denial::QueryObligations(worth_query_execution::facade::query_obligations::QueryObligationDenial::SupportUnavailable)));
         } else if name == "query.corrections" {
             assert!(matches!(refused.reason(), Denial::QueryCorrections(
                 worth_query_execution::facade::correction_material::QueryCorrectionMaterialDenial::AdmissionRequired)));

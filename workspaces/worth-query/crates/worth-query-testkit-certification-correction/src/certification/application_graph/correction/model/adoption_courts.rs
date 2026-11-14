@@ -30,6 +30,11 @@ pub fn adopt<P: ApplicationProgramDefinition<NumericSchema>>(
             assert_eq!(performed.target(), &target);
             performed
         }
+        WorthQueryBranchAdoptionPublicationOutcome::ObligationDischargePending {
+            cause, ..
+        } => {
+            panic!("adoption obligation discharge: {cause:?}")
+        }
         WorthQueryBranchAdoptionPublicationOutcome::AuthorizationDenied { cause, .. } => {
             panic!("adoption authority: {cause:?}")
         }

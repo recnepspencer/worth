@@ -25,7 +25,7 @@ pub fn unhold(
     .state_mut_for_test()) = DemandState::Running;
 
     let context = interest
-        .required_context_for_test("registry-fixture-family", &owner)
+        .required_context_for_test("registry-fixture-family", Ok(()), &owner)
         .unwrap();
     let mut claims = context
         .prepare_prerequisites_for_test(std::iter::empty(), &owner)

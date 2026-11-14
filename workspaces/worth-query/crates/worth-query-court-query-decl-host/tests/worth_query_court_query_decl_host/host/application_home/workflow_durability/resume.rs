@@ -10,7 +10,7 @@ fn directory_workflow_resumes_original_keys_and_required_approval_to_reference_t
 fn journey(location: Location, reopen: bool) -> (WorthQueryWorkflowObservedState, Vec<String>) {
     let (mut home, mut auth) = open(&location);
     let (definition, target) = publish(&home);
-    let (mut instance, original) = start(&home, definition);
+    let (mut instance, original) = start(&home, definition, 1002);
     let original_entity = instance.entity_id();
     assert!(matches!(
         propose(&home, instance.clone(), 1003, &target),
@@ -33,10 +33,11 @@ fn journey(location: Location, reopen: bool) -> (WorthQueryWorkflowObservedState
             );
         }
         let evidence = assessment::settle(&home, instance.clone(), settlement);
-        assert!(matches!(
-            assessment::accept(&home, instance.clone(), &evidence, acceptance),
-            WorkflowProgressOutcome::Completed(_)
-        ));
+        let outcome = assessment::accept(&home, instance.clone(), &evidence, acceptance);
+        assert!(
+            matches!(outcome, WorkflowProgressOutcome::Completed(_)),
+            "assessment {settlement} must complete: {outcome:?}"
+        );
     }
     assert!(matches!(
         advance(&home, instance.clone(), 1008),

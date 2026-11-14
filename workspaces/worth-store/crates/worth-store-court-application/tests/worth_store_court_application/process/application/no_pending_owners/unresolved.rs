@@ -50,7 +50,7 @@ fn an_unresolved_first_journal_publication_refuses_even_with_an_empty_durable_he
             .err()
             .expect("the exact owner gate must refuse unresolved position one");
         if name == "query.obligations" {
-            assert!(matches!(refused.reason(), Denial::QueryObligations(worth_query_execution::facade::program_support::QueryProgramSupportDenial::PublicationUnresolved)));
+            assert!(matches!(refused.reason(), Denial::QueryObligations(worth_query_execution::facade::query_obligations::QueryObligationDenial::PublicationUnresolved)));
         } else if name == "query.dispatch" {
             assert!(matches!(
                 refused.reason(),

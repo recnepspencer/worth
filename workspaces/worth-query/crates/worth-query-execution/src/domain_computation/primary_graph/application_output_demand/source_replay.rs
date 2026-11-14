@@ -7,6 +7,20 @@ pub enum WorthQueryOutputSourceReplay<'receipt> {
     Retained(&'receipt WorthQueryApplicationCommitReceipt),
     Recorded(&'receipt WorthQueryRecoveredApplicationCommitReceipt),
 }
+impl<'receipt> From<&'receipt WorthQueryApplicationCommitReceipt>
+    for WorthQueryOutputSourceReplay<'receipt>
+{
+    fn from(receipt: &'receipt WorthQueryApplicationCommitReceipt) -> Self {
+        Self::Retained(receipt)
+    }
+}
+impl<'receipt> From<&'receipt WorthQueryRecoveredApplicationCommitReceipt>
+    for WorthQueryOutputSourceReplay<'receipt>
+{
+    fn from(receipt: &'receipt WorthQueryRecoveredApplicationCommitReceipt) -> Self {
+        Self::Recorded(receipt)
+    }
+}
 impl WorthQueryOutputSourceReplay<'_> {
     pub fn matches_recorded(&self, recorded: &WorthQueryRecoveredApplicationCommitReceipt) -> bool {
         match self {

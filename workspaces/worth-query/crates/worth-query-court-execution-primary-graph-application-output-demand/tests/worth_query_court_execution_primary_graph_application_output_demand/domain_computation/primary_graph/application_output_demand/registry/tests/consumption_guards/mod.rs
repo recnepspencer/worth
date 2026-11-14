@@ -8,7 +8,7 @@ use worth_query_execution::court_doors_for_test::domain_computation::primary_gra
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputCheckpoint;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputProgress;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryPendingOutputDelivery;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryPerformedOutputDemandSource;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryRetainedOutputDemandSource;
 use crate::domain_computation::primary_graph::application_output_demand::registry::tests::*;
 use worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId;
 
@@ -22,7 +22,7 @@ pub fn retained_source(
         .take_output_demand_observation_for_test()
         .unwrap();
     let source =
-        WorthQueryPerformedOutputDemandSource::new_for_test(receipt, change, observation, None);
+        WorthQueryRetainedOutputDemandSource::new_for_test(receipt, change, observation, None);
     let scope = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::source_custody::real_scope_and_occurrence().0;
     {
         // Bound in the original literal order, passed in the door's.

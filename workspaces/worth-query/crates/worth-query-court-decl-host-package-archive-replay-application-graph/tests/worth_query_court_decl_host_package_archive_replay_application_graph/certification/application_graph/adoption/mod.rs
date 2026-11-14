@@ -47,3 +47,9 @@ pub(crate) mod workflow_pinned_basis;
 pub(crate) mod workflow_runtime_binding;
 
 pub(crate) mod workflow_vocabulary;
+
+mod directory_adoption;
+
+mod directory_stopped;
+
+mod directory_refusal;

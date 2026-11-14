@@ -9,6 +9,7 @@ use std::sync::{Arc, RwLock};
 pub struct BridgeAuthoredConditionalExecution<'a> {
     signal: &'a worth_signal::facade::durability::SignalDurableOwner<(), (), (), (), ()>,
     program: Arc<Program>,
+    allocations: crate::correspondence::SharedCorrespondenceAllocationRegistry,
     lowerings: Arc<RwLock<lowering_registry::BridgeConditionalLoweringRegistry>>,
     retention: Arc<retention::BridgeRetentionLedger>,
     source_owner: Arc<worth_proof::ConditionalSourceObservationOwner>,
@@ -26,6 +27,7 @@ impl BridgeReadmittedAuthoredAssembly {
         Ok(BridgeAuthoredConditionalExecution {
             signal: &self.signal,
             program: Arc::clone(&self.program),
+            allocations: Arc::clone(&serving._allocations),
             lowerings: Arc::clone(&serving.lowerings),
             retention: Arc::clone(&serving.retention),
             source_owner: Arc::clone(&serving.source_owner),
@@ -71,6 +73,7 @@ impl BridgeAuthoredConditionalExecution<'_> {
     fn view(&self) -> execution_view::BridgeConditionalExecutionView<'_> {
         execution_view::BridgeConditionalExecutionView {
             bridge: &self.program.bridge,
+            allocations: &self.allocations,
             retention: &self.retention,
             conditional_lowerings: &self.lowerings,
             signal_graph_instance_id: self.graph_instance_id,

@@ -7,7 +7,7 @@ fn directory_captured_workflow_resumes_the_original_target_and_key_after_close()
     let (home, authentication) = open(&location);
     let (definition, target) = definition::unsigned();
     let definition = publish_with(&home, definition);
-    let (instance, original) = start(&home, definition);
+    let (instance, original) = start(&home, definition, 1002);
     let identity = instance.entity_id();
     assert!(matches!(
         propose_captured(&home, instance, 1003, &target),
