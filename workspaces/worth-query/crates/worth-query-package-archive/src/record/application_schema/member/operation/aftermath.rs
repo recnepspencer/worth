@@ -39,7 +39,7 @@ pub(super) fn decode(
     input: &mut BinaryInput<'_>,
     budget: &mut RecordDecodeAttempt,
     has_correction_binding: bool,
-) -> Result<PreImageOutputFieldCapture, PortableApplicationAftermathContract, Denial> {
+) -> Result<PortableApplicationAftermathContract, Denial> {
     let authority = authority_from_tag(input.u16()?)?;
     let mechanism = match input.u16()? {
         0 => None,
