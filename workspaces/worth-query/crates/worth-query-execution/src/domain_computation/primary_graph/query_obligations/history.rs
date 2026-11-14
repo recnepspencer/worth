@@ -10,6 +10,8 @@ use worth_query_installation::facade::{
 };
 
 use worth_foundational::facade::ProgramSupportStatus;
+mod accepted_output;
+mod adoption;
 mod conditional_decision;
 mod durable_retirement;
 mod interpretation_membership;
@@ -17,6 +19,8 @@ mod managed_run;
 mod original_expiry;
 mod original_readmission;
 mod original_transfer;
+mod output_demand;
+mod output_source;
 mod resource;
 use interpretation_membership::InterpretationMembership;
 pub(in crate::domain_computation::primary_graph) use resource::ResourceDisposal;
@@ -45,6 +49,7 @@ struct SupportEntryState {
 }
 
 struct QueryObligationState {
+    pending_output_discharges: std::collections::BTreeSet<std::num::NonZeroU64>,
     entries: BTreeMap<ApplicationProgramRevision, SupportEntryState>,
     journal: Option<QueryObligationJournalState>,
 }
@@ -76,6 +81,7 @@ impl QueryObligationHistory {
             .collect();
         Self {
             state: Arc::new(Mutex::new(QueryObligationState {
+                pending_output_discharges: Default::default(),
                 entries,
                 journal: None,
             })),
@@ -138,6 +144,7 @@ impl QueryObligationHistory {
             return None;
         }
         Some(WorthQueryProgramSupportCustody {
+            local: true,
             state: Arc::clone(&self.state),
             source: *source,
             target: (source != target).then_some(*target),
@@ -277,6 +284,7 @@ impl Drop for WorthQueryProgramSupportInterpretation {
 }
 
 pub(in crate::domain_computation::primary_graph) struct WorthQueryProgramSupportCustody {
+    local: bool,
     state: Arc<Mutex<QueryObligationState>>,
     source: ApplicationProgramRevision,
     target: Option<ApplicationProgramRevision>,
@@ -294,6 +302,9 @@ impl std::fmt::Debug for WorthQueryProgramSupportCustody {
 
 impl Drop for WorthQueryProgramSupportCustody {
     fn drop(&mut self) {
+        if !self.local {
+            return;
+        }
         QueryObligationHistory::release(&self.state, &self.source, SupportUse::Custody);
         if let Some(target) = &self.target {
             QueryObligationHistory::release(&self.state, target, SupportUse::Custody);

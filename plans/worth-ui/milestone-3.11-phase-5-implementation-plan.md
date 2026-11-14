@@ -216,11 +216,11 @@ run the same certification command without reading test internals.
 
 ### Review Order
 
-1. `implementation-batch` closes 5A.
+1. Implement and verify 5A.
 2. `qa-loop` and `qa-tests` challenge 5A before 5B begins.
-3. `implementation-batch` closes 5B.
+3. Implement and verify 5B.
 4. `qa-loop`, `qa-tests`, and `code-quality-qa` challenge 5B before 5C.
-5. `implementation-batch` closes 5C and 5D.
+5. Implement and verify 5C and 5D.
 6. all three QA disciplines rerun across the entire dirty milestone.
 
 Any failed gate creates a new written plan before repair. Later batches remain

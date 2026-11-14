@@ -81,8 +81,7 @@ where
         + worth_query_declaration::facade::application_program::ApplicationDiscoveredOutputRoot,
     RootConnection<Schema, Root>: WorthQueryApplicationDiscoveredOutputConnection<Schema>,
 {
-    source_receipt:
-        worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt,
+    source_receipt: worth_query_execution::facade::primary_graph::WorthQueryOutputSourceEvidence,
     roots: Vec<RootNode<Schema, Program, Root>>,
     admission: RootAdmission<Schema, Root>,
     superseded: Vec<Demand<Schema, Root>>,
@@ -105,15 +104,21 @@ where
     Demand<Schema, Root>: Clone,
 {
     pub(super) fn new(
-        source_receipt: worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt,
-        discovery: Discovery<Schema, Root>,
+        source_receipt: impl Into<
+            worth_query_execution::facade::primary_graph::WorthQueryOutputSourceEvidence,
+        >,
+        discovery: impl Into<
+            worth_query_execution::facade::primary_graph::WorthQueryOutputDiscoveryRecipe<
+                Discovery<Schema, Root>,
+            >,
+        >,
         source_lease: worth_query_execution::facade::primary_graph::WorthQueryPreparedRequiredOutputSource,
         source: WorthQueryApplicationReadObservation,
         controls: WorthQueryOutputDemandControls,
         start_kind: DiscoveredRootStartKind,
     ) -> Self {
         Self {
-            source_receipt,
+            source_receipt: source_receipt.into(),
             roots: Vec::new(),
             admission: RootAdmission::new(discovery, start_kind),
             superseded: Vec::new(),

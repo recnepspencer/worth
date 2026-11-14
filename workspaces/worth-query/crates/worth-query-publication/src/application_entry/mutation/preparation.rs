@@ -1,5 +1,6 @@
 //! Prepare one installed handler candidate without entering commit progression.
 mod completion;
+mod envelope;
 mod handler_execution;
 mod original_input;
 use super::{

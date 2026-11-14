@@ -48,7 +48,7 @@ impl WorthQueryOutputDemandRegistry {
         receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
         kind: PreparedOutputRootKind,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
-        Self::validate_recovery_root_kind(self, receipt, kind)
+        Self::validate_recovery_root_kind(self, &receipt.into(), kind)
     }
 }
 

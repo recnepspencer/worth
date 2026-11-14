@@ -64,6 +64,7 @@ fn run(worker: bool, survivors: u64, unrelated: u64) {
             reconciliation_peer_caps: false,
             reconciliation_emission: false,
             envelope_records: false,
+            ..Default::default()
         },
     );
     let scope = request_scope();

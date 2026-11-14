@@ -2022,9 +2022,24 @@ supply and embed their own fresh UUID. Tests use explicit fixture identities.
 
 A journal-only Directory Home with the same supported program/schema opens under
 a new build UUID. Authored binding and durable history remain intact; the
-initializer does not run and nothing regenerates eagerly. Producers are not
-supported in this Directory lane. Accepted-output reuse and regeneration on demand
-are Phase 6 behavior, not a promise of rebuild admission.
+initializer does not run and nothing regenerates eagerly. Accepted producer outputs
+retain their original correspondence and dependency facts. Same-build demand
+verifies those facts before reuse. A changed build makes incompatible output
+stale; the normal demand and settlement owners regenerate it only when demanded,
+keeping its authored entity identities.
+
+Required demand records, performed-source obligations, consumed prerequisites and
+source custody use `query.obligations`. After reopening, recover the original
+keyed source receipt and pass it to `request.advanced().recover_required_outputs`
+(or `recover_discovered_outputs`). The recorded receipt supplies original data;
+fresh authentication, scope and World observation supply authority. A live receipt
+from an earlier Home is not readmitted. Completing the source/output tree records
+its discharge, so another reopen cannot resurrect completed custody. Producer
+domain denials retain their declared value data rather than rerunning the producer.
+
+These are graceful or quiescent reopen guarantees. Oversize obligation records
+receive the existing typed `MalformedFrame` refusal at the 16 KiB frame boundary;
+larger provenance support and crash/fault certification belong to track C.
 
 ### One process execution service
 
@@ -4523,6 +4538,33 @@ rules using the actual producer antecedent, including after repeated Native-only
 restore/retire cycles. Restoration grants no producer readiness or replayable
 producer-input contract.
 
+### Independent authored prefixes
+
+`OperationHandler::supports_candidate_planning()` defaults to false. Opt in
+only when decision, candidate construction and result cleanup have no external
+effects or mutable supplier-state dependence. Graph-dependent choices must use
+the supplied tracked readers; invocation input, key, original ordinal,
+principal/scope and installed immutable configuration are the other inputs.
+This promise grants no READ or WRITE authority and does not enable ordinary
+ordinal-sensitive decision reuse.
+
+For an independent authored prefix, Query may retain the finished program and
+result, compare its complete sealed reads against every peer's possible writes,
+and remove only proven false authored-to-authored edges. It validates support
+again against the actual pre-stage candidate before consuming the program once.
+Complete equality predicates retain absence/nonmatch meaning; selected IDs are
+not a complete range footprint. Producer barriers and unknown supports remain
+conservative. Creation/deletion, relation/external effects and nested work do
+not qualify. Same-record authored conflicts and true cycles still refuse.
+
+Canonical whole-envelope replay/drift is authenticated before any supplier
+planning. Every prefix candidate keeps its own nominal admission and full
+recorded input/operation/scope/precondition meaning. An Unseen envelope stays
+under the existing branch commit coordination through ordinary publication;
+recorded retries return authentic original receipts without live stage values.
+There is still one Native commit, no handler/producer execution to discover a
+footprint, and no extra caller plan or inspection API.
+
 ### Ordinary coupled source edits
 
 An ordinary authored edit can declare a finite set of source-owned roots
@@ -4629,10 +4671,27 @@ observe the existing publications without reopening healthy producers or making
 another commit, including current demands after a checkpoint reopen.
 
 [P5/S6 synchronous edit publication](../plans/WORTH-query/synchronous-edit-publication.md)
-is still in progress: general demand continuations and the explicit document-seal
-envelope remain in that plan. Demand-only output graphs retain their separate
-lazy delivery meaning. Synchronous consequences belong to the required-source
-entry or the planned envelope. Declared predecessor observations also
+provides the explicit edit envelope through `request.edit_envelope()`: collect
+typed `.stage::<Root, _>(intent)` values, one `.idempotency(key)`, and call
+`execute_performed::<Program>`. The declared graph orders a genuine authored
+prefix, required producer waves and authored dependents reading the actual
+unpublished candidate. An ordinary last authored stage can compare and advance
+application generation/frontier fields. There is one commit and one receipt;
+request-branded tokens expose live typed stage results. Same-key replay returns
+the original committed receipt without live results; read committed seal fields
+through Query for adoption. Producer-before-any-authored entry remains a typed
+refusal. General demand continuations remain separate in that plan; demand-only
+graphs retain their lazy delivery meaning.
+
+The [executable interleaved consumer example](../workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/owned_outputs/synchronous_edit/interleaved/courts.rs)
+uses the supported declaration/Host facade in the existing installed cabinet
+fixture. Its `edit!` sequence and ordinary journey demonstrate dependency order
+different from declaration ordinals, B consuming newly allocated output,
+generation/frontier sealing and receipt-only replay at two dependent counts.
+Current-C authorization and actual proposed D data remain distinct throughout;
+the application does not repeat platform currentness or publication validation.
+
+Declared predecessor observations also
 work inside coupled handlers, with independently admitted current-C read
 permission and the edit's genuinely held commit lane. Native never labels the
 transaction-before basis as a coupled producer's consumed applied input image.
@@ -6851,6 +6910,13 @@ The same chain in production code is
 | Prepare | `.prepare(maximum_selection_work)` | `WorthQueryPreparedBranchAdoption` (move-only, fields private) |
 | Publish | `programs.publish(prepared)` | `WorthQueryBranchAdoptionPublicationOutcome` |
 | Recover | `programs().recover(unpublished.into_recovery())` | `Result<WorthQueryBranchAdoptionRecoveryOutcome, WorthQueryApplicationProgramAdoptionRecoveryFailure>` |
+| Readmit after Directory reopen | `runtime.readmit_branch_adoption(fresh_world_recovery_handle)` | Exact original adoption custody where D18 admits the tail; then ordinary `programs().recover` with fresh authentication |
+
+Directory close succeeds before preparation starts and after the World occurrence or
+disposition settles. A cancelled adoption with a Native effect but no World
+occurrence or disposition refuses close with `UnresolvedBusinessCustody`; the
+returned Home remains usable. Abandoning that prefix refuses reopen with
+`UncleanRecoveryUnsupported(Relational)` (D18); its continuation belongs to C1.
 
 `compare` comes first because the requirements are the input to `adopt`.
 `WorthQueryProgramAdoptionRequirements` exposes `semantic_diff()`,
@@ -6991,7 +7057,10 @@ This prepares adoption across a set of branches. It is **not atomic**:
   It returns `Result<WorthQueryBranchSetAdoptionCancellation, Self>`: while a
   branch awaits resolution it hands the adoption back, so resolve it and
   `advance` first.
-- `resume(stopped, max)` continues a stopped set.
+- `begin_resume(runtime, &scope)` acknowledges stopped custody before releasing the old suffix.
+- After Directory reopen, `runtime.readmit_stopped_branch_set_adoptions(&phase)` rejoins fresh selectors.
+- `resume(stopped, max)` prepares only that ordered remainder; historical progress is descriptive.
+- `stopped.cancel(runtime, &scope)` acknowledges release of the retained custody.
 
 Coverage comes from `runtime.branches().program_adoption_coverage(..)`;
 `on_branches` orders it against your target list and refuses a mismatch with

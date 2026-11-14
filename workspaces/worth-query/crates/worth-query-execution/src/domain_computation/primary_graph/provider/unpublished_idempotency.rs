@@ -7,6 +7,7 @@ use crate::domain_computation::primary_graph::application_attempt::WorthQueryApp
 use worth_runtime_world::facade::ProductUnpublishedRecoveryHandle;
 
 mod before_world;
+mod envelope_resolution;
 mod handle_slots;
 mod managed_recovery;
 pub(super) mod recovered;

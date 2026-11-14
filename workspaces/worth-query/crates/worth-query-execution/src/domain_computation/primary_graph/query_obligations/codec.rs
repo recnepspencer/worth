@@ -40,6 +40,14 @@ pub(super) fn encode(
             bytes.push(16);
             conditional_decision::codec::encode(&mut bytes, record);
         }
+        QueryObligationRecord::Adoption(record) => {
+            bytes.push(5);
+            adoption::codec::encode(&mut bytes, record);
+        }
+        QueryObligationRecord::AcceptedOutput(row) => {
+            bytes.push(4);
+            output_custody::codec::encode_accepted(&mut bytes, row);
+        }
         QueryObligationRecord::ProgramSupport(record) => {
             bytes.push(0);
             encode_support(&mut bytes, record);
@@ -47,6 +55,14 @@ pub(super) fn encode(
         QueryObligationRecord::ManagedCleanup(record) => {
             bytes.push(1);
             managed_cleanup::codec::encode(&mut bytes, record);
+        }
+        QueryObligationRecord::OutputSource(record) => {
+            bytes.push(2);
+            output_custody::codec::encode_source(&mut bytes, record);
+        }
+        QueryObligationRecord::OutputDemand(record) => {
+            bytes.push(3);
+            output_custody::codec::encode_demand(&mut bytes, record);
         }
     }
     let digest: [u8; 32] = Sha256::digest(&bytes).into();
@@ -152,6 +168,7 @@ pub(super) fn decode(bytes: &[u8]) -> Result<QueryObligationFrame, QueryObligati
     let generation =
         NonZeroU64::new(u64::from_le_bytes(reader.take()?)).ok_or(Denial::MalformedFrame)?;
     let record = match reader.take::<1>()?[0] {
+        5 => QueryObligationRecord::Adoption(adoption::codec::decode(&mut reader)?),
         0 => QueryObligationRecord::ProgramSupport(read_support(&mut reader, home)?),
         1 => QueryObligationRecord::ManagedCleanup(managed_cleanup::codec::decode(
             &mut reader,
@@ -163,6 +180,15 @@ pub(super) fn decode(bytes: &[u8]) -> Result<QueryObligationFrame, QueryObligati
         16 => QueryObligationRecord::ConditionalDecision(conditional_decision::codec::decode(
             &mut reader,
             home,
+        )?),
+        2 => {
+            QueryObligationRecord::OutputSource(output_custody::codec::decode_source(&mut reader)?)
+        }
+        3 => {
+            QueryObligationRecord::OutputDemand(output_custody::codec::decode_demand(&mut reader)?)
+        }
+        4 => QueryObligationRecord::AcceptedOutput(output_custody::codec::decode_accepted(
+            &mut reader,
         )?),
         _ => return Err(Denial::MalformedFrame),
     };

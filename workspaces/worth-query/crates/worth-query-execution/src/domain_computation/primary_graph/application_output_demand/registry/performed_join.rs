@@ -7,7 +7,7 @@ use worth_runtime_world::facade::{CompositeCommitIdentity, ProductBranchIncarnat
 pub(super) struct PreparedPerformedJoin {
     commit: CompositeCommitIdentity,
     epoch: SourceEpoch,
-    source: WorthQueryPerformedOutputDemandSource,
+    source: WorthQueryRetainedOutputDemandSource,
     obligations: Vec<PerformedOutputObligation>,
     growth: Option<record_preparation::PreparedSourceCommitGrowth>,
 }

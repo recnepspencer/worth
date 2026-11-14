@@ -23,6 +23,10 @@ pub struct WorthQueryPreparedProductPublication {
 }
 
 impl WorthQueryPreparedProductPublication {
+    pub(crate) fn expected_head(&self) -> &worth_runtime_world::facade::ProductBranchObservation {
+        self.prepared.expected_head()
+    }
+
     pub(crate) fn planned_successor(
         &self,
     ) -> &worth_runtime_world::facade::PlannedProductReferenceSuccessor {

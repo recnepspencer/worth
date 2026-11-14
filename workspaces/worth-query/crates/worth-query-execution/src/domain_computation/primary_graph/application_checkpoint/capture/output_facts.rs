@@ -5,7 +5,7 @@ use super::super::facts;
 use crate::domain_computation::primary_graph::output_lineage::SealedNativeOutputWitness;
 use crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact as Fact;
 
-pub(super) fn encode(
+pub(in crate::domain_computation::primary_graph) fn encode(
     producer: &(impl facts::FactSequence + ?Sized),
     witness: &SealedNativeOutputWitness,
 ) -> Option<Vec<u8>> {

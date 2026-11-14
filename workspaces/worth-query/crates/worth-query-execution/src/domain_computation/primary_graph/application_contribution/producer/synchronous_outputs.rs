@@ -14,6 +14,12 @@ mod capture;
 pub(in crate::domain_computation::primary_graph) enum CapturedSynchronousOutputs {
     Prepared {
         root: Box<dyn std::any::Any + Send>,
+        source_recipe: Option<
+            Result<
+                Vec<u8>,
+                crate::domain_computation::primary_graph::query_obligations::QueryObligationDenial,
+            >,
+        >,
         _memory: Option<worth_execution::ExecutionMemoryReservation>,
     },
     Refused(retention::CaptureRefusal),
@@ -30,7 +36,7 @@ pub use discovered::SynchronousDiscoveredOutputRoot;
 mod discovery;
 mod edges;
 pub(in crate::domain_computation::primary_graph::application_contribution) mod rounds;
-mod source;
+pub(in crate::domain_computation::primary_graph::application_contribution) mod source;
 mod wave;
 pub use rounds::default_producer_round_bounds;
 pub use wave::SynchronousOutputWave;
@@ -55,17 +61,22 @@ impl AppliedOutputParent {
         Self { pin, source }
     }
 }
-pub struct SynchronousOutputFailure(CoupledSourceReadStop);
+pub struct SynchronousOutputFailure(
+    pub(in crate::domain_computation::primary_graph::application_contribution) CoupledSourceReadStop,
+);
 impl From<CoupledSourceReadStop> for SynchronousOutputFailure {
     fn from(cause: CoupledSourceReadStop) -> Self {
         Self(cause)
     }
 }
 pub struct SynchronousOutputAssembly<'a, 'owner, 'run, 'phase, S: ApplicationSchema> {
-    owner: &'a CoupledApplicationAssembly<'owner, 'run, 'phase, S>,
-    execution: &'a worth_execution::ExecutionRequest<'a, 'a>,
-    before: &'a RelationalPinnedRead,
-    order:
+    pub(in crate::domain_computation::primary_graph::application_contribution) owner:
+        &'a CoupledApplicationAssembly<'owner, 'run, 'phase, S>,
+    pub(in crate::domain_computation::primary_graph::application_contribution) execution:
+        &'a worth_execution::ExecutionRequest<'a, 'a>,
+    pub(in crate::domain_computation::primary_graph::application_contribution) before:
+        &'a RelationalPinnedRead,
+    pub(in crate::domain_computation::primary_graph::application_contribution) order:
         &'a worth_query_declaration::facade::application_program::ApplicationProgramConnectionOrder,
 }
 mod sealed {
@@ -76,7 +87,10 @@ where
     S: ApplicationSchema,
     D: WorthQueryApplicationOutputDemand<S>,
 {
-    fn declared_families(visit: &mut impl FnMut(std::any::TypeId));
+    fn declared_families(
+        parent: std::any::TypeId,
+        visit: &mut impl FnMut(std::any::TypeId, std::any::TypeId),
+    );
     fn assemble(
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
         parent: &AppliedOutputParent,
@@ -88,7 +102,11 @@ impl sealed::Edges for ApplicationOutputLeaf {}
 impl<S: ApplicationSchema, D: WorthQueryApplicationOutputDemand<S>> SynchronousOutputEdges<S, D>
     for ApplicationOutputLeaf
 {
-    fn declared_families(_: &mut impl FnMut(std::any::TypeId)) {}
+    fn declared_families(
+        _: std::any::TypeId,
+        _: &mut impl FnMut(std::any::TypeId, std::any::TypeId),
+    ) {
+    }
     fn assemble(
         _: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
         _: &AppliedOutputParent,
@@ -122,4 +140,20 @@ fn checkpoint(
         .map_err(denied)?
         .0
         .map_err(|cause| denied(worth_execution::WorkCeilingDenial::Stopped(cause)))
+}
+
+impl CapturedSynchronousOutputs {
+    pub(in crate::domain_computation::primary_graph) fn source_recipe(
+        &self,
+    ) -> Option<
+        &Result<
+            Vec<u8>,
+            crate::domain_computation::primary_graph::query_obligations::QueryObligationDenial,
+        >,
+    > {
+        match self {
+            Self::Prepared { source_recipe, .. } => source_recipe.as_ref(),
+            Self::Refused(_) => None,
+        }
+    }
 }

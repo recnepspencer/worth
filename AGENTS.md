@@ -5,7 +5,10 @@
 Before reviewing, read [REVIEW.md](REVIEW.md). Apply the repository skills
 [qa-loop](skills/qa-loop/SKILL.md), [qa-tests](skills/qa-tests/SKILL.md) and
 [code-quality-qa](skills/code-quality-qa/SKILL.md) to each final platform slice.
-Use [implementation-batch](skills/implementation-batch/SKILL.md) for new slices.
+Work from the assigned phase or goal, break it into slices as useful, and verify
+work after each slice. Continue until the assigned phase is complete.
+The implementation-batch, plan-implementation, optimize-code and
+feature-doc-writer skills are retired; older plans do not require invoking them.
 CAD kernel work uses cad-qa-loop and cad-qa-tests instead of the generic pair.
 Review briefs must name the files; a skill label alone is not application.
 

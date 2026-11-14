@@ -1,7 +1,7 @@
 use super::post_commit::source_retirement::retire_stale_records;
 use super::{
     BoundOutputSource, SourceCustody, WorthQueryOutputDemandRegistry,
-    WorthQueryPerformedOutputDemandSource,
+    WorthQueryRetainedOutputDemandSource,
 };
 use crate::equality_type_id::EqualityTypeId as TypeId;
 
@@ -22,6 +22,7 @@ use crate::domain_computation::primary_graph::{
 use std::cmp::Ordering;
 use worth_runtime_world::facade::CompositeCommitIdentity;
 
+mod cold_readmission;
 mod owned_affinity;
 mod recorded_replay;
 mod reservation_control;
@@ -34,7 +35,7 @@ mod undelivered_root;
 impl WorthQueryOutputDemandRegistry {
     pub(in crate::domain_computation::primary_graph) fn validate_recovery_root_kind(
         &self,
-        receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
+        receipt: &crate::domain_computation::primary_graph::WorthQueryOutputSourceEvidence,
         kind: PreparedOutputRootKind,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
         let state = self
@@ -43,12 +44,9 @@ impl WorthQueryOutputDemandRegistry {
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         let custody = state
             .source_custody
-            .get(receipt.committed_product_publication().composite_commit())
+            .get(receipt.source_commit())
             .filter(|_| {
-                super::post_commit::custody_reader::visible(
-                    &state,
-                    receipt.committed_product_publication().composite_commit(),
-                )
+                super::post_commit::custody_reader::visible(&state, receipt.source_commit())
             })
             .ok_or_else(|| {
                 denial(
@@ -75,22 +73,19 @@ impl WorthQueryOutputDemandRegistry {
 
     pub(in crate::domain_computation::primary_graph) fn retained_prepared_source_observation(
         &self,
-        receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
+        receipt: &crate::domain_computation::primary_graph::WorthQueryOutputSourceEvidence,
         root_type: TypeId,
     ) -> Option<worth_runtime_world::facade::ProductBranchObservation> {
         let mut state = self
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        if !super::post_commit::custody_reader::visible(
-            &state,
-            receipt.committed_product_publication().composite_commit(),
-        ) {
+        if !super::post_commit::custody_reader::visible(&state, receipt.source_commit()) {
             return None;
         }
         let custody = state
             .source_custody
-            .get_mut(receipt.committed_product_publication().composite_commit())
+            .get_mut(receipt.source_commit())
             .filter(|custody| custody.retired.is_none() && !custody.completed)
             .filter(|custody| custody.root_kind == PreparedOutputRootKind::Required(root_type))
             .filter(|custody| {
@@ -201,7 +196,10 @@ impl WorthQueryOutputDemandRegistry {
         let occurrence = receipt.product_branch().occurrence();
         // Completed custody is retained physically until a later drain. This
         // admission-free reader must resolve it before using bound revisions.
-        super::post_commit::custody_reader::resolve_before_binding(&mut state, &receipt);
+        super::post_commit::custody_reader::resolve_before_binding(
+            &mut state,
+            receipt.source_commit(),
+        );
         let superseded = sources
             .iter()
             .filter(|source| {

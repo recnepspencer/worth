@@ -79,17 +79,13 @@ fn fixed_delivery_result_contract_retry_unrelated_progress_and_consumed_fact_his
         .unwrap()
         .selected_commit()
         .clone();
-    let source_receipt = settled
-        .settlement()
-        .performed_source()
-        .unwrap()
+    let source = settled.settlement().performed_source().unwrap();
+    let source_receipt = source
         .receipt()
+        .retained_receipt()
+        .expect("this freshly performed action retains its source receipt")
         .clone();
-    let fulfillment = settled
-        .settlement()
-        .performed_source()
-        .unwrap()
-        .root_fulfillment();
+    let fulfillment = source.root_fulfillment();
     assert!(fulfillment.matches_source(&source_receipt));
     assert_eq!(
         fulfillment.source_commit(),
@@ -156,6 +152,8 @@ fn fixed_delivery_result_contract_retry_unrelated_progress_and_consumed_fact_his
             .performed_source()
             .unwrap()
             .receipt()
+            .retained_receipt()
+            .expect("output progress retains the performed source receipt")
             .is_same_authoritative_commit(&source_receipt),
         "later output progress cannot replace original action provenance"
     );

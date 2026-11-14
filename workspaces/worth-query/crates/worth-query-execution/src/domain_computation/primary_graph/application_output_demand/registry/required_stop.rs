@@ -86,7 +86,7 @@ pub(super) fn intrinsic_to_row(kind: WorthQueryOutputDemandDenialKind) -> bool {
                 .recovery_posture()
                 == WorthQueryOutputDemandRecoveryPosture::Terminal
         }
-        Kind::ExecutionRequest(_) => false,
+        Kind::ExecutionRequest(_) | Kind::ObligationPublication(_) => false,
         Kind::BridgeConditional(kind) => {
             WorthQueryOutputDemandDenial::new(Kind::BridgeConditional(kind), "").recovery_posture()
                 == WorthQueryOutputDemandRecoveryPosture::Terminal

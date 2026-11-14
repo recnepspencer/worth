@@ -34,6 +34,7 @@ impl PortablePreImageLocus {
 
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub struct PortablePreImageDemand {
+    pub(super) changed_output: Option<super::PortableChangedFieldOutput>,
     pub(super) loci: Vec<PortablePreImageLocus>,
     pub(super) relations: Vec<super::PortablePreImageRelationLocus>,
     pub(super) maximum_encoded_bytes: usize,
@@ -46,9 +47,23 @@ impl PortablePreImageDemand {
     ) -> Self {
         Self {
             loci,
+            changed_output: None,
             relations: Vec::new(),
             maximum_encoded_bytes,
         }
+    }
+
+    /// Untrusted selection data; association validates the installed output and reads.
+    pub fn with_untrusted_changed_output(
+        mut self,
+        output: super::PortableChangedFieldOutput,
+    ) -> Self {
+        self.changed_output = Some(output);
+        self
+    }
+
+    pub fn changed_output(&self) -> Option<&super::PortableChangedFieldOutput> {
+        self.changed_output.as_ref()
     }
 
     pub fn with_untrusted_relations(

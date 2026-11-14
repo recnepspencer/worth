@@ -12,6 +12,21 @@ impl DecisionContextUse {
     const MANAGED_COMPUTATION: u8 = 16;
     const REQUEST_CONTEXT: u8 = 32;
     const SOURCE_QUERY_PERMISSION: u8 = 64;
+    const STAGE_ORDINAL: u8 = 128;
+
+    pub(super) const fn stage_ordinal(self) -> Self {
+        Self(self.0 | Self::STAGE_ORDINAL)
+    }
+    pub(in crate::domain_computation::primary_graph) const fn supports_candidate_planning(
+        self,
+    ) -> bool {
+        self.0
+            & (Self::OPAQUE_READER
+                | Self::MANAGED_COMPUTATION
+                | Self::REQUEST_CONTEXT
+                | Self::SOURCE_QUERY_PERMISSION)
+            == 0
+    }
 
     pub(super) const fn key(self) -> Self {
         Self(self.0 | Self::KEY)
@@ -52,7 +67,8 @@ impl DecisionContextUse {
             & (Self::OPAQUE_READER
                 | Self::MANAGED_COMPUTATION
                 | Self::REQUEST_CONTEXT
-                | Self::SOURCE_QUERY_PERMISSION)
+                | Self::SOURCE_QUERY_PERMISSION
+                | Self::STAGE_ORDINAL)
             != 0
     }
 

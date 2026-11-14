@@ -20,6 +20,16 @@ pub struct WorthQueryProgramMigrationDescription {
 }
 
 impl WorthQueryProgramMigrationDescription {
+    pub(in crate::domain_computation::primary_graph::product_operation::program_adoption) fn from_recorded(
+        operation: String,
+        effect_count: usize,
+    ) -> Self {
+        Self {
+            operation,
+            effect_count,
+        }
+    }
+
     pub fn operation(&self) -> &str {
         &self.operation
     }

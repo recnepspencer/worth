@@ -1,6 +1,9 @@
 //! Extract an actual directed cycle, excluding merely blocked descendants.
 use super::*;
-pub(super) fn find(count: usize, edges: &[(usize, usize, DeclaredEditDependency)]) -> Vec<usize> {
+pub(super) fn find(
+    count: usize,
+    edges: &[(usize, usize, Option<DeclaredEditDependency>)],
+) -> Vec<usize> {
     let mut outgoing = vec![Vec::new(); count];
     for (index, (writer, _, _)) in edges.iter().enumerate() {
         outgoing[*writer].push(index);

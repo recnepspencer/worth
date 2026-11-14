@@ -281,6 +281,7 @@ impl QueryObligationHistory {
         &self,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<(), QueryObligationDenial> {
+        self.flush_output_discharges(request)?;
         let Some(medium) = self.medium.get() else {
             return Ok(());
         };

@@ -10,7 +10,7 @@ where
         &self, phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
         application: &WorthQueryProgramApplicationRuntime<S, P>,
         prepared: &worth_query_execution::facade::primary_graph::WorthQueryPreparedRequiredOutputSource,
-        receipt: &worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt,
+        receipt: &worth_query_execution::facade::primary_graph::WorthQueryOutputSourceEvidence,
         settlement: &WorthQueryApplicationOutputDemandSettlement<SourceQuery<S, D>>,
     ) -> Result<worth_query_execution::facade::primary_graph::WorthQueryFulfilledRequiredRoot, WorthQueryApplicationOutputDemandDenial>
     where R: worth_query_declaration::facade::application_program::ApplicationOutputGraphShape<S>

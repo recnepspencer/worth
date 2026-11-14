@@ -24,6 +24,7 @@ fn exercise(worker: bool) {
             reconciliation_emission: false,
             envelope_records: false,
             second_derivation: Some(reject_child),
+            ..Default::default()
         },
     );
     let scope = request_scope();

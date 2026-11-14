@@ -183,7 +183,13 @@ fn fixed_registered_reply_loss_resumes_without_handler_rerun() {
         })
         .expect("authored output graph settles");
     assert!(settled.handler_result().is_none());
-    let carried_source = settled.settlement().performed_source().unwrap().receipt();
+    let carried_source = settled
+        .settlement()
+        .performed_source()
+        .unwrap()
+        .receipt()
+        .retained_receipt()
+        .expect("same-runtime replay retains the original performed source receipt");
     let fulfillment = settled
         .settlement()
         .performed_source()

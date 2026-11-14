@@ -144,7 +144,7 @@ where
         // Ordinal-sensitive decisions must not reuse an ordinary decision that
         // retained only the domain key. This existing posture disables reuse
         // without weakening the tracked reader or inventing a key dependency.
-        self.context_use.set(self.context_use.get().opaque_reader());
+        self.context_use.set(self.context_use.get().stage_ordinal());
         self.identities
             .edit_stage_identity()
             .map(|stage| stage.ordinal())

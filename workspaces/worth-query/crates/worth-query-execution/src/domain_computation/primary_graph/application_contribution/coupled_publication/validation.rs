@@ -24,23 +24,28 @@ impl<S: ApplicationSchema>
                 let Some(CoupledWriterStage::Prepared(prepared)) = writer.stage.as_ref() else {
                     unreachable!("validated authored stage")
                 };
-                prepared.authored_member(
+                let mut member = prepared.authored_member(
                     writer.physical,
                     writer.capture.identity,
                     writer.capture.source,
                     writer.capture.binding,
-                )
+                );
+                member.position = writer.position;
+                member
             })
             .collect::<Vec<_>>();
         members.extend(self.writers.borrow().iter().map(|writer| {
             let Some(CoupledWriterStage::Prepared(prepared)) = writer.stage.as_ref() else {
                 unreachable!("validated group prepares every actual participant")
             };
-            prepared.member(
+            let mut member = prepared.member(
                 &writer.producer.declaration.identity,
                 writer.meaning.clone(),
-            )
+            );
+            member.position = writer.position;
+            member
         }));
+        members.sort_by_key(|member| member.position);
         members
     }
     fn invariant_requirements(

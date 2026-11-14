@@ -23,7 +23,7 @@ where
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         prepared: &WorthQueryPreparedRequiredOutputSource,
-        receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
+        receipt: &crate::domain_computation::primary_graph::WorthQueryOutputSourceEvidence,
         observation: &crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation,
         principal: &worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
@@ -48,7 +48,7 @@ where
         }
         if prepared.runtime_authority
             != self.backing.runtime().runtime.authority_identity().as_u64()
-            || &prepared.source_commit != receipt.committed_product_publication().composite_commit()
+            || &prepared.source_commit != receipt.source_commit()
             || &prepared.source_commit != observation.selected_commit()
             || prepared.product_occurrence != observation.branch_incarnation()
             || branch.occurrence() != observation.branch_incarnation()

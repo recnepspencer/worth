@@ -949,8 +949,7 @@ retell only the original runtime-intent floor and call that milestone closure.
 It must document the concrete adopted covered-entrypoint inventory and support
 posture finalized by Phase 5.5.
 
-This phase should be executed with the standards embodied by the
-`feature-doc-writer` skill: product-facing, implementation-grounded,
+This phase should deliver product-facing, implementation-grounded,
 developer-teaching documentation rather than milestone prose or internal notes.
 
 Work to complete in order:

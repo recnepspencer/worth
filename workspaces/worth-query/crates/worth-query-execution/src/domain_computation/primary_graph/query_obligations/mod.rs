@@ -14,6 +14,11 @@ use worth_foundational::facade::{
     CanonicalDigestId, DurableCompositePublicationAttemptIdentity, HomeIdentity,
     ProgramSupportObligationIdentity, ProgramSupportObligationKind, ProgramSupportStatus,
 };
+mod adoption;
+pub use adoption::{
+    QueryAdoptionPerformedDescription, QueryAdoptionRecord, QueryBranchAdoptionObligation,
+    QueryStoppedBranchSetObligation,
+};
 mod codec;
 mod conditional_decision;
 pub use conditional_decision::{
@@ -40,10 +45,15 @@ mod generation;
 mod ledger;
 mod medium;
 mod originals;
+mod output_custody;
 mod program_support;
 pub use generation::QueryObligationPublicationGenerations;
 pub use ledger::QueryObligationLedger;
 pub use medium::*;
+pub use output_custody::{
+    QueryAcceptedOutputRecord, QueryOutputDemandObligation, QueryOutputDemandRecord,
+    QueryOutputSourceObligation, QueryOutputSourceRecord,
+};
 pub use program_support::{QueryProgramSupportObligation, QueryProgramSupportRecord};
 
 pub const QUERY_OBLIGATION_FRAME_MAX_BYTES: u64 = 16 * 1024;
@@ -56,26 +66,25 @@ pub use managed_cleanup::{
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum QueryObligationRecord {
+    Adoption(QueryAdoptionRecord),
     ProgramSupport(QueryProgramSupportRecord),
     ManagedCleanup(QueryManagedCleanupRecord),
     ConditionalDecision(QueryConditionalDecisionRecord),
     ManagedRun(QueryManagedRunRecord),
     OwnedAsync(QueryOwnedAsyncRecord),
     Resource(QueryResourceRecord),
+    OutputSource(QueryOutputSourceRecord),
+    OutputDemand(QueryOutputDemandRecord),
+    AcceptedOutput(QueryAcceptedOutputRecord),
 }
-impl From<QueryResourceRecord> for QueryObligationRecord {
-    fn from(record: QueryResourceRecord) -> Self {
-        Self::Resource(record)
+impl From<QueryOutputSourceRecord> for QueryObligationRecord {
+    fn from(record: QueryOutputSourceRecord) -> Self {
+        Self::OutputSource(record)
     }
 }
-impl From<QueryOwnedAsyncRecord> for QueryObligationRecord {
-    fn from(record: QueryOwnedAsyncRecord) -> Self {
-        Self::OwnedAsync(record)
-    }
-}
-impl From<QueryManagedRunRecord> for QueryObligationRecord {
-    fn from(record: QueryManagedRunRecord) -> Self {
-        Self::ManagedRun(record)
+impl From<QueryOutputDemandRecord> for QueryObligationRecord {
+    fn from(record: QueryOutputDemandRecord) -> Self {
+        Self::OutputDemand(record)
     }
 }
 impl From<QueryProgramSupportRecord> for QueryObligationRecord {
@@ -186,4 +195,28 @@ pub enum QueryObligationDenial {
     PublicationUnresolved,
     Storage(String),
     Execution(worth_execution::WorkCeilingDenial),
+}
+
+impl From<QueryAcceptedOutputRecord> for QueryObligationRecord {
+    fn from(record: QueryAcceptedOutputRecord) -> Self {
+        Self::AcceptedOutput(record)
+    }
+}
+
+impl From<QueryResourceRecord> for QueryObligationRecord {
+    fn from(record: QueryResourceRecord) -> Self {
+        Self::Resource(record)
+    }
+}
+
+impl From<QueryOwnedAsyncRecord> for QueryObligationRecord {
+    fn from(record: QueryOwnedAsyncRecord) -> Self {
+        Self::OwnedAsync(record)
+    }
+}
+
+impl From<QueryManagedRunRecord> for QueryObligationRecord {
+    fn from(record: QueryManagedRunRecord) -> Self {
+        Self::ManagedRun(record)
+    }
 }

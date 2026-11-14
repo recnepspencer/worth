@@ -207,10 +207,11 @@ pub mod synchronous_outputs {
 
 pub mod authored_edit {
     pub use crate::domain_computation::primary_graph::application_contribution::authored_edit::{
-        order_authored_stages, stage_admission_refusal, AuthoredEditStageAdmission,
-        AuthoredEditStageContext, AuthoredStageDomainDenial, AuthoredStageExecutionCause,
-        AuthoredStageExecutionDenial, CapturedAuthoredEditStage, DeclaredEditDependency,
-        DeclaredEditOrderRefusal, DeclaredEditParticipant, DeclaredEditReadScope,
-        DeclaredEditScopeCycle, DeclaredEditStage, DeclaredQueryRead, RetainedAuthoredStageResult,
+        order_authored_stages, stage_admission_refusal, with_resolved_edit_envelope,
+        AuthoredEditStageAdmission, AuthoredEditStageContext, AuthoredEnvelopeResolution,
+        AuthoredStageDomainDenial, AuthoredStageExecutionCause, AuthoredStageExecutionDenial,
+        CapturedAuthoredEditStage, DeclaredEditDependency, DeclaredEditOrderRefusal,
+        DeclaredEditParticipant, DeclaredEditReadScope, DeclaredEditScopeCycle, DeclaredEditStage,
+        DeclaredQueryRead, RetainedAuthoredStageResult, UnseenAuthoredEnvelope,
     };
 }

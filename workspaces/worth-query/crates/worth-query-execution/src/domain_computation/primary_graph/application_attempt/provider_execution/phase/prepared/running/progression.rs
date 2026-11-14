@@ -178,6 +178,7 @@ pub fn progress_application_commit<Schema, Operation, Input, Scope>(
     running_commit: WorthQueryRunningApplicationCommit<Schema, Operation, Input, Scope>,
     history: Option<HistoryProducerInvocation<'_>>,
     allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+    held: Option<&crate::domain_computation::primary_graph::provider::WorthQueryApplicationBranchCommitCoordination<'_>>,
 ) -> super::completion_storage::CompletedApplicationCommit
 where
     Schema: worth_query_installation::facade::ApplicationSchema,
@@ -220,6 +221,7 @@ where
         &original_completion,
         history,
         allocation_policy,
+        held,
     )
     .finish(
         lease,
@@ -239,6 +241,7 @@ fn progress_provider_application<Schema, Operation, Input, Scope>(
     original_completion: &crate::domain_computation::primary_graph::provider::OriginalCompletionReceiver,
     history: Option<HistoryProducerInvocation<'_>>,
     allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+    held: Option<&crate::domain_computation::primary_graph::provider::WorthQueryApplicationBranchCommitCoordination<'_>>,
 ) -> WorthQueryProviderProgressionCompletion
 where
     Schema: worth_query_installation::facade::ApplicationSchema,
@@ -303,7 +306,14 @@ where
         .primary_provider
         .application_branch_commit_lane(product.observation());
 
-    let coordination = commit_lane.enter();
+    let owned_coordination;
+    let coordination = match held {
+        Some(held) => held,
+        None => {
+            owned_coordination = commit_lane.enter();
+            &owned_coordination
+        }
+    };
     let authority = WorthQueryApplicationCommitProgressionAuthority {
         coupled_outputs: &coupled_outputs,
         application,
@@ -311,7 +321,7 @@ where
         admission,
         authorization,
         idempotency,
-        coordination: &coordination,
+        coordination,
         product: &product,
         original_completion,
         history,

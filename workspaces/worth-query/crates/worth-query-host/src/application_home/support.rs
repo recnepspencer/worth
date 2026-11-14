@@ -55,12 +55,15 @@ pub const fn directory_family_support(family: DurableStateFamily) -> DirectoryFa
         | BridgeDiagnosticRetention => DirectoryFamilySupport::Supported(5),
 
         ProgramSupportLifecycle => DirectoryFamilySupport::Supported(6),
-        BranchAdoptionRecovery
-        | StoppedBranchSetAdoption
-        | OutputDemandRecords
+        // R8 owns the Phase 6 performed-source/prepared-output obligations;
+        // read leases remain local. Managed/correction extensions still refuse.
+        OutputDemandRecords
         | OutputSourceCustody
         | PerformedSourcePreparation
-        | ProgramOutputReadCustody => DirectoryFamilySupport::RefusedUntil(6),
+        | ProgramOutputReadCustody => DirectoryFamilySupport::Supported(6),
+        // Graceful stages only; Native effect without World occurrence/disposition is C1 (D18).
+        BranchAdoptionRecovery => DirectoryFamilySupport::Supported(6),
+        StoppedBranchSetAdoption => DirectoryFamilySupport::Supported(6),
         // The logical cleanup stays in Query's one journal. Native resources
         // must have an actual live release before graceful Home handoff.
         PendingApplicationCleanup

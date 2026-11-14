@@ -3,7 +3,7 @@ use worth_query_execution::facade::domain_computation::WorthQueryApplicationComm
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::currentness::select_current_product;
 use worth_query_execution::facade::domain_computation::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::source_custody::PreparedOutputRootKind;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryPerformedOutputDemandSource;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryRetainedOutputDemandSource;
 use worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId as TypeId;
 
 #[test]
@@ -61,7 +61,7 @@ fn current_commit_basis_reclaims_an_abandoned_performed_observation() {
     let kind = PreparedOutputRootKind::Required(TypeId::of_for_test::<()>());
     let commit = registry
         .retain_performed_source_for_test(
-            WorthQueryPerformedOutputDemandSource::new_for_test(receipt, change, observation, None),
+            WorthQueryRetainedOutputDemandSource::new_for_test(receipt, change, observation, None),
             &preparation,
             kind.clone(),
             None,

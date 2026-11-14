@@ -11,6 +11,7 @@ pub use interim_transport::WorthQueryInterimCheckpointOrigin;
 use sha2::{Digest, Sha256};
 use std::sync::Arc;
 
+pub(in crate::domain_computation::primary_graph) mod accepted_output;
 pub(crate) mod capture;
 mod decode;
 pub(crate) mod header;

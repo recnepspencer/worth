@@ -460,7 +460,7 @@ count rule: use every shared capability needed to preserve the phase's real
 semantics, but do not invent proofs, evidence, or wrappers for meanings the phase
 does not have.
 
-Every implementation-batch boundary review for this milestone records, for each
+Every implementation boundary review for this milestone records, for each
 new semantic or proof-bearing type: the strongest existing shared owner, the
 specific shared capabilities used on the authoritative path, the stronger
 owner-only invariant being added, the point where raw lower-strength inputs are

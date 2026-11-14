@@ -117,10 +117,11 @@ pub use super::application_contribution::{
     WorthQueryProducerInvariantRequirement, WorthQueryProducerLifecyclePosture,
     WorthQueryProducerOutputEquivalence, WorthQueryProducerOutputFamily,
     WorthQueryProjectedProducerDenial, WorthQueryPublishedComputationStateForTest,
-    WorthQueryReadinessFieldUse, WorthQueryReductionInputDenial, WorthQueryRequiredFeatureContract,
-    WorthQueryRequiredFeaturePair, WorthQuerySelectedApplicationProducer,
-    WorthQueryUndeclaredProducerDenial, WorthQueryWorkflowAssessmentOutputFamily,
-    WorthQueryWorkflowAssessmentPosture,
+    WorthQueryReadinessFieldUse, WorthQueryRecordedProducerDenialEncodingRefusal,
+    WorthQueryRecordedProducerDenialValue, WorthQueryReductionInputDenial,
+    WorthQueryRequiredFeatureContract, WorthQueryRequiredFeaturePair,
+    WorthQuerySelectedApplicationProducer, WorthQueryUndeclaredProducerDenial,
+    WorthQueryWorkflowAssessmentOutputFamily, WorthQueryWorkflowAssessmentPosture,
 };
 pub use super::application_entry::mutation::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerFailure, HandlerInterruption,

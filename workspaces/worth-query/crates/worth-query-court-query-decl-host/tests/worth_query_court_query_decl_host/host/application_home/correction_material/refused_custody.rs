@@ -77,7 +77,7 @@ fn directory_operation_custody_refuses_before_handler_contact_and_keeps_the_home
         .reclaim();
 }
 #[test]
-fn directory_output_demand_refuses_a_genuine_completed_query_before_producer_selection() {
+fn directory_ordinary_output_demand_reports_an_absent_producer_after_its_source_query() {
     use worth_query_host::facade::primary_graph::WorthQueryOutputDemandDenialKind as Output;
     let path = fixture::location();
     let lease = checkpoint_capture::lease(256 << 20);
@@ -97,18 +97,16 @@ fn directory_output_demand_refuses_a_genuine_completed_query_before_producer_sel
             .execute()
             .unwrap();
         assert_eq!(rows.rows()[0].label, "primary");
-        let denied =
-            request.demand(CurrentAccountDemand).start().err().expect(
-                "Directory refuses after the real source query and before the absent producer",
-            );
+        let denied = request
+            .demand(CurrentAccountDemand)
+            .start()
+            .err()
+            .expect("the real source query reaches the absent producer");
         let worth_query_host::facade::application_entry::WorthQueryApplicationOutputDemandDenial::Demand(denied) = denied else { panic!("the completed source must reach demand admission"); };
-        assert!(matches!(
-            denied.kind(),
-            Output::DurableStateAdmission(Durable::Unsupported {
-                family: Family::OutputDemandRecords,
-                supported_from_phase: 6
-            })
-        ));
+        assert!(
+            matches!(denied.kind(), Output::MissingApplicableProducer),
+            "{denied:?}"
+        );
     }
     home.close(&execution)
         .unwrap_or_else(|cause| panic!("output refusal close: {cause:?}"))

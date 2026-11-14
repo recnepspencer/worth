@@ -14,6 +14,8 @@ impl QueryObligationHistory {
         let Some(medium) = self.medium.get() else {
             return self.begin_retirement(revision).map_err(Failure::Policy);
         };
+        self.flush_output_discharges(request)
+            .map_err(Failure::Durability)?;
         let driver = self.lock_publication().map_err(Failure::Durability)?;
         driver
             .finish_pending(medium.as_ref(), request)

@@ -31,6 +31,7 @@ use super::super::{
 
 #[derive(Clone)]
 pub struct PendingMutationHandler {
+    candidate_planning: bool,
     origin: HandlerOrigin,
     durable_capabilities: Option<&'static [super::super::application_entry::mutation::WorthQueryOperationDurableCapability]>,
     identity: &'static str,
@@ -158,6 +159,15 @@ impl<Schema> InstalledMutationHandlerRegistry<Schema>
 where
     Schema: ApplicationSchema,
 {
+    pub(in crate::domain_computation::primary_graph) fn supports_candidate_planning<
+        B: ApplicationMutationBinding<Schema>,
+    >(
+        &self,
+    ) -> bool {
+        self.entries.get(B::IDENTITY).is_some_and(|entry| {
+            entry.handler_identity == B::HANDLER_IDENTITY && entry.candidate_planning
+        })
+    }
     pub(in crate::domain_computation::primary_graph) fn declared_durable_capabilities<Binding>(
         &self,
     ) -> Result<

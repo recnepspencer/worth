@@ -62,7 +62,7 @@ impl Model {
 pub struct Member;
 impl Entity for Member {
     const NAME: &'static str = "Member";
-    type Aspects = (MemberFacts, Option<Calibration>);
+    type Aspects = (MemberFacts, Option<Calibration>, Option<EnvelopeProgress>);
     type Relations = (ChildOf, UpstreamOf);
 }
 impl Member {

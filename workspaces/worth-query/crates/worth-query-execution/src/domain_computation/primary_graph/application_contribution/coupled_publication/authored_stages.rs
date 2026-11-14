@@ -5,6 +5,9 @@ use crate::domain_computation::primary_graph::application_contribution::authored
 };
 impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run, 'phase, S> {
     pub(super) fn stage_captures(&self) -> &[CapturedAuthoredEditStage<S>] {
+        self.all_stage_captures().get(1..).unwrap_or_default()
+    }
+    pub(super) fn all_stage_captures(&self) -> &[CapturedAuthoredEditStage<S>] {
         self.demands
             .authored_stages
             .as_ref()
@@ -15,23 +18,12 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
                     .as_slice()
             })
             .unwrap_or_default()
-            .get(1..)
-            .unwrap_or_default()
     }
-    pub(super) fn prepare_authored(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        before_pin: &worth_relational::facade::runtime::RelationalPinnedRead,
-        candidate: &mut RelationalAuthoredCoupledCandidate<'_>,
-    ) -> Result<Vec<DeclaredCoupledOutputDemands>, CoupledSourceReadStop> {
-        if let Some(stages) = self
-            .demands
-            .authored_stages
-            .as_ref()
-            .and_then(|stages| stages.downcast_ref::<Vec<CapturedAuthoredEditStage<S>>>())
-            && let Some(stage) = stages
-                .iter()
-                .find(|stage| &stage.before != self.before.observation())
+    pub(super) fn require_authored_basis(&self) -> Result<(), CoupledSourceReadStop> {
+        if let Some(stage) = self
+            .all_stage_captures()
+            .iter()
+            .find(|stage| &stage.before != self.before.observation())
         {
             return Err(WorthQueryOutputDemandDenial::new(
                 WorthQueryOutputDemandDenialKind::AuthoredStageRefused {
@@ -42,83 +34,96 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             )
             .into());
         }
+        Ok(())
+    }
+    pub(super) fn prepare_stage(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        before_pin: &worth_relational::facade::runtime::RelationalPinnedRead,
+        candidate: &mut RelationalAuthoredCoupledCandidate<'_>,
+        physical: usize,
+    ) -> Result<DeclaredCoupledOutputDemands, CoupledSourceReadStop> {
         let context = AuthoredEditStageContext {
             phase: self.phase,
             application: self.application,
         };
-        let mut all_demands = Vec::new();
-        for (physical, capture) in self.stage_captures().iter().enumerate() {
-            let pin = candidate.pin_source(execution)?;
-            let prepared = capture.executor.prepare(
-                execution,
-                &context,
-                self.coordination,
-                self.before,
-                before_pin,
-                &pin,
-            )?;
-            let crate::domain_computation::primary_graph::application_attempt::InspectedAuthoredApplication { writer, batch, content, roles, demands } = prepared;
-            // Retain custody before append: a cold-symbol retry must abort this
-            // exact real session even when Native rejects the current suffix.
-            self.authored.borrow_mut().push(AuthoredWriter {
-                capture: capture.clone(),
-                physical,
-                stage: Some(CoupledWriterStage::Inspected(writer)),
-            });
-            if let Err(cause) = candidate.append_authored_stage_outputs(
-                execution,
-                capture.source,
-                &content,
-                vec![batch],
-                roles,
-            ) {
-                if let Some((target, earlier, later)) = cause.authored_stage_conflict() {
-                    let ordinal = |position: usize| {
-                        if position == 0 {
-                            self.demands
-                                .authored_stages
-                                .as_ref()
-                                .and_then(|stages| {
-                                    stages.downcast_ref::<Vec<CapturedAuthoredEditStage<S>>>()
-                                })
-                                .and_then(|stages| stages.first())
-                                .expect("authored prefix identity")
-                                .identity
-                                .ordinal()
-                        } else {
-                            self.stage_captures()[position - 1].identity.ordinal()
-                        }
-                    };
-                    return Err(WorthQueryOutputDemandDenial::new(
-                        WorthQueryOutputDemandDenialKind::ConflictingIntent {
-                            target: target.clone(),
-                            earlier: ordinal(earlier),
-                            later: ordinal(later),
-                        },
-                        format!(
-                            "authored stages {} and {} write {target:?}",
-                            ordinal(earlier),
-                            ordinal(later)
-                        ),
-                    )
-                    .into());
-                }
-                return Err(cause.into());
+        let capture = &self.stage_captures()[physical];
+        let pin = candidate.pin_source(execution)?;
+        let prepared = capture.executor.prepare(
+            execution,
+            &context,
+            self.coordination,
+            self.before,
+            before_pin,
+            &pin,
+        )?;
+        let crate::domain_computation::primary_graph::application_attempt::InspectedAuthoredApplication { writer, batch, content, roles, demands } = prepared;
+        // Retain custody before append: a cold-symbol retry must abort this
+        // exact real session even when Native rejects the current suffix.
+        let position = self.applied_position() + 1;
+        self.authored.borrow_mut().push(AuthoredWriter {
+            capture: capture.clone(),
+            physical,
+            position,
+            stage: Some(CoupledWriterStage::Inspected(writer)),
+        });
+        if let Err(cause) = candidate.append_authored_stage_outputs(
+            execution,
+            capture.source,
+            &content,
+            vec![batch],
+            roles,
+        ) {
+            if let Some((target, earlier, later)) = cause.authored_stage_conflict() {
+                let ordinal = |position: usize| {
+                    if position == 0 {
+                        self.demands
+                            .authored_stages
+                            .as_ref()
+                            .and_then(|stages| {
+                                stages.downcast_ref::<Vec<CapturedAuthoredEditStage<S>>>()
+                            })
+                            .and_then(|stages| stages.first())
+                            .expect("authored prefix identity")
+                            .identity
+                            .ordinal()
+                    } else {
+                        self.stage_captures()[position - 1].identity.ordinal()
+                    }
+                };
+                return Err(WorthQueryOutputDemandDenial::new(
+                    WorthQueryOutputDemandDenialKind::ConflictingIntent {
+                        target: target.clone(),
+                        earlier: ordinal(earlier),
+                        later: ordinal(later),
+                    },
+                    format!(
+                        "authored stages {} and {} write {target:?}",
+                        ordinal(earlier),
+                        ordinal(later)
+                    ),
+                )
+                .into());
             }
-            let after_own = candidate.pin_source(execution)?;
-            let writers = self.authored.borrow();
-            let Some(CoupledWriterStage::Inspected(writer)) =
-                writers.last().and_then(|writer| writer.stage.as_ref())
-            else {
-                unreachable!("retained authored session")
-            };
-            self.application
-                .runtime
-                .primary_provider
-                .retain_authored_stage_after_own(writer.session(), after_own);
-            all_demands.push(demands);
+            return Err(cause.into());
         }
-        Ok(all_demands)
+        let after_own = candidate.pin_source(execution)?;
+        let writers = self.authored.borrow();
+        let Some(CoupledWriterStage::Inspected(writer)) =
+            writers.last().and_then(|writer| writer.stage.as_ref())
+        else {
+            unreachable!("retained authored session")
+        };
+        self.application
+            .runtime
+            .primary_provider
+            .retain_authored_stage_after_own(
+                writer.session(),
+                capture.identity,
+                capture.binding,
+                after_own,
+            );
+        Ok(demands)
     }
     pub(super) fn admit_authored(
         &self,

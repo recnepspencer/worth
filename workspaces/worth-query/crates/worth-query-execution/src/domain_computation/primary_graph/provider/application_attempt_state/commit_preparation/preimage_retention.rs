@@ -56,7 +56,17 @@ pub(super) fn retain_attempt_preimage(
     {
         source.validate_relation_inverse(candidate, execution, layout)?;
     }
-    let Some(demand) = attempt.preimage_demand() else {
+    let original_capture = attempt
+        .recorded_reverse()
+        .map(|source| source.changed_field_capture())
+        .transpose()
+        .map_err(|()| retention_failure(WorthQueryPreImageRetentionDenial::MissingDemandedField))?
+        .flatten();
+    let Some(demand) = original_capture
+        .as_ref()
+        .map(|(demand, _)| demand)
+        .or_else(|| attempt.preimage_demand())
+    else {
         return Ok(WorthQueryPreparedPreImageRetention {
             retained: None,
             work: WorthQueryPreImageRetentionWork::default(),
@@ -75,7 +85,37 @@ pub(super) fn retain_attempt_preimage(
                 "preimage projection capacity exhausted"),
         })?;
     let examined = candidates.examined();
-    let selected = if let Some(selection) = authored_anchors::select(attempt)? {
+    let selected = if let Some(output) = demand.changed_output() {
+        use worth_query_declaration::facade::application_operation::ApplicationMutationOutputPosture as Posture;
+        use worth_relational::facade::transactions::EntityReference;
+        let target = if let Some((_, target)) = &original_capture {
+            *target
+        } else {
+            let mut roles =
+                attempt
+                    .native_publication_roles()
+                    .filter_map(|(name, posture, entity, target)| match target {
+                        EntityReference::Existing(id)
+                            if name == output.role()
+                                && posture == Posture::Preserve
+                                && entity == output.entity() =>
+                        {
+                            Some(*id)
+                        }
+                        _ => None,
+                    });
+            let target = roles.next().ok_or_else(|| {
+                retention_failure(WorthQueryPreImageRetentionDenial::MissingDemandedField)
+            })?;
+            if roles.next().is_some() {
+                return Err(retention_failure(
+                    WorthQueryPreImageRetentionDenial::AmbiguousDemandedField,
+                ));
+            }
+            target
+        };
+        selection::retain_changed_fields(demand, candidates.iter(), &footprint, target, layout)
+    } else if let Some(selection) = authored_anchors::select(attempt)? {
         selection::retain_from_authored_anchors(
             demand,
             candidates.iter(),
@@ -97,6 +137,15 @@ pub(super) fn retain_attempt_preimage(
             candidates.as_slice(),
             retained,
         )?;
+    }
+    if demand.changed_output().is_some()
+        && retained.fields().is_empty()
+        && retained.absences().is_empty()
+        && retained.relations().is_empty()
+    {
+        return Err(retention_failure(
+            WorthQueryPreImageRetentionDenial::NoMutatedRecord,
+        ));
     }
     retained
         .retain_content(
