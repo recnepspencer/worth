@@ -1,4 +1,4 @@
-mod envelope;
+pub(in crate::application_entry) mod envelope;
 pub use envelope::{
     AuthoredStageExecutionCause, WorthQueryEditEnvelope, WorthQueryEditEnvelopeExecutionDenial,
     WorthQueryEditEnvelopeModeDenial, WorthQueryEditEnvelopeOutcome, WorthQueryEditEnvelopeReceipt,

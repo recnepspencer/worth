@@ -5,6 +5,7 @@ use crate::application_entry::mutation::{
     WorthQueryApplicationMutationRequest,
 };
 use worth_query_execution::facade::application_installation::WorthQueryProgramOwner;
+use worth_query_execution::publication_boundary::authored_edit::AuthoredEditStageContext;
 type Failure = crate::application_entry::WorthQueryPerformedMutationExecutionDenial;
 impl<S, P, K, Prev, I, R> CaptureEditStages<S, P, K> for WithEditStage<Prev, R, I>
 where Prev: CaptureEditStages<S, P, K>,
@@ -88,7 +89,7 @@ where
         let envelope_key = key.clone();
         let extension = self.commit_extension.clone();
         let admit =
-            move |context| {
+            move |context: &AuthoredEditStageContext<'_, '_, '_, S>| {
                 let identities = envelope_key.stage_with_encoded_input::<S, I::Binding>(&input, ordinal).map_err(|cause| stage_admission_refusal::<S, I::Binding>(&worth_query_execution::publication_boundary::program_publication_access(), ordinal, format!("stage identity: {cause:?}")))?;
                 let mut request = WorthQueryApplicationMutationRequest::new(context.application(), &principal, &scope, branch, intent.clone()).idempotency(envelope_key.key());
                 let prepared = (|| {
@@ -138,7 +139,7 @@ where
         if context.correction.is_some() && !self.corrective {
             return Err(Failure::Correction(Box::new(crate::application_entry::WorthQueryApplicationCorrectionDenial::SourceBindingUnavailable)));
         }
-        let mut request = WorthQueryApplicationMutationRequest::new(context.application, context.principal, context.scope, context.branch, self.intent.clone()).idempotency(key.key());
+        let request = WorthQueryApplicationMutationRequest::new(context.application, context.principal, context.scope, context.branch, self.intent.clone()).idempotency(key.key());
         let (_selected, owner) = request.select_performed_owner::<P, R>(phase, program)?;
         let identities = key.stage_with_encoded_input::<S, I::Binding>(&self.input, ordinal).map_err(|cause| Failure::Mutation(WorthQueryApplicationRequestMutationDenial::Identity(cause)))?;
         let stage_identity = *identities.edit_stage_identity().expect("canonical prefix");

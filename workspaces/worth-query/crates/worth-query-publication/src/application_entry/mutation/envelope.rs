@@ -32,8 +32,8 @@ use worth_query_execution::facade::{
     primary_graph::{
         HandlerExecutionDenial, MutationHandlerExecutionDenial, WorthQueryApplicationCommitReceipt,
         WorthQueryApplicationIdempotencyBinding, WorthQueryApplicationProjection,
-        WorthQueryApplicationUncommitted, WorthQueryMutationHandlerWork,
-        WorthQueryPrimaryGraphApplicationRuntime, WorthQueryRecoveredApplicationCommitReceipt,
+        WorthQueryApplicationUncommitted, WorthQueryPrimaryGraphApplicationRuntime,
+        WorthQueryRecoveredApplicationCommitReceipt,
     },
     runtime::ExecutionAllocationPolicy,
 };
@@ -72,8 +72,9 @@ pub struct EnvelopeContext<'a, S> {
     pub(in crate::application_entry) correction: Option<worth_query_execution::publication_boundary::recorded_correction::WorthQueryCorrectionIntent>,
 }
 pub(super) type StageValue = Arc<Mutex<Option<Box<dyn Any + Send>>>>;
-pub(super) type Connection<S, R> = <<R as ApplicationOutputGraphShape<S>>::RootConnection as ApplicationConnectionShape<S>>::Binding;
-pub(super) type Demand<S, R> =
+pub(in crate::application_entry) type Connection<S, R> = <<R as ApplicationOutputGraphShape<S>>::RootConnection as ApplicationConnectionShape<S>>::Binding;
+pub(in crate::application_entry) type Demand<S, R> =
     <Connection<S, R> as WorthQueryApplicationRequiredOutputConnection<S>>::Demand;
 pub(super) type Family<S, R> = <Demand<S, R> as WorthQueryApplicationOutputDemand<S>>::OutputFamily;
-pub(super) type Source<S, R> = <Family<S, R> as WorthQueryProducerOutputFamily<S>>::Source;
+pub(in crate::application_entry) type Source<S, R> =
+    <Family<S, R> as WorthQueryProducerOutputFamily<S>>::Source;
