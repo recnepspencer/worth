@@ -267,7 +267,7 @@ pub(super) fn entry_spec_with_member_delivery<
     with_envelope_completion_actions(entry_builder::<Delivery, MemberDelivery, Completion>())
         .finish()
 }
-fn entry_builder<
+pub(super) fn entry_builder<
     Delivery: ApplicationActionDelivery<Schema, edit::Binding>,
     MemberDelivery: ApplicationActionDelivery<Schema, member_edit::Binding>,
     RestoreDelivery: ApplicationActionDelivery<Schema, authored_member::restore::Binding>,
@@ -332,7 +332,7 @@ pub(super) fn with_envelope_completion_actions(
         Completion,
     >(entry)
 }
-fn envelope_actions<
+pub(super) fn envelope_actions<
     ModelPart: ApplicationActionDelivery<Schema, synchronous_edit::envelope_fixture::model::Binding>,
     MemberPart: ApplicationActionDelivery<Schema, synchronous_edit::envelope_fixture::member::Binding>,
     CapPart: ApplicationActionDelivery<Schema, synchronous_edit::envelope_fixture::cap::Binding>,

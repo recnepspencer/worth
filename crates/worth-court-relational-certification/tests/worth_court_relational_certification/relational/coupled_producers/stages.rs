@@ -299,6 +299,13 @@ fn a_stage_relation_is_part_of_the_authored_relation_footprint() {
         .map(|relation| (relation.before(), relation.after()))
         .collect::<Vec<_>>();
     assert_eq!(links, [(None, Some((world.carrier, world.source)))]);
+    let prefix = proposal
+        .authored_prefix_relation_mutation_footprint(execution, &[KindId(2)], &[], &[])
+        .unwrap();
+    assert!(
+        prefix.relations().is_empty(),
+        "the empty relation root cannot borrow the later authored link"
+    );
 }
 
 #[test]

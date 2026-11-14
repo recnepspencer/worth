@@ -97,10 +97,22 @@ impl<Key: Serialize> ApplicationEditEnvelopeKey<Key> {
 /// Canonical intent of the complete ordered stage list. The input and root
 /// names come from the same nominal bindings that execute each stage.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct ApplicationEditIntentIdentity([u8; 32]);
+pub enum ApplicationEditEnvelopeOrder {
+    DeclaredDependencies,
+    OrderedAuthored,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct ApplicationEditIntentIdentity {
+    identity: [u8; 32],
+    order: ApplicationEditEnvelopeOrder,
+}
 impl ApplicationEditIntentIdentity {
     pub const fn identity(&self) -> &[u8; 32] {
-        &self.0
+        &self.identity
+    }
+    pub const fn order(&self) -> ApplicationEditEnvelopeOrder {
+        self.order
     }
 }
 
@@ -163,7 +175,33 @@ impl<Key: Serialize> ApplicationEditEnvelopeKey<Key> {
             &self.namespace,
             &(self.canonical.identity, stages),
         )
-        .map(|canonical| ApplicationEditIntentIdentity(canonical.identity))
+        .map(|canonical| ApplicationEditIntentIdentity {
+            identity: canonical.identity,
+            order: ApplicationEditEnvelopeOrder::DeclaredDependencies,
+        })
+        .map_err(|_| {
+            super::super::rejected(
+                crate::portable_identity::WorthQueryPortableTypeIdentity::declared(
+                    "worth-query.edit-envelope",
+                ),
+            )
+        })
+    }
+
+    /// A positioned request shares the caller key, but never the default intent.
+    pub fn ordered_intent(
+        &self,
+        stages: &[ApplicationEditStageIntent],
+    ) -> Result<ApplicationEditIntentIdentity, ApplicationValueEncodeDenial> {
+        super::super::canonical_identity(
+            "worth-query.edit-envelope-intent.ordered.v1",
+            &self.namespace,
+            &(self.canonical.identity, "ordered-authored", stages),
+        )
+        .map(|canonical| ApplicationEditIntentIdentity {
+            identity: canonical.identity,
+            order: ApplicationEditEnvelopeOrder::OrderedAuthored,
+        })
         .map_err(|_| {
             super::super::rejected(
                 crate::portable_identity::WorthQueryPortableTypeIdentity::declared(

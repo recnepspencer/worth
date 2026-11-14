@@ -59,9 +59,14 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
                 )
                 .map_err(CoupledSourceReadStop::capture)?;
         }
+        let positioned = self
+            .all_stage_captures()
+            .first()
+            .is_some_and(|stage| stage.ordered);
         let captured = self
             .stage_captures()
             .iter()
+            .filter(|_| !positioned)
             .filter_map(|stage| stage.required.as_ref())
             .map(|capture| capture(execution))
             .collect::<Vec<_>>();
@@ -108,6 +113,10 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             let mut demands = self.prepare_stage(execution, &before_pin, candidate, physical)?;
             if let Some(cause) = demands.take_failure() {
                 return Err(CoupledSourceReadStop::capture(cause));
+            }
+            if positioned && let Some(required) = &capture.required {
+                // Only this actual append makes its required root available.
+                demands.synchronous.push(required(execution));
             }
             pending.extend(demands.values.drain(..).map(PendingOutputDemand::Stage));
             let roots = demands.synchronous.iter().collect::<Vec<_>>();
@@ -187,8 +196,10 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             before_pin,
             demand,
             candidate,
+            false,
         )?;
         let source = match source {
+            execution::CoupledSourceRead::Route { .. } => unreachable!("ordinary source read"),
             execution::CoupledSourceRead::Retiring => return Ok(None),
             execution::CoupledSourceRead::Prepared(index) => {
                 let writers = self.writers.borrow();

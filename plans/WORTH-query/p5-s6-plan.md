@@ -35,6 +35,25 @@ or new execution mandates.
 - **Not in parallel with:** another writer in `NC/` or in `Q/application_contribution/producer/{coupled_assembly,synchronous_outputs}`, `Q/application_attempt/coupled_outputs.rs` or `P/mutation/performed/`; Phase 4 (#131) if it touches `authority/commit/pipeline/publication_execution.rs` (decided at #131's plan review); the parked 3b branch.
 - **Closes when:** the L1 rows of section 6 are green with their mutants (M-S1, M-S3, stage cycle, mixed cycle, subject-less refusal, refusing authored stage), the cold-reopen court for the new part variant passes, and commits per edit are counted at 1 and 4 authored stages.
 
+## Phase 5 consumer extension of the landed envelope
+
+The default static/DAG entry and historical L1/L2 results below retain their
+scope. Runtime-length CAD cohorts use the same typed Publication envelope,
+with explicit positioned authored semantics when the product promises order,
+canonical whole-key replay before handlers, genuine pre-stage data and final
+support. Repeated-family histories use the closed installed occurrence
+component in the existing wave, not a private refresh graph or SourceID edge
+exemption. Corrective authoring retains a genuine inverse root and appends its
+ordinary final Edit before the one commit; only that real root satisfies the
+recorded inverse. See [current authoring DX](../../docs/build-an-application.md#runtime-cohorts-and-positioned-authored-execution).
+
+Current affected evidence is the bounded ordinary runtime/ordered/correction
+and occurrence journeys plus their necessary refusal/replay/support controls.
+Historical portfolio, hot/worker and mutant runs below are not a new campaign
+or completion prerequisite. Public prerequisite completion alone does not
+close Phase 5: the real private full-stage and final-body consumer must adopt
+one landed SDK and remove its private ordering/currentness fallbacks.
+
 ## L2 header: stage B after waves, final qualification, seal-shaped stage
 
 - **Usable result:** an edit, its dependents and its seal are one transaction. A CAD edit can then be one commit where today it is S + P + 1, at least 3 and at least 9 in the product (`transaction.rs:3-122`, `run.rs:104-155`, `document.rs:31-103`). Counted on the cabinet-shaped fixture at 3 and 12 dependents: 1 commit at both. A healthy envelope whose producers are all current makes 0 producer contacts and 1 commit, with the seal folded in.

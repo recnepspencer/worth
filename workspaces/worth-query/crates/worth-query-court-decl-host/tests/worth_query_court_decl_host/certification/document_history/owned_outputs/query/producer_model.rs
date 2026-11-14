@@ -1,5 +1,6 @@
 //! A real source query whose admitted expected-key parameter defines its partition.
 use super::*;
+mod parents;
 worth_query_application_query!(pub Query for Schema, identity "owned-outputs.producer-model-read.v1",
     parameters PartitionParametersBinding, result RowBinding, scope Model => "Model", name "ProducerModel");
 pub struct PartitionParameters;
@@ -82,7 +83,7 @@ impl WorthQueryApplicationProjection<Schema, Query> for Row {
         Ok(Self {
             native_id: row.entity_id(),
             key: row.field(key())?,
-            value: row.field(value())?,
+            value: row.field(value())? + parents::sum(row)?,
         })
     }
 }
@@ -93,8 +94,8 @@ pub fn declare(
         Model::reference(),
     )
     .field(key())
-    .field(value())
-    .build();
+    .field(value());
+    let shape = parents::shape(shape).build();
     let definition = ApplicationQueryDefinitionBuilder::declare(Query::reference())
         .root(Model::reference())
         .scope(Model::reference())

@@ -25,7 +25,7 @@ impl<S: ApplicationSchema> SynchronousOutputAssembly<'_, '_, '_, '_, S> {
         B::ScopeBinding: ApplicationQueryScopeResolution<S, B::PrincipalIdentity>,
         Row<S, B>: WorthQueryApplicationProjection<S, B::Query>,
     {
-        self.discover_at::<B>(&parent.pin, parent.source(), intent)
+        self.discover_as_at::<B, Row<S, B>>(&parent.pin, parent.source(), intent)
     }
     pub(super) fn discover_authored<B>(
         &self,
@@ -38,19 +38,19 @@ impl<S: ApplicationSchema> SynchronousOutputAssembly<'_, '_, '_, '_, S> {
         B::ScopeBinding: ApplicationQueryScopeResolution<S, B::PrincipalIdentity>,
         Row<S, B>: WorthQueryApplicationProjection<S, B::Query>,
     {
-        self.discover_at::<B>(&source.pin, source.source, intent)
+        self.discover_as_at::<B, Row<S, B>>(&source.pin, source.source, intent)
     }
-    fn discover_at<B>(
+    pub(super) fn discover_as_at<B, V>(
         &self,
         pin: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
         subject: worth_relational::facade::identity::EntityId,
         intent: B::Input,
-    ) -> Result<Row<S, B>, CoupledSourceReadStop>
+    ) -> Result<V, CoupledSourceReadStop>
     where
         B: ApplicationQueryBinding<S>,
         B::Input: ApplicationQueryIntent<S, Binding = B>,
         B::ScopeBinding: ApplicationQueryScopeResolution<S, B::PrincipalIdentity>,
-        Row<S, B>: WorthQueryApplicationProjection<S, B::Query>,
+        V: WorthQueryApplicationProjection<S, B::Query>,
     {
         let runtime = self.owner.application;
         let external = self.owner.principal.ok_or_else(|| {
@@ -93,7 +93,11 @@ impl<S: ApplicationSchema> SynchronousOutputAssembly<'_, '_, '_, '_, S> {
                 &mut ApplicationQueryNativeAccess::acquire(),
                 |plan, _| {
                     let source = runtime
-                        .project_applied_source_plan(self.execution, plan, pin)
+                        .project_applied_source_plan_as::<_, _, _, V, _, _, _>(
+                            self.execution,
+                            plan,
+                            pin,
+                        )
                         .map_err(|cause| cause.into_source_query_stop(B::IDENTITY))?;
                     let support = source
                         .retain_candidate_support(

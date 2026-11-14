@@ -29,17 +29,66 @@ pub(super) trait CorrectionPublication {
         self: Box<Self>,
     ) -> Result<WorthQueryApplicationCorrectionOutcome, WorthQueryApplicationCorrectionDenial>;
 }
-pub(super) struct PreparedCorrectionAction<
+pub(in crate::application_entry) struct PreparedCorrectionAction<
     'application,
     Schema: ApplicationSchema,
     Binding: ApplicationMutationBinding<Schema>,
+    Identities = ApplicationOwnedMutationIdentities<Schema, Binding>,
 > {
-    pub(super) application: &'application WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-    pub(super) owner: WorthQuerySelectedProgramOwner<'application, Schema>,
-    pub(super) program: CandidateProgram<Schema, Binding>,
-    pub(super) identities: ApplicationOwnedMutationIdentities<Schema, Binding>,
-    pub(super) result: Binding::Result,
-    pub(super) source: Arc<WorthQueryPreparedCorrectionSource>,
+    pub(in crate::application_entry) application:
+        &'application WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    pub(in crate::application_entry) owner: WorthQuerySelectedProgramOwner<'application, Schema>,
+    pub(in crate::application_entry) program: CandidateProgram<Schema, Binding>,
+    pub(in crate::application_entry) identities: Identities,
+    pub(in crate::application_entry) result: Binding::Result,
+    pub(in crate::application_entry) source: Arc<WorthQueryPreparedCorrectionSource>,
+}
+
+impl<S, B>
+    PreparedCorrectionAction<
+        '_,
+        S,
+        B,
+        worth_query_declaration::facade::application_operation::ApplicationMutationIdentities<
+            '_,
+            S,
+            B,
+        >,
+    >
+where
+    S: ApplicationSchema,
+    B: ApplicationMutationBinding<S>,
+    B::Input: Clone + Send + Sync,
+{
+    pub(in crate::application_entry) fn commit_envelope<P, R>(
+        self,
+        program: &worth_query_execution::facade::application_installation::WorthQueryProgramApplicationRuntime<S, P>,
+        phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
+        binding: worth_query_execution::facade::primary_graph::WorthQueryApplicationIdempotencyBinding,
+        unseen: &worth_query_execution::publication_boundary::authored_edit::UnseenAuthoredEnvelope<'_>,
+        allocation: worth_query_execution::facade::runtime::ExecutionAllocationPolicy<'_, '_>,
+    ) -> (worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitOutcome, B::Result)
+    where
+        P: worth_query_declaration::facade::application_program::ApplicationProgramDefinition<S>,
+        R: worth_query_declaration::facade::application_program::ApplicationOutputGraphShape<S>,
+        <R::RootConnection as worth_query_declaration::facade::application_program::ApplicationConnectionShape<S>>::Binding:
+            worth_query_declaration::facade::application_program::WorthQueryApplicationRequiredOutputConnection<S>,
+        B: worth_query_declaration::facade::application_program::WorthQueryApplicationRequiredOutputSource<S,
+            <R::RootConnection as worth_query_declaration::facade::application_program::ApplicationConnectionShape<S>>::Binding>,
+{
+        let outcome = program.compare_and_commit_selected_corrective_envelope::<R, B>(
+            phase,
+            &worth_query_execution::publication_boundary::program_publication_access(),
+            &self.owner,
+            self.program,
+            &self.identities,
+            self.source,
+            binding,
+            unseen,
+            allocation,
+        );
+        (outcome, self.result)
+    }
 }
 impl<Schema, Binding> CorrectionPublication for PreparedCorrectionAction<'_, Schema, Binding>
 where

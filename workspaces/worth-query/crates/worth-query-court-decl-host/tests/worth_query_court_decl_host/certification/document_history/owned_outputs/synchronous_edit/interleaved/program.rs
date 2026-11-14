@@ -151,9 +151,7 @@ impl ApplicationProgramDefinition<Schema> for Program {
         ApplicationProgramIdentity::new("owned-outputs.interleaved");
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
         let mut specs = hierarchy::Program::feature_specs();
-        specs[0] = base::entry_spec_with_envelope_deliveries::<
-            Completion,
-            Completion,
+        specs[0] = base::envelope_actions::<
             fixture::Delivery<ModelTree>,
             Completion,
             fixture::Delivery<ModelTree>,
@@ -161,8 +159,31 @@ impl ApplicationProgramDefinition<Schema> for Program {
             Completion,
             Completion,
             Completion,
+        >(base::entry_builder::<
             Completion,
-        >();
+            Completion,
+            fixture::Delivery<ModelTree>,
+        >())
+        .action::<created::Binding, fixture::Delivery<ModelTree>>()
+        .finish_action()
+        .finish();
         specs
+    }
+}
+
+impl WorthQueryApplicationRequiredOutputSource<Schema, ModelRoot> for created::Binding {
+    fn demand_from_source(
+        _: &created::Intent,
+    ) -> Result<first::Demand, WorthQueryRequiredOutputConnectionDenial> {
+        Ok(first::Demand("a".into()))
+    }
+}
+impl WorthQueryApplicationRequiredOutputSource<Schema, ModelRoot>
+    for super::super::super::authored_member::restore::Binding
+{
+    fn demand_from_source(
+        _: &super::super::super::authored_member::restore::Intent,
+    ) -> Result<first::Demand, WorthQueryRequiredOutputConnectionDenial> {
+        Ok(first::Demand("a".into()))
     }
 }

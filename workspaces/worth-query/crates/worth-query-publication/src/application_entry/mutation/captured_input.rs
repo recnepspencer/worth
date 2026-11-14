@@ -22,6 +22,14 @@ where
     marker: PhantomData<fn() -> Schema>,
 }
 
+impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>> Clone
+    for WorthQueryCapturedMutationInput<Schema, Binding>
+{
+    fn clone(&self) -> Self {
+        Self::new(self.input.clone())
+    }
+}
+
 impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
     WorthQueryCapturedMutationInput<Schema, Binding>
 {

@@ -29,6 +29,7 @@ mod root;
 pub use discovered::SynchronousDiscoveredOutputRoot;
 mod discovery;
 mod edges;
+mod occurrences;
 pub(in crate::domain_computation::primary_graph::application_contribution) mod rounds;
 pub(in crate::domain_computation::primary_graph::application_contribution) mod source;
 mod wave;
@@ -81,6 +82,19 @@ where
     S: ApplicationSchema,
     D: WorthQueryApplicationOutputDemand<S>,
 {
+    fn occurrence_families(_visit: &mut impl FnMut(std::any::TypeId)) {}
+    fn occurrence_component() -> bool {
+        false
+    }
+    fn prerequisites(
+        _context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        _pin: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
+        _source: worth_relational::facade::identity::EntityId,
+        _demand: &D,
+        _next: &mut SynchronousOutputWave<S>,
+    ) -> Result<(), SynchronousOutputFailure> {
+        Ok(())
+    }
     fn declared_families(
         parent: std::any::TypeId,
         visit: &mut impl FnMut(std::any::TypeId, std::any::TypeId),
