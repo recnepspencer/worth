@@ -43,8 +43,21 @@ impl RelationalRuntime {
             execution
                 .run_native_with_checkpoint(|context| {
                     for owner in stage.owners {
-                        checkpoint(context, owners.owners.len() as u64 + 1)
-                            .map_err(custody::execution_stop)?;
+                        checkpoint(
+                            context,
+                            (owners.owners.len() + owners.retirements.len()) as u64 + 1,
+                        )
+                        .map_err(custody::execution_stop)?;
+                        // A later source's current closure can also see a route
+                        // genuinely retired by this prefix. Its actual retirement
+                        // custody must not become a required surviving writer.
+                        if owners
+                            .retirements
+                            .iter()
+                            .any(|retired| retired.origin.same_publication(&owner.origin))
+                        {
+                            continue;
+                        }
                         if !owners
                             .owners
                             .iter()
