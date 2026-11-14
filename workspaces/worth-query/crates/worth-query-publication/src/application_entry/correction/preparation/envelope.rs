@@ -1,6 +1,6 @@
 //! Typed correction fronts defer handler work until whole-envelope resolution.
 use super::*;
-use crate::application_entry::mutation::envelope::{Connection, Demand, Source};
+use crate::application_entry::mutation::envelope::entry::outputs::EditStageOutputs;
 use crate::application_entry::mutation::{
     captured_input::WorthQueryCapturedMutationInput,
     envelope::{
@@ -9,14 +9,8 @@ use crate::application_entry::mutation::{
     },
 };
 use crate::application_entry::WorthQueryApplicationRequestExt;
-use worth_query_declaration::facade::{
-    application_program::*, application_query::*,
-    application_schema::ApplicationStructuredValueBinding,
-};
-use worth_query_execution::facade::{
-    application_installation::WorthQueryProgramApplicationRuntime,
-    primary_graph::WorthQueryApplicationProjection,
-};
+use worth_query_declaration::facade::application_program::ApplicationProgramDefinition;
+use worth_query_execution::facade::application_installation::WorthQueryProgramApplicationRuntime;
 
 impl<'a, 'p, 's, 'h, S: ApplicationSchema>
     WorthQueryApplicationCorrectionRequest<'a, 'p, 's, 'h, S>
@@ -30,20 +24,14 @@ impl<'a, 'p, 's, 'h, S: ApplicationSchema>
         C: ApplicationCorrectionBinding<S>,
 
     P: ApplicationProgramDefinition<S>,
-    ApplicationInverseBinding<S, C>: ApplicationMutationBinding<S> + ApplicationMutationAdmissionBinding<S> + WorthQueryApplicationRequiredOutputSource<S, Connection<S, R>>,
+    ApplicationInverseBinding<S, C>: ApplicationMutationBinding<S> + ApplicationMutationAdmissionBinding<S>,
     <ApplicationInverseBinding<S, C> as ApplicationMutationAdmissionBinding<S>>::Admission: crate::application_entry::mutation::authorization::WorthQueryBindingAdmission<S, ApplicationInverseBinding<S, C>>,
     <ApplicationInverseBinding<S, C> as ApplicationMutationBinding<S>>::Input: Clone + Send + Sync + ApplicationMutationInputScope<S, ApplicationInverseBinding<S, C>>,
     <ApplicationInverseBinding<S, C> as ApplicationMutationBinding<S>>::Result: Send,
     <ApplicationInverseBinding<S, C> as ApplicationMutationBinding<S>>::Denial: Send,
     <ApplicationInverseBinding<S, C> as ApplicationMutationBinding<S>>::ScopeBinding: ApplicationMutationScopeResolution<S, <ApplicationInverseBinding<S, C> as ApplicationMutationBinding<S>>::PrincipalIdentity>,
     <ApplicationInverseBinding<S, C> as ApplicationMutationBinding<S>>::IdempotencyKey: serde::Serialize + Send + Sync + 'static,
-    R: ApplicationOutputGraphShape<S> + ApplicationRequiredOutputRoot,
-    Connection<S, R>: WorthQueryApplicationRequiredOutputConnection<S>,
-    Demand<S, R>: Clone + Send + Sync,
-    R::Dependents: worth_query_execution::publication_boundary::synchronous_outputs::SynchronousOutputEdges<S, Demand<S, R>>,
-    <Source<S, R> as ApplicationQueryBinding<S>>::Input: ApplicationQueryIntent<S, Binding = Source<S, R>>,
-    <Source<S, R> as ApplicationQueryBinding<S>>::ScopeBinding: ApplicationQueryScopeResolution<S, <Source<S, R> as ApplicationQueryBinding<S>>::PrincipalIdentity>,
-    <<Source<S, R> as ApplicationQueryBinding<S>>::ResultBinding as ApplicationStructuredValueBinding>::Value: WorthQueryApplicationProjection<S, <Source<S, R> as ApplicationQueryBinding<S>>::Query> + Clone,
+    R: EditStageOutputs<S, ApplicationInverseBinding<S, C>>,
 {
         use WorthQueryApplicationCorrectionDenial as Denial;
         let key = C::inverse_key(&self.key).map_err(|cause| {
@@ -68,8 +56,8 @@ impl<'a, 'p, 's, 'h, S: ApplicationSchema>
             let limits = self.limits;
             let selected = Prepare { request: self, phase }.with_input::<C, _>(
                 true,
-                |target, access, command| target.derive_required_output_correction::<C, R>(
-                    access, phase, principal, scope, selected_source, command,
+                |target, _access, command| R::inverse::<C>(
+                    target, phase, principal, scope, selected_source, command,
                     limits.maximum_ancestors, limits.maximum_disclosure_results,
                 ).map_err(Denial::Derivation),
                 |request, target, _, _, selected, phase| {

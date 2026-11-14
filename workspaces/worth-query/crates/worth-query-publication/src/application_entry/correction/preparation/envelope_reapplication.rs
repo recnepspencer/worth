@@ -1,6 +1,6 @@
 //! Typed correction fronts defer handler work until whole-envelope resolution.
 use super::*;
-use crate::application_entry::mutation::envelope::{Connection, Demand, Source};
+use crate::application_entry::mutation::envelope::entry::outputs::EditStageOutputs;
 use crate::application_entry::mutation::{
     captured_input::WorthQueryCapturedMutationInput,
     envelope::{
@@ -9,42 +9,53 @@ use crate::application_entry::mutation::{
     },
 };
 use crate::application_entry::WorthQueryApplicationRequestExt;
-use worth_query_declaration::facade::{
-    application_program::*, application_query::*,
-    application_schema::ApplicationStructuredValueBinding,
-};
-use worth_query_execution::facade::{
-    application_installation::WorthQueryProgramApplicationRuntime,
-    primary_graph::WorthQueryApplicationProjection,
-};
+use worth_query_declaration::facade::application_program::ApplicationProgramDefinition;
+use worth_query_execution::facade::application_installation::WorthQueryProgramApplicationRuntime;
 
 impl<'a, 'p, 's, 'h, S: ApplicationSchema>
     WorthQueryApplicationReapplicationRequest<'a, 'p, 's, 'h, S>
 {
     /// Retains the genuine selected action; no handler runs until execute.
     pub fn edit_envelope<'e, 'program, C, P, R>(
-        self, program: &'program WorthQueryProgramApplicationRuntime<S, P>,
-    ) -> Result<WorthQueryRuntimeEditEnvelope<'e, 'program, S, P, <C::Source as ApplicationMutationBinding<S>>::IdempotencyKey>, WorthQueryApplicationCorrectionDenial>
+        self,
+        program: &'program WorthQueryProgramApplicationRuntime<S, P>,
+    ) -> Result<
+        WorthQueryRuntimeEditEnvelope<
+            'e,
+            'program,
+            S,
+            P,
+            <C::Source as ApplicationMutationBinding<S>>::IdempotencyKey,
+        >,
+        WorthQueryApplicationCorrectionDenial,
+    >
     where
-        'a: 'e, 'p: 'e, 's: 'e, 'h: 'e,
+        'a: 'e,
+        'p: 'e,
+        's: 'e,
+        'h: 'e,
         C: ApplicationCorrectionBinding<S>,
 
-    P: ApplicationProgramDefinition<S>,
-    C::Source: ApplicationMutationBinding<S> + ApplicationMutationAdmissionBinding<S> + WorthQueryApplicationRequiredOutputSource<S, Connection<S, R>>,
-    <C::Source as ApplicationMutationAdmissionBinding<S>>::Admission: crate::application_entry::mutation::authorization::WorthQueryBindingAdmission<S, C::Source>,
-    <C::Source as ApplicationMutationBinding<S>>::Input: Clone + Send + Sync + ApplicationMutationInputScope<S, C::Source>,
-    <C::Source as ApplicationMutationBinding<S>>::Result: Send,
-    <C::Source as ApplicationMutationBinding<S>>::Denial: Send,
-    <C::Source as ApplicationMutationBinding<S>>::ScopeBinding: ApplicationMutationScopeResolution<S, <C::Source as ApplicationMutationBinding<S>>::PrincipalIdentity>,
-    <C::Source as ApplicationMutationBinding<S>>::IdempotencyKey: serde::Serialize + Send + Sync + 'static,
-    R: ApplicationOutputGraphShape<S> + ApplicationRequiredOutputRoot,
-    Connection<S, R>: WorthQueryApplicationRequiredOutputConnection<S>,
-    Demand<S, R>: Clone + Send + Sync,
-    R::Dependents: worth_query_execution::publication_boundary::synchronous_outputs::SynchronousOutputEdges<S, Demand<S, R>>,
-    <Source<S, R> as ApplicationQueryBinding<S>>::Input: ApplicationQueryIntent<S, Binding = Source<S, R>>,
-    <Source<S, R> as ApplicationQueryBinding<S>>::ScopeBinding: ApplicationQueryScopeResolution<S, <Source<S, R> as ApplicationQueryBinding<S>>::PrincipalIdentity>,
-    <<Source<S, R> as ApplicationQueryBinding<S>>::ResultBinding as ApplicationStructuredValueBinding>::Value: WorthQueryApplicationProjection<S, <Source<S, R> as ApplicationQueryBinding<S>>::Query> + Clone,
-{
+        P: ApplicationProgramDefinition<S>,
+        C::Source: ApplicationMutationBinding<S> + ApplicationMutationAdmissionBinding<S>,
+        <C::Source as ApplicationMutationAdmissionBinding<S>>::Admission:
+            crate::application_entry::mutation::authorization::WorthQueryBindingAdmission<
+                S,
+                C::Source,
+            >,
+        <C::Source as ApplicationMutationBinding<S>>::Input:
+            Clone + Send + Sync + ApplicationMutationInputScope<S, C::Source>,
+        <C::Source as ApplicationMutationBinding<S>>::Result: Send,
+        <C::Source as ApplicationMutationBinding<S>>::Denial: Send,
+        <C::Source as ApplicationMutationBinding<S>>::ScopeBinding:
+            ApplicationMutationScopeResolution<
+                S,
+                <C::Source as ApplicationMutationBinding<S>>::PrincipalIdentity,
+            >,
+        <C::Source as ApplicationMutationBinding<S>>::IdempotencyKey:
+            serde::Serialize + Send + Sync + 'static,
+        R: EditStageOutputs<S, C::Source>,
+    {
         use WorthQueryApplicationCorrectionDenial as Denial;
         let key = C::reapplication_key(&self.key).map_err(|cause| {
             Denial::Mutation(
@@ -68,8 +79,8 @@ impl<'a, 'p, 's, 'h, S: ApplicationSchema>
             let limits = self.limits;
             let selected = reapplication::PrepareReapplication { request: self, phase }.with_input::<C, _>(
                 true,
-                |target, access, command| target.derive_required_output_reapplication::<C, R>(
-                    access, phase, principal, scope, selected_source, command,
+                |target, _access, command| R::reapplication::<C>(
+                    target, phase, principal, scope, selected_source, command,
                     limits.maximum_ancestors, limits.maximum_disclosure_results,
                 ).map_err(Denial::Derivation),
                 |request, target, _, _, selected, phase| {

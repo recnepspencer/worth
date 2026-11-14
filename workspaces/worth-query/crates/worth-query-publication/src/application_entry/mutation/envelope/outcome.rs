@@ -185,3 +185,37 @@ impl std::fmt::Debug for WorthQueryEditEnvelopeOutcome {
         }
     }
 }
+
+pub(super) fn settled<D: Send + 'static, R: 'static>(
+    stage: usize,
+    identity: ApplicationEditStageIdentity,
+    binding: &'static str,
+    brand: Arc<()>,
+    outcome: crate::application_entry::mutation::WorthQueryApplicationMutationOutcome<D, R>,
+) -> WorthQueryEditEnvelopeOutcome {
+    use crate::application_entry::mutation::WorthQueryApplicationMutationOutcome as Outcome;
+    match outcome {
+        Outcome::AlreadyCommitted(receipt) => {
+            WorthQueryEditEnvelopeOutcome::AlreadyCommitted(receipt)
+        }
+        Outcome::IdempotencyIntentDrift => WorthQueryEditEnvelopeOutcome::IdempotencyIntentDrift,
+        Outcome::RecoveredCommitted(receipt) => {
+            WorthQueryEditEnvelopeOutcome::RecoveredCommitted(receipt)
+        }
+        Outcome::Commit(cause) => WorthQueryEditEnvelopeOutcome::Uncommitted(cause),
+        Outcome::Cancelled => WorthQueryEditEnvelopeOutcome::Cancelled { stage },
+        Outcome::DeadlineExceeded => WorthQueryEditEnvelopeOutcome::DeadlineExceeded { stage },
+        Outcome::DomainDenied(denial) => {
+            WorthQueryEditEnvelopeOutcome::DomainDenied(WorthQueryEditStageDomainDenial {
+                failure: AuthoredStageDomainDenial {
+                    identity,
+                    binding,
+                    denial: Box::new(denial),
+                },
+                brand,
+                outcome: None,
+            })
+        }
+        Outcome::Committed { .. } => unreachable!("preparation never publishes a candidate"),
+    }
+}

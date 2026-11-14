@@ -1,7 +1,9 @@
 //! The heterogeneous stage list keeps each installed binding and root nominal.
 use super::*;
 pub(in crate::application_entry) mod corrective;
+pub mod outputs;
 pub(in crate::application_entry) mod typed;
+use outputs::EditStageOutputs;
 mod sealed {
     pub trait Stages {}
     impl Stages for super::NoEditStages {}
@@ -118,4 +120,68 @@ where S: ApplicationSchema, I: ApplicationMutationIntent<S> {
     pub(in crate::application_entry) corrective: bool,
     pub(in crate::application_entry) original: Mutex<Option<AuthoredEditStageAdmission<S, I::Binding>>>,
     pub(in crate::application_entry) commit_extension: Arc<Mutex<Option<crate::application_entry::mutation::commit_binding::WorthQueryCommitExtension>>>,
+}
+
+impl<S, P, K, Prev, I, R> CaptureEditStages<S, P, K> for WithEditStage<Prev, R, I>
+where
+    Prev: CaptureEditStages<S, P, K>,
+
+    S: ApplicationSchema,
+    P: ApplicationProgramDefinition<S>,
+    I: ApplicationMutationIntent<S> + Clone + Send + Sync + 'static,
+    I::Binding: ApplicationMutationBinding<
+            S,
+            IdempotencyKey = K,
+            SourceExpectation = NoApplicationMutationSource,
+        > + ApplicationMutationAdmissionBinding<S>,
+    <I::Binding as ApplicationMutationAdmissionBinding<S>>::Admission:
+        crate::application_entry::mutation::authorization::WorthQueryBindingAdmission<
+            S,
+            I::Binding,
+        >,
+    <I::Binding as ApplicationMutationBinding<S>>::Input: Clone + Send + Sync,
+    <I::Binding as ApplicationMutationBinding<S>>::Result: Send,
+    <I::Binding as ApplicationMutationBinding<S>>::Denial: Send,
+    <I::Binding as ApplicationMutationBinding<S>>::ScopeBinding: ApplicationMutationScopeResolution<
+        S,
+        <I::Binding as ApplicationMutationBinding<S>>::PrincipalIdentity,
+    >,
+    K: serde::Serialize + Send + Sync + 'static,
+    R: EditStageOutputs<S, I::Binding>,
+{
+    fn capture(
+        self,
+        entries: &mut Vec<Box<dyn EditEntry<S, P, K>>>,
+    ) -> Result<(), WorthQueryEditEnvelopeExecutionDenial> {
+        self.previous.capture(entries)?;
+        let ordinal = entries.len();
+        let input =
+            ApplicationEncodedInput::encode(self.intent.input().clone()).map_err(|cause| {
+                WorthQueryEditEnvelopeExecutionDenial::stage(
+                    ordinal,
+                    I::Binding::IDENTITY,
+                    crate::application_entry::WorthQueryPerformedMutationExecutionDenial::Mutation(
+                        WorthQueryApplicationRequestMutationDenial::Identity(
+                            ApplicationMutationIdentityDenial::Input(cause),
+                        ),
+                    ),
+                )
+            })?;
+        entries.push(Box::new(TypedEntry::<S, I, R> {
+            intent: self.intent.clone(),
+            input,
+            marker: PhantomData,
+            correction_source: None,
+            corrective: false,
+            original: Mutex::new(None),
+            commit_extension: Arc::new(Mutex::new(None)),
+        }));
+        Ok(())
+    }
+    fn capture_boxed(
+        self: Box<Self>,
+        entries: &mut Vec<Box<dyn EditEntry<S, P, K>>>,
+    ) -> Result<(), WorthQueryEditEnvelopeExecutionDenial> {
+        (*self).capture(entries)
+    }
 }
