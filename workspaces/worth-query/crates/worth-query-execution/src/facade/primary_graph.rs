@@ -371,14 +371,6 @@ mod product;
 pub use crate::domain_computation::primary_graph::WorthQueryManagedPhaseStorageForTest;
 pub use product::*;
 
-#[doc(hidden)]
-pub use crate::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::completion_storage::{ApplicationCommitCompletionStorage, CompletedApplicationCommit};
-#[doc(hidden)]
-pub use crate::domain_computation::primary_graph::provider::original_attempt_completion::OriginalCompletionReceiver;
-
-#[doc(hidden)]
-pub use crate::domain_computation::primary_graph::provider::session_commit::WorthQueryRetainedApplicationCommitBasis;
-
 mod read_denials;
 pub use read_denials::*;
 
