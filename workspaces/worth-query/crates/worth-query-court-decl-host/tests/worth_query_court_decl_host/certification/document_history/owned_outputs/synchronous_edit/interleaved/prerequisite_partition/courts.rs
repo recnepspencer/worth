@@ -1,4 +1,5 @@
 use super::*;
+use crate::certification::document_history::owned_outputs::synchronous_edit::courts::native_head;
 use worth_query_host::facade::runtime::ExecutionAllocationPolicy;
 
 fn host() -> WorthQueryProgramApplicationRuntime<Schema, Program> {
@@ -103,7 +104,7 @@ fn excluded_candidate_field_changes_invalidate_the_complete_partition_source() {
                 ]
             );
         }
-        let head = super::super::super::super::courts::native_head(&host);
+        let head = native_head(&host);
         let denial = request
             .advanced()
             .mutate(expectation::Observe)
@@ -121,6 +122,6 @@ fn excluded_candidate_field_changes_invalidate_the_complete_partition_source() {
             cause.kind(),
             WorthQueryApplicationAttemptDenialKind::SourceChanged
         );
-        assert_eq!(super::super::super::super::courts::native_head(&host), head);
+        assert_eq!(native_head(&host), head);
     }
 }
