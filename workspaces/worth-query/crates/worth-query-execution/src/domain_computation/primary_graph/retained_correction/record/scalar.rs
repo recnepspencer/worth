@@ -88,23 +88,21 @@ pub(super) fn validate(record: &MaterialRecord) -> Result<(), Denial> {
                     scalar(&field.value)?;
                 }
             }
-            if let Some(changed) = &material.changed_fields {
-                if changed.role.is_empty()
-                    || changed.entity.is_empty()
-                    || material.preimage.is_none()
+            if let Some(output) = &material.output_fields {
+                if output.role.is_empty() || output.entity.is_empty() || material.preimage.is_none()
                 {
                     return Err(Denial::MalformedFrame);
                 }
-                let target = RecordRef::Entity(changed.target);
+                let target = RecordRef::Entity(output.target);
                 let mut captured = std::collections::BTreeSet::new();
                 for field in material.preimage.iter().flatten() {
-                    if field.entity != changed.entity || field.target != target {
+                    if field.entity != output.entity || field.target != target {
                         return Err(Denial::MalformedFrame);
                     }
                     captured.insert((&field.entity, &field.aspect, &field.field));
                 }
-                for field in &changed.absences {
-                    if field.entity != changed.entity
+                for field in &output.absences {
+                    if field.entity != output.entity
                         || field.target != target
                         || field.location.aspect != field.aspect
                         || field.location.fields.len() != 1
@@ -115,6 +113,17 @@ pub(super) fn validate(record: &MaterialRecord) -> Result<(), Denial> {
                         return Err(Denial::MalformedFrame);
                     }
                     location(&field.location)?;
+                    if field.absence == RecordedAbsenceKind::Aspect
+                        && (material.preimage.iter().flatten().any(|present| {
+                            present.entity == field.entity && present.aspect == field.aspect
+                        }) || output.absences.iter().any(|absent| {
+                            absent.entity == field.entity
+                                && absent.aspect == field.aspect
+                                && absent.absence == RecordedAbsenceKind::Field
+                        }))
+                    {
+                        return Err(Denial::MalformedFrame);
+                    }
                 }
             }
         }

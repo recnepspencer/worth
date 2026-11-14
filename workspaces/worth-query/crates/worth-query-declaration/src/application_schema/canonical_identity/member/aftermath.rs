@@ -144,10 +144,10 @@ fn append_mechanism(
                 format!("{prefix}.preimage-byte-bound"),
                 inverse.preimage_demand().maximum_encoded_bytes(),
             );
-            if let Some(output) = inverse.preimage_demand().changed_output() {
+            if let Some(output) = inverse.preimage_demand().output_fields() {
                 basis.text(
                     format!("{prefix}.preimage-selection"),
-                    "changed-output-fields",
+                    match output.capture() { crate::application_aftermath::PreImageOutputFieldCapture::ChangedPreserved => "changed-output-fields", crate::application_aftermath::PreImageOutputFieldCapture::CompleteRetired => "retired-output-fields" },
                 );
                 basis.text(format!("{prefix}.preimage-output-role"), output.role());
                 basis.text(format!("{prefix}.preimage-output-entity"), output.entity());

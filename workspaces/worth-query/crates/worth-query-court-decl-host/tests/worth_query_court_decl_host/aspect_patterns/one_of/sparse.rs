@@ -131,6 +131,7 @@ impl ApplicationDeclaredOperation<Schema> for Edit {
             .operation_write(Self::reference(), SecondRequired::at("SecondRequired"))
             .operation_write(Self::reference(), ThirdValue::at("ThirdValue"))
             .operation_read_field(Self::reference(), AnnotationValue::at("Value"))
+            .operation_read_field(Self::reference(), AnnotationNote::at("Note"))
             .operation_write(Self::reference(), AnnotationValue::at("Value"))
             .operation_remove_aspect(Self::reference(), Annotation::reference())
             .operation_remove_aspect(Self::reference(), First::reference())

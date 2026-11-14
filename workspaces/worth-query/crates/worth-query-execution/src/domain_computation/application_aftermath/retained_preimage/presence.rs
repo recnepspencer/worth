@@ -4,9 +4,9 @@ use worth_query_installation::facade::InstalledPreImageLocus;
 use worth_relational::facade::{identity::KindId, transactions::RecordRef};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation) struct RetainedChangedFieldOutput {
+pub(in crate::domain_computation) struct RetainedOutputFields {
     pub(in crate::domain_computation) output:
-        worth_query_declaration::facade::application_aftermath::PortableChangedFieldOutput,
+        worth_query_declaration::facade::application_aftermath::PortablePreImageFieldOutput,
     pub(in crate::domain_computation) target: worth_relational::facade::identity::EntityId,
 }
 

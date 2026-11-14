@@ -146,8 +146,8 @@ pub(super) fn retain(
     let mut total = retained.total_encoded_bytes();
     execution
         .run_native_with_checkpoint(|context| {
-            let changed_output_mutated = if footprint.relations().is_empty() {
-                has_changed_output_material(&retained, context)?
+            let output_fields_mutated = if footprint.relations().is_empty() {
+                has_output_fields_material(&retained, context)?
             } else {
                 false
             };
@@ -224,7 +224,7 @@ pub(super) fn retain(
                 // adjacency. The complete validated footprint closes unused
                 // kinds when it carries another demanded change; every carried
                 // row is still checked against this actor's observations above.
-                if count == 0 && footprint.relations().is_empty() && !changed_output_mutated {
+                if count == 0 && footprint.relations().is_empty() && !output_fields_mutated {
                     // An empty historical locus requires an actual complete empty read
                     // on a record this actor mutates; absence of a read is not emptiness.
                     let mut empty = false;
@@ -312,11 +312,11 @@ pub(super) fn retain(
 /// The changed-field issuer captures only actual eligible mutations on its
 /// sealed output. Such material authenticates zero relation changes, not empty
 /// adjacency. A descriptor without a captured value or absence is insufficient.
-fn has_changed_output_material(
+fn has_output_fields_material(
     retained: &WorthQueryRetainedPreImage,
     context: &mut worth_execution::MapKernelContext<'_, '_>,
 ) -> Result<bool, WorthQueryProviderSessionFailure> {
-    let Some(output) = retained.changed_output() else {
+    let Some(output) = retained.output_fields() else {
         return Ok(false);
     };
     let target = RecordRef::Entity(output.target);

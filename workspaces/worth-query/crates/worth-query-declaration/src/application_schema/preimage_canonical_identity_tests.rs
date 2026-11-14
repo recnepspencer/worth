@@ -147,7 +147,7 @@ fn changed_fields_require_one_preserved_output_and_a_bounded_same_entity_vocabul
     ] {
         assert_eq!(
             DeclaredPreImageDemand::changed_fields_for_output(role, [field()], 64).validate(),
-            Err(Denial::InvalidChangedFieldOutput)
+            Err(Denial::InvalidOutputFieldCapture)
         );
     }
     let foreign = DeclaredPreImageLocus::<Schema>::from_field(fragment::FieldSelection::<
@@ -159,7 +159,7 @@ fn changed_fields_require_one_preserved_output_and_a_bounded_same_entity_vocabul
     for fields in [vec![], vec![foreign]] {
         assert_eq!(
             DeclaredPreImageDemand::changed_fields_for_output(kept, fields, 64).validate(),
-            Err(Denial::InvalidChangedFieldOutput)
+            Err(Denial::InvalidOutputFieldCapture)
         );
     }
     assert_eq!(
@@ -191,6 +191,56 @@ fn changed_field_selection_has_a_distinct_canonical_contract_without_changing_st
             Target::<WorthQueryPreserveOutput, WorthQueryExactlyOneOutput>::DESCRIPTOR,
             [field()],
             65
+        ))
+    );
+}
+
+#[test]
+fn complete_fields_require_one_retired_output_and_have_distinct_canonical_meaning() {
+    use crate::application_aftermath::DeclaredPreImageDemandDenial as Denial;
+    let retired = Target::<WorthQueryRetireOutput, WorthQueryExactlyOneOutput>::DESCRIPTOR;
+    assert_eq!(
+        DeclaredPreImageDemand::retired_fields_for_output(retired, [field()], 64).validate(),
+        Ok(())
+    );
+    for role in [
+        Target::<WorthQueryPreserveOutput, WorthQueryExactlyOneOutput>::DESCRIPTOR,
+        Target::<WorthQueryCreateOutput, WorthQueryExactlyOneOutput>::DESCRIPTOR,
+        Target::<WorthQueryRetireOutput, WorthQueryAtMostOneOutput>::DESCRIPTOR,
+    ] {
+        assert_eq!(
+            DeclaredPreImageDemand::retired_fields_for_output(role, [field()], 64).validate(),
+            Err(Denial::InvalidOutputFieldCapture)
+        );
+    }
+    assert_eq!(
+        DeclaredPreImageDemand::<Schema>::retired_fields_for_output(retired, [], 64).validate(),
+        Err(Denial::InvalidOutputFieldCapture)
+    );
+    assert_eq!(
+        DeclaredPreImageDemand::retired_fields_for_output(retired, [field()], 0).validate(),
+        Err(Denial::ZeroByteBound)
+    );
+    assert_eq!(
+        DeclaredPreImageDemand::retired_fields_for_output(retired, [field(), field()], 64)
+            .validate(),
+        Err(Denial::DuplicateLocus)
+    );
+    let complete = demand_identity(DeclaredPreImageDemand::retired_fields_for_output(
+        retired,
+        [field()],
+        64,
+    ));
+    assert_ne!(
+        complete,
+        demand_identity(DeclaredPreImageDemand::new([field()], 64))
+    );
+    assert_ne!(
+        complete,
+        demand_identity(DeclaredPreImageDemand::changed_fields_for_output(
+            Target::<WorthQueryPreserveOutput, WorthQueryExactlyOneOutput>::DESCRIPTOR,
+            [field()],
+            64
         ))
     );
 }

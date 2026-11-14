@@ -16,9 +16,12 @@ pub(super) fn validate(
         return Ok(());
     };
     let demand = inverse.preimage_demand();
-    let Some(output) = demand.changed_output() else {
+    let Some(output) = demand.output_fields() else {
         return Ok(());
     };
+    if output.capture() != worth_query_declaration::facade::application_aftermath::PreImageOutputFieldCapture::ChangedPreserved {
+        return Ok(());
+    }
     if binding.authored_identity().is_some()
         || demand.loci().is_empty()
         || output.role().trim().is_empty()

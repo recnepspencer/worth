@@ -170,8 +170,8 @@ fn push_correction_contract(
                     .maximum_encoded_bytes()
                     .to_string(),
             );
-            if let Some(output) = inverse.preimage_demand().changed_output() {
-                builder.text("preimage-selection", "changed-output-fields");
+            if let Some(output) = inverse.preimage_demand().output_fields() {
+                builder.text("preimage-selection", match output.capture() { worth_query_declaration::facade::application_aftermath::PreImageOutputFieldCapture::ChangedPreserved => "changed-output-fields", worth_query_declaration::facade::application_aftermath::PreImageOutputFieldCapture::CompleteRetired => "retired-output-fields" });
                 builder.text("preimage-output-role", output.role());
                 builder.text("preimage-output-entity", output.entity());
             }
