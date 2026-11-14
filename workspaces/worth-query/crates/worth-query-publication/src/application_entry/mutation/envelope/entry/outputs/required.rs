@@ -15,12 +15,10 @@ where
     <Source<S, Self> as ApplicationQueryBinding<S>>::ScopeBinding: ApplicationQueryScopeResolution<S, <Source<S, Self> as ApplicationQueryBinding<S>>::PrincipalIdentity>,
     <<Source<S, Self> as ApplicationQueryBinding<S>>::ResultBinding as ApplicationStructuredValueBinding>::Value: WorthQueryApplicationProjection<S, <Source<S, Self> as ApplicationQueryBinding<S>>::Query> + Clone,
 {
-    fn require<P: ApplicationProgramDefinition<S>>(program: &WorthQueryProgramApplicationRuntime<S, P>, owner: &WorthQuerySelectedProgramOwner<'_, S>) -> Result<(), Failure> {
-        crate::application_entry::mutation::performed_source::require_program_output_root::<S, P, Self>(program.runtime(), program)?;
-        if !owner.owns_output_root(std::any::TypeId::of::<Self>()) {
-            return Err(Failure::UndeclaredOutputRoot);
-        }
-        Ok(())
+    fn require<P: ApplicationProgramDefinition<S>>(program: &WorthQueryProgramApplicationRuntime<S, P>, _owner: &WorthQuerySelectedProgramOwner<'_, S>) -> Result<(), Failure> {
+        // The existing commit owner checks the selected root/source. Capture
+        // retains the existing initial-program typed-root requirement.
+        crate::application_entry::mutation::performed_source::require_program_output_root::<S, P, Self>(program.runtime(), program)
     }
     fn dependencies(stage: CapturedAuthoredEditStage<S>, application: &WorthQueryPrimaryGraphApplicationRuntime<S>, input: &ApplicationEncodedInput<B::InputBinding>, owner: &WorthQuerySelectedProgramOwner<'_, S>) -> Result<CapturedAuthoredEditStage<S>, Failure> {
         let demand = <B as WorthQueryApplicationRequiredOutputSource<S, Connection<S, Self>>>::demand_from_source(input.input()).map_err(Failure::Connection)?;
