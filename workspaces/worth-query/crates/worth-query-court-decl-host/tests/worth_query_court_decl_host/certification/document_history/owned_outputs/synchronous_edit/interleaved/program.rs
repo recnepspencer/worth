@@ -158,8 +158,7 @@ impl ApplicationProgramDefinition<Schema> for Program {
 pub struct RetirementProgram;
 impl ApplicationProgramDefinition<Schema> for RetirementProgram {
     type Contributions = (Contribution,);
-    type Outputs =
-        ApplicationProgramOutputs<(ModelTree, (ProducedTree, (SealTree, OwnedMemberTree)))>;
+    type Outputs = ApplicationProgramOutputs<(ModelTree, (ProducedTree, OwnedMemberTree))>;
     type Rules = ApplicationRuleLeaf;
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("owned-outputs.interleaved-retirement");
