@@ -74,7 +74,7 @@ fn exact_member_identity_stays_inside_scope_and_retains_membership_support() {
         .advanced()
         .mutate(expectation::Observe(actual))
         .expect_source(observed.clone())
-        .idempotency("identity-supported")
+        .idempotency(&"identity-supported".to_owned())
         .execute_in_program(&host, ExecutionAllocationPolicy::SystemAllocation)
         .unwrap();
     assert!(
@@ -87,7 +87,7 @@ fn exact_member_identity_stays_inside_scope_and_retains_membership_support() {
     let deleted = request
         .advanced()
         .mutate(member_delete::Intent)
-        .idempotency("identity-remove-member")
+        .idempotency(&"identity-remove-member".to_owned())
         .execute_in_program(&host, ExecutionAllocationPolicy::SystemAllocation)
         .unwrap();
     assert!(
@@ -114,7 +114,7 @@ fn exact_member_identity_stays_inside_scope_and_retains_membership_support() {
         .advanced()
         .mutate(expectation::Observe(actual))
         .expect_source(observed)
-        .idempotency("identity-stale-support")
+        .idempotency(&"identity-stale-support".to_owned())
         .execute_in_program(&host, ExecutionAllocationPolicy::SystemAllocation)
         .unwrap_err();
     let WorthQueryApplicationRequestMutationDenial::Handler(
@@ -136,7 +136,7 @@ fn exact_member_identity_stays_inside_scope_and_retains_membership_support() {
         .advanced()
         .mutate(expectation::Observe(actual))
         .expect_source(empty_observation)
-        .idempotency("identity-empty-supported")
+        .idempotency(&"identity-empty-supported".to_owned())
         .execute_in_program(&host, ExecutionAllocationPolicy::SystemAllocation)
         .unwrap();
     assert!(
