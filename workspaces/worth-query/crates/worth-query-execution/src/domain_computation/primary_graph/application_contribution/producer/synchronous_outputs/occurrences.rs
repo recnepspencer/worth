@@ -8,7 +8,9 @@ use crate::domain_computation::primary_graph::{
 };
 use std::any::Any;
 use worth_query_declaration::facade::{
-    application_program::{ApplicationConnectionShape, ApplicationOutputOccurrences},
+    application_program::{
+        ApplicationConnectionShape, ApplicationOccurrenceGroup, ApplicationOutputOccurrences,
+    },
     application_query::{
         ApplicationQueryBinding, ApplicationQueryIntent, ApplicationQueryScopeResolution,
     },
@@ -229,13 +231,13 @@ trait Component<S: ApplicationSchema>:
     worth_query_declaration::facade::application_program::ApplicationOccurrenceConnections<S>
 {
     fn families(visit: &mut impl FnMut(std::any::TypeId));
-    fn outgoing(
+    fn outgoing<Whole: Component<S>>(
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
         parent: &AppliedOutputParent,
         demand: &dyn Any,
         next: &mut SynchronousOutputWave<S>,
     ) -> Result<(), SynchronousOutputFailure>;
-    fn incoming(
+    fn incoming<Whole: Component<S>>(
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
         pin: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
         source: worth_relational::facade::identity::EntityId,
@@ -247,8 +249,8 @@ macro_rules! tuple {
     ($($c:ident),+) => {
         impl<S:ApplicationSchema,$($c:ConnectionExecution<S>),+> Component<S> for ($($c,)+) {
             fn families(visit:&mut impl FnMut(std::any::TypeId)) { $($c::families(visit);)+ }
-            fn outgoing(context:&SynchronousOutputAssembly<'_, '_, '_, '_, S>,parent:&AppliedOutputParent,demand:&dyn Any,next:&mut SynchronousOutputWave<S>)->Result<(),SynchronousOutputFailure> { $($c::outgoing::<Self>(context,parent,demand,next)?;)+ Ok(()) }
-            fn incoming(context:&SynchronousOutputAssembly<'_, '_, '_, '_, S>,pin:&RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,source:worth_relational::facade::identity::EntityId,demand:&dyn Any,next:&mut SynchronousOutputWave<S>)->Result<(),SynchronousOutputFailure> { $($c::incoming::<Self>(context,pin,source,demand,next)?;)+ Ok(()) }
+            fn outgoing<Whole: Component<S>>(context:&SynchronousOutputAssembly<'_, '_, '_, '_, S>,parent:&AppliedOutputParent,demand:&dyn Any,next:&mut SynchronousOutputWave<S>)->Result<(),SynchronousOutputFailure> { $($c::outgoing::<Whole>(context,parent,demand,next)?;)+ Ok(()) }
+            fn incoming<Whole: Component<S>>(context:&SynchronousOutputAssembly<'_, '_, '_, '_, S>,pin:&RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,source:worth_relational::facade::identity::EntityId,demand:&dyn Any,next:&mut SynchronousOutputWave<S>)->Result<(),SynchronousOutputFailure> { $($c::incoming::<Whole>(context,pin,source,demand,next)?;)+ Ok(()) }
         }
     }
 }
@@ -260,6 +262,36 @@ tuple!(A, B, C, D, E);
 tuple!(A, B, C, D, E, F);
 tuple!(A, B, C, D, E, F, G);
 tuple!(A, B, C, D, E, F, G, H);
+impl<S, L, R> Component<S> for ApplicationOccurrenceGroup<L, R>
+where
+    S: ApplicationSchema,
+    L: Component<S>,
+    R: Component<S>,
+{
+    fn families(visit: &mut impl FnMut(std::any::TypeId)) {
+        L::families(visit);
+        R::families(visit);
+    }
+    fn outgoing<Whole: Component<S>>(
+        context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        parent: &AppliedOutputParent,
+        demand: &dyn Any,
+        next: &mut SynchronousOutputWave<S>,
+    ) -> Result<(), SynchronousOutputFailure> {
+        L::outgoing::<Whole>(context, parent, demand, next)?;
+        R::outgoing::<Whole>(context, parent, demand, next)
+    }
+    fn incoming<Whole: Component<S>>(
+        context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        pin: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
+        source: worth_relational::facade::identity::EntityId,
+        demand: &dyn Any,
+        next: &mut SynchronousOutputWave<S>,
+    ) -> Result<(), SynchronousOutputFailure> {
+        L::incoming::<Whole>(context, pin, source, demand, next)?;
+        R::incoming::<Whole>(context, pin, source, demand, next)
+    }
+}
 impl<T> sealed::Edges for ApplicationOutputOccurrences<T> {}
 impl<S: ApplicationSchema, D: WorthQueryApplicationOutputDemand<S>, T: Component<S>>
     SynchronousOutputEdges<S, D> for ApplicationOutputOccurrences<T>
@@ -267,8 +299,12 @@ impl<S: ApplicationSchema, D: WorthQueryApplicationOutputDemand<S>, T: Component
     fn occurrence_families(visit: &mut impl FnMut(std::any::TypeId)) {
         T::families(visit);
     }
-    fn occurrence_component() -> bool {
-        true
+    fn occurrence_context(
+        family: std::any::TypeId,
+    ) -> Result<Option<std::any::TypeId>, SynchronousOutputFailure> {
+        let mut member = false;
+        T::families(&mut |candidate| member |= candidate == family);
+        Ok(member.then(std::any::TypeId::of::<T>))
     }
     fn declared_families(
         _: std::any::TypeId,
@@ -282,7 +318,7 @@ impl<S: ApplicationSchema, D: WorthQueryApplicationOutputDemand<S>, T: Component
         demand: &D,
         next: &mut SynchronousOutputWave<S>,
     ) -> Result<(), SynchronousOutputFailure> {
-        T::incoming(context, pin, source, demand, next)
+        T::incoming::<T>(context, pin, source, demand, next)
     }
     fn assemble(
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
@@ -290,6 +326,14 @@ impl<S: ApplicationSchema, D: WorthQueryApplicationOutputDemand<S>, T: Component
         demand: &D,
         next: &mut SynchronousOutputWave<S>,
     ) -> Result<(), SynchronousOutputFailure> {
-        T::outgoing(context, parent, demand, next)
+        T::outgoing::<T>(context, parent, demand, next)
+    }
+    fn assemble_static(
+        _: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        _: &AppliedOutputParent,
+        _: &D,
+        _: &mut SynchronousOutputWave<S>,
+    ) -> Result<(), SynchronousOutputFailure> {
+        Ok(())
     }
 }

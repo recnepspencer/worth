@@ -83,7 +83,12 @@ where
     D: WorthQueryApplicationOutputDemand<S>,
 {
     fn occurrence_families(_visit: &mut impl FnMut(std::any::TypeId)) {}
-    fn occurrence_component() -> bool {
+    fn occurrence_context(
+        _family: std::any::TypeId,
+    ) -> Result<Option<std::any::TypeId>, SynchronousOutputFailure> {
+        Ok(None)
+    }
+    fn has_static_continuation() -> bool {
         false
     }
     fn prerequisites(
@@ -105,6 +110,14 @@ where
         demand: &D,
         next: &mut SynchronousOutputWave<S>,
     ) -> Result<(), SynchronousOutputFailure>;
+    fn assemble_static(
+        context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        parent: &AppliedOutputParent,
+        demand: &D,
+        next: &mut SynchronousOutputWave<S>,
+    ) -> Result<(), SynchronousOutputFailure> {
+        Self::assemble(context, parent, demand, next)
+    }
 }
 impl sealed::Edges for ApplicationOutputLeaf {}
 impl<S: ApplicationSchema, D: WorthQueryApplicationOutputDemand<S>> SynchronousOutputEdges<S, D>

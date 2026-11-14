@@ -5,6 +5,18 @@ pub struct Input;
 pub struct Output;
 pub struct FirstSeedInput;
 pub struct PredecessorInput;
+pub struct ForeignInput;
+pub struct ContinuationInput;
+impl ApplicationInputPort<Schema, Parent> for ContinuationInput {
+    type Value = query::RowBinding;
+    const IDENTITY: &'static str = "hierarchy-continuation-input";
+    const REQUIRED: bool = false;
+}
+impl ApplicationInputPort<Schema, Parent> for ForeignInput {
+    type Value = query::RowBinding;
+    const IDENTITY: &'static str = "hierarchy-foreign-input";
+    const REQUIRED: bool = false;
+}
 impl ApplicationInputPort<Schema, Parent> for PredecessorInput {
     type Value = query::RowBinding;
     const IDENTITY: &'static str = "hierarchy-predecessor-input";
@@ -21,7 +33,13 @@ impl ApplicationFeature<Schema> for Parent {
         Input,
         ApplicationFeatureInputList<
             FirstSeedInput,
-            ApplicationFeatureInputList<PredecessorInput, ApplicationFeatureInputLeaf>,
+            ApplicationFeatureInputList<
+                PredecessorInput,
+                ApplicationFeatureInputList<
+                    ForeignInput,
+                    ApplicationFeatureInputList<ContinuationInput, ApplicationFeatureInputLeaf>,
+                >,
+            >,
         >,
     >;
     const IDENTITY: &'static str = "owned-outputs.hierarchy.parent";

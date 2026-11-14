@@ -78,7 +78,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
         }
         super::super::occurrences::refusal("required outputs", "unavailable occurrence identity")
     }
-    fn canonical(&self, mut i: usize) -> usize {
+    pub(super) fn canonical(&self, mut i: usize) -> usize {
         while let Some(parent) = self.tasks[i].alias {
             i = parent;
         }
@@ -143,7 +143,9 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
                 continue;
             }
             context.checkpoint(self.tasks[i].subject)?;
-            self.tasks[i].key = self.tasks[i].tree.occurrence(context, candidate)?;
+            let occurrence = self.tasks[i].tree.occurrence(context, candidate)?;
+            self.tasks[i].component = occurrence.as_ref().map(|(_, component)| *component);
+            self.tasks[i].key = occurrence.map(|(key, _)| key);
             self.tasks[i].closed = true;
             let Some(key) = self.tasks[i].key.clone() else {
                 i += 1;
@@ -158,6 +160,12 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
                 }
             }
             if let Some(prior) = prior {
+                if self.tasks[i].component != self.tasks[prior].component {
+                    return Err(super::super::occurrences::refusal(
+                        self.tasks[i].subject,
+                        "shared occurrence has different complete component contexts",
+                    ));
+                }
                 self.tasks[i].alias = Some(prior);
                 self.tasks[i].done = true;
                 i += 1;

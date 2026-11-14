@@ -1,11 +1,14 @@
 //! Every prepared parent precedes discovery and preparation of the next wave.
 use super::*;
+mod continuations;
 mod occurrences;
 struct Scheduled<S: ApplicationSchema> {
     key: Option<super::occurrences::OccurrenceKey>,
+    component: Option<std::any::TypeId>,
     closed: bool,
     done: bool,
     alias: Option<usize>,
+    continuation_done: bool,
     prerequisites: Vec<usize>,
     _prerequisite_memory: Option<worth_execution::ExecutionMemoryReservation>,
     subject: &'static str,
@@ -67,16 +70,20 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
                 .into(),
             )
         })?;
+        let tree = tree();
+        let continuation_done = !tree.has_static_continuation();
         self.tasks.push(Scheduled {
             key: None,
+            component: None,
             closed: false,
             done: false,
             alias: None,
+            continuation_done,
             prerequisites: Vec::new(),
             _prerequisite_memory: None,
             subject,
             rank,
-            tree: tree(),
+            tree,
             parent: None,
             _memory: memory,
         });
@@ -133,6 +140,9 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
     ) -> Result<(), SynchronousOutputFailure> {
         loop {
             self.close_frontier(context, candidate)?;
+            if self.discover_alias_continuations(context, candidate)? {
+                continue;
+            }
             let _planning_memory = self.quote_frontier(context, allowed.map_or(0, |v| v.len()))?;
             let needed = self.needed(allowed);
             let rank = self
@@ -183,6 +193,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
                     parent.pin = pin.clone();
                     task.tree.discover(context, parent, &mut next)?;
                 }
+                task.continuation_done = true;
             }
             for task in next.tasks {
                 self.reserve_slot(context, task.subject)?;

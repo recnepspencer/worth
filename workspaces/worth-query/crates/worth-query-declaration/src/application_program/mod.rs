@@ -116,9 +116,10 @@ pub use manifest::ApplicationProgramManifest;
 pub use output_graph::{
     ApplicationConnectionShape, ApplicationDemandOutputGraph, ApplicationDiscoveredOutputGraph,
     ApplicationDiscoveredOutputRoot, ApplicationFixedOutputRoot, ApplicationOccurrenceConnections,
-    ApplicationOutputChildrenShape, ApplicationOutputEdge, ApplicationOutputEdgeShape,
-    ApplicationOutputEdgesShape, ApplicationOutputGraph, ApplicationOutputGraphShape,
-    ApplicationOutputLeaf, ApplicationOutputOccurrences, ApplicationRequiredOutputRoot,
+    ApplicationOccurrenceGroup, ApplicationOutputChildrenShape, ApplicationOutputEdge,
+    ApplicationOutputEdgeShape, ApplicationOutputEdgesShape, ApplicationOutputGraph,
+    ApplicationOutputGraphShape, ApplicationOutputLeaf, ApplicationOutputOccurrences,
+    ApplicationRequiredOutputRoot,
 };
 pub use output_posture::{ApplicationNoOutputGraph, ApplicationProgramOutputShape};
 pub use program::{

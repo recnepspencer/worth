@@ -4573,9 +4573,21 @@ it for the original canonical request.
 
 ### Repeated-family required outputs
 
-Use `ApplicationOutputOccurrences<(Connection, ...)>` as the dependents of the
-existing output graph when a closed installed component has repeated-family
-instances. Unmarked static trees still reject declaration cycles. Each member
+Use `ApplicationOutputOccurrences<All>` as the dependents of the existing
+output graph when a closed installed component has repeated-family instances.
+Small connection tuples are leaves; compose them recursively with
+`ApplicationOccurrenceGroup<Left, Right>` inside that ONE outer wrapper. For
+example, `All = ApplicationOccurrenceGroup<PreviousPorts, GeneratorPorts>`
+retains both typed groups through every parent and child schedule. There is no
+flat eight-connection limit on the complete recursive component. Overlapping
+fragmented sibling wrappers refuse during program declaration with
+`IncompleteOccurrenceComponent`; put those groups inside the same wrapper.
+Independent components and ordinary static branches remain composable.
+Distinct startable roots may share the same complete component and exact typed
+static tail: the program describes those exact connections once, while retaining
+each root and its runtime demand. Textual ID collisions, conflicting meanings
+and duplicates within a graph still refuse.
+Unmarked static trees still reject declaration cycles. Each member
 implements `WorthQueryApplicationPrerequisiteOutputConnection`: its typed
 prerequisite query, sealed result-relation selector (`prerequisite_rows`), row
 binding, target-to-query mapping and one parent-demand mapping per row. Query
@@ -4603,7 +4615,12 @@ recreate obsolete development archives rather than migrating old formats.
 The existing output wave closes the actual frontier, authenticates complete
 source generation/family/binding/parameter partitions, and prepares every real
 parent before projecting and executing its dependent source. Shared occurrences
-coalesce; actual cycles, absent required parents and invalidated support refuse.
+coalesce only under the same complete typed component; actual cycles, absent
+required parents and invalidated support refuse. Coalescing a supplier does not
+discard a captured root's static branch: each retained alias runs its own static
+discovery once against the canonical genuine Parent, even when that supplier
+completed before a later positioned capture. Distinct static selectors in the
+full demand remain distinct work; they do not execute the supplier again.
 Installed ports, current C READ, genuine D data, Prepared/Verified Parent custody,
 existing producer round/allocation bounds and after-own/final support remain in
 force. Neither distinct source IDs nor a proposed descriptor constitutes proof.
