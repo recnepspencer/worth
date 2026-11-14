@@ -13,9 +13,16 @@ fn relation_predicate_changes_definition_identity() {
         ManyResults,
     >::forward_many("related", relation_reference());
     let unfiltered = relation_definition(relation);
-    let filtered = filtered_relation_definition(relation);
+    let filtered = filtered_relation_definition(relation, false);
+    let absent = filtered_relation_definition(relation, true);
 
     assert_ne!(unfiltered.canonical_basis(), filtered.canonical_basis());
+    assert_ne!(unfiltered.canonical_basis(), absent.canonical_basis());
+    assert_ne!(filtered.canonical_basis(), absent.canonical_basis());
+    assert!(
+        absent.parameters().is_empty(),
+        "absence has no artificial parameter"
+    );
 }
 
 fn filtered_relation_definition(
@@ -29,6 +36,7 @@ fn filtered_relation_definition(
         ForwardResultTraversal,
         ManyResults,
     >,
+    absent: bool,
 ) -> ErasedApplicationQueryDefinition {
     let entity = ApplicationEntityRef::<Schema, Entity>::from_schema_identifier("Entity");
     let nested =
@@ -46,10 +54,14 @@ fn filtered_relation_definition(
         Entity,
         QueryResult,
         QueryResultBinding,
-    >::new(entity)
-    .relation_where_equal(relation, nested, Field::at("Field"), parameter)
+    >::new(entity);
+    let shape = if absent {
+        shape.relation_where_absent(relation, nested, Field::at("Field"))
+    } else {
+        shape.relation_where_equal(relation, nested, Field::at("Field"), parameter)
+    }
     .build();
-    ApplicationQueryDefinitionBuilder::declare(query_reference())
+    let definition = ApplicationQueryDefinitionBuilder::declare(query_reference())
         .root(entity)
         .scope(entity)
         .result_shape(shape)
@@ -57,9 +69,11 @@ fn filtered_relation_definition(
         .disclosure(ApplicationQueryDisclosureContract::public())
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
-        .public()
-        .parameter(parameter)
-        .build()
-        .unwrap()
-        .into_erased()
+        .public();
+    let definition = if absent {
+        definition
+    } else {
+        definition.parameter(parameter)
+    };
+    definition.build().unwrap().into_erased()
 }

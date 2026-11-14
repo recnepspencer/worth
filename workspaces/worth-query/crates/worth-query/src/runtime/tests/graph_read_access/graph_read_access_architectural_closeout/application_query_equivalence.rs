@@ -217,7 +217,7 @@ fn planning_semantics(graph: &impl WorthQueryReadGraphPlanningContract) -> Plann
             .map(|index| {
                 let predicate = graph.predicate(index).unwrap();
                 format!(
-                    "{}:{}:{}:{}",
+                    "{}:{}:{:?}:{}",
                     predicate.aspect.as_str(),
                     predicate.field.as_str(),
                     predicate.parameter,

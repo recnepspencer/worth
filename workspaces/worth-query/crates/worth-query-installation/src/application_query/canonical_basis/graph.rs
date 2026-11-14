@@ -162,12 +162,22 @@ fn append_relations(
                 text(format!("{path}.predicate.entity"), entity),
                 text(format!("{path}.predicate.aspect"), aspect),
                 text(format!("{path}.predicate.field"), field),
-                text(format!("{path}.predicate.parameter"), predicate.parameter()),
+                text(
+                    format!("{path}.predicate.operator"),
+                    if predicate.parameter().is_some() {
+                        "equal-parameter"
+                    } else {
+                        "field-absent"
+                    },
+                ),
                 text(
                     format!("{path}.predicate.scalar"),
                     predicate.scalar_family().canonical_name(),
                 ),
             ]);
+            if let Some(parameter) = predicate.parameter() {
+                entries.push(text(format!("{path}.predicate.parameter"), parameter));
+            }
         }
     }
 }

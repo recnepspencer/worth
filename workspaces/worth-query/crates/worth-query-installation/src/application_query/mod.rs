@@ -49,7 +49,7 @@ pub use denial::{
 pub use graph_access_contract::{
     WorthQueryInstalledGraphOrdering, WorthQueryInstalledGraphPredicate,
     WorthQueryInstalledGraphProjection, WorthQueryInstalledGraphReadContract,
-    WorthQueryInstalledGraphRelation,
+    WorthQueryInstalledGraphRelation, WorthQueryInstalledGraphRelationPredicate,
 };
 pub use installed_binding::{
     WorthQueryInstalledApplicationQueryBinding, WorthQueryInstalledBoundPrincipal,

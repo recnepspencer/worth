@@ -136,7 +136,7 @@ where
             return Some(WorthQueryReadGraphPredicateView {
                 aspect: field.aspect,
                 field: field.field,
-                parameter: "one-axis-equality",
+                parameter: Some("one-axis-equality"),
                 scalar_family: field.scalar_family,
             });
         }

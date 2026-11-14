@@ -9,7 +9,9 @@ use worth_query_declaration::facade::application_query::{
 use worth_query_declaration::facade::portable_identity::WorthQueryPortableTypeIdentity;
 
 mod compilation;
+mod relation_predicate;
 mod root_selection;
+pub use relation_predicate::WorthQueryInstalledGraphRelationPredicate;
 
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub struct WorthQueryInstalledGraphProjection {
@@ -110,7 +112,7 @@ pub struct WorthQueryInstalledGraphRelation {
     direction: ApplicationQueryResultTraversalDirection,
     output_name: String,
     cardinality: ApplicationQueryCardinality,
-    predicate: Option<WorthQueryInstalledGraphPredicate>,
+    predicate: Option<WorthQueryInstalledGraphRelationPredicate>,
     depth: usize,
 }
 
@@ -185,7 +187,7 @@ impl WorthQueryInstalledGraphRelation {
         self.cardinality
     }
 
-    pub fn predicate(&self) -> Option<&WorthQueryInstalledGraphPredicate> {
+    pub fn predicate(&self) -> Option<&WorthQueryInstalledGraphRelationPredicate> {
         self.predicate.as_ref()
     }
 
