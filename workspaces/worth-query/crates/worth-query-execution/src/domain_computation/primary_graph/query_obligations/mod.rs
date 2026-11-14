@@ -14,6 +14,11 @@ use worth_foundational::facade::{
     CanonicalDigestId, DurableCompositePublicationAttemptIdentity, HomeIdentity,
     ProgramSupportObligationIdentity, ProgramSupportObligationKind, ProgramSupportStatus,
 };
+mod adoption;
+pub use adoption::{
+    QueryAdoptionPerformedDescription, QueryAdoptionRecord, QueryBranchAdoptionObligation,
+    QueryStoppedBranchSetObligation,
+};
 mod codec;
 mod generation;
 mod ledger;
@@ -40,6 +45,7 @@ pub use managed_cleanup::{
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum QueryObligationRecord {
+    Adoption(QueryAdoptionRecord),
     ProgramSupport(QueryProgramSupportRecord),
     ManagedCleanup(QueryManagedCleanupRecord),
     OutputSource(QueryOutputSourceRecord),

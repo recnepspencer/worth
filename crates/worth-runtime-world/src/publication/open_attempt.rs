@@ -60,6 +60,17 @@ impl WorldOpenAttemptOriginal {
     }
 }
 impl WorldPendingOpenAttempt {
+    /// Descriptive reservation coordinates; these cannot publish an occurrence.
+    pub fn planned_successor(&self) -> super::PlannedProductReferenceSuccessor {
+        super::PlannedProductReferenceSuccessor::from_expected(
+            self.original.identity.clone(),
+            self.original.resolved.expected(),
+        )
+    }
+    pub fn expected_head(&self) -> &crate::branch::ProductBranchObservation {
+        self.original.resolved.expected()
+    }
+
     /// Transfer this same pending original into the World's retained catalog.
     /// Its durable fate remains unresolved until owner settlement decides it.
     pub fn retain(self) -> crate::recovery::ProductUnpublishedOwnerEffects {

@@ -243,6 +243,18 @@ impl WorthQueryPrimaryGraphProvider {
             self.graph
                 .carry_primary_index_basis_for_basis(execution, runtime, basis)
                 .map_err(idempotency_index_currency_denial)?;
+            // A carried known-empty selection is not yet a concrete lookup
+            // generation. Admit only this key index through Native's ordinary
+            // field preparation; it never reconstructs a missing population.
+            runtime.index_authority().ensure_field_index_for_basis(
+                layout.key_index_id,
+                basis,
+                crate::domain_computation::primary_graph::index_maintenance_budget::ordinary_index_maintenance_budget(),
+                execution,
+            ).map_err(|denial| match denial.kind {
+                worth_relational::facade::indexes::DerivedIndexMaintenanceDenialKind::Execution(cause) => snapshot_resolution::idempotency_read_stop(cause),
+                _ => WorthQueryProviderIdempotencyResolutionDenial::Unavailable,
+            })?;
             let snapshot = crate::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot(runtime, basis)
                 .map_err(|denial| idempotency_snapshot_denial(denial.into()))?;
             let resolution = resolve_at_snapshot(execution, self, runtime, &snapshot, &layout, product, binding);

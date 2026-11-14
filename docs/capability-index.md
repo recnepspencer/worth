@@ -726,6 +726,7 @@ Choose a task and follow its guide for the exact calls and result handling.
 | Prepare an issued provider-session grant on its receiving application | `runtime.prepare_provider_session_grant(&phase, grant, receiver)` supplies the installed provider and actual Home witness. Stale and foreign grants refuse before the lazy receiver constructs any run, reads or supplier work. A current receiver must carry the exact original plan and provider. | [Host session preparation](../workspaces/worth-query/crates/worth-query-host/README.md#writer-contention-and-incarnation) |
 | Retire unused program support across graceful reopen | `home.runtime().retire_program_support(&execution, &revision)` acknowledges durable Retired status. Keep that revision rostered on reopen; `supported_program::<P>()` stays unavailable and repeated retirement returns `AlreadyRetired`. Live branches, interpretations and mandatory custody refuse retirement. | [Directory support retirement](../workspaces/worth-query/crates/worth-query/docs/foundations/programs-and-adoption.md#directory-support-retirement) |
 | Work on a branch or move it to a new program under its declared capability | `runtime.branches().fork(runtime.current_world()).components(..).create(&phase)`; `request(..).on_branch(branch)`; `.programs()` then `compare(&target)`, `adopt(&requirements)?.prepare(max)`, `programs.publish(prepared)`; `.workflow(WorthQueryWorkflowDispositions::retire_and_cancel_unperformed())` explicitly retires definitions and cancels only legal unperformed instances under the admitted adoption principal | [Branches](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#application-product-branches-host), [Build Â§7](build-an-application.md#7-adopt-a-new-program-on-a-branch) |
+| Resume a stopped branch-set adoption after graceful reopen | `begin_resume(runtime, &scope)` acknowledges its journal custody. Reopen and use `runtime.readmit_stopped_branch_set_adoptions(&phase)`, issue exact ordered coverage for the returned remainder, then ordinary `programs().resume`. Historical prefix commits remain descriptive and are never executed again. `stopped.cancel(runtime, &scope)` acknowledges discharge; refusals return the stopped owner. | [Resume a branch set](../workspaces/worth-query/crates/worth-query/docs/foundations/programs-and-adoption.md#resume-cancel-and-recover-a-branch-set) |
 | Discover the product branches admitted by the current Home | Inside `runtime.with_host_advancement`, call `runtime.branches().inventory(&phase)` and iterate the returned `WorthQueryProductBranchInventory`. It retains the actual request-funded World membership observation and supplies fresh selectors after reopen. Select a branch normally for later domain work; drop the inventory before closing the Home. A foreign phase returns `WorthQueryProductBranchInventoryDenial::ForeignPhase`. | [Derived recovery](build-an-application.md#current-durable-home-composition-boundary), [Branch inventory](../workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/branches/inventory.rs) |
 | Run isolated transaction steps on a fork | `runtime.branches().fork(head).components(..).create(&phase)`, then `request(..).on_branch(fork)`. The application's model-state owner selects the branch for subsequent requests; `runtime.on_branch(discarded).close(&phase)` retires discarded branches. The fork retains its parent's history for corrections. | [Branches](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#application-product-branches-host), [Fork transaction example](../workspaces/worth-query/crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/fork_head_adoption.rs) |
 | Retry retired application product cleanup under a fresh admitted request | Keep the `WorthQueryApplicationProductBranchCleanup` from `OwnerCleanupPending`. Inside the original runtime's `with_application_advancement(scope, \|phase\| ...)`, call `cleanup.retry_in_advancement(&phase)`. Foreign or interrupted phases return the same cleanup owner; retained readers may still refuse. Release those readers and retry that owner. Keep the actual completed receipt even if the outer request later stops. | [Build: retired cleanup](build-an-application.md#register-attempts-on-a-stable-product), [Compiled control and release court](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/proposal_acceptance/courts/acceptance/disposal.rs) |
@@ -1019,12 +1020,23 @@ A Directory Home preserves program support status and scalar recorded correction
 through graceful close and reopen. Support retirement can return `AlreadyRetired`
 after reopen; retained original interpretation membership is counted once.
 
-Directory adoption and branch-set adoption currently return
-`DurableStateAdmission(Unsupported { family: BranchAdoptionRecovery, .. })` before
-retaining adoption custody. Required and performed-source output demand, including promotion of a current
-output to a mandatory prerequisite, refuses `OutputDemandRecords`. Optional
-producer execution can settle through its authored Signal allocation registry,
-but cold accepted-output reuse remains unfinished Phase 6 work.
+General required-output and performed-source obligations, including mandatory
+prerequisites, survive graceful Directory reopen in `query.obligations`. Ready
+outputs and read leases remain derived or process-local. The Phase 6 portions of
+performed-source preparation and program output read custody use those same R8
+records; managed cleanup and correction/original-owner extensions remain refused.
+Accepted producer provenance rejoins fresh World and installed meaning: same-build
+reuse retains its ownership/equivalence checks, and changed builds regenerate
+stale output only on demand while preserving authored entity identity.
+
+Branch adoption records the original World attempt and canonical source/target
+meaning in that same journal. Graceful stages before Native effects and after
+World occurrence/disposition preserve activation and custody. A cancelled Native
+effect without World occurrence/disposition refuses close with
+`UnresolvedBusinessCustody` and unclean reopen with
+`UncleanRecoveryUnsupported(Relational)` (D18); continuation is C1.
+Stopped branch sets retain the actual performed prefix and ordered remainder;
+reopen readmits fresh branch selectors and resume prepares only that suffix.
 Workflow registration and specialized definition publication refuse
 `WorkflowInstances`; declared managed, resource, conditional and temporal
 operations refuse their corresponding custody family before handler contact.

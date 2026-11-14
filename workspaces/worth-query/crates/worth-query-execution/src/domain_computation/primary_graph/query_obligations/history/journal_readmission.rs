@@ -63,6 +63,35 @@ impl QueryObligationHistory {
             medium
         };
         driver.finish_pending(medium.as_ref(), request)?;
+        // The exclusive Home open has admitted the complete protected World
+        // prefix. A pre-effect acquire with no World open has no owner effect;
+        // terminal original fates no longer carry adoption custody.
+        let finished_adoptions = {
+            let state = self.state();
+            let fold = &state
+                .journal
+                .as_ref()
+                .expect("admitted journal")
+                .ledger
+                .adoption;
+            fold.branches
+                .keys()
+                .copied()
+                .filter(|attempt| !fold.completed.contains(attempt))
+                .filter(|attempt| {
+                    originals.original_state(*attempt).is_none_or(|original| {
+                        original.fate() != worth_foundational::facade::WorldOriginalFate::Open
+                    })
+                })
+                .collect::<Vec<_>>()
+        };
+        for attempt in finished_adoptions {
+            driver.publish(
+                medium.as_ref(),
+                QueryAdoptionRecord::ReleaseBranch { attempt },
+                request,
+            )?;
+        }
         let released = {
             let state = self.state();
             let ledger = &state.journal.as_ref().expect("admitted journal").ledger;
@@ -135,6 +164,30 @@ impl QueryObligationHistory {
             ledger.payload_digest(),
         ))
     }
+    /// Finish cold cleanup's acknowledged records before the Home service
+    /// witness escapes. This is the same publisher and admitted ledger.
+    pub(in crate::domain_computation::primary_graph) fn admit_current_prefix(
+        &self,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<worth_proof::AdmittedHomeQueryObligations, QueryObligationDenial> {
+        let medium = self
+            .medium
+            .get()
+            .ok_or(QueryObligationDenial::SupportUnavailable)?;
+        let driver = self.lock_publication()?;
+        driver.finish_pending(medium.as_ref(), request)?;
+        let state = self.state();
+        let ledger = &state
+            .journal
+            .as_ref()
+            .ok_or(QueryObligationDenial::SupportUnavailable)?
+            .ledger;
+        Ok(medium.authority().admit_query_obligation_prefix(
+            ledger.position(),
+            ledger.digest(),
+            ledger.payload_digest(),
+        ))
+    }
     fn join_original_interpretations(
         &self,
         ledger: &QueryObligationLedger,
@@ -154,6 +207,45 @@ impl QueryObligationHistory {
         originals: &WorldProgramActivationHistory,
         material: &MaterialPublication<'_>,
     ) -> Result<Vec<ProgramSupportObligationIdentity>, QueryObligationDenial> {
+        for row in ledger
+            .adoption
+            .branches
+            .values()
+            .filter(|row| !ledger.adoption.completed.contains(&row.attempt))
+        {
+            for revision in [row.source, row.target] {
+                if !entries
+                    .keys()
+                    .any(|known| known.as_bytes() == revision.bytes())
+                {
+                    return Err(QueryObligationDenial::UnrosteredProgram(revision));
+                }
+                if !matches!(
+                    ledger.status(&revision),
+                    Some(ProgramSupportStatus::Active | ProgramSupportStatus::Retiring)
+                ) {
+                    return Err(QueryObligationDenial::SupportUnavailable);
+                }
+            }
+        }
+        for row in ledger.adoption.stopped.values() {
+            for revision in std::iter::once(row.target)
+                .chain(row.remaining.iter().map(|(_, _, source)| *source))
+            {
+                if !entries
+                    .keys()
+                    .any(|known| known.as_bytes() == revision.bytes())
+                {
+                    return Err(QueryObligationDenial::UnrosteredProgram(revision));
+                }
+                if !matches!(
+                    ledger.status(&revision),
+                    Some(ProgramSupportStatus::Active | ProgramSupportStatus::Retiring)
+                ) {
+                    return Err(QueryObligationDenial::SupportUnavailable);
+                }
+            }
+        }
         for row in ledger.output.sources.values() {
             let original = originals
                 .recorded_entry(row.commit)

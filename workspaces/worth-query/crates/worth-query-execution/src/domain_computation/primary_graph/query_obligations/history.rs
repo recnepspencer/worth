@@ -11,6 +11,7 @@ use worth_query_installation::facade::{
 
 use worth_foundational::facade::ProgramSupportStatus;
 mod accepted_output;
+mod adoption;
 mod durable_retirement;
 mod interpretation_membership;
 mod original_expiry;
@@ -139,6 +140,7 @@ impl QueryObligationHistory {
             return None;
         }
         Some(WorthQueryProgramSupportCustody {
+            local: true,
             state: Arc::clone(&self.state),
             source: *source,
             target: (source != target).then_some(*target),
@@ -278,6 +280,7 @@ impl Drop for WorthQueryProgramSupportInterpretation {
 }
 
 pub(in crate::domain_computation::primary_graph) struct WorthQueryProgramSupportCustody {
+    local: bool,
     state: Arc<Mutex<QueryObligationState>>,
     source: ApplicationProgramRevision,
     target: Option<ApplicationProgramRevision>,
@@ -295,6 +298,9 @@ impl std::fmt::Debug for WorthQueryProgramSupportCustody {
 
 impl Drop for WorthQueryProgramSupportCustody {
     fn drop(&mut self) {
+        if !self.local {
+            return;
+        }
         QueryObligationHistory::release(&self.state, &self.source, SupportUse::Custody);
         if let Some(target) = &self.target {
             QueryObligationHistory::release(&self.state, target, SupportUse::Custody);

@@ -12,6 +12,11 @@ use crate::domain_computation::{
 
 /// Why `release_branch_adoption_recovery` did not return a cleanup receipt.
 pub enum WorthQueryBranchAdoptionRecoveryReleaseFailure {
+    /// World release completed; Query discharge still awaits acknowledgement.
+    ObligationDischargePending {
+        cause: crate::domain_computation::primary_graph::query_obligations::QueryObligationDenial,
+        cleanup: Result<crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanupReceipt,crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanupFailure>,
+    },
     /// The recovery record was not released; the recovery is handed back
     /// unchanged to retry.
     Recovery {
@@ -29,7 +34,7 @@ impl WorthQueryBranchAdoptionRecoveryReleaseFailure {
     pub fn into_recovery(self) -> Option<WorthQueryBranchAdoptionRecovery> {
         match self {
             Self::Recovery { recovery, .. } => Some(recovery),
-            Self::OwnerCleanup(_) => None,
+            Self::OwnerCleanup(_) | Self::ObligationDischargePending { .. } => None,
         }
     }
 
@@ -39,7 +44,11 @@ impl WorthQueryBranchAdoptionRecoveryReleaseFailure {
         crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanup,
     >{
         match self {
-            Self::Recovery { .. } => None,
+            Self::Recovery { .. } | Self::ObligationDischargePending { cleanup: Ok(_), .. } => None,
+            Self::ObligationDischargePending {
+                cleanup: Err(failure),
+                ..
+            } => Some(failure.into_cleanup()),
             Self::OwnerCleanup(failure) => Some(failure.into_cleanup()),
         }
     }
@@ -48,6 +57,10 @@ impl WorthQueryBranchAdoptionRecoveryReleaseFailure {
 impl std::fmt::Debug for WorthQueryBranchAdoptionRecoveryReleaseFailure {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::ObligationDischargePending { cause, .. } => formatter
+                .debug_tuple("ObligationDischargePending")
+                .field(cause)
+                .finish(),
             Self::Recovery { denial, .. } => formatter
                 .debug_struct("Recovery")
                 .field("denial", denial)
@@ -71,6 +84,18 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanupReceipt,
         WorthQueryBranchAdoptionRecoveryReleaseFailure,
     >{
+        let attempt = match recovery.product.inspect() {
+            Ok(effects) => {
+                let actual = effects.attempt_identity();
+                actual.owner_identity().durable().map(|owner| worth_foundational::facade::DurableCompositePublicationAttemptIdentity::from_recorded(owner,actual.ordinal()))
+            }
+            Err(cause) => {
+                return Err(WorthQueryBranchAdoptionRecoveryReleaseFailure::Recovery {
+                    denial: WorthQueryProductUnpublishedRecoveryReleaseDenial::World(cause),
+                    recovery,
+                })
+            }
+        };
         let WorthQueryBranchAdoptionRecovery {
             source,
             target,
@@ -80,7 +105,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             product,
             support_custody,
         } = recovery;
-        match self.release_product_recovery_in_request(
+        let result = match self.release_product_recovery_in_request(
             execution,
             product,
             minimum_age_ticks,
@@ -105,7 +130,30 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             Err(WorthQueryProductUnpublishedRecoveryReleaseFailure::OwnerCleanup(failure)) => {
                 Err(WorthQueryBranchAdoptionRecoveryReleaseFailure::OwnerCleanup(failure))
             }
+        };
+        if matches!(
+            &result,
+            Ok(_) | Err(WorthQueryBranchAdoptionRecoveryReleaseFailure::OwnerCleanup(_))
+        ) {
+            if let Some(attempt) = attempt {
+                if let Err(cause) = self
+                    .installed_program_support()
+                    .expect("adoption support")
+                    .lifecycle()
+                    .release_branch_adoption(execution, attempt)
+                {
+                    let cleanup = match result {
+                        Ok(receipt) => Ok(receipt),
+                        Err(WorthQueryBranchAdoptionRecoveryReleaseFailure::OwnerCleanup(
+                            failure,
+                        )) => Err(failure),
+                        _ => unreachable!("only released World custody is discharged"),
+                    };
+                    return Err(WorthQueryBranchAdoptionRecoveryReleaseFailure::ObligationDischargePending { cause,cleanup });
+                }
+            }
         }
+        result
     }
 
     pub fn release_branch_adoption_recovery(

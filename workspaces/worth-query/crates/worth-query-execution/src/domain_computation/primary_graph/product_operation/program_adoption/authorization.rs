@@ -63,8 +63,8 @@ pub(in crate::domain_computation::primary_graph) fn admit_program<
     target: &ApplicationProgramRevision,
     effect: AdoptionEffect<'effect>,
 ) -> Result<AdoptionEffectOutcome, AdoptionEffectRefusal<'effect>> {
-    let source = match selected.inspect_selected_program() {
-        Ok(source) => *source.revision(),
+    let source = match effect.source_revision(selected) {
+        Ok(source) => source,
         Err(cause) => {
             return Err(AdoptionEffectRefusal {
                 cause: WorthQueryProgramAdoptionAuthorizationDenial::Inspection(cause),
@@ -202,8 +202,8 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         target: &ApplicationProgramRevision,
         effect: AdoptionEffect<'effect>,
     ) -> Result<AdoptionEffectOutcome, AdoptionEffectRefusal<'effect>> {
-        let source = match self.inspect_selected_program() {
-            Ok(source) => *source.revision(),
+        let source = match effect.source_revision(self) {
+            Ok(source) => source,
             Err(cause) => {
                 return Err(AdoptionEffectRefusal {
                     cause: WorthQueryProgramAdoptionAuthorizationDenial::Inspection(cause),
@@ -214,7 +214,12 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         let Some(admission) = self
             .application()
             .installed_program_support()
-            .and_then(|support| support.adoption_admission(&source))
+            .and_then(|support| match &effect {
+                AdoptionEffect::Recover(recovery) => {
+                    support.retained_adoption_admission(&source, recovery.support_custody())
+                }
+                _ => support.adoption_admission(&source),
+            })
         else {
             return Err(AdoptionEffectRefusal {
                 cause: WorthQueryProgramAdoptionAuthorizationDenial::CapabilityNotDeclared,

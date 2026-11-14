@@ -121,6 +121,19 @@ impl<Schema> WorthQueryInstalledProgramSupport<Schema> {
         self.adoption_admissions.get(revision).copied()
     }
 
+    pub(in crate::domain_computation::primary_graph) fn retained_adoption_admission(
+        &self,
+        revision: &ApplicationProgramRevision,
+        custody: &WorthQueryProgramSupportCustody,
+    ) -> Option<
+        super::product_operation::program_adoption::authorization::ProgramAdoptionAdmission<Schema>,
+    > {
+        self.lifecycle
+            .owns_retained_adoption(revision, custody)
+            .then(|| self.adoption_admissions.get(revision).copied())
+            .flatten()
+    }
+
     pub const fn activation(&self) -> &WorthQueryProgramActivationCell {
         &self.activation
     }

@@ -6859,6 +6859,13 @@ The same chain in production code is
 | Prepare | `.prepare(maximum_selection_work)` | `WorthQueryPreparedBranchAdoption` (move-only, fields private) |
 | Publish | `programs.publish(prepared)` | `WorthQueryBranchAdoptionPublicationOutcome` |
 | Recover | `programs().recover(unpublished.into_recovery())` | `Result<WorthQueryBranchAdoptionRecoveryOutcome, WorthQueryApplicationProgramAdoptionRecoveryFailure>` |
+| Readmit after Directory reopen | `runtime.readmit_branch_adoption(fresh_world_recovery_handle)` | Exact original adoption custody where D18 admits the tail; then ordinary `programs().recover` with fresh authentication |
+
+Directory close succeeds before preparation starts and after the World occurrence or
+disposition settles. A cancelled adoption with a Native effect but no World
+occurrence or disposition refuses close with `UnresolvedBusinessCustody`; the
+returned Home remains usable. Abandoning that prefix refuses reopen with
+`UncleanRecoveryUnsupported(Relational)` (D18); its continuation belongs to C1.
 
 `compare` comes first because the requirements are the input to `adopt`.
 `WorthQueryProgramAdoptionRequirements` exposes `semantic_diff()`,
@@ -6999,7 +7006,10 @@ This prepares adoption across a set of branches. It is **not atomic**:
   It returns `Result<WorthQueryBranchSetAdoptionCancellation, Self>`: while a
   branch awaits resolution it hands the adoption back, so resolve it and
   `advance` first.
-- `resume(stopped, max)` continues a stopped set.
+- `begin_resume(runtime, &scope)` acknowledges stopped custody before releasing the old suffix.
+- After Directory reopen, `runtime.readmit_stopped_branch_set_adoptions(&phase)` rejoins fresh selectors.
+- `resume(stopped, max)` prepares only that ordered remainder; historical progress is descriptive.
+- `stopped.cancel(runtime, &scope)` acknowledges release of the retained custody.
 
 Coverage comes from `runtime.branches().program_adoption_coverage(..)`;
 `on_branches` orders it against your target list and refuses a mismatch with
