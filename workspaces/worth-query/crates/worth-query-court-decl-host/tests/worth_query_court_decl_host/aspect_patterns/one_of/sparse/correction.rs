@@ -37,7 +37,10 @@ impl ApplicationCorrectionBinding<Schema> for Correction {
     }
     fn mechanism() -> DeclaredCorrectionMechanism<Schema> {
         DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(
-            DeclaredPreImageDemand::changed_fields_for_output(Kept::DESCRIPTOR, loci(), 4096),
+            DeclaredPreImageDemand::changed_fields_for_output(Kept::DESCRIPTOR, loci(), 4096)
+                .with_relations([DeclaredPreImageRelationLocus::from_relation(
+                    Companion::reference(),
+                )]),
         )
     }
     fn derive_correction(
@@ -75,9 +78,27 @@ impl ApplicationCorrectionBinding<Schema> for Correction {
             },
             _ => return Err(MissingPreImage),
         };
+        let owner = image
+            .output_entity(&Kept::DESCRIPTOR)
+            .ok_or(MissingPreImage)?;
+        let locus = DeclaredPreImageRelationLocus::from_relation(Companion::reference());
+        let mut link = None;
+        for index in 0..image.relation_count(&locus).ok_or(MissingPreImage)? {
+            let change = image.relation_at(&locus, index).ok_or(MissingPreImage)?;
+            if let Some((from, to)) = change.before() {
+                if from != owner || link.is_some() {
+                    return Err(InvalidPreImage);
+                }
+                link = Some(LinkTarget::historical(to));
+            }
+            if change.after().is_some_and(|(from, _)| from != owner) {
+                return Err(InvalidPreImage);
+            }
+        }
         Ok(Input {
             key: original.key.clone(),
             case,
+            link,
         })
     }
     fn inverse_key(key: &str) -> Result<String, ApplicationValueEncodeDenial> {

@@ -61,6 +61,8 @@ impl Registration<Schema> for Contracts {
                 .invariant(rule::definition())
                 .application_query(query::definition())
                 .application_query_binding::<query::Binding>()
+                .application_query(sparse::link_query::definition())
+                .application_query_binding::<sparse::link_query::Binding>()
                 .application_query_inspection(
                     ApplicationQueryInspectionDefinition::<Schema, query::Binding>::new(
                         ApplicationQueryDisclosureContract::public(),

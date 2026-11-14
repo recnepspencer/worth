@@ -40,6 +40,18 @@ fn changed_optional_cases_reverse_and_reapply_without_capturing_unchanged_fields
         third: None,
     };
     assert_eq!(neighbour(), untouched);
+    let links = || {
+        request
+            .query(link_query::Read {
+                key: "record".into(),
+            })
+            .execute()
+            .unwrap()
+            .rows()[0]
+            .targets
+            .clone()
+    };
+    assert!(links().is_empty());
     let outcome = request
         .advanced()
         .mutate(Input {
@@ -48,6 +60,7 @@ fn changed_optional_cases_reverse_and_reapply_without_capturing_unchanged_fields
                 value: 42,
                 required: 420,
             },
+            link: Some(LinkTarget::Named("neighbour".into())),
         })
         .without_source()
         .idempotency(&"sparse-source".to_owned())
@@ -63,6 +76,7 @@ fn changed_optional_cases_reverse_and_reapply_without_capturing_unchanged_fields
         panic!("sparse source: {outcome:?}");
     };
     assert_eq!(world::read(&host), expected);
+    assert_eq!(links(), ["neighbour"]);
     assert_eq!(neighbour(), untouched);
     let limits = WorthQueryCorrectionHistoryLimits::new(None, std::num::NonZeroUsize::MIN);
     let selected = request.corrections().select(&source, limits).unwrap();
@@ -84,6 +98,7 @@ fn changed_optional_cases_reverse_and_reapply_without_capturing_unchanged_fields
         panic!("sparse inverse: {outcome:?}");
     };
     assert_eq!(world::read(&host), initial);
+    assert!(links().is_empty());
     assert_eq!(neighbour(), untouched);
     let selected = request.corrections().select(&source, limits).unwrap();
     let page = request
@@ -116,5 +131,6 @@ fn changed_optional_cases_reverse_and_reapply_without_capturing_unchanged_fields
         "{outcome:?}"
     );
     assert_eq!(world::read(&host), expected);
+    assert_eq!(links(), ["neighbour"]);
     assert_eq!(neighbour(), untouched);
 }

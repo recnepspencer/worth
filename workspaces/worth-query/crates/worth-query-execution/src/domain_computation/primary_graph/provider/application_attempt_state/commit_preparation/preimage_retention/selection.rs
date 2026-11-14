@@ -304,7 +304,7 @@ fn locus_matches(
 }
 
 impl WorthQueryRetainedPreImageSeal {
-    pub(crate) fn into_parts(self) -> (
+    pub(in crate::domain_computation) fn into_parts(self) -> (
         Vec<WorthQueryRetainedPreImageFieldSeal>,
         Vec<crate::domain_computation::application_aftermath::retained_preimage::RetainedPreImageAbsence>,
         Option<crate::domain_computation::application_aftermath::retained_preimage::RetainedChangedFieldOutput>,

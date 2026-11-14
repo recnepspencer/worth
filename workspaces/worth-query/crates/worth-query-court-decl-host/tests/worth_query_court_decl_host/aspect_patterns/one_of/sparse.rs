@@ -4,6 +4,7 @@ use worth_query_decl::facade::application_aftermath::*;
 mod correction;
 mod courts;
 mod handler;
+pub(super) mod link_query;
 pub use correction::Correction;
 pub use handler::Handler;
 
@@ -18,7 +19,40 @@ pub enum Case {
 pub struct Input {
     pub key: String,
     pub case: Case,
+    pub link: Option<LinkTarget>,
 }
+#[derive(Clone, Debug, WorthValue)]
+#[worth_value(crate = "worth_query_decl::facade::application_schema")]
+pub enum LinkTarget {
+    Named(String),
+    Historical {
+        partition: u32,
+        slot: u64,
+        generation: u32,
+    },
+}
+impl LinkTarget {
+    fn historical(id: worth_query_decl::facade::application_aftermath::EntityId) -> Self {
+        Self::Historical {
+            partition: id.partition_id.0,
+            slot: id.local_slot.0,
+            generation: id.generation.0,
+        }
+    }
+}
+pub struct Companion;
+impl worth_query_decl::facade::application_schema::fragment::Relation for Companion {
+    const NAME: &'static str = "SparseCompanion";
+    type To = Record;
+}
+impl Companion {
+    pub fn reference() -> ApplicationRelationRef<Schema, Self, Record, Record> {
+        worth_query_decl::facade::application_schema::fragment::relation(PatternModel, Record, Self)
+    }
+}
+impl OperationReads<Edit> for Companion {}
+impl OperationLinks<Edit> for Companion {}
+impl OperationUnlinks<Edit> for Companion {}
 worth_query_structured_value_binding!(pub InputValue for Input {identity: "native-record-patterns.sparse.input.v1"});
 worth_query_operation!(pub Edit for Schema, input InputValue);
 worth_query_operation_removes_aspects!(Edit => [First, Second, Third]);
@@ -41,6 +75,8 @@ fn key(input: &Input) -> String {
 pub struct Decision {
     selected: ObservedTarget<Record>,
     output: WorthQueryInvariantMutationTarget<Schema, Record>,
+    previous_link: Option<WorthQueryInvariantMutationTarget<Schema, Record>>,
+    next_link: Option<WorthQueryInvariantMutationTarget<Schema, Record>>,
 }
 worth_query_mutation_binding!(pub Binding for Input, schema Schema,
     identity "native-record-patterns.sparse.v1", input InputValue,
@@ -71,6 +107,9 @@ impl ApplicationDeclaredOperation<Schema> for Edit {
             .operation_remove_aspect(Self::reference(), First::reference())
             .operation_remove_aspect(Self::reference(), Second::reference())
             .operation_remove_aspect(Self::reference(), Third::reference())
+            .operation_read_relation(Self::reference(), Companion::reference())
+            .operation_link(Self::reference(), Companion::reference())
+            .operation_unlink(Self::reference(), Companion::reference())
     }
 }
 pub fn loci() -> Vec<DeclaredPreImageLocus<Schema>> {
