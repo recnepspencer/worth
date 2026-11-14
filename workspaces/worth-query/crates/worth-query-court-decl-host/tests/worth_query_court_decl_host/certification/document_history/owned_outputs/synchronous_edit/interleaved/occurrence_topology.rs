@@ -19,13 +19,15 @@ pub struct Parents;
 pub struct ParentModel;
 pub struct Children;
 pub struct ChildModel;
-pub struct Key;
+pub struct ParentKey;
+pub struct ChildKey;
 pub struct Role;
 worth_query_portable_type!(Parents=>"owned-outputs.occurrence-parents");
 worth_query_portable_type!(ParentModel=>"owned-outputs.occurrence-parent-model");
 worth_query_portable_type!(Children=>"owned-outputs.occurrence-children");
 worth_query_portable_type!(ChildModel=>"owned-outputs.occurrence-child-model");
-worth_query_portable_type!(Key=>"owned-outputs.occurrence-key");
+worth_query_portable_type!(ParentKey=>"owned-outputs.occurrence-parent-key");
+worth_query_portable_type!(ChildKey=>"owned-outputs.occurrence-child-key");
 worth_query_portable_type!(Role=>"owned-outputs.occurrence-role");
 pub fn parents() -> ApplicationQueryResultRelationRef<
     Query,
@@ -75,8 +77,11 @@ fn child() -> ApplicationQueryResultRelationRef<
 > {
     ApplicationQueryResultRelationRef::reverse_one("dependent", ModelMember::reference())
 }
-fn key() -> ApplicationQueryResultFieldRef<Query, Key, Schema, ModelKey> {
-    ApplicationQueryResultFieldRef::new("key", ModelKey::at("ModelKey"))
+fn parent_key() -> ApplicationQueryResultFieldRef<Query, ParentKey, Schema, ModelKey> {
+    ApplicationQueryResultFieldRef::new("parent-key", ModelKey::at("ModelKey"))
+}
+fn child_key() -> ApplicationQueryResultFieldRef<Query, ChildKey, Schema, ModelKey> {
+    ApplicationQueryResultFieldRef::new("child-key", ModelKey::at("ModelKey"))
 }
 fn role() -> ApplicationQueryResultFieldRef<Query, Role, Schema, MemberKey> {
     ApplicationQueryResultFieldRef::new("role", MemberKey::at("MemberKey"))
@@ -87,7 +92,7 @@ impl WorthQueryApplicationProjection<Schema, Query> for Parent {
     ) -> Result<Self, WorthQueryApplicationProjectionDenial> {
         Ok(Self {
             role: row.field(role())?,
-            key: row.one(parent())?.field(key())?,
+            key: row.one(parent())?.field(parent_key())?,
         })
     }
 }
@@ -104,7 +109,7 @@ impl WorthQueryApplicationProjection<Schema, Query> for Topology {
             children: row
                 .many(children())?
                 .iter()
-                .map(|r| r.one(child())?.field(key()))
+                .map(|r| r.one(child())?.field(child_key()))
                 .collect::<Result<_, _>>()?,
         })
     }
@@ -116,7 +121,6 @@ pub fn declare(
         ApplicationQueryResultShapeBuilder::<Schema, Query, Model, Topology, TopologyBinding>::new(
             Model::reference(),
         )
-        .field(key())
     };
     let parent_row = ApplicationQueryResultShapeBuilder::<
         Schema,
@@ -126,7 +130,7 @@ pub fn declare(
         TopologyBinding,
     >::new(Member::reference())
     .field(role())
-    .relation(parent(), model());
+    .relation(parent(), model().field(parent_key()));
     let child_row = ApplicationQueryResultShapeBuilder::<
         Schema,
         Query,
@@ -134,7 +138,7 @@ pub fn declare(
         Topology,
         TopologyBinding,
     >::new(Member::reference())
-    .relation(child(), model());
+    .relation(child(), model().field(child_key()));
     let definition = ApplicationQueryDefinitionBuilder::declare(Query::reference())
         .root(Model::reference())
         .scope(Model::reference())
