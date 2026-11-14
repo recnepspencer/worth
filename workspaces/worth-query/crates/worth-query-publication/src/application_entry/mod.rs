@@ -1,9 +1,10 @@
 // Ordering refusals retain their installed subjects and scopes through the consumer entry.
 pub use mutation::{
     AuthoredStageExecutionCause, WorthQueryEditEnvelope, WorthQueryEditEnvelopeExecutionDenial,
-    WorthQueryEditEnvelopeOutcome, WorthQueryEditEnvelopeReceipt, WorthQueryEditEnvelopeSubject,
-    WorthQueryEditStageDomainDenial, WorthQueryEditStageExecutionDenial,
-    WorthQueryEditStageResultDenial, WorthQueryEditStageToken, WorthQueryKeyedEditEnvelope,
+    WorthQueryEditEnvelopeModeDenial, WorthQueryEditEnvelopeOutcome, WorthQueryEditEnvelopeReceipt,
+    WorthQueryEditEnvelopeSubject, WorthQueryEditStageDomainDenial,
+    WorthQueryEditStageExecutionDenial, WorthQueryEditStageResultDenial, WorthQueryEditStageToken,
+    WorthQueryKeyedEditEnvelope, WorthQueryRuntimeEditEnvelope,
 };
 pub use worth_query_execution::publication_boundary::authored_edit::{
     DeclaredEditDependency, DeclaredEditParticipant, DeclaredEditReadScope, DeclaredEditScopeCycle,

@@ -58,6 +58,7 @@ pub struct CapturedAuthoredEditStage<S> {
     >,
     pub(in crate::domain_computation::primary_graph) contracts:
         worth_query_installation::facade::WorthQueryOperationReadTouchOverlapIndex,
+    pub(in crate::domain_computation::primary_graph::application_contribution) ordered: bool,
 }
 impl<S> Clone for CapturedAuthoredEditStage<S> {
     fn clone(&self) -> Self {
@@ -74,6 +75,7 @@ impl<S> Clone for CapturedAuthoredEditStage<S> {
             producer_connections: self.producer_connections.clone(),
             producer_barrier: self.producer_barrier.clone(),
             required: self.required.clone(),
+            ordered: self.ordered,
         }
     }
 }
@@ -81,6 +83,11 @@ impl<S> Clone for CapturedAuthoredEditStage<S> {
 pub(in crate::domain_computation::primary_graph) trait AuthoredEditStageExecutor<S>:
     Send + Sync
 {
+    fn order_authored(&self);
+    fn bind_correction(
+        &self,
+        intent: crate::domain_computation::primary_graph::WorthQueryCorrectionIntent,
+    );
     fn plan(
         &self,
         context: &AuthoredEditStageContext<'_, '_, '_, S>,
@@ -144,7 +151,12 @@ type Admit<S, B> = dyn Fn(
     + Send
     + Sync;
 pub(super) struct TypedStage<S: ApplicationSchema, B: ApplicationMutationBinding<S>> {
-    pub(super) original_admission: std::sync::Mutex<AuthoredEditStageOperation<S, B>>,
+    pub(super) original_admission: std::sync::Mutex<Option<AuthoredEditStageOperation<S, B>>>,
+    pub(super) principal_value: worth_foundational::facade::AspectValue,
+    pub(super) ordered: std::sync::atomic::AtomicBool,
+    pub(super) correction: std::sync::Mutex<
+        Option<crate::domain_computation::primary_graph::WorthQueryCorrectionIntent>,
+    >,
     pub(super) planning: std::sync::Mutex<super::planning::StagePlanning<S, B>>,
     pub(super) before: worth_runtime_world::facade::ProductBranchObservation,
     pub(super) key: Arc<ApplicationEditEnvelopeKey<B::IdempotencyKey>>,
@@ -181,6 +193,45 @@ impl<S: ApplicationSchema> CapturedAuthoredEditStage<S> {
         B::Denial: Send,
     {
         let admitted = admit(&AuthoredEditStageContext { phase, application })?;
+        Self::capture_admitted(
+            _access,
+            application,
+            key,
+            input,
+            ordinal,
+            principal,
+            admitted,
+            admit,
+            result,
+        )
+    }
+
+    pub fn capture_admitted<B>(
+        _access: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
+        application: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+        key: Arc<ApplicationEditEnvelopeKey<B::IdempotencyKey>>,
+        input: ApplicationEncodedInput<B::InputBinding>,
+        ordinal: usize,
+        principal: WorthQueryAuthenticatedExternalPrincipal<S>,
+        admitted: AuthoredEditStageAdmission<S, B>,
+        admit: impl Fn(
+                &AuthoredEditStageContext<'_, '_, '_, S>,
+            )
+                -> Result<AuthoredEditStageAdmission<S, B>, WorthQueryOutputDemandDenial>
+            + Send
+            + Sync
+            + 'static,
+        result: Arc<std::sync::Mutex<Option<Box<dyn Any + Send>>>>,
+    ) -> Result<Self, WorthQueryOutputDemandDenial>
+    where
+        B: ApplicationMutationBinding<S>,
+        B::Input: Clone + Send + Sync,
+        B::IdempotencyKey: Send + Sync,
+        B::Result: Send,
+        B::Denial: Send,
+    {
+        let principal_value = <B::PrincipalIdentityBinding as worth_query_declaration::facade::application_schema::ApplicationScalarValueBinding>::encode(&admitted.principal)
+            .map_err(|cause| stage_admission_refusal::<S, B>(_access, ordinal, format!("principal identity: {cause:?}")))?;
         let source = admitted.operation.scope_entity_id();
         let before = admitted
             .operation
@@ -222,10 +273,14 @@ impl<S: ApplicationSchema> CapturedAuthoredEditStage<S> {
             producer_connections: Vec::new(),
             producer_barrier: Vec::new(),
             required: None,
+            ordered: false,
             identity,
             binding: B::IDENTITY,
             executor: Arc::new(TypedStage::<S, B> {
-                original_admission: std::sync::Mutex::new(admitted.operation),
+                original_admission: std::sync::Mutex::new(Some(admitted.operation)),
+                principal_value,
+                ordered: std::sync::atomic::AtomicBool::new(false),
+                correction: std::sync::Mutex::new(None),
                 planning: std::sync::Mutex::new(super::planning::StagePlanning::default()),
                 before,
                 key,
@@ -241,6 +296,14 @@ impl<S: ApplicationSchema> CapturedAuthoredEditStage<S> {
 }
 
 impl<S> CapturedAuthoredEditStage<S> {
+    pub fn with_correction_intent(
+        self,
+        _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
+        intent: crate::domain_computation::primary_graph::WorthQueryCorrectionIntent,
+    ) -> Self {
+        self.executor.bind_correction(intent);
+        self
+    }
     pub fn same_admitted_basis(&self, other: &Self) -> bool {
         self.before == other.before
     }

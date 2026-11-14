@@ -169,6 +169,7 @@ pub use projection::{
     WorthQueryApplicationDisclosed, WorthQueryApplicationOmission, WorthQueryApplicationProjection,
     WorthQueryApplicationProjectionDenial, WorthQueryApplicationProjectionDenialKind,
     WorthQueryApplicationProjectionRow, WorthQueryApplicationProjectionRows,
+    WorthQueryPrerequisiteSelection,
 };
 pub use readiness::WorthQueryPrimaryGraphApplicationReadinessSnapshot;
 pub use resource_lifecycle::{

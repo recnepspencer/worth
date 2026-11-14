@@ -18,6 +18,8 @@ pub use denial::{
     WorthQueryApplicationProjectionDenial, WorthQueryApplicationProjectionDenialKind,
 };
 mod optional_aspect;
+mod prerequisite_selection;
+pub use prerequisite_selection::WorthQueryPrerequisiteSelection;
 pub(crate) mod projected_tree;
 pub(in crate::domain_computation::primary_graph::application_query) use projected_tree::content::ContentWriter;
 pub(in crate::domain_computation::primary_graph) use projected_tree::content_storage::ContentScratch;

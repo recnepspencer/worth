@@ -13,6 +13,8 @@ use crate::{
 use std::sync::Arc;
 use worth_execution::MapKernelContext;
 mod coupled;
+#[cfg(test)]
+pub(crate) use coupled::tests::assert_exact_owner_refusals;
 
 /// O(H^2 + P^2 M), catalog-bounded and charged under the original request.
 pub(crate) fn historical_positions(
@@ -234,6 +236,28 @@ pub(crate) fn select(
         }
         if !advanced {
             break;
+        }
+    }
+    Ok(selected)
+}
+
+/// The exact source-owned closure for a corrective envelope's later stage.
+/// Current business-neighbour reads supply candidates; history supplies the
+/// preceding canonical catalog. Both use this same finite semantic selection.
+pub(crate) fn later_source_owners(
+    source: EntityId,
+    facts: &[SelectedOutputPublication],
+    context: &mut MapKernelContext<'_, '_>,
+) -> Result<Vec<SelectedOutputPublication>, Stop> {
+    let mut selected = select(&[source], facts, context)?;
+    let linked = super::scope_dependents::linked_owners(&[source], &selected, facts, context)?;
+    for owner in linked {
+        charge(context, selected.len() + 1)?;
+        if !selected
+            .iter()
+            .any(|known| known.origin.same_publication(&owner.origin))
+        {
+            selected.push(owner);
         }
     }
     Ok(selected)

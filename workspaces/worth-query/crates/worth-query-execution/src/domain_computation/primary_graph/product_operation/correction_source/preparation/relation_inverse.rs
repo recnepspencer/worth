@@ -61,7 +61,12 @@ impl WorthQueryPreparedCorrectionSource {
         let members = self.member_inverses(retained, layout, execution)?;
         let selectors = members.selectors();
         let inverse = candidate
-            .relation_mutation_footprint(execution, &kinds, &selectors, members.kinds())
+            .authored_prefix_relation_mutation_footprint(
+                execution,
+                &kinds,
+                &selectors,
+                members.kinds(),
+            )
             .map_err(|cause| {
                 base("inverse relation mutation projection refused")
                     .with_native_preparation_error(cause)

@@ -25,7 +25,7 @@ or new execution mandates.
 
 ## L1 header: authored stages, envelope entry, slots, keys, receipt, DAG
 
-- **Usable result:** a multi-step authored edit with several required roots of one program is one Native commit with one envelope key and one receipt, and the receipt carries each authored stage's typed result. Counted on the cabinet-shaped fixture at 1 and 4 authored stages: 1 commit at both. Today each authored step is its own entry and commit (the product's source commits, `worth-cad-runtime/src/runtime/installed/run.rs:104-155`). Stored format: L1 adds one variant, `CanonicalCoupledAuthoredSources::Stages`, and changes no existing one; old stores decode unchanged (D1590), and the variant has its cold court (row 11).
+- **Usable result:** a multi-step authored edit with several required roots of one program is one Native commit with one envelope key and one receipt, and the receipt carries each authored stage's typed result. Counted on the cabinet-shaped fixture at 1 and 4 authored stages: 1 commit at both. Today each authored step is its own entry and commit (the product's source commits, `worth-cad-runtime/src/runtime/installed/run.rs:104-155`). Current storage uses the three semantic source kinds and actual consumed order described below; development artifacts are recreated, not migrated.
 - **Requires:**
   - the Phase 1 base merge of public `5034b49b25` into `4058790f09`, committed with green Phase 1 courts (D1585);
   - D1397 B3 (`orchestration/log/orchestration-log-2026-11-07.md`, D1397 rulings: read-your-writes inside the transaction, DAG order, typed cycle);
@@ -34,6 +34,41 @@ or new execution mandates.
 - **Establishes:** L2 may rely on the authored stage part kind, the single assembly per envelope with one refusal slot, the envelope key and receipt with per-stage results, several roots of one program, and the declared-scope DAG with typed stage and mixed cycles. It may not assume authored stages after a producer wave, the extended final qualification, or the seal-shaped stage.
 - **Not in parallel with:** another writer in `NC/` or in `Q/application_contribution/producer/{coupled_assembly,synchronous_outputs}`, `Q/application_attempt/coupled_outputs.rs` or `P/mutation/performed/`; Phase 4 (#131) if it touches `authority/commit/pipeline/publication_execution.rs` (decided at #131's plan review); the parked 3b branch.
 - **Closes when:** the L1 rows of section 6 are green with their mutants (M-S1, M-S3, stage cycle, mixed cycle, subject-less refusal, refusing authored stage), the cold-reopen court for the new part variant passes, and commits per edit are counted at 1 and 4 authored stages.
+
+## Phase 5 consumer extension of the landed envelope
+
+The default static/DAG entry and historical L1/L2 results below retain their
+scope. Runtime-length CAD cohorts use the same typed Publication envelope,
+with explicit positioned authored semantics when the product promises order,
+canonical whole-key replay before handlers, genuine pre-stage data and final
+support. Repeated-family histories use the closed installed occurrence
+component in the existing wave, not a private refresh graph or SourceID edge
+exemption. Corrective authoring retains a genuine inverse root and appends its
+ordinary final Edit before the one commit; only that real root satisfies the
+recorded inverse. See [current authoring DX](../../docs/build-an-application.md#runtime-cohorts-and-positioned-authored-execution).
+
+A genuinely producing later authored stage retains usable corrective history.
+Native has one current representation with three semantic kinds: `Edit` stores
+its nonempty prefix-first consumed source sequence; `Retirement` and
+`Restoration` store their genuine prefix event and consumed later-source
+sequence. Zero, one and multiple later stages use that same shape; repeated
+scopes remain ordered data. Live and historical selection retain exact owners,
+predecessors, genuine source authority and corrective participant restrictions.
+Canonical artifact format9 supports only this current grammar. Other versions
+and unknown meanings refuse before effects. Development artifacts from older
+formats are recreated; no compatibility reader, migration, downgrade or
+old-byte guarantee is required. CHK22, outer protocols and Original-root-v4
+identity domains are otherwise unchanged. Whole intent uses one encoding of
+the actual key, explicit execution mode and complete original stage list;
+default unordered behavior remains, with current replay and mode/order/input
+drift before handlers.
+
+Current affected evidence is the bounded ordinary runtime/ordered/correction
+and occurrence journeys plus their necessary refusal/replay/support controls.
+Historical portfolio, hot/worker and mutant runs below are not a new campaign
+or completion prerequisite. Public prerequisite completion alone does not
+close Phase 5: the real private full-stage and final-body consumer must adopt
+one landed SDK and remove its private ordering/currentness fallbacks.
 
 ## L2 header: stage B after waves, final qualification, seal-shaped stage
 
@@ -205,7 +240,7 @@ no kernel fallback or new admission authority.
 - **The first DAG-ordered stage is the authored prefix.** It is the transaction's first merged plan (`commit_plan.rs:68-76`). Stages 2..k are the new Native part kind. `CoupledPublicationPart.publication` becomes producer-or-authored-stage. Authored stages use a writer custody arm with `AuthoredPrefix`'s meaning and their own part ordinal. The producer-only checks (`part.rs:22-42`, `completion.rs:133-146`, `coupled_authored.rs:138-142`) skip authored stages.
 - **Stage handlers read the candidate.** A stage after the first runs its handler with C authorization and D data at the current candidate pin, through the provider-session read the producers use (`coupled_source::read`). This is L1's one new Query read mechanism.
 - **API.** An envelope request takes `.stage::<Root, _>(intent)` (Rust infers the concrete intent type) per authored stage, then `.idempotency(..)` and `execute_performed::<Program>`. Each stage names its root of the one program. The roots seed one wave (`synchronous_outputs/capture.rs:144-171` becomes a collection).
-- **Durable shape.** The new variant is `CanonicalCoupledAuthoredSources::Stages`, beside `Edit` (`coupled_authored.rs:12-17`), and is courted cold (row 11). An envelope with no producer participant commits through the existing `install_empty` path.
+- **Durable shape.** The current Edit kind retains the complete prefix-first consumed source sequence. Genuine Retirement/Restoration retain their own prefix event plus later sources. An envelope with no producer participant uses the actual standalone source behavior through `install_empty`; it does not invent a coupled event.
 
 ## 11. L1 lands as L1a (Native) and L1b (Query) (2026-11-10, lane decision: land small)
 
@@ -218,7 +253,7 @@ L1 as a single landing would combine a stored-format addition with a new generic
   - Each stage's touches project from its own commands (`authored_stage_mutation_touches`).
   - The canonical event records the stage sources (`CommitPublication::coupled_authored_stage_sources`).
   - Commits per envelope: 1 (Native court).
-  - Stored format: adds the variant `CanonicalCoupledAuthoredSources::Stages`, appended last, and changes no existing one.
+  - Stored format: use only the current Native artifact grammar; recreate obsolete development artifacts. Current replay, undo, recovery and exact source meaning remain required.
 - **Requires:**
   - merge `d39fc1fd21`;
   - plan `b9ae180743` (D1588, D1590);
