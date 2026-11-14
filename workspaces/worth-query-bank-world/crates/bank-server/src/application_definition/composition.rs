@@ -57,12 +57,6 @@ fn bank_feature_specs_with_optional_effects(
 ) -> Vec<ApplicationFeatureSpec> {
     use bank_domain::schema::*;
 
-    let estate = ApplicationFeatureSpec::root::<BankSchema, BankEstateFeature>();
-    let estate = if include_estate_notification {
-        estate.action::<NotifyEstateDeathMutationBinding, super::estate_actions::DeathNotificationDelivery>().finish_action()
-    } else {
-        estate
-    };
     let payments = ApplicationFeatureSpec::root::<BankSchema, BankPaymentsFeature>()
         .action::<ApplyOpeningFundingMutationBinding, super::money_actions::OpeningFundingDelivery>().finish_action()
         .action::<DepositMutationBinding, super::money_actions::DepositDelivery>().finish_action()
@@ -81,18 +75,37 @@ fn bank_feature_specs_with_optional_effects(
         payments
     };
     vec![
-        ApplicationFeatureSpec::root::<BankSchema, BankAccountsFeature>()
+        bank_account_feature_spec(),
+        payments
+            .action::<RejectPaymentMutationBinding, super::payment_actions::PaymentRejectionDelivery>().finish_action()
+            .action::<ReverseJournalMutationBinding, super::money_actions::ReverseJournalDelivery>().finish_action()
+            .finish(),
+        bank_estate_feature_spec(include_estate_notification),
+    ]
+}
+
+pub(super) fn bank_account_feature_spec() -> ApplicationFeatureSpec {
+    use bank_domain::schema::*;
+    ApplicationFeatureSpec::root::<BankSchema, BankAccountsFeature>()
             .action::<ProgramDeploymentRevocationBinding, super::deployment_actions::ProgramDeploymentRevocationDelivery>().finish_action()
             .action::<CreatePersonalAccountMutationBinding, super::account_actions::PersonalAccountCreationDelivery>().finish_action()
             .action::<CreateBusinessAccountMutationBinding, super::account_actions::BusinessAccountCreationDelivery>().finish_action()
             .action::<GrantAccountAccessMutationBinding, super::account_actions::AccountAccessGrantDelivery>().finish_action()
             .action::<RevokeAccountAccessMutationBinding, super::account_actions::AccountAccessRevocationDelivery>().finish_action()
-            .finish(),
-        payments
-            .action::<RejectPaymentMutationBinding, super::payment_actions::PaymentRejectionDelivery>().finish_action()
-            .action::<ReverseJournalMutationBinding, super::money_actions::ReverseJournalDelivery>().finish_action()
-            .finish(),
+            .finish()
+}
+
+pub(super) fn bank_estate_feature_spec(
+    include_estate_notification: bool,
+) -> ApplicationFeatureSpec {
+    use bank_domain::schema::*;
+    let estate = ApplicationFeatureSpec::root::<BankSchema, BankEstateFeature>();
+    let estate = if include_estate_notification {
+        estate.action::<NotifyEstateDeathMutationBinding, super::estate_actions::DeathNotificationDelivery>().finish_action()
+    } else {
         estate
+    };
+    estate
             .action::<FreezeEstateAccountMutationBinding, super::estate_actions::EstateAccountFreezeDelivery>().finish_action()
             .action::<RestoreFrozenEstateAccountBinding, super::estate_actions::RestoreFrozenAccountDelivery>().finish_action()
             .action::<OpenEstateCaseMutationBinding, super::estate_actions::EstateCaseOpeningDelivery>().finish_action()
@@ -106,8 +119,7 @@ fn bank_feature_specs_with_optional_effects(
             .operation::<CompleteEstateMandatoryReviewOperation>()
             .operation::<DelegateEstateCapabilityOperation>()
             .operation::<RevokeEstateCapabilityOperation>()
-            .finish(),
-    ]
+            .finish()
 }
 
 impl ApplicationProgramDefinition<BankSchema> for BankApplicationP1 {

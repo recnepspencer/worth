@@ -17,6 +17,12 @@ use crate::operation_admission::bank_operation_scope_binding;
 pub(crate) struct ReverseJournalHandler;
 
 impl OperationHandler<BankSchema, ReverseJournalMutationBinding> for ReverseJournalHandler {
+    fn declared_durable_capabilities() -> Option<
+        &'static [worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability],
+    > {
+        Some(&[worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability::RelationalMutation])
+    }
+
     fn decide(
         &self,
         input: &ReverseJournal,

@@ -52,6 +52,10 @@ impl Drop for SettlementIndex {
 }
 
 impl SettlementIndex {
+    pub(super) fn is_quiescent(&self) -> bool {
+        self.sources.is_empty() && self.cancelled_head.is_none()
+    }
+
     pub(super) fn get_exact_admitted(
         &self,
         identity: &RecordedSettlementIdentity,

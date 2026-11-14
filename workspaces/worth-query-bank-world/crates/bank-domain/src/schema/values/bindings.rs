@@ -53,7 +53,7 @@ macro_rules! string_enum_binding {
             }
 
             fn decode(value: InternedString) -> Option<Self> {
-                let InternedString::Raw(value) = value else { return None; };
+                let value = value.into_raw_text()?;
                 match value.as_str() { $($text => Some($Variant),)+ _ => None }
             }
         }
@@ -192,9 +192,7 @@ macro_rules! canonical_text_binding {
                 InternedString::from(self.canonical_text())
             }
             fn decode(value: InternedString) -> Option<Self> {
-                let InternedString::Raw(value) = value else {
-                    return None;
-                };
+                let value = value.into_raw_text()?;
                 $decode(&value)
             }
         }
@@ -238,9 +236,7 @@ fn encode_account_name(value: &AccountName) -> InternedString {
 }
 
 fn decode_account_name(value: InternedString) -> Option<AccountName> {
-    let InternedString::Raw(value) = value else {
-        return None;
-    };
+    let value = value.into_raw_text()?;
     AccountName::new(value).ok()
 }
 

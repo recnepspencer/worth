@@ -135,16 +135,18 @@ impl<Schema> Default for WorthQueryInstalledApplicationProducerRegistry<Schema> 
 
 impl<Schema> WorthQueryInstalledApplicationProducerRegistry<Schema> {
     pub(in crate::domain_computation::primary_graph) fn preflight_home_retirement(
-        &self,
+        &mut self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<(), crate::domain_computation::primary_graph::WorthQueryHomeRetirementDenial> {
         use crate::domain_computation::primary_graph::{
             WorthQueryHomeRetirementDenial as Denial, WorthQueryHomeRetirementOwner as Owner,
         };
-        if self.entries.is_empty() {
-            Ok(())
-        } else {
-            Err(Denial::Unsupported(Owner::InstalledProducers))
+        for entry in self.entries.values_mut() {
+            request.consult().map_err(Denial::Execution)?;
+            let original = Arc::get_mut(entry).ok_or(Denial::Busy(Owner::InstalledProducers))?;
+            Arc::get_mut(&mut original.executor).ok_or(Denial::Busy(Owner::InstalledProducers))?;
         }
+        Ok(())
     }
 }
 
@@ -314,6 +316,42 @@ where
 
     pub(in crate::domain_computation::primary_graph) fn is_empty(&self) -> bool {
         self.entries.is_empty()
+    }
+
+    #[doc(hidden)]
+    pub fn installed_identities_for_test(&self) -> Vec<&str> {
+        self.entries.keys().map(String::as_str).collect()
+    }
+}
+
+impl<Schema: 'static> WorthQueryInstalledApplicationProducerRegistry<Schema> {
+    #[doc(hidden)]
+    pub fn retain_entry_for_test(&self) -> Option<Box<dyn Any>> {
+        self.entries
+            .values()
+            .next()
+            .map(|entry| Box::new(entry.clone()) as Box<dyn Any>)
+    }
+    #[doc(hidden)]
+    pub fn retain_weak_entry_for_test(&self) -> Option<Box<dyn Any>> {
+        self.entries
+            .values()
+            .next()
+            .map(|entry| Box::new(Arc::downgrade(entry)) as Box<dyn Any>)
+    }
+    #[doc(hidden)]
+    pub fn retain_executor_for_test(&self) -> Option<Box<dyn Any>> {
+        self.entries
+            .values()
+            .next()
+            .map(|entry| Box::new(entry.executor.clone()) as Box<dyn Any>)
+    }
+    #[doc(hidden)]
+    pub fn retain_weak_executor_for_test(&self) -> Option<Box<dyn Any>> {
+        self.entries
+            .values()
+            .next()
+            .map(|entry| Box::new(Arc::downgrade(&entry.executor)) as Box<dyn Any>)
     }
 }
 

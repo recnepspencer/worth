@@ -8,6 +8,51 @@ use worth_query_installation::facade::{
     InstalledCorrectionBinding, InstalledCorrectionMechanism, WorthQueryInstalledAftermathContract,
 };
 impl WorthQueryProductRuntime {
+    /// Narrow installed native source qualification. Other original owners keep
+    /// the whole-family gate; installed meaning grants no current request authority.
+    pub fn admit_native_correction_source_owner(
+        &self,
+        contracts: &worth_query_installation::facade::WorthQueryCompiledApplicationOperationContracts,
+        correction: Option<&InstalledCorrectionBinding>,
+    ) -> Result<(), Denial> {
+        if !self.is_directory_home() {
+            return Ok(());
+        }
+        match self.admit_directory_original_shape(contracts, correction)? {
+            Admission::NativeRecordedCorrection => Ok(()),
+            Admission::ExistingShape | Admission::ExternalOriginalRecoveryOnly => {
+                self.admit_retained_original_operation_owner()
+            }
+        }
+    }
+
+    /// Preflight of the installed inverse for a genuine correction handoff.
+    /// The publication owner separately requires private Prepared/Replay provenance.
+    pub fn admit_native_correction_inverse(
+        &self,
+        contracts: &worth_query_installation::facade::WorthQueryCompiledApplicationOperationContracts,
+    ) -> Result<(), Denial> {
+        if !self.is_directory_home() {
+            return Ok(());
+        }
+        use worth_query_installation::facade::{
+            InstalledExternalEffectContract, PublishedAftermathPosture,
+        };
+        if contracts.body().is_some()
+            || !matches!(
+                contracts.external_effect(),
+                InstalledExternalEffectContract::None
+            )
+            || contracts.aftermath().is_some_and(|aftermath| {
+                aftermath.published_posture() != PublishedAftermathPosture::Irreversible
+                    || aftermath.mechanism().is_some()
+            })
+        {
+            return Err(Denial::UnsupportedCorrectionCompensation);
+        }
+        Ok(())
+    }
+
     pub(in crate::domain_computation) fn admit_directory_original_shape(
         &self,
         contracts: &worth_query_installation::facade::WorthQueryCompiledApplicationOperationContracts,
@@ -46,8 +91,12 @@ impl WorthQueryProductRuntime {
                 inverse.preimage_demand().is_empty()
             }
             Some(InstalledCorrectionMechanism::Compensation(_)) => {
-                if correction.is_some() {
-                    return Err(Denial::UnsupportedCorrectionCompensation);
+                if let Some(binding) = correction {
+                    return compensation::classify_native(
+                        aftermath.expect("compensation belongs to this aftermath"),
+                        binding,
+                        usage,
+                    );
                 }
                 return compensation::classify(
                     aftermath.expect("compensation belongs to this aftermath"),
