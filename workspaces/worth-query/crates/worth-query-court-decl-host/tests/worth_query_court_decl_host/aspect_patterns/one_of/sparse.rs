@@ -19,7 +19,7 @@ pub enum Case {
 pub struct Input {
     pub key: String,
     pub case: Case,
-    pub link: Option<LinkTarget>,
+    pub link: LinkEdit,
     pub observation_fault: ObservationFault,
 }
 /// Deliberately incomplete decisions exercise the pre-publication retention guard.
@@ -29,6 +29,14 @@ pub enum ObservationFault {
     None,
     Unobserved,
     ForeignOnly,
+}
+/// A sparse inverse leaves an unchanged role alone, rather than inventing absence.
+#[derive(Clone, Debug, WorthValue)]
+#[worth_value(crate = "worth_query_decl::facade::application_schema")]
+pub enum LinkEdit {
+    Unchanged,
+    Clear,
+    Set(LinkTarget),
 }
 #[derive(Clone, Debug, WorthValue)]
 #[worth_value(crate = "worth_query_decl::facade::application_schema")]
@@ -87,6 +95,7 @@ pub struct Decision {
     output: WorthQueryInvariantMutationTarget<Schema, Record>,
     previous_link: Option<WorthQueryInvariantMutationTarget<Schema, Record>>,
     next_link: Option<WorthQueryInvariantMutationTarget<Schema, Record>>,
+    change_link: bool,
 }
 worth_query_mutation_binding!(pub Binding for Input, schema Schema,
     identity "native-record-patterns.sparse.v1", input InputValue,

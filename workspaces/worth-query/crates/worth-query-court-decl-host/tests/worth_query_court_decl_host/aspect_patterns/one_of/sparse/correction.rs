@@ -82,8 +82,9 @@ impl ApplicationCorrectionBinding<Schema> for Correction {
             .output_entity(&Kept::DESCRIPTOR)
             .ok_or(MissingPreImage)?;
         let locus = DeclaredPreImageRelationLocus::from_relation(Companion::reference());
+        let count = image.relation_count(&locus).ok_or(MissingPreImage)?;
         let mut link = None;
-        for index in 0..image.relation_count(&locus).ok_or(MissingPreImage)? {
+        for index in 0..count {
             let change = image.relation_at(&locus, index).ok_or(MissingPreImage)?;
             if let Some((from, to)) = change.before() {
                 if from != owner || link.is_some() {
@@ -98,7 +99,11 @@ impl ApplicationCorrectionBinding<Schema> for Correction {
         Ok(Input {
             key: original.key.clone(),
             case,
-            link,
+            link: if count == 0 {
+                LinkEdit::Unchanged
+            } else {
+                link.map_or(LinkEdit::Clear, LinkEdit::Set)
+            },
             observation_fault: ObservationFault::None,
         })
     }

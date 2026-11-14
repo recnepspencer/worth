@@ -3,6 +3,15 @@ use super::*;
 
 #[test]
 fn changed_optional_cases_reverse_and_reapply_without_capturing_unchanged_fields() {
+    exercise_case_inverse(false);
+}
+
+#[test]
+fn changed_fields_reverse_and_reapply_while_a_nonempty_relation_is_unchanged() {
+    exercise_case_inverse(true);
+}
+
+fn exercise_case_inverse(keep_link: bool) {
     let host = world::install_with_neighbour();
     let initial = query::Row {
         class: 1,
@@ -52,6 +61,31 @@ fn changed_optional_cases_reverse_and_reapply_without_capturing_unchanged_fields
             .clone()
     };
     assert!(links().is_empty());
+    if keep_link {
+        let outcome = request
+            .advanced()
+            .mutate(Input {
+                key: "record".into(),
+                case: Case::First { value: 11 },
+                link: LinkEdit::Set(LinkTarget::Named("neighbour".into())),
+                observation_fault: ObservationFault::None,
+            })
+            .without_source()
+            .idempotency(&"establish-companion".to_owned())
+            .execute_in_program(
+                &host,
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )
+            .unwrap();
+        assert!(
+            matches!(
+                outcome,
+                WorthQueryApplicationMutationOutcome::Committed { .. }
+            ),
+            "{outcome:?}"
+        );
+        assert_eq!(links(), ["neighbour"]);
+    }
     let outcome = request
         .advanced()
         .mutate(Input {
@@ -60,7 +94,7 @@ fn changed_optional_cases_reverse_and_reapply_without_capturing_unchanged_fields
                 value: 42,
                 required: 420,
             },
-            link: Some(LinkTarget::Named("neighbour".into())),
+            link: LinkEdit::Set(LinkTarget::Named("neighbour".into())),
             observation_fault: ObservationFault::None,
         })
         .without_source()
@@ -99,7 +133,11 @@ fn changed_optional_cases_reverse_and_reapply_without_capturing_unchanged_fields
         panic!("sparse inverse: {outcome:?}");
     };
     assert_eq!(world::read(&host), initial);
-    assert!(links().is_empty());
+    if keep_link {
+        assert_eq!(links(), ["neighbour"]);
+    } else {
+        assert!(links().is_empty());
+    }
     assert_eq!(neighbour(), untouched);
     let selected = request.corrections().select(&source, limits).unwrap();
     let page = request
@@ -153,7 +191,7 @@ fn missing_original_or_same_kind_neighbour_never_supplies_a_changed_output_preim
                     value: 42,
                     required: 420,
                 },
-                link: Some(LinkTarget::Named("neighbour".into())),
+                link: LinkEdit::Set(LinkTarget::Named("neighbour".into())),
                 observation_fault: fault,
             })
             .without_source()

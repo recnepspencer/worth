@@ -57,8 +57,8 @@ impl OperationHandler<Schema, Binding> for Handler {
                 .map(|link| reader.mutation_target(link.to()))
                 .transpose()?;
             let next_link = match &input.link {
-                None => None,
-                Some(target) => {
+                LinkEdit::Unchanged | LinkEdit::Clear => None,
+                LinkEdit::Set(target) => {
                     let next = match target {
                         LinkTarget::Named(key) => {
                             reader.resolve_entity(Key::at("Key"), key.clone())?
@@ -78,15 +78,20 @@ impl OperationHandler<Schema, Binding> for Handler {
                             ),
                         )?,
                     };
-                    Some(reader.mutation_target(&next)?)
+                    Some((next.entity_id(), reader.mutation_target(&next)?))
                 }
             };
+            let change_link = !matches!(input.link, LinkEdit::Unchanged)
+                && links.first().map(|link| link.to().entity_id())
+                    != next_link.as_ref().map(|(id, _)| *id);
+            let next_link = next_link.map(|(_, target)| target);
             Ok::<_, HandlerExecutionDenial>((
                 Decision {
                     selected,
                     output: reader.mutation_target(&row)?,
                     previous_link,
                     next_link,
+                    change_link,
                 },
                 class,
             ))
@@ -131,7 +136,7 @@ impl OperationHandler<Schema, Binding> for Handler {
             let entity = writer
                 .projected_entity(&target.output)
                 .map_err(HandlerExecutionDenial::new)?;
-            if let Some(previous) = target.previous_link {
+            if let Some(previous) = target.previous_link.filter(|_| target.change_link) {
                 let previous = writer
                     .projected_entity(&previous)
                     .map_err(HandlerExecutionDenial::new)?;
@@ -139,7 +144,7 @@ impl OperationHandler<Schema, Binding> for Handler {
                     .unlink(Companion::reference(), &entity, &previous)
                     .map_err(HandlerExecutionDenial::new)?;
             }
-            if let Some(next) = target.next_link {
+            if let Some(next) = target.next_link.filter(|_| target.change_link) {
                 let next = writer
                     .projected_entity(&next)
                     .map_err(HandlerExecutionDenial::new)?;
@@ -155,6 +160,10 @@ impl OperationHandler<Schema, Binding> for Handler {
             writer
                 .preserve_output::<Kept>(&entity)
                 .map_err(HandlerExecutionDenial::new)?;
+            let change_link = !matches!(input.link, LinkEdit::Unchanged)
+                && links.first().map(|link| link.to().entity_id())
+                    != next_link.as_ref().map(|(id, _)| *id);
+            let next_link = next_link.map(|(_, target)| target);
             Ok::<_, HandlerExecutionDenial>(())
         })();
         match result {
