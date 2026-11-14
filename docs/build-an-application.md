@@ -4516,6 +4516,33 @@ rules using the actual producer antecedent, including after repeated Native-only
 restore/retire cycles. Restoration grants no producer readiness or replayable
 producer-input contract.
 
+### Independent authored prefixes
+
+`OperationHandler::supports_candidate_planning()` defaults to false. Opt in
+only when decision, candidate construction and result cleanup have no external
+effects or mutable supplier-state dependence. Graph-dependent choices must use
+the supplied tracked readers; invocation input, key, original ordinal,
+principal/scope and installed immutable configuration are the other inputs.
+This promise grants no READ or WRITE authority and does not enable ordinary
+ordinal-sensitive decision reuse.
+
+For an independent authored prefix, Query may retain the finished program and
+result, compare its complete sealed reads against every peer's possible writes,
+and remove only proven false authored-to-authored edges. It validates support
+again against the actual pre-stage candidate before consuming the program once.
+Complete equality predicates retain absence/nonmatch meaning; selected IDs are
+not a complete range footprint. Producer barriers and unknown supports remain
+conservative. Creation/deletion, relation/external effects and nested work do
+not qualify. Same-record authored conflicts and true cycles still refuse.
+
+Canonical whole-envelope replay/drift is authenticated before any supplier
+planning. Every prefix candidate keeps its own nominal admission and full
+recorded input/operation/scope/precondition meaning. An Unseen envelope stays
+under the existing branch commit coordination through ordinary publication;
+recorded retries return authentic original receipts without live stage values.
+There is still one Native commit, no handler/producer execution to discover a
+footprint, and no extra caller plan or inspection API.
+
 ### Ordinary coupled source edits
 
 An ordinary authored edit can declare a finite set of source-owned roots

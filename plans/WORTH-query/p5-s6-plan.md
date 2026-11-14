@@ -2,6 +2,27 @@
 
 Approved with changes (D1588; review `orchestration/reviews/pubquery-cp3-plan-review.md`, 8 binding changes, all taken in below). L1 landed with its retained certification. L2 completes that existing envelope. Current REVIEW/qa-tests scheduling governs implementation evidence: use the bounded ordinary journey and directly affected controls in the Phase 3 completion Plan, reuse valid results, and recheck corrections only. The historical 22-mutant and hot/worker portfolios below record their original scope; they are not fresh execution mandates.
 
+## Current bounded record-instance extension
+
+Phase4 retains L1/L2 behavior and narrows only an earned independent authored
+prefix: explicit default-false installed pure-handler opt-in, complete sealed
+reads plus the finished existing-record scalar/aspect effect program, monotone
+conservative pruning, actual pre-stage support validation and one-use program
+consumption. Whole-envelope authenticated replay/drift precedes planning and
+retains every original prefix identity slot. Unseen execution keeps the existing
+branch commit coordination through ordinary commit-time validation.
+
+Producer and opaque/unsupported/creation/deletion/relation/external/nested
+categories remain conservative. Neither a distinct source ID nor observed
+selected rows alone proves independence. A genuine authored prefix remains
+required; prefix-free requests still refuse. Phase5 owns the actual CAD realized
+foreign-output input mapping; a demand-only leaf Body tree is not made valid by
+a marker swap. The existing disjoint-source/dependent court and directly
+affected replay/cycle/conflict/support controls are the finite evidence, with
+valid Phase3 results reused. The historical L1 conservative-refusal and
+hot/worker/mutant descriptions below are history, not blanket current promises
+or new execution mandates.
+
 ## L1 header: authored stages, envelope entry, slots, keys, receipt, DAG
 
 - **Usable result:** a multi-step authored edit with several required roots of one program is one Native commit with one envelope key and one receipt, and the receipt carries each authored stage's typed result. Counted on the cabinet-shaped fixture at 1 and 4 authored stages: 1 commit at both. Today each authored step is its own entry and commit (the product's source commits, `worth-cad-runtime/src/runtime/installed/run.rs:104-155`). Stored format: L1 adds one variant, `CanonicalCoupledAuthoredSources::Stages`, and changes no existing one; old stores decode unchanged (D1590), and the variant has its cold court (row 11).

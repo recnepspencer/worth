@@ -21,16 +21,16 @@ impl WorthQueryApplicationRequiredOutputConnection<Schema> for ModelRoot {
     type Demand = first::Demand;
     const IDENTITY: &'static str = <Self as ApplicationConnectionIdentity>::IDENTITY;
     fn demand_from_source(
-        _: &fixture::model::Intent,
+        input: &fixture::model::Intent,
     ) -> Result<Self::Demand, WorthQueryRequiredOutputConnectionDenial> {
-        Ok(first::Demand("a".into()))
+        Ok(first::Demand(input.key.clone()))
     }
 }
 impl WorthQueryApplicationRequiredOutputSource<Schema, ModelRoot> for fixture::model::Binding {
     fn demand_from_source(
-        _: &fixture::model::Intent,
+        input: &fixture::model::Intent,
     ) -> Result<first::Demand, WorthQueryRequiredOutputConnectionDenial> {
-        Ok(first::Demand("a".into()))
+        Ok(first::Demand(input.key.clone()))
     }
 }
 impl WorthQueryApplicationRequiredOutputSource<Schema, ModelRoot> for fixture::cap::Binding {

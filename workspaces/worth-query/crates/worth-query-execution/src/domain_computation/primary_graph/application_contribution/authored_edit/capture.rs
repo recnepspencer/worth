@@ -81,6 +81,32 @@ impl<S> Clone for CapturedAuthoredEditStage<S> {
 pub(in crate::domain_computation::primary_graph) trait AuthoredEditStageExecutor<S>:
     Send + Sync
 {
+    fn plan(
+        &self,
+        context: &AuthoredEditStageContext<'_, '_, '_, S>,
+        unseen: &super::UnseenAuthoredEnvelope<'_>,
+    ) -> Result<(), WorthQueryOutputDemandDenial>;
+    fn footprint(&self) -> Option<super::planning::Footprint>;
+    fn discard_plan(&self);
+    fn prefix_candidate(
+        &self,
+        context: &AuthoredEditStageContext<'_, '_, '_, S>,
+        unseen: &super::UnseenAuthoredEnvelope<'_>,
+    ) -> Result<Box<dyn Any + Send>, WorthQueryOutputDemandDenial>;
+    fn product(
+        &self,
+        context: &AuthoredEditStageContext<'_, '_, '_, S>,
+    ) -> Result<crate::basis::WorthQueryProductBranchLease, super::envelope::Denial>;
+    fn govern_envelope(
+        &self,
+        context: &AuthoredEditStageContext<'_, '_, '_, S>,
+        coordination: &crate::domain_computation::primary_graph::provider::WorthQueryApplicationBranchCommitCoordination<'_>,
+        intent: worth_query_declaration::facade::application_operation::ApplicationEditIntentIdentity,
+        next: &mut dyn FnMut(
+            WorthQueryApplicationIdempotencyBinding,
+        )
+            -> Result<super::envelope::Resolution, super::envelope::Denial>,
+    ) -> Result<super::envelope::Resolution, super::envelope::Denial>;
     fn prepare<'run>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -118,6 +144,9 @@ type Admit<S, B> = dyn Fn(
     + Send
     + Sync;
 pub(super) struct TypedStage<S: ApplicationSchema, B: ApplicationMutationBinding<S>> {
+    pub(super) original_admission: std::sync::Mutex<AuthoredEditStageOperation<S, B>>,
+    pub(super) planning: std::sync::Mutex<super::planning::StagePlanning<S, B>>,
+    pub(super) before: worth_runtime_world::facade::ProductBranchObservation,
     pub(super) key: Arc<ApplicationEditEnvelopeKey<B::IdempotencyKey>>,
     pub(super) input: ApplicationEncodedInput<B::InputBinding>,
     pub(super) ordinal: usize,
@@ -185,7 +214,7 @@ impl<S: ApplicationSchema> CapturedAuthoredEditStage<S> {
             .expect("canonical stage");
         Ok(Self {
             source,
-            before,
+            before: before.clone(),
             contracts,
             queries,
             schema,
@@ -196,6 +225,9 @@ impl<S: ApplicationSchema> CapturedAuthoredEditStage<S> {
             identity,
             binding: B::IDENTITY,
             executor: Arc::new(TypedStage::<S, B> {
+                original_admission: std::sync::Mutex::new(admitted.operation),
+                planning: std::sync::Mutex::new(super::planning::StagePlanning::default()),
+                before,
                 key,
                 input,
                 ordinal,

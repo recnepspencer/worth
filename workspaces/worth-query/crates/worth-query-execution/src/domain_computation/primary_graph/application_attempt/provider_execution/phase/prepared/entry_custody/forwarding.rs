@@ -43,6 +43,29 @@ impl<Schema: ApplicationSchema, Operation, Input, Scope>
     where
         Input: Clone + Send + Sync + 'static,
     {
+        self.compare_and_commit_application_with_causality_under_coordination(
+            execution,
+            idempotency,
+            retain_output_observation,
+            causality,
+            history,
+            allocation_policy,
+            None,
+        )
+    }
+    pub(in crate::domain_computation::primary_graph) fn compare_and_commit_application_with_causality_under_coordination(
+        self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        idempotency: WorthQueryApplicationIdempotencyBinding,
+        retain_output_observation: bool,
+        causality: ApplicationCommitCausality,
+        history: Option<HistoryProducerInvocation<'_>>,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+        coordination: Option<&crate::domain_computation::primary_graph::provider::WorthQueryApplicationBranchCommitCoordination<'_>>,
+    ) -> WorthQueryApplicationCommitOutcome
+    where
+        Input: Clone + Send + Sync + 'static,
+    {
         if let Some(denial) = plain_publication_posture(&self.program.read_set.admission) {
             return WorthQueryApplicationCommitOutcome::Denied(denial);
         }
@@ -67,13 +90,14 @@ impl<Schema: ApplicationSchema, Operation, Input, Scope>
             Ok(pending) => pending,
             Err(denial) => return WorthQueryApplicationCommitOutcome::Denied(denial),
         };
-        entry.compare_and_commit_application_inner_with_currentness_and_aftermath(
+        entry.compare_and_commit_application_inner_under_coordination(
             execution,
             idempotency,
             None,
             pending,
             history,
             allocation_policy,
+            coordination,
         )
     }
     pub(in crate::domain_computation::primary_graph) fn compare_and_commit_application_inner(

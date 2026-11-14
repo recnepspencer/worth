@@ -23,6 +23,30 @@ impl<Schema: ApplicationSchema, Operation, Input, Scope>
     where
         Input: Clone + Send + Sync + 'static,
     {
+        self.compare_and_commit_application_inner_under_coordination(
+            execution,
+            idempotency,
+            elevation_currentness,
+            aftermath_causality,
+            history,
+            allocation_policy,
+            None,
+        )
+    }
+    pub(super) fn compare_and_commit_application_inner_under_coordination(
+        self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+
+        idempotency: WorthQueryApplicationIdempotencyBinding,
+        elevation_currentness: Option<WorthQueryElevationCommitCurrentness>,
+        aftermath_causality: Option<WorthQueryPendingAftermathCausality>,
+        history: Option<HistoryProducerInvocation<'_>>,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+        coordination: Option<&crate::domain_computation::primary_graph::provider::WorthQueryApplicationBranchCommitCoordination<'_>>,
+    ) -> WorthQueryApplicationCommitOutcome
+    where
+        Input: Clone + Send + Sync + 'static,
+    {
         let application = self.application;
         let phase = self.phase;
         let running = match self.prepare_managed_application_commit(
@@ -30,6 +54,7 @@ impl<Schema: ApplicationSchema, Operation, Input, Scope>
             idempotency,
             elevation_currentness,
             aftermath_causality,
+            coordination,
         ) {
             Ok(running) => running,
             Err(outcome) => return outcome,
@@ -45,6 +70,7 @@ impl<Schema: ApplicationSchema, Operation, Input, Scope>
                 running.consume(),
                 history,
                 allocation_policy,
+                coordination,
             ),
         )
     }

@@ -4,6 +4,7 @@ mod admitted_intent;
 mod capability_workflow;
 mod correction;
 mod encoding;
+pub(in crate::domain_computation::primary_graph) mod envelope_candidates;
 pub(in crate::domain_computation::primary_graph) mod home_readmission;
 mod host_commit;
 mod mutation_binding;

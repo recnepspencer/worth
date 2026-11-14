@@ -5,6 +5,7 @@ use worth_query_host::facade::{
 };
 use worth_relational::facade::inspection::observe_maintenance_work;
 type Host = WorthQueryProgramApplicationRuntime<Schema, Program>;
+mod instance_replay;
 fn host(
     second_derivation: Option<fn(u64) -> u64>,
     child_derivation: Option<fn(u64) -> u64>,
@@ -280,4 +281,87 @@ fn later_producer_and_seal_refusals_publish_no_prefix() {
         "",
     );
     refuses(None, None, 1, 5, Some(seal::Denial::FrontierChanged), "");
+}
+
+#[test]
+fn same_binding_disjoint_sources_with_a_real_dependent() {
+    let host: Host = world::install_configured(
+        host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
+        1,
+        Some(2),
+        world::Configuration { envelope_records: true, interleaved_records: true, ..Default::default() },
+    );
+    let scope = request_scope();
+    let principal = authenticate_operator(host.installed_schema(), &scope);
+    let request = host.request(&principal, &scope);
+    let envelope = request
+        .edit_envelope()
+        .stage::<ProducedTree, _>(dependent::Intent { add: 7 })
+        .stage::<ModelTree, _>(fixture::model::Intent {
+            key: "a".into(),
+            value: 3,
+            key_derived_target: false,
+        })
+        .stage::<ModelTree, _>(fixture::model::Intent {
+            key: "b".into(),
+            value: 4,
+            key_derived_target: false,
+        })
+        .idempotency("independent-sources-with-dependent".to_owned());
+    let dependent = envelope.stage_token::<dependent::Binding>(0).unwrap();
+    let a = envelope.stage_token::<fixture::model::Binding>(1).unwrap();
+    let b = envelope.stage_token::<fixture::model::Binding>(2).unwrap();
+    let before = super::super::courts::native_head(&host);
+    let contacts = host.producer_contacts_on_this_thread_for_test();
+    let (outcome, writes) = observe_maintenance_work(16, || {
+        envelope.execute_performed::<Program>(&host, ExecutionAllocationPolicy::SystemAllocation)
+    });
+    let after = super::super::courts::native_head(&host);
+    let publications = writes.published_rows.len() + writes.omitted_publications;
+    eprintln!("instance-order entry: {outcome:#?}\npublications={publications}; head_before={before:?}; head_after={after:?}; producer_contacts={}",
+        host.producer_contacts_on_this_thread_for_test() - contacts);
+    let outcome = outcome.expect("the public entry executes the admitted request");
+    let Outcome::Committed(receipt) = outcome else {
+        assert_eq!(publications, 0);
+        assert_eq!(after, before);
+        panic!("independent sources plus their real dependent must commit: {outcome:#?}");
+    };
+    assert_eq!(publications, 1);
+    assert_eq!(after.1, [before.0]);
+    assert_eq!(receipt.stage_count(), 3);
+    for (ordinal, result) in [
+        (0, receipt.result(&dependent).unwrap()),
+        (1, receipt.result(&a).unwrap()),
+        (2, receipt.result(&b).unwrap()),
+    ] {
+        assert_eq!(
+            (result.ordinal, result.key.as_str()),
+            (ordinal, "independent-sources-with-dependent")
+        );
+    }
+    assert_eq!(receipt.result(&dependent).unwrap().value, 37);
+    assert_eq!(
+        receipt
+            .stage_receipt(&dependent)
+            .unwrap()
+            .commit_reference(),
+        receipt.receipt().commit_reference()
+    );
+    for (key, value) in [("a", 3), ("b", 4)] {
+        let model = request
+            .query(query::model::Read(key.into()))
+            .execute()
+            .unwrap();
+        assert_eq!(model.rows()[0].value, value);
+        let output = request
+            .query(query::first_output::Read(format!("first:{key}")))
+            .execute()
+            .unwrap();
+        assert_eq!(output.rows()[0].value, value * 10);
+    }
+    let contacts = host.producer_contacts_on_this_thread_for_test();
+    let head = super::super::courts::native_head(&host);
+    instance_replay::verify(&host, receipt.receipt());
+    assert_eq!(host.producer_contacts_on_this_thread_for_test(), contacts);
+    assert_eq!(super::super::courts::native_head(&host), head);
 }
