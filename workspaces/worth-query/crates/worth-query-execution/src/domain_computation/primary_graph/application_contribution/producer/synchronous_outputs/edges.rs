@@ -42,6 +42,9 @@ where
             <source::Source<S, Child<S, C>> as ApplicationQueryBinding<S>>::PrincipalIdentity,
         >,
 {
+    fn has_static_continuation() -> bool {
+        true
+    }
     fn occurrence_families(visit: &mut impl FnMut(std::any::TypeId)) {
         E::occurrence_families(visit);
     }
@@ -98,8 +101,23 @@ where
     L: SynchronousOutputEdges<S, D>,
     R: SynchronousOutputEdges<S, D>,
 {
-    fn occurrence_component() -> bool {
-        L::occurrence_component() || R::occurrence_component()
+    fn occurrence_context(
+        family: std::any::TypeId,
+    ) -> Result<Option<std::any::TypeId>, SynchronousOutputFailure> {
+        match (
+            L::occurrence_context(family)?,
+            R::occurrence_context(family)?,
+        ) {
+            (Some(left), Some(right)) if left != right => Err(occurrences::refusal(
+                "required occurrence",
+                "overlapping incomplete components",
+            )),
+            (Some(component), _) | (_, Some(component)) => Ok(Some(component)),
+            _ => Ok(None),
+        }
+    }
+    fn has_static_continuation() -> bool {
+        L::has_static_continuation() || R::has_static_continuation()
     }
     fn occurrence_families(visit: &mut impl FnMut(std::any::TypeId)) {
         L::occurrence_families(visit);
@@ -130,5 +148,14 @@ where
     ) -> Result<(), SynchronousOutputFailure> {
         L::assemble(context, parent, demand, next)?;
         R::assemble(context, parent, demand, next)
+    }
+    fn assemble_static(
+        context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        parent: &AppliedOutputParent,
+        demand: &D,
+        next: &mut SynchronousOutputWave<S>,
+    ) -> Result<(), SynchronousOutputFailure> {
+        L::assemble_static(context, parent, demand, next)?;
+        R::assemble_static(context, parent, demand, next)
     }
 }

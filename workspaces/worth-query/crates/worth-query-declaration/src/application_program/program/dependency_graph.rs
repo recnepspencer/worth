@@ -29,6 +29,21 @@ pub(super) fn order_connections(
             }
         }
     }
+    // One connected occurrence component must carry one complete typed context.
+    let mut contexts = BTreeMap::new();
+    for connection in connections {
+        if let Some(context) = connection.occurrence_component() {
+            let group = groups[&(connection.source_instance(), connection.source_feature())];
+            if let Some(previous) = contexts.insert(group, context) {
+                if previous != context {
+                    return Err(denial(
+                        ApplicationProgramValidationDenialKind::IncompleteOccurrenceComponent,
+                        "place overlapping connection groups inside one ApplicationOutputOccurrences",
+                    ));
+                }
+            }
+        }
+    }
     let mut incoming = BTreeMap::new();
     let mut ranks = BTreeMap::new();
     let mut outgoing = BTreeMap::<_, Vec<_>>::new();

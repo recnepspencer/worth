@@ -18,6 +18,7 @@ pub enum ApplicationProgramValidationDenialKind {
     UndeclaredInput,
     UnexportedCrossInstanceConnection,
     CyclicConnection,
+    IncompleteOccurrenceComponent,
     DuplicateRule,
     IncompleteActionChangeContract,
     InvalidActionDelivery,

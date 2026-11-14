@@ -25,7 +25,8 @@ pub(super) trait RequiredTree<S: ApplicationSchema>: Send + 'static {
         &self,
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
         candidate: &RelationalAuthoredCoupledCandidate<'_>,
-    ) -> Result<Option<occurrences::OccurrenceKey>, SynchronousOutputFailure>;
+    ) -> Result<Option<(occurrences::OccurrenceKey, std::any::TypeId)>, SynchronousOutputFailure>;
+    fn has_static_continuation(&self) -> bool;
     fn prerequisites(
         &self,
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
@@ -39,6 +40,12 @@ pub(super) trait RequiredTree<S: ApplicationSchema>: Send + 'static {
         candidate: &mut RelationalAuthoredCoupledCandidate<'_>,
     ) -> Result<Option<AppliedOutputParent>, SynchronousOutputFailure>;
     fn discover(
+        &self,
+        context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        parent: &AppliedOutputParent,
+        next: &mut SynchronousOutputWave<S>,
+    ) -> Result<(), SynchronousOutputFailure>;
+    fn discover_static(
         &self,
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
         parent: &AppliedOutputParent,
@@ -95,10 +102,12 @@ where
         &self,
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
         candidate: &RelationalAuthoredCoupledCandidate<'_>,
-    ) -> Result<Option<occurrences::OccurrenceKey>, SynchronousOutputFailure> {
-        if !E::occurrence_component() {
+    ) -> Result<Option<(occurrences::OccurrenceKey, std::any::TypeId)>, SynchronousOutputFailure>
+    {
+        let Some(component) = E::occurrence_context(std::any::TypeId::of::<D::OutputFamily>())?
+        else {
             return Ok(None);
-        }
+        };
         let demand = source::capture::<S, D>(self.connection, self.demand.clone());
         let principal = context.owner.principal.ok_or_else(|| {
             occurrences::refusal(self.connection, "current principal unavailable")
@@ -121,19 +130,23 @@ where
             true,
         )?;
         match route {
-            super::super::execution::CoupledSourceRead::Route { scope, partition } => {
-                Ok(Some(occurrences::OccurrenceKey {
+            super::super::execution::CoupledSourceRead::Route { scope, partition } => Ok(Some((
+                occurrences::OccurrenceKey {
                     family: demand.family,
                     source_binding: demand.source_binding_type,
                     scope,
                     partition,
-                }))
-            }
+                },
+                component,
+            ))),
             _ => Err(occurrences::refusal(
                 self.connection,
                 "route-only source returned a result",
             )),
         }
+    }
+    fn has_static_continuation(&self) -> bool {
+        E::has_static_continuation()
     }
     fn prerequisites(
         &self,
@@ -162,6 +175,14 @@ where
         next: &mut SynchronousOutputWave<S>,
     ) -> Result<(), SynchronousOutputFailure> {
         E::assemble(context, parent, &self.demand, next)
+    }
+    fn discover_static(
+        &self,
+        context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        parent: &AppliedOutputParent,
+        next: &mut SynchronousOutputWave<S>,
+    ) -> Result<(), SynchronousOutputFailure> {
+        E::assemble_static(context, parent, &self.demand, next)
     }
 }
 pub(super) fn schedule<S, D, E>(

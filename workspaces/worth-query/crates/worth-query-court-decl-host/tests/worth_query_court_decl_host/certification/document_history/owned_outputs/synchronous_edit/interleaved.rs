@@ -1,6 +1,7 @@
 //! One existing cabinet world exercises authored work between real producer waves.
 use super::envelope_fixture as fixture;
 use super::*;
+mod component_carriage;
 mod courts;
 pub(in super::super) mod created;
 pub(in super::super) mod dependent;
@@ -14,9 +15,11 @@ use program::{ModelTree, ProducedTree, Program};
 pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
-    prerequisite_partition::declare(occurrence_topology::declare(created::declare(
-        reading::declare(seal::declare(dependent::declare(schema))),
-    )))
+    component_carriage::declare(prerequisite_partition::declare(
+        occurrence_topology::declare(created::declare(reading::declare(seal::declare(
+            dependent::declare(schema),
+        )))),
+    ))
 }
 pub fn install(
     setup: &mut WorthQueryApplicationContributionSetup<'_, Schema>,
@@ -32,6 +35,7 @@ pub fn seed(
     graph: &mut WorthQueryPrimaryGraphBootstrap<Schema>,
 ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
     occurrences::seed(graph)?;
+    component_carriage::seed(graph)?;
     prerequisite_partition::seed(graph)?;
     for key in ["m", "envelope-calibration"] {
         // Distinct authored records preserve the existing disjoint-write rule.
