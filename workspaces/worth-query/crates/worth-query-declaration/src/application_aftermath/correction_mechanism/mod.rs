@@ -4,7 +4,9 @@
 //! 9.16. Deterministic re-derivation is a committed future sibling under this
 //! parent axis and must not appear as an empty placeholder file.
 
+mod changed_field_output;
 mod compensation;
+pub use changed_field_output::PortableChangedFieldOutput;
 mod portable_recorded_inverse;
 mod preimage_demand;
 mod preimage_locus;

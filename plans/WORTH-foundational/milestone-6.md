@@ -986,8 +986,8 @@ finished diagnostics API is taught as an actual crate capability rather than
 remaining discoverable only through milestone specs, closeout docs, and code
 archaeology.
 
-This phase must use the `feature-doc-writer` skill when producing the final
-developer-facing documentation surface.
+This phase must produce the final developer-facing documentation surface
+against the implemented public API.
 
 Practical implementation order:
 
@@ -1022,8 +1022,6 @@ Acceptance evidence:
 - published crate-doc additions for the diagnostics/explanation surface
 - doc examples checked against the real public API
 - terminology parity check against the final readiness artifact and closeout
-- explicit confirmation that `feature-doc-writer` was used for the final
-  feature-doc pass
 
 ## What Must Ship
 

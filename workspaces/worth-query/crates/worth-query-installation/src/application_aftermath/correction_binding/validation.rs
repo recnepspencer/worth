@@ -88,6 +88,7 @@ pub(crate) fn resolve_correction_binding(
     })?;
     source_outputs::validate(members, source, declaration.source_output_fields())
         .map_err(|()| denied())?;
+    changed_fields::validate(source, declaration, contract.mechanism()).map_err(|()| denied())?;
     authored_identity::validate(members, source, inverse, declaration, contract.mechanism())
         .map_err(|()| denied())?;
     Ok(Some(InstalledCorrectionBinding {
@@ -99,4 +100,5 @@ pub(crate) fn resolve_correction_binding(
 }
 
 mod authored_identity;
+mod changed_fields;
 mod source_outputs;

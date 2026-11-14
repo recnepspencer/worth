@@ -170,6 +170,11 @@ fn push_correction_contract(
                     .maximum_encoded_bytes()
                     .to_string(),
             );
+            if let Some(output) = inverse.preimage_demand().changed_output() {
+                builder.text("preimage-selection", "changed-output-fields");
+                builder.text("preimage-output-role", output.role());
+                builder.text("preimage-output-entity", output.entity());
+            }
             for (index, locus) in inverse.preimage_demand().loci().iter().enumerate() {
                 builder.text(format!("preimage-entity-{index}"), locus.entity());
                 builder.text(format!("preimage-aspect-{index}"), locus.aspect());

@@ -86,6 +86,20 @@ where
     Schema: ApplicationSchema,
     Binding: ApplicationMutationBinding<Schema>,
 {
+    /// Opt into unpublished, request-local candidate planning for edit envelopes.
+    ///
+    /// Both decision and candidate construction (including result cleanup) must
+    /// have no external effects or mutable supplier-state dependence. All graph
+    /// choices use the supplied tracked readers; other decision inputs are the
+    /// immutable invocation and installed configuration. No producer may run to
+    /// discover a footprint. This declaration grants no graph authority.
+    fn supports_candidate_planning() -> bool
+    where
+        Self: Sized,
+    {
+        false
+    }
+
     /// Admit retirement of the Home's invocation capability for this handler.
     ///
     /// The Home first establishes unique ownership of its original registry

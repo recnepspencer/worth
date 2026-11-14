@@ -5,11 +5,14 @@ use crate::domain_computation::primary_graph::{
 };
 pub(in crate::domain_computation::primary_graph) enum CoupledAttemptPreparation {
     Producer(CoupledProducerPreparation),
-    AuthoredStage(
-        worth_relational::facade::runtime::RelationalPinnedRead<
+    AuthoredStage {
+        after_own: worth_relational::facade::runtime::RelationalPinnedRead<
             worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
         >,
-    ),
+        identity:
+            worth_query_declaration::facade::application_operation::ApplicationEditStageIdentity,
+        binding: &'static str,
+    },
 }
 pub(in crate::domain_computation::primary_graph) struct CoupledProducerPreparation {
     pub(in crate::domain_computation::primary_graph::provider) completion:
@@ -35,6 +38,8 @@ impl super::super::WorthQueryPrimaryGraphProvider {
     pub(in crate::domain_computation::primary_graph) fn retain_authored_stage_after_own(
         &self,
         session: WorthQueryProviderSessionView<'_>,
+        identity: worth_query_declaration::facade::application_operation::ApplicationEditStageIdentity,
+        binding: &'static str,
         pin: worth_relational::facade::runtime::RelationalPinnedRead<
             worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
         >,
@@ -47,7 +52,7 @@ impl super::super::WorthQueryPrimaryGraphProvider {
             .attempt_state_mut(session)
             .expect("actual registered authored stage")
             .attempt_mut()
-            .retain_authored_stage_after_own(pin);
+            .retain_authored_stage_after_own(identity, binding, pin);
     }
     pub(in crate::domain_computation::primary_graph) fn retain_coupled_after_own(
         &self,
@@ -95,6 +100,7 @@ impl super::super::WorthQueryPrimaryGraphProvider {
 /// The actual prepared Query session paired with its Native participant route.
 /// This contains no executable input and cannot publish an independent proposal.
 pub(in crate::domain_computation::primary_graph) struct CoupledApplicationMember {
+    pub(in crate::domain_computation::primary_graph) position: usize,
     pub(in crate::domain_computation::primary_graph::provider) terminal:
         crate::domain_computation::provider_session::WorthQueryProviderSessionTerminalBinding,
     pub(in crate::domain_computation::primary_graph::provider) pending: Option<
@@ -147,6 +153,7 @@ impl CoupledApplicationMember {
         binding: &'static str,
     ) -> Self {
         Self {
+            position: 0,
             terminal,
             owned: None,
             pending: None,
@@ -164,6 +171,7 @@ impl CoupledApplicationMember {
         meaning: worth_relational::facade::mvcc::RequiredOutputPublicationMeaning,
     ) -> Self {
         Self {
+            position: 0,
             terminal,
             owned: None,
             pending: None,

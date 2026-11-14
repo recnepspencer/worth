@@ -42,14 +42,16 @@ where
             <source::Source<S, Child<S, C>> as ApplicationQueryBinding<S>>::PrincipalIdentity,
         >,
 {
-    fn declared_families(visit: &mut impl FnMut(std::any::TypeId)) {
-        visit(
-            crate::equality_type_id::EqualityTypeId::of::<
-                <Child<S, C> as WorthQueryApplicationOutputDemand<S>>::OutputFamily,
-            >()
-            .into_external(),
-        );
-        E::declared_families(visit);
+    fn declared_families(
+        parent: std::any::TypeId,
+        visit: &mut impl FnMut(std::any::TypeId, std::any::TypeId),
+    ) {
+        let child = crate::equality_type_id::EqualityTypeId::of::<
+            <Child<S, C> as WorthQueryApplicationOutputDemand<S>>::OutputFamily,
+        >()
+        .into_external();
+        visit(parent, child);
+        E::declared_families(child, visit);
     }
     fn assemble(
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
@@ -93,9 +95,12 @@ where
     L: SynchronousOutputEdges<S, D>,
     R: SynchronousOutputEdges<S, D>,
 {
-    fn declared_families(visit: &mut impl FnMut(std::any::TypeId)) {
-        L::declared_families(visit);
-        R::declared_families(visit);
+    fn declared_families(
+        parent: std::any::TypeId,
+        visit: &mut impl FnMut(std::any::TypeId, std::any::TypeId),
+    ) {
+        L::declared_families(parent, visit);
+        R::declared_families(parent, visit);
     }
     fn assemble(
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,

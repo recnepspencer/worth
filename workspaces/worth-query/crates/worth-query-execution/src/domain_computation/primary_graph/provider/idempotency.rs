@@ -4,6 +4,7 @@ use crate::domain_computation::primary_graph::application_attempt::WorthQueryApp
 mod publication_appendix;
 pub(super) use publication_appendix::bind_receipt;
 pub(in crate::domain_computation::primary_graph) use publication_appendix::ReceiptAppendix;
+mod envelope_resolution;
 mod lookup_key;
 pub(crate) mod product_affinity;
 pub(in crate::domain_computation::primary_graph) use lookup_key::WorthQueryIdempotencyLookupKey;
@@ -171,101 +172,8 @@ impl WorthQueryPrimaryGraphProvider {
         WorthQueryProviderIdempotencyResolution,
         WorthQueryProviderIdempotencyResolutionDenial,
     > {
-        self.application_attempt_work.observe_retained_resolution();
-        if let Some(resolution) = self.resolve_recovered_application_idempotency(
-            &WorthQueryProductIdempotencyAffinity::from_observation(product.observation()),
-            binding,
-        )? {
-            return Ok(resolution);
-        }
-
-        let layout = self.graph.layout.provider_idempotency().clone();
-        let product_affinity =
-            WorthQueryProductIdempotencyAffinity::from_observation(product.observation());
-        match self.resolve_unpublished_application_idempotency(&product_affinity, binding) {
-            Some(WorthQueryProviderIdempotencyResolution::PreparationBusy) => {
-                return Err(WorthQueryProviderIdempotencyResolutionDenial::PreparationBusy)
-            }
-            Some(
-                resolution @ (WorthQueryProviderIdempotencyResolution::PreparationPending {
-                    ..
-                }
-                | WorthQueryProviderIdempotencyResolution::Drift
-                | WorthQueryProviderIdempotencyResolution::ReleasedOriginal(_)),
-            ) => return Ok(resolution),
-            None
-            | Some(
-                WorthQueryProviderIdempotencyResolution::Absent
-                | WorthQueryProviderIdempotencyResolution::Readmitted(_)
-                | WorthQueryProviderIdempotencyResolution::RecoveredUnpublished { .. }
-                | WorthQueryProviderIdempotencyResolution::Unpublished,
-            ) => {}
-        }
-        let mut retired = crate::domain_computation::primary_graph::application_query::derived_view::PredicatePreparationRetirement::default();
-        self.graph.with_runtime(execution, |runtime| {
-            if binding.correction_identity().is_some()
-                && self.inspect_pending_correction_idempotency(binding.key_identity())
-                    .is_some_and(|recorded| recorded != binding)
-            {
-                return Ok(WorthQueryProviderIdempotencyResolution::Drift);
-            }
-            if let Some(Some(recorded)) = self.inspect_pending_application_idempotency(
-                product.observation().lifecycle_incarnation())
-                && recorded != binding
-            {
-                if recorded.key_identity() == binding.key_identity() {
-                    return Ok(WorthQueryProviderIdempotencyResolution::Drift);
-                }
-                if recorded.correction_identity().is_some() {
-                    return Ok(WorthQueryProviderIdempotencyResolution::Unpublished);
-                }
-            }
-            self.resume_pending_application_publication(execution,
-                runtime,
-                product.observation().lifecycle_incarnation(),
-                &mut retired,
-            )
-                .map_err(pending_publication_denial)?;
-            // Concurrent requests can have admitted the same earlier head.
-            // Under the branch lane, locate the key in the SAME live occurrence's
-            // current owner selection, then read its immutable original source.
-            let selected = product.observation_port().observe_product_branch_occurrence(
-                product.observation().lifecycle_incarnation(),
-            ).map_err(|_| WorthQueryProviderIdempotencyResolutionDenial::ForeignAffinity)?;
-            let observation = &selected;
-            let basis = observation.basis().relational_basis();
-            if let Some(resolution) = self.resolve_unpublished_application_idempotency(
-                &product_affinity,
-                binding,
-            ) {
-                return Ok(resolution);
-            }
-            self.graph
-                .carry_primary_index_basis_for_basis(execution, runtime, basis)
-                .map_err(idempotency_index_currency_denial)?;
-            // A carried known-empty selection is not yet a concrete lookup
-            // generation. Admit only this key index through Native's ordinary
-            // field preparation; it never reconstructs a missing population.
-            runtime.index_authority().ensure_field_index_for_basis(
-                layout.key_index_id,
-                basis,
-                crate::domain_computation::primary_graph::index_maintenance_budget::ordinary_index_maintenance_budget(),
-                execution,
-            ).map_err(|denial| match denial.kind {
-                worth_relational::facade::indexes::DerivedIndexMaintenanceDenialKind::Execution(cause) => snapshot_resolution::idempotency_read_stop(cause),
-                _ => WorthQueryProviderIdempotencyResolutionDenial::Unavailable,
-            })?;
-            let snapshot = crate::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot(runtime, basis)
-                .map_err(|denial| idempotency_snapshot_denial(denial.into()))?;
-            let resolution = resolve_at_snapshot(execution, self, runtime, &snapshot, &layout, product, binding);
-            crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
-            let resolution = resolution?;
-            if let WorthQueryProviderIdempotencyResolution::Readmitted(receipt) = &resolution {
-                runtime.repair_pending_publication_settlement(receipt.commit_reference().commit_id)
-                    .map_err(|_| WorthQueryProviderIdempotencyResolutionDenial::Unavailable)?;
-            }
-            Ok(resolution)
-        })
+        let candidates = crate::domain_computation::primary_graph::application_attempt::idempotency::envelope_candidates::EnvelopeCandidates::new(std::slice::from_ref(&binding))?;
+        self.resolve_envelope_idempotency_at_product(execution, &candidates, product)
     }
 
     pub(in crate::domain_computation::primary_graph) fn resolve_application_idempotency(

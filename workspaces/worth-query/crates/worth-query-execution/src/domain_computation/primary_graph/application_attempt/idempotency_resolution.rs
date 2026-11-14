@@ -5,6 +5,7 @@ use worth_query_installation::facade::ApplicationSchema;
 mod denial;
 #[path = "idempotency_resolution/external_settlement.rs"]
 mod external_settlement;
+mod outcome;
 
 pub use denial::{
     WorthQueryApplicationIdempotencyResolutionDenial,
@@ -319,43 +320,13 @@ where
         bindings
             .into_iter()
             .zip(resolutions)
-            .map(|((read_for, _binding), resolution)| match resolution {
-                Ok(WorthQueryProviderIdempotencyResolution::Readmitted(receipt)) => Ok(WorthQueryAdmittedIdempotencyRead::mint(read_for, WorthQueryApplicationIdempotencyResolution::RecoveredCommitted(receipt))),
-                Ok(WorthQueryProviderIdempotencyResolution::ReleasedOriginal(original)) => Ok(WorthQueryAdmittedIdempotencyRead::mint(read_for, WorthQueryApplicationIdempotencyResolution::ReleasedOriginal(original))),
-                Ok(WorthQueryProviderIdempotencyResolution::Absent) => {
-                    Ok(WorthQueryAdmittedIdempotencyRead::mint(
-                        read_for,
-                        WorthQueryApplicationIdempotencyResolution::Unseen,
-                    ))
-                }
-                Ok(WorthQueryProviderIdempotencyResolution::Drift) => {
-                    Ok(WorthQueryAdmittedIdempotencyRead::mint(
-                        read_for,
-                        WorthQueryApplicationIdempotencyResolution::IntentDrift,
-                    ))
-                }
-                Ok(WorthQueryProviderIdempotencyResolution::RecoveredUnpublished { handle }) => {
-                    let value = self.runtime.primary_provider.recovered_unpublished_application(&product, handle)
-                        .map_err(|_| WorthQueryApplicationIdempotencyResolutionDenial::provider_unavailable())?;
-                    Ok(WorthQueryAdmittedIdempotencyRead::mint(read_for, WorthQueryApplicationIdempotencyResolution::ProductUnpublished(value)))
-                }
-                Ok(WorthQueryProviderIdempotencyResolution::PreparationPending {
-                    handle,
-                    stage,
-                }) => Ok(WorthQueryAdmittedIdempotencyRead::mint(
-                    read_for,
-                    WorthQueryApplicationIdempotencyResolution::ProductPreparationPending(
-                        self.pending_preparation_resolution(handle, stage),
-                    ),
-                )),
-                Ok(WorthQueryProviderIdempotencyResolution::PreparationBusy) => Err(WorthQueryApplicationIdempotencyResolutionDenial::from_provider(
-                    crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial::PreparationBusy)),
-                Ok(WorthQueryProviderIdempotencyResolution::Unpublished) => {
-                    Err(WorthQueryApplicationIdempotencyResolutionDenial::provider_unavailable())
-                }
-                Err(denial) => {
-                    Err(WorthQueryApplicationIdempotencyResolutionDenial::from_provider(denial))
-                }
+            .map(|((read_for, _binding), resolution)| {
+                self.envelope_resolution(
+                    resolution
+                        .map_err(WorthQueryApplicationIdempotencyResolutionDenial::from_provider)?,
+                    &product,
+                )
+                .map(|resolution| WorthQueryAdmittedIdempotencyRead::mint(read_for, resolution))
             })
             .collect()
     }

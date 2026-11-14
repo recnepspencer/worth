@@ -17,6 +17,7 @@ fn exercise(worker: bool) {
             reconciliation_emission: false,
             envelope_records: false,
             second_derivation: Some(|_| u64::MAX),
+            ..Default::default()
         },
     );
     let scope = request_scope();

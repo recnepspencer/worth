@@ -22,6 +22,7 @@ where
         owner: &WorthQuerySelectedProgramOwner<'_, S>,
         program: selected::SourceProgram<S, B>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
+        unseen: &crate::domain_computation::primary_graph::application_contribution::authored_edit::UnseenAuthoredEnvelope<'_>,
         allocation: ExecutionAllocationPolicy<'_, '_>,
     ) -> WorthQueryApplicationCommitOutcome
     where
@@ -46,12 +47,13 @@ where
             Err(cause) => return WorthQueryApplicationCommitOutcome::Denied(cause),
         };
         self.runtime()
-            .compare_and_commit_application_for_required_output_source(
+            .compare_and_commit_application_in_edit_envelope(
             &execution,
             phase,
             &presented,
             program,
             idempotency,
+            unseen,
             crate::domain_computation::application_aftermath::ApplicationCommitCausality::Ordinary,
             allocation,
         )

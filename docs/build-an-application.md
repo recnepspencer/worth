@@ -4531,6 +4531,33 @@ rules using the actual producer antecedent, including after repeated Native-only
 restore/retire cycles. Restoration grants no producer readiness or replayable
 producer-input contract.
 
+### Independent authored prefixes
+
+`OperationHandler::supports_candidate_planning()` defaults to false. Opt in
+only when decision, candidate construction and result cleanup have no external
+effects or mutable supplier-state dependence. Graph-dependent choices must use
+the supplied tracked readers; invocation input, key, original ordinal,
+principal/scope and installed immutable configuration are the other inputs.
+This promise grants no READ or WRITE authority and does not enable ordinary
+ordinal-sensitive decision reuse.
+
+For an independent authored prefix, Query may retain the finished program and
+result, compare its complete sealed reads against every peer's possible writes,
+and remove only proven false authored-to-authored edges. It validates support
+again against the actual pre-stage candidate before consuming the program once.
+Complete equality predicates retain absence/nonmatch meaning; selected IDs are
+not a complete range footprint. Producer barriers and unknown supports remain
+conservative. Creation/deletion, relation/external effects and nested work do
+not qualify. Same-record authored conflicts and true cycles still refuse.
+
+Canonical whole-envelope replay/drift is authenticated before any supplier
+planning. Every prefix candidate keeps its own nominal admission and full
+recorded input/operation/scope/precondition meaning. An Unseen envelope stays
+under the existing branch commit coordination through ordinary publication;
+recorded retries return authentic original receipts without live stage values.
+There is still one Native commit, no handler/producer execution to discover a
+footprint, and no extra caller plan or inspection API.
+
 ### Ordinary coupled source edits
 
 An ordinary authored edit can declare a finite set of source-owned roots
@@ -4637,10 +4664,27 @@ observe the existing publications without reopening healthy producers or making
 another commit, including current demands after a checkpoint reopen.
 
 [P5/S6 synchronous edit publication](../plans/WORTH-query/synchronous-edit-publication.md)
-is still in progress: general demand continuations and the explicit document-seal
-envelope remain in that plan. Demand-only output graphs retain their separate
-lazy delivery meaning. Synchronous consequences belong to the required-source
-entry or the planned envelope. Declared predecessor observations also
+provides the explicit edit envelope through `request.edit_envelope()`: collect
+typed `.stage::<Root, _>(intent)` values, one `.idempotency(key)`, and call
+`execute_performed::<Program>`. The declared graph orders a genuine authored
+prefix, required producer waves and authored dependents reading the actual
+unpublished candidate. An ordinary last authored stage can compare and advance
+application generation/frontier fields. There is one commit and one receipt;
+request-branded tokens expose live typed stage results. Same-key replay returns
+the original committed receipt without live results; read committed seal fields
+through Query for adoption. Producer-before-any-authored entry remains a typed
+refusal. General demand continuations remain separate in that plan; demand-only
+graphs retain their lazy delivery meaning.
+
+The [executable interleaved consumer example](../workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/owned_outputs/synchronous_edit/interleaved/courts.rs)
+uses the supported declaration/Host facade in the existing installed cabinet
+fixture. Its `edit!` sequence and ordinary journey demonstrate dependency order
+different from declaration ordinals, B consuming newly allocated output,
+generation/frontier sealing and receipt-only replay at two dependent counts.
+Current-C authorization and actual proposed D data remain distinct throughout;
+the application does not repeat platform currentness or publication validation.
+
+Declared predecessor observations also
 work inside coupled handlers, with independently admitted current-C read
 permission and the edit's genuinely held commit lane. Native never labels the
 transaction-before basis as a coupled producer's consumed applied input image.

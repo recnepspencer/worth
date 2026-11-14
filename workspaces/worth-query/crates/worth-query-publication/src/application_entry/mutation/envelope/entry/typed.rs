@@ -95,9 +95,8 @@ where
                 })().map_err(|cause| stage_admission_refusal::<S, I::Binding>(&worth_query_execution::publication_boundary::program_publication_access(), ordinal, format!("stage admission: {cause:?}")))?;
                 Ok(AuthoredEditStageAdmission::new(prepared.admission, prepared.principal_identity))
             },
-            move |execution, program| program.with_synchronous_required_outputs::<Connection<S, R>, R::Dependents>(&worth_query_execution::publication_boundary::program_publication_access(), execution, demand.clone(), R::RootConnection::declaration(), &order),
             value,
-        ).and_then(|stage| stage.with_required_output_dependencies::<I::Binding, Demand<S, R>, R::Dependents>(context.application)).map_err(|cause| Failure::Mutation(WorthQueryApplicationRequestMutationDenial::Handler(MutationHandlerExecutionDenial::Handler(HandlerExecutionDenial::new(cause)))))
+        ).and_then(|stage| stage.with_required_output_dependencies::<I::Binding, Demand<S, R>, R::Dependents>(context.application, demand, R::RootConnection::declaration(), order)).map_err(|cause| Failure::Mutation(WorthQueryApplicationRequestMutationDenial::Handler(MutationHandlerExecutionDenial::Handler(HandlerExecutionDenial::new(cause)))))
     }
     fn execute_prefix(
         &self,
@@ -106,6 +105,7 @@ where
         phase: &WorthQueryAdvancementPhase<'_>,
         key: &Arc<ApplicationEditEnvelopeKey<K>>,
         ordinal: usize,
+        unseen: &UnseenAuthoredEnvelope<'_>,
         envelope_intent: ApplicationEditIntentIdentity,
         stages: Vec<CapturedAuthoredEditStage<S>>,
         values: Vec<StageValue>,
@@ -115,12 +115,16 @@ where
         let (selected, owner) = request.select_performed_owner::<P, R>(phase, program)?;
         let identities = key.stage_with_encoded_input::<S, I::Binding>(&self.input, ordinal).map_err(|cause| Failure::Mutation(WorthQueryApplicationRequestMutationDenial::Identity(cause)))?;
         let stage_identity = *identities.edit_stage_identity().expect("canonical prefix");
-        let mut work = WorthQueryMutationHandlerWork::NotStarted;
-        let prepared = request.prepare_owned_candidate(phase, identities, |request, identities, staged| {
-            let mut prepared = <I::Binding as ApplicationMutationAdmissionBinding<S>>::Admission::prepare_selected(phase, request, identities, staged, &selected)?;
-            prepared.extension.envelope = Some(envelope_intent);
-            Ok(prepared)
-        }, &mut work, phase.checked_execution_request_for(context.application.product_runtime()).map_err(|cause| Failure::Mutation(WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause)))?.allocation_policy()).map_err(Failure::Mutation)?;
+        request.require_workflow_transition().map_err(Failure::Mutation)?;
+        let staged = request.stage().map_err(Failure::Mutation)?;
+        let mut admission = <I::Binding as ApplicationMutationAdmissionBinding<S>>::Admission::prepare_selected(phase, &request, &identities, staged, &selected).map_err(Failure::Mutation)?;
+        admission.extension.envelope = Some(envelope_intent);
+        let capture = stages.first().expect("admitted nonempty prefix");
+        let (completed, work) = capture.prepare_prefix_candidate::<I::Binding>(
+            &worth_query_execution::publication_boundary::program_publication_access(), phase, context.application, unseen,
+        ).map_err(|cause| Failure::Mutation(WorthQueryApplicationRequestMutationDenial::Handler(MutationHandlerExecutionDenial::Handler(HandlerExecutionDenial::new(cause)))))?;
+        let execution = phase.checked_execution_request_for(context.application.product_runtime()).map_err(|cause| Failure::Mutation(WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause)))?;
+        let prepared = request.prepare_resolved_envelope_candidate(phase, identities, admission.extension, completed, work, execution.allocation_policy()).map_err(Failure::Mutation)?;
         let candidate = match prepared {
             CandidatePreparation::Prepared(candidate) => candidate,
             CandidatePreparation::Settled(outcome) => return Ok(settled(ordinal, stage_identity, I::Binding::IDENTITY, brand, outcome)),
@@ -130,7 +134,7 @@ where
         let captured = candidate.program.with_authored_edit_stages(&worth_query_execution::publication_boundary::program_publication_access(), stages)
             .with_synchronous_required_outputs::<Connection<S, R>, R::Dependents>(&worth_query_execution::publication_boundary::program_publication_access(), &execution, demand.clone(), R::RootConnection::declaration(), owner.connection_order());
         let binding = candidate.extension.apply(WorthQueryApplicationIdempotencyBinding::for_mutation_identities(&candidate.identities));
-        let commit = program.compare_and_commit_selected_edit_envelope::<R, I::Binding>(phase, &worth_query_execution::publication_boundary::program_publication_access(), &owner, captured, binding, execution.allocation_policy());
+        let commit = program.compare_and_commit_selected_edit_envelope::<R, I::Binding>(phase, &worth_query_execution::publication_boundary::program_publication_access(), &owner, captured, binding, unseen, execution.allocation_policy());
         match commit.landed() {
             Ok(worth_query_execution::facade::primary_graph::WorthQueryApplicationLandedCommit::Recovered(receipt)) => Ok(WorthQueryEditEnvelopeOutcome::RecoveredCommitted(receipt)),
             Ok(worth_query_execution::facade::primary_graph::WorthQueryApplicationLandedCommit::Live { receipt }) => {

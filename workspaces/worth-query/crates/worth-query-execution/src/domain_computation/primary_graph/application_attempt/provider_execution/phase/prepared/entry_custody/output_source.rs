@@ -23,6 +23,7 @@ impl<Schema: ApplicationSchema, Operation, Input, Scope>
         idempotency: WorthQueryApplicationIdempotencyBinding,
         causality: ApplicationCommitCausality,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+        coordination: Option<&crate::domain_computation::primary_graph::provider::WorthQueryApplicationBranchCommitCoordination<'_>>,
     ) -> WorthQueryApplicationCommitOutcome
     where
         Input: Clone + Send + Sync + 'static,
@@ -52,13 +53,14 @@ impl<Schema: ApplicationSchema, Operation, Input, Scope>
             program,
             phase,
         }
-        .compare_and_commit_application_with_causality(
+        .compare_and_commit_application_with_causality_under_coordination(
             execution,
             idempotency,
             true,
             causality,
             None,
             allocation_policy,
+            coordination,
         )
     }
     pub(in crate::domain_computation::primary_graph) fn compare_and_commit_application_for_program_output_producer(

@@ -2,6 +2,25 @@
 use super::*;
 use crate::domain_computation::primary_graph::provider::CoupledAttemptPreparation;
 impl WorthQueryPrimaryGraphApplicationAttempt {
+    pub(in crate::domain_computation::primary_graph) fn replace_authored_prefix_after_own(
+        &mut self,
+        identity: worth_query_declaration::facade::application_operation::ApplicationEditStageIdentity,
+        binding: &'static str,
+        pin: worth_relational::facade::runtime::RelationalPinnedRead<
+            worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
+        >,
+    ) {
+        assert!(self.idempotency().is_for_mutation_binding(binding));
+        assert!(!matches!(
+            self.coupled_preparation,
+            Some(CoupledAttemptPreparation::Producer(_))
+        ));
+        self.coupled_preparation = Some(CoupledAttemptPreparation::AuthoredStage {
+            after_own: pin,
+            identity,
+            binding,
+        });
+    }
     pub(in crate::domain_computation::primary_graph) fn coupled_after_own(
         &self,
     ) -> Option<
@@ -11,18 +30,24 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
     > {
         match self.coupled_preparation.as_ref()? {
             CoupledAttemptPreparation::Producer(preparation) => preparation.after_own.as_ref(),
-            CoupledAttemptPreparation::AuthoredStage(pin) => Some(pin),
+            CoupledAttemptPreparation::AuthoredStage { after_own, .. } => Some(after_own),
         }
     }
     pub(in crate::domain_computation::primary_graph) fn retain_authored_stage_after_own(
         &mut self,
+        identity: worth_query_declaration::facade::application_operation::ApplicationEditStageIdentity,
+        binding: &'static str,
         pin: worth_relational::facade::runtime::RelationalPinnedRead<
             worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
         >,
     ) {
         assert!(
             self.coupled_preparation
-                .replace(CoupledAttemptPreparation::AuthoredStage(pin))
+                .replace(CoupledAttemptPreparation::AuthoredStage {
+                    after_own: pin,
+                    identity,
+                    binding
+                })
                 .is_none(),
             "a stage retains its own completed candidate exactly once"
         );
@@ -39,7 +64,7 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
             .expect("actual writer preparation");
         match preparation {
             CoupledAttemptPreparation::Producer(preparation) => preparation.retain_after_own(pin),
-            CoupledAttemptPreparation::AuthoredStage(_) => {
+            CoupledAttemptPreparation::AuthoredStage { .. } => {
                 unreachable!("producer dispatch owns its producer preparation")
             }
         }
@@ -61,7 +86,7 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
     {
         match self.coupled_preparation.as_ref()? {
             CoupledAttemptPreparation::Producer(preparation) => Some(preparation),
-            CoupledAttemptPreparation::AuthoredStage(_) => None,
+            CoupledAttemptPreparation::AuthoredStage { .. } => None,
         }
     }
     pub(in crate::domain_computation::primary_graph) fn take_coupled_preparation(
@@ -70,7 +95,21 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
     {
         match self.coupled_preparation.take()? {
             CoupledAttemptPreparation::Producer(preparation) => Some(preparation),
-            CoupledAttemptPreparation::AuthoredStage(_) => None,
+            CoupledAttemptPreparation::AuthoredStage { .. } => None,
+        }
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn coupled_authored_subject(
+        &self,
+    ) -> Option<(
+        worth_query_declaration::facade::application_operation::ApplicationEditStageIdentity,
+        &'static str,
+    )> {
+        match &self.coupled_preparation {
+            Some(CoupledAttemptPreparation::AuthoredStage {
+                identity, binding, ..
+            }) => Some((*identity, *binding)),
+            _ => None,
         }
     }
 }

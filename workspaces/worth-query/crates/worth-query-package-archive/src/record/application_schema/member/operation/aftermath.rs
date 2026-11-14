@@ -1,8 +1,9 @@
 use worth_query_declaration::facade::application_aftermath::{
     DeclaredAftermathPostcondition, DeclaredCompensation, DeclaredCorrectionAuthority,
     DeclaredLoweringCorrespondenceRef, DeclaredReconciliationProcedure,
-    PortableApplicationAftermathContract, PortableCorrectionMechanism, PortablePreImageDemand,
-    PortablePreImageLocus, PortablePreImageRelationLocus, PortableRecordedInverse,
+    PortableApplicationAftermathContract, PortableChangedFieldOutput, PortableCorrectionMechanism,
+    PortablePreImageDemand, PortablePreImageLocus, PortablePreImageRelationLocus,
+    PortableRecordedInverse,
 };
 
 use crate::binary_encoding::BinaryEncodingSink;
@@ -71,7 +72,13 @@ fn write_mechanism(
     match mechanism {
         PortableCorrectionMechanism::RecordedInverse(value) => {
             let relations = value.preimage_demand().relations();
-            output.u16(if relations.is_empty() { 1 } else { 3 })?;
+            if let Some(target) = value.preimage_demand().changed_output() {
+                output.u16(if relations.is_empty() { 4 } else { 5 })?;
+                output.text(target.role())?;
+                output.text(target.entity())?;
+            } else {
+                output.u16(if relations.is_empty() { 1 } else { 3 })?;
+            }
             write_recorded_inverse(output, value)?;
             if !relations.is_empty() {
                 write_sequence(output, relations, |output, locus| {
@@ -123,6 +130,49 @@ fn decode_mechanism(
                 .preimage_demand()
                 .clone()
                 .with_untrusted_relations(relations);
+            Ok(PortableCorrectionMechanism::RecordedInverse(
+                PortableRecordedInverse::from_untrusted_fields(
+                    value.inverse_operation_slot().to_owned(),
+                    value.lowering_correspondence().clone(),
+                    value.postcondition().clone(),
+                    demand,
+                ),
+            ))
+        }
+        tag @ (4 | 5) => {
+            let output = PortableChangedFieldOutput::from_untrusted_fields(
+                input.text()?.to_owned(),
+                input.text()?.to_owned(),
+            );
+            let value = decode_recorded_inverse(input, budget)?;
+            if output.role().trim().is_empty()
+                || output.entity().trim().is_empty()
+                || value.preimage_demand().loci().is_empty()
+                || value
+                    .preimage_demand()
+                    .loci()
+                    .iter()
+                    .any(|locus| locus.entity() != output.entity())
+            {
+                return Err(Denial::new(Kind::InvalidRecordShape));
+            }
+            let mut demand = value
+                .preimage_demand()
+                .clone()
+                .with_untrusted_changed_output(output);
+            if tag == 5 {
+                let relations = decode_sequence(input, budget, 12, |input, _| {
+                    Ok(PortablePreImageRelationLocus::from_untrusted_fields(
+                        input.text()?.to_owned(),
+                        input.text()?.to_owned(),
+                        input.text()?.to_owned(),
+                    ))
+                })?;
+                if relations.is_empty() {
+                    return Err(Denial::new(Kind::InvalidRecordShape));
+                }
+                demand = demand.with_untrusted_relations(relations);
+            }
             Ok(PortableCorrectionMechanism::RecordedInverse(
                 PortableRecordedInverse::from_untrusted_fields(
                     value.inverse_operation_slot().to_owned(),

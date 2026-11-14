@@ -12,6 +12,7 @@ type Scope<S, D> = <Source<S, D> as ApplicationQueryBinding<S>>::ScopeBinding;
 type Principal<S, D> = <Source<S, D> as ApplicationQueryBinding<S>>::PrincipalIdentity;
 
 pub(super) trait RequiredTree<S: ApplicationSchema>: Send + 'static {
+    fn family(&self) -> &'static str;
     fn order(
         &self,
     ) -> &worth_query_declaration::facade::application_program::ApplicationProgramConnectionOrder;
@@ -48,6 +49,9 @@ where
     SourceInput<S, D>: ApplicationQueryIntent<S, Binding = Source<S, D>>,
     Scope<S, D>: ApplicationQueryScopeResolution<S, Principal<S, D>>,
 {
+    fn family(&self) -> &'static str {
+        <D::OutputFamily as worth_query_declaration::facade::application_program::WorthQueryProducerOutputFamily<S>>::IDENTITY
+    }
     fn order(
         &self,
     ) -> &worth_query_declaration::facade::application_program::ApplicationProgramConnectionOrder
@@ -126,6 +130,35 @@ where
     )
 }
 impl CapturedSynchronousOutputs {
+    pub(in crate::domain_computation::primary_graph::application_contribution) fn fixed<S, D, E>(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        connection: &'static str,
+        demand: D,
+        position: worth_query_declaration::facade::application_program::ApplicationConnectionDeclaration,
+        order: &worth_query_declaration::facade::application_program::ApplicationProgramConnectionOrder,
+    ) -> Self
+    where
+        S: ApplicationSchema,
+        D: WorthQueryApplicationOutputDemand<S> + Clone + Send,
+        E: SynchronousOutputEdges<S, D> + 'static,
+        SourceInput<S, D>: ApplicationQueryIntent<S, Binding = Source<S, D>>,
+        Scope<S, D>: ApplicationQueryScopeResolution<S, Principal<S, D>>,
+    {
+        Self::capture(
+            execution,
+            connection,
+            size_of::<Tree<D, E>>() + size_of::<root::Root<S>>(),
+            || {
+                Box::new(root::Root::Fixed(Box::new(Tree::<D, E> {
+                    connection,
+                    position,
+                    order: order.clone(),
+                    demand,
+                    marker: PhantomData,
+                })))
+            },
+        )
+    }
     pub(in crate::domain_computation::primary_graph::application_contribution) fn assemble<
         S: ApplicationSchema,
     >(
@@ -136,6 +169,32 @@ impl CapturedSynchronousOutputs {
         candidate: &mut RelationalAuthoredCoupledCandidate<'_>,
     ) -> Result<(), CoupledSourceReadStop> {
         let mut wave = SynchronousOutputWave::new();
+        let order = Self::seed(roots, owner, execution, before, candidate, &mut wave)?;
+        let Some(order) = order else { return Ok(()) };
+        let context = SynchronousOutputAssembly {
+            owner,
+            execution,
+            before,
+            order: &order,
+        };
+        wave.drive(&context, candidate, None)
+            .map_err(|cause| cause.0)
+    }
+    pub(in crate::domain_computation::primary_graph::application_contribution) fn seed<
+        S: ApplicationSchema,
+    >(
+        roots: &[&Self],
+        owner: &CoupledApplicationAssembly<'_, '_, '_, S>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        before: &RelationalPinnedRead,
+        candidate: &mut RelationalAuthoredCoupledCandidate<'_>,
+        wave: &mut SynchronousOutputWave<S>,
+    ) -> Result<
+        Option<
+            worth_query_declaration::facade::application_program::ApplicationProgramConnectionOrder,
+        >,
+        CoupledSourceReadStop,
+    > {
         let mut order = None;
         for captured in roots {
             let Self::Prepared { root, _memory, .. } = captured else {
@@ -163,18 +222,11 @@ impl CapturedSynchronousOutputs {
                 before,
                 order: tree.order(),
             };
-            order = Some(tree.order());
-            tree.seed(&context, candidate, &mut wave)
+            order = Some(tree.order().clone());
+            tree.seed(&context, candidate, wave)
                 .map_err(|cause| cause.0)?;
         }
-        let Some(order) = order else { return Ok(()) };
-        let context = SynchronousOutputAssembly {
-            owner,
-            execution,
-            before,
-            order,
-        };
-        wave.drive(&context, candidate).map_err(|cause| cause.0)
+        Ok(order)
     }
 }
 impl<S: ApplicationSchema, O, I, Scope>

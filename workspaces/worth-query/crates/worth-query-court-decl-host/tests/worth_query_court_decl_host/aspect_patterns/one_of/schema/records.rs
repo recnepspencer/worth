@@ -55,7 +55,7 @@ pub struct Record;
 impl fragment::Entity for Record {
     const NAME: &'static str = "Record";
     type Aspects = (Identity, Exclusive<Meaning>);
-    type Relations = ();
+    type Relations = (sparse::Companion,);
 }
 impl Record {
     pub fn reference() -> ApplicationEntityRef<Schema, Self> {

@@ -10,9 +10,9 @@ impl RelationalAuthoredCoupledCandidate<'_> {
     }
 
     /// Apply the next admitted authored stage's own commands over the current
-    /// candidate pin. Stages apply once each, in the admitted roster order, and
-    /// before any producer part: a stage after a producer wave would need the
-    /// envelope-wide final qualification, which this entry does not provide.
+    /// candidate pin. Stages apply once each, in the admitted authored roster
+    /// order, including after producer parts. The complete envelope retains
+    /// final decision-support qualification at its Query owner.
     pub fn append_authored_stage(
         &mut self,
         execution: &ExecutionRequest<'_, '_>,
@@ -33,9 +33,16 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         batches: Vec<WorkerIntentBatch>,
         mut roles: Vec<RequiredOutputRoleTarget>,
     ) -> Result<(), RelationalCoupledAssemblyFailure> {
-        if self.next_authored_stage() != Some(source) || !self.parts.is_empty() {
+        if self.next_authored_stage() != Some(source) {
             return Err(part::reject(Cause::UnadmittedAuthoredStage, source).into());
         }
+        let fragment_start = self
+            .mutation
+            .outcome
+            .effect
+            .publication
+            .patch_fragments
+            .len();
         let applied = self.apply_suffix(
             execution,
             part::SuffixWriter::Authored {
@@ -57,6 +64,14 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             &self.mutation.outcome.created_entities,
         )?;
         self.stages.push(CoupledAuthoredStagePart {
+            fragments: fragment_start
+                ..self
+                    .mutation
+                    .outcome
+                    .effect
+                    .publication
+                    .patch_fragments
+                    .len(),
             roles,
             output_ids,
             source,
@@ -64,13 +79,6 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             commands: applied.plan,
             records: applied.records,
         });
-        self.authored_fragments = self
-            .mutation
-            .outcome
-            .effect
-            .publication
-            .patch_fragments
-            .len();
         let latest = self.stages.last().expect("the actual stage just appended");
         self.advance_pin(
             execution,

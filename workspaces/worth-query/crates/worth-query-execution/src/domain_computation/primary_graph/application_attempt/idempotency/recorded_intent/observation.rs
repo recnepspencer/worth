@@ -5,6 +5,7 @@ pub(in crate::domain_computation::primary_graph) struct RecordedIntentObservatio
     pub(in crate::domain_computation::primary_graph) root: [u8; 32],
     pub(in crate::domain_computation::primary_graph) correction: Option<[u8; 32]>,
     pub(in crate::domain_computation::primary_graph) conditional: Option<[u8; 32]>,
+    pub(in crate::domain_computation::primary_graph) envelope: Option<[u8; 32]>,
     mutation: Option<[u8; 32]>,
 }
 impl RecordedIntentObservation {
@@ -29,6 +30,7 @@ pub(super) fn read(text: &str) -> Result<RecordedIntentObservation, &'static str
         root,
         correction: None,
         conditional: None,
+        envelope: None,
         mutation: None,
     };
     for slot in slots {
@@ -40,6 +42,7 @@ pub(super) fn read(text: &str) -> Result<RecordedIntentObservation, &'static str
             "correction" => observed.correction = Some(decode(value)?),
             "conditional-definition" => observed.conditional = Some(decode(value)?),
             "mutation-binding" => observed.mutation = Some(decode(value)?),
+            "edit-envelope" => observed.envelope = Some(decode(value)?),
             "input"
             | "source"
             | "operation"
@@ -54,7 +57,6 @@ pub(super) fn read(text: &str) -> Result<RecordedIntentObservation, &'static str
             | "workflow-support"
             | "workflow-client-key"
             | "workflow-approval"
-            | "edit-envelope"
             | "transport-intent" => {}
             _ => return Err(MALFORMED),
         }

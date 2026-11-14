@@ -224,6 +224,18 @@ impl WorthQueryInvariantExecutionFailure {
         ]));
         denied
     }
+    pub(crate) fn with_coupled_writer(
+        mut self,
+        writer: worth_relational::facade::identity::EntityId,
+    ) -> Self {
+        let mut records = self.affected_records().to_vec();
+        let writer = worth_relational::facade::transactions::RecordRef::Entity(writer);
+        if !records.contains(&writer) {
+            records.push(writer);
+        }
+        self.affected_records = Some(Arc::from(records));
+        self
+    }
     /// Exact records whose Query settlement could not be admitted.
     pub fn affected_records(&self) -> &[worth_relational::facade::transactions::RecordRef] {
         self.affected_records.as_deref().unwrap_or(&[])

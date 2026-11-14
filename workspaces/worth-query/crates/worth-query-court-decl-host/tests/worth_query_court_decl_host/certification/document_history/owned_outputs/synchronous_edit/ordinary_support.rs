@@ -50,6 +50,10 @@ fn run(worker: bool) {
         WorthQueryInvariantExecutionDenialKind::CoupledReadSupportChanged
     );
     assert!(failure.detail().contains("MemberValue"), "{failure:?}");
+    assert!(
+        failure.detail().contains("later writer producer"),
+        "{failure:?}"
+    );
     assert_eq!(
         failure.affected_records(),
         [worth_relational::facade::transactions::RecordRef::Entity(

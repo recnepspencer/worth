@@ -156,7 +156,7 @@ extend one existing public runtime world rather than growing a sibling
 - [Support Matrix And Admission](../../workspaces/worth-query/crates/worth-query/docs/foundations/support-matrix-and-admission.md)
 
 **Documentation follow-through**
-- Add or revise the phase's feature-facing docs with the `feature-doc-writer` skill before this phase can close.
+- Add or revise the phase's feature-facing docs before this phase can close.
 - Treat doc updates as part of the same authority boundary as the code/API change, not as post-hoc cleanup.
 
 **Relevant Query source surfaces**
@@ -204,7 +204,7 @@ teach it as a production surface.
 - [Downstream Runtime Integration](../../workspaces/worth-query/crates/worth-query/docs/foundations/downstream-runtime-integration.md)
 
 **Documentation follow-through**
-- Add or revise the phase's feature-facing docs with the `feature-doc-writer` skill before this phase can close.
+- Add or revise the phase's feature-facing docs before this phase can close.
 - Treat doc updates as part of the same authority boundary as the code/API change, not as post-hoc cleanup.
 
 **Relevant Query source surfaces**
@@ -250,7 +250,7 @@ runtime ids.
 - Configured Domain Handles
 
 **Documentation follow-through**
-- Add or revise the phase's feature-facing docs with the `feature-doc-writer` skill before this phase can close.
+- Add or revise the phase's feature-facing docs before this phase can close.
 - Treat doc updates as part of the same authority boundary as the code/API change, not as post-hoc cleanup.
 
 **Relevant Query source surfaces**
@@ -298,7 +298,7 @@ timers or host observer setup.
 - Canonical Domain Declarations
 
 **Documentation follow-through**
-- Add or revise the phase's feature-facing docs with the `feature-doc-writer` skill before this phase can close.
+- Add or revise the phase's feature-facing docs before this phase can close.
 - Treat doc updates as part of the same authority boundary as the code/API change, not as post-hoc cleanup.
 
 **Relevant Query source surfaces**
@@ -343,7 +343,7 @@ component-local status enums or transport adapters.
 - [Declaration Family Taxonomy](../../workspaces/worth-query/crates/worth-query/docs/domain-capabilities/declaration-family-taxonomy.md)
 
 **Documentation follow-through**
-- Add or revise the phase's feature-facing docs with the `feature-doc-writer` skill before this phase can close.
+- Add or revise the phase's feature-facing docs before this phase can close.
 - Treat doc updates as part of the same authority boundary as the code/API change, not as post-hoc cleanup.
 
 **Relevant Query source surfaces**
@@ -387,7 +387,7 @@ combinations deny before route planning, activation, or materialization.
 - [Support Matrix And Admission](../../workspaces/worth-query/crates/worth-query/docs/foundations/support-matrix-and-admission.md)
 
 **Documentation follow-through**
-- Add or revise the phase's feature-facing docs with the `feature-doc-writer` skill before this phase can close.
+- Add or revise the phase's feature-facing docs before this phase can close.
 - Treat doc updates as part of the same authority boundary as the code/API change, not as post-hoc cleanup.
 
 **Relevant Query source surfaces**
@@ -432,7 +432,7 @@ subscription or materialized result-state exists.
 - [Support Matrix And Admission](../../workspaces/worth-query/crates/worth-query/docs/foundations/support-matrix-and-admission.md)
 
 **Documentation follow-through**
-- Add or revise the phase's feature-facing docs with the `feature-doc-writer` skill before this phase can close.
+- Add or revise the phase's feature-facing docs before this phase can close.
 - Treat doc updates as part of the same authority boundary as the code/API change, not as post-hoc cleanup.
 
 **Relevant Query source surfaces**
@@ -477,7 +477,7 @@ instead of raw branch/snapshot/time/source ids.
 - Configured Domain Handles
 
 **Documentation follow-through**
-- Add or revise the phase's feature-facing docs with the `feature-doc-writer` skill before this phase can close.
+- Add or revise the phase's feature-facing docs before this phase can close.
 - Treat doc updates as part of the same authority boundary as the code/API change, not as post-hoc cleanup.
 
 **Relevant Query source surfaces**
@@ -523,7 +523,7 @@ story.
 - Configured Domain Handles
 
 **Documentation follow-through**
-- Add or revise the phase's feature-facing docs with the `feature-doc-writer` skill before this phase can close.
+- Add or revise the phase's feature-facing docs before this phase can close.
 - Treat doc updates as part of the same authority boundary as the code/API change, not as post-hoc cleanup.
 
 **Relevant Query source surfaces**
@@ -570,7 +570,7 @@ lower-runtime behavior.
 - [Continuation Pipeline](../../workspaces/worth-query/crates/worth-query/docs/domain-capabilities/continuation-pipeline.md)
 
 **Documentation follow-through**
-- Add or revise the phase's feature-facing docs with the `feature-doc-writer` skill before this phase can close.
+- Add or revise the phase's feature-facing docs before this phase can close.
 - Treat doc updates as part of the same authority boundary as the code/API change, not as post-hoc cleanup.
 
 **Relevant Query source surfaces**
@@ -616,7 +616,7 @@ subscription API.
 - [Scopes, Templates, Saved Queries, And View Shapes](../../workspaces/worth-query/crates/worth-query/docs/authoring/scopes-templates-saved-queries-and-view-shapes.md)
 
 **Documentation follow-through**
-- Add or revise the phase's feature-facing docs with the `feature-doc-writer` skill before this phase can close.
+- Add or revise the phase's feature-facing docs before this phase can close.
 - Treat doc updates as part of the same authority boundary as the code/API change, not as post-hoc cleanup.
 
 **Relevant Query source surfaces**
@@ -664,7 +664,7 @@ lifecycle begins.
 - [Support Matrix And Admission](../../workspaces/worth-query/crates/worth-query/docs/foundations/support-matrix-and-admission.md)
 
 **Documentation follow-through**
-- Add or revise the phase's feature-facing docs with the `feature-doc-writer` skill before this phase can close.
+- Add or revise the phase's feature-facing docs before this phase can close.
 - Treat doc updates as part of the same authority boundary as the code/API change, not as post-hoc cleanup.
 
 **Relevant Query source surfaces**
@@ -709,7 +709,7 @@ active objects instead of declaration-only paperwork.
 - [Branches And Previews](../../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md)
 
 **Documentation follow-through**
-- Add or revise the phase's feature-facing docs with the `feature-doc-writer` skill before this phase can close.
+- Add or revise the phase's feature-facing docs before this phase can close.
 - Treat doc updates as part of the same authority boundary as the code/API change, not as post-hoc cleanup.
 
 **Relevant Query source surfaces**
@@ -756,7 +756,7 @@ produce canonical deliveries even when no relational patch arrived.
 - [Workspace Overview](../../workspaces/worth-query/crates/worth-query/docs/foundations/workspace-overview.md)
 
 **Documentation follow-through**
-- Add or revise the phase's feature-facing docs with the `feature-doc-writer` skill before this phase can close.
+- Add or revise the phase's feature-facing docs before this phase can close.
 - Treat doc updates as part of the same authority boundary as the code/API change, not as post-hoc cleanup.
 
 **Relevant Query source surfaces**
@@ -803,7 +803,7 @@ Query.
 - [Support Matrix And Admission](../../workspaces/worth-query/crates/worth-query/docs/foundations/support-matrix-and-admission.md)
 
 **Documentation follow-through**
-- Add or revise the phase's feature-facing docs with the `feature-doc-writer` skill before this phase can close.
+- Add or revise the phase's feature-facing docs before this phase can close.
 - Treat doc updates as part of the same authority boundary as the code/API change, not as post-hoc cleanup.
 
 **Relevant Query source surfaces**
@@ -849,7 +849,7 @@ canonical Query delivery stream.
 - [Inspection](../../workspaces/worth-query/crates/worth-query/docs/capabilities/inspection.md)
 
 **Documentation follow-through**
-- Add or revise the phase's feature-facing docs with the `feature-doc-writer` skill before this phase can close.
+- Add or revise the phase's feature-facing docs before this phase can close.
 - Treat doc updates as part of the same authority boundary as the code/API change, not as post-hoc cleanup.
 
 **Relevant Query source surfaces**
@@ -894,7 +894,7 @@ language already used for ordinary reads, live views, writes, and previews.
 - [Workspace Overview](../../workspaces/worth-query/crates/worth-query/docs/foundations/workspace-overview.md)
 
 **Documentation follow-through**
-- Add or revise the phase's feature-facing docs with the `feature-doc-writer` skill before this phase can close.
+- Add or revise the phase's feature-facing docs before this phase can close.
 - Treat doc updates as part of the same authority boundary as the code/API change, not as post-hoc cleanup.
 
 **Relevant Query source surfaces**
@@ -940,7 +940,7 @@ imports in downstream code.
 - [Cross-Runtime Causal Inspection](../../workspaces/worth-query/crates/worth-query/docs/capabilities/cross-runtime-causal-inspection.md)
 
 **Documentation follow-through**
-- Add or revise the phase's feature-facing docs with the `feature-doc-writer` skill before this phase can close.
+- Add or revise the phase's feature-facing docs before this phase can close.
 - Treat doc updates as part of the same authority boundary as the code/API change, not as post-hoc cleanup.
 
 **Relevant Query source surfaces**
@@ -984,7 +984,7 @@ if they were already authoritative.
 - [Inspection](../../workspaces/worth-query/crates/worth-query/docs/capabilities/inspection.md)
 
 **Documentation follow-through**
-- Add or revise the phase's feature-facing docs with the `feature-doc-writer` skill before this phase can close.
+- Add or revise the phase's feature-facing docs before this phase can close.
 - Treat doc updates as part of the same authority boundary as the code/API change, not as post-hoc cleanup.
 
 **Relevant Query source surfaces**
@@ -1031,7 +1031,7 @@ changes resolve before delivery or result-state materialization.
 - [Inspection](../../workspaces/worth-query/crates/worth-query/docs/capabilities/inspection.md)
 
 **Documentation follow-through**
-- Add or revise the phase's feature-facing docs with the `feature-doc-writer` skill before this phase can close.
+- Add or revise the phase's feature-facing docs before this phase can close.
 - Treat doc updates as part of the same authority boundary as the code/API change, not as post-hoc cleanup.
 
 **Relevant Query source surfaces**
@@ -1078,7 +1078,7 @@ semantics.
 - [Support Matrix And Admission](../../workspaces/worth-query/crates/worth-query/docs/foundations/support-matrix-and-admission.md)
 
 **Documentation follow-through**
-- Add or revise the phase's feature-facing docs with the `feature-doc-writer` skill before this phase can close.
+- Add or revise the phase's feature-facing docs before this phase can close.
 - Treat doc updates as part of the same authority boundary as the code/API change, not as post-hoc cleanup.
 
 **Relevant Query source surfaces**
@@ -1124,7 +1124,7 @@ reopening lower authority or degrading to row-bag folklore.
 - [Inspection](../../workspaces/worth-query/crates/worth-query/docs/capabilities/inspection.md)
 
 **Documentation follow-through**
-- Add or revise the phase's feature-facing docs with the `feature-doc-writer` skill before this phase can close.
+- Add or revise the phase's feature-facing docs before this phase can close.
 - Treat doc updates as part of the same authority boundary as the code/API change, not as post-hoc cleanup.
 
 **Relevant Query source surfaces**
@@ -1172,7 +1172,7 @@ ambient exceptions or log-only failures.
 - [Inspection](../../workspaces/worth-query/crates/worth-query/docs/capabilities/inspection.md)
 
 **Documentation follow-through**
-- Add or revise the phase's feature-facing docs with the `feature-doc-writer` skill before this phase can close.
+- Add or revise the phase's feature-facing docs before this phase can close.
 - Treat doc updates as part of the same authority boundary as the code/API change, not as post-hoc cleanup.
 
 **Relevant Query source surfaces**
@@ -1219,7 +1219,7 @@ for write-adjacent work.
 - [Continuation Pipeline](../../workspaces/worth-query/crates/worth-query/docs/domain-capabilities/continuation-pipeline.md)
 
 **Documentation follow-through**
-- Add or revise the phase's feature-facing docs with the `feature-doc-writer` skill before this phase can close.
+- Add or revise the phase's feature-facing docs before this phase can close.
 - Treat doc updates as part of the same authority boundary as the code/API change, not as post-hoc cleanup.
 
 **Relevant Query source surfaces**
@@ -1267,7 +1267,7 @@ posture instead of rediscovering temporal/async semantics at the network edge.
 - [Support Matrix And Admission](../../workspaces/worth-query/crates/worth-query/docs/foundations/support-matrix-and-admission.md)
 
 **Documentation follow-through**
-- Add or revise the phase's feature-facing docs with the `feature-doc-writer` skill before this phase can close.
+- Add or revise the phase's feature-facing docs before this phase can close.
 - Treat doc updates as part of the same authority boundary as the code/API change, not as post-hoc cleanup.
 
 **Relevant Query source surfaces**
@@ -1313,7 +1313,7 @@ async-only, and mixed-cause lanes.
 - [Domain Capability Documentation Certification](../../workspaces/worth-query/crates/worth-query/docs/domain-capabilities/public-doc-coverage.md)
 
 **Documentation follow-through**
-- Add or revise the phase's feature-facing docs with the `feature-doc-writer` skill before this phase can close.
+- Add or revise the phase's feature-facing docs before this phase can close.
 - Treat doc updates as part of the same authority boundary as the code/API change, not as post-hoc cleanup.
 
 **Relevant Query source surfaces**

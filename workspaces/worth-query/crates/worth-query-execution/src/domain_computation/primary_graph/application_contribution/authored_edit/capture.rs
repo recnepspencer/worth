@@ -42,6 +42,20 @@ pub struct CapturedAuthoredEditStage<S> {
         worth_query_declaration::facade::application_schema::ApplicationSchemaBindingIdentity,
     pub(in crate::domain_computation::primary_graph::application_contribution) producers:
         Vec<ProducerDependencyScopes>,
+    pub(in crate::domain_computation::primary_graph::application_contribution) producer_connections:
+        Vec<(std::any::TypeId, std::any::TypeId)>,
+    pub(in crate::domain_computation::primary_graph::application_contribution) producer_barrier:
+        Vec<String>,
+    pub(in crate::domain_computation::primary_graph::application_contribution) required: Option<
+        Arc<
+            dyn Fn(
+                    &worth_execution::ExecutionRequest<'_, '_>,
+                )
+                    -> super::super::producer::synchronous_outputs::CapturedSynchronousOutputs
+                + Send
+                + Sync,
+        >,
+    >,
     pub(in crate::domain_computation::primary_graph) contracts:
         worth_query_installation::facade::WorthQueryOperationReadTouchOverlapIndex,
 }
@@ -57,6 +71,9 @@ impl<S> Clone for CapturedAuthoredEditStage<S> {
             queries: self.queries.clone(),
             schema: self.schema.clone(),
             producers: self.producers.clone(),
+            producer_connections: self.producer_connections.clone(),
+            producer_barrier: self.producer_barrier.clone(),
+            required: self.required.clone(),
         }
     }
 }
@@ -64,6 +81,32 @@ impl<S> Clone for CapturedAuthoredEditStage<S> {
 pub(in crate::domain_computation::primary_graph) trait AuthoredEditStageExecutor<S>:
     Send + Sync
 {
+    fn plan(
+        &self,
+        context: &AuthoredEditStageContext<'_, '_, '_, S>,
+        unseen: &super::UnseenAuthoredEnvelope<'_>,
+    ) -> Result<(), WorthQueryOutputDemandDenial>;
+    fn footprint(&self) -> Option<super::planning::Footprint>;
+    fn discard_plan(&self);
+    fn prefix_candidate(
+        &self,
+        context: &AuthoredEditStageContext<'_, '_, '_, S>,
+        unseen: &super::UnseenAuthoredEnvelope<'_>,
+    ) -> Result<Box<dyn Any + Send>, WorthQueryOutputDemandDenial>;
+    fn product(
+        &self,
+        context: &AuthoredEditStageContext<'_, '_, '_, S>,
+    ) -> Result<crate::basis::WorthQueryProductBranchLease, super::envelope::Denial>;
+    fn govern_envelope(
+        &self,
+        context: &AuthoredEditStageContext<'_, '_, '_, S>,
+        coordination: &crate::domain_computation::primary_graph::provider::WorthQueryApplicationBranchCommitCoordination<'_>,
+        intent: worth_query_declaration::facade::application_operation::ApplicationEditIntentIdentity,
+        next: &mut dyn FnMut(
+            WorthQueryApplicationIdempotencyBinding,
+        )
+            -> Result<super::envelope::Resolution, super::envelope::Denial>,
+    ) -> Result<super::envelope::Resolution, super::envelope::Denial>;
     fn prepare<'run>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -100,26 +143,16 @@ type Admit<S, B> = dyn Fn(
     ) -> Result<AuthoredEditStageAdmission<S, B>, WorthQueryOutputDemandDenial>
     + Send
     + Sync;
-type Seed<S, B> = dyn Fn(&worth_execution::ExecutionRequest<'_, '_>, StageProgram<S, B>) -> StageProgram<S, B>
-    + Send
-    + Sync;
-pub(super) type StageProgram<S, B> =
-    WorthQueryApplicationEffectProgram<
-        S,
-        <B as ApplicationMutationBinding<S>>::Operation,
-        <B as ApplicationMutationBinding<S>>::Input,
-        <<B as ApplicationMutationBinding<S>>::ScopeBinding as ApplicationMutationScopeBinding<
-            S,
-        >>::Scope,
-    >;
 pub(super) struct TypedStage<S: ApplicationSchema, B: ApplicationMutationBinding<S>> {
+    pub(super) original_admission: std::sync::Mutex<AuthoredEditStageOperation<S, B>>,
+    pub(super) planning: std::sync::Mutex<super::planning::StagePlanning<S, B>>,
+    pub(super) before: worth_runtime_world::facade::ProductBranchObservation,
     pub(super) key: Arc<ApplicationEditEnvelopeKey<B::IdempotencyKey>>,
     pub(super) input: ApplicationEncodedInput<B::InputBinding>,
     pub(super) ordinal: usize,
     pub(super) source: worth_relational::facade::identity::EntityId,
     pub(super) principal: WorthQueryAuthenticatedExternalPrincipal<S>,
     pub(super) admit: Box<Admit<S, B>>,
-    pub(super) seed: Box<Seed<S, B>>,
     pub(super) result: Arc<std::sync::Mutex<Option<Box<dyn Any + Send>>>>,
 }
 impl<S: ApplicationSchema> CapturedAuthoredEditStage<S> {
@@ -135,10 +168,6 @@ impl<S: ApplicationSchema> CapturedAuthoredEditStage<S> {
                 &AuthoredEditStageContext<'_, '_, '_, S>,
             )
                 -> Result<AuthoredEditStageAdmission<S, B>, WorthQueryOutputDemandDenial>
-            + Send
-            + Sync
-            + 'static,
-        seed: impl Fn(&worth_execution::ExecutionRequest<'_, '_>, StageProgram<S, B>) -> StageProgram<S, B>
             + Send
             + Sync
             + 'static,
@@ -185,21 +214,26 @@ impl<S: ApplicationSchema> CapturedAuthoredEditStage<S> {
             .expect("canonical stage");
         Ok(Self {
             source,
-            before,
+            before: before.clone(),
             contracts,
             queries,
             schema,
             producers: Vec::new(),
+            producer_connections: Vec::new(),
+            producer_barrier: Vec::new(),
+            required: None,
             identity,
             binding: B::IDENTITY,
             executor: Arc::new(TypedStage::<S, B> {
+                original_admission: std::sync::Mutex::new(admitted.operation),
+                planning: std::sync::Mutex::new(super::planning::StagePlanning::default()),
+                before,
                 key,
                 input,
                 ordinal,
                 source,
                 principal,
                 admit: Box::new(admit),
-                seed: Box::new(seed),
                 result,
             }),
         })

@@ -28,7 +28,7 @@ impl ApplicationFactTable {
         mutation: &worth_relational::facade::mvcc::ValidatedMutationFootprint,
         policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<ProjectedPreImageCandidates, StoreDenial> {
-        if !demand.relations().is_empty() {
+        if !demand.relations().is_empty() || demand.changed_output().is_some() {
             let bytes = self
                 .count
                 .checked_mul(size_of::<Decision>())
