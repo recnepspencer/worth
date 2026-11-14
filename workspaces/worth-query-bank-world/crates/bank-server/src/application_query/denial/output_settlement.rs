@@ -13,6 +13,7 @@ pub enum BankApplicationOutputSettlementDenialKind {
         binding: &'static str,
     },
     DurableStateAdmission(worth_query_host::facade::product::WorthQueryDurableStateAdmissionDenial),
+    ObligationPublication(worth_query_host::facade::primary_graph::QueryObligationDenial),
     WorldRecovery(worth_query_host::facade::primary_graph::RuntimeWorldRecoveryDenial),
     RecoveryPublication(worth_query_host::facade::primary_graph::NoEffectCause),
     PublicationReceipt(worth_query_host::facade::primary_graph::WorthQueryApplicationIdempotencyResolutionDenialKind),
@@ -87,6 +88,7 @@ impl From<WorthQueryOutputDemandDenialKind> for BankApplicationOutputSettlementD
             Query::AuthoredStageRefused { ordinal, binding } => {
                 Bank::AuthoredStageRefused { ordinal, binding }
             }
+            Query::ObligationPublication(cause) => Bank::ObligationPublication(cause),
             Query::WorldRecovery(cause) => Bank::WorldRecovery(cause),
             Query::RecoveryPublication(cause) => Bank::RecoveryPublication(cause),
             Query::PublicationReceipt(cause) => Bank::PublicationReceipt(cause),
