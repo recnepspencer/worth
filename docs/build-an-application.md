@@ -4592,6 +4592,13 @@ implements `WorthQueryApplicationPrerequisiteOutputConnection`: its typed
 prerequisite query, sealed result-relation selector (`prerequisite_rows`), row
 binding, target-to-query mapping and one parent-demand mapping per row. Query
 drains **every** selected row; the application cannot submit a truncated list.
+A nested prerequisite path uses a sealed tuple of its existing declared relation
+selectors: `(outer, inner)` or `(outer, (middle, leaf))`. Query visits every
+selected branch and projects every terminal row; repetitions remain rows. Each
+step retains its declared cardinality and disclosure checks. A valid empty
+Optional/Many branch contributes zero, while missing, omitted, wrong-node or
+malformed relations refuse. The path issues no additional query and retains the
+complete nested result/predicate support already acquired by Query.
 The query must describe actual predecessor/operand sources without requiring
 geometry that has not yet been produced.
 

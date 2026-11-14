@@ -8,6 +8,7 @@ pub(in super::super) mod dependent;
 mod occurrence_topology;
 mod occurrences;
 pub(in super::super) mod prerequisite_partition;
+mod prerequisite_path;
 mod program;
 mod reading;
 pub(in super::super) mod seal;
@@ -15,10 +16,10 @@ use program::{ModelTree, ProducedTree, Program};
 pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
-    component_carriage::declare(prerequisite_partition::declare(
-        occurrence_topology::declare(created::declare(reading::declare(seal::declare(
-            dependent::declare(schema),
-        )))),
+    prerequisite_path::declare(component_carriage::declare(
+        prerequisite_partition::declare(occurrence_topology::declare(created::declare(
+            reading::declare(seal::declare(dependent::declare(schema))),
+        ))),
     ))
 }
 pub fn install(
