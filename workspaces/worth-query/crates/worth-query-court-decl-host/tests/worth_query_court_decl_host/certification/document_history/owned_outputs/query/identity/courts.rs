@@ -125,7 +125,7 @@ fn exact_member_identity_stays_inside_scope_and_retains_membership_support() {
     };
     assert_eq!(
         cause.kind(),
-        WorthQueryApplicationAttemptDenialKind::SourceChanged
+        WorthQueryApplicationAttemptDenialKind::SourceRetired
     );
     assert_eq!(
         super::super::super::synchronous_edit::native_head(&host),
