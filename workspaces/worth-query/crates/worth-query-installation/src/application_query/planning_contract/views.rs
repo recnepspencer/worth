@@ -98,14 +98,15 @@ pub(super) fn predicate(
     meaning: &WorthQueryInstalledGraphReadMeaning,
     index: usize,
 ) -> Option<WorthQueryReadGraphPredicateView<'_>> {
-    let predicate = meaning.predicates.get(index).or_else(|| {
-        meaning
-            .relations
-            .iter()
-            .filter_map(|relation| relation.predicate())
-            .nth(index.saturating_sub(meaning.predicates.len()))
-    });
-    predicate.map(predicate_view)
+    if let Some(predicate) = meaning.predicates.get(index) {
+        return Some(predicate_view(predicate));
+    }
+    meaning
+        .relations
+        .iter()
+        .filter_map(|relation| relation.predicate())
+        .nth(index.saturating_sub(meaning.predicates.len()))
+        .map(relation_predicate_view)
 }
 
 pub(super) fn all_predicate_count(meaning: &WorthQueryInstalledGraphReadMeaning) -> usize {
@@ -192,6 +193,17 @@ pub(super) fn guard_view(
 
 pub(super) fn predicate_view(
     predicate: &WorthQueryInstalledGraphPredicate,
+) -> WorthQueryReadGraphPredicateView<'_> {
+    WorthQueryReadGraphPredicateView {
+        aspect: predicate.aspect_key(),
+        field: predicate.field_key(),
+        parameter: Some(predicate.parameter()),
+        scalar_family: predicate.scalar_family(),
+    }
+}
+
+pub(super) fn relation_predicate_view(
+    predicate: &crate::application_query::WorthQueryInstalledGraphRelationPredicate,
 ) -> WorthQueryReadGraphPredicateView<'_> {
     WorthQueryReadGraphPredicateView {
         aspect: predicate.aspect_key(),

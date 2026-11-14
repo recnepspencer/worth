@@ -28,15 +28,18 @@ pub(super) fn retain_matching_targets<T>(
     let Some(predicate) = relation.predicate() else {
         return Ok(());
     };
-    let expected = parameters
-        .bindings()
-        .iter()
-        .find(|(name, _)| name.as_ref() == predicate.parameter())
-        .map(|(_, value)| value)
-        .ok_or_else(|| projection_denial(predicate.parameter()))?;
-    if expected.value_family() != predicate.scalar_family() {
-        return Err(projection_denial(predicate.parameter()));
-    }
+    let expected = predicate
+        .parameter()
+        .map(|parameter| {
+            parameters
+                .bindings()
+                .iter()
+                .find(|(name, _)| name.as_ref() == parameter)
+                .map(|(_, value)| value)
+                .filter(|value| value.value_family() == predicate.scalar_family())
+                .ok_or_else(|| projection_denial(parameter))
+        })
+        .transpose()?;
     let field = predicate.field();
     let admission = governance
         .admit_internal_projection(
@@ -68,7 +71,7 @@ pub(super) fn retain_matching_targets<T>(
                     .then(|| {
                         work.reads.record_fields(1);
                         record.aspect_field_value(predicate.aspect_key(), predicate.field_key())
-                            == Some(expected)
+                            == expected
                     })
             }).map_err(|cause| crate::domain_computation::primary_graph::application_query::read_execution::denial::relational_read_denial(cause, relation.result_path()))?
             .ok_or_else(|| projection_denial(relation.result_path()))?;

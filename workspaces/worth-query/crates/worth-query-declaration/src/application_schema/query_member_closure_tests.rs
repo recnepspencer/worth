@@ -59,18 +59,19 @@ fn forged_projection_field_or_value_type_cannot_enter_package_meaning() {
 
 #[test]
 fn relation_predicate_field_must_be_declared_and_equality_queryable() {
-    let mut members = relation_predicate_dependencies(false);
-    let shape = relation_predicate_shape();
-    assert!(!shape_is_closed(&members, "PredicateQuery", &shape));
-
-    let ApplicationSchemaMember::Field {
-        equality_queryable, ..
-    } = &mut members[5]
-    else {
-        panic!("fixture field must occupy the declared slot");
-    };
-    *equality_queryable = true;
-    assert!(shape_is_closed(&members, "PredicateQuery", &shape));
+    for absent in [false, true] {
+        let shape = relation_predicate_shape(absent);
+        assert!(!shape_is_closed(
+            &relation_predicate_dependencies(false),
+            "PredicateQuery",
+            &shape
+        ));
+        assert!(shape_is_closed(
+            &relation_predicate_dependencies(true),
+            "PredicateQuery",
+            &shape
+        ));
+    }
 }
 
 #[test]
@@ -223,7 +224,7 @@ fn relation_predicate_dependencies(equality_queryable: bool) -> Vec<ApplicationS
     members
 }
 
-fn relation_predicate_shape() -> ApplicationQueryResultShape {
+fn relation_predicate_shape(absent: bool) -> ApplicationQueryResultShape {
     let identity = |value: &str| WorthQueryPortableTypeIdentity::from_untrusted(value.to_owned());
     let nested = ApplicationQueryResultShape::from_untrusted_parts(
         WorthQueryPortableApplicationQueryResultShapeParts {
@@ -244,13 +245,24 @@ fn relation_predicate_shape() -> ApplicationQueryResultShape {
             direction: ApplicationQueryResultTraversalDirection::Forward,
             output_name: "activity".to_owned(),
             cardinality: ApplicationQueryCardinality::ExactlyOne,
-            predicate: Some(ApplicationQueryPredicate::from_untrusted_fields(
-                "Activity".to_owned(),
-                "ActivityFacts".to_owned(),
-                "ActivityId".to_owned(),
-                "activity".to_owned(),
-                ScalarAspectType::UInt64,
-            )),
+            predicate: Some(if absent {
+                crate::application_query::ApplicationQueryRelationPredicate::FieldAbsent {
+                    entity: "Activity".to_owned(),
+                    aspect: "ActivityFacts".to_owned(),
+                    field: "ActivityId".to_owned(),
+                    scalar_family: ScalarAspectType::UInt64,
+                }
+            } else {
+                crate::application_query::ApplicationQueryRelationPredicate::EqualParameter(
+                    ApplicationQueryPredicate::from_untrusted_fields(
+                        "Activity".to_owned(),
+                        "ActivityFacts".to_owned(),
+                        "ActivityId".to_owned(),
+                        "activity".to_owned(),
+                        ScalarAspectType::UInt64,
+                    ),
+                )
+            }),
             nested_shape: nested,
         },
     );

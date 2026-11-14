@@ -15,12 +15,14 @@ use crate::portable_identity::{WorthQueryPortableType, WorthQueryPortableTypeIde
 mod expression_context;
 mod field;
 mod optional_aspect;
+mod relation_absence;
 pub use expression_context::ApplicationQueryExpressionContextDenial;
 mod relation;
 
 pub use field::{ApplicationQueryResultField, WorthQueryPortableApplicationQueryResultFieldParts};
 pub use relation::{
-    ApplicationQueryResultRelation, WorthQueryPortableApplicationQueryResultRelationParts,
+    ApplicationQueryRelationPredicate, ApplicationQueryResultRelation,
+    WorthQueryPortableApplicationQueryResultRelationParts,
 };
 
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
@@ -303,12 +305,14 @@ where
                     direction: relation.direction(),
                     output_name: relation.output_name().to_owned(),
                     cardinality: relation.cardinality(),
-                    predicate: Some(ApplicationQueryPredicate::from_untrusted_fields(
-                        field.entity().to_owned(),
-                        field.aspect().to_owned(),
-                        field.field().to_owned(),
-                        parameter.name().to_owned(),
-                        Binding::SCALAR_FAMILY,
+                    predicate: Some(ApplicationQueryRelationPredicate::EqualParameter(
+                        ApplicationQueryPredicate::from_untrusted_fields(
+                            field.entity().to_owned(),
+                            field.aspect().to_owned(),
+                            field.field().to_owned(),
+                            parameter.name().to_owned(),
+                            Binding::SCALAR_FAMILY,
+                        ),
                     )),
                     nested_shape,
                 },

@@ -282,6 +282,8 @@ pub(super) fn entry_builder_with_retirement<
 >() -> ApplicationFeatureSpecBuilder<Schema, ApplicationRootComposition, Entry> {
     ApplicationFeatureSpec::root::<Schema, Entry>()
         .provides::<EntryOutput>()
+        .action::<synchronous_edit::interleaved::prerequisite_partition::expectation::Binding, Completion>()
+        .finish_action()
         .action::<predecessor::synchronous::Binding, Completion>()
         .finish_action()
         .action::<synchronous_edit::new_source::Binding, Completion>()

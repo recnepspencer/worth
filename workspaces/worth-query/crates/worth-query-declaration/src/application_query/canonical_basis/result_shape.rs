@@ -60,14 +60,24 @@ pub(super) fn append_result_shape(
                 text(format!("{relation_path}.predicate.aspect"), aspect),
                 text(format!("{relation_path}.predicate.field"), field),
                 text(
-                    format!("{relation_path}.predicate.parameter"),
-                    predicate.parameter(),
+                    format!("{relation_path}.predicate.operator"),
+                    if predicate.parameter().is_some() {
+                        "equal-parameter"
+                    } else {
+                        "field-absent"
+                    },
                 ),
                 text(
                     format!("{relation_path}.predicate.scalar"),
                     predicate.scalar_family().canonical_name(),
                 ),
             ]);
+            if let Some(parameter) = predicate.parameter() {
+                entries.push(text(
+                    format!("{relation_path}.predicate.parameter"),
+                    parameter,
+                ));
+            }
         }
         append_result_shape(
             entries,

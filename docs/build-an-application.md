@@ -4583,6 +4583,23 @@ drains **every** selected row; the application cannot submit a truncated list.
 The query must describe actual predecessor/operand sources without requiring
 geometry that has not yet been produced.
 
+Partition a mixed relation in its declared result shape, rather than dropping
+rows in the Parent mapping. `relation_where_absent(relation, nested, field)`
+selects live rows with no value for that exact declared scalar field, including
+an absent optional aspect. `relation_where_equal(relation, nested, field,
+parameter)` selects a present matching value. For example, an optional generator
+name field can separate ordinary prerequisites from each genuine generator
+family without inventing a bridge producer or a stored kind flag. Each relation
+slot is still a sealed prerequisite selector, and every selected row maps to its
+real typed Parent. Unavailable or unauthorized data is never treated as absence.
+
+Both filters retain complete candidate adjacency and predicate-field support,
+including rows excluded from the result. Changing an excluded row can invalidate
+the observation even when the selected IDs stay the same. Use the existing
+Source expectation and output support owners; do not add a private check or
+truncate the selected set. The current package-record format binds the operator;
+recreate obsolete development archives rather than migrating old formats.
+
 The existing output wave closes the actual frontier, authenticates complete
 source generation/family/binding/parameter partitions, and prepares every real
 parent before projecting and executing its dependent source. Shared occurrences

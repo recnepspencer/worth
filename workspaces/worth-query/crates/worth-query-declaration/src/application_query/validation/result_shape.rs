@@ -112,7 +112,7 @@ pub(super) fn relation_parent_entity(relation: &ApplicationQueryResultRelation) 
 
 pub(super) fn relation_predicates(
     shape: &ApplicationQueryResultShape,
-) -> Vec<&crate::application_query::ApplicationQueryPredicate> {
+) -> Vec<&crate::application_query::ApplicationQueryRelationPredicate> {
     shape
         .relations()
         .iter()

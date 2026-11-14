@@ -152,12 +152,22 @@ fn append_predicates(
         entries.extend([
             text(format!("{path}.aspect"), predicate.aspect.as_str()),
             text(format!("{path}.field"), predicate.field.as_str()),
-            text(format!("{path}.parameter"), predicate.parameter),
+            text(
+                format!("{path}.operator"),
+                if predicate.parameter.is_some() {
+                    "equal-parameter"
+                } else {
+                    "field-absent"
+                },
+            ),
             text(
                 format!("{path}.scalar"),
                 predicate.scalar_family.canonical_name(),
             ),
         ]);
+        if let Some(parameter) = predicate.parameter {
+            entries.push(text(format!("{path}.parameter"), parameter));
+        }
     }
 }
 
