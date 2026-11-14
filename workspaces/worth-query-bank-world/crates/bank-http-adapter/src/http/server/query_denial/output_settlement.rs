@@ -77,7 +77,9 @@ pub(super) fn output_settlement(kind: BankApplicationOutputSettlementDenialKind)
         | Settlement::SchedulingDeferred
         | Settlement::NoEffect => unavailable(),
         Settlement::ProductSelection(kind) => product_selection(kind),
-        Settlement::RequiredSuccessorStateUnavailable
+        Settlement::CyclicRequiredOutputOccurrences { .. }
+        | Settlement::RequiredOutputParentUnavailable { .. }
+        | Settlement::RequiredSuccessorStateUnavailable
         | Settlement::DuplicatePerformedSource
         | Settlement::IncompleteDependencyCoverage
         | Settlement::ManagedSourceExpansionUnsupported
@@ -91,7 +93,11 @@ fn obligation_publication(
     use worth_query_host::facade::primary_graph::QueryObligationDenial as D;
     match cause {
         D::Execution(cause) => advancement_denial::request(cause),
-        D::PublicationPending
+        D::ConditionalCleanupPending { .. }
+        | D::ManagedRunPending { .. }
+        | D::OwnedAsyncPending { .. }
+        | D::OwnedAsyncQueuePending { .. }
+        | D::PublicationPending
         | D::PublicationNoEffect
         | D::PublicationUnresolved
         | D::Storage(_) => unavailable(),
@@ -113,6 +119,7 @@ fn obligation_publication(
         | D::DuplicateObligation
         | D::AdoptionReadmissionRequired
         | D::CleanupReleaseUnrecorded { .. }
+        | D::OwnedAsyncMandatory { .. }
         | D::CleanupInconsistent { .. }
         | D::MissingOriginalInterpretationSource { .. }
         | D::OriginalInterpretationProgramMismatch { .. }
