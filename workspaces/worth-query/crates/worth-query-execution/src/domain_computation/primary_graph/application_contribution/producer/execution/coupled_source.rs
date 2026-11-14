@@ -255,7 +255,7 @@ where
         })?
     };
     if demand.reuse_prepared
-        && assembly.permits_unoutput_fields_selection()
+        && assembly.permits_unchanged_output_selection()
         && let Some(parent) = runtime.verify_applied_output_parent::<Binding::OutputFamily>(
             execution,
             request,
