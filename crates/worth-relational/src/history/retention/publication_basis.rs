@@ -43,6 +43,9 @@ pub(crate) struct RetainedPublicationBasis {
     pub(crate) root: Arc<RelationalBranchRoot>,
     pub(crate) binding: super::RelationalBranchRetentionBinding,
     pub(crate) applied: Option<Arc<dyn crate::history::data::AppliedPublicationInputAccess>>,
+    /// The publishing branch's own cell, so issuing this input does not
+    /// depend on that branch still being registered after it is deleted.
+    pub(crate) publication_cell: crate::branch::RelationalBranchPublicationCell,
     _hold: super::RelationalObservationRetentionObligation,
     _funding: Option<worth_execution::ExecutionMemoryReservation>,
 }
@@ -164,6 +167,7 @@ impl PublicationBasisImage {
                                 root: Arc::clone(&basis.inner.root),
                                 binding: basis.inner.retention_binding.clone(),
                                 applied,
+                                publication_cell: basis.publication_cell().clone(),
                                 _hold: hold,
                                 _funding: funding,
                             }),
