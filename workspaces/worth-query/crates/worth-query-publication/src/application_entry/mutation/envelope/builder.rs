@@ -84,13 +84,19 @@ where
         Stages: entry::CaptureEditStages<S, Program, Key>,
         Key: serde::Serialize + Send + Sync + 'static,
     {
-        self.execute_with_front(program, allocation, |_, _, _, _, _| Ok(None))
+        self.advance_with_front(
+            program,
+            allocation,
+            AuthoredEnvelopeResolutionPurpose::Execute,
+            |_, _, _, _, _| Ok(None),
+        )
     }
 
-    pub(in crate::application_entry) fn execute_with_front<Program>(
+    pub(in crate::application_entry) fn advance_with_front<Program>(
         self,
         program: &WorthQueryProgramApplicationRuntime<S, Program>,
         allocation: ExecutionAllocationPolicy<'_, '_>,
+        purpose: AuthoredEnvelopeResolutionPurpose,
         front: impl FnOnce(
             &mut EnvelopeContext<'_, S>,
             &WorthQueryProgramApplicationRuntime<S, Program>,
@@ -158,12 +164,15 @@ where
                 let admissions = captured.clone();
                 with_resolved_edit_envelope(
                     &worth_query_execution::publication_boundary::program_publication_access(),
-                    &phase, context.application, &admissions, intent,
+                    &phase, context.application, &admissions, intent, purpose,
                     |resolution| {
                         let unseen = match resolution {
                             AuthoredEnvelopeResolution::Recorded(resolution) => return super::replay::recorded(resolution).map_err(envelope_failure),
                             AuthoredEnvelopeResolution::Unseen(unseen) => unseen,
                         };
+                if purpose == AuthoredEnvelopeResolutionPurpose::ResolveOnly {
+                    return Ok(WorthQueryEditEnvelopeOutcome::Unseen);
+                }
                 let order = worth_query_execution::publication_boundary::authored_edit::order_authored_stages(
                     &phase.checked_execution_request_for(context.application.product_runtime())
                         .map_err(|cause| crate::application_entry::WorthQueryPerformedMutationExecutionDenial::Mutation(

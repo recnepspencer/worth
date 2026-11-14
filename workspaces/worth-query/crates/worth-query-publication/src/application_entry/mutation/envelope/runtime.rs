@@ -107,9 +107,31 @@ where
     where
         K: serde::Serialize + Send + Sync + 'static,
     {
-        self.envelope.execute_with_front(
+        self.envelope.advance_with_front(
             self.program,
             allocation,
+            AuthoredEnvelopeResolutionPurpose::Execute,
+            move |context, program, phase, key, entries| match self.front {
+                Some(front) => front(context, program, phase, key, entries),
+                None => Ok(None),
+            },
+        )
+    }
+
+    /// Resolve this complete original intent without planning or executing it.
+    /// Unseen is descriptive only; no candidate or stage result is produced.
+    /// Pending publication that needs recovery remains unavailable here.
+    pub fn resolve_idempotency(
+        self,
+        allocation: ExecutionAllocationPolicy<'_, '_>,
+    ) -> Result<WorthQueryEditEnvelopeOutcome, WorthQueryEditEnvelopeExecutionDenial>
+    where
+        K: serde::Serialize + Send + Sync + 'static,
+    {
+        self.envelope.advance_with_front(
+            self.program,
+            allocation,
+            AuthoredEnvelopeResolutionPurpose::ResolveOnly,
             move |context, program, phase, key, entries| match self.front {
                 Some(front) => front(context, program, phase, key, entries),
                 None => Ok(None),
