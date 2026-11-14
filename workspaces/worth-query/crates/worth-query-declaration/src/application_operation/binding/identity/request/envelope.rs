@@ -121,6 +121,7 @@ impl ApplicationEditIntentIdentity {
 pub struct ApplicationEditStageIntent {
     binding: &'static str,
     input: [u8; 32],
+    discovered_root: bool,
     root: Vec<EditConnectionIntent>,
 }
 #[derive(Serialize)]
@@ -135,7 +136,6 @@ struct EditConnectionIntent {
     required: bool,
     exports: bool,
     demand_only: bool,
-    discovered_root: bool,
 }
 impl ApplicationEditStageIntent {
     pub fn new<S, B, R>(input: &ApplicationEncodedInput<B::InputBinding>) -> Self
@@ -157,12 +157,12 @@ impl ApplicationEditStageIntent {
                 required: connection.target_required(),
                 exports: connection.exports_across_instances(),
                 demand_only: connection.is_demand_only_root(),
-                discovered_root: connection.is_discovered_root(),
             })
             .collect();
         Self {
             binding: B::IDENTITY,
             input: *input.identity(),
+            discovered_root: R::DISCOVERED_ROOT,
             root,
         }
     }
