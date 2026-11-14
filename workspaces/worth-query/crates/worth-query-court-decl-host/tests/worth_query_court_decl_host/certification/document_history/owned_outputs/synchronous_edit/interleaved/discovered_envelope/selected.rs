@@ -3,6 +3,34 @@ use super::super::super::courts::native_head;
 use super::*;
 use worth_query_host::facade::runtime::ExecutionAllocationPolicy;
 
+// This fixture program explicitly uses its existing genuine Model-a NAV grant
+// to authorize program adoption; no extra grant, principal or capability is seeded.
+pub(super) struct Adoption;
+impl ApplicationProgramAdoptionBinding<Schema> for Adoption {
+    const IDENTITY: &'static str = "owned-outputs.conditional-adoption";
+    type Capability = super::super::super::super::navigation::Navigate;
+    type Input = query::model::Read;
+    type InputBinding = query::model::ReadInput;
+    type Operation = super::super::super::super::navigation::SelectSnapshot;
+    type PrincipalBinding = Actor;
+    type Mapping = Mapping;
+    type Principal = Principal;
+    type PrincipalIdentity = u64;
+    type PrincipalIdentityBinding = U64ApplicationValueBinding;
+    fn principal_binding() -> ApplicationPrincipalBindingRef<
+        Schema,
+        Actor,
+        Mapping,
+        Principal,
+        u64,
+        U64ApplicationValueBinding,
+    > {
+        Actor::reference()
+    }
+    fn input(_: ApplicationProgramAdoptionContext<'_>) -> query::model::Read {
+        query::model::Read("a".into())
+    }
+}
 struct WithoutConditional;
 impl ApplicationProgramDefinition<Schema> for WithoutConditional {
     type Contributions = (Contribution,);
@@ -10,6 +38,11 @@ impl ApplicationProgramDefinition<Schema> for WithoutConditional {
     type Rules = ApplicationRuleLeaf;
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("owned-outputs.without-conditional");
+    fn adoption_authorization<V: ApplicationProgramAdoptionAuthorizationVisitor<Schema>>(
+        visitor: V,
+    ) -> V::Output {
+        visitor.capability::<Adoption>()
+    }
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
         let mut specs = hierarchy::Program::feature_specs();
         specs[0] = base::with_envelope_completion_actions(base::entry_builder_with_retirement::<

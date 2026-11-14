@@ -96,6 +96,12 @@ impl ApplicationProgramDefinition<Schema> for Program {
     type Rules = ApplicationRuleLeaf;
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("owned-outputs.runtime-discovered");
+    #[cfg(test)]
+    fn adoption_authorization<V: ApplicationProgramAdoptionAuthorizationVisitor<Schema>>(
+        visitor: V,
+    ) -> V::Output {
+        visitor.capability::<selected::Adoption>()
+    }
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
         let mut specs = hierarchy::Program::feature_specs();
         specs[0] = base::with_envelope_completion_actions(base::entry_builder_with_retirement::<
