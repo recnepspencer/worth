@@ -31,13 +31,23 @@ impl ApplicationProgramAdoptionBinding<Schema> for Adoption {
         query::model::Read("a".into())
     }
 }
-struct WithoutConditional;
-impl ApplicationProgramDefinition<Schema> for WithoutConditional {
+// Same canonical connection meaning, different admitted nominal root shapes.
+// An empty pair adds no connection and requires no state migration.
+type OtherRetire = ApplicationDiscoveredOutputGraph<
+    RetireConnection,
+    (ApplicationOutputLeaf, ApplicationOutputLeaf),
+>;
+type OtherRestore = ApplicationDiscoveredOutputGraph<
+    RestoreConnection,
+    (ApplicationOutputLeaf, ApplicationOutputLeaf),
+>;
+struct DifferentConditional;
+impl ApplicationProgramDefinition<Schema> for DifferentConditional {
     type Contributions = (Contribution,);
-    type Outputs = <hierarchy::Program as ApplicationProgramDefinition<Schema>>::Outputs;
+    type Outputs = ApplicationProgramOutputs<(OtherRetire, OtherRestore)>;
     type Rules = ApplicationRuleLeaf;
     const IDENTITY: ApplicationProgramIdentity =
-        ApplicationProgramIdentity::new("owned-outputs.without-conditional");
+        ApplicationProgramIdentity::new("owned-outputs.different-conditional");
     fn adoption_authorization<V: ApplicationProgramAdoptionAuthorizationVisitor<Schema>>(
         visitor: V,
     ) -> V::Output {
@@ -48,8 +58,8 @@ impl ApplicationProgramDefinition<Schema> for WithoutConditional {
         specs[0] = base::with_envelope_completion_actions(base::entry_builder_with_retirement::<
             Completion,
             Completion,
-            Completion,
-            Completion,
+            Delivery<OtherRestore>,
+            Delivery<OtherRetire>,
         >())
         .finish();
         specs
@@ -63,7 +73,7 @@ fn a_secondary_zero_root_recipe_requires_the_selected_program() {
         .with_schema(&schema)
         .validated_program()
         .unwrap();
-    let other = ApplicationProgramAuthoring::<Schema, WithoutConditional>::begin()
+    let other = ApplicationProgramAuthoring::<Schema, DifferentConditional>::begin()
         .with_schema(&schema)
         .validated_program()
         .unwrap();
@@ -81,7 +91,7 @@ fn a_secondary_zero_root_recipe_requires_the_selected_program() {
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.request(&principal, &scope);
     let target = *host
-        .supported_program::<WithoutConditional>()
+        .supported_program::<DifferentConditional>()
         .unwrap()
         .installed_program()
         .revision();
