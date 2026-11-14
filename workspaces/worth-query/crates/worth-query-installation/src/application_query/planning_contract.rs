@@ -51,7 +51,7 @@ pub struct WorthQueryReadGraphRelationView<'a> {
     pub depth: usize,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub enum WorthQueryReadGraphPredicateTarget<'a> {
     Field {
         aspect: &'a AspectKey,
