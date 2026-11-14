@@ -323,6 +323,8 @@ pub(super) fn entry_spec_with_envelope_deliveries<
         CyclicPart,
         AfterProducerPart,
     >(entry_builder::<Delivery, MemberDelivery, RestorePart>())
+    .action::<synchronous_edit::interleaved::created::Binding, Completion>()
+    .finish_action()
     .finish()
 }
 // Every program in this fixture installs one complete schema and handler
@@ -339,6 +341,8 @@ pub(super) fn with_envelope_completion_actions(
         Completion,
         Completion,
     >(entry)
+    .action::<synchronous_edit::interleaved::created::Binding, Completion>()
+    .finish_action()
 }
 pub(super) fn envelope_actions<
     ModelPart: ApplicationActionDelivery<Schema, synchronous_edit::envelope_fixture::model::Binding>,
