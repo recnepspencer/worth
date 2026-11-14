@@ -279,7 +279,7 @@ impl<S, O, I, E> WorthQueryApplicationEffectProgram<S, O, I, E> {
     }
 
     pub(in crate::domain_computation::primary_graph) fn require_planned_support(
-        &self,
+        &mut self,
         application: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<S>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         applied: Option<
@@ -291,6 +291,15 @@ impl<S, O, I, E> WorthQueryApplicationEffectProgram<S, O, I, E> {
     where
         S: ApplicationSchema,
     {
+        if applied.is_some_and(|pin| {
+            pin.candidate_identity().proposal().branch_observation()
+                != self.read_set.lease.product().relational_basis().reference()
+        }) {
+            return Err(denial(
+                WorthQueryApplicationAttemptDenialKind::ProjectionAdmissionMismatch,
+                "planned authored stage image",
+            ));
+        }
         self.validate_installed_entry(
             &application.runtime,
             &application.installed_schema.binding_identity(),
@@ -326,6 +335,10 @@ impl<S, O, I, E> WorthQueryApplicationEffectProgram<S, O, I, E> {
                     }
                 }
                 Ok(())
-            })
+            })?;
+        if let Some(pin) = applied {
+            self.read_set.lease.retain_applied_projection(pin.clone());
+        }
+        Ok(())
     }
 }

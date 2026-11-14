@@ -152,7 +152,7 @@ where
             .candidate
             .take();
         let was_planned = planned.is_some();
-        let candidate = match planned {
+        let mut candidate = match planned {
             Some((candidate, work)) => (HandlerResult::Completed(candidate), work),
             None => self.run_on_c(context, unseen)?,
         };
@@ -160,7 +160,7 @@ where
             .phase
             .checked_execution_request_for(context.application.product_runtime())
             .map_err(|cause| self.planning_denial(format!("stage execution: {cause:?}")))?;
-        if was_planned && let HandlerResult::Completed(completed) = &candidate.0 {
+        if was_planned && let HandlerResult::Completed(completed) = &mut candidate.0 {
             completed
                 .require_planned_support(context.application, &execution, None)
                 .map_err(|cause| {

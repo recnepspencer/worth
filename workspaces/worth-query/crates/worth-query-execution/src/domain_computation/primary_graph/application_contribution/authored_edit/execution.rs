@@ -148,7 +148,7 @@ where
                 });
             refuse("stage execution refused".into())
         };
-        let completed = match outcome
+        let mut completed = match outcome
             .map_err(|cause| stopped_stage(AuthoredStageExecutionCause::Request(cause)))?
         {
             HandlerResult::Completed(completed) => completed,

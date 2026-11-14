@@ -55,7 +55,7 @@ where
         self.program.candidate_footprint(execution)
     }
     pub(in crate::domain_computation::primary_graph) fn require_planned_support(
-        &self,
+        &mut self,
         application: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         applied: Option<
