@@ -12,7 +12,12 @@ use worth_query_host::facade::primary_graph::{
 #[test]
 fn unseen_resolution_precedes_supplier_planning_and_does_not_execute() {
     let _observation = WorthQueryExecutionObservation::install_on_this_thread();
-    let host = host(None, None);
+    let host: Host = world::install_configured(
+        host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
+        1,
+        Some(2),
+        world::Configuration { envelope_records: true, interleaved_records: true, ..Default::default() },
+    );
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.request(&principal, &scope);
@@ -206,7 +211,15 @@ fn resolution_preserves_pending_publication_until_execution_resumes_it() {
         matches!(outcome, Outcome::RecoveredCommitted(_)),
         "{outcome:?}"
     );
-    assert_ne!(super::super::super::courts::native_head(&host), held);
+    // Resumption publishes the already committed truth, not another Native commit.
+    assert_eq!(super::super::super::courts::native_head(&host), held);
+    let outcome = make("resolve-pending")
+        .resolve_idempotency(ExecutionAllocationPolicy::SystemAllocation)
+        .unwrap();
+    assert!(
+        matches!(outcome, Outcome::RecoveredCommitted(_)),
+        "resumed publication must now resolve: {outcome:?}"
+    );
     drop(pending);
 }
 
