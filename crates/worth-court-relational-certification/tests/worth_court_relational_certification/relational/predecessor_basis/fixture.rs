@@ -116,7 +116,15 @@ impl World {
         &self,
         execution: &ExecutionRequest<'_, '_>,
     ) -> RelationalRequiredOutputPublication {
-        self.birth_for(execution, self.source, "output")
+        self.birth_on(execution, &self.runtime.main_branch_identity())
+    }
+    /// Births the source's output on `branch`, whose head records its basis.
+    pub fn birth_on(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        branch: &worth_relational::facade::branch::RelationalBranchIdentity,
+    ) -> RelationalRequiredOutputPublication {
+        self.birth_for(execution, branch, self.source, "output")
     }
     pub fn add_unrelated_publication(
         &self,
@@ -128,16 +136,23 @@ impl World {
         let result = tx.commit(execution, &self.runtime).unwrap();
         let source = result.created_entity(&target("other-source")).unwrap();
         release_test_commit_snapshot(&self.runtime, &result);
-        self.birth_for(execution, source, "other-output")
+        self.birth_for(
+            execution,
+            &self.runtime.main_branch_identity(),
+            source,
+            "other-output",
+        )
     }
     fn birth_for(
         &self,
         execution: &ExecutionRequest<'_, '_>,
+        branch: &worth_relational::facade::branch::RelationalBranchIdentity,
         source: EntityId,
         key: &str,
     ) -> RelationalRequiredOutputPublication {
-        self.publish(
+        self.publish_on(
             execution,
+            branch,
             create(key),
             RequiredOutputPublication::Birth {
                 admission: self.owner.admit_required_output("source-owned", [1; 32]),
@@ -210,7 +225,21 @@ impl World {
         batch: WorkerIntentBatch,
         publication: RequiredOutputPublication,
     ) -> Option<RelationalRequiredOutputPublication> {
-        let mut tx = begin_main_transaction(&self.runtime);
+        let main = self.runtime.main_branch_identity();
+        self.publish_on(execution, &main, batch, publication)
+    }
+    fn publish_on(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        branch: &worth_relational::facade::branch::RelationalBranchIdentity,
+        batch: WorkerIntentBatch,
+        publication: RequiredOutputPublication,
+    ) -> Option<RelationalRequiredOutputPublication> {
+        let basis = self.runtime.admit_branch_basis(branch).unwrap();
+        let mut tx = self
+            .runtime
+            .begin_branch_transaction(&basis, RelationalTransactionIntent::ordinary())
+            .unwrap();
         tx.push_batch(batch, execution.allocation_policy()).unwrap();
         let proposal = tx
             .validate(execution, &self.runtime)
