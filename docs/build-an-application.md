@@ -1088,6 +1088,11 @@ counterpart is the consumer fixture at
 `.../fixtures/consumer_entry/consumer_root/src/application_program/roots.rs`
 (the output graph). That fixture takes every Query name from the two facades.
 
+Reusable input vocabularies can bound their associated input type with
+`ApplicationFeatureInputsShape<S, TargetFeature>`. Use the actual target feature:
+an input shape for another nominal feature does not establish this bound.
+The trait is sealed; its implementations remain the SDK's input leaf and list.
+
 <!-- illustrative -->
 ```rust,ignore
 // Illustrative: not compiled.

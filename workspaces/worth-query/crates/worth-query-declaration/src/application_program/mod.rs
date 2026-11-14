@@ -96,8 +96,8 @@ pub use external_input::{ApplicationExternalInputProvider, ApplicationExternalIn
 pub use feature::{
     ApplicationFeature, ApplicationFeatureDeclaration, ApplicationFeatureDefinition,
     ApplicationFeatureInputDeclaration, ApplicationFeatureInputLeaf, ApplicationFeatureInputList,
-    ApplicationFeatureOutputDeclaration, ApplicationFeatureSpec, ApplicationFeatureSpecBuilder,
-    ApplicationInputPort, ApplicationOutputPort, ApplicationPortRef,
+    ApplicationFeatureInputsShape, ApplicationFeatureOutputDeclaration, ApplicationFeatureSpec,
+    ApplicationFeatureSpecBuilder, ApplicationInputPort, ApplicationOutputPort, ApplicationPortRef,
     ApplicationRequiredFeatureOutput, ApplicationRequiredFeatureRoleDeclaration,
     ApplicationRequiredFeatureRoleKind, ApplicationRequiredFeatureRoles,
 };
