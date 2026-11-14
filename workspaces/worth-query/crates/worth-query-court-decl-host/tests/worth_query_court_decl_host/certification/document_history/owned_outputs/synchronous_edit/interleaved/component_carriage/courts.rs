@@ -30,7 +30,7 @@ fn recursive_component_retains_parents_and_later_static_selectors() {
     // This real read of first:a forces the earlier prerequisite wave before
     // its own unchanged-a root is appended, then supplies static selector a.
     edit.push_stage::<AfterTree, _>(fixture::after_producer::Intent {
-        key: "a".into(),
+        key: "envelope-cap".into(),
         value: 1,
         key_derived_target: false,
     })
