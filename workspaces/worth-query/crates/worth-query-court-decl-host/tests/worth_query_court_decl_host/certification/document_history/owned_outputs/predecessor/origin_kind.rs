@@ -37,7 +37,7 @@ fn historical_selection_predecessor(host: &Host) {
     let values = PROBE.with(|probe| probe.borrow().values[before..].to_vec());
     assert_eq!(
         values,
-        [Err(WorthQueryPredecessorReadDenial::Native(
+        [Err(WorthQueryProducerObservationReadDenial::Native(
             RelationalPredecessorBasisDenial::PredecessorBasisUnavailableForOrigin(
                 RelationalPredecessorBasisOrigin::HistoricalSelection
             )

@@ -48,7 +48,7 @@ pub struct OriginalSettledProducerObservation {
     read: WorthQueryProductBranchReadIdentity,
     source: OriginalSettledProducerSource,
     correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
-    historical_reads: Option<Arc<[crate::domain_computation::primary_graph::application_contribution::producer::predecessor_reads::WorthQueryHistoricalProducerRead]>>,
+    historical_reads: Option<Arc<[crate::domain_computation::primary_graph::application_contribution::producer::observation_reads::WorthQueryHistoricalProducerRead]>>,
     _memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 
@@ -222,7 +222,7 @@ impl OriginalSettledProducerObservation {
 
     pub(in crate::domain_computation::primary_graph) fn predecessor_reads(
         &self,
-    ) -> Option<&[crate::domain_computation::primary_graph::application_contribution::producer::predecessor_reads::WorthQueryHistoricalProducerRead]>{
+    ) -> Option<&[crate::domain_computation::primary_graph::application_contribution::producer::observation_reads::WorthQueryHistoricalProducerRead]>{
         self.historical_reads.as_deref()
     }
     pub fn read(&self) -> &WorthQueryProductBranchReadIdentity {

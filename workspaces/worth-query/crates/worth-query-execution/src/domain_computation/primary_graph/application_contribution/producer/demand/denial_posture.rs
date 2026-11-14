@@ -104,7 +104,7 @@ impl WorthQueryOutputDemandDenialKind {
             | Self::IncompleteDependencyCoverage
             | Self::RetainedBasisUnavailable
             | Self::Closed
-            | Self::PredecessorRead(_)
+            | Self::ObservationRead(_)
             | Self::DuplicatePerformedSource => Terminal,
         }
     }

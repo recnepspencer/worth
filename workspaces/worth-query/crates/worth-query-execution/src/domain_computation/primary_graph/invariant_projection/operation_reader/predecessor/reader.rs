@@ -3,32 +3,41 @@ use super::*;
 use worth_query_declaration::facade::application_schema::ApplicationEntityRef;
 
 mod identity;
-pub use identity::{PredecessorEntity, PredecessorRelation};
+pub use identity::{BeforeEntity, BeforeRelation};
 
-pub struct PredecessorDecisionReader<'borrow, 'reader, 'runtime, S, O> {
-    pub(super) reader: &'borrow mut WorthQueryApplicationOperationInvariantProjectionReader<
-        'reader,
-        'runtime,
-        S,
-        O,
-    >,
+pub struct BeforeDecisionReader<'borrow, 'reader, 'runtime, S, O> {
+    pub(in crate::domain_computation::primary_graph::invariant_projection::operation_reader) reader:
+        &'borrow mut WorthQueryApplicationOperationInvariantProjectionReader<
+            'reader,
+            'runtime,
+            S,
+            O,
+        >,
 }
-impl<S: ApplicationSchema, O> PredecessorDecisionReader<'_, '_, '_, S, O> {
+impl<S: ApplicationSchema, O> BeforeDecisionReader<'_, '_, '_, S, O> {
+    /// Descriptive version of this actual data basis, never a Current certificate.
+    pub fn version(&self) -> worth_relational::facade::identity::VersionId {
+        self.reader
+            .reader
+            .native
+            .version(self.reader.reader.snapshot)
+    }
+
     /// Reacquire the same full-generation identity at the predecessor's basis.
     pub fn entity<E: ApplicationEntityMarkerIdentity<S> + OperationReads<O>>(
         &mut self,
         entity: ApplicationEntityRef<S, E>,
         current: &WorthQueryInvariantEntityIdentity<S, E>,
-    ) -> Result<PredecessorEntity<S, E>, WorthQueryCurrentOutputDenial> {
+    ) -> Result<BeforeEntity<S, E>, WorthQueryCurrentOutputDenial> {
         let _ = entity;
         let execution = *self.reader.reader.execution;
         self.reader
             .live_current_identity(&execution, E::IDENTIFIER, current.entity_id)
-            .map(|identity| PredecessorEntity { identity })
+            .map(|identity| BeforeEntity { identity })
     }
     pub fn field<E, A, F, V>(
         &mut self,
-        entity: &PredecessorEntity<S, E>,
+        entity: &BeforeEntity<S, E>,
         field: F,
     ) -> Result<Option<V>, WorthQueryInvariantDecisionPlanDenial>
     where
@@ -45,7 +54,7 @@ impl<S: ApplicationSchema, O> PredecessorDecisionReader<'_, '_, '_, S, O> {
     /// authorized operation's field contract. The handle never becomes current.
     pub fn content<E, F, C>(
         &mut self,
-        entity: &PredecessorEntity<S, E>,
+        entity: &BeforeEntity<S, E>,
         content: worth_query_declaration::facade::application_schema::ApplicationContentFieldRef<
             F,
             C,
@@ -67,30 +76,28 @@ impl<S: ApplicationSchema, O> PredecessorDecisionReader<'_, '_, '_, S, O> {
     pub fn relations_from<R: OperationReads<O>, F, T>(
         &mut self,
         relation: ApplicationRelationRef<S, R, F, T>,
-        from: &PredecessorEntity<S, F>,
-    ) -> Result<Vec<PredecessorRelation<S, R, F, T>>, WorthQueryInvariantProjectionTraversalDenial>
-    {
+        from: &BeforeEntity<S, F>,
+    ) -> Result<Vec<BeforeRelation<S, R, F, T>>, WorthQueryInvariantProjectionTraversalDenial> {
         self.reader
             .decision_relations_from(relation, &from.identity)
             .map(|relations| {
                 relations
                     .into_iter()
-                    .map(PredecessorRelation::from_read)
+                    .map(BeforeRelation::from_read)
                     .collect()
             })
     }
     pub fn relations_to<R: OperationReads<O>, F, T>(
         &mut self,
         relation: ApplicationRelationRef<S, R, F, T>,
-        to: &PredecessorEntity<S, T>,
-    ) -> Result<Vec<PredecessorRelation<S, R, F, T>>, WorthQueryInvariantProjectionTraversalDenial>
-    {
+        to: &BeforeEntity<S, T>,
+    ) -> Result<Vec<BeforeRelation<S, R, F, T>>, WorthQueryInvariantProjectionTraversalDenial> {
         self.reader
             .decision_relations_to(relation, &to.identity)
             .map(|relations| {
                 relations
                     .into_iter()
-                    .map(PredecessorRelation::from_read)
+                    .map(BeforeRelation::from_read)
                     .collect()
             })
     }

@@ -78,6 +78,17 @@ macro_rules! producer_member_effect {
     ($operation:ident, $writer:ident, $decision:ident, $input:ident) => { () };
 }
 // Shared fixture hooks default to no predecessor observation.
+macro_rules! original_contract {
+    (PredecessorInitial) => {
+        Some(super::super::super::predecessor::original::CONTRACT)
+    };
+    (PredecessorPreserve) => {
+        Some(super::super::super::predecessor::original::CONTRACT)
+    };
+    ($operation:ident) => {
+        None
+    };
+}
 macro_rules! predecessor_contract {
     (PredecessorInitial) => {
         Some(super::super::super::predecessor::CONTRACT)
@@ -160,7 +171,8 @@ macro_rules! phase {
                 const APPLICABILITY: &'static [WorthQueryProducerApplicability] = &[WorthQueryProducerApplicability::new(PROFILE, WorthQueryProducerLifecyclePosture::$posture)];
                 const REQUIRED_INVARIANTS: &'static [WorthQueryProducerInvariantRequirement] = &[];
                 const OWNERSHIP: ProducerPublicationOwnership = ProducerPublicationOwnership::$ownership;
-                const PREDECESSOR_READS: Option<WorthQueryPredecessorReadContract<Schema>> = predecessor_contract!($operation);
+                const PREDECESSOR_READS: Option<WorthQueryProducerObservationReadContract<Schema>> = predecessor_contract!($operation);
+                const ORIGINAL_READS: Option<WorthQueryProducerObservationReadContract<Schema>> = original_contract!($operation);
                 const REUSE_POLICY: &'static str = "exact-source";
             }
             impl WorthQueryApplicationProducerProvider<Schema, Producer> for Provider {

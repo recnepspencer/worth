@@ -1,16 +1,16 @@
 //! C operation permission precedes selecting the genuine predecessor's old truth.
 use super::*;
-pub(super) use crate::domain_computation::primary_graph::application_contribution::producer::predecessor_reads::WorthQueryPredecessorReadDenial as Denial;
+pub(super) use crate::domain_computation::primary_graph::application_contribution::producer::observation_reads::WorthQueryProducerObservationReadDenial as Denial;
 use worth_query_declaration::facade::application_schema::{ApplicationOperationMarkerIdentity, ApplicationOperationRef};
 use worth_relational::facade::{runtime::RelationalRuntime, mvcc::{RelationalPredecessorInput, RelationalRequiredOutputPublication}};
 
 impl<S: ApplicationSchema> SourceQueryReaderAccess<'_, S> {
-    pub(in crate::domain_computation::primary_graph) fn predecessor_control(
+    pub(in crate::domain_computation::primary_graph) fn observation_control(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         native: &RelationalRuntime,
     ) -> Result<(), Denial> {
-        if let Some(cause) = self.predecessor_refused.borrow().as_ref() {
+        if let Some(cause) = self.observation_refused.borrow().as_ref() {
             return Err(cause.clone());
         }
         self.confirm_control(
@@ -20,7 +20,7 @@ impl<S: ApplicationSchema> SourceQueryReaderAccess<'_, S> {
         )
         .map_err(|cause| Denial::Control(Box::new(self.record_control_refusal(cause))))
     }
-    pub(in crate::domain_computation::primary_graph) fn record_predecessor_failure(
+    pub(in crate::domain_computation::primary_graph) fn record_observation_failure(
         &self,
         cause: &Denial,
     ) {
@@ -34,7 +34,7 @@ impl<S: ApplicationSchema> SourceQueryReaderAccess<'_, S> {
             _ => false,
         };
         if !data_posture {
-            self.predecessor_refused
+            self.observation_refused
                 .borrow_mut()
                 .get_or_insert_with(|| cause.clone());
         }
@@ -55,7 +55,54 @@ impl<S: ApplicationSchema> SourceQueryReaderAccess<'_, S> {
     where O: ApplicationOperationMarkerIdentity<S> + 'static,
         O::InputBinding: ApplicationStructuredValueBinding<Value = I>, I: 'static,
 {
-        self.predecessor_control(execution, native)?;
+        let (contracts, authorization) =
+            self.authorize_observation(execution, native, operation)?;
+        let access = self
+            .predecessor
+            .as_ref()
+            .ok_or(Denial::UndeclaredObservationRead)?;
+        access.require::<S, O>()?;
+        let (prior, basis) = access.select(
+            execution,
+            self.application,
+            native,
+            self.shared.selected().product().relational_basis(),
+            scope,
+            partition,
+        )?;
+        Ok((prior, basis, contracts, authorization))
+    }
+    pub(in crate::domain_computation::primary_graph) fn prepare_original<O, I>(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        native: &RelationalRuntime,
+        operation: ApplicationOperationRef<S, O, I>,
+    ) -> Result<(
+        Arc<worth_query_installation::facade::WorthQueryCompiledApplicationOperationContracts>,
+        Arc<crate::domain_computation::primary_graph::application_attempt::SourceReadAuthorization>,
+    ), Denial>
+    where O: ApplicationOperationMarkerIdentity<S> + 'static,
+        O::InputBinding: ApplicationStructuredValueBinding<Value = I>, I: 'static,
+{
+        self.original
+            .as_ref()
+            .ok_or(Denial::UndeclaredObservationRead)?
+            .require::<S, O>()?;
+        self.authorize_observation(execution, native, operation)
+    }
+    pub(in crate::domain_computation::primary_graph) fn authorize_observation<O, I>(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        native: &RelationalRuntime,
+        operation: ApplicationOperationRef<S, O, I>,
+    ) -> Result<(
+        Arc<worth_query_installation::facade::WorthQueryCompiledApplicationOperationContracts>,
+        Arc<crate::domain_computation::primary_graph::application_attempt::SourceReadAuthorization>,
+    ), Denial>
+    where O: ApplicationOperationMarkerIdentity<S> + 'static,
+        O::InputBinding: ApplicationStructuredValueBinding<Value = I>, I: 'static,
+{
+        self.observation_control(execution, native)?;
         let installed = self
             .application
             .installed_schema()
@@ -74,7 +121,7 @@ impl<S: ApplicationSchema> SourceQueryReaderAccess<'_, S> {
         let authorization = self
             .read_authorization
             .as_ref()
-            .ok_or(Denial::UndeclaredPredecessorRead)?
+            .ok_or(Denial::UndeclaredObservationRead)?
             .observe(
                 execution,
                 native,
@@ -82,29 +129,16 @@ impl<S: ApplicationSchema> SourceQueryReaderAccess<'_, S> {
                 installed.installed_view(),
             )
             .map_err(Denial::Authorization)?;
-        let access = self
-            .predecessor
-            .as_ref()
-            .ok_or(Denial::UndeclaredPredecessorRead)?;
-        access.require::<S, O>()?;
-        let (prior, basis) = access.select(
-            execution,
-            self.application,
-            native,
-            self.shared.selected().product().relational_basis(),
-            scope,
-            partition,
-        )?;
         let authorization = crate::domain_computation::primary_graph::application_attempt::SourceReadAuthorization::retain_operation(
             execution, installed.installed_view(), self.read_authorization.as_ref().expect("admitted read"),
             authorization, &self.application.runtime.authorization,
         ).map_err(|stop| Denial::Control(Box::new(SourceQueryObservationStop::Read(WorthQueryAdmittedOneShotStop::Admission(stop)))))?;
         let contracts = installed.retain_compiled_contracts_for_admission();
-        Ok((prior, basis, contracts, authorization))
+        Ok((contracts, authorization))
     }
     pub(in crate::domain_computation::primary_graph) fn record_predecessor_read(
         &self,
-        read: crate::domain_computation::primary_graph::application_contribution::producer::predecessor_reads::WorthQueryHistoricalProducerRead,
+        read: crate::domain_computation::primary_graph::application_contribution::producer::observation_reads::WorthQueryHistoricalProducerRead,
     ) {
         self.predecessor
             .as_ref()

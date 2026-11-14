@@ -133,7 +133,7 @@ where
         .map_err(|cause| failed(Binding::IDENTITY, cause))?;
     admission.graph_work_mut().arm_coupled_handler();
     let predecessor_reads =
-        super::super::predecessor_reads::ProducerPredecessorReadAccess::prepare_coupled::<
+        super::super::observation_reads::ProducerPredecessorReadAccess::prepare_coupled::<
             Schema,
             Binding,
         >(
@@ -162,7 +162,7 @@ where
             shared.selected().product().read_lease_ref(), &producer_request, &producer_principal,
         ), coordination,
     ).map_err(super::denial::request_admission_rejected)?
-        .with_predecessor_reads(read_admission, predecessor_reads);
+        .with_producer_reads::<Binding>(read_admission, predecessor_reads);
     let prepared_handler = runtime
         .prepare_mutation_handler_plan_on_basis::<Operation<Schema, Binding>>(
             phase,

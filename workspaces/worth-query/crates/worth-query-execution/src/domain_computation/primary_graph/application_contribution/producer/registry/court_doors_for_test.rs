@@ -219,6 +219,7 @@ impl DeclaredProducerBinding {
     ) -> Self {
         Self {
             predecessor_reads: None,
+            original_reads: None,
             ownership,
             owned_scope_entity,
             owner,
@@ -253,7 +254,7 @@ impl DeclaredProducerBinding {
     #[doc(hidden)]
     pub fn set_predecessor_reads_for_test<S: ApplicationSchema>(
         &mut self,
-        contract: Option<super::super::WorthQueryPredecessorReadContract<S>>,
+        contract: Option<super::super::WorthQueryProducerObservationReadContract<S>>,
     ) {
         self.predecessor_reads = contract.map(|c| c.meaning());
     }

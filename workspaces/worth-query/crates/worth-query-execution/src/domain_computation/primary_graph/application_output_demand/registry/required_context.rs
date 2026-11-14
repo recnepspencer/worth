@@ -47,7 +47,7 @@ impl RequiredOutputDemandContext {
 
     pub(in crate::domain_computation::primary_graph) fn bind_predecessor_reads(
         &mut self,
-        state: Arc<crate::domain_computation::primary_graph::application_contribution::producer::predecessor_reads::ProducerPredecessorReadState>,
+        state: Arc<crate::domain_computation::primary_graph::application_contribution::producer::observation_reads::ProducerPredecessorReadState>,
     ) {
         self.handler.bind_predecessor_reads(state);
     }

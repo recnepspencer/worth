@@ -4894,9 +4894,9 @@ An owned producer can read its inputs as its exact predecessor publication
 consumed them. Declare its installed read-only operations beside `OWNERSHIP`:
 
 ```rust,ignore
-const PREDECESSOR_READS: Option<WorthQueryPredecessorReadContract<Schema>> =
-    Some(WorthQueryPredecessorReadContract::new(&[
-        WorthQueryPredecessorReadOperation::new(ReadInputs::reference()),
+const PREDECESSOR_READS: Option<WorthQueryProducerObservationReadContract<Schema>> =
+    Some(WorthQueryProducerObservationReadContract::new(&[
+        WorthQueryProducerObservationReadOperation::new(ReadInputs::reference()),
     ]));
 ```
 
@@ -4923,7 +4923,7 @@ let previous = reader.predecessor_observation(ReadInputs::reference(), |old| {
 
 The outer result describes observation admission; the closure's result describes
 its read. The restricted reader exposes tracked entity, field and relation
-reads. Its `PredecessorEntity` and `PredecessorRelation` handles are distinct from
+reads. Its `BeforeEntity` and `BeforeRelation` handles are distinct from
 current projection identities and cannot mint mutation targets. There is no raw
 reader, nested query, computation or publication access. Reads use the existing
 Native loan, request checks and projection limits. Current control contention
@@ -4944,7 +4944,7 @@ substituted with a current value, and no old root is retained by Query evidence.
 
 A first publication or cold reopen refuses `PredecessorBasisUnavailable`; a
 producer can then choose full computation. Undeclared reads refuse
-`UndeclaredPredecessorRead`, and conflicting predecessor coordinates refuse
+`UndeclaredObservationRead`, and conflicting predecessor coordinates refuse
 `PredecessorMismatch`. HistoricalSelection and authored-restoration publications
 refuse `PredecessorBasisUnavailableForOrigin`, naming the origin kind. Their
 navigation precommit basis is not the producer's consumed input basis; follow-up
@@ -8612,3 +8612,13 @@ result, stage receipt or typed domain denial; recovered receipts do not recreate
 results. After projecting a stage denial's identity and typed cause, consume
 `into_commit_outcome()` to transfer its original uncommitted cleanup/recovery
 owner. A domain refusal before a transaction begins has no such owner.
+
+
+Original producer DATA can be read through `DecisionReader::original_observation`
+under separately declared `ORIGINAL_READS` and fresh READ authorization at the
+admitted original C. `PREDECESSOR_READS` and `predecessor_observation` still read
+exact prior publication consumed inputs. Both use the readonly `BeforeDecisionReader`
+fields/content/relations and descriptive basis version; neither lends mutation
+targets or promotes old data to Current. Original C values do not become D-current
+expectations. Actual Initial/no-prior output may omit an old own image; Preserve
+requires genuine old data. The producer's WRITE permission does not grant READ.

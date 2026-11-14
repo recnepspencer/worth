@@ -57,7 +57,7 @@ macro_rules! reconciliation_phase {
                 const APPLICABILITY: &'static [WorthQueryProducerApplicability] = &[WorthQueryProducerApplicability::new(PROFILE, WorthQueryProducerLifecyclePosture::$posture)];
                 const REQUIRED_INVARIANTS: &'static [WorthQueryProducerInvariantRequirement] = &[];
                 const OWNERSHIP: ProducerPublicationOwnership = ProducerPublicationOwnership::$ownership;
-                const PREDECESSOR_READS: Option<WorthQueryPredecessorReadContract<Schema>> = None;
+                const PREDECESSOR_READS: Option<WorthQueryProducerObservationReadContract<Schema>> = None;
                 const REUSE_POLICY: &'static str = "exact-source";
             }
             impl WorthQueryApplicationProducerProvider<Schema, Producer> for Provider {

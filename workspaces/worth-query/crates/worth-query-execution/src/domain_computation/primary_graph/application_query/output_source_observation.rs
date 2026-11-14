@@ -55,9 +55,10 @@ pub(in crate::domain_computation::primary_graph) struct SourceQueryReaderAccess<
     pub(in crate::domain_computation::primary_graph) principal:
         &'a WorthQueryAuthenticatedExternalPrincipal<Schema>,
     pub(in crate::domain_computation::primary_graph) request: &'a WorthQueryRequestScope,
-    predecessor_refused: std::cell::RefCell<Option<crate::domain_computation::primary_graph::application_contribution::producer::predecessor_reads::WorthQueryPredecessorReadDenial>>,
+    observation_refused: std::cell::RefCell<Option<crate::domain_computation::primary_graph::application_contribution::producer::observation_reads::WorthQueryProducerObservationReadDenial>>,
     read_authorization: Option<crate::domain_computation::authorization::BorrowedReadOperationAdmission<'a>>,
-    predecessor: Option<crate::domain_computation::primary_graph::application_contribution::producer::predecessor_reads::ProducerPredecessorReadAccess>,
+    predecessor: Option<crate::domain_computation::primary_graph::application_contribution::producer::observation_reads::ProducerPredecessorReadAccess>,
+    original: Option<crate::domain_computation::primary_graph::application_contribution::producer::observation_reads::ProducerOriginalReadAccess>,
     current: Option<current_control::ordinary::CurrentSourceQueryControl<'a>>,
     history: Option<current_control::HistorySourceQueryControl<'a, Schema>>,
     refused: std::cell::RefCell<Option<SourceQueryObservationStop>>,
