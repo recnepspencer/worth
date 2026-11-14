@@ -20,6 +20,15 @@ pub struct Input {
     pub key: String,
     pub case: Case,
     pub link: Option<LinkTarget>,
+    pub observation_fault: ObservationFault,
+}
+/// Deliberately incomplete decisions exercise the pre-publication retention guard.
+#[derive(Clone, Debug, WorthValue)]
+#[worth_value(crate = "worth_query_decl::facade::application_schema")]
+pub enum ObservationFault {
+    None,
+    Unobserved,
+    ForeignOnly,
 }
 #[derive(Clone, Debug, WorthValue)]
 #[worth_value(crate = "worth_query_decl::facade::application_schema")]
