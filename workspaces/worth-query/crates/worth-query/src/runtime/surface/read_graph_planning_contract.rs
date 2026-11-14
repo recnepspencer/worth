@@ -199,7 +199,7 @@ fn planning_predicate(
     Some(WorthQueryReadGraphPredicateView {
         aspect: predicate.native_aspect_key(),
         field: predicate.native_field_key(),
-        parameter: predicate.value_basis(),
+        parameter: Some(predicate.value_basis()),
         scalar_family: *predicate.field_kind(),
     })
 }
