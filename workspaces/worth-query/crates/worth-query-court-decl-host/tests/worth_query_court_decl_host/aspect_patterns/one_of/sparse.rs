@@ -55,6 +55,7 @@ impl OperationLinks<Edit> for Companion {}
 impl OperationUnlinks<Edit> for Companion {}
 worth_query_structured_value_binding!(pub InputValue for Input {identity: "native-record-patterns.sparse.input.v1"});
 worth_query_operation!(pub Edit for Schema, input InputValue);
+worth_query_operation_reads!(Edit => [Record]);
 worth_query_operation_removes_aspects!(Edit => [First, Second, Third]);
 pub struct Outputs;
 pub struct Kept;
@@ -95,6 +96,7 @@ impl ApplicationDeclaredOperation<Schema> for Edit {
     ) -> ApplicationSchemaDeclarationBuilder<Schema> {
         schema
             .operation_projection_work_budget(Self::reference(), 32)
+            .operation_read_entity(Self::reference(), Record::reference())
             .operation_read_field(Self::reference(), Key::at("Key"))
             .operation_read_field(Self::reference(), FirstValue::at("FirstValue"))
             .operation_read_field(Self::reference(), SecondValue::at("SecondValue"))
