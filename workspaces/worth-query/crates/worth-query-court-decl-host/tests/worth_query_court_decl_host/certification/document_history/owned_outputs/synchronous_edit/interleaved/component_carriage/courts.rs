@@ -29,13 +29,13 @@ fn recursive_component_retains_parents_and_later_static_selectors() {
     .unwrap();
     // This real read of first:a forces the earlier prerequisite wave before
     // its own unchanged-a root is appended, then supplies static selector a.
-    edit.push_stage::<Tree, _>(fixture::after_producer::Intent {
+    edit.push_stage::<AfterTree, _>(fixture::after_producer::Intent {
         key: "a".into(),
         value: 1,
         key_derived_target: false,
     })
     .unwrap();
-    edit.push_stage::<Tree, _>(fixture::member::Intent {
+    edit.push_stage::<MemberTree, _>(fixture::member::Intent {
         key: "m".into(),
         value: 2,
         key_derived_target: false,
@@ -96,5 +96,15 @@ fn fragmented_overlapping_components_refuse_at_declaration() {
     assert_eq!(
         cause.kind(),
         ApplicationProgramValidationDenialKind::IncompleteOccurrenceComponent
+    );
+    let Err(cause) = ApplicationProgramAuthoring::<Schema, DuplicateTail>::begin()
+        .with_schema(&schema)
+        .validated_program()
+    else {
+        panic!("duplicate inside one graph admitted")
+    };
+    assert_eq!(
+        cause.kind(),
+        ApplicationProgramValidationDenialKind::DuplicateConnection
     );
 }

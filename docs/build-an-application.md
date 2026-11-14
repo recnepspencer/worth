@@ -4583,6 +4583,10 @@ flat eight-connection limit on the complete recursive component. Overlapping
 fragmented sibling wrappers refuse during program declaration with
 `IncompleteOccurrenceComponent`; put those groups inside the same wrapper.
 Independent components and ordinary static branches remain composable.
+Distinct startable roots may share the same complete component and exact typed
+static tail: the program describes those exact connections once, while retaining
+each root and its runtime demand. Textual ID collisions, conflicting meanings
+and duplicates within a graph still refuse.
 Unmarked static trees still reject declaration cycles. Each member
 implements `WorthQueryApplicationPrerequisiteOutputConnection`: its typed
 prerequisite query, sealed result-relation selector (`prerequisite_rows`), row

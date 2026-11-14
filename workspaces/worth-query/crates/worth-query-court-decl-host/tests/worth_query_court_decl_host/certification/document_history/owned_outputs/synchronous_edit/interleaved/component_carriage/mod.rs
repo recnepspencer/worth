@@ -33,13 +33,65 @@ type Root = ApplicationConnectionRef<
     Start,
 >;
 pub type All = ApplicationOccurrenceGroup<(PreviousConnection,), (ForeignConnection,)>;
-pub type Tree = ApplicationOutputGraph<
-    Root,
-    (
-        ApplicationOutputOccurrences<All>,
-        ApplicationOutputEdge<StaticConnection, ApplicationOutputLeaf>,
-    ),
+type Edges = (
+    ApplicationOutputOccurrences<All>,
+    ApplicationOutputEdge<StaticConnection, ApplicationOutputLeaf>,
+);
+pub type Tree = ApplicationOutputGraph<Root, Edges>;
+pub struct After;
+impl ApplicationConnectionIdentity for After {
+    const IDENTITY: &'static str = "component-carriage.after";
+}
+impl ApplicationOccurrenceConnectionBinding<Schema, entry::Entry, hierarchy::Parent> for After {}
+type AfterConnection = ApplicationConnectionRef<
+    Schema,
+    entry::Entry,
+    entry::EntryOutput,
+    hierarchy::Parent,
+    hierarchy::ContinuationInput,
+    After,
 >;
+pub type AfterTree = ApplicationOutputGraph<AfterConnection, Edges>;
+impl WorthQueryApplicationRequiredOutputConnection<Schema> for After {
+    type Source = fixture::after_producer::Binding;
+    type Demand = Demand;
+    const IDENTITY: &'static str = <Self as ApplicationConnectionIdentity>::IDENTITY;
+    fn demand_from_source(
+        input: &fixture::after_producer::Intent,
+    ) -> Result<Demand, WorthQueryRequiredOutputConnectionDenial> {
+        <fixture::after_producer::Binding as WorthQueryApplicationRequiredOutputSource<
+            Schema,
+            Self,
+        >>::demand_from_source(input)
+    }
+}
+pub struct MemberStart;
+impl ApplicationConnectionIdentity for MemberStart {
+    const IDENTITY: &'static str = "component-carriage.member";
+}
+impl ApplicationOccurrenceConnectionBinding<Schema, entry::Entry, hierarchy::Parent>
+    for MemberStart
+{
+}
+type MemberConnection = ApplicationConnectionRef<
+    Schema,
+    entry::Entry,
+    entry::EntryOutput,
+    hierarchy::Parent,
+    hierarchy::FirstSeedInput,
+    MemberStart,
+>;
+pub type MemberTree = ApplicationOutputGraph<MemberConnection, Edges>;
+impl WorthQueryApplicationRequiredOutputConnection<Schema> for MemberStart {
+    type Source = fixture::member::Binding;
+    type Demand = Demand;
+    const IDENTITY: &'static str = <Self as ApplicationConnectionIdentity>::IDENTITY;
+    fn demand_from_source(
+        input: &fixture::member::Intent,
+    ) -> Result<Demand, WorthQueryRequiredOutputConnectionDenial> {
+        <fixture::member::Binding as WorthQueryApplicationRequiredOutputSource<Schema, Self>>::demand_from_source(input)
+    }
+}
 impl WorthQueryApplicationRequiredOutputConnection<Schema> for Start {
     type Source = fixture::model::Binding;
     type Demand = Demand;
@@ -60,7 +112,7 @@ impl WorthQueryApplicationRequiredOutputSource<Schema, Start> for fixture::model
         Start::demand_from_source(input)
     }
 }
-impl WorthQueryApplicationRequiredOutputSource<Schema, Start> for fixture::after_producer::Binding {
+impl WorthQueryApplicationRequiredOutputSource<Schema, After> for fixture::after_producer::Binding {
     fn demand_from_source(
         _: &fixture::after_producer::Intent,
     ) -> Result<Demand, WorthQueryRequiredOutputConnectionDenial> {
@@ -70,7 +122,7 @@ impl WorthQueryApplicationRequiredOutputSource<Schema, Start> for fixture::after
         })
     }
 }
-impl WorthQueryApplicationRequiredOutputSource<Schema, Start> for fixture::member::Binding {
+impl WorthQueryApplicationRequiredOutputSource<Schema, MemberStart> for fixture::member::Binding {
     fn demand_from_source(
         _: &fixture::member::Intent,
     ) -> Result<Demand, WorthQueryRequiredOutputConnectionDenial> {
@@ -83,7 +135,7 @@ impl WorthQueryApplicationRequiredOutputSource<Schema, Start> for fixture::membe
 pub struct Program;
 impl ApplicationProgramDefinition<Schema> for Program {
     type Contributions = (Contribution,);
-    type Outputs = ApplicationProgramOutputs<Tree>;
+    type Outputs = ApplicationProgramOutputs<(Tree, (AfterTree, MemberTree))>;
     type Rules = ApplicationRuleLeaf;
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("owned-outputs.complete-component");
@@ -91,12 +143,12 @@ impl ApplicationProgramDefinition<Schema> for Program {
         let mut specs = hierarchy::Program::feature_specs();
         specs[0] = entry::envelope_actions::<
             fixture::Delivery<Tree>,
-            fixture::Delivery<Tree>,
+            fixture::Delivery<MemberTree>,
             Completion,
             Completion,
             Completion,
             Completion,
-            fixture::Delivery<Tree>,
+            fixture::Delivery<AfterTree>,
         >(entry::entry_builder::<Completion, Completion, Completion>())
         .finish();
         specs
@@ -117,6 +169,25 @@ impl ApplicationProgramDefinition<Schema> for Fragmented {
     type Rules = ApplicationRuleLeaf;
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("owned-outputs.fragmented-component");
+    fn feature_specs() -> Vec<ApplicationFeatureSpec> {
+        Program::feature_specs()
+    }
+}
+struct DuplicateTail;
+impl ApplicationProgramDefinition<Schema> for DuplicateTail {
+    type Contributions = (Contribution,);
+    type Outputs = ApplicationProgramOutputs<
+        ApplicationOutputGraph<
+            Root,
+            (
+                Edges,
+                ApplicationOutputEdge<StaticConnection, ApplicationOutputLeaf>,
+            ),
+        >,
+    >;
+    type Rules = ApplicationRuleLeaf;
+    const IDENTITY: ApplicationProgramIdentity =
+        ApplicationProgramIdentity::new("owned-outputs.duplicate-tail");
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
         Program::feature_specs()
     }
