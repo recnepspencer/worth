@@ -13,9 +13,9 @@ mod correction_binding;
 pub use correction_binding::{
     dispatch_application_correction, ApplicationCorrectionBinding,
     ApplicationCorrectionDerivationDenial, ApplicationCorrectionDispatch,
-    ApplicationCorrectionPreImage, ApplicationCorrectionSourceMaterial,
-    ApplicationCorrectionVisitor, ApplicationInverseBinding, DeclaredCorrectionBinding,
-    DeclaredCorrectionBindingParts,
+    ApplicationCorrectionFieldPreImage, ApplicationCorrectionPreImage,
+    ApplicationCorrectionSourceMaterial, ApplicationCorrectionVisitor, ApplicationInverseBinding,
+    DeclaredCorrectionBinding, DeclaredCorrectionBindingParts,
 };
 pub use correction_binding::{
     dispatch_application_reapplication, ApplicationReapplicationDispatch,
@@ -47,8 +47,8 @@ pub use correction_mechanism::{
     DeclaredCompensation, DeclaredCorrectionMechanism, DeclaredCorrectionMechanismDenial,
     DeclaredLoweringCorrespondenceRef, DeclaredPreImageDemand, DeclaredPreImageDemandDenial,
     DeclaredPreImageLocus, DeclaredPreImageRelationLocus, DeclaredRecordedInverse,
-    PortableCorrectionMechanism, PortablePreImageDemand, PortablePreImageLocus,
-    PortablePreImageRelationLocus, PortableRecordedInverse,
+    PortableChangedFieldOutput, PortableCorrectionMechanism, PortablePreImageDemand,
+    PortablePreImageLocus, PortablePreImageRelationLocus, PortableRecordedInverse,
 };
 pub use postcondition::DeclaredAftermathPostcondition;
 pub use reconciliation::DeclaredReconciliationProcedure;

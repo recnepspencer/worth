@@ -25,6 +25,8 @@ impl ApplicationProgramDefinition<Schema> for Program {
             .finish_action()
             .native_action::<restore_first::Binding>()
             .finish_action()
+            .native_action::<sparse::Binding>()
+            .finish_action()
             .finish()]
     }
 }
@@ -39,6 +41,7 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
         })?;
         setup.handler::<retirement::Binding, _>(retirement::Handler)?;
         setup.handler::<restore_first::Binding, _>(restore_first::Handler)?;
+        setup.handler::<sparse::Binding, _>(sparse::Handler)?;
         setup.invariant(
             rule::OneOf::reference(),
             ApplicationInvariantExecutionPoint::CommitBoundary,
@@ -65,6 +68,16 @@ pub fn try_install_seed(
     cancellation: Option<WorthQueryCancellationSource>,
     first: Option<u64>,
 ) -> Result<Host, WorthQueryApplicationPreparationDenial> {
+    try_install_seed_with_neighbour(cancellation, first, false)
+}
+pub fn install_with_neighbour() -> Host {
+    try_install_seed_with_neighbour(None, Some(11), true).unwrap()
+}
+fn try_install_seed_with_neighbour(
+    cancellation: Option<WorthQueryCancellationSource>,
+    first: Option<u64>,
+    neighbour: bool,
+) -> Result<Host, WorthQueryApplicationPreparationDenial> {
     in_memory_program(
         program(),
         Schema::declaration().unwrap(),
@@ -86,6 +99,12 @@ pub fn try_install_seed(
                 .field(Key::at("Key"), "record".to_owned());
             if let Some(first) = first { seed = seed.field(FirstValue::at("FirstValue"), first); }
             graph.bind_entity(seed)?;
+            if neighbour {
+                graph.bind_entity(WorthQueryApplicationEntitySeed::new(
+                    Record::reference(), WorthQueryApplicationEntityKey::new("neighbour").unwrap())
+                    .field(Key::at("Key"), "neighbour".to_owned())
+                    .field(FirstValue::at("FirstValue"), 999))?;
+            }
             Ok(())
         },
     )

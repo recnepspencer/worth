@@ -3,7 +3,8 @@ use super::*;
 use crate::domain_computation::application_aftermath::WorthQueryRetainedPreImage;
 use crate::domain_computation::primary_graph::{
     retained_correction::record::{
-        MaterialCapture, RecordedDisclosure, RecordedLocation, RecordedPreImageField, RecordedScope,
+        MaterialCapture, RecordedAbsenceKind, RecordedChangedFields, RecordedDisclosure,
+        RecordedLocation, RecordedPreImageAbsence, RecordedPreImageField, RecordedScope,
     },
     WorthQueryApplicationCommitAuthorityBinding,
 };
@@ -64,6 +65,19 @@ impl WorthQueryPrimaryGraphProvider {
                 })
                 .collect()
         });
+        let changed_fields = preimage.and_then(|image| image.changed_output().map(|output| {
+            use crate::domain_computation::application_aftermath::retained_preimage::RetainedPreImageAbsenceKind as Kind;
+            RecordedChangedFields {
+                role: output.output.role().to_owned(), entity: output.output.entity().to_owned(),
+                target: output.target,
+                absences: image.absences().iter().map(|field| RecordedPreImageAbsence {
+                    entity: field.locus.entity().to_owned(), aspect: field.locus.aspect().to_owned(),
+                    field: field.locus.field().to_owned(), target: field.target.clone(),
+                    kind: field.entity_kind, location: location(&field.locator),
+                    absence: match field.kind { Kind::Field => RecordedAbsenceKind::Field, Kind::Aspect => RecordedAbsenceKind::Aspect },
+                }).collect(),
+            }
+        }));
         owner.ensure_capture(
             MaterialCapture {
                 original,
@@ -79,6 +93,7 @@ impl WorthQueryPrimaryGraphProvider {
                 scope,
                 disclosure,
                 preimage: fields,
+                changed_fields,
                 content: preimage
                     .map(|preimage| preimage.content().clone())
                     .unwrap_or_default(),

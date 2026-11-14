@@ -42,7 +42,12 @@ pub struct Contribution;
 impl ApplicationSchemaContribution<Schema> for Contribution {
     const IDENTITY: ApplicationSchemaContributionIdentity =
         ApplicationSchemaContributionIdentity::new("native-record-patterns.contribution.v1");
-    type Members = (PatternModel, Contracts, correction::Restore);
+    type Members = (
+        PatternModel,
+        Contracts,
+        correction::Restore,
+        sparse::Correction,
+    );
 }
 
 pub struct Contracts;

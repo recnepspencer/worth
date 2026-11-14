@@ -36,6 +36,8 @@ pub(crate) struct WorthQueryRetainedPreImageFieldSeal {
 
 pub(crate) struct WorthQueryRetainedPreImageSeal {
     fields: Vec<WorthQueryRetainedPreImageFieldSeal>,
+    absences: Vec<crate::domain_computation::application_aftermath::retained_preimage::RetainedPreImageAbsence>,
+    changed_output: Option<crate::domain_computation::application_aftermath::retained_preimage::RetainedChangedFieldOutput>,
     total_encoded_bytes: usize,
 }
 
@@ -170,6 +172,8 @@ pub fn retain_matching(
         return Ok(WorthQueryRetainedPreImage::from_retention_seal(
             WorthQueryRetainedPreImageSeal {
                 fields: Vec::new(),
+                absences: Vec::new(),
+                changed_output: None,
                 total_encoded_bytes: 0,
             },
         ));
@@ -200,6 +204,8 @@ pub fn retain_matching(
     Ok(WorthQueryRetainedPreImage::from_retention_seal(
         WorthQueryRetainedPreImageSeal {
             fields,
+            absences: Vec::new(),
+            changed_output: None,
             total_encoded_bytes: total,
         },
     ))
@@ -298,8 +304,18 @@ fn locus_matches(
 }
 
 impl WorthQueryRetainedPreImageSeal {
-    pub(crate) fn into_parts(self) -> (Vec<WorthQueryRetainedPreImageFieldSeal>, usize) {
-        (self.fields, self.total_encoded_bytes)
+    pub(crate) fn into_parts(self) -> (
+        Vec<WorthQueryRetainedPreImageFieldSeal>,
+        Vec<crate::domain_computation::application_aftermath::retained_preimage::RetainedPreImageAbsence>,
+        Option<crate::domain_computation::application_aftermath::retained_preimage::RetainedChangedFieldOutput>,
+        usize,
+    ){
+        (
+            self.fields,
+            self.absences,
+            self.changed_output,
+            self.total_encoded_bytes,
+        )
     }
 }
 
@@ -327,4 +343,6 @@ impl WorthQueryRetainedPreImageFieldSeal {
 
 mod anchored;
 pub(super) use anchored::retain_from_authored_anchors;
+mod changed_fields;
+pub(super) use changed_fields::retain_changed_fields;
 mod court_doors_for_test;
