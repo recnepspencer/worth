@@ -1,5 +1,6 @@
 //! Conditional roots, genuine inverse custody and whole-envelope original replay.
 use super::*;
+use crate::certification::document_history::owned_outputs::member_edit::Edited;
 use crate::certification::document_history::owned_outputs::synchronous_edit::courts::native_head;
 use std::num::NonZeroUsize;
 use worth_query_host::facade::{
@@ -142,7 +143,7 @@ fn conditional_corrective_roots_and_final_actions_publish_once_and_replay_origin
         panic!("{outcome:?}")
     };
     assert_eq!(restored.stage_count(), 2);
-    assert!(restored.result(&prefix).is_some());
+    let _: &Edited = restored.result(&prefix).unwrap();
     assert_eq!(restored.result(&final_edit).unwrap().value, 8);
     assert_eq!(
         restored.stage_receipt(&prefix).unwrap().commit_reference(),
@@ -200,7 +201,7 @@ fn conditional_corrective_roots_and_final_actions_publish_once_and_replay_origin
     let Outcome::Committed(reapplied) = outcome else {
         panic!("{outcome:?}")
     };
-    assert!(reapplied.result(&prefix).is_some());
+    let _: &Edited = reapplied.result(&prefix).unwrap();
     assert_eq!(writes.published_rows.len() + writes.omitted_publications, 1);
     assert_eq!(native_head(&host).1, [current.0]);
     assert_eq!(host.producer_contacts_on_this_thread_for_test(), contacts);
