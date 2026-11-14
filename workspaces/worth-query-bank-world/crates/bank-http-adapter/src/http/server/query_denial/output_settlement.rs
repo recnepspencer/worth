@@ -78,6 +78,8 @@ pub(super) fn output_settlement(kind: BankApplicationOutputSettlementDenialKind)
         | Settlement::NoEffect => unavailable(),
         Settlement::ProductSelection(kind) => product_selection(kind),
         Settlement::RequiredSuccessorStateUnavailable
+        | Settlement::CyclicRequiredOutputOccurrences { .. }
+        | Settlement::RequiredOutputParentUnavailable { .. }
         | Settlement::DuplicatePerformedSource
         | Settlement::IncompleteDependencyCoverage
         | Settlement::ManagedSourceExpansionUnsupported

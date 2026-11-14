@@ -68,6 +68,12 @@ pub enum BankApplicationOutputSettlementDenialKind {
     PublicationCapacityExceeded,
     ForeignDemand,
     RequiredSuccessorStateUnavailable,
+    CyclicRequiredOutputOccurrences {
+        source: worth_query_host::facade::application_invariants::EntityId,
+    },
+    RequiredOutputParentUnavailable {
+        source: worth_query_host::facade::application_invariants::EntityId,
+    },
     ForeignSettlement,
     RetainedBasisUnavailable,
     Closed,
@@ -138,6 +144,12 @@ impl From<WorthQueryOutputDemandDenialKind> for BankApplicationOutputSettlementD
             Query::PublicationCapacityExceeded => Bank::PublicationCapacityExceeded,
             Query::ForeignDemand => Bank::ForeignDemand,
             Query::RequiredSuccessorStateUnavailable => Bank::RequiredSuccessorStateUnavailable,
+            Query::CyclicRequiredOutputOccurrences { source } => {
+                Bank::CyclicRequiredOutputOccurrences { source }
+            }
+            Query::RequiredOutputParentUnavailable { source } => {
+                Bank::RequiredOutputParentUnavailable { source }
+            }
             Query::ForeignSettlement => Bank::ForeignSettlement,
             Query::RetainedBasisUnavailable => Bank::RetainedBasisUnavailable,
             Query::Closed => Bank::Closed,
