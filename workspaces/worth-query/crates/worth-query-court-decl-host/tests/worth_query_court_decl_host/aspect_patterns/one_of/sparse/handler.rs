@@ -58,6 +58,7 @@ impl OperationHandler<Schema, Binding> for Handler {
                 reader.field(&observed, SecondRequired::at("SecondRequired"))?;
                 reader.field(&observed, ThirdValue::at("ThirdValue"))?;
                 reader.field(&observed, AnnotationValue::at("Value"))?;
+                reader.field(&observed, AnnotationNote::at("Note"))?;
             }
             let links = reader
                 .relations_from(Companion::reference(), &row)
