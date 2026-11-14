@@ -46,10 +46,13 @@ impl WorthQueryPrimaryGraphProvider {
             Some(restoration) => self
                 .graph
                 .with_runtime(execution, |runtime| {
-                    runtime.readmit_authored_restoration_coupled_owners(
+                    runtime.readmit_authored_restoration_stage_owners(
                         execution,
                         &publisher.native,
                         restoration.clone(),
+                        &assembly
+                            .map(|value| value.authored_stage_sources())
+                            .unwrap_or_default(),
                     )
                 })
                 .map_err(map_validation_failure)?,
@@ -73,15 +76,24 @@ impl WorthQueryPrimaryGraphProvider {
                         .with_runtime(execution, |runtime| {
                             let basis = material.product.observation().basis().relational_basis();
                             match selected {
-                                Some((anchor, co_anchors, roles)) => runtime
-                                    .readmit_authored_coupled_owners(
+                                Some((anchor, co_anchors, roles)) => {
+                                    let owners = runtime.readmit_authored_coupled_owners(
                                         execution,
                                         &publisher.native,
                                         basis,
                                         anchor,
                                         &co_anchors,
                                         &roles,
-                                    ),
+                                    )?;
+                                    runtime.readmit_later_authored_stage_owners(
+                                        execution,
+                                        &publisher.native,
+                                        owners,
+                                        &assembly
+                                            .map(|value| value.authored_stage_sources())
+                                            .unwrap_or_default(),
+                                    )
+                                }
                                 None => runtime.readmit_edit_coupled_stage_owners(
                                     execution,
                                     &publisher.native,

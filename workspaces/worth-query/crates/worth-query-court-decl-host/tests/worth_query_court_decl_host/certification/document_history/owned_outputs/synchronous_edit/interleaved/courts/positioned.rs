@@ -2,6 +2,7 @@
 use super::*;
 #[test]
 fn positioned_creates_keep_earlier_data_and_one_commit_or_discard_everything() {
+    let _execution = worth_query_host::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let host = host(None, None);
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);

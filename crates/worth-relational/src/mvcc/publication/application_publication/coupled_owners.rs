@@ -31,8 +31,8 @@ pub struct RelationalAuthoredCoupledOwners {
     pub(crate) owners: Vec<RelationalRequiredOutputPublication>,
     pub(crate) current: Vec<crate::history::data::SelectedOutputPublication>,
     pub(crate) deferred_edges: BTreeSet<RelationId>,
-    /// Edit sources of authored stages 2..k, in envelope order. Empty for a
-    /// single authored prefix, a retirement and a restoration.
+    /// Sources of authored stages 2..k in envelope order, also when the
+    /// genuine prefix is a Retirement/Restoration. Empty for a single writer.
     pub(crate) stages: Vec<EntityId>,
     pub(crate) corrective_root: Option<AuthoredRootCorrespondence>,
 }

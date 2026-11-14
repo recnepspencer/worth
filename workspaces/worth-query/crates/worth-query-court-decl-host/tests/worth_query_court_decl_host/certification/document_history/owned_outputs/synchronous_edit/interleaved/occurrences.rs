@@ -157,6 +157,7 @@ mod courts {
     }
     #[test]
     fn repeated_family_closes_previous_and_foreign_parents_before_real_source_projection() {
+        let _execution = worth_query_host::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
         let host = host();
         let scope = request_scope();
         let principal = authenticate_operator(host.installed_schema(), &scope);
@@ -208,6 +209,7 @@ mod courts {
     }
     #[test]
     fn actual_occurrence_cycle_and_missing_parent_refuse_before_any_supplier() {
+        let _execution = worth_query_host::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
         for key in ["cycle:a", "missing"] {
             let host = host();
             let scope = request_scope();

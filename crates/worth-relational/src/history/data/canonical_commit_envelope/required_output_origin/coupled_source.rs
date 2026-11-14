@@ -25,6 +25,22 @@ pub(super) fn install_empty(
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<RequiredOutputPublicationPositions, TransactionCommitError> {
     let custody = &group.binding.owners;
+    if let CoupledSource::Restoration { plan, .. } = &custody.source {
+        return super::authored_restoration::install(
+            envelope,
+            runtime,
+            basis,
+            created,
+            created_relations,
+            state,
+            installed,
+            group.binding.retirement_admission.as_deref(),
+            plan,
+            lease,
+            validated_history,
+            context,
+        );
+    }
     if let (
         CoupledSource::Retirement {
             anchor,

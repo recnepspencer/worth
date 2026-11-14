@@ -272,6 +272,14 @@ pub(super) fn entry_builder<
     MemberDelivery: ApplicationActionDelivery<Schema, member_edit::Binding>,
     RestoreDelivery: ApplicationActionDelivery<Schema, authored_member::restore::Binding>,
 >() -> ApplicationFeatureSpecBuilder<Schema, ApplicationRootComposition, Entry> {
+    entry_builder_with_retirement::<Delivery, MemberDelivery, RestoreDelivery, Completion>()
+}
+pub(super) fn entry_builder_with_retirement<
+    Delivery: ApplicationActionDelivery<Schema, edit::Binding>,
+    MemberDelivery: ApplicationActionDelivery<Schema, member_edit::Binding>,
+    RestoreDelivery: ApplicationActionDelivery<Schema, authored_member::restore::Binding>,
+    RetireDelivery: ApplicationActionDelivery<Schema, authored_member::retire::Binding>,
+>() -> ApplicationFeatureSpecBuilder<Schema, ApplicationRootComposition, Entry> {
     ApplicationFeatureSpec::root::<Schema, Entry>()
         .provides::<EntryOutput>()
         .action::<predecessor::synchronous::Binding, Completion>()
@@ -286,7 +294,7 @@ pub(super) fn entry_builder<
         .finish_action()
         .action::<member_edit::Binding, MemberDelivery>()
         .finish_action()
-        .action::<authored_member::retire::Binding, Completion>()
+        .action::<authored_member::retire::Binding, RetireDelivery>()
         .finish_action()
         .action::<authored_member::restore::Binding, RestoreDelivery>()
         .finish_action()
