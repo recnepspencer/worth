@@ -66,6 +66,9 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
         setup.handler::<predecessor::synchronous::Binding, _>(predecessor::synchronous::Handler)?;
         setup.handler::<member_edit::Binding, _>(member_edit::Handler)?;
         setup.handler::<member_delete::Binding, _>(member_delete::Handler)?;
+        setup.handler::<query::identity::expectation::Binding, _>(
+            query::identity::expectation::Handler,
+        )?;
         family::decision_write::install(setup)?;
         family::convergent::install(setup)?;
         family::decision_input::install(setup)?;

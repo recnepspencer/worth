@@ -106,25 +106,46 @@ fn write_relation_predicate(
     output: &mut dyn BinaryEncodingSink,
     predicate: &ApplicationQueryRelationPredicate,
 ) -> Result<(), Denial> {
-    output.u8(if predicate.parameter().is_some() {
-        1
-    } else {
-        2
-    })?;
-    let (entity, aspect, field) = predicate.field();
-    output.text(entity)?;
-    output.text(aspect)?;
-    output.text(field)?;
-    if let Some(parameter) = predicate.parameter() {
-        output.text(parameter)?;
+    match predicate {
+        ApplicationQueryRelationPredicate::EqualParameter(equal) => {
+            output.u8(1)?;
+            let (entity, aspect, field) = equal.field();
+            output.text(entity)?;
+            output.text(aspect)?;
+            output.text(field)?;
+            output.text(equal.parameter())?;
+            foundational_aspect::write_scalar_type(output, equal.scalar_family())
+        }
+        ApplicationQueryRelationPredicate::FieldAbsent {
+            entity,
+            aspect,
+            field,
+            scalar_family,
+        } => {
+            output.u8(2)?;
+            output.text(entity)?;
+            output.text(aspect)?;
+            output.text(field)?;
+            foundational_aspect::write_scalar_type(output, *scalar_family)
+        }
+        ApplicationQueryRelationPredicate::EntityEqualParameter { entity, parameter } => {
+            output.u8(3)?;
+            output.text(entity)?;
+            output.text(parameter)
+        }
     }
-    foundational_aspect::write_scalar_type(output, predicate.scalar_family())
 }
 
 fn decode_relation_predicate(
     input: &mut BinaryInput<'_>,
 ) -> Result<ApplicationQueryRelationPredicate, Denial> {
     let operator = input.u8()?;
+    if operator == 3 {
+        return Ok(ApplicationQueryRelationPredicate::EntityEqualParameter {
+            entity: input.text()?.to_owned(),
+            parameter: input.text()?.to_owned(),
+        });
+    }
     if !matches!(operator, 1 | 2) {
         return Err(Denial::new(Kind::UnsupportedRecordVariant));
     }
@@ -267,21 +288,39 @@ mod tests {
             assert_eq!(decoded, source);
             assert_eq!(
                 decoded.relations()[0].predicate().unwrap().field(),
-                ("Child", "Facts", "key")
+                Some(("Child", "Facts", "key"))
             );
         }
+    }
+
+    #[test]
+    fn intrinsic_identity_predicate_round_trips_its_current_full_meaning() {
+        let source = ApplicationQueryRelationPredicate::EntityEqualParameter {
+            entity: "Child".into(),
+            parameter: "selected-entity".into(),
+        };
+        let mut output = BinaryOutput::with_capacity(128);
+        super::write_relation_predicate(&mut output, &source).unwrap();
+        let bytes = output.into_bytes();
+        assert_eq!(bytes[0], 3);
+        let mut input = BinaryInput::new(&bytes);
+        assert_eq!(
+            super::decode_relation_predicate(&mut input).unwrap(),
+            source
+        );
+        assert!(input.is_finished());
     }
 
     #[test]
     fn unknown_or_incomplete_relation_operators_refuse_in_the_current_record_window() {
         use crate::denial::WorthQueryPackageArchiveDenialKind as Kind;
         assert_eq!(
-            super::decode_relation_predicate(&mut BinaryInput::new(&[3]))
+            super::decode_relation_predicate(&mut BinaryInput::new(&[4]))
                 .unwrap_err()
                 .kind(),
             Kind::UnsupportedRecordVariant
         );
-        for tag in [1, 2] {
+        for tag in [1, 2, 3] {
             assert_eq!(
                 super::decode_relation_predicate(&mut BinaryInput::new(&[tag]))
                     .unwrap_err()

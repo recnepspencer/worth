@@ -16,6 +16,7 @@ mod expression_context;
 mod field;
 mod optional_aspect;
 mod relation_absence;
+mod relation_identity;
 pub use expression_context::ApplicationQueryExpressionContextDenial;
 mod relation;
 

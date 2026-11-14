@@ -4,9 +4,9 @@ use worth_query_declaration::facade::application_query::{
 
 use super::{
     WorthQueryReadGraphGuardView, WorthQueryReadGraphOrderingMechanism,
-    WorthQueryReadGraphOrderingView, WorthQueryReadGraphPredicateView,
-    WorthQueryReadGraphProjectionView, WorthQueryReadGraphRelationDirection,
-    WorthQueryReadGraphRelationView,
+    WorthQueryReadGraphOrderingView, WorthQueryReadGraphPredicateTarget,
+    WorthQueryReadGraphPredicateView, WorthQueryReadGraphProjectionView,
+    WorthQueryReadGraphRelationDirection, WorthQueryReadGraphRelationView,
 };
 use crate::application_query::graph_access_contract::WorthQueryInstalledGraphReadMeaning;
 use crate::application_query::{
@@ -195,8 +195,10 @@ pub(super) fn predicate_view(
     predicate: &WorthQueryInstalledGraphPredicate,
 ) -> WorthQueryReadGraphPredicateView<'_> {
     WorthQueryReadGraphPredicateView {
-        aspect: predicate.aspect_key(),
-        field: predicate.field_key(),
+        target: WorthQueryReadGraphPredicateTarget::Field {
+            aspect: predicate.aspect_key(),
+            field: predicate.field_key(),
+        },
         parameter: Some(predicate.parameter()),
         scalar_family: predicate.scalar_family(),
     }
@@ -206,8 +208,10 @@ pub(super) fn relation_predicate_view(
     predicate: &crate::application_query::WorthQueryInstalledGraphRelationPredicate,
 ) -> WorthQueryReadGraphPredicateView<'_> {
     WorthQueryReadGraphPredicateView {
-        aspect: predicate.aspect_key(),
-        field: predicate.field_key(),
+        target: predicate.field_keys().map_or(
+            WorthQueryReadGraphPredicateTarget::EntityIdentity,
+            |(aspect, field)| WorthQueryReadGraphPredicateTarget::Field { aspect, field },
+        ),
         parameter: predicate.parameter(),
         scalar_family: predicate.scalar_family(),
     }

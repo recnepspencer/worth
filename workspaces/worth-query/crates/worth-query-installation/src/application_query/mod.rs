@@ -66,8 +66,9 @@ pub use planning_contract::{
     WorthQueryPlanningInventoryStop, WorthQueryPreparedReadGraphPlanningContract,
     WorthQueryReadGraphGuardView, WorthQueryReadGraphOrderingMechanism,
     WorthQueryReadGraphOrderingView, WorthQueryReadGraphPlanningContract,
-    WorthQueryReadGraphPredicateView, WorthQueryReadGraphProjectionView,
-    WorthQueryReadGraphRelationDirection, WorthQueryReadGraphRelationView,
+    WorthQueryReadGraphPredicateTarget, WorthQueryReadGraphPredicateView,
+    WorthQueryReadGraphProjectionView, WorthQueryReadGraphRelationDirection,
+    WorthQueryReadGraphRelationView,
 };
 pub use read_family_binding::WorthQueryInstalledApplicationReadFamilyBinding;
 pub use root_selection::{

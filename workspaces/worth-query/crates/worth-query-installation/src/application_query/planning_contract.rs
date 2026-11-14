@@ -52,9 +52,17 @@ pub struct WorthQueryReadGraphRelationView<'a> {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum WorthQueryReadGraphPredicateTarget<'a> {
+    Field {
+        aspect: &'a AspectKey,
+        field: &'a FieldKey,
+    },
+    EntityIdentity,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct WorthQueryReadGraphPredicateView<'a> {
-    pub aspect: &'a AspectKey,
-    pub field: &'a FieldKey,
+    pub target: WorthQueryReadGraphPredicateTarget<'a>,
     /// None is the declared FieldAbsent operator; Some is scalar equality.
     pub parameter: Option<&'a str>,
     pub scalar_family: ScalarAspectType,
