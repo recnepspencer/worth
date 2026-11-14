@@ -191,6 +191,8 @@ pub(super) fn run(worker: bool) {
     let unavailable = unavailable.unwrap();
     assert!(unavailable
         .source_receipt()
+        .retained_receipt()
+        .expect("live unavailable completion retains the original receipt")
         .is_same_authoritative_commit(&source));
     assert_eq!(
         unavailable

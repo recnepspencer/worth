@@ -1,10 +1,43 @@
-//! Consuming Home admission checks actual output custody without discharging it.
+//! Consuming Home admission reclaims idle caches and checks live output custody.
 use super::*;
 use crate::domain_computation::primary_graph::{
     WorthQueryHomeRetirementDenial as Denial, WorthQueryHomeRetirementOwner as Owner,
 };
 
 impl WorthQueryOutputDemandRegistry {
+    /// Closed answers and stale scheduling hints carry no live demand.
+    pub(in crate::domain_computation::primary_graph) fn reclaim_home_retirement_cache(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<(), Denial> {
+        loop {
+            request.consult().map_err(Denial::Execution)?;
+            if self
+                .reclaim_unheld_observation()
+                .map_err(|_| Denial::Busy(Owner::InstalledProducers))?
+            {
+                continue;
+            }
+            let queue = self
+                .state
+                .lock()
+                .map_err(|_| Denial::Busy(Owner::InstalledProducers))?
+                .required_work_queue
+                .clone();
+            let Some(queue) = queue else {
+                return Ok(());
+            };
+            match queue.pop() {
+                required_work::RequiredWorkPop::Stale => continue,
+                required_work::RequiredWorkPop::Empty => return Ok(()),
+                // Dropping the claim requeues the original live work.
+                required_work::RequiredWorkPop::Claimed(_) => {
+                    return Err(Denial::Busy(Owner::InstalledProducers));
+                }
+            }
+        }
+    }
+
     pub(in crate::domain_computation::primary_graph) fn preflight_home_retirement(
         &mut self,
     ) -> Result<(), Denial> {
@@ -12,10 +45,18 @@ impl WorthQueryOutputDemandRegistry {
             .ok_or(Denial::Busy(Owner::InstalledProducers))?
             .get_mut()
             .map_err(|_| Denial::Busy(Owner::InstalledProducers))?;
+        // Native observers may retain inactive membership and its weak queue
+        // reference. Only live registry custody and queued work prevent close.
+        if state
+            .required_work_queue
+            .as_ref()
+            .is_some_and(|queue| !queue.is_quiescent())
+        {
+            return Err(Denial::Busy(Owner::InstalledProducers));
+        }
         if !state.records.is_empty()
             || state.join_pause.is_some()
             || !state.required_keys.is_empty()
-            || state.required_work_queue.is_some()
             || !state.source_preparations.is_empty()
             || !state.source_custody.is_empty()
             || state.retention_reservation.is_some()
@@ -66,13 +107,7 @@ mod tests {
     }
 
     #[test]
-    fn invisible_required_work_and_retention_custody_refuse_without_visible_rows() {
-        let mut original = WorthQueryOutputDemandRegistry::default();
-        original.state.lock().unwrap().required_work_queue =
-            Some(Arc::new(required_work::RequiredWorkQueue::new()));
-        assert!(original.state.lock().unwrap().records.is_empty());
-        refused(&mut original);
-        assert!(original.state.lock().unwrap().required_work_queue.is_some());
+    fn retention_reservation_refuses_without_visible_rows() {
         let mut reserved = WorthQueryOutputDemandRegistry::default();
         let reservation = reserved.arm_retention_reservation().unwrap();
         refused(&mut reserved);

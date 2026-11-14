@@ -5,7 +5,7 @@ pub enum RecordedSourceIdentity {
 }
 
 impl RecordedSourceIdentity {
-    pub(super) fn matches_current(
+    pub(in crate::domain_computation::primary_graph) fn matches_current(
         self,
         runtime: super::super::application_query::WorthQueryRuntimeSourceIdentity,
         checkpoint: super::super::application_query::WorthQueryCheckpointSourceIdentity,

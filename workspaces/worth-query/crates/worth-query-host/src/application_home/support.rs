@@ -121,7 +121,7 @@ pub const fn directory_family_support(family: DurableStateFamily) -> DirectoryFa
         | WorkflowEvidenceDependencies
         | WorkflowApprovals
         | WorkflowOperationOutputs
-        | WorkflowCapturedInputs => DirectoryFamilySupport::RefusedUntil(7),
+        | WorkflowCapturedInputs => DirectoryFamilySupport::Supported(7),
         RecoveryClaims | RecoveryClaimDispositions | RecoveryHandleCustody | BankRecoveryClaim => {
             DirectoryFamilySupport::Supported(8)
         }
