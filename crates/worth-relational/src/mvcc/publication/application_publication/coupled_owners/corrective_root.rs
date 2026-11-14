@@ -1,6 +1,6 @@
 //! An authenticated correction's root mapping does not depend on a cascade event.
 use super::*;
-use crate::storage::overlay::CurrentPartitionAccess;
+use crate::storage::overlay::{CurrentPartitionAccess, PartitionAccess};
 use crate::transactions::data::CreatedEntityRef;
 
 impl RelationalRuntime {
@@ -20,6 +20,11 @@ impl RelationalRuntime {
     ) -> Result<RelationalAuthoredCoupledOwners, TransactionCommitError> {
         let (original_commit, anchor, co_anchors) = correspondence;
         let refuse = || origin_denial("corrective root correspondence differs from its original");
+        let allocation_stop = |cause: worth_execution::ExecutionAllocationDenial| {
+            crate::execution::denial::allocation_commit_error(TransactionCommitError::conflict(
+                crate::mvcc::RelationalTransactionStagingDenial::from(cause).into_conflict(),
+            ))
+        };
         if installed.runtime_instance_id != self.runtime_instance_id()
             || owners.before.descriptor().runtime_instance_id() != self.runtime_instance_id()
             || !owners.before.is_current()
@@ -39,9 +44,7 @@ impl RelationalRuntime {
                 count,
                 execution.allocation_policy(),
             )
-            .map_err(|cause| {
-                custody::execution_stop(crate::execution::denial::lease_denial(cause))
-            })?;
+            .map_err(allocation_stop)?;
         for (old, target) in std::iter::once(anchor).chain(co_anchors) {
             execution
                 .run_native_with_checkpoint(|context| {
@@ -80,13 +83,9 @@ impl RelationalRuntime {
             {
                 return Err(refuse());
             }
-            targets.push((old, target)).map_err(|cause| {
-                custody::execution_stop(crate::execution::denial::lease_denial(cause))
-            })?;
+            targets.push((old, target)).map_err(allocation_stop)?;
         }
-        let targets = targets.seal().map_err(|cause| {
-            custody::execution_stop(crate::execution::denial::lease_denial(cause))
-        })?;
+        let targets = targets.seal().map_err(allocation_stop)?;
         if let Some(plan) = owners.source.restoration() {
             let event = plan
                 .retirement
