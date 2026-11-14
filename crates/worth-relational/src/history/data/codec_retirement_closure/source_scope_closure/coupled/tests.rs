@@ -1,25 +1,12 @@
-//! The exact comparison consumes descriptive data, never issues custody.
+//! Pure exact-owner assertions, borrowing the existing codec unit host's context.
 use super::*;
 use crate::mvcc::{RequiredOutputProducingImplementation, RequiredOutputPublicationMeaning};
-use crate::tests::support::{
-    create_entity, runtime_with_test_schema, test_owner_transaction_validation_input_for_main,
-};
-use worth_execution::{ExecutionRequest, ExecutionWorkCeiling};
-
-#[test]
-fn corrective_owner_union_keeps_missing_extra_and_wrong_predecessor_refusals() {
-    let host = crate::test_execution_policy::serial_request();
-    let execution = ExecutionRequest::serial(&host);
-    let runtime = runtime_with_test_schema();
-    let source = create_entity(&execution, &runtime, "descriptive-owner");
-    let original = runtime
-        .history
-        .positioned_canonical_commits_snapshot()
-        .last()
-        .unwrap()
-        .canonical_arc()
-        .clone();
-    let admission = test_owner_transaction_validation_input_for_main(&runtime);
+pub(crate) fn assert_exact_owner_refusals(
+    original: Arc<CanonicalCommitEnvelope>,
+    basis: &crate::branch::RelationalBranchBasisDescriptor,
+    source: EntityId,
+    context: &mut MapKernelContext<'_, '_>,
+) {
     let meaning = RequiredOutputPublicationMeaning {
         implementation: RequiredOutputProducingImplementation::from_checkpoint([1; 16], [2; 32])
             .unwrap(),
@@ -31,7 +18,7 @@ fn corrective_owner_union_keeps_missing_extra_and_wrong_predecessor_refusals() {
     // No installed issuer is fabricated. These are comparison inputs only;
     // complete publication/header/readmission still have their other gates.
     let value = serde_json::json!({
-        "commit": original.commit, "basis": admission.basis().descriptor(),
+        "commit": original.commit, "basis": basis,
         "producer": "owner-selection-data", "source_scope_owned": true,
         "dependency_identity": worth_foundational::CanonicalDigestId::new([5;32]),
         "outputs": [], "relations": [], "meaning": meaning, "publication": "Birth",
@@ -53,43 +40,32 @@ fn corrective_owner_union_keeps_missing_extra_and_wrong_predecessor_refusals() {
     let mut extra = successor;
     extra["meaning"]["family"] = serde_json::json!("another-owner");
     let extra: CanonicalRequiredOutputOrigin = serde_json::from_value(extra).unwrap();
-    execution
-        .in_scope(|lease| {
-            ExecutionWorkCeiling::new(execution.work_ceiling()).run_with_checkpoint(
-                lease,
-                None,
-                |context| {
-                    exact(
-                        std::slice::from_ref(&expected),
-                        std::iter::once(&correct),
-                        true,
-                        context,
-                    )
-                    .unwrap();
-                    assert!(exact(
-                        std::slice::from_ref(&expected),
-                        std::iter::empty(),
-                        true,
-                        context
-                    )
-                    .is_err());
-                    assert!(exact(
-                        std::slice::from_ref(&expected),
-                        [&correct, &extra].into_iter(),
-                        true,
-                        context
-                    )
-                    .is_err());
-                    assert!(exact(
-                        std::slice::from_ref(&expected),
-                        std::iter::once(&wrong),
-                        true,
-                        context
-                    )
-                    .is_err());
-                },
-            )
-        })
-        .unwrap()
-        .unwrap();
+    exact(
+        std::slice::from_ref(&expected),
+        std::iter::once(&correct),
+        true,
+        context,
+    )
+    .unwrap();
+    assert!(exact(
+        std::slice::from_ref(&expected),
+        std::iter::empty(),
+        true,
+        context
+    )
+    .is_err());
+    assert!(exact(
+        std::slice::from_ref(&expected),
+        [&correct, &extra].into_iter(),
+        true,
+        context
+    )
+    .is_err());
+    assert!(exact(
+        std::slice::from_ref(&expected),
+        std::iter::once(&wrong),
+        true,
+        context
+    )
+    .is_err());
 }

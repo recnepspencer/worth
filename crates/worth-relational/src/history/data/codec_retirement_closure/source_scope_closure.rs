@@ -13,6 +13,8 @@ use crate::{
 use std::sync::Arc;
 use worth_execution::MapKernelContext;
 mod coupled;
+#[cfg(test)]
+pub(crate) use coupled::tests::assert_exact_owner_refusals;
 
 /// O(H^2 + P^2 M), catalog-bounded and charged under the original request.
 pub(crate) fn historical_positions(

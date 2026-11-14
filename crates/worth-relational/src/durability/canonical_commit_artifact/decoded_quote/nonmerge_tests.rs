@@ -299,59 +299,84 @@ fn owned_decode_shared_schema_preflight_refuses_zero_original_memory() {
 
 #[test]
 fn malformed_stages_vector_is_refused_before_decode() {
-    #[derive(serde::Serialize)]
-    enum Sources {
-        Stages(&'static str),
-    }
-    #[derive(serde::Serialize)]
-    struct Malformed {
-        sources: Sources,
-        participants: Vec<()>,
-    }
-    let bytes = rmp_serde::to_vec_named(&Malformed {
-        sources: Sources::Stages("not an entity vector"),
-        participants: Vec::new(),
-    })
-    .unwrap();
-    let request = worth_execution::SerialRequest::from_memory(
-        worth_execution::SerialMemoryBudget::new(None),
-        worth_execution::CancellationSource::new().token(),
-        None,
-    );
+    let bytes = corrective_sources::malformed_stages();
+    let host = crate::test_execution_policy::serial_request();
     assert!(matches!(
         super::coupled_publication::quote(
             BorrowedPayload(&bytes),
-            &ExecutionRequest::serial(&request)
+            &ExecutionRequest::serial(&host)
         ),
         Err(Refusal::PayloadDecode { .. })
     ));
 }
 #[test]
 fn unknown_authored_source_variant_still_refuses_noncanonical_payload() {
-    #[derive(serde::Serialize)]
-    enum Sources {
-        UnknownStages(Vec<crate::identity::data::EntityId>),
-    }
-    #[derive(serde::Serialize)]
-    struct Malformed {
-        sources: Sources,
-        participants: Vec<()>,
-    }
-    let bytes = rmp_serde::to_vec_named(&Malformed {
-        sources: Sources::UnknownStages(Vec::new()),
-        participants: Vec::new(),
-    })
-    .unwrap();
-    let request = worth_execution::SerialRequest::from_memory(
-        worth_execution::SerialMemoryBudget::new(None),
-        worth_execution::CancellationSource::new().token(),
-        None,
-    );
+    let bytes = corrective_sources::unknown_source();
+    let host = crate::test_execution_policy::serial_request();
     assert!(matches!(
         super::coupled_publication::quote(
             BorrowedPayload(&bytes),
-            &ExecutionRequest::serial(&request)
+            &ExecutionRequest::serial(&host)
         ),
         Err(Refusal::NonCanonicalPayload)
     ));
+}
+#[test]
+fn corrective_source_codec_preserves_old_bytes_and_repeated_later_sources() {
+    let host = crate::test_execution_policy::serial_request();
+    let request = ExecutionRequest::serial(&host);
+    for (bytes, expected) in corrective_sources::roundtrips() {
+        let quote = super::coupled_publication::quote(BorrowedPayload(&bytes), &request).unwrap();
+        let _scratch = request.reserve_retained_memory(quote.transient).unwrap();
+        let memory = request.reserve_retained_memory(quote.retained).unwrap();
+        let mut decoded: crate::history::data::CanonicalCoupledAuthoredPublication =
+            rmp_serde::from_slice(&bytes).unwrap();
+        decoded._decoded_memory = Some(Arc::new(memory));
+        assert_eq!(decoded.sources, expected);
+        assert_eq!(rmp_serde::to_vec_named(&decoded).unwrap(), bytes);
+    }
+}
+#[test]
+fn corrective_source_quote_refuses_malformed_empty_missing_or_unknown_fields() {
+    let host = crate::test_execution_policy::serial_request();
+    for (label, bytes) in corrective_sources::malformed_inputs() {
+        assert!(
+            super::coupled_publication::quote(
+                BorrowedPayload(&bytes),
+                &ExecutionRequest::serial(&host)
+            )
+            .is_err(),
+            "{label}"
+        );
+    }
+}
+#[test]
+fn corrective_owner_union_keeps_missing_extra_and_wrong_predecessor_refusals() {
+    let host = crate::test_execution_policy::serial_request();
+    let execution = ExecutionRequest::serial(&host);
+    let runtime = crate::tests::support::runtime_with_test_schema();
+    let source = crate::tests::support::create_entity(&execution, &runtime, "descriptive-owner");
+    let original = runtime
+        .history
+        .positioned_canonical_commits_snapshot()
+        .last()
+        .unwrap()
+        .canonical_arc()
+        .clone();
+    let admission =
+        crate::tests::support::test_owner_transaction_validation_input_for_main(&runtime);
+    execution
+        .in_scope(|lease| {
+            worth_execution::ExecutionWorkCeiling::new(execution.work_ceiling())
+                .run_with_checkpoint(lease, None, |context| {
+                    crate::history::data::source_scope_closure::assert_exact_owner_refusals(
+                        original,
+                        admission.basis().descriptor(),
+                        source,
+                        context,
+                    );
+                })
+        })
+        .unwrap()
+        .unwrap();
 }

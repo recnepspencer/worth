@@ -295,4 +295,4 @@ fn exact<'a>(
 }
 
 #[cfg(test)]
-mod tests;
+pub(super) mod tests;

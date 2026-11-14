@@ -1,10 +1,10 @@
-//! Source grammar data only; these controls issue no publication authority.
-use super::*;
+//! Pure grammar data for the existing decoded-owner unit host; no runtime roots.
 use crate::history::data::{
     CanonicalAuthoredRestoration, CanonicalAuthoredRetirement, CanonicalCoupledAuthoredPublication,
     CanonicalCoupledAuthoredSources as Sources, CommitId,
 };
-
+use crate::identity::data::{EntityId, PartitionId};
+use std::sync::Arc;
 fn prefixes() -> (
     Arc<CanonicalAuthoredRetirement>,
     Arc<CanonicalAuthoredRestoration>,
@@ -41,10 +41,7 @@ fn group(sources: Sources) -> CanonicalCoupledAuthoredPublication {
         _decoded_memory: None,
     }
 }
-
-#[test]
-fn corrective_source_codec_preserves_old_bytes_and_repeated_later_sources() {
-    // An independent closed legacy grammar states the unchanged encoding.
+pub(super) fn roundtrips() -> Vec<(Vec<u8>, Sources)> {
     #[derive(serde::Serialize)]
     enum Legacy {
         Retirement(Arc<CanonicalAuthoredRetirement>),
@@ -55,6 +52,7 @@ fn corrective_source_codec_preserves_old_bytes_and_repeated_later_sources() {
     let (retirement, restoration) = prefixes();
     let scope = EntityId::new(PartitionId(1), 8, 1);
     let later = vec![scope, scope];
+    let mut values = Vec::new();
     for (old, current) in [
         (
             Legacy::Retirement(retirement.clone()),
@@ -70,56 +68,34 @@ fn corrective_source_codec_preserves_old_bytes_and_repeated_later_sources() {
             Sources::Stages(later.clone()),
         ),
     ] {
-        let bytes = rmp_serde::to_vec_named(&current).unwrap();
-        assert_eq!(bytes, rmp_serde::to_vec_named(&old).unwrap());
-        assert_eq!(rmp_serde::from_slice::<Sources>(&bytes).unwrap(), current);
+        assert_eq!(
+            rmp_serde::to_vec_named(&current).unwrap(),
+            rmp_serde::to_vec_named(&old).unwrap()
+        );
+        values.push(current);
     }
-    let host = SerialRequest::from_memory(
-        SerialMemoryBudget::new(None),
-        CancellationSource::new().token(),
-        None,
-    );
-    let request = ExecutionRequest::serial(&host);
-    for source in [
+    values.extend([
         Sources::RetirementWithLaterSources {
             prefix: retirement,
             later: later.clone(),
         },
         Sources::RestorationWithLaterSources {
             prefix: restoration,
-            later: later.clone(),
+            later,
         },
-    ] {
-        let original = group(source);
-        let bytes = rmp_serde::to_vec_named(&original).unwrap();
-        let quote =
-            super::super::coupled_publication::quote(BorrowedPayload(&bytes), &request).unwrap();
-        let _scratch = request.reserve_retained_memory(quote.transient).unwrap();
-        let memory = request.reserve_retained_memory(quote.retained).unwrap();
-        let mut decoded: CanonicalCoupledAuthoredPublication =
-            rmp_serde::from_slice(&bytes).unwrap();
-        decoded._decoded_memory = Some(Arc::new(memory));
-        assert_eq!(decoded.sources, original.sources);
-        let actual = match &decoded.sources {
-            Sources::RetirementWithLaterSources { later, .. }
-            | Sources::RestorationWithLaterSources { later, .. } => later,
-            _ => panic!("the new meaning was lost"),
-        };
-        assert_eq!(actual, &later);
-        assert_eq!(rmp_serde::to_vec_named(&decoded).unwrap(), bytes);
-    }
+    ]);
+    values
+        .into_iter()
+        .map(|source| {
+            let value = group(source);
+            (rmp_serde::to_vec_named(&value).unwrap(), value.sources)
+        })
+        .collect()
 }
-
-#[test]
-fn corrective_source_quote_refuses_malformed_empty_missing_or_unknown_fields() {
+pub(super) fn malformed_inputs() -> Vec<(String, Vec<u8>)> {
     let (retirement, restoration) = prefixes();
     let scope = EntityId::new(PartitionId(1), 8, 1);
-    let host = SerialRequest::from_memory(
-        SerialMemoryBudget::new(None),
-        CancellationSource::new().token(),
-        None,
-    );
-    let request = ExecutionRequest::serial(&host);
+    let mut cases = Vec::new();
     for (tag, source) in [
         (
             "RetirementWithLaterSources",
@@ -164,12 +140,43 @@ fn corrective_source_quote_refuses_malformed_empty_missing_or_unknown_fields() {
                 }
                 _ => unreachable!(),
             }
-            let bytes = rmp_serde::to_vec_named(&value).unwrap();
-            assert!(
-                super::super::coupled_publication::quote(BorrowedPayload(&bytes), &request)
-                    .is_err(),
-                "{tag} {defect}"
-            );
+            cases.push((
+                format!("{tag} {defect}"),
+                rmp_serde::to_vec_named(&value).unwrap(),
+            ));
         }
     }
+    cases
+}
+pub(super) fn malformed_stages() -> Vec<u8> {
+    #[derive(serde::Serialize)]
+    enum Source {
+        Stages(&'static str),
+    }
+    #[derive(serde::Serialize)]
+    struct Data {
+        sources: Source,
+        participants: Vec<()>,
+    }
+    rmp_serde::to_vec_named(&Data {
+        sources: Source::Stages("not an entity vector"),
+        participants: vec![],
+    })
+    .unwrap()
+}
+pub(super) fn unknown_source() -> Vec<u8> {
+    #[derive(serde::Serialize)]
+    enum Source {
+        UnknownStages(Vec<EntityId>),
+    }
+    #[derive(serde::Serialize)]
+    struct Data {
+        sources: Source,
+        participants: Vec<()>,
+    }
+    rmp_serde::to_vec_named(&Data {
+        sources: Source::UnknownStages(vec![]),
+        participants: vec![],
+    })
+    .unwrap()
 }
