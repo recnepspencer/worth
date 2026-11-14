@@ -150,7 +150,7 @@ fn changed_fields_require_one_preserved_output_and_a_bounded_same_entity_vocabul
             Err(Denial::InvalidChangedFieldOutput)
         );
     }
-    let foreign = DeclaredPreImageLocus::from_field(fragment::FieldSelection::<
+    let foreign = DeclaredPreImageLocus::<Schema>::from_field(fragment::FieldSelection::<
         Fixture,
         OtherEntity,
         Aspect,
