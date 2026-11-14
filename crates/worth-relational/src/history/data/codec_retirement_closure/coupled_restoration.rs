@@ -15,6 +15,68 @@ use std::sync::Arc;
 use worth_execution::ExecutionRequest;
 
 impl RelationalRuntime {
+    /// Explicit envelope conversion retains the genuine restoration plan.
+    /// With no later stages the established independent/coupled choice stays.
+    pub fn readmit_authored_restoration_stage_owners(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        installed: &RelationalInstalledApplicationPublicationAuthority,
+        restoration: RelationalAuthoredRestoration,
+        later: &[EntityId],
+    ) -> Result<Option<RelationalAuthoredCoupledOwners>, TransactionCommitError> {
+        if later.is_empty() {
+            return self.readmit_authored_restoration_coupled_owners(
+                execution,
+                installed,
+                restoration,
+            );
+        }
+        let owners = if restoration
+            .retirement
+            .coupled_authored_publication
+            .is_some()
+        {
+            self.readmit_authored_restoration_coupled_owners(execution, installed, restoration)?
+                .ok_or_else(|| {
+                    crate::mvcc::origin_denial("recorded restoration lost its coupled owners")
+                })?
+        } else {
+            if installed.runtime_instance_id != self.runtime_instance_id()
+                || restoration.before.descriptor().runtime_instance_id()
+                    != self.runtime_instance_id()
+                || !restoration.before.is_current()
+            {
+                return Err(crate::mvcc::origin_denial(
+                    "foreign restoration envelope basis",
+                ));
+            }
+            let source = restoration
+                .retirement
+                .authored_source_retirement()
+                .ok_or_else(|| {
+                    crate::mvcc::origin_denial("restoration has no actual retirement")
+                })?;
+            let anchor = source.anchor;
+            let before = restoration.before.clone();
+            let retirements = restoration.publications.clone();
+            RelationalAuthoredCoupledOwners {
+                before,
+                source: crate::mvcc::CoupledSource::Restoration {
+                    anchor,
+                    plan: Arc::new(restoration),
+                },
+                retirements,
+                owners: Vec::new(),
+                current: Vec::new(),
+                deferred_edges: Default::default(),
+                stages: Vec::new(),
+                corrective_root: None,
+            }
+        };
+        self.readmit_later_authored_stage_owners(execution, installed, owners, later)
+            .map(Some)
+    }
+
     pub fn readmit_authored_restoration_coupled_owners(
         &self,
         execution: &ExecutionRequest<'_, '_>,
@@ -24,20 +86,19 @@ impl RelationalRuntime {
         let Some(group) = &restoration.retirement.coupled_authored_publication else {
             return Ok(None);
         };
-        let CanonicalCoupledAuthoredSources::Retirement(source) = &group.sources else {
+        let Some(source) = restoration.retirement.authored_source_retirement() else {
             let recorded = match &group.sources {
-                CanonicalCoupledAuthoredSources::Retirement(source) => source.anchor,
-                CanonicalCoupledAuthoredSources::Edit(source) => *source,
-                // Header validation admits only lists of two or more sources.
-                CanonicalCoupledAuthoredSources::Stages(sources) => match sources.first() {
-                    Some(source) => *source,
-                    None => {
-                        return Err(crate::mvcc::origin_denial(
-                            "coupled authored stage list is empty",
-                        ));
-                    }
-                },
-                CanonicalCoupledAuthoredSources::Restoration(source) => source.original_anchor,
+                CanonicalCoupledAuthoredSources::Retirement { prefix, .. } => prefix.anchor,
+                CanonicalCoupledAuthoredSources::Edit { sources } => {
+                    *sources.first().ok_or_else(|| {
+                        crate::mvcc::origin_denial(
+                            "coupled edit source list has no authored prefix",
+                        )
+                    })?
+                }
+                CanonicalCoupledAuthoredSources::Restoration { prefix, .. } => {
+                    prefix.original_anchor
+                }
             };
             return Err(refuse(
                 Cause::InvalidAuthoredAnchor,
@@ -119,6 +180,7 @@ impl RelationalRuntime {
             current,
             deferred_edges,
             stages: Vec::new(),
+            corrective_root: None,
         }))
     }
 }

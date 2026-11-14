@@ -16,6 +16,55 @@ where
     Schema: worth_query_declaration::facade::application_schema::ApplicationSchema,
     Program: ApplicationProgramDefinition<Schema>,
 {
+    /// The recorded inverse remains the real prefix of one coupled envelope.
+    pub fn compare_and_commit_selected_corrective_envelope<Root, Source>(
+        &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
+        owner: &super::super::WorthQuerySelectedProgramOwner<'_, Schema>,
+        program: SourceProgram<Schema, Source>,
+        identities: &ApplicationMutationIdentities<'_, Schema, Source>,
+        source: std::sync::Arc<WorthQueryPreparedCorrectionSource>,
+        idempotency: crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding,
+        unseen: &crate::domain_computation::primary_graph::application_contribution::authored_edit::UnseenAuthoredEnvelope<'_>,
+        allocation: ExecutionAllocationPolicy<'_, '_>,
+    ) -> WorthQueryApplicationCommitOutcome
+    where
+        Root: ApplicationOutputGraphShape<Schema>,
+        RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
+        Source: ApplicationMutationBinding<Schema>
+            + WorthQueryApplicationRequiredOutputSource<Schema, RootConnection<Schema, Root>>,
+        Source::Input: Clone + Send + Sync,
+    {
+        if let Err(cause) = source.admit_receiver(
+            self.runtime()
+                .runtime
+                .product_runtime
+                .owner
+                .owner_identity(),
+        ) {
+            return WorthQueryApplicationCommitOutcome::Denied(cause);
+        }
+        if !source.is_action_binding::<Source>()
+            || !source.matches_input(identities.input_identity())
+            || !source.requires_root(Some(TypeId::of::<Root>()))
+        {
+            return WorthQueryApplicationCommitOutcome::Denied(
+                WorthQueryApplicationCommitDenial::correction_context_mismatch(),
+            );
+        }
+        let idempotency = source.intent().bind_idempotency(idempotency);
+        self.commit_edit_envelope::<Root, Source>(
+            phase,
+            owner,
+            program,
+            idempotency,
+            unseen,
+            ApplicationCommitCausality::RecordedCorrection(source),
+            allocation,
+        )
+    }
+
     /// Publishes the sealed inverse and reserves its ordinary required-output custody.
     pub fn commit_required_output_correction<Root, Source>(
         &self,

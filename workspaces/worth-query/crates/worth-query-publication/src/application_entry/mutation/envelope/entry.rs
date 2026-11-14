@@ -1,10 +1,17 @@
 //! The heterogeneous stage list keeps each installed binding and root nominal.
 use super::*;
-mod typed;
+pub(in crate::application_entry) mod corrective;
+pub(in crate::application_entry) mod typed;
 mod sealed {
     pub trait Stages {}
     impl Stages for super::NoEditStages {}
     impl<P: Stages, R, I> Stages for super::WithEditStage<P, R, I> {}
+    impl<S, P, K> Stages for super::super::runtime::RuntimeEditStages<S, P, K>
+    where
+        S: super::ApplicationSchema,
+        P: super::ApplicationProgramDefinition<S>,
+    {
+    }
 }
 pub trait EditStageList<S: ApplicationSchema>: sealed::Stages {
     fn binding(&self, ordinal: usize) -> Option<std::any::TypeId>;
@@ -43,10 +50,13 @@ pub trait CaptureEditStages<S: ApplicationSchema, P: ApplicationProgramDefinitio
     EditStageList<S>
 {
     fn capture(
-        &self,
-        context: &EnvelopeContext<'_, S>,
-        program: &WorthQueryProgramApplicationRuntime<S, P>,
-        key: &Arc<ApplicationEditEnvelopeKey<K>>,
+        self,
+        entries: &mut Vec<Box<dyn EditEntry<S, P, K>>>,
+    ) -> Result<(), WorthQueryEditEnvelopeExecutionDenial>
+    where
+        Self: Sized;
+    fn capture_boxed(
+        self: Box<Self>,
         entries: &mut Vec<Box<dyn EditEntry<S, P, K>>>,
     ) -> Result<(), WorthQueryEditEnvelopeExecutionDenial>;
 }
@@ -54,13 +64,16 @@ impl<S: ApplicationSchema, P: ApplicationProgramDefinition<S>, K> CaptureEditSta
     for NoEditStages
 {
     fn capture(
-        &self,
-        _: &EnvelopeContext<'_, S>,
-        _: &WorthQueryProgramApplicationRuntime<S, P>,
-        _: &Arc<ApplicationEditEnvelopeKey<K>>,
+        self,
         _: &mut Vec<Box<dyn EditEntry<S, P, K>>>,
     ) -> Result<(), WorthQueryEditEnvelopeExecutionDenial> {
         Ok(())
+    }
+    fn capture_boxed(
+        self: Box<Self>,
+        entries: &mut Vec<Box<dyn EditEntry<S, P, K>>>,
+    ) -> Result<(), WorthQueryEditEnvelopeExecutionDenial> {
+        (*self).capture(entries)
     }
 }
 #[doc(hidden)]
@@ -96,8 +109,13 @@ pub trait EditEntry<S: ApplicationSchema, P: ApplicationProgramDefinition<S>, K>
         crate::application_entry::WorthQueryPerformedMutationExecutionDenial,
     >;
 }
-struct TypedEntry<I, R, InputBinding: ApplicationStructuredValueBinding> {
-    intent: I,
-    input: ApplicationEncodedInput<InputBinding>,
-    marker: PhantomData<fn() -> R>,
+pub(in crate::application_entry) struct TypedEntry<S, I, R>
+where S: ApplicationSchema, I: ApplicationMutationIntent<S> {
+    pub(in crate::application_entry) intent: I,
+    pub(in crate::application_entry) input: ApplicationEncodedInput<<I::Binding as ApplicationMutationBinding<S>>::InputBinding>,
+    pub(in crate::application_entry) marker: PhantomData<fn() -> R>,
+    pub(in crate::application_entry) correction_source: Option<Arc<worth_query_execution::publication_boundary::recorded_correction::WorthQueryPreparedCorrectionSource>>,
+    pub(in crate::application_entry) corrective: bool,
+    pub(in crate::application_entry) original: Mutex<Option<AuthoredEditStageAdmission<S, I::Binding>>>,
+    pub(in crate::application_entry) commit_extension: Arc<Mutex<Option<crate::application_entry::mutation::commit_binding::WorthQueryCommitExtension>>>,
 }

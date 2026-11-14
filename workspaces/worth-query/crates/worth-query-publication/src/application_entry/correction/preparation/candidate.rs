@@ -13,6 +13,13 @@ use worth_query_execution::publication_boundary::recorded_correction::{
     WorthQueryCorrectionCommandKey, WorthQueryCorrectionIntent, WorthQueryPreparedCorrectionSource,
 };
 
+pub(super) enum CorrectionFront<T> {
+    Selected(T),
+    IntentDrift,
+    PublicationPending,
+    ProductUnpublished(worth_runtime_world::facade::ProductUnpublishedRecoveryHandle),
+}
+
 pub(super) enum NativePreparation<'a, S: ApplicationSchema, B: ApplicationMutationBinding<S>> {
     Prepared(super::super::publication::PreparedCorrectionAction<'a, S, B>),
     IntentDrift,

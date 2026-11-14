@@ -32,6 +32,34 @@ where
         RootConnection<S, R>: WorthQueryApplicationRequiredOutputConnection<S>,
         B: WorthQueryApplicationRequiredOutputSource<S, RootConnection<S, R>>,
     {
+        self.commit_edit_envelope::<R, B>(
+            phase,
+            owner,
+            program,
+            idempotency,
+            unseen,
+            crate::domain_computation::application_aftermath::ApplicationCommitCausality::Ordinary,
+            allocation,
+        )
+    }
+
+    pub(super) fn commit_edit_envelope<R, B>(
+        &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        owner: &WorthQuerySelectedProgramOwner<'_, S>,
+        program: selected::SourceProgram<S, B>,
+        idempotency: WorthQueryApplicationIdempotencyBinding,
+        unseen: &crate::domain_computation::primary_graph::application_contribution::authored_edit::UnseenAuthoredEnvelope<'_>,
+        causality: crate::domain_computation::application_aftermath::ApplicationCommitCausality,
+        allocation: ExecutionAllocationPolicy<'_, '_>,
+    ) -> WorthQueryApplicationCommitOutcome
+    where
+        B: ApplicationMutationBinding<S>,
+        B::Input: Clone + Send + Sync,
+        R: ApplicationOutputGraphShape<S>,
+        RootConnection<S, R>: WorthQueryApplicationRequiredOutputConnection<S>,
+        B: WorthQueryApplicationRequiredOutputSource<S, RootConnection<S, R>>,
+    {
         let execution = match phase.checked_execution_request_for(self.runtime().product_runtime())
         {
             Ok(execution) => execution,
@@ -48,14 +76,14 @@ where
         };
         self.runtime()
             .compare_and_commit_application_in_edit_envelope(
-            &execution,
-            phase,
-            &presented,
-            program,
-            idempotency,
-            unseen,
-            crate::domain_computation::application_aftermath::ApplicationCommitCausality::Ordinary,
-            allocation,
-        )
+                &execution,
+                phase,
+                &presented,
+                program,
+                idempotency,
+                unseen,
+                causality,
+                allocation,
+            )
     }
 }

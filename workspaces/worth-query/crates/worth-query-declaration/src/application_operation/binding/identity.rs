@@ -77,10 +77,10 @@ pub use polled::{
     application_computation_partition_digest_polled,
 };
 pub use request::{
-    ApplicationEditEnvelopeKey, ApplicationEditIntentIdentity, ApplicationEditStageIdentity,
-    ApplicationEditStageIntent, ApplicationEncodedMutationKey, ApplicationMutationIdentities,
-    ApplicationMutationIdentityAdmittedDenial, ApplicationMutationIdentityDenial,
-    ApplicationOwnedMutationIdentities,
+    ApplicationEditEnvelopeKey, ApplicationEditEnvelopeOrder, ApplicationEditIntentIdentity,
+    ApplicationEditStageIdentity, ApplicationEditStageIntent, ApplicationEncodedMutationKey,
+    ApplicationMutationIdentities, ApplicationMutationIdentityAdmittedDenial,
+    ApplicationMutationIdentityDenial, ApplicationOwnedMutationIdentities,
 };
 pub use retained_input::ApplicationRetainedInput;
 pub use work::ApplicationCanonicalWork;

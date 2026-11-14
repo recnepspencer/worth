@@ -83,7 +83,7 @@ where
         context: &AuthoredEditStageContext<'_, '_, '_, S>,
         unseen: &UnseenAuthoredEnvelope<'_>,
     ) -> Result<PrefixCandidate<S, B>, WorthQueryOutputDemandDenial> {
-        let admission = (self.admit)(context)?;
+        let admission = self.execution_admission(context)?;
         let identities = self
             .key
             .stage_with_encoded_input::<S, B>(&self.input, self.ordinal)
@@ -91,6 +91,7 @@ where
         let binding = WorthQueryApplicationIdempotencyBinding::for_mutation_identities(&identities)
             .bind_edit_envelope(&unseen.intent)
             .bind_admission(&admission.operation);
+        let binding = self.bind_corrective_identity(binding);
         let before = admission
             .operation
             .graph_work()

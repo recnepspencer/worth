@@ -16,9 +16,11 @@ pub(super) fn validate_ancestry(
     for envelope in ancestry.iter().rev() {
         if let Some(group) = &envelope.coupled_authored_publication {
             match &group.sources {
-                CanonicalCoupledAuthoredSources::Edit(_)
-                | CanonicalCoupledAuthoredSources::Stages(_) => {}
-                CanonicalCoupledAuthoredSources::Retirement(source) => {
+                CanonicalCoupledAuthoredSources::Edit { .. } => {}
+                CanonicalCoupledAuthoredSources::Retirement {
+                    prefix: source,
+                    later,
+                } => {
                     let anchors = source.anchors().collect::<Vec<_>>();
                     for (anchor, birth) in std::iter::once((source.anchor, source.birth))
                         .chain(source.co_anchors.iter().copied())
@@ -59,8 +61,15 @@ pub(super) fn validate_ancestry(
                         false,
                         context,
                     )?;
-                    let required = super::super::scope_dependents::linked_owners(
+                    let mut required = super::super::scope_dependents::linked_owners(
                         &anchors, &retiring, &preceding, context,
+                    )?;
+                    include_later(
+                        &mut required,
+                        later,
+                        &preceding,
+                        retiring.iter().map(|item| item.origin.as_ref()),
+                        context,
                     )?;
                     exact(
                         &required,
@@ -69,20 +78,32 @@ pub(super) fn validate_ancestry(
                         context,
                     )?;
                 }
-                CanonicalCoupledAuthoredSources::Restoration(source) => {
+                CanonicalCoupledAuthoredSources::Restoration {
+                    prefix: source,
+                    later,
+                } => {
                     charge(context, ancestry.len() + 1)?;
-                    let original = ancestry
+                    let original_envelope = ancestry
                         .iter()
                         .find(|item| item.commit.commit_id == source.retirement)
-                        .and_then(|item| item.coupled_authored_publication.as_ref())
                         .ok_or_else(|| {
                             Failure::at_source(
                                 source.original_anchor,
                                 "coupled restore lost retirement".into(),
                             )
                         })?;
-                    let mut required = Vec::with_capacity(original.participants.len());
-                    for part in &original.participants {
+                    let original = original_envelope.coupled_authored_publication.as_ref();
+                    let retirement =
+                        original_envelope
+                            .authored_source_retirement()
+                            .ok_or_else(|| {
+                                Failure::at_source(
+                                    source.original_anchor,
+                                    "coupled restore lost its genuine retirement".into(),
+                                )
+                            })?;
+                    let mut required = Vec::new();
+                    for part in original.iter().flat_map(|original| &original.participants) {
                         let prior = &part.origin;
                         for item in &preceding {
                             charge(
@@ -108,6 +129,13 @@ pub(super) fn validate_ancestry(
                             })?;
                         required.push(current.clone());
                     }
+                    include_later(
+                        &mut required,
+                        later,
+                        &preceding,
+                        retirement.publications.iter().map(Arc::as_ref),
+                        context,
+                    )?;
                     exact(
                         &required,
                         group.participants.iter().map(|part| part.origin.as_ref()),
@@ -144,6 +172,39 @@ pub(super) fn validate_ancestry(
                     ));
                 }
                 preceding.push(selected);
+            }
+        }
+    }
+    Ok(())
+}
+
+fn include_later<'a>(
+    required: &mut Vec<SelectedOutputPublication>,
+    later: &[EntityId],
+    preceding: &[SelectedOutputPublication],
+    retired: impl ExactSizeIterator<Item = &'a CanonicalRequiredOutputOrigin> + Clone,
+    context: &mut MapKernelContext<'_, '_>,
+) -> Result<(), Failure> {
+    for source in later {
+        for owner in later_source_owners(*source, preceding, context)? {
+            for other_family_bytes in retired
+                .clone()
+                .map(|item| item.meaning.family.len())
+                .chain(required.iter().map(|item| item.origin.meaning.family.len()))
+            {
+                charge(
+                    context,
+                    owner.origin.meaning.family.len() + other_family_bytes + 65,
+                )?;
+            }
+            if !retired
+                .clone()
+                .any(|item| item.same_publication(&owner.origin))
+                && !required
+                    .iter()
+                    .any(|item| item.origin.same_publication(&owner.origin))
+            {
+                required.push(owner);
             }
         }
     }
@@ -204,3 +265,6 @@ fn exact<'a>(
     }
     Ok(())
 }
+
+#[cfg(test)]
+pub(super) mod tests;

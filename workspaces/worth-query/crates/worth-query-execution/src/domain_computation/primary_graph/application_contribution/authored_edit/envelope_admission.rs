@@ -17,7 +17,7 @@ where
             .original_admission
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let admitted = &*retained;
+        let admitted = retained.as_ref().ok_or_else(Denial::foreign_admission)?;
         admitted
             .graph_work()
             .mutation_product()
@@ -35,7 +35,7 @@ where
             .original_admission
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let admitted = &*retained;
+        let admitted = retained.as_ref().ok_or_else(Denial::foreign_admission)?;
         if admitted.scope_entity_id() != self.source {
             return Err(Denial::foreign_admission());
         }
@@ -53,6 +53,7 @@ where
         let binding = WorthQueryApplicationIdempotencyBinding::for_mutation_identities(&identities)
             .bind_edit_envelope(&intent)
             .bind_admission(admitted);
+        let binding = self.bind_corrective_identity(binding);
         let execution = context
             .phase
             .checked_execution_request_for(context.application.product_runtime())

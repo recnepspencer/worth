@@ -9,20 +9,47 @@ pub(super) fn order_connections(
     features: &[ApplicationFeatureDeclaration],
     connections: &[ApplicationConnectionDeclaration],
 ) -> Result<ApplicationProgramConnectionOrder, ApplicationProgramValidationDenial> {
+    // Only declaration-owned explicit occurrence components are condensed.
+    // Static edges and every edge crossing a component remain ordinary DAG arcs.
+    let mut groups = features
+        .iter()
+        .map(|f| {
+            let key = (f.composition_instance(), f.identity());
+            (key, key)
+        })
+        .collect::<BTreeMap<_, _>>();
+    for c in connections.iter().filter(|c| c.is_occurrence_component()) {
+        let source = groups[&(c.source_instance(), c.source_feature())];
+        let target = groups[&(c.target_instance(), c.target_feature())];
+        let keep = source.min(target);
+        let replace = source.max(target);
+        for group in groups.values_mut() {
+            if *group == replace {
+                *group = keep;
+            }
+        }
+    }
     let mut incoming = BTreeMap::new();
     let mut ranks = BTreeMap::new();
     let mut outgoing = BTreeMap::<_, Vec<_>>::new();
-    for feature in features {
-        incoming.insert((feature.composition_instance(), feature.identity()), 0usize);
-        ranks.insert((feature.composition_instance(), feature.identity()), 0usize);
+    for group in groups.values() {
+        incoming.insert(*group, 0usize);
+        ranks.insert(*group, 0usize);
     }
     for connection in connections {
-        let source = (connection.source_instance(), connection.source_feature());
-        let target = (connection.target_instance(), connection.target_feature());
+        let source = groups[&(connection.source_instance(), connection.source_feature())];
+        let target = groups[&(connection.target_instance(), connection.target_feature())];
+        if connection.is_occurrence_component() {
+            continue;
+        }
+        if source == target {
+            return Err(denial(
+                ApplicationProgramValidationDenialKind::CyclicConnection,
+                "static dependency inside an occurrence component",
+            ));
+        }
         outgoing.entry(source).or_default().push(target);
-        *incoming
-            .get_mut(&target)
-            .expect("connection target was proven present") += 1;
+        *incoming.get_mut(&target).expect("validated target") += 1;
     }
     let mut ready: Vec<_> = incoming
         .iter()
@@ -44,13 +71,13 @@ pub(super) fn order_connections(
             }
         }
     }
-    if visited == features.len() {
+    if visited == incoming.len() {
         let mut ordered = connections
             .iter()
             .map(|connection| {
                 (
                     key(connection),
-                    ranks[&(connection.target_instance(), connection.target_feature())],
+                    ranks[&groups[&(connection.target_instance(), connection.target_feature())]],
                 )
             })
             .collect::<Vec<_>>();

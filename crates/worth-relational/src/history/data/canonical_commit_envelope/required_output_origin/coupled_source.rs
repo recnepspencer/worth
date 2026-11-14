@@ -25,6 +25,22 @@ pub(super) fn install_empty(
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<RequiredOutputPublicationPositions, TransactionCommitError> {
     let custody = &group.binding.owners;
+    if let CoupledSource::Restoration { plan, .. } = &custody.source {
+        return super::authored_restoration::install(
+            envelope,
+            runtime,
+            basis,
+            created,
+            created_relations,
+            state,
+            installed,
+            group.binding.retirement_admission.as_deref(),
+            plan,
+            lease,
+            validated_history,
+            context,
+        );
+    }
     if let (
         CoupledSource::Retirement {
             anchor,
@@ -80,12 +96,11 @@ pub(super) fn install(
     use coupled_authored::CanonicalCoupledAuthoredSources as Sources;
     let custody = &group.binding.owners;
     match &custody.source {
-        CoupledSource::Edit(source) if group.stages.is_empty() => Ok(Sources::Edit(*source)),
-        CoupledSource::Edit(source) => Ok(Sources::Stages(
-            std::iter::once(*source)
+        CoupledSource::Edit(source) => Ok(Sources::Edit {
+            sources: std::iter::once(*source)
                 .chain(group.stages.iter().map(|stage| stage.source))
                 .collect(),
-        )),
+        }),
         CoupledSource::Restoration { plan, .. } => {
             super::authored_restoration::install(
                 envelope,
@@ -101,12 +116,14 @@ pub(super) fn install(
                 validated_history,
                 context,
             )?;
-            Ok(Sources::Restoration(
-                envelope
-                    .authored_cascade_restoration
-                    .take()
-                    .expect("Native installed authored source restoration"),
-            ))
+            let prefix = envelope
+                .authored_cascade_restoration
+                .take()
+                .expect("Native installed authored source restoration");
+            Ok(Sources::Restoration {
+                prefix,
+                later: group.stages.iter().map(|stage| stage.source).collect(),
+            })
         }
         CoupledSource::Retirement {
             anchor,
@@ -141,12 +158,14 @@ pub(super) fn install(
                         publications: Vec::new(),
                     }));
             }
-            Ok(Sources::Retirement(
-                envelope
-                    .authored_cascade_retirement
-                    .take()
-                    .expect("Native installed authored source retirement"),
-            ))
+            let prefix = envelope
+                .authored_cascade_retirement
+                .take()
+                .expect("Native installed authored source retirement");
+            Ok(Sources::Retirement {
+                prefix,
+                later: group.stages.iter().map(|stage| stage.source).collect(),
+            })
         }
     }
 }

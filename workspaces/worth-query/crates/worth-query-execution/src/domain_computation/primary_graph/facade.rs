@@ -138,9 +138,11 @@ pub use super::application_output_demand::{
 };
 pub use super::application_program::{
     WorthQueryApplicationDependentOutputConnection,
-    WorthQueryApplicationDiscoveredOutputConnection, WorthQueryApplicationRequiredOutputConnection,
-    WorthQueryApplicationRequiredOutputSource, WorthQueryPreparedRequiredOutputSource,
-    WorthQueryRequiredOutputConnectionDenial, WorthQueryRequiredOutputSourcePreparationFailure,
+    WorthQueryApplicationDiscoveredOutputConnection,
+    WorthQueryApplicationPrerequisiteOutputConnection,
+    WorthQueryApplicationRequiredOutputConnection, WorthQueryApplicationRequiredOutputSource,
+    WorthQueryPreparedRequiredOutputSource, WorthQueryRequiredOutputConnectionDenial,
+    WorthQueryRequiredOutputSourcePreparationFailure,
 };
 pub use super::application_query::{
     query_read_kernel_entries_by_root_on_this_thread_for_test,
@@ -201,9 +203,9 @@ pub use super::application_query::{
     WorthQueryManagedIndexWatch, WorthQueryManagedIndexWatchOutcome,
     WorthQueryManagedIndexWatchUpdate, WorthQueryManagedIndexWorkDenial,
     WorthQueryObservedResultSet, WorthQueryObservedSource, WorthQueryPendingSourceExpectation,
-    WorthQueryPrimaryGraphApplicationReadinessSnapshot, WorthQueryScopeFreshnessCheck,
-    WorthQueryScopeFreshnessDiagnostic, WorthQuerySourceExpectationDenial,
-    WorthQuerySourceExpectationDenialKind,
+    WorthQueryPrerequisiteSelection, WorthQueryPrimaryGraphApplicationReadinessSnapshot,
+    WorthQueryScopeFreshnessCheck, WorthQueryScopeFreshnessDiagnostic,
+    WorthQuerySourceExpectationDenial, WorthQuerySourceExpectationDenialKind,
 };
 pub use super::application_runtime::{
     WorthQueryAdmittedInboundOccurrence, WorthQueryApplicationLiveDeliveryCloseReceipt,

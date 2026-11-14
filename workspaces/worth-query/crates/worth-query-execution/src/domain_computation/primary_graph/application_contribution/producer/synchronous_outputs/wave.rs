@@ -1,6 +1,13 @@
 //! Every prepared parent precedes discovery and preparation of the next wave.
 use super::*;
+mod occurrences;
 struct Scheduled<S: ApplicationSchema> {
+    key: Option<super::occurrences::OccurrenceKey>,
+    closed: bool,
+    done: bool,
+    alias: Option<usize>,
+    prerequisites: Vec<usize>,
+    _prerequisite_memory: Option<worth_execution::ExecutionMemoryReservation>,
     subject: &'static str,
     rank: usize,
     tree: Box<dyn capture::RequiredTree<S>>,
@@ -61,6 +68,12 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
             )
         })?;
         self.tasks.push(Scheduled {
+            key: None,
+            closed: false,
+            done: false,
+            alias: None,
+            prerequisites: Vec::new(),
+            _prerequisite_memory: None,
             subject,
             rank,
             tree: tree(),
@@ -118,48 +131,63 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
         candidate: &mut RelationalAuthoredCoupledCandidate<'_>,
         allowed: Option<&[String]>,
     ) -> Result<(), SynchronousOutputFailure> {
-        while !self.tasks.is_empty() {
-            let mut rank = usize::MAX;
-            for task in &self.tasks {
-                context.checkpoint(task.subject)?;
-                if allowed.is_none_or(|families| {
-                    families.iter().any(|family| family == task.tree.family())
-                }) {
-                    rank = rank.min(task.rank);
-                }
-            }
-            if rank == usize::MAX {
-                break;
-            }
-            for task in &mut self.tasks {
-                if task.rank == rank
-                    && allowed.is_none_or(|families| {
-                        families.iter().any(|family| family == task.tree.family())
-                    })
+        loop {
+            self.close_frontier(context, candidate)?;
+            let _planning_memory = self.quote_frontier(context, allowed.map_or(0, |v| v.len()))?;
+            let needed = self.needed(allowed);
+            let rank = self
+                .tasks
+                .iter()
+                .enumerate()
+                .filter(|(i, t)| needed[*i] && !t.done && self.ready(*i))
+                .map(|(_, t)| t.rank)
+                .min();
+            let Some(rank) = rank else {
+                if self
+                    .tasks
+                    .iter()
+                    .enumerate()
+                    .any(|(i, t)| needed[i] && !t.done)
                 {
-                    task.parent = task.tree.prepare(context, candidate)?;
+                    return Err(self.blocked_frontier(&needed));
                 }
+                break;
+            };
+            let mut ready = Vec::new();
+            ready.try_reserve_exact(self.tasks.len()).map_err(|_| {
+                SynchronousOutputFailure(CoupledSourceReadStop::from(
+                    super::super::WorthQueryOutputDemandDenial::new(
+                        super::super::WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
+                        "required occurrence frontier",
+                    ),
+                ))
+            })?;
+            for (i, t) in self.tasks.iter().enumerate() {
+                if needed[i] && !t.done && t.rank == rank && self.ready(i) {
+                    ready.push(i);
+                }
+            }
+            for i in &ready {
+                let task = &mut self.tasks[*i];
+                context.checkpoint(task.subject)?;
+                task.parent = task.tree.prepare(context, candidate)?;
+                task.done = true;
             }
             let pin = candidate
                 .pin_source(context.execution)
                 .map_err(CoupledSourceReadStop::from)?;
             let mut next = Self::new();
-            for task in self.tasks.drain(..) {
-                if task.rank != rank
-                    || !allowed.is_none_or(|families| {
-                        families.iter().any(|family| family == task.tree.family())
-                    })
-                {
-                    next.reserve_slot(context, task.subject)?;
-                    next.tasks.push(task);
-                    continue;
-                }
-                if let Some(mut parent) = task.parent {
+            for i in ready {
+                let task = &mut self.tasks[i];
+                if let Some(parent) = &mut task.parent {
                     parent.pin = pin.clone();
-                    task.tree.discover(context, &parent, &mut next)?;
+                    task.tree.discover(context, parent, &mut next)?;
                 }
             }
-            *self = next;
+            for task in next.tasks {
+                self.reserve_slot(context, task.subject)?;
+                self.tasks.push(task);
+            }
         }
         Ok(())
     }

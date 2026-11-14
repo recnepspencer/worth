@@ -33,7 +33,63 @@ impl<'a, Schema: ApplicationSchema> Prepare<'a, '_, '_, '_, '_, '_, Schema> {
                 <Inverse<Schema, C> as ApplicationMutationBinding<Schema>>::PrincipalIdentity,
             >,
     {
-        use NativePreparation as Preparation;
+        self.with_input::<C, _>(
+            false,
+            derive,
+            |request, target, key, command_key, selected, phase| {
+                super::candidate::prepare_action_candidate::<Schema, Inverse<Schema, C>, Admission>(
+                    request,
+                    phase,
+                    &target,
+                    key,
+                    command_key,
+                    selected,
+                )
+            },
+        )
+        .map(|front| match front {
+            super::candidate::CorrectionFront::Selected(prepared) => prepared,
+            super::candidate::CorrectionFront::IntentDrift => NativePreparation::IntentDrift,
+            super::candidate::CorrectionFront::PublicationPending => {
+                NativePreparation::PublicationPending
+            }
+            super::candidate::CorrectionFront::ProductUnpublished(handle) => {
+                NativePreparation::ProductUnpublished(handle)
+            }
+        })
+    }
+
+    pub(super) fn with_input<C, T>(
+        self,
+        envelope_identity: bool,
+        derive: impl FnOnce(
+            &worth_query_execution::facade::primary_graph::WorthQuerySelectedProductOperation<'a, Schema>,
+            &worth_query_execution::publication_boundary::WorthQueryProgramPublicationAccess,
+            &worth_query_execution::publication_boundary::recorded_correction::WorthQueryCorrectionCommandKey,
+        ) -> Result<(
+            ApplicationEncodedInput<<Inverse<Schema, C> as ApplicationMutationBinding<Schema>>::InputBinding>,
+            std::sync::Arc<worth_query_execution::publication_boundary::recorded_correction::WorthQueryPreparedCorrectionSource>,
+        ), WorthQueryApplicationCorrectionDenial>,
+        next: impl FnOnce(
+            WorthQueryApplicationCorrections<'a, '_, '_, Schema>,
+            worth_query_execution::facade::primary_graph::WorthQuerySelectedProductOperation<'a, Schema>,
+            <Inverse<Schema, C> as ApplicationMutationBinding<Schema>>::IdempotencyKey,
+            worth_query_execution::publication_boundary::recorded_correction::WorthQueryCorrectionCommandKey,
+            super::candidate::CorrectionActionInput<Schema, Inverse<Schema, C>>,
+            &WorthQueryAdvancementPhase<'_>,
+        ) -> Result<T, WorthQueryApplicationCorrectionDenial>,
+    ) -> Result<super::candidate::CorrectionFront<T>, WorthQueryApplicationCorrectionDenial>
+    where
+        C: ApplicationCorrectionBinding<Schema>,
+        <Inverse<Schema, C> as ApplicationMutationBinding<Schema>>::Input:
+            Clone + Send + Sync + ApplicationMutationInputScope<Schema, Inverse<Schema, C>>,
+        <Inverse<Schema, C> as ApplicationMutationBinding<Schema>>::ScopeBinding:
+            ApplicationMutationScopeResolution<
+                Schema,
+                <Inverse<Schema, C> as ApplicationMutationBinding<Schema>>::PrincipalIdentity,
+            >,
+    {
+        use super::candidate::CorrectionFront as Preparation;
         use WorthQueryApplicationCorrectionDenial as Denial;
         let correction = self.request.correction;
         let request = correction.request;
@@ -82,17 +138,26 @@ impl<'a, Schema: ApplicationSchema> Prepare<'a, '_, '_, '_, '_, '_, Schema> {
             WorthQueryCorrectionActionInputSelection::IntentDrift => {
                 return Ok(Preparation::IntentDrift)
             }
-            WorthQueryCorrectionActionInputSelection::PublicationPending => {
+            WorthQueryCorrectionActionInputSelection::PublicationPending if !envelope_identity => {
                 return Ok(Preparation::PublicationPending)
             }
-            WorthQueryCorrectionActionInputSelection::ProductUnpublished(handle) => {
+            WorthQueryCorrectionActionInputSelection::ProductUnpublished(handle)
+                if !envelope_identity =>
+            {
                 return Ok(Preparation::ProductUnpublished(handle))
             }
+            WorthQueryCorrectionActionInputSelection::PublicationPending
+            | WorthQueryCorrectionActionInputSelection::ProductUnpublished(_) => {
+                // Identity derivation performs no handler work. Only the whole
+                // authenticated envelope resolver may classify pending/recovery.
+                let (input, source) = derive(&target, &access, &command_key)?;
+                let intent = source.intent();
+                (input, Some(source), intent)
+            }
         };
-        super::candidate::prepare_action_candidate::<Schema, Inverse<Schema, C>, Admission>(
+        next(
             request,
-            phase,
-            &target,
+            target,
             inverse_key,
             command_key,
             super::candidate::CorrectionActionInput {
@@ -100,7 +165,9 @@ impl<'a, Schema: ApplicationSchema> Prepare<'a, '_, '_, '_, '_, '_, Schema> {
                 source,
                 intent,
             },
+            phase,
         )
+        .map(Preparation::Selected)
     }
 }
 

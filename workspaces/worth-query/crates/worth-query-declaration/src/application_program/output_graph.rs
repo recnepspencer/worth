@@ -287,3 +287,6 @@ where
 }
 
 impl<ParentFeature, Left, Right> sealed::OutputChildrenShape<ParentFeature> for (Left, Right) {}
+
+mod occurrences;
+pub use occurrences::{ApplicationOccurrenceConnections, ApplicationOutputOccurrences};

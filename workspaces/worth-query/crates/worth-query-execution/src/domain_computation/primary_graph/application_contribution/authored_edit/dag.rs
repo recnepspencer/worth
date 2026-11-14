@@ -2,6 +2,7 @@
 use super::*;
 mod cycle;
 mod independent_prefix;
+mod positioned;
 use worth_query_installation::facade::{
     WorthQueryOperationGraphReadScope, WorthQueryOperationReadTouchOverlapIndex,
     WorthQueryOperationTouchScope,
@@ -98,6 +99,8 @@ where
     let Some(first) = stages.first() else {
         return Ok(Vec::new());
     };
+    let positioned = unseen.intent.order()
+        == worth_query_declaration::facade::application_operation::ApplicationEditEnvelopeOrder::OrderedAuthored;
     let mut nodes = stages
         .iter()
         .map(|stage| Node {
@@ -119,6 +122,16 @@ where
         } else {
             nodes.push(Node { subject: DeclaredEditParticipant::Producer { family: producer.family.into(), implementations: vec![producer.identity.clone()] }, contracts: vec![&producer.contract], queries: producer.queries.iter().collect() });
         }
+    }
+    if positioned {
+        let barriers = positioned::barriers(execution, stages, &nodes)?;
+        drop(nodes);
+        for (stage, barrier) in stages.iter_mut().zip(barriers) {
+            stage.producer_barrier = barrier;
+            stage.ordered = true;
+            stage.executor.order_authored();
+        }
+        return Ok((0..stages.len()).collect());
     }
     let mut edges = Vec::new();
     let mut incoming = vec![0usize; nodes.len()];

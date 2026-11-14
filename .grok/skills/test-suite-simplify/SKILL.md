@@ -11,6 +11,16 @@ Code is cheap. Certification is expensive: builds, slow suites, snapshot
 regeneration, review and evidence handling. Spend code to cut certification
 time. Success is that the next production change certifies faster.
 
+## Preproduction
+
+WORTH is not in production. Do not preserve obsolete APIs, stored formats,
+fixtures or golden bytes for backward compatibility. Within the change's
+scope, delete displaced implementations, adapters, migrations and
+compatibility-only tests; use one current representation. Recreate development
+artifacts instead of migrating them. Preserve required current-version replay,
+undo and recovery behavior. Add backward compatibility only when the user
+explicitly requests it.
+
 ## How to work
 
 - Act; do not propose. Report what you changed afterwards.

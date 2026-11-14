@@ -172,6 +172,7 @@ pub struct ApplicationConnectionDeclaration {
     target_required: bool,
     exports_across_instances: bool,
     demand_only_root: bool,
+    occurrence_component: bool,
 }
 
 impl ApplicationConnectionDeclaration {
@@ -197,7 +198,17 @@ impl ApplicationConnectionDeclaration {
             target_required,
             exports_across_instances,
             demand_only_root: false,
+            occurrence_component: false,
         }
+    }
+
+    pub(in crate::application_program) fn in_occurrence_component(mut self) -> Self {
+        self.occurrence_component = true;
+        self
+    }
+    /// Internal declaration cycles are resolved from complete admitted occurrences.
+    pub const fn is_occurrence_component(&self) -> bool {
+        self.occurrence_component
     }
 
     pub(in crate::application_program) fn as_demand_only_root(mut self) -> Self {

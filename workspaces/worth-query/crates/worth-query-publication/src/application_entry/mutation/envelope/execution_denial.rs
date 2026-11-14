@@ -32,7 +32,7 @@ impl WorthQueryEditEnvelopeExecutionDenial {
             cause,
         }
     }
-    pub(super) fn envelope(
+    pub(in crate::application_entry) fn envelope(
         program: &str,
         cause: WorthQueryPerformedMutationExecutionDenial,
     ) -> Self {

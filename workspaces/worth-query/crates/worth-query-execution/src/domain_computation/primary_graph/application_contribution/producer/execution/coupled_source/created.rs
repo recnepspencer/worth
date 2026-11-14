@@ -17,6 +17,7 @@ pub(super) fn read<S, B>(
     current_absence: crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenial,
     assembly: &worth_relational::facade::mvcc::RelationalAuthoredCoupledCandidate<'_>,
     demand: &DeclaredCoupledOutputDemand,
+    route_only: bool,
 ) -> Result<CoupledSourceRead, CoupledSourceReadStop>
 where
     S: ApplicationSchema,
@@ -119,6 +120,12 @@ where
                 scope_rejected(B::IDENTITY, current_absence)
             } else { query_admission_denied(B::IDENTITY, cause) }
         })?;
+    if route_only {
+        return Ok(CoupledSourceRead::Route {
+            scope: scope.entity_id(),
+            partition: *plan.parameter_binding_identity().bytes(),
+        });
+    }
     if demand.reuse_prepared
         && let Some(index) = assembly.prepared_route_index(
             execution,

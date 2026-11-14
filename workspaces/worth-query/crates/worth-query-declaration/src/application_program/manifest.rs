@@ -334,6 +334,21 @@ impl ApplicationProgramManifest {
                     )
                 }),
         );
+        records.extend(
+            connections
+                .iter()
+                .filter(|c| c.is_occurrence_component())
+                .map(|c| {
+                    framed_record(
+                        "output-occurrences",
+                        [
+                            ("connection", c.identity().to_owned()),
+                            ("source-instance", c.source_instance().to_owned()),
+                            ("target-instance", c.target_instance().to_owned()),
+                        ],
+                    )
+                }),
+        );
         if let Some(authorization) = adoption_authorization {
             records.push(authorization.canonical_meaning().to_owned());
         }

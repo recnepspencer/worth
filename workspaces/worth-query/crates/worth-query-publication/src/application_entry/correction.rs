@@ -3,7 +3,7 @@ mod alternatives;
 mod inspection;
 mod outcome;
 mod preparation;
-mod publication;
+pub(in crate::application_entry) mod publication;
 use super::WorthQueryApplicationRequest;
 pub use alternatives::{
     WorthQueryApplicationCorrectionAlternatives, WorthQueryCorrectionAlternativeRef,
@@ -70,10 +70,12 @@ pub enum WorthQueryApplicationCorrectionDenial {
 
 /// The current principal, request scope and target branch for recorded corrections.
 pub struct WorthQueryApplicationCorrections<'application, 'principal, 'scope, Schema> {
-    application: &'application WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-    principal: &'principal WorthQueryAuthenticatedExternalPrincipal<Schema>,
-    scope: &'scope WorthQueryRequestScope,
-    branch: WorthQueryProductBranch,
+    pub(in crate::application_entry) application:
+        &'application WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    pub(in crate::application_entry) principal:
+        &'principal WorthQueryAuthenticatedExternalPrincipal<Schema>,
+    pub(in crate::application_entry) scope: &'scope WorthQueryRequestScope,
+    pub(in crate::application_entry) branch: WorthQueryProductBranch,
 }
 
 impl<'application, 'principal, 'scope, Schema: ApplicationSchema>

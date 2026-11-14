@@ -179,3 +179,22 @@ where
 #[cfg(test)]
 #[path = "application_program_inline_type_budget.rs"]
 pub(crate) mod inline_type_budget;
+
+/// Complete predecessor query for one dependent connection. Query owns draining
+/// the selected relation; each admitted row maps to one real parent demand.
+pub trait WorthQueryApplicationPrerequisiteOutputConnection<S: ApplicationSchema>:
+    WorthQueryApplicationDependentOutputConnection<S>
+{
+    type Prerequisites: worth_query_declaration::facade::application_query::ApplicationQueryIntent<
+        S,
+    >;
+    type PrerequisiteRow: worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding;
+    type Selection: 'static;
+    fn prerequisite_rows() -> Self::Selection;
+    fn prerequisites_from_target(
+        target: &Self::Demand,
+    ) -> Result<Self::Prerequisites, WorthQueryRequiredOutputConnectionDenial>;
+    fn parent_from_prerequisite(
+        row: &<Self::PrerequisiteRow as worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding>::Value,
+    ) -> Result<Self::RootDemand, WorthQueryRequiredOutputConnectionDenial>;
+}

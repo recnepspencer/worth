@@ -42,6 +42,9 @@ where
             <source::Source<S, Child<S, C>> as ApplicationQueryBinding<S>>::PrincipalIdentity,
         >,
 {
+    fn occurrence_families(visit: &mut impl FnMut(std::any::TypeId)) {
+        E::occurrence_families(visit);
+    }
     fn declared_families(
         parent: std::any::TypeId,
         visit: &mut impl FnMut(std::any::TypeId, std::any::TypeId),
@@ -95,6 +98,23 @@ where
     L: SynchronousOutputEdges<S, D>,
     R: SynchronousOutputEdges<S, D>,
 {
+    fn occurrence_component() -> bool {
+        L::occurrence_component() || R::occurrence_component()
+    }
+    fn occurrence_families(visit: &mut impl FnMut(std::any::TypeId)) {
+        L::occurrence_families(visit);
+        R::occurrence_families(visit);
+    }
+    fn prerequisites(
+        context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        pin: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
+        source: worth_relational::facade::identity::EntityId,
+        demand: &D,
+        next: &mut SynchronousOutputWave<S>,
+    ) -> Result<(), SynchronousOutputFailure> {
+        L::prerequisites(context, pin, source, demand, next)?;
+        R::prerequisites(context, pin, source, demand, next)
+    }
     fn declared_families(
         parent: std::any::TypeId,
         visit: &mut impl FnMut(std::any::TypeId, std::any::TypeId),

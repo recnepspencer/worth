@@ -4,6 +4,12 @@ pub struct Parent;
 pub struct Input;
 pub struct Output;
 pub struct FirstSeedInput;
+pub struct PredecessorInput;
+impl ApplicationInputPort<Schema, Parent> for PredecessorInput {
+    type Value = query::RowBinding;
+    const IDENTITY: &'static str = "hierarchy-predecessor-input";
+    const REQUIRED: bool = false;
+}
 impl ApplicationInputPort<Schema, Parent> for FirstSeedInput {
     type Value = query::RowBinding;
     const IDENTITY: &'static str = "hierarchy-seed-input";
@@ -13,7 +19,10 @@ impl ApplicationInputPort<Schema, Parent> for FirstSeedInput {
 impl ApplicationFeature<Schema> for Parent {
     type Inputs = ApplicationFeatureInputList<
         Input,
-        ApplicationFeatureInputList<FirstSeedInput, ApplicationFeatureInputLeaf>,
+        ApplicationFeatureInputList<
+            FirstSeedInput,
+            ApplicationFeatureInputList<PredecessorInput, ApplicationFeatureInputLeaf>,
+        >,
     >;
     const IDENTITY: &'static str = "owned-outputs.hierarchy.parent";
 }

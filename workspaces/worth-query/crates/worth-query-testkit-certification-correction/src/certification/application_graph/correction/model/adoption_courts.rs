@@ -33,7 +33,7 @@ pub fn adopt<P: ApplicationProgramDefinition<NumericSchema>>(
         WorthQueryBranchAdoptionPublicationOutcome::ObligationDischargePending {
             cause, ..
         } => {
-            panic!("adoption obligation discharge: {cause:?}")
+            panic!("adoption custody acknowledgement: {cause:?}")
         }
         WorthQueryBranchAdoptionPublicationOutcome::AuthorizationDenied { cause, .. } => {
             panic!("adoption authority: {cause:?}")

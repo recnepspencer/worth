@@ -8,7 +8,7 @@ use crate::history::data::CommitId;
 use crate::publication::patch::data::PatchStreamPosition;
 
 pub(super) const MAGIC: [u8; 8] = *b"WRTHRCCA";
-pub(super) const FORMAT_VERSION: u16 = 8;
+pub(super) const FORMAT_VERSION: u16 = 9;
 
 const VERSION_OFFSET: usize = MAGIC.len();
 const POSITION_OFFSET: usize = VERSION_OFFSET + 2;
@@ -147,4 +147,22 @@ fn content_artifact_ceiling_includes_header_and_refuses_before_payload_or_digest
             maximum_frame: super::MAXIMUM_ARTIFACT_BYTES
         }
     );
+}
+
+#[test]
+fn only_current_artifact_version_is_admitted_before_payload_checks() {
+    for version in [FORMAT_VERSION - 1, FORMAT_VERSION + 1] {
+        let mut frame = MAGIC.to_vec();
+        frame.extend(version.to_le_bytes());
+        assert!(matches!(
+            CanonicalCommitArtifactHeader::verify(&frame),
+            Err(Refusal::UnsupportedVersion(_))
+        ));
+    }
+    let mut current = MAGIC.to_vec();
+    current.extend(FORMAT_VERSION.to_le_bytes());
+    assert!(matches!(
+        CanonicalCommitArtifactHeader::verify(&current),
+        Err(Refusal::TruncatedHeader { .. })
+    ));
 }

@@ -1,9 +1,10 @@
-mod envelope;
+pub(in crate::application_entry) mod envelope;
 pub use envelope::{
     AuthoredStageExecutionCause, WorthQueryEditEnvelope, WorthQueryEditEnvelopeExecutionDenial,
-    WorthQueryEditEnvelopeOutcome, WorthQueryEditEnvelopeReceipt, WorthQueryEditEnvelopeSubject,
-    WorthQueryEditStageDomainDenial, WorthQueryEditStageExecutionDenial,
-    WorthQueryEditStageResultDenial, WorthQueryEditStageToken, WorthQueryKeyedEditEnvelope,
+    WorthQueryEditEnvelopeModeDenial, WorthQueryEditEnvelopeOutcome, WorthQueryEditEnvelopeReceipt,
+    WorthQueryEditEnvelopeSubject, WorthQueryEditStageDomainDenial,
+    WorthQueryEditStageExecutionDenial, WorthQueryEditStageResultDenial, WorthQueryEditStageToken,
+    WorthQueryKeyedEditEnvelope, WorthQueryRuntimeEditEnvelope,
 };
 mod attempt;
 mod producer_round_limits;

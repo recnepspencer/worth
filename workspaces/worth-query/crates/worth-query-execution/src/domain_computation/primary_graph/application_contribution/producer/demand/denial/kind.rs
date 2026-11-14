@@ -106,6 +106,10 @@ pub enum WorthQueryOutputDemandDenialKind {
     /// The demand, or its dependent connection, belongs to another runtime,
     /// schema binding, or program.
     ForeignDemand,
+    /// The complete admitted occurrence frontier has no parent-ready node.
+    CyclicRequiredOutputOccurrences { source: worth_relational::facade::identity::EntityId },
+    /// An actual prerequisite has no surviving Prepared or Verified parent.
+    RequiredOutputParentUnavailable { source: worth_relational::facade::identity::EntityId },
     /// An internal required successor lost its admitted demand or execution provenance.
     RequiredSuccessorStateUnavailable,
     /// A dependent output's parent settlement belongs to another program,

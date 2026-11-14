@@ -69,6 +69,11 @@ impl<S: ApplicationSchema> CapturedAuthoredEditStage<S> {
             }
             self.producer_connections.push((parent, family));
         });
+        E::occurrence_families(&mut |family| {
+            if !families.contains(&family) {
+                families.push(family);
+            }
+        });
         self.producers = application
             .installed_producers
             .declared_dependency_scopes(application, &families)?;

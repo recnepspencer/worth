@@ -102,6 +102,8 @@ impl WorthQueryOutputDemandDenialKind {
             | Self::WorkBudgetExceeded
             | Self::RetentionBudgetExceeded
             | Self::PublicationCapacityExceeded
+            | Self::CyclicRequiredOutputOccurrences { .. }
+            | Self::RequiredOutputParentUnavailable { .. }
             | Self::ForeignDemand
             | Self::RequiredSuccessorStateUnavailable
             | Self::ForeignSettlement

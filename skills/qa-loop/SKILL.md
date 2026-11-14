@@ -10,6 +10,16 @@ The governing specification or plan is the only authority for behaviour. Do
 not consult other documents to find requirements. "No material findings" is
 a fully successful outcome.
 
+## Preproduction
+
+WORTH is not in production. Do not preserve obsolete APIs, stored formats,
+fixtures or golden bytes for backward compatibility. Within the change's
+scope, delete displaced implementations, adapters, migrations and
+compatibility-only tests; use one current representation. Recreate development
+artifacts instead of migrating them. Preserve required current-version replay,
+undo and recovery behavior. Add backward compatibility only when the user
+explicitly requests it.
+
 ## Check in two directions
 
 Missing: for each behaviour the specification states, read the code path

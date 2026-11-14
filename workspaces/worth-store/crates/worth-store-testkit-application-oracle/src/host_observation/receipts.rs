@@ -19,6 +19,7 @@ pub enum MutationFate {
     Cancelled,
     TimedOut,
     CleanupRequired,
+    OutputAdopted,
     ProductStale,
     ProductUnpublished,
     ProductPreparationPending,
@@ -97,6 +98,7 @@ pub fn observe(outcome: &MutationOutcome, original_before: &HeadProjection) -> M
                 WorthQueryApplicationUncommitted::ProductPreparationRefused(_) => {
                     MutationFate::ProductPreparationRefused
                 }
+                WorthQueryApplicationUncommitted::OutputAdopted(_) => MutationFate::OutputAdopted,
                 WorthQueryApplicationUncommitted::NoEffect(_) => MutationFate::NoEffect,
                 WorthQueryApplicationUncommitted::Stale(_) => MutationFate::Stale,
                 WorthQueryApplicationUncommitted::Cancelled => MutationFate::Cancelled,
