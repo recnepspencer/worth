@@ -17,11 +17,21 @@ impl OperationHandler<Schema, Binding> for Handler {
                         Key::at("Key")
                             .resolve()
                             .map_err(HandlerExecutionDenial::new)?,
-                        input.key.clone(),
+                        if matches!(
+                            input.observation_fault,
+                            ObservationFault::OtherRecordMutation
+                        ) {
+                            "neighbour".into()
+                        } else {
+                            input.key.clone()
+                        },
                     )
                     .map_err(HandlerExecutionDenial::new)?;
                 let mut work = |_, _| Ok(());
-                let class = if matches!(input.observation_fault, ObservationFault::None) {
+                let class = if !matches!(
+                    input.observation_fault,
+                    ObservationFault::Unobserved | ObservationFault::ForeignOnly
+                ) {
                     view.read(&row, Meaning, &mut work)
                         .map_err(HandlerExecutionDenial::new)?
                         .class()
@@ -36,7 +46,7 @@ impl OperationHandler<Schema, Binding> for Handler {
             let row = reader.resolve_entity(Key::at("Key"), input.key.clone())?;
             reader.field(&row, Key::at("Key"))?;
             let observed = match input.observation_fault {
-                ObservationFault::None => Some(row.clone()),
+                ObservationFault::None | ObservationFault::OtherRecordMutation => Some(row.clone()),
                 ObservationFault::Unobserved => None,
                 ObservationFault::ForeignOnly => {
                     Some(reader.resolve_entity(Key::at("Key"), "neighbour".to_owned())?)
@@ -47,6 +57,7 @@ impl OperationHandler<Schema, Binding> for Handler {
                 reader.field(&observed, SecondValue::at("SecondValue"))?;
                 reader.field(&observed, SecondRequired::at("SecondRequired"))?;
                 reader.field(&observed, ThirdValue::at("ThirdValue"))?;
+                reader.field(&observed, AnnotationValue::at("Value"))?;
             }
             let links = reader
                 .relations_from(Companion::reference(), &row)
@@ -109,7 +120,7 @@ impl OperationHandler<Schema, Binding> for Handler {
         writer: &mut CandidateWriter<'_, Schema, Binding>,
     ) -> HandlerResult<authoring::Edited, authoring::Denial> {
         let result = (|| {
-            {
+            if matches!(input.case, Case::First { .. } | Case::Second { .. }) {
                 let mut view = writer
                     .fragment(PatternModel)
                     .map_err(HandlerExecutionDenial::new)?;
@@ -130,12 +141,22 @@ impl OperationHandler<Schema, Binding> for Handler {
                         },
                         &mut work,
                     ),
+                    Case::Annotation { .. } | Case::Unchanged => {
+                        unreachable!("case classified above")
+                    }
                 }
                 .map_err(HandlerExecutionDenial::new)?;
             }
             let entity = writer
                 .projected_entity(&target.output)
                 .map_err(HandlerExecutionDenial::new)?;
+            if let Case::Annotation { value } = input.case {
+                match value {
+                    Some(value) => writer.write_field(&entity, AnnotationValue::at("Value"), value),
+                    None => writer.remove_aspect(&entity, Annotation::reference()),
+                }
+                .map_err(HandlerExecutionDenial::new)?;
+            }
             if let Some(previous) = target.previous_link.filter(|_| target.change_link) {
                 let previous = writer
                     .projected_entity(&previous)

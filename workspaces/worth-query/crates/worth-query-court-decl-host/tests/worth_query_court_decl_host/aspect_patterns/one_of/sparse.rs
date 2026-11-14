@@ -1,9 +1,12 @@
 //! General case transitions derive their inverse from captured fields and absence.
 use super::*;
 use worth_query_decl::facade::application_aftermath::*;
+pub(super) mod annotation;
 mod correction;
 mod courts;
 mod handler;
+mod zero_change_refusals;
+use annotation::*;
 pub(super) mod link_query;
 pub use correction::Correction;
 pub use handler::Handler;
@@ -13,6 +16,8 @@ pub use handler::Handler;
 pub enum Case {
     First { value: u64 },
     Second { value: u64, required: u64 },
+    Annotation { value: Option<u64> },
+    Unchanged,
 }
 #[derive(Clone, Debug, WorthValue)]
 #[worth_value(crate = "worth_query_decl::facade::application_schema")]
@@ -29,6 +34,7 @@ pub enum ObservationFault {
     None,
     Unobserved,
     ForeignOnly,
+    OtherRecordMutation,
 }
 /// A sparse inverse leaves an unchanged role alone, rather than inventing absence.
 #[derive(Clone, Debug, WorthValue)]
@@ -73,7 +79,7 @@ impl OperationUnlinks<Edit> for Companion {}
 worth_query_structured_value_binding!(pub InputValue for Input {identity: "native-record-patterns.sparse.input.v1"});
 worth_query_operation!(pub Edit for Schema, input InputValue);
 worth_query_operation_reads!(Edit => [Record]);
-worth_query_operation_removes_aspects!(Edit => [First, Second, Third]);
+worth_query_operation_removes_aspects!(Edit => [First, Second, Third, Annotation]);
 pub struct Outputs;
 pub struct Kept;
 impl WorthQueryApplicationOutputRole for Kept {
@@ -124,6 +130,9 @@ impl ApplicationDeclaredOperation<Schema> for Edit {
             .operation_write(Self::reference(), SecondValue::at("SecondValue"))
             .operation_write(Self::reference(), SecondRequired::at("SecondRequired"))
             .operation_write(Self::reference(), ThirdValue::at("ThirdValue"))
+            .operation_read_field(Self::reference(), AnnotationValue::at("Value"))
+            .operation_write(Self::reference(), AnnotationValue::at("Value"))
+            .operation_remove_aspect(Self::reference(), Annotation::reference())
             .operation_remove_aspect(Self::reference(), First::reference())
             .operation_remove_aspect(Self::reference(), Second::reference())
             .operation_remove_aspect(Self::reference(), Third::reference())
@@ -135,6 +144,7 @@ impl ApplicationDeclaredOperation<Schema> for Edit {
 pub fn loci() -> Vec<DeclaredPreImageLocus<Schema>> {
     vec![
         DeclaredPreImageLocus::from_field(Key::at("Key")),
+        DeclaredPreImageLocus::from_field(AnnotationValue::at("Value")),
         DeclaredPreImageLocus::from_field(FirstValue::at("FirstValue")),
         DeclaredPreImageLocus::from_field(SecondValue::at("SecondValue")),
         DeclaredPreImageLocus::from_field(SecondRequired::at("SecondRequired")),

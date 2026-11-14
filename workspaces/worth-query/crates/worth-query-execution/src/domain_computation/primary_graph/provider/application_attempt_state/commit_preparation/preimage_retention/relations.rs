@@ -146,6 +146,11 @@ pub(super) fn retain(
     let mut total = retained.total_encoded_bytes();
     execution
         .run_native_with_checkpoint(|context| {
+            let changed_output_mutated = if footprint.relations().is_empty() {
+                has_changed_output_material(&retained, context)?
+            } else {
+                false
+            };
             for (locus, kind) in demand.relations().iter().zip(kinds) {
                 let mut count = 0usize;
                 for mutation in footprint.relations() {
@@ -219,7 +224,7 @@ pub(super) fn retain(
                 // adjacency. The complete validated footprint closes unused
                 // kinds when it carries another demanded change; every carried
                 // row is still checked against this actor's observations above.
-                if count == 0 && footprint.relations().is_empty() {
+                if count == 0 && footprint.relations().is_empty() && !changed_output_mutated {
                     // An empty historical locus requires an actual complete empty read
                     // on a record this actor mutates; absence of a read is not emptiness.
                     let mut empty = false;
@@ -303,6 +308,31 @@ pub(super) fn retain(
         },
         total,
     ))
+}
+/// The changed-field issuer captures only actual eligible mutations on its
+/// sealed output. Such material authenticates zero relation changes, not empty
+/// adjacency. A descriptor without a captured value or absence is insufficient.
+fn has_changed_output_material(
+    retained: &WorthQueryRetainedPreImage,
+    context: &mut worth_execution::MapKernelContext<'_, '_>,
+) -> Result<bool, WorthQueryProviderSessionFailure> {
+    let Some(output) = retained.changed_output() else {
+        return Ok(false);
+    };
+    let target = RecordRef::Entity(output.target);
+    let records = retained
+        .fields()
+        .iter()
+        .map(|field| field.target_record())
+        .chain(retained.absences().iter().map(|absence| &absence.target));
+    for record in records {
+        checkpoint(context, 1)
+            .map_err(|cause| request_stop(worth_execution::WorkCeilingDenial::Stopped(cause)))?;
+        if record == &target {
+            return Ok(true);
+        }
+    }
+    Ok(false)
 }
 pub(super) fn denied(kind: Cause, records: Vec<RecordRef>) -> WorthQueryProviderSessionFailure {
     provider_failure(

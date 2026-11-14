@@ -68,7 +68,17 @@ impl ApplicationCorrectionBinding<Schema> for Correction {
             "SecondRequired",
         )));
         let decode = |value| U64ApplicationValueBinding::decode(value).map_err(|_| InvalidPreImage);
+        let annotation = read(DeclaredPreImageLocus::from_field(AnnotationValue::at(
+            "Value",
+        )));
         let case = match (first, second, required) {
+            (State::Uncaptured, State::Uncaptured, State::Uncaptured) => Case::Annotation {
+                value: match annotation {
+                    State::AbsentAspect => None,
+                    State::Value(value) => Some(decode(value)?),
+                    _ => return Err(MissingPreImage),
+                },
+            },
             (State::Value(first), State::AbsentAspect, State::AbsentAspect) => Case::First {
                 value: decode(first)?,
             },

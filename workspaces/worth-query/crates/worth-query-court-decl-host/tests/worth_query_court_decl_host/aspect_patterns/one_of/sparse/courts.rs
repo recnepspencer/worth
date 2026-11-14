@@ -3,15 +3,19 @@ use super::*;
 
 #[test]
 fn changed_optional_cases_reverse_and_reapply_without_capturing_unchanged_fields() {
-    exercise_case_inverse(false);
+    exercise_case_inverse(false, false);
 }
 
 #[test]
 fn changed_fields_reverse_and_reapply_while_a_nonempty_relation_is_unchanged() {
-    exercise_case_inverse(true);
+    exercise_case_inverse(true, false);
 }
 
-fn exercise_case_inverse(keep_link: bool) {
+#[test]
+fn authenticated_absence_alone_closes_zero_relation_changes() {
+    exercise_case_inverse(true, true);
+}
+fn exercise_case_inverse(keep_link: bool, annotate: bool) {
     let host = world::install_with_neighbour();
     let initial = query::Row {
         class: 1,
@@ -20,12 +24,16 @@ fn exercise_case_inverse(keep_link: bool) {
         required: None,
         third: None,
     };
-    let expected = query::Row {
-        class: 2,
-        first: None,
-        second: Some(42),
-        required: Some(420),
-        third: None,
+    let expected = if annotate {
+        initial.clone()
+    } else {
+        query::Row {
+            class: 2,
+            first: None,
+            second: Some(42),
+            required: Some(420),
+            third: None,
+        }
     };
     assert_eq!(world::read(&host), initial);
     let scope = request_scope();
@@ -60,6 +68,17 @@ fn exercise_case_inverse(keep_link: bool) {
             .targets
             .clone()
     };
+    let annotation = || {
+        request
+            .query(link_query::Read {
+                key: "record".into(),
+            })
+            .execute()
+            .unwrap()
+            .rows()[0]
+            .annotation
+    };
+    assert_eq!(annotation(), None);
     assert!(links().is_empty());
     if keep_link {
         let outcome = request
@@ -90,9 +109,13 @@ fn exercise_case_inverse(keep_link: bool) {
         .advanced()
         .mutate(Input {
             key: "record".into(),
-            case: Case::Second {
-                value: 42,
-                required: 420,
+            case: if annotate {
+                Case::Annotation { value: Some(7) }
+            } else {
+                Case::Second {
+                    value: 42,
+                    required: 420,
+                }
             },
             link: LinkEdit::Set(LinkTarget::Named("neighbour".into())),
             observation_fault: ObservationFault::None,
@@ -111,6 +134,7 @@ fn exercise_case_inverse(keep_link: bool) {
         panic!("sparse source: {outcome:?}");
     };
     assert_eq!(world::read(&host), expected);
+    assert_eq!(annotation(), annotate.then_some(7));
     assert_eq!(links(), ["neighbour"]);
     assert_eq!(neighbour(), untouched);
     let limits = WorthQueryCorrectionHistoryLimits::new(None, std::num::NonZeroUsize::MIN);
@@ -133,6 +157,7 @@ fn exercise_case_inverse(keep_link: bool) {
         panic!("sparse inverse: {outcome:?}");
     };
     assert_eq!(world::read(&host), initial);
+    assert_eq!(annotation(), None);
     if keep_link {
         assert_eq!(links(), ["neighbour"]);
     } else {
@@ -170,6 +195,7 @@ fn exercise_case_inverse(keep_link: bool) {
         "{outcome:?}"
     );
     assert_eq!(world::read(&host), expected);
+    assert_eq!(annotation(), annotate.then_some(7));
     assert_eq!(links(), ["neighbour"]);
     assert_eq!(neighbour(), untouched);
 }
