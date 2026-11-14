@@ -1,4 +1,4 @@
-//! Native output references incur endpoint invariant duties without application write authority.
+//! Native output and captured-resource references carry endpoint invariant duties.
 use crate::domain_computation::primary_graph::{
     application_attempt::WorthQueryApplicationRealizedEffect as Effect,
     schema_layout::WorthQueryPrimaryGraphLayout,
@@ -6,20 +6,36 @@ use crate::domain_computation::primary_graph::{
 use std::collections::{BTreeMap, BTreeSet};
 use worth_query_declaration::facade::application_schema::ApplicationInvariantScopeTarget;
 use worth_query_installation::facade::{
-    WorthQueryInstalledApplicationInvariantCatalog, WorthQueryInvariantExecutionContract,
+    ApplicationSchema, WorthQueryInstalledApplicationSchema, WorthQueryInvariantExecutionContract,
 };
 use worth_relational::facade::transactions::EntityReference;
 
-pub(super) fn derive(
+pub(super) fn derive<Schema: ApplicationSchema>(
     layout: &WorthQueryPrimaryGraphLayout,
-    catalog: &WorthQueryInstalledApplicationInvariantCatalog,
+    schema: &WorthQueryInstalledApplicationSchema<Schema>,
     effects: &[Effect],
 ) -> Result<WorthQueryInvariantExecutionContract, &'static str> {
-    let entities = referenced_entities(layout, effects)?;
+    let mut entities = referenced_entities(layout, effects)?;
+    let captured = &layout.workflow().captured_input;
+    for effect in effects {
+        if let Effect::CreateEntity { kind, fields, .. } = effect
+            && *kind == captured.entity_kind
+        {
+            let binding = fields
+                .get(&captured.binding)
+                .and_then(|value| value.raw_text())
+                .ok_or("captured resource reference has no mutation binding")?;
+            let binding = schema
+                .installed_mutation_binding_descriptor(binding)
+                .ok_or("captured resource reference names an uninstalled mutation binding")?;
+            entities.insert(binding.scope_entity());
+        }
+    }
     if entities.is_empty() {
         return Ok(WorthQueryInvariantExecutionContract::NotRequired);
     }
-    let descriptors = catalog
+    let descriptors = schema
+        .invariants()
         .descriptors()
         .filter(|descriptor| applies_to_references(descriptor.applicability(), &entities))
         .cloned()

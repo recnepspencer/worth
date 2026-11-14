@@ -4,10 +4,10 @@ use super::{
     RequiredWorkflowAssessment, WorkflowAssessmentEvidenceMeaning, WorthQueryObservedSource,
     WorthQueryOutputDemandSettlement, WorthQueryWorkflowAssessmentPosture,
 };
-use crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt;
+use crate::domain_computation::primary_graph::application_output_demand::OutputPublicationView;
 
 pub(super) fn output_content_identity(
-    receipt: &WorthQueryApplicationCommitReceipt,
+    receipt: OutputPublicationView<'_>,
     source_identity: [u8; 32],
 ) -> String {
     let publication = receipt.committed_product_publication();
@@ -15,7 +15,7 @@ pub(super) fn output_content_identity(
     digest.update(b"worth-query:workflow-assessment-output-content:v1");
     digest.update(receipt.output_correspondence().workflow_content_identity());
     digest.update(source_identity);
-    digest.update(receipt.installed_operation());
+    digest.update(receipt.authority_binding().installed_operation());
     digest.update(
         publication
             .product_branch()
@@ -62,6 +62,26 @@ pub(super) fn stable_output_identities(
     ))
 }
 
+fn restored_output_identities(
+    restored: &crate::domain_computation::primary_graph::application_output_demand::WorthQueryRestoredAcceptedOutput,
+) -> (String, String) {
+    use crate::domain_computation::primary_graph::application_output_demand::RestoredOutputOrigin;
+    // The accepted checkpoint and historical selection retain their original
+    // producer key, not a live commit receipt. Keep that provenance explicit.
+    let provenance = match &restored.origin {
+        RestoredOutputOrigin::Checkpoint(_) => "checkpoint",
+        RestoredOutputOrigin::HistoricalSelection(_) => "historical-selection",
+    };
+    let publication = format!("{provenance}:{}", hex(restored.origin.key()));
+    let mut output = Sha256::new();
+    output.update(b"worth-query:workflow-assessment-restored-output-content:v1");
+    output.update(restored.correspondence.workflow_content_identity());
+    output.update(restored.source_identity.bytes());
+    output.update(restored.origin.partition());
+    output.update(publication.as_bytes());
+    (publication, hex(output.finalize().into()))
+}
+
 pub(super) fn hex(bytes: [u8; 32]) -> String {
     use std::fmt::Write;
 
@@ -96,7 +116,7 @@ pub(super) fn evidence_meaning<Query>(
 ) -> Option<WorkflowAssessmentEvidenceMeaning> {
     let source_identity = hex(source.idempotency_identity().bytes());
     let (publication_identity, output_content_identity) =
-        if let Some(receipt) = settlement.application_commit_receipt() {
+        if let Some(receipt) = settlement.publication_view() {
             let publication = receipt.committed_product_publication();
             (
                 format!(
@@ -113,6 +133,8 @@ pub(super) fn evidence_meaning<Query>(
                 ),
                 output_content_identity(receipt, source.idempotency_identity().bytes()),
             )
+        } else if let Some(restored) = settlement.restored_source.as_ref() {
+            restored_output_identities(restored)
         } else {
             stable_output_identities(
                 settlement.stable.as_ref()?,

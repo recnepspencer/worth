@@ -215,6 +215,17 @@ where
             operation.operation(),
         )
     })?;
+    // Re-admission names the current occurrence; its program source must be
+    // bound by the selected-product owner before the mutation lease retains it.
+    let selected = runtime.on_product(execution, product).map_err(|_| {
+        denial(
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::GraphWorkAdmissionUnavailable,
+            ),
+            operation.operation(),
+        )
+    })?;
+    let product = selected.product().retained_clone();
     let principal = access.principal_entity_id;
     let installed_capability = access.authorization.installed_capability_identity();
     let super::WorthQueryAdmittedApplicationCapabilityAccess {

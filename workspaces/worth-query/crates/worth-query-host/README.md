@@ -90,8 +90,9 @@ recovery claim from this Home. `continue_original_in_request` publishes that
 original occurrence without handler/effect replay; release records the durable
 disposition before removing live custody. Pending and refused actions retain the
 same catalog owner. An acknowledged `Continued` permits continuation, never
-release, including after another reopen. Persisted workflow, outbox, inbound-completion and aftermath rows also
-refuse cold service; compiled workflow declarations alone remain allowed.
+release, including after another reopen. Persisted outbox, inbound-completion and aftermath rows also
+refuse cold service. Workflow graph records have the graceful reopen contract
+described under [workflow configuration](#workflow-configuration-and-home-custody).
 
 MemoryOnly keeps its ordinary producer, conditional and resource installation.
 The richer contribution, output, workflow and adoption examples below use that
@@ -173,7 +174,7 @@ recovery handles cannot cross incarnations. Zero observed effects are not proof
 of no effect, and lower recovery does not recreate a Rust business result.
 
 Existing service refuses retained World recovery custody and unsupported
-persisted workflow, outbox, inbound-completion or aftermath state. Keep the owning
+persisted outbox, inbound-completion or aftermath state. Keep the owning
 opening refusal and follow its close route. `ProductPreparationRefused` is a
 terminal preparation failure, with no publication/retry door; its carrier may
 still own partial reservations until ordinary unbudgeted destruction.
@@ -234,9 +235,10 @@ the actual durable Home World owner from the checked request, never a principal
 invented for the Home. These framework writes enter the canonical target step
 after the authored-body fence and before intent recording.
 
-Workflow-bearing Directory admission still waits for H5's family cutoff and
-structural workflow readmission. Supplying choices does not bypass either gate;
-positive workflow cancellation/reopen qualification is pending that integration.
+Workflow records survive graceful Directory close and reopen. Home transitions
+apply the ordinary workflow disposition rules; retirement and cancellation are
+retained across successor-only reopen. Opening supplies no executable target
+workflow vocabulary, so carriage cannot establish target coverage there.
 
 
 When a Directory Home's recorded program or schema differs, supply the actual
@@ -1116,9 +1118,13 @@ A vocabulary borrows the Home and cannot remain usable after it is consumed.
 Memory Homes still have their existing close-lifecycle refusal; resume returns
 the same configured owner. This is not a filesystem-close claim.
 
-Workflow-bearing Directory execution and reopen qualification remain pending
-H5's cutoff and structural workflow readmission. Configuration after open does
-not supply a transition's target executable vocabulary retroactively.
+A Directory workflow Home can close between completed steps and reopen with
+its graph records, approvals and original logical keys preserved. Reinstall
+workflow configuration and fresh signing authority, then reacquire current
+locators through governed original-intent discovery. Progress and replay
+retention reconstruct from the records. Configuration after open does not
+supply a transition's target executable vocabulary retroactively. Crash recovery
+and interrupted-transition resumption remain uncertified.
 
 A completion with a live durable `ProductUnpublished` original requires Home
 reopen. Owning close can refuse while preserving the same serving Home; end

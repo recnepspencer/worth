@@ -1,7 +1,5 @@
 //! One genuine Home composition of the existing label schema and handler.
 use super::*;
-mod capability_handlers;
-pub(super) use capability_handlers::LabelPolicy;
 use label::{schema_declaration::IdentityExecutionContribution, IdentityExecutionSchema};
 use worth_query_decl::facade::{application_program::*, application_schema::*};
 use worth_query_host::facade::{
@@ -22,12 +20,12 @@ impl ApplicationSchemaContribution<IdentityExecutionSchema> for LabelSurface {
     >>::Members;
 }
 impl WorthQueryApplicationContribution<IdentityExecutionSchema> for LabelSurface {
-    type Configuration = (LabelPolicy, Arc<AtomicUsize>);
+    type Configuration = ();
     fn configure(
-        (policy, contacts): Self::Configuration,
+        _: Self::Configuration,
         setup: &mut WorthQueryApplicationContributionSetup<'_, IdentityExecutionSchema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
-        capability_handlers::install(setup, policy, contacts)?;
+        setup.handler::<LabelBinding, _>(LabelHandler)?;
         setup.handler::<label::program_required_binding::ProgramRequiredMutationBinding, _>(
             label::program_required_binding::ProgramRequiredHandler,
         )?;
@@ -78,17 +76,6 @@ pub(super) type Home =
 pub(super) fn request(
     location: std::path::PathBuf,
 ) -> WorthQueryApplicationHomeRequest<'static, IdentityExecutionSchema, HomeLabelProgram> {
-    request_with_policy(
-        location,
-        LabelPolicy::Original,
-        Arc::new(AtomicUsize::new(0)),
-    )
-}
-pub(super) fn request_with_policy(
-    location: std::path::PathBuf,
-    policy: LabelPolicy,
-    contacts: Arc<AtomicUsize>,
-) -> WorthQueryApplicationHomeRequest<'static, IdentityExecutionSchema, HomeLabelProgram> {
     let declaration = IdentityExecutionSchema::declaration().unwrap();
     WorthQueryApplicationHomeRequest::new(
         WorthQueryApplicationHomeLocation::Directory(location),
@@ -98,7 +85,7 @@ pub(super) fn request_with_policy(
             .unwrap(),
         WorthQueryApplicationProgramRoster::new(),
         declaration,
-        ((policy, contacts),),
+        ((),),
         ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID")).unwrap(),
         WorthQueryApplicationLimits::new(
             identity::world_resources(),

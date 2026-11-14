@@ -1,4 +1,4 @@
-//! Complete bounded record revalidation; workflow migration remains unsupported.
+//! Complete bounded application-record revalidation; workflow dispositions have their own owner.
 use super::denial;
 #[path = "selection_storage.rs"]
 mod storage;
@@ -25,31 +25,6 @@ pub(super) fn select(
     mut work: usize,
 ) -> Result<RevalidationSelection, WorthQueryPrimaryGraphInstallationDenial> {
     let mut storage = storage::reserve(execution)?;
-    let workflow = layout.workflow();
-    for kind in [
-        workflow.lineage.entity_kind,
-        workflow.definition.entity_kind,
-        workflow.node.entity_kind,
-        workflow.connection.entity_kind,
-        workflow.instance.entity_kind,
-        workflow.transition.entity_kind,
-        workflow.proposal.entity_kind,
-        workflow.proposal_coverage.entity_kind,
-        workflow.assessment_evidence.entity_kind,
-        workflow.approval.entity_kind,
-        workflow.evidence_dependency.entity_kind,
-    ] {
-        let read = branch
-            .bounded_entities_of_kind(execution, kind, maximum_work.saturating_sub(work))
-            .map_err(super::super::request_read_denial::read)?
-            .map_err(|_| denial("checkpoint transition workflow selection exceeded its bound"))?;
-        work = work.saturating_add(read.work_units());
-        if !read.into_records().is_empty() {
-            return Err(denial(
-                "checkpoint transition requires workflow migration dispositions",
-            ));
-        }
-    }
     let mut entities = Vec::new();
     for kind in layout.application_entity_kinds() {
         let read = branch

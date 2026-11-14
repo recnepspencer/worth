@@ -23,6 +23,25 @@ struct RecoveredOutputRecords {
     _metadata: Option<CheckpointMetadataFunding>,
 }
 impl WorthQueryRecoveredOutputs {
+    /// Journal selectors are a rebuilt cache. After World seal they must stop
+    /// retaining the old product image before Native closes its read custody.
+    pub(in crate::domain_computation::primary_graph) fn retire_home_observations(
+        &mut self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<(), super::super::WorthQueryHomeRetirementDenial> {
+        for record in self.checkpoint.records.iter_mut().chain(
+            self.journal
+                .get_mut()
+                .into_iter()
+                .flat_map(|rows| rows.records.iter_mut()),
+        ) {
+            request
+                .consult()
+                .map_err(super::super::WorthQueryHomeRetirementDenial::Execution)?;
+            record.observation = None;
+        }
+        Ok(())
+    }
     pub(in crate::domain_computation::primary_graph) fn from_checkpoint(
         checkpoint: DecodedApplicationCheckpoint,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

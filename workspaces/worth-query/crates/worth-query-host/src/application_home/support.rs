@@ -61,6 +61,19 @@ pub const fn directory_family_support(family: DurableStateFamily) -> DirectoryFa
         | OutputSourceCustody
         | PerformedSourcePreparation
         | ProgramOutputReadCustody => DirectoryFamilySupport::Supported(6),
+        WorkflowLineages
+        | WorkflowDefinitions
+        | WorkflowNodes
+        | WorkflowConnections
+        | WorkflowInstances
+        | WorkflowTransitions
+        | WorkflowProposals
+        | WorkflowProposalCoverage
+        | WorkflowAssessmentEvidence
+        | WorkflowEvidenceDependencies
+        | WorkflowApprovals
+        | WorkflowOperationOutputs
+        | WorkflowCapturedInputs => DirectoryFamilySupport::Supported(7),
         // Graceful stages only; Native effect without World occurrence/disposition is C1 (D18).
         BranchAdoptionRecovery => DirectoryFamilySupport::Supported(6),
         StoppedBranchSetAdoption => DirectoryFamilySupport::Supported(6),
@@ -93,19 +106,6 @@ pub const fn directory_family_support(family: DurableStateFamily) -> DirectoryFa
         | WorkflowYieldRecovery
         | ManagedRestoreRecovery
         | WorkflowTerminalCleanup
-        | WorkflowLineages
-        | WorkflowDefinitions
-        | WorkflowNodes
-        | WorkflowConnections
-        | WorkflowInstances
-        | WorkflowTransitions
-        | WorkflowProposals
-        | WorkflowProposalCoverage
-        | WorkflowAssessmentEvidence
-        | WorkflowEvidenceDependencies
-        | WorkflowApprovals
-        | WorkflowOperationOutputs
-        | WorkflowCapturedInputs
         | UiPresentationCustody
         | CapturedExternalInput
         | SignalResourceRequestCustody => DirectoryFamilySupport::RefusedUntil(7),

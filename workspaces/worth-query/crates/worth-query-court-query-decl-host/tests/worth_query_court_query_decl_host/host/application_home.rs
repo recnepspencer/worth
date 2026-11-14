@@ -1,7 +1,6 @@
 //! Real directory startup/read/owning close, extended by the ordinary commit seam.
 mod changed_build;
 mod correction_material;
-mod directory_capabilities;
 mod program_support;
 mod workflow_configuration;
 use std::{
@@ -247,6 +246,7 @@ mod transition_required;
 
 mod signing_owner_retirement;
 
+mod workflow_durability;
 #[test]
 fn failed_managed_cleanup_records_live_release_and_discharges_after_directory_reopen() {
     use worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome as Outcome;

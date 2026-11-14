@@ -69,6 +69,7 @@ enum QueryRetirementStage {
     TransportCustody,
     Participation,
     InstalledConditionals,
+    RecoveredOutputs,
     Provider,
     Projection,
     Granular,
@@ -98,6 +99,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         self.conditional_cleanup
             .preflight_home_retirement(request)?;
         if !self.installed_producers.is_empty() {
+            self.runtime
+                .output_demands
+                .reclaim_home_retirement_cache(request)?;
             self.installed_producers
                 .preflight_home_retirement(request)?;
             self.runtime.output_demands.preflight_home_retirement()?;
@@ -322,6 +326,13 @@ impl<Schema: ApplicationSchema> RetiringPrimaryGraphRuntime<Schema> {
                 self.runtime.installed_conditionals = Default::default();
                 Progress::Complete
             }
+            QueryRetirementStage::RecoveredOutputs => {
+                self.runtime
+                    .runtime
+                    .recovered_outputs
+                    .retire_home_observations(request)?;
+                Progress::Complete
+            }
             QueryRetirementStage::Bridge => self.runtime.runtime.bridge.advance_home_retirement(
                 request,
                 native,
@@ -335,7 +346,10 @@ impl<Schema: ApplicationSchema> RetiringPrimaryGraphRuntime<Schema> {
                 QueryRetirementStage::InboundCustody => QueryRetirementStage::TransportCustody,
                 QueryRetirementStage::TransportCustody => QueryRetirementStage::Participation,
                 QueryRetirementStage::Participation => QueryRetirementStage::InstalledConditionals,
-                QueryRetirementStage::InstalledConditionals => QueryRetirementStage::Provider,
+                QueryRetirementStage::InstalledConditionals => {
+                    QueryRetirementStage::RecoveredOutputs
+                }
+                QueryRetirementStage::RecoveredOutputs => QueryRetirementStage::Provider,
                 QueryRetirementStage::Provider => QueryRetirementStage::Projection,
                 QueryRetirementStage::Projection => QueryRetirementStage::Granular,
                 QueryRetirementStage::Granular => QueryRetirementStage::ProductSource,
