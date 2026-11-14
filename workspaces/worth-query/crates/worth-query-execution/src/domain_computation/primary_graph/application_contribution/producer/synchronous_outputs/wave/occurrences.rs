@@ -1,7 +1,7 @@
 //! Close the finite typed occurrence frontier before preparing any supplier.
 use super::*;
 impl<S: ApplicationSchema> SynchronousOutputWave<S> {
-    fn quote_frontier(
+    pub(super) fn quote_frontier(
         &self,
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
         allowed: usize,
@@ -39,7 +39,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
         context.execution.allocation_policy().reserve_memory(bytes).map_err(|cause| SynchronousOutputFailure(CoupledSourceReadStop::capture(
             crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::allocation_denied("required occurrence frontier",cause))))
     }
-    fn blocked_frontier(&self, needed: &[bool]) -> SynchronousOutputFailure {
+    pub(super) fn blocked_frontier(&self, needed: &[bool]) -> SynchronousOutputFailure {
         use super::super::super::{
             WorthQueryOutputDemandDenial as Denial, WorthQueryOutputDemandDenialKind as Kind,
         };
@@ -84,14 +84,14 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
         }
         i
     }
-    fn ready(&self, i: usize) -> bool {
+    pub(super) fn ready(&self, i: usize) -> bool {
         self.tasks[i].alias.is_none()
             && self.tasks[i].prerequisites.iter().all(|parent| {
                 let parent = &self.tasks[self.canonical(*parent)];
                 parent.done && parent.parent.is_some()
             })
     }
-    fn needed(&self, allowed: Option<&[String]>) -> Vec<bool> {
+    pub(super) fn needed(&self, allowed: Option<&[String]>) -> Vec<bool> {
         let mut needed = self
             .tasks
             .iter()
@@ -128,7 +128,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
             }
         }
     }
-    fn close_frontier(
+    pub(super) fn close_frontier(
         &mut self,
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
         candidate: &RelationalAuthoredCoupledCandidate<'_>,

@@ -107,6 +107,9 @@ pub(super) fn intrinsic_to_row(kind: WorthQueryOutputDemandDenialKind) -> bool {
         | Kind::SchedulingDeferred
         | Kind::PublicationCapacityExceeded
         | Kind::CurrentControlBusy => false,
+        // A proposed cohort's frontier does not permanently fail a shared row.
+        Kind::CyclicRequiredOutputOccurrences { .. }
+        | Kind::RequiredOutputParentUnavailable { .. } => false,
         Kind::ProductSelection(denial) => !denial.is_transient(),
         Kind::DurableStateAdmission(_)
         | Kind::UnobservedWrite(_)

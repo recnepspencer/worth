@@ -6,7 +6,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationProjectionDenial, WorthQueryApplicationProjectionRow,
     WorthQueryPrerequisiteSelection,
 };
-use std::{any::Any, marker::PhantomData};
+use std::any::Any;
 use worth_query_declaration::facade::{
     application_program::{ApplicationConnectionShape, ApplicationOutputOccurrences},
     application_query::{
@@ -108,6 +108,10 @@ where
         >,
     DeclaredRow<S, Discovery<S, C>>:
         WorthQueryApplicationProjection<S, <Discovery<S, C> as ApplicationQueryBinding<S>>::Query>,
+    DeclaredRow<S, Prerequisites<S, C>>: WorthQueryApplicationProjection<
+        S,
+        <Prerequisites<S, C> as ApplicationQueryBinding<S>>::Query,
+    >,
     Row<S, C>: WorthQueryApplicationProjection<
         S,
         <Prerequisites<S, C> as ApplicationQueryBinding<S>>::Query,

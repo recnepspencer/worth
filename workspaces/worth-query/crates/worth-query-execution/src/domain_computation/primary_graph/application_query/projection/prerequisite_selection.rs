@@ -18,7 +18,7 @@ impl<Q, Slot, S, R, F, T, D, C> WorthQueryPrerequisiteSelection<S, Q>
     for ApplicationQueryResultRelationRef<Q, Slot, S, R, F, T, D, C>
 where
     Q: ApplicationQueryMarkerIdentity<S> + 'static,
-    Slot: WorthQueryPortableType,
+    Slot: WorthQueryPortableType + 'static,
     S: worth_query_installation::facade::ApplicationSchema,
     R: 'static,
     F: 'static,

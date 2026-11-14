@@ -51,6 +51,7 @@ impl<S: ApplicationSchema> SynchronousOutputAssembly<'_, '_, '_, '_, S> {
         B::Input: ApplicationQueryIntent<S, Binding = B>,
         B::ScopeBinding: ApplicationQueryScopeResolution<S, B::PrincipalIdentity>,
         V: WorthQueryApplicationProjection<S, B::Query>,
+        Row<S, B>: WorthQueryApplicationProjection<S, B::Query>,
     {
         let runtime = self.owner.application;
         let external = self.owner.principal.ok_or_else(|| {
