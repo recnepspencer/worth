@@ -214,7 +214,7 @@ fn complete_fields_require_one_retired_output_and_have_distinct_canonical_meanin
         );
     }
     assert_eq!(
-        DeclaredPreImageDemand::retired_fields_for_output(retired, [], 64).validate(),
+        DeclaredPreImageDemand::<Schema>::retired_fields_for_output(retired, [], 64).validate(),
         Err(Denial::InvalidOutputFieldCapture)
     );
     assert_eq!(
