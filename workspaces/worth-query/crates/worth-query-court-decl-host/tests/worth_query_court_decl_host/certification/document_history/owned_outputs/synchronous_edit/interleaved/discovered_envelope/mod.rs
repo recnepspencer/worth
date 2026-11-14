@@ -10,6 +10,8 @@ use worth_query_decl::facade::application_program::{
 };
 #[cfg(test)]
 mod courts;
+#[cfg(test)]
+mod selected;
 
 macro_rules! root {
     ($start:ident, $connection:ident, $tree:ident, $port:ty, $binding:ty, $identity:literal) => {

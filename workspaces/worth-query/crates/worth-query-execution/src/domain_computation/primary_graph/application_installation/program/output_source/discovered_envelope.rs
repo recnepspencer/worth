@@ -15,6 +15,40 @@ where
     S: worth_query_installation::facade::ApplicationSchema,
     P: ApplicationProgramDefinition<S>,
 {
+    /// Every positioned discovered stage belongs to the selected program even
+    /// when its genuine query yields no roots and schedules no output task.
+    pub fn require_selected_discovered_envelope_stage<R, B>(
+        &self,
+        _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
+        owner: &super::super::WorthQuerySelectedProgramOwner<'_, S>,
+    ) -> Result<(), crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial>
+    where
+        R: ApplicationOutputGraphShape<S> + ApplicationDiscoveredOutputRoot,
+        RootConnection<S, R>: WorthQueryApplicationDiscoveredOutputConnection<S, Source = B>,
+        B: ApplicationMutationBinding<S>,
+    {
+        let refuse = crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::application_program_required;
+        self.selected_source_owner::<B>(owner, TypeId::of::<R>())?;
+        let declared = self
+            .installed_program()
+            .action_inventory()
+            .resolve_unique_binding::<S, B>()
+            .map_err(|_| refuse())?;
+        let action = owner
+            .resolve_declared_action::<B>(declared)
+            .map_err(|_| refuse())?;
+        if !action
+            .delivery()
+            .and_then(|delivery| delivery.output())
+            .is_some_and(|output| {
+                output.is_discovered() && output.root_type() == TypeId::of::<R>().into_external()
+            })
+        {
+            return Err(refuse());
+        }
+        Ok(())
+    }
+
     pub fn compare_and_commit_selected_discovered_envelope<R, B>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,

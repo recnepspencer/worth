@@ -20,13 +20,23 @@ where
 {
     fn require<P: ApplicationProgramDefinition<S>>(
         program: &WorthQueryProgramApplicationRuntime<S, P>,
-        _: &WorthQuerySelectedProgramOwner<'_, S>,
+        owner: &WorthQuerySelectedProgramOwner<'_, S>,
     ) -> Result<(), Failure> {
         crate::application_entry::mutation::performed_source::require_program_output_root::<
             S,
             P,
             Self,
-        >(program.runtime(), program)
+        >(program.runtime(), program)?;
+        program
+            .require_selected_discovered_envelope_stage::<Self, B>(
+                &worth_query_execution::publication_boundary::program_publication_access(),
+                owner,
+            )
+            .map_err(|_| {
+                Failure::Mutation(
+                    WorthQueryApplicationRequestMutationDenial::ApplicationProgramRequired,
+                )
+            })
     }
     fn dependencies(
         stage: CapturedAuthoredEditStage<S>,
