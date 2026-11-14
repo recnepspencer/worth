@@ -1,9 +1,9 @@
-use super::super::{signal_port::BridgeConditionalSignalPort, BridgeOwnedSignalRuntime};
+use super::super::{signal_port::BridgeConditionalSignalPort, BridgeConditionalExecutionView};
 use super::{
     BridgeOwnedAsyncManagedDenial as Denial, BridgeOwnedAsyncManagedRequestAdmission as Custodian,
 };
 
-impl BridgeOwnedSignalRuntime {
+impl BridgeConditionalExecutionView<'_> {
     pub(super) fn retain_managed_native_progress(
         &self,
         owner: &mut Custodian,

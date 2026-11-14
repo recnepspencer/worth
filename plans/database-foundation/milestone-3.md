@@ -158,6 +158,8 @@ Each H item's proof is its phase's graceful journeys, plus the graceful oracle.
 
 ### Moved courts
 
+- **C3:** cold discharge of an H7 process-local application-resource obligation whose provider/queue/Native release was outstanding at quiescent kill; keep its original input/request and typed pending record; never release it against fresh empty resources.
+- **C3:** cold discharge of an H7 process-local application-resource obligation whose provider/queue/Native release was outstanding at quiescent kill; keep its original input/request and typed pending record; never release it against fresh empty resources.
 - **C3:** cold discharge of an H7 cleanup obligation whose process-local provider-memory, queue or Bridge release was outstanding at a quiescent kill; reopen retains the typed pending obligation and close refuses until an owner-defined cold release contract lands (coordinator ruling 2026-11-13).
 
 Cleanup courts moved out of the tree are listed under their C item, with `restore from <sha>:<path>`. Existing entries:

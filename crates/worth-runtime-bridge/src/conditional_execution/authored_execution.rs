@@ -7,6 +7,21 @@ use super::*;
 use std::sync::{Arc, RwLock};
 
 pub struct BridgeAuthoredConditionalExecution<'a> {
+    async_definitions: Arc<
+        std::collections::BTreeMap<
+            Arc<str>,
+            super::owned_async::definition_source::OwnedAsyncDefinitionSource,
+        >,
+    >,
+    async_declarations: Arc<
+        RwLock<
+            std::collections::BTreeMap<
+                Arc<str>,
+                super::owned_async::BridgeInstalledOwnedAsyncDeclaration,
+            >,
+        >,
+    >,
+    async_observation_authority: Arc<()>,
     signal: &'a worth_signal::facade::durability::SignalDurableOwner<(), (), (), (), ()>,
     program: Arc<Program>,
     lowerings: Arc<RwLock<lowering_registry::BridgeConditionalLoweringRegistry>>,
@@ -33,6 +48,9 @@ impl BridgeReadmittedAuthoredAssembly {
         let projection = self.branches.projection(branch)?;
         let serving = projection.serving(branch)?;
         Ok(BridgeAuthoredConditionalExecution {
+            async_definitions: Arc::clone(&serving.async_definitions),
+            async_declarations: Arc::clone(&serving.async_declarations),
+            async_observation_authority: Arc::clone(&serving.async_observation_authority),
             signal: &self.signal,
             program: Arc::clone(&self.program),
             lowerings: Arc::clone(&serving.lowerings),
@@ -58,6 +76,10 @@ impl BridgeAuthoredConditionalExecution<'_> {
 
     pub fn view(&self) -> execution_view::BridgeConditionalExecutionView<'_> {
         execution_view::BridgeConditionalExecutionView {
+            async_declarations: &self.async_declarations,
+            async_definitions: Some(&self.async_definitions),
+            async_observation_authority: &self.async_observation_authority,
+            signal_services: None,
             bridge: &self.program.bridge,
             correspondence_allocations: &self.allocations,
             managed_clock_lanes: &self.managed_clock_lanes,

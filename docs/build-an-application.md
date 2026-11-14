@@ -2857,6 +2857,13 @@ process-local selection provenance; fresh original-branch action and requested
 facet admission precede protected row/provider/clock access. Explicit runtime
 close refuses allocated rows and preserves their owners. Rust Drop/process
 termination does not attest to provider or Native cleanup.
+For a Directory Home, graceful Home close instead hands each original row to
+its existing live release transitions and persists the actual terminal. Failed
+provider/queue/Native cleanup refuses that close. Reopen installs fresh declared
+providers and clocks. Use the resource request's `retained_state::<Binding>(&input, identity)`,
+`with_retained_result` and `discharge_retained` to consume the original logical
+custody under fresh State, Result or Close admission. No provider is replayed;
+unverified ingress remains distinct from a committed result.
 The existing lower World/Bridge path already preserves the
 exact committed source through request admission and revalidation; an empty
 source returns `NoCommittedSource` before creating a Signal request. This source

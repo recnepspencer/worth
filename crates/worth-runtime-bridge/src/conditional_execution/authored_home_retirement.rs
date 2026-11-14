@@ -168,6 +168,7 @@ impl BridgeReadmittedAuthoredAssembly {
             bridge,
             _memory: programme_memory,
             installation: _,
+            async_definitions: _,
             conditional_evaluation_budget: _,
         } = Arc::try_unwrap(program)
             .unwrap_or_else(|_| unreachable!("checked holders leave the original programme"));

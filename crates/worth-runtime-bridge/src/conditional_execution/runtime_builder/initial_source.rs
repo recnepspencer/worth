@@ -57,7 +57,7 @@ impl BridgeConditionalRuntimeBuilder {
         contribution: SignalRecordedIdentityContribution,
         execution: &ExecutionRequest<'_, '_>,
     ) -> Result<BridgeInitialSourcePublication, BridgeInitialSourcePreparationRefusal> {
-        if !self.managed_clocks.is_empty() || self.runtime.owned_async_declaration_count() != 0 {
+        if !self.supports_authored_program() {
             return Err(BridgeInitialSourcePreparationRefusal {
                 builder: self,
                 cause: BridgeInitialSourceDenial::UnsupportedProgramFamily,

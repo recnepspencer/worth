@@ -14,7 +14,7 @@ trait PendingResource<Schema> {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         builder: &mut worth_runtime_bridge::facade::BridgeConditionalRuntimeBuilder,
         support: &worth_query_admission::facade::resource_admission::WorthQueryExecutionResourceSupportSnapshot,
-    ) -> Result<(TypeId, InstalledResourceEntry), Denial>;
+    ) -> Result<(TypeId, InstalledResourceEntry<Schema>), Denial>;
 }
 
 struct PendingBinding<Schema: ApplicationSchema, Binding: ApplicationResourceBinding<Schema>> {
@@ -110,18 +110,6 @@ impl<Schema: ApplicationSchema + 'static> PendingResourceRegistry<Schema> {
         Ok(())
     }
 
-    pub(in crate::domain_computation::primary_graph) fn require_home_recovery_support(
-        &self,
-    ) -> Result<(), Denial> {
-        if self.entries.is_empty() {
-            Ok(())
-        } else {
-            Err(denial(
-                "resource pools require their later Home recovery phase",
-            ))
-        }
-    }
-
     /// The whole batch is the final graph mutation before seal. No unrelated
     /// raw-tick producer may already occupy this same Native temporal cell.
     pub(in crate::domain_computation::primary_graph) fn install(
@@ -167,7 +155,7 @@ impl<Schema: ApplicationSchema + 'static, Binding: ApplicationResourceBinding<Sc
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         builder: &mut worth_runtime_bridge::facade::BridgeConditionalRuntimeBuilder,
         support: &worth_query_admission::facade::resource_admission::WorthQueryExecutionResourceSupportSnapshot,
-    ) -> Result<(TypeId, InstalledResourceEntry), Denial> {
+    ) -> Result<(TypeId, InstalledResourceEntry<Schema>), Denial> {
         let resource = InstalledResourceBinding::install(
             execution,
             builder,
@@ -177,10 +165,12 @@ impl<Schema: ApplicationSchema + 'static, Binding: ApplicationResourceBinding<Sc
             self.clock,
         )?;
         let storage = Arc::clone(&resource.storage);
+        let resource = Arc::new(resource);
         Ok((
             TypeId::of::<Binding>(),
             InstalledResourceEntry {
-                binding: Arc::new(resource),
+                binding: resource.clone(),
+                custody: resource,
                 storage,
             },
         ))

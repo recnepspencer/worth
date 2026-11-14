@@ -1,12 +1,12 @@
 //! Accept a reading only at this actual installed process-local source's cell.
-use super::super::BridgeOwnedSignalRuntime;
+use super::super::BridgeConditionalExecutionView;
 use super::admission::request_denial;
 use crate::facade::{
     BridgeAsyncRequestIdentityRejection, BridgeAsyncRequestTruthViewBasis,
     LoweredBridgeAsyncSourceDeclaration,
 };
 
-impl BridgeOwnedSignalRuntime {
+impl BridgeConditionalExecutionView<'_> {
     pub fn advance_owned_async_source_clock(
         &self,
         declaration: &LoweredBridgeAsyncSourceDeclaration,

@@ -24,6 +24,10 @@ pub(super) fn encode(
     bytes.extend_from_slice(&predecessor);
     bytes.extend_from_slice(&generation.get().to_le_bytes());
     match &record {
+        QueryObligationRecord::Resource(record) => {
+            bytes.push(19);
+            resource::codec::encode(&mut bytes, record);
+        }
         QueryObligationRecord::OwnedAsync(record) => {
             bytes.push(18);
             owned_async::codec::encode(&mut bytes, record);
@@ -153,6 +157,7 @@ pub(super) fn decode(bytes: &[u8]) -> Result<QueryObligationFrame, QueryObligati
             &mut reader,
             home,
         )?),
+        19 => QueryObligationRecord::Resource(resource::codec::decode(&mut reader, home)?),
         18 => QueryObligationRecord::OwnedAsync(owned_async::codec::decode(&mut reader, home)?),
         17 => QueryObligationRecord::ManagedRun(managed_run::codec::decode(&mut reader, home)?),
         16 => QueryObligationRecord::ConditionalDecision(conditional_decision::codec::decode(

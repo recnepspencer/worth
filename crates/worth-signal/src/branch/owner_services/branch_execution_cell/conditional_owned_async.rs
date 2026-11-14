@@ -29,6 +29,21 @@ where
     I: Copy + Ord,
     T: Copy + Ord,
 {
+    pub(in crate::branch::owner_services) fn readmit_conditional_owned_async_definition(
+        &self,
+        admission: &SignalOwnerOperationAdmission<'_>,
+        basis: &AdmittedSignalBranchBasis,
+        definition: &SignalInstalledDefinitionBinding,
+        declaration: crate::data::resource::ResourceNodeDeclaration,
+    ) -> Result<
+        crate::data::resource::LoweredResourceDescriptor,
+        SignalConditionalServiceExecutionDenial,
+    > {
+        self.with_conditional_owned_async_state(admission, basis, definition, |state| {
+            state.readmit_owned_async_definition(declaration)
+        })
+    }
+
     pub(in crate::branch::owner_services) fn admit_conditional_owned_async_source(
         &self,
         admission: &SignalOwnerOperationAdmission<'_>,

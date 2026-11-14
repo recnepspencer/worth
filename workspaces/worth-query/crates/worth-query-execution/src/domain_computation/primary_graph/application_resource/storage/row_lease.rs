@@ -63,6 +63,42 @@ impl ResourceRowLease {
         Ok(())
     }
 
+    /// Home handoff consumes a released row after its durable release record.
+    /// This is retirement, not a fabricated ordinary ResourceRead completion.
+    pub(in crate::domain_computation::primary_graph::application_resource) fn retire_to_home(
+        mut self,
+    ) -> Result<(), (Self, ResourceStorageDenial)> {
+        let occurrence = self.occurrence();
+        if occurrence.native_slot.is_some()
+            || !occurrence.provider_closed
+            || occurrence.candidate.is_some()
+            || occurrence.recovery.is_some()
+            || matches!(
+                occurrence.lifecycle,
+                super::super::occurrence::ResourceLifecycle::Live { .. }
+            )
+            || (occurrence.obligation.is_some()
+                && occurrence
+                    .handoff
+                    .as_ref()
+                    .is_none_or(|handoff| handoff.release.is_none()))
+        {
+            return Err((self, ResourceStorageDenial::CleanupPending));
+        }
+        self.release_row();
+        drop(self.occurrence.take());
+        Ok(())
+    }
+    fn release_row(&self) {
+        let mut free = lock(&self.storage.free);
+        let mut slot = lock(&self.storage.rows[self.key.index]);
+        assert!(
+            slot.allocated && slot.generation == self.key.generation && slot.occurrence.is_none()
+        );
+        slot.allocated = false;
+        slot.next_free = free.row;
+        free.row = Some(self.key.index);
+    }
     pub(in crate::domain_computation::primary_graph::application_resource) fn recycle(
         mut self,
     ) -> Result<super::super::closed::WorthQueryClosedResource, (Self, ResourceStorageDenial)> {
@@ -78,6 +114,9 @@ impl ResourceRowLease {
         {
             return Err((self, ResourceStorageDenial::CleanupPending));
         }
+        if occurrence.obligation.is_some() && occurrence.disposal != crate::domain_computation::primary_graph::query_obligations::history::ResourceDisposal::Discharged {
+            return Err((self, ResourceStorageDenial::CleanupPending));
+        }
         if occurrence.last_action.is_none() {
             return Err((self, ResourceStorageDenial::CleanupPending));
         }
@@ -85,16 +124,7 @@ impl ResourceRowLease {
             .occurrence
             .take()
             .expect("closed action retains actual row");
-        let mut free = lock(&self.storage.free);
-        let mut slot = lock(&self.storage.rows[self.key.index]);
-        assert!(
-            slot.allocated && slot.generation == self.key.generation && slot.occurrence.is_none()
-        );
-        slot.allocated = false;
-        slot.next_free = free.row;
-        free.row = Some(self.key.index);
-        drop(slot);
-        drop(free);
+        self.release_row();
         // A retained output releases its result slot through the same free
         // index owner, so do not run its Drop while holding that owner's lock.
         let (native, clock_only) = match occurrence.lifecycle {

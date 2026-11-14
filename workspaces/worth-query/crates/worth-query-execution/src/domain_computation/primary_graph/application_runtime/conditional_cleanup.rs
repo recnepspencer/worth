@@ -29,7 +29,7 @@ impl<Schema> ConditionalRuntimeCleanup<Schema> {
         if self.owner.is_some() {
             return Err(Denial::Unsupported(Owner::ConditionalRuntime));
         }
-        self.resources.preflight_home_retirement()
+        Ok(())
     }
 
     pub(super) fn new(

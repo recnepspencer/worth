@@ -8,5 +8,8 @@ pub use crate::domain_computation::primary_graph::application_resource::{
     WorthQueryResourceOwnedEffectStartStop, WorthQueryResourceProviderAttempt,
     WorthQueryResourceProviderFailure, WorthQueryResourceRecoveryCloseStop,
     WorthQueryResourceStartStop, WorthQueryResourceState, WorthQueryResourceStopKind,
-    WorthQueryResourceVerificationFailure, WorthQueryResourceVerifiedFrame,
+    WorthQueryResourceTerminal, WorthQueryResourceVerificationFailure,
+    WorthQueryResourceVerifiedFrame, WorthQueryRetainedResourceState,
 };
+
+pub use worth_foundational::facade::OwnedAsyncObligationIdentity;

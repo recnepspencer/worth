@@ -11,7 +11,9 @@ pub use crate::domain_computation::primary_graph::query_obligations::{
     QueryOwnedAsyncDefinition, QueryOwnedAsyncObligation, QueryOwnedAsyncPosture,
     QueryOwnedAsyncRecord, QueryOwnedAsyncRequestGeneration, QueryOwnedAsyncRetention,
     QueryOwnedAsyncRetryCause, QueryOwnedAsyncTerminal, QueryProgramSupportObligation,
-    QueryProgramSupportRecord, QUERY_OBLIGATION_FRAME_MAX_BYTES,
+    QueryProgramSupportRecord, QueryResourceHandoff, QueryResourceObligation,
+    QueryResourceOriginal, QueryResourceRecord, QueryResourceRelease, QueryResourceResultKind,
+    QUERY_OBLIGATION_FRAME_MAX_BYTES,
 };
 pub use worth_foundational::facade::{
     ProgramSupportObligationIdentity, ProgramSupportObligationKind, ProgramSupportStatus,

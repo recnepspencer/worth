@@ -1,5 +1,6 @@
 use super::super::{
-    BridgeOwnedAsyncCompletionAdmission, BridgeOwnedAsyncRequestAdmission, BridgeOwnedSignalRuntime,
+    BridgeConditionalExecutionView, BridgeOwnedAsyncCompletionAdmission,
+    BridgeOwnedAsyncRequestAdmission,
 };
 use crate::facade::{BridgeAsyncCompletionRejection, BridgeAsyncCompletionRejectionKind};
 use std::sync::Arc;
@@ -28,7 +29,7 @@ impl BridgeOwnedAsyncCommittedCompletion {
     }
 }
 
-impl BridgeOwnedSignalRuntime {
+impl BridgeConditionalExecutionView<'_> {
     pub fn commit_owned_async_completion(
         &self,
         request: &BridgeOwnedAsyncRequestAdmission,

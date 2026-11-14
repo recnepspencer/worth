@@ -1221,6 +1221,20 @@ disclosure facets. Close has no Inspect or result obligation; detailed close add
 only cleanup detail. ResourceRead admission binds that exact installed contract
 to genuine provider capacity, without borrowing the Access query's payload plan.
 
+Retain the handle or receipt's `obligation_identity()` to address its original
+work after reopen; that descriptive identity grants no authority.
+Directory Homes retain declared process-local resource work in the shared Query
+obligation history. Graceful close freezes accepted ingress, runs the original
+provider/queue/Native release and records its actual terminal; pending cleanup
+refuses close. After reopening with fresh provider/clock owners, use
+`application_resources(...).retained_state::<Binding>(&input, identity)` to inspect original
+identities and typed terminal posture, `with_retained_result` for an authorized
+committed result, and `discharge_retained` for the logical obligation. These use
+the installed State, Result and Close purposes independently. Use the `_governed`
+State/Result forms with a fresh capability when the declaration requires metadata
+governance. Unverified ingress
+never becomes a result, and cold discharge never restarts the external provider.
+
 The internal engine's owned async entry returns a move-owned custodian. Entry
 refusals return any admitted custodian in `WorthQueryOwnedAsyncRuntimeStop`;
 timeout/retry/revalidation borrow that same owner mutably. Immutable retained

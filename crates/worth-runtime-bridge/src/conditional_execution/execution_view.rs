@@ -6,6 +6,20 @@ use super::{
 use std::sync::{Arc, RwLock};
 
 pub struct BridgeConditionalExecutionView<'a> {
+    pub(super) async_definitions: Option<
+        &'a std::collections::BTreeMap<
+            Arc<str>,
+            super::owned_async::definition_source::OwnedAsyncDefinitionSource,
+        >,
+    >,
+    pub(super) async_declarations: &'a RwLock<
+        std::collections::BTreeMap<
+            Arc<str>,
+            super::owned_async::BridgeInstalledOwnedAsyncDeclaration,
+        >,
+    >,
+    pub(super) async_observation_authority: &'a Arc<()>,
+    pub(super) signal_services: Option<&'a super::service_binding::BridgeSignalServiceBinding>,
     pub(super) correspondence_allocations:
         &'a crate::correspondence::SharedCorrespondenceAllocationRegistry,
     pub(super) bridge: &'a crate::facade::RuntimeBridge,
@@ -32,6 +46,10 @@ pub struct BridgeConditionalExecutionView<'a> {
 impl BridgeOwnedSignalRuntime {
     pub(super) fn execution_view(&self) -> BridgeConditionalExecutionView<'_> {
         BridgeConditionalExecutionView {
+            async_definitions: None,
+            async_declarations: &self.async_declarations,
+            async_observation_authority: &self.async_observation_authority,
+            signal_services: self.signal_services.as_ref(),
             bridge: &self.bridge,
             correspondence_allocations: &self.bridge.correspondence_allocations,
             managed_clock_lanes: &self.managed_clock_lanes,

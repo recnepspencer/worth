@@ -12,8 +12,11 @@ impl WorthQueryOwnedAsyncRuntimeServices<'_> {
         selected: &crate::basis::WorthQueryProductBranchLease,
     ) -> Result<Custody, Stop> {
         self.admit_from_source(source, selected, || {
-            self.world
-                .admit_unqueued_owned_async_request(self.bridge, &source.lowered, selected)
+            self.world.admit_unqueued_owned_async_request(
+                &self.bridge.conditional_execution_view(),
+                &source.lowered,
+                selected,
+            )
         })
     }
 
@@ -26,7 +29,7 @@ impl WorthQueryOwnedAsyncRuntimeServices<'_> {
         self.admit_from_source(source, selected, || {
             self.world
                 .admit_unqueued_owned_async_request_at_branch_head(
-                    self.bridge,
+                    &self.bridge.conditional_execution_view(),
                     &source.lowered,
                     selected,
                 )

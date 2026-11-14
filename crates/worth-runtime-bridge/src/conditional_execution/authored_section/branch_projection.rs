@@ -45,6 +45,16 @@ pub(in crate::conditional_execution) enum BranchPosture {
     },
 }
 pub(in crate::conditional_execution) struct ReadmittedBranch {
+    pub(in crate::conditional_execution) async_definitions: Arc<std::collections::BTreeMap<Arc<str>, crate::conditional_execution::owned_async::definition_source::OwnedAsyncDefinitionSource>>,
+    pub(in crate::conditional_execution) async_declarations: Arc<
+        std::sync::RwLock<
+            std::collections::BTreeMap<
+                Arc<str>,
+                crate::conditional_execution::owned_async::BridgeInstalledOwnedAsyncDeclaration,
+            >,
+        >,
+    >,
+    pub(in crate::conditional_execution) async_observation_authority: Arc<()>,
     pub(in crate::conditional_execution) programme_memory:
         Option<worth_execution::ExecutionMemoryReservation>,
     pub(in crate::conditional_execution) graph_lifecycle:

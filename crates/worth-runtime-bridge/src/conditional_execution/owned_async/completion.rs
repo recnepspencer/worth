@@ -6,10 +6,10 @@ use crate::facade::{
     BridgeMixedCauseOrderingRequest, ValidatedBridgeAsyncCompletionEnvelope,
 };
 
-use super::super::BridgeOwnedSignalRuntime;
+use super::super::BridgeConditionalExecutionView;
 use super::foreign_continuation_denial;
 
-impl BridgeOwnedSignalRuntime {
+impl BridgeConditionalExecutionView<'_> {
     pub fn validate_owned_async_completion_envelope(
         &self,
         request: &super::super::BridgeOwnedAsyncRequestAdmission,

@@ -13,12 +13,12 @@ pub struct BridgeOwnedAsyncRequestResponseDeclaration {
 }
 
 /// Declaration meaning only; it recreates no installed Signal source or port.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 pub enum BridgeOwnedAsyncRetention {
     Mandatory,
     ProcessLocal,
 }
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct BridgeOwnedAsyncDeclarationDescription {
     pub identity: String,
     pub payload_contract: u64,
@@ -30,6 +30,53 @@ pub struct BridgeOwnedAsyncDeclarationDescription {
     pub retention: BridgeOwnedAsyncRetention,
 }
 impl BridgeOwnedAsyncRequestResponseDeclaration {
+    pub(super) fn signal_declaration(
+        &self,
+        node: worth_signal::facade::NodeId,
+    ) -> Result<
+        worth_signal::facade::ResourceNodeDeclaration,
+        crate::facade::BridgeAsyncSourceDeclarationRejection,
+    > {
+        let retry_delay =
+            worth_signal::facade::TemporalDuration::temporal_duration(self.retry_delay_ticks)
+                .map_err(|error| {
+                    crate::facade::BridgeAsyncSourceDeclarationRejection::new(
+                crate::facade::BridgeAsyncSourceDeclarationRejectionKind::SignalDeclarationRejected,
+                error.to_string(),
+            )
+                })?;
+        let timeout = worth_signal::facade::TemporalDuration::temporal_duration(self.timeout_ticks)
+            .map_err(|error| {
+                crate::facade::BridgeAsyncSourceDeclarationRejection::new(
+                crate::facade::BridgeAsyncSourceDeclarationRejectionKind::SignalDeclarationRejected,
+                error.to_string(),
+            )
+            })?;
+        let mut resource = worth_signal::facade::ResourceNodeDeclaration::new(
+            worth_signal::facade::ResourceNodeId::from_node(node),
+            worth_signal::facade::ResourcePayloadContract::new(
+                worth_signal::facade::ResourcePayloadContractId::new(self.payload_contract),
+            )
+            .with_max_payload_bytes(self.max_payload_bytes),
+        )
+        .with_observation_policy(
+            worth_signal::facade::ResourceObservationPolicyDeclaration::LifecycleOnly,
+        )
+        .with_retry_policy(
+            worth_signal::facade::ResourceRetryPolicyDeclaration::FixedDelay { delay: retry_delay },
+        )
+        .with_timeout_policy(
+            worth_signal::facade::ResourceTimeoutPolicyDeclaration::PerAttemptTimeout { timeout },
+        )
+        .with_retry_max_attempts(self.retry_max_attempts);
+        if self.process_local_retention {
+            resource = resource.with_retention_policy(
+                worth_signal::facade::ResourceRetentionPolicyDeclaration::TerminalSummariesOnly,
+            );
+        }
+        Ok(resource)
+    }
+
     /// Reconstruct declaration meaning. Installation still issues fresh Native owners.
     pub fn from_description(description: BridgeOwnedAsyncDeclarationDescription) -> Self {
         Self {

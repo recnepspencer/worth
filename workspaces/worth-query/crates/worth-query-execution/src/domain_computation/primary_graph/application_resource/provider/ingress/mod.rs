@@ -1,5 +1,6 @@
 //! Finite pre-admitted ingress; unverified frames are not Native queue items.
 mod backing;
+mod handoff;
 mod sealed_frame;
 mod writer;
 pub(in crate::domain_computation::primary_graph::application_resource) use backing::IngressBacking;

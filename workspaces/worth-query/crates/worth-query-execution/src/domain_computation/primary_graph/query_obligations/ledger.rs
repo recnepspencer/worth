@@ -17,6 +17,8 @@ pub struct QueryObligationLedger {
         worth_foundational::facade::OwnedAsyncObligationIdentity,
         QueryOwnedAsyncObligation,
     >,
+    pub(super) resources:
+        BTreeMap<worth_foundational::facade::OwnedAsyncObligationIdentity, QueryResourceObligation>,
     statuses: BTreeMap<CanonicalDigestId, ProgramSupportStatus>,
     obligations: BTreeMap<ProgramSupportObligationIdentity, QueryProgramSupportObligation>,
 }
@@ -32,6 +34,7 @@ impl QueryObligationLedger {
             conditional: BTreeMap::new(),
             runs: BTreeMap::new(),
             owned_async: BTreeMap::new(),
+            resources: BTreeMap::new(),
             statuses: BTreeMap::new(),
             obligations: BTreeMap::new(),
         }
@@ -143,6 +146,7 @@ impl QueryObligationLedger {
         self.validate(&frame.record, frame.position)?;
         let payload_digest = frame.payload_digest();
         match frame.record {
+            QueryObligationRecord::Resource(record) => self.apply_resource(record),
             QueryObligationRecord::OwnedAsync(record) => self.apply_owned_async(record),
             QueryObligationRecord::ManagedRun(record) => self.apply_managed_run(record),
             QueryObligationRecord::ProgramSupport(record) => self.apply_support(record),
@@ -180,6 +184,7 @@ impl QueryObligationLedger {
         position: u64,
     ) -> Result<(), QueryObligationDenial> {
         match record {
+            QueryObligationRecord::Resource(record) => self.validate_resource(record, position),
             QueryObligationRecord::OwnedAsync(record) => {
                 self.validate_owned_async(record, position)
             }

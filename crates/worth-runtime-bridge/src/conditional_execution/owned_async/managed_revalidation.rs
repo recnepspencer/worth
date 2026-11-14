@@ -1,4 +1,4 @@
-use super::super::BridgeOwnedSignalRuntime;
+use super::super::BridgeConditionalExecutionView;
 use super::{
     BridgeOwnedAsyncManagedDenial as Denial, BridgeOwnedAsyncManagedRequestAdmission as Custodian,
 };
@@ -13,7 +13,7 @@ pub enum BridgeOwnedAsyncManagedRevalidation {
     Replaced(crate::facade::BridgeAsyncRevalidationLineage),
 }
 
-impl BridgeOwnedSignalRuntime {
+impl BridgeConditionalExecutionView<'_> {
     pub fn revalidate_managed_owned_async_request(
         &self,
         owner: &mut Custodian,

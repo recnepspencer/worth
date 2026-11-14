@@ -19,3 +19,6 @@ mod yield_recovery;
 
 #[path = "query_obligations/restore_recovery.rs"]
 mod restore_recovery;
+
+#[path = "query_obligations/resource.rs"]
+mod resource;

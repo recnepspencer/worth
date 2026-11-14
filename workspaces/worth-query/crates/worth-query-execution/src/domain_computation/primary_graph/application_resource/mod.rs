@@ -2,6 +2,7 @@
 mod action;
 mod admission;
 mod closed;
+mod custody;
 pub(crate) mod legacy_bridge;
 mod occurrence;
 mod progression;
@@ -14,7 +15,8 @@ mod storage;
 mod value_capture;
 pub use closed::WorthQueryClosedResource;
 pub use request::{
-    WorthQueryApplicationResourcesRequest, WorthQueryResourceCleanupDetail, WorthQueryResourceState,
+    WorthQueryApplicationResourcesRequest, WorthQueryResourceCleanupDetail,
+    WorthQueryResourceState, WorthQueryResourceTerminal, WorthQueryRetainedResourceState,
 };
 pub use selector::{WorthQueryApplicationResource, WorthQueryApplicationResourceReceipt};
 pub use stop::{

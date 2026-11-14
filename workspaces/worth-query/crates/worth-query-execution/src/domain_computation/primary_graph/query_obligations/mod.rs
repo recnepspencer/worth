@@ -19,6 +19,11 @@ mod conditional_decision;
 pub use conditional_decision::{
     QueryConditionalDecision, QueryConditionalDecisionRecord, QueryConditionalPosture,
 };
+mod resource;
+pub use resource::{
+    QueryResourceHandoff, QueryResourceObligation, QueryResourceOriginal, QueryResourceRecord,
+    QueryResourceRelease, QueryResourceResultKind,
+};
 mod owned_async;
 pub use owned_async::{
     QueryOwnedAsyncContinuation, QueryOwnedAsyncDefinition, QueryOwnedAsyncObligation,
@@ -56,6 +61,12 @@ pub enum QueryObligationRecord {
     ConditionalDecision(QueryConditionalDecisionRecord),
     ManagedRun(QueryManagedRunRecord),
     OwnedAsync(QueryOwnedAsyncRecord),
+    Resource(QueryResourceRecord),
+}
+impl From<QueryResourceRecord> for QueryObligationRecord {
+    fn from(record: QueryResourceRecord) -> Self {
+        Self::Resource(record)
+    }
 }
 impl From<QueryOwnedAsyncRecord> for QueryObligationRecord {
     fn from(record: QueryOwnedAsyncRecord) -> Self {

@@ -127,6 +127,21 @@ impl BridgeConditionalRuntimeBuilder {
         self.runtime.active_semantic_dependency_count()
     }
 
+    fn supports_authored_program(&self) -> bool {
+        self.managed_clocks.is_empty()
+            && self
+                .runtime
+                .async_declarations
+                .read()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .values()
+                .all(|row| {
+                    row.source.description.retention
+                        == super::BridgeOwnedAsyncRetention::ProcessLocal
+                        && row.source.description.managed_queue_capacity.is_some()
+                })
+    }
+
     pub(super) fn from_runtime(runtime: BridgeOwnedSignalRuntime) -> Self {
         Self {
             runtime: Box::new(runtime),

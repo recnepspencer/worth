@@ -64,8 +64,6 @@ fn fresh_directory_home_journey() {
                 Family::BranchAdoptionRecovery,
                 6,
             ),
-            (Capability::ManagedExecution, Family::ManagedDirectRuns, 7),
-            (Capability::ResourceRequest, Family::ResourceOccurrences, 7),
             (Capability::WorkflowExecution, Family::WorkflowInstances, 7),
             (
                 Capability::RetainedOriginalOperationOwner,

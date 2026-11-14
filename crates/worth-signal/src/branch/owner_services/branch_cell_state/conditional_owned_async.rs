@@ -22,6 +22,16 @@ where
     I: Copy + Ord,
     T: Copy + Ord,
 {
+    pub(in crate::branch::owner_services) fn readmit_owned_async_definition(
+        &mut self,
+        declaration: crate::data::resource::ResourceNodeDeclaration,
+    ) -> Result<
+        crate::data::resource::LoweredResourceDescriptor,
+        SignalConditionalServiceExecutionDenial,
+    > {
+        self.state.readmit_owned_async_definition(declaration)
+    }
+
     pub(in crate::branch::owner_services) fn admit_owned_async_source(
         &mut self,
         node: ResourceNodeId,
