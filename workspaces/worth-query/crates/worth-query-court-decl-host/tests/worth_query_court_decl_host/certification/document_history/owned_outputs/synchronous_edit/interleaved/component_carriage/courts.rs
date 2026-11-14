@@ -1,5 +1,6 @@
 //! Complete recursive context and per-capture static work share one supplier.
 use super::*;
+use crate::certification::document_history::owned_outputs::synchronous_edit::courts::native_head;
 use worth_query_host::facade::{
     application_entry::WorthQueryEditEnvelopeOutcome as Outcome, runtime::ExecutionAllocationPolicy,
 };
@@ -13,7 +14,7 @@ fn recursive_component_retains_parents_and_later_static_selectors() {
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.request(&principal, &scope);
-    let before = super::super::super::super::courts::native_head(&host).0;
+    let before = native_head(&host).0;
     let mut edit = request
         .edit_envelope()
         .idempotency("component-and-static".to_owned())
@@ -55,10 +56,7 @@ fn recursive_component_retains_parents_and_later_static_selectors() {
     };
     assert_eq!(receipt.stage_count(), 3);
     assert_eq!(writes.published_rows.len() + writes.omitted_publications, 1);
-    assert_eq!(
-        super::super::super::super::courts::native_head(&host).1,
-        [before]
-    );
+    assert_eq!(native_head(&host).1, [before]);
     for (key, value) in [("a", 10), ("carriage:d", 40), ("carriage:b", 530)] {
         let rows = request
             .query(query::first_output::Read(format!("first:{key}")))
