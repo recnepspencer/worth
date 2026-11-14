@@ -12,6 +12,11 @@ use crate::domain_computation::{
 
 #[derive(Default)]
 pub struct WorthQueryRecoveredOutputs {
+    checkpoint: RecoveredOutputRecords,
+    journal: std::sync::OnceLock<RecoveredOutputRecords>,
+}
+#[derive(Default)]
+struct RecoveredOutputRecords {
     records: Vec<WorthQueryReadmittedAcceptedOutput>,
     by_source_partition: Vec<usize>,
     // Declared last: every retained row/string/role/wire and index drops first.
@@ -47,6 +52,7 @@ impl WorthQueryRecoveredOutputs {
             let correspondence =
                 readmit(&accepted).map_err(CheckpointDecodeDenial::into_installation_denial)?;
             records.push(WorthQueryReadmittedAcceptedOutput {
+                observation: None,
                 checkpoint: accepted,
                 correspondence,
             });
@@ -55,9 +61,50 @@ impl WorthQueryRecoveredOutputs {
         metadata
             .release_slots::<super::WorthQueryAcceptedOutputCheckpointIdentity>(old_capacity)
             .map_err(CheckpointDecodeDenial::into_installation_denial)?;
-        Self::from_records(records, metadata, execution)
-            .map_err(CheckpointDecodeDenial::into_installation_denial)
+        Ok(Self {
+            checkpoint: RecoveredOutputRecords::from_records(records, metadata, execution)
+                .map_err(CheckpointDecodeDenial::into_installation_denial)?,
+            journal: std::sync::OnceLock::new(),
+        })
     }
+    pub(in crate::domain_computation::primary_graph) fn readmit_journal(
+        &self,
+        records: Vec<WorthQueryReadmittedAcceptedOutput>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<(), CheckpointDecodeDenial> {
+        if self.journal.get().is_some() {
+            return Ok(());
+        }
+        let index = RecoveredOutputRecords::from_records(
+            records,
+            CheckpointMetadataFunding::new(execution)?,
+            execution,
+        )?;
+        self.journal
+            .set(index)
+            .map_err(|_| "accepted output journal already admitted".to_owned().into())
+    }
+    pub fn iter(&self) -> impl Iterator<Item = &WorthQueryReadmittedAcceptedOutput> {
+        self.checkpoint.records.iter().chain(
+            self.journal
+                .get()
+                .into_iter()
+                .flat_map(|rows| rows.records.iter()),
+        )
+    }
+    pub(in crate::domain_computation::primary_graph) fn matching_source_partition(
+        &self,
+        scope: WorthQueryOperationScopeEntityBinding,
+        partition: [u8; 32],
+    ) -> impl Iterator<Item = &WorthQueryReadmittedAcceptedOutput> {
+        self.journal
+            .get()
+            .into_iter()
+            .flat_map(move |rows| rows.matching_source_partition(scope, partition))
+            .chain(self.checkpoint.matching_source_partition(scope, partition))
+    }
+}
+impl RecoveredOutputRecords {
     fn from_records(
         records: Vec<WorthQueryReadmittedAcceptedOutput>,
         mut metadata: CheckpointMetadataFunding,
@@ -77,9 +124,6 @@ impl WorthQueryRecoveredOutputs {
             by_source_partition,
             _metadata: Some(metadata),
         })
-    }
-    pub fn iter(&self) -> impl Iterator<Item = &WorthQueryReadmittedAcceptedOutput> {
-        self.records.iter()
     }
     pub(in crate::domain_computation::primary_graph) fn matching_source_partition(
         &self,

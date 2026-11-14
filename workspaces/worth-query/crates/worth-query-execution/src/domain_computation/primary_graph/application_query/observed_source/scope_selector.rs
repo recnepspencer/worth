@@ -40,7 +40,7 @@ impl<Query> WorthQueryObservedSource<Query> {
 
     pub(in crate::domain_computation::primary_graph) fn retained_scope_selector(
         &self,
-    ) -> &WorthQueryObservedScopeSelector {
+    ) -> &Arc<WorthQueryObservedScopeSelector> {
         &self.scope_selector
     }
 

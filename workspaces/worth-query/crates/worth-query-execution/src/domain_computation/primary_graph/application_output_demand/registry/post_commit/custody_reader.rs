@@ -1,13 +1,9 @@
 //! Binding has a World receipt but no admission with which to drain custody.
 
 use super::*;
-use crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt;
+use worth_runtime_world::facade::CompositeCommitIdentity;
 
-pub fn resolve_before_binding(
-    state: &mut DemandRegistryState,
-    receipt: &WorthQueryApplicationCommitReceipt,
-) {
-    let commit = receipt.committed_product_publication().composite_commit();
+pub fn resolve_before_binding(state: &mut DemandRegistryState, commit: &CompositeCommitIdentity) {
     state.drain_custody_entry(commit);
 }
 

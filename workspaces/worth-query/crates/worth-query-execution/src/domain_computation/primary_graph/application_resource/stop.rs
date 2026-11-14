@@ -33,6 +33,7 @@ pub enum WorthQueryResourceEffectRefusal {
 )]
 pub(super) enum ResourceCause {
     Unavailable,
+    Obligation(super::super::query_obligations::QueryObligationDenial),
     Request(WorkCeilingDenial),
     Control(worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption),
     Advancement(crate::domain_computation::primary_graph::application_contribution::WorthQueryAdvancementDenial),
@@ -136,7 +137,7 @@ impl WorthQueryResourceActionDenial {
             C::Storage(_) => K::Capacity,
             C::Provider(_) | C::Ingress(_) => K::Provider,
             C::Completion(_) | C::DeniedCompletion(_) => K::Completion,
-            C::Managed(_) => K::Cleanup,
+            C::Managed(_) | C::Obligation(_) => K::Cleanup,
             C::Selection(_) | C::Principal(_) | C::Scope(_) | C::ScopeCapture(_)
             | C::ParameterCapture(_) | C::Admission(_) | C::Value(_) | C::Clock(_)
             | C::Bridge(_) | C::Native(_) | C::Revalidation(_) | C::Scratch(_) | C::Attempt(_) => K::Admission,

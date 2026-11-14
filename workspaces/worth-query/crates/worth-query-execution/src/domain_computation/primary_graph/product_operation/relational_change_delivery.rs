@@ -81,43 +81,34 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         let bridge = bridge_root
             .read()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let memory = match bridge.memory() {
-            Ok(memory) => memory,
-            Err(cause) => {
-                return Err(
-                    WorthQueryPerformedRelationalProductChangeDeliveryDenial::new(
-                        Kind::Bridge(cause.kind()),
-                        cause.detail(),
-                        change,
-                    ),
-                )
-            }
-        };
         let mut installed = operation.lock_operation();
-        if let Err(denial) =
-            installed.select_product_binding(execution, memory, self.application(), &truth)
-        {
-            return Err(
-                WorthQueryPerformedRelationalProductChangeDeliveryDenial::new(
-                    Kind::ConditionalProductAdmission,
-                    format!(
-                        "selected conditional product admission was denied: {}",
-                        denial.subject()
-                    ),
-                    change,
-                ),
-            );
-        }
-        let lowering = installed.selected_lowering();
-        let binding = match memory.admit_conditional_signal_basis(&lowering, change.signal_basis())
-        {
+        let result = bridge
+            .with_view(truth.signal_basis(), |view| {
+                installed
+                    .select_product_binding(execution, &view, self.application(), &truth)
+                    .map_err(|cause| {
+                        (
+                            Kind::ConditionalProductAdmission,
+                            cause.subject().to_owned(),
+                        )
+                    })?;
+                let lowering = installed.selected_lowering().ok_or_else(|| {
+                    (
+                        Kind::ConditionalProductAdmission,
+                        "selected conditional binding has no lowering".to_owned(),
+                    )
+                })?;
+                view.admit_conditional_signal_basis(&lowering, change.signal_basis())
+                    .map_err(|cause| (Kind::Bridge(cause.kind()), cause.detail().to_owned()))
+            })
+            .map_err(|cause| (Kind::Bridge(cause.kind()), cause.detail().to_owned()))
+            .and_then(|result| result);
+        let binding = match result {
             Ok(binding) => binding,
-            Err(cause) => {
+            Err((kind, detail)) => {
                 return Err(
                     WorthQueryPerformedRelationalProductChangeDeliveryDenial::new(
-                        Kind::Bridge(cause.kind()),
-                        cause.detail(),
-                        change,
+                        kind, detail, change,
                     ),
                 )
             }

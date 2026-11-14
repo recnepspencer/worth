@@ -141,6 +141,8 @@ fn a_new_performed_source_is_fulfilled_by_restored_outputs_without_reexecution()
     let source = settled.settlement().performed_source().unwrap();
     assert!(source
         .receipt()
+        .retained_receipt()
+        .expect("the new source action retains its performed receipt after restore")
         .is_same_authoritative_commit(&source_receipt));
     assert!(source.root_fulfillment().matches_source(&source_receipt));
     assert_eq!(

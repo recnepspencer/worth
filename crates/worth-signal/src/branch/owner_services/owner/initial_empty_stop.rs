@@ -49,7 +49,7 @@ where
     ) -> Result<super::super::lifecycle_state::SignalPreparedOwnerStopGate<'_>, Denial> {
         request.check_live().map_err(Denial::Stopped)?;
         let _metadata = self.metadata.try_authored_home_stop_guard()?;
-        let _temporal = self.conditional_temporal.try_initial_empty_stop_guard()?;
+        let _temporal = self.conditional_temporal.try_authored_home_stop_guard()?;
         let _retention = self.retention.try_initial_empty_stop_guard()?;
         let _conditional = self.conditional_retention.try_initial_empty_stop_guard()?;
         request.check_live().map_err(Denial::Stopped)?;

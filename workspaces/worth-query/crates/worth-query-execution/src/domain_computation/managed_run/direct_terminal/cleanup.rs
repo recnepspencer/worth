@@ -17,9 +17,34 @@ pub struct WorthQueryDirectRunCleanupFailure {
 pub(super) fn finish(
     terminal: WorthQueryDirectRunTerminal,
 ) -> Result<WorthQueryDirectRunCleanupReceipt, WorthQueryDirectRunCleanupFailure> {
-    let terminal = release_provider_queue_occupancy(terminal)?;
-    let terminal = reconcile_provider_memory(terminal)?;
-    finalize_terminal(terminal)
+    let custody = terminal.affinity.custody();
+    let kind = terminal.kind;
+    let attempt = terminal.identity().to_owned();
+    let result = release_provider_queue_occupancy(terminal)
+        .and_then(reconcile_provider_memory)
+        .and_then(finalize_terminal);
+    if let Some(custody) = custody {
+        use crate::domain_computation::primary_graph::query_obligations::QueryManagedRunPosture as Posture;
+        if let Err(failure) = &result {
+            custody.record_recovery(crate::domain_computation::primary_graph::query_obligations::QueryManagedRunRecovery::Cleanup(failure.failure_kind()));
+        }
+        custody.record(
+            match &result {
+                Ok(receipt) => Posture::DirectCleanup {
+                    terminal: receipt.inspection().terminal(),
+                    disposition: receipt.inspection().disposition(),
+                    resources: crate::domain_computation::primary_graph::query_obligations::QueryManagedRunResources::observe(
+                        receipt.inspection().resources_released(), receipt.inspection().provider_work()),
+                },
+                Err(failure) => Posture::CleanupRequired {
+                    terminal: kind,
+                    failure: failure.failure_kind(),
+                },
+            },
+            &attempt,
+        );
+    }
+    result
 }
 
 fn release_provider_queue_occupancy(

@@ -32,8 +32,6 @@ pub mod readmission_cleanup_inspection;
 pub mod readmission_custody;
 #[path = "readmission_direct/mod.rs"]
 pub mod readmission_direct;
-#[path = "readmission_direct_recovery/mod.rs"]
-pub mod readmission_direct_recovery;
 #[path = "readmission_owner_evidence/mod.rs"]
 pub mod readmission_owner_evidence;
 #[path = "readmission_preflight/mod.rs"]
@@ -62,7 +60,5 @@ pub mod yield_bridge_failure;
 pub mod yield_eligibility_workflow;
 #[path = "yield_generation/mod.rs"]
 pub mod yield_generation;
-#[path = "yield_lifecycle_direct_signal_recovery/mod.rs"]
-pub mod yield_lifecycle_direct_signal_recovery;
 #[path = "yield_signal_workflow/mod.rs"]
 pub mod yield_signal_workflow;

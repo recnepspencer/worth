@@ -66,6 +66,7 @@ impl BridgeConditionalRuntimeBuilder {
         parts: super::BridgeManagedClockInstallationParts<'_>,
     ) -> Result<super::BridgeManagedClockBinding, super::BridgeManagedTemporalDenial> {
         self.runtime
+            .execution_view()
             .require_managed_clock_lowering(parts.lowering)?;
         let declaration = super::managed_time::BridgeManagedClockDeclaration::admit(
             self.runtime.bridge.signal_runtime_key,
@@ -124,6 +125,21 @@ impl BridgeConditionalRuntimeBuilder {
 
     pub fn active_semantic_dependency_count(&self) -> usize {
         self.runtime.active_semantic_dependency_count()
+    }
+
+    fn supports_authored_program(&self) -> bool {
+        self.managed_clocks.is_empty()
+            && self
+                .runtime
+                .async_declarations
+                .read()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .values()
+                .all(|row| {
+                    row.source.description.retention
+                        == super::BridgeOwnedAsyncRetention::ProcessLocal
+                        && row.source.description.managed_queue_capacity.is_some()
+                })
     }
 
     pub(super) fn from_runtime(runtime: BridgeOwnedSignalRuntime) -> Self {

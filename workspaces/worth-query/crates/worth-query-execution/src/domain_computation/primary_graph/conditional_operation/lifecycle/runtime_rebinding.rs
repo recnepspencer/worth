@@ -122,7 +122,10 @@ pub(super) fn apply_temporal_runtime_binding<B, R, E, Clock: 'static, Input: 'st
     prepared: WorthQueryPreparedConditionalRuntimeBinding,
 ) {
     operation.pending_invalidations = prepared.pending_invalidations;
-    operation.bootstrap_lowering = prepared.lowering;
+    operation.bootstrap_route =
+        super::super::installation::route_binding::InstalledConditionalRoute::Memory(
+            prepared.lowering,
+        );
     operation.active_affinity = Some(prepared.affinity);
     operation.managed_clock = Some(prepared.managed_clock);
     operation.authoritative_commit_cursor = prepared.authoritative_commit_cursor;

@@ -50,10 +50,9 @@ impl WorthQueryOutputDemandRegistry {
             .records
             .get_mut(&interest.key)
             .expect("selected Ready row retained");
-        let obligations = std::mem::take(&mut record.performed_obligations);
+        record.release_obligations();
         record.finish();
         drop(state);
-        drop(obligations);
         Ok(())
     }
 

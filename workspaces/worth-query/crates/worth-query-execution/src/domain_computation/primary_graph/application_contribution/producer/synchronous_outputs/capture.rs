@@ -262,7 +262,7 @@ impl CapturedSynchronousOutputs {
     > {
         let mut order = None;
         for captured in roots {
-            let Self::Prepared { root, _memory } = captured else {
+            let Self::Prepared { root, _memory, .. } = captured else {
                 let Self::Refused(cause) = captured else {
                     unreachable!()
                 };

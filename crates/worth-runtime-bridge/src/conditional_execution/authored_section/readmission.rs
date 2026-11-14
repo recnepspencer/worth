@@ -94,6 +94,10 @@ pub(in crate::conditional_execution) struct PreparedDefinition {
     pub(in crate::conditional_execution) provider_admission:crate::conditional_execution::provider_admission::BridgeConditionalProviderAdmission,
 }
 pub(in crate::conditional_execution) struct Program {
+    pub(in crate::conditional_execution) async_definitions:
+        BTreeMap<Arc<str>, crate::conditional_execution::BridgeOwnedAsyncDeclarationDescription>,
+    pub(in crate::conditional_execution) conditional_evaluation_budget:
+        worth_signal::facade::runtime::SignalConditionalEvaluationBudget,
     pub(in crate::conditional_execution) bridge: RuntimeBridge,
     pub(in crate::conditional_execution) installation:
         worth_proof::BridgeProgramInstallationBinding,
@@ -104,6 +108,11 @@ impl Program {
     pub(in crate::conditional_execution) fn new(
         bridge: RuntimeBridge,
         installation: worth_proof::BridgeProgramInstallationBinding,
+        async_definitions: BTreeMap<
+            Arc<str>,
+            crate::conditional_execution::BridgeOwnedAsyncDeclarationDescription,
+        >,
+        conditional_evaluation_budget: worth_signal::facade::runtime::SignalConditionalEvaluationBudget,
         execution: &ExecutionRequest<'_, '_>,
     ) -> Result<Arc<Self>, BridgeAuthoredReadmissionDenial> {
         let bytes =
@@ -116,11 +125,17 @@ impl Program {
         Ok(Arc::new(Self {
             bridge,
             installation,
+            async_definitions,
+            conditional_evaluation_budget,
             _memory: memory,
         }))
     }
 }
 pub(in crate::conditional_execution) struct PreparedBranch {
+    pub(in crate::conditional_execution) async_definitions: BTreeMap<
+        Arc<str>,
+        crate::conditional_execution::owned_async::definition_source::OwnedAsyncDefinitionSource,
+    >,
     pub(in crate::conditional_execution) graph_lifecycle:
         worth_signal::facade::SignalGraphLifecycleProbe,
     pub(in crate::conditional_execution) graph_instance_id: u64,
@@ -156,6 +171,15 @@ impl Installation<'_> {
         let section =
             BridgeAuthoredSection::readmit_bytes(execution, branch.bridge_section(), identity)?;
         let layout = Layout::read(section.as_signal_section().as_bytes())?;
+        let async_definitions = super::owned_async::read(layout.owned_async, identity)?;
+        if async_definitions.len() != self.program.async_definitions.len()
+            || async_definitions.iter().any(|(key, source)| {
+                self.program.async_definitions.get(key) != Some(&source.description)
+                    || !branch.graph().is_alive(source.node)
+            })
+        {
+            return Err(D::ConditionalDefinitionMismatch);
+        }
         let actual = self
             .program
             .bridge
@@ -204,6 +228,7 @@ impl Installation<'_> {
             .map_err(|_| D::section(BridgeAuthoredSectionDenial::SizeLimit))?,
         )?;
         Ok(Box::new(PreparedBranch {
+            async_definitions,
             graph_lifecycle: branch.graph().lifecycle_probe(),
             graph_instance_id: branch
                 .graph()

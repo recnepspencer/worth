@@ -86,26 +86,27 @@ impl<Schema: ApplicationSchema, Binding: ApplicationResourceBinding<Schema>>
         for ordinal in 0..live {
             let ingress = IngressBacking::allocate(execution, slots, frame_bytes)
                 .map_err(|cause| denial(format!("{cause:?}")))?;
+            let source = BridgeOwnedAsyncRequestResponseDeclaration::new(
+                format!("{identity}:{ordinal}"),
+                payload_contract,
+                limits.maximum_frame_bytes,
+                profile.retry_max_attempts,
+                delay,
+                timeout,
+            )
+            .with_managed_queue_capacity(
+                std::num::NonZeroU64::new(u64::from(limits.ingress_slots_per_request))
+                    .expect("installed finite ingress"),
+            )
+            .with_process_local_retention();
+            let description = source.description();
             let declaration = builder
-                .install_owned_async_request_response(
-                    BridgeOwnedAsyncRequestResponseDeclaration::new(
-                        format!("{identity}:{ordinal}"),
-                        payload_contract,
-                        limits.maximum_frame_bytes,
-                        profile.retry_max_attempts,
-                        delay,
-                        timeout,
-                    )
-                    .with_managed_queue_capacity(
-                        std::num::NonZeroU64::new(u64::from(limits.ingress_slots_per_request))
-                            .expect("installed finite ingress"),
-                    )
-                    .with_process_local_retention(),
-                )
+                .install_owned_async_request_response(source)
                 .map_err(|cause| denial(format!("{cause:?}")))?;
             nodes
                 .push(NativeResourceSlot::new(
                     declaration,
+                    description,
                     ingress,
                     (ordinal + 1 < live).then_some(ordinal + 1),
                 ))

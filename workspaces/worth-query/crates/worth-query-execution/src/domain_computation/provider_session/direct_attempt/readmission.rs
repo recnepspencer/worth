@@ -82,6 +82,7 @@ impl WorthQueryDirectResourceReadmissionPending {
             attempt_identity: _,
             provider_session,
             evidence: _,
+            custody,
         } = yielded_attempt;
         drop(provider_session);
         reserved.resources_mut().record_provider_session_mint();
@@ -90,6 +91,7 @@ impl WorthQueryDirectResourceReadmissionPending {
             attempt_identity: fresh_attempt_identity,
             provider_session: fresh_provider_session,
             evidence: fresh_evidence,
+            custody,
         }
     }
 

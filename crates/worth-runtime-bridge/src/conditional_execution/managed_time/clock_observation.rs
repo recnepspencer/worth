@@ -3,7 +3,7 @@ use super::{
     BridgeManagedClockObservationParts, BridgeManagedTemporalDenial,
     BridgeManagedTemporalDenialKind,
 };
-use crate::conditional_execution::BridgeOwnedSignalRuntime;
+use crate::conditional_execution::execution_view::BridgeConditionalExecutionView;
 
 enum ObservationAdmission {
     Advance,
@@ -12,7 +12,7 @@ enum ObservationAdmission {
     Reordered,
 }
 
-impl BridgeOwnedSignalRuntime {
+impl BridgeConditionalExecutionView<'_> {
     pub fn observe_managed_clock(
         &self,
         parts: BridgeManagedClockObservationParts<'_>,

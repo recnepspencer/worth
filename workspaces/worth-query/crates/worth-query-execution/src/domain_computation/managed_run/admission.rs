@@ -45,6 +45,7 @@ impl WorthQueryExecutionRuntime {
             bridge_basis,
             relational_basis,
             counters,
+            super::durable_custody::ManagedRunIdentity::local(),
         ))
     }
 }

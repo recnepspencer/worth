@@ -24,6 +24,7 @@ pub use denial_value::{
     WorthQueryProducerDenialDeclaration, WorthQueryProducerDenialDecodeDenial,
     WorthQueryProducerDenialEncodingRefusal, WorthQueryProducerDenialProjection,
     WorthQueryProducerDenialValue, WorthQueryProjectedProducerDenial,
+    WorthQueryRecordedProducerDenialEncodingRefusal, WorthQueryRecordedProducerDenialValue,
     WorthQueryUndeclaredProducerDenial,
 };
 pub(crate) mod execution;

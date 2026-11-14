@@ -6,6 +6,7 @@ mod due_wake_retention;
 mod evaluation_affinity;
 mod evaluation_binding;
 mod evaluation_predecessor;
+mod home_handoff;
 pub(crate) mod installed_operation;
 pub(crate) mod operation_cell;
 mod operation_totals;

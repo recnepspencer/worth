@@ -118,7 +118,7 @@ impl WorthQueryOutputDemandRegistry {
     pub(in crate::domain_computation::primary_graph) fn finish_scheduling(
         &self,
         interest: &WorthQueryOutputDemandInterest,
-        performed_source: Option<WorthQueryPerformedOutputDemandSource>,
+        performed_source: Option<WorthQueryRetainedOutputDemandSource>,
         result: &mut Result<WorthQueryOutputSchedulingResult, WorthQueryOutputDemandDenial>,
     ) {
         let rescheduled = match result {

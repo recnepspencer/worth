@@ -10,6 +10,7 @@ pub(super) struct RetainedManagedCleanup {
         crate::domain_computation::primary_graph::WorthQueryApplicationManagedCleanupReceipt,
     >,
     kind: crate::domain_computation::WorthQueryMutationCleanupFailureKind,
+    logical_discharged: bool,
 }
 impl RetainedManagedCleanup {
     pub(super) fn new(required: Box<WorthQueryApplicationCleanupRequired>) -> Self {
@@ -20,6 +21,7 @@ impl RetainedManagedCleanup {
             pending: Some(cleanup),
             receipt: None,
             kind,
+            logical_discharged: false,
         }
     }
     fn take_released_original(
@@ -47,12 +49,39 @@ impl RetainedManagedCleanup {
     pub(super) fn kind(&self) -> crate::domain_computation::WorthQueryMutationCleanupFailureKind {
         self.kind
     }
+    pub(super) fn obligation_identity(
+        &self,
+    ) -> Option<worth_foundational::facade::ManagedCleanupObligationIdentity> {
+        match &self.pending {
+            Some(cleanup) => cleanup.obligation_identity(),
+            None => self
+                .receipt
+                .as_ref()
+                .and_then(|receipt| receipt.obligation_identity()),
+        }
+    }
+    pub(super) fn acknowledge_logical_discharge(&mut self) {
+        // The original actual release receipt remains available as evidence.
+        assert!(self.pending.is_none() && self.receipt.is_some());
+        self.logical_discharged = true;
+    }
+    pub(super) fn logical_discharged(&self) -> bool {
+        self.logical_discharged
+    }
     pub(super) fn pending_kind(
         &self,
     ) -> Option<crate::domain_computation::WorthQueryMutationCleanupFailureKind> {
         self.pending
             .as_ref()
             .map(|cleanup| cleanup.failure().kind())
+    }
+    pub(super) fn retry_for_home(&mut self, request: &worth_execution::ExecutionRequest<'_, '_>) {
+        if let Some(cleanup) = self.pending.take() {
+            match cleanup.retry_for_home(request) {
+                Ok(receipt) => self.receipt = Some(receipt),
+                Err(cleanup) => self.pending = Some(cleanup),
+            }
+        }
     }
     pub(super) fn retry(&mut self, phase: &WorthQueryAdvancementPhase<'_>) {
         if let Some(cleanup) = self.pending.take() {

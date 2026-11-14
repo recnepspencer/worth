@@ -1,8 +1,8 @@
-use super::super::{BridgeOwnedAsyncRequestAdmission, BridgeOwnedSignalRuntime};
+use super::super::{BridgeConditionalExecutionView, BridgeOwnedAsyncRequestAdmission};
 use crate::facade::BridgeAsyncCompletionRejection;
 use worth_signal::facade::{TemporalFrontierSnapshot, TemporalWakeSummary};
 
-impl BridgeOwnedSignalRuntime {
+impl BridgeConditionalExecutionView<'_> {
     #[doc(hidden)]
     pub fn owned_async_retention_storage_for_test(
         &self,

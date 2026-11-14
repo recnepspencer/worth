@@ -1,6 +1,7 @@
+use worth_runtime_bridge::facade::BridgeConditionalExecutionView;
 use worth_runtime_bridge::facade::{
     BridgeConditionalDecisionEvidence, BridgeManagedConditionalExecutionRequest,
-    BridgeManagedDueWake, BridgeSealedRuntimeAssembly, TruthBranchIdentity, TruthSnapshotIdentity,
+    BridgeManagedDueWake, TruthBranchIdentity, TruthSnapshotIdentity,
 };
 
 use super::predicate_admission::QueryConditionalComputeContext;
@@ -117,6 +118,7 @@ pub(super) struct WorthQueryRetainedConditionalWake {
     pub(super) attempt: u64,
     pub(super) last_signal_decision: Option<super::WorthQueryConditionalSignalDecision>,
     pub(super) application_attempted: bool,
+    pub(super) continuation_identity: Option<([u8; 32], [u8; 32])>,
     pub(super) application_admission_canonical_work:
         worth_query_installation::facade::WorthQueryCanonicalWorkEvidence,
 }
@@ -234,7 +236,7 @@ pub(super) fn retained_decision_counts(
 pub(super) fn evaluate_due_wake(
     execution: worth_execution::ExecutionRequest<'_, '_>,
 
-    bridge: &BridgeSealedRuntimeAssembly,
+    bridge: &BridgeConditionalExecutionView<'_>,
     due: BridgeManagedDueWake,
     signal_basis: &worth_runtime_bridge::facade::BridgeConditionalSignalBasisBinding,
     query_binding_identity: &str,
@@ -280,6 +282,7 @@ pub(super) fn evaluate_due_wake(
         attempt,
         last_signal_decision,
         application_attempted: false,
+        continuation_identity: None,
         application_admission_canonical_work:
             worth_query_installation::facade::WorthQueryCanonicalWorkEvidence::zero(),
     }
@@ -288,7 +291,7 @@ pub(super) fn evaluate_due_wake(
 pub(super) fn reconsider_retained_wake(
     execution: worth_execution::ExecutionRequest<'_, '_>,
 
-    bridge: &BridgeSealedRuntimeAssembly,
+    bridge: &BridgeConditionalExecutionView<'_>,
     wake: &mut WorthQueryRetainedConditionalWake,
     signal_basis: &worth_runtime_bridge::facade::BridgeConditionalSignalBasisBinding,
     query_binding_identity: &str,

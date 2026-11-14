@@ -14,11 +14,9 @@ impl BridgeSealedRuntimeAssembly {
         signal_basis: &worth_signal::facade::branch::AdmittedSignalBranchBasis,
         truth_basis: BridgeAsyncRequestTruthViewBasis,
     ) -> Result<BridgeOwnedAsyncManagedRequestAdmission, BridgeAsyncRequestIdentityRejection> {
-        self.runtime.admit_unqueued_owned_async_request_identity(
-            declaration,
-            signal_basis,
-            truth_basis,
-        )
+        self.runtime
+            .execution_view()
+            .admit_unqueued_owned_async_request_identity(declaration, signal_basis, truth_basis)
     }
 
     pub fn finish_unqueued_owned_async_entry_cleanup(
@@ -26,6 +24,7 @@ impl BridgeSealedRuntimeAssembly {
         owner: &mut BridgeOwnedAsyncManagedRequestAdmission,
     ) -> Result<(), BridgeOwnedAsyncManagedDenial> {
         self.runtime
+            .execution_view()
             .finish_unqueued_owned_async_entry_cleanup(owner)
     }
 }

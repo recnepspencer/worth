@@ -1,8 +1,8 @@
 //! The actual admitted Home lends Query its sole obligation transport.
 use super::WorldReadmittedApplicationHome;
 use std::sync::Arc;
-use worth_query_execution::facade::program_support::{
-    QueryObligationsMedium, QueryProgramSupportDenial,
+use worth_query_execution::facade::query_obligations::{
+    QueryObligationDenial, QueryObligationsMedium,
 };
 impl WorldReadmittedApplicationHome<(), (), (), (), ()> {
     /// Closed construction seam for Host's actual Query custody admission.
@@ -13,7 +13,7 @@ impl WorldReadmittedApplicationHome<(), (), (), (), ()> {
         &self,
         proof: worth_proof::AdmittedHomeQueryObligations,
         request: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<(), QueryProgramSupportDenial> {
+    ) -> Result<(), QueryObligationDenial> {
         self.home.context.query_obligations.admit(proof, request)
     }
 }

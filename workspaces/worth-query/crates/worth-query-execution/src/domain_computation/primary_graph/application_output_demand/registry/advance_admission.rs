@@ -1,7 +1,7 @@
 //! Admission result transferred from the registry into actual demand progression.
 use super::*;
 pub enum WorthQueryOutputDemandAdvanceAdmission {
-    Schedule(Option<WorthQueryPerformedOutputDemandSource>),
+    Schedule(Option<WorthQueryRetainedOutputDemandSource>),
     Execute {
         successor_of: Option<[u8; 32]>,
     },

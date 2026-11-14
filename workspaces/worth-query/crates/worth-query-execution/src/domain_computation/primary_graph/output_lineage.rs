@@ -1,6 +1,7 @@
 //! Product-local semantic output correspondence owned by Query publication.
 
 pub(in crate::domain_computation) use invalidation::HeadCellRegistrationStop;
+mod checkpoint_prerequisites;
 pub(crate) mod source_facts;
 mod source_publication;
 pub(in crate::domain_computation::primary_graph) use source_facts::ComparableSourceFacts;

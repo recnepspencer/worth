@@ -86,6 +86,11 @@ pub(crate) struct SignalOwnedAsyncManagedHandoff {
 }
 
 impl SignalOwnedAsyncManagedAdmission {
+    /// Immutable retention chosen by this actual Native admission's declaration.
+    pub fn uses_process_local_retention(&self) -> bool {
+        self.process_local
+    }
+
     /// Descriptive selection from this actual custodian, never abort authority.
     pub fn pending_retry(&self) -> Option<&crate::data::resource::ScheduledResourceRetry> {
         self.pending_retry.as_ref()

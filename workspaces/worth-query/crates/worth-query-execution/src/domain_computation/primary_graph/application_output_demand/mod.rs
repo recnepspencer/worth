@@ -77,10 +77,10 @@ pub use registry::WorthQueryOutputDemandNotifications;
 pub(super) use registry::WorthQueryOutputDemandRegistry;
 pub(super) use registry::WorthQueryOutputSchedulingResult;
 pub(super) use registry::WorthQueryPendingOutputDelivery;
-pub(super) use registry::WorthQueryPerformedOutputDemandSource;
 pub(super) use registry::WorthQueryReadmittedAcceptedOutput;
 pub(super) use registry::WorthQueryRequiredOutputSourcePreparation;
 pub(super) use registry::WorthQueryRestoredAcceptedOutput;
+pub(super) use registry::WorthQueryRetainedOutputDemandSource;
 pub(in crate::domain_computation::primary_graph) use settlement::observation::{
     OriginalSettledProducerObservation, OriginalSettledProducerSource,
 };
@@ -96,3 +96,8 @@ pub use registry::WorthQueryDiscoveredRetentionReservationForTest;
 #[cfg(test)]
 #[path = "mod_inline_type_budget.rs"]
 pub(crate) mod inline_type_budget;
+mod source_evidence;
+pub use source_evidence::WorthQueryOutputSourceEvidence;
+
+pub(in crate::domain_computation::primary_graph) mod discovery_recipe;
+pub use discovery_recipe::WorthQueryOutputDiscoveryRecipe;

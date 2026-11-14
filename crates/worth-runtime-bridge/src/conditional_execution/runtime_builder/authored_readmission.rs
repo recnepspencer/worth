@@ -47,7 +47,15 @@ impl BridgeConditionalRuntimeBuilder {
         bindings: &mut dyn BridgeAuthoredInstallationBindings,
         execution: &ExecutionRequest<'_, '_>,
     ) -> Result<Box<BridgeReadmittedAuthoredAssembly>, D> {
-        if !self.managed_clocks.is_empty() || self.runtime.owned_async_declaration_count() != 0 {
+        let async_definitions: BTreeMap<_, _> = self
+            .runtime
+            .async_declarations
+            .read()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .iter()
+            .map(|(key, row)| (Arc::clone(key), row.source.description.clone()))
+            .collect();
+        if !self.supports_authored_program() {
             return Err(D::UnsupportedProgramFamily);
         }
         self.runtime.revoke_conditional_liveness();
@@ -67,7 +75,13 @@ impl BridgeConditionalRuntimeBuilder {
                     crate::conditional_execution::BridgeAuthoredSectionDenial::Request(cause),
                 )
             })?;
-        let program = Program::new(template, self.program_owner.binding(), execution)?;
+        let program = Program::new(
+            template,
+            self.program_owner.binding(),
+            async_definitions,
+            self.runtime.conditional_evaluation_budget,
+            execution,
+        )?;
         let mut installation = Box::new(Installation {
             program,
             bindings,
@@ -292,6 +306,9 @@ pub(in crate::conditional_execution) fn finish(
     }
     Ok(Arc::new(BranchProjection {
         state: std::sync::Mutex::new(Box::new(ReadmittedBranch {
+            async_declarations: Default::default(),
+            async_definitions: Arc::new(prepared.async_definitions),
+            async_observation_authority: Arc::new(()),
             programme_memory: None,
             graph_lifecycle: prepared.graph_lifecycle,
             posture: BranchPosture::Serving,
@@ -304,6 +321,7 @@ pub(in crate::conditional_execution) fn finish(
             graph_instance_id: prepared.graph_instance_id,
             signal_branch: branch,
             retention: ledger,
+            managed_clock_lanes: Arc::new(std::sync::Mutex::new(std::collections::BTreeMap::new())),
             _backing: prepared.backing,
         })),
     }))

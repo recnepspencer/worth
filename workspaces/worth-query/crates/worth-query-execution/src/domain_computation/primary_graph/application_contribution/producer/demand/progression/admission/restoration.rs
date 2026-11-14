@@ -42,18 +42,22 @@ where
         else {
             return Ok(None);
         };
-        let authority = self
-            .runtime
-            .product_runtime
-            .recovered_root_authority
+        let observation = readmitted
+            .observation
             .as_ref()
+            .or_else(|| {
+                self.runtime
+                    .product_runtime
+                    .recovered_root_authority
+                    .as_ref()
+                    .map(|authority| authority.product_branch())
+            })
             .ok_or_else(|| {
                 denial(
                     WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
                     "checkpoint output has no World recovery adoption authority",
                 )
             })?;
-        let observation = authority.product_branch();
         if observed_source.selected_product_occurrence()
             != Some(observation.lifecycle_incarnation())
         {

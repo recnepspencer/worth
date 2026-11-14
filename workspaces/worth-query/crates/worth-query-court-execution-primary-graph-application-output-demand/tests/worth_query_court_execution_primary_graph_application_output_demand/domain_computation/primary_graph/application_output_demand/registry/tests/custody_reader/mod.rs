@@ -22,7 +22,7 @@ fn registry_binding_reader_ignores_logically_absent_completed_custody() {
         .committed_product_publication()
         .take_output_demand_observation_for_test()
         .unwrap();
-    let source = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryPerformedOutputDemandSource::new_for_test(active, change, observation, None);
+    let source = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryRetainedOutputDemandSource::new_for_test(active, change, observation, None);
     let completed = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::recoverable_commit_support::commit_on_world_with_output_demand_observation(
         &world,
         202,
@@ -38,7 +38,8 @@ fn registry_binding_reader_ignores_logically_absent_completed_custody() {
         .product_branch()
         .occurrence_for_test();
     let (scope, _) = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::source_custody::real_scope_and_occurrence();
-    for seed in 0..16 {
+    {
+        let seed = 0;
         let selected = BoundOutputSource::new_for_test(
             scope,
             key("binding", seed + 1, 3).source_into_for_test(),

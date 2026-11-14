@@ -5,8 +5,8 @@ use crate::lifecycle::{
     RuntimeWorldOwnedAsyncRequestAdmissionDenial as AdmissionDenial,
 };
 use worth_runtime_bridge::facade::{
-    BridgeOwnedAsyncManagedRequestAdmission, BridgeOwnedAsyncManagedRevalidation,
-    BridgeSealedRuntimeAssembly, LoweredBridgeAsyncSourceDeclaration,
+    BridgeConditionalExecutionView, BridgeOwnedAsyncManagedRequestAdmission,
+    BridgeOwnedAsyncManagedRevalidation, LoweredBridgeAsyncSourceDeclaration,
     RelationalBridgeObservationLease,
 };
 
@@ -20,7 +20,7 @@ where
 {
     pub fn admit_managed_owned_async_request(
         &self,
-        bridge: &BridgeSealedRuntimeAssembly,
+        bridge: &BridgeConditionalExecutionView<'_>,
         declaration: &LoweredBridgeAsyncSourceDeclaration,
         observation: &ProductBranchObservation,
         source: &RelationalBridgeObservationLease,
@@ -32,7 +32,7 @@ where
 
     pub fn advance_owned_async_source_clock(
         &self,
-        bridge: &BridgeSealedRuntimeAssembly,
+        bridge: &BridgeConditionalExecutionView<'_>,
         declaration: &LoweredBridgeAsyncSourceDeclaration,
         observation: &ProductBranchObservation,
         source: &RelationalBridgeObservationLease,
@@ -45,7 +45,7 @@ where
 
     pub fn admit_unqueued_owned_async_request(
         &self,
-        bridge: &BridgeSealedRuntimeAssembly,
+        bridge: &BridgeConditionalExecutionView<'_>,
         declaration: &LoweredBridgeAsyncSourceDeclaration,
         observation: &ProductBranchObservation,
         source: &RelationalBridgeObservationLease,
@@ -57,7 +57,7 @@ where
 
     pub fn admit_unqueued_owned_async_request_at_branch_head(
         &self,
-        bridge: &BridgeSealedRuntimeAssembly,
+        bridge: &BridgeConditionalExecutionView<'_>,
         declaration: &LoweredBridgeAsyncSourceDeclaration,
         observation: &ProductBranchObservation,
         source: &RelationalBridgeObservationLease,
@@ -74,7 +74,7 @@ where
 
     pub fn revalidate_managed_owned_async_request(
         &self,
-        bridge: &BridgeSealedRuntimeAssembly,
+        bridge: &BridgeConditionalExecutionView<'_>,
         request: &mut BridgeOwnedAsyncManagedRequestAdmission,
         observation: &ProductBranchObservation,
         source: &RelationalBridgeObservationLease,

@@ -16,6 +16,7 @@ pub(super) struct Layout<'a> {
     pub(super) registrations: &'a [u8],
     pub(super) allocations: &'a [u8],
     pub(super) definitions: &'a [u8],
+    pub(super) owned_async: &'a [u8],
 }
 impl<'a> Layout<'a> {
     pub(super) fn read(bytes: &'a [u8]) -> Result<Self, D> {
@@ -32,6 +33,7 @@ impl<'a> Layout<'a> {
         let registrations = input.blob()?;
         let allocations = input.blob()?;
         let definitions = input.blob()?;
+        let owned_async = input.blob()?;
         input.finish()?;
         Ok(Self {
             branch,
@@ -39,6 +41,7 @@ impl<'a> Layout<'a> {
             registrations,
             allocations,
             definitions,
+            owned_async,
         })
     }
     pub(super) fn inspect(&self) -> Result<(), D> {
@@ -72,7 +75,9 @@ impl<'a> Layout<'a> {
         }
         registrations.finish()?;
         self.inspect_allocations()?;
-        self.inspect_definitions()
+        self.inspect_definitions()?;
+        super::owned_async::read(self.owned_async, self.branch)?;
+        Ok(())
     }
     fn inspect_allocations(&self) -> Result<(), D> {
         let mut rows = Rows::new(self.allocations)?;

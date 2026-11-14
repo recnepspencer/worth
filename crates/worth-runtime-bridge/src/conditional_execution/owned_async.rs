@@ -3,8 +3,10 @@ mod clock;
 mod completion;
 mod completion_commit;
 mod declaration;
+pub(in crate::conditional_execution) mod definition_source;
 mod initial_request;
 mod installation;
+mod installed_view;
 mod managed_progress;
 mod managed_queue;
 mod managed_request;
@@ -16,7 +18,10 @@ mod supersession;
 mod wake_observation_for_test;
 
 pub use completion_commit::BridgeOwnedAsyncCommittedCompletion;
-pub use declaration::BridgeOwnedAsyncRequestResponseDeclaration;
+pub use declaration::{
+    BridgeOwnedAsyncDeclarationDescription, BridgeOwnedAsyncRequestResponseDeclaration,
+    BridgeOwnedAsyncRetention,
+};
 pub(super) use installation::BridgeInstalledOwnedAsyncDeclaration;
 pub use managed_request::{BridgeOwnedAsyncManagedDenial, BridgeOwnedAsyncManagedRequestAdmission};
 pub use managed_revalidation::BridgeOwnedAsyncManagedRevalidation;

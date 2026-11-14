@@ -92,7 +92,14 @@ impl BridgeConditionalRuntimeBuilder {
         {
             return Err(D::SignalDefinitionMismatch);
         }
+        let async_catalog = self
+            .runtime
+            .async_declarations
+            .read()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let async_sources: Vec<_> = async_catalog.values().map(|row| &row.source).collect();
         let section = Capture {
+            owned_async: &async_sources,
             bridge: &self.runtime.bridge,
             graph,
             branch,

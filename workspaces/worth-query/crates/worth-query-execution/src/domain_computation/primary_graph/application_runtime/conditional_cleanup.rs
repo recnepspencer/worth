@@ -26,17 +26,10 @@ impl<Schema> ConditionalRuntimeCleanup<Schema> {
             WorthQueryHomeRetirementDenial as Denial, WorthQueryHomeRetirementOwner as Owner,
         };
         request.consult().map_err(Denial::Execution)?;
-        if self.owner.is_some()
-            || self
-                .operations
-                .get_mut()
-                .map_err(|_| Denial::Busy(Owner::ConditionalRuntime))?
-                .len()
-                != 0
-        {
+        if self.owner.is_some() {
             return Err(Denial::Unsupported(Owner::ConditionalRuntime));
         }
-        self.resources.preflight_home_retirement()
+        Ok(())
     }
 
     pub(super) fn new(
@@ -86,7 +79,7 @@ impl Drop for OwnedConditionalCleanup {
 }
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    fn release_query_conditional_bindings(&mut self) {
+    pub(super) fn release_query_conditional_bindings(&mut self) {
         *self
             .conditional_cleanup
             .operations

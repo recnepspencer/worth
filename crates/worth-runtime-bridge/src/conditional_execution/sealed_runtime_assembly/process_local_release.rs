@@ -10,7 +10,9 @@ impl BridgeSealedRuntimeAssembly {
         &self,
         owner: &mut BridgeOwnedAsyncManagedRequestAdmission,
     ) -> Result<(), BridgeOwnedAsyncManagedDenial> {
-        self.runtime.abort_process_local_owned_async_retry(owner)
+        self.runtime
+            .execution_view()
+            .abort_process_local_owned_async_retry(owner)
     }
 
     pub fn release_process_local_managed_request(
@@ -19,6 +21,7 @@ impl BridgeSealedRuntimeAssembly {
         completion: Option<BridgeOwnedAsyncCommittedCompletion>,
     ) -> Result<BridgeOwnedAsyncReleasedResource, BridgeOwnedAsyncResourceReleaseRefusal> {
         self.runtime
+            .execution_view()
             .release_process_local_managed_request(owner, completion)
     }
 
@@ -28,6 +31,7 @@ impl BridgeSealedRuntimeAssembly {
         completion: &BridgeOwnedAsyncCompletionAdmission,
     ) -> Result<(), BridgeOwnedAsyncManagedDenial> {
         self.runtime
+            .execution_view()
             .release_process_local_completion_denial(owner, completion)
     }
 }

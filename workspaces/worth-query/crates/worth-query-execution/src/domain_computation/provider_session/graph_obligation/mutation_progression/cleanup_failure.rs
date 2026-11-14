@@ -27,6 +27,10 @@ enum Custody {
     Native(WorthQueryDirectRunCleanupFailure),
     Affinity(WorthQueryRunningDirectRun),
     Completion(WorthQueryDirectRunCleanupReceipt),
+    Released {
+        receipt: WorthQueryDirectRunCleanupReceipt,
+        previous: WorthQueryMutationCleanupFailureKind,
+    },
 }
 impl WorthQueryMutationCleanupFailure {
     pub(super) fn native(
@@ -70,9 +74,14 @@ impl WorthQueryMutationCleanupFailure {
         self.provider_session = Some(session);
         self
     }
-    pub(in crate::domain_computation) fn retry(
+    /// Retains the actual release while its owner publishes the durable handoff.
+    pub(in crate::domain_computation) fn retry_retaining_release(
         self,
-    ) -> Result<WorthQueryDirectRunCleanupReceipt, Self> {
+    ) -> Result<(WorthQueryDirectRunCleanupReceipt, Self), Self> {
+        if let Custody::Released { receipt, .. } = &self.custody {
+            return Ok((receipt.clone(), self));
+        }
+        let previous = self.kind();
         let Self {
             binding,
             provider_session,
@@ -104,7 +113,16 @@ impl WorthQueryMutationCleanupFailure {
                     && inspection.released_reservation_count() == binding.reservation_count
                     && inspection.provider_work().provider_retained_bytes() == 0
                 {
-                    Ok(receipt)
+                    let retained = Self {
+                        binding,
+                        provider_session,
+                        snapshot_released,
+                        custody: Custody::Released {
+                            receipt: receipt.clone(),
+                            previous,
+                        },
+                    };
+                    Ok((receipt, retained))
                 } else {
                     Err(Self {
                         binding,
@@ -124,6 +142,7 @@ impl WorthQueryMutationCleanupFailure {
             }
             Custody::Affinity(_) => WorthQueryMutationCleanupFailureKind::AffinityInconsistent,
             Custody::Completion(_) => WorthQueryMutationCleanupFailureKind::CompletionInconsistent,
+            Custody::Released { previous, .. } => *previous,
         }
     }
     /// The retained native run identity, including the actual run on affinity mismatch.
@@ -131,7 +150,9 @@ impl WorthQueryMutationCleanupFailure {
         match &self.custody {
             Custody::Native(_) => self.binding.worker.as_ref(),
             Custody::Affinity(running) => running.identity(),
-            Custody::Completion(receipt) => receipt.inspection().run_identity(),
+            Custody::Completion(receipt) | Custody::Released { receipt, .. } => {
+                receipt.inspection().run_identity()
+            }
         }
     }
     /// Original admitted graph-work session identity; no fresh session is inferred.

@@ -1,5 +1,6 @@
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use std::sync::Arc;
+use worth_runtime_bridge::facade::BridgeConditionalExecutionView;
 
 use worth_query_installation::facade::{
     WorthQueryHostConditionalPredicateProvider, WorthQueryInstalledTemporalConditionalOperation,
@@ -80,6 +81,9 @@ where
     LifecycleValue: Clone + Send + Sync + 'static,
     Authorization: super::super::WorthQueryTemporalOperationAuthorization<Schema, ApplicationOperation, Input, Scope> + 'static,
 {
+    fn handoff_to_home(&mut self, request: &worth_execution::ExecutionRequest<'_, '_>, runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>) -> Result<(), crate::domain_computation::primary_graph::WorthQueryHomeRetirementDenial> {
+        self.handoff_to_home(request, runtime)
+    }
     fn binding_identity(&self) -> &str {
         self.definition.binding_identity.support_identity()
     }
@@ -104,12 +108,14 @@ where
         Arc::clone(&self.definition.clock_lease)
     }
 
-    fn operation_anchor(&self) -> Arc<worth_runtime_bridge::facade::BridgeInstalledConditionalLowering> {
-        Arc::clone(&self.bootstrap_lowering)
+    fn admit_operation_binding(&self, view: &BridgeConditionalExecutionView<'_>, basis: &worth_signal::facade::branch::AdmittedSignalBranchBasis) -> Result<(worth_runtime_bridge::facade::BridgeConditionalSignalBasisBinding, bool), worth_runtime_bridge::facade::BridgeConditionalDenial> {
+        self.bootstrap_route.admit_view_signal_basis(view, basis).map(|binding| (binding, self.bootstrap_route.is_authored()))
     }
-
-    fn selected_lowering(&self) -> Arc<worth_runtime_bridge::facade::BridgeInstalledConditionalLowering> {
-        Arc::clone(self.active_lowering())
+    fn admit_authored_route(&mut self, fresh: &worth_runtime_bridge::facade::BridgeFreshAuthoredBindings) -> Result<(), worth_runtime_bridge::facade::BridgeAuthoredReadmissionDenial> {
+        self.bootstrap_route.admit_authored_declaration(fresh)
+    }
+    fn selected_lowering(&self) -> Option<Arc<worth_runtime_bridge::facade::BridgeInstalledConditionalLowering>> {
+        self.active_lowering().map(Arc::clone)
     }
 
     fn retain_direct_delivery(
@@ -122,7 +128,7 @@ where
     fn select_product_binding(
         &mut self,
 execution: &worth_execution::ExecutionRequest<'_, '_>,
-        bridge: &BridgeSealedRuntimeAssembly,
+        bridge: &BridgeConditionalExecutionView<'_>,
         runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         truth: &WorthQueryConditionalTruthBasis,
     ) -> Result<(), super::super::installation::WorthQueryConditionalRuntimeInstallationDenial> {
@@ -141,7 +147,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
     #[rustfmt::skip]
     fn reconcile_reconstruction(&mut self, bridge: &mut BridgeSealedRuntimeAssembly) -> Result<(), super::super::installation::WorthQueryConditionalRuntimeInstallationDenial> {
         let Some(managed_clock) = self.managed_clock.as_ref() else { return Ok(()); };
-        super::super::temporal_reconstruction::reconcile_temporal_intents(bridge, managed_clock, &mut self.reconstructed_intents)
+        super::super::temporal_reconstruction::reconcile_temporal_intents(&bridge.conditional_execution_view(), managed_clock, &mut self.reconstructed_intents)
     }
 
     fn prepare_derived_runtime_reinstallation(
@@ -161,7 +167,9 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
         let mut prepared = runtime_rebinding::prepare_temporal_runtime_binding(
             &self.definition.binding,
             bridge,
-            self.active_lowering(),
+            self.active_lowering().ok_or_else(|| super::super::installation::WorthQueryConditionalRuntimeInstallationDenial::new(
+                super::super::installation::WorthQueryConditionalRuntimeInstallationDenialKind::ApplicationHomeOwnsLifecycle,
+                "authored temporal reinstallation requires its Home lifecycle"))?,
             Arc::clone(&self.runtime_binding_identity),
             product,
         )?;
@@ -199,7 +207,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
         &mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
 
-        bridge: &BridgeSealedRuntimeAssembly,
+        bridge: &BridgeConditionalExecutionView<'_>,
         runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<
             Schema,
         >,
@@ -288,6 +296,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
         });
         // Only an accepted or duplicate reading emits what this binding owes;
         // any other outcome leaves it owed to the next one.
+        let mut persistence_denial = None;
         let retain_and_reenter = |accepted| {
             let mut released = self.pending_invalidations.release();
             let receipt = due_wake_retention::retain_due(phase,
@@ -308,7 +317,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
                 .node()
                 .operation()
                 .application_operation();
-            let counts = super::super::application_operation_reentry::reenter_retained_wakes(&execution, phase,
+            let counts = match super::super::application_operation_reentry::reenter_retained_wakes(&execution, phase,
                 runtime,
                 truth.product(),
                 bridge,
@@ -319,7 +328,10 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
                 &mut self.reconstructed_intents,
                 &mut self.retained_wakes,
                 &self.runtime_canonical_identity,
-            );
+            ) {
+                Ok(counts) => counts,
+                Err(cause) => { persistence_denial = Some(cause); Default::default() }
+            };
             released.deliveries =
                 super::super::authoritative_reconsideration::promote_performed_signal_deliveries(
                     std::mem::take(&mut released.deliveries),
@@ -337,7 +349,14 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
                 self.inactive_bindings.values().flat_map(|binding| binding.retained_wakes.iter()));
             receipt
         };
-        bridge_clock_outcome::map_bridge_clock_outcome(outcome, retain_and_reenter)
+        let outcome = bridge_clock_outcome::map_bridge_clock_outcome(outcome, retain_and_reenter);
+        match persistence_denial {
+            Some(cause) => ErasedClockObservationOutcome::Failed {
+                detail: format!("conditional continuation publication refused: {cause:?}"),
+                kind: super::WorthQueryConditionalClockObservationFailureKind::Obligation(cause),
+            },
+            None => outcome,
+        }
     }
 
     fn retained_resource_counts(&self) -> WorthQueryConditionalRetainedResourceCounts {

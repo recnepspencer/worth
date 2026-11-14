@@ -4,10 +4,11 @@ use crate::equality_type_id::EqualityTypeId as TypeId;
 impl WorthQueryOutputDemandRegistry {
     pub(in crate::domain_computation::primary_graph) fn retain_performed_source(
         &self,
-        source: WorthQueryPerformedOutputDemandSource,
+        source: WorthQueryRetainedOutputDemandSource,
         preparation: &super::super::WorthQueryRequiredOutputSourcePreparation,
         root_kind: PreparedOutputRootKind,
         discovery: Option<std::sync::Arc<dyn std::any::Any + Send + Sync>>,
+        retirement: Option<(&crate::domain_computation::primary_graph::query_obligations::history::QueryObligationHistory, &worth_execution::ExecutionRequest<'_, '_>)>,
     ) -> Result<CompositeCommitIdentity, WorthQueryOutputDemandDenial> {
         let occurrence = source.receipt.product_branch().occurrence();
         if preparation.occurrence != occurrence {
@@ -16,7 +17,7 @@ impl WorthQueryOutputDemandRegistry {
                 "preparation belongs to another product occurrence",
             ));
         }
-        let commit = source.change.product_commit().clone();
+        let commit = source.observation.selected_commit().clone();
         let mut state = self
             .state
             .lock()
@@ -38,7 +39,7 @@ impl WorthQueryOutputDemandRegistry {
             ));
         }
         super::super::post_commit::custody_reader::prune_invisible_slot(&mut state, &commit);
-        let scope = source.receipt.principal_scope().scope();
+        let scope = source.receipt.scope();
         let direct_root = matches!(root_kind, PreparedOutputRootKind::Required(_));
         if direct_root
             && state.source_custody.iter().any(|(prior, candidate)| {
@@ -48,7 +49,7 @@ impl WorthQueryOutputDemandRegistry {
                     && candidate.bound_sources.is_none()
                     && candidate.source.as_ref().is_some_and(|retained| {
                         retained.receipt.product_branch().occurrence() == occurrence
-                            && retained.receipt.principal_scope().scope() == scope
+                            && retained.receipt.scope() == scope
                     })
             })
         {
@@ -70,9 +71,10 @@ impl WorthQueryOutputDemandRegistry {
                         && candidate.root_kind == root_kind
                         && candidate.occurrence == occurrence
                         && candidate.token_count == 0
-                        && candidate.source.as_ref().is_some_and(|retained| {
-                            retained.receipt.principal_scope().scope() == scope
-                        })
+                        && candidate
+                            .source
+                            .as_ref()
+                            .is_some_and(|retained| retained.receipt.scope() == scope)
                 })
                 .filter(|(prior, candidate)| {
                     !candidate.bound_sources.iter().flatten().any(|source| {
@@ -90,6 +92,7 @@ impl WorthQueryOutputDemandRegistry {
                     .map_err(|_| source_capacity_denial())?;
                 abandoned.push(prior.clone());
             }
+            persist_discovered_retirements(&state, &commit, &abandoned, retirement)?;
         }
         state.note_custody_changes(|prior, candidate| {
             if direct_root
@@ -99,7 +102,7 @@ impl WorthQueryOutputDemandRegistry {
                 && candidate.bound_sources.is_none()
                 && candidate.source.as_ref().is_some_and(|retained| {
                     retained.receipt.product_branch().occurrence() == occurrence
-                        && retained.receipt.principal_scope().scope() == scope
+                        && retained.receipt.scope() == scope
                 })
             {
                 candidate.retire(denial(
@@ -149,11 +152,11 @@ impl WorthQueryOutputDemandRegistry {
         Discovery: Clone + Send + Sync + 'static,
     >(
         &self,
-        receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
+        receipt: &crate::domain_computation::primary_graph::WorthQueryOutputSourceEvidence,
         root_type: TypeId,
     ) -> Result<
         (
-            Discovery,
+            Option<Discovery>,
             worth_runtime_world::facade::ProductBranchObservation,
         ),
         WorthQueryOutputDemandDenial,
@@ -162,13 +165,11 @@ impl WorthQueryOutputDemandRegistry {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let visible = super::super::post_commit::custody_reader::visible(
-            &state,
-            receipt.committed_product_publication().composite_commit(),
-        );
+        let visible =
+            super::super::post_commit::custody_reader::visible(&state, receipt.source_commit());
         let custody = state
             .source_custody
-            .get_mut(receipt.committed_product_publication().composite_commit())
+            .get_mut(receipt.source_commit())
             .filter(|_| visible)
             .filter(|custody| custody.retired.is_none() && !custody.completed)
             .filter(|custody| custody.root_kind == PreparedOutputRootKind::Discovered(root_type))
@@ -178,27 +179,38 @@ impl WorthQueryOutputDemandRegistry {
                     "exact discovered source is not retained",
                 )
             })?;
-        let recovery = custody
+        let (discovery, observation) = if let Some(recovery) = custody
             .discovery
             .as_ref()
             .filter(|retained| retained.receipt.same_retained_output_source_as(receipt))
-            .ok_or_else(|| {
-                denial(
-                    WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
-                    "exact discovered program source is not retained",
-                )
-            })?;
-        let discovery = recovery
-            .discovery
-            .downcast_ref::<Discovery>()
-            .ok_or_else(|| {
-                denial(
-                    WorthQueryOutputDemandDenialKind::ForeignSource,
-                    "discovered root has a different typed query",
-                )
-            })?
-            .clone();
-        let observation = recovery.observation.clone();
+        {
+            let discovery = recovery
+                .discovery
+                .downcast_ref::<Discovery>()
+                .ok_or_else(|| {
+                    denial(
+                        WorthQueryOutputDemandDenialKind::ForeignSource,
+                        "discovered root has a different typed query",
+                    )
+                })?
+                .clone();
+            (Some(discovery), recovery.observation.clone())
+        } else {
+            let source = custody
+                .source
+                .as_ref()
+                .filter(|source| {
+                    source.receipt.same_retained_output_source_as(receipt)
+                        && source.receipt.recovered_receipt().is_some()
+                })
+                .ok_or_else(|| {
+                    denial(
+                        WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
+                        "exact discovered program source is not retained",
+                    )
+                })?;
+            (None, source.observation.clone())
+        };
         custody.token_count += 1;
         Ok((discovery, observation))
     }
@@ -209,6 +221,53 @@ fn source_capacity_denial() -> WorthQueryOutputDemandDenial {
         WorthQueryOutputDemandDenialKind::PublicationCapacityExceeded,
         "performed source custody storage cannot be allocated",
     )
+}
+
+fn persist_discovered_retirements(
+    state: &super::super::DemandRegistryState,
+    current: &CompositeCommitIdentity,
+    abandoned: &[CompositeCommitIdentity],
+    publication: Option<(&crate::domain_computation::primary_graph::query_obligations::history::QueryObligationHistory, &worth_execution::ExecutionRequest<'_, '_>)>,
+) -> Result<(), WorthQueryOutputDemandDenial> {
+    let Some((history, execution)) = publication else {
+        return Ok(());
+    };
+    let durable = |commit: &CompositeCommitIdentity| {
+        commit.owner_identity().durable().map(|owner| {
+            worth_foundational::facade::DurableCompositeCommitIdentity::from_recorded(
+                owner,
+                commit.ordinal(),
+            )
+        })
+    };
+    let publish = |prior| {
+        history
+            .discharge_output_source(execution, prior)
+            .map_err(|cause| {
+                denial(
+                    WorthQueryOutputDemandDenialKind::ObligationPublication(cause),
+                    "discovered source retirement",
+                )
+            })
+    };
+    for prior in abandoned.iter().filter_map(durable) {
+        publish(prior)?;
+    }
+    if let Some(current) = durable(current) {
+        for prior in history.discovered_source_predecessors(current) {
+            // A source not yet reissued in this incarnation has no live
+            // handle/interest. Known sources obey the existing owner's exact
+            // abandoned-source selection above, including its active checks.
+            let known = state
+                .source_custody
+                .keys()
+                .find(|known| durable(known) == Some(prior));
+            if known.is_none_or(|known| abandoned.contains(known)) {
+                publish(prior)?;
+            }
+        }
+    }
+    Ok(())
 }
 
 mod court_doors_for_test;

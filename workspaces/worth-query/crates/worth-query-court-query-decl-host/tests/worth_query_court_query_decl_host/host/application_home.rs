@@ -2,7 +2,10 @@
 mod changed_build;
 mod correction_material;
 mod directory_capabilities;
+mod managed_cleanup;
+mod managed_runs;
 mod program_support;
+mod temporal;
 mod workflow_configuration;
 use std::{
     sync::{
@@ -39,6 +42,44 @@ fn fresh_directory_home_journey() {
     })
     .expect("the original bootstrap execution opens")
     .unwrap_or_else(|refused| panic!("fresh directory {}: {refused:?}", location.display()));
+    {
+        use worth_foundational::facade::DurableStateFamily as Family;
+        use worth_query_host::facade::{
+            primary_graph::WorthQueryOperationDurableCapability as Capability,
+            product::WorthQueryDurableStateAdmissionDenial as Denial,
+        };
+        let product = home
+            .runtime()
+            .runtime()
+            .runtime_for_test()
+            .product_runtime_for_test();
+        for (capability, family, phase) in [
+            (
+                Capability::RequiredOutputDemand,
+                Family::OutputDemandRecords,
+                6,
+            ),
+            (
+                Capability::ProgramAdoption,
+                Family::BranchAdoptionRecovery,
+                6,
+            ),
+            (Capability::WorkflowExecution, Family::WorkflowInstances, 7),
+            (
+                Capability::RetainedOriginalOperationOwner,
+                Family::OriginalOperationDescription,
+                9,
+            ),
+        ] {
+            assert_eq!(
+                product.admit_directory_capability_for_test(capability),
+                Err(Denial::Unsupported {
+                    family,
+                    supported_from_phase: phase
+                })
+            );
+        }
+    }
     assert!(home.is_directory());
     assert_eq!(initialized.load(Ordering::SeqCst), 1);
     {

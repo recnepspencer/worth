@@ -6,13 +6,12 @@ use crate::domain_computation::primary_graph::conditional_operation::signal_deci
     WorthQueryRetainedConditionalDecision, WorthQueryRetainedConditionalWake,
 };
 use std::collections::BTreeMap;
-use worth_runtime_bridge::facade::{
-    BridgeConditionalDecisionEvidence, BridgeManagedClockBinding, BridgeSealedRuntimeAssembly,
-};
+use worth_runtime_bridge::facade::BridgeConditionalExecutionView;
+use worth_runtime_bridge::facade::{BridgeConditionalDecisionEvidence, BridgeManagedClockBinding};
 
 #[allow(clippy::too_many_arguments)]
 pub(super) fn apply_reentry_outcome<Clock, Input>(
-    bridge: &BridgeSealedRuntimeAssembly,
+    bridge: &BridgeConditionalExecutionView<'_>,
     clock: &BridgeManagedClockBinding,
     candidates: &mut BTreeMap<
         String,

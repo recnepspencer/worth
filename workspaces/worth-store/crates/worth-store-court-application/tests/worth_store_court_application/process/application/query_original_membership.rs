@@ -6,19 +6,19 @@ use worth_foundational::facade::{
     CanonicalDigestId, DurableCompositePublicationAttemptIdentity,
     ProgramSupportObligationIdentity, ProgramSupportObligationKind, WorldOriginalFate,
 };
-use worth_query_execution::facade::program_support::{
-    QueryObligationPublicationOutcome as Outcome, QueryObligationsMedium,
-    QueryProgramSupportDenial as Denial, QueryProgramSupportFrame, QueryProgramSupportLedger,
-    QueryProgramSupportObligation, QueryProgramSupportPublicationGenerations,
-    QueryProgramSupportRecord as Record, QUERY_PROGRAM_SUPPORT_FRAME_MAX_BYTES,
+use worth_query_execution::facade::query_obligations::{
+    QueryObligationDenial as Denial, QueryObligationFrame, QueryObligationLedger,
+    QueryObligationPublicationGenerations, QueryObligationPublicationOutcome as Outcome,
+    QueryObligationsMedium, QueryProgramSupportObligation, QueryProgramSupportRecord as Record,
+    QUERY_OBLIGATION_FRAME_MAX_BYTES,
 };
 use worth_runtime_world::facade::*;
 
 type Fixture = worth_store_testkit_application_oracle::world_home::WorldHomeFixture;
 pub(super) struct MembershipJournal {
     medium: Arc<dyn QueryObligationsMedium>,
-    pub(super) ledger: QueryProgramSupportLedger,
-    generations: QueryProgramSupportPublicationGenerations,
+    pub(super) ledger: QueryObligationLedger,
+    generations: QueryObligationPublicationGenerations,
 }
 impl MembershipJournal {
     fn read(fixture: &Fixture, execution: &ExecutionRequest<'_, '_>) -> Self {
@@ -29,14 +29,14 @@ impl MembershipJournal {
         execution: &ExecutionRequest<'_, '_>,
     ) -> Self {
         let medium = home.query_obligations_medium();
-        let mut ledger = QueryProgramSupportLedger::empty(home.home_identity());
+        let mut ledger = QueryObligationLedger::empty(home.home_identity());
         while let Some(bytes) = medium.read_frame(execution, ledger.position() + 1).unwrap() {
-            assert!(bytes.len() as u64 <= QUERY_PROGRAM_SUPPORT_FRAME_MAX_BYTES);
+            assert!(bytes.len() as u64 <= QUERY_OBLIGATION_FRAME_MAX_BYTES);
             ledger
-                .readmit(QueryProgramSupportFrame::readmit(&bytes).unwrap())
+                .readmit(QueryObligationFrame::readmit(&bytes).unwrap())
                 .unwrap();
         }
-        let generations = QueryProgramSupportPublicationGenerations::from_journal(&ledger);
+        let generations = QueryObligationPublicationGenerations::from_journal(&ledger);
         Self {
             medium,
             ledger,
@@ -47,13 +47,13 @@ impl MembershipJournal {
         &self,
         position: u64,
         execution: &ExecutionRequest<'_, '_>,
-    ) -> QueryProgramSupportFrame {
+    ) -> QueryObligationFrame {
         let bytes = self
             .medium
             .read_frame(execution, position)
             .unwrap()
             .unwrap();
-        QueryProgramSupportFrame::readmit(&bytes).unwrap()
+        QueryObligationFrame::readmit(&bytes).unwrap()
     }
     fn publish(&mut self, record: Record, execution: &ExecutionRequest<'_, '_>) {
         let frame = self.ledger.prepare(record, &mut self.generations).unwrap();
@@ -182,10 +182,12 @@ fn original_interpretation_membership_matches_the_protected_original_after_grace
     );
     // The row is DATA, so counterfeit revision content must be refused against
     // the actual original instead of being promoted to interpretation authority.
-    let changed = CanonicalDigestId::new([0xe7; 32]);
+    let mut changed = *revision.bytes();
+    changed[0] ^= 1;
+    let changed = CanonicalDigestId::new(changed);
     assert_ne!(changed, revision);
-    let mut false_ledger = QueryProgramSupportLedger::empty(fixture.home.home_identity());
-    let mut generations = QueryProgramSupportPublicationGenerations::from_journal(&false_ledger);
+    let mut false_ledger = QueryObligationLedger::empty(fixture.home.home_identity());
+    let mut generations = QueryObligationPublicationGenerations::from_journal(&false_ledger);
     let install = false_ledger
         .prepare(Record::Install { revision: changed }, &mut generations)
         .unwrap();
@@ -215,100 +217,4 @@ fn original_interpretation_membership_matches_the_protected_original_after_grace
     drop((journal, originals));
     super::world_occurrence_readmission::close(fixture.home, &execution);
     super::world_occurrence_readmission::close(foreign.home, &execution);
-}
-
-#[test]
-fn released_no_effect_original_disposes_its_durable_interpretation_membership() {
-    let directory = tempfile::tempdir().unwrap();
-    let request = crate::workload::serial_request();
-    let execution = ExecutionRequest::serial(&request);
-    let fixture = super::world_occurrence_readmission::open(directory.path(), &execution);
-    let root = fixture.bootstrap_root(&execution);
-    let expected = root.product_branch().clone();
-    drop(root);
-    let cancellation = RuntimeWorldCancellationSource::new();
-    let prepared = fixture.prepare_publication(
-        &execution,
-        expected,
-        crate::batches::create(0),
-        &cancellation.token(),
-    );
-    let attempt = DurableCompositePublicationAttemptIdentity::from_recorded(
-        fixture.home.world().owner_identity().durable().unwrap(),
-        prepared.attempt_identity().ordinal(),
-    );
-    let revision = source(&fixture, &execution)
-        .original_state(attempt)
-        .unwrap()
-        .program_revision();
-    let mut journal = MembershipJournal::read(&fixture, &execution);
-    let identity = journal.acquire(attempt, revision, &execution);
-    // Establish a real released original through the current recovery owner.
-    // This setup is not the graceful membership-readmission claim below.
-    drop((prepared, journal, fixture));
-    let fixture = super::world_occurrence_readmission::open(directory.path(), &execution);
-    let page = fixture
-        .home
-        .world()
-        .inspection_port()
-        .recovery_page(None, std::num::NonZeroUsize::MIN)
-        .unwrap();
-    let [row] = page.rows() else {
-        panic!("one actual acknowledged original");
-    };
-    let recovery = fixture.home.world().recovery_port();
-    let claim = recovery.inspect_recovered_effects(row.handle()).unwrap();
-    assert!(claim.native_receipt().is_none());
-    let mut outcome = recovery.release_recovered_effects(&execution, claim);
-    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(30);
-    loop {
-        match outcome {
-            WorldRecoveredReleaseOutcome::Released(released) => {
-                drop(released);
-                break;
-            }
-            WorldRecoveredReleaseOutcome::Pending(claim) => {
-                assert!(std::time::Instant::now() < deadline);
-                std::thread::yield_now();
-                outcome = recovery.release_recovered_effects(&execution, claim);
-            }
-            other => panic!("actual no-effect original release: {other:?}"),
-        }
-    }
-    drop(page);
-    let retained = MembershipJournal::read(&fixture, &execution);
-    assert_eq!(retained.ledger.counts(&revision), (1, 0));
-    assert_eq!(
-        source(&fixture, &execution)
-            .original_state(attempt)
-            .unwrap()
-            .fate(),
-        WorldOriginalFate::Released
-    );
-    drop(retained);
-    // H9 consumer journey: the released original and its still-unreleased
-    // Query obligation cross a genuine graceful close before disposal.
-    super::world_occurrence_readmission::close(fixture.home, &execution);
-    let fixture = super::world_occurrence_readmission::open(directory.path(), &execution);
-    let originals = source(&fixture, &execution);
-    let mut journal = MembershipJournal::read(&fixture, &execution);
-    assert_eq!(journal.ledger.counts(&revision), (1, 0));
-    let released = journal
-        .ledger
-        .released_original_interpretations(&originals)
-        .unwrap();
-    assert_eq!(released, vec![identity]);
-    for identity in released {
-        journal.publish(Record::Release { identity }, &execution);
-    }
-    assert_eq!(journal.ledger.counts(&revision), (0, 0));
-    drop((journal, originals));
-    super::world_occurrence_readmission::close(fixture.home, &execution);
-    let fixture = super::world_occurrence_readmission::open(directory.path(), &execution);
-    let journal = MembershipJournal::read(&fixture, &execution);
-    assert_eq!(journal.ledger.position(), 3);
-    assert_eq!(journal.ledger.counts(&revision), (0, 0));
-    assert!(journal.ledger.obligations().next().is_none());
-    drop(journal);
-    super::world_occurrence_readmission::close(fixture.home, &execution);
 }

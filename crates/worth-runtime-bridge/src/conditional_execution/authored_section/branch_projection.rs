@@ -45,6 +45,16 @@ pub(in crate::conditional_execution) enum BranchPosture {
     },
 }
 pub(in crate::conditional_execution) struct ReadmittedBranch {
+    pub(in crate::conditional_execution) async_definitions: Arc<std::collections::BTreeMap<Arc<str>, crate::conditional_execution::owned_async::definition_source::OwnedAsyncDefinitionSource>>,
+    pub(in crate::conditional_execution) async_declarations: Arc<
+        std::sync::RwLock<
+            std::collections::BTreeMap<
+                Arc<str>,
+                crate::conditional_execution::owned_async::BridgeInstalledOwnedAsyncDeclaration,
+            >,
+        >,
+    >,
+    pub(in crate::conditional_execution) async_observation_authority: Arc<()>,
     pub(in crate::conditional_execution) programme_memory:
         Option<worth_execution::ExecutionMemoryReservation>,
     pub(in crate::conditional_execution) graph_lifecycle:
@@ -66,6 +76,14 @@ pub(in crate::conditional_execution) struct ReadmittedBranch {
     pub(in crate::conditional_execution) signal_branch:
         worth_signal::facade::branch::SignalBranchIdentity,
     pub(in crate::conditional_execution) retention: Arc<BridgeRetentionLedger>,
+    pub(in crate::conditional_execution) managed_clock_lanes: Arc<
+        Mutex<
+            std::collections::BTreeMap<
+                Arc<str>,
+                Arc<Mutex<crate::conditional_execution::managed_time::BridgeManagedClockLane>>,
+            >,
+        >,
+    >,
     pub(in crate::conditional_execution) _backing: Arc<backing::Backing>,
 }
 #[derive(Debug)]
@@ -211,6 +229,7 @@ impl BridgeAuthoredBranchView<'_> {
 }
 impl Drop for ReadmittedBranch {
     fn drop(&mut self) {
+        crate::conditional_execution::managed_time::revoke_clock_lanes(&self.managed_clock_lanes);
         self.retention.close();
         for lowering in self
             .lowerings

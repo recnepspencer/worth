@@ -23,6 +23,8 @@ pub(in crate::domain_computation::primary_graph) use required_wave::CurrentProof
 mod admission;
 mod caller_pass;
 use caller_pass::CallerPass;
+mod durable_output;
+mod recorded_prerequisites;
 mod refresh;
 mod rejoin;
 mod required_fresh;
@@ -71,7 +73,13 @@ where
                     "foreign advancement phase",
                 )
             })?;
-        self.advance_as_caller(demand, |demand, performed| {
+        self.readmit_recorded_prerequisites(
+            &execution,
+            principal,
+            request_scope,
+            demand.interest.as_ref(),
+        )?;
+        self.advance_as_caller(&execution, demand, |demand, performed| {
             self.advance_output_demand_with_commit_authority(
                 &execution,
                 phase,
@@ -114,7 +122,13 @@ where
                     "foreign advancement phase",
                 )
             })?;
-        self.advance_as_caller(demand, |demand, performed| {
+        self.readmit_recorded_prerequisites(
+            &execution,
+            principal,
+            request_scope,
+            demand.interest.as_ref(),
+        )?;
+        self.advance_as_caller(&execution, demand, |demand, performed| {
             self.advance_retained_with_commit_authority(
                 &execution,
                 phase,
@@ -204,7 +218,13 @@ where
                     "the phase belongs to another installed runtime",
                 )
             })?;
-        self.advance_as_caller(demand, |demand, performed| {
+        self.readmit_recorded_prerequisites(
+            &execution,
+            principal,
+            request_scope,
+            demand.interest.as_ref(),
+        )?;
+        self.advance_as_caller(&execution, demand, |demand, performed| {
             self.advance_output_demand_with_commit_authority(
                 execution,
                 phase,
@@ -241,7 +261,13 @@ where
                 > + 'static,
         FamilySourceQuery<Schema, Family>: 'static,
     {
-        self.advance_as_caller(demand, |demand, performed| {
+        self.readmit_recorded_prerequisites(
+            &execution,
+            principal,
+            request_scope,
+            demand.interest.as_ref(),
+        )?;
+        self.advance_as_caller(&execution, demand, |demand, performed| {
             self.advance_retained_with_commit_authority(
                 execution,
                 phase,
@@ -260,6 +286,7 @@ where
 
     pub(super) fn advance_as_caller<Family>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
         advance: impl FnOnce(
             &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
@@ -273,11 +300,30 @@ where
         let performed = std::cell::RefCell::new(PerformedMembers::start());
         let stop = match advance(demand, &performed) {
             Ok(progress) => {
+                if matches!(progress, WorthQueryOutputDemandAdvance::Settled(_)) {
+                    if let Some(interest) = &demand.interest {
+                        self.retain_accepted_output(
+                            execution,
+                            interest.key(),
+                            demand.observed_source.selected_product_commit(),
+                            demand.observed_source.selected_product_occurrence(),
+                        )?;
+                    }
+                }
                 demand.settled |= matches!(progress, WorthQueryOutputDemandAdvance::Settled(_));
                 return Ok(progress);
             }
             Err(stop) => stop,
         };
+        if stop.kind() == WorthQueryOutputDemandDenialKind::ProducerDomainDenied {
+            if let Some(source) = demand
+                .interest
+                .as_ref()
+                .and_then(|interest| interest.durable_readmission())
+            {
+                source.retain_domain_failure(execution, &stop)?;
+            }
+        }
         if stop.has_read_cleanup() {
             let diagnostic = stop.clone();
             demand.terminal_caller_denial = Some(stop);

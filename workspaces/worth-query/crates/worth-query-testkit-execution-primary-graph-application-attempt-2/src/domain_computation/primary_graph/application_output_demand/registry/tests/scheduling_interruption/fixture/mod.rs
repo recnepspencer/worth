@@ -108,7 +108,7 @@ impl Fixture {
                 .get_mut(interest.key_for_test())
                 .unwrap();
             (*row.performed_source_mut_for_test()) =
-                Some(WorthQueryPerformedOutputDemandSource::new_for_test(
+                Some(WorthQueryRetainedOutputDemandSource::new_for_test(
                     receipt.clone(),
                     change,
                     observation,

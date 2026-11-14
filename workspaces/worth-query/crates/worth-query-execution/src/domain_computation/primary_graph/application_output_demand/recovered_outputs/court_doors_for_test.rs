@@ -26,7 +26,10 @@ impl WorthQueryRecoveredOutputs {
         metadata: CheckpointMetadataFunding,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Self, CheckpointDecodeDenial> {
-        Self::from_records(records, metadata, execution)
+        Ok(Self {
+            checkpoint: RecoveredOutputRecords::from_records(records, metadata, execution)?,
+            journal: std::sync::OnceLock::new(),
+        })
     }
 }
 

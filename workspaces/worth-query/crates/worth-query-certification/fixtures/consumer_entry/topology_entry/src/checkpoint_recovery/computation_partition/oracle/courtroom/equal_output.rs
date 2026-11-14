@@ -79,6 +79,7 @@ impl WorthQueryProducerOutputFamily<Schema> for Family {
         "region-output"
     }
 }
+#[derive(Clone)]
 struct Demand(&'static str);
 impl WorthQueryApplicationOutputDemand<Schema> for Demand {
     type OutputFamily = Family;

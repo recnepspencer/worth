@@ -53,37 +53,63 @@ pub const fn directory_family_support(family: DurableStateFamily) -> DirectoryFa
         | BridgeSemanticRegistrations
         | BridgeCorrespondenceAllocation
         | BridgeDiagnosticRetention => DirectoryFamilySupport::Supported(5),
-        BridgeOwnedAsyncDefinitions => DirectoryFamilySupport::RefusedUntil(7),
+
         ProgramSupportLifecycle => DirectoryFamilySupport::Supported(6),
-        BranchAdoptionRecovery
-        | StoppedBranchSetAdoption
-        | OutputDemandRecords
+        // R8 owns the Phase 6 performed-source/prepared-output obligations;
+        // read leases remain local. Managed/correction extensions still refuse.
+        OutputDemandRecords
         | OutputSourceCustody
         | PerformedSourcePreparation
-        | ProgramOutputReadCustody => DirectoryFamilySupport::RefusedUntil(6),
-        SignalOwnedAsyncCustody
-        | SignalOwnedAsyncQueue
-        | BridgeManagedTemporalIntents
-        | BridgeOwnedAsyncCustody
-        | PendingApplicationCleanup
-        | ProducerCleanupCustody
+        | ProgramOutputReadCustody => DirectoryFamilySupport::Supported(6),
+        // Graceful stages only; Native effect without World occurrence/disposition is C1 (D18).
+        BranchAdoptionRecovery => DirectoryFamilySupport::Supported(6),
+        StoppedBranchSetAdoption => DirectoryFamilySupport::Supported(6),
+        // The logical cleanup stays in Query's one journal. Native resources
+        // must have an actual live release before graceful Home handoff.
+        PendingApplicationCleanup
         | ConditionalDecisions
         | RetainedConditionalCleanup
         | TemporalIdempotency
+        | BridgeManagedTemporalIntents
+        | ManagedDirectRuns
+        | DirectTerminalCleanup => DirectoryFamilySupport::Supported(7),
+        // no Home installation admits generic managed providers; owner-boundary court yielded_owner_data_preserves_terminal_cause_and_refuses_unrecorded_release
+        YieldedDirectRuns | ProviderSuspensions | DirectYieldRecovery => {
+            DirectoryFamilySupport::Supported(7)
+        }
+        // no Home installation admits generic managed providers; owner-boundary court managed_restore_owner_data_keeps_original_failure_and_separate_release_facts
+        ManagedRestoreRecovery => DirectoryFamilySupport::Supported(7),
+        // no Home installation admits generic managed providers; owner-boundary court workflow_owner_data_retains_pending_artifacts_after_native_resource_release
+        ManagedWorkflowRuns
+        | YieldedWorkflowRuns
+        | WorkflowYieldRecovery
+        | WorkflowTerminalCleanup => DirectoryFamilySupport::Supported(7),
+        BridgeOwnedAsyncDefinitions
+        | SignalOwnedAsyncCustody
+        | SignalOwnedAsyncQueue
+        | BridgeOwnedAsyncCustody
         | ResourceOccurrences
         | ResourceIngress
         | OwnedAsyncCustody
-        | ManagedDirectRuns
-        | ManagedWorkflowRuns
-        | YieldedDirectRuns
-        | YieldedWorkflowRuns
-        | ProviderSuspensions
-        | DirectYieldRecovery
-        | WorkflowYieldRecovery
-        | ManagedRestoreRecovery
-        | DirectTerminalCleanup
-        | WorkflowTerminalCleanup
-        | WorkflowLineages
+        | SignalResourceRequestCustody => DirectoryFamilySupport::Supported(7),
+        // No Home installation admits caller-owned generic external captures;
+        // owner-boundary court external_input_capture_refusal_preserves_selection_values_revision_and_provenance.
+        // Encoded inputs admitted to actual work use that work's durable record.
+        CapturedExternalInput => DirectoryFamilySupport::Supported(7),
+        // Query's logical request/queue custody is the shared owned-async owner;
+        // physical UI presentation has no Home installation and is out of scope.
+        // Owner-boundary court mandatory_owned_async_keeps_payload_generation_lineage_and_requires_fresh_owner.
+        UiPresentationCustody => DirectoryFamilySupport::Supported(7),
+        // These wrappers own the same Query cleanup obligation, not another
+        // journal or resource codec. Their Native release/cold logical disposal
+        // is qualified by failed_managed_cleanup_records_live_release_and_discharges_after_directory_reopen.
+        ProducerCleanupCustody
+        | OperationCleanupCustody
+        | SourceOperationCustody
+        | FixedOperationCustody
+        | BankManagedCleanup
+        | HttpNativeCleanup => DirectoryFamilySupport::Supported(7),
+        WorkflowLineages
         | WorkflowDefinitions
         | WorkflowNodes
         | WorkflowConnections
@@ -95,15 +121,7 @@ pub const fn directory_family_support(family: DurableStateFamily) -> DirectoryFa
         | WorkflowEvidenceDependencies
         | WorkflowApprovals
         | WorkflowOperationOutputs
-        | WorkflowCapturedInputs
-        | SourceOperationCustody
-        | OperationCleanupCustody
-        | BankManagedCleanup
-        | HttpNativeCleanup
-        | UiPresentationCustody
-        | CapturedExternalInput
-        | FixedOperationCustody
-        | SignalResourceRequestCustody => DirectoryFamilySupport::RefusedUntil(7),
+        | WorkflowCapturedInputs => DirectoryFamilySupport::RefusedUntil(7),
         RecoveryClaims | RecoveryClaimDispositions | RecoveryHandleCustody | BankRecoveryClaim => {
             DirectoryFamilySupport::Supported(8)
         }

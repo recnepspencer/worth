@@ -14,7 +14,7 @@ use worth_query_execution::facade::domain_computation::WorthQueryConditionalRunt
 use worth_query_execution::facade::domain_computation::WorthQueryPrimaryGraphApplicationRuntime;
 use worth_query_installation::facade::WorthQueryNamedClockFailure;
 use worth_query_installation::facade::WorthQueryNamedClockFailureKind;
-use worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly;
+use worth_runtime_bridge::facade::{BridgeSealedRuntimeAssembly, BridgeConditionalExecutionView};
 
 pub struct TestSchema;
 
@@ -32,6 +32,14 @@ impl WorthQueryInstalledConditionalOperation<TestSchema> for InstalledClock {
         None
     }
 
+    fn handoff_to_home(
+        &mut self,
+        _: &worth_execution::ExecutionRequest<'_, '_>,
+        _: &WorthQueryPrimaryGraphApplicationRuntime<TestSchema>,
+    ) -> Result<(), worth_query_execution::facade::primary_graph::WorthQueryHomeRetirementDenial>
+    {
+        unreachable!("lease/lock fixture never owns a Home")
+    }
     fn binding_identity(&self) -> &str {
         &self.identity
     }
@@ -54,22 +62,35 @@ impl WorthQueryInstalledConditionalOperation<TestSchema> for InstalledClock {
         Arc::clone(&self.lease)
     }
 
-    fn operation_anchor(
+    fn admit_operation_binding(
         &self,
-    ) -> Arc<worth_runtime_bridge::facade::BridgeInstalledConditionalLowering> {
-        panic!("test operation has no Bridge lowering")
+        _view: &BridgeConditionalExecutionView<'_>,
+        _basis: &worth_signal::facade::branch::AdmittedSignalBranchBasis,
+    ) -> Result<
+        (
+            worth_runtime_bridge::facade::BridgeConditionalSignalBasisBinding,
+            bool,
+        ),
+        worth_runtime_bridge::facade::BridgeConditionalDenial,
+    > {
+        unreachable!("registry lease fixture has no Bridge execution route")
     }
-
+    fn admit_authored_route(
+        &mut self,
+        _fresh: &worth_runtime_bridge::facade::BridgeFreshAuthoredBindings,
+    ) -> Result<(), worth_runtime_bridge::facade::BridgeAuthoredReadmissionDenial> {
+        unreachable!("registry lease fixture does not install an authored route")
+    }
     fn selected_lowering(
         &self,
-    ) -> Arc<worth_runtime_bridge::facade::BridgeInstalledConditionalLowering> {
-        panic!("test operation has no selected Bridge lowering")
+    ) -> Option<Arc<worth_runtime_bridge::facade::BridgeInstalledConditionalLowering>> {
+        None
     }
 
     fn select_product_binding(
         &mut self,
         _execution: &worth_execution::ExecutionRequest<'_, '_>,
-        _bridge: &BridgeSealedRuntimeAssembly,
+        _bridge: &BridgeConditionalExecutionView<'_>,
         _runtime: &WorthQueryPrimaryGraphApplicationRuntime<TestSchema>,
         _truth: &WorthQueryConditionalTruthBasis,
     ) -> Result<(), WorthQueryConditionalRuntimeInstallationDenial> {
@@ -126,7 +147,7 @@ impl WorthQueryInstalledConditionalOperation<TestSchema> for InstalledClock {
         &mut self,
         _phase: &WorthQueryAdvancementPhase<'_>,
 
-        _bridge: &BridgeSealedRuntimeAssembly,
+        _bridge: &BridgeConditionalExecutionView<'_>,
         _runtime: &worth_query_execution::facade::domain_computation::WorthQueryPrimaryGraphApplicationRuntime<
                 TestSchema,
             >,

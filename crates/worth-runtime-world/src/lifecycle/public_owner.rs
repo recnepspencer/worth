@@ -124,7 +124,7 @@ where
         super::owner::RuntimeWorldOwnedAsyncRequestAdmissionDenial,
     > {
         self.root.admit_managed_owned_async_request(
-            bridge,
+            &bridge.conditional_execution_view(),
             declaration,
             observation,
             relational_source,
@@ -143,7 +143,7 @@ where
         super::owner::RuntimeWorldOwnedAsyncRequestAdmissionDenial,
     > {
         self.root.advance_owned_async_source_clock(
-            bridge,
+            &bridge.conditional_execution_view(),
             declaration,
             observation,
             relational_source,
@@ -162,7 +162,7 @@ where
         super::owner::RuntimeWorldOwnedAsyncRequestAdmissionDenial,
     > {
         self.root.admit_unqueued_owned_async_request(
-            bridge,
+            &bridge.conditional_execution_view(),
             declaration,
             observation,
             relational_source,
@@ -181,7 +181,7 @@ where
         super::owner::RuntimeWorldOwnedAsyncRequestAdmissionDenial,
     > {
         self.root.admit_unqueued_owned_async_request_at_branch_head(
-            bridge,
+            &bridge.conditional_execution_view(),
             declaration,
             observation,
             relational_source,
@@ -199,7 +199,7 @@ where
         super::owner::RuntimeWorldOwnedAsyncManagedRevalidationDenial,
     > {
         self.root.revalidate_managed_owned_async_request(
-            bridge,
+            &bridge.conditional_execution_view(),
             request,
             observation,
             relational_source,

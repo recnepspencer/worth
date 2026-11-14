@@ -99,11 +99,13 @@ does not require duplicating World's durable business result.
 
 ## Implementation boundaries
 
-There is one Query obligation history in `query.obligations`. The present
-`program_occurrence/support_lifecycle/journal` owns support records and their
-fold. New run/decision records require an explicit typed envelope, codecs and
-family folds; silently sending new bytes through a support-only decoder is not
-an extension. Support status and custody counts must preserve their existing
+There is one Query obligation history in `query.obligations`. `primary_graph/query_obligations` owns the typed envelope, codecs and family
+folds. Its `history` is the single serialized publication and cold admission
+owner, including the existing program-support membership. Version 2 routes
+support and managed-cleanup records explicitly; predecessor version 1 refuses.
+Additional run/decision records require their own explicit envelope variants,
+codecs and family folds; silently sending new bytes through a support-only
+decoder is not an extension. Support status and custody counts must preserve their existing
 cold admission. Store continues to transport opaque owner records.
 
 The destination separates record families from live consumers:
@@ -117,9 +119,9 @@ worth-query-execution/domain_computation
   managed_run/                             [existing live owners]
     durable_custody/                        [future run record consumption]
   primary_graph/
-    program_occurrence/support_lifecycle/   [existing support fold]
-    query_obligations/                      [future shared envelope/routing]
-      managed_cleanup/                     [future record/fold/discharge]
+    query_obligations/                      [shared envelope/routing]
+      history/                             [serialized publication/admission]
+      managed_cleanup/                     [cleanup record/codec/fold]
       conditional_decision/                [future record/fold/continuation]
     workflow/adoption/                     [existing shared disposition owner]
 worth-runtime-bridge/conditional_execution/owned_async/

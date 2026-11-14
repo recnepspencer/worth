@@ -1,5 +1,6 @@
 use super::evaluation_predecessor::WorthQueryPredecessorEvaluationState;
 use std::{collections::BTreeMap, sync::Arc};
+use worth_runtime_bridge::facade::BridgeConditionalExecutionView;
 
 use worth_query_installation::facade::{
     WorthQueryHostConditionalPredicateProvider, WorthQueryInstalledTemporalConditionalOperation,
@@ -7,7 +8,7 @@ use worth_query_installation::facade::{
 };
 use worth_runtime_bridge::facade::{
     BridgeConditionalSignalBasisBinding, BridgeInstalledConditionalLowering,
-    BridgeManagedClockBinding, BridgeSealedRuntimeAssembly,
+    BridgeManagedClockBinding,
 };
 
 use super::super::{
@@ -98,7 +99,7 @@ where
     pub(super) fn select_product_evaluation_binding(
         &mut self,
 execution: &worth_execution::ExecutionRequest<'_, '_>,
-        bridge: &BridgeSealedRuntimeAssembly,
+        bridge: &BridgeConditionalExecutionView<'_>,
         runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         truth: &super::super::signal_decision_reentry::WorthQueryConditionalTruthBasis,
     ) -> Result<(), super::super::installation::WorthQueryConditionalRuntimeInstallationDenial> {
@@ -140,14 +141,13 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
     fn fresh_evaluation_binding(
         &mut self,
 execution: &worth_execution::ExecutionRequest<'_, '_>,
-        bridge: &BridgeSealedRuntimeAssembly,
+        bridge: &BridgeConditionalExecutionView<'_>,
         runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         truth: &super::super::signal_decision_reentry::WorthQueryConditionalTruthBasis,
         predecessor: Option<&WorthQueryPredecessorEvaluationState>,
     ) -> Result<WorthQueryInactiveTemporalEvaluationBinding<Clock, Input>, super::super::installation::WorthQueryConditionalRuntimeInstallationDenial> {
-        let lowering_anchor = Arc::clone(&self.bootstrap_lowering);
-        let exact = bridge
-            .admit_exact_conditional_signal_basis(&lowering_anchor, truth.signal_basis())
+        let exact = self.bootstrap_route
+            .admit_view_signal_basis(bridge, truth.signal_basis())
             .map_err(|denial| {
                 super::super::installation::WorthQueryConditionalRuntimeInstallationDenial::new(
                     super::super::installation::WorthQueryConditionalRuntimeInstallationDenialKind::BridgeConditional(Box::new(denial.kind())),
@@ -161,7 +161,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
     fn create_evaluation_binding(
         &mut self,
 execution: &worth_execution::ExecutionRequest<'_, '_>,
-        bridge: &BridgeSealedRuntimeAssembly,
+        bridge: &BridgeConditionalExecutionView<'_>,
         runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         truth: &super::super::signal_decision_reentry::WorthQueryConditionalTruthBasis,
         exact: BridgeConditionalSignalBasisBinding,
@@ -251,11 +251,11 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
 impl<Binding, Reconstruction, Execution, Clock, Input>
     super::WorthQueryInstalledTemporalOperation<Binding, Reconstruction, Execution, Clock, Input>
 {
-    pub(super) fn active_lowering(&self) -> &Arc<BridgeInstalledConditionalLowering> {
+    pub(super) fn active_lowering(&self) -> Option<&Arc<BridgeInstalledConditionalLowering>> {
         self.active_affinity
             .as_ref()
             .map(|affinity| affinity.signal_basis().installed_lowering_ref())
-            .unwrap_or(&self.bootstrap_lowering)
+            .or_else(|| self.bootstrap_route.memory_anchor())
     }
 
     pub(super) fn swap_evaluation_binding(

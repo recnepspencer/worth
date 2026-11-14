@@ -22,6 +22,8 @@ use crate::domain_computation::primary_graph::{
 /// binding and provider routing consume. It is not reconstructible from an
 /// index digest or workspace label.
 pub struct WorthQueryExecutionRuntime {
+    pub(in crate::domain_computation) managed_run_custody:
+        crate::domain_computation::managed_run::durable_custody::ManagedRunCustodyRegistry,
     authority_identity: WorthQueryRuntimeAuthorityIdentity,
     installed_packages: Arc<WorthQueryInstalledPackageIndex>,
     current_generation: Arc<AtomicU64>,
@@ -101,6 +103,7 @@ impl WorthQueryExecutionRuntimeInstaller {
         )?;
         Ok(WorthQueryExecutionRuntimeInstallation::new(
             WorthQueryExecutionRuntime {
+                managed_run_custody: Default::default(),
                 authority_identity: self.authority_identity,
                 current_generation: Arc::new(AtomicU64::new(generation.ordinal())),
                 installed_packages: Arc::new(installed_packages),

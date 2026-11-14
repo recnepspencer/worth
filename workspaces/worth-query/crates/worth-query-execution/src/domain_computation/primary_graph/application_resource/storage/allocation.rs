@@ -98,11 +98,13 @@ impl ResourceStorage {
 impl NativeResourceSlot {
     pub(in crate::domain_computation::primary_graph::application_resource) fn new(
         declaration: LoweredBridgeAsyncSourceDeclaration,
+        source: worth_runtime_bridge::facade::BridgeOwnedAsyncDeclarationDescription,
         ingress: Arc<IngressBacking>,
         next_free: Option<usize>,
     ) -> Self {
         Self {
             declaration,
+            source,
             ingress,
             next_free: Mutex::new(next_free),
         }

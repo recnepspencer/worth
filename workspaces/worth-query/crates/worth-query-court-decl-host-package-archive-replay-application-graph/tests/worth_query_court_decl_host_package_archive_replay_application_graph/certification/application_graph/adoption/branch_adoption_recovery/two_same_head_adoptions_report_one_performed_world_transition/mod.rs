@@ -93,6 +93,10 @@ fn two_same_head_adoptions_report_one_performed_world_transition() {
             }
         };
         match outcome {
+            WorthQueryBranchAdoptionPublicationOutcome::ObligationDischargePending {
+                cause,
+                ..
+            } => panic!("unexpected journal refusal: {cause:?}"),
             WorthQueryBranchAdoptionPublicationOutcome::AuthorizationDenied { cause, .. } => {
                 panic!("authorized adoption refused: {cause:?}")
             }

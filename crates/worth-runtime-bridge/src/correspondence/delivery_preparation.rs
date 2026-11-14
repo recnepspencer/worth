@@ -34,6 +34,7 @@ pub(crate) struct BridgePreparedCorrespondenceDelivery {
 impl RuntimeBridge {
     pub(crate) fn prepare_installed_correspondence_envelope_to_targets(
         &self,
+        allocations: &super::SharedCorrespondenceAllocationRegistry,
         correspondence: &BridgeInstalledSemanticCorrespondence,
         targets: &ProvenCorrespondenceTargets,
         graph_instance_id: u64,
@@ -47,9 +48,12 @@ impl RuntimeBridge {
             return map_preflight(outcome);
         }
         let target_slice = targets.as_slice();
-        if let Err(outcome) =
-            self.admit_delivery_target_allocations(correspondence, target_slice, &mut counters)
-        {
+        if let Err(outcome) = super::delivery::admit_delivery_target_allocations(
+            allocations,
+            correspondence,
+            target_slice,
+            &mut counters,
+        ) {
             return map_preflight(outcome);
         }
         let matched = match match_envelope(

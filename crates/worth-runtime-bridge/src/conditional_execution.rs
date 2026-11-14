@@ -32,6 +32,7 @@ mod evaluation_reuse;
 mod evaluation_session;
 mod execution;
 mod execution_view;
+pub use execution_view::BridgeConditionalExecutionView;
 mod installation_admission;
 mod installation_extension;
 mod installed_lowering;
@@ -46,6 +47,7 @@ mod lowering_installation;
 mod lowering_registry;
 mod managed_time;
 mod memory_execution;
+mod memory_managed_time;
 #[cfg(test)]
 pub(crate) use managed_time::budget_tests::assert_retention_boundaries;
 #[cfg(test)]
@@ -131,10 +133,11 @@ pub use output_comparison::{
     BridgeExactOutputComparison, BridgeOutputComparisonDenial, BridgeOutputComparisonStage,
 };
 pub use owned_async::{
-    BridgeOwnedAsyncCommittedCompletion, BridgeOwnedAsyncManagedDenial,
-    BridgeOwnedAsyncManagedRequestAdmission, BridgeOwnedAsyncManagedRevalidation,
-    BridgeOwnedAsyncReleasedResource, BridgeOwnedAsyncRequestResponseDeclaration,
-    BridgeOwnedAsyncResourceReleaseRefusal,
+    BridgeOwnedAsyncCommittedCompletion, BridgeOwnedAsyncDeclarationDescription,
+    BridgeOwnedAsyncManagedDenial, BridgeOwnedAsyncManagedRequestAdmission,
+    BridgeOwnedAsyncManagedRevalidation, BridgeOwnedAsyncReleasedResource,
+    BridgeOwnedAsyncRequestResponseDeclaration, BridgeOwnedAsyncResourceReleaseRefusal,
+    BridgeOwnedAsyncRetention,
 };
 pub use owned_async_observation::{
     BridgeAsyncEffectsIndeterminateObservation, BridgeOwnedAsyncCompletionAdmission,

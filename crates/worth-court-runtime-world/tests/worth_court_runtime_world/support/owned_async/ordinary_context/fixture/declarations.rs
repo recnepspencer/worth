@@ -100,6 +100,8 @@ impl AsyncSourceCourt {
         } else {
             declaration
         };
+        let declaration =
+            BridgeOwnedAsyncRequestResponseDeclaration::from_description(declaration.description());
         let declaration = builder
             .install_owned_async_request_response(declaration)
             .unwrap();

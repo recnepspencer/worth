@@ -119,6 +119,7 @@ impl RuntimeBridge {
     ) -> CorrespondenceDeliveryOutcome {
         let graph_instance_id = graph.installed_graph_capability().graph_instance_id();
         let prepared = match self.prepare_installed_correspondence_envelope_to_targets(
+            &self.correspondence_allocations,
             correspondence,
             targets,
             graph_instance_id,
@@ -192,47 +193,47 @@ impl RuntimeBridge {
             Some(prepared_signal),
         ))
     }
+}
 
-    pub(super) fn admit_delivery_target_allocations(
-        &self,
-        correspondence: &BridgeInstalledSemanticCorrespondence,
-        targets: &[super::InstalledCorrespondenceTarget],
-        counters: &mut CorrespondenceDeliveryCounters,
-    ) -> Result<(), CorrespondenceDeliveryOutcome> {
-        counters.allocation_registry_lock_attempts += 1;
-        let allocation_registry = match self.correspondence_allocations.try_read() {
-            Ok(registry) => registry,
-            Err(std::sync::TryLockError::WouldBlock) => {
-                return Err(TransitionOutcome::Deferred(
-                    BridgeCorrespondenceDeferred::GraphMutationInProgress,
-                ))
-            }
-            Err(std::sync::TryLockError::Poisoned(_)) => {
-                return Err(TransitionOutcome::Failed(
-                    BridgeCorrespondenceAdmissionFailure::LockPoisoned,
-                ))
-            }
-        };
-        for target in targets {
-            counters.allocation_source_set_checks += 1;
-            if !allocation_registry.admits_source_set(target) {
-                return Err(TransitionOutcome::RebindRequired(
-                    BridgeCorrespondenceRebindRequired::AllocationSourceSet,
-                ));
-            }
+pub(super) fn admit_delivery_target_allocations(
+    allocations: &super::SharedCorrespondenceAllocationRegistry,
+    correspondence: &BridgeInstalledSemanticCorrespondence,
+    targets: &[super::InstalledCorrespondenceTarget],
+    counters: &mut CorrespondenceDeliveryCounters,
+) -> Result<(), CorrespondenceDeliveryOutcome> {
+    counters.allocation_registry_lock_attempts += 1;
+    let allocation_registry = match allocations.try_read() {
+        Ok(registry) => registry,
+        Err(std::sync::TryLockError::WouldBlock) => {
+            return Err(TransitionOutcome::Deferred(
+                BridgeCorrespondenceDeferred::GraphMutationInProgress,
+            ))
         }
-        drop(allocation_registry);
-        let basis = correspondence.basis();
-        for target in targets {
-            counters.signal_basis_target_checks += 1;
-            if target.signal_graph_instance_id != basis.signal_graph_instance_id
-                || !basis.signal_partitions.contains(&target.partition)
-            {
-                return Err(TransitionOutcome::RebindRequired(
-                    BridgeCorrespondenceRebindRequired::SignalGraphGeneration,
-                ));
-            }
+        Err(std::sync::TryLockError::Poisoned(_)) => {
+            return Err(TransitionOutcome::Failed(
+                BridgeCorrespondenceAdmissionFailure::LockPoisoned,
+            ))
         }
-        Ok(())
+    };
+    for target in targets {
+        counters.allocation_source_set_checks += 1;
+        if !allocation_registry.admits_source_set(target) {
+            return Err(TransitionOutcome::RebindRequired(
+                BridgeCorrespondenceRebindRequired::AllocationSourceSet,
+            ));
+        }
     }
+    drop(allocation_registry);
+    let basis = correspondence.basis();
+    for target in targets {
+        counters.signal_basis_target_checks += 1;
+        if target.signal_graph_instance_id != basis.signal_graph_instance_id
+            || !basis.signal_partitions.contains(&target.partition)
+        {
+            return Err(TransitionOutcome::RebindRequired(
+                BridgeCorrespondenceRebindRequired::SignalGraphGeneration,
+            ));
+        }
+    }
+    Ok(())
 }

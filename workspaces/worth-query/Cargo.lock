@@ -1465,6 +1465,7 @@ dependencies = [
  "worth-query-testkit-execution-primary-graph-application-contribution",
  "worth-query-testkit-instantiation",
  "worth-relational",
+ "worth-runtime-bridge",
  "worth-runtime-world",
  "worth-testkit-compiler",
 ]
@@ -1775,6 +1776,7 @@ name = "worth-query-execution"
 version = "0.1.0"
 dependencies = [
  "im",
+ "rmp-serde",
  "serde",
  "serde_json",
  "sha2",

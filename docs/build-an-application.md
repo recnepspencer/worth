@@ -2022,9 +2022,24 @@ supply and embed their own fresh UUID. Tests use explicit fixture identities.
 
 A journal-only Directory Home with the same supported program/schema opens under
 a new build UUID. Authored binding and durable history remain intact; the
-initializer does not run and nothing regenerates eagerly. Producers are not
-supported in this Directory lane. Accepted-output reuse and regeneration on demand
-are Phase 6 behavior, not a promise of rebuild admission.
+initializer does not run and nothing regenerates eagerly. Accepted producer outputs
+retain their original correspondence and dependency facts. Same-build demand
+verifies those facts before reuse. A changed build makes incompatible output
+stale; the normal demand and settlement owners regenerate it only when demanded,
+keeping its authored entity identities.
+
+Required demand records, performed-source obligations, consumed prerequisites and
+source custody use `query.obligations`. After reopening, recover the original
+keyed source receipt and pass it to `request.advanced().recover_required_outputs`
+(or `recover_discovered_outputs`). The recorded receipt supplies original data;
+fresh authentication, scope and World observation supply authority. A live receipt
+from an earlier Home is not readmitted. Completing the source/output tree records
+its discharge, so another reopen cannot resurrect completed custody. Producer
+domain denials retain their declared value data rather than rerunning the producer.
+
+These are graceful or quiescent reopen guarantees. Oversize obligation records
+receive the existing typed `MalformedFrame` refusal at the 16 KiB frame boundary;
+larger provenance support and crash/fault certification belong to track C.
 
 ### One process execution service
 
@@ -2857,6 +2872,13 @@ process-local selection provenance; fresh original-branch action and requested
 facet admission precede protected row/provider/clock access. Explicit runtime
 close refuses allocated rows and preserves their owners. Rust Drop/process
 termination does not attest to provider or Native cleanup.
+For a Directory Home, graceful Home close instead hands each original row to
+its existing live release transitions and persists the actual terminal. Failed
+provider/queue/Native cleanup refuses that close. Reopen installs fresh declared
+providers and clocks. Use the resource request's `retained_state::<Binding>(&input, identity)`,
+`with_retained_result` and `discharge_retained` to consume the original logical
+custody under fresh State, Result or Close admission. No provider is replayed;
+unverified ingress remains distinct from a committed result.
 The existing lower World/Bridge path already preserves the
 exact committed source through request admission and revalidation; an empty
 source returns `NoCommittedSource` before creating a Signal request. This source
@@ -6967,6 +6989,13 @@ The same chain in production code is
 | Prepare | `.prepare(maximum_selection_work)` | `WorthQueryPreparedBranchAdoption` (move-only, fields private) |
 | Publish | `programs.publish(prepared)` | `WorthQueryBranchAdoptionPublicationOutcome` |
 | Recover | `programs().recover(unpublished.into_recovery())` | `Result<WorthQueryBranchAdoptionRecoveryOutcome, WorthQueryApplicationProgramAdoptionRecoveryFailure>` |
+| Readmit after Directory reopen | `runtime.readmit_branch_adoption(fresh_world_recovery_handle)` | Exact original adoption custody where D18 admits the tail; then ordinary `programs().recover` with fresh authentication |
+
+Directory close succeeds before preparation starts and after the World occurrence or
+disposition settles. A cancelled adoption with a Native effect but no World
+occurrence or disposition refuses close with `UnresolvedBusinessCustody`; the
+returned Home remains usable. Abandoning that prefix refuses reopen with
+`UncleanRecoveryUnsupported(Relational)` (D18); its continuation belongs to C1.
 
 `compare` comes first because the requirements are the input to `adopt`.
 `WorthQueryProgramAdoptionRequirements` exposes `semantic_diff()`,
@@ -7107,7 +7136,10 @@ This prepares adoption across a set of branches. It is **not atomic**:
   It returns `Result<WorthQueryBranchSetAdoptionCancellation, Self>`: while a
   branch awaits resolution it hands the adoption back, so resolve it and
   `advance` first.
-- `resume(stopped, max)` continues a stopped set.
+- `begin_resume(runtime, &scope)` acknowledges stopped custody before releasing the old suffix.
+- After Directory reopen, `runtime.readmit_stopped_branch_set_adoptions(&phase)` rejoins fresh selectors.
+- `resume(stopped, max)` prepares only that ordered remainder; historical progress is descriptive.
+- `stopped.cancel(runtime, &scope)` acknowledges release of the retained custody.
 
 Coverage comes from `runtime.branches().program_adoption_coverage(..)`;
 `on_branches` orders it against your target list and refuses a mismatch with

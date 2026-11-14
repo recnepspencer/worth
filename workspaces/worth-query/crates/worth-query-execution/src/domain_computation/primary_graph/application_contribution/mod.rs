@@ -99,6 +99,7 @@ pub use producer::{
     WorthQueryProducerInputReuseContract, WorthQueryProducerInvariantRequirement,
     WorthQueryProducerLifecyclePosture, WorthQueryProducerOutputEquivalence,
     WorthQueryProducerOutputFamily, WorthQueryProjectedProducerDenial,
+    WorthQueryRecordedProducerDenialEncodingRefusal, WorthQueryRecordedProducerDenialValue,
     WorthQuerySelectedApplicationProducer, WorthQueryUndeclaredProducerDenial,
     WorthQueryWorkflowAssessmentOutputFamily, WorthQueryWorkflowAssessmentPosture,
 };
