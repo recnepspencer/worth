@@ -162,16 +162,28 @@ fn missing_original_or_same_kind_neighbour_never_supplies_a_changed_output_preim
                 &host,
                 worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
             );
-        let outcome = outcome.unwrap();
-        let WorthQueryApplicationMutationOutcome::Commit(WorthQueryApplicationUncommitted::Denied(
-            denial,
-        )) = outcome
+        let denial = outcome.unwrap_err();
+        let WorthQueryApplicationRequestMutationDenial::Handler(
+            MutationHandlerExecutionDenial::Handler(denial),
+        ) = denial
         else {
-            panic!("{outcome:?}")
+            panic!("{denial:?}")
+        };
+        let FragmentDenial::Write(denial) = denial.downcast::<FragmentDenial>().unwrap() else {
+            panic!("actual native write refusal")
         };
         assert_eq!(
-            denial.preimage_retention_denial(),
-            Some(WorthQueryPreImageRetentionDenial::MissingDemandedField)
+            denial.kind(),
+            WorthQueryApplicationAttemptDenialKind::UnobservedWrite
+        );
+        let cause = denial.unobserved_write().unwrap();
+        assert_eq!(
+            cause.locator().aspect().aspect_key().as_str(),
+            SecondValue::at("SecondValue").aspect()
+        );
+        assert_eq!(
+            cause.locator().field_path().fields()[0].as_str(),
+            "SecondValue"
         );
         assert_eq!(
             pinned.selected_commit(),

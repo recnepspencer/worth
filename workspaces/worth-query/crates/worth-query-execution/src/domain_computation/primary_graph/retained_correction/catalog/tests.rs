@@ -264,6 +264,23 @@ fn changed_fields_capture_retains_explicit_absence_across_the_material_roundtrip
             absence: RecordedAbsenceKind::Aspect,
         }],
     });
+    let changed = material.changed_fields.as_mut().unwrap();
+    let mut absent_field = changed.absences[0].clone();
+    absent_field.field = "optional-field".into();
+    absent_field.location.fields = vec!["optional-field".into()];
+    absent_field.absence = RecordedAbsenceKind::Field;
+    changed.absences.push(absent_field);
+    let valid = record.clone();
+    if let MaterialRecord::Capture { material } = &mut record {
+        let changed = material.changed_fields.as_mut().unwrap();
+        changed.absences.push(changed.absences[0].clone());
+    }
+    assert_eq!(
+        record.encode(),
+        Err(Denial::MalformedFrame),
+        "contradictory/repeated presence has no canonical retained record"
+    );
+    record = valid;
     let encoded = record.encode().unwrap();
     let mut body: serde_json::Value = serde_json::from_slice(&encoded).unwrap();
     assert_eq!(body["version"], 2);
