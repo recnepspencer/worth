@@ -216,13 +216,14 @@ fn include_later<'a>(
 ) -> Result<(), Failure> {
     for source in later {
         for owner in later_source_owners(*source, preceding, context)? {
-            for other in retired
+            for other_family_bytes in retired
                 .clone()
-                .chain(required.iter().map(|item| item.origin.as_ref()))
+                .map(|item| item.meaning.family.len())
+                .chain(required.iter().map(|item| item.origin.meaning.family.len()))
             {
                 charge(
                     context,
-                    owner.origin.meaning.family.len() + other.meaning.family.len() + 65,
+                    owner.origin.meaning.family.len() + other_family_bytes + 65,
                 )?;
             }
             if !retired

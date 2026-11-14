@@ -157,12 +157,13 @@ pub(super) fn install(
                 group.binding.owners.source,
                 crate::mvcc::CoupledSource::Edit(_)
             ) {
-            Some(Arc::new(crate::mvcc::plan_copy_admission::reserve_copy(
+            crate::mvcc::plan_copy_admission::reserve_copy(
                 execution,
                 crate::mvcc::plan_copy_admission::slots::<crate::identity::data::EntityId>(
                     group.stages.len(),
                 ),
-            )?))
+            )?
+            .map(Arc::new)
         } else {
             None
         };
