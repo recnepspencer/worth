@@ -160,10 +160,6 @@ impl OperationHandler<Schema, Binding> for Handler {
             writer
                 .preserve_output::<Kept>(&entity)
                 .map_err(HandlerExecutionDenial::new)?;
-            let change_link = !matches!(input.link, LinkEdit::Unchanged)
-                && links.first().map(|link| link.to().entity_id())
-                    != next_link.as_ref().map(|(id, _)| *id);
-            let next_link = next_link.map(|(_, target)| target);
             Ok::<_, HandlerExecutionDenial>(())
         })();
         match result {
