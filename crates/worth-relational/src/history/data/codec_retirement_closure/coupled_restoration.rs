@@ -86,9 +86,12 @@ impl RelationalRuntime {
         let Some(group) = &restoration.retirement.coupled_authored_publication else {
             return Ok(None);
         };
-        let CanonicalCoupledAuthoredSources::Retirement(source) = &group.sources else {
+        let Some(source) = restoration.retirement.authored_source_retirement() else {
             let recorded = match &group.sources {
                 CanonicalCoupledAuthoredSources::Retirement(source) => source.anchor,
+                CanonicalCoupledAuthoredSources::RetirementWithLaterSources { prefix, .. } => {
+                    prefix.anchor
+                }
                 CanonicalCoupledAuthoredSources::Edit(source) => *source,
                 // Header validation admits only lists of two or more sources.
                 CanonicalCoupledAuthoredSources::Stages(sources) => match sources.first() {
@@ -100,6 +103,9 @@ impl RelationalRuntime {
                     }
                 },
                 CanonicalCoupledAuthoredSources::Restoration(source) => source.original_anchor,
+                CanonicalCoupledAuthoredSources::RestorationWithLaterSources { prefix, .. } => {
+                    prefix.original_anchor
+                }
             };
             return Err(refuse(
                 Cause::InvalidAuthoredAnchor,

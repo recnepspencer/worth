@@ -18,6 +18,13 @@ impl CanonicalCommitEnvelopeBody {
         {
             return Err("coupled authored stage list is shorter than two".into());
         }
+        if matches!(&event.sources,
+            CanonicalCoupledAuthoredSources::RetirementWithLaterSources { later, .. }
+            | CanonicalCoupledAuthoredSources::RestorationWithLaterSources { later, .. }
+            if later.is_empty())
+        {
+            return Err("corrective coupled stage list has no later source".into());
+        }
         if self.required_output_origin.is_some()
             || self.authored_cascade_retirement.is_some()
             || self.authored_cascade_restoration.is_some()
@@ -29,10 +36,16 @@ impl CanonicalCommitEnvelopeBody {
         match &event.sources {
             CanonicalCoupledAuthoredSources::Edit(_) => {}
             CanonicalCoupledAuthoredSources::Stages(_) => {}
-            CanonicalCoupledAuthoredSources::Retirement(source) => {
+            CanonicalCoupledAuthoredSources::Retirement(source)
+            | CanonicalCoupledAuthoredSources::RetirementWithLaterSources {
+                prefix: source, ..
+            } => {
                 self.validate_authored_retirement_components(source, true, context)?;
             }
-            CanonicalCoupledAuthoredSources::Restoration(source) => {
+            CanonicalCoupledAuthoredSources::Restoration(source)
+            | CanonicalCoupledAuthoredSources::RestorationWithLaterSources {
+                prefix: source, ..
+            } => {
                 self.validate_authored_restoration_components(source, true, context)?;
             }
         }

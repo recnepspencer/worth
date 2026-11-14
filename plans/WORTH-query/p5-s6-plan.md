@@ -47,6 +47,20 @@ exemption. Corrective authoring retains a genuine inverse root and appends its
 ordinary final Edit before the one commit; only that real root satisfies the
 recorded inverse. See [current authoring DX](../../docs/build-an-application.md#runtime-cohorts-and-positioned-authored-execution).
 
+A genuinely producing later authored stage also retains usable corrective
+history. Native appends distinct `RetirementWithLaterSources` and
+`RestorationWithLaterSources` canonical variants: the genuine prefix event and
+the exact consumed later-source sequence, including repeated scopes. Live and
+historical validation use the same finite source-owned closure and exact
+predecessor/participant checks. These variants do not permit Birth participants
+or turn scope IDs/descriptive source effects into authority.
+This is an additive named-sum extension within canonical artifact format8.
+The four existing source encodings retain their bytes and meaning; older
+readers refuse unknown new tags before effects. CHK22, outer protocols and
+Original-root-v4/digest domains are unchanged. There is no lossy downgrade.
+Its affected proof is the real retirement/restoration-plus-final-Edit journey
+and required codec/refusal controls, not a new recovery portfolio.
+
 Current affected evidence is the bounded ordinary runtime/ordered/correction
 and occurrence journeys plus their necessary refusal/replay/support controls.
 Historical portfolio, hot/worker and mutant runs below are not a new campaign

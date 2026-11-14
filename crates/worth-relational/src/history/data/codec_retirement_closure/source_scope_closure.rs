@@ -239,6 +239,28 @@ pub(crate) fn select(
     Ok(selected)
 }
 
+/// The exact source-owned closure for a corrective envelope's later stage.
+/// Current business-neighbour reads supply candidates; history supplies the
+/// preceding canonical catalog. Both use this same finite semantic selection.
+pub(crate) fn later_source_owners(
+    source: EntityId,
+    facts: &[SelectedOutputPublication],
+    context: &mut MapKernelContext<'_, '_>,
+) -> Result<Vec<SelectedOutputPublication>, Stop> {
+    let mut selected = select(&[source], facts, context)?;
+    let linked = super::scope_dependents::linked_owners(&[source], &selected, facts, context)?;
+    for owner in linked {
+        charge(context, selected.len() + 1)?;
+        if !selected
+            .iter()
+            .any(|known| known.origin.same_publication(&owner.origin))
+        {
+            selected.push(owner);
+        }
+    }
+    Ok(selected)
+}
+
 /// A genuinely historical source birth or inverse selects its recorded prefix.
 /// This is never called to enforce current ownership or to rebuild its roster.
 pub(super) fn validate_historical_prefix(

@@ -117,12 +117,18 @@ pub(super) fn install(
                 validated_history,
                 context,
             )?;
-            Ok(Sources::Restoration(
-                envelope
-                    .authored_cascade_restoration
-                    .take()
-                    .expect("Native installed authored source restoration"),
-            ))
+            let prefix = envelope
+                .authored_cascade_restoration
+                .take()
+                .expect("Native installed authored source restoration");
+            Ok(if group.stages.is_empty() {
+                Sources::Restoration(prefix)
+            } else {
+                Sources::RestorationWithLaterSources {
+                    prefix,
+                    later: group.stages.iter().map(|stage| stage.source).collect(),
+                }
+            })
         }
         CoupledSource::Retirement {
             anchor,
@@ -157,12 +163,18 @@ pub(super) fn install(
                         publications: Vec::new(),
                     }));
             }
-            Ok(Sources::Retirement(
-                envelope
-                    .authored_cascade_retirement
-                    .take()
-                    .expect("Native installed authored source retirement"),
-            ))
+            let prefix = envelope
+                .authored_cascade_retirement
+                .take()
+                .expect("Native installed authored source retirement");
+            Ok(if group.stages.is_empty() {
+                Sources::Retirement(prefix)
+            } else {
+                Sources::RetirementWithLaterSources {
+                    prefix,
+                    later: group.stages.iter().map(|stage| stage.source).collect(),
+                }
+            })
         }
     }
 }

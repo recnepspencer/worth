@@ -42,7 +42,29 @@ impl RelationalRuntime {
                 self.readmit_edit_coupled_owners(execution, installed, &owners.before, *source)?;
             execution
                 .run_native_with_checkpoint(|context| {
+                    let selected = if matches!(owners.source, CoupledSource::Edit(_)) {
+                        None
+                    } else {
+                        Some(
+                            crate::history::data::source_scope_closure::later_source_owners(
+                                *source,
+                                &stage.current,
+                                context,
+                            )
+                            .map_err(custody::cold_stop)?,
+                        )
+                    };
                     for owner in stage.owners {
+                        if let Some(selected) = &selected {
+                            checkpoint(context, selected.len() as u64 + 1)
+                                .map_err(custody::execution_stop)?;
+                            if !selected
+                                .iter()
+                                .any(|known| known.origin.same_publication(&owner.origin))
+                            {
+                                continue;
+                            }
+                        }
                         checkpoint(
                             context,
                             (owners.owners.len() + owners.retirements.len()) as u64 + 1,

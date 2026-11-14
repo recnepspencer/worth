@@ -17,6 +17,14 @@ pub(crate) enum CanonicalCoupledAuthoredSources {
     /// An edit envelope: the authored prefix's source, then each later
     /// authored stage's source, in apply order. Edit semantics otherwise.
     Stages(Vec<crate::identity::data::EntityId>),
+    RetirementWithLaterSources {
+        prefix: Arc<CanonicalAuthoredRetirement>,
+        later: Vec<crate::identity::data::EntityId>,
+    },
+    RestorationWithLaterSources {
+        prefix: Arc<CanonicalAuthoredRestoration>,
+        later: Vec<crate::identity::data::EntityId>,
+    },
 }
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub(crate) struct CanonicalCoupledParticipant {
@@ -45,8 +53,14 @@ impl CanonicalCoupledAuthoredPublication {
         &self,
     ) -> impl Iterator<Item = &Arc<CanonicalRequiredOutputOrigin>> {
         let sources: &[Arc<CanonicalRequiredOutputOrigin>] = match &self.sources {
-            CanonicalCoupledAuthoredSources::Retirement(event) => &event.publications,
-            CanonicalCoupledAuthoredSources::Restoration(event) => &event.publications,
+            CanonicalCoupledAuthoredSources::Retirement(event)
+            | CanonicalCoupledAuthoredSources::RetirementWithLaterSources {
+                prefix: event, ..
+            } => &event.publications,
+            CanonicalCoupledAuthoredSources::Restoration(event)
+            | CanonicalCoupledAuthoredSources::RestorationWithLaterSources {
+                prefix: event, ..
+            } => &event.publications,
             CanonicalCoupledAuthoredSources::Edit(_)
             | CanonicalCoupledAuthoredSources::Stages(_) => &[],
         };
@@ -66,8 +80,13 @@ impl CanonicalCommitEnvelopeBody {
     pub(crate) fn authored_source_retirement(&self) -> Option<&Arc<CanonicalAuthoredRetirement>> {
         self.authored_cascade_retirement.as_ref().or_else(|| {
             match &self.coupled_authored_publication.as_ref()?.sources {
-                CanonicalCoupledAuthoredSources::Retirement(event) => Some(event),
+                CanonicalCoupledAuthoredSources::Retirement(event)
+                | CanonicalCoupledAuthoredSources::RetirementWithLaterSources {
+                    prefix: event,
+                    ..
+                } => Some(event),
                 CanonicalCoupledAuthoredSources::Restoration(_)
+                | CanonicalCoupledAuthoredSources::RestorationWithLaterSources { .. }
                 | CanonicalCoupledAuthoredSources::Edit(_)
                 | CanonicalCoupledAuthoredSources::Stages(_) => None,
             }
@@ -76,8 +95,13 @@ impl CanonicalCommitEnvelopeBody {
     pub(crate) fn authored_source_restoration(&self) -> Option<&Arc<CanonicalAuthoredRestoration>> {
         self.authored_cascade_restoration.as_ref().or_else(|| {
             match &self.coupled_authored_publication.as_ref()?.sources {
-                CanonicalCoupledAuthoredSources::Restoration(event) => Some(event),
+                CanonicalCoupledAuthoredSources::Restoration(event)
+                | CanonicalCoupledAuthoredSources::RestorationWithLaterSources {
+                    prefix: event,
+                    ..
+                } => Some(event),
                 CanonicalCoupledAuthoredSources::Retirement(_)
+                | CanonicalCoupledAuthoredSources::RetirementWithLaterSources { .. }
                 | CanonicalCoupledAuthoredSources::Edit(_)
                 | CanonicalCoupledAuthoredSources::Stages(_) => None,
             }
@@ -126,6 +150,22 @@ pub(super) fn install(
     }
     let full = std::mem::take(&mut envelope.patch.authoritative_record_patches);
     let answer: Result<RequiredOutputPublicationPositions, TransactionCommitError> = (|| {
+        // The new corrective source vector is one necessary funded copy of
+        // the completed Native stage roster, retained by this canonical owner.
+        let source_memory = if !group.stages.is_empty()
+            && !matches!(
+                group.binding.owners.source,
+                crate::mvcc::CoupledSource::Edit(_)
+            ) {
+            Some(Arc::new(crate::mvcc::plan_copy_admission::reserve_copy(
+                execution,
+                crate::mvcc::plan_copy_admission::slots::<crate::identity::data::EntityId>(
+                    group.stages.len(),
+                ),
+            )?))
+        } else {
+            None
+        };
         restrict(
             envelope,
             &full,
@@ -192,7 +232,7 @@ pub(super) fn install(
             });
         }
         let event = CanonicalCoupledAuthoredPublication {
-            _decoded_memory: None,
+            _decoded_memory: source_memory,
             sources,
             participants,
             live_inputs,
