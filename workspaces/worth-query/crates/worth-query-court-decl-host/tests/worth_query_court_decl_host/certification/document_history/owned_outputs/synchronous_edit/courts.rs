@@ -16,7 +16,9 @@ pub(super) fn commit_ordinal(host: &world::Host) -> u64 {
     .unwrap()
 }
 
-pub(super) fn native_head<P: ApplicationProgramDefinition<Schema>>(
+pub(in crate::certification::document_history::owned_outputs) fn native_head<
+    P: ApplicationProgramDefinition<Schema>,
+>(
     host: &WorthQueryProgramApplicationRuntime<Schema, P>,
 ) -> (u64, Vec<u64>) {
     host.with_host_advancement(|phase| {

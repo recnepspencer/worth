@@ -159,7 +159,7 @@ mod courts {
                     Mode::Undeclared
                 })
             });
-            let before = crate::certification::document_history::owned_outputs::synchronous_edit::courts::native_head(&host);
+            let before = crate::certification::document_history::owned_outputs::synchronous_edit::native_head(&host);
             let outcome = request
                 .advanced()
                 .mutate(synchronous::Intent {
@@ -201,7 +201,7 @@ mod courts {
                     );
                 }
             });
-            assert_eq!(crate::certification::document_history::owned_outputs::synchronous_edit::courts::native_head(&host), before);
+            assert_eq!(crate::certification::document_history::owned_outputs::synchronous_edit::native_head(&host), before);
             assert_eq!(
                 request
                     .query(query::first_output::Read("predecessor:a".into()))
