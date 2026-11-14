@@ -31,6 +31,13 @@ pub enum AuthoredEnvelopeResolution<'a> {
     Recorded(crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolution),
 }
 
+/// Resolution-only admission must not resume another pending publication.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum AuthoredEnvelopeResolutionPurpose {
+    Execute,
+    ResolveOnly,
+}
+
 /// The callback cannot retain a coordination grant after the owning lane closes.
 pub fn with_resolved_edit_envelope<S: ApplicationSchema, R>(
     _access: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
@@ -38,6 +45,7 @@ pub fn with_resolved_edit_envelope<S: ApplicationSchema, R>(
     application: &WorthQueryPrimaryGraphApplicationRuntime<S>,
     stages: &[CapturedAuthoredEditStage<S>],
     intent: ApplicationEditIntentIdentity,
+    purpose: AuthoredEnvelopeResolutionPurpose,
     proceed: impl FnOnce(AuthoredEnvelopeResolution<'_>) -> R,
 ) -> Result<R, Denial> {
     let first = stages.first().ok_or_else(Denial::foreign_admission)?;
@@ -96,6 +104,7 @@ pub fn with_resolved_edit_envelope<S: ApplicationSchema, R>(
                     &execution,
                     &candidates,
                     &product.publication_binding(),
+                    purpose,
                 )
                 .map_err(Denial::from_provider)
         },

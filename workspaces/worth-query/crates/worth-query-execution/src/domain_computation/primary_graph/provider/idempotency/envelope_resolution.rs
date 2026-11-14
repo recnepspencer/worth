@@ -1,5 +1,6 @@
 //! One owner resolution of all genuinely admitted prefix meanings.
 use super::*;
+use crate::domain_computation::primary_graph::application_contribution::authored_edit::AuthoredEnvelopeResolutionPurpose;
 use crate::domain_computation::primary_graph::application_attempt::idempotency::envelope_candidates::EnvelopeCandidates;
 impl WorthQueryPrimaryGraphProvider {
     pub(in crate::domain_computation::primary_graph) fn resolve_envelope_idempotency_at_product(
@@ -7,6 +8,7 @@ impl WorthQueryPrimaryGraphProvider {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         candidates: &EnvelopeCandidates<'_>,
         product: &crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding,
+        purpose: AuthoredEnvelopeResolutionPurpose,
     ) -> Result<
         WorthQueryProviderIdempotencyResolution,
         WorthQueryProviderIdempotencyResolutionDenial,
@@ -50,23 +52,29 @@ impl WorthQueryPrimaryGraphProvider {
             {
                 return Ok(WorthQueryProviderIdempotencyResolution::Drift);
             }
-            if let Some(Some(recorded)) = self.inspect_pending_application_idempotency(
+            if let Some(pending) = self.inspect_pending_application_idempotency(
                 product.observation().lifecycle_incarnation())
             {
-                if recorded.key_identity() == binding.key_identity() {
-                    if !candidates.matches(recorded)? {
-                        return Ok(WorthQueryProviderIdempotencyResolution::Drift);
+                if let Some(recorded) = pending {
+                    if recorded.key_identity() == binding.key_identity() {
+                        if !candidates.matches(recorded)? {
+                            return Ok(WorthQueryProviderIdempotencyResolution::Drift);
+                        }
+                    } else if recorded.correction_identity().is_some() {
+                        return Ok(WorthQueryProviderIdempotencyResolution::Unpublished);
                     }
-                } else if recorded.correction_identity().is_some() {
-                    return Ok(WorthQueryProviderIdempotencyResolution::Unpublished);
+                }
+                if purpose == AuthoredEnvelopeResolutionPurpose::ResolveOnly {
+                    return Err(WorthQueryProviderIdempotencyResolutionDenial::Unavailable);
                 }
             }
-            self.resume_pending_application_publication(execution,
-                runtime,
-                product.observation().lifecycle_incarnation(),
-                &mut retired,
-            )
-                .map_err(pending_publication_denial)?;
+            if purpose == AuthoredEnvelopeResolutionPurpose::Execute {
+                self.resume_pending_application_publication(execution,
+                    runtime,
+                    product.observation().lifecycle_incarnation(),
+                    &mut retired,
+                ).map_err(pending_publication_denial)?;
+            }
             // Concurrent requests can have admitted the same earlier head.
             // Under the branch lane, locate the key in the SAME live occurrence's
             // current owner selection, then read its immutable original source.
@@ -89,7 +97,8 @@ impl WorthQueryPrimaryGraphProvider {
             let resolution = resolve_at_snapshot(execution, self, runtime, &snapshot, &layout, product, candidates);
             crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
             let resolution = resolution?;
-            if let WorthQueryProviderIdempotencyResolution::Readmitted(receipt) = &resolution {
+            if purpose == AuthoredEnvelopeResolutionPurpose::Execute
+                && let WorthQueryProviderIdempotencyResolution::Readmitted(receipt) = &resolution {
                 runtime.repair_pending_publication_settlement(receipt.commit_reference().commit_id)
                     .map_err(|_| WorthQueryProviderIdempotencyResolutionDenial::Unavailable)?;
             }

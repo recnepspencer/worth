@@ -39,9 +39,10 @@ use worth_query_execution::facade::{
 };
 use worth_query_execution::publication_boundary::authored_edit::{
     stage_admission_refusal, with_resolved_edit_envelope, AuthoredEditStageAdmission,
-    AuthoredEnvelopeResolution, AuthoredStageDomainDenial, AuthoredStageExecutionDenial,
-    CapturedAuthoredEditStage, DeclaredEditDependency, DeclaredEditOrderRefusal,
-    DeclaredEditScopeCycle, DeclaredEditStage, RetainedAuthoredStageResult, UnseenAuthoredEnvelope,
+    AuthoredEnvelopeResolution, AuthoredEnvelopeResolutionPurpose, AuthoredStageDomainDenial,
+    AuthoredStageExecutionDenial, CapturedAuthoredEditStage, DeclaredEditDependency,
+    DeclaredEditOrderRefusal, DeclaredEditScopeCycle, DeclaredEditStage,
+    RetainedAuthoredStageResult, UnseenAuthoredEnvelope,
 };
 use worth_query_installation::facade::ApplicationSchema;
 mod builder;

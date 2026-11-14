@@ -4554,6 +4554,23 @@ original causality; later authored/producer changes cannot satisfy its inverse.
 A recovered request returns the authentic original receipt, not live stage
 results. Pending/recovery/drift classification remains the whole-key owner's.
 
+To confirm a cached answer without starting a new edit, rebuild the original
+runtime envelope from its original request-construction data and call
+`resolve_idempotency(allocation)` instead of `execute_performed`. The same
+whole-key, full-stage-list, mode and nominal admission checks apply. `Unseen`
+means nothing is recorded and no supplier planning, handler or producer ran;
+it is not permission to return a cached success. Only an authentic recorded
+committed outcome confirms the earlier operation. Drift and released-original
+refusals retain their normal meaning, and stage results are not reconstructed.
+
+Resolution admits/encodes inputs and may readmit a genuine corrective source,
+but does not resume pending publication or repair its settlement. When that
+recovery is necessary it returns the existing pending/unavailable posture and
+leaves custody intact; an explicit ordinary execution keeps its existing
+recovery behavior. Cached input data grants no authority. Do not reconstruct
+an implicit editor default or allocated name from a later head and substitute
+it for the original canonical request.
+
 ### Repeated-family required outputs
 
 Use `ApplicationOutputOccurrences<(Connection, ...)>` as the dependents of the

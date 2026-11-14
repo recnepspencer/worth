@@ -8,6 +8,7 @@ type Host = WorthQueryProgramApplicationRuntime<Schema, Program>;
 mod correction;
 mod instance_replay;
 mod positioned;
+mod resolution;
 fn host(
     second_derivation: Option<fn(u64) -> u64>,
     child_derivation: Option<fn(u64) -> u64>,

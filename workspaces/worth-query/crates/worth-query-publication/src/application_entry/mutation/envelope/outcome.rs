@@ -67,6 +67,8 @@ impl WorthQueryEditEnvelopeReceipt {
 /// recovered commit evidence; no handler runs and no live receipt or result is
 /// reconstructed (milestone 3, D1675/D1676, superseding D1637).
 pub enum WorthQueryEditEnvelopeOutcome {
+    /// Resolution-only entry found no record; it executed no supplier/handler.
+    Unseen,
     Committed(WorthQueryEditEnvelopeReceipt),
     AlreadyCommitted(WorthQueryApplicationCommitReceipt),
     IdempotencyIntentDrift,
@@ -74,8 +76,12 @@ pub enum WorthQueryEditEnvelopeOutcome {
     Uncommitted(WorthQueryApplicationUncommitted),
     DomainDenied(WorthQueryEditStageDomainDenial),
     StageExecutionDenied(WorthQueryEditStageExecutionDenial),
-    Cancelled { stage: usize },
-    DeadlineExceeded { stage: usize },
+    Cancelled {
+        stage: usize,
+    },
+    DeadlineExceeded {
+        stage: usize,
+    },
     AdmissionBasisChanged(DeclaredEditStage),
     StageAfterProducer(DeclaredEditDependency),
     CyclicStages(DeclaredEditScopeCycle),
@@ -138,6 +144,7 @@ impl WorthQueryEditStageExecutionDenial {
 impl std::fmt::Debug for WorthQueryEditEnvelopeOutcome {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::Unseen => f.write_str("Unseen"),
             Self::Committed(value) => f
                 .debug_struct("Committed")
                 .field("receipt", &value.receipt)

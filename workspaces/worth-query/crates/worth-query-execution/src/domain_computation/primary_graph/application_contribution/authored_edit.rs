@@ -27,7 +27,8 @@ pub(in crate::domain_computation::primary_graph::application_contribution) use d
     managed_reads, ProducerDependencyScopes,
 };
 pub use envelope::{
-    with_resolved_edit_envelope, AuthoredEnvelopeResolution, UnseenAuthoredEnvelope,
+    with_resolved_edit_envelope, AuthoredEnvelopeResolution, AuthoredEnvelopeResolutionPurpose,
+    UnseenAuthoredEnvelope,
 };
 mod results;
 pub(in crate::domain_computation::primary_graph) use capture::AuthoredEditStageExecutor;
