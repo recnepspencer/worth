@@ -24,4 +24,5 @@ mod lifecycle;
 mod redo;
 mod restore_first;
 
+mod sparse;
 mod typed_causes;

@@ -88,6 +88,35 @@ pub(super) fn validate(record: &MaterialRecord) -> Result<(), Denial> {
                     scalar(&field.value)?;
                 }
             }
+            if let Some(changed) = &material.changed_fields {
+                if changed.role.is_empty()
+                    || changed.entity.is_empty()
+                    || material.preimage.is_none()
+                {
+                    return Err(Denial::MalformedFrame);
+                }
+                let target = RecordRef::Entity(changed.target);
+                let mut captured = std::collections::BTreeSet::new();
+                for field in material.preimage.iter().flatten() {
+                    if field.entity != changed.entity || field.target != target {
+                        return Err(Denial::MalformedFrame);
+                    }
+                    captured.insert((&field.entity, &field.aspect, &field.field));
+                }
+                for field in &changed.absences {
+                    if field.entity != changed.entity
+                        || field.target != target
+                        || field.location.aspect != field.aspect
+                        || field.location.fields.len() != 1
+                        || field.location.fields.first().map(String::as_str)
+                            != Some(field.field.as_str())
+                        || !captured.insert((&field.entity, &field.aspect, &field.field))
+                    {
+                        return Err(Denial::MalformedFrame);
+                    }
+                    location(&field.location)?;
+                }
+            }
         }
         MaterialRecord::Ready { material } => {
             let mut roles = std::collections::BTreeSet::new();

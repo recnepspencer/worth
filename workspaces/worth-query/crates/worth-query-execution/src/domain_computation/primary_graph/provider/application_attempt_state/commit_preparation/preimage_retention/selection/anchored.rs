@@ -121,6 +121,8 @@ pub(in super::super) fn retain_from_authored_anchors<'fact>(
     Ok(WorthQueryRetainedPreImageSelection {
         retained: WorthQueryRetainedPreImage::from_retention_seal(WorthQueryRetainedPreImageSeal {
             fields,
+            absences: Vec::new(),
+            changed_output: None,
             total_encoded_bytes: total,
         }),
         candidates_materialized: candidates.len(),

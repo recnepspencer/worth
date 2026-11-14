@@ -7,6 +7,7 @@ pub struct DeclaredPreImageDemand<Schema> {
     relations: Vec<super::DeclaredPreImageRelationLocus<Schema>>,
     maximum_encoded_bytes: usize,
     created_entity: bool,
+    changed_output: Option<crate::application_operation::ApplicationMutationOutputRoleDescriptor>,
 }
 
 impl<Schema> DeclaredPreImageDemand<Schema> {
@@ -16,6 +17,7 @@ impl<Schema> DeclaredPreImageDemand<Schema> {
             relations: Vec::new(),
             maximum_encoded_bytes: 0,
             created_entity: true,
+            changed_output: None,
         }
     }
     /// Records a demand expression; operation association checks its bounds.
@@ -28,7 +30,21 @@ impl<Schema> DeclaredPreImageDemand<Schema> {
             relations: Vec::new(),
             maximum_encoded_bytes,
             created_entity: false,
+            changed_output: None,
         }
+    }
+
+    /// Retain only actually changed eligible fields on one exact preserved output.
+    /// An unchanged eligible field is not retained; changed fields require an
+    /// authorized original value or authenticated absence before publication.
+    pub fn changed_fields_for_output(
+        output: crate::application_operation::ApplicationMutationOutputRoleDescriptor,
+        loci: impl IntoIterator<Item = DeclaredPreImageLocus<Schema>>,
+        maximum_encoded_bytes: usize,
+    ) -> Self {
+        let mut demand = Self::new(loci, maximum_encoded_bytes);
+        demand.changed_output = Some(output);
+        demand
     }
 
     /// A relation-only inverse has no field correlation role.
@@ -50,6 +66,22 @@ impl<Schema> DeclaredPreImageDemand<Schema> {
     }
 
     pub(crate) fn validate(&self) -> Result<(), DeclaredPreImageDemandDenial> {
+        if let Some(output) = self.changed_output {
+            use crate::application_operation::{
+                ApplicationMutationOutputPosture as Posture,
+                ApplicationMutationOutputRoleCardinality as Cardinality,
+            };
+            if output.posture() != Posture::Preserve
+                || output.cardinality() != Cardinality::ExactlyOne
+                || self.loci.is_empty()
+                || self
+                    .loci
+                    .iter()
+                    .any(|locus| locus.entity() != output.entity())
+            {
+                return Err(DeclaredPreImageDemandDenial::InvalidChangedFieldOutput);
+            }
+        }
         if self.created_entity {
             return Ok(());
         }
@@ -87,6 +119,12 @@ impl<Schema> DeclaredPreImageDemand<Schema> {
 
     pub(super) fn into_portable(self) -> PortablePreImageDemand {
         PortablePreImageDemand {
+            changed_output: self.changed_output.map(|output| {
+                super::PortableChangedFieldOutput::from_untrusted_fields(
+                    output.name().to_owned(),
+                    output.entity().to_owned(),
+                )
+            }),
             loci: self
                 .loci
                 .into_iter()
@@ -129,6 +167,7 @@ impl<Schema> Clone for DeclaredPreImageDemand<Schema> {
             relations: self.relations.clone(),
             maximum_encoded_bytes: self.maximum_encoded_bytes,
             created_entity: self.created_entity,
+            changed_output: self.changed_output,
         }
     }
 }
@@ -141,6 +180,7 @@ impl<Schema> fmt::Debug for DeclaredPreImageDemand<Schema> {
             .field("relations", &self.relations)
             .field("maximum_encoded_bytes", &self.maximum_encoded_bytes)
             .field("created_entity", &self.created_entity)
+            .field("changed_output", &self.changed_output)
             .finish()
     }
 }
@@ -151,6 +191,7 @@ impl<Schema> PartialEq for DeclaredPreImageDemand<Schema> {
             && self.relations == other.relations
             && self.maximum_encoded_bytes == other.maximum_encoded_bytes
             && self.created_entity == other.created_entity
+            && self.changed_output == other.changed_output
     }
 }
 
@@ -169,12 +210,14 @@ impl<Schema> Ord for DeclaredPreImageDemand<Schema> {
             &self.relations,
             self.maximum_encoded_bytes,
             self.created_entity,
+            self.changed_output,
         )
             .cmp(&(
                 &other.loci,
                 &other.relations,
                 other.maximum_encoded_bytes,
                 other.created_entity,
+                other.changed_output,
             ))
     }
 }
@@ -185,4 +228,5 @@ pub enum DeclaredPreImageDemandDenial {
     EmptyLocusAxis,
     ZeroByteBound,
     DuplicateLocus,
+    InvalidChangedFieldOutput,
 }
