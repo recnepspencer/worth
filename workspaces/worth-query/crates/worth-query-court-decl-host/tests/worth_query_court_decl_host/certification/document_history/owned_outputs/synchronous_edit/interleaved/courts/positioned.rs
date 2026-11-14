@@ -62,7 +62,6 @@ fn positioned_creates_keep_earlier_data_and_one_commit_or_discard_everything() {
         [before.0]
     );
     let committed = super::super::super::courts::native_head(&host);
-    let contacts = host.producer_contacts_on_this_thread_for_test();
     for (ordered, reverse, expected_replay) in [
         (true, false, true),
         (false, false, false),
@@ -95,9 +94,16 @@ fn positioned_creates_keep_earlier_data_and_one_commit_or_discard_everything() {
         for input in inputs {
             edit.push_stage::<ModelTree, _>(input).unwrap();
         }
-        let outcome = edit
-            .execute_performed(ExecutionAllocationPolicy::SystemAllocation)
-            .unwrap();
+        let ((outcome, contacts), writes) = observe_maintenance_work(16, || {
+            let before = host.producer_contacts_on_this_thread_for_test();
+            let outcome = edit
+                .execute_performed(ExecutionAllocationPolicy::SystemAllocation)
+                .unwrap();
+            (
+                outcome,
+                host.producer_contacts_on_this_thread_for_test() - before,
+            )
+        });
         if expected_replay {
             let Outcome::RecoveredCommitted(original) = outcome else {
                 panic!("{outcome:?}")
@@ -110,7 +116,8 @@ fn positioned_creates_keep_earlier_data_and_one_commit_or_discard_everything() {
             );
         }
         assert_eq!(super::super::super::courts::native_head(&host), committed);
-        assert_eq!(host.producer_contacts_on_this_thread_for_test(), contacts);
+        assert_eq!(contacts, 0);
+        assert_eq!(writes.published_rows.len() + writes.omitted_publications, 0);
     }
     let mut failed = request
         .edit_envelope()

@@ -84,7 +84,6 @@ fn corrective_root_and_ordinary_member_create_and_final_edit_publish_once_with_a
         .iter()
         .any(|m| m.key == "additional-member" && m.value == 9));
     let head = super::super::super::courts::native_head(&host);
-    let contacts = host.producer_contacts_on_this_thread_for_test();
     for value in [8, 1001] {
         let mut retry = request
             .corrections()
@@ -109,9 +108,16 @@ fn corrective_root_and_ordinary_member_create_and_final_edit_publish_once_with_a
                 key_derived_target: false,
             })
             .unwrap();
-        let outcome = retry
-            .execute_performed(ExecutionAllocationPolicy::SystemAllocation)
-            .unwrap();
+        let ((outcome, contacts), writes) = observe_maintenance_work(24, || {
+            let before = host.producer_contacts_on_this_thread_for_test();
+            let outcome = retry
+                .execute_performed(ExecutionAllocationPolicy::SystemAllocation)
+                .unwrap();
+            (
+                outcome,
+                host.producer_contacts_on_this_thread_for_test() - before,
+            )
+        });
         if value == 8 {
             let Outcome::RecoveredCommitted(original) = outcome else {
                 panic!("{outcome:?}")
@@ -124,7 +130,8 @@ fn corrective_root_and_ordinary_member_create_and_final_edit_publish_once_with_a
             );
         }
         assert_eq!(super::super::super::courts::native_head(&host), head);
-        assert_eq!(host.producer_contacts_on_this_thread_for_test(), contacts);
+        assert_eq!(contacts, 0);
+        assert_eq!(writes.published_rows.len() + writes.omitted_publications, 0);
     }
 }
 #[test]
@@ -159,9 +166,11 @@ fn a_wrong_inverse_root_cannot_borrow_a_later_correct_member_and_owner_link() {
     let Outcome::Uncommitted(WorthQueryApplicationUncommitted::Denied(cause)) = outcome else {
         panic!("{outcome:?}")
     };
-    assert!(
-        cause.relation_preimage_failure().is_some(),
-        "wrong phase/owner for the inverse refusal: {cause:?}"
+    // The declared root identity is checked before a later stage can run.
+    assert_eq!(
+        cause.kind(),
+        worth_query_host::facade::primary_graph::WorthQueryApplicationCommitDenialKind::CorrectionIdentityMismatch,
+        "{cause:?}"
     );
     assert_eq!(writes.published_rows.len() + writes.omitted_publications, 0);
     assert_eq!(super::super::super::courts::native_head(&host), before);

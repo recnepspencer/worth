@@ -119,6 +119,7 @@ impl RelationalRuntime {
             current,
             deferred_edges,
             stages: Vec::new(),
+            corrective_root: None,
         }))
     }
 }

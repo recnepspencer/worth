@@ -111,6 +111,20 @@ impl WorthQueryPrimaryGraphProvider {
                 .map_err(map_validation_failure)?;
             unreachable!("nonempty Native owner set requires declared coupling");
         };
+        let owners = match material.authored_restoration.take() {
+            Some((commit, original, target, co_anchors)) => self
+                .graph
+                .with_runtime(execution, |runtime| {
+                    runtime.bind_authored_coupled_corrective_root(
+                        execution,
+                        &publisher.native,
+                        owners,
+                        (commit, (original, target), co_anchors),
+                    )
+                })
+                .map_err(map_validation_failure)?,
+            None => owners,
+        };
         material.restoration_plan = None;
         material.restoration_publication = None;
         Ok(Some(NativeAuthoredCoupling { owners, assembly }))

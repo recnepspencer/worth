@@ -131,15 +131,40 @@ impl ValidatedRelationalProposal {
             .required_output_publication
             .as_ref()
             .and_then(|admission| admission.publication.authored_restoration());
-        let anchors = restoration.map_or(0, |restoration| {
-            restoration
-                .retirement
-                .authored_source_retirement()
-                .expect("Native restoration")
-                .co_anchors
-                .len()
-                + 1
-        });
+        let corrective_root = if prefix_only {
+            self.state
+                .required_output_publication
+                .as_ref()
+                .and_then(|admission| match &admission.publication {
+                    crate::mvcc::RequiredOutputPublication::CoupledAuthored { group } => group
+                        .binding
+                        .owners
+                        .corrective_root
+                        .as_ref()
+                        .map(|(_, targets)| targets.elements()),
+                    _ => None,
+                })
+        } else {
+            None
+        };
+        let anchors = corrective_root.map_or_else(
+            || {
+                restoration.map_or(0, |restoration| {
+                    restoration
+                        .retirement
+                        .authored_source_retirement()
+                        .expect("Native restoration")
+                        .co_anchors
+                        .len()
+                        + 1
+                })
+            },
+            |targets| targets.len(),
+        );
+        // Both routes enter the same allocation resolution and root-membership
+        // projection. The binder already refused conflict with a real plan.
+        let anchor_targets =
+            corrective_root.or_else(|| restoration.map(|plan| plan.entities.as_slice()));
         let restored_capacity = anchors.checked_add(members.len()).ok_or_else(|| {
             stop(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow)
         })?;
@@ -181,8 +206,8 @@ impl ValidatedRelationalProposal {
             })?;
         let mut member_refusal = None;
         execution.run_native_with_checkpoint(|context| {
-            if let Some(restoration) = restoration {
-                for (original, target) in restoration.entities.iter().take(anchors) {
+            if let Some(targets) = anchor_targets {
+                for (original, target) in targets.iter().take(anchors) {
                     let created = &self.state.proposed_mutation.outcome.created_entities;
                     checkpoint(context, created.resolve_work_bound(target).ok_or_else(|| stop(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow))?).map_err(stop)?;
                     let actual = created.resolve(target).ok_or_else(|| crate::mvcc::origin_denial("authored inverse anchor has no actual allocation"))?;
@@ -191,6 +216,10 @@ impl ValidatedRelationalProposal {
                         if !root.contains(&RecordRef::Entity(actual)) {
                             return Err(crate::mvcc::origin_denial("restoration anchor is outside the actual authored root"));
                         }
+                    }
+                    checkpoint(context, restored_entities.len() as u64).map_err(stop)?;
+                    if restored_entities.iter().any(|(known, allocated)| known == original || *allocated == actual) {
+                        return Err(crate::mvcc::origin_denial("ambiguous actual authored root correspondence"));
                     }
                     restored_entities.push((*original, actual));
                 }

@@ -11,8 +11,15 @@ use crate::{
 };
 use std::{collections::BTreeSet, sync::Arc};
 use worth_execution::ExecutionRequest;
+mod corrective_root;
 mod edit;
 mod stages;
+
+// Request-local correspondence only. It never admits a retirement or publication.
+pub(crate) type AuthoredRootCorrespondence = (
+    CommitId,
+    Arc<worth_execution::ExecutionArray<(EntityId, crate::transactions::data::CreatedEntityRef)>>,
+);
 
 /// Canonical predecessor facts, issued only after the shared closure selection.
 /// A submitted connection roster cannot construct or enlarge this owner set.
@@ -27,6 +34,7 @@ pub struct RelationalAuthoredCoupledOwners {
     /// Edit sources of authored stages 2..k, in envelope order. Empty for a
     /// single authored prefix, a retirement and a restoration.
     pub(crate) stages: Vec<EntityId>,
+    pub(crate) corrective_root: Option<AuthoredRootCorrespondence>,
 }
 
 /// The authored prefix has an explicit meaning. Ordinary edits cannot supply
@@ -231,6 +239,7 @@ impl RelationalRuntime {
                     current,
                     deferred_edges,
                     stages: Vec::new(),
+                    corrective_root: None,
                 })
             })
             .map_err(custody::execution_stop)?

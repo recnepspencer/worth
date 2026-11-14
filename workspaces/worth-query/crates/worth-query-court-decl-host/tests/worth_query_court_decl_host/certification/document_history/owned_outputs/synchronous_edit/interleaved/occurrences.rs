@@ -174,10 +174,15 @@ mod courts {
         })
         .unwrap();
         let before = super::super::super::courts::native_head(&host).0;
-        let contacts = host.producer_contacts_on_this_thread_for_test();
-        let (outcome, writes) = observe_maintenance_work(24, || {
-            edit.execute_performed(ExecutionAllocationPolicy::SystemAllocation)
-                .unwrap()
+        let ((outcome, contacts), writes) = observe_maintenance_work(24, || {
+            let before = host.producer_contacts_on_this_thread_for_test();
+            let outcome = edit
+                .execute_performed(ExecutionAllocationPolicy::SystemAllocation)
+                .unwrap();
+            (
+                outcome,
+                host.producer_contacts_on_this_thread_for_test() - before,
+            )
         });
         let Outcome::Committed(receipt) = outcome else {
             panic!("{outcome:?}")
@@ -197,8 +202,7 @@ mod courts {
             );
         }
         assert_eq!(
-            host.producer_contacts_on_this_thread_for_test() - contacts,
-            4,
+            contacts, 4,
             "each actual route executes once; shared parents coalesce"
         );
     }
@@ -222,10 +226,15 @@ mod courts {
             })
             .unwrap();
             let before = super::super::super::courts::native_head(&host);
-            let contacts = host.producer_contacts_on_this_thread_for_test();
-            let (outcome, writes) = observe_maintenance_work(16, || {
-                edit.execute_performed(ExecutionAllocationPolicy::SystemAllocation)
-                    .unwrap()
+            let ((outcome, contacts), writes) = observe_maintenance_work(16, || {
+                let before = host.producer_contacts_on_this_thread_for_test();
+                let outcome = edit
+                    .execute_performed(ExecutionAllocationPolicy::SystemAllocation)
+                    .unwrap();
+                (
+                    outcome,
+                    host.producer_contacts_on_this_thread_for_test() - before,
+                )
             });
             let Outcome::Uncommitted(WorthQueryApplicationUncommitted::Denied(cause)) = outcome
             else {
@@ -243,7 +252,7 @@ mod courts {
                     "{refusal:?}"
                 );
             }
-            assert_eq!(host.producer_contacts_on_this_thread_for_test(), contacts);
+            assert_eq!(contacts, 0);
             assert_eq!(writes.published_rows.len() + writes.omitted_publications, 0);
             assert_eq!(super::super::super::courts::native_head(&host), before);
         }
