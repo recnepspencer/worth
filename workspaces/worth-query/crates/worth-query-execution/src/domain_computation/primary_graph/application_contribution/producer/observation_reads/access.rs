@@ -59,7 +59,7 @@ impl ProducerPredecessorReadState {
 /// operation membership and the running producer's authentic route coordinates.
 pub(in crate::domain_computation::primary_graph) struct ProducerPredecessorReadAccess {
     pub(in crate::domain_computation::primary_graph) state: Arc<ProducerPredecessorReadState>,
-    require: fn(&str, &str, EqualityTypeId) -> Result<(), WorthQueryPredecessorReadDenial>,
+    require: fn(&str, &str, EqualityTypeId) -> Result<(), WorthQueryProducerObservationReadDenial>,
     producer: &'static str,
     family: &'static str,
     epoch: [u8; 32],
@@ -123,7 +123,7 @@ impl ProducerPredecessorReadAccess {
     }
     pub(in crate::domain_computation::primary_graph) fn require<S, O>(
         &self,
-    ) -> Result<(), WorthQueryPredecessorReadDenial>
+    ) -> Result<(), WorthQueryProducerObservationReadDenial>
     where
         S: ApplicationSchema,
         O: ApplicationOperationMarkerIdentity<S> + 'static,
@@ -147,9 +147,9 @@ impl ProducerPredecessorReadAccess {
             RelationalRequiredOutputPublication,
             RelationalPredecessorInput,
         ),
-        WorthQueryPredecessorReadDenial,
+        WorthQueryProducerObservationReadDenial,
     > {
-        use WorthQueryPredecessorReadDenial as Denial;
+        use WorthQueryProducerObservationReadDenial as Denial;
         let graph = application
             .runtime
             .primary_graph()
@@ -209,12 +209,12 @@ fn require<S, B>(
     name: &str,
     input: &str,
     operation: EqualityTypeId,
-) -> Result<(), WorthQueryPredecessorReadDenial>
+) -> Result<(), WorthQueryProducerObservationReadDenial>
 where
     S: ApplicationSchema + 'static,
     B: WorthQueryApplicationProducerBinding<S>,
 {
     B::PREDECESSOR_READS
-        .ok_or(WorthQueryPredecessorReadDenial::UndeclaredPredecessorRead)?
+        .ok_or(WorthQueryProducerObservationReadDenial::UndeclaredObservationRead)?
         .require_identity(name, input, operation)
 }

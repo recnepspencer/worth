@@ -41,7 +41,7 @@ impl<'a> WorthQueryConnectedApplicationInspection<'a> {
     /// The borrowed values grant no old root, current dependency or READ authority.
     pub fn predecessor_reads(
         &self,
-    ) -> Option<&[crate::domain_computation::primary_graph::application_contribution::producer::predecessor_reads::WorthQueryHistoricalProducerRead]>{
+    ) -> Option<&[crate::domain_computation::primary_graph::application_contribution::producer::observation_reads::WorthQueryHistoricalProducerRead]>{
         self.original
             .source
             .original_settled_producer()?

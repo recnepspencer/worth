@@ -1,6 +1,6 @@
 //! Retain descriptive predecessor metadata from the exact existing published row.
 use super::*;
-use crate::domain_computation::primary_graph::application_contribution::producer::predecessor_reads::WorthQueryHistoricalProducerRead;
+use crate::domain_computation::primary_graph::application_contribution::producer::observation_reads::WorthQueryHistoricalProducerRead;
 impl WorthQueryApplicationOutputLineage {
     pub(in crate::domain_computation::primary_graph) fn retain_predecessor_reads(
         &self,

@@ -111,7 +111,10 @@ where
         external_principal,
         request_scope,
         &principal,
-        Binding::PREDECESSOR_READS.as_ref().map(|_| &scope),
+        Binding::PREDECESSOR_READS
+            .or(Binding::ORIGINAL_READS)
+            .as_ref()
+            .map(|_| &scope),
         admission,
         required_output,
         provider,

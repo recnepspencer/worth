@@ -9,6 +9,8 @@ use worth_query_declaration::facade::application_schema::{
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledApplicationSchema};
 
 mod access;
+mod original;
+pub(in crate::domain_computation::primary_graph) use original::ProducerOriginalReadAccess;
 mod evidence;
 pub use evidence::WorthQueryHistoricalProducerRead;
 mod installation;
@@ -17,9 +19,9 @@ pub(in crate::domain_computation::primary_graph) use access::{
 };
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum WorthQueryPredecessorReadDenial {
+pub enum WorthQueryProducerObservationReadDenial {
     PredecessorBasisUnavailable,
-    UndeclaredPredecessorRead,
+    UndeclaredObservationRead,
     PredecessorMismatch,
     Authorization(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial),
     Control(
@@ -35,7 +37,7 @@ pub enum WorthQueryPredecessorReadDenial {
     Native(worth_relational::facade::mvcc::RelationalPredecessorBasisDenial),
 }
 impl From<worth_relational::facade::mvcc::RelationalPredecessorBasisDenial>
-    for WorthQueryPredecessorReadDenial
+    for WorthQueryProducerObservationReadDenial
 {
     fn from(value: worth_relational::facade::mvcc::RelationalPredecessorBasisDenial) -> Self {
         use worth_relational::facade::mvcc::RelationalPredecessorBasisDenial as Native;
@@ -46,14 +48,14 @@ impl From<worth_relational::facade::mvcc::RelationalPredecessorBasisDenial>
         }
     }
 }
-impl std::fmt::Display for WorthQueryPredecessorReadDenial {
+impl std::fmt::Display for WorthQueryProducerObservationReadDenial {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{self:?}")
     }
 }
-impl std::error::Error for WorthQueryPredecessorReadDenial {}
+impl std::error::Error for WorthQueryProducerObservationReadDenial {}
 
-pub struct WorthQueryPredecessorReadOperation<S> {
+pub struct WorthQueryProducerObservationReadOperation<S> {
     name: &'static str,
     input: &'static str,
     operation_type: fn() -> EqualityTypeId,
@@ -61,7 +63,7 @@ pub struct WorthQueryPredecessorReadOperation<S> {
         &WorthQueryInstalledApplicationSchema<S>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>,
 }
-impl<S: ApplicationSchema> WorthQueryPredecessorReadOperation<S> {
+impl<S: ApplicationSchema> WorthQueryProducerObservationReadOperation<S> {
     /// Names a typed schema operation. Installation must still prove that its
     /// actual installed meaning is read-only; a label or Rust type cannot do so.
     pub const fn new<O, I>(operation: ApplicationOperationRef<S, O, I>) -> Self
@@ -78,25 +80,25 @@ impl<S: ApplicationSchema> WorthQueryPredecessorReadOperation<S> {
         }
     }
 }
-impl<S> Copy for WorthQueryPredecessorReadOperation<S> {}
-impl<S> Clone for WorthQueryPredecessorReadOperation<S> {
+impl<S> Copy for WorthQueryProducerObservationReadOperation<S> {}
+impl<S> Clone for WorthQueryProducerObservationReadOperation<S> {
     fn clone(&self) -> Self {
         *self
     }
 }
 
-pub struct WorthQueryPredecessorReadContract<S: 'static> {
-    operations: &'static [WorthQueryPredecessorReadOperation<S>],
+pub struct WorthQueryProducerObservationReadContract<S: 'static> {
+    operations: &'static [WorthQueryProducerObservationReadOperation<S>],
 }
-impl<S: ApplicationSchema> WorthQueryPredecessorReadContract<S> {
-    pub const fn new(operations: &'static [WorthQueryPredecessorReadOperation<S>]) -> Self {
+impl<S: ApplicationSchema> WorthQueryProducerObservationReadContract<S> {
+    pub const fn new(operations: &'static [WorthQueryProducerObservationReadOperation<S>]) -> Self {
         Self { operations }
     }
     /// Membership checks never authorize execution. The observation owner must
     /// separately admit the current principal and pin the genuine predecessor.
     pub fn require<O: ApplicationOperationMarkerIdentity<S> + 'static>(
         &self,
-    ) -> Result<(), WorthQueryPredecessorReadDenial> {
+    ) -> Result<(), WorthQueryProducerObservationReadDenial> {
         self.require_identity(
             O::IDENTIFIER,
             O::InputBinding::IDENTITY_NAME,
@@ -108,20 +110,20 @@ impl<S: ApplicationSchema> WorthQueryPredecessorReadContract<S> {
         name: &str,
         input: &str,
         operation: EqualityTypeId,
-    ) -> Result<(), WorthQueryPredecessorReadDenial> {
+    ) -> Result<(), WorthQueryProducerObservationReadDenial> {
         if self.operations.iter().any(|read| {
             read.name == name && read.input == input && (read.operation_type)() == operation
         }) {
             Ok(())
         } else {
-            Err(WorthQueryPredecessorReadDenial::UndeclaredPredecessorRead)
+            Err(WorthQueryProducerObservationReadDenial::UndeclaredObservationRead)
         }
     }
-    pub(super) fn meaning(&self) -> Vec<PredecessorReadMeaning> {
+    pub(super) fn meaning(&self) -> Vec<ProducerObservationReadMeaning> {
         let mut reads = self
             .operations
             .iter()
-            .map(|r| PredecessorReadMeaning {
+            .map(|r| ProducerObservationReadMeaning {
                 name: r.name,
                 input: r.input,
                 operation_type: (r.operation_type)(),
@@ -149,22 +151,22 @@ impl<S: ApplicationSchema> WorthQueryPredecessorReadContract<S> {
         Ok(())
     }
 }
-impl<S> Copy for WorthQueryPredecessorReadContract<S> {}
-impl<S> Clone for WorthQueryPredecessorReadContract<S> {
+impl<S> Copy for WorthQueryProducerObservationReadContract<S> {}
+impl<S> Clone for WorthQueryProducerObservationReadContract<S> {
     fn clone(&self) -> Self {
         *self
     }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub(in crate::domain_computation::primary_graph) struct PredecessorReadMeaning {
+pub(in crate::domain_computation::primary_graph) struct ProducerObservationReadMeaning {
     pub(super) name: &'static str,
     pub(super) input: &'static str,
     operation_type: EqualityTypeId,
 }
 fn refused(subject: &str) -> WorthQueryPrimaryGraphInstallationDenial {
     WorthQueryPrimaryGraphInstallationDenial::new(
-        Kind::ProducerPredecessorReadContractRejected,
+        Kind::ProducerObservationReadContractRejected,
         subject,
     )
 }

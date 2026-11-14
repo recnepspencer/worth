@@ -3,7 +3,7 @@ use crate::domain_computation::primary_graph::application_attempt::CompletedHand
 use crate::domain_computation::primary_graph::{ComputationPrior, SealedComputationRetention};
 
 pub(in crate::domain_computation) struct ProducerHandlerPreparation {
-    predecessor_reads: Option<std::sync::Arc<super::super::application_contribution::producer::predecessor_reads::ProducerPredecessorReadState>>,
+    predecessor_reads: Option<std::sync::Arc<super::super::application_contribution::producer::observation_reads::ProducerPredecessorReadState>>,
     completed_handler_facts: Option<CompletedHandlerFactBoundary>,
     decision_context_use: Option<crate::domain_computation::primary_graph::DecisionContextUse>,
     prepared_decision_reuse: Option<
@@ -51,7 +51,7 @@ impl HandlerComputationCustody {
 impl ProducerHandlerPreparation {
     pub(in crate::domain_computation::primary_graph) fn bind_predecessor_reads(
         &mut self,
-        state: std::sync::Arc<super::super::application_contribution::producer::predecessor_reads::ProducerPredecessorReadState>,
+        state: std::sync::Arc<super::super::application_contribution::producer::observation_reads::ProducerPredecessorReadState>,
     ) {
         assert!(
             self.predecessor_reads.replace(state).is_none(),

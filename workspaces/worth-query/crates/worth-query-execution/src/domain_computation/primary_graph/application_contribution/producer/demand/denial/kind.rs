@@ -16,7 +16,7 @@ pub enum WorthQueryOutputDemandDenialKind {
     PublicationReceipt(crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenialKind),
     /// The current control owner is in use. No source result was handed off.
     CurrentControlBusy,
-    PredecessorRead(Box<super::super::super::predecessor_reads::WorthQueryPredecessorReadDenial>),
+    ObservationRead(Box<super::super::super::observation_reads::WorthQueryProducerObservationReadDenial>),
     /// Native current roster/presence or storage refused this exact publication read.
     CurrentPublication(Box<worth_relational::facade::transactions::TransactionCommitError>),
     ManagedIndexSourceDenied,

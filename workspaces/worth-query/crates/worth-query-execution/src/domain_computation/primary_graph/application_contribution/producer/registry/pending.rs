@@ -112,7 +112,10 @@ where
                 Binding::IDENTITY,
             ));
         }
-        if let Some(contract) = Binding::PREDECESSOR_READS {
+        for contract in [Binding::PREDECESSOR_READS, Binding::ORIGINAL_READS]
+            .into_iter()
+            .flatten()
+        {
             contract.validate(installed, Binding::OWNERSHIP)?;
         }
         declared.owned_scope_entity =

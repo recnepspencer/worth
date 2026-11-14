@@ -54,6 +54,7 @@ impl DeclaredProducerBinding {
                 == worth_foundational::facade::ProducerPublicationOwnership::SourceScopeCascade)
                 .then(|| Binding::Operation::scope_field().entity().to_owned()),
             predecessor_reads: Binding::PREDECESSOR_READS.map(|contract| contract.meaning()),
+            original_reads: Binding::ORIGINAL_READS.map(|contract| contract.meaning()),
             input_reuse: Binding::INPUT_REUSE,
             output_equivalence: Binding::output_equivalence().map(|contract| contract.into_field()),
             installed_output_equivalence: None,
@@ -109,6 +110,7 @@ impl DeclaredProducerBinding {
             && self.owned_scope_entity == expected.owned_scope_entity
             && self.reuse_policy == expected.reuse_policy
             && self.predecessor_reads == expected.predecessor_reads
+            && self.original_reads == expected.original_reads
             && self.input_reuse == expected.input_reuse
             && self.output_equivalence == expected.output_equivalence
             && self.binding_type == expected.binding_type

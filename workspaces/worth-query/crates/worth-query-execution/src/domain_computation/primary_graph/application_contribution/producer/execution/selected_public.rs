@@ -224,7 +224,7 @@ where
                     execution, runtime, shared, control.ok_or(Stop::ForeignSelectedRuntime)?, &current, &installed.prepared_graph,
                     &principal, &truth_scope, history.expect("historical source"), request,
                 ).map_err(Stop::CurrentOperation)?;
-                return Ok(PreparedSelectedPublicMutation { principal, operation, scope: Binding::PREDECESSOR_READS.map(|_| truth_scope.scope().retain_description().into_application_identity()) });
+                return Ok(PreparedSelectedPublicMutation { principal, operation, scope: Binding::PREDECESSOR_READS.or(Binding::ORIGINAL_READS).map(|_| truth_scope.scope().retain_description().into_application_identity()) });
             }
             scope
         }
@@ -241,7 +241,7 @@ where
             let operation = crate::domain_computation::authorization::authorize_applied_control_mutation_on_selected::<Schema, Mutation<Schema, Binding>, MutationScope<Schema, Binding>>(
                 execution, runtime, shared, &current, &installed.prepared_graph, &principal, &scope, before, candidate, request,
             ).map_err(Stop::Operation)?;
-            return Ok(PreparedSelectedPublicMutation { principal, operation, scope: Binding::PREDECESSOR_READS.map(|_| scope) });
+            return Ok(PreparedSelectedPublicMutation { principal, operation, scope: Binding::PREDECESSOR_READS.or(Binding::ORIGINAL_READS).map(|_| scope) });
         }
         Err(cause) if history.is_some_and(|history| history.admits_historical_truth(shared.selected()))
             && cause.kind() == crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind::Refused(
@@ -258,7 +258,7 @@ where
                 execution, runtime, shared, control, &current, &installed.prepared_graph,
                 &principal, &mutation_scope, history, request,
             ).map_err(Stop::CurrentOperation)?;
-            return Ok(PreparedSelectedPublicMutation { principal, operation, scope: Binding::PREDECESSOR_READS.map(|_| mutation_scope.scope().retain_description().into_application_identity()) });
+            return Ok(PreparedSelectedPublicMutation { principal, operation, scope: Binding::PREDECESSOR_READS.or(Binding::ORIGINAL_READS).map(|_| mutation_scope.scope().retain_description().into_application_identity()) });
         }
         Err(cause) => return Err(if control.is_some() { Stop::CurrentScope(cause) } else { Stop::Scope(cause) }),
     };
@@ -314,12 +314,14 @@ where
     Ok(PreparedSelectedPublicMutation {
         principal,
         operation,
-        scope: Binding::PREDECESSOR_READS.map(|_| {
-            scope
-                .scope()
-                .retain_description()
-                .into_application_identity()
-        }),
+        scope: Binding::PREDECESSOR_READS
+            .or(Binding::ORIGINAL_READS)
+            .map(|_| {
+                scope
+                    .scope()
+                    .retain_description()
+                    .into_application_identity()
+            }),
     })
 }
 
