@@ -341,6 +341,8 @@ pub(super) fn with_envelope_completion_actions(
         Completion,
         Completion,
     >(entry)
+    .action::<synchronous_edit::interleaved::created::Binding, Completion>()
+    .finish_action()
 }
 pub(super) fn envelope_actions<
     ModelPart: ApplicationActionDelivery<Schema, synchronous_edit::envelope_fixture::model::Binding>,
