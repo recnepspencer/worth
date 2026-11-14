@@ -82,11 +82,15 @@ fn identity(
         }
         _ => panic!("unknown fixture locus"),
     };
+    demand_identity(DeclaredPreImageDemand::new([locus], maximum_encoded_bytes))
+}
+
+fn demand_identity(demand: DeclaredPreImageDemand<Schema>) -> ApplicationSchemaIdentity {
     let inverse = DeclaredRecordedInverse::new(
         "restore",
         DeclaredLoweringCorrespondenceRef::new("exact-inverse"),
         DeclaredAftermathPostcondition::ExactPriorTruth,
-        DeclaredPreImageDemand::new([locus], maximum_encoded_bytes),
+        demand,
     );
     let definition = ApplicationOperationRef::<Schema, Operation, ()>::from_declaration()
         .definition()
@@ -102,6 +106,93 @@ fn identity(
         .unwrap()
         .identity()
         .clone()
+}
+
+use crate::application_operation::*;
+struct Outputs;
+impl ApplicationMutationOutputContract<Schema> for Outputs {
+    const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] = &[];
+}
+struct Target<A, C>(std::marker::PhantomData<(A, C)>);
+impl<
+        A: WorthQueryApplicationOutputAction + 'static,
+        C: WorthQueryApplicationOutputCardinality + 'static,
+    > WorthQueryApplicationOutputRole for Target<A, C>
+{
+    type Schema = Schema;
+    type Contract = Outputs;
+    type Entity = Entity;
+    type Action = A;
+    type Cardinality = C;
+    const NAME: &'static str = "target";
+}
+fn field() -> DeclaredPreImageLocus<Schema> {
+    DeclaredPreImageLocus::from_field(
+        fragment::FieldSelection::<Fixture, Entity, Aspect, u64>::at("Field"),
+    )
+}
+
+#[test]
+fn changed_fields_require_one_preserved_output_and_a_bounded_same_entity_vocabulary() {
+    use crate::application_aftermath::DeclaredPreImageDemandDenial as Denial;
+    let kept = Target::<WorthQueryPreserveOutput, WorthQueryExactlyOneOutput>::DESCRIPTOR;
+    assert_eq!(
+        DeclaredPreImageDemand::changed_fields_for_output(kept, [field()], 64).validate(),
+        Ok(())
+    );
+    for role in [
+        Target::<WorthQueryCreateOutput, WorthQueryExactlyOneOutput>::DESCRIPTOR,
+        Target::<WorthQueryRetireOutput, WorthQueryExactlyOneOutput>::DESCRIPTOR,
+        Target::<WorthQueryPreserveOutput, WorthQueryAtMostOneOutput>::DESCRIPTOR,
+    ] {
+        assert_eq!(
+            DeclaredPreImageDemand::changed_fields_for_output(role, [field()], 64).validate(),
+            Err(Denial::InvalidChangedFieldOutput)
+        );
+    }
+    let foreign = DeclaredPreImageLocus::from_field(fragment::FieldSelection::<
+        Fixture,
+        OtherEntity,
+        Aspect,
+        u64,
+    >::at("Field"));
+    for fields in [vec![], vec![foreign]] {
+        assert_eq!(
+            DeclaredPreImageDemand::changed_fields_for_output(kept, fields, 64).validate(),
+            Err(Denial::InvalidChangedFieldOutput)
+        );
+    }
+    assert_eq!(
+        DeclaredPreImageDemand::changed_fields_for_output(kept, [field()], 0).validate(),
+        Err(Denial::ZeroByteBound)
+    );
+    assert_eq!(
+        DeclaredPreImageDemand::changed_fields_for_output(kept, [field(), field()], 64).validate(),
+        Err(Denial::DuplicateLocus)
+    );
+}
+
+#[test]
+fn changed_field_selection_has_a_distinct_canonical_contract_without_changing_strict_meaning() {
+    let strict = identity("Entity", "Aspect", "Field", 64);
+    let changed = demand_identity(DeclaredPreImageDemand::changed_fields_for_output(
+        Target::<WorthQueryPreserveOutput, WorthQueryExactlyOneOutput>::DESCRIPTOR,
+        [field()],
+        64,
+    ));
+    assert_ne!(strict, changed);
+    assert_eq!(
+        strict,
+        demand_identity(DeclaredPreImageDemand::new([field()], 64))
+    );
+    assert_ne!(
+        changed,
+        demand_identity(DeclaredPreImageDemand::changed_fields_for_output(
+            Target::<WorthQueryPreserveOutput, WorthQueryExactlyOneOutput>::DESCRIPTOR,
+            [field()],
+            65
+        ))
+    );
 }
 
 use super::fragment;

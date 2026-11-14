@@ -61,6 +61,7 @@ fn changed_optional_cases_reverse_and_reapply_without_capturing_unchanged_fields
                 required: 420,
             },
             link: Some(LinkTarget::Named("neighbour".into())),
+            observation_fault: ObservationFault::None,
         })
         .without_source()
         .idempotency(&"sparse-source".to_owned())
@@ -133,4 +134,58 @@ fn changed_optional_cases_reverse_and_reapply_without_capturing_unchanged_fields
     assert_eq!(world::read(&host), expected);
     assert_eq!(links(), ["neighbour"]);
     assert_eq!(neighbour(), untouched);
+}
+
+#[test]
+fn missing_original_or_same_kind_neighbour_never_supplies_a_changed_output_preimage() {
+    for fault in [ObservationFault::Unobserved, ObservationFault::ForeignOnly] {
+        let host = world::install_with_neighbour();
+        let before = world::read(&host);
+        let scope = request_scope();
+        let principal = authenticate_operator(host.installed_schema(), &scope);
+        let request = host.runtime().request(&principal, &scope);
+        let pinned = request.retain_current_read().unwrap();
+        let outcome = request
+            .advanced()
+            .mutate(Input {
+                key: "record".into(),
+                case: Case::Second {
+                    value: 42,
+                    required: 420,
+                },
+                link: Some(LinkTarget::Named("neighbour".into())),
+                observation_fault: fault,
+            })
+            .without_source()
+            .idempotency(&"incomplete-original".to_owned())
+            .execute_in_program(
+                &host,
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            );
+        let outcome = outcome.unwrap();
+        let WorthQueryApplicationMutationOutcome::Commit(WorthQueryApplicationUncommitted::Denied(
+            denial,
+        )) = outcome
+        else {
+            panic!("{outcome:?}")
+        };
+        assert_eq!(
+            denial.preimage_retention_denial(),
+            Some(WorthQueryPreImageRetentionDenial::MissingDemandedField)
+        );
+        assert_eq!(
+            pinned.selected_commit(),
+            request.retain_current_read().unwrap().selected_commit()
+        );
+        assert_eq!(world::read(&host), before);
+        assert!(request
+            .query(link_query::Read {
+                key: "record".into()
+            })
+            .execute()
+            .unwrap()
+            .rows()[0]
+            .targets
+            .is_empty());
+    }
 }

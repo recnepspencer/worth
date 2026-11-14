@@ -99,6 +99,7 @@ impl ApplicationCorrectionBinding<Schema> for Correction {
             key: original.key.clone(),
             case,
             link,
+            observation_fault: ObservationFault::None,
         })
     }
     fn inverse_key(key: &str) -> Result<String, ApplicationValueEncodeDenial> {

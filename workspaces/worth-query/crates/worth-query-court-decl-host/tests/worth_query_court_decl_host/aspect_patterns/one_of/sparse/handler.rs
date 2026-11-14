@@ -21,20 +21,33 @@ impl OperationHandler<Schema, Binding> for Handler {
                     )
                     .map_err(HandlerExecutionDenial::new)?;
                 let mut work = |_, _| Ok(());
-                let meaning = view
-                    .read(&row, Meaning, &mut work)
-                    .map_err(HandlerExecutionDenial::new)?;
+                let class = if matches!(input.observation_fault, ObservationFault::None) {
+                    view.read(&row, Meaning, &mut work)
+                        .map_err(HandlerExecutionDenial::new)?
+                        .class()
+                } else {
+                    1
+                };
                 (
                     view.target(&row).map_err(HandlerExecutionDenial::new)?,
-                    meaning.class(),
+                    class,
                 )
             };
             let row = reader.resolve_entity(Key::at("Key"), input.key.clone())?;
             reader.field(&row, Key::at("Key"))?;
-            reader.field(&row, FirstValue::at("FirstValue"))?;
-            reader.field(&row, SecondValue::at("SecondValue"))?;
-            reader.field(&row, SecondRequired::at("SecondRequired"))?;
-            reader.field(&row, ThirdValue::at("ThirdValue"))?;
+            let observed = match input.observation_fault {
+                ObservationFault::None => Some(row.clone()),
+                ObservationFault::Unobserved => None,
+                ObservationFault::ForeignOnly => {
+                    Some(reader.resolve_entity(Key::at("Key"), "neighbour".to_owned())?)
+                }
+            };
+            if let Some(observed) = observed {
+                reader.field(&observed, FirstValue::at("FirstValue"))?;
+                reader.field(&observed, SecondValue::at("SecondValue"))?;
+                reader.field(&observed, SecondRequired::at("SecondRequired"))?;
+                reader.field(&observed, ThirdValue::at("ThirdValue"))?;
+            }
             let links = reader
                 .relations_from(Companion::reference(), &row)
                 .map_err(HandlerExecutionDenial::new)?;
