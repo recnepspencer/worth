@@ -11,17 +11,15 @@ use worth_execution::{ExecutionResourceLease, MapKernelContext};
 
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub(crate) enum CanonicalCoupledAuthoredSources {
-    Retirement(Arc<CanonicalAuthoredRetirement>),
-    Restoration(Arc<CanonicalAuthoredRestoration>),
-    Edit(crate::identity::data::EntityId),
-    /// An edit envelope: the authored prefix's source, then each later
-    /// authored stage's source, in apply order. Edit semantics otherwise.
-    Stages(Vec<crate::identity::data::EntityId>),
-    RetirementWithLaterSources {
+    /// The prefix source followed by every consumed later stage, in apply order.
+    Edit {
+        sources: Vec<crate::identity::data::EntityId>,
+    },
+    Retirement {
         prefix: Arc<CanonicalAuthoredRetirement>,
         later: Vec<crate::identity::data::EntityId>,
     },
-    RestorationWithLaterSources {
+    Restoration {
         prefix: Arc<CanonicalAuthoredRestoration>,
         later: Vec<crate::identity::data::EntityId>,
     },
@@ -53,16 +51,9 @@ impl CanonicalCoupledAuthoredPublication {
         &self,
     ) -> impl Iterator<Item = &Arc<CanonicalRequiredOutputOrigin>> {
         let sources: &[Arc<CanonicalRequiredOutputOrigin>] = match &self.sources {
-            CanonicalCoupledAuthoredSources::Retirement(event)
-            | CanonicalCoupledAuthoredSources::RetirementWithLaterSources {
-                prefix: event, ..
-            } => &event.publications,
-            CanonicalCoupledAuthoredSources::Restoration(event)
-            | CanonicalCoupledAuthoredSources::RestorationWithLaterSources {
-                prefix: event, ..
-            } => &event.publications,
-            CanonicalCoupledAuthoredSources::Edit(_)
-            | CanonicalCoupledAuthoredSources::Stages(_) => &[],
+            CanonicalCoupledAuthoredSources::Retirement { prefix, .. } => &prefix.publications,
+            CanonicalCoupledAuthoredSources::Restoration { prefix, .. } => &prefix.publications,
+            CanonicalCoupledAuthoredSources::Edit { .. } => &[],
         };
         sources
             .iter()
@@ -80,30 +71,16 @@ impl CanonicalCommitEnvelopeBody {
     pub(crate) fn authored_source_retirement(&self) -> Option<&Arc<CanonicalAuthoredRetirement>> {
         self.authored_cascade_retirement.as_ref().or_else(|| {
             match &self.coupled_authored_publication.as_ref()?.sources {
-                CanonicalCoupledAuthoredSources::Retirement(event)
-                | CanonicalCoupledAuthoredSources::RetirementWithLaterSources {
-                    prefix: event,
-                    ..
-                } => Some(event),
-                CanonicalCoupledAuthoredSources::Restoration(_)
-                | CanonicalCoupledAuthoredSources::RestorationWithLaterSources { .. }
-                | CanonicalCoupledAuthoredSources::Edit(_)
-                | CanonicalCoupledAuthoredSources::Stages(_) => None,
+                CanonicalCoupledAuthoredSources::Retirement { prefix, .. } => Some(prefix),
+                _ => None,
             }
         })
     }
     pub(crate) fn authored_source_restoration(&self) -> Option<&Arc<CanonicalAuthoredRestoration>> {
         self.authored_cascade_restoration.as_ref().or_else(|| {
             match &self.coupled_authored_publication.as_ref()?.sources {
-                CanonicalCoupledAuthoredSources::Restoration(event)
-                | CanonicalCoupledAuthoredSources::RestorationWithLaterSources {
-                    prefix: event,
-                    ..
-                } => Some(event),
-                CanonicalCoupledAuthoredSources::Retirement(_)
-                | CanonicalCoupledAuthoredSources::RetirementWithLaterSources { .. }
-                | CanonicalCoupledAuthoredSources::Edit(_)
-                | CanonicalCoupledAuthoredSources::Stages(_) => None,
+                CanonicalCoupledAuthoredSources::Restoration { prefix, .. } => Some(prefix),
+                _ => None,
             }
         })
     }
@@ -150,23 +127,18 @@ pub(super) fn install(
     }
     let full = std::mem::take(&mut envelope.patch.authoritative_record_patches);
     let answer: Result<RequiredOutputPublicationPositions, TransactionCommitError> = (|| {
-        // The new corrective source vector is one necessary funded copy of
-        // the completed Native stage roster, retained by this canonical owner.
-        let source_memory = if !group.stages.is_empty()
-            && !matches!(
-                group.binding.owners.source,
-                crate::mvcc::CoupledSource::Edit(_)
-            ) {
-            crate::mvcc::plan_copy_admission::reserve_copy(
-                execution,
-                crate::mvcc::plan_copy_admission::slots::<crate::identity::data::EntityId>(
-                    group.stages.len(),
-                ),
-            )?
-            .map(Arc::new)
-        } else {
-            None
-        };
+        // Retain the one necessary copy of the actually consumed source roster.
+        let source_count = group.stages.len().saturating_add(usize::from(matches!(
+            group.binding.owners.source,
+            crate::mvcc::CoupledSource::Edit(_)
+        )));
+        let source_memory = crate::mvcc::plan_copy_admission::reserve_copy(
+            execution,
+            crate::mvcc::plan_copy_admission::slots::<crate::identity::data::EntityId>(
+                source_count,
+            ),
+        )?
+        .map(Arc::new);
         restrict(
             envelope,
             &full,

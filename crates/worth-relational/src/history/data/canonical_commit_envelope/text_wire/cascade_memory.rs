@@ -31,23 +31,14 @@ impl<Symbols> CanonicalEnvelopeWire<Symbols> {
             let event = Arc::get_mut(event).ok_or("decoded coupled publication already aliased")?;
             event._decoded_memory = memory.clone();
             match &mut event.sources {
-                CanonicalCoupledAuthoredSources::Edit(_)
-                | CanonicalCoupledAuthoredSources::Stages(_) => {}
-                CanonicalCoupledAuthoredSources::Retirement(source)
-                | CanonicalCoupledAuthoredSources::RetirementWithLaterSources {
-                    prefix: source,
-                    ..
-                } => {
+                CanonicalCoupledAuthoredSources::Edit { .. } => {}
+                CanonicalCoupledAuthoredSources::Retirement { prefix: source, .. } => {
                     let source =
                         Arc::get_mut(source).ok_or("decoded coupled retirement already aliased")?;
                     source._decoded_memory = memory.clone();
                     attach_origins(&mut source.publications, &memory)?;
                 }
-                CanonicalCoupledAuthoredSources::Restoration(source)
-                | CanonicalCoupledAuthoredSources::RestorationWithLaterSources {
-                    prefix: source,
-                    ..
-                } => {
+                CanonicalCoupledAuthoredSources::Restoration { prefix: source, .. } => {
                     let source = Arc::get_mut(source)
                         .ok_or("decoded coupled restoration already aliased")?;
                     source._decoded_memory = memory.clone();

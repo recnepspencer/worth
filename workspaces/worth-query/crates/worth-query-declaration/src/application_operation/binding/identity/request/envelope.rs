@@ -96,7 +96,7 @@ impl<Key: Serialize> ApplicationEditEnvelopeKey<Key> {
 
 /// Canonical intent of the complete ordered stage list. The input and root
 /// names come from the same nominal bindings that execute each stage.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
 pub enum ApplicationEditEnvelopeOrder {
     DeclaredDependencies,
     OrderedAuthored,
@@ -166,41 +166,20 @@ impl ApplicationEditStageIntent {
     }
 }
 impl<Key: Serialize> ApplicationEditEnvelopeKey<Key> {
+    /// One full intent binds the explicit execution mode and original stage order.
     pub fn intent(
         &self,
+        order: ApplicationEditEnvelopeOrder,
         stages: &[ApplicationEditStageIntent],
     ) -> Result<ApplicationEditIntentIdentity, ApplicationValueEncodeDenial> {
         super::super::canonical_identity(
             "worth-query.edit-envelope-intent.v1",
             &self.namespace,
-            &(self.canonical.identity, stages),
+            &(self.canonical.identity, order, stages),
         )
         .map(|canonical| ApplicationEditIntentIdentity {
             identity: canonical.identity,
-            order: ApplicationEditEnvelopeOrder::DeclaredDependencies,
-        })
-        .map_err(|_| {
-            super::super::rejected(
-                crate::portable_identity::WorthQueryPortableTypeIdentity::declared(
-                    "worth-query.edit-envelope",
-                ),
-            )
-        })
-    }
-
-    /// A positioned request shares the caller key, but never the default intent.
-    pub fn ordered_intent(
-        &self,
-        stages: &[ApplicationEditStageIntent],
-    ) -> Result<ApplicationEditIntentIdentity, ApplicationValueEncodeDenial> {
-        super::super::canonical_identity(
-            "worth-query.edit-envelope-intent.ordered.v1",
-            &self.namespace,
-            &(self.canonical.identity, "ordered-authored", stages),
-        )
-        .map(|canonical| ApplicationEditIntentIdentity {
-            identity: canonical.identity,
-            order: ApplicationEditEnvelopeOrder::OrderedAuthored,
+            order,
         })
         .map_err(|_| {
             super::super::rejected(

@@ -16,18 +16,11 @@ pub(super) fn quote(
                         add(
                             &mut sources,
                             match variant {
-                                "Retirement" => super::cascades::authored(event, request)?,
-                                "Restoration" => super::cascades::restoration(event, request)?,
-                                "Edit" => OwnerAllocation::default(),
-                                "Stages" => vector::<crate::identity::data::EntityId>(
-                                    event,
-                                    request,
-                                    |_| Ok(OwnerAllocation::default()),
-                                )?,
-                                "RetirementWithLaterSources" => {
+                                "Edit" => edit_sources(event, request)?,
+                                "Retirement" => {
                                     corrective_sources(event, request, super::cascades::authored)?
                                 }
-                                "RestorationWithLaterSources" => corrective_sources(
+                                "Restoration" => corrective_sources(
                                     event,
                                     request,
                                     super::cascades::restoration,
@@ -83,21 +76,38 @@ fn corrective_sources(
             }
             "later" if !later => {
                 later = true;
-                let mut present = false;
-                let backing = vector::<crate::identity::data::EntityId>(value, request, |_| {
-                    present = true;
+                vector::<crate::identity::data::EntityId>(value, request, |_| {
                     Ok(OwnerAllocation::default())
-                })?;
-                if !present {
-                    return Err(Refusal::NonCanonicalPayload);
-                }
-                backing
+                })?
             }
             _ => return Err(Refusal::NonCanonicalPayload),
         };
         add(&mut bytes, nested)
     })?;
     if !prefix || !later {
+        return Err(Refusal::NonCanonicalPayload);
+    }
+    Ok(bytes)
+}
+
+fn edit_sources(
+    value: BorrowedPayload<'_>,
+    request: &ExecutionRequest<'_, '_>,
+) -> Result<OwnerAllocation, Refusal> {
+    let mut bytes = OwnerAllocation::default();
+    let (mut field_seen, mut prefix_seen) = (false, false);
+    value.fields(request, |field, value| {
+        if field != "sources" || field_seen {
+            return Err(Refusal::NonCanonicalPayload);
+        }
+        field_seen = true;
+        let sources = vector::<crate::identity::data::EntityId>(value, request, |_| {
+            prefix_seen = true;
+            Ok(OwnerAllocation::default())
+        })?;
+        add(&mut bytes, sources)
+    })?;
+    if !prefix_seen {
         return Err(Refusal::NonCanonicalPayload);
     }
     Ok(bytes)

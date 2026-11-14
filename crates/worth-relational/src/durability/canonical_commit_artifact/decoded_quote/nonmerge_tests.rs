@@ -298,32 +298,10 @@ fn owned_decode_shared_schema_preflight_refuses_zero_original_memory() {
 }
 
 #[test]
-fn malformed_stages_vector_is_refused_before_decode() {
-    let bytes = corrective_sources::malformed_stages();
-    let host = crate::test_execution_policy::serial_request();
-    assert!(matches!(
-        super::coupled_publication::quote(
-            BorrowedPayload(&bytes),
-            &ExecutionRequest::serial(&host)
-        ),
-        Err(Refusal::PayloadDecode { .. })
-    ));
-}
-#[test]
-fn unknown_authored_source_variant_still_refuses_noncanonical_payload() {
-    let bytes = corrective_sources::unknown_source();
-    let host = crate::test_execution_policy::serial_request();
-    assert!(matches!(
-        super::coupled_publication::quote(
-            BorrowedPayload(&bytes),
-            &ExecutionRequest::serial(&host)
-        ),
-        Err(Refusal::NonCanonicalPayload)
-    ));
-}
-#[test]
-fn corrective_source_codec_preserves_old_bytes_and_repeated_later_sources() {
-    let host = crate::test_execution_policy::serial_request();
+fn current_source_codec_roundtrips_funded_ordered_sources() {
+    let budget = SerialMemoryBudget::new(Some(65_536));
+    let cancellation = CancellationSource::new();
+    let host = SerialRequest::from_memory(budget.clone(), cancellation.token(), None);
     let request = ExecutionRequest::serial(&host);
     for (bytes, expected) in corrective_sources::roundtrips() {
         let quote = super::coupled_publication::quote(BorrowedPayload(&bytes), &request).unwrap();
@@ -332,12 +310,16 @@ fn corrective_source_codec_preserves_old_bytes_and_repeated_later_sources() {
         let mut decoded: crate::history::data::CanonicalCoupledAuthoredPublication =
             rmp_serde::from_slice(&bytes).unwrap();
         decoded._decoded_memory = memory.map(Arc::new);
+        drop(_scratch);
+        assert_eq!(budget.charged_memory_bytes(), quote.retained);
         assert_eq!(decoded.sources, expected);
         assert_eq!(rmp_serde::to_vec_named(&decoded).unwrap(), bytes);
+        drop(decoded);
+        assert_eq!(budget.charged_memory_bytes(), 0);
     }
 }
 #[test]
-fn corrective_source_quote_refuses_malformed_empty_missing_or_unknown_fields() {
+fn current_source_quote_refuses_malformed_missing_or_unknown_meaning() {
     let host = crate::test_execution_policy::serial_request();
     for (label, bytes) in corrective_sources::malformed_inputs() {
         assert!(

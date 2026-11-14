@@ -415,8 +415,9 @@ existing currentness owner; it must not mint settlement from descriptive IDs.
 The adversarial case is a selection that correctly names a producer but includes
 an unrelated record, or restores only roster facts while route presence stays
 current. Both must refuse before publication. A no-storage store cannot make an
-owned publication disappear into an empty current roster. Unknown additive origin
-tags remain typed decoder errors; old CHK18 records retain their exact encoding.
+owned publication disappear into an empty current roster. Unknown origin tags and unsupported artifact versions remain typed decoder
+errors before effects. Only current development artifact grammar is supported;
+recreate obsolete artifacts rather than preserving or migrating their encoding.
 
 Implementation plan, in authority order:
 
@@ -436,7 +437,7 @@ Implementation plan, in authority order:
    is complete. Add #57 per-family currentness verification and fallbacks on the
    restored facts, then #56 correction step composition.
 5. Court original IDs/payloads, foreign coverage, pairing mismatch, storage absence,
-   old CHK18 opening, unknown origin refusal and cold selection reopen. Public
+   current artifact readmission, unknown origin refusal and cold selection reopen. Public
    undo/redo with two families must contact zero producers; changed build contacts
    only the affected family. Mutate presence, foreign admission, verification and
    regeneration. Record fixtures through their existing recorders only.

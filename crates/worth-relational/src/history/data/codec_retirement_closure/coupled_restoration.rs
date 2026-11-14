@@ -88,22 +88,15 @@ impl RelationalRuntime {
         };
         let Some(source) = restoration.retirement.authored_source_retirement() else {
             let recorded = match &group.sources {
-                CanonicalCoupledAuthoredSources::Retirement(source) => source.anchor,
-                CanonicalCoupledAuthoredSources::RetirementWithLaterSources { prefix, .. } => {
-                    prefix.anchor
+                CanonicalCoupledAuthoredSources::Retirement { prefix, .. } => prefix.anchor,
+                CanonicalCoupledAuthoredSources::Edit { sources } => {
+                    *sources.first().ok_or_else(|| {
+                        crate::mvcc::origin_denial(
+                            "coupled edit source list has no authored prefix",
+                        )
+                    })?
                 }
-                CanonicalCoupledAuthoredSources::Edit(source) => *source,
-                // Header validation admits only lists of two or more sources.
-                CanonicalCoupledAuthoredSources::Stages(sources) => match sources.first() {
-                    Some(source) => *source,
-                    None => {
-                        return Err(crate::mvcc::origin_denial(
-                            "coupled authored stage list is empty",
-                        ));
-                    }
-                },
-                CanonicalCoupledAuthoredSources::Restoration(source) => source.original_anchor,
-                CanonicalCoupledAuthoredSources::RestorationWithLaterSources { prefix, .. } => {
+                CanonicalCoupledAuthoredSources::Restoration { prefix, .. } => {
                     prefix.original_anchor
                 }
             };

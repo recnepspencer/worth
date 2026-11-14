@@ -42,48 +42,26 @@ fn group(sources: Sources) -> CanonicalCoupledAuthoredPublication {
     }
 }
 pub(super) fn roundtrips() -> Vec<(Vec<u8>, Sources)> {
-    #[derive(serde::Serialize)]
-    enum Legacy {
-        Retirement(Arc<CanonicalAuthoredRetirement>),
-        Restoration(Arc<CanonicalAuthoredRestoration>),
-        Edit(EntityId),
-        Stages(Vec<EntityId>),
-    }
     let (retirement, restoration) = prefixes();
     let scope = EntityId::new(PartitionId(1), 8, 1);
-    let later = vec![scope, scope];
     let mut values = Vec::new();
-    for (old, current) in [
-        (
-            Legacy::Retirement(retirement.clone()),
-            Sources::Retirement(retirement.clone()),
-        ),
-        (
-            Legacy::Restoration(restoration.clone()),
-            Sources::Restoration(restoration.clone()),
-        ),
-        (Legacy::Edit(scope), Sources::Edit(scope)),
-        (
-            Legacy::Stages(later.clone()),
-            Sources::Stages(later.clone()),
-        ),
-    ] {
-        assert_eq!(
-            rmp_serde::to_vec_named(&current).unwrap(),
-            rmp_serde::to_vec_named(&old).unwrap()
-        );
-        values.push(current);
+    for later in [vec![], vec![scope], vec![scope, scope]] {
+        values.extend([
+            Sources::Edit {
+                sources: std::iter::once(scope)
+                    .chain(later.iter().copied())
+                    .collect(),
+            },
+            Sources::Retirement {
+                prefix: retirement.clone(),
+                later: later.clone(),
+            },
+            Sources::Restoration {
+                prefix: restoration.clone(),
+                later,
+            },
+        ]);
     }
-    values.extend([
-        Sources::RetirementWithLaterSources {
-            prefix: retirement,
-            later: later.clone(),
-        },
-        Sources::RestorationWithLaterSources {
-            prefix: restoration,
-            later,
-        },
-    ]);
     values
         .into_iter()
         .map(|source| {
@@ -93,47 +71,36 @@ pub(super) fn roundtrips() -> Vec<(Vec<u8>, Sources)> {
         .collect()
 }
 pub(super) fn malformed_inputs() -> Vec<(String, Vec<u8>)> {
-    let (retirement, restoration) = prefixes();
-    let scope = EntityId::new(PartitionId(1), 8, 1);
     let mut cases = Vec::new();
-    for (tag, source) in [
-        (
-            "RetirementWithLaterSources",
-            Sources::RetirementWithLaterSources {
-                prefix: retirement,
-                later: vec![scope],
-            },
-        ),
-        (
-            "RestorationWithLaterSources",
-            Sources::RestorationWithLaterSources {
-                prefix: restoration,
-                later: vec![scope],
-            },
-        ),
-    ] {
+    for (_, source) in roundtrips().into_iter().take(3) {
         let original = serde_json::to_value(group(source)).unwrap();
+        let tag = original["sources"]
+            .as_object()
+            .unwrap()
+            .keys()
+            .next()
+            .unwrap();
+        let sequence = if tag == "Edit" { "sources" } else { "later" };
         for defect in [
             "malformed",
-            "empty",
+            "missing-sequence",
             "missing-prefix",
-            "missing-later",
             "unknown-field",
         ] {
+            if defect == "missing-prefix" && tag == "Edit" {
+                continue;
+            }
             let mut value = original.clone();
             let fields = value["sources"][tag].as_object_mut().unwrap();
             match defect {
                 "malformed" => {
-                    fields.insert("later".into(), serde_json::json!("not an entity vector"));
+                    fields.insert(sequence.into(), serde_json::json!("not an entity vector"));
                 }
-                "empty" => {
-                    fields.insert("later".into(), serde_json::json!([]));
+                "missing-sequence" => {
+                    fields.remove(sequence);
                 }
                 "missing-prefix" => {
                     fields.remove("prefix");
-                }
-                "missing-later" => {
-                    fields.remove("later");
                 }
                 "unknown-field" => {
                     fields.insert("extra".into(), serde_json::json!(0));
@@ -146,37 +113,15 @@ pub(super) fn malformed_inputs() -> Vec<(String, Vec<u8>)> {
             ));
         }
     }
+    for (label, sources) in [
+        (
+            "missing edit prefix",
+            serde_json::json!({"Edit":{"sources":[]}}),
+        ),
+        ("unknown semantic kind", serde_json::json!({"Unknown":{}})),
+    ] {
+        let value = serde_json::json!({"sources":sources,"participants":[]});
+        cases.push((label.into(), rmp_serde::to_vec_named(&value).unwrap()));
+    }
     cases
-}
-pub(super) fn malformed_stages() -> Vec<u8> {
-    #[derive(serde::Serialize)]
-    enum Source {
-        Stages(&'static str),
-    }
-    #[derive(serde::Serialize)]
-    struct Data {
-        sources: Source,
-        participants: Vec<()>,
-    }
-    rmp_serde::to_vec_named(&Data {
-        sources: Source::Stages("not an entity vector"),
-        participants: vec![],
-    })
-    .unwrap()
-}
-pub(super) fn unknown_source() -> Vec<u8> {
-    #[derive(serde::Serialize)]
-    enum Source {
-        UnknownStages(Vec<EntityId>),
-    }
-    #[derive(serde::Serialize)]
-    struct Data {
-        sources: Source,
-        participants: Vec<()>,
-    }
-    rmp_serde::to_vec_named(&Data {
-        sources: Source::UnknownStages(vec![]),
-        participants: vec![],
-    })
-    .unwrap()
 }

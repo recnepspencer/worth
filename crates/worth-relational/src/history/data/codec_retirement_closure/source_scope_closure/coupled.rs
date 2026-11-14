@@ -16,12 +16,10 @@ pub(super) fn validate_ancestry(
     for envelope in ancestry.iter().rev() {
         if let Some(group) = &envelope.coupled_authored_publication {
             match &group.sources {
-                CanonicalCoupledAuthoredSources::Edit(_)
-                | CanonicalCoupledAuthoredSources::Stages(_) => {}
-                CanonicalCoupledAuthoredSources::Retirement(source)
-                | CanonicalCoupledAuthoredSources::RetirementWithLaterSources {
+                CanonicalCoupledAuthoredSources::Edit { .. } => {}
+                CanonicalCoupledAuthoredSources::Retirement {
                     prefix: source,
-                    ..
+                    later,
                 } => {
                     let anchors = source.anchors().collect::<Vec<_>>();
                     for (anchor, birth) in std::iter::once((source.anchor, source.birth))
@@ -66,19 +64,13 @@ pub(super) fn validate_ancestry(
                     let mut required = super::super::scope_dependents::linked_owners(
                         &anchors, &retiring, &preceding, context,
                     )?;
-                    if let CanonicalCoupledAuthoredSources::RetirementWithLaterSources {
+                    include_later(
+                        &mut required,
                         later,
-                        ..
-                    } = &group.sources
-                    {
-                        include_later(
-                            &mut required,
-                            later,
-                            &preceding,
-                            retiring.iter().map(|item| item.origin.as_ref()),
-                            context,
-                        )?;
-                    }
+                        &preceding,
+                        retiring.iter().map(|item| item.origin.as_ref()),
+                        context,
+                    )?;
                     exact(
                         &required,
                         group.participants.iter().map(|part| part.origin.as_ref()),
@@ -86,10 +78,9 @@ pub(super) fn validate_ancestry(
                         context,
                     )?;
                 }
-                CanonicalCoupledAuthoredSources::Restoration(source)
-                | CanonicalCoupledAuthoredSources::RestorationWithLaterSources {
+                CanonicalCoupledAuthoredSources::Restoration {
                     prefix: source,
-                    ..
+                    later,
                 } => {
                     charge(context, ancestry.len() + 1)?;
                     let original_envelope = ancestry
@@ -102,29 +93,15 @@ pub(super) fn validate_ancestry(
                             )
                         })?;
                     let original = original_envelope.coupled_authored_publication.as_ref();
-                    let later = match &group.sources {
-                        CanonicalCoupledAuthoredSources::RestorationWithLaterSources {
-                            later,
-                            ..
-                        } => {
-                            if original_envelope.authored_source_retirement().is_none() {
-                                return Err(Failure::at_source(
+                    let retirement =
+                        original_envelope
+                            .authored_source_retirement()
+                            .ok_or_else(|| {
+                                Failure::at_source(
                                     source.original_anchor,
                                     "coupled restore lost its genuine retirement".into(),
-                                ));
-                            }
-                            Some(later)
-                        }
-                        _ => {
-                            if original.is_none() {
-                                return Err(Failure::at_source(
-                                    source.original_anchor,
-                                    "coupled restore lost retirement".into(),
-                                ));
-                            }
-                            None
-                        }
-                    };
+                                )
+                            })?;
                     let mut required = Vec::new();
                     for part in original.iter().flat_map(|original| &original.participants) {
                         let prior = &part.origin;
@@ -152,19 +129,13 @@ pub(super) fn validate_ancestry(
                             })?;
                         required.push(current.clone());
                     }
-                    if let Some(later) = later {
-                        let retired = &original_envelope
-                            .authored_source_retirement()
-                            .expect("new restoration checked its genuine retirement")
-                            .publications;
-                        include_later(
-                            &mut required,
-                            later,
-                            &preceding,
-                            retired.iter().map(Arc::as_ref),
-                            context,
-                        )?;
-                    }
+                    include_later(
+                        &mut required,
+                        later,
+                        &preceding,
+                        retirement.publications.iter().map(Arc::as_ref),
+                        context,
+                    )?;
                     exact(
                         &required,
                         group.participants.iter().map(|part| part.origin.as_ref()),

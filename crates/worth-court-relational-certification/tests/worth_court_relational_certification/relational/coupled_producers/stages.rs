@@ -307,33 +307,3 @@ fn a_stage_relation_is_part_of_the_authored_relation_footprint() {
         "the empty relation root cannot borrow the later authored link"
     );
 }
-
-#[test]
-fn a_recorded_stage_list_shorter_than_two_refuses_before_any_reading() {
-    // A genuine recorded edit envelope, re-validated with its stage list cut
-    // short: an empty or prefix-only list is a corrupt header.
-    let host = request();
-    let execution = &ExecutionRequest::serial(&host);
-    let world = World::new(execution, true, true);
-    let parts = Stages {
-        world: &world,
-        shape: Shape::Ordered { mixed: true },
-    };
-    let proposal = world
-        .prepare_stages(execution, &[world.carrier], &parts)
-        .unwrap();
-    let result = world.publish(execution, proposal);
-    let publication = result.publication();
-    for len in [0, 1] {
-        assert_eq!(
-            publication.validate_stage_list_cut_for_test(execution, len),
-            Err("coupled authored stage list is shorter than two".to_owned()),
-            "{len}"
-        );
-    }
-    assert_eq!(
-        publication.validate_stage_list_cut_for_test(execution, 2),
-        Ok(())
-    );
-    release_test_commit_snapshot(&world.runtime, &result);
-}

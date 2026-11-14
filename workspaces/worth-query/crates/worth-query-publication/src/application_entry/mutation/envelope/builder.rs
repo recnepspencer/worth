@@ -133,10 +133,7 @@ where
                     return Ok(WorthQueryEditEnvelopeOutcome::Empty);
                 }
                 let intents = entries.iter().map(|entry| entry.intent()).collect::<Vec<_>>();
-                let intent = match context.order {
-                    ApplicationEditEnvelopeOrder::DeclaredDependencies => key.intent(&intents),
-                    ApplicationEditEnvelopeOrder::OrderedAuthored => key.ordered_intent(&intents),
-                }
+                let intent = key.intent(context.order, &intents)
                     .map_err(|cause| crate::application_entry::WorthQueryPerformedMutationExecutionDenial::Mutation(
                         WorthQueryApplicationRequestMutationDenial::Identity(
                             ApplicationMutationIdentityDenial::Input(cause),

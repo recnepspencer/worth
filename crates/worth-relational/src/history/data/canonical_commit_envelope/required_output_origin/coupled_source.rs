@@ -96,12 +96,11 @@ pub(super) fn install(
     use coupled_authored::CanonicalCoupledAuthoredSources as Sources;
     let custody = &group.binding.owners;
     match &custody.source {
-        CoupledSource::Edit(source) if group.stages.is_empty() => Ok(Sources::Edit(*source)),
-        CoupledSource::Edit(source) => Ok(Sources::Stages(
-            std::iter::once(*source)
+        CoupledSource::Edit(source) => Ok(Sources::Edit {
+            sources: std::iter::once(*source)
                 .chain(group.stages.iter().map(|stage| stage.source))
                 .collect(),
-        )),
+        }),
         CoupledSource::Restoration { plan, .. } => {
             super::authored_restoration::install(
                 envelope,
@@ -121,13 +120,9 @@ pub(super) fn install(
                 .authored_cascade_restoration
                 .take()
                 .expect("Native installed authored source restoration");
-            Ok(if group.stages.is_empty() {
-                Sources::Restoration(prefix)
-            } else {
-                Sources::RestorationWithLaterSources {
-                    prefix,
-                    later: group.stages.iter().map(|stage| stage.source).collect(),
-                }
+            Ok(Sources::Restoration {
+                prefix,
+                later: group.stages.iter().map(|stage| stage.source).collect(),
             })
         }
         CoupledSource::Retirement {
@@ -167,13 +162,9 @@ pub(super) fn install(
                 .authored_cascade_retirement
                 .take()
                 .expect("Native installed authored source retirement");
-            Ok(if group.stages.is_empty() {
-                Sources::Retirement(prefix)
-            } else {
-                Sources::RetirementWithLaterSources {
-                    prefix,
-                    later: group.stages.iter().map(|stage| stage.source).collect(),
-                }
+            Ok(Sources::Retirement {
+                prefix,
+                later: group.stages.iter().map(|stage| stage.source).collect(),
             })
         }
     }
