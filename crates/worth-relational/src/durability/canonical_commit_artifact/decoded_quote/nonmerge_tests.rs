@@ -331,7 +331,7 @@ fn corrective_source_codec_preserves_old_bytes_and_repeated_later_sources() {
         let memory = request.reserve_retained_memory(quote.retained).unwrap();
         let mut decoded: crate::history::data::CanonicalCoupledAuthoredPublication =
             rmp_serde::from_slice(&bytes).unwrap();
-        decoded._decoded_memory = Some(Arc::new(memory));
+        decoded._decoded_memory = memory.map(Arc::new);
         assert_eq!(decoded.sources, expected);
         assert_eq!(rmp_serde::to_vec_named(&decoded).unwrap(), bytes);
     }
