@@ -155,8 +155,10 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
                     })
                 }
             };
-        if let Err(cause) =
-            support.bind_original_meaning_receiver(&self.runtime.runtime().runtime.primary_provider)
+        let serving = &self.runtime.runtime().runtime;
+        if let Err(cause) = support
+            .obligation_history()
+            .bind_live_receivers(&serving.primary_provider, serving.execution())
         {
             return Err(QueryHomeCustodyReadmissionRefused {
                 query: self,

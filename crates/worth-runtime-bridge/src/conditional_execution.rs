@@ -133,10 +133,11 @@ pub use output_comparison::{
     BridgeExactOutputComparison, BridgeOutputComparisonDenial, BridgeOutputComparisonStage,
 };
 pub use owned_async::{
-    BridgeOwnedAsyncCommittedCompletion, BridgeOwnedAsyncManagedDenial,
-    BridgeOwnedAsyncManagedRequestAdmission, BridgeOwnedAsyncManagedRevalidation,
-    BridgeOwnedAsyncReleasedResource, BridgeOwnedAsyncRequestResponseDeclaration,
-    BridgeOwnedAsyncResourceReleaseRefusal,
+    BridgeOwnedAsyncCommittedCompletion, BridgeOwnedAsyncDeclarationDescription,
+    BridgeOwnedAsyncManagedDenial, BridgeOwnedAsyncManagedRequestAdmission,
+    BridgeOwnedAsyncManagedRevalidation, BridgeOwnedAsyncReleasedResource,
+    BridgeOwnedAsyncRequestResponseDeclaration, BridgeOwnedAsyncResourceReleaseRefusal,
+    BridgeOwnedAsyncRetention,
 };
 pub use owned_async_observation::{
     BridgeAsyncEffectsIndeterminateObservation, BridgeOwnedAsyncCompletionAdmission,

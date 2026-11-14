@@ -229,16 +229,6 @@ impl<Schema> WorthQueryInstalledProgramSupport<Schema> {
         self.lifecycle.retain_custody(source, target)
     }
 
-    pub(in crate::domain_computation::primary_graph) fn bind_original_meaning_receiver(
-        &self,
-        receiver: &super::provider::WorthQueryPrimaryGraphProvider,
-    ) -> Result<
-        (),
-        crate::domain_computation::primary_graph::query_obligations::QueryObligationDenial,
-    > {
-        receiver.bind_original_meaning_support(&self.lifecycle)
-    }
-
     pub(in crate::domain_computation::primary_graph) fn obligation_history(
         &self,
     ) -> Arc<history::QueryObligationHistory> {

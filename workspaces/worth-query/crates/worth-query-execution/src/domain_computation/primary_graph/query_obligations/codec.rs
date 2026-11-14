@@ -5,6 +5,7 @@ use std::num::NonZeroU64;
 use worth_foundational::facade::{
     BoundaryProtocolVersion, DurableWorldOwnerIdentity, WorldOwnerSlotIdentity,
 };
+pub(super) mod business_original;
 const VERSION: BoundaryProtocolVersion = BoundaryProtocolVersion::new(2);
 const MAGIC: &[u8; 8] = b"WQOBL001";
 
@@ -23,6 +24,14 @@ pub(super) fn encode(
     bytes.extend_from_slice(&predecessor);
     bytes.extend_from_slice(&generation.get().to_le_bytes());
     match &record {
+        QueryObligationRecord::OwnedAsync(record) => {
+            bytes.push(18);
+            owned_async::codec::encode(&mut bytes, record);
+        }
+        QueryObligationRecord::ManagedRun(record) => {
+            bytes.push(17);
+            managed_run::codec::encode(&mut bytes, record);
+        }
         QueryObligationRecord::ConditionalDecision(record) => {
             bytes.push(16);
             conditional_decision::codec::encode(&mut bytes, record);
@@ -144,6 +153,8 @@ pub(super) fn decode(bytes: &[u8]) -> Result<QueryObligationFrame, QueryObligati
             &mut reader,
             home,
         )?),
+        18 => QueryObligationRecord::OwnedAsync(owned_async::codec::decode(&mut reader, home)?),
+        17 => QueryObligationRecord::ManagedRun(managed_run::codec::decode(&mut reader, home)?),
         16 => QueryObligationRecord::ConditionalDecision(conditional_decision::codec::decode(
             &mut reader,
             home,

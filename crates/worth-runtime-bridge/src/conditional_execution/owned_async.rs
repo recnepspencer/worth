@@ -16,7 +16,10 @@ mod supersession;
 mod wake_observation_for_test;
 
 pub use completion_commit::BridgeOwnedAsyncCommittedCompletion;
-pub use declaration::BridgeOwnedAsyncRequestResponseDeclaration;
+pub use declaration::{
+    BridgeOwnedAsyncDeclarationDescription, BridgeOwnedAsyncRequestResponseDeclaration,
+    BridgeOwnedAsyncRetention,
+};
 pub(super) use installation::BridgeInstalledOwnedAsyncDeclaration;
 pub use managed_request::{BridgeOwnedAsyncManagedDenial, BridgeOwnedAsyncManagedRequestAdmission};
 pub use managed_revalidation::BridgeOwnedAsyncManagedRevalidation;

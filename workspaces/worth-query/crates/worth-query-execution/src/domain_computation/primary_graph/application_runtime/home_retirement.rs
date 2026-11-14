@@ -97,7 +97,16 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .snapshot();
         operations.handoff_to_home(request, self)?;
+        self.runtime
+            .execution()
+            .managed_run_custody
+            .flush(request)
+            .map_err(WorthQueryHomeRetirementDenial::ManagedCleanup)?;
         if let Some(support) = self.installed_program_support() {
+            support
+                .lifecycle()
+                .preflight_managed_run_close(request)
+                .map_err(WorthQueryHomeRetirementDenial::ManagedCleanup)?;
             support
                 .lifecycle()
                 .preflight_managed_cleanup_close(request)

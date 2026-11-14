@@ -18,6 +18,9 @@ pub struct WorthQueryDirectExecutionResourceAttempt {
     attempt_identity: WorthQueryExecutionAttemptIdentity,
     provider_session: WorthQueryExecutionProviderSession,
     evidence: WorthQueryExecutionResourceAttemptEvidence,
+    custody: Option<
+        std::sync::Arc<crate::domain_computation::managed_run::durable_custody::ManagedRunCustody>,
+    >,
 }
 
 impl WorthQueryDirectExecutionResourceAttempt {
@@ -38,9 +41,28 @@ impl WorthQueryDirectExecutionResourceAttempt {
             attempt_identity,
             provider_session,
             evidence,
+            custody: None,
         }
     }
 
+    pub(in crate::domain_computation) fn with_managed_custody(
+        mut self,
+        custody: Option<
+            std::sync::Arc<
+                crate::domain_computation::managed_run::durable_custody::ManagedRunCustody,
+            >,
+        >,
+    ) -> Self {
+        if custody.is_some() {
+            self.custody = custody;
+        }
+        self
+    }
+    // Once the affinity takes over, releasing this admission alone cannot
+    // certify the run's checkpoint, provider or Bridge cleanup.
+    pub(in crate::domain_computation) fn enter_managed_run(&mut self) {
+        self.custody = None;
+    }
     pub fn resources(&self) -> &WorthQueryAdmittedExecutionResourcePlan {
         self.reserved.resources()
     }
@@ -75,12 +97,19 @@ impl WorthQueryDirectExecutionResourceAttempt {
     }
 
     pub(crate) fn release(self) -> WorthQueryDirectExecutionAttemptReleaseReceipt {
+        let attempt = self.attempt_identity.as_str().to_owned();
         let provider_session_identity = self.provider_session.identity().to_owned();
         drop(self.provider_session);
-        WorthQueryDirectExecutionAttemptReleaseReceipt {
+        let receipt = WorthQueryDirectExecutionAttemptReleaseReceipt {
             provider_session_identity,
             capacity: self.reserved.release(),
+        };
+        if receipt.capacity().released_reservation_count() != 0 {
+            if let Some(custody) = self.custody {
+                custody.record_admission_release(&attempt);
+            }
         }
+        receipt
     }
 }
 

@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use super::super::retained_graph_execution::WorthQueryRetainedManagedGraphExecution;
+use crate::domain_computation::provider_session::graph_provider::bounded_step::WorthQueryGraphProviderMemoryArena;
 use crate::domain_computation::provider_session::graph_provider::bounded_step::WorthQueryProviderExecutionReleaseEvidence;
 use crate::domain_computation::{
     WorthQueryProviderCheckpointEvidence, WorthQueryProviderCheckpointReleaseEvidence,
@@ -27,6 +28,7 @@ pub(in crate::domain_computation::managed_run) struct WorthQueryManagedGraphRest
 }
 
 pub(in crate::domain_computation::managed_run) struct WorthQueryManagedGraphRestoreCleanupEvidence {
+    pub(in crate::domain_computation::managed_run) memory: WorthQueryGraphProviderMemoryArena,
     pub(in crate::domain_computation::managed_run) checkpoint_release:
         WorthQueryProviderCheckpointReleaseEvidence,
     pub(in crate::domain_computation::managed_run) restored_execution_release:
@@ -40,6 +42,7 @@ enum WorthQueryManagedGraphRestoreRecoveryResource {
         restored_execution: WorthQueryProviderExecutionReleaseEvidence,
     },
     Released {
+        memory: WorthQueryGraphProviderMemoryArena,
         checkpoint: WorthQueryProviderCheckpointReleaseEvidence,
         restored_execution: WorthQueryProviderExecutionReleaseEvidence,
     },
@@ -47,7 +50,10 @@ enum WorthQueryManagedGraphRestoreRecoveryResource {
 
 enum WorthQueryManagedGraphRestoreCleanupCheckpoint {
     Retained(WorthQueryRetainedManagedGraphExecution),
-    Released(WorthQueryProviderCheckpointReleaseEvidence),
+    Released {
+        release: WorthQueryProviderCheckpointReleaseEvidence,
+        memory: WorthQueryGraphProviderMemoryArena,
+    },
 }
 
 impl WorthQueryManagedGraphRestoreRecoveryRequired {
@@ -84,11 +90,13 @@ impl WorthQueryManagedGraphRestoreRecoveryRequired {
         detail: impl Into<Arc<str>>,
         checkpoint: WorthQueryProviderCheckpointReleaseEvidence,
         restored_execution: WorthQueryProviderExecutionReleaseEvidence,
+        memory: WorthQueryGraphProviderMemoryArena,
     ) -> Self {
         Self {
             kind,
             detail: detail.into(),
             resource: WorthQueryManagedGraphRestoreRecoveryResource::Released {
+                memory,
                 checkpoint,
                 restored_execution,
             },
@@ -166,8 +174,12 @@ impl WorthQueryManagedGraphRestoreRecoveryRequired {
             WorthQueryManagedGraphRestoreRecoveryResource::Released {
                 checkpoint,
                 restored_execution,
+                memory,
             } => WorthQueryManagedGraphRestoreCleanupRequired {
-                checkpoint: WorthQueryManagedGraphRestoreCleanupCheckpoint::Released(checkpoint),
+                checkpoint: WorthQueryManagedGraphRestoreCleanupCheckpoint::Released {
+                    release: checkpoint,
+                    memory,
+                },
                 restored_execution_release: Some(restored_execution),
             },
         }
@@ -188,13 +200,17 @@ impl WorthQueryManagedGraphRestoreCleanupRequired {
     pub(in crate::domain_computation::managed_run) fn finish(
         self,
     ) -> WorthQueryManagedGraphRestoreCleanupEvidence {
-        let checkpoint_release = match self.checkpoint {
+        let (checkpoint_release, memory) = match self.checkpoint {
             WorthQueryManagedGraphRestoreCleanupCheckpoint::Retained(retained) => {
-                retained.release()
+                let memory = retained.memory.clone();
+                (retained.release(), memory)
             }
-            WorthQueryManagedGraphRestoreCleanupCheckpoint::Released(release) => release,
+            WorthQueryManagedGraphRestoreCleanupCheckpoint::Released { release, memory } => {
+                (release, memory)
+            }
         };
         WorthQueryManagedGraphRestoreCleanupEvidence {
+            memory,
             checkpoint_release,
             restored_execution_release: self.restored_execution_release,
         }

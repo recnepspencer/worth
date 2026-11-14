@@ -5,6 +5,28 @@ use worth_foundational::facade::ManagedCleanupObligationIdentity;
 use worth_query_installation::facade::ApplicationSchema;
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+    pub fn managed_run_obligations(&self) -> Vec<QueryManagedRunObligation> {
+        self.installed_program_support()
+            .map(|support| support.lifecycle().managed_run_obligations())
+            .unwrap_or_default()
+    }
+    pub fn discharge_managed_run(
+        &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        identity: worth_foundational::facade::ManagedRunObligationIdentity,
+    ) -> Result<(), QueryObligationDenial> {
+        let request = phase
+            .checked_execution_request_for(&self.runtime.product_runtime)
+            .map_err(|_| QueryObligationDenial::StaleIncarnation)?;
+        self.runtime
+            .execution()
+            .managed_run_custody
+            .flush(&request)?;
+        self.installed_program_support()
+            .ok_or(QueryObligationDenial::SupportUnavailable)?
+            .lifecycle()
+            .discharge_managed_run(&request, identity)
+    }
     /// Pending conditional continuation DATA; execution still needs fresh admission.
     pub fn conditional_decision_obligations(&self) -> Vec<QueryConditionalDecision> {
         self.installed_program_support()

@@ -47,6 +47,9 @@ fn finish_application_commit_with_delivery<Schema: ApplicationSchema>(
         cleanup,
         request,
     } = progressed.consume();
+    if let Some(custody) = running.managed_home_custody() {
+        custody.associate_original(crate::domain_computation::primary_graph::application_attempt::business_original::from_progression(&outcome));
+    }
     let terminal = terminal_for(&outcome);
     let snapshot_release = lease.release_custody();
     application

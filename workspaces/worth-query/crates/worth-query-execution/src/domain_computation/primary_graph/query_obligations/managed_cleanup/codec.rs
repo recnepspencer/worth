@@ -2,7 +2,7 @@
 use super::super::{codec::Reader, QueryObligationDenial as Denial};
 use super::*;
 use std::num::NonZeroU64;
-use worth_foundational::facade::{DurableWorldOwnerIdentity, HomeIdentity, WorldOwnerSlotIdentity};
+use worth_foundational::facade::HomeIdentity;
 
 pub(in crate::domain_computation::primary_graph::query_obligations) fn encode(
     bytes: &mut Vec<u8>,
@@ -15,23 +15,7 @@ pub(in crate::domain_computation::primary_graph::query_obligations) fn encode(
             bytes.extend_from_slice(&(row.run.len() as u32).to_le_bytes());
             bytes.extend_from_slice(row.run.as_bytes());
             bytes.push(failure(row.failure));
-            match row.original {
-                None => bytes.push(0),
-                Some(original) => {
-                    let (tag, owner, ordinal) = match original {
-                        QueryManagedCleanupOriginal::Attempt(original) => {
-                            (1, original.owner(), original.ordinal())
-                        }
-                        QueryManagedCleanupOriginal::Unpublished(original) => {
-                            (2, original.owner(), original.ordinal())
-                        }
-                    };
-                    bytes.push(tag);
-                    bytes.extend_from_slice(&owner.home().bytes());
-                    bytes.extend_from_slice(&owner.slot().get().to_le_bytes());
-                    bytes.extend_from_slice(&ordinal.to_le_bytes());
-                }
-            }
+            super::super::codec::business_original::encode(bytes, row.original);
         }
         QueryManagedCleanupRecord::Released {
             identity: id,
@@ -83,23 +67,7 @@ pub(in crate::domain_computation::primary_graph::query_obligations) fn decode(
                 .to_owned();
             reader.0 = tail;
             let failure = read_failure(reader.take::<1>()?[0])?;
-            let original = match reader.take::<1>()?[0] {
-                0 => None,
-                tag @ (1 | 2) => {
-                    let owner = DurableWorldOwnerIdentity::from_recorded(
-                        HomeIdentity::from_observed_bytes(reader.take()?)
-                            .map_err(|_| Denial::MalformedFrame)?,
-                        WorldOwnerSlotIdentity::from_recorded(u64::from_le_bytes(reader.take()?)),
-                    );
-                    let ordinal = u64::from_le_bytes(reader.take()?);
-                    Some(match tag {
-                        1 => QueryManagedCleanupOriginal::Attempt(DurableCompositePublicationAttemptIdentity::from_recorded(owner, ordinal)),
-                        2 => QueryManagedCleanupOriginal::Unpublished(worth_foundational::facade::DurableProductUnpublishedOwnerEffectsIdentity::from_recorded(owner, ordinal)),
-                        _ => unreachable!("matched association tag"),
-                    })
-                }
-                _ => return Err(Denial::MalformedFrame),
-            };
+            let original = super::super::codec::business_original::decode(reader)?;
             QueryManagedCleanupRecord::Retain(QueryManagedCleanupObligation {
                 identity,
                 run,
@@ -128,7 +96,9 @@ pub(in crate::domain_computation::primary_graph::query_obligations) fn decode(
         _ => return Err(Denial::MalformedFrame),
     })
 }
-fn terminal(terminal: WorthQueryManagedRunTerminalKind) -> u8 {
+pub(in crate::domain_computation::primary_graph::query_obligations) fn terminal(
+    terminal: WorthQueryManagedRunTerminalKind,
+) -> u8 {
     use WorthQueryManagedRunTerminalKind::*;
     match terminal {
         Completed => 0,
@@ -139,7 +109,9 @@ fn terminal(terminal: WorthQueryManagedRunTerminalKind) -> u8 {
         Failed => 5,
     }
 }
-fn read_terminal(tag: u8) -> Result<WorthQueryManagedRunTerminalKind, Denial> {
+pub(in crate::domain_computation::primary_graph::query_obligations) fn read_terminal(
+    tag: u8,
+) -> Result<WorthQueryManagedRunTerminalKind, Denial> {
     use WorthQueryManagedRunTerminalKind::*;
     Ok(match tag {
         0 => Completed,
@@ -151,7 +123,9 @@ fn read_terminal(tag: u8) -> Result<WorthQueryManagedRunTerminalKind, Denial> {
         _ => return Err(Denial::MalformedFrame),
     })
 }
-fn failure(kind: WorthQueryMutationCleanupFailureKind) -> u8 {
+pub(in crate::domain_computation::primary_graph::query_obligations) fn failure(
+    kind: WorthQueryMutationCleanupFailureKind,
+) -> u8 {
     use crate::domain_computation::WorthQueryManagedRunCleanupFailureKind as Native;
     use worth_runtime_bridge::facade::{
         BridgeExecutionBasisFinalizationFailureKind as Bridge,
@@ -181,7 +155,9 @@ fn failure(kind: WorthQueryMutationCleanupFailureKind) -> u8 {
         },
     }
 }
-fn read_failure(tag: u8) -> Result<WorthQueryMutationCleanupFailureKind, Denial> {
+pub(in crate::domain_computation::primary_graph::query_obligations) fn read_failure(
+    tag: u8,
+) -> Result<WorthQueryMutationCleanupFailureKind, Denial> {
     use crate::domain_computation::WorthQueryManagedRunCleanupFailureKind as Native;
     use worth_runtime_bridge::facade::{
         BridgeExecutionBasisFinalizationFailureKind as Bridge,

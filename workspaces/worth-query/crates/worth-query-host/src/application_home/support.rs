@@ -67,29 +67,32 @@ pub const fn directory_family_support(family: DurableStateFamily) -> DirectoryFa
         | ConditionalDecisions
         | RetainedConditionalCleanup
         | TemporalIdempotency
-        | BridgeManagedTemporalIntents => DirectoryFamilySupport::Supported(7),
+        | BridgeManagedTemporalIntents
+        | ManagedDirectRuns
+        | DirectTerminalCleanup => DirectoryFamilySupport::Supported(7),
+        // no Home installation admits generic managed providers; owner-boundary court yielded_owner_data_preserves_terminal_cause_and_refuses_unrecorded_release
+        YieldedDirectRuns | ProviderSuspensions | DirectYieldRecovery => {
+            DirectoryFamilySupport::Supported(7)
+        }
+        // no Home installation admits generic managed providers; owner-boundary court managed_restore_owner_data_keeps_original_failure_and_separate_release_facts
+        ManagedRestoreRecovery => DirectoryFamilySupport::Supported(7),
+        // no Home installation admits generic managed providers; owner-boundary court workflow_owner_data_retains_pending_artifacts_after_native_resource_release
+        ManagedWorkflowRuns
+        | YieldedWorkflowRuns
+        | WorkflowYieldRecovery
+        | WorkflowTerminalCleanup => DirectoryFamilySupport::Supported(7),
         ProducerCleanupCustody
         | OperationCleanupCustody
         | SourceOperationCustody
         | FixedOperationCustody
         | BankManagedCleanup
         | HttpNativeCleanup
-        | DirectTerminalCleanup
         | SignalOwnedAsyncCustody
         | SignalOwnedAsyncQueue
         | BridgeOwnedAsyncCustody
         | ResourceOccurrences
         | ResourceIngress
         | OwnedAsyncCustody
-        | ManagedDirectRuns
-        | ManagedWorkflowRuns
-        | YieldedDirectRuns
-        | YieldedWorkflowRuns
-        | ProviderSuspensions
-        | DirectYieldRecovery
-        | WorkflowYieldRecovery
-        | ManagedRestoreRecovery
-        | WorkflowTerminalCleanup
         | WorkflowLineages
         | WorkflowDefinitions
         | WorkflowNodes

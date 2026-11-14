@@ -9,6 +9,14 @@ pub struct QueryObligationLedger {
     publication_generation: u64,
     pub(super) cleanup: managed_cleanup::fold::ManagedCleanupFold,
     pub(super) conditional: BTreeMap<[u8; 32], QueryConditionalDecision>,
+    pub(super) runs: BTreeMap<
+        worth_foundational::facade::ManagedRunObligationIdentity,
+        QueryManagedRunObligation,
+    >,
+    pub(super) owned_async: BTreeMap<
+        worth_foundational::facade::OwnedAsyncObligationIdentity,
+        QueryOwnedAsyncObligation,
+    >,
     statuses: BTreeMap<CanonicalDigestId, ProgramSupportStatus>,
     obligations: BTreeMap<ProgramSupportObligationIdentity, QueryProgramSupportObligation>,
 }
@@ -22,6 +30,8 @@ impl QueryObligationLedger {
             publication_generation: 0,
             cleanup: managed_cleanup::fold::ManagedCleanupFold::default(),
             conditional: BTreeMap::new(),
+            runs: BTreeMap::new(),
+            owned_async: BTreeMap::new(),
             statuses: BTreeMap::new(),
             obligations: BTreeMap::new(),
         }
@@ -105,13 +115,17 @@ impl QueryObligationLedger {
                 .ok_or(QueryObligationDenial::IdentityExhausted)?,
         )?;
         let generation = generations.allocate(self)?;
-        Ok(super::codec::encode(
+        let frame = super::codec::encode(
             self.home,
             self.position + 1,
             self.digest,
             generation,
             record,
-        ))
+        );
+        if frame.bytes().len() as u64 > QUERY_OBLIGATION_FRAME_MAX_BYTES {
+            return Err(QueryObligationDenial::MalformedFrame);
+        }
+        Ok(frame)
     }
     /// Readmission never treats matching content as live publication authority.
     pub fn readmit(&mut self, frame: QueryObligationFrame) -> Result<(), QueryObligationDenial> {
@@ -129,6 +143,8 @@ impl QueryObligationLedger {
         self.validate(&frame.record, frame.position)?;
         let payload_digest = frame.payload_digest();
         match frame.record {
+            QueryObligationRecord::OwnedAsync(record) => self.apply_owned_async(record),
+            QueryObligationRecord::ManagedRun(record) => self.apply_managed_run(record),
             QueryObligationRecord::ProgramSupport(record) => self.apply_support(record),
             QueryObligationRecord::ManagedCleanup(record) => self.cleanup.apply(record),
             QueryObligationRecord::ConditionalDecision(record) => self.apply_conditional(record),
@@ -164,6 +180,12 @@ impl QueryObligationLedger {
         position: u64,
     ) -> Result<(), QueryObligationDenial> {
         match record {
+            QueryObligationRecord::OwnedAsync(record) => {
+                self.validate_owned_async(record, position)
+            }
+            QueryObligationRecord::ManagedRun(record) => {
+                self.validate_managed_run(record, position)
+            }
             QueryObligationRecord::ConditionalDecision(record) => self.validate_conditional(record),
             QueryObligationRecord::ProgramSupport(record) => {
                 self.validate_support(record, position)

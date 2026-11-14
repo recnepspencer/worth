@@ -116,12 +116,57 @@ fn conditional_temporal_custody_consumes_original_key_after_directory_reopen() {
             .3,
         1
     );
+    let issued_runs = home.runtime().managed_run_obligations();
+    let [issued_run] = issued_runs.as_slice() else {
+        panic!("one actual native managed run");
+    };
+    let issued_run = issued_run.clone();
     home.close(&execution)
         .unwrap_or_else(|refused| panic!("committed clock handoff: {refused:?}"))
         .reclaim();
 
     let home = open(&location, &execution);
     assert!(home.runtime().conditional_decision_obligations().is_empty());
+    {
+        use worth_query_execution::facade::domain_computation::{
+            WorthQueryManagedRunCleanupDisposition as Cleanup,
+            WorthQueryManagedRunTerminalKind as Terminal,
+        };
+        let retained = home.runtime().managed_run_obligations();
+        let [retained] = retained.as_slice() else {
+            panic!("same original managed work");
+        };
+        assert_eq!(retained.identity, issued_run.identity);
+        assert_eq!(retained.logical_run, issued_run.logical_run);
+        assert_eq!(retained.original_attempt, issued_run.original_attempt);
+        assert_eq!(retained.attempt, issued_run.attempt);
+        assert!(
+            retained.original.is_some(),
+            "the actual original World attempt remains joined"
+        );
+        assert_eq!(
+            retained.posture,
+            primary_graph::QueryManagedRunPosture::DirectCleanup {
+                terminal: Terminal::Completed,
+                disposition: Cleanup::CleanupComplete,
+                resources:
+                    worth_query_execution::facade::query_obligations::QueryManagedRunResources {
+                        native_released: true,
+                        checkpoint: None,
+                        provider_execution: None,
+                        restored_execution: None
+                    },
+            }
+        );
+        home.runtime()
+            .with_host_advancement(|phase| {
+                home.runtime()
+                    .discharge_managed_run(&phase, issued_run.identity)
+            })
+            .unwrap()
+            .unwrap();
+        assert!(home.runtime().managed_run_obligations().is_empty());
+    }
     let response = observe(&home, &execution);
     let primary_graph::WorthQueryConditionalClockObservationOutcome::Accepted(response) = response
     else {
@@ -183,6 +228,11 @@ fn conditional_temporal_custody_releases_live_cleanup_and_discharges_cold_associ
     let cleanup = home.runtime().managed_cleanup_obligations();
     assert_eq!(cleanup[0].identity, identity);
     assert!(cleanup[0].release.is_none());
+    let runs = home.runtime().managed_run_obligations();
+    let [run] = runs.as_slice() else {
+        panic!("one actual failed native cleanup");
+    };
+    let original_run = run.clone();
     drop(response);
     drop(guard);
     home.close(&execution)
@@ -198,6 +248,30 @@ fn conditional_temporal_custody_releases_live_cleanup_and_discharges_cold_associ
         retained[0].release.is_some(),
         "the original live owner recorded release before close"
     );
+    let runs = home.runtime().managed_run_obligations();
+    let [run] = runs.as_slice() else {
+        panic!("one retained native terminal");
+    };
+    assert_eq!(run.identity, original_run.identity);
+    assert_eq!(run.original_attempt, original_run.original_attempt);
+    assert_eq!(run.attempt, retained[0].run);
+    assert_eq!(run.original, retained[0].original);
+    let worth_query_execution::facade::domain_computation::WorthQueryMutationCleanupFailureKind::Native(failure) = retained[0].failure
+    else {
+        panic!("actual native cleanup failure");
+    };
+    assert_eq!(
+        run.recovery,
+        Some(primary_graph::QueryManagedRunRecovery::Cleanup(failure))
+    );
+    assert!(
+        matches!(run.posture, primary_graph::QueryManagedRunPosture::DirectCleanup { resources, .. } if resources.released())
+    );
+    home.runtime()
+        .with_host_advancement(|phase| home.runtime().discharge_managed_run(&phase, run.identity))
+        .unwrap()
+        .unwrap();
+    assert!(home.runtime().managed_run_obligations().is_empty());
     home.runtime()
         .with_host_advancement(|phase| home.runtime().discharge_managed_cleanup(&phase, identity))
         .unwrap()

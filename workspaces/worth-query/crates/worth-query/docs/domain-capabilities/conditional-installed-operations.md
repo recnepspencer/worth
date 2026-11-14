@@ -1,5 +1,18 @@
 # Conditional Installed Operations
 
+## Directory continuation
+
+A Directory Home retains CleanupRequired, Retryable, CommitRetryable and
+ProductStale decisions with their original operation intent and idempotency
+association. It re-derives eligibility from current graph truth and fresh
+host-fed time; no clock lease survives reopen. Temporal retry uses the durable
+Home-scoped intent key and resolves to the same World occurrence.
+
+Live cleanup releases before graceful handoff. Its durable logical association
+remains inspectable through `conditional_decision_obligations()` and the managed
+cleanup inspection/discharge doors. A retained failure or unrecorded live release
+keeps close refused; physical cleanup does not change the original business fate.
+
 ## What This Feature Is
 
 Conditional installed operations let a domain author eligibility, trigger,

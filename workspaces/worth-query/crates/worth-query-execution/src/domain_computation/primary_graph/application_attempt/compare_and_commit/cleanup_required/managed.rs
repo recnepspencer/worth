@@ -101,16 +101,7 @@ impl WorthQueryApplicationManagedCleanup {
         let Some(history) = state.history.as_ref() else {
             return Ok(());
         };
-        let original = state.business_original.or_else(|| {
-            state.original.as_ref().and_then(|original| {
-                super::world_association::from_attempt(
-                    original
-                        .original()
-                        .original_publication()
-                        .publication_attempt(),
-                )
-            })
-        });
+        let original = Self::original_association(state);
         state.publication = history.retain_managed_cleanup(request, &state.failure, original)?;
         if let Some(cause) = state
             .publication
@@ -121,6 +112,22 @@ impl WorthQueryApplicationManagedCleanup {
         }
         state.journal_denial = None;
         Ok(())
+    }
+    fn original_association(
+        state: &ManagedCleanupState,
+    ) -> Option<
+        crate::domain_computation::primary_graph::query_obligations::QueryManagedCleanupOriginal,
+    > {
+        state.business_original.or_else(|| {
+            state.original.as_ref().and_then(|original| {
+                crate::domain_computation::primary_graph::application_attempt::business_original::from_attempt(
+                    original
+                        .original()
+                        .original_publication()
+                        .publication_attempt(),
+                )
+            })
+        })
     }
     pub fn obligation_identity(
         &self,

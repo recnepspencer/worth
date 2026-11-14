@@ -11,6 +11,15 @@ use worth_foundational::facade::{
 use worth_runtime_world::facade::WorldProgramActivationHistory;
 
 impl QueryObligationHistory {
+    pub(in crate::domain_computation::primary_graph) fn bind_live_receivers(
+        self: &Arc<Self>,
+        provider: &crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider,
+        execution: &crate::domain_computation::WorthQueryExecutionRuntime,
+    ) -> Result<(), QueryObligationDenial> {
+        provider.bind_original_meaning_support(self)?;
+        execution.managed_run_custody.bind(Arc::clone(self))
+    }
+
     pub(in crate::domain_computation::primary_graph) fn readmit_journal(
         &self,
         medium: Arc<dyn QueryObligationsMedium>,

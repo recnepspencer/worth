@@ -24,12 +24,14 @@ static NEXT_MANAGED_LOGICAL_RUN: AtomicU64 = AtomicU64::new(1);
 /// always read from the owned attempt; they cannot be substituted separately.
 pub(super) struct WorthQueryDirectRunAffinity {
     logical: Arc<str>,
+    custody: Option<Arc<super::durable_custody::ManagedRunCustody>>,
     attempt: WorthQueryDirectExecutionResourceAttempt,
     provider_work: WorthQueryManagedProviderWorkLedger,
 }
 
 pub(super) struct WorthQueryDirectRunReadmissionPending {
     logical: Arc<str>,
+    custody: Option<Arc<super::durable_custody::ManagedRunCustody>>,
     attempt: WorthQueryDirectResourceReadmissionPending,
     provider_work: WorthQueryManagedProviderWorkLedger,
     fresh_call: Option<WorthQueryGraphProviderCall>,
@@ -51,19 +53,25 @@ pub(super) enum WorthQueryDirectRunProviderRestoreOutcome {
 }
 
 impl WorthQueryDirectRunAffinity {
-    pub(super) fn initial(attempt: WorthQueryDirectExecutionResourceAttempt) -> Self {
-        let ordinal = next_managed_logical_run_ordinal(&NEXT_MANAGED_LOGICAL_RUN)
-            .expect("managed logical-run identity space must not be exhausted");
+    pub(super) fn initial(
+        mut attempt: WorthQueryDirectExecutionResourceAttempt,
+        identity: super::durable_custody::ManagedRunIdentity,
+    ) -> Self {
+        attempt.enter_managed_run();
         let provider_work = WorthQueryManagedProviderWorkLedger::new(
             attempt.managed_provider_session().closed_identity(),
         );
         Self {
-            logical: Arc::from(format!("managed-logical-run:{ordinal}")),
+            logical: identity.logical,
+            custody: identity.custody,
             attempt,
             provider_work,
         }
     }
 
+    pub(super) fn custody(&self) -> Option<Arc<super::durable_custody::ManagedRunCustody>> {
+        self.custody.clone()
+    }
     pub(super) fn logical_identity(&self) -> &str {
         &self.logical
     }
@@ -260,6 +268,7 @@ impl WorthQueryDirectRunAffinity {
             WorthQueryDirectResourceReadmissionPending::begin(self.attempt, call, owner);
         WorthQueryDirectRunReadmissionPending {
             logical: self.logical,
+            custody: self.custody,
             attempt,
             provider_work: self.provider_work,
             fresh_call: Some(fresh_call),
@@ -277,7 +286,7 @@ impl WorthQueryDirectRunAffinity {
     ) {
         let (provider_work, provider_cleanup) = self.provider_work.into_terminal_parts();
         (
-            WorthQueryDirectRunTerminalAffinity::new(self.logical, self.attempt),
+            WorthQueryDirectRunTerminalAffinity::new(self.logical, self.attempt, self.custody),
             provider_work,
             provider_cleanup,
         )
@@ -321,4 +330,10 @@ mod tests {
         assert_eq!(next_managed_logical_run_ordinal(&counter), None);
         assert_eq!(counter.load(Ordering::Relaxed), u64::MAX);
     }
+}
+
+pub(super) fn fresh_logical_identity() -> Arc<str> {
+    let ordinal = next_managed_logical_run_ordinal(&NEXT_MANAGED_LOGICAL_RUN)
+        .expect("managed logical-run identity space must not be exhausted");
+    Arc::from(format!("managed-logical-run:{ordinal}"))
 }

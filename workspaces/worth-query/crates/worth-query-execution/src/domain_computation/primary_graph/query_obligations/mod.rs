@@ -19,6 +19,18 @@ mod conditional_decision;
 pub use conditional_decision::{
     QueryConditionalDecision, QueryConditionalDecisionRecord, QueryConditionalPosture,
 };
+mod owned_async;
+pub use owned_async::{
+    QueryOwnedAsyncContinuation, QueryOwnedAsyncDefinition, QueryOwnedAsyncObligation,
+    QueryOwnedAsyncPosture, QueryOwnedAsyncRecord, QueryOwnedAsyncRequestGeneration,
+    QueryOwnedAsyncRetention, QueryOwnedAsyncRetryCause, QueryOwnedAsyncTerminal,
+};
+mod managed_run;
+pub use managed_run::{
+    QueryManagedExecutionRelease, QueryManagedRunObligation, QueryManagedRunPosture,
+    QueryManagedRunRecord, QueryManagedRunRecovery, QueryManagedRunResources,
+    QueryManagedWorkflowCleanupRoute, QueryManagedYieldRecoveryState,
+};
 mod generation;
 mod ledger;
 mod medium;
@@ -42,6 +54,18 @@ pub enum QueryObligationRecord {
     ProgramSupport(QueryProgramSupportRecord),
     ManagedCleanup(QueryManagedCleanupRecord),
     ConditionalDecision(QueryConditionalDecisionRecord),
+    ManagedRun(QueryManagedRunRecord),
+    OwnedAsync(QueryOwnedAsyncRecord),
+}
+impl From<QueryOwnedAsyncRecord> for QueryObligationRecord {
+    fn from(record: QueryOwnedAsyncRecord) -> Self {
+        Self::OwnedAsync(record)
+    }
+}
+impl From<QueryManagedRunRecord> for QueryObligationRecord {
+    fn from(record: QueryManagedRunRecord) -> Self {
+        Self::ManagedRun(record)
+    }
 }
 impl From<QueryProgramSupportRecord> for QueryObligationRecord {
     fn from(record: QueryProgramSupportRecord) -> Self {
@@ -130,6 +154,18 @@ pub enum QueryObligationDenial {
     },
     OriginalInterpretationProgramMismatch {
         identity: ProgramSupportObligationIdentity,
+    },
+    ManagedRunPending {
+        identity: worth_foundational::facade::ManagedRunObligationIdentity,
+    },
+    OwnedAsyncPending {
+        identity: worth_foundational::facade::OwnedAsyncObligationIdentity,
+    },
+    OwnedAsyncMandatory {
+        identity: worth_foundational::facade::OwnedAsyncObligationIdentity,
+    },
+    OwnedAsyncQueuePending {
+        identity: worth_foundational::facade::OwnedAsyncObligationIdentity,
     },
     OwnerUnavailable,
     StaleIncarnation,

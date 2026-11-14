@@ -13,6 +13,7 @@ use worth_foundational::facade::ProgramSupportStatus;
 mod conditional_decision;
 mod durable_retirement;
 mod interpretation_membership;
+mod managed_run;
 mod original_expiry;
 mod original_readmission;
 mod original_transfer;

@@ -4,6 +4,7 @@ use crate::domain_computation::WorthQueryDirectExecutionResourceAttempt;
 
 pub(in crate::domain_computation::managed_run) struct WorthQueryDirectRunTerminalAffinity {
     logical: Arc<str>,
+    custody: Option<Arc<super::super::durable_custody::ManagedRunCustody>>,
     attempt: WorthQueryDirectExecutionResourceAttempt,
 }
 
@@ -11,8 +12,19 @@ impl WorthQueryDirectRunTerminalAffinity {
     pub(super) const fn new(
         logical: Arc<str>,
         attempt: WorthQueryDirectExecutionResourceAttempt,
+        custody: Option<Arc<super::super::durable_custody::ManagedRunCustody>>,
     ) -> Self {
-        Self { logical, attempt }
+        Self {
+            logical,
+            attempt,
+            custody,
+        }
+    }
+
+    pub(in crate::domain_computation::managed_run) fn custody(
+        &self,
+    ) -> Option<Arc<super::super::durable_custody::ManagedRunCustody>> {
+        self.custody.clone()
     }
 
     pub(in crate::domain_computation::managed_run) fn logical_identity(&self) -> &str {
