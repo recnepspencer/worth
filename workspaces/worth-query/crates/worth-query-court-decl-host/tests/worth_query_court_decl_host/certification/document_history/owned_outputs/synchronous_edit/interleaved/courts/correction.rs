@@ -222,10 +222,10 @@ fn a_real_retirement_and_restoration_each_keep_their_final_edit_and_owned_histor
         }};
     }
     settle!(first::Demand("a".into()), ModelTree);
-    settle!(child::Demand("m".into()), program::SealTree);
+    settle!(downstream::Demand("m".into()), program::OwnedMemberTree);
     assert_eq!(
         request
-            .query(query::child_output::Read("child:m".into()))
+            .query(query::child_output::Read("downstream:m".into()))
             .execute()
             .unwrap()
             .rows()[0]
@@ -243,9 +243,9 @@ fn a_real_retirement_and_restoration_each_keep_their_final_edit_and_owned_histor
         .push_stage::<ModelTree, _>(member::retire::Intent)
         .unwrap();
     let final_edit = edit
-        .push_stage::<ModelTree, _>(fixture::cap::Intent {
-            key: "envelope-cap".into(),
-            value: 8,
+        .push_stage::<ModelTree, _>(fixture::model::Intent {
+            key: "a".into(),
+            value: 2,
             key_derived_target: false,
         })
         .unwrap();
@@ -258,7 +258,7 @@ fn a_real_retirement_and_restoration_each_keep_their_final_edit_and_owned_histor
         panic!("{outcome:?}")
     };
     assert_eq!(retired.stage_count(), 2);
-    assert_eq!(retired.result(&final_edit).unwrap().value, 8);
+    assert_eq!(retired.result(&final_edit).unwrap().value, 2);
     assert_eq!(writes.published_rows.len() + writes.omitted_publications, 1);
     assert_eq!(super::super::super::courts::native_head(&host).1, [before]);
     assert!(request
@@ -266,7 +266,7 @@ fn a_real_retirement_and_restoration_each_keep_their_final_edit_and_owned_histor
         .execute()
         .is_err());
     assert!(request
-        .query(query::child_output::Read("child:m".into()))
+        .query(query::child_output::Read("downstream:m".into()))
         .execute()
         .is_err());
     let limits = WorthQueryCorrectionHistoryLimits::new(None, NonZeroUsize::MIN);
@@ -284,9 +284,9 @@ fn a_real_retirement_and_restoration_each_keep_their_final_edit_and_owned_histor
         .ordered_authored()
         .unwrap();
     let final_edit = inverse
-        .push_stage::<ModelTree, _>(fixture::cap::Intent {
-            key: "envelope-cap".into(),
-            value: 9,
+        .push_stage::<ModelTree, _>(fixture::model::Intent {
+            key: "a".into(),
+            value: 3,
             key_derived_target: false,
         })
         .unwrap();
@@ -300,7 +300,7 @@ fn a_real_retirement_and_restoration_each_keep_their_final_edit_and_owned_histor
         panic!("{outcome:?}")
     };
     assert_eq!(restored.stage_count(), 2);
-    assert_eq!(restored.result(&final_edit).unwrap().value, 9);
+    assert_eq!(restored.result(&final_edit).unwrap().value, 3);
     assert_eq!(writes.published_rows.len() + writes.omitted_publications, 1);
     assert_eq!(super::super::super::courts::native_head(&host).1, [before]);
     assert_eq!(
@@ -316,12 +316,12 @@ fn a_real_retirement_and_restoration_each_keep_their_final_edit_and_owned_histor
     // including its current delivery/close route; no fresh Birth is requested.
     assert_eq!(
         request
-            .query(query::child_output::Read("child:m".into()))
+            .query(query::child_output::Read("downstream:m".into()))
             .execute()
             .unwrap()
             .rows()[0]
             .value,
         500
     );
-    settle!(child::Demand("m".into()), program::SealTree);
+    settle!(downstream::Demand("m".into()), program::OwnedMemberTree);
 }

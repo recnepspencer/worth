@@ -158,12 +158,42 @@ impl ApplicationProgramDefinition<Schema> for Program {
 pub struct RetirementProgram;
 impl ApplicationProgramDefinition<Schema> for RetirementProgram {
     type Contributions = (Contribution,);
-    type Outputs = <Program as ApplicationProgramDefinition<Schema>>::Outputs;
+    type Outputs =
+        ApplicationProgramOutputs<(ModelTree, (ProducedTree, (SealTree, OwnedMemberTree)))>;
     type Rules = ApplicationRuleLeaf;
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("owned-outputs.interleaved-retirement");
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
         feature_specs::<fixture::Delivery<ModelTree>>()
+    }
+}
+pub struct OwnedMemberRoot;
+impl ApplicationConnectionIdentity for OwnedMemberRoot {
+    const IDENTITY: &'static str = "interleaved.owned-member-root";
+}
+impl ApplicationOccurrenceConnectionBinding<Schema, base::Entry, hierarchy::Child>
+    for OwnedMemberRoot
+{
+}
+pub type OwnedMemberTree = ApplicationDemandOutputGraph<
+    ApplicationConnectionRef<
+        Schema,
+        base::Entry,
+        base::EntryOutput,
+        hierarchy::Child,
+        hierarchy::SeedInput,
+        OwnedMemberRoot,
+    >,
+    ApplicationOutputLeaf,
+>;
+impl WorthQueryApplicationRequiredOutputConnection<Schema> for OwnedMemberRoot {
+    type Source = downstream::initial::Binding;
+    type Demand = downstream::Demand;
+    const IDENTITY: &'static str = <Self as ApplicationConnectionIdentity>::IDENTITY;
+    fn demand_from_source(
+        input: &downstream::initial::Input,
+    ) -> Result<Self::Demand, WorthQueryRequiredOutputConnectionDenial> {
+        Ok(downstream::Demand(input.0.key.clone()))
     }
 }
 fn feature_specs<
