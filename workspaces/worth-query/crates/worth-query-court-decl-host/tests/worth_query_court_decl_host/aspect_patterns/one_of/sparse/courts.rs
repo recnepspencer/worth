@@ -34,7 +34,7 @@ fn changed_optional_cases_reverse_and_reapply_without_capturing_unchanged_fields
     };
     let untouched = query::Row {
         class: 1,
-        first: Some(999),
+        first: Some(99),
         second: None,
         required: None,
         third: None,

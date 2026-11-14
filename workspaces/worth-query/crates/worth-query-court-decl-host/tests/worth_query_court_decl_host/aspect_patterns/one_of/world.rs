@@ -103,7 +103,7 @@ fn try_install_seed_with_neighbour(
                 graph.bind_entity(WorthQueryApplicationEntitySeed::new(
                     Record::reference(), WorthQueryApplicationEntityKey::new("neighbour").unwrap())
                     .field(Key::at("Key"), "neighbour".to_owned())
-                    .field(FirstValue::at("FirstValue"), 999))?;
+                    .field(FirstValue::at("FirstValue"), 99))?;
             }
             Ok(())
         },
