@@ -182,7 +182,7 @@ where
                 ),
             ))
         })?;
-        let rows = context.discover::<Discovery<S, C>>(parent, intent)?;
+        let rows = context.discover_outgoing::<Discovery<S, C>>(parent, intent)?;
         let children = Binding::<S, C>::demands_from_discovery(&rows).map_err(|cause| {
             SynchronousOutputFailure(CoupledSourceReadStop::from(
                 super::super::WorthQueryOutputDemandDenial::discovery_connection_denied(
@@ -214,8 +214,12 @@ where
                 ),
             ))
         })?;
-        let rows = context
-            .discover_as_at::<Prerequisites<S, C>, PrerequisiteRows<S, C>>(pin, source, intent)?;
+        let rows = context.discover_as_at::<Prerequisites<S, C>, PrerequisiteRows<S, C>>(
+            pin,
+            source,
+            intent,
+            crate::domain_computation::primary_graph::provider::CandidateReadSupport::Query,
+        )?;
         for row in rows.0 {
             let parent = Binding::<S, C>::parent_from_prerequisite(&row).map_err(|cause| {
                 SynchronousOutputFailure(CoupledSourceReadStop::from(

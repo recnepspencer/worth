@@ -10,18 +10,20 @@ use worth_relational::facade::{
 };
 pub(in crate::domain_computation::primary_graph) enum CandidateReadSupport {
     Query(AppliedQuerySupport),
+    Outgoing(AppliedQuerySupport),
     Parent(VerifiedAppliedParent),
 }
 impl CandidateReadSupport {
     pub(in crate::domain_computation::primary_graph) fn subject(&self) -> &str {
         match self {
-            Self::Query(support) => support.query(),
+            Self::Query(support) | Self::Outgoing(support) => support.query(),
             Self::Parent(parent) => parent.family(),
         }
     }
     pub(in crate::domain_computation::primary_graph) fn description(&self) -> &'static str {
         match self {
             Self::Query(_) => "discovery support",
+            Self::Outgoing(_) => "outgoing discovery support",
             Self::Parent(_) => "verified output support",
         }
     }
@@ -33,7 +35,9 @@ impl CandidateReadSupport {
         complete: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
     ) -> Result<Option<&Fact>, WorthQueryApplicationAttemptDenial> {
         match self {
-            Self::Query(support) => support.changed_fact(execution, runtime, before, complete),
+            Self::Query(support) | Self::Outgoing(support) => {
+                support.changed_fact(execution, runtime, before, complete)
+            }
             Self::Parent(parent) => parent.changed_fact(execution, runtime, before, complete),
         }
     }

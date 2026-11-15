@@ -90,6 +90,12 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
     pub(in crate::domain_computation::primary_graph) fn reset_candidate_read_support(&mut self) {
         self.candidate_read_support = CandidateReadSupports::default();
     }
+    /// The wave must replace these by a complete pure outgoing pass before returning.
+    pub(in crate::domain_computation::primary_graph) fn refresh_outgoing_read_support(&mut self) {
+        self.candidate_read_support
+            .values
+            .retain(|(_, _, support)| !matches!(support, CandidateReadSupport::Outgoing(_)));
+    }
     pub(in crate::domain_computation::primary_graph) fn candidate_read_support(
         &self,
     ) -> &[(EntityId, usize, CandidateReadSupport)] {

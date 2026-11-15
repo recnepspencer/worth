@@ -158,4 +158,13 @@ where
         L::assemble_static(context, parent, demand, next)?;
         R::assemble_static(context, parent, demand, next)
     }
+    fn assemble_occurrences(
+        context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        parent: &AppliedOutputParent,
+        demand: &D,
+        next: &mut SynchronousOutputWave<S>,
+    ) -> Result<(), SynchronousOutputFailure> {
+        L::assemble_occurrences(context, parent, demand, next)?;
+        R::assemble_occurrences(context, parent, demand, next)
+    }
 }

@@ -4705,6 +4705,17 @@ discard a captured root's static branch: each retained alias runs its own static
 discovery once against the canonical genuine Parent, even when that supplier
 completed before a later positioned capture. Distinct static selectors in the
 full demand remain distinct work; they do not execute the supplier again.
+Before a wave returns its candidate to a later authored stage, and before final
+publication, Query re-closes the component's outgoing discovery at that candidate.
+A later authored action can therefore add a real next/consumer link in the same
+envelope. Query replaces only its outgoing closure observations, re-admits every
+completed canonical Parent's declared outgoing query, and drains all newly found
+demands through the same ranked wave. New suppliers run once; this pure refresh
+does not replay existing suppliers or static selectors. The resulting complete
+outgoing support still undergoes normal strict final validation. Incoming Parent,
+static-selector, verified-output and numerical decision support remain strict:
+changing data an executed supplier consumed is still an atomic refusal. Every
+refresh uses the same request, C authorization, allocation and work allowance.
 Installed ports, current C READ, genuine D data, Prepared/Verified Parent custody,
 existing producer round/allocation bounds and after-own/final support remain in
 force. Neither distinct source IDs nor a proposed descriptor constitutes proof.

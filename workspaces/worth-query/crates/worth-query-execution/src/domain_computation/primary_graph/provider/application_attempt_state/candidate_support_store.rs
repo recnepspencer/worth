@@ -81,4 +81,15 @@ impl super::super::WorthQueryPrimaryGraphProvider {
             .reset_candidate_read_support();
         Ok(())
     }
+    pub(in crate::domain_computation::primary_graph) fn refresh_outgoing_read_support(
+        &self,
+        root: &WorthQueryProviderSessionTerminalBinding,
+    ) -> Result<(), Denial> {
+        self.attempts
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+            .query_support_root(root)?
+            .refresh_outgoing_read_support();
+        Ok(())
+    }
 }

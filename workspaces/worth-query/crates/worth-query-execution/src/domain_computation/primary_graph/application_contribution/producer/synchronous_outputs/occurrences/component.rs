@@ -149,6 +149,15 @@ where
     ) -> Step {
         Ok(())
     }
+    fn assemble_occurrences(
+        &self,
+        context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        parent: &AppliedOutputParent,
+        demand: &D,
+        next: &mut SynchronousOutputWave<S>,
+    ) -> Step {
+        self.assemble(context, parent, demand, next)
+    }
 }
 
 impl<T> sealed::Edges for ApplicationOutputOccurrences<T> {}
@@ -192,5 +201,13 @@ where
         _: &mut SynchronousOutputWave<S>,
     ) -> Step {
         Ok(())
+    }
+    fn assemble_occurrences(
+        context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        parent: &AppliedOutputParent,
+        demand: &D,
+        next: &mut SynchronousOutputWave<S>,
+    ) -> Step {
+        capture::Continuation::assemble(&N::EXECUTION, context, parent, demand, next)
     }
 }

@@ -33,6 +33,13 @@ pub(in super::super) trait Continuation<S: ApplicationSchema, D>:
         demand: &D,
         next: &mut SynchronousOutputWave<S>,
     ) -> Result<(), SynchronousOutputFailure>;
+    fn assemble_occurrences(
+        &self,
+        context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        parent: &AppliedOutputParent,
+        demand: &D,
+        next: &mut SynchronousOutputWave<S>,
+    ) -> Result<(), SynchronousOutputFailure>;
 }
 
 /// The declared static edges `E` of a demand, dispatched by type.
@@ -89,5 +96,14 @@ where
         next: &mut SynchronousOutputWave<S>,
     ) -> Result<(), SynchronousOutputFailure> {
         E::assemble_static(context, parent, demand, next)
+    }
+    fn assemble_occurrences(
+        &self,
+        context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        parent: &AppliedOutputParent,
+        demand: &D,
+        next: &mut SynchronousOutputWave<S>,
+    ) -> Result<(), SynchronousOutputFailure> {
+        E::assemble_occurrences(context, parent, demand, next)
     }
 }
