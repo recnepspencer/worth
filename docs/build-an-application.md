@@ -4614,7 +4614,12 @@ the same complete component: its declarations expand once per graph, while every
 continuation and selector remains active. Repeated members inside that component,
 ordinary duplicate static edges, textual ID collisions and conflicting meanings
 still refuse.
-Unmarked static trees still reject declaration cycles. Each member
+Static continuations may connect members inside that complete component. Their
+full static graph must be acyclic before condensation, and the projected graph
+between components must also be acyclic. Among runnable tasks, component order
+then static precedence determine priority; actual instance prerequisites still
+decide readiness. Each captured continuation retains its own selector and does
+not replay a supplier. Each occurrence member
 implements `WorthQueryApplicationPrerequisiteOutputConnection`: its typed
 prerequisite query, sealed result-relation selector (`prerequisite_rows`), row
 binding, target-to-query mapping and one parent-demand mapping per row. Query

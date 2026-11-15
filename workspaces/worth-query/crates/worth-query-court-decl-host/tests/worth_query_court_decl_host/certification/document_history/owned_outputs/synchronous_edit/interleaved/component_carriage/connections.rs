@@ -111,7 +111,7 @@ pub type StaticConnection = ApplicationConnectionRef<
 >;
 impl WorthQueryApplicationDependentOutputConnection<Schema> for Static {
     type RootDemand = Demand;
-    type Demand = second::Demand;
+    type Demand = from_first::Demand;
     type Discovery = query::first_output::Read;
     const IDENTITY: &'static str = <Self as ApplicationConnectionIdentity>::IDENTITY;
     fn discovery_from_root(
@@ -124,11 +124,66 @@ impl WorthQueryApplicationDependentOutputConnection<Schema> for Static {
     }
     fn demands_from_discovery(
         row: &query::Row,
-    ) -> Result<Vec<second::Demand>, WorthQueryRequiredOutputConnectionDenial> {
+    ) -> Result<Vec<from_first::Demand>, WorthQueryRequiredOutputConnectionDenial> {
         match row.key.as_str() {
-            "first:a" => Ok(vec![second::Demand("a".into())]),
-            "first:carriage:d" => Ok(vec![second::Demand("carriage:d".into())]),
+            "first:a" | "first:carriage:d" => Ok(vec![from_first::Demand(row.key.clone())]),
             _ => Ok(Vec::new()),
         }
+    }
+}
+
+pub struct Parent;
+impl ApplicationConnectionIdentity for Parent {
+    const IDENTITY: &'static str = "component-carriage.child-parent";
+}
+impl ApplicationOccurrenceConnectionBinding<Schema, hierarchy::Parent, hierarchy::Child>
+    for Parent
+{
+}
+pub type ParentConnection = ApplicationConnectionRef<
+    Schema,
+    hierarchy::Parent,
+    hierarchy::Output,
+    hierarchy::Child,
+    hierarchy::SeedInput,
+    Parent,
+>;
+impl WorthQueryApplicationDependentOutputConnection<Schema> for Parent {
+    type RootDemand = Demand;
+    type Demand = from_first::Demand;
+    type Discovery = query::first_output::Read;
+    const IDENTITY: &'static str = <Self as ApplicationConnectionIdentity>::IDENTITY;
+    fn discovery_from_root(
+        root: &Demand,
+    ) -> Result<Self::Discovery, WorthQueryRequiredOutputConnectionDenial> {
+        Ok(query::first_output::Read(format!("first:{}", root.source)))
+    }
+    fn demands_from_discovery(
+        _: &query::Row,
+    ) -> Result<Vec<Self::Demand>, WorthQueryRequiredOutputConnectionDenial> {
+        // Only Static's captured a/d selectors request children. This connection
+        // supplies their real incoming Parents, never an alternative child list.
+        Ok(Vec::new())
+    }
+}
+impl WorthQueryApplicationPrerequisiteOutputConnection<Schema> for Parent {
+    type Prerequisites = parent::Read;
+    type PrerequisiteRow = parent::ParentBinding;
+    type Selection = parent::Selection;
+    fn prerequisite_rows() -> Self::Selection {
+        parent::owner()
+    }
+    fn prerequisites_from_target(
+        target: &from_first::Demand,
+    ) -> Result<parent::Read, WorthQueryRequiredOutputConnectionDenial> {
+        Ok(parent::Read(target.0.clone()))
+    }
+    fn parent_from_prerequisite(
+        row: &parent::Parent,
+    ) -> Result<Demand, WorthQueryRequiredOutputConnectionDenial> {
+        Ok(Demand {
+            source: row.key.clone(),
+            selector: None,
+        })
     }
 }

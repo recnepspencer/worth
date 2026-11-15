@@ -68,9 +68,9 @@ fn recursive_component_retains_parents_and_later_static_selectors() {
             "both typed prerequisite groups must execute before their consumer"
         );
     }
-    for (key, value) in [("a", 1001), ("carriage:d", 1004)] {
+    for (key, value) in [("a", 1000), ("carriage:d", 4000)] {
         let rows = request
-            .query(query::second_output::Read(format!("second:{key}")))
+            .query(query::child_output::Read(format!("from-first:first:{key}")))
             .execute()
             .unwrap();
         assert_eq!(
@@ -81,7 +81,7 @@ fn recursive_component_retains_parents_and_later_static_selectors() {
     }
     assert_eq!(
         contacts, 5,
-        "three real first routes and two selected second routes, with no supplier replay"
+        "three real first routes and two selected from-first routes, with no supplier replay"
     );
 }
 #[test]
