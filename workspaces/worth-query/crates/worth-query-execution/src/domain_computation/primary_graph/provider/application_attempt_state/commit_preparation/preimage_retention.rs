@@ -47,6 +47,7 @@ impl WorthQueryPreparedPreImageRetention {
 
 pub(super) fn retain_attempt_preimage(
     attempt: &WorthQueryPrimaryGraphApplicationAttempt,
+    member: Option<&super::super::CoupledApplicationMemberKind>,
     candidate: &worth_relational::facade::mvcc::ValidatedRelationalProposal,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     layout: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
@@ -93,7 +94,7 @@ pub(super) fn retain_attempt_preimage(
                 "preimage projection capacity exhausted"),
         })?;
     let examined = candidates.examined();
-    let selected = if let Some(output) = demand.output_fields() {
+    let (selected, route) = if let Some(output) = demand.output_fields() {
         use worth_relational::facade::transactions::EntityReference;
         let target = if let Some((_, target)) = &original_capture {
             *target
@@ -136,34 +137,55 @@ pub(super) fn retain_attempt_preimage(
             None
         };
         match members {
-            Some(members) => selection::retain_output_fields_with_members(
-                demand,
-                candidates.iter(),
-                &footprint,
-                target,
-                layout,
-                &members,
+            Some(members) => (
+                selection::retain_output_fields_with_members(
+                    demand,
+                    candidates.iter(),
+                    &footprint,
+                    target,
+                    layout,
+                    &members,
+                ),
+                "output-fields-with-members",
             ),
-            None => selection::retain_output_fields(
-                demand,
-                candidates.iter(),
-                &footprint,
-                target,
-                layout,
+            None => (
+                selection::retain_output_fields(
+                    demand,
+                    candidates.iter(),
+                    &footprint,
+                    target,
+                    layout,
+                ),
+                "output-fields",
             ),
         }
     } else if let Some(selection) = authored_anchors::select(attempt)? {
-        selection::retain_from_authored_anchors(
-            demand,
-            candidates.iter(),
-            &footprint,
-            &selection.anchors,
-            selection.own_changes,
+        (
+            selection::retain_from_authored_anchors(
+                demand,
+                candidates.iter(),
+                &footprint,
+                &selection.anchors,
+                selection.own_changes,
+            ),
+            "authored-anchors",
         )
     } else {
-        selection::retain_from_attempt_with_context(demand, candidates.iter(), &footprint)
+        (
+            selection::retain_from_attempt_with_context(demand, candidates.iter(), &footprint),
+            "strict-mutated-fields",
+        )
     };
-    let (mut retained, candidates_materialized) = selected.map_err(retention_failure)?.into_parts();
+    let (mut retained, candidates_materialized) = selected
+        .map_err(|failure| {
+            retention_failure(failure.with_attempt(
+                attempt,
+                member,
+                route,
+                original_capture.is_some(),
+            ))
+        })?
+        .into_parts();
     if !demand.relations().is_empty() {
         retained = relations::retain(
             attempt,

@@ -276,6 +276,14 @@ fn collateral_value_cannot_supply_a_missing_retired_root_observation() {
     assert!(detail.contains("site=output-locus-observation"), "{detail}");
     assert!(detail.contains("target=Some(Entity("), "{detail}");
     assert!(detail.contains("ThirdValue"), "{detail}");
+    assert!(detail.contains("participant=root;"), "{detail}");
+    assert!(
+        detail.contains("binding=Some(\"native-record-patterns.complete-retire.v1\")"),
+        "{detail}"
+    );
+    assert!(detail.contains("correction_association=true"), "{detail}");
+    assert!(detail.contains("authored_identity=true"), "{detail}");
+    assert!(detail.contains("route=output-fields;"), "{detail}");
     assert_eq!(
         before.selected_commit(),
         world::pin(&host).selected_commit()
