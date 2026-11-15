@@ -29,7 +29,7 @@ fn run(consumed: bool) {
     .unwrap();
     if consumed {
         // This existing real stage needs First, exposing its pending static child.
-        edit.push_stage::<ApplicationNoOutputGraph, _>(fixture::after_producer::Intent {
+        edit.push_stage::<AfterTree, _>(fixture::after_producer::Intent {
             key: "envelope-cap".into(),
             value: 1,
             key_derived_target: false,
