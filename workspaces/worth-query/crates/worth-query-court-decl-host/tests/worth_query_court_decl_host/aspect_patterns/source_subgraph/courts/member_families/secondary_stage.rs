@@ -4,7 +4,7 @@ use worth_query_decl::facade::application_program::ApplicationNoOutputGraph;
 use worth_query_host::facade::application_entry::WorthQueryEditEnvelopeOutcome;
 
 #[test]
-fn a_later_live_member_edit_retains_its_input_and_reverses_only_its_own_change() {
+fn a_later_live_member_edit_keeps_its_original_input_and_complete_envelope_replay() {
     let host = world::install(world::Fault::None, Hashes::default());
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
@@ -16,25 +16,29 @@ fn a_later_live_member_edit_retains_its_input_and_reverses_only_its_own_change()
         key: "part-0".into(),
         value: 77,
     });
-    let mut envelope = request
-        .edit_envelope()
-        .idempotency("source-and-later-member".to_owned())
-        .runtime_stages(&host)
-        .ordered_authored()
-        .unwrap();
-    let first = envelope
-        .push_stage::<ApplicationNoOutputGraph, _>(edit::source::Intent(edit::Edit {
-            key: "source".into(),
-            value: 9,
-        }))
-        .unwrap();
-    let later = envelope
-        .push_stage::<ApplicationNoOutputGraph, _>(input)
-        .unwrap();
+    let perform = || {
+        let mut envelope = request
+            .edit_envelope()
+            .idempotency("source-and-later-member".to_owned())
+            .runtime_stages(&host)
+            .ordered_authored()
+            .unwrap();
+        let first = envelope
+            .push_stage::<ApplicationNoOutputGraph, _>(edit::source::Intent(edit::Edit {
+                key: "source".into(),
+                value: 9,
+            }))
+            .unwrap();
+        let later = envelope
+            .push_stage::<ApplicationNoOutputGraph, _>(input.clone())
+            .unwrap();
+        let outcome = envelope
+            .execute_performed(ExecutionAllocationPolicy::SystemAllocation)
+            .unwrap();
+        (outcome, first, later)
+    };
+    let (outcome, first, later) = perform();
     assert_eq!((first.ordinal(), later.ordinal()), (0, 1));
-    let outcome = envelope
-        .execute_performed(ExecutionAllocationPolicy::SystemAllocation)
-        .unwrap();
     let WorthQueryEditEnvelopeOutcome::Committed(done) = outcome else {
         panic!("{outcome:?}");
     };
@@ -44,12 +48,26 @@ fn a_later_live_member_edit_retains_its_input_and_reverses_only_its_own_change()
     assert_eq!(changed.id, before.id);
     assert_eq!(changed.members[0].0, before.members[0].0);
     assert_eq!(changed.members[0].1.value, 77);
-    reverse(
-        &request,
-        done.stage_receipt(&later).unwrap(),
-        "reverse-only-later-member",
+    assert_eq!(
+        done.stage_receipt(&later).unwrap().commit_reference(),
+        done.receipt().commit_reference(),
+        "the later stage belongs to the same atomic Native commit"
     );
-    assert_eq!(local_snapshot(&request), before);
+    let mut following = input.clone();
+    following.revalue.as_mut().unwrap().value = 88;
+    delete(&host, &request, following, "subsequent-member-edit");
+    let after = local_snapshot(&request);
+    assert_eq!(after.members[0].1.value, 88);
+    let replay = perform().0;
+    assert!(
+        matches!(
+            replay,
+            WorthQueryEditEnvelopeOutcome::AlreadyCommitted(_)
+                | WorthQueryEditEnvelopeOutcome::RecoveredCommitted(_)
+        ),
+        "{replay:?}"
+    );
+    assert_eq!(local_snapshot(&request), after);
     assert_eq!(
         request
             .query(graph_read::source::Read("source".into()))
