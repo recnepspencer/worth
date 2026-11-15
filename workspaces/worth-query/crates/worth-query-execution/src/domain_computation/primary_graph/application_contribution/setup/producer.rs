@@ -2,6 +2,7 @@
 use super::super::producer::input_capture::InputCaptureOwner;
 use super::super::WorthQueryProducerInputCaptureHandler;
 use super::*;
+use crate::domain_computation::primary_graph::WorthQueryApplicationProjection;
 use worth_query_declaration::facade::application_program::WorthQueryProducerInputCaptureDefinition;
 
 impl<Schema: ApplicationSchema> WorthQueryApplicationContributionSetup<'_, Schema> {
@@ -12,10 +13,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationContributionSetup<'_, Schem
     where
         Binding: WorthQueryApplicationProducerBinding<Schema>,
         ProducerSourceValue<Schema, Binding>:
-            super::super::super::super::WorthQueryApplicationProjection<
-                Schema,
-                ProducerSourceQuery<Schema, Binding>,
-            >,
+            WorthQueryApplicationProjection<Schema, ProducerSourceQuery<Schema, Binding>>,
     {
         self.register_producer::<Binding>(provider, None)
     }
@@ -33,10 +31,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationContributionSetup<'_, Schem
             WorthQueryProducerInputCaptureDefinition<Schema, OutputFamily = Binding::OutputFamily>,
         Handler: WorthQueryProducerInputCaptureHandler<Schema, Binding, Capture>,
         ProducerSourceValue<Schema, Binding>:
-            super::super::super::super::WorthQueryApplicationProjection<
-                Schema,
-                ProducerSourceQuery<Schema, Binding>,
-            >,
+            WorthQueryApplicationProjection<Schema, ProducerSourceQuery<Schema, Binding>>,
     {
         self.handler::<Binding::Operation, Handler>(handler)?;
         self.register_producer::<Binding>(
@@ -52,10 +47,8 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationContributionSetup<'_, Schem
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>
     where
         Binding: WorthQueryApplicationProducerBinding<Schema>,
-        ProducerSourceValue<Schema, Binding>: super::super::super::WorthQueryApplicationProjection<
-            Schema,
-            ProducerSourceQuery<Schema, Binding>,
-        >,
+        ProducerSourceValue<Schema, Binding>:
+            WorthQueryApplicationProjection<Schema, ProducerSourceQuery<Schema, Binding>>,
     {
         let source_query = self.require_owned_query::<ProducerSourceBinding<Schema, Binding>>()?;
         let mutation = self.require_owned_mutation::<Binding::Operation>()?;
