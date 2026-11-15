@@ -120,11 +120,12 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
     }
     pub(in crate::domain_computation::primary_graph::application_contribution) fn refresh_outgoing_support(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
         self.application
             .runtime
             .primary_provider
-            .refresh_outgoing_read_support(&self.root_session)
+            .refresh_outgoing_read_support(execution, &self.root_session)
             .map_err(execution::denial::candidate_support_denied)
     }
     pub(in crate::domain_computation::primary_graph::application_contribution) fn retain_verified_parent(

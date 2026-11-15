@@ -83,13 +83,13 @@ impl super::super::WorthQueryPrimaryGraphProvider {
     }
     pub(in crate::domain_computation::primary_graph) fn refresh_outgoing_read_support(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         root: &WorthQueryProviderSessionTerminalBinding,
     ) -> Result<(), Denial> {
         self.attempts
             .lock()
             .unwrap_or_else(|p| p.into_inner())
             .query_support_root(root)?
-            .refresh_outgoing_read_support();
-        Ok(())
+            .refresh_outgoing_read_support(execution)
     }
 }

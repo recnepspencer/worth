@@ -12,7 +12,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
         // Failure anywhere below stops this whole attempt before publication.
         context
             .owner
-            .refresh_outgoing_support()
+            .refresh_outgoing_support(context.execution)
             .map_err(CoupledSourceReadStop::from)?;
         let pin = candidate
             .pin_source(context.execution)

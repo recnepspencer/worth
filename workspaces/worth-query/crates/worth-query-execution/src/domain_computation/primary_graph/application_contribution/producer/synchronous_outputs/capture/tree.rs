@@ -131,15 +131,17 @@ where
             true,
         )?;
         match route {
-            super::super::execution::CoupledSourceRead::Route { scope, partition } => Ok(Some((
-                occurrences::OccurrenceKey {
-                    family: demand.family,
-                    source_binding: demand.source_binding_type,
-                    scope,
-                    partition,
-                },
-                component,
-            ))),
+            super::super::super::execution::CoupledSourceRead::Route { scope, partition } => {
+                Ok(Some((
+                    occurrences::OccurrenceKey {
+                        family: demand.family,
+                        source_binding: demand.source_binding_type,
+                        scope,
+                        partition,
+                    },
+                    component,
+                )))
+            }
             _ => Err(occurrences::refusal(
                 self.connection,
                 "route-only source returned a result",
