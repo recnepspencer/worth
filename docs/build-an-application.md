@@ -4609,8 +4609,11 @@ fragmented sibling wrappers refuse during program declaration with
 Independent components and ordinary static branches remain composable.
 Distinct startable roots may share the same complete component and exact typed
 static tail: the program describes those exact connections once, while retaining
-each root and its runtime demand. Textual ID collisions, conflicting meanings
-and duplicates within a graph still refuse.
+each root and its runtime demand. Nested static continuations may also repeat
+the same complete component: its declarations expand once per graph, while every
+continuation and selector remains active. Repeated members inside that component,
+ordinary duplicate static edges, textual ID collisions and conflicting meanings
+still refuse.
 Unmarked static trees still reject declaration cycles. Each member
 implements `WorthQueryApplicationPrerequisiteOutputConnection`: its typed
 prerequisite query, sealed result-relation selector (`prerequisite_rows`), row
