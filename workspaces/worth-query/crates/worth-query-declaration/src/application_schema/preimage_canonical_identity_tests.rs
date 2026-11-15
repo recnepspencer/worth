@@ -133,7 +133,7 @@ fn field() -> DeclaredPreImageLocus<Schema> {
 }
 
 #[test]
-fn changed_fields_require_one_preserved_output_and_a_bounded_same_entity_vocabulary() {
+fn changed_fields_require_one_preserved_output_and_a_bounded_root_vocabulary() {
     use crate::application_aftermath::DeclaredPreImageDemandDenial as Denial;
     let kept = Target::<WorthQueryPreserveOutput, WorthQueryExactlyOneOutput>::DESCRIPTOR;
     assert_eq!(
@@ -156,12 +156,30 @@ fn changed_fields_require_one_preserved_output_and_a_bounded_same_entity_vocabul
         Aspect,
         u64,
     >::at("Field"));
-    for fields in [vec![], vec![foreign]] {
+    // At least one field belongs to the preserved root. Fields on another
+    // entity are judged at installation, which alone knows the member families.
+    for fields in [vec![], vec![foreign.clone()]] {
         assert_eq!(
             DeclaredPreImageDemand::changed_fields_for_output(kept, fields, 64).validate(),
             Err(Denial::InvalidOutputFieldCapture)
         );
     }
+    assert_eq!(
+        DeclaredPreImageDemand::changed_fields_for_output(kept, [field(), foreign], 64).validate(),
+        Ok(())
+    );
+    let retired = Target::<WorthQueryRetireOutput, WorthQueryExactlyOneOutput>::DESCRIPTOR;
+    let other = DeclaredPreImageLocus::<Schema>::from_field(fragment::FieldSelection::<
+        Fixture,
+        OtherEntity,
+        Aspect,
+        u64,
+    >::at("Field"));
+    assert_eq!(
+        DeclaredPreImageDemand::retired_fields_for_output(retired, [field(), other], 64).validate(),
+        Err(Denial::InvalidOutputFieldCapture),
+        "a complete retired image stays on its one output entity"
+    );
     assert_eq!(
         DeclaredPreImageDemand::changed_fields_for_output(kept, [field()], 0).validate(),
         Err(Denial::ZeroByteBound)

@@ -6,6 +6,7 @@ mod notes;
 pub(super) use notes::*;
 pub(super) mod local_member;
 mod operations;
+pub(super) mod sparse_owner;
 pub(super) use operations::*;
 mod correction;
 mod creation;
@@ -36,13 +37,16 @@ pub type NoteTarget = WorthQueryInvariantMutationTarget<Schema, Note>;
 pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
-    local_member::declare(links::declare(query::declare(operations::declare(schema))))
+    sparse_owner::declare(local_member::declare(links::declare(query::declare(
+        operations::declare(schema),
+    ))))
 }
 pub fn configure(
     setup: &mut WorthQueryApplicationContributionSetup<'_, Schema>,
     fault: world::Fault,
 ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
     local_member::configure(setup, fault)?;
+    sparse_owner::configure(setup)?;
     setup.handler::<links::Binding, _>(links::Handler)?;
     setup.handler::<CreateBinding, _>(creation::Handler)?;
     setup.handler::<RestoreBinding, _>(creation::RestorationHandler {

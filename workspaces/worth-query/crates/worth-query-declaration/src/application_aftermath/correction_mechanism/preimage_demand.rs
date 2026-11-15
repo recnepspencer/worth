@@ -40,6 +40,8 @@ impl<Schema> DeclaredPreImageDemand<Schema> {
     /// Retain only actually changed eligible fields on one exact preserved output.
     /// An unchanged eligible field is not retained; changed fields require an
     /// authorized original value or authenticated absence before publication.
+    /// Fields of declared live-owner member families may sit beside the
+    /// output's own fields; each moved member's fields are captured completely.
     pub fn changed_fields_for_output(
         output: crate::application_operation::ApplicationMutationOutputRoleDescriptor,
         loci: impl IntoIterator<Item = DeclaredPreImageLocus<Schema>>,
@@ -82,14 +84,21 @@ impl<Schema> DeclaredPreImageDemand<Schema> {
 
     pub(crate) fn validate(&self) -> Result<(), DeclaredPreImageDemandDenial> {
         if let Some((capture, output)) = self.output_fields {
+            use super::PreImageOutputFieldCapture as Capture;
             use crate::application_operation::ApplicationMutationOutputRoleCardinality as Cardinality;
+            let mut on_output = self
+                .loci
+                .iter()
+                .map(|locus| locus.entity() == output.entity());
+            // A changed-field demand may also name live-owner member fields;
+            // installation, which knows the member families, judges those.
+            let vocabulary = match capture {
+                Capture::ChangedPreserved => on_output.any(|root| root),
+                Capture::CompleteRetired => !self.loci.is_empty() && on_output.all(|root| root),
+            };
             if output.posture() != capture.posture()
                 || output.cardinality() != Cardinality::ExactlyOne
-                || self.loci.is_empty()
-                || self
-                    .loci
-                    .iter()
-                    .any(|locus| locus.entity() != output.entity())
+                || !vocabulary
             {
                 return Err(DeclaredPreImageDemandDenial::InvalidOutputFieldCapture);
             }

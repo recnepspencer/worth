@@ -49,6 +49,7 @@ impl ApplicationSchemaContribution<Schema> for Contribution {
         roster::UndoCreate,
         roster::UndoRetire,
         roster::local_member::UndoDelete,
+        roster::sparse_owner::Revision,
     );
 }
 

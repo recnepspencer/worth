@@ -14,7 +14,7 @@ impl ProjectedPreImageCandidates {
     }
     pub(in crate::domain_computation::primary_graph) fn iter(
         &self,
-    ) -> impl Iterator<Item = &Decision> {
+    ) -> impl Iterator<Item = &Decision> + Clone {
         self.facts.iter()
     }
     pub(in crate::domain_computation::primary_graph) fn examined(&self) -> usize {

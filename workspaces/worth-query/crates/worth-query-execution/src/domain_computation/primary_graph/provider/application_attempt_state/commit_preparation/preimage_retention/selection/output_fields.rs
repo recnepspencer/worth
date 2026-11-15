@@ -16,6 +16,28 @@ pub(in super::super) fn retain_output_fields<'a>(
     target: EntityId,
     layout: &WorthQueryPrimaryGraphLayout,
 ) -> Result<WorthQueryRetainedPreImageSelection, WorthQueryPreImageRetentionDenial> {
+    let captured = capture_output_fields(demand, facts, mutation, target, layout)?;
+    captured.seal(demand, Vec::new(), 0)
+}
+
+/// The output's own fields and absences, and the bytes charged for them.
+pub(super) struct OutputCapture {
+    fields: Vec<WorthQueryRetainedPreImageFieldSeal>,
+    absences: Vec<RetainedPreImageAbsence>,
+    pub(super) total: usize,
+    facts: usize,
+    target: EntityId,
+}
+
+/// Only loci on the output's entity are judged here. Any other demanded locus
+/// belongs to a member family and is captured on its own member record.
+pub(super) fn capture_output_fields<'a>(
+    demand: &InstalledPreImageDemand,
+    facts: impl Iterator<Item = &'a WorthQueryPrimaryGraphApplicationDecisionFact>,
+    mutation: &ValidatedMutationFootprint,
+    target: EntityId,
+    layout: &WorthQueryPrimaryGraphLayout,
+) -> Result<OutputCapture, WorthQueryPreImageRetentionDenial> {
     use WorthQueryPreImageRetentionDenial as Denial;
     let facts: Vec<_> = facts.collect();
     let record = RecordRef::Entity(target);
@@ -29,7 +51,11 @@ pub(in super::super) fn retain_output_fields<'a>(
     if total > demand.maximum_encoded_bytes() {
         return Err(Denial::ExceedsByteBound);
     }
-    for locus in demand.loci() {
+    for locus in demand
+        .loci()
+        .iter()
+        .filter(|locus| locus.entity() == output.entity())
+    {
         let field = layout
             .field(locus.entity(), locus.aspect(), locus.field())
             .ok_or(Denial::MissingDemandedField)?;
@@ -134,22 +160,45 @@ pub(in super::super) fn retain_output_fields<'a>(
             return Err(Denial::AmbiguousDemandedField);
         }
     }
-    if fields.is_empty() && absences.is_empty() && demand.relations().is_empty() {
-        return Err(Denial::NoMutatedRecord);
-    }
-    Ok(WorthQueryRetainedPreImageSelection {
-        retained: WorthQueryRetainedPreImage::from_retention_seal(WorthQueryRetainedPreImageSeal {
-            fields,
-            absences,
-            total_encoded_bytes: total,
-            output_fields: Some(RetainedOutputFields {
-                output: demand
-                    .output_fields()
-                    .ok_or(Denial::MissingDemandedField)?
-                    .clone(),
-                target,
-            }),
-        }),
-        candidates_materialized: facts.len(),
+    Ok(OutputCapture {
+        fields,
+        absences,
+        total,
+        facts: facts.len(),
+        target,
     })
+}
+
+impl OutputCapture {
+    /// One image: the output's fields and absences, then any member fields
+    /// charged under the same byte total.
+    pub(super) fn seal(
+        mut self,
+        demand: &InstalledPreImageDemand,
+        members: Vec<WorthQueryRetainedPreImageFieldSeal>,
+        member_facts: usize,
+    ) -> Result<WorthQueryRetainedPreImageSelection, WorthQueryPreImageRetentionDenial> {
+        use WorthQueryPreImageRetentionDenial as Denial;
+        self.fields.extend(members);
+        if self.fields.is_empty() && self.absences.is_empty() && demand.relations().is_empty() {
+            return Err(Denial::NoMutatedRecord);
+        }
+        Ok(WorthQueryRetainedPreImageSelection {
+            retained: WorthQueryRetainedPreImage::from_retention_seal(
+                WorthQueryRetainedPreImageSeal {
+                    fields: self.fields,
+                    absences: self.absences,
+                    total_encoded_bytes: self.total,
+                    output_fields: Some(RetainedOutputFields {
+                        output: demand
+                            .output_fields()
+                            .ok_or(Denial::MissingDemandedField)?
+                            .clone(),
+                        target: self.target,
+                    }),
+                },
+            ),
+            candidates_materialized: self.facts + member_facts,
+        })
+    }
 }

@@ -113,10 +113,34 @@ pub(super) fn retain_attempt_preimage(
             }
             target
         };
-        if output.capture() == worth_query_declaration::facade::application_aftermath::PreImageOutputFieldCapture::CompleteRetired {
+        use worth_query_declaration::facade::application_aftermath::PreImageOutputFieldCapture as Capture;
+        if output.capture() == Capture::CompleteRetired {
             validate_retired_target(attempt, output, target).map_err(retention_failure)?;
         }
-        selection::retain_output_fields(demand, candidates.iter(), &footprint, target, layout)
+        // Installation admits member loci beside a changed-field output only
+        // under live-owner families, whose members are captured by record.
+        let members = if output.capture() == Capture::ChangedPreserved {
+            authored_anchors::select(attempt)?
+        } else {
+            None
+        };
+        match members {
+            Some(members) => selection::retain_output_fields_with_members(
+                demand,
+                candidates.iter(),
+                &footprint,
+                target,
+                layout,
+                &members,
+            ),
+            None => selection::retain_output_fields(
+                demand,
+                candidates.iter(),
+                &footprint,
+                target,
+                layout,
+            ),
+        }
     } else if let Some(selection) = authored_anchors::select(attempt)? {
         selection::retain_from_authored_anchors(
             demand,
