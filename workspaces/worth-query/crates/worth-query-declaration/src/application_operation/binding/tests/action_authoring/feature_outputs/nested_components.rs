@@ -6,12 +6,16 @@ struct Side;
 struct Output;
 struct Input;
 struct StaticInput;
+struct BackInput;
 struct ComponentLink;
 struct StaticLink;
 impl ApplicationFeature<MutationSchema> for Member {
     type Inputs = ApplicationFeatureInputList<
         Input,
-        ApplicationFeatureInputList<StaticInput, ApplicationFeatureInputLeaf>,
+        ApplicationFeatureInputList<
+            StaticInput,
+            ApplicationFeatureInputList<BackInput, ApplicationFeatureInputLeaf>,
+        >,
     >;
     const IDENTITY: &'static str = "test.nested.member";
 }
@@ -52,6 +56,11 @@ macro_rules! static_ports {
 }
 static_ports!(Member);
 static_ports!(Side);
+impl ApplicationInputPort<MutationSchema, Member> for BackInput {
+    type Value = RenameInputBinding;
+    const IDENTITY: &'static str = "test.nested.back-input";
+    const REQUIRED: bool = false;
+}
 impl ApplicationConnectionIdentity for ComponentLink {
     const IDENTITY: &'static str = "test.nested.component";
 }
@@ -216,7 +225,7 @@ connection!(
     Side,
     Output,
     Member,
-    StaticInput
+    BackInput
 );
 connection!(
     SeparateComponent,
@@ -274,8 +283,11 @@ fn condensation_cannot_hide_an_internal_static_cycle() {
         (
             Complete,
             ApplicationOutputEdge<
-                SideStaticConnection,
-                ApplicationOutputEdge<BackStaticConnection, Complete>,
+                MemberStaticConnection,
+                ApplicationOutputEdge<
+                    SideStaticConnection,
+                    ApplicationOutputEdge<BackStaticConnection, Complete>,
+                >,
             >,
         ),
     >;
@@ -291,7 +303,10 @@ fn static_dag_cannot_cycle_between_condensed_groups() {
         RootConnection,
         (
             Groups,
-            ApplicationOutputEdge<SideStaticConnection, ApplicationOutputLeaf>,
+            ApplicationOutputEdge<
+                MemberStaticConnection,
+                ApplicationOutputEdge<SideStaticConnection, ApplicationOutputLeaf>,
+            >,
         ),
     >;
     refuses_cycle::<Tree>();
