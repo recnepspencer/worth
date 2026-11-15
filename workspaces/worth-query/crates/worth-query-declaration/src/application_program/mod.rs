@@ -114,12 +114,14 @@ pub use managed_computation::{
 };
 pub use manifest::ApplicationProgramManifest;
 pub use output_graph::{
+    ApplicationCapturedInputConnection, ApplicationCapturedPrerequisites,
     ApplicationConnectionShape, ApplicationDemandOutputGraph, ApplicationDiscoveredOutputGraph,
     ApplicationDiscoveredOutputRoot, ApplicationFixedOutputRoot, ApplicationOccurrenceComponent,
     ApplicationOccurrenceConnections, ApplicationOccurrenceGroup, ApplicationOutputChildrenShape,
     ApplicationOutputEdge, ApplicationOutputEdgeShape, ApplicationOutputEdgesShape,
     ApplicationOutputGraph, ApplicationOutputGraphShape, ApplicationOutputLeaf,
-    ApplicationOutputOccurrences, ApplicationRequiredOutputRoot,
+    ApplicationOutputOccurrences, ApplicationPrerequisiteSource, ApplicationRequiredOutputRoot,
+    ApplicationStoredPrerequisites, WorthQueryProducerInputCaptureDefinition,
 };
 pub use output_posture::{ApplicationNoOutputGraph, ApplicationProgramOutputShape};
 pub use program::{

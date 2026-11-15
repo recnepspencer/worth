@@ -173,6 +173,7 @@ pub struct ApplicationConnectionDeclaration {
     exports_across_instances: bool,
     demand_only_root: bool,
     occurrence_component: Option<std::any::TypeId>,
+    input_capture: Option<(std::any::TypeId, &'static str)>,
 }
 
 impl ApplicationConnectionDeclaration {
@@ -199,6 +200,7 @@ impl ApplicationConnectionDeclaration {
             exports_across_instances,
             demand_only_root: false,
             occurrence_component: None,
+            input_capture: None,
         }
     }
 
@@ -216,6 +218,23 @@ impl ApplicationConnectionDeclaration {
     /// Internal declaration cycles are resolved from complete admitted occurrences.
     pub const fn is_occurrence_component(&self) -> bool {
         self.occurrence_component.is_some()
+    }
+
+    pub(in crate::application_program) fn set_input_capture<C: 'static>(
+        &mut self,
+        identity: &'static str,
+    ) {
+        self.input_capture = Some((std::any::TypeId::of::<C>(), identity));
+    }
+
+    /// Stable declared meaning; a capture payload itself is never serialized.
+    pub fn input_capture_identity(&self) -> Option<&'static str> {
+        self.input_capture.map(|(_, identity)| identity)
+    }
+
+    /// Nominal point equality, not a portable identity or a read capability.
+    pub fn input_capture_type(&self) -> Option<std::any::TypeId> {
+        self.input_capture.map(|(nominal, _)| nominal)
     }
 
     pub(in crate::application_program) fn as_demand_only_root(mut self) -> Self {

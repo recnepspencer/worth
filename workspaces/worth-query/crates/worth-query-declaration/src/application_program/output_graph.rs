@@ -48,7 +48,13 @@ mod sealed {
     pub trait DiscoveredRootKind {}
 }
 
+mod input_capture;
 mod root_kinds;
+pub use input_capture::{
+    ApplicationCapturedInputConnection, ApplicationCapturedPrerequisites,
+    ApplicationPrerequisiteSource, ApplicationStoredPrerequisites,
+    WorthQueryProducerInputCaptureDefinition,
+};
 pub use root_kinds::{
     ApplicationDiscoveredOutputRoot, ApplicationFixedOutputRoot, ApplicationRequiredOutputRoot,
 };
@@ -60,6 +66,7 @@ where
     Schema: ApplicationSchema,
 {
     type Binding: ApplicationConnectionIdentity;
+    type Prerequisites: ApplicationPrerequisiteSource;
     type SourceFeature: ApplicationFeature<Schema>;
     type SourcePort: ApplicationOutputPort<Schema, Self::SourceFeature>;
     type TargetFeature: ApplicationFeature<Schema>;
