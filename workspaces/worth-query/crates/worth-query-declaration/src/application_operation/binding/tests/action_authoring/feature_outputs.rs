@@ -1,6 +1,7 @@
 //! Root selection must happen before global connection validation.
 use super::*;
 use std::marker::PhantomData;
+mod nested_components;
 
 type Repeated = ApplicationFeatureOutputs<(
     ApplicationActionOutput<RenameBinding, Delivery>,

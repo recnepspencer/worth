@@ -49,19 +49,31 @@ where
         R::append_types(out);
     }
 }
-impl<C> sealed::OutputEdgesShape for ApplicationOutputOccurrences<C> {}
 impl<S: ApplicationSchema, C: ApplicationOccurrenceConnections<S>> ApplicationOutputEdgesShape<S>
     for ApplicationOutputOccurrences<C>
 {
-    fn append_connections(out: &mut Vec<ApplicationConnectionDeclaration>) {
-        let start = out.len();
-        C::append(out);
-        for connection in &mut out[start..] {
-            connection.set_occurrence_component(std::any::TypeId::of::<C>());
+}
+impl<S: ApplicationSchema, C: ApplicationOccurrenceConnections<S>> sealed::OutputEdgesShape<S>
+    for ApplicationOutputOccurrences<C>
+{
+    fn append_typed(out: &mut Vec<(std::any::TypeId, ApplicationConnectionDeclaration)>) {
+        let component = std::any::TypeId::of::<C>();
+        if out
+            .iter()
+            .any(|(_, declaration)| declaration.occurrence_component() == Some(component))
+        {
+            return;
         }
-    }
-    fn append_connection_types(out: &mut Vec<std::any::TypeId>) {
-        C::append_types(out);
+        // Preserve every first-expansion member, including invalid duplicates.
+        // Later placements reuse C's declaration, not its runtime continuation.
+        let mut declarations = Vec::new();
+        let mut identities = Vec::new();
+        C::append(&mut declarations);
+        C::append_types(&mut identities);
+        for declaration in &mut declarations {
+            declaration.set_occurrence_component(component);
+        }
+        out.extend(identities.into_iter().zip(declarations));
     }
 }
 impl<F, C> sealed::OutputChildrenShape<F> for ApplicationOutputOccurrences<C> {}
