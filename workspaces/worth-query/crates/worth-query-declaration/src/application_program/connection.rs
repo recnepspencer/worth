@@ -210,9 +210,9 @@ impl ApplicationConnectionDeclaration {
     ) {
         self.occurrence_component = Some(component);
     }
-    pub(in crate::application_program) const fn occurrence_component(
-        &self,
-    ) -> Option<std::any::TypeId> {
+    /// Nominal point identity for validating complete component placements.
+    /// It is neither portable program meaning nor execution authority.
+    pub const fn occurrence_component(&self) -> Option<std::any::TypeId> {
         self.occurrence_component
     }
     /// Internal declaration cycles are resolved from complete admitted occurrences.

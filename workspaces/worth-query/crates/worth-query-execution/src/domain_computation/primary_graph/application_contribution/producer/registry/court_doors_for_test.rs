@@ -220,6 +220,7 @@ impl DeclaredProducerBinding {
         Self {
             predecessor_reads: None,
             original_reads: None,
+            input_capture: None,
             ownership,
             owned_scope_entity,
             owner,
