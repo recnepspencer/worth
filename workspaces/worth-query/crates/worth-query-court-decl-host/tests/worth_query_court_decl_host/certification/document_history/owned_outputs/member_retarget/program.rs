@@ -1,4 +1,4 @@
-//! The owner's published value selects a second, distinct source in the same family.
+//! The owner's published value selects a second, distinct coupled source.
 use super::super::hierarchy::program as hierarchy;
 use super::super::program as entry;
 use super::*;
@@ -36,7 +36,7 @@ pub struct Selected;
 impl ApplicationConnectionIdentity for Selected {
     const IDENTITY: &'static str = "member-retarget.selected";
 }
-impl ApplicationOccurrenceConnectionBinding<Schema, hierarchy::Parent, hierarchy::Parent>
+impl ApplicationOccurrenceConnectionBinding<Schema, hierarchy::Parent, hierarchy::Child>
     for Selected
 {
 }
@@ -44,13 +44,13 @@ pub type Connection = ApplicationConnectionRef<
     Schema,
     hierarchy::Parent,
     hierarchy::Output,
-    hierarchy::Parent,
-    hierarchy::ForeignInput,
+    hierarchy::Child,
+    hierarchy::ChildInput,
     Selected,
 >;
 impl WorthQueryApplicationDependentOutputConnection<Schema> for Selected {
     type RootDemand = first::Demand;
-    type Demand = first::Demand;
+    type Demand = second::Demand;
     type Discovery = query::first_output::Read;
     const IDENTITY: &'static str = <Self as ApplicationConnectionIdentity>::IDENTITY;
     fn discovery_from_root(
@@ -60,10 +60,10 @@ impl WorthQueryApplicationDependentOutputConnection<Schema> for Selected {
     }
     fn demands_from_discovery(
         row: &query::Row,
-    ) -> Result<Vec<first::Demand>, WorthQueryRequiredOutputConnectionDenial> {
+    ) -> Result<Vec<second::Demand>, WorthQueryRequiredOutputConnectionDenial> {
         // Only a's changed real output calls for b; b does not recurse.
         Ok(if row.key == "first:a" && row.value == 20 {
-            vec![first::Demand("b".into())]
+            vec![second::Demand("b".into())]
         } else {
             vec![]
         })

@@ -184,7 +184,7 @@ impl RelationalAuthoredCoupledOwners {
         self.source.is_edit() || !self.owners.is_empty()
     }
 
-    pub(super) fn required_owners(&self) -> &[RelationalRequiredOutputPublication] {
+    pub(crate) fn required_owners(&self) -> &[RelationalRequiredOutputPublication] {
         if matches!(self.source, CoupledSource::Edit(_)) {
             &[]
         } else {

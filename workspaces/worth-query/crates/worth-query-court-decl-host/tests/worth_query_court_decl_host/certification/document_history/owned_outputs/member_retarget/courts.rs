@@ -73,7 +73,7 @@ fn a_member_edit_keeps_its_new_source_route_through_reverse_and_reapply() {
         .native_id;
     assert_eq!(first_value(&request, "a"), 10);
     assert!(request
-        .query(query::first_output::Read("first:b".into()))
+        .query(query::second_output::Read("second:b".into()))
         .execute()
         .is_err());
     let before = super::super::courts::native_head(&host).0;
@@ -97,8 +97,16 @@ fn a_member_edit_keeps_its_new_source_route_through_reverse_and_reapply() {
         "the member edit and both producer scopes publish once"
     );
     assert_eq!(
-        (first_value(&request, "a"), first_value(&request, "b")),
-        (20, 70)
+        (
+            first_value(&request, "a"),
+            request
+                .query(query::second_output::Read("second:b".into()))
+                .execute()
+                .unwrap()
+                .rows()[0]
+                .value
+        ),
+        (20, 1007)
     );
     assert!(request
         .query(query::input_member::Read("old".into()))
@@ -161,8 +169,16 @@ fn a_member_edit_keeps_its_new_source_route_through_reverse_and_reapply() {
         .unwrap();
     assert!(matches!(reapplied, Outcome::Committed(_)), "{reapplied:?}");
     assert_eq!(
-        (first_value(&request, "a"), first_value(&request, "b")),
-        (20, 70)
+        (
+            first_value(&request, "a"),
+            request
+                .query(query::second_output::Read("second:b".into()))
+                .execute()
+                .unwrap()
+                .rows()[0]
+                .value
+        ),
+        (20, 1007)
     );
     assert!(request
         .query(query::input_member::Read("old".into()))
