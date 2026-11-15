@@ -187,9 +187,12 @@ impl RelationalAuthoredCoupledCandidate<'_> {
                 // callers must select the current route through its own owner.
                 return Ok(None);
             }
-            return Err(part::reject(
-                crate::publication::data::AuthoredRetirementRefusal::ExtraCoupledOwner,
+            return Err(part::reject_extra_owner(
+                &self.binding.owners,
                 source,
+                format!(
+                    "site=catalog-route-absent; family={family}; requested_source={source:?}; original_source={original:?}; partition={partition:?}",
+                ),
             ));
         };
         if let RelationalDeclaredCoupledOwner::Surviving(previous) = &owner {

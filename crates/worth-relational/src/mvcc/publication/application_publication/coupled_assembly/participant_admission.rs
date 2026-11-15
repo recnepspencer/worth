@@ -90,7 +90,15 @@ pub(super) fn admit(
                         .map_err(custody::execution_stop)?
                         .0?
                 }
-                .ok_or_else(|| part::reject(Cause::ExtraCoupledOwner, subject))?;
+                .ok_or_else(|| part::reject_extra_owner(
+                    &binding.owners,
+                    subject,
+                    format!(
+                        "site=preserve-owner-absent; family={}; requested_source={subject:?}; partition={:?}; producer={:?}",
+                        meaning.family, meaning.source_partition.bytes(),
+                        publication.lineage_attribution().map(|(producer, _)| producer),
+                    ),
+                ))?;
                 if !expected.same_origin(predecessor) {
                     return Err(foreign());
                 }

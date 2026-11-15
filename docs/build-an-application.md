@@ -4920,6 +4920,12 @@ actual committed postcondition, so replacing an owned edge does not cause a
 second publication. A real upstream change still re-runs the producer, and a
 read of another publication remains a source observation. The original raw reads
 still participate in candidate admission and complete-candidate support checks.
+If Native refuses `ExtraCoupledOwner`, its existing publication error preserves
+the actual requested family, full-generation source and partition, authored
+source kind/root, and the failed catalog site. A preserve-admission failure also
+names its actual producer. These are descriptive diagnostics; they never enlarge
+the admitted owner roster or infer a CAD feature from a record coordinate.
+
 If the whole observed aggregate or walk is retired, Query proves every observed
 entity belongs to that predecessor and compares its actual retirement between
 the writer's candidate and the completed candidate. The committed postcondition
