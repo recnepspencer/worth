@@ -4663,6 +4663,13 @@ malformed relations refuse. The path issues no additional query and retains the
 complete nested result/predicate support already acquired by Query.
 The query must describe actual predecessor/operand sources without requiring
 geometry that has not yet been produced.
+At an authored barrier, Query captures incoming prerequisites only for the
+occurrences needed there and their complete transitive parents. A pending future
+consumer does not retain an early incoming observation merely because its root
+is present. Identity coalescing remains eager, so an alias still retains its own
+static selector on the authentic Parent. Once a consumer's incoming support is
+captured for production, it remains strict through final publication; a later
+authored change cannot silently refresh a consumed input or replay its supplier.
 
 Partition a mixed relation in its declared result shape, rather than dropping
 rows in the Parent mapping. `relation_where_absent(relation, nested, field)`

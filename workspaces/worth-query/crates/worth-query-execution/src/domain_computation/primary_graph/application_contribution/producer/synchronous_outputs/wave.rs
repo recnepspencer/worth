@@ -3,10 +3,14 @@ use super::*;
 mod continuations;
 mod occurrences;
 mod outgoing;
+mod prerequisites;
 struct Scheduled<S: ApplicationSchema> {
     key: Option<super::occurrences::OccurrenceKey>,
     component: Option<std::any::TypeId>,
+    identified: bool,
     closed: bool,
+    prerequisite_queued: bool,
+    next_prerequisite: Option<usize>,
     done: bool,
     alias: Option<usize>,
     continuation_done: bool,
@@ -76,7 +80,10 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
         self.tasks.push(Scheduled {
             key: None,
             component: None,
+            identified: false,
             closed: false,
+            prerequisite_queued: false,
+            next_prerequisite: None,
             done: false,
             alias: None,
             continuation_done,
@@ -140,7 +147,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
         allowed: Option<&[String]>,
     ) -> Result<(), SynchronousOutputFailure> {
         loop {
-            self.close_frontier(context, candidate)?;
+            self.close_frontier(context, candidate, allowed)?;
             if self.discover_alias_continuations(context, candidate)? {
                 continue;
             }
@@ -154,7 +161,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
                 .map(|(_, t)| t.rank)
                 .min();
             let Some(rank) = rank else {
-                self.refresh_outgoing(context, candidate)?;
+                self.refresh_outgoing(context, candidate, allowed)?;
                 let needed = self.needed(allowed);
                 if self
                     .tasks

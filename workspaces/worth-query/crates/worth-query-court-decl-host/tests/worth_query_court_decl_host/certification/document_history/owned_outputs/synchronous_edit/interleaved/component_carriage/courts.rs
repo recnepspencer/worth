@@ -31,6 +31,7 @@ fn a_later_authored_link_expands_the_same_atomic_output_closure() {
         .push_stage::<ApplicationNoOutputGraph, _>(attach::Intent {
             parent: "a".into(),
             child: "carriage:late".into(),
+            pending_child: false,
         })
         .unwrap();
     let ((outcome, contacts), writes) = observe_maintenance_work(24, || {

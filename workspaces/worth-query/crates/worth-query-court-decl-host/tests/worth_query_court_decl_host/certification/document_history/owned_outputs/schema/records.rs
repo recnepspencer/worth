@@ -63,7 +63,7 @@ pub struct Member;
 impl Entity for Member {
     const NAME: &'static str = "Member";
     type Aspects = (MemberFacts, Option<Calibration>, Option<EnvelopeProgress>);
-    type Relations = (ChildOf, UpstreamOf);
+    type Relations = (ChildOf, UpstreamOf, PendingChildOf);
 }
 impl Member {
     pub fn reference() -> ApplicationEntityRef<Schema, Self> {

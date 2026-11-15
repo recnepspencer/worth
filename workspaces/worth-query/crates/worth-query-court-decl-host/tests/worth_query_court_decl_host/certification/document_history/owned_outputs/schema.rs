@@ -7,6 +7,8 @@ mod cap;
 pub use cap::*;
 mod owned_orbit;
 pub use owned_orbit::{Incidence, IncidenceKey, OwnedNext};
+mod pending_child;
+pub use pending_child::PendingChildOf;
 mod records;
 pub use records::*;
 mod joined;

@@ -4,6 +4,9 @@ use super::super::super::program as entry;
 pub(in super::super::super) mod attach;
 mod outgoing;
 mod parent;
+pub(in super::super::super) mod pending;
+pub(in super::super::super) mod pending_consumer;
+mod pending_courts;
 mod topology;
 use super::*;
 mod connections;
@@ -38,8 +41,10 @@ type Root = ApplicationConnectionRef<
 /// The one complete component, named once and placed twice.
 pub struct All;
 impl ApplicationOccurrenceComponent<Schema> for All {
-    type Connections =
-        ApplicationOccurrenceGroup<(PreviousConnection,), (ForeignConnection, ParentConnection)>;
+    type Connections = ApplicationOccurrenceGroup<
+        (PreviousConnection,),
+        (ForeignConnection, (ParentConnection, pending::Connection)),
+    >;
 }
 type Edges = (
     ApplicationOutputOccurrences<All>,
@@ -262,12 +267,13 @@ pub(super) fn seed(
 pub(super) fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
-    parent::declare(outgoing::declare(topology::declare(attach::declare(
-        schema,
+    pending_consumer::declare(pending::declare(parent::declare(outgoing::declare(
+        topology::declare(attach::declare(schema)),
     ))))
 }
 pub(super) fn install(
     setup: &mut WorthQueryApplicationContributionSetup<'_, Schema>,
 ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+    setup.handler::<pending_consumer::Binding, _>(pending_consumer::Handler)?;
     setup.handler::<attach::Binding, _>(attach::Handler)
 }
