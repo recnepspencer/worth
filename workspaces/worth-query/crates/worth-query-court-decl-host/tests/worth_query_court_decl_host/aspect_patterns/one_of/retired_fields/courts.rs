@@ -272,6 +272,10 @@ fn collateral_value_cannot_supply_a_missing_retired_root_observation() {
         denial.preimage_retention_denial(),
         Some(WorthQueryPreImageRetentionDenial::MissingDemandedField)
     );
+    let detail = denial.detail().expect("original retention failure detail");
+    assert!(detail.contains("site=output-locus-observation"), "{detail}");
+    assert!(detail.contains("target=Some(Entity("), "{detail}");
+    assert!(detail.contains("ThirdValue"), "{detail}");
     assert_eq!(
         before.selected_commit(),
         world::pin(&host).selected_commit()

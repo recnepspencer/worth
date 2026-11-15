@@ -53,7 +53,7 @@ pub(in super::super) fn retain_from_authored_anchors<'fact>(
     mutation: &ValidatedMutationFootprint,
     anchors: &[(RecordRef, &str)],
     own_changes: bool,
-) -> Result<WorthQueryRetainedPreImageSelection, WorthQueryPreImageRetentionDenial> {
+) -> Result<WorthQueryRetainedPreImageSelection, FieldRetentionFailure> {
     let mut total = 0usize;
     let anchored = AnchoredFields {
         demand,
@@ -98,8 +98,7 @@ impl AnchoredFields<'_> {
         &self,
         facts: impl Iterator<Item = &'fact WorthQueryPrimaryGraphApplicationDecisionFact>,
         total: &mut usize,
-    ) -> Result<(Vec<WorthQueryRetainedPreImageFieldSeal>, usize), WorthQueryPreImageRetentionDenial>
-    {
+    ) -> Result<(Vec<WorthQueryRetainedPreImageFieldSeal>, usize), FieldRetentionFailure> {
         let (demand, mutation) = (self.demand, self.mutation);
         let mut candidates = Vec::new();
         let mut absences = Vec::new();
@@ -130,10 +129,14 @@ impl AnchoredFields<'_> {
                     }) {
                         continue;
                     }
-                    return Err(WorthQueryPreImageRetentionDenial::MissingDemandedField);
+                    return Err(FieldRetentionFailure::missing(
+                        "anchored-locus-observation",
+                        Some(record),
+                        Some(locus),
+                    ));
                 };
                 if matched.next().is_some() {
-                    return Err(WorthQueryPreImageRetentionDenial::AmbiguousDemandedField);
+                    return Err(WorthQueryPreImageRetentionDenial::AmbiguousDemandedField.into());
                 }
                 fields.push((self.seal)(demand, total, locus, candidate)?);
             }
@@ -154,7 +157,7 @@ impl AnchoredFields<'_> {
                     continue;
                 };
                 if !kept.insert((record, locus)) {
-                    return Err(WorthQueryPreImageRetentionDenial::AmbiguousDemandedField);
+                    return Err(WorthQueryPreImageRetentionDenial::AmbiguousDemandedField.into());
                 }
                 fields.push((self.seal)(
                     demand,

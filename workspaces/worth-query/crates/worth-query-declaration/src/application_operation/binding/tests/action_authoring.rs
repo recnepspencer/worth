@@ -2,6 +2,7 @@
 use super::*;
 use crate::application_program::*;
 
+mod delivery_sharing;
 mod duplicates;
 mod feature_outputs;
 mod world;

@@ -1174,6 +1174,10 @@ pub(crate) fn validated_bank_application() -> Result<
   `normalized_manifest()`.
 - `revision()` is the content-addressed `ApplicationProgramRevision`: the same
   meaning always gives the same revision.
+- The normalized manifest quotes identical delivery connections and complete
+  delivery definitions once. Each action references its own definition; shared
+  encoding preserves the full graph, projection bounds and delivery mode. It
+  does not combine actions or alter execution.
 - Validation uses `ApplicationProgramDefinition::CANONICAL_REVISION_BUDGET`,
   a finite `CanonicalDigestWorkBudget` available from the same program facade.
   Its default remains 4096 basis entries and 1 MiB encoded bytes. Large authored
@@ -4456,6 +4460,10 @@ aspect: read it in the handler, and the observed absence retains nothing, so
 demanded field the handler never read on a retiring member refuses with
 `MissingDemandedField`, present or not. This holds for every authored anchor
 and co-anchor, and costs one probe per absence the attempt observed.
+
+For `MissingDemandedField`, the commit denial's existing `detail()` names the
+retention branch and the exact target and locus when known. This is diagnostic
+text; use `preimage_retention_denial()` for programmatic classification.
 
 Each original Retire role identifies one deleted member. Native's validated
 relation footprint matches its retained family key to exactly one fresh member
