@@ -88,7 +88,10 @@ impl RelationalRuntime {
         };
         let Some(source) = restoration.retirement.authored_source_retirement() else {
             let recorded = match &group.sources {
-                CanonicalCoupledAuthoredSources::Retirement { prefix, .. } => prefix.anchor,
+                CanonicalCoupledAuthoredSources::Retirement { prefix, .. }
+                | CanonicalCoupledAuthoredSources::MemberEditRetirement { prefix, .. } => {
+                    prefix.anchor
+                }
                 CanonicalCoupledAuthoredSources::Edit { sources } => {
                     *sources.first().ok_or_else(|| {
                         crate::mvcc::origin_denial(
@@ -96,7 +99,8 @@ impl RelationalRuntime {
                         )
                     })?
                 }
-                CanonicalCoupledAuthoredSources::Restoration { prefix, .. } => {
+                CanonicalCoupledAuthoredSources::Restoration { prefix, .. }
+                | CanonicalCoupledAuthoredSources::MemberEditRestoration { prefix, .. } => {
                     prefix.original_anchor
                 }
             };
@@ -123,7 +127,7 @@ impl RelationalRuntime {
                     context,
                 )?;
                 let mut owners = Vec::with_capacity(group.participants.len());
-                for part in &group.participants {
+                for part in group.participants.iter().filter(|part| part.is_required()) {
                     let required = &part.origin;
                     for item in &current {
                         checkpoint(

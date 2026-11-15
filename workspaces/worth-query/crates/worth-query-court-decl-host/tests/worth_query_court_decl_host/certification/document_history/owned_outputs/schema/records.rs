@@ -14,6 +14,7 @@ impl Fragment for Storage {
         SecondOutput,
         ChildOutput,
         (Cap, Incidence),
+        member_retarget::records::InputMember,
     );
 }
 mod bindings;

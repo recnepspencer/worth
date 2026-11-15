@@ -3,10 +3,7 @@ use super::*;
 impl RelationalAuthoredCoupledCandidate<'_> {
     /// Only an Edit may complete a route by verification; retirement retains its mandatory Preserve participants.
     pub fn permits_unchanged_output_selection(&self) -> bool {
-        matches!(
-            self.binding.owners.source,
-            super::super::CoupledSource::Edit(_)
-        )
+        self.binding.owners.source.is_edit()
     }
     /// Select an already appended part by the admitted full-generation route.
     /// This index is an observation, never publication or writer authority.

@@ -1,4 +1,5 @@
 //! Its own installed schema: model, owned member and two derived output entities.
+pub use super::member_retarget::records::{InputKey, InputMember, InputValue};
 use super::*;
 use worth_query_decl::facade::application_schema::fragment::*;
 mod calibration;
@@ -53,6 +54,7 @@ impl ApplicationSchemaContribution<Schema> for Contribution {
         Actor,
         Registrations,
         authored_member::correction::UndoRetire,
+        member_retarget::correction::Revision,
     );
 }
 impl Contribution {
@@ -110,6 +112,7 @@ impl Registration<Schema> for Actor {
 fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
+    let schema = member_retarget::declare(schema);
     let schema = family::convergent::declare(schema);
     let schema = family::parity_input::declare(schema);
     let schema = synchronous_edit::reconciliation::declare(schema);

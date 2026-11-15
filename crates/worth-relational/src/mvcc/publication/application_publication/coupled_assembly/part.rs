@@ -29,6 +29,8 @@ pub(super) fn reject_extra_owner(
         super::super::CoupledSource::Edit(_) => "edit",
         super::super::CoupledSource::Retirement { .. } => "retirement",
         super::super::CoupledSource::Restoration { .. } => "restoration",
+        super::super::CoupledSource::MemberEditRetirement { .. } => "member-edit-retirement",
+        super::super::CoupledSource::MemberEditRestoration { .. } => "member-edit-restoration",
     };
     let mut error = crate::publication::data::PublicationError::authored_retirement(
         Cause::ExtraCoupledOwner,

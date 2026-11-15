@@ -193,15 +193,21 @@ where
     {
         return Ok(CoupledSourceRead::Prepared(index));
     }
-    let predecessor = match assembly.declared_owner(execution, demand.family, root, &partition)? {
-        Some(worth_relational::facade::mvcc::RelationalDeclaredCoupledOwner::Retiring) => {
-            return Ok(CoupledSourceRead::Retiring)
-        }
-        Some(worth_relational::facade::mvcc::RelationalDeclaredCoupledOwner::Surviving(owner)) => {
-            Some(owner.clone())
-        }
-        None => None,
-    };
+    let (predecessor, required_writer) =
+        match assembly.declared_owner(execution, demand.family, root, &partition)? {
+            Some(worth_relational::facade::mvcc::RelationalDeclaredCoupledOwner::Retiring) => {
+                return Ok(CoupledSourceRead::Retiring)
+            }
+            Some(worth_relational::facade::mvcc::RelationalDeclaredCoupledOwner::Surviving(
+                owner,
+            )) => (Some(owner.clone()), false),
+            Some(
+                worth_relational::facade::mvcc::RelationalDeclaredCoupledOwner::RequiredSurviving(
+                    owner,
+                ),
+            ) => (Some(owner.clone()), true),
+            None => (None, false),
+        };
     let source = runtime
         .project_applied_source_plan(execution, plan, &candidate)
         .map_err(|cause| failed(Binding::IDENTITY, cause))?;
@@ -255,6 +261,7 @@ where
         })?
     };
     if demand.reuse_prepared
+        && !required_writer
         && assembly.permits_unchanged_output_selection()
         && let Some(parent) = runtime.verify_applied_output_parent::<Binding::OutputFamily>(
             execution,

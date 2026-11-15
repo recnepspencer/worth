@@ -145,9 +145,10 @@ where
         Some(worth_relational::facade::mvcc::RelationalDeclaredCoupledOwner::Retiring) => {
             return Ok(CoupledSourceRead::Retiring)
         }
-        Some(worth_relational::facade::mvcc::RelationalDeclaredCoupledOwner::Surviving(_)) => {
-            return Err(foreign().into())
-        }
+        Some(
+            worth_relational::facade::mvcc::RelationalDeclaredCoupledOwner::Surviving(_)
+            | worth_relational::facade::mvcc::RelationalDeclaredCoupledOwner::RequiredSurviving(_),
+        ) => return Err(foreign().into()),
         None => {}
     }
     let source = runtime

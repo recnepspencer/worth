@@ -19,6 +19,7 @@ mod family;
 mod historical_source;
 mod member_delete;
 mod member_edit;
+mod member_retarget;
 mod navigation;
 mod permission;
 mod program;
