@@ -75,6 +75,7 @@ impl OperationHandler<Schema, Binding> for Handler {
             let mut leaving = Vec::new();
             for key in &input.retire {
                 let member = reader.resolve_entity(InputKey::at("InputKey"), key.clone())?;
+                reader.entity(&member, InputMember::reference())?;
                 reader.field(&member, InputKey::at("InputKey"))?;
                 reader.field(&member, InputValue::at("InputValue"))?;
                 let links = reader
