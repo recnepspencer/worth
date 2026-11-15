@@ -93,7 +93,7 @@ impl ApplicationFeature<Schema> for Child {
         ApplicationFeatureInputList<
             SeedInput,
             ApplicationFeatureInputList<
-                super::super::synchronous_edit::interleaved::component_carriage::pending::Input,
+                super::super::synchronous_edit::interleaved::PendingSeedInput,
                 ApplicationFeatureInputLeaf,
             >,
         >,

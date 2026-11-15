@@ -43,7 +43,7 @@ pub struct All;
 impl ApplicationOccurrenceComponent<Schema> for All {
     type Connections = ApplicationOccurrenceGroup<
         (PreviousConnection,),
-        (ForeignConnection, (ParentConnection, pending::Connection)),
+        (ForeignConnection, ParentConnection, pending::Connection),
     >;
 }
 type Edges = (
