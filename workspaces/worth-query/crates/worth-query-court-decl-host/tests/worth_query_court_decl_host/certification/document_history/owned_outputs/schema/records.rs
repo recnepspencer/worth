@@ -13,7 +13,7 @@ impl Fragment for Storage {
         FirstOutput,
         SecondOutput,
         ChildOutput,
-        (Cap, Incidence),
+        (Cap, Incidence, member_retarget::records::InputMember),
     );
 }
 mod bindings;
@@ -75,7 +75,13 @@ pub struct FirstOutput;
 impl Entity for FirstOutput {
     const NAME: &'static str = "FirstOutput";
     type Aspects = (FirstFacts,);
-    type Relations = (ChildOfFirst, FirstOf, JoinedOf, ReconciledSourceOf);
+    type Relations = (
+        ChildOfFirst,
+        FirstOf,
+        JoinedOf,
+        ReconciledSourceOf,
+        member_retarget::records::ConsumedInput,
+    );
 }
 impl FirstOutput {
     pub fn reference() -> ApplicationEntityRef<Schema, Self> {

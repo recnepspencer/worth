@@ -194,6 +194,7 @@ scalar_read!(
 pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
+    let schema = input_member::declare(schema);
     let schema = model::declare(schema);
     let schema = identity::declare(members::declare(schema));
     let schema = joined::declare(producer_model::declare(schema));
@@ -205,3 +206,15 @@ pub fn declare(
     let schema = child_output::declare(schema);
     member_public::declare(schema)
 }
+scalar_read!(
+    input_member,
+    InputMember,
+    InputKey,
+    InputValue,
+    "InputMember",
+    "owned-outputs.input-member-query",
+    "owned-outputs.input-member-binding",
+    "owned-outputs.input-member-read",
+    "InputMemberRead",
+    public
+);

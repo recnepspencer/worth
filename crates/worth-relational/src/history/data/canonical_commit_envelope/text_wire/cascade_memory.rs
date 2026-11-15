@@ -32,13 +32,19 @@ impl<Symbols> CanonicalEnvelopeWire<Symbols> {
             event._decoded_memory = memory.clone();
             match &mut event.sources {
                 CanonicalCoupledAuthoredSources::Edit { .. } => {}
-                CanonicalCoupledAuthoredSources::Retirement { prefix: source, .. } => {
+                CanonicalCoupledAuthoredSources::Retirement { prefix: source, .. }
+                | CanonicalCoupledAuthoredSources::MemberEditRetirement {
+                    prefix: source, ..
+                } => {
                     let source =
                         Arc::get_mut(source).ok_or("decoded coupled retirement already aliased")?;
                     source._decoded_memory = memory.clone();
                     attach_origins(&mut source.publications, &memory)?;
                 }
-                CanonicalCoupledAuthoredSources::Restoration { prefix: source, .. } => {
+                CanonicalCoupledAuthoredSources::Restoration { prefix: source, .. }
+                | CanonicalCoupledAuthoredSources::MemberEditRestoration {
+                    prefix: source, ..
+                } => {
                     let source = Arc::get_mut(source)
                         .ok_or("decoded coupled restoration already aliased")?;
                     source._decoded_memory = memory.clone();

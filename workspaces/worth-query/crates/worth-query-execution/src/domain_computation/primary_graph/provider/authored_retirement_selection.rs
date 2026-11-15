@@ -4,6 +4,24 @@ use crate::domain_computation::application_aftermath::WorthQueryAftermathCausalR
 use crate::domain_computation::primary_graph::WorthQueryApplicationOutputPosture as Posture;
 use worth_relational::facade::{mvcc::CompanionPreflightStop, transactions::EntityReference};
 
+/// An installed live-owner inverse changes members while its authored scope stays live.
+pub(super) enum AuthoredCouplingPosture {
+    Source,
+    LiveOwnerMembers,
+}
+pub(super) fn coupling_posture(
+    attempt: &WorthQueryPrimaryGraphApplicationAttempt,
+) -> AuthoredCouplingPosture {
+    if attempt
+        .authored_correction_identity()
+        .is_some_and(|identity| identity.live_member_owner().is_some())
+    {
+        AuthoredCouplingPosture::LiveOwnerMembers
+    } else {
+        AuthoredCouplingPosture::Source
+    }
+}
+
 /// The installed correction declaration chooses the role. Roster order and
 /// reference reachability never choose an authored source.
 pub(super) fn authored_anchor(

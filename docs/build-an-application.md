@@ -4446,6 +4446,16 @@ replacement. Demand and observe every changed incident relation, the logical
 key and all fields to restore. A demanded relation the mutation did not change
 retains as empty, so `relation_count` there reports the mutation's own changes.
 A mutation that moves no member commits, and its inverse restores none.
+
+Required-output delivery keeps this mutation's admitted Edit scope alongside
+its exact member retirement or restoration custody. Each linked surviving
+writer publishes a preserving successor. The graph may also require outputs
+from newly selected sources through ordinary Edit admission; an unaffected
+current source can verify without running its producer. That verification does
+not replace a mandatory linked writer. Recorded inverse, reapplication and
+canonical checkpoint recovery retain both obligations. Whole-source Retire
+and Restore keep their exact catalogs and refuse extra or missing writers.
+
 The retained fields are the mutation's own changes: every demanded field of
 each member it retires, and each demanded field it changes on a record that
 stays. The live owner's kind is covered by the declared owner relation in the

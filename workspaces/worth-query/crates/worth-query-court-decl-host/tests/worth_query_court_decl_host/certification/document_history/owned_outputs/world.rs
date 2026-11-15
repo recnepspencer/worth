@@ -43,6 +43,7 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
         configuration: Configuration,
         setup: &mut WorthQueryApplicationContributionSetup<'_, Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+        member_retarget::install(setup)?;
         synchronous_edit::reconciliation::install(
             setup,
             configuration.reconciliation_indices,

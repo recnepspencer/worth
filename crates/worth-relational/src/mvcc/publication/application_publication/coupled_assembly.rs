@@ -182,7 +182,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             .owners
             .recorded_owner(execution, family, original, partition)?;
         let Some(owner) = owner else {
-            if matches!(self.binding.owners.source, super::CoupledSource::Edit(_)) {
+            if self.binding.owners.source.is_edit() {
                 // This catalog has no entry. It is not route-absence custody;
                 // callers must select the current route through its own owner.
                 return Ok(None);
@@ -195,7 +195,9 @@ impl RelationalAuthoredCoupledCandidate<'_> {
                 ),
             ));
         };
-        if let RelationalDeclaredCoupledOwner::Surviving(previous) = &owner {
+        if let RelationalDeclaredCoupledOwner::Surviving(previous)
+        | RelationalDeclaredCoupledOwner::RequiredSurviving(previous) = &owner
+        {
             execution
                 .run_native_with_checkpoint(|context| {
                     part::require_unseen_route(context, &self.parts, &previous.origin.meaning)

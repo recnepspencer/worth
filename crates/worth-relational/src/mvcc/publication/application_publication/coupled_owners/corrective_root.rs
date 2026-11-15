@@ -29,7 +29,10 @@ impl RelationalRuntime {
             || owners.before.descriptor().runtime_instance_id() != self.runtime_instance_id()
             || !owners.before.is_current()
             || owners.corrective_root.is_some()
-            || matches!(owners.source, CoupledSource::Retirement { .. })
+            || matches!(
+                owners.source,
+                CoupledSource::Retirement { .. } | CoupledSource::MemberEditRetirement { .. }
+            )
         {
             return Err(refuse());
         }

@@ -2,6 +2,8 @@
 //! publish exactly one derived output owned by its source model (SourceScopeCascade).
 use super::*;
 #[macro_use]
+mod member_inputs;
+#[macro_use]
 mod ordinary_carrier;
 #[macro_use]
 mod phase;

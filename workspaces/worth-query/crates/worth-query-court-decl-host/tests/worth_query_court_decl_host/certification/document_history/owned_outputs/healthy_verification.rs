@@ -1,5 +1,89 @@
 //! Healthy selection reads currentness evidence without disclosing producer sources.
 use super::*;
+
+#[test]
+fn a_member_edit_preserves_its_required_writer_and_verifies_an_unaffected_source() {
+    let _observation = WorthQueryExecutionObservation::install_on_this_thread();
+    use member_retarget::{courts::publish, operation::Intent, program::Program, records::Row};
+    let host = world::install_program_with_other_model::<Program>(host_limits(
+        worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system(),
+    ), 1, Some(7));
+    let scope = request_scope();
+    let principal = authenticate_operator(host.installed_schema(), &scope);
+    let request = host.request(&principal, &scope);
+    publish(
+        &host,
+        &request,
+        Intent {
+            owner: "a".into(),
+            value: Some(2),
+            retire: vec![],
+            create: vec![Row {
+                key: "old".into(),
+                value: 11,
+            }],
+        },
+        "initialize-current-input",
+    );
+    let contacts = host.producer_contacts_on_this_thread_for_test();
+    let first = request
+        .query(query::first_output::Read("first:a".into()))
+        .execute()
+        .unwrap()
+        .rows()[0]
+        .clone();
+    let second = request
+        .query(query::second_output::Read("second:b".into()))
+        .execute()
+        .unwrap()
+        .rows()[0]
+        .clone();
+    publish(
+        &host,
+        &request,
+        Intent {
+            owner: "a".into(),
+            value: None,
+            retire: vec!["old".into()],
+            create: vec![Row {
+                key: "new".into(),
+                value: 22,
+            }],
+        },
+        "member-only-edit",
+    );
+    assert_eq!(host.producer_contacts_on_this_thread_for_test(), contacts + 1,
+        "the member-linked writer publishes; the unaffected source verifies without a producer call");
+    assert_eq!(
+        request
+            .query(query::first_output::Read("first:a".into()))
+            .execute()
+            .unwrap()
+            .rows()[0],
+        first
+    );
+    assert_eq!(
+        request
+            .query(query::second_output::Read("second:b".into()))
+            .execute()
+            .unwrap()
+            .rows()[0],
+        second
+    );
+    assert!(request
+        .query(query::input_member::Read("old".into()))
+        .execute()
+        .is_err());
+    assert_eq!(
+        request
+            .query(query::input_member::Read("new".into()))
+            .execute()
+            .unwrap()
+            .rows()[0]
+            .value,
+        22
+    );
+}
 fn exercise(host: &world::Host, configured: bool) {
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);

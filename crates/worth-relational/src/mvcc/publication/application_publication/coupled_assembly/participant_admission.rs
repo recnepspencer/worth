@@ -20,7 +20,7 @@ pub(super) fn admit(
     if !publication.admitted_by(&binding.installed) {
         return Err(foreign());
     }
-    let ordinary = matches!(binding.owners.source, super::super::CoupledSource::Edit(_));
+    let ordinary = binding.owners.source.is_edit();
     if let RelationalCoupledProducerPosture::Ordinary {
         admission,
         absence,

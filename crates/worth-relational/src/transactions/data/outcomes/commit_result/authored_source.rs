@@ -16,11 +16,10 @@ impl CommitPublication {
     /// every consumed stage in apply order. Corrective prefixes retain their
     /// genuine event instead. Descriptive receipt data, never authority.
     pub fn coupled_authored_stage_sources(&self) -> Option<&[crate::identity::data::EntityId]> {
-        match &self.envelope.coupled_authored_publication.as_ref()?.sources {
-            crate::history::data::CanonicalCoupledAuthoredSources::Edit { sources } => {
-                Some(sources)
-            }
-            _ => None,
-        }
+        self.envelope
+            .coupled_authored_publication
+            .as_ref()?
+            .sources
+            .edit_sources()
     }
 }
