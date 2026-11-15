@@ -1174,6 +1174,10 @@ pub(crate) fn validated_bank_application() -> Result<
   `normalized_manifest()`.
 - `revision()` is the content-addressed `ApplicationProgramRevision`: the same
   meaning always gives the same revision.
+- The normalized manifest quotes identical delivery connections and complete
+  delivery definitions once. Each action references its own definition; shared
+  encoding preserves the full graph, projection bounds and delivery mode. It
+  does not combine actions or alter execution.
 - Validation uses `ApplicationProgramDefinition::CANONICAL_REVISION_BUDGET`,
   a finite `CanonicalDigestWorkBudget` available from the same program facade.
   Its default remains 4096 basis entries and 1 MiB encoded bytes. Large authored
