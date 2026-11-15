@@ -9,10 +9,10 @@ macro_rules! reconciliation_phase {
             worth_query_operation!(pub $operation for Schema, input InputBinding; access {
                 read_entities: [Cap, Model, Member, FirstOutput, SecondOutput, ChildOutput];
                 read_fields: [CapKey::at("CapKey"), CapValue::at("CapValue"), MemberValue::at("MemberValue"), ModelKey::at("ModelKey"), ModelValue::at("ModelValue"), FirstKey::at("FirstKey"), FirstValue::at("FirstValue"), ChildKey::at("ChildKey"), ChildValue::at("ChildValue"), SecondKey::at("SecondKey"), SecondValue::at("SecondValue")];
-                read_relations: [CapNext, ModelMember, FirstOf, ChildOfFirst, SecondOf, ReconciledSourceOf];
+                read_relations: [OwnedNext, CapNext, ModelMember, FirstOf, ChildOfFirst, SecondOf, ReconciledSourceOf];
                 writes: [FirstKey::at("FirstKey"), FirstValue::at("FirstValue"), ChildKey::at("ChildKey"), ChildValue::at("ChildValue"), SecondKey::at("SecondKey"), SecondValue::at("SecondValue")];
-                creates: [FirstOutput, SecondOutput, ChildOutput]; links: [FirstOf, ChildOfFirst, SecondOf, ReconciledSourceOf];
-                deletes: [FirstOutput, SecondOutput, ChildOutput]; unlinks: [FirstOf, ChildOfFirst, SecondOf, ReconciledSourceOf];
+                creates: [FirstOutput, SecondOutput, ChildOutput]; links: [OwnedNext, FirstOf, ChildOfFirst, SecondOf, ReconciledSourceOf];
+                deletes: [FirstOutput, SecondOutput, ChildOutput]; unlinks: [OwnedNext, FirstOf, ChildOfFirst, SecondOf, ReconciledSourceOf];
             });
             worth_query_operation_emits!($operation => [emission::Changed]);
             pub type Operation = $operation;
@@ -105,13 +105,13 @@ macro_rules! reconciliation_phase {
                     installation.bind_output_readiness::<Producer, _, _, _, _, _, _>(node, ordinal)
                 }
             }
-            pub struct Handler { pub derive: fn(u64) -> u64, pub peer_caps: bool, pub emission: bool }
+            pub struct Handler { pub derive: fn(u64) -> u64, pub peer_caps: bool, pub emission: bool, pub owned_orbits: bool }
             impl OperationHandler<Schema, Binding> for Handler {
                 fn decide(&self, input: &Input, reader: &mut DecisionReader<'_, '_, '_, Schema, Binding>) -> HandlerResult<Decision, Denial> {
                     let result = (|| {
                         let source = reader.resolve_entity(source_key(), input.0.key.clone())?;
                         reader.field(&source, source_value())?;
-                        let prepared = observation::capture(reader, &source, input.0.value, self.peer_caps)?;
+                        let prepared = observation::capture(reader, &source, input.0.value, self.peer_caps, self.owned_orbits)?;
                         let prior = if $preserve { Some(reader.prior_output_preserved_or_created::<preserve::Binding, preserve::Output, initial::Binding, initial::Output>()?) }
                             else { reader.resolve_optional_entity($key::at(stringify!($key)), output_key(&input.0))? };
                         if !$preserve && prior.is_some() { return Ok(Err(Denial::InitialHasPriorOutput)); }

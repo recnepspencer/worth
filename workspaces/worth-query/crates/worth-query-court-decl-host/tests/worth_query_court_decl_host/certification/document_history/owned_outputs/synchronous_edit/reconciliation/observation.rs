@@ -20,6 +20,7 @@ pub(super) struct Prepared {
     pub count: u64,
     pub members: BTreeMap<u64, Member>,
     pub retired: Vec<Retired>,
+    pub owned_orbits: bool,
 }
 pub(super) fn member_key(model: &str, ordinal: u64) -> String {
     format!("reconciled:member:{model}:{ordinal}")
@@ -32,9 +33,11 @@ pub(super) fn capture<B: ApplicationMutationBinding<Schema>>(
     source: &WorthQueryInvariantEntityIdentity<Schema, Model>,
     mut next_count: u64,
     peer_caps: bool,
+    owned_orbits: bool,
 ) -> Result<Prepared, HandlerExecutionDenial>
 where
     ModelMember: OperationReads<B::Operation>,
+    OwnedNext: OperationReads<B::Operation>,
     CapNext: OperationReads<B::Operation>,
     Cap: OperationReads<B::Operation>,
     super::Member: OperationReads<B::Operation>,
@@ -84,6 +87,17 @@ where
             let ordinal = ordinal
                 .parse::<u64>()
                 .expect("fixture-owned member ordinal");
+            if owned_orbits {
+                let orbit = reader
+                    .orbit(OwnedNext::reference(), edge.from())
+                    .map_err(HandlerExecutionDenial::new)?;
+                assert!(
+                    !orbit.members().is_empty(),
+                    "the member has real orbit incidence"
+                );
+                let walk = reader.walk(OwnedNext::reference(), worth_query_host::facade::application_invariants::RelationDirection::Forward, edge.from()).map_err(HandlerExecutionDenial::new)?;
+                assert!(!walk.is_empty());
+            }
             let sources = reader
                 .relations_from(ReconciledSourceOf::reference(), edge.from())
                 .map_err(HandlerExecutionDenial::new)?;
@@ -135,6 +149,7 @@ where
     }
     Ok(Prepared {
         count: next_count,
+        owned_orbits,
         model,
         members,
         retired,

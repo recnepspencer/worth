@@ -4913,6 +4913,12 @@ actual committed postcondition, so replacing an owned edge does not cause a
 second publication. A real upstream change still re-runs the producer, and a
 read of another publication remains a source observation. The original raw reads
 still participate in candidate admission and complete-candidate support checks.
+If the whole observed aggregate or walk is retired, Query proves every observed
+entity belongs to that predecessor and compares its actual retirement between
+the writer's candidate and the completed candidate. The committed postcondition
+retains genuine retirement truth, so no surviving aggregate selector is needed.
+Partial retirements keep complete support through surviving members; foreign
+observations retain their source semantics.
 
 Native derives private aggregate membership deletion and recreation through its
 existing aggregate consequence owner. Applications supply the exact changes for

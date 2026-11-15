@@ -10,6 +10,9 @@ pub(super) fn publish<B: ApplicationMutationBinding<Schema>>(
     mut prior: observation::Prepared,
 ) -> Result<(), WorthQueryApplicationAttemptDenial>
 where
+    OwnedNext: OperationLinks<B::Operation>
+        + OperationReads<B::Operation>
+        + OperationUnlinks<B::Operation>,
     FirstOf: OperationLinks<B::Operation>
         + OperationReads<B::Operation>
         + OperationUnlinks<B::Operation>,
@@ -27,7 +30,12 @@ where
     SecondOutput: OperationCreates<B::Operation> + OperationDeletes<B::Operation>,
 {
     let count = prior.count;
+    let owned_orbits = prior.owned_orbits;
     let model = &prior.model;
+    if owned_orbits {
+        member_orbit::unlink(writer, &prior.members)?;
+    }
+    let mut orbit = Vec::new();
     for retired in prior.retired {
         let row = writer.projected_entity(&retired.row)?;
         writer.unlink(ChildOfFirst::reference(), root, &row)?;
@@ -52,6 +60,9 @@ where
                 &prior.source_key,
                 &stable_source,
             )?;
+            if owned_orbits {
+                orbit.push(row);
+            }
         } else {
             let row = writer.create_entity_in_context(
                 source,
@@ -87,6 +98,9 @@ where
                 &stable_source,
             )?;
             writer.create_member::<Rows<B::Output, SecondOutput>>(&source_key, &stable_source)?;
+            if owned_orbits {
+                orbit.push(row);
+            }
         }
     }
     for (ordinal, prior) in prior.members {
@@ -115,6 +129,9 @@ where
         writer.initialize_field(&fact, ChildValue::at("ChildValue"), ordinal)?;
         writer.link(ChildOfFirst::reference(), format!("of:{key}"), root, &fact)?;
         writer.create_member::<Rows<B::Output, ChildOutput>>(&key, &fact)?;
+    }
+    if owned_orbits {
+        member_orbit::link(writer, model, &orbit)?;
     }
     Ok(())
 }
