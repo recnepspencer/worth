@@ -76,6 +76,6 @@ fn a_later_live_member_edit_keeps_its_original_input_and_complete_envelope_repla
             .rows()[0]
             .value,
         9,
-        "the later stage's inverse must leave the prefix change intact"
+        "complete-envelope replay must leave the recorded prefix change intact"
     );
 }
