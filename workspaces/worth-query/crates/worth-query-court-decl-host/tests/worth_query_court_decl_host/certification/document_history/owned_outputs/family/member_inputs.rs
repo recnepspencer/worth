@@ -1,4 +1,9 @@
 //! First's actual input edge makes its surviving writer part of member retirement.
+macro_rules! member_input_type {
+    (FirstInitial) => { Option<WorthQueryInvariantMutationTarget<Schema, InputMember>> };
+    (FirstPreserve) => { Option<WorthQueryInvariantMutationTarget<Schema, InputMember>> };
+    ($operation:ident) => { () };
+}
 macro_rules! member_input_operation {
     ($operation:ident, $entity:ident, $key:ident, $value:ident, $of:ident) => {
         worth_query_operation!(pub $operation for Schema, input InputBinding; access {
@@ -25,7 +30,7 @@ macro_rules! capture_member_input {
             }
         }
     }};
-    ($operation:ident, $reader:ident, $source:ident) => { None };
+    ($operation:ident, $reader:ident, $source:ident) => { () };
 }
 macro_rules! publish_member_input {
     (FirstInitial, $writer:ident, $decision:ident, $output:ident, $input:ident) => { publish_member_input!(@publish $writer, $decision, $output, $input) };
@@ -36,5 +41,7 @@ macro_rules! publish_member_input {
             $writer.link(member_retarget::records::ConsumedInput::reference(), format!("consumed-input:{}", $input.0.key), &$output, &member)?;
         }
     };
-    ($operation:ident, $writer:ident, $decision:ident, $output:ident, $input:ident) => { () };
+    ($operation:ident, $writer:ident, $decision:ident, $output:ident, $input:ident) => {
+        let () = $decision.input_member;
+    };
 }
