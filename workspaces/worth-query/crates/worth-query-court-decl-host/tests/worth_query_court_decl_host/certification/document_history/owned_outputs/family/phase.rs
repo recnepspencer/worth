@@ -1,5 +1,7 @@
 //! Optional predecessor observations and lifecycle bindings stay at their fixture owner.
 macro_rules! producer_operation {
+    (FirstInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { member_input_operation!(FirstInitial, $entity, $key, $value, $of); };
+    (FirstPreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { member_input_operation!(FirstPreserve, $entity, $key, $value, $of); };
     (ConvergentPreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => {
         worth_query_operation!(pub ConvergentPreserve for Schema, input InputBinding; access {
             read_entities: [SourceEntity, $entity, Member]; read_fields: [source_key(), source_value(), $key::at(stringify!($key)), $value::at(stringify!($value)), MemberKey::at("MemberKey"), CalibrationReady::at("Ready")];
@@ -144,7 +146,7 @@ macro_rules! phase {
                 const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] = producer_role_descriptors!($operation);
                 const ROLE_FAMILIES: &'static [ApplicationMutationOutputRoleFamilyDescriptor] = &[];
             }
-            pub struct Decision { source: WorthQueryInvariantMutationTarget<Schema, SourceEntity>, output: Option<WorthQueryInvariantMutationTarget<Schema, $entity>>, member_value: u64, member_target: Option<WorthQueryInvariantMutationTarget<Schema, Member>> }
+            pub struct Decision { source: WorthQueryInvariantMutationTarget<Schema, SourceEntity>, output: Option<WorthQueryInvariantMutationTarget<Schema, $entity>>, member_value: u64, member_target: Option<WorthQueryInvariantMutationTarget<Schema, Member>>, input_member: Option<WorthQueryInvariantMutationTarget<Schema, InputMember>> }
             pub struct Binding;
             impl ApplicationMutationBinding<Schema> for Binding {
                 type Input = Input; type InputBinding = InputBinding; type Result = (); type ResultBinding = ResultBinding;
@@ -229,6 +231,7 @@ macro_rules! phase {
                         predecessor_hook!($operation, reader, source);
                         let member_value = producer_decision_dependency!($operation, reader);
                         let member_target = producer_member_target!($operation, reader);
+                        let input_member = capture_member_input!($operation, reader, source);
                         let prior = if $preserve { Some(reader.prior_output_preserved_or_created::<preserve::Binding, preserve::Output, initial::Binding, initial::Output>()?) }
                             else { reader.resolve_optional_entity($key::at(stringify!($key)), output_key(&input.0))? };
                         if !$preserve && prior.is_some() { return Ok(Err(Denial::InitialHasPriorOutput)); }
@@ -237,7 +240,7 @@ macro_rules! phase {
                             Some(prior) => { reader.field(&prior, $value::at(stringify!($value)))?; Some(reader.mutation_target(&prior)?) }
                             None => None,
                         };
-                        Ok(Ok(Decision { source: reader.mutation_target(&source)?, output, member_value, member_target }))
+                        Ok(Ok(Decision { source: reader.mutation_target(&source)?, output, member_value, member_target, input_member }))
                     })();
                     match result { Ok(Ok(decision)) => HandlerResult::Completed(decision), Ok(Err(denial)) => HandlerResult::DomainDenied(denial), Err(error) => HandlerResult::ExecutionDenied(error) }
                 }
@@ -259,6 +262,7 @@ macro_rules! phase {
                             }
                         };
                         writer.$writer::<Output>(&output)?;
+                        publish_member_input!($operation, writer, decision, output, input);
                         ordinary_carrier_output!($operation,writer,source);
                         Ok::<_, WorthQueryApplicationAttemptDenial>(())
                     })();

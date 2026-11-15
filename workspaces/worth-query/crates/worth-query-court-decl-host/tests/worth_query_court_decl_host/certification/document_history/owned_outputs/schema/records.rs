@@ -76,7 +76,13 @@ pub struct FirstOutput;
 impl Entity for FirstOutput {
     const NAME: &'static str = "FirstOutput";
     type Aspects = (FirstFacts,);
-    type Relations = (ChildOfFirst, FirstOf, JoinedOf, ReconciledSourceOf);
+    type Relations = (
+        ChildOfFirst,
+        FirstOf,
+        JoinedOf,
+        ReconciledSourceOf,
+        member_retarget::records::ConsumedInput,
+    );
 }
 impl FirstOutput {
     pub fn reference() -> ApplicationEntityRef<Schema, Self> {

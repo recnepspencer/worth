@@ -49,6 +49,18 @@ impl InputOwner {
     }
 }
 pub struct Family;
+pub struct ConsumedInput;
+impl Relation for ConsumedInput {
+    const NAME: &'static str = "ConsumedInput";
+    type To = InputMember;
+    const DELETION: ApplicationRelationDeletionPolicy =
+        ApplicationRelationDeletionPolicy::CascadeDeleteRelations;
+}
+impl ConsumedInput {
+    pub fn reference() -> ApplicationRelationRef<Schema, Self, FirstOutput, InputMember> {
+        relation(Storage, FirstOutput, Self)
+    }
+}
 impl ApplicationAuthoredCorrectionFamily<Schema> for Family {
     type Entity = InputMember;
     const IDENTITY: &'static str = "owned-outputs.input-member-family";

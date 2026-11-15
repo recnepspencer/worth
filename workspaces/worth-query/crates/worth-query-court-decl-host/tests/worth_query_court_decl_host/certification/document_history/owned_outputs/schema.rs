@@ -1,5 +1,7 @@
 //! Its own installed schema: model, owned member and two derived output entities.
-pub use super::member_retarget::records::{InputKey, InputMember, InputValue};
+pub use super::member_retarget::records::{
+    ConsumedInput, InputKey, InputMember, InputOwner, InputValue,
+};
 use super::*;
 use worth_query_decl::facade::application_schema::fragment::*;
 mod calibration;

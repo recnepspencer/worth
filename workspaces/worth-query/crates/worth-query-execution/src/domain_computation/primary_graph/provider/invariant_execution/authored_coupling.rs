@@ -48,7 +48,7 @@ impl WorthQueryPrimaryGraphProvider {
             Ok::<_, WorthQueryInvariantExecutionFailure>((
                 super::super::application_attempt_state::coupled_publication::authored_retirement_input(&self.graph.layout, &staged)?,
                 super::super::application_attempt_state::coupled_publication::authored_source(&staged),
-                super::super::authored_retirement_selection::coupling_posture(staged.attempt),
+                super::super::authored_retirement_selection::coupling_posture(staged.appendix_attempt()),
             ))
         }).transpose()?;
         if material.restoration_plan.is_none() && source.is_none() {

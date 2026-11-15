@@ -45,7 +45,6 @@ fn first_value(request: &family::Request<'_, '_, '_>, key: &str) -> u64 {
 
 #[test]
 fn a_member_edit_keeps_its_new_source_route_through_reverse_and_reapply() {
-    let _observation = WorthQueryExecutionObservation::install_on_this_thread();
     let host = world::install_program_with_other_model::<program::Program>(host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()), 0, Some(7));
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
