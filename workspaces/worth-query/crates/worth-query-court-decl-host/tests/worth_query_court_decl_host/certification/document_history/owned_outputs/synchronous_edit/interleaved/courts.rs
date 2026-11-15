@@ -9,6 +9,7 @@ mod authored_only;
 mod correction;
 mod instance_replay;
 mod positioned;
+mod prefix;
 mod resolution;
 fn host(
     second_derivation: Option<fn(u64) -> u64>,
