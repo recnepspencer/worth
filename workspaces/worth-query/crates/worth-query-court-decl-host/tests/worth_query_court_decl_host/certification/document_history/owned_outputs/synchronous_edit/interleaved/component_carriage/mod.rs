@@ -1,6 +1,7 @@
 //! One complete component plus demand-dependent static continuations.
 use super::super::super::hierarchy::program as hierarchy;
 use super::super::super::program as entry;
+mod parent;
 mod topology;
 use super::*;
 mod connections;
@@ -32,10 +33,11 @@ type Root = ApplicationConnectionRef<
     hierarchy::Input,
     Start,
 >;
-pub type All = ApplicationOccurrenceGroup<(PreviousConnection,), (ForeignConnection,)>;
+pub type All =
+    ApplicationOccurrenceGroup<(PreviousConnection,), (ForeignConnection, ParentConnection)>;
 type Edges = (
     ApplicationOutputOccurrences<All>,
-    ApplicationOutputEdge<StaticConnection, ApplicationOutputLeaf>,
+    ApplicationOutputEdge<StaticConnection, ApplicationOutputOccurrences<All>>,
 );
 pub type Tree = ApplicationOutputGraph<Root, Edges>;
 pub struct After;
@@ -246,5 +248,5 @@ pub(super) fn seed(
 pub(super) fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
-    topology::declare(schema)
+    parent::declare(topology::declare(schema))
 }

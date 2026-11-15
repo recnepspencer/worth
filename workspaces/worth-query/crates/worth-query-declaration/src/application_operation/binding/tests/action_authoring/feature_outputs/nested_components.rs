@@ -5,14 +5,21 @@ struct Member;
 struct Side;
 struct Output;
 struct Input;
+struct StaticInput;
 struct ComponentLink;
 struct StaticLink;
 impl ApplicationFeature<MutationSchema> for Member {
-    type Inputs = ApplicationFeatureInputList<Input, ApplicationFeatureInputLeaf>;
+    type Inputs = ApplicationFeatureInputList<
+        Input,
+        ApplicationFeatureInputList<StaticInput, ApplicationFeatureInputLeaf>,
+    >;
     const IDENTITY: &'static str = "test.nested.member";
 }
 impl ApplicationFeature<MutationSchema> for Side {
-    type Inputs = ApplicationFeatureInputList<Input, ApplicationFeatureInputLeaf>;
+    type Inputs = ApplicationFeatureInputList<
+        Input,
+        ApplicationFeatureInputList<StaticInput, ApplicationFeatureInputLeaf>,
+    >;
     const IDENTITY: &'static str = "test.nested.side";
 }
 impl ApplicationOutputPort<MutationSchema, Target> for Output {
@@ -30,6 +37,21 @@ macro_rules! input {
 }
 input!(Member);
 input!(Side);
+macro_rules! static_ports {
+    ($feature:ty) => {
+        impl ApplicationInputPort<MutationSchema, $feature> for StaticInput {
+            type Value = RenameInputBinding;
+            const IDENTITY: &'static str = "test.nested.static-input";
+            const REQUIRED: bool = false;
+        }
+        impl ApplicationOutputPort<MutationSchema, $feature> for Output {
+            type Value = RenameInputBinding;
+            const IDENTITY: &'static str = "test.nested.output";
+        }
+    };
+}
+static_ports!(Member);
+static_ports!(Side);
 impl ApplicationConnectionIdentity for ComponentLink {
     const IDENTITY: &'static str = "test.nested.component";
 }
@@ -72,8 +94,12 @@ impl<R: ApplicationProgramOutputRootsShape<MutationSchema>>
             ApplicationFeatureSpec::root::<MutationSchema, Target>()
                 .provides::<Output>()
                 .finish(),
-            ApplicationFeatureSpec::root::<MutationSchema, Member>().finish(),
-            ApplicationFeatureSpec::root::<MutationSchema, Side>().finish(),
+            ApplicationFeatureSpec::root::<MutationSchema, Member>()
+                .provides::<Output>()
+                .finish(),
+            ApplicationFeatureSpec::root::<MutationSchema, Side>()
+                .provides::<Output>()
+                .finish(),
         ]
     }
 }
@@ -144,4 +170,129 @@ fn different_components_do_not_hide_shared_connection_collisions() {
         ApplicationOccurrenceGroup<(ComponentConnection,), (StaticConnection,)>,
     >;
     refuses::<ApplicationOutputGraph<RootConnection, (All, Different)>>();
+}
+
+macro_rules! connection {
+    ($binding:ident, $name:ident, $id:literal, $source:ty, $output:ty, $target:ty, $input:ty) => {
+        struct $binding;
+        impl ApplicationConnectionIdentity for $binding {
+            const IDENTITY: &'static str = $id;
+        }
+        impl ApplicationOccurrenceConnectionBinding<MutationSchema, $source, $target> for $binding {}
+        type $name = ApplicationConnectionRef<MutationSchema, $source, $output, $target, $input, $binding>;
+    };
+}
+connection!(
+    SideComponent,
+    SideComponentConnection,
+    "test.mixed.side-component",
+    Target,
+    Output,
+    Side,
+    Input
+);
+connection!(
+    MemberStatic,
+    MemberStaticConnection,
+    "test.mixed.member-static",
+    Target,
+    Output,
+    Member,
+    StaticInput
+);
+connection!(
+    SideStatic,
+    SideStaticConnection,
+    "test.mixed.side-static",
+    Member,
+    Output,
+    Side,
+    StaticInput
+);
+connection!(
+    BackStatic,
+    BackStaticConnection,
+    "test.mixed.back-static",
+    Side,
+    Output,
+    Member,
+    StaticInput
+);
+connection!(
+    SeparateComponent,
+    SeparateComponentConnection,
+    "test.mixed.separate-component",
+    Source,
+    Export,
+    Side,
+    Input
+);
+
+type Complete = ApplicationOutputOccurrences<(ComponentConnection, SideComponentConnection)>;
+
+#[test]
+fn internal_static_dag_keeps_its_runnable_precedence() {
+    type Tree = ApplicationOutputGraph<
+        RootConnection,
+        (
+            Complete,
+            ApplicationOutputEdge<
+                MemberStaticConnection,
+                ApplicationOutputEdge<SideStaticConnection, Complete>,
+            >,
+        ),
+    >;
+    let program = ApplicationProgramAuthoring::<MutationSchema, NestedProgram<Tree>>::begin()
+        .validated_program()
+        .unwrap();
+    let order = program.connection_order();
+    let member = order.rank(&MemberStaticConnection::declaration()).unwrap();
+    let side = order.rank(&SideStaticConnection::declaration()).unwrap();
+    assert!(
+        member < side,
+        "internal static precedence survives occurrence condensation"
+    );
+}
+
+fn refuses_cycle<R: ApplicationProgramOutputRootsShape<MutationSchema>>() {
+    let denied = match ApplicationProgramAuthoring::<MutationSchema, NestedProgram<R>>::begin()
+        .validated_program()
+    {
+        Err(denied) => denied,
+        Ok(_) => panic!("static cycle admitted"),
+    };
+    assert_eq!(
+        denied.kind(),
+        ApplicationProgramValidationDenialKind::CyclicConnection
+    );
+}
+
+#[test]
+fn condensation_cannot_hide_an_internal_static_cycle() {
+    type Tree = ApplicationOutputGraph<
+        RootConnection,
+        (
+            Complete,
+            ApplicationOutputEdge<
+                SideStaticConnection,
+                ApplicationOutputEdge<BackStaticConnection, Complete>,
+            >,
+        ),
+    >;
+    refuses_cycle::<Tree>();
+}
+
+#[test]
+fn static_dag_cannot_cycle_between_condensed_groups() {
+    // Source->Target and Member->Side are statically acyclic, but the two
+    // occurrence groups {Source,Side} and {Target,Member} depend on each other.
+    type Groups = ApplicationOutputOccurrences<(ComponentConnection, SeparateComponentConnection)>;
+    type Tree = ApplicationOutputGraph<
+        RootConnection,
+        (
+            Groups,
+            ApplicationOutputEdge<SideStaticConnection, ApplicationOutputLeaf>,
+        ),
+    >;
+    refuses_cycle::<Tree>();
 }
