@@ -17,6 +17,10 @@ impl<Schema, Operation, Input, Scope>
         &self,
         _access: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
     ) -> bool {
+        self.captures_original_input()
+    }
+
+    fn captures_original_input(&self) -> bool {
         self.read_set
             .admission
             .allowed_graph_contract()
@@ -29,9 +33,13 @@ impl<Schema, Operation, Input, Scope>
     /// Original disclosure parameters have a separate custody from correction input.
     pub fn requires_original_source_capture(
         &self,
-        access: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
+        _access: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
     ) -> bool {
-        self.requires_original_input_retention(access)
+        self.captures_original_source()
+    }
+
+    fn captures_original_source(&self) -> bool {
+        self.captures_original_input()
             || !self
                 .read_set
                 .admission
@@ -44,7 +52,7 @@ impl<Schema, Operation, Input, Scope>
     /// The sealed handler proof prevents substitution of another input or binding.
     pub fn retain_original_mutation_input<Binding>(
         self,
-        access: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
+        _access: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         input: ApplicationEncodedInput<Binding::InputBinding>,
@@ -54,18 +62,33 @@ impl<Schema, Operation, Input, Scope>
         Binding: ApplicationMutationBinding<Schema, Operation = Operation, Input = Input>,
         Input: serde::Serialize + Send + Sync + 'static,
     {
-        if !self.requires_original_source_capture(access) {
+        self.retain_admitted_source_input::<Binding>(phase, runtime, input)
+    }
+
+    /// The owned SDK stage uses the same checked retention without issuing a publication token.
+    pub(in crate::domain_computation::primary_graph) fn retain_admitted_source_input<Binding>(
+        self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        input: ApplicationEncodedInput<Binding::InputBinding>,
+    ) -> Result<Self, WorthQueryApplicationAttemptDenial>
+    where
+        Schema: ApplicationSchema,
+        Binding: ApplicationMutationBinding<Schema, Operation = Operation, Input = Input>,
+        Input: serde::Serialize + Send + Sync + 'static,
+    {
+        if !self.captures_original_source() {
             return Ok(self);
         }
-        let retain_input = self.requires_original_input_retention(access);
-        self.retain_checked_input::<Binding>(access, phase, runtime, input, retain_input)
+        let retain_input = self.captures_original_input();
+        self.retain_checked_input::<Binding>(phase, runtime, input, retain_input)
     }
 
     /// Keeps the performed inverse's actual input for retry, including an irreversible inverse.
     /// This does not change its installed correction or disclosure contract.
     pub fn retain_performed_correction_input<Binding>(
         self,
-        access: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
+        _access: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         input: ApplicationEncodedInput<Binding::InputBinding>,
@@ -75,12 +98,11 @@ impl<Schema, Operation, Input, Scope>
         Binding: ApplicationMutationBinding<Schema, Operation = Operation, Input = Input>,
         Input: serde::Serialize + Send + Sync + 'static,
     {
-        self.retain_checked_input::<Binding>(access, phase, runtime, input, true)
+        self.retain_checked_input::<Binding>(phase, runtime, input, true)
     }
 
     fn retain_checked_input<Binding>(
         mut self,
-        access: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         input: ApplicationEncodedInput<Binding::InputBinding>,
@@ -105,7 +127,7 @@ impl<Schema, Operation, Input, Scope>
             ));
         }
         if self.read_set.admission.runtime_authority() != runtime.runtime.authority_identity()
-            || (self.requires_original_input_retention(access)
+            || (self.captures_original_input()
                 && self.read_set.admission.original_scope().is_none())
         {
             return Err(WorthQueryApplicationAttemptDenial::new(
