@@ -74,7 +74,17 @@ type ComponentConnection =
     ApplicationConnectionRef<MutationSchema, Target, Output, Member, Input, ComponentLink>;
 type StaticConnection =
     ApplicationConnectionRef<MutationSchema, Target, Output, Side, Input, StaticLink>;
-type All = ApplicationOutputOccurrences<(ComponentConnection,)>;
+/// Declares a named occurrence component over its structural connections.
+macro_rules! component {
+    ($name:ident = $connections:ty) => {
+        struct $name;
+        impl ApplicationOccurrenceComponent<MutationSchema> for $name {
+            type Connections = $connections;
+        }
+    };
+}
+component!(Members = (ComponentConnection,));
+type All = ApplicationOutputOccurrences<Members>;
 type Flat = ApplicationOutputGraph<
     RootConnection,
     (
@@ -163,7 +173,8 @@ fn refuses<R: ApplicationProgramOutputRootsShape<MutationSchema>>() {
 
 #[test]
 fn first_component_expansion_retains_invalid_duplicate_members() {
-    type Invalid = ApplicationOutputOccurrences<(ComponentConnection, ComponentConnection)>;
+    component!(Duplicated = (ComponentConnection, ComponentConnection));
+    type Invalid = ApplicationOutputOccurrences<Duplicated>;
     refuses::<ApplicationOutputGraph<RootConnection, (Invalid, Invalid)>>();
 }
 
@@ -175,10 +186,20 @@ fn repeated_component_does_not_hide_duplicate_static_edges() {
 
 #[test]
 fn different_components_do_not_hide_shared_connection_collisions() {
-    type Different = ApplicationOutputOccurrences<
-        ApplicationOccurrenceGroup<(ComponentConnection,), (StaticConnection,)>,
-    >;
+    component!(
+        Overlapping = ApplicationOccurrenceGroup<(ComponentConnection,), (StaticConnection,)>
+    );
+    type Different = ApplicationOutputOccurrences<Overlapping>;
     refuses::<ApplicationOutputGraph<RootConnection, (All, Different)>>();
+}
+
+#[test]
+fn a_component_is_its_name_not_its_connections() {
+    // Identical structural connections under a second name are a different
+    // component; their shared connection collides instead of merging.
+    component!(Twin = (ComponentConnection,));
+    type Renamed = ApplicationOutputOccurrences<Twin>;
+    refuses::<ApplicationOutputGraph<RootConnection, (All, Renamed)>>();
 }
 
 macro_rules! connection {
@@ -237,7 +258,8 @@ connection!(
     Input
 );
 
-type Complete = ApplicationOutputOccurrences<(ComponentConnection, SideComponentConnection)>;
+component!(Mixed = (ComponentConnection, SideComponentConnection));
+type Complete = ApplicationOutputOccurrences<Mixed>;
 
 #[test]
 fn internal_static_dag_keeps_its_runnable_precedence() {
@@ -298,7 +320,8 @@ fn condensation_cannot_hide_an_internal_static_cycle() {
 fn static_dag_cannot_cycle_between_condensed_groups() {
     // Source->Target and Member->Side are statically acyclic, but the two
     // occurrence groups {Source,Side} and {Target,Member} depend on each other.
-    type Groups = ApplicationOutputOccurrences<(ComponentConnection, SeparateComponentConnection)>;
+    component!(Separate = (ComponentConnection, SeparateComponentConnection));
+    type Groups = ApplicationOutputOccurrences<Separate>;
     type Tree = ApplicationOutputGraph<
         RootConnection,
         (
