@@ -307,5 +307,6 @@ impl<ParentFeature, Left, Right> sealed::OutputChildrenShape<ParentFeature> for 
 
 mod occurrences;
 pub use occurrences::{
-    ApplicationOccurrenceConnections, ApplicationOccurrenceGroup, ApplicationOutputOccurrences,
+    ApplicationOccurrenceComponent, ApplicationOccurrenceConnections, ApplicationOccurrenceGroup,
+    ApplicationOutputOccurrences,
 };

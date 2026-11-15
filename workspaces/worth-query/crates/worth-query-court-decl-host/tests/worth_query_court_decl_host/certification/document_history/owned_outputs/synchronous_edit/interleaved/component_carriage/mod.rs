@@ -33,8 +33,12 @@ type Root = ApplicationConnectionRef<
     hierarchy::Input,
     Start,
 >;
-pub type All =
-    ApplicationOccurrenceGroup<(PreviousConnection,), (ForeignConnection, ParentConnection)>;
+/// The one complete component, named once and placed twice.
+pub struct All;
+impl ApplicationOccurrenceComponent<Schema> for All {
+    type Connections =
+        ApplicationOccurrenceGroup<(PreviousConnection,), (ForeignConnection, ParentConnection)>;
+}
 type Edges = (
     ApplicationOutputOccurrences<All>,
     ApplicationOutputEdge<StaticConnection, ApplicationOutputOccurrences<All>>,
@@ -149,11 +153,19 @@ impl ApplicationProgramDefinition<Schema> for Program {
         >()
     }
 }
+pub struct PreviousOnly;
+impl ApplicationOccurrenceComponent<Schema> for PreviousOnly {
+    type Connections = (PreviousConnection,);
+}
+pub struct ForeignOnly;
+impl ApplicationOccurrenceComponent<Schema> for ForeignOnly {
+    type Connections = (ForeignConnection,);
+}
 type FragmentedTree = ApplicationOutputGraph<
     Root,
     (
-        ApplicationOutputOccurrences<(PreviousConnection,)>,
-        ApplicationOutputOccurrences<(ForeignConnection,)>,
+        ApplicationOutputOccurrences<PreviousOnly>,
+        ApplicationOutputOccurrences<ForeignOnly>,
     ),
 >;
 struct Fragmented;

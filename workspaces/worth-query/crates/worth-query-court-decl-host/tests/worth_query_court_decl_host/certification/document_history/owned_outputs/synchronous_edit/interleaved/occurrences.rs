@@ -19,8 +19,12 @@ pub type Connection = ApplicationConnectionRef<
     hierarchy::PredecessorInput,
     Previous,
 >;
+pub struct Predecessors;
+impl ApplicationOccurrenceComponent<Schema> for Predecessors {
+    type Connections = (Connection,);
+}
 pub type Tree =
-    ApplicationOutputGraph<program::ModelConnection, ApplicationOutputOccurrences<(Connection,)>>;
+    ApplicationOutputGraph<program::ModelConnection, ApplicationOutputOccurrences<Predecessors>>;
 impl WorthQueryApplicationDependentOutputConnection<Schema> for Previous {
     type RootDemand = first::Demand;
     type Demand = first::Demand;

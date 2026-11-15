@@ -4601,15 +4601,33 @@ recreate pre-change development records instead of preserving a legacy encoder.
 
 ### Repeated-family required outputs
 
-Use `ApplicationOutputOccurrences<All>` as the dependents of the existing
+Use `ApplicationOutputOccurrences<Component>` as the dependents of the existing
 output graph when a closed installed component has repeated-family instances.
+`Component` is a named type implementing `ApplicationOccurrenceComponent<S>`;
+that type is the component's identity, and its `Connections` hold the complete
+structural vocabulary:
+
+```rust
+pub struct Generators<S>(PhantomData<fn() -> S>);
+impl<S: ApplicationSchema> ApplicationOccurrenceComponent<S> for Generators<S>
+where
+    All<S>: ApplicationOccurrenceConnections<S>,
+{
+    type Connections = All<S>;
+}
+```
+
 Small connection tuples are leaves; compose them recursively with
-`ApplicationOccurrenceGroup<Left, Right>` inside that ONE outer wrapper. For
+`ApplicationOccurrenceGroup<Left, Right>` inside that ONE component. For
 example, `All = ApplicationOccurrenceGroup<PreviousPorts, GeneratorPorts>`
 retains both typed groups through every parent and child schedule. There is no
-flat eight-connection limit on the complete recursive component. Overlapping
-fragmented sibling wrappers refuse during program declaration with
-`IncompleteOccurrenceComponent`; put those groups inside the same wrapper.
+flat eight-connection limit on the complete recursive component. A structural
+tuple or group is never itself a component, so the full vocabulary is spelled
+once, at the component's declaration, and generated code names only the
+component. Every placement of one component names the same type; the same
+connections under a second name are a different component. Overlapping
+fragmented sibling components refuse during program declaration with
+`IncompleteOccurrenceComponent`; put those groups inside the same component.
 Independent components and ordinary static branches remain composable.
 Distinct startable roots may share the same complete component and exact typed
 static tail: the program describes those exact connections once, while retaining
