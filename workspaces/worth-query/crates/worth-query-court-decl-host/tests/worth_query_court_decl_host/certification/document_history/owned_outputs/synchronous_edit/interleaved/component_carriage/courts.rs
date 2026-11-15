@@ -6,6 +6,68 @@ use worth_query_host::facade::{
 };
 use worth_relational::facade::inspection::observe_maintenance_work;
 #[test]
+fn a_later_authored_link_expands_the_same_atomic_output_closure() {
+    let host: WorthQueryProgramApplicationRuntime<Schema, Program> = world::install_configured(
+        host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()), 1, None,
+        world::Configuration { envelope_records:true, interleaved_records:true, ..Default::default() });
+    let scope = request_scope();
+    let principal = authenticate_operator(host.installed_schema(), &scope);
+    let request = host.request(&principal, &scope);
+    let before = native_head(&host).0;
+    let mut edit = request
+        .edit_envelope()
+        .idempotency("new-dependent-after-parent".to_owned())
+        .runtime_stages(&host)
+        .ordered_authored()
+        .unwrap();
+    edit.push_stage::<Tree, _>(fixture::model::Intent {
+        key: "a".into(),
+        value: 3,
+        key_derived_target: false,
+    })
+    .unwrap();
+    let attached = edit
+        .push_stage::<ApplicationNoOutputGraph, _>(attach::Intent {
+            parent: "a".into(),
+            child: "carriage:late".into(),
+        })
+        .unwrap();
+    let ((outcome, contacts), writes) = observe_maintenance_work(24, || {
+        let before = host.producer_contacts_on_this_thread_for_test();
+        let outcome = edit
+            .execute_performed(ExecutionAllocationPolicy::SystemAllocation)
+            .unwrap();
+        (
+            outcome,
+            host.producer_contacts_on_this_thread_for_test() - before,
+        )
+    });
+    let Outcome::Committed(done) = outcome else {
+        panic!("{outcome:?}")
+    };
+    assert_eq!(
+        done.result(&attached).unwrap().value,
+        30,
+        "the later authored link reads the genuine earlier produced value"
+    );
+    assert_eq!(done.result(&attached).unwrap().ordinal, 1);
+    assert_eq!(native_head(&host).1, [before]);
+    assert_eq!(writes.published_rows.len() + writes.omitted_publications, 1);
+    let later = request
+        .query(query::first_output::Read("first:carriage:late".into()))
+        .execute()
+        .unwrap();
+    assert_eq!(
+        later.rows()[0].value,
+        (5 + 30) * 10,
+        "only final outgoing discovery can require this newly linked consumer"
+    );
+    assert_eq!(
+        contacts, 5,
+        "a, b, d, the later consumer and a's static child each execute once"
+    );
+}
+#[test]
 fn recursive_component_retains_parents_and_later_static_selectors() {
     let _execution = WorthQueryExecutionObservation::install_on_this_thread();
     let host: WorthQueryProgramApplicationRuntime<Schema, Program> = world::install_configured(

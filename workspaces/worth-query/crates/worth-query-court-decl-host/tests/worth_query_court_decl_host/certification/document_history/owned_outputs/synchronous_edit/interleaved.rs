@@ -26,6 +26,7 @@ pub fn declare(
 pub fn install(
     setup: &mut WorthQueryApplicationContributionSetup<'_, Schema>,
 ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+    component_carriage::install(setup)?;
     setup.handler::<prerequisite_partition::expectation::Binding, _>(
         prerequisite_partition::expectation::Handler,
     )?;
