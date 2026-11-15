@@ -13,8 +13,7 @@ impl Fragment for Storage {
         FirstOutput,
         SecondOutput,
         ChildOutput,
-        (Cap, Incidence),
-        member_retarget::records::InputMember,
+        (Cap, Incidence, member_retarget::records::InputMember),
     );
 }
 mod bindings;

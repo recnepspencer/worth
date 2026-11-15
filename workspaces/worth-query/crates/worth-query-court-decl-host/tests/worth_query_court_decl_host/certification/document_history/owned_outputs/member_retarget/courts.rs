@@ -75,7 +75,7 @@ fn a_member_edit_keeps_its_new_source_route_through_reverse_and_reapply() {
         .query(query::second_output::Read("second:b".into()))
         .execute()
         .is_err());
-    let before = super::super::courts::native_head(&host).0;
+    let before = synchronous_edit::native_head(&host).0;
     let receipt = publish(
         &host,
         &request,
@@ -91,7 +91,7 @@ fn a_member_edit_keeps_its_new_source_route_through_reverse_and_reapply() {
         "retarget-input",
     );
     assert_eq!(
-        super::super::courts::native_head(&host).1,
+        synchronous_edit::native_head(&host).1,
         [before],
         "the member edit and both producer scopes publish once"
     );
