@@ -11,6 +11,7 @@ pub struct Configuration {
     pub reconciliation_indices: bool,
     pub reconciliation_peer_caps: bool,
     pub reconciliation_emission: bool,
+    pub reconciliation_owned_orbits: bool,
     pub envelope_records: bool,
     pub interleaved_records: bool,
     pub wrong_inverse_member: bool,
@@ -47,6 +48,7 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
             configuration.reconciliation_indices,
             configuration.reconciliation_peer_caps,
             configuration.reconciliation_emission,
+            configuration.reconciliation_owned_orbits,
         )?;
         setup.handler::<authored_member::retire::Binding, _>(authored_member::retire::Handler)?;
         setup.handler::<authored_member::restore::Binding, _>(
@@ -180,7 +182,7 @@ where
         schema,
         (configuration,),
         ApplicationBuildIdentity::parse(
-            match (
+            &match (
                 configuration.reconciliation_indices,
                 configuration.reconciliation_peer_caps,
                 configuration.reconciliation_emission,
@@ -193,7 +195,15 @@ where
                 (true, false, true) => "91830000-0000-0000-0000-00000000535c",
                 (false, true, true) => "91830000-0000-0000-0000-00000000535d",
                 (true, true, true) => "91830000-0000-0000-0000-00000000535e",
-            },
+            }
+            .replace(
+                "91830000",
+                if configuration.reconciliation_owned_orbits {
+                    "91830001"
+                } else {
+                    "91830000"
+                },
+            ),
         )
         .unwrap(),
         limits,

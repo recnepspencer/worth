@@ -282,10 +282,6 @@ pub(super) fn entry_builder_with_retirement<
 >() -> ApplicationFeatureSpecBuilder<Schema, ApplicationRootComposition, Entry> {
     ApplicationFeatureSpec::root::<Schema, Entry>()
         .provides::<EntryOutput>()
-        .action::<query::identity::expectation::Binding, Completion>()
-        .finish_action()
-        .action::<synchronous_edit::interleaved::prerequisite_partition::expectation::Binding, Completion>()
-        .finish_action()
         .action::<predecessor::synchronous::Binding, Completion>()
         .finish_action()
         .action::<synchronous_edit::new_source::Binding, Completion>()
@@ -360,6 +356,10 @@ pub(super) fn envelope_actions<
     entry: ApplicationFeatureSpecBuilder<Schema, ApplicationRootComposition, Entry>,
 ) -> ApplicationFeatureSpecBuilder<Schema, ApplicationRootComposition, Entry> {
     entry
+        .action::<query::identity::expectation::Binding, Completion>()
+        .finish_action()
+        .action::<synchronous_edit::interleaved::prerequisite_partition::expectation::Binding, Completion>()
+        .finish_action()
         .action::<synchronous_edit::interleaved::attach::Binding, Completion>()
         .finish_action()
         .action::<synchronous_edit::interleaved::dependent::Binding, Completion>()

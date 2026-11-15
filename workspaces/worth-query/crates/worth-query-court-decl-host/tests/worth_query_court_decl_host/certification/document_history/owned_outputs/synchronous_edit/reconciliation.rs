@@ -68,6 +68,9 @@ impl MemberKind for SecondOutput {
 impl MemberKind for ChildOutput {
     const PREFIX: &'static str = "retired.";
 }
+impl MemberKind for Incidence {
+    const PREFIX: &'static str = "incidence.";
+}
 pub struct Rows<C, E>(PhantomData<fn() -> (C, E)>);
 impl<C: ApplicationMutationOutputContract<Schema>, E: MemberKind + 'static>
     WorthQueryApplicationOutputRoleFamily for Rows<C, E>
@@ -141,6 +144,7 @@ pub fn install(
     indices: bool,
     peer_caps: bool,
     emission: bool,
+    owned_orbits: bool,
 ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
     child::install(setup, indices)?;
     setup.handler::<cap_edit::Binding, _>(cap_edit::Handler)?;
@@ -148,11 +152,13 @@ pub fn install(
         derive: |v| v,
         peer_caps,
         emission,
+        owned_orbits,
     })?;
     setup.handler::<preserve::Binding, _>(preserve::Handler {
         derive: |v| v,
         peer_caps,
         emission,
+        owned_orbits,
     })?;
     setup.producer::<initial::Producer>(initial::Provider)?;
     setup.producer::<preserve::Producer>(preserve::Provider)?;
@@ -179,4 +185,6 @@ mod unkeyed;
 mod genuine_retirement;
 mod kept_refusals;
 mod late_stop;
+mod member_orbit;
 mod original_root;
+mod retired_structure;
