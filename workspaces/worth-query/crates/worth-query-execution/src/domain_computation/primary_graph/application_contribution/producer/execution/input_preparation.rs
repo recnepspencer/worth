@@ -6,7 +6,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryProjectedApplicationMutation,
 };
 use worth_query_declaration::facade::application_operation::{
-    ApplicationMutationScopeBinding, ApplicationOwnedMutationIdentities,
+    ApplicationMutationBinding, ApplicationMutationScopeBinding, ApplicationOwnedMutationIdentities,
 };
 use worth_relational::facade::runtime::{
     RelationalAppliedCandidateReadIdentity, RelationalPinnedRead,
@@ -72,11 +72,21 @@ where
     if source.candidate.qualification() != candidate.candidate_identity().qualification() {
         return Err(foreign().into());
     }
-    let execution = phase
-        .checked_execution_request_for(&runtime.runtime.product_runtime)
+    let query_execution = phase
+        .execution_for(&runtime.runtime.product_runtime)
+        .map_err(|cause| {
+            execution_failed(
+                B::IDENTITY,
+                MutationHandlerExecutionDenial::ForeignAdvancementPhase(cause),
+            )
+        })?;
+    let execution = query_execution
+        .execution_request()
         .map_err(|cause| {
             denial(
-                WorthQueryOutputDemandDenialKind::ExecutionRequest(cause),
+                WorthQueryOutputDemandDenialKind::ExecutionRequest(
+                    crate::domain_computation::primary_graph::application_contribution::WorthQueryAdvancementDenial::Resource(cause),
+                ),
                 B::IDENTITY,
             )
         })?;
@@ -176,7 +186,7 @@ where
                     borrowed.mutation_input(),
                     reader,
                     scope,
-                    &execution,
+                    query_execution,
                     &meaning.types,
                     affinity,
                 )
