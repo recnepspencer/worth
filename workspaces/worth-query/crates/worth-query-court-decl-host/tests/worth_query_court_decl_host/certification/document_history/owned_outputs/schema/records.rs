@@ -13,8 +13,7 @@ impl Fragment for Storage {
         FirstOutput,
         SecondOutput,
         ChildOutput,
-        Cap,
-        Incidence,
+        (Cap, Incidence),
     );
 }
 mod bindings;
