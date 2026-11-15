@@ -90,6 +90,33 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
     pub(in crate::domain_computation::primary_graph) fn reset_candidate_read_support(&mut self) {
         self.candidate_read_support = CandidateReadSupports::default();
     }
+    /// The wave must replace these by a complete pure outgoing pass before returning.
+    pub(in crate::domain_computation::primary_graph) fn refresh_outgoing_read_support(
+        &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<(), Denial> {
+        let subject = "outgoing discovery support refresh";
+        let work = u64::try_from(self.candidate_read_support.values.len())
+            .map_err(|_| Denial::new(Kind::CandidateCapacityExceeded, subject))?;
+        execution
+            .run_native_with_checkpoint(|context| {
+                crate::domain_computation::primary_graph::admitted_capture::checkpoint(
+                    context, work,
+                )
+            })
+            .map_err(|cause| Denial::relational_read_stopped(cause.into(), subject))?
+            .0
+            .map_err(|cause| {
+                Denial::relational_read_stopped(
+                    worth_execution::WorkCeilingDenial::Stopped(cause).into(),
+                    subject,
+                )
+            })?;
+        self.candidate_read_support
+            .values
+            .retain(|(_, _, support)| !matches!(support, CandidateReadSupport::Outgoing(_)));
+        Ok(())
+    }
     pub(in crate::domain_computation::primary_graph) fn candidate_read_support(
         &self,
     ) -> &[(EntityId, usize, CandidateReadSupport)] {

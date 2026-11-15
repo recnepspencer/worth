@@ -3,9 +3,7 @@ use super::*;
 worth_query_application_query!(pub Query for Schema, identity "owned-outputs.component-carriage-topology.v1",
     parameters query::ParametersBinding, result TopologyBinding, scope Model => "Model", name "ComponentCarriageTopology");
 #[derive(Clone, Debug)]
-pub struct Topology {
-    pub children: Vec<String>,
-}
+pub struct Topology;
 worth_query_structured_value_binding!(pub TopologyBinding for Topology { identity:"owned-outputs.component-carriage-topology-result.v1" });
 #[derive(Clone, Debug)]
 pub struct PreviousParent {
@@ -51,18 +49,12 @@ fn foreign_role() -> ApplicationQueryParameterRef<Query, ForeignRole, StringAppl
 }
 pub struct PreviousModel;
 pub struct ForeignModel;
-pub struct Children;
-pub struct ChildModel;
 pub struct PreviousKey;
 pub struct ForeignKey;
-pub struct ChildKey;
 worth_query_portable_type!(PreviousModel=>"owned-outputs.component-carriage-previous-model");
 worth_query_portable_type!(ForeignModel=>"owned-outputs.component-carriage-foreign-model");
-worth_query_portable_type!(Children=>"owned-outputs.component-carriage-children");
-worth_query_portable_type!(ChildModel=>"owned-outputs.component-carriage-child-model");
 worth_query_portable_type!(PreviousKey=>"owned-outputs.component-carriage-previous-key");
 worth_query_portable_type!(ForeignKey=>"owned-outputs.component-carriage-foreign-key");
-worth_query_portable_type!(ChildKey=>"owned-outputs.component-carriage-child-key");
 fn previous_parent() -> ApplicationQueryResultRelationRef<
     Query,
     PreviousModel,
@@ -87,38 +79,11 @@ fn foreign_parent() -> ApplicationQueryResultRelationRef<
 > {
     ApplicationQueryResultRelationRef::forward_one("foreign-parent", UpstreamOf::reference())
 }
-fn children() -> ApplicationQueryResultRelationRef<
-    Query,
-    Children,
-    Schema,
-    UpstreamOf,
-    Member,
-    Model,
-    ReverseResultTraversal,
-    ManyResults,
-> {
-    ApplicationQueryResultRelationRef::reverse_many("dependents", UpstreamOf::reference())
-}
-fn child() -> ApplicationQueryResultRelationRef<
-    Query,
-    ChildModel,
-    Schema,
-    ModelMember,
-    Model,
-    Member,
-    ReverseResultTraversal,
-    ExactlyOneResult,
-> {
-    ApplicationQueryResultRelationRef::reverse_one("dependent", ModelMember::reference())
-}
 fn previous_key() -> ApplicationQueryResultFieldRef<Query, PreviousKey, Schema, ModelKey> {
     ApplicationQueryResultFieldRef::new("previous-key", ModelKey::at("ModelKey"))
 }
 fn foreign_key() -> ApplicationQueryResultFieldRef<Query, ForeignKey, Schema, ModelKey> {
     ApplicationQueryResultFieldRef::new("foreign-key", ModelKey::at("ModelKey"))
-}
-fn child_key() -> ApplicationQueryResultFieldRef<Query, ChildKey, Schema, ModelKey> {
-    ApplicationQueryResultFieldRef::new("child-key", ModelKey::at("ModelKey"))
 }
 impl WorthQueryApplicationProjection<Schema, Query> for PreviousParent {
     fn project(
@@ -142,13 +107,7 @@ impl WorthQueryApplicationProjection<Schema, Query> for Topology {
     fn project(
         row: &WorthQueryApplicationProjectionRow<'_, Schema, Query>,
     ) -> Result<Self, WorthQueryApplicationProjectionDenial> {
-        Ok(Self {
-            children: row
-                .many(children())?
-                .iter()
-                .map(|r| r.one(child())?.field(child_key()))
-                .collect::<Result<_, _>>()?,
-        })
+        Ok(Self)
     }
 }
 pub fn declare(
@@ -175,14 +134,6 @@ pub fn declare(
         TopologyBinding,
     >::new(Member::reference())
     .relation(foreign_parent(), model().field(foreign_key()));
-    let child_row = ApplicationQueryResultShapeBuilder::<
-        Schema,
-        Query,
-        Member,
-        Topology,
-        TopologyBinding,
-    >::new(Member::reference())
-    .relation(child(), model().field(child_key()));
     let definition = ApplicationQueryDefinitionBuilder::declare(Query::reference())
         .root(Model::reference())
         .scope(Model::reference())
@@ -200,7 +151,6 @@ pub fn declare(
                     MemberKey::at("MemberKey"),
                     foreign_role(),
                 )
-                .relation(children(), child_row)
                 .build(),
         )
         .cardinality(ApplicationQueryCardinality::ExactlyOne)

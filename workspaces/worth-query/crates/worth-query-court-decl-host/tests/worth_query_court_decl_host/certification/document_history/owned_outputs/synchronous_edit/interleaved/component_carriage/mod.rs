@@ -1,6 +1,8 @@
 //! One complete component plus demand-dependent static continuations.
 use super::super::super::hierarchy::program as hierarchy;
 use super::super::super::program as entry;
+pub(in super::super::super) mod attach;
+mod outgoing;
 mod parent;
 mod topology;
 use super::*;
@@ -221,7 +223,7 @@ where
 pub(super) fn seed(
     graph: &mut WorthQueryPrimaryGraphBootstrap<Schema>,
 ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
-    for (key, value) in [("carriage:b", 2), ("carriage:d", 4)] {
+    for (key, value) in [("carriage:b", 2), ("carriage:d", 4), ("carriage:late", 5)] {
         graph.bind_entity(
             WorthQueryApplicationEntitySeed::new(
                 Model::reference(),
@@ -260,5 +262,12 @@ pub(super) fn seed(
 pub(super) fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
-    parent::declare(topology::declare(schema))
+    parent::declare(outgoing::declare(topology::declare(attach::declare(
+        schema,
+    ))))
+}
+pub(super) fn install(
+    setup: &mut WorthQueryApplicationContributionSetup<'_, Schema>,
+) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+    setup.handler::<attach::Binding, _>(attach::Handler)
 }

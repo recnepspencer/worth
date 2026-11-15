@@ -118,6 +118,14 @@ where
     ) -> Result<(), SynchronousOutputFailure> {
         Self::assemble(context, parent, demand, next)
     }
+    fn assemble_occurrences(
+        _context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        _parent: &AppliedOutputParent,
+        _demand: &D,
+        _next: &mut SynchronousOutputWave<S>,
+    ) -> Result<(), SynchronousOutputFailure> {
+        Ok(())
+    }
 }
 impl sealed::Edges for ApplicationOutputLeaf {}
 impl<S: ApplicationSchema, D: WorthQueryApplicationOutputDemand<S>> SynchronousOutputEdges<S, D>

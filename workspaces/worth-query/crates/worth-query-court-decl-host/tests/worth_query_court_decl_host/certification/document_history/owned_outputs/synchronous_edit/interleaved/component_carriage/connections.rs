@@ -21,15 +21,15 @@ macro_rules! relation {
         impl WorthQueryApplicationDependentOutputConnection<Schema> for $binding {
             type RootDemand = Demand;
             type Demand = Demand;
-            type Discovery = topology::Read;
+            type Discovery = outgoing::Read;
             const IDENTITY: &'static str = $identity;
             fn discovery_from_root(
                 root: &Demand,
-            ) -> Result<topology::Read, WorthQueryRequiredOutputConnectionDenial> {
-                Ok(topology::Read(root.source.clone()))
+            ) -> Result<outgoing::Read, WorthQueryRequiredOutputConnectionDenial> {
+                Ok(outgoing::Read(root.source.clone()))
             }
             fn demands_from_discovery(
-                found: &topology::Topology,
+                found: &outgoing::Dependents,
             ) -> Result<Vec<Demand>, WorthQueryRequiredOutputConnectionDenial> {
                 Ok(found
                     .children

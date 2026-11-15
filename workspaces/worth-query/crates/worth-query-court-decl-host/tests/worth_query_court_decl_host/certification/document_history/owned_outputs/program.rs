@@ -360,6 +360,8 @@ pub(super) fn envelope_actions<
     entry: ApplicationFeatureSpecBuilder<Schema, ApplicationRootComposition, Entry>,
 ) -> ApplicationFeatureSpecBuilder<Schema, ApplicationRootComposition, Entry> {
     entry
+        .action::<synchronous_edit::interleaved::attach::Binding, Completion>()
+        .finish_action()
         .action::<synchronous_edit::interleaved::dependent::Binding, Completion>()
         .finish_action()
         .action::<synchronous_edit::interleaved::seal::Binding, Completion>()

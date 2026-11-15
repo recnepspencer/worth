@@ -2,6 +2,7 @@
 use super::*;
 mod continuations;
 mod occurrences;
+mod outgoing;
 struct Scheduled<S: ApplicationSchema> {
     key: Option<super::occurrences::OccurrenceKey>,
     component: Option<std::any::TypeId>,
@@ -153,6 +154,16 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
                 .map(|(_, t)| t.rank)
                 .min();
             let Some(rank) = rank else {
+                self.refresh_outgoing(context, candidate)?;
+                let needed = self.needed(allowed);
+                if self
+                    .tasks
+                    .iter()
+                    .enumerate()
+                    .any(|(i, t)| needed[i] && !t.done && self.ready(i))
+                {
+                    continue;
+                }
                 if self
                     .tasks
                     .iter()
