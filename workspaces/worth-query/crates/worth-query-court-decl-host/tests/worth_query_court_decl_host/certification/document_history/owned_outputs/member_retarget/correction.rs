@@ -92,13 +92,16 @@ impl ApplicationCorrectionBinding<Schema> for Revision {
         let ApplicationCorrectionSourceMaterial::RecordedInverse(prior) = material else {
             return Err(UnsupportedSourceMeaning);
         };
-        let ApplicationCorrectionFieldPreImage::Value(value) = prior.field_state_for_output(
+        let value = match prior.field_state_for_output(
             &Owner::DESCRIPTOR,
             &DeclaredPreImageLocus::from_field(ModelValue::at("ModelValue")),
-        ) else {
-            return Err(MissingPreImage);
+        ) {
+            ApplicationCorrectionFieldPreImage::Value(value) => {
+                Some(U64ApplicationValueBinding::decode(value).map_err(|_| InvalidPreImage)?)
+            }
+            ApplicationCorrectionFieldPreImage::Uncaptured => None,
+            _ => return Err(InvalidPreImage),
         };
-        let value = U64ApplicationValueBinding::decode(value).map_err(|_| InvalidPreImage)?;
         let mut create = Vec::new();
         for key in &original.retire {
             let field = |locus| {

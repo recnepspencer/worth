@@ -4,7 +4,7 @@ use super::*;
 #[worth_value(crate = "worth_query_decl::facade::application_schema")]
 pub struct Intent {
     pub owner: String,
-    pub value: u64,
+    pub value: Option<u64>,
     pub retire: Vec<String>,
     pub create: Vec<Row>,
 }
@@ -67,7 +67,9 @@ impl OperationHandler<Schema, Binding> for Handler {
     ) -> HandlerResult<Decision, edit::Denial> {
         let result = (|| {
             let owner = reader.resolve_entity(ModelKey::at("ModelKey"), input.owner.clone())?;
-            reader.field(&owner, ModelValue::at("ModelValue"))?;
+            if input.value.is_some() {
+                reader.field(&owner, ModelValue::at("ModelValue"))?;
+            }
             for row in &input.create {
                 // The native unique owner needs the indexed selection, including absence.
                 reader.resolve_optional_entity(InputKey::at("InputKey"), row.key.clone())?;
@@ -106,7 +108,9 @@ impl OperationHandler<Schema, Binding> for Handler {
     ) -> HandlerResult<edit::Edited, edit::Denial> {
         let result = (|| {
             let owner = writer.projected_entity(&decision.owner)?;
-            writer.write_field(&owner, ModelValue::at("ModelValue"), input.value)?;
+            if let Some(value) = input.value {
+                writer.write_field(&owner, ModelValue::at("ModelValue"), value)?;
+            }
             for (key, member) in input.retire.iter().zip(&decision.leaving) {
                 let member = writer.projected_entity(member)?;
                 writer.unlink(InputOwner::reference(), &member, &owner)?;

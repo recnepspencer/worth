@@ -5,7 +5,7 @@ use worth_query_host::facade::runtime::ExecutionAllocationPolicy;
 use WorthQueryEditEnvelopeOutcome as Outcome;
 type Host = WorthQueryProgramApplicationRuntime<Schema, program::Program>;
 
-fn publish(
+pub(in crate::certification::document_history::owned_outputs) fn publish(
     host: &Host,
     request: &family::Request<'_, '_, '_>,
     input: Intent,
@@ -54,7 +54,7 @@ fn a_member_edit_keeps_its_new_source_route_through_reverse_and_reapply() {
         &request,
         Intent {
             owner: "a".into(),
-            value: 1,
+            value: Some(1),
             retire: vec![],
             create: vec![Row {
                 key: "old".into(),
@@ -81,7 +81,7 @@ fn a_member_edit_keeps_its_new_source_route_through_reverse_and_reapply() {
         &request,
         Intent {
             owner: "a".into(),
-            value: 2,
+            value: Some(2),
             retire: vec!["old".into()],
             create: vec![Row {
                 key: "new".into(),
