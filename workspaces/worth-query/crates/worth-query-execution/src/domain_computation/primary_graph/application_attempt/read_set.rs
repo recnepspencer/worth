@@ -58,6 +58,7 @@ pub(crate) mod handler_fact_boundary;
 pub(in crate::domain_computation) use handler_fact_boundary::CompletedHandlerFactBoundary;
 pub(crate) mod aggregate;
 mod captured_input_support;
+mod captured_input_transfer;
 mod components;
 mod observation_admission;
 mod observations;
