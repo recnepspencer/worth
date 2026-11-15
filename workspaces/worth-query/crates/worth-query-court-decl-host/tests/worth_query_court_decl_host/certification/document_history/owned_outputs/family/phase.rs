@@ -231,11 +231,11 @@ macro_rules! phase {
                         predecessor_hook!($operation, reader, source);
                         let member_value = producer_decision_dependency!($operation, reader);
                         let member_target = producer_member_target!($operation, reader);
-                        let input_member = capture_member_input!($operation, reader, source);
                         let prior = if $preserve { Some(reader.prior_output_preserved_or_created::<preserve::Binding, preserve::Output, initial::Binding, initial::Output>()?) }
                             else { reader.resolve_optional_entity($key::at(stringify!($key)), output_key(&input.0))? };
                         if !$preserve && prior.is_some() { return Ok(Err(Denial::InitialHasPriorOutput)); }
                         if $preserve && prior.is_none() { return Ok(Err(Denial::PreserveMissingOutput)); }
+                        let input_member = capture_member_input!($operation, reader, source, prior);
                         let output = match prior {
                             Some(prior) => { reader.field(&prior, $value::at(stringify!($value)))?; Some(reader.mutation_target(&prior)?) }
                             None => None,
