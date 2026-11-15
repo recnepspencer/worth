@@ -7,6 +7,7 @@ use worth_query_host::facade::{
 use worth_relational::facade::inspection::observe_maintenance_work;
 #[test]
 fn a_later_authored_link_expands_the_same_atomic_output_closure() {
+    let _execution = WorthQueryExecutionObservation::install_on_this_thread();
     let host: WorthQueryProgramApplicationRuntime<Schema, Program> = world::install_configured(
         host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()), 1, None,
         world::Configuration { envelope_records:true, interleaved_records:true, ..Default::default() });

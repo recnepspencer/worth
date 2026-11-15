@@ -1,7 +1,7 @@
 //! One complete component plus demand-dependent static continuations.
 use super::super::super::hierarchy::program as hierarchy;
 use super::super::super::program as entry;
-mod attach;
+pub(in super::super::super) mod attach;
 mod outgoing;
 mod parent;
 mod topology;
@@ -216,8 +216,6 @@ where
         AfterDelivery,
     >(entry::entry_builder::<Completion, Completion, Completion>())
     .action::<created::Binding, Completion>()
-    .finish_action()
-    .action::<attach::Binding, Completion>()
     .finish_action()
     .finish();
     specs

@@ -2,6 +2,7 @@
 use super::envelope_fixture as fixture;
 use super::*;
 mod component_carriage;
+pub(in super::super) use component_carriage::attach;
 mod courts;
 pub(in super::super) mod created;
 pub(in super::super) mod dependent;
