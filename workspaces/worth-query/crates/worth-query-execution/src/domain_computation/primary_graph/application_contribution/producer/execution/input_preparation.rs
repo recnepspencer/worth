@@ -47,6 +47,7 @@ pub(super) fn capture<S, B>(
     candidate: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
     erased: ErasedAppliedProducerSource,
     edition: super::super::InstalledProducerEdition,
+    component: std::any::TypeId,
 ) -> Result<PreparedProducerInputs<S, B>, ProducerExecutionStop>
 where
     S: ApplicationSchema,
@@ -154,7 +155,7 @@ where
         )
         .map_err(|cause| execution_failed(B::IDENTITY, cause))?;
     let _source = source
-        .bind_applied_expectation::<S, Op<S, B>, _>(
+        .bind_applied_expectation::<S, Operation<S, B>, _>(
             runtime,
             &execution,
             &mut admission,
@@ -171,6 +172,7 @@ where
         admission: admission.admission_identity(),
         candidate: candidate.candidate_identity().qualification(),
         source: source.root(),
+        component,
     };
     let (result, projection, _) = runtime
         .mutation_projection

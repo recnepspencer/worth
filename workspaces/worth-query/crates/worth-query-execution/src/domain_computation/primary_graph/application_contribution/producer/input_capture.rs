@@ -84,4 +84,5 @@ pub(in crate::domain_computation::primary_graph::application_contribution) struc
     pub(super) candidate:
         worth_relational::facade::runtime::RelationalAppliedCandidateReadQualification,
     pub(super) source: worth_relational::facade::identity::EntityId,
+    pub(super) component: std::any::TypeId,
 }
