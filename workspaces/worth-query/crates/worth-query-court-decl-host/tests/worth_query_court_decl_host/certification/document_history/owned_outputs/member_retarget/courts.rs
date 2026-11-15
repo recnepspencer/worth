@@ -184,4 +184,31 @@ fn a_member_edit_keeps_its_new_source_route_through_reverse_and_reapply() {
         .execute()
         .is_err());
     assert_eq!(input(&request, "new").value, 22);
+    let checkpoint = host
+        .with_host_advancement(|phase| {
+            host.capture_application_checkpoint(
+                &phase,
+                WorthQueryCheckpointCapturePolicy::SystemAllocation,
+            )
+            .unwrap()
+        })
+        .unwrap();
+    let recovered = world::restore_program_checkpoint::<program::Program>(checkpoint, false, false);
+    let recovered_principal = authenticate_operator(recovered.installed_schema(), &scope);
+    let recovered_request = recovered.request(&recovered_principal, &scope);
+    assert_eq!(first_value(&recovered_request, "a"), 20);
+    assert_eq!(
+        recovered_request
+            .query(query::second_output::Read("second:b".into()))
+            .execute()
+            .unwrap()
+            .rows()[0]
+            .value,
+        1007
+    );
+    assert_eq!(input(&recovered_request, "new").value, 22);
+    assert!(recovered_request
+        .query(query::input_member::Read("old".into()))
+        .execute()
+        .is_err());
 }
