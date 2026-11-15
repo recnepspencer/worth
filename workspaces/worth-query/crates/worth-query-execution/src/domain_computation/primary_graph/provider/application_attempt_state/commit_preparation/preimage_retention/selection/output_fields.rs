@@ -15,7 +15,7 @@ pub(in super::super) fn retain_output_fields<'a>(
     mutation: &ValidatedMutationFootprint,
     target: EntityId,
     layout: &WorthQueryPrimaryGraphLayout,
-) -> Result<WorthQueryRetainedPreImageSelection, WorthQueryPreImageRetentionDenial> {
+) -> Result<WorthQueryRetainedPreImageSelection, FieldRetentionFailure> {
     let captured = capture_output_fields(demand, facts, mutation, target, layout)?;
     captured.seal(demand, Vec::new(), 0)
 }
@@ -37,19 +37,21 @@ pub(super) fn capture_output_fields<'a>(
     mutation: &ValidatedMutationFootprint,
     target: EntityId,
     layout: &WorthQueryPrimaryGraphLayout,
-) -> Result<OutputCapture, WorthQueryPreImageRetentionDenial> {
+) -> Result<OutputCapture, FieldRetentionFailure> {
     use WorthQueryPreImageRetentionDenial as Denial;
     let facts: Vec<_> = facts.collect();
     let record = RecordRef::Entity(target);
     let mut fields = Vec::new();
     let mut absences = Vec::new();
-    let output = demand.output_fields().ok_or(Denial::MissingDemandedField)?;
+    let output = demand
+        .output_fields()
+        .ok_or_else(|| FieldRetentionFailure::missing("output-demand", Some(&record), None))?;
     let mut total = 18usize
         .checked_add(output.role().len())
         .and_then(|n| n.checked_add(output.entity().len()))
         .ok_or(Denial::ExceedsByteBound)?;
     if total > demand.maximum_encoded_bytes() {
-        return Err(Denial::ExceedsByteBound);
+        return Err(Denial::ExceedsByteBound.into());
     }
     for locus in demand
         .loci()
@@ -58,10 +60,12 @@ pub(super) fn capture_output_fields<'a>(
     {
         let field = layout
             .field(locus.entity(), locus.aspect(), locus.field())
-            .ok_or(Denial::MissingDemandedField)?;
+            .ok_or_else(|| {
+                FieldRetentionFailure::missing("output-locus-layout", Some(&record), Some(locus))
+            })?;
         if !mutation.mutates_field(&record, &field.locator) {
             if output.capture() == worth_query_declaration::facade::application_aftermath::PreImageOutputFieldCapture::CompleteRetired {
-                return Err(Denial::MissingDemandedField);
+                return Err(FieldRetentionFailure::missing("retired-output-locus-not-mutated", Some(&record), Some(locus)));
             }
             continue;
         }
@@ -96,9 +100,11 @@ pub(super) fn capture_output_fields<'a>(
                 && locus_matches(read_scope.as_ref(), locator, locus))
             .then_some((read_scope, fact.as_ref()))
         });
-        let (read_scope, fact) = matched.next().ok_or(Denial::MissingDemandedField)?;
+        let (read_scope, fact) = matched.next().ok_or_else(|| {
+            FieldRetentionFailure::missing("output-locus-observation", Some(&record), Some(locus))
+        })?;
         if matched.next().is_some() {
-            return Err(Denial::AmbiguousDemandedField);
+            return Err(Denial::AmbiguousDemandedField.into());
         }
         // Sparse absence needs target/locus/presence metadata as well as values.
         let bytes = 16usize
@@ -109,7 +115,7 @@ pub(super) fn capture_output_fields<'a>(
             .ok_or(Denial::ExceedsByteBound)?;
         total = total.checked_add(bytes).ok_or(Denial::ExceedsByteBound)?;
         if total > demand.maximum_encoded_bytes() {
-            return Err(Denial::ExceedsByteBound);
+            return Err(Denial::ExceedsByteBound.into());
         }
         match fact {
             Fact::Field {
@@ -125,7 +131,13 @@ pub(super) fn capture_output_fields<'a>(
                     *entity_id,
                     *kind,
                 )
-                .ok_or(Denial::MissingDemandedField)?;
+                .ok_or_else(|| {
+                    FieldRetentionFailure::missing(
+                        "output-locus-value-capture",
+                        Some(&record),
+                        Some(locus),
+                    )
+                })?;
                 fields.push(seal_field(demand, &mut total, locus, &candidate)?);
             }
             Fact::AbsentField { kind, locator, .. }
@@ -142,7 +154,13 @@ pub(super) fn capture_output_fields<'a>(
                     },
                 });
             }
-            _ => return Err(Denial::MissingDemandedField),
+            _ => {
+                return Err(FieldRetentionFailure::missing(
+                    "output-locus-fact-kind",
+                    Some(&record),
+                    Some(locus),
+                ))
+            }
         }
     }
     // An absent aspect cannot simultaneously supply a field value or field absence.
@@ -157,7 +175,7 @@ pub(super) fn capture_output_fields<'a>(
                     && field.locus.aspect() == absent.locus.aspect()
             }))
         {
-            return Err(Denial::AmbiguousDemandedField);
+            return Err(Denial::AmbiguousDemandedField.into());
         }
     }
     Ok(OutputCapture {
@@ -177,11 +195,11 @@ impl OutputCapture {
         demand: &InstalledPreImageDemand,
         members: Vec<WorthQueryRetainedPreImageFieldSeal>,
         member_facts: usize,
-    ) -> Result<WorthQueryRetainedPreImageSelection, WorthQueryPreImageRetentionDenial> {
+    ) -> Result<WorthQueryRetainedPreImageSelection, FieldRetentionFailure> {
         use WorthQueryPreImageRetentionDenial as Denial;
         self.fields.extend(members);
         if self.fields.is_empty() && self.absences.is_empty() && demand.relations().is_empty() {
-            return Err(Denial::NoMutatedRecord);
+            return Err(Denial::NoMutatedRecord.into());
         }
         Ok(WorthQueryRetainedPreImageSelection {
             retained: WorthQueryRetainedPreImage::from_retention_seal(
@@ -192,7 +210,13 @@ impl OutputCapture {
                     output_fields: Some(RetainedOutputFields {
                         output: demand
                             .output_fields()
-                            .ok_or(Denial::MissingDemandedField)?
+                            .ok_or_else(|| {
+                                FieldRetentionFailure::missing(
+                                    "output-seal-demand",
+                                    Some(&RecordRef::Entity(self.target)),
+                                    None,
+                                )
+                            })?
                             .clone(),
                         target: self.target,
                     }),

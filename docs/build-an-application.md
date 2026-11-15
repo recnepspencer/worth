@@ -4457,6 +4457,10 @@ demanded field the handler never read on a retiring member refuses with
 `MissingDemandedField`, present or not. This holds for every authored anchor
 and co-anchor, and costs one probe per absence the attempt observed.
 
+For `MissingDemandedField`, the commit denial's existing `detail()` names the
+retention branch and the exact target and locus when known. This is diagnostic
+text; use `preimage_retention_denial()` for programmatic classification.
+
 Each original Retire role identifies one deleted member. Native's validated
 relation footprint matches its retained family key to exactly one fresh member
 and carries that old-to-fresh pair into relation inversion. The family's

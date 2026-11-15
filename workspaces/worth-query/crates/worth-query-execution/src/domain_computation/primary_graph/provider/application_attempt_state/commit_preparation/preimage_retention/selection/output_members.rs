@@ -20,10 +20,14 @@ pub(in super::super) fn retain_output_fields_with_members<'a>(
     target: EntityId,
     layout: &WorthQueryPrimaryGraphLayout,
     members: &super::super::authored_anchors::Selection<'_>,
-) -> Result<WorthQueryRetainedPreImageSelection, WorthQueryPreImageRetentionDenial> {
-    let output = demand
-        .output_fields()
-        .ok_or(WorthQueryPreImageRetentionDenial::MissingDemandedField)?;
+) -> Result<WorthQueryRetainedPreImageSelection, FieldRetentionFailure> {
+    let output = demand.output_fields().ok_or_else(|| {
+        FieldRetentionFailure::missing(
+            "member-output-demand",
+            Some(&RecordRef::Entity(target)),
+            None,
+        )
+    })?;
     let mut captured = capture_output_fields(demand, facts.clone(), mutation, target, layout)?;
     let anchored = AnchoredFields {
         demand,
