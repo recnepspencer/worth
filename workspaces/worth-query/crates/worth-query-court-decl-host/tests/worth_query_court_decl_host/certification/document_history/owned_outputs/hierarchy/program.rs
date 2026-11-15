@@ -90,7 +90,13 @@ pub struct SeedInput;
 impl ApplicationFeature<Schema> for Child {
     type Inputs = ApplicationFeatureInputList<
         ChildInput,
-        ApplicationFeatureInputList<SeedInput, ApplicationFeatureInputLeaf>,
+        ApplicationFeatureInputList<
+            SeedInput,
+            ApplicationFeatureInputList<
+                super::super::synchronous_edit::interleaved::PendingSeedInput,
+                ApplicationFeatureInputLeaf,
+            >,
+        >,
     >;
     const IDENTITY: &'static str = "owned-outputs.hierarchy.child";
 }

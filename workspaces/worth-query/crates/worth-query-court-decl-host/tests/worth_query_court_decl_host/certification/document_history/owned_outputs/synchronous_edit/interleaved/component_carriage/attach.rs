@@ -6,13 +6,14 @@ use super::*;
 pub struct Intent {
     pub parent: String,
     pub child: String,
+    pub pending_child: bool,
 }
 worth_query_structured_value_binding!(pub Input for Intent { identity:"owned-outputs.component-attach.v1" });
 worth_query_operation!(pub Attach for Schema, input Input; access {
     read_entities:[Model, FirstOutput];
     read_fields:[ModelKey::at("ModelKey"), FirstKey::at("FirstKey"), FirstValue::at("FirstValue")];
     creates:[Member]; writes:[MemberKey::at("MemberKey"), MemberValue::at("MemberValue")];
-    links:[ModelMember, UpstreamOf];
+    links:[ModelMember, UpstreamOf, PendingChildOf];
 });
 fn scope(input: &Intent) -> String {
     input.child.clone()
@@ -27,6 +28,7 @@ worth_query_mutation_binding!(pub Binding for Intent, schema Schema,
 pub struct Decision {
     parent: WorthQueryInvariantMutationTarget<Schema, Model>,
     child: WorthQueryInvariantMutationTarget<Schema, Model>,
+    output: WorthQueryInvariantMutationTarget<Schema, FirstOutput>,
     result: fixture::StageResult,
 }
 pub struct Handler;
@@ -47,6 +49,7 @@ impl OperationHandler<Schema, Binding> for Handler {
             Ok::<_, HandlerExecutionDenial>(Decision {
                 parent: reader.mutation_target(&parent)?,
                 child: reader.mutation_target(&child)?,
+                output: reader.mutation_target(&output)?,
                 result: fixture::StageResult {
                     old_value: value,
                     value,
@@ -69,7 +72,12 @@ impl OperationHandler<Schema, Binding> for Handler {
         let apply = (|| {
             let parent = writer.projected_entity(&decision.parent)?;
             let child = writer.projected_entity(&decision.child)?;
-            let key = format!("{}:previous", input.child);
+            let role = if input.pending_child {
+                "pending-child"
+            } else {
+                "previous"
+            };
+            let key = format!("{}:{role}", input.child);
             let link = writer.create_entity_in_context(
                 &child,
                 Member::reference(),
@@ -83,12 +91,22 @@ impl OperationHandler<Schema, Binding> for Handler {
                 &child,
                 &link,
             )?;
-            writer.link(
-                UpstreamOf::reference(),
-                format!("uses:{key}"),
-                &link,
-                &parent,
-            )
+            if input.pending_child {
+                let output = writer.projected_entity(&decision.output)?;
+                writer.link(
+                    PendingChildOf::reference(),
+                    format!("uses:{key}"),
+                    &link,
+                    &output,
+                )
+            } else {
+                writer.link(
+                    UpstreamOf::reference(),
+                    format!("uses:{key}"),
+                    &link,
+                    &parent,
+                )
+            }
         })();
         match apply {
             Ok(()) => HandlerResult::Completed(decision.result),

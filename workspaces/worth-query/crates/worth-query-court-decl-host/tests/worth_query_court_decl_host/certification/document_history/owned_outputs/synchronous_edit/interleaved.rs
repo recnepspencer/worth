@@ -3,6 +3,9 @@ use super::envelope_fixture as fixture;
 use super::*;
 mod component_carriage;
 pub(in super::super) use component_carriage::attach;
+pub(in super::super) use component_carriage::{
+    pending::Input as PendingSeedInput, pending_consumer::Binding as ConsumeChildBinding,
+};
 mod courts;
 pub(in super::super) mod created;
 pub(in super::super) mod dependent;

@@ -19,6 +19,28 @@ pub(super) fn reject(
     )
 }
 
+/// Describe the actual rejected route without changing its admission or cause.
+pub(super) fn reject_extra_owner(
+    owners: &super::super::RelationalAuthoredCoupledOwners,
+    subject: crate::identity::data::EntityId,
+    detail: String,
+) -> TransactionCommitError {
+    let source_kind = match &owners.source {
+        super::super::CoupledSource::Edit(_) => "edit",
+        super::super::CoupledSource::Retirement { .. } => "retirement",
+        super::super::CoupledSource::Restoration { .. } => "restoration",
+    };
+    let mut error = crate::publication::data::PublicationError::authored_retirement(
+        Cause::ExtraCoupledOwner,
+        RecordRef::Entity(subject),
+    );
+    error.detail.push_str(&format!(
+        "; {detail}; source_kind={source_kind}; source_root={:?}",
+        owners.source.subject(),
+    ));
+    TransactionCommitError::publication(error)
+}
+
 pub(super) fn require_unseen_route(
     context: &mut worth_execution::MapKernelContext<'_, '_>,
     parts: &[CoupledPublicationPart],

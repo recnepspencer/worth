@@ -4663,6 +4663,13 @@ malformed relations refuse. The path issues no additional query and retains the
 complete nested result/predicate support already acquired by Query.
 The query must describe actual predecessor/operand sources without requiring
 geometry that has not yet been produced.
+At an authored barrier, Query captures incoming prerequisites only for the
+occurrences needed there and their complete transitive parents. A pending future
+consumer does not retain an early incoming observation merely because its root
+is present. Identity coalescing remains eager, so an alias still retains its own
+static selector on the authentic Parent. Once a consumer's incoming support is
+captured for production, it remains strict through final publication; a later
+authored change cannot silently refresh a consumed input or replay its supplier.
 
 Partition a mixed relation in its declared result shape, rather than dropping
 rows in the Parent mapping. `relation_where_absent(relation, nested, field)`
@@ -4913,6 +4920,12 @@ actual committed postcondition, so replacing an owned edge does not cause a
 second publication. A real upstream change still re-runs the producer, and a
 read of another publication remains a source observation. The original raw reads
 still participate in candidate admission and complete-candidate support checks.
+If Native refuses `ExtraCoupledOwner`, its existing publication error preserves
+the actual requested family, full-generation source and partition, authored
+source kind/root, and the failed catalog site. A preserve-admission failure also
+names its actual producer. These are descriptive diagnostics; they never enlarge
+the admitted owner roster or infer a CAD feature from a record coordinate.
+
 If the whole observed aggregate or walk is retired, Query proves every observed
 entity belongs to that predecessor and compares its actual retirement between
 the writer's candidate and the completed candidate. The committed postcondition

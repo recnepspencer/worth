@@ -6,6 +6,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
         &mut self,
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
         candidate: &RelationalAuthoredCoupledCandidate<'_>,
+        allowed: Option<&[String]>,
     ) -> Result<(), SynchronousOutputFailure> {
         // Only the wave's replaceable outgoing evidence is removed. Every
         // consumed Parent, incoming query and static selector stays strict.
@@ -36,6 +37,6 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
         // copy of a root's static selector. Existing aliases still close by
         // their complete Native route/context; genuine new suppliers remain
         // pending for the ordinary ranked drive, never invoked by this pass.
-        self.close_frontier(context, candidate)
+        self.close_frontier(context, candidate, allowed)
     }
 }

@@ -356,6 +356,8 @@ pub(super) fn envelope_actions<
     entry: ApplicationFeatureSpecBuilder<Schema, ApplicationRootComposition, Entry>,
 ) -> ApplicationFeatureSpecBuilder<Schema, ApplicationRootComposition, Entry> {
     entry
+        .action::<synchronous_edit::interleaved::ConsumeChildBinding, Completion>()
+        .finish_action()
         .action::<query::identity::expectation::Binding, Completion>()
         .finish_action()
         .action::<synchronous_edit::interleaved::prerequisite_partition::expectation::Binding, Completion>()
