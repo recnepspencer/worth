@@ -15,6 +15,7 @@ mod contract;
 pub(in crate::domain_computation::primary_graph) use contract::InputCaptureMeaning;
 pub use contract::WorthQueryProducerInputCaptureContract;
 mod owner;
+pub(in crate::domain_computation::primary_graph::application_contribution) use owner::ErasedCapturedInputs;
 pub(in crate::domain_computation::primary_graph::application_contribution) use owner::InputCaptureOwner;
 
 type Operation<S, P> = <P as WorthQueryApplicationProducerBinding<S>>::Operation;
