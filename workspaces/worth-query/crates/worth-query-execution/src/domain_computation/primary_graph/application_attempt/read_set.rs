@@ -57,6 +57,7 @@ pub(in crate::domain_computation::primary_graph) use fact_observation::observe_a
 pub(crate) mod handler_fact_boundary;
 pub(in crate::domain_computation) use handler_fact_boundary::CompletedHandlerFactBoundary;
 pub(crate) mod aggregate;
+mod captured_input_support;
 mod components;
 mod observation_admission;
 mod observations;
