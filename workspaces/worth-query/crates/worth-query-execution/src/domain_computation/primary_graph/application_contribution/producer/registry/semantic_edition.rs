@@ -237,6 +237,27 @@ impl InstalledProducerEdition {
             })?
             .identity(),
         };
+        let digest = match &declaration.input_capture {
+            None => digest,
+            Some(capture) => application_value_identity(
+                ApplicationValueIdentityDomain::ProducerImplementationEdition,
+                &declaration.identity,
+                &(
+                    "producer-input-capture.v1",
+                    digest,
+                    declaration.operation.as_str(),
+                    capture.portable_meaning(),
+                    "program-occurrence-preparation",
+                ),
+            )
+            .map_err(|_| {
+                WorthQueryPrimaryGraphInstallationDenial::new(
+                    DenialKind::ProducerBindingMeaningMismatch,
+                    declaration.identity.clone(),
+                )
+            })?
+            .identity(),
+        };
         let digest = application_value_identity(
             ApplicationValueIdentityDomain::ProducerImplementationEdition,
             &declaration.identity,

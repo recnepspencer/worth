@@ -222,6 +222,12 @@ where
     const ORIGINAL_READS: Option<WorthQueryProducerObservationReadContract<Schema>> = None;
     const INPUT_REUSE: Option<WorthQueryProducerInputReuseContract> = None;
 
+    /// The pure input preparation owned by this family. Configuration installs
+    /// its original handler through `producer_with_input_capture`.
+    fn input_capture() -> Option<WorthQueryProducerInputCaptureContract<Schema>> {
+        None
+    }
+
     /// Opt in to a bounded actual output-field evaluation. The field must belong
     /// to this producer's exactly-one output role; this grants no disclosure.
     fn output_equivalence() -> Option<WorthQueryProducerOutputEquivalence<Schema, Self::OutputRole>>
@@ -230,7 +236,12 @@ where
     }
 }
 
-mod input_capture;
+pub(in crate::domain_computation::primary_graph::application_contribution) mod input_capture;
+pub(in crate::domain_computation::primary_graph) use input_capture::InputCaptureMeaning;
+pub use input_capture::{
+    WorthQueryCapturedProducerInputs, WorthQueryProducerInputCaptureContract,
+    WorthQueryProducerInputCaptureHandler, WorthQueryProducerInputReader,
+};
 pub(crate) mod registry;
 pub(super) use registry::DeclaredProducerBinding;
 pub(in crate::domain_computation::primary_graph) use registry::InstalledProducerEdition;

@@ -45,6 +45,7 @@ pub(super) enum InputCaptureStop {
     Interrupted(HandlerInterruption),
     ForeignPort,
     Finished,
+    ForeignCapture,
     Read(std::sync::Arc<HandlerExecutionDenial>),
 }
 impl std::fmt::Display for InputCaptureStop {
@@ -227,7 +228,7 @@ where
             parents,
             affinity: self.affinity,
             _storage: self.storage.take(),
-            _data_memory: memory,
+            _data_memory: Some(memory),
             marker: PhantomData,
         })
     }
@@ -235,6 +236,33 @@ where
     fn stop(&self, cause: InputCaptureStop) -> HandlerExecutionDenial {
         let first = self.stopped.borrow_mut().get_or_insert(cause).clone();
         HandlerExecutionDenial::new(first)
+    }
+
+    /// The invocation owner checks the loan after the supplier returns, including
+    /// caught failures and a container retained from a different invocation.
+    pub(super) fn complete_call<Data, Denial>(
+        self,
+        result: HandlerResult<WorthQueryCapturedProducerInputs<S, C, Data>, Denial>,
+    ) -> HandlerResult<WorthQueryCapturedProducerInputs<S, C, Data>, Denial> {
+        if let Some(stop) = self.stopped.into_inner() {
+            return match stop {
+                InputCaptureStop::Interrupted(HandlerInterruption::Cancelled) => {
+                    HandlerResult::Cancelled
+                }
+                InputCaptureStop::Interrupted(HandlerInterruption::DeadlineExceeded) => {
+                    HandlerResult::DeadlineExceeded
+                }
+                cause => HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause)),
+            };
+        }
+        if let HandlerResult::Completed(captured) = &result
+            && (self.parents.is_some() || captured.affinity != self.affinity)
+        {
+            return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(
+                InputCaptureStop::ForeignCapture,
+            ));
+        }
+        result
     }
 
     fn checked<T, E: std::error::Error + Send + Sync + 'static>(

@@ -11,6 +11,11 @@ use worth_query_declaration::facade::{
 };
 mod reader;
 pub use reader::WorthQueryProducerInputReader;
+mod contract;
+pub(in crate::domain_computation::primary_graph) use contract::InputCaptureMeaning;
+pub use contract::WorthQueryProducerInputCaptureContract;
+mod owner;
+pub(in crate::domain_computation::primary_graph::application_contribution) use owner::InputCaptureOwner;
 
 type Operation<S, P> = <P as WorthQueryApplicationProducerBinding<S>>::Operation;
 type Input<S, P> = <Operation<S, P> as ApplicationMutationBinding<S>>::Input;
@@ -49,7 +54,7 @@ pub struct WorthQueryCapturedProducerInputs<S, C, Data> {
     pub(super) parents: Vec<CapturedParent>,
     pub(super) affinity: InputCaptureAffinity,
     pub(super) _storage: Option<super::super::request_execution::QueryMemoryReservation>,
-    pub(super) _data_memory: super::super::request_execution::QueryMemoryReservation,
+    pub(super) _data_memory: Option<super::super::request_execution::QueryMemoryReservation>,
     marker: PhantomData<fn() -> (S, C)>,
 }
 impl<S, C, Data> WorthQueryCapturedProducerInputs<S, C, Data> {
@@ -62,7 +67,7 @@ impl<S, C, Data> WorthQueryCapturedProducerInputs<S, C, Data> {
     }
 }
 
-pub(super) struct CapturedParent {
+pub(in crate::domain_computation::primary_graph::application_contribution) struct CapturedParent {
     pub(super) connection: std::any::TypeId,
     pub(super) source: worth_relational::facade::identity::EntityId,
     pub(super) demand: Box<dyn Any + Send>,
@@ -71,7 +76,8 @@ pub(super) struct CapturedParent {
 
 /// Binding and candidate affinity come from the actual admitted projection.
 #[derive(Clone, Copy, Eq, PartialEq)]
-pub(super) struct InputCaptureAffinity {
+pub(in crate::domain_computation::primary_graph::application_contribution) struct InputCaptureAffinity
+{
     pub(super) admission:
         crate::domain_computation::authorization::WorthQueryOperationAdmissionIdentity,
     pub(super) candidate:

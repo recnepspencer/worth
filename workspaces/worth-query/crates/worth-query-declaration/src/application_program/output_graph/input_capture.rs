@@ -53,7 +53,7 @@ where
 
     fn declaration() -> ApplicationConnectionDeclaration {
         let mut connection = Connection::declaration();
-        connection.set_input_capture::<Capture>(Capture::IDENTITY);
+        connection.set_input_capture::<Capture, Connection>(Capture::IDENTITY);
         connection
     }
 }
