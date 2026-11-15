@@ -65,6 +65,15 @@ pub(in crate::domain_computation::primary_graph::application_contribution) struc
         Box<dyn std::any::Any>,
 }
 
+/// A source description is distinct from selecting a prepared or current output.
+#[derive(Clone, Copy, Eq, PartialEq)]
+pub(in crate::domain_computation::primary_graph::application_contribution) enum CoupledSourceReadPurpose
+{
+    Route,
+    InputPreparation,
+    OutputPreparation,
+}
+
 pub(in crate::domain_computation::primary_graph::application_contribution) enum CoupledSourceRead {
     Route {
         scope: worth_relational::facade::identity::EntityId,
@@ -86,7 +95,7 @@ pub(super) fn read<Schema, Binding>(
     before_pin: &RelationalPinnedRead,
     demand: &DeclaredCoupledOutputDemand,
     assembly: &worth_relational::facade::mvcc::RelationalAuthoredCoupledCandidate<'_>,
-    route_only: bool,
+    purpose: CoupledSourceReadPurpose,
 ) -> Result<CoupledSourceRead, CoupledSourceReadStop>
 where
     Schema: ApplicationSchema,
@@ -161,7 +170,7 @@ where
                 execution, runtime, 0, || Ok(parameters),
             ).map_err(CoupledSourceReadStop::capture)?;
             return created::read(installed, execution, runtime, external, request, selected, before_pin,
-                &candidate, &arguments.value, &captured, cause, assembly, demand, route_only);
+                &candidate, &arguments.value, &captured, cause, assembly, demand, purpose);
 
         }
         Err(cause) => return Err(scope_rejected(Binding::IDENTITY, cause).into()),
@@ -181,13 +190,14 @@ where
         .map_err(|cause| query_admission_denied(Binding::IDENTITY, cause))?;
     let partition = *plan.parameter_binding_identity().bytes();
     let root = scope.entity_id();
-    if route_only {
+    if purpose == CoupledSourceReadPurpose::Route {
         return Ok(CoupledSourceRead::Route {
             scope: root,
             partition,
         });
     }
-    if demand.reuse_prepared
+    if purpose == CoupledSourceReadPurpose::OutputPreparation
+        && demand.reuse_prepared
         && let Some(index) =
             assembly.prepared_route_index(execution, demand.family, root, &partition)?
     {
@@ -260,7 +270,8 @@ where
                 ),
         })?
     };
-    if demand.reuse_prepared
+    if purpose == CoupledSourceReadPurpose::OutputPreparation
+        && demand.reuse_prepared
         && !required_writer
         && let Some(parent) = runtime.verify_applied_output_parent::<Binding::OutputFamily>(
             execution,

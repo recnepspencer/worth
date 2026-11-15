@@ -39,7 +39,7 @@ mod coupled_source;
 pub(in crate::domain_computation::primary_graph::application_contribution) use coupled::InstalledCoupledProducerExecutor;
 pub(in crate::domain_computation::primary_graph::application_contribution) use coupled::PreparedCoupledWriter;
 pub(in crate::domain_computation::primary_graph::application_contribution) use coupled_source::{
-    CoupledSourceRead, CoupledSourceReadStop, ErasedAppliedProducerSource,
+    CoupledSourceRead, CoupledSourceReadPurpose, CoupledSourceReadStop, ErasedAppliedProducerSource,
 };
 pub(crate) mod denial;
 mod input_cutoff;

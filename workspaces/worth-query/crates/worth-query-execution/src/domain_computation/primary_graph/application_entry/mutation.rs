@@ -81,7 +81,7 @@ pub enum HandlerResult<Value, Denial> {
 }
 
 /// Execution-owned contract implemented by the handler selected by a binding.
-pub trait OperationHandler<Schema, Binding>: Send + Sync + 'static
+pub trait OperationHandler<Schema, Binding>: std::any::Any + Send + Sync + 'static
 where
     Schema: ApplicationSchema,
     Binding: ApplicationMutationBinding<Schema>,

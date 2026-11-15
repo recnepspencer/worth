@@ -230,6 +230,7 @@ where
     }
 }
 
+mod input_capture;
 pub(crate) mod registry;
 pub(super) use registry::DeclaredProducerBinding;
 pub(in crate::domain_computation::primary_graph) use registry::InstalledProducerEdition;

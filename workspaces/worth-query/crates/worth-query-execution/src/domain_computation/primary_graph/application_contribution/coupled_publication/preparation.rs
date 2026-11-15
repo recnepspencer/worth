@@ -196,7 +196,7 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             before_pin,
             demand,
             candidate,
-            false,
+            execution::CoupledSourceReadPurpose::OutputPreparation,
         )?;
         let source = match source {
             execution::CoupledSourceRead::Route { .. } => unreachable!("ordinary source read"),

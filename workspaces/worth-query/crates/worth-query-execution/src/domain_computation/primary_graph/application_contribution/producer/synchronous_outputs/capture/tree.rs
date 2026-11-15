@@ -128,7 +128,7 @@ where
             context.before,
             &demand,
             candidate,
-            true,
+            super::super::super::execution::CoupledSourceReadPurpose::Route,
         )?;
         match route {
             super::super::super::execution::CoupledSourceRead::Route { scope, partition } => {
