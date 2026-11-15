@@ -77,6 +77,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             source_query,
             admission,
             None,
+            None,
             on_contact,
             allocation_policy,
         )
@@ -110,6 +111,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
             >,
         )>,
+        prepared_inputs: Option<PreparedMutationInputs<Schema, Binding>>,
         on_contact: impl FnOnce(),
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, 'authority>,
     ) -> Result<
@@ -119,6 +121,12 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     where
         Binding: ApplicationMutationBinding<Schema>,
     {
+        if prepared_inputs.is_some() && applied.is_none() {
+            return Err(WorthQueryMutationHandlerExecutionReport::new(
+                Err(MutationHandlerExecutionDenial::InputNotAdmitted),
+                WorthQueryMutationHandlerWork::NotStarted,
+            ));
+        }
         let execution = match phase.execution_for(&self.runtime.product_runtime) {
             Ok(execution) => execution,
             Err(cause) => {
@@ -205,6 +213,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 WorthQueryMutationHandlerWork::NotStarted,
             ));
         }
+        let mut captured_retention = None;
         let projection = |reader: &mut crate::domain_computation::primary_graph::WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, Binding::Operation>, scope: &crate::domain_computation::primary_graph::WorthQueryInvariantEntityIdentity<Schema, <Binding::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Scope>| {
                         let mut decision_reader = DecisionReader::<Schema, Binding>::new(
                             reader,
@@ -221,7 +230,14 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                         );
                         on_contact();
                         handler_contacted = true;
-                        handler.prepare_decision(input, &mut decision_reader)
+                        match prepared_inputs {
+                            Some(captured) => {
+                                let (plan, retained) = captured.prepare(handler.as_ref(), input, &mut decision_reader);
+                                captured_retention = Some(retained);
+                                plan
+                            }
+                            None => handler.prepare_decision(input, &mut decision_reader),
+                        }
                     };
         let projected = match applied {
             None => self
@@ -318,7 +334,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     };
                     let mut admission = admission;
                     admission.record_decision_context_use(context_use);
-                    let reads = projection
+                    let mut reads = projection
                         .begin_read_attempt(
                             runtime,
                             &phase_request,
@@ -330,6 +346,17 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                             &phase_request,
                             allocation_control.policy(),
                         )
+                        .map_err(MutationHandlerExecutionDenial::Attempt)?;
+                    let _captured_memory = captured_retention
+                        .map(|retained| {
+                            retained.complete(
+                                &mut reads,
+                                runtime,
+                                &phase_request,
+                                allocation_control.policy(),
+                            )
+                        })
+                        .transpose()
                         .map_err(MutationHandlerExecutionDenial::Attempt)?;
                     super::build_handler_candidate(
                         reads,

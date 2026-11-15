@@ -30,9 +30,9 @@ type Capture<S, P> =
 type Prepare<S, P> = fn(
     &dyn OperationHandler<S, Operation<S, P>>,
     &Input<S, P>,
-    ErasedCapturedInputs,
+    Box<dyn Any>,
     &mut DecisionReader<'_, '_, '_, S, Operation<S, P>>,
-) -> CapturedDecision<S, P>;
+) -> WorthQueryDecisionPlan<Decision<S, P>, Denial<S, P>>;
 
 pub(in crate::domain_computation::primary_graph::application_contribution) struct InputCaptureOwner<
     S,
@@ -78,20 +78,14 @@ impl ErasedCapturedInputs {
     ) -> &[CapturedParent] {
         (self.parents)(self.value.as_ref())
     }
-}
-
-pub(in crate::domain_computation::primary_graph::application_contribution) struct CapturedDecision<
-    S,
-    P,
-> where
-    S: ApplicationSchema,
-    P: WorthQueryApplicationProducerBinding<S>,
-{
-    pub(in crate::domain_computation::primary_graph::application_contribution) plan:
-        WorthQueryDecisionPlan<Decision<S, P>, Denial<S, P>>,
-    /// The preparation owner holds this through the plan's actual run/completion.
-    pub(in crate::domain_computation::primary_graph::application_contribution) memory:
+    pub(in crate::domain_computation::primary_graph::application_contribution) fn into_parts(
+        self,
+    ) -> (
+        Box<dyn Any>,
         Option<super::super::super::request_execution::QueryMemoryReservation>,
+    ) {
+        (self.value, self.memory)
+    }
 }
 
 impl<S, P> InputCaptureOwner<S, P>
@@ -176,9 +170,9 @@ fn parents<S: 'static, C: 'static, Data: 'static>(value: &dyn Any) -> &[Captured
 fn prepare<S, P, C, H>(
     handler: &dyn OperationHandler<S, Operation<S, P>>,
     input: &Input<S, P>,
-    captured: ErasedCapturedInputs,
+    captured: Box<dyn Any>,
     reader: &mut DecisionReader<'_, '_, '_, S, Operation<S, P>>,
-) -> CapturedDecision<S, P>
+) -> WorthQueryDecisionPlan<Decision<S, P>, Denial<S, P>>
 where
     S: ApplicationSchema,
     P: WorthQueryApplicationProducerBinding<S>,
@@ -186,17 +180,11 @@ where
     H: WorthQueryProducerInputCaptureHandler<S, P, C>,
 {
     let original: &dyn Any = handler;
-    let plan = match (
+    match (
         original.downcast_ref::<H>(),
-        captured
-            .value
-            .downcast::<WorthQueryCapturedProducerInputs<S, C, H::Captured>>(),
+        captured.downcast::<WorthQueryCapturedProducerInputs<S, C, H::Captured>>(),
     ) {
         (Some(handler), Ok(inputs)) => handler.prepare_captured_decision(input, *inputs, reader),
         _ => WorthQueryDecisionPlan::immediate(HandlerResult::ExecutionDenied(foreign())),
-    };
-    CapturedDecision {
-        plan,
-        memory: captured.memory,
     }
 }

@@ -178,6 +178,7 @@ where
             source,
             predecessor.as_ref(),
             edition,
+            None,
         )?;
         let registered = register_coupled_application::<Schema, Binding::Operation>(
             &execution, phase, runtime, prepared,

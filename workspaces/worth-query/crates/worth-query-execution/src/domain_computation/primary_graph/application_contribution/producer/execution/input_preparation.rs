@@ -36,6 +36,49 @@ where
     _input: unpublished::PreparedProducerPublication,
 }
 
+impl<S: ApplicationSchema, B: WorthQueryApplicationProducerBinding<S>>
+    PreparedProducerInputs<S, B>
+{
+    pub(super) fn into_mutation_inputs(
+        self,
+        installed: &TypedInstalledProducer<S, B>,
+        identities: &worth_query_declaration::facade::application_operation::ApplicationMutationIdentities<'_, S, Operation<S, B>>,
+        source: worth_relational::facade::identity::EntityId,
+        edition: super::super::InstalledProducerEdition,
+        component: std::any::TypeId,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        candidate: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
+    ) -> Result<crate::domain_computation::primary_graph::application_entry::mutation::execution::PreparedMutationInputs<S, Operation<S, B>>, ProducerExecutionStop>{
+        let foreign = || denial(WorthQueryOutputDemandDenialKind::ForeignSource, B::IDENTITY);
+        let owner = installed.input_capture.ok_or_else(foreign)?;
+        if self.edition != edition
+            || self.identities.borrow().input_identity() != identities.input_identity()
+            || self.inputs.affinity.source != source
+            || self.inputs.affinity.component != component
+        {
+            return Err(foreign().into());
+        }
+        if !self
+            .reads
+            .captured_inputs_remain_equal(execution, candidate)
+            .map_err(|cause| {
+                execution_failed(B::IDENTITY, MutationHandlerExecutionDenial::Attempt(cause))
+            })?
+        {
+            return Err(execution_failed(B::IDENTITY, MutationHandlerExecutionDenial::Attempt(
+                crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::new(
+                    crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::SourceChanged,
+                    B::IDENTITY,
+                ),
+            )));
+        }
+        let (value, memory) = self.inputs.into_parts();
+        Ok(crate::domain_computation::primary_graph::application_entry::mutation::execution::PreparedMutationInputs::new(
+            value, self.reads, memory, owner.prepare,
+        ))
+    }
+}
+
 pub(super) fn capture<S, B>(
     installed: &TypedInstalledProducer<S, B>,
     phase: &WorthQueryAdvancementPhase<'_>,
