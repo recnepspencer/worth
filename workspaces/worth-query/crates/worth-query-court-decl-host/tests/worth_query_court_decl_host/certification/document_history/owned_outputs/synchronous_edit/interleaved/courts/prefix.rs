@@ -30,6 +30,11 @@ fn positioned_prefix_keeps_current_reads_future_absence_and_final_support() {
                     .value,
                 10
             );
+        } else {
+            assert!(request
+                .query(query::first_output::Read("first:a".into()))
+                .execute()
+                .is_err());
         }
         let before = super::super::super::courts::native_head(&host);
         let mut edit = request
@@ -68,13 +73,14 @@ fn positioned_prefix_keeps_current_reads_future_absence_and_final_support() {
             };
             let refusal = std::error::Error::source(cause)
                 .unwrap()
-                .downcast_ref::<WorthQueryEntityResolutionDenial>()
-                .unwrap();
+                .downcast_ref::<WorthQueryOutputDemandDenial>()
+                .unwrap_or_else(|| panic!("{failure:?}"));
             assert_eq!(
                 refusal.kind(),
-                WorthQueryEntityResolutionDenialKind::Refused(
-                    WorthQueryEntityResolutionRefusalKind::UnknownEntity
-                )
+                WorthQueryOutputDemandDenialKind::AuthoredStageRefused {
+                    ordinal: 0,
+                    binding: dependent::Binding::IDENTITY,
+                }
             );
             assert_eq!(host.producer_contacts_on_this_thread_for_test(), contacts);
             assert_eq!(publications, 0);
