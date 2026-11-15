@@ -22,6 +22,7 @@ where
     OwnedNext: OperationReads<B::Operation>,
 {
     let node = reader.resolve_entity(IncidenceKey::at("IncidenceKey"), key(member))?;
+    reader.entity(&node, Incidence::reference())?;
     let orbit = reader
         .orbit(OwnedNext::reference(), &node)
         .map_err(HandlerExecutionDenial::new)?;
