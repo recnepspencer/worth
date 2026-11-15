@@ -14,6 +14,7 @@ use worth_query_declaration::facade::{
     application_query::{ApplicationQueryBinding, ApplicationQueryScopeBinding},
     application_schema::{ApplicationEntityMarkerIdentity, OperationReads},
 };
+mod control;
 mod reads;
 type Scope<S, B> = <<B as ApplicationMutationBinding<S>>::ScopeBinding as ApplicationMutationScopeBinding<S>>::Scope;
 type Parent<S, E> = <<E as ApplicationConnectionShape<S>>::Binding as WorthQueryApplicationDependentOutputConnection<S>>::RootDemand;
@@ -46,6 +47,7 @@ pub(super) enum InputCaptureStop {
     ForeignPort,
     Finished,
     ForeignCapture,
+    Work(crate::domain_computation::primary_graph::application_contribution::WorthQueryAdvancementDenial),
     Read(std::sync::Arc<HandlerExecutionDenial>),
 }
 impl std::fmt::Display for InputCaptureStop {
@@ -98,26 +100,6 @@ where
         self.scope
     }
 
-    /// Interruption stays sticky even when the owner catches the poll result.
-    pub fn checkpoint(&self) -> Result<(), HandlerInterruption> {
-        let interruption = self.execution.interruption().map(|stop| match stop {
-            WorthQueryManagedComputationInterruption::Cancelled => HandlerInterruption::Cancelled,
-            WorthQueryManagedComputationInterruption::DeadlineExceeded => {
-                HandlerInterruption::DeadlineExceeded
-            }
-        });
-        if let Some(stop) = interruption {
-            self.stopped
-                .borrow_mut()
-                .get_or_insert(InputCaptureStop::Interrupted(stop));
-            return Err(stop);
-        }
-        match self.stopped.borrow().as_ref() {
-            Some(InputCaptureStop::Interrupted(stop)) => Err(*stop),
-            _ => Ok(()),
-        }
-    }
-
     /// Retain a genuine read-issued source and its one declared parent demand.
     /// Query validates the resolved demand's full route and drains every entry.
     pub fn parent<E, Entity>(
@@ -133,6 +115,7 @@ where
         <<Parent<S, E> as super::super::WorthQueryApplicationOutputDemand<S>>::OutputFamily as WorthQueryProducerOutputFamily<S>>::Source:
             ApplicationQueryBinding<S, ScopeBinding: ApplicationQueryScopeBinding<S, Scope = Entity>>,
 {
+        self.charge(self.ports.len() as u64 + 1)?;
         if !self.ports.contains(&std::any::TypeId::of::<E>()) {
             return Err(self.stop(InputCaptureStop::ForeignPort));
         }
@@ -169,6 +152,7 @@ where
                         WorthQueryManagedComputationResourceDenial::CapacityOverflow,
                     ))
                 })?;
+            self.charge(bytes)?;
             let storage = self
                 .execution
                 .reserve(bytes)
@@ -205,10 +189,11 @@ where
         &mut self,
         data: Data,
     ) -> Result<WorthQueryCapturedProducerInputs<S, C, Data>, HandlerExecutionDenial> {
+        self.charge(1)?;
         if let Some(stop) = self.stopped.borrow().as_ref() {
             return Err(HandlerExecutionDenial::new(stop.clone()));
         }
-        let bytes = (std::mem::size_of_val(&data) as u64)
+        let bytes = (std::mem::size_of::<WorthQueryCapturedProducerInputs<S, C, Data>>() as u64)
             .checked_add(data.additional_charged_bytes())
             .ok_or_else(|| {
                 self.stop(InputCaptureStop::Resource(
@@ -244,6 +229,7 @@ where
         self,
         result: HandlerResult<WorthQueryCapturedProducerInputs<S, C, Data>, Denial>,
     ) -> HandlerResult<WorthQueryCapturedProducerInputs<S, C, Data>, Denial> {
+        let _ = self.checkpoint();
         if let Some(stop) = self.stopped.into_inner() {
             return match stop {
                 InputCaptureStop::Interrupted(HandlerInterruption::Cancelled) => {
