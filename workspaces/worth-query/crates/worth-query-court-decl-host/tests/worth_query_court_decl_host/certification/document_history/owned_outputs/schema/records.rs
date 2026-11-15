@@ -14,6 +14,7 @@ impl Fragment for Storage {
         SecondOutput,
         ChildOutput,
         Cap,
+        Incidence,
     );
 }
 mod bindings;
@@ -75,13 +76,7 @@ pub struct FirstOutput;
 impl Entity for FirstOutput {
     const NAME: &'static str = "FirstOutput";
     type Aspects = (FirstFacts,);
-    type Relations = (
-        ChildOfFirst,
-        FirstOf,
-        JoinedOf,
-        ReconciledSourceOf,
-        OwnedNext,
-    );
+    type Relations = (ChildOfFirst, FirstOf, JoinedOf, ReconciledSourceOf);
 }
 impl FirstOutput {
     pub fn reference() -> ApplicationEntityRef<Schema, Self> {

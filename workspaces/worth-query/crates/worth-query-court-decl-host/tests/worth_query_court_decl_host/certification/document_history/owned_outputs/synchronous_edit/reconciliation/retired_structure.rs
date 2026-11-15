@@ -50,13 +50,13 @@ fn whole_owned_structural_reads_retire_in_the_same_coupled_commit() {
                 )
                 .unwrap()
         });
-        assert!(
-            matches!(
-                outcome,
-                WorthQueryApplicationPerformedMutationOutcome::Performed(_)
-            ),
-            "{outcome:?}"
-        );
+        match outcome {
+            WorthQueryApplicationPerformedMutationOutcome::Performed(_) => {}
+            WorthQueryApplicationPerformedMutationOutcome::NotPerformed(denied) => {
+                panic!("{denied:?}")
+            }
+            _ => panic!("the coupled retirement did not perform"),
+        }
         assert_eq!(writes.published_rows.len() + writes.omitted_publications, 1);
         let current = request
             .query(snapshot::Read("a".into()))

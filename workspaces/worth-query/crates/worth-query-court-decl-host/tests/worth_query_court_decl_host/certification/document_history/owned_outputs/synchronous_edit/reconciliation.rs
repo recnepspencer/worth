@@ -68,6 +68,9 @@ impl MemberKind for SecondOutput {
 impl MemberKind for ChildOutput {
     const PREFIX: &'static str = "retired.";
 }
+impl MemberKind for Incidence {
+    const PREFIX: &'static str = "incidence.";
+}
 pub struct Rows<C, E>(PhantomData<fn() -> (C, E)>);
 impl<C: ApplicationMutationOutputContract<Schema>, E: MemberKind + 'static>
     WorthQueryApplicationOutputRoleFamily for Rows<C, E>

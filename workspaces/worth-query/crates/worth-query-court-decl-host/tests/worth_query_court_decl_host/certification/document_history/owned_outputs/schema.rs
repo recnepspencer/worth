@@ -6,7 +6,7 @@ pub use calibration::*;
 mod cap;
 pub use cap::*;
 mod owned_orbit;
-pub use owned_orbit::OwnedNext;
+pub use owned_orbit::{Incidence, IncidenceKey, OwnedNext};
 mod records;
 pub use records::*;
 mod joined;

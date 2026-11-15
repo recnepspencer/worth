@@ -105,7 +105,7 @@ impl WorthQueryApplicationProjection<Schema, Query> for ForeignParent {
 }
 impl WorthQueryApplicationProjection<Schema, Query> for Topology {
     fn project(
-        row: &WorthQueryApplicationProjectionRow<'_, Schema, Query>,
+        _: &WorthQueryApplicationProjectionRow<'_, Schema, Query>,
     ) -> Result<Self, WorthQueryApplicationProjectionDenial> {
         Ok(Self)
     }

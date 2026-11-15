@@ -10,6 +10,7 @@ pub(super) struct Member {
     pub source: Target<SecondOutput>,
     pub source_key: String,
     pub children: Vec<Retired>,
+    pub incidence: Option<member_orbit::Prior>,
 }
 pub(super) struct Retired {
     pub key: String,
@@ -38,6 +39,7 @@ pub(super) fn capture<B: ApplicationMutationBinding<Schema>>(
 where
     ModelMember: OperationReads<B::Operation>,
     OwnedNext: OperationReads<B::Operation>,
+    Incidence: OperationReads<B::Operation>,
     CapNext: OperationReads<B::Operation>,
     Cap: OperationReads<B::Operation>,
     super::Member: OperationReads<B::Operation>,
@@ -87,17 +89,11 @@ where
             let ordinal = ordinal
                 .parse::<u64>()
                 .expect("fixture-owned member ordinal");
-            if owned_orbits {
-                let orbit = reader
-                    .orbit(OwnedNext::reference(), edge.from())
-                    .map_err(HandlerExecutionDenial::new)?;
-                assert!(
-                    !orbit.members().is_empty(),
-                    "the member has real orbit incidence"
-                );
-                let walk = reader.walk(OwnedNext::reference(), worth_query_host::facade::application_invariants::RelationDirection::Forward, edge.from()).map_err(HandlerExecutionDenial::new)?;
-                assert!(!walk.is_empty());
-            }
+            let incidence = if owned_orbits {
+                Some(member_orbit::capture(reader, &key)?)
+            } else {
+                None
+            };
             let sources = reader
                 .relations_from(ReconciledSourceOf::reference(), edge.from())
                 .map_err(HandlerExecutionDenial::new)?;
@@ -133,7 +129,8 @@ where
                         row: reader.mutation_target(edge.from())?,
                         source,
                         source_key,
-                        children
+                        children,
+                        incidence
                     }
                 )
                 .is_none());

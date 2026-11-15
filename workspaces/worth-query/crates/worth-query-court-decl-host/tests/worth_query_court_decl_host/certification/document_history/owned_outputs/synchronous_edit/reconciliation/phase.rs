@@ -7,12 +7,12 @@ macro_rules! reconciliation_phase {
             #[derive(Clone, serde::Serialize)] pub struct Input(pub query::Row);
             worth_query_structured_value_binding!(pub InputBinding for Input { identity: $identity });
             worth_query_operation!(pub $operation for Schema, input InputBinding; access {
-                read_entities: [Cap, Model, Member, FirstOutput, SecondOutput, ChildOutput];
-                read_fields: [CapKey::at("CapKey"), CapValue::at("CapValue"), MemberValue::at("MemberValue"), ModelKey::at("ModelKey"), ModelValue::at("ModelValue"), FirstKey::at("FirstKey"), FirstValue::at("FirstValue"), ChildKey::at("ChildKey"), ChildValue::at("ChildValue"), SecondKey::at("SecondKey"), SecondValue::at("SecondValue")];
+                read_entities: [Incidence, Cap, Model, Member, FirstOutput, SecondOutput, ChildOutput];
+                read_fields: [IncidenceKey::at("IncidenceKey"), CapKey::at("CapKey"), CapValue::at("CapValue"), MemberValue::at("MemberValue"), ModelKey::at("ModelKey"), ModelValue::at("ModelValue"), FirstKey::at("FirstKey"), FirstValue::at("FirstValue"), ChildKey::at("ChildKey"), ChildValue::at("ChildValue"), SecondKey::at("SecondKey"), SecondValue::at("SecondValue")];
                 read_relations: [OwnedNext, CapNext, ModelMember, FirstOf, ChildOfFirst, SecondOf, ReconciledSourceOf];
-                writes: [FirstKey::at("FirstKey"), FirstValue::at("FirstValue"), ChildKey::at("ChildKey"), ChildValue::at("ChildValue"), SecondKey::at("SecondKey"), SecondValue::at("SecondValue")];
-                creates: [FirstOutput, SecondOutput, ChildOutput]; links: [OwnedNext, FirstOf, ChildOfFirst, SecondOf, ReconciledSourceOf];
-                deletes: [FirstOutput, SecondOutput, ChildOutput]; unlinks: [OwnedNext, FirstOf, ChildOfFirst, SecondOf, ReconciledSourceOf];
+                writes: [IncidenceKey::at("IncidenceKey"), FirstKey::at("FirstKey"), FirstValue::at("FirstValue"), ChildKey::at("ChildKey"), ChildValue::at("ChildValue"), SecondKey::at("SecondKey"), SecondValue::at("SecondValue")];
+                creates: [Incidence, FirstOutput, SecondOutput, ChildOutput]; links: [OwnedNext, FirstOf, ChildOfFirst, SecondOf, ReconciledSourceOf];
+                deletes: [Incidence, FirstOutput, SecondOutput, ChildOutput]; unlinks: [OwnedNext, FirstOf, ChildOfFirst, SecondOf, ReconciledSourceOf];
             });
             worth_query_operation_emits!($operation => [emission::Changed]);
             pub type Operation = $operation;
@@ -26,6 +26,7 @@ macro_rules! reconciliation_phase {
                 const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] = &[<Output as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR];
                 const ROLE_FAMILIES: &'static [ApplicationMutationOutputRoleFamilyDescriptor] = &[
                     <Rows<Outputs, FirstOutput> as WorthQueryApplicationDeclaredOutputRoleFamily>::DESCRIPTOR,
+                    <Rows<Outputs, Incidence> as WorthQueryApplicationDeclaredOutputRoleFamily>::DESCRIPTOR,
                     <Rows<Outputs, ChildOutput> as WorthQueryApplicationDeclaredOutputRoleFamily>::DESCRIPTOR,
                     <Rows<Outputs, SecondOutput> as WorthQueryApplicationDeclaredOutputRoleFamily>::DESCRIPTOR,
                 ];

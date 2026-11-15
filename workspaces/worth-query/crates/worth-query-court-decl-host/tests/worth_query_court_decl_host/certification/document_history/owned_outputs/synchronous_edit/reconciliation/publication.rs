@@ -26,6 +26,7 @@ where
         + OperationReads<B::Operation>
         + OperationUnlinks<B::Operation>,
     FirstOutput: OperationCreates<B::Operation> + OperationDeletes<B::Operation>,
+    Incidence: OperationCreates<B::Operation> + OperationDeletes<B::Operation>,
     ChildOutput: OperationCreates<B::Operation> + OperationDeletes<B::Operation>,
     SecondOutput: OperationCreates<B::Operation> + OperationDeletes<B::Operation>,
 {
@@ -61,7 +62,11 @@ where
                 &stable_source,
             )?;
             if owned_orbits {
-                orbit.push(row);
+                orbit.push(member_orbit::preserve(
+                    writer,
+                    prior.incidence.as_ref().expect("captured incidence"),
+                    &key,
+                )?);
             }
         } else {
             let row = writer.create_entity_in_context(
@@ -99,11 +104,18 @@ where
             )?;
             writer.create_member::<Rows<B::Output, SecondOutput>>(&source_key, &stable_source)?;
             if owned_orbits {
-                orbit.push(row);
+                orbit.push(member_orbit::create(writer, source, &key)?);
             }
         }
     }
     for (ordinal, prior) in prior.members {
+        if owned_orbits {
+            member_orbit::retire(
+                writer,
+                prior.incidence.as_ref().expect("captured incidence"),
+                &prior.key,
+            )?;
+        }
         let row = writer.projected_entity(&prior.row)?;
         for child in &prior.children {
             let child_row = writer.projected_entity(&child.row)?;
