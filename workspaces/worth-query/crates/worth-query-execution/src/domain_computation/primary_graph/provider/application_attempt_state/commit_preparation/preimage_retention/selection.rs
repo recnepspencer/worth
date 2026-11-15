@@ -345,4 +345,6 @@ mod anchored;
 pub(super) use anchored::retain_from_authored_anchors;
 mod output_fields;
 pub(super) use output_fields::retain_output_fields;
+mod output_members;
+pub(super) use output_members::retain_output_fields_with_members;
 mod court_doors_for_test;

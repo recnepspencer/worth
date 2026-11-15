@@ -90,6 +90,18 @@ Native's existing footprint semantics; this is not a value-difference detector.
 Existing `.with_relations(...)` retains the actual changed endpoints under its
 original observation, visibility and byte-bound rules.
 
+A sparse output may also own variable members through `live_owner_members`
+families, when one operation edits the output's fields and adds or removes its
+members. List each family's member fields beside the output's own fields, and
+keep the member-to-owner relation in `.with_relations(...)`. The demand splits
+exactly by entity: the output's own fields are captured sparsely as above, and
+each member the mutation moves keeps every demanded member field on its own
+record, as in an ordinary live-owner correction. Read them through
+`field_for_family_member`. Installation refuses an anchored or owned-member
+identity, a field on an entity that is neither the output nor a declared
+family, a family whose entity is the output's, and a demand with no field on
+the output.
+
 Derive a sparse restoring intent from
 `preimage.field_state_for_output(&Role::DESCRIPTOR, &locus)`. Its
 `ApplicationCorrectionFieldPreImage` distinguishes `Value`, `AbsentField`,

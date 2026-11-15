@@ -18,7 +18,13 @@ impl Fragment for SourceFeature {
     const NAME: &'static str = "source_feature";
     type Bindings = SourceModelBindings;
     type Members = (
-        Extend<Source, (Option<SourceFacts>,)>,
+        Extend<
+            Source,
+            (
+                Option<SourceFacts>,
+                Option<roster::sparse_owner::SourceMark>,
+            ),
+        >,
         Extend<roster::Note, (Option<roster::NoteMark>,)>,
     );
 }

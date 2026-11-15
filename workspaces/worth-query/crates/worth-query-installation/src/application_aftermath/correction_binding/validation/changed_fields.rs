@@ -1,10 +1,18 @@
 //! A sparse field demand selects one genuine preserved source output.
+//!
+//! Every demanded field is captured at that exact output or is unchanged there.
+//! The only other fields allowed are those of live-owner member families, which
+//! are captured completely on each member a mutation moves. Their entities never
+//! equal the output's, so the two captures partition the vocabulary exactly.
 use worth_query_declaration::facade::{
-    application_aftermath::{DeclaredCorrectionBinding, PortableCorrectionMechanism},
+    application_aftermath::{
+        DeclaredAuthoredCorrection, DeclaredCorrectionBinding, PortableCorrectionMechanism,
+    },
     application_operation::{
         ApplicationMutationBindingDescriptor, ApplicationMutationOutputPosture as Posture,
         ApplicationMutationOutputRoleCardinality as Cardinality,
     },
+    application_schema::ApplicationSchemaMember,
 };
 
 pub(super) fn validate(
@@ -22,14 +30,18 @@ pub(super) fn validate(
     if output.capture() != worth_query_declaration::facade::application_aftermath::PreImageOutputFieldCapture::ChangedPreserved {
         return Ok(());
     }
-    if binding.authored_identity().is_some()
-        || demand.loci().is_empty()
+    let families = member_family_entities(binding.authored_identity())?;
+    if families.contains(&output.entity())
         || output.role().trim().is_empty()
         || output.entity().trim().is_empty()
+        || !demand
+            .loci()
+            .iter()
+            .any(|locus| locus.entity() == output.entity())
         || demand
             .loci()
             .iter()
-            .any(|locus| locus.entity() != output.entity())
+            .any(|locus| locus.entity() != output.entity() && !families.contains(&locus.entity()))
     {
         return Err(());
     }
@@ -54,4 +66,25 @@ pub(super) fn validate(
         return Err(());
     }
     Ok(())
+}
+
+/// The entities of the identity's member families. Only live-owner member
+/// families may stand beside a sparse output: an anchored or owned-member
+/// identity creates or retires its own anchor, which a preserved output is not.
+fn member_family_entities(identity: Option<&DeclaredAuthoredCorrection>) -> Result<Vec<&str>, ()> {
+    let Some(identity) = identity else {
+        return Ok(Vec::new());
+    };
+    std::iter::once(identity)
+        .chain(identity.co_anchors())
+        .map(|family| {
+            if family.live_member_owner().is_none() || family.member_owner().is_some() {
+                return Err(());
+            }
+            match family.parts().logical_key.as_ref() {
+                ApplicationSchemaMember::Field { entity, .. } => Ok(entity.as_str()),
+                _ => Err(()),
+            }
+        })
+        .collect()
 }
