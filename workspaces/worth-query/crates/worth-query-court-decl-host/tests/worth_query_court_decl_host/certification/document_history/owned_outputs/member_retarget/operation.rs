@@ -68,6 +68,10 @@ impl OperationHandler<Schema, Binding> for Handler {
         let result = (|| {
             let owner = reader.resolve_entity(ModelKey::at("ModelKey"), input.owner.clone())?;
             reader.field(&owner, ModelValue::at("ModelValue"))?;
+            for row in &input.create {
+                // The native unique owner needs the indexed selection, including absence.
+                reader.resolve_optional_entity(InputKey::at("InputKey"), row.key.clone())?;
+            }
             let mut leaving = Vec::new();
             for key in &input.retire {
                 let member = reader.resolve_entity(InputKey::at("InputKey"), key.clone())?;

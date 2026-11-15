@@ -22,7 +22,7 @@ fn publish(
         .execute_performed(ExecutionAllocationPolicy::SystemAllocation)
         .unwrap();
     let Outcome::Committed(done) = outcome else {
-        panic!("{outcome:?}")
+        panic!("{key}: {outcome:?}")
     };
     done.receipt().clone()
 }
