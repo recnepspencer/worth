@@ -4544,7 +4544,11 @@ final support validation. Native same-record writer conflicts are unchanged.
 Only roots returned by positions already applied enter the shared wave. A
 later position that reads those outputs waits at the actual producer barrier;
 a future reference is unavailable, not permission to reorder the caller or run
-an effectful handler again. A genuine prefix is required. Final generation or
+an effectful handler again. The first position reads genuine current C data
+even when an installed potential producer has an overlapping write declaration;
+no producer runs before that authored prefix. Its reads remain subject to final
+support validation. The default dependency-DAG mode still refuses a declared
+producer-before-prefix dependency. Final generation or
 frontier advancement is an ordinary declared action in this same envelope,
 not another publication or a new public seal capability.
 
