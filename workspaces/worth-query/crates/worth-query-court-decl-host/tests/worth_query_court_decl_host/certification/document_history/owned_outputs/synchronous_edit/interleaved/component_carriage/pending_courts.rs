@@ -28,7 +28,17 @@ fn run(consumed: bool) {
     })
     .unwrap();
     if consumed {
+        // This existing real stage needs First, exposing its pending static child.
+        edit.push_stage::<ApplicationNoOutputGraph, _>(fixture::after_producer::Intent {
+            key: "envelope-cap".into(),
+            value: 1,
+            key_derived_target: false,
+        })
+        .unwrap();
+        // Admission stays on the existing authored Model; the actual child
+        // value is read only after its producer barrier has run.
         edit.push_stage::<ApplicationNoOutputGraph, _>(pending_consumer::Intent {
+            model: "a".into(),
             key: "from-first:first:a".into(),
         })
         .unwrap();
@@ -92,8 +102,8 @@ fn run(consumed: bool) {
             3000
         );
         assert_eq!(
-            contacts, 6,
-            "four first routes and two child routes each execute once"
+            contacts, 5,
+            "four first routes and the root's selected child each execute once"
         );
     }
 }

@@ -3,21 +3,22 @@ use super::*;
 #[derive(Clone, Debug, WorthValue)]
 #[worth_value(crate = "worth_query_decl::facade::application_schema")]
 pub struct Intent {
+    pub model: String,
     pub key: String,
 }
 worth_query_structured_value_binding!(pub Input for Intent { identity:"owned-outputs.consume-child.v1" });
 worth_query_operation!(pub Consume for Schema, input Input; access {
-    read_fields:[ChildKey::at("ChildKey"), ChildValue::at("ChildValue")];
+    read_fields:[ModelKey::at("ModelKey"), ChildKey::at("ChildKey"), ChildValue::at("ChildValue")];
 });
 fn scope(input: &Intent) -> String {
-    input.key.clone()
+    input.model.clone()
 }
 worth_query_mutation_binding!(pub Binding for Intent, schema Schema,
     identity "owned-outputs.consume-child.v1", input Input, operation Consume, result fixture::StageResultBinding,
     idempotency String, identity "owned-outputs.consume-child.v1", decision fixture::StageResult, denial super::DenialBinding,
     handler identity "owned-outputs.consume-child.v1", program required, outputs NoApplicationMutationOutputs,
     principal Actor, mapping Mapping, principal_entity Principal, principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope ChildKey, field ChildKey::at("ChildKey"), value scope,
+    scope ModelKey, field ModelKey::at("ModelKey"), value scope,
 );
 pub struct Handler;
 impl OperationHandler<Schema, Binding> for Handler {
