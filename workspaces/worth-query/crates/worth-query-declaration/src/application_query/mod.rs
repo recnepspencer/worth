@@ -125,8 +125,8 @@ pub use result_relation_selector::{
     ManyResults, OptionalOneResult,
 };
 pub use result_shape::{
-    ApplicationQueryExpressionContextDenial, ApplicationQueryResultField,
-    ApplicationQueryResultRelation, ApplicationQueryResultShape,
+    ApplicationQueryExpressionContextDenial, ApplicationQueryRelationPredicate,
+    ApplicationQueryResultField, ApplicationQueryResultRelation, ApplicationQueryResultShape,
     ApplicationQueryResultShapeBuilder, TypedApplicationQueryResultShape,
     WorthQueryPortableApplicationQueryResultFieldParts,
     WorthQueryPortableApplicationQueryResultRelationParts,

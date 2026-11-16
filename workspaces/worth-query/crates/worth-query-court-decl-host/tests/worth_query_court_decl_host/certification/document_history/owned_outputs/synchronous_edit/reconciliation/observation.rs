@@ -10,6 +10,7 @@ pub(super) struct Member {
     pub source: Target<SecondOutput>,
     pub source_key: String,
     pub children: Vec<Retired>,
+    pub incidence: Option<member_orbit::Prior>,
 }
 pub(super) struct Retired {
     pub key: String,
@@ -20,6 +21,7 @@ pub(super) struct Prepared {
     pub count: u64,
     pub members: BTreeMap<u64, Member>,
     pub retired: Vec<Retired>,
+    pub owned_orbits: bool,
 }
 pub(super) fn member_key(model: &str, ordinal: u64) -> String {
     format!("reconciled:member:{model}:{ordinal}")
@@ -32,9 +34,12 @@ pub(super) fn capture<B: ApplicationMutationBinding<Schema>>(
     source: &WorthQueryInvariantEntityIdentity<Schema, Model>,
     mut next_count: u64,
     peer_caps: bool,
+    owned_orbits: bool,
 ) -> Result<Prepared, HandlerExecutionDenial>
 where
     ModelMember: OperationReads<B::Operation>,
+    OwnedNext: OperationReads<B::Operation>,
+    Incidence: OperationReads<B::Operation>,
     CapNext: OperationReads<B::Operation>,
     Cap: OperationReads<B::Operation>,
     super::Member: OperationReads<B::Operation>,
@@ -84,6 +89,11 @@ where
             let ordinal = ordinal
                 .parse::<u64>()
                 .expect("fixture-owned member ordinal");
+            let incidence = if owned_orbits {
+                Some(member_orbit::capture(reader, &key)?)
+            } else {
+                None
+            };
             let sources = reader
                 .relations_from(ReconciledSourceOf::reference(), edge.from())
                 .map_err(HandlerExecutionDenial::new)?;
@@ -119,7 +129,8 @@ where
                         row: reader.mutation_target(edge.from())?,
                         source,
                         source_key,
-                        children
+                        children,
+                        incidence
                     }
                 )
                 .is_none());
@@ -135,6 +146,7 @@ where
     }
     Ok(Prepared {
         count: next_count,
+        owned_orbits,
         model,
         members,
         retired,

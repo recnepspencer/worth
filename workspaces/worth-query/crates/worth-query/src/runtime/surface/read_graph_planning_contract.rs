@@ -197,9 +197,11 @@ fn planning_predicate(
 ) -> Option<WorthQueryReadGraphPredicateView<'_>> {
     let predicate = validated.query().predicates().entries().get(index)?;
     Some(WorthQueryReadGraphPredicateView {
-        aspect: predicate.native_aspect_key(),
-        field: predicate.native_field_key(),
-        parameter: predicate.value_basis(),
+        target: worth_query_installation::facade::WorthQueryReadGraphPredicateTarget::Field {
+            aspect: predicate.native_aspect_key(),
+            field: predicate.native_field_key(),
+        },
+        parameter: Some(predicate.value_basis()),
         scalar_family: *predicate.field_kind(),
     })
 }

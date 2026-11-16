@@ -141,14 +141,23 @@ fn relations(
 fn predicate_fields(
     graph: &impl WorthQueryReadGraphPlanningContract,
 ) -> Vec<WorthQueryGraphReadPlanningPredicateField> {
-    let predicates = (0..graph.predicate_count()).map(|index| {
+    let predicates = (0..graph.predicate_count()).filter_map(|index| {
         let predicate = graph
             .predicate(index)
             .expect("planning contract predicate count must be exact");
-        WorthQueryGraphReadPlanningPredicateField::from_admitted_field(
-            predicate.aspect.clone(),
-            predicate.field.clone(),
-            predicate.scalar_family.canonical_name(),
+        let worth_query_installation::facade::WorthQueryReadGraphPredicateTarget::Field {
+            aspect,
+            field,
+        } = predicate.target
+        else {
+            return None;
+        };
+        Some(
+            WorthQueryGraphReadPlanningPredicateField::from_admitted_field(
+                aspect.clone(),
+                field.clone(),
+                predicate.scalar_family.canonical_name(),
+            ),
         )
     });
     let guards = (0..graph.guard_count()).map(|index| {

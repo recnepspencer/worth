@@ -2,6 +2,7 @@
 use super::*;
 use std::cell::RefCell;
 pub(super) mod content;
+pub(super) mod original;
 worth_query_ability!(pub ReadInputs scoped_to Model, in Schema);
 worth_query_policy!(pub InputReadPolicy in Schema);
 worth_query_operation!(pub ReadOldInputs for Schema, input query::ParametersBinding; access {
@@ -15,11 +16,11 @@ worth_query_operation_requires!(ReadWrongScope => [permission::ReadMember]);
 worth_query_operation!(pub UndeclaredRead for Schema, input query::ParametersBinding; access {
     read_entities: [Model]; read_fields: [ModelValue::at("ModelValue")];
 });
-pub const CONTRACT: WorthQueryPredecessorReadContract<Schema> =
-    WorthQueryPredecessorReadContract::new(&[
-        WorthQueryPredecessorReadOperation::new(ReadOldInputs::reference()),
-        WorthQueryPredecessorReadOperation::new(content::ReadContentInputs::reference()),
-        WorthQueryPredecessorReadOperation::new(ReadWrongScope::reference()),
+pub const CONTRACT: WorthQueryProducerObservationReadContract<Schema> =
+    WorthQueryProducerObservationReadContract::new(&[
+        WorthQueryProducerObservationReadOperation::new(ReadOldInputs::reference()),
+        WorthQueryProducerObservationReadOperation::new(content::ReadContentInputs::reference()),
+        WorthQueryProducerObservationReadOperation::new(ReadWrongScope::reference()),
     ]);
 pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
@@ -34,44 +35,48 @@ pub fn declare(
         .unwrap()
         .reverse(ModelMember::reference())
         .allow(Model::reference());
-    content::declare(inspection::declare(synchronous::declare(schema)))
-        .declared_operation::<UndeclaredRead>(
-            UndeclaredRead::reference()
-                .definition()
-                .no_external_effect()
-                .no_aftermath()
-                .finish(),
-        )
-        .ability(ReadInputs::reference())
-        .policy(InputReadPolicy::reference())
-        .ability_policy(
-            ReadInputs::reference(),
-            InputReadPolicy::reference(),
-            [path],
-        )
-        .declared_operation::<ReadOldInputs>(
-            ReadOldInputs::reference()
-                .definition()
-                .no_external_effect()
-                .no_aftermath()
-                .finish(),
-        )
-        .declared_operation::<ReadWrongScope>(
-            ReadWrongScope::reference()
-                .definition()
-                .no_external_effect()
-                .no_aftermath()
-                .finish(),
-        )
-        .operation_requires_ability(ReadOldInputs::reference(), ReadInputs::reference())
-        .operation_requires_ability(
-            ReadWrongScope::reference(),
-            permission::ReadMember::reference(),
-        )
+    original::declare(content::declare(inspection::declare(synchronous::declare(
+        schema,
+    ))))
+    .declared_operation::<UndeclaredRead>(
+        UndeclaredRead::reference()
+            .definition()
+            .no_external_effect()
+            .no_aftermath()
+            .finish(),
+    )
+    .ability(ReadInputs::reference())
+    .policy(InputReadPolicy::reference())
+    .ability_policy(
+        ReadInputs::reference(),
+        InputReadPolicy::reference(),
+        [path],
+    )
+    .declared_operation::<ReadOldInputs>(
+        ReadOldInputs::reference()
+            .definition()
+            .no_external_effect()
+            .no_aftermath()
+            .finish(),
+    )
+    .declared_operation::<ReadWrongScope>(
+        ReadWrongScope::reference()
+            .definition()
+            .no_external_effect()
+            .no_aftermath()
+            .finish(),
+    )
+    .operation_requires_ability(ReadOldInputs::reference(), ReadInputs::reference())
+    .operation_requires_ability(
+        ReadWrongScope::reference(),
+        permission::ReadMember::reference(),
+    )
 }
-type ReadResult = Result<Option<u64>, WorthQueryPredecessorReadDenial>;
+type ReadResult = Result<Option<u64>, WorthQueryProducerObservationReadDenial>;
 #[derive(Default)]
 struct Probe {
+    original_mode: Option<original::Mode>,
+    original_values: Vec<Result<(u64, u64, Option<u64>), WorthQueryProducerObservationReadDenial>>,
     content_mode: Option<bool>,
     content_values: Vec<Option<Vec<u8>>>,
     content_denied: bool,
@@ -80,13 +85,16 @@ struct Probe {
     foreign: bool,
     after_read: Option<Box<dyn FnOnce()>>,
     around_read: Option<Box<dyn FnOnce(&mut dyn FnMut() -> ReadResult) -> ReadResult>>,
-    values: Vec<Result<Option<u64>, WorthQueryPredecessorReadDenial>>,
+    values: Vec<Result<Option<u64>, WorthQueryProducerObservationReadDenial>>,
 }
 thread_local! { static PROBE: RefCell<Probe> = RefCell::new(Probe::default()); }
 pub fn observe<B: ApplicationMutationBinding<Schema>>(
     reader: &mut DecisionReader<'_, '_, '_, Schema, B>,
     source: &WorthQueryInvariantEntityIdentity<Schema, Model>,
 ) {
+    if original::observe(reader, source) {
+        return;
+    }
     let foreign = PROBE.with(|probe| probe.borrow().foreign);
     // Resolving B observes only its identity/key at C. Its value is read only
     // through the historical operation, so later value edits must not invalidate A.

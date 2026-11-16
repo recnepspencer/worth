@@ -209,17 +209,18 @@ fn shape_is_closed(
                 && relation_shape_endpoints_match(relation, shape)
                 && relation_exists(members, relation.relation(), relation.from(), relation.to())
                 && relation.predicate().is_none_or(|predicate| {
-                    let (entity, aspect, field) = predicate.field();
-                    entity == relation.nested_shape().root_entity()
-                        && field_matches(
-                            members,
-                            entity,
-                            aspect,
-                            field,
-                            predicate.scalar_family(),
-                            None,
-                            true,
-                        )
+                    predicate.entity() == relation.nested_shape().root_entity()
+                        && predicate.field().is_none_or(|(entity, aspect, field)| {
+                            field_matches(
+                                members,
+                                entity,
+                                aspect,
+                                field,
+                                predicate.scalar_family(),
+                                None,
+                                true,
+                            )
+                        })
                 })
                 && shape_is_closed(members, query_type, relation.nested_shape())
         })

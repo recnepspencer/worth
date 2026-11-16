@@ -24,6 +24,7 @@ where
     Binding: ApplicationOccurrenceConnectionBinding<Schema, SourceFeature, TargetFeature>,
 {
     type Binding = Binding;
+    type Prerequisites = ApplicationStoredPrerequisites;
     type SourceFeature = SourceFeature;
     type SourcePort = SourcePort;
     type TargetFeature = TargetFeature;
@@ -69,6 +70,7 @@ where
     Binding: ApplicationOccurrenceConnectionBinding<Schema, SourceFeature, TargetFeature>,
 {
     type Binding = Binding;
+    type Prerequisites = ApplicationStoredPrerequisites;
     type SourceFeature = SourceFeature;
     type SourcePort = SourcePort;
     type TargetFeature = TargetFeature;

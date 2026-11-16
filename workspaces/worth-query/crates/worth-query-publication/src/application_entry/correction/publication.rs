@@ -70,19 +70,16 @@ where
     ) -> (worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitOutcome, B::Result)
     where
         P: worth_query_declaration::facade::application_program::ApplicationProgramDefinition<S>,
-        R: worth_query_declaration::facade::application_program::ApplicationOutputGraphShape<S>,
-        <R::RootConnection as worth_query_declaration::facade::application_program::ApplicationConnectionShape<S>>::Binding:
-            worth_query_declaration::facade::application_program::WorthQueryApplicationRequiredOutputConnection<S>,
-        B: worth_query_declaration::facade::application_program::WorthQueryApplicationRequiredOutputSource<S,
-            <R::RootConnection as worth_query_declaration::facade::application_program::ApplicationConnectionShape<S>>::Binding>,
+        B::ScopeBinding: worth_query_declaration::facade::application_operation::ApplicationMutationScopeResolution<S, B::PrincipalIdentity>,
+        R: crate::application_entry::mutation::envelope::entry::outputs::EditStageOutputs<S, B>,
 {
-        let outcome = program.compare_and_commit_selected_corrective_envelope::<R, B>(
+        let outcome = R::commit(
+            program,
             phase,
-            &worth_query_execution::publication_boundary::program_publication_access(),
             &self.owner,
             self.program,
             &self.identities,
-            self.source,
+            Some(self.source),
             binding,
             unseen,
             allocation,

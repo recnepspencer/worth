@@ -12,14 +12,15 @@ struct CurrentSourceQueryControl
     held: Option<&'a crate::domain_computation::primary_graph::provider::WorthQueryApplicationBranchCommitCoordination<'a>>,
 }
 impl<'a, S: ApplicationSchema> SourceQueryReaderAccess<'a, S> {
-    pub(in crate::domain_computation::primary_graph) fn with_predecessor_reads(
+    pub(in crate::domain_computation::primary_graph) fn with_producer_reads<B: crate::domain_computation::primary_graph::application_contribution::WorthQueryApplicationProducerBinding<S>>(
         mut self,
         authorization: Option<
             crate::domain_computation::authorization::BorrowedReadOperationAdmission<'a>,
         >,
-        access: Option<crate::domain_computation::primary_graph::application_contribution::producer::predecessor_reads::ProducerPredecessorReadAccess>,
-    ) -> Self {
-        if access.is_some() {
+        access: Option<crate::domain_computation::primary_graph::application_contribution::producer::observation_reads::ProducerPredecessorReadAccess>,
+    ) -> Self{
+        self.original = crate::domain_computation::primary_graph::application_contribution::producer::observation_reads::ProducerOriginalReadAccess::for_binding::<S, B>();
+        if access.is_some() || self.original.is_some() {
             self.read_authorization = authorization;
         }
         self.predecessor = access;

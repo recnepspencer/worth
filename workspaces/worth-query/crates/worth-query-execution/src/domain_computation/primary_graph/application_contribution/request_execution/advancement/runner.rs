@@ -14,6 +14,7 @@ pub fn run_advancement(
     maintenance: Option<
         &dyn crate::domain_computation::execution_runtime::product_world::WorthQueryHomeMaintenance,
     >,
+    retain_returned_outcome: bool,
     body: &mut dyn FnMut(WorthQueryAdvancementPhase<'_>),
     discard: &mut dyn FnMut(),
 ) -> Result<(), WorthQueryAdvancementDenial> {
@@ -29,6 +30,7 @@ pub fn run_advancement(
         owner,
         source_instance,
         maintenance,
+        retain_returned_outcome,
         body,
         discard,
     );
@@ -43,15 +45,15 @@ fn run_admitted_advancement(
     maintenance: Option<
         &dyn crate::domain_computation::execution_runtime::product_world::WorthQueryHomeMaintenance,
     >,
+    retain_returned_outcome: bool,
     body: &mut dyn FnMut(WorthQueryAdvancementPhase<'_>),
     discard: &mut dyn FnMut(),
 ) -> Result<(), WorthQueryAdvancementDenial> {
     // Follows the old owned FnOnce into Execution, then its successful result.
-    // A native final refusal must destroy that result inside Execution's
-    // boundary, with one exception (public #132): once World has answered a
-    // publication of this body with an effect, the commit cannot be withheld,
-    // so a completed body keeps its own typed outcome past a late native stop,
-    // as the accounted path always does.
+    // Ordinary native advancement destroys an unobserved result at a late
+    // refusal. An effectful completion instead transfers the callback's exact
+    // returned owner, including refusals, through Execution's completion primitive.
+    // World's publication marker still protects ordinary callers (public #132).
     let published = PublishedEffect::fresh();
     let _published_scope = PublishedEffect::install(Some(published.clone()));
     let handoff = AdvancementHandoff {
@@ -97,13 +99,13 @@ fn run_admitted_advancement(
     };
     let outcome = if execution.has_accounting() {
         let ceiling = ExecutionWorkCeiling::new(execution.declared_work);
-        if maintenance.is_some() {
+        if retain_returned_outcome || maintenance.is_some() {
             request.run_completion(ceiling, execute)
         } else {
             request.run(ceiling, execute)
         }
     } else {
-        let native = if maintenance.is_some() {
+        let native = if retain_returned_outcome || maintenance.is_some() {
             request.run_native_completion(execute)
         } else {
             request.run_native(execute)

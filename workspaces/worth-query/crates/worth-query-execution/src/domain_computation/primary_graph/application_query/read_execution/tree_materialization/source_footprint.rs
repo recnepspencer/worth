@@ -218,42 +218,45 @@ fn collect_node_content(
             })?;
         work.charge_source_observation(revision.work_units(), relation.result_path())?;
         if let Some(predicate) = relation.predicate() {
-            let contract_revision = graph
-                .aspect_contract(relation.child_entity(), predicate.aspect_key())
-                .ok_or_else(|| projection_denial(relation.result_path()))?
-                .revision();
             for entity_id in projected.predicate_sources() {
                 storage.next(&mut footprint.entities)?;
+                footprint.entities.push(*entity_id);
+                work.charge_source_observation(1, relation.result_path())?;
+                let Some((aspect_key, field_key)) = predicate.field_keys() else {
+                    continue;
+                };
+                let contract_revision = graph
+                    .aspect_contract(relation.child_entity(), aspect_key)
+                    .ok_or_else(|| projection_denial(relation.result_path()))?
+                    .revision();
                 storage.field(
                     &mut footprint.aspects,
                     relation.child_entity(),
-                    predicate.aspect_key(),
-                    predicate.field_key(),
+                    aspect_key,
+                    field_key,
                 )?;
-                let entity_name = relation.child_entity().to_owned();
-                let aspect = predicate.aspect_key().clone();
-                let field = predicate.field_key().clone();
-
-                footprint.entities.push(*entity_id);
                 footprint.aspects.push(WorthQueryObservedFieldRevision {
                     entity: *entity_id,
-                    entity_name,
-                    aspect,
-                    field,
+                    entity_name: relation.child_entity().to_owned(),
+                    aspect: aspect_key.clone(),
+                    field: field_key.clone(),
                     contract_revision,
-                    native_revision: projection.entity_field_revision(
-                        execution,
-                        *entity_id,
-                        &worth_foundational::facade::AspectFieldLocator::new(
-                            worth_foundational::facade::LocatorAuthority::Authoritative,
-                            predicate.aspect_key().clone(),
-                            worth_foundational::facade::CanonicalFieldPath::single(
-                                predicate.field_key().clone(),
+                    native_revision: projection
+                        .entity_field_revision(
+                            execution,
+                            *entity_id,
+                            &worth_foundational::facade::AspectFieldLocator::new(
+                                worth_foundational::facade::LocatorAuthority::Authoritative,
+                                aspect_key.clone(),
+                                worth_foundational::facade::CanonicalFieldPath::single(
+                                    field_key.clone(),
+                                ),
                             ),
-                        ),
-                    ).map_err(|cause| crate::domain_computation::primary_graph::application_query::read_execution::denial::relational_read_denial(cause, node.result_path()))?,
+                        )
+                        .map_err(|cause| {
+                            super::super::denial::relational_read_denial(cause, node.result_path())
+                        })?,
                 });
-                work.charge_source_observation(1, relation.result_path())?;
             }
         }
         let filtered_relation = relation.predicate().is_some();

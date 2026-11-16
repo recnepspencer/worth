@@ -19,8 +19,12 @@ pub type Connection = ApplicationConnectionRef<
     hierarchy::PredecessorInput,
     Previous,
 >;
+pub struct Predecessors;
+impl ApplicationOccurrenceComponent<Schema> for Predecessors {
+    type Connections = (Connection,);
+}
 pub type Tree =
-    ApplicationOutputGraph<program::ModelConnection, ApplicationOutputOccurrences<(Connection,)>>;
+    ApplicationOutputGraph<program::ModelConnection, ApplicationOutputOccurrences<Predecessors>>;
 impl WorthQueryApplicationDependentOutputConnection<Schema> for Previous {
     type RootDemand = first::Demand;
     type Demand = first::Demand;
@@ -67,7 +71,7 @@ impl WorthQueryApplicationPrerequisiteOutputConnection<Schema> for Previous {
 pub struct Program;
 impl ApplicationProgramDefinition<Schema> for Program {
     type Contributions = (Contribution,);
-    type Outputs = ApplicationProgramOutputs<(Tree, (program::ProducedTree, program::SealTree))>;
+    type Outputs = ApplicationProgramOutputs<(Tree, program::ProducedTree)>;
     type Rules = ApplicationRuleLeaf;
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("owned-outputs.occurrence-history");
@@ -81,8 +85,11 @@ impl ApplicationProgramDefinition<Schema> for Program {
             Completion,
             Completion,
             Completion,
+            Completion,
         >(base::entry_builder::<Completion, Completion, Completion>())
         .action::<created::Binding, Completion>()
+        .finish_action()
+        .action::<member_retarget::operation::Binding, Completion>()
         .finish_action()
         .finish();
         specs

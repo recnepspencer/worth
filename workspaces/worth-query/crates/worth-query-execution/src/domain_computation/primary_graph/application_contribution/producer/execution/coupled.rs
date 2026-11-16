@@ -64,7 +64,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution) trait
         before_pin: &RelationalPinnedRead,
         demand: &crate::domain_computation::primary_graph::application_attempt::coupled_outputs::DeclaredCoupledOutputDemand,
         candidate: &RelationalAuthoredCoupledCandidate<'_>,
-        route_only: bool,
+        purpose: CoupledSourceReadPurpose,
     ) -> Result<CoupledSourceRead, CoupledSourceReadStop>;
 
     fn prepare_coupled_writer<'run>(
@@ -79,7 +79,22 @@ pub(in crate::domain_computation::primary_graph::application_contribution) trait
         candidate: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
         source: ErasedAppliedProducerSource,
         edition: super::super::InstalledProducerEdition,
+        captured: Option<(Box<dyn CapturedProducerInputRead>, std::any::TypeId)>,
     ) -> Result<PreparedCoupledWriter<'run>, ProducerExecutionStop>;
+
+    fn capture_coupled_inputs(
+        &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
+        request: &WorthQueryRequestScope,
+        before: &crate::basis::WorthQueryProductBranchLease,
+        before_pin: &RelationalPinnedRead,
+        candidate: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
+        source: ErasedAppliedProducerSource,
+        edition: super::super::InstalledProducerEdition,
+        component: std::any::TypeId,
+    ) -> Result<Box<dyn CapturedProducerInputRead>, ProducerExecutionStop>;
 }
 impl<Schema, Binding> InstalledCoupledProducerExecutor<Schema>
     for TypedInstalledProducer<Schema, Binding>
@@ -136,11 +151,11 @@ where
         before_pin: &RelationalPinnedRead,
         demand: &crate::domain_computation::primary_graph::application_attempt::coupled_outputs::DeclaredCoupledOutputDemand,
         candidate: &RelationalAuthoredCoupledCandidate<'_>,
-        route_only: bool,
+        purpose: CoupledSourceReadPurpose,
     ) -> Result<CoupledSourceRead, CoupledSourceReadStop> {
         coupled_source::read::<Schema, Binding>(
             self, execution, runtime, principal, request, before, before_pin, demand, candidate,
-            route_only,
+            purpose,
         )
     }
     fn prepare_coupled_writer<'run>(
@@ -155,7 +170,22 @@ where
         candidate: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
         source: ErasedAppliedProducerSource,
         edition: super::super::InstalledProducerEdition,
+        captured: Option<(Box<dyn CapturedProducerInputRead>, std::any::TypeId)>,
     ) -> Result<PreparedCoupledWriter<'run>, ProducerExecutionStop> {
+        let captured = captured
+            .map(|(inputs, component)| {
+                let inputs: Box<dyn std::any::Any> = inputs;
+                inputs
+                    .downcast::<super::input_preparation::PreparedProducerInputs<Schema, Binding>>()
+                    .map(|inputs| (*inputs, component))
+                    .map_err(|_| {
+                        denial(
+                            WorthQueryOutputDemandDenialKind::ForeignSource,
+                            Binding::IDENTITY,
+                        )
+                    })
+            })
+            .transpose()?;
         let predecessor = source.predecessor.clone();
         let execution = phase
             .checked_execution_request_for(&runtime.runtime.product_runtime)
@@ -178,6 +208,7 @@ where
             source,
             predecessor.as_ref(),
             edition,
+            captured,
         )?;
         let registered = register_coupled_application::<Schema, Binding::Operation>(
             &execution, phase, runtime, prepared,
@@ -198,5 +229,30 @@ where
             batch,
             content,
         })
+    }
+
+    fn capture_coupled_inputs(
+        &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
+        request: &WorthQueryRequestScope,
+        before: &crate::basis::WorthQueryProductBranchLease,
+        before_pin: &RelationalPinnedRead,
+        candidate: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
+        source: ErasedAppliedProducerSource,
+        edition: super::super::InstalledProducerEdition,
+        component: std::any::TypeId,
+    ) -> Result<Box<dyn CapturedProducerInputRead>, ProducerExecutionStop> {
+        let owner = self.input_capture.ok_or_else(|| {
+            denial(
+                WorthQueryOutputDemandDenialKind::ForeignSource,
+                Binding::IDENTITY,
+            )
+        })?;
+        (owner.admit)(
+            self, phase, runtime, principal, request, before, before_pin, candidate, source,
+            edition, component,
+        )
     }
 }

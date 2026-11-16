@@ -94,48 +94,15 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
         >,
         Field::Binding: ApplicationReadableScalarValueBinding,
     {
-        let mut matches = self
-            .select_entities(field, value, 2)
-            .map_err(|denial| resolution_denial(denial, field.field()))?;
-        if matches.len() > 1 {
-            return Err(HandlerExecutionDenial::new(
-                WorthQueryEntityResolutionDenial::new(
-                    WorthQueryEntityResolutionDenialKind::Refused(
-                        ResolutionRefusal::AmbiguousEntity,
-                    ),
-                    field.field(),
+        let _execution = self.execution().execution_request().map_err(|cause| {
+            HandlerExecutionDenial::new(
+                crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(
+                    cause,
                 ),
-            ));
-        }
-        let identity = matches.pop();
-        if let Some(ref identity) = identity {
-            self.reader
-                .require_decision_field(identity, field)
-                .map_err(HandlerExecutionDenial::new)?;
-        }
-        Ok(identity)
+            )
+        })?;
+        self.reader.resolve_optional_decision_entity(field, value)
     }
 }
 
-pub(in crate::domain_computation::primary_graph) fn resolution_denial(
-    denial: HandlerExecutionDenial,
-    subject: &str,
-) -> HandlerExecutionDenial {
-    match denial.downcast::<WorthQueryEntityResolutionDenial>() {
-        Ok(denial)
-            if matches!(
-                denial.kind(),
-                WorthQueryEntityResolutionDenialKind::Refused(
-                    ResolutionRefusal::CandidateLimitExceeded { .. }
-                )
-            ) =>
-        {
-            HandlerExecutionDenial::new(WorthQueryEntityResolutionDenial::new(
-                WorthQueryEntityResolutionDenialKind::Refused(ResolutionRefusal::AmbiguousEntity),
-                subject,
-            ))
-        }
-        Ok(denial) => HandlerExecutionDenial::new(denial),
-        Err(denial) => denial,
-    }
-}
+pub(in crate::domain_computation::primary_graph) use crate::domain_computation::primary_graph::invariant_projection::operation_reader::decision_plan::resolution_denial;

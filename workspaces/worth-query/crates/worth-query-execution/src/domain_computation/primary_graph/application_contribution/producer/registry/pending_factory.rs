@@ -40,6 +40,7 @@ where
     mutation: WorthQueryInstalledApplicationMutationBinding<Schema, Binding::Operation>,
     source_query:
         WorthQueryInstalledApplicationQueryBinding<Schema, ProducerSourceBinding<Schema, Binding>>,
+    input_capture: Option<super::super::input_capture::InputCaptureOwner<Schema, Binding>>,
     marker: PhantomData<fn() -> Schema>,
 }
 
@@ -55,11 +56,13 @@ where
             Schema,
             ProducerSourceBinding<Schema, Binding>,
         >,
+        input_capture: Option<super::super::input_capture::InputCaptureOwner<Schema, Binding>>,
     ) -> Self {
         Self {
             provider,
             mutation,
             source_query,
+            input_capture,
             marker: PhantomData,
         }
     }
@@ -127,6 +130,7 @@ where
             prepared,
             self.source_query,
             principal_validation,
+            self.input_capture,
         )))
     }
 }

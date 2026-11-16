@@ -96,7 +96,7 @@ impl CanonicalCommitEnvelopeBody {
                     .saturating_mul(event.co_anchors.len() + 1)
                     + 1,
             )?;
-            self.validate_output_origin_header(origin)?;
+            self.validate_output_origin_header(origin, context)?;
             if !origin.source_scope_owned
                 || origin.publication.predecessor().is_none()
                 || origin.members.iter().any(|member| {
@@ -166,7 +166,7 @@ impl CanonicalCommitEnvelopeBody {
                 context,
                 origin.members.len() + 1,
             )?;
-            self.validate_output_origin_header(origin)?;
+            self.validate_output_origin_header(origin, context)?;
         }
         Ok(ValidatedOutputOrigins { envelope: self })
     }

@@ -8,10 +8,12 @@ mod candidate;
 mod completion;
 mod decision_query;
 pub(super) use decision_query::native_decision_cause;
+mod input_capture;
 mod preparation;
 mod projection;
 pub(in crate::domain_computation::primary_graph) use candidate::build_handler_candidate;
 pub(in crate::domain_computation::primary_graph) use completion::PreparedMutationHandler;
+pub(in crate::domain_computation::primary_graph) use input_capture::PreparedMutationInputs;
 
 use super::{
     HandlerExecutionDenial, HandlerResult, WorthQueryCompletedMutationCandidate,

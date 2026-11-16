@@ -46,6 +46,16 @@ pub(in crate::domain_computation::primary_graph::application_contribution) fn ma
         .collect()
 }
 impl<S: ApplicationSchema> CapturedAuthoredEditStage<S> {
+    pub fn with_declared_output_dependencies<B: ApplicationMutationBinding<S>>(
+        mut self,
+        application: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+    ) -> Result<Self, WorthQueryOutputDemandDenial> {
+        self.producers = application
+            .installed_producers
+            .declared_dependency_scopes(application, &declared_families::<S, B>())?;
+        Ok(self)
+    }
+
     pub fn with_required_output_dependencies<B, D, E>(
         mut self,
         application: &WorthQueryPrimaryGraphApplicationRuntime<S>,
@@ -60,6 +70,32 @@ impl<S: ApplicationSchema> CapturedAuthoredEditStage<S> {
         super::super::producer::synchronous_outputs::source::SourceInput<S, D>: worth_query_declaration::facade::application_query::ApplicationQueryIntent<S, Binding = super::super::producer::synchronous_outputs::source::Source<S, D>>,
         <super::super::producer::synchronous_outputs::source::Source<S, D> as worth_query_declaration::facade::application_query::ApplicationQueryBinding<S>>::ScopeBinding: worth_query_declaration::facade::application_query::ApplicationQueryScopeResolution<S, <super::super::producer::synchronous_outputs::source::Source<S, D> as worth_query_declaration::facade::application_query::ApplicationQueryBinding<S>>::PrincipalIdentity>,
 {
+        self = self.with_output_dependency_families::<B, D, E>(application)?;
+        self.required = Some(std::sync::Arc::new(move |execution| {
+            super::super::producer::synchronous_outputs::CapturedSynchronousOutputs::fixed::<S, D, E>(
+                execution,
+                position.identity(),
+                demand.clone(),
+                position.clone(),
+                &order,
+            )
+        }));
+        Ok(self)
+    }
+
+    pub(in crate::domain_computation::primary_graph::application_contribution) fn with_output_dependency_families<
+        B,
+        D,
+        E,
+    >(
+        mut self,
+        application: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+    ) -> Result<Self, WorthQueryOutputDemandDenial>
+    where
+        B: ApplicationMutationBinding<S>,
+        D: WorthQueryApplicationOutputDemand<S>,
+        E: super::super::producer::synchronous_outputs::SynchronousOutputEdges<S, D>,
+    {
         let mut families = declared_families::<S, B>();
         let root = crate::equality_type_id::EqualityTypeId::of::<D::OutputFamily>().into_external();
         families.push(root);
@@ -77,15 +113,6 @@ impl<S: ApplicationSchema> CapturedAuthoredEditStage<S> {
         self.producers = application
             .installed_producers
             .declared_dependency_scopes(application, &families)?;
-        self.required = Some(std::sync::Arc::new(move |execution| {
-            super::super::producer::synchronous_outputs::CapturedSynchronousOutputs::fixed::<S, D, E>(
-                execution,
-                position.identity(),
-                demand.clone(),
-                position.clone(),
-                &order,
-            )
-        }));
         Ok(self)
     }
 }

@@ -13,12 +13,12 @@ use worth_relational::facade::{
     identity::{EntityId, KindId},
     transactions::RecordRef,
 };
-mod changed_fields;
+mod output_fields;
 mod prepared;
 mod scalar;
 mod source_facts;
-pub(in crate::domain_computation::primary_graph) use changed_fields::{
-    RecordedAbsenceKind, RecordedChangedFields, RecordedPreImageAbsence,
+pub(in crate::domain_computation::primary_graph) use output_fields::{
+    RecordedAbsenceKind, RecordedFieldCapture, RecordedOutputFields, RecordedPreImageAbsence,
 };
 pub(in crate::domain_computation::primary_graph) use prepared::{
     PreparedCorrectionSnapshot, RecordedCorrectionTarget,
@@ -76,8 +76,7 @@ pub(in crate::domain_computation::primary_graph) struct MaterialCapture {
     pub(in crate::domain_computation::primary_graph) scope: Option<RecordedScope>,
     pub(in crate::domain_computation::primary_graph) disclosure: Option<RecordedDisclosure>,
     pub(in crate::domain_computation::primary_graph) preimage: Option<Vec<RecordedPreImageField>>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub(in crate::domain_computation::primary_graph) changed_fields: Option<RecordedChangedFields>,
+    pub(in crate::domain_computation::primary_graph) output_fields: Option<RecordedOutputFields>,
     pub(in crate::domain_computation::primary_graph) content: RelationalContentAttachments,
 }
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
@@ -163,11 +162,12 @@ struct EncodedMaterialEnvelope<'a> {
     version: u16,
     body: &'a MaterialRecord,
 }
+const MATERIAL_RECORD_VERSION: u16 = 3;
 impl MaterialRecord {
     pub(in crate::domain_computation::primary_graph) fn encode(&self) -> Result<Vec<u8>, Denial> {
         scalar::validate(self)?;
         serde_json::to_vec(&EncodedMaterialEnvelope {
-            version: self.wire_version(),
+            version: MATERIAL_RECORD_VERSION,
             body: self,
         })
         .map_err(|_| Denial::MalformedFrame)
@@ -177,23 +177,14 @@ impl MaterialRecord {
     ) -> Result<Self, Denial> {
         let envelope: MaterialEnvelope =
             serde_json::from_slice(frame.body()).map_err(|_| Denial::MalformedFrame)?;
-        if envelope.version != 1 && envelope.version != 2 {
+        if envelope.version != MATERIAL_RECORD_VERSION {
             return Err(Denial::UnsupportedVersion(u32::from(envelope.version)));
-        }
-        if envelope.version != envelope.body.wire_version() {
-            return Err(Denial::MalformedFrame);
         }
         scalar::validate(&envelope.body)?;
         if envelope.body.class() != frame.body_retention_class() {
             return Err(Denial::RetentionClassMismatch);
         }
         Ok(envelope.body)
-    }
-    fn wire_version(&self) -> u16 {
-        match self {
-            Self::Capture { material } if material.changed_fields.is_some() => 2,
-            _ => 1,
-        }
     }
     pub(in crate::domain_computation::primary_graph) fn class(&self) -> RetentionClass {
         match self {

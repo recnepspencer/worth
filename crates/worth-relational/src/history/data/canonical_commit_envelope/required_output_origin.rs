@@ -16,6 +16,7 @@ mod authored_restoration;
 mod historical_selection;
 mod history_request;
 pub(crate) use historical_selection::CanonicalHistoricalOutputSelection;
+mod inputs;
 mod installation;
 pub(crate) use authored_cascade::CanonicalAuthoredRetirement;
 pub(crate) use authored_restoration::CanonicalAuthoredRestoration;
@@ -94,6 +95,9 @@ pub(crate) struct CanonicalOutputMember {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) struct CanonicalRequiredOutputOrigin {
+    pub(crate) inputs: Vec<crate::mvcc::RequiredOutputPublicationMeaning>,
+    #[serde(skip)]
+    pub(crate) _input_memory: Option<worth_execution::ExecutionMemoryReservation>,
     pub(crate) commit: crate::history::data::RelationalCommitReceipt,
     pub(crate) basis: RelationalBranchBasisDescriptor,
     pub(crate) producer: String,
@@ -117,7 +121,8 @@ pub(crate) struct CanonicalRequiredOutputOrigin {
 
 impl PartialEq for CanonicalRequiredOutputOrigin {
     fn eq(&self, other: &Self) -> bool {
-        self.commit == other.commit
+        self.inputs == other.inputs
+            && self.commit == other.commit
             && self.basis == other.basis
             && self.source_scope_owned == other.source_scope_owned
             && self.producer == other.producer
@@ -135,6 +140,13 @@ impl PartialEq for CanonicalRequiredOutputOrigin {
 impl Eq for CanonicalRequiredOutputOrigin {}
 
 impl CanonicalRequiredOutputOrigin {
+    pub(crate) fn validate_inputs(
+        &self,
+        context: &mut worth_execution::MapKernelContext<'_, '_>,
+    ) -> Result<(), crate::history::data::CodecRetirementClosureStop> {
+        inputs::validate(self, context)
+    }
+
     pub(crate) fn retain_cascade_memory(
         &mut self,
         memory: Option<std::sync::Arc<worth_execution::ExecutionMemoryReservation>>,

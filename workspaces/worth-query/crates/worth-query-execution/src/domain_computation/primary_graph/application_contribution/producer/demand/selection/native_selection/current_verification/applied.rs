@@ -20,12 +20,18 @@ mod expectations;
 mod qualification;
 type Pin = RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>;
 pub(in crate::domain_computation::primary_graph) struct VerifiedAppliedParent {
+    publication: Option<worth_relational::facade::mvcc::RelationalRequiredOutputPublication>,
     source: EntityId,
     family: &'static str,
     pin: Pin,
     facts: FactPayload,
 }
 impl VerifiedAppliedParent {
+    pub(in crate::domain_computation::primary_graph) fn publication(
+        &self,
+    ) -> Option<&worth_relational::facade::mvcc::RelationalRequiredOutputPublication> {
+        self.publication.as_ref()
+    }
     pub(in crate::domain_computation::primary_graph) fn source(&self) -> EntityId {
         self.source
     }
@@ -174,6 +180,7 @@ impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S>
                 F::IDENTITY,
             )? {
                 return Ok(Some(VerifiedAppliedParent {
+                    publication: prior.cloned(),
                     source: source.root(),
                     family: F::IDENTITY,
                     pin: pin.clone(),

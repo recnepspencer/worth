@@ -172,7 +172,8 @@ pub struct ApplicationConnectionDeclaration {
     target_required: bool,
     exports_across_instances: bool,
     demand_only_root: bool,
-    occurrence_component: bool,
+    occurrence_component: Option<std::any::TypeId>,
+    input_capture: Option<(std::any::TypeId, &'static str, std::any::TypeId)>,
 }
 
 impl ApplicationConnectionDeclaration {
@@ -198,17 +199,51 @@ impl ApplicationConnectionDeclaration {
             target_required,
             exports_across_instances,
             demand_only_root: false,
-            occurrence_component: false,
+            occurrence_component: None,
+            input_capture: None,
         }
     }
 
-    pub(in crate::application_program) fn in_occurrence_component(mut self) -> Self {
-        self.occurrence_component = true;
-        self
+    pub(in crate::application_program) fn set_occurrence_component(
+        &mut self,
+        component: std::any::TypeId,
+    ) {
+        self.occurrence_component = Some(component);
+    }
+    /// Nominal point identity for validating complete component placements.
+    /// It is neither portable program meaning nor execution authority.
+    pub const fn occurrence_component(&self) -> Option<std::any::TypeId> {
+        self.occurrence_component
     }
     /// Internal declaration cycles are resolved from complete admitted occurrences.
     pub const fn is_occurrence_component(&self) -> bool {
-        self.occurrence_component
+        self.occurrence_component.is_some()
+    }
+
+    pub(in crate::application_program) fn set_input_capture<C: 'static, Port: 'static>(
+        &mut self,
+        identity: &'static str,
+    ) {
+        self.input_capture = Some((
+            std::any::TypeId::of::<C>(),
+            identity,
+            std::any::TypeId::of::<Port>(),
+        ));
+    }
+
+    /// Stable declared meaning; a capture payload itself is never serialized.
+    pub fn input_capture_identity(&self) -> Option<&'static str> {
+        self.input_capture.map(|(_, identity, _)| identity)
+    }
+
+    /// Nominal point equality, not a portable identity or a read capability.
+    pub fn input_capture_type(&self) -> Option<std::any::TypeId> {
+        self.input_capture.map(|(nominal, _, _)| nominal)
+    }
+
+    /// The concrete declared base port; this is point metadata, never wire identity.
+    pub fn input_capture_port_type(&self) -> Option<std::any::TypeId> {
+        self.input_capture.map(|(_, _, port)| port)
     }
 
     pub(in crate::application_program) fn as_demand_only_root(mut self) -> Self {

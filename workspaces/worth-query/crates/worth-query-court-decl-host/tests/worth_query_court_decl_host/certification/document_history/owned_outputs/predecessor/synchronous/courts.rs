@@ -126,10 +126,10 @@ fn refusal(cause: ReadRefusal) {
             "ReadWrongScope",
         ),
         ReadRefusal::Undeclared => (
-            WorthQueryOutputDemandDenialKind::PredecessorRead(Box::new(
-                WorthQueryPredecessorReadDenial::UndeclaredPredecessorRead,
+            WorthQueryOutputDemandDenialKind::ObservationRead(Box::new(
+                WorthQueryProducerObservationReadDenial::UndeclaredObservationRead,
             )),
-            "UndeclaredPredecessorRead",
+            "UndeclaredObservationRead",
         ),
     };
     assert_eq!(producer.kind(), expected);

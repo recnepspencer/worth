@@ -7,8 +7,16 @@ use crate::domain_computation::primary_graph::output_lineage::invalidation::Full
 pub struct RebaseVerificationFailure {
     reason: Reason,
     registration: Registration,
+    detail: Option<String>,
 }
 impl RebaseVerificationFailure {
+    pub(super) fn with_detail(mut self, detail: String) -> Self {
+        self.detail = Some(detail);
+        self
+    }
+    pub(super) fn detail(&self) -> Option<&str> {
+        self.detail.as_deref()
+    }
     pub(in crate::domain_computation::primary_graph) fn reason(&self) -> &Reason {
         &self.reason
     }
@@ -26,6 +34,7 @@ impl RebaseVerificationFailure {
         Self {
             reason: Reason::Execution(cause),
             registration: Registration::RegistrationIncomplete,
+            detail: None,
         }
     }
     pub(in crate::domain_computation::primary_graph) fn managed_index(
@@ -34,12 +43,14 @@ impl RebaseVerificationFailure {
         Self {
             reason: Reason::ManagedIndex(cause),
             registration: Registration::RegistrationIncomplete,
+            detail: None,
         }
     }
     pub(in crate::domain_computation::primary_graph) fn native_unavailable() -> Self {
         Self {
             reason: Reason::NativeRevisionUnavailable,
             registration: Registration::NativeRevisionUnavailable,
+            detail: None,
         }
     }
     pub(in crate::domain_computation::primary_graph) fn native_fact_unavailable(
@@ -48,12 +59,14 @@ impl RebaseVerificationFailure {
         Self {
             reason: Reason::NativeFactRevisionUnavailable,
             registration: Registration::NativeFactRevisionUnavailable(ordinal),
+            detail: None,
         }
     }
     pub(in crate::domain_computation::primary_graph) fn indexed_denied(cause: Indexed) -> Self {
         Self {
             reason: Reason::IndexedSelectionDenied(cause),
             registration: Registration::IndexedSelectionDenied(cause),
+            detail: None,
         }
     }
     pub(in crate::domain_computation::primary_graph) fn indexed_fact_denied(
@@ -63,12 +76,14 @@ impl RebaseVerificationFailure {
         Self {
             reason: Reason::IndexedSelectionFactDenied(cause),
             registration: Registration::IndexedSelectionFactDenied(ordinal, cause),
+            detail: None,
         }
     }
     pub(in crate::domain_computation::primary_graph) fn unsupported() -> Self {
         Self {
             reason: Reason::UnsupportedDecisionFact,
             registration: Registration::UnsupportedFact,
+            detail: None,
         }
     }
     pub(in crate::domain_computation::primary_graph) fn native_payload_storage(
@@ -78,6 +93,7 @@ impl RebaseVerificationFailure {
         Self {
             reason: Reason::NativePayloadStorage { class, requested },
             registration: Registration::RegistrationIncomplete,
+            detail: None,
         }
     }
     pub(in crate::domain_computation::primary_graph) fn admission_denied(
@@ -87,10 +103,12 @@ impl RebaseVerificationFailure {
         Self {
             reason: Reason::AdmissionDenied(cause),
             registration: Registration::RegistrationIncomplete,
+            detail: None,
         }
     }
-    pub(in crate::domain_computation::primary_graph) fn at_fact(self, ordinal: usize) -> Self {
-        match self.reason {
+    pub(in crate::domain_computation::primary_graph) fn at_fact(mut self, ordinal: usize) -> Self {
+        let detail = self.detail.take();
+        let mut result = match self.reason {
             Reason::NativeRevisionUnavailable => Self::native_fact_unavailable(ordinal),
             Reason::IndexedSelectionDenied(cause) => Self::indexed_fact_denied(ordinal, cause),
             Reason::ManagedIndex(_)
@@ -100,7 +118,9 @@ impl RebaseVerificationFailure {
             | Reason::UnsupportedDecisionFact
             | Reason::NativePayloadStorage { .. }
             | Reason::AdmissionDenied(_) => self,
-        }
+        };
+        result.detail = detail;
+        result
     }
 }
 

@@ -3,7 +3,7 @@ use super::*;
 use serde::Deserialize;
 use serde_json::Value;
 use sha2::{Digest, Sha256};
-const NATIVE_MAGIC: &[u8] = b"WORTH-REL-CHK22\n";
+const NATIVE_MAGIC: &[u8] = b"WORTH-REL-CHK23\n";
 const ARTIFACT_HEADER: usize = 66;
 pub fn capture(app: &world::App) -> installation::WorthQueryApplicationCheckpoint {
     app.with_host_advancement(|phase| {

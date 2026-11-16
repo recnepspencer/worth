@@ -74,6 +74,15 @@ fn validate_result_shape(
             relation.to(),
             relation.output_name(),
         ])?;
+        if let Some(predicate) = relation.predicate() {
+            validate_simple_identifier(predicate.entity())?;
+            if let Some((_, aspect, field)) = predicate.field() {
+                validate_identifiers([aspect, field])?;
+            }
+            if let Some(parameter) = predicate.parameter() {
+                validate_simple_identifier(parameter)?;
+            }
+        }
         validate_result_shape(relation.nested_shape())?;
     }
     Ok(())

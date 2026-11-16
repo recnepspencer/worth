@@ -71,9 +71,14 @@ impl PreparedFactRebase {
         >,
     ) -> Result<Result<Self, RebaseVerificationFailure>, CompanionPreflightStop> {
         let unavailable = RebaseVerificationFailure::native_unavailable();
-        if let Some(retirement) =
-            retirement::structural::prepare(runtime, execution, snapshot, fact, retired)?
-        {
+        if let Some(retirement) = retirement::structural::prepare(
+            runtime,
+            execution,
+            snapshot,
+            fact,
+            retired,
+            if producer_output { predecessor } else { None },
+        )? {
             return Ok(Ok(Self::Replace(retirement)));
         }
         if let Some(entity_id) = retirement::retired_anchor(fact, retired) {

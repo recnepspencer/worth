@@ -80,7 +80,7 @@ fn exact_old_inputs(host: &Host) {
         assert_eq!(
             probe.borrow().values.as_slice(),
             &[Err(
-                WorthQueryPredecessorReadDenial::PredecessorBasisUnavailable
+                WorthQueryProducerObservationReadDenial::PredecessorBasisUnavailable
             )]
         )
     });
@@ -288,8 +288,8 @@ fn undeclared_read_cannot_be_swallowed() {
         settle(&request, &host).expect_err("an installed READ is not a declared predecessor read");
     assert_eq!(
         denial.kind(),
-        WorthQueryOutputDemandDenialKind::PredecessorRead(Box::new(
-            WorthQueryPredecessorReadDenial::UndeclaredPredecessorRead
+        WorthQueryOutputDemandDenialKind::ObservationRead(Box::new(
+            WorthQueryProducerObservationReadDenial::UndeclaredObservationRead
         ))
     );
     assert_eq!(host.current_world(), before);

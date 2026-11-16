@@ -17,6 +17,7 @@ use super::{
 use crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenial;
 
 mod borrowed_snapshot;
+pub(super) use borrowed_snapshot::NativeReadAccess;
 #[path = "locked_reader/content.rs"]
 mod content;
 #[path = "locked_reader/operation_body.rs"]

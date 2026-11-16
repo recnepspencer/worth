@@ -266,9 +266,10 @@ pub mod facade {
         WorthQueryManagedIndexPredicateProfileDenial, WorthQueryPlanningInventoryStop,
         WorthQueryPreparedReadGraphPlanningContract, WorthQueryReadGraphGuardView,
         WorthQueryReadGraphOrderingMechanism, WorthQueryReadGraphOrderingView,
-        WorthQueryReadGraphPlanningContract, WorthQueryReadGraphPredicateView,
-        WorthQueryReadGraphProjectionView, WorthQueryReadGraphRelationDirection,
-        WorthQueryReadGraphRelationView, WorthQueryResolvedApplicationQueryLimits,
+        WorthQueryReadGraphPlanningContract, WorthQueryReadGraphPredicateTarget,
+        WorthQueryReadGraphPredicateView, WorthQueryReadGraphProjectionView,
+        WorthQueryReadGraphRelationDirection, WorthQueryReadGraphRelationView,
+        WorthQueryResolvedApplicationQueryLimits,
         WorthQueryRetainedApplicationQueryGraphObligations,
     };
     pub use crate::application_schema::{

@@ -6,7 +6,7 @@ use crate::durability::data::{DurabilityError, DurableCheckpoint, RecoveryFailur
 // This grammar joins authenticated Original-member inventory and binary digests
 // with current custody, kind counts and exact index bases. Neither parent
 // grammar (CHK18 or CHK20.1), nor master's distinct CHK21, is an input format.
-pub(crate) const CHECKPOINT_MAGIC: &[u8] = b"WORTH-REL-CHK22\n";
+pub(crate) const CHECKPOINT_MAGIC: &[u8] = b"WORTH-REL-CHK23\n";
 fn checkpoint_payload(bytes: &[u8]) -> Result<&[u8], DurabilityError> {
     bytes.strip_prefix(CHECKPOINT_MAGIC).ok_or_else(|| {
         DurabilityError::new(

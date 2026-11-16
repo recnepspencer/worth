@@ -10,6 +10,9 @@ pub(super) fn publish<B: ApplicationMutationBinding<Schema>>(
     mut prior: observation::Prepared,
 ) -> Result<(), WorthQueryApplicationAttemptDenial>
 where
+    OwnedNext: OperationLinks<B::Operation>
+        + OperationReads<B::Operation>
+        + OperationUnlinks<B::Operation>,
     FirstOf: OperationLinks<B::Operation>
         + OperationReads<B::Operation>
         + OperationUnlinks<B::Operation>,
@@ -23,11 +26,17 @@ where
         + OperationReads<B::Operation>
         + OperationUnlinks<B::Operation>,
     FirstOutput: OperationCreates<B::Operation> + OperationDeletes<B::Operation>,
+    Incidence: OperationCreates<B::Operation> + OperationDeletes<B::Operation>,
     ChildOutput: OperationCreates<B::Operation> + OperationDeletes<B::Operation>,
     SecondOutput: OperationCreates<B::Operation> + OperationDeletes<B::Operation>,
 {
     let count = prior.count;
+    let owned_orbits = prior.owned_orbits;
     let model = &prior.model;
+    if owned_orbits {
+        member_orbit::unlink(writer, &prior.members)?;
+    }
+    let mut orbit = Vec::new();
     for retired in prior.retired {
         let row = writer.projected_entity(&retired.row)?;
         writer.unlink(ChildOfFirst::reference(), root, &row)?;
@@ -52,6 +61,13 @@ where
                 &prior.source_key,
                 &stable_source,
             )?;
+            if owned_orbits {
+                orbit.push(member_orbit::preserve(
+                    writer,
+                    prior.incidence.as_ref().expect("captured incidence"),
+                    &key,
+                )?);
+            }
         } else {
             let row = writer.create_entity_in_context(
                 source,
@@ -87,9 +103,19 @@ where
                 &stable_source,
             )?;
             writer.create_member::<Rows<B::Output, SecondOutput>>(&source_key, &stable_source)?;
+            if owned_orbits {
+                orbit.push(member_orbit::create(writer, source, &key)?);
+            }
         }
     }
     for (ordinal, prior) in prior.members {
+        if owned_orbits {
+            member_orbit::retire(
+                writer,
+                prior.incidence.as_ref().expect("captured incidence"),
+                &prior.key,
+            )?;
+        }
         let row = writer.projected_entity(&prior.row)?;
         for child in &prior.children {
             let child_row = writer.projected_entity(&child.row)?;
@@ -115,6 +141,9 @@ where
         writer.initialize_field(&fact, ChildValue::at("ChildValue"), ordinal)?;
         writer.link(ChildOfFirst::reference(), format!("of:{key}"), root, &fact)?;
         writer.create_member::<Rows<B::Output, ChildOutput>>(&key, &fact)?;
+    }
+    if owned_orbits {
+        member_orbit::link(writer, model, &orbit)?;
     }
     Ok(())
 }

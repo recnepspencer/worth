@@ -29,7 +29,7 @@ pub(crate) fn validate_binding(
     .into_iter()
     .collect::<BTreeSet<_>>();
     if registry.current_publication_storage.is_some()
-        || private.len() != 9
+        || private.len() != 10
         || aspects.len() != 5
         || relation.kind_id != storage.scope_link
         || storage.entity_kinds.is_empty()
@@ -68,6 +68,12 @@ pub(crate) fn validate_binding(
         }
     }
     for (kind, name, from, to) in [
+        (
+            storage.input_link,
+            "worth-current-publication-input",
+            storage.entity_kinds.clone(),
+            vec![storage.publication_kind],
+        ),
         (
             storage.publication_link,
             "worth-current-publication-catalog-link",

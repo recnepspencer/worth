@@ -50,7 +50,7 @@ impl CanonicalCommitEnvelopeBody {
         for (index, origin) in event.publications.iter().enumerate() {
             crate::execution::request_stage::checkpoint(context, index as u64 + 1)
                 .map_err(|cause| Stop::Request(cause.into()))?;
-            self.validate_output_origin_header(origin)?;
+            self.validate_output_origin_header(origin, context)?;
             if !origin.source_scope_owned
                 || !matches!(origin.publication,
                 CanonicalOutputPublication::HistoricalSelection { selected, generation, .. }

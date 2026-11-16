@@ -8,6 +8,7 @@ impl QueryRequestExecution<'_> {
     pub(super) fn run_product_advancement<R>(
         &self,
         product: &WorthQueryProductRuntime,
+        retain_returned_outcome: bool,
         body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
     ) -> Result<R, WorthQueryAdvancementDenial> {
         let owner = Some(product.owner.owner_identity());
@@ -17,12 +18,13 @@ impl QueryRequestExecution<'_> {
                 .authoritative_source_profile()
                 .runtime_instance_id(),
         );
-        match product.home_maintenance() {
-            Some(maintenance) => {
-                self.run_advancement_with_maintenance(owner, source, Some(maintenance), body)
-            }
-            None => self.run_advancement(owner, source, body),
-        }
+        self.run_advancement_with_maintenance(
+            owner,
+            source,
+            product.home_maintenance(),
+            retain_returned_outcome,
+            body,
+        )
     }
 }
 pub(super) fn after_business(

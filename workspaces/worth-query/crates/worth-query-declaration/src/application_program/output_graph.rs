@@ -20,7 +20,9 @@ pub struct ApplicationDemandOutputGraph<RootConnection, Dependents> {
     marker: PhantomData<fn() -> (RootConnection, Dependents)>,
 }
 
-/// A performed action whose required root outputs are discovered at its retained commit.
+/// A performed action whose roots are discovered from its authored result.
+/// Runtime envelopes discover at the actual appended candidate; standalone
+/// delivery retains the committed source until its discovered outputs settle.
 pub struct ApplicationDiscoveredOutputGraph<RootConnection, Dependents> {
     marker: PhantomData<fn() -> (RootConnection, Dependents)>,
 }
@@ -35,14 +37,24 @@ pub struct ApplicationOutputLeaf;
 
 mod sealed {
     pub trait ConnectionShape {}
-    pub trait OutputEdgesShape {}
+    pub trait OutputEdgesShape<Schema> {
+        fn append_typed(
+            connections: &mut Vec<(std::any::TypeId, super::ApplicationConnectionDeclaration)>,
+        );
+    }
     pub trait OutputChildrenShape<ParentFeature> {}
     pub trait FixedRootKind {}
     pub trait RequiredRootKind {}
     pub trait DiscoveredRootKind {}
 }
 
+mod input_capture;
 mod root_kinds;
+pub use input_capture::{
+    ApplicationCapturedInputConnection, ApplicationCapturedPrerequisites,
+    ApplicationPrerequisiteSource, ApplicationStoredPrerequisites,
+    WorthQueryProducerInputCaptureDefinition,
+};
 pub use root_kinds::{
     ApplicationDiscoveredOutputRoot, ApplicationFixedOutputRoot, ApplicationRequiredOutputRoot,
 };
@@ -54,6 +66,7 @@ where
     Schema: ApplicationSchema,
 {
     type Binding: ApplicationConnectionIdentity;
+    type Prerequisites: ApplicationPrerequisiteSource;
     type SourceFeature: ApplicationFeature<Schema>;
     type SourcePort: ApplicationOutputPort<Schema, Self::SourceFeature>;
     type TargetFeature: ApplicationFeature<Schema>;
@@ -109,12 +122,21 @@ where
     type Dependents = Dependents;
 }
 
-pub trait ApplicationOutputEdgesShape<Schema>: sealed::OutputEdgesShape + Sized + 'static
+pub trait ApplicationOutputEdgesShape<Schema>:
+    sealed::OutputEdgesShape<Schema> + Sized + 'static
 where
     Schema: ApplicationSchema,
 {
-    fn append_connections(connections: &mut Vec<ApplicationConnectionDeclaration>);
-    fn append_connection_types(connections: &mut Vec<std::any::TypeId>);
+    fn append_connections(connections: &mut Vec<ApplicationConnectionDeclaration>) {
+        let mut typed = Vec::new();
+        Self::append_typed(&mut typed);
+        connections.extend(typed.into_iter().map(|(_, declaration)| declaration));
+    }
+    fn append_connection_types(connections: &mut Vec<std::any::TypeId>) {
+        let mut typed = Vec::new();
+        Self::append_typed(&mut typed);
+        connections.extend(typed.into_iter().map(|(identity, _)| identity));
+    }
 }
 
 /// Sealed adjacency proof for every edge leaving one feature.
@@ -187,15 +209,14 @@ where
     type Dependents: ApplicationOutputEdgesShape<Schema>;
 }
 
-impl<Schema> ApplicationOutputEdgesShape<Schema> for ApplicationOutputLeaf
-where
-    Schema: ApplicationSchema,
+impl<Schema> ApplicationOutputEdgesShape<Schema> for ApplicationOutputLeaf where
+    Schema: ApplicationSchema
 {
-    fn append_connections(_: &mut Vec<ApplicationConnectionDeclaration>) {}
-    fn append_connection_types(_: &mut Vec<std::any::TypeId>) {}
 }
 
-impl sealed::OutputEdgesShape for ApplicationOutputLeaf {}
+impl<Schema> sealed::OutputEdgesShape<Schema> for ApplicationOutputLeaf {
+    fn append_typed(_: &mut Vec<(std::any::TypeId, ApplicationConnectionDeclaration)>) {}
+}
 
 impl<Schema, ParentFeature> ApplicationOutputChildrenShape<Schema, ParentFeature>
     for ApplicationOutputLeaf
@@ -214,20 +235,22 @@ where
     Connection: ApplicationConnectionShape<Schema>,
     Dependents: ApplicationOutputEdgesShape<Schema>,
 {
-    fn append_connections(connections: &mut Vec<ApplicationConnectionDeclaration>) {
-        connections.push(Connection::declaration());
-        Dependents::append_connections(connections);
-    }
-
-    fn append_connection_types(connections: &mut Vec<std::any::TypeId>) {
-        connections.push(std::any::TypeId::of::<Connection>());
-        Dependents::append_connection_types(connections);
-    }
 }
 
-impl<Connection, Dependents> sealed::OutputEdgesShape
+impl<Schema, Connection, Dependents> sealed::OutputEdgesShape<Schema>
     for ApplicationOutputEdge<Connection, Dependents>
+where
+    Schema: ApplicationSchema,
+    Connection: ApplicationConnectionShape<Schema>,
+    Dependents: ApplicationOutputEdgesShape<Schema>,
 {
+    fn append_typed(connections: &mut Vec<(std::any::TypeId, ApplicationConnectionDeclaration)>) {
+        connections.push((
+            std::any::TypeId::of::<Connection>(),
+            Connection::declaration(),
+        ));
+        Dependents::append_typed(connections);
+    }
 }
 
 impl<Schema, ParentFeature, Connection, Dependents>
@@ -263,18 +286,19 @@ where
     Left: ApplicationOutputEdgesShape<Schema>,
     Right: ApplicationOutputEdgesShape<Schema>,
 {
-    fn append_connections(connections: &mut Vec<ApplicationConnectionDeclaration>) {
-        Left::append_connections(connections);
-        Right::append_connections(connections);
-    }
-
-    fn append_connection_types(connections: &mut Vec<std::any::TypeId>) {
-        Left::append_connection_types(connections);
-        Right::append_connection_types(connections);
-    }
 }
 
-impl<Left, Right> sealed::OutputEdgesShape for (Left, Right) {}
+impl<Schema, Left, Right> sealed::OutputEdgesShape<Schema> for (Left, Right)
+where
+    Schema: ApplicationSchema,
+    Left: ApplicationOutputEdgesShape<Schema>,
+    Right: ApplicationOutputEdgesShape<Schema>,
+{
+    fn append_typed(connections: &mut Vec<(std::any::TypeId, ApplicationConnectionDeclaration)>) {
+        Left::append_typed(connections);
+        Right::append_typed(connections);
+    }
+}
 
 impl<Schema, ParentFeature, Left, Right> ApplicationOutputChildrenShape<Schema, ParentFeature>
     for (Left, Right)
@@ -289,4 +313,7 @@ where
 impl<ParentFeature, Left, Right> sealed::OutputChildrenShape<ParentFeature> for (Left, Right) {}
 
 mod occurrences;
-pub use occurrences::{ApplicationOccurrenceConnections, ApplicationOutputOccurrences};
+pub use occurrences::{
+    ApplicationOccurrenceComponent, ApplicationOccurrenceConnections, ApplicationOccurrenceGroup,
+    ApplicationOutputOccurrences,
+};

@@ -1,4 +1,5 @@
 use super::semantic_encoding::framed_record;
+mod deliveries;
 mod relation_laws;
 use super::{
     ApplicationActionDeclaration, ApplicationConnectionDeclaration, ApplicationFeatureDeclaration,
@@ -185,17 +186,8 @@ impl ApplicationProgramManifest {
                 records.push(framed_record("computation", fields));
             }
         }
+        deliveries::append(&mut records, actions);
         for action in actions {
-            if let Some(delivery) = action.delivery() {
-                records.push(framed_record(
-                    "delivery",
-                    [
-                        ("action", action.semantic_subject()),
-                        ("meaning", delivery.canonical_meaning()),
-                    ],
-                ));
-            }
-
             let mut fields = vec![
                 ("owner", action.composition_instance().to_owned()),
                 ("feature", action.feature().to_owned()),

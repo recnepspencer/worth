@@ -144,6 +144,20 @@ impl RuntimeSymbolTable {
 }
 
 impl PendingSymbolMeanings {
+    /// Admit the exact closed suffix's dictionary input before reservation.
+    /// The pending candidate retains its existing identities; this performs no
+    /// mutation, identity issuance or publication. Loads use the original request.
+    pub(crate) fn demand_text(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        value: &str,
+    ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
+        if self.interner.contains(value) {
+            return Ok(());
+        }
+        self.owner.demand_text(execution, value)
+    }
+
     /// A reserved dictionary identity is an actual candidate effect even if
     /// no application record survives in its authoritative patch.
     pub(crate) fn has_reserved_meanings(&self) -> bool {
@@ -225,8 +239,9 @@ impl PendingSymbolMeanings {
         &self.interner
     }
 
-    /// No I/O occurs here. A cold bucket is a discovery for the enclosing
-    /// candidate round, which must abandon this custody before demanding it.
+    /// No I/O occurs here. Closed input sets demand their exact text first.
+    /// Otherwise a cold miss returns before issuing that text's identity, for
+    /// the enclosing preparation owner to handle at its residency boundary.
     pub(crate) fn reserve(&mut self, value: &str) -> Result<Symbol, SymbolReservationDenial> {
         if let Some(symbol) = self.interner.symbol(value) {
             return Ok(symbol);

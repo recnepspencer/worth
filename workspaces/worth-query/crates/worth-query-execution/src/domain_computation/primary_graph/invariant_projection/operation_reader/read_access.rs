@@ -13,6 +13,34 @@ impl<'reader, 'runtime, Schema, Operation>
 where
     Schema: ApplicationSchema,
 {
+    /// Validate a read-issued input at this exact candidate without minting a target.
+    pub(in crate::domain_computation::primary_graph) fn captured_input_source<Entity>(
+        &self,
+        identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
+    ) -> Result<
+        worth_relational::facade::identity::EntityId,
+        WorthQueryInvariantProjectionTraversalDenial,
+    >
+    where
+        Entity: ApplicationEntityMarkerIdentity<Schema> + OperationReads<Operation>,
+    {
+        let phase = self
+            .reader
+            .native
+            .candidate_identity()
+            .map(|id| id.qualification());
+        let native = identity.native_identity();
+        if phase.is_none()
+            || native.phase != phase
+            || !native.local_to(self.reader.authority_identity, phase, Entity::IDENTIFIER)
+        {
+            return Err(
+                WorthQueryInvariantProjectionTraversalDenial::foreign_identity(Entity::IDENTIFIER),
+            );
+        }
+        Ok(native.entity_id)
+    }
+
     pub const fn version(&self) -> worth_relational::facade::identity::VersionId {
         self.reader.version()
     }

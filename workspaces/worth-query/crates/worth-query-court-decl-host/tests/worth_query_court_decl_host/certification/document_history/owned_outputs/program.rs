@@ -180,7 +180,7 @@ impl ApplicationProgramDefinition<Schema> for Program {
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("owned-outputs.program.v1");
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
-        vec![
+        let mut features = vec![
             entry_spec::<Completion>(),
             ApplicationFeatureSpec::root::<Schema, Derived>()
                 .conditional_operation::<from_first::initial::Operation>()
@@ -202,16 +202,11 @@ impl ApplicationProgramDefinition<Schema> for Program {
                 .conditional_operation::<restricted_owned::initial::Operation>()
                 .conditional_operation::<restricted_owned::preserve::Operation>()
                 .finish(),
-            predecessor::program::feature(),
-            family::diamond::feature(),
-            family::decision_input::feature(),
-            family::parity_input::feature(),
-            family::convergent::feature(),
-            family::ordinary_input::feature(),
-            family::decision_write::feature(),
-            synchronous_edit::reconciliation::feature(),
-            synchronous_edit::reconciliation::child_feature(),
-        ]
+        ];
+        features.extend(family::feature_specs(
+            family::captured_input::program::conditional_feature(),
+        ));
+        features
     }
 }
 /// The recorded history action of the model edit.
@@ -265,6 +260,8 @@ pub(super) fn entry_spec_with_member_delivery<
     MemberDelivery: ApplicationActionDelivery<Schema, member_edit::Binding>,
 >() -> ApplicationFeatureSpec {
     with_envelope_completion_actions(entry_builder::<Delivery, MemberDelivery, Completion>())
+        .action::<member_retarget::operation::Binding, Completion>()
+        .finish_action()
         .finish()
 }
 pub(super) fn entry_builder<
@@ -322,7 +319,10 @@ pub(super) fn entry_spec_with_envelope_deliveries<
         DependentPart,
         CyclicPart,
         AfterProducerPart,
+        Completion,
     >(entry_builder::<Delivery, MemberDelivery, RestorePart>())
+    .action::<synchronous_edit::interleaved::created::Binding, Completion>()
+    .finish_action()
     .finish()
 }
 // Every program in this fixture installs one complete schema and handler
@@ -338,7 +338,10 @@ pub(super) fn with_envelope_completion_actions(
         Completion,
         Completion,
         Completion,
+        Completion,
     >(entry)
+    .action::<synchronous_edit::interleaved::created::Binding, Completion>()
+    .finish_action()
 }
 pub(super) fn envelope_actions<
     ModelPart: ApplicationActionDelivery<Schema, synchronous_edit::envelope_fixture::model::Binding>,
@@ -348,10 +351,21 @@ pub(super) fn envelope_actions<
     DependentPart: ApplicationActionDelivery<Schema, synchronous_edit::envelope_fixture::dependent::Binding>,
     CyclicPart: ApplicationActionDelivery<Schema, synchronous_edit::envelope_fixture::cyclic::Binding>,
     AfterProducerPart: ApplicationActionDelivery<Schema, synchronous_edit::envelope_fixture::after_producer::Binding>,
+    DisconnectPart: ApplicationActionDelivery<Schema, family::borrowed_inputs::disconnect::Binding>,
 >(
     entry: ApplicationFeatureSpecBuilder<Schema, ApplicationRootComposition, Entry>,
 ) -> ApplicationFeatureSpecBuilder<Schema, ApplicationRootComposition, Entry> {
     entry
+        .action::<family::borrowed_inputs::disconnect::Binding, DisconnectPart>()
+        .finish_action()
+        .action::<synchronous_edit::interleaved::ConsumeChildBinding, Completion>()
+        .finish_action()
+        .action::<query::identity::expectation::Binding, Completion>()
+        .finish_action()
+        .action::<synchronous_edit::interleaved::prerequisite_partition::expectation::Binding, Completion>()
+        .finish_action()
+        .action::<synchronous_edit::interleaved::attach::Binding, Completion>()
+        .finish_action()
         .action::<synchronous_edit::interleaved::dependent::Binding, Completion>()
         .finish_action()
         .action::<synchronous_edit::interleaved::seal::Binding, Completion>()

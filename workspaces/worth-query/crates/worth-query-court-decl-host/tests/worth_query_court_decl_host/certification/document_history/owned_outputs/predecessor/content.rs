@@ -80,7 +80,7 @@ pub(super) fn observe<B: ApplicationMutationBinding<Schema>>(
     }
 }
 fn read<O>(
-    old: &mut PredecessorDecisionReader<'_, '_, '_, Schema, O>,
+    old: &mut BeforeDecisionReader<'_, '_, '_, Schema, O>,
     source: &WorthQueryInvariantEntityIdentity<Schema, Model>,
 ) -> Option<u64>
 where

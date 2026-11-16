@@ -112,7 +112,7 @@ pub(super) fn relation_parent_entity(relation: &ApplicationQueryResultRelation) 
 
 pub(super) fn relation_predicates(
     shape: &ApplicationQueryResultShape,
-) -> Vec<&crate::application_query::ApplicationQueryPredicate> {
+) -> Vec<&crate::application_query::ApplicationQueryRelationPredicate> {
     shape
         .relations()
         .iter()
@@ -129,7 +129,7 @@ pub(super) fn relation_predicate_targets_are_valid(shape: &ApplicationQueryResul
     shape.relations().iter().all(|relation| {
         relation
             .predicate()
-            .is_none_or(|predicate| predicate.field().0 == relation.nested_shape().root_entity())
+            .is_none_or(|predicate| predicate.entity() == relation.nested_shape().root_entity())
             && relation_predicate_targets_are_valid(relation.nested_shape())
     })
 }

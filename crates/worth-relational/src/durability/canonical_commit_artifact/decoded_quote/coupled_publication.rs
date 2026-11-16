@@ -17,12 +17,28 @@ pub(super) fn quote(
                             &mut sources,
                             match variant {
                                 "Edit" => edit_sources(event, request)?,
-                                "Retirement" => {
-                                    corrective_sources(event, request, super::cascades::authored)?
-                                }
+                                "Retirement" => corrective_sources(
+                                    event,
+                                    request,
+                                    "later",
+                                    super::cascades::authored,
+                                )?,
                                 "Restoration" => corrective_sources(
                                     event,
                                     request,
+                                    "later",
+                                    super::cascades::restoration,
+                                )?,
+                                "MemberEditRetirement" => corrective_sources(
+                                    event,
+                                    request,
+                                    "sources",
+                                    super::cascades::authored,
+                                )?,
+                                "MemberEditRestoration" => corrective_sources(
+                                    event,
+                                    request,
+                                    "sources",
                                     super::cascades::restoration,
                                 )?,
                                 _ => return Err(Refusal::NonCanonicalPayload),
@@ -43,6 +59,7 @@ pub(super) fn quote(
                                 match field {
                                     "origin" => super::required_output::origin(value, request)?,
                                     "retirement" => super::cascades::producer(value, request)?,
+                                    "participation" => OwnerAllocation::default(),
                                     _ => return Err(Refusal::NonCanonicalPayload),
                                 },
                             )
@@ -61,6 +78,7 @@ pub(super) fn quote(
 fn corrective_sources(
     value: BorrowedPayload<'_>,
     request: &ExecutionRequest<'_, '_>,
+    source_field: &'static str,
     prefix_quote: impl Fn(
         BorrowedPayload<'_>,
         &ExecutionRequest<'_, '_>,
@@ -68,15 +86,17 @@ fn corrective_sources(
 ) -> Result<OwnerAllocation, Refusal> {
     let mut bytes = OwnerAllocation::default();
     let (mut prefix, mut later) = (false, false);
+    let mut source_seen = false;
     value.fields(request, |field, value| {
         let nested = match field {
             "prefix" if !prefix => {
                 prefix = true;
                 prefix_quote(value, request)?
             }
-            "later" if !later => {
+            field if field == source_field && !later => {
                 later = true;
                 vector::<crate::identity::data::EntityId>(value, request, |_| {
+                    source_seen = true;
                     Ok(OwnerAllocation::default())
                 })?
             }
@@ -84,7 +104,7 @@ fn corrective_sources(
         };
         add(&mut bytes, nested)
     })?;
-    if !prefix || !later {
+    if !prefix || !later || (source_field == "sources" && !source_seen) {
         return Err(Refusal::NonCanonicalPayload);
     }
     Ok(bytes)

@@ -159,6 +159,25 @@ impl<Schema> InstalledMutationHandlerRegistry<Schema>
 where
     Schema: ApplicationSchema,
 {
+    /// Borrow the original configured owner without retaining another Arc.
+    pub(in crate::domain_computation::primary_graph) fn original_handler<Binding, Handler>(
+        &self,
+    ) -> Option<&Handler>
+    where
+        Binding: ApplicationMutationBinding<Schema>,
+        Handler: OperationHandler<Schema, Binding>,
+    {
+        let entry = self.entries.get(Binding::IDENTITY)?;
+        if entry.handler_identity != Binding::HANDLER_IDENTITY {
+            return None;
+        }
+        let slot = entry
+            .value
+            .downcast_ref::<TypedHandlerSlot<Schema, Binding>>()?;
+        let handler: &dyn Any = slot.handler.as_ref();
+        handler.downcast_ref::<Handler>()
+    }
+
     pub(in crate::domain_computation::primary_graph) fn supports_candidate_planning<
         B: ApplicationMutationBinding<Schema>,
     >(

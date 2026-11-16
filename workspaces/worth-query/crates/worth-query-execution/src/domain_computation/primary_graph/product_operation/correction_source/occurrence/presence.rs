@@ -17,11 +17,11 @@ impl CorrectionOccurrence {
                 if let Some(value) = self.preimage_key(entity, name, locator) {
                     return State::Value(value);
                 }
-                let Some(changed) = &value.material.capture.changed_fields else {
+                let Some(output) = &value.material.capture.output_fields else {
                     return State::Uncaptured;
                 };
                 use crate::domain_computation::primary_graph::retained_correction::record::RecordedAbsenceKind as Kind;
-                changed
+                output
                     .absences
                     .iter()
                     .find(|field| {
