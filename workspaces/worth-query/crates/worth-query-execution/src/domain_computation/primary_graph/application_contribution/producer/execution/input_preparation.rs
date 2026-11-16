@@ -340,7 +340,7 @@ where
                 B::IDENTITY,
             )
         })?;
-    Ok(Box::new(PreparedProducerInputs {
+    Ok(Box::new(PreparedProducerInputs::<S, B> {
         inputs,
         reads,
         identities,

@@ -1,6 +1,5 @@
 //! A borrowed incoming view cannot manufacture capture or current-output custody.
 use super::super::execution::CapturedProducerInputRead;
-use super::*;
 
 pub struct PrerequisiteInputs<'a>(pub(super) InputState<'a>);
 #[derive(Clone, Copy)]
