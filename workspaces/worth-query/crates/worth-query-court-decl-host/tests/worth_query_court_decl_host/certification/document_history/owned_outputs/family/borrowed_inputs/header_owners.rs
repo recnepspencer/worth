@@ -2,7 +2,7 @@
 use super::query::{ParametersBinding, Row, RowBinding};
 use super::*;
 worth_query_application_query!(pub Query for Schema, identity "owned-outputs.borrowed-header-owners-query.v1",
-    parameters ParametersBinding, result OwnersBinding, scope FirstOutput => "FirstOutput", name "OwnedOwners");
+    parameters ParametersBinding, result OwnersBinding, scope FirstOutput => "FirstOutput", name "BorrowedHeaderOwners");
 #[derive(Clone, Debug)]
 pub struct Owners {
     pub owners: Vec<Row>,
