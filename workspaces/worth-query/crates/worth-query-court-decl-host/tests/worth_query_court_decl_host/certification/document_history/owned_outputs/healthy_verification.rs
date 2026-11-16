@@ -295,7 +295,7 @@ fn exercise_retirement_parent(current: bool) {
                 .clone(),
         );
     }
-    let before = super::synchronous_edit::courts::native_head(&host);
+    let before = super::synchronous_edit::native_head(&host);
     let contacts = host.producer_contacts_on_this_thread_for_test();
     let mut edit = request
         .edit_envelope()
@@ -340,7 +340,7 @@ fn exercise_retirement_parent(current: bool) {
             Some(AuthoredRetirementRefusal::ExtraCoupledOwner)
         );
         assert_eq!(work.published_rows.len() + work.omitted_publications, 0);
-        assert_eq!(super::synchronous_edit::courts::native_head(&host), before);
+        assert_eq!(super::synchronous_edit::native_head(&host), before);
         assert_eq!(
             request
                 .query(query::member_public::Read("m".into()))
