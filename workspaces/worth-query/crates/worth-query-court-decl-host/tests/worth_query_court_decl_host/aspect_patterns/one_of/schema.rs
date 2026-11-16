@@ -47,6 +47,8 @@ impl ApplicationSchemaContribution<Schema> for Contribution {
         Contracts,
         correction::Restore,
         sparse::Correction,
+        retired_fields::correction::UndoRetirement,
+        retired_fields::correction::UndoRestoration,
     );
 }
 
@@ -57,18 +59,20 @@ impl Registration<Schema> for Contracts {
     ) -> Result<ApplicationSchemaDeclarationBuilder<Schema>, ApplicationSchemaDeclarationDenial>
     {
         Ok(
-            restore_first::declare(retirement::declare(authoring::declare(declare(schema))))
-                .invariant(rule::definition())
-                .application_query(query::definition())
-                .application_query_binding::<query::Binding>()
-                .application_query(sparse::link_query::definition())
-                .application_query_binding::<sparse::link_query::Binding>()
-                .application_query_inspection(
-                    ApplicationQueryInspectionDefinition::<Schema, query::Binding>::new(
-                        ApplicationQueryDisclosureContract::public(),
-                    )
-                    .unwrap(),
-                ),
+            retired_fields::declare(restore_first::declare(retirement::declare(
+                authoring::declare(declare(schema)),
+            )))
+            .invariant(rule::definition())
+            .application_query(query::definition())
+            .application_query_binding::<query::Binding>()
+            .application_query(sparse::link_query::definition())
+            .application_query_binding::<sparse::link_query::Binding>()
+            .application_query_inspection(
+                ApplicationQueryInspectionDefinition::<Schema, query::Binding>::new(
+                    ApplicationQueryDisclosureContract::public(),
+                )
+                .unwrap(),
+            ),
         )
     }
 }

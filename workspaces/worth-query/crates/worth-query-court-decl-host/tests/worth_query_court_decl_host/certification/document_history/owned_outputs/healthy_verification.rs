@@ -1,5 +1,89 @@
 //! Healthy selection reads currentness evidence without disclosing producer sources.
 use super::*;
+
+#[test]
+fn a_member_edit_preserves_its_required_writer_and_verifies_an_unaffected_source() {
+    let _observation = WorthQueryExecutionObservation::install_on_this_thread();
+    use member_retarget::{courts::publish, operation::Intent, program::Program, records::Row};
+    let host = world::install_program_with_other_model::<Program>(host_limits(
+        worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system(),
+    ), 1, Some(7));
+    let scope = request_scope();
+    let principal = authenticate_operator(host.installed_schema(), &scope);
+    let request = host.request(&principal, &scope);
+    publish(
+        &host,
+        &request,
+        Intent {
+            owner: "a".into(),
+            value: Some(2),
+            retire: vec![],
+            create: vec![Row {
+                key: "old".into(),
+                value: 11,
+            }],
+        },
+        "initialize-current-input",
+    );
+    let contacts = host.producer_contacts_on_this_thread_for_test();
+    let first = request
+        .query(query::first_output::Read("first:a".into()))
+        .execute()
+        .unwrap()
+        .rows()[0]
+        .clone();
+    let second = request
+        .query(query::second_output::Read("second:b".into()))
+        .execute()
+        .unwrap()
+        .rows()[0]
+        .clone();
+    publish(
+        &host,
+        &request,
+        Intent {
+            owner: "a".into(),
+            value: None,
+            retire: vec!["old".into()],
+            create: vec![Row {
+                key: "new".into(),
+                value: 22,
+            }],
+        },
+        "member-only-edit",
+    );
+    assert_eq!(host.producer_contacts_on_this_thread_for_test(), contacts + 1,
+        "the member-linked writer publishes; the unaffected source verifies without a producer call");
+    assert_eq!(
+        request
+            .query(query::first_output::Read("first:a".into()))
+            .execute()
+            .unwrap()
+            .rows()[0],
+        first
+    );
+    assert_eq!(
+        request
+            .query(query::second_output::Read("second:b".into()))
+            .execute()
+            .unwrap()
+            .rows()[0],
+        second
+    );
+    assert!(request
+        .query(query::input_member::Read("old".into()))
+        .execute()
+        .is_err());
+    assert_eq!(
+        request
+            .query(query::input_member::Read("new".into()))
+            .execute()
+            .unwrap()
+            .rows()[0]
+            .value,
+        22
+    );
+}
 fn exercise(host: &world::Host, configured: bool) {
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
@@ -165,4 +249,145 @@ fn healthy_verification_does_not_borrow_restored_source_grants() {
 fn worker_only_healthy_verification_needs_no_source_admission() {
     let _observation = WorthQueryExecutionObservation::install_on_this_thread();
     current_source_permission_is_not_needed_for_healthy_verification(&world::install_worker_only());
+}
+
+// Whole-source retirement distinguishes a current read from an extra writer.
+#[derive(Debug)]
+enum RetirementParent {
+    Absent,
+    Current,
+    Changed,
+}
+fn exercise_retirement_parent(state: RetirementParent) {
+    let current = matches!(state, RetirementParent::Current);
+    let _execution = WorthQueryExecutionObservation::install_on_this_thread();
+    use super::authored_member as member;
+    use super::synchronous_edit::interleaved::retirement_parent::{Program, Tree as ModelTree};
+    use worth_query_host::facade::{
+        application_entry::WorthQueryEditEnvelopeOutcome as Outcome,
+        runtime::ExecutionAllocationPolicy,
+    };
+    use worth_relational::facade::{
+        inspection::observe_maintenance_work, publication::AuthoredRetirementRefusal,
+    };
+    let host = world::install_configured::<Program>(host_limits(
+        worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()), 1, Some(7),
+        world::Configuration { envelope_records:true, interleaved_records:true, ..Default::default() });
+    let scope = request_scope();
+    let principal = authenticate_operator(host.installed_schema(), &scope);
+    let request = host.request(&principal, &scope);
+    let mut original = None;
+    if !matches!(state, RetirementParent::Absent) {
+        let mut demand = request
+            .demand(first::Demand("b".into()))
+            .start_in_program::<Program, ModelTree>(&host)
+            .unwrap();
+        loop {
+            match demand.settle(&request).unwrap() {
+                WorthQueryApplicationOutputDemandProgress::Settled(output) => {
+                    drop(output);
+                    break;
+                }
+                WorthQueryApplicationOutputDemandProgress::Progressed
+                | WorthQueryApplicationOutputDemandProgress::Pending => {}
+            }
+        }
+        demand.close();
+        original = Some(
+            request
+                .query(query::first_output::Read("first:b".into()))
+                .execute()
+                .unwrap()
+                .rows()[0]
+                .clone(),
+        );
+    }
+    if matches!(state, RetirementParent::Changed) {
+        let changed = request
+            .advanced()
+            .mutate(edit::Intent {
+                key: "b".into(),
+                value: 8,
+            })
+            .without_source()
+            .idempotency(&"dirty-independent-parent".to_owned())
+            .execute_in_program(&host, ExecutionAllocationPolicy::SystemAllocation)
+            .unwrap();
+        assert!(
+            matches!(
+                changed,
+                WorthQueryApplicationMutationOutcome::Committed { .. }
+            ),
+            "{changed:?}"
+        );
+    }
+    let before = super::synchronous_edit::native_head(&host);
+    let contacts = host.producer_contacts_on_this_thread_for_test();
+    let mut edit = request
+        .edit_envelope()
+        .idempotency(format!("retire-with-parent-{state:?}"))
+        .runtime_stages(&host)
+        .ordered_authored()
+        .unwrap();
+    edit.push_stage::<ModelTree, _>(member::retire::Intent)
+        .unwrap();
+    let (outcome, work) = observe_maintenance_work(8, || {
+        edit.execute_performed(ExecutionAllocationPolicy::SystemAllocation)
+            .unwrap()
+    });
+    assert_eq!(
+        host.producer_contacts_on_this_thread_for_test(),
+        contacts,
+        "a retirement may verify this parent, never run an unlisted producer"
+    );
+    if current {
+        assert!(matches!(outcome, Outcome::Committed(_)), "{outcome:?}");
+        assert_eq!(work.published_rows.len() + work.omitted_publications, 1);
+        assert!(request
+            .query(query::member_public::Read("m".into()))
+            .execute()
+            .is_err());
+        let row = request
+            .query(query::first_output::Read("first:b".into()))
+            .execute()
+            .unwrap();
+        let original = original.unwrap();
+        assert_eq!(row.rows()[0].native_id, original.native_id);
+        assert_eq!((row.rows()[0].value, original.value), (70, 70));
+    } else {
+        let Outcome::Uncommitted(WorthQueryApplicationUncommitted::Denied(denial)) = outcome else {
+            panic!("{outcome:?}");
+        };
+        assert_eq!(
+            denial
+                .authored_retirement_error()
+                .unwrap()
+                .authored_retirement_refusal(),
+            Some(AuthoredRetirementRefusal::ExtraCoupledOwner)
+        );
+        assert_eq!(work.published_rows.len() + work.omitted_publications, 0);
+        assert_eq!(super::synchronous_edit::native_head(&host), before);
+        assert_eq!(
+            request
+                .query(query::member_public::Read("m".into()))
+                .execute()
+                .unwrap()
+                .rows()[0]
+                .key,
+            "m"
+        );
+    }
+}
+#[test]
+fn retirement_reads_a_current_parent_outside_its_writer_catalog() {
+    exercise_retirement_parent(RetirementParent::Current);
+}
+#[test]
+fn retirement_cannot_create_a_parent_outside_its_writer_catalog() {
+    exercise_retirement_parent(RetirementParent::Absent);
+}
+
+#[test]
+fn retirement_cannot_recompute_a_parent_outside_its_writer_catalog() {
+    exercise_retirement_parent(RetirementParent::Changed);
 }

@@ -27,6 +27,10 @@ fn stored(claim: &Claim, serial: u64) -> StoredClaim {
             entity: *entity,
             link,
         },
+        Claim::Input(entity) => StoredClaim::Input {
+            entity: *entity,
+            link,
+        },
         Claim::Relation(edge) => StoredClaim::Relation {
             edge: edge.clone(),
             witness: EntityId::new(PartitionId(9), serial, 1),
@@ -37,6 +41,7 @@ fn stored(claim: &Claim, serial: u64) -> StoredClaim {
 fn claim(value: &StoredClaim) -> Claim {
     match value {
         StoredClaim::Member { entity, .. } => Claim::Member(*entity),
+        StoredClaim::Input { entity, .. } => Claim::Input(*entity),
         StoredClaim::Relation { edge, .. } => Claim::Relation(edge.clone()),
     }
 }
@@ -44,8 +49,8 @@ fn claim(value: &StoredClaim) -> Claim {
 fn mixed_membership_relation_retirement_and_generation_changes_equal_replace_all() {
     for seed in 1..=64_u64 {
         let mut random = seed;
-        let mut actual = BTreeMap::<RecordRef, StoredClaim>::new();
-        let mut expected = BTreeMap::<RecordRef, Claim>::new();
+        let mut actual = BTreeMap::<(u8, RecordRef), StoredClaim>::new();
+        let mut expected = BTreeMap::<(u8, RecordRef), Claim>::new();
         let mut serial = 0;
         for step in 0..100 {
             random ^= random << 13;
@@ -121,6 +126,19 @@ fn mixed_membership_relation_retirement_and_generation_changes_equal_replace_all
             }
         }
     }
+}
+#[test]
+fn removing_a_borrowed_input_does_not_retire_the_same_entitys_owned_membership() {
+    let entity = EntityId::new(PartitionId(7), 4, 1);
+    let member = stored(&Claim::Member(entity), 1);
+    let input = stored(&Claim::Input(entity), 2);
+    let previous = [member.clone(), input];
+    let desired = [Claim::Member(entity)];
+    let delta = changes(&previous, &desired);
+    assert!(matches!(delta.as_slice(), [Change::Retire(1)]));
+    assert_ne!(previous[0].key(), previous[1].key());
+    assert_eq!(previous[0].link(), member.link());
+    assert!(changes(&[member], &desired).is_empty());
 }
 #[test]
 fn transient_write_proof_changes_do_not_rewrite_custody() {

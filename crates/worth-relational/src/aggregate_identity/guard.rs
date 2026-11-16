@@ -145,7 +145,7 @@ pub(crate) fn ordinary_plan(
 }
 enum PrivateKinds {
     Aggregate([KindId; 3]),
-    Publication([KindId; 9]),
+    Publication([KindId; 10]),
 }
 impl PrivateKinds {
     fn contains(&self, kind: KindId) -> bool {

@@ -2,9 +2,15 @@
 //! publish exactly one derived output owned by its source model (SourceScopeCascade).
 use super::*;
 #[macro_use]
+mod member_inputs;
+#[macro_use]
 mod ordinary_carrier;
 #[macro_use]
 mod phase;
+pub mod borrowed_inputs;
+pub mod captured_input;
+mod feature_specs;
+pub(super) use feature_specs::feature_specs;
 mod readiness;
 pub(super) use readiness::readiness_query;
 #[derive(Clone, Debug)]

@@ -13,6 +13,9 @@ use crate::{
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
 mod adoption;
+mod inputs;
+pub use inputs::RelationalRequiredOutputInput;
+pub(crate) use inputs::RequiredOutputInputs;
 mod aggregate_read;
 mod authored_writes;
 mod completion;
@@ -113,6 +116,7 @@ pub struct RelationalAuthoredCoupledCandidate<'a> {
     pub(crate) mutation: &'a mut AppliedMutationCore,
     pub(crate) identity: &'a RelationalMutationProposalIdentity,
     pub(crate) binding: &'a BoundAuthoredCoupling,
+    input_issuance: std::cell::RefCell<Option<Arc<inputs::InputIssuance>>>,
     pub(crate) parts: Vec<CoupledPublicationPart>,
     pub(crate) stages: Vec<CoupledAuthoredStagePart>,
     /// Exact applied prefix; later authored stages retain their own spans.
@@ -124,6 +128,7 @@ pub struct RelationalAuthoredCoupledCandidate<'a> {
 }
 
 pub(crate) struct CoupledPublicationPart {
+    pub(crate) inputs: Option<RequiredOutputInputs>,
     pub(crate) ordinary_ids:
         Option<worth_execution::ExecutionArray<crate::identity::data::EntityId>>,
     pub(crate) input: RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
@@ -157,16 +162,51 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         self.binding.owners.source.subject()
     }
 
-    /// Classify an actual candidate source through the same canonical roster
-    /// that admitted this assembly. The caller cannot submit an owner set.
-    pub fn declared_owner(
+    /// Classify a parent read through the canonical roster. An absent entry
+    /// grants no writer: Query may only verify an already current output, or
+    /// ask `require_unlisted_writer` before preparing a new participant.
+    pub fn read_parent_owner(
         &self,
         execution: &ExecutionRequest<'_, '_>,
         family: &str,
         source: crate::identity::data::EntityId,
         partition: &[u8; 32],
     ) -> Result<Option<RelationalDeclaredCoupledOwner<'_>>, TransactionCommitError> {
-        let original = execution.run_native_with_checkpoint(|context| {
+        let original = self.catalog_source(execution, source)?;
+        let owner = self
+            .binding
+            .owners
+            .recorded_owner(execution, family, original, partition)?;
+        let Some(owner) = owner else {
+            return Ok(None);
+        };
+        if matches!(owner, RelationalDeclaredCoupledOwner::Retiring)
+            && original != source
+            && self.binding.owners.source.restoration().is_some()
+        {
+            return self
+                .restored_output_input(execution, family, original, source, partition)
+                .map(|input| Some(RelationalDeclaredCoupledOwner::Restored(input)));
+        }
+        if let RelationalDeclaredCoupledOwner::Surviving(previous)
+        | RelationalDeclaredCoupledOwner::RequiredSurviving(previous) = &owner
+        {
+            execution
+                .run_native_with_checkpoint(|context| {
+                    part::require_unseen_route(context, &self.parts, &previous.origin.meaning)
+                })
+                .map_err(custody::execution_stop)?
+                .0?;
+        }
+        Ok(Some(owner))
+    }
+
+    fn catalog_source(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        source: crate::identity::data::EntityId,
+    ) -> Result<crate::identity::data::EntityId, TransactionCommitError> {
+        execution.run_native_with_checkpoint(|context| {
             if let Some(restoration) = self.binding.owners.source.restoration() {
                 for (old, created) in &restoration.entities {
                     checkpoint(context, self.mutation.outcome.created_entities.resolve_work_bound(created).ok_or_else(|| custody::execution_stop(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow))?).map_err(custody::execution_stop)?;
@@ -176,31 +216,25 @@ impl RelationalAuthoredCoupledCandidate<'_> {
                 }
             }
             Ok(source)
-        }).map_err(custody::execution_stop)?.0?;
-        let owner = self
-            .binding
-            .owners
-            .recorded_owner(execution, family, original, partition)?;
-        let Some(owner) = owner else {
-            if matches!(self.binding.owners.source, super::CoupledSource::Edit(_)) {
-                // This catalog has no entry. It is not route-absence custody;
-                // callers must select the current route through its own owner.
-                return Ok(None);
-            }
-            return Err(part::reject(
-                crate::publication::data::AuthoredRetirementRefusal::ExtraCoupledOwner,
-                source,
-            ));
-        };
-        if let RelationalDeclaredCoupledOwner::Surviving(previous) = &owner {
-            execution
-                .run_native_with_checkpoint(|context| {
-                    part::require_unseen_route(context, &self.parts, &previous.origin.meaning)
-                })
-                .map_err(custody::execution_stop)?
-                .0?;
+        }).map_err(custody::execution_stop)?.0
+    }
+
+    /// No absent catalog route may become a fresh retirement/restoration writer.
+    /// Ordinary Edit source admission is still decided by its current owner.
+    pub fn require_unlisted_writer(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        family: &str,
+        source: crate::identity::data::EntityId,
+        partition: &[u8; 32],
+    ) -> Result<(), TransactionCommitError> {
+        if self.binding.owners.source.is_edit() {
+            return Ok(());
         }
-        Ok(Some(owner))
+        let original = self.catalog_source(execution, source)?;
+        Err(part::reject_extra_owner(&self.binding.owners, source, format!(
+            "site=catalog-route-absent; family={family}; requested_source={source:?}; original_source={original:?}; partition={partition:?}",
+        )))
     }
 
     pub fn pin_source(

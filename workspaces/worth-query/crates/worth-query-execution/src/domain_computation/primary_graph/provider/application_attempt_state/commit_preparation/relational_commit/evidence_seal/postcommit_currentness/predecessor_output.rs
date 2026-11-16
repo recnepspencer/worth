@@ -102,7 +102,8 @@ pub(super) fn refresh_on_pin<Phase>(
                             let entity = visit.entity.entity_id;
                             if !retired(entity)? { roots.push(entity); }
                         }
-                        if roots.is_empty() { return Err(Failure::native_unavailable()); }
+                        if roots.is_empty() { return Err(Failure::native_unavailable()
+                            .with_detail("walk-no-surviving-roots".into())); }
                         walk_roots = Some((roots, memory));
                     }
                 }
@@ -118,11 +119,13 @@ pub(super) fn refresh_on_pin<Phase>(
                             pin,
                             origin,
                             execution,
-                            aggregate_member.ok_or_else(Failure::native_unavailable)?,
+                            aggregate_member.ok_or_else(|| Failure::native_unavailable()
+                                .with_detail("aggregate-no-surviving-member".into()))?,
                         )
                         .map_err(|stop| match stop.kind {
                             PinnedAggregateReadDenialKind::Read(cause) => Failure::execution(cause),
-                            _ => Failure::native_unavailable(),
+                            cause => Failure::native_unavailable()
+                                .with_detail(format!("aggregate-refresh: {cause:?}")),
                         })?,
                 },
                 Fact::StructuralWalk { observation } => Fact::StructuralWalk {
@@ -137,7 +140,8 @@ pub(super) fn refresh_on_pin<Phase>(
                             PinnedStructuralWalkDenialKind::Read(cause) => {
                                 Failure::execution(cause)
                             }
-                            _ => Failure::native_unavailable(),
+                            cause => Failure::native_unavailable()
+                                .with_detail(format!("walk-refresh: {cause:?}")),
                         },
                     )?,
                 },

@@ -48,7 +48,7 @@ impl RequiredOutputDemandContext {
 
     pub(in crate::domain_computation::primary_graph) fn bind_predecessor_reads(
         &mut self,
-        state: Arc<crate::domain_computation::primary_graph::application_contribution::producer::predecessor_reads::ProducerPredecessorReadState>,
+        state: Arc<crate::domain_computation::primary_graph::application_contribution::producer::observation_reads::ProducerPredecessorReadState>,
     ) {
         self.handler.bind_predecessor_reads(state);
     }
@@ -145,6 +145,18 @@ impl RequiredOutputDemandContext {
         &mut self,
     ) -> Option<CompletedHandlerFactBoundary> {
         self.handler.take_completed_handler_facts()
+    }
+
+    pub(in crate::domain_computation) fn completed_input_prefix(&self) -> Option<usize> {
+        self.handler.completed_input_prefix()
+    }
+
+    pub(in crate::domain_computation) fn insert_input_facts(
+        &mut self,
+        expected: usize,
+        count: usize,
+    ) -> bool {
+        self.handler.insert_input_facts(expected, count)
     }
 
     pub(in crate::domain_computation::primary_graph) fn retain_prepared_input_reuse_key(

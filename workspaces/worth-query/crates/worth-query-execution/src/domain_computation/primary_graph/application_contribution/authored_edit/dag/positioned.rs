@@ -16,11 +16,7 @@ pub(super) fn barriers<S: worth_query_installation::facade::ApplicationSchema>(
         let mut required = Vec::new();
         for producer in count..nodes.len() {
             checkpoint(execution)?;
-            if let Some(dependency) = overlap(&nodes[position], &nodes[producer], &stages[0].schema)
-            {
-                if position == 0 {
-                    return Err(DeclaredEditOrderRefusal::StageAfterProducer(dependency));
-                }
+            if overlap(&nodes[position], &nodes[producer], &stages[0].schema).is_some() {
                 required.push(producer);
             }
         }

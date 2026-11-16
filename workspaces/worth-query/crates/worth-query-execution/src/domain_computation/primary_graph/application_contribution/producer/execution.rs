@@ -33,13 +33,16 @@ use super::demand::WorthQueryOutputDemandDenialKind;
 mod admitted;
 mod coupled_adoption;
 mod coupled_preparation;
+mod input_preparation;
+pub(super) use input_preparation::{capture as capture_producer_inputs, CaptureAdmission};
+pub(in crate::domain_computation::primary_graph::application_contribution) use input_preparation::CapturedProducerInputRead;
 pub(in crate::domain_computation::primary_graph::application_contribution) use coupled_preparation::preparation_denial as coupled_preparation_denial;
 mod coupled;
 mod coupled_source;
 pub(in crate::domain_computation::primary_graph::application_contribution) use coupled::InstalledCoupledProducerExecutor;
 pub(in crate::domain_computation::primary_graph::application_contribution) use coupled::PreparedCoupledWriter;
 pub(in crate::domain_computation::primary_graph::application_contribution) use coupled_source::{
-    CoupledSourceRead, CoupledSourceReadStop, ErasedAppliedProducerSource,
+    CoupledSourceRead, CoupledSourceReadPurpose, CoupledSourceReadStop, ErasedAppliedProducerSource,
 };
 pub(crate) mod denial;
 mod input_cutoff;

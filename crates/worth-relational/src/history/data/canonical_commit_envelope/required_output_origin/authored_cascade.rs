@@ -181,6 +181,7 @@ pub(super) fn install(
                 created_relations,
                 state,
                 crate::mvcc::RequiredOutputPublicationAdmission {
+                    inputs: Default::default(),
                     installed: installed.clone(),
                     publication: RequiredOutputPublication::AuthoredRetirement {
                         admission: single,

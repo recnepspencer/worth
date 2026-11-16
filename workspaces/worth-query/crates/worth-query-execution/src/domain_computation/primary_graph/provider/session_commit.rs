@@ -62,7 +62,7 @@ pub(super) fn commit_prepared_session(
 
 pub(super) fn provider_failure(
     stage: WorthQueryProviderSessionProtocolStage,
-    detail: &'static str,
+    detail: impl Into<String>,
 ) -> WorthQueryProviderSessionFailure {
     WorthQueryProviderSessionFailure::new(
         crate::domain_computation::WorthQueryProviderSessionDenialKind::ProviderRejected,

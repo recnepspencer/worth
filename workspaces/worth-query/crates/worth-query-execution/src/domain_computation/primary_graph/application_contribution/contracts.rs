@@ -98,6 +98,16 @@ where
             ));
         }
         let declared = DeclaredProducerBinding::of::<Schema, Binding>(&self.owner);
+        if declared
+            .input_capture
+            .as_ref()
+            .is_some_and(|capture| !capture.validate::<Schema, Binding>())
+        {
+            return Err(denial(
+                DenialKind::ProducerBindingMeaningMismatch,
+                Binding::IDENTITY,
+            ));
+        }
         // Validate declared field meaning before any contribution configures or seeds.
         if let Some(field) = declared.output_equivalence.as_ref() {
             field.declare(self.declaration).map_err(|cause| {

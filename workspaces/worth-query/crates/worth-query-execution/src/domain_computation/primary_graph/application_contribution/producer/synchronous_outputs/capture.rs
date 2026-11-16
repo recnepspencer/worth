@@ -1,7 +1,11 @@
 //! Immutable, sendable required demand carried into its source's assembly.
 use super::*;
 use source::{Source, SourceInput};
-use std::marker::PhantomData;
+mod continuation;
+mod tree;
+pub(super) use continuation::{Continuation, Static};
+pub(super) use tree::RequiredTree;
+use tree::Tree;
 use worth_query_declaration::facade::{
     application_program::WorthQueryApplicationRequiredOutputConnection,
     application_query::{
@@ -11,159 +15,6 @@ use worth_query_declaration::facade::{
 type Scope<S, D> = <Source<S, D> as ApplicationQueryBinding<S>>::ScopeBinding;
 type Principal<S, D> = <Source<S, D> as ApplicationQueryBinding<S>>::PrincipalIdentity;
 
-pub(super) trait RequiredTree<S: ApplicationSchema>: Send + 'static {
-    fn family(&self) -> &'static str;
-    fn order(
-        &self,
-    ) -> &worth_query_declaration::facade::application_program::ApplicationProgramConnectionOrder;
-    fn seed(
-        &self,
-        context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
-        wave: &mut SynchronousOutputWave<S>,
-    ) -> Result<(), SynchronousOutputFailure>;
-    fn occurrence(
-        &self,
-        context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
-        candidate: &RelationalAuthoredCoupledCandidate<'_>,
-    ) -> Result<Option<occurrences::OccurrenceKey>, SynchronousOutputFailure>;
-    fn prerequisites(
-        &self,
-        context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
-        pin: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
-        source: worth_relational::facade::identity::EntityId,
-        next: &mut SynchronousOutputWave<S>,
-    ) -> Result<(), SynchronousOutputFailure>;
-    fn prepare(
-        &self,
-        context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
-        candidate: &mut RelationalAuthoredCoupledCandidate<'_>,
-    ) -> Result<Option<AppliedOutputParent>, SynchronousOutputFailure>;
-    fn discover(
-        &self,
-        context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
-        parent: &AppliedOutputParent,
-        next: &mut SynchronousOutputWave<S>,
-    ) -> Result<(), SynchronousOutputFailure>;
-}
-struct Tree<D, E> {
-    connection: &'static str,
-    position:
-        worth_query_declaration::facade::application_program::ApplicationConnectionDeclaration,
-    order: worth_query_declaration::facade::application_program::ApplicationProgramConnectionOrder,
-    demand: D,
-    marker: PhantomData<fn() -> E>,
-}
-impl<S, D, E> RequiredTree<S> for Tree<D, E>
-where
-    S: ApplicationSchema,
-    D: WorthQueryApplicationOutputDemand<S> + Clone + Send,
-    E: SynchronousOutputEdges<S, D> + 'static,
-    SourceInput<S, D>: ApplicationQueryIntent<S, Binding = Source<S, D>>,
-    Scope<S, D>: ApplicationQueryScopeResolution<S, Principal<S, D>>,
-{
-    fn family(&self) -> &'static str {
-        <D::OutputFamily as worth_query_declaration::facade::application_program::WorthQueryProducerOutputFamily<S>>::IDENTITY
-    }
-    fn order(
-        &self,
-    ) -> &worth_query_declaration::facade::application_program::ApplicationProgramConnectionOrder
-    {
-        &self.order
-    }
-    fn seed(
-        &self,
-        context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
-        wave: &mut SynchronousOutputWave<S>,
-    ) -> Result<(), SynchronousOutputFailure> {
-        wave.push(
-            context,
-            self.connection,
-            &self.position,
-            size_of::<Self>(),
-            || {
-                Box::new(Self {
-                    connection: self.connection,
-                    position: self.position.clone(),
-                    order: self.order.clone(),
-                    demand: self.demand.clone(),
-                    marker: PhantomData,
-                })
-            },
-        )
-    }
-    fn occurrence(
-        &self,
-        context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
-        candidate: &RelationalAuthoredCoupledCandidate<'_>,
-    ) -> Result<Option<occurrences::OccurrenceKey>, SynchronousOutputFailure> {
-        if !E::occurrence_component() {
-            return Ok(None);
-        }
-        let demand = source::capture::<S, D>(self.connection, self.demand.clone());
-        let principal = context.owner.principal.ok_or_else(|| {
-            occurrences::refusal(self.connection, "current principal unavailable")
-        })?;
-        let reader = context
-            .owner
-            .application
-            .installed_producers
-            .declared_coupled_source(&demand)
-            .map_err(CoupledSourceReadStop::from)?;
-        let route = reader.coupled_executor().read_coupled_source(
-            context.execution,
-            context.owner.application,
-            principal,
-            context.owner.request,
-            context.owner.before,
-            context.before,
-            &demand,
-            candidate,
-            true,
-        )?;
-        match route {
-            super::super::execution::CoupledSourceRead::Route { scope, partition } => {
-                Ok(Some(occurrences::OccurrenceKey {
-                    family: demand.family,
-                    source_binding: demand.source_binding_type,
-                    scope,
-                    partition,
-                }))
-            }
-            _ => Err(occurrences::refusal(
-                self.connection,
-                "route-only source returned a result",
-            )),
-        }
-    }
-    fn prerequisites(
-        &self,
-        context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
-        pin: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
-        source: worth_relational::facade::identity::EntityId,
-        next: &mut SynchronousOutputWave<S>,
-    ) -> Result<(), SynchronousOutputFailure> {
-        E::prerequisites(context, pin, source, &self.demand, next)
-    }
-    fn prepare(
-        &self,
-        context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
-        candidate: &mut RelationalAuthoredCoupledCandidate<'_>,
-    ) -> Result<Option<AppliedOutputParent>, SynchronousOutputFailure> {
-        context.checkpoint(self.connection)?;
-        let demand = source::capture::<S, D>(self.connection, self.demand.clone());
-        Ok(context
-            .owner
-            .prepare_one(context.execution, context.before, &demand, candidate)?)
-    }
-    fn discover(
-        &self,
-        context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
-        parent: &AppliedOutputParent,
-        next: &mut SynchronousOutputWave<S>,
-    ) -> Result<(), SynchronousOutputFailure> {
-        E::assemble(context, parent, &self.demand, next)
-    }
-}
 pub(super) fn schedule<S, D, E>(
     context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
     wave: &mut SynchronousOutputWave<S>,
@@ -178,18 +29,46 @@ where
     SourceInput<S, D>: ApplicationQueryIntent<S, Binding = Source<S, D>>,
     Scope<S, D>: ApplicationQueryScopeResolution<S, Principal<S, D>>,
 {
+    schedule_continued(
+        context,
+        wave,
+        connection,
+        position,
+        demand,
+        Static::<E>::new(),
+        None,
+    )
+}
+/// Schedule `demand` with an explicit continuation value.
+pub(super) fn schedule_continued<S, D, K>(
+    context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+    wave: &mut SynchronousOutputWave<S>,
+    connection: &'static str,
+    position: worth_query_declaration::facade::application_program::ApplicationConnectionDeclaration,
+    demand: D,
+    continuation: K,
+    expected_source: Option<worth_relational::facade::identity::EntityId>,
+) -> Result<(), SynchronousOutputFailure>
+where
+    S: ApplicationSchema,
+    D: WorthQueryApplicationOutputDemand<S> + Clone + Send,
+    K: Continuation<S, D>,
+    SourceInput<S, D>: ApplicationQueryIntent<S, Binding = Source<S, D>>,
+    Scope<S, D>: ApplicationQueryScopeResolution<S, Principal<S, D>>,
+{
     wave.push(
         context,
         connection,
         &position,
-        std::mem::size_of::<Tree<D, E>>(),
+        std::mem::size_of::<Tree<D, K>>(),
         || {
-            Box::new(Tree::<D, E> {
+            Box::new(Tree::<D, K> {
                 connection,
                 position: position.clone(),
                 order: context.order.clone(),
                 demand,
-                marker: PhantomData,
+                continuation,
+                expected_source,
             })
         },
     )
@@ -212,14 +91,15 @@ impl CapturedSynchronousOutputs {
         Self::capture(
             execution,
             connection,
-            size_of::<Tree<D, E>>() + size_of::<root::Root<S>>(),
+            size_of::<Tree<D, Static<E>>>() + size_of::<root::Root<S>>(),
             || {
-                Box::new(root::Root::Fixed(Box::new(Tree::<D, E> {
+                Box::new(root::Root::Fixed(Box::new(Tree::<D, Static<E>> {
                     connection,
                     position,
                     order: order.clone(),
                     demand,
-                    marker: PhantomData,
+                    continuation: Static::new(),
+                    expected_source: None,
                 })))
             },
         )
@@ -320,14 +200,16 @@ impl<S: ApplicationSchema, O, I, Scope>
             .push(CapturedSynchronousOutputs::capture(
                 execution,
                 C::IDENTITY,
-                std::mem::size_of::<Tree<C::Demand, E>>() + std::mem::size_of::<root::Root<S>>(),
+                std::mem::size_of::<Tree<C::Demand, Static<E>>>()
+                    + std::mem::size_of::<root::Root<S>>(),
                 || {
-                    let tree: Box<dyn RequiredTree<S>> = Box::new(Tree::<C::Demand, E> {
+                    let tree: Box<dyn RequiredTree<S>> = Box::new(Tree::<C::Demand, Static<E>> {
                         connection: C::IDENTITY,
                         position,
                         order: order.clone(),
                         demand,
-                        marker: PhantomData,
+                        continuation: Static::new(),
+                        expected_source: None,
                     });
                     Box::new(root::Root::Fixed(tree))
                 },

@@ -261,11 +261,12 @@ fn validate_group(
 pub(super) fn validate_birth(
     runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
     birth: &OwnedValidatedOutputOrigins,
+    meaning: &crate::mvcc::RequiredOutputPublicationMeaning,
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&ExecutionResourceLease<'_>>,
     schema: &crate::branch::RelationalBranchRootSchemaAuthority,
 ) -> Result<(), Stop> {
-    let origin = birth.validate_output_membership_header()?;
+    let origin = birth.output_origin_for_route(meaning, context)?;
     let prior = super::route_selection::select_at(
         runtime,
         birth.commit.parents.first().copied(),

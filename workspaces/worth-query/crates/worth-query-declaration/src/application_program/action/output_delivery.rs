@@ -77,6 +77,13 @@ impl ApplicationOutputActionDeliveryDeclaration {
         &self.root_connections
     }
     pub fn canonical_meaning(&self) -> String {
+        let graph = self.canonical_connections();
+        let graph = super::super::semantic_encoding::framed_parts(
+            &graph.iter().map(String::as_str).collect::<Vec<_>>(),
+        );
+        self.canonical_meaning_with_graph(&graph)
+    }
+    pub(in crate::application_program) fn canonical_connections(&self) -> Vec<String> {
         let mut graph = self
             .root_connections
             .iter()
@@ -93,13 +100,19 @@ impl ApplicationOutputActionDeliveryDeclaration {
             })
             .collect::<Vec<_>>();
         graph.sort_unstable();
-        let graph = super::super::semantic_encoding::framed_parts(
-            &graph.iter().map(String::as_str).collect::<Vec<_>>(),
-        );
+        graph
+    }
+    /// The same complete delivery fields, with a manifest-local graph encoding.
+    /// Standalone semantic comparisons supply full connections; the manifest
+    /// supplies references to its once-quoted connection definitions.
+    pub(in crate::application_program) fn canonical_meaning_with_graph(
+        &self,
+        graph: &str,
+    ) -> String {
         let Some(read) = &self.read else {
             return super::super::semantic_encoding::framed_parts(&[
                 self.identity,
-                &graph,
+                graph,
                 if self.discovered {
                     "discovered-no-projection"
                 } else {
@@ -117,7 +130,7 @@ impl ApplicationOutputActionDeliveryDeclaration {
         let result_limit = read.limits().maximum_results().to_string();
         let query_meaning = super::super::semantic_encoding::framed_parts(&[
             self.identity,
-            &graph,
+            graph,
             &result_limit,
             self.root_connection.identity(),
             self.root_connection.source_instance(),

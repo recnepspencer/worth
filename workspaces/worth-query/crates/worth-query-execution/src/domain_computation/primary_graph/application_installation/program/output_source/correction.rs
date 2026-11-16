@@ -36,6 +36,27 @@ where
             + WorthQueryApplicationRequiredOutputSource<Schema, RootConnection<Schema, Root>>,
         Source::Input: Clone + Send + Sync,
     {
+        self.commit_corrective_envelope::<Root, Source>(phase, owner, program, identities, source, idempotency, unseen,
+            crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind::Required(TypeId::of::<Root>()), allocation)
+    }
+
+    pub(super) fn commit_corrective_envelope<Root, Source>(
+        &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        owner: &super::super::WorthQuerySelectedProgramOwner<'_, Schema>,
+        program: SourceProgram<Schema, Source>,
+        identities: &ApplicationMutationIdentities<'_, Schema, Source>,
+        source: std::sync::Arc<WorthQueryPreparedCorrectionSource>,
+        idempotency: crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding,
+        unseen: &crate::domain_computation::primary_graph::application_contribution::authored_edit::UnseenAuthoredEnvelope<'_>,
+        kind: crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind,
+        allocation: ExecutionAllocationPolicy<'_, '_>,
+    ) -> WorthQueryApplicationCommitOutcome
+    where
+        Root: ApplicationOutputGraphShape<Schema>,
+        Source: ApplicationMutationBinding<Schema>,
+        Source::Input: Clone + Send + Sync,
+    {
         if let Err(cause) = source.admit_receiver(
             self.runtime()
                 .runtime
@@ -47,7 +68,7 @@ where
         }
         if !source.is_action_binding::<Source>()
             || !source.matches_input(identities.input_identity())
-            || !source.requires_root(Some(TypeId::of::<Root>()))
+            || !source.requires_root(Some(kind))
         {
             return WorthQueryApplicationCommitOutcome::Denied(
                 WorthQueryApplicationCommitDenial::correction_context_mismatch(),
@@ -98,7 +119,7 @@ where
         }
         if !source.is_action_binding::<Source>()
             || !source.matches_input(identities.input_identity())
-            || !source.requires_root(Some(TypeId::of::<Root>()))
+            || !source.requires_root(Some(crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind::Required(TypeId::of::<Root>())))
         {
             return Ok((
                 WorthQueryApplicationCommitOutcome::Denied(

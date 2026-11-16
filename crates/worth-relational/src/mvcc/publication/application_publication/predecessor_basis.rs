@@ -172,15 +172,14 @@ impl RelationalRuntime {
         {
             return Err(Denial::PredecessorMismatch);
         }
-        let cell = self
-            .history
-            .branch_cell(retained.descriptor.branch_id())
-            .ok_or(Denial::PredecessorBasisUnavailable)?;
+        // The hold carries the publishing branch's cell: a fork keeps this
+        // input after that branch is deleted and leaves the registry.
+        let cell = &retained.publication_cell;
         crate::branch::issue_admitted_relational_branch_basis_with_retention(
             retained.descriptor.clone(),
             cell.identity().clone(),
             std::sync::Arc::clone(&retained.root),
-            cell.publication_cell(),
+            cell.clone(),
             &retained.binding,
         )
         .and_then(|basis| cell.register_basis(basis))

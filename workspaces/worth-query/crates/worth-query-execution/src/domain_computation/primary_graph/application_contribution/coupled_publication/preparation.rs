@@ -179,6 +179,22 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
         demand: &crate::domain_computation::primary_graph::application_attempt::coupled_outputs::DeclaredCoupledOutputDemand,
         candidate: &mut RelationalAuthoredCoupledCandidate<'_>,
     ) -> Result<Option<synchronous_outputs::AppliedOutputParent>, CoupledSourceReadStop> {
+        let read = self.read_source_one(execution, before_pin, demand, candidate)?;
+        self.prepare_read_one(execution, before_pin, demand, candidate, read, None)
+    }
+
+    pub(super) fn prepare_read_one(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        before_pin: &worth_relational::facade::runtime::RelationalPinnedRead,
+        demand: &crate::domain_computation::primary_graph::application_attempt::coupled_outputs::DeclaredCoupledOutputDemand,
+        candidate: &mut RelationalAuthoredCoupledCandidate<'_>,
+        source: execution::CoupledSourceRead,
+        captured: Option<(
+            Box<dyn execution::CapturedProducerInputRead>,
+            std::any::TypeId,
+        )>,
+    ) -> Result<Option<synchronous_outputs::AppliedOutputParent>, CoupledSourceReadStop> {
         let principal = self.principal.ok_or_else(|| {
             WorthQueryOutputDemandDenial::new(
                 WorthQueryOutputDemandDenialKind::ForeignSource,
@@ -186,21 +202,16 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             )
         })?;
         let registry = &self.application.installed_producers;
-        let source_entry = registry.declared_coupled_source(demand)?;
-        let source = source_entry.coupled_executor().read_coupled_source(
-            execution,
-            self.application,
-            principal,
-            self.request,
-            self.before,
-            before_pin,
-            demand,
-            candidate,
-            false,
-        )?;
         let source = match source {
             execution::CoupledSourceRead::Route { .. } => unreachable!("ordinary source read"),
             execution::CoupledSourceRead::Retiring => return Ok(None),
+            execution::CoupledSourceRead::Restored { scope, input } => {
+                return Ok(Some(synchronous_outputs::AppliedOutputParent::new(
+                    candidate.pin_source(execution)?,
+                    scope,
+                    Some(input),
+                )));
+            }
             execution::CoupledSourceRead::Prepared(index) => {
                 let writers = self.writers.borrow();
                 let writer = writers.get(index).ok_or_else(|| {
@@ -221,11 +232,12 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
                 return Ok(Some(synchronous_outputs::AppliedOutputParent::new(
                     candidate.pin_source(execution)?,
                     writer.meaning.source_scope,
+                    candidate.applied_output_input(execution, &writer.meaning)?,
                 )));
             }
             execution::CoupledSourceRead::Verified(parent) => {
                 return self
-                    .retain_verified_parent(execution, parent)
+                    .retain_verified_parent(execution, parent, candidate)
                     .map(Some)
                     .map_err(Into::into);
             }
@@ -252,6 +264,7 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             &pin,
             source,
             producer.edition,
+            captured,
         )?;
         let PreparedCoupledWriter {
             writer,
@@ -299,9 +312,12 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             .runtime
             .primary_provider
             .retain_coupled_after_own(writer.session(), after_own.clone());
+        let meaning = &writers.last().expect("actual appended writer").meaning;
+        let input = candidate.applied_output_input(execution, meaning)?;
         Ok(Some(synchronous_outputs::AppliedOutputParent::new(
             after_own,
             source_scope,
+            input,
         )))
     }
 }

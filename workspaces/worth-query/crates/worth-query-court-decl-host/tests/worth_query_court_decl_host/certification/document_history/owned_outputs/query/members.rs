@@ -9,7 +9,7 @@ pub struct Members {
 worth_query_structured_value_binding!(pub MembersBinding for Members { identity: "owned-outputs.members-result.v1" });
 pub struct MembersSlot;
 worth_query_portable_type!(MembersSlot => "owned-outputs.members-slot.v1");
-fn members() -> ApplicationQueryResultRelationRef<
+pub(in super::super) fn members() -> ApplicationQueryResultRelationRef<
     Query,
     MembersSlot,
     Schema,
@@ -34,12 +34,11 @@ fn value() -> ApplicationQueryResultFieldRef<Query, ValueSlot, Schema, MemberVal
 pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
-    let child =
-        ApplicationQueryResultShapeBuilder::<Schema, Query, Member, Members, MembersBinding>::new(
-            Member::reference(),
-        )
-        .field(key())
-        .field(value());
+    let child = ApplicationQueryResultShapeBuilder::<Schema, Query, Member, Row, RowBinding>::new(
+        Member::reference(),
+    )
+    .field(key())
+    .field(value());
     let definition = ApplicationQueryDefinitionBuilder::declare(Query::reference())
         .root(Model::reference()).scope(Model::reference())
         .result_shape(ApplicationQueryResultShapeBuilder::<Schema, Query, Model, Members, MembersBinding>::new(Model::reference())
@@ -118,5 +117,17 @@ impl ApplicationQueryIntent<Schema> for Read {
     }
     fn into_scope(self) -> Scope {
         Scope::new(ModelKey::at("ModelKey"), self.0)
+    }
+}
+
+impl WorthQueryApplicationProjection<Schema, Query> for Row {
+    fn project(
+        row: &WorthQueryApplicationProjectionRow<'_, Schema, Query>,
+    ) -> Result<Self, WorthQueryApplicationProjectionDenial> {
+        Ok(Self {
+            native_id: row.entity_id(),
+            key: row.field(key())?,
+            value: row.field(value())?,
+        })
     }
 }

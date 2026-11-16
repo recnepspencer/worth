@@ -44,7 +44,8 @@ pub fn register_current_publication_storage(
         next = next.checked_add(1).ok_or_else(exhausted)?;
         Ok(KindId(next))
     };
-    let kinds: [KindId; 9] = [
+    let kinds: [KindId; 10] = [
+        kind()?,
         kind()?,
         kind()?,
         kind()?,
@@ -80,7 +81,9 @@ pub fn register_current_publication_storage(
         publication_link: kinds[3],
         member_link: kinds[4],
         edge_link: kinds[5],
-        scope_link: kinds[8],
+        // Composition readmits kinds in order; the designation validates them all.
+        scope_link: kinds[9],
+        input_link: kinds[8],
         position_kind: kinds[6],
         position_link: kinds[7],
         catalog_aspect: identity()?,
@@ -115,6 +118,12 @@ pub fn register_current_publication_storage(
         })?;
     }
     for (kind_id, name, from, to) in [
+        (
+            storage.input_link,
+            "worth-current-publication-input",
+            storage.entity_kinds.clone(),
+            vec![storage.publication_kind],
+        ),
         (
             storage.publication_link,
             "worth-current-publication-catalog-link",

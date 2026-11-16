@@ -14,7 +14,7 @@ impl ProjectedPreImageCandidates {
     }
     pub(in crate::domain_computation::primary_graph) fn iter(
         &self,
-    ) -> impl Iterator<Item = &Decision> {
+    ) -> impl Iterator<Item = &Decision> + Clone {
         self.facts.iter()
     }
     pub(in crate::domain_computation::primary_graph) fn examined(&self) -> usize {
@@ -28,7 +28,7 @@ impl ApplicationFactTable {
         mutation: &worth_relational::facade::mvcc::ValidatedMutationFootprint,
         policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<ProjectedPreImageCandidates, StoreDenial> {
-        if !demand.relations().is_empty() || demand.changed_output().is_some() {
+        if !demand.relations().is_empty() || demand.output_fields().is_some() {
             let bytes = self
                 .count
                 .checked_mul(size_of::<Decision>())

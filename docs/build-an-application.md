@@ -1088,6 +1088,11 @@ counterpart is the consumer fixture at
 `.../fixtures/consumer_entry/consumer_root/src/application_program/roots.rs`
 (the output graph). That fixture takes every Query name from the two facades.
 
+Reusable input vocabularies can bound their associated input type with
+`ApplicationFeatureInputsShape<S, TargetFeature>`. Use the actual target feature:
+an input shape for another nominal feature does not establish this bound.
+The trait is sealed; its implementations remain the SDK's input leaf and list.
+
 <!-- illustrative -->
 ```rust,ignore
 // Illustrative: not compiled.
@@ -1169,6 +1174,10 @@ pub(crate) fn validated_bank_application() -> Result<
   `normalized_manifest()`.
 - `revision()` is the content-addressed `ApplicationProgramRevision`: the same
   meaning always gives the same revision.
+- The normalized manifest quotes identical delivery connections and complete
+  delivery definitions once. Each action references its own definition; shared
+  encoding preserves the full graph, projection bounds and delivery mode. It
+  does not combine actions or alter execution.
 - Validation uses `ApplicationProgramDefinition::CANONICAL_REVISION_BUDGET`,
   a finite `CanonicalDigestWorkBudget` available from the same program facade.
   Its default remains 4096 basis entries and 1 MiB encoded bytes. Large authored
@@ -4459,6 +4468,19 @@ replacement. Demand and observe every changed incident relation, the logical
 key and all fields to restore. A demanded relation the mutation did not change
 retains as empty, so `relation_count` there reports the mutation's own changes.
 A mutation that moves no member commits, and its inverse restores none.
+
+Required-output delivery keeps this mutation's admitted Edit scope alongside
+its exact member retirement or restoration custody. Each linked surviving
+writer publishes a preserving successor. The graph may also require outputs
+from newly selected sources through ordinary Edit admission; an unaffected
+current source can verify without running its producer. That verification does
+not replace a mandatory linked writer. Recorded inverse, reapplication and
+canonical checkpoint recovery retain both obligations. Whole-source Retire
+and Restore keep their exact writer catalogs and refuse extra or missing writers.
+They may still read an outside parent through Native's exact current-output
+proof, without enrolling another writer. If that parent needs a new publication,
+the retirement refuses `ExtraCoupledOwner` before a producer handler runs.
+
 The retained fields are the mutation's own changes: every demanded field of
 each member it retires, and each demanded field it changes on a record that
 stays. The live owner's kind is covered by the declared owner relation in the
@@ -4473,6 +4495,10 @@ aspect: read it in the handler, and the observed absence retains nothing, so
 demanded field the handler never read on a retiring member refuses with
 `MissingDemandedField`, present or not. This holds for every authored anchor
 and co-anchor, and costs one probe per absence the attempt observed.
+
+For `MissingDemandedField`, the commit denial's existing `detail()` names the
+retention branch and the exact target and locus when known. This is diagnostic
+text; use `preimage_retention_denial()` for programmatic classification.
 
 Each original Retire role identifies one deleted member. Native's validated
 relation footprint matches its retained family key to exactly one fresh member
@@ -4561,7 +4587,11 @@ final support validation. Native same-record writer conflicts are unchanged.
 Only roots returned by positions already applied enter the shared wave. A
 later position that reads those outputs waits at the actual producer barrier;
 a future reference is unavailable, not permission to reorder the caller or run
-an effectful handler again. A genuine prefix is required. Final generation or
+an effectful handler again. The first position reads genuine current C data
+even when an installed potential producer has an overlapping write declaration;
+no producer runs before that authored prefix. Its reads remain subject to final
+support validation. The default dependency-DAG mode still refuses a declared
+producer-before-prefix dependency. Final generation or
 frontier advancement is an ordinary declared action in this same envelope,
 not another publication or a new public seal capability.
 
@@ -4576,22 +4606,165 @@ original causality; later authored/producer changes cannot satisfy its inverse.
 A recovered request returns the authentic original receipt, not live stage
 results. Pending/recovery/drift classification remains the whole-key owner's.
 
+To confirm a cached answer without starting a new edit, rebuild the original
+runtime envelope from its original request-construction data and call
+`resolve_idempotency(allocation)` instead of `execute_performed`. The same
+whole-key, full-stage-list, mode and nominal admission checks apply. `Unseen`
+means nothing is recorded and no supplier planning, handler or producer ran;
+it is not permission to return a cached success. Only an authentic recorded
+committed outcome confirms the earlier operation. Drift and released-original
+refusals retain their normal meaning, and stage results are not reconstructed.
+
+Resolution admits/encodes inputs and may readmit a genuine corrective source,
+but does not resume pending publication or repair its settlement. When that
+recovery is necessary it returns the existing pending/unavailable posture and
+leaves custody intact; an explicit ordinary execution keeps its existing
+recovery behavior. Cached input data grants no authority. Do not reconstruct
+an implicit editor default or allocated name from a later head and substitute
+it for the original canonical request.
+
+Effectful `execute_performed` retains the exact returned envelope outcome,
+including a refusal or cleanup owner, through late request settlement. It uses
+`with_funded_application_completion` under the same original request and
+allocation; cancellation before callback entry still refuses. Retained custody
+is not proof of commitment and grants no further effects. Resolution-only work
+and ordinary advancement keep their existing settlement behavior.
+
+### Conditional roots in one authored envelope
+
+A Runtime/static/corrective stage may select its declared
+`ApplicationDiscoveredOutputGraph<Connection, Edges>` through the same stage
+APIs. Capture retains the recipe selected from the complete typed source input;
+its installed query runs only after that authored position appends at D, under
+current C permission. Every actual demand joins the existing wave and final
+support. A valid empty result produces no demand; missing or denied data refuses.
+The complete candidate and all later authored work still publish once.
+
+Use this shape for an action whose remaining roots depend on its actual authored
+result. A binding installed as a conditional source cannot select
+`ApplicationNoOutputGraph` just because one result has zero roots. NoGraph stays
+appropriate for ordinary actions without an installed required source. Correction
+and reapplication retain the exact installed discovered kind/root, input and
+ancestry through the normal front; neither uses a standalone postcommit carrier.
+The current full intent includes discovered posture, with one v2 identity domain;
+recreate pre-change development records instead of preserving a legacy encoder.
+
 ### Repeated-family required outputs
 
-Use `ApplicationOutputOccurrences<(Connection, ...)>` as the dependents of the
-existing output graph when a closed installed component has repeated-family
-instances. Unmarked static trees still reject declaration cycles. Each member
+Use `ApplicationOutputOccurrences<Component>` as the dependents of the existing
+output graph when a closed installed component has repeated-family instances.
+`Component` is a named type implementing `ApplicationOccurrenceComponent<S>`;
+that type is the component's identity, and its `Connections` hold the complete
+structural vocabulary:
+
+```rust
+pub struct Generators<S>(PhantomData<fn() -> S>);
+impl<S: ApplicationSchema> ApplicationOccurrenceComponent<S> for Generators<S>
+where
+    All<S>: ApplicationOccurrenceConnections<S>,
+{
+    type Connections = All<S>;
+}
+```
+
+Small connection tuples are leaves; compose them recursively with
+`ApplicationOccurrenceGroup<Left, Right>` inside that ONE component. For
+example, `All = ApplicationOccurrenceGroup<PreviousPorts, GeneratorPorts>`
+retains both typed groups through every parent and child schedule. There is no
+flat eight-connection limit on the complete recursive component. A structural
+tuple or group is never itself a component, so the full vocabulary is spelled
+once, at the component's declaration, and generated code names only the
+component. Every placement of one component names the same type; the same
+connections under a second name are a different component. Overlapping
+fragmented sibling components refuse during program declaration with
+`IncompleteOccurrenceComponent`; put those groups inside the same component.
+Independent components and ordinary static branches remain composable.
+Distinct startable roots may share the same complete component and exact typed
+static tail: the program describes those exact connections once, while retaining
+each root and its runtime demand. Nested static continuations may also repeat
+the same complete component: its declarations expand once per graph, while every
+continuation and selector remains active. Repeated members inside that component,
+ordinary duplicate static edges, textual ID collisions and conflicting meanings
+still refuse.
+Static continuations may connect members inside that complete component. Their
+full static graph must be acyclic before condensation, and the projected graph
+between components must also be acyclic. Among runnable tasks, component order
+then static precedence determine priority; actual instance prerequisites still
+decide readiness. Each captured continuation retains its own selector and does
+not replay a supplier. Each occurrence member
 implements `WorthQueryApplicationPrerequisiteOutputConnection`: its typed
 prerequisite query, sealed result-relation selector (`prerequisite_rows`), row
 binding, target-to-query mapping and one parent-demand mapping per row. Query
 drains **every** selected row; the application cannot submit a truncated list.
+A nested prerequisite path uses a sealed tuple of its existing declared relation
+selectors: `(outer, inner)` or `(outer, (middle, leaf))`. Query visits every
+selected branch and projects every terminal row; repetitions remain rows. Each
+step retains its declared cardinality and disclosure checks. A valid empty
+Optional/Many branch contributes zero, while missing, omitted, wrong-node or
+malformed relations refuse. The path issues no additional query and retains the
+complete nested result/predicate support already acquired by Query.
 The query must describe actual predecessor/operand sources without requiring
 geometry that has not yet been produced.
+At an authored barrier, Query captures incoming prerequisites only for the
+occurrences needed there and their complete transitive parents. A pending future
+consumer does not retain an early incoming observation merely because its root
+is present. Identity coalescing remains eager, so an alias still retains its own
+static selector on the authentic Parent. Once a consumer's incoming support is
+captured for production, it remains strict through final publication; a later
+authored change cannot silently refresh a consumed input or replay its supplier.
+
+Partition a mixed relation in its declared result shape, rather than dropping
+rows in the Parent mapping. `relation_where_absent(relation, nested, field)`
+selects live rows with no value for that exact declared scalar field, including
+an absent optional aspect. `relation_where_equal(relation, nested, field,
+parameter)` selects a present matching value. For example, an optional generator
+name field can separate ordinary prerequisites from each genuine generator
+family without inventing a bridge producer or a stored kind flag. Each relation
+slot is still a sealed prerequisite selector, and every selected row maps to its
+real typed Parent. Unavailable or unauthorized data is never treated as absence.
+
+For an already known physical coordinate, use
+`relation_where_entity(relation, nested, coordinate_parameter)` with an
+`ApplicationQueryParameterRef<Query, Coordinate, EntityRefApplicationValueBinding>`.
+Bind its value as the descriptive foundational `EntityId`. The query compares
+all partition, slot and generation components against actual live endpoints
+inside its admitted relation; generation zero is literal equality, not a
+wildcard. It cannot turn a foreign or retired coordinate into a lookup root,
+resolve a logical successor, or grant entity read or mutation authority.
+
+The existing query scope, READ admission and relation disclosure still govern
+row presence and count. Complete relation/endpoint support protects reuse,
+including empty results. This is a bounded traversal of that relation roster,
+not an indexed identity lookup; only matching nested rows are materialized.
+
+
+Both filters retain complete candidate adjacency and predicate-field support,
+including rows excluded from the result. Changing an excluded row can invalidate
+the observation even when the selected IDs stay the same. Use the existing
+Source expectation and output support owners; do not add a private check or
+truncate the selected set. The current package-record format binds the operator;
+recreate obsolete development archives rather than migrating old formats.
 
 The existing output wave closes the actual frontier, authenticates complete
 source generation/family/binding/parameter partitions, and prepares every real
 parent before projecting and executing its dependent source. Shared occurrences
-coalesce; actual cycles, absent required parents and invalidated support refuse.
+coalesce only under the same complete typed component; actual cycles, absent
+required parents and invalidated support refuse. Coalescing a supplier does not
+discard a captured root's static branch: each retained alias runs its own static
+discovery once against the canonical genuine Parent, even when that supplier
+completed before a later positioned capture. Distinct static selectors in the
+full demand remain distinct work; they do not execute the supplier again.
+Before a wave returns its candidate to a later authored stage, and before final
+publication, Query re-closes the component's outgoing discovery at that candidate.
+A later authored action can therefore add a real next/consumer link in the same
+envelope. Query replaces only its outgoing closure observations, re-admits every
+completed canonical Parent's declared outgoing query, and drains all newly found
+demands through the same ranked wave. New suppliers run once; this pure refresh
+does not replay existing suppliers or static selectors. The resulting complete
+outgoing support still undergoes normal strict final validation. Incoming Parent,
+static-selector, verified-output and numerical decision support remain strict:
+changing data an executed supplier consumed is still an atomic refusal. Every
+refresh uses the same request, C authorization, allocation and work allowance.
 Installed ports, current C READ, genuine D data, Prepared/Verified Parent custody,
 existing producer round/allocation bounds and after-own/final support remain in
 force. Neither distinct source IDs nor a proposed descriptor constitutes proof.
@@ -4599,6 +4772,68 @@ The existing interleaved cabinet courts demonstrate positioned Creates, a real
 inter-position producer, repeated predecessor plus foreign input, and a genuine
 recorded inverse followed by ordinary authoring. CAD numerical reuse and the
 private whole-stage/final-body translation remain their own consumer work.
+
+
+### Capture producer inputs before preparing required parents
+
+When the current required parents come from authored data rather than a stored
+output roster, use `ApplicationCapturedInputConnection<Base, Capture>` inside
+the same complete `ApplicationOccurrenceComponent<S>`. `Base` remains the real
+connection, including its ports, demand types and complete outgoing discovery.
+`Capture` implements `WorthQueryProducerInputCaptureDefinition<S>` with one
+`OutputFamily`, stable `IDENTITY` and finite `Parents` naming the **base**
+connections, without their capture wrappers.
+
+Declare `input_capture()` on each applicable producer binding using
+`WorthQueryProducerInputCaptureContract::new::<Capture>()`. Its mutation binding
+must require an application program. Configure the original handler once with
+`setup.producer_with_input_capture::<Producer, Capture, _>(provider, handler)`.
+The installed required feature and complete component must contain every
+capture port; an incomplete or different contract refuses during installation.
+Available conditional bindings alone do not request an artifact or a component.
+
+The same handler implements
+`WorthQueryProducerInputCaptureHandler<S, Producer, Capture>`:
+
+- `capture_inputs` receives `WorthQueryProducerInputReader` under the actual
+  installed operation's read authority. Read the genuine authored fields,
+  relations and indexed selections, then call `parent::<Base, _>(&source,
+  typed_demand)` for every currently required entry on each fixed port. The
+  source must be issued by this reader, and the demand must resolve to its exact
+  generation. An empty required set must follow from those actual reads.
+  The same loan supplies `walk`, `orbit`, `entity_member`,
+  `derived_member_relations_from` and admitted `content` reads through the
+  existing decision-read owners. Their Native cursor/member identity, complete
+  structural/aggregate/derived support and original request remain intact.
+  Errors stay with the loan even if the handler catches them. No raw projection
+  reader or writer is exposed. `RecordSelection` already requires a readable
+  binding; the scalar `field` signature imposes no additional codec capability.
+- Finish with `reader.finish(data)`, where the owned data implements
+  `ChargedBytes`. The returned `WorthQueryCapturedProducerInputs` carries the
+  original read custody, complete parent set and request allocation. The loan
+  exposes no candidate writer, mutation target or producer invocation.
+- `prepare_captured_decision` consumes that exact container once, after every
+  required parent is ready. `into_data()` yields numerical input data; use the
+  fresh `DecisionReader` to obtain actual D mutation targets. Captured data grants
+  no writes or Current authority.
+
+Query first uses normal Native output readiness. An already-current output does
+not run this prelude or require a capture-only mutation admission. For a source
+requiring computation, Query compares complete captured support before the next
+supplier and before consuming the data. A changed **unconsumed** pure capture is
+reacquired on the current candidate using the same request and work budget; its
+superseded incoming edges do not become independent delivery roots. Other real
+roots, still-required parents and every alias's static selector remain active.
+A supplier already performed is not replayed. Once computation consumes the
+capture, its read support stays strict through publication and participates in
+normal input-reuse classification; it is not the replaceable source suffix.
+
+Keep consumer recipes in their own inventory or pack. Capture the complete
+admitted input set, including referenced owners and absence support; do not run
+a producer to discover dependencies or substitute a prior publication's roster
+for newly authored inputs. Unavailable, denied or interrupted reads remain typed
+failures. See the same-world executable examples in
+[`captured_input`](../workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/owned_outputs/family/captured_input.rs).
 
 ### Independent authored prefixes
 
@@ -4789,6 +5024,34 @@ actual committed postcondition, so replacing an owned edge does not cause a
 second publication. A real upstream change still re-runs the producer, and a
 read of another publication remains a source observation. The original raw reads
 still participate in candidate admission and complete-candidate support checks.
+The synchronous prerequisite wave also retains the actual Native publications
+consumed by an opted-in writer. This includes borrowed required outputs: the
+consumer need not own their cells or add an association edge to them. Native
+records those input routes with the consumer's own origin and maintains separate
+current input incidence. Retirement selects their surviving consumers transitively
+and requires every selected successor in the same atomic candidate. Unrelated
+current parents remain reads, and an unlisted fresh writer still refuses. Ordinary
+participants that publish no Native-owned output do not acquire ownership through
+this accounting. Applications continue declaring the genuine complete prerequisite
+graph; they do not submit a writer roster, fabricate a dependency stamp or add
+synthetic ownership links. Recorded restoration carries the real input identities
+through its existing correspondence, including after checkpoint recovery.
+Within the inverse candidate, a restored parent can supply its actual
+Native-validated applied image before its consumers run. This is applied-input
+custody, not a claim that its old producer ran again or a new Current permission.
+
+If Native refuses `ExtraCoupledOwner`, its existing publication error preserves
+the actual requested family, full-generation source and partition, authored
+source kind/root, and the failed catalog site. A preserve-admission failure also
+names its actual producer. These are descriptive diagnostics; they never enlarge
+the admitted owner roster or infer a CAD feature from a record coordinate.
+
+If the whole observed aggregate or walk is retired, Query proves every observed
+entity belongs to that predecessor and compares its actual retirement between
+the writer's candidate and the completed candidate. The committed postcondition
+retains genuine retirement truth, so no surviving aggregate selector is needed.
+Partial retirements keep complete support through surviving members; foreign
+observations retain their source semantics.
 
 Native derives private aggregate membership deletion and recreation through its
 existing aggregate consequence owner. Applications supply the exact changes for
@@ -4839,9 +5102,9 @@ An owned producer can read its inputs as its exact predecessor publication
 consumed them. Declare its installed read-only operations beside `OWNERSHIP`:
 
 ```rust,ignore
-const PREDECESSOR_READS: Option<WorthQueryPredecessorReadContract<Schema>> =
-    Some(WorthQueryPredecessorReadContract::new(&[
-        WorthQueryPredecessorReadOperation::new(ReadInputs::reference()),
+const PREDECESSOR_READS: Option<WorthQueryProducerObservationReadContract<Schema>> =
+    Some(WorthQueryProducerObservationReadContract::new(&[
+        WorthQueryProducerObservationReadOperation::new(ReadInputs::reference()),
     ]));
 ```
 
@@ -4868,7 +5131,7 @@ let previous = reader.predecessor_observation(ReadInputs::reference(), |old| {
 
 The outer result describes observation admission; the closure's result describes
 its read. The restricted reader exposes tracked entity, field and relation
-reads. Its `PredecessorEntity` and `PredecessorRelation` handles are distinct from
+reads. Its `BeforeEntity` and `BeforeRelation` handles are distinct from
 current projection identities and cannot mint mutation targets. There is no raw
 reader, nested query, computation or publication access. Reads use the existing
 Native loan, request checks and projection limits. Current control contention
@@ -4889,7 +5152,7 @@ substituted with a current value, and no old root is retained by Query evidence.
 
 A first publication or cold reopen refuses `PredecessorBasisUnavailable`; a
 producer can then choose full computation. Undeclared reads refuse
-`UndeclaredPredecessorRead`, and conflicting predecessor coordinates refuse
+`UndeclaredObservationRead`, and conflicting predecessor coordinates refuse
 `PredecessorMismatch`. HistoricalSelection and authored-restoration publications
 refuse `PredecessorBasisUnavailableForOrigin`, naming the origin kind. Their
 navigation precommit basis is not the producer's consumed input basis; follow-up
@@ -8542,3 +8805,38 @@ ordinary Bank courts and is not supplied by this all-accounts index.
 A settled producer's `outputs_of::<Contract>()` reports the roles in that route's canonical Native publication. A shrink may also require Retire witnesses for publications owned by the deleted children. Those witnesses are admission evidence, and are exposed separately through `root_settlement().closure_evidence_of::<Contract>()` and its typed `family_entries::<Family>()`. A closure entry describes a retired identity; it is not an output-role entity and grants no current identity or producer custody. Only the canonical roles participate in producer correspondence and cold readmission. The closure evidence describes this host's performed admission and adds no durable replay obligation. A program may refresh a producer again before it delivers its final root settlement. Each publication has its own correspondence and evidence; the final settlement does not accumulate witnesses from earlier publications in that wave.
 
 Source-scope-owned output cannot be physically suspended independently. The ordinary suspension door refuses `OwnedPublicationRequiresCascade` before publication; the output remains readable and its producer remains settled. Independent output retains the ordinary suspension and exact rematerialization path.
+
+### Authored envelope stages without required outputs
+
+Use `ApplicationNoOutputGraph` as the output choice for an ordinary authored
+stage that has no required output of its own: `push_stage::<ApplicationNoOutputGraph, _>(intent)`
+(or static `stage::<ApplicationNoOutputGraph, _>`). The same explicit choice works
+for correction/reapplication `edit_envelope::<C, Program, ApplicationNoOutputGraph>`.
+An action can still create or retire real typed Native rows; this choice means
+it has no demanded geometry graph, not that its effects are absent.
+
+The initial and selected installed programs must both own the ordinary action.
+A binding declared as a required-output source cannot omit that obligation by
+choosing no graph. Real roots on other stages still run before a final authored
+stage that reads them. Every stage retains nominal admission, complete original
+input/mode/order/graph intent, actual pre-stage data and final support, one
+commit and the same original-receipt replay. A deleted object is not a root;
+do not invent an empty producer or a replacement object to seal its retirement.
+
+Runtime `stage_token::<Binding>(ordinal)` describes only a captured stage of
+that request, including a genuine corrective prefix at ordinal zero. A wrong
+binding or absent ordinal returns `None`. Use that branded token for the live
+result, stage receipt or typed domain denial; recovered receipts do not recreate
+results. After projecting a stage denial's identity and typed cause, consume
+`into_commit_outcome()` to transfer its original uncommitted cleanup/recovery
+owner. A domain refusal before a transaction begins has no such owner.
+
+
+Original producer DATA can be read through `DecisionReader::original_observation`
+under separately declared `ORIGINAL_READS` and fresh READ authorization at the
+admitted original C. `PREDECESSOR_READS` and `predecessor_observation` still read
+exact prior publication consumed inputs. Both use the readonly `BeforeDecisionReader`
+fields/content/relations and descriptive basis version; neither lends mutation
+targets or promotes old data to Current. Original C values do not become D-current
+expectations. Actual Initial/no-prior output may omit an old own image; Preserve
+requires genuine old data. The producer's WRITE permission does not grant READ.

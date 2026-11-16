@@ -54,20 +54,32 @@ pub(super) fn append_result_shape(
             ),
         ]);
         if let Some(predicate) = relation.predicate() {
-            let (entity, aspect, field) = predicate.field();
             entries.extend([
-                text(format!("{relation_path}.predicate.entity"), entity),
-                text(format!("{relation_path}.predicate.aspect"), aspect),
-                text(format!("{relation_path}.predicate.field"), field),
                 text(
-                    format!("{relation_path}.predicate.parameter"),
-                    predicate.parameter(),
+                    format!("{relation_path}.predicate.entity"),
+                    predicate.entity(),
+                ),
+                text(
+                    format!("{relation_path}.predicate.operator"),
+                    predicate.operator(),
                 ),
                 text(
                     format!("{relation_path}.predicate.scalar"),
                     predicate.scalar_family().canonical_name(),
                 ),
             ]);
+            if let Some((_, aspect, field)) = predicate.field() {
+                entries.extend([
+                    text(format!("{relation_path}.predicate.aspect"), aspect),
+                    text(format!("{relation_path}.predicate.field"), field),
+                ]);
+            }
+            if let Some(parameter) = predicate.parameter() {
+                entries.push(text(
+                    format!("{relation_path}.predicate.parameter"),
+                    parameter,
+                ));
+            }
         }
         append_result_shape(
             entries,

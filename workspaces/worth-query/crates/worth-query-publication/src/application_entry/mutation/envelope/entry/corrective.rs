@@ -24,24 +24,25 @@ pub(in crate::application_entry) fn admit<S, P, K, I, R>(
     correction: WorthQueryCorrectionIntent,
 ) -> Result<Box<dyn EditEntry<S, P, K>>, WorthQueryApplicationCorrectionDenial>
 where
-
     S: ApplicationSchema,
     P: ApplicationProgramDefinition<S>,
     I: ApplicationMutationIntent<S> + Clone + Send + Sync + 'static,
-    I::Binding: ApplicationMutationBinding<S, IdempotencyKey = K> + ApplicationMutationAdmissionBinding<S> + WorthQueryApplicationRequiredOutputSource<S, Connection<S, R>>,
-    <I::Binding as ApplicationMutationAdmissionBinding<S>>::Admission: crate::application_entry::mutation::authorization::WorthQueryBindingAdmission<S, I::Binding>,
+    I::Binding:
+        ApplicationMutationBinding<S, IdempotencyKey = K> + ApplicationMutationAdmissionBinding<S>,
+    <I::Binding as ApplicationMutationAdmissionBinding<S>>::Admission:
+        crate::application_entry::mutation::authorization::WorthQueryBindingAdmission<
+            S,
+            I::Binding,
+        >,
     <I::Binding as ApplicationMutationBinding<S>>::Input: Clone + Send + Sync,
     <I::Binding as ApplicationMutationBinding<S>>::Result: Send,
     <I::Binding as ApplicationMutationBinding<S>>::Denial: Send,
-    <I::Binding as ApplicationMutationBinding<S>>::ScopeBinding: ApplicationMutationScopeResolution<S, <I::Binding as ApplicationMutationBinding<S>>::PrincipalIdentity>,
+    <I::Binding as ApplicationMutationBinding<S>>::ScopeBinding: ApplicationMutationScopeResolution<
+        S,
+        <I::Binding as ApplicationMutationBinding<S>>::PrincipalIdentity,
+    >,
     K: serde::Serialize + Send + Sync + 'static,
-    R: ApplicationOutputGraphShape<S> + ApplicationRequiredOutputRoot,
-    Connection<S, R>: WorthQueryApplicationRequiredOutputConnection<S>,
-    Demand<S, R>: Clone + Send + Sync,
-    R::Dependents: worth_query_execution::publication_boundary::synchronous_outputs::SynchronousOutputEdges<S, Demand<S, R>>,
-    <Source<S, R> as ApplicationQueryBinding<S>>::Input: ApplicationQueryIntent<S, Binding = Source<S, R>>,
-    <Source<S, R> as ApplicationQueryBinding<S>>::ScopeBinding: ApplicationQueryScopeResolution<S, <Source<S, R> as ApplicationQueryBinding<S>>::PrincipalIdentity>,
-    <<Source<S, R> as ApplicationQueryBinding<S>>::ResultBinding as ApplicationStructuredValueBinding>::Value: WorthQueryApplicationProjection<S, <Source<S, R> as ApplicationQueryBinding<S>>::Query> + Clone,
+    R: EditStageOutputs<S, I::Binding>,
 {
     use WorthQueryApplicationCorrectionDenial as Denial;
     let identities = key
@@ -58,11 +59,12 @@ where
     )
     .idempotency(key.key());
     let (_, owner) = mutation
-        .select_performed_owner::<P, R>(phase, program)
+        .select_envelope_owner::<P>(phase, program)
         .map_err(Denial::RequiredOutputs)?;
     if !owner.contains_action::<I::Binding>() {
         return Err(Denial::SourceBindingUnavailable);
     }
+    R::require(program, &owner).map_err(Denial::RequiredOutputs)?;
     mutation
         .require_workflow_transition()
         .map_err(Denial::Mutation)?;

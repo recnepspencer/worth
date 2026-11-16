@@ -20,6 +20,11 @@ pub(super) fn origin(
                 "basis" => super::branches::descriptor(value, request)?,
                 "producer" | "birth_producer" => text(value, request)?,
                 "meaning" => meaning(value, request)?,
+                "inputs" => vector::<crate::mvcc::RequiredOutputPublicationMeaning>(
+                    value,
+                    request,
+                    |value| meaning(value, request),
+                )?,
                 "outputs" => {
                     vector::<EntityId>(value, request, |_| Ok(OwnerAllocation::default()))?
                 }

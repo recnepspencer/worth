@@ -122,9 +122,16 @@ fn predicate_fields<Stop>(
         .map_err(inventory_stop)?
     {
         admit(1, 0).map_err(WorthQueryCanonicalIdentityStop::Admission)?;
+        let worth_query_installation::facade::WorthQueryReadGraphPredicateTarget::Field {
+            aspect,
+            field,
+        } = predicate.target
+        else {
+            continue;
+        };
         rows.push(owned_predicate_field(
-            predicate.aspect,
-            predicate.field,
+            aspect,
+            field,
             predicate.scalar_family.canonical_name(),
             admit,
         )?);

@@ -12,6 +12,7 @@ pub use home_retirement::{
 };
 mod completed_candidate;
 mod execution;
+pub(in crate::domain_computation::primary_graph) use execution::PreparedMutationInputs;
 mod execution_report;
 mod failure;
 pub use completed_candidate::WorthQueryCompletedMutationCandidate;
@@ -81,7 +82,7 @@ pub enum HandlerResult<Value, Denial> {
 }
 
 /// Execution-owned contract implemented by the handler selected by a binding.
-pub trait OperationHandler<Schema, Binding>: Send + Sync + 'static
+pub trait OperationHandler<Schema, Binding>: std::any::Any + Send + Sync + 'static
 where
     Schema: ApplicationSchema,
     Binding: ApplicationMutationBinding<Schema>,

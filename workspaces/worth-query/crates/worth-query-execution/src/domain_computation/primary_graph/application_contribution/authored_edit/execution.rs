@@ -204,6 +204,17 @@ where
                 .map_err(|cause| refuse(format!("planned authored support: {cause:?}")))?;
         }
         let (program, result) = completed.into_parts();
+        let program = program
+            .retain_admitted_source_input::<B>(
+                context.phase,
+                context.application,
+                identities.encoded_input(),
+            )
+            .map_err(|cause| {
+                stopped_stage(AuthoredStageExecutionCause::Request(
+                    crate::domain_computation::primary_graph::MutationHandlerExecutionDenial::Attempt(cause),
+                ))
+            })?;
         let binding =
             WorthQueryApplicationIdempotencyBinding::for_authored_stage_identities(&identities)
                 .expect("canonical stage identities");

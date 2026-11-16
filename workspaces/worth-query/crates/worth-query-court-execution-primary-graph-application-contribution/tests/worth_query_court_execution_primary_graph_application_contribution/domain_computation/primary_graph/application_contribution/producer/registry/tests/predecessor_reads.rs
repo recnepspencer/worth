@@ -2,8 +2,10 @@
 use super::{declared, InstalledProducer, InstalledProducerEdition, TypeId};
 use worth_query_declaration::facade::application_schema::{self as schema, *};
 use worth_query_execution::facade::application_contribution::{
-    ProducerPublicationOwnership as Ownership, WorthQueryPredecessorReadContract as Contract,
-    WorthQueryPredecessorReadDenial as Denial, WorthQueryPredecessorReadOperation as Read,
+    ProducerPublicationOwnership as Ownership,
+    WorthQueryProducerObservationReadContract as Contract,
+    WorthQueryProducerObservationReadDenial as Denial,
+    WorthQueryProducerObservationReadOperation as Read,
 };
 use worth_query_installation::facade as domain;
 
@@ -131,15 +133,15 @@ fn predecessor_contract_requires_the_declared_exact_operation_type() {
     assert_eq!(READS.require::<ReadInput>(), Ok(()));
     assert_eq!(
         READS.require::<OtherRead>(),
-        Err(Denial::UndeclaredPredecessorRead)
+        Err(Denial::UndeclaredObservationRead)
     );
     assert_eq!(
         READS.require::<ForeignRead>(),
-        Err(Denial::UndeclaredPredecessorRead)
+        Err(Denial::UndeclaredObservationRead)
     );
     assert_eq!(
         Contract::<Schema>::new(&[]).require::<ReadInput>(),
-        Err(Denial::UndeclaredPredecessorRead)
+        Err(Denial::UndeclaredObservationRead)
     );
 }
 #[test]

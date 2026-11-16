@@ -3,8 +3,8 @@ use super::*;
 use crate::domain_computation::application_aftermath::WorthQueryRetainedPreImage;
 use crate::domain_computation::primary_graph::{
     retained_correction::record::{
-        MaterialCapture, RecordedAbsenceKind, RecordedChangedFields, RecordedDisclosure,
-        RecordedLocation, RecordedPreImageAbsence, RecordedPreImageField, RecordedScope,
+        MaterialCapture, RecordedAbsenceKind, RecordedDisclosure, RecordedLocation,
+        RecordedOutputFields, RecordedPreImageAbsence, RecordedPreImageField, RecordedScope,
     },
     WorthQueryApplicationCommitAuthorityBinding,
 };
@@ -65,9 +65,10 @@ impl WorthQueryPrimaryGraphProvider {
                 })
                 .collect()
         });
-        let changed_fields = preimage.and_then(|image| image.changed_output().map(|output| {
+        let output_fields = preimage.and_then(|image| image.output_fields().map(|output| {
             use crate::domain_computation::application_aftermath::retained_preimage::RetainedPreImageAbsenceKind as Kind;
-            RecordedChangedFields {
+            RecordedOutputFields {
+                capture: output.output.capture().into(),
                 role: output.output.role().to_owned(), entity: output.output.entity().to_owned(),
                 target: output.target,
                 absences: image.absences().iter().map(|field| RecordedPreImageAbsence {
@@ -93,7 +94,7 @@ impl WorthQueryPrimaryGraphProvider {
                 scope,
                 disclosure,
                 preimage: fields,
-                changed_fields,
+                output_fields,
                 content: preimage
                     .map(|preimage| preimage.content().clone())
                     .unwrap_or_default(),

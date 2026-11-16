@@ -15,6 +15,7 @@ where
     envelope: WorthQueryKeyedEditEnvelope<'a, S, RuntimeEditStages<S, P, K>, K>,
     program: &'program WorthQueryProgramApplicationRuntime<S, P>,
     front: Option<CorrectionEnvelopeFront<'a, S, P, K>>,
+    front_binding: Option<std::any::TypeId>,
 }
 
 pub(in crate::application_entry) type CorrectionEnvelopeFront<'a, S, P, K> = Box<
@@ -43,6 +44,7 @@ impl<'a, S: ApplicationSchema, K> WorthQueryKeyedEditEnvelope<'a, S, NoEditStage
         WorthQueryRuntimeEditEnvelope {
             program,
             front: None,
+            front_binding: None,
             envelope: WorthQueryKeyedEditEnvelope {
                 key: self.key,
                 envelope: WorthQueryEditEnvelope {
@@ -62,6 +64,23 @@ where
     S: ApplicationSchema,
     P: ApplicationProgramDefinition<S>,
 {
+    /// A token describes only an actually captured nominal stage. It grants
+    /// typed access to that request's live result or denial, never replay data.
+    pub fn stage_token<B: ApplicationMutationBinding<S>>(
+        &self,
+        ordinal: usize,
+    ) -> Option<WorthQueryEditStageToken<B::Result, B::Denial>> {
+        let binding = match (self.front_binding, ordinal) {
+            (Some(binding), 0) => Some(binding),
+            (Some(_), ordinal) => self.envelope.envelope.stages.binding(ordinal - 1),
+            (None, ordinal) => self.envelope.envelope.stages.binding(ordinal),
+        };
+        (binding == Some(std::any::TypeId::of::<B>())).then(|| WorthQueryEditStageToken {
+            brand: self.envelope.envelope.brand.clone(),
+            ordinal,
+            marker: PhantomData,
+        })
+    }
     /// Select positioned semantics before capturing the original stage list.
     pub fn ordered_authored(mut self) -> Result<Self, WorthQueryEditEnvelopeModeDenial> {
         if !self.envelope.envelope.stages.entries.is_empty() {
@@ -107,9 +126,31 @@ where
     where
         K: serde::Serialize + Send + Sync + 'static,
     {
-        self.envelope.execute_with_front(
+        self.envelope.advance_with_front(
             self.program,
             allocation,
+            AuthoredEnvelopeResolutionPurpose::Execute,
+            move |context, program, phase, key, entries| match self.front {
+                Some(front) => front(context, program, phase, key, entries),
+                None => Ok(None),
+            },
+        )
+    }
+
+    /// Resolve this complete original intent without planning or executing it.
+    /// Unseen is descriptive only; no candidate or stage result is produced.
+    /// Pending publication that needs recovery remains unavailable here.
+    pub fn resolve_idempotency(
+        self,
+        allocation: ExecutionAllocationPolicy<'_, '_>,
+    ) -> Result<WorthQueryEditEnvelopeOutcome, WorthQueryEditEnvelopeExecutionDenial>
+    where
+        K: serde::Serialize + Send + Sync + 'static,
+    {
+        self.envelope.advance_with_front(
+            self.program,
+            allocation,
+            AuthoredEnvelopeResolutionPurpose::ResolveOnly,
             move |context, program, phase, key, entries| match self.front {
                 Some(front) => front(context, program, phase, key, entries),
                 None => Ok(None),
@@ -123,11 +164,12 @@ where
     S: ApplicationSchema,
     P: ApplicationProgramDefinition<S>,
 {
-    pub(in crate::application_entry) fn with_correction_front(
+    pub(in crate::application_entry) fn with_correction_front<B: ApplicationMutationBinding<S>>(
         mut self,
         front: CorrectionEnvelopeFront<'a, S, P, K>,
     ) -> Self {
         self.front = Some(front);
+        self.front_binding = Some(std::any::TypeId::of::<B>());
         self
     }
 }

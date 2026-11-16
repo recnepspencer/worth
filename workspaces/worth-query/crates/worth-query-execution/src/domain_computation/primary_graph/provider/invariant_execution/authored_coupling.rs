@@ -42,73 +42,76 @@ impl WorthQueryPrimaryGraphProvider {
         let Some(publisher) = &self.graph.application_publication else {
             return Ok(None);
         };
-        let owners = match &material.restoration_plan {
-            Some(restoration) => self
-                .graph
-                .with_runtime(execution, |runtime| {
-                    runtime.readmit_authored_restoration_stage_owners(
+        let source = assembly.map(|_| {
+            let attempts = self.attempts.lock().unwrap_or_else(|p| p.into_inner());
+            let staged = attempts.staged_attempt(session).ok_or_else(missing_candidate_failure)?;
+            Ok::<_, WorthQueryInvariantExecutionFailure>((
+                super::super::application_attempt_state::coupled_publication::authored_retirement_input(&self.graph.layout, &staged)?,
+                super::super::application_attempt_state::coupled_publication::authored_source(&staged),
+                super::super::authored_retirement_selection::coupling_posture(staged.appendix_attempt()),
+            ))
+        }).transpose()?;
+        if material.restoration_plan.is_none() && source.is_none() {
+            return Ok(None);
+        }
+        let later = assembly
+            .map(|value| value.authored_stage_sources())
+            .unwrap_or_default();
+        let member_edit_source = source.as_ref().and_then(|(retirement, source, posture)| {
+            (matches!(posture, super::super::authored_retirement_selection::AuthoredCouplingPosture::LiveOwnerMembers)
+                && (retirement.is_some() || material.restoration_plan.is_some())).then_some(*source)
+        });
+        let owners = self
+            .graph
+            .with_runtime(execution, |runtime| {
+                let basis = material.product.observation().basis().relational_basis();
+                let owners = match (&material.restoration_plan, source) {
+                    (Some(restoration), _) => runtime.readmit_authored_restoration_stage_owners(
                         execution,
                         &publisher.native,
                         restoration.clone(),
-                        &assembly
-                            .map(|value| value.authored_stage_sources())
-                            .unwrap_or_default(),
-                    )
-                })
-                .map_err(map_validation_failure)?,
-            None => {
-                if assembly.is_none() {
-                    return Ok(None);
-                }
-                let (selected, source) = {
-                    let attempts = self.attempts.lock().unwrap_or_else(|p| p.into_inner());
-                    let staged = attempts
-                        .staged_attempt(session)
-                        .ok_or_else(missing_candidate_failure)?;
-                    let selected = super::super::application_attempt_state::coupled_publication::authored_retirement_input(&self.graph.layout, &staged)?;
-                    (
-                        selected,
-                        super::super::application_attempt_state::coupled_publication::authored_source(&staged),
-                    )
+                        &[],
+                    )?,
+                    (None, Some((selected, source, _))) => Some(match selected {
+                        Some((anchor, co_anchors, roles)) => runtime
+                            .readmit_authored_coupled_owners(
+                                execution,
+                                &publisher.native,
+                                basis,
+                                anchor,
+                                &co_anchors,
+                                &roles,
+                            )?,
+                        None => runtime.readmit_edit_coupled_owners(
+                            execution,
+                            &publisher.native,
+                            basis,
+                            source,
+                        )?,
+                    }),
+                    (None, None) => unreachable!("an ordinary assembly retains its source"),
                 };
-                Some(
-                    self.graph
-                        .with_runtime(execution, |runtime| {
-                            let basis = material.product.observation().basis().relational_basis();
-                            match selected {
-                                Some((anchor, co_anchors, roles)) => {
-                                    let owners = runtime.readmit_authored_coupled_owners(
-                                        execution,
-                                        &publisher.native,
-                                        basis,
-                                        anchor,
-                                        &co_anchors,
-                                        &roles,
-                                    )?;
-                                    runtime.readmit_later_authored_stage_owners(
-                                        execution,
-                                        &publisher.native,
-                                        owners,
-                                        &assembly
-                                            .map(|value| value.authored_stage_sources())
-                                            .unwrap_or_default(),
-                                    )
-                                }
-                                None => runtime.readmit_edit_coupled_stage_owners(
-                                    execution,
-                                    &publisher.native,
-                                    basis,
-                                    source,
-                                    &assembly
-                                        .map(|value| value.authored_stage_sources())
-                                        .unwrap_or_default(),
-                                ),
-                            }
-                        })
-                        .map_err(map_validation_failure)?,
-                )
-            }
-        };
+                let Some(mut owners) = owners else {
+                    return Ok(None);
+                };
+                if let Some(source) = member_edit_source {
+                    owners = runtime.readmit_member_edit_coupled_owners(
+                        execution,
+                        &publisher.native,
+                        owners,
+                        source,
+                    )?;
+                }
+                runtime
+                    .readmit_later_authored_stage_owners(
+                        execution,
+                        &publisher.native,
+                        owners,
+                        &later,
+                    )
+                    .map(Some)
+            })
+            .map_err(map_validation_failure)?;
         let Some(owners) = owners.filter(|owners| {
             owners.requires_coupled_assembly()
                 || assembly.is_some_and(|assembly| assembly.is_authored_edit())

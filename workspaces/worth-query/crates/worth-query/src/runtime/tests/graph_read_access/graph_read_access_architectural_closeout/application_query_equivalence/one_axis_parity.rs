@@ -134,9 +134,12 @@ where
         if matches!(self.variation, GraphVariation::EqualityPredicate) && index == 0 {
             let field = self.graph.ordering(0)?;
             return Some(WorthQueryReadGraphPredicateView {
-                aspect: field.aspect,
-                field: field.field,
-                parameter: "one-axis-equality",
+                target:
+                    worth_query_installation::facade::WorthQueryReadGraphPredicateTarget::Field {
+                        aspect: field.aspect,
+                        field: field.field,
+                    },
+                parameter: Some("one-axis-equality"),
                 scalar_family: field.scalar_family,
             });
         }

@@ -33,6 +33,13 @@ pub struct SourceReadAuthorization {
     identity: [u8; 32],
 }
 
+struct OperationReadOrigin {
+    authority: [u8; 32],
+    session: WorthQueryGraphWorkSessionIdentity,
+    principal: EntityId,
+    scope: EntityId,
+}
+
 impl SourceReadAuthorization {
     /// Only successful Source completion supplies the actual terminal and its
     /// exact bound query. Descriptive query identities cannot create custody.
@@ -159,6 +166,71 @@ impl SourceReadAuthorization {
         authorization: WorthQueryRetainedAuthorizationDecisionFacts,
         registry: &Arc<WorthQueryInstalledAuthorizationRegistry>,
     ) -> Result<Arc<Self>, CompanionPreflightStop> {
+        Self::operation_support(
+            execution,
+            OperationReadOrigin {
+                authority: operation.authority_identity_bytes(),
+                session: issuer.session,
+                principal: issuer.principal,
+                scope: issuer.scope,
+            },
+            authorization,
+            registry,
+        )
+    }
+
+    /// A completed input prelude relinquishes its original operation brand.
+    /// Its C decisions remain Source support, never a grant for the later write.
+    pub(in crate::domain_computation::primary_graph::application_attempt) fn consume_operation<
+        S,
+        O,
+        I,
+        E,
+    >(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        admission: crate::domain_computation::authorization::WorthQueryAdmittedApplicationOperation<
+            S,
+            O,
+            I,
+            E,
+        >,
+        registry: &Arc<WorthQueryInstalledAuthorizationRegistry>,
+    ) -> Result<Arc<Self>, CompanionPreflightStop> {
+        let authority = *admission.operation_authority_identity_bytes();
+        let session = admission.graph_work_session_identity();
+        let principal = admission.graph_work_principal_entity_id();
+        let scope = admission.scope_entity_id();
+        let authorization = admission
+            .into_read_authorization()
+            .ok_or(CompanionPreflightStop::SelectedSourceMismatch)?;
+        if !authorization.belongs_to_session(session) {
+            return Err(CompanionPreflightStop::SelectedSourceMismatch);
+        }
+        Self::operation_support(
+            execution,
+            OperationReadOrigin {
+                authority,
+                session,
+                principal,
+                scope,
+            },
+            authorization,
+            registry,
+        )
+    }
+
+    fn operation_support(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        origin: OperationReadOrigin,
+        authorization: WorthQueryRetainedAuthorizationDecisionFacts,
+        registry: &Arc<WorthQueryInstalledAuthorizationRegistry>,
+    ) -> Result<Arc<Self>, CompanionPreflightStop> {
+        let OperationReadOrigin {
+            authority,
+            session,
+            principal,
+            scope,
+        } = origin;
         let allocation =
             SourceFactsAllocation::open(execution).map_err(CompanionPreflightStop::Execution)?;
         allocation
@@ -167,8 +239,8 @@ impl SourceReadAuthorization {
         let support = SourceReadSupport::retain(execution, authorization, registry, &allocation)?;
         let mut digest = Sha256::new();
         digest.update(b"worth-query:operation-read-authorization:v1");
-        digest.update(operation.authority_identity_bytes());
-        for entity in [issuer.principal, issuer.scope] {
+        digest.update(authority);
+        for entity in [principal, scope] {
             digest.update(entity.partition_value().to_be_bytes());
             digest.update(entity.local_slot_value().to_be_bytes());
             digest.update(entity.generation_value().to_be_bytes());
@@ -185,13 +257,13 @@ impl SourceReadAuthorization {
         let identity = digest.finalize().into();
         Ok(Arc::new(Self {
             key: SourceReadAuthorizationKey {
-                source: operation.authority_identity_bytes(),
+                source: authority,
                 support: identity,
-                principal: issuer.principal,
-                scope: issuer.scope,
+                principal,
+                scope,
             },
             binding: None,
-            session: issuer.session,
+            session,
             support,
             identity,
         }))

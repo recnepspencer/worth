@@ -197,16 +197,24 @@ fn validate_predicates(
     let predicates = definition
         .predicates()
         .iter()
-        .chain(relation_predicates.iter().copied());
-    for predicate in predicates {
+        .map(|predicate| (Some(predicate.parameter()), predicate.scalar_family()))
+        .chain(
+            relation_predicates
+                .iter()
+                .map(|predicate| (predicate.parameter(), predicate.scalar_family())),
+        );
+    for (parameter_name, scalar_family) in predicates {
+        let Some(parameter_name) = parameter_name else {
+            continue;
+        };
         let Some(parameter) = definition
             .parameters()
             .iter()
-            .find(|parameter| parameter.name() == predicate.parameter())
+            .find(|parameter| parameter.name() == parameter_name)
         else {
             return Err(ApplicationQueryDefinitionDenial::UnknownPredicateParameter);
         };
-        if parameter.scalar_family() != predicate.scalar_family() {
+        if parameter.scalar_family() != scalar_family {
             return Err(ApplicationQueryDefinitionDenial::PredicateParameterMismatch);
         }
     }

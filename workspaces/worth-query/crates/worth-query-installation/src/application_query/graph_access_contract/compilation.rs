@@ -176,16 +176,9 @@ fn flatten_shape(
             direction: relation.direction(),
             output_name: relation.output_name().to_string(),
             cardinality: relation.cardinality(),
-            predicate: relation.predicate().map(|predicate| {
-                let (entity, aspect, field) = predicate.field();
-                WorthQueryInstalledGraphPredicate {
-                    entity: entity.to_owned(),
-                    aspect: admitted_aspect_key(aspect),
-                    field: admitted_field_key(field),
-                    parameter: predicate.parameter().to_owned(),
-                    scalar_family: predicate.scalar_family(),
-                }
-            }),
+            predicate: relation
+                .predicate()
+                .map(super::WorthQueryInstalledGraphRelationPredicate::compile),
             depth: depth + 1,
         });
         flatten_shape(
@@ -198,10 +191,10 @@ fn flatten_shape(
     }
 }
 
-fn admitted_aspect_key(value: &str) -> AspectKey {
+pub(super) fn admitted_aspect_key(value: &str) -> AspectKey {
     AspectKey::new(value).expect("installed application-query aspects are schema-admitted")
 }
 
-fn admitted_field_key(value: &str) -> FieldKey {
+pub(super) fn admitted_field_key(value: &str) -> FieldKey {
     FieldKey::new(value).expect("installed application-query fields are schema-admitted")
 }

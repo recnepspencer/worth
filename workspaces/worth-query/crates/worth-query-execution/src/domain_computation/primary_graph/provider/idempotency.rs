@@ -173,7 +173,12 @@ impl WorthQueryPrimaryGraphProvider {
         WorthQueryProviderIdempotencyResolutionDenial,
     > {
         let candidates = crate::domain_computation::primary_graph::application_attempt::idempotency::envelope_candidates::EnvelopeCandidates::new(std::slice::from_ref(&binding))?;
-        self.resolve_envelope_idempotency_at_product(execution, &candidates, product)
+        self.resolve_envelope_idempotency_at_product(
+            execution,
+            &candidates,
+            product,
+            crate::domain_computation::primary_graph::application_contribution::authored_edit::AuthoredEnvelopeResolutionPurpose::Execute,
+        )
     }
 
     pub(in crate::domain_computation::primary_graph) fn resolve_application_idempotency(

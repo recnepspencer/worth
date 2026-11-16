@@ -194,3 +194,5 @@ pub mod observations;
 pub mod panic_custody;
 #[path = "seam_cancellation/mod.rs"]
 pub mod seam_cancellation;
+
+mod completion_custody;

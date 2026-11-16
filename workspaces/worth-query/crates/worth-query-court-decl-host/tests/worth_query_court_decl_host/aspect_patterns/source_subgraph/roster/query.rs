@@ -6,6 +6,7 @@ pub struct Snapshot {
     pub id: NativeEntityId,
     pub key: String,
     pub value: u64,
+    pub mark: Option<u64>,
     pub head: Option<String>,
     pub members: Vec<(NativeEntityId, Row)>,
     pub notes: Vec<(NativeEntityId, String, u64, Option<u64>)>,
@@ -23,6 +24,15 @@ slot!(ChildKey, child_key, MemberKey, "MemberKey");
 slot!(ChildValue, child_value, Value, "MemberValue");
 slot!(RemarkKey, remark_key, NoteKey, "NoteKey");
 slot!(RemarkValue, remark_value, NoteValue, "NoteValue");
+pub struct RootMark;
+worth_query_portable_type!(RootMark => "source-subgraph.roster-owner-mark.v1");
+fn root_mark(
+) -> ApplicationQueryOptionalAspectFieldRef<Query, RootMark, Schema, sparse_owner::OwnerMark> {
+    ApplicationQueryOptionalAspectFieldRef::new(
+        "owner_mark",
+        sparse_owner::OwnerMark::at("OwnerMark"),
+    )
+}
 pub struct RemarkMark;
 worth_query_portable_type!(RemarkMark => "source-subgraph.roster-note-mark.v1");
 fn remark_mark() -> ApplicationQueryOptionalAspectFieldRef<Query, RemarkMark, Schema, Mark> {
@@ -144,6 +154,7 @@ pub fn declare(
     >::new(Source::reference())
     .field(root_key())
     .field(root_value())
+    .optional_aspect_field(root_mark())
     .relation(head(), ApplicationQueryResultShapeBuilder::<Schema, Query, Member, Snapshot, SnapshotBinding>::new(Member::reference()).field(head_key()))
     .relation(members(), member_shape)
     .relation(notes(), ApplicationQueryResultShapeBuilder::<Schema, Query, Note, Snapshot, SnapshotBinding>::new(Note::reference()).field(remark_key()).field(remark_value()).optional_aspect_field(remark_mark()))
@@ -210,6 +221,7 @@ impl WorthQueryApplicationProjection<Schema, Query> for Snapshot {
             id: row.entity_id(),
             key: row.field(root_key())?,
             value: row.field(root_value())?,
+            mark: row.optional_aspect_field(root_mark())?,
             head: row
                 .many(head())?
                 .iter()

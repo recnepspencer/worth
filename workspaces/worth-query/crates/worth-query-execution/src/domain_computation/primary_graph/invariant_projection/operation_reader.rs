@@ -40,9 +40,10 @@ pub use output_availability::{
     WorthQueryObservedOutputAvailability, WorthQueryOutputAvailabilityDenial,
     WorthQueryOutputAvailabilityState,
 };
+mod original;
 mod predecessor;
 mod prior_output;
-pub use predecessor::{PredecessorDecisionReader, PredecessorEntity, PredecessorRelation};
+pub use predecessor::{BeforeDecisionReader, BeforeEntity, BeforeRelation};
 
 pub(in crate::domain_computation::primary_graph) use computation_calls::{
     CallSequenceDenial, CallShape, CallShapeTransition, CallVisit, ComputationCallCharge,

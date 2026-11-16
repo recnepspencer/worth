@@ -65,12 +65,24 @@ pub(in crate::domain_computation::primary_graph::application_contribution) struc
         Box<dyn std::any::Any>,
 }
 
+/// A source description is distinct from selecting a prepared or current output.
+#[derive(Clone, Copy, Eq, PartialEq)]
+pub(in crate::domain_computation::primary_graph::application_contribution) enum CoupledSourceReadPurpose
+{
+    Route,
+    OutputPreparation,
+}
+
 pub(in crate::domain_computation::primary_graph::application_contribution) enum CoupledSourceRead {
     Route {
         scope: worth_relational::facade::identity::EntityId,
         partition: [u8; 32],
     },
     Retiring,
+    Restored {
+        scope: worth_relational::facade::identity::EntityId,
+        input: worth_relational::facade::mvcc::RelationalRequiredOutputInput,
+    },
     Prepared(usize),
     Verified(super::super::VerifiedAppliedParent),
     Source(ErasedAppliedProducerSource),
@@ -86,7 +98,7 @@ pub(super) fn read<Schema, Binding>(
     before_pin: &RelationalPinnedRead,
     demand: &DeclaredCoupledOutputDemand,
     assembly: &worth_relational::facade::mvcc::RelationalAuthoredCoupledCandidate<'_>,
-    route_only: bool,
+    purpose: CoupledSourceReadPurpose,
 ) -> Result<CoupledSourceRead, CoupledSourceReadStop>
 where
     Schema: ApplicationSchema,
@@ -161,7 +173,7 @@ where
                 execution, runtime, 0, || Ok(parameters),
             ).map_err(CoupledSourceReadStop::capture)?;
             return created::read(installed, execution, runtime, external, request, selected, before_pin,
-                &candidate, &arguments.value, &captured, cause, assembly, demand, route_only);
+                &candidate, &arguments.value, &captured, cause, assembly, demand, purpose);
 
         }
         Err(cause) => return Err(scope_rejected(Binding::IDENTITY, cause).into()),
@@ -181,27 +193,37 @@ where
         .map_err(|cause| query_admission_denied(Binding::IDENTITY, cause))?;
     let partition = *plan.parameter_binding_identity().bytes();
     let root = scope.entity_id();
-    if route_only {
+    if purpose == CoupledSourceReadPurpose::Route {
         return Ok(CoupledSourceRead::Route {
             scope: root,
             partition,
         });
     }
-    if demand.reuse_prepared
+    if purpose == CoupledSourceReadPurpose::OutputPreparation
+        && demand.reuse_prepared
         && let Some(index) =
             assembly.prepared_route_index(execution, demand.family, root, &partition)?
     {
         return Ok(CoupledSourceRead::Prepared(index));
     }
-    let predecessor = match assembly.declared_owner(execution, demand.family, root, &partition)? {
-        Some(worth_relational::facade::mvcc::RelationalDeclaredCoupledOwner::Retiring) => {
-            return Ok(CoupledSourceRead::Retiring)
-        }
-        Some(worth_relational::facade::mvcc::RelationalDeclaredCoupledOwner::Surviving(owner)) => {
-            Some(owner.clone())
-        }
-        None => None,
-    };
+    let (predecessor, required_writer, unlisted) =
+        match assembly.read_parent_owner(execution, demand.family, root, &partition)? {
+            Some(worth_relational::facade::mvcc::RelationalDeclaredCoupledOwner::Retiring) => {
+                return Ok(CoupledSourceRead::Retiring)
+            }
+            Some(worth_relational::facade::mvcc::RelationalDeclaredCoupledOwner::Restored(
+                input,
+            )) => return Ok(CoupledSourceRead::Restored { scope: root, input }),
+            Some(worth_relational::facade::mvcc::RelationalDeclaredCoupledOwner::Surviving(
+                owner,
+            )) => (Some(owner.clone()), false, false),
+            Some(
+                worth_relational::facade::mvcc::RelationalDeclaredCoupledOwner::RequiredSurviving(
+                    owner,
+                ),
+            ) => (Some(owner.clone()), true, false),
+            None => (None, false, true),
+        };
     let source = runtime
         .project_applied_source_plan(execution, plan, &candidate)
         .map_err(|cause| failed(Binding::IDENTITY, cause))?;
@@ -254,8 +276,9 @@ where
                 ),
         })?
     };
-    if demand.reuse_prepared
-        && assembly.permits_unchanged_output_selection()
+    if purpose == CoupledSourceReadPurpose::OutputPreparation
+        && demand.reuse_prepared
+        && !required_writer
         && let Some(parent) = runtime.verify_applied_output_parent::<Binding::OutputFamily>(
             execution,
             request,
@@ -266,6 +289,11 @@ where
         )?
     {
         return Ok(CoupledSourceRead::Verified(parent));
+    }
+    if unlisted {
+        // A current proof is a read, never another retiring catalog's writer.
+        // Refuse before lifecycle selection or any producer handler contact.
+        assembly.require_unlisted_writer(execution, demand.family, root, &partition)?;
     }
     let profile = <Binding::OutputFamily as super::super::WorthQueryProducerOutputFamily<Schema>>::profile_kind(&source.value);
     let lifecycle = super::super::demand::selection::retained_liveness::applied_lifecycle::<

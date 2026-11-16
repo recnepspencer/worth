@@ -25,7 +25,7 @@ pub(super) fn install_empty(
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<RequiredOutputPublicationPositions, TransactionCommitError> {
     let custody = &group.binding.owners;
-    if let CoupledSource::Restoration { plan, .. } = &custody.source {
+    if let Some(plan) = custody.source.restoration() {
         return super::authored_restoration::install(
             envelope,
             runtime,
@@ -47,6 +47,13 @@ pub(super) fn install_empty(
             birth,
             co_anchors,
             roles,
+        }
+        | CoupledSource::MemberEditRetirement {
+            anchor,
+            birth,
+            co_anchors,
+            roles,
+            ..
         },
         Some(admission),
     ) = (&custody.source, &group.binding.retirement_admission)
@@ -101,7 +108,8 @@ pub(super) fn install(
                 .chain(group.stages.iter().map(|stage| stage.source))
                 .collect(),
         }),
-        CoupledSource::Restoration { plan, .. } => {
+        CoupledSource::Restoration { plan, .. }
+        | CoupledSource::MemberEditRestoration { plan, .. } => {
             super::authored_restoration::install(
                 envelope,
                 runtime,
@@ -120,12 +128,27 @@ pub(super) fn install(
                 .authored_cascade_restoration
                 .take()
                 .expect("Native installed authored source restoration");
-            Ok(Sources::Restoration {
-                prefix,
-                later: group.stages.iter().map(|stage| stage.source).collect(),
-            })
+            if custody.source.is_member_edit() {
+                Ok(Sources::MemberEditRestoration {
+                    prefix,
+                    sources: std::iter::once(custody.source.subject())
+                        .chain(group.stages.iter().map(|stage| stage.source))
+                        .collect(),
+                })
+            } else {
+                Ok(Sources::Restoration {
+                    prefix,
+                    later: group.stages.iter().map(|stage| stage.source).collect(),
+                })
+            }
         }
         CoupledSource::Retirement {
+            anchor,
+            birth,
+            co_anchors,
+            ..
+        }
+        | CoupledSource::MemberEditRetirement {
             anchor,
             birth,
             co_anchors,
@@ -162,10 +185,19 @@ pub(super) fn install(
                 .authored_cascade_retirement
                 .take()
                 .expect("Native installed authored source retirement");
-            Ok(Sources::Retirement {
-                prefix,
-                later: group.stages.iter().map(|stage| stage.source).collect(),
-            })
+            if custody.source.is_member_edit() {
+                Ok(Sources::MemberEditRetirement {
+                    prefix,
+                    sources: std::iter::once(custody.source.subject())
+                        .chain(group.stages.iter().map(|stage| stage.source))
+                        .collect(),
+                })
+            } else {
+                Ok(Sources::Retirement {
+                    prefix,
+                    later: group.stages.iter().map(|stage| stage.source).collect(),
+                })
+            }
         }
     }
 }

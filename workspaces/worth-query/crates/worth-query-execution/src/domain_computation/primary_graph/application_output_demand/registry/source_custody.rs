@@ -5,7 +5,7 @@ use super::{
 };
 use crate::equality_type_id::EqualityTypeId as TypeId;
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum PreparedOutputRootKind {
     Required(TypeId),
     Discovered(TypeId),

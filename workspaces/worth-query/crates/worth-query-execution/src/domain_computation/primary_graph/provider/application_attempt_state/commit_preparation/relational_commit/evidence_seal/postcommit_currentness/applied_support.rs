@@ -25,6 +25,24 @@ impl PreparedSourceFactRebase {
         complete: &Candidate,
     ) -> Result<bool, Denial> {
         let refreshed = if let Some(predecessor) = &self.predecessor {
+            if let Some(equal) = super::retirement::structural::support_equal_after_own_effect(
+                execution,
+                after_own,
+                complete,
+                fact,
+                predecessor,
+            )
+            .map_err(|stop| match stop.into_reason() {
+                super::RebaseVerificationReason::Execution(cause) => {
+                    Denial::relational_read_stopped(cause, "coupled predecessor retirement support")
+                }
+                _ => Denial::new(
+                    Kind::MissingAuthoritativeFact,
+                    "coupled predecessor retirement support",
+                ),
+            })? {
+                return Ok(equal);
+            }
             super::predecessor_output::refresh_on_pin(
                 execution,
                 after_own,
@@ -39,14 +57,18 @@ impl PreparedSourceFactRebase {
                         .map_err(RebaseVerificationFailure::execution)
                 },
             )
-            .map_err(|stop| match stop.into_reason() {
-                super::RebaseVerificationReason::Execution(cause) => {
-                    Denial::relational_read_stopped(cause, "coupled predecessor support")
+            .map_err(|stop| {
+                let detail = format!(
+                    "coupled predecessor support: {:?}; fact={}; site={}; predecessor={} family={} source={:?}",
+                    stop.reason(), fact.locator_identity(), stop.detail().unwrap_or("unclassified"),
+                    predecessor.producer(), predecessor.meaning().family, predecessor.meaning().source_scope,
+                );
+                match stop.into_reason() {
+                    super::RebaseVerificationReason::Execution(cause) => {
+                        Denial::relational_read_stopped(cause, "coupled predecessor support")
+                    }
+                    _ => Denial::new(Kind::MissingAuthoritativeFact, detail),
                 }
-                cause => Denial::new(
-                    Kind::MissingAuthoritativeFact,
-                    format!("coupled predecessor support: {cause:?}"),
-                ),
             })?
         } else {
             None

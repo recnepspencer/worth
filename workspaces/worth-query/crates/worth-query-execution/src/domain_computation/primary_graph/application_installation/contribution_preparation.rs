@@ -35,6 +35,11 @@ pub(super) fn prepare<Schema: ApplicationSchema>(
             managed_indexes,
         },
     ) = configured.into_parts().map_err(Denial::Contributions)?;
+    super::program_admission::input_capture::validate(
+        &producers,
+        admitted_program_support.as_ref(),
+    )
+    .map_err(Denial::Contributions)?;
     invariants.install_current_publication_ownership(producers.owns_source_scopes());
     conditionals
         .validate_target_coverage(

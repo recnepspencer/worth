@@ -19,6 +19,30 @@ pub(super) fn reject(
     )
 }
 
+/// Describe the actual rejected route without changing its admission or cause.
+pub(super) fn reject_extra_owner(
+    owners: &super::super::RelationalAuthoredCoupledOwners,
+    subject: crate::identity::data::EntityId,
+    detail: String,
+) -> TransactionCommitError {
+    let source_kind = match &owners.source {
+        super::super::CoupledSource::Edit(_) => "edit",
+        super::super::CoupledSource::Retirement { .. } => "retirement",
+        super::super::CoupledSource::Restoration { .. } => "restoration",
+        super::super::CoupledSource::MemberEditRetirement { .. } => "member-edit-retirement",
+        super::super::CoupledSource::MemberEditRestoration { .. } => "member-edit-restoration",
+    };
+    let mut error = crate::publication::data::PublicationError::authored_retirement(
+        Cause::ExtraCoupledOwner,
+        RecordRef::Entity(subject),
+    );
+    error.detail.push_str(&format!(
+        "; {detail}; source_kind={source_kind}; source_root={:?}",
+        owners.source.subject(),
+    ));
+    TransactionCommitError::publication(error)
+}
+
 pub(super) fn require_unseen_route(
     context: &mut worth_execution::MapKernelContext<'_, '_>,
     parts: &[CoupledPublicationPart],
@@ -73,6 +97,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         let ordinary_ids = publication
             .resolve_ordinary_roles(execution, &self.mutation.outcome.created_entities)?;
         self.parts.push(CoupledPublicationPart {
+            inputs: None,
             ordinary_ids,
             input: applied.read,
             publication,

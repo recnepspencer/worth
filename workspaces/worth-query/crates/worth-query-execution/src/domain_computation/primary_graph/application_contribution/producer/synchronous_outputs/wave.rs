@@ -1,11 +1,22 @@
 //! Every prepared parent precedes discovery and preparation of the next wave.
 use super::*;
+mod continuations;
+mod inputs;
 mod occurrences;
+mod outgoing;
+mod prerequisites;
 struct Scheduled<S: ApplicationSchema> {
+    root: bool,
     key: Option<super::occurrences::OccurrenceKey>,
+    component: Option<std::any::TypeId>,
+    identified: bool,
     closed: bool,
+    inputs: Option<PreparedCoupledInputs>,
+    prerequisite_queued: bool,
+    next_prerequisite: Option<usize>,
     done: bool,
     alias: Option<usize>,
+    continuation_done: bool,
     prerequisites: Vec<usize>,
     _prerequisite_memory: Option<worth_execution::ExecutionMemoryReservation>,
     subject: &'static str,
@@ -13,6 +24,14 @@ struct Scheduled<S: ApplicationSchema> {
     tree: Box<dyn capture::RequiredTree<S>>,
     parent: Option<AppliedOutputParent>,
     _memory: Option<worth_execution::ExecutionMemoryReservation>,
+}
+impl<S: ApplicationSchema> Scheduled<S> {
+    fn clear_input_capture(&mut self) {
+        self.closed = false;
+        self.inputs = None;
+        self.prerequisites = Vec::new();
+        self._prerequisite_memory = None;
+    }
 }
 pub struct SynchronousOutputWave<S: ApplicationSchema> {
     tasks: Vec<Scheduled<S>>,
@@ -67,16 +86,25 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
                 .into(),
             )
         })?;
+        let tree = tree();
+        let continuation_done = !tree.has_static_continuation();
         self.tasks.push(Scheduled {
+            root: true,
             key: None,
+            component: None,
+            identified: false,
             closed: false,
+            inputs: None,
+            prerequisite_queued: false,
+            next_prerequisite: None,
             done: false,
             alias: None,
+            continuation_done,
             prerequisites: Vec::new(),
             _prerequisite_memory: None,
             subject,
             rank,
-            tree: tree(),
+            tree,
             parent: None,
             _memory: memory,
         });
@@ -132,7 +160,10 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
         allowed: Option<&[String]>,
     ) -> Result<(), SynchronousOutputFailure> {
         loop {
-            self.close_frontier(context, candidate)?;
+            self.close_frontier(context, candidate, allowed)?;
+            if self.discover_alias_continuations(context, candidate)? {
+                continue;
+            }
             let _planning_memory = self.quote_frontier(context, allowed.map_or(0, |v| v.len()))?;
             let needed = self.needed(allowed);
             let rank = self
@@ -143,6 +174,16 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
                 .map(|(_, t)| t.rank)
                 .min();
             let Some(rank) = rank else {
+                self.refresh_outgoing(context, candidate, allowed)?;
+                let needed = self.needed(allowed);
+                if self
+                    .tasks
+                    .iter()
+                    .enumerate()
+                    .any(|(i, t)| needed[i] && !t.done && self.ready(i))
+                {
+                    continue;
+                }
                 if self
                     .tasks
                     .iter()
@@ -167,22 +208,42 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
                     ready.push(i);
                 }
             }
+            let mut completed = 0;
             for i in &ready {
+                // Earlier real suppliers can change a still-unconsumed child's
+                // desired parents. Reclose before computing any orphaned row.
+                if self.refresh_input_captures(context, candidate, allowed)? {
+                    break;
+                }
                 let task = &mut self.tasks[*i];
                 context.checkpoint(task.subject)?;
-                task.parent = task.tree.prepare(context, candidate)?;
-                task.done = true;
+                match task
+                    .tree
+                    .prepare(context, candidate, task.inputs.take(), task.component)?
+                {
+                    PlannedOutput::Prepared(parent) => {
+                        task.parent = parent;
+                        task.done = true;
+                        completed += 1;
+                    }
+                    PlannedOutput::Recapture => {
+                        task.clear_input_capture();
+                        break;
+                    }
+                }
+                self.retain_parent_inputs(context, candidate, *i)?;
             }
             let pin = candidate
                 .pin_source(context.execution)
                 .map_err(CoupledSourceReadStop::from)?;
             let mut next = Self::new();
-            for i in ready {
+            for i in ready.into_iter().take(completed) {
                 let task = &mut self.tasks[i];
                 if let Some(parent) = &mut task.parent {
                     parent.pin = pin.clone();
                     task.tree.discover(context, parent, &mut next)?;
                 }
+                task.continuation_done = true;
             }
             for task in next.tasks {
                 self.reserve_slot(context, task.subject)?;

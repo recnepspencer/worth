@@ -24,7 +24,9 @@ pub(super) fn advance(
     let before_count = claims
         .links
         .iter()
-        .filter(|link| [storage.member_link, storage.edge_link].contains(&link.kind))
+        .filter(|link| {
+            [storage.member_link, storage.edge_link, storage.input_link].contains(&link.kind)
+        })
         .count();
     let after_count = next
         .members
@@ -32,6 +34,7 @@ pub(super) fn advance(
         .filter(|member| member.posture != Retire)
         .count()
         .checked_add(next.relations.len())
+        .and_then(|count| count.checked_add(next.inputs.len()))
         .ok_or_else(overflow)?;
     let capacity = before_count.checked_add(after_count).ok_or_else(overflow)?;
     let lookup_count = old
@@ -94,6 +97,24 @@ pub(super) fn advance(
                 entity: link.source,
                 link: link.id,
             });
+        } else if link.kind == storage.input_link {
+            writer.checkpoint(old.value.origin.inputs.len())?;
+            if !old
+                .value
+                .origin
+                .inputs
+                .iter()
+                .any(|input| input.source_scope == link.source)
+            {
+                return Err(crate::publication::ownership::corrupt(
+                    custody,
+                    RecordRef::Relation(link.id),
+                ));
+            }
+            before.push(plan::StoredClaim::Input {
+                entity: link.source,
+                link: link.id,
+            });
         } else if link.kind == storage.edge_link {
             let witness = claims
                 .edges
@@ -122,6 +143,12 @@ pub(super) fn advance(
             });
         }
     }
+    for input in &old.value.origin.inputs {
+        writer.checkpoint(before.len() + 1)?;
+        if !before.iter().any(|claim| matches!(claim, plan::StoredClaim::Input { entity, .. } if *entity == input.source_scope)) {
+            return Err(crate::publication::ownership::corrupt(custody, RecordRef::Entity(input.source_scope)));
+        }
+    }
     before.sort_unstable_by_key(plan::StoredClaim::key);
     if before.windows(2).any(|pair| pair[0].key() == pair[1].key()) {
         return Err(crate::publication::ownership::corrupt(
@@ -141,7 +168,15 @@ pub(super) fn advance(
             .iter()
             .map(|edge| plan::Claim::Relation(edge.into())),
     );
+    desired.extend(
+        next.inputs
+            .iter()
+            .map(|input| plan::Claim::Input(input.source_scope)),
+    );
     desired.sort_unstable_by_key(plan::Claim::key);
+    desired.dedup_by(
+        |a, b| matches!((a, b), (plan::Claim::Input(a), plan::Claim::Input(b)) if a == b),
+    );
     let changes = plan::changes(&before, &desired);
     for change in changes {
         writer.checkpoint(1)?;
@@ -153,6 +188,9 @@ pub(super) fn advance(
                 }
             }
             plan::Change::Insert(index) => match &desired[index] {
+                plan::Claim::Input(entity) => {
+                    writer.create_link(storage.input_link, custody, *entity, old.entity)?
+                }
                 plan::Claim::Member(entity) => {
                     writer.create_link(storage.member_link, custody, *entity, old.entity)?
                 }
@@ -208,6 +246,15 @@ pub(super) fn insert(
     {
         writer.create_link(storage.member_link, custody, member.id, row)?;
     }
+    for (index, input) in origin.inputs.iter().enumerate() {
+        writer.checkpoint(index + 1)?;
+        if !origin.inputs[..index]
+            .iter()
+            .any(|prior| prior.source_scope == input.source_scope)
+        {
+            writer.create_link(storage.input_link, custody, input.source_scope, row)?;
+        }
+    }
     for edge in &origin.relations {
         insert_edge(writer, storage, row, custody, edge)?;
     }
@@ -253,7 +300,7 @@ pub(super) fn retire(
     for link in &claims.links {
         writer.checkpoint(1)?;
         if row_retired && link.kind == storage.publication_link
-            || [storage.member_link, storage.edge_link].contains(&link.kind)
+            || [storage.member_link, storage.edge_link, storage.input_link].contains(&link.kind)
         {
             writer.delete_relation(link.id)?;
             if link.kind == storage.edge_link {

@@ -7,7 +7,11 @@ use super::producer::{
 use worth_query_installation::facade::ApplicationSchema;
 mod authored_stages;
 mod disposal;
+mod input_preparation;
 mod preparation;
+mod source_selection;
+pub(in crate::domain_computation::primary_graph::application_contribution) use input_preparation::{PreparedCoupledInputs, PlannedOutput};
+pub(in crate::domain_computation::primary_graph::application_contribution) use source_selection::SelectedCoupledSource;
 mod validation;
 use crate::domain_computation::primary_graph::{
     application_attempt::coupled_outputs::DeclaredCoupledOutputDemands, WorthQueryAdvancementPhase,
@@ -104,7 +108,7 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         source: worth_relational::facade::identity::EntityId,
-        support: crate::domain_computation::primary_graph::application_query::AppliedQuerySupport,
+        support: crate::domain_computation::primary_graph::provider::CandidateReadSupport,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
         self.application
             .runtime
@@ -114,19 +118,35 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
                 &self.root_session,
                 source,
                 self.applied_position(),
-                crate::domain_computation::primary_graph::provider::CandidateReadSupport::Query(
-                    support,
-                ),
+                support,
             )
+            .map_err(execution::denial::candidate_support_denied)
+    }
+    pub(in crate::domain_computation::primary_graph::application_contribution) fn refresh_outgoing_support(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<(), WorthQueryOutputDemandDenial> {
+        self.application
+            .runtime
+            .primary_provider
+            .refresh_outgoing_read_support(execution, &self.root_session)
             .map_err(execution::denial::candidate_support_denied)
     }
     pub(in crate::domain_computation::primary_graph::application_contribution) fn retain_verified_parent(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         parent: super::producer::VerifiedAppliedParent,
-    ) -> Result<synchronous_outputs::AppliedOutputParent, WorthQueryOutputDemandDenial> {
-        let applied =
-            synchronous_outputs::AppliedOutputParent::new(parent.pin().clone(), parent.source());
+        candidate: &RelationalAuthoredCoupledCandidate<'_>,
+    ) -> Result<synchronous_outputs::AppliedOutputParent, CoupledSourceReadStop> {
+        let input = parent
+            .publication()
+            .map(|publication| candidate.current_output_input(execution, publication))
+            .transpose()?;
+        let applied = synchronous_outputs::AppliedOutputParent::new(
+            parent.pin().clone(),
+            parent.source(),
+            input,
+        );
         self.application
             .runtime
             .primary_provider

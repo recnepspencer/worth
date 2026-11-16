@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use super::{
     denial, ApplicationConnectionDeclaration, ApplicationFeatureDeclaration,
@@ -9,8 +9,55 @@ pub(super) fn order_connections(
     features: &[ApplicationFeatureDeclaration],
     connections: &[ApplicationConnectionDeclaration],
 ) -> Result<ApplicationProgramConnectionOrder, ApplicationProgramValidationDenial> {
-    // Only declaration-owned explicit occurrence components are condensed.
-    // Static edges and every edge crossing a component remain ordinary DAG arcs.
+    let groups = occurrence_groups(features, connections)?;
+    let vertices = groups.keys().copied().collect::<Vec<_>>();
+    let static_edges = connections
+        .iter()
+        .filter(|connection| !connection.is_occurrence_component())
+        .map(|connection| {
+            (
+                (connection.source_instance(), connection.source_feature()),
+                (connection.target_instance(), connection.target_feature()),
+            )
+        })
+        .collect::<Vec<_>>();
+    // Prove every static arc before condensation can hide an internal cycle.
+    let static_ranks = topological_ranks(&vertices, &static_edges)?;
+    let group_vertices = groups.values().copied().collect::<Vec<_>>();
+    let group_edges = static_edges
+        .iter()
+        .map(|(source, target)| (groups[source], groups[target]))
+        .filter(|(source, target)| source != target)
+        .collect::<Vec<_>>();
+    let group_ranks = topological_ranks(&group_vertices, &group_edges)?;
+    let priority = |connection: &ApplicationConnectionDeclaration| {
+        let target = (connection.target_instance(), connection.target_feature());
+        (group_ranks[&groups[&target]], static_ranks[&target])
+    };
+    // Compact lexicographic priorities into the existing lookup representation.
+    // Actual occurrence prerequisites still decide whether a task is runnable.
+    let priorities = connections.iter().map(priority).collect::<BTreeSet<_>>();
+    let priorities = priorities
+        .into_iter()
+        .enumerate()
+        .map(|(rank, pair)| (pair, rank))
+        .collect::<BTreeMap<_, _>>();
+    let mut ordered = connections
+        .iter()
+        .map(|connection| (key(connection), priorities[&priority(connection)]))
+        .collect::<Vec<_>>();
+    ordered.sort_unstable_by_key(|entry| entry.0);
+    Ok(ApplicationProgramConnectionOrder {
+        ranks: ordered.into(),
+    })
+}
+
+type FeatureKey = (&'static str, &'static str);
+
+fn occurrence_groups(
+    features: &[ApplicationFeatureDeclaration],
+    connections: &[ApplicationConnectionDeclaration],
+) -> Result<BTreeMap<FeatureKey, FeatureKey>, ApplicationProgramValidationDenial> {
     let mut groups = features
         .iter()
         .map(|f| {
@@ -29,25 +76,35 @@ pub(super) fn order_connections(
             }
         }
     }
-    let mut incoming = BTreeMap::new();
-    let mut ranks = BTreeMap::new();
-    let mut outgoing = BTreeMap::<_, Vec<_>>::new();
-    for group in groups.values() {
-        incoming.insert(*group, 0usize);
-        ranks.insert(*group, 0usize);
-    }
+    // One connected occurrence component must carry one complete typed context.
+    let mut contexts = BTreeMap::new();
     for connection in connections {
-        let source = groups[&(connection.source_instance(), connection.source_feature())];
-        let target = groups[&(connection.target_instance(), connection.target_feature())];
-        if connection.is_occurrence_component() {
-            continue;
+        if let Some(context) = connection.occurrence_component() {
+            let group = groups[&(connection.source_instance(), connection.source_feature())];
+            if let Some(previous) = contexts.insert(group, context) {
+                if previous != context {
+                    return Err(denial(
+                        ApplicationProgramValidationDenialKind::IncompleteOccurrenceComponent,
+                        "place overlapping connection groups inside one ApplicationOutputOccurrences",
+                    ));
+                }
+            }
         }
-        if source == target {
-            return Err(denial(
-                ApplicationProgramValidationDenialKind::CyclicConnection,
-                "static dependency inside an occurrence component",
-            ));
-        }
+    }
+    Ok(groups)
+}
+
+fn topological_ranks(
+    vertices: &[FeatureKey],
+    edges: &[(FeatureKey, FeatureKey)],
+) -> Result<BTreeMap<FeatureKey, usize>, ApplicationProgramValidationDenial> {
+    let mut incoming = vertices
+        .iter()
+        .map(|key| (*key, 0usize))
+        .collect::<BTreeMap<_, _>>();
+    let mut ranks = incoming.clone();
+    let mut outgoing = BTreeMap::<_, Vec<_>>::new();
+    for &(source, target) in edges {
         outgoing.entry(source).or_default().push(target);
         *incoming.get_mut(&target).expect("validated target") += 1;
     }
@@ -72,19 +129,7 @@ pub(super) fn order_connections(
         }
     }
     if visited == incoming.len() {
-        let mut ordered = connections
-            .iter()
-            .map(|connection| {
-                (
-                    key(connection),
-                    ranks[&groups[&(connection.target_instance(), connection.target_feature())]],
-                )
-            })
-            .collect::<Vec<_>>();
-        ordered.sort_unstable_by_key(|entry| entry.0);
-        return Ok(ApplicationProgramConnectionOrder {
-            ranks: ordered.into(),
-        });
+        return Ok(ranks);
     }
     Err(denial(
         ApplicationProgramValidationDenialKind::CyclicConnection,
