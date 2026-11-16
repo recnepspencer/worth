@@ -4601,6 +4601,13 @@ recovery behavior. Cached input data grants no authority. Do not reconstruct
 an implicit editor default or allocated name from a later head and substitute
 it for the original canonical request.
 
+Effectful `execute_performed` retains the exact returned envelope outcome,
+including a refusal or cleanup owner, through late request settlement. It uses
+`with_funded_application_completion` under the same original request and
+allocation; cancellation before callback entry still refuses. Retained custody
+is not proof of commitment and grants no further effects. Resolution-only work
+and ordinary advancement keep their existing settlement behavior.
+
 ### Conditional roots in one authored envelope
 
 A Runtime/static/corrective stage may select its declared

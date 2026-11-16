@@ -351,6 +351,14 @@ the original declared ceiling and remaining allowance. Neither completion port
 invokes an effectful callback through an existing own or untaken joined stop.
 See [Execution request entry](../crates/worth-execution/README.md).
 
+Effectful installed application calls use
+`with_funded_application_completion(scope, allocation, callback)`. It retains
+that callback's exact returned outcome through late settlement on the same
+request, controls and caller funding; pre-entry stops still refuse. Edit-envelope
+`execute_performed` selects this custody. Ordinary advancement and
+`resolve_idempotency` keep their existing settlement behavior. A returned refusal
+or cleanup owner is not a commit certificate or permission for further effects.
+
 Platform-owned ordered retained metadata uses `ExecutionOrderedMap<K, V>`:
 shared-root cloning and canonical iteration preserve original custody.
 Retain the returned root while reading or applying later edits. `accounted_bytes()`

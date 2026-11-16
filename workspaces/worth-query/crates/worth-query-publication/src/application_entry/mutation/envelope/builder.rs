@@ -117,11 +117,10 @@ where
             WorthQueryEditEnvelopeExecutionDenial::envelope(Program::IDENTITY.as_str(), cause)
         };
         let mut context = self.envelope.context;
-        context.application.with_funded_application_advancement(
-            context.scope,
-            allocation,
-            |phase| {
-                let key = Arc::new(
+        let application = context.application;
+        let scope = context.scope;
+        let advance = |phase: WorthQueryAdvancementPhase<'_>| {
+            let key = Arc::new(
                     ApplicationEditEnvelopeKey::encode(Program::IDENTITY.as_str(), self.key)
                         .map_err(|cause| crate::application_entry::WorthQueryPerformedMutationExecutionDenial::Mutation(
                             WorthQueryApplicationRequestMutationDenial::Identity(
@@ -130,39 +129,64 @@ where
                         ))
                         .map_err(envelope_failure)?,
                 );
-                let mut entries = Vec::new();
-                if let Some(outcome) = front(&mut context, program, &phase, &key, &mut entries)? {
-                    return Ok(outcome);
-                }
-                self.envelope.stages.capture(&mut entries)?;
-                if entries.is_empty() {
-                    return Ok(WorthQueryEditEnvelopeOutcome::Empty);
-                }
-                let intents = entries.iter().map(|entry| entry.intent()).collect::<Vec<_>>();
-                let intent = key.intent(context.order, &intents)
-                    .map_err(|cause| crate::application_entry::WorthQueryPerformedMutationExecutionDenial::Mutation(
+            let mut entries = Vec::new();
+            if let Some(outcome) = front(&mut context, program, &phase, &key, &mut entries)? {
+                return Ok(outcome);
+            }
+            self.envelope.stages.capture(&mut entries)?;
+            if entries.is_empty() {
+                return Ok(WorthQueryEditEnvelopeOutcome::Empty);
+            }
+            let intents = entries
+                .iter()
+                .map(|entry| entry.intent())
+                .collect::<Vec<_>>();
+            let intent = key
+                .intent(context.order, &intents)
+                .map_err(|cause| {
+                    crate::application_entry::WorthQueryPerformedMutationExecutionDenial::Mutation(
                         WorthQueryApplicationRequestMutationDenial::Identity(
                             ApplicationMutationIdentityDenial::Input(cause),
                         ),
-                    ))
-                    .map_err(envelope_failure)?;
-                let values = entries.iter().map(|_| Arc::new(Mutex::new(None))).collect::<Vec<StageValue>>();
-                let mut captured = Vec::new();
-                for (ordinal, entry) in entries.iter().enumerate() {
-                    captured.push(
-                        entry.secondary(&context, program, &phase, &key, ordinal, values[ordinal].clone())
-                            .map_err(|cause| WorthQueryEditEnvelopeExecutionDenial::stage(
-                                ordinal, entry.binding(), cause,
-                            ))?,
-                    );
-                }
-                if let Some(stage) = captured.iter().skip(1)
-                    .find(|stage| !stage.same_admitted_basis(&captured[0]))
-                {
-                    return Ok(WorthQueryEditEnvelopeOutcome::AdmissionBasisChanged(stage.subject()));
-                }
-                let admissions = captured.clone();
-                with_resolved_edit_envelope(
+                    )
+                })
+                .map_err(envelope_failure)?;
+            let values = entries
+                .iter()
+                .map(|_| Arc::new(Mutex::new(None)))
+                .collect::<Vec<StageValue>>();
+            let mut captured = Vec::new();
+            for (ordinal, entry) in entries.iter().enumerate() {
+                captured.push(
+                    entry
+                        .secondary(
+                            &context,
+                            program,
+                            &phase,
+                            &key,
+                            ordinal,
+                            values[ordinal].clone(),
+                        )
+                        .map_err(|cause| {
+                            WorthQueryEditEnvelopeExecutionDenial::stage(
+                                ordinal,
+                                entry.binding(),
+                                cause,
+                            )
+                        })?,
+                );
+            }
+            if let Some(stage) = captured
+                .iter()
+                .skip(1)
+                .find(|stage| !stage.same_admitted_basis(&captured[0]))
+            {
+                return Ok(WorthQueryEditEnvelopeOutcome::AdmissionBasisChanged(
+                    stage.subject(),
+                ));
+            }
+            let admissions = captured.clone();
+            with_resolved_edit_envelope(
                     &worth_query_execution::publication_boundary::program_publication_access(),
                     &phase, context.application, &admissions, intent, purpose,
                     |resolution| {
@@ -204,11 +228,21 @@ where
                 ))
                     },
                 ).map_err(|cause| envelope_failure(crate::application_entry::WorthQueryPerformedMutationExecutionDenial::Mutation(WorthQueryApplicationRequestMutationDenial::Idempotency(cause))))?
-            },
-        ).unwrap_or_else(|cause| Err(envelope_failure(
-            crate::application_entry::WorthQueryPerformedMutationExecutionDenial::Mutation(
-                WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause),
-            ),
-        )))
+        };
+        let advanced = match purpose {
+            AuthoredEnvelopeResolutionPurpose::Execute => {
+                application.with_funded_application_completion(scope, allocation, advance)
+            }
+            AuthoredEnvelopeResolutionPurpose::ResolveOnly => {
+                application.with_funded_application_advancement(scope, allocation, advance)
+            }
+        };
+        advanced.unwrap_or_else(|cause| {
+            Err(envelope_failure(
+                crate::application_entry::WorthQueryPerformedMutationExecutionDenial::Mutation(
+                    WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause),
+                ),
+            ))
+        })
     }
 }
