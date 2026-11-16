@@ -157,43 +157,23 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         self.binding.owners.source.subject()
     }
 
-    /// Classify an actual candidate source through the same canonical roster
-    /// that admitted this assembly. The caller cannot submit an owner set.
-    pub fn declared_owner(
+    /// Classify a parent read through the canonical roster. An absent entry
+    /// grants no writer: Query may only verify an already current output, or
+    /// ask `require_unlisted_writer` before preparing a new participant.
+    pub fn read_parent_owner(
         &self,
         execution: &ExecutionRequest<'_, '_>,
         family: &str,
         source: crate::identity::data::EntityId,
         partition: &[u8; 32],
     ) -> Result<Option<RelationalDeclaredCoupledOwner<'_>>, TransactionCommitError> {
-        let original = execution.run_native_with_checkpoint(|context| {
-            if let Some(restoration) = self.binding.owners.source.restoration() {
-                for (old, created) in &restoration.entities {
-                    checkpoint(context, self.mutation.outcome.created_entities.resolve_work_bound(created).ok_or_else(|| custody::execution_stop(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow))?).map_err(custody::execution_stop)?;
-                    if self.mutation.outcome.created_entities.resolve(created) == Some(source) {
-                        return Ok::<_, TransactionCommitError>(*old);
-                    }
-                }
-            }
-            Ok(source)
-        }).map_err(custody::execution_stop)?.0?;
+        let original = self.catalog_source(execution, source)?;
         let owner = self
             .binding
             .owners
             .recorded_owner(execution, family, original, partition)?;
         let Some(owner) = owner else {
-            if self.binding.owners.source.is_edit() {
-                // This catalog has no entry. It is not route-absence custody;
-                // callers must select the current route through its own owner.
-                return Ok(None);
-            }
-            return Err(part::reject_extra_owner(
-                &self.binding.owners,
-                source,
-                format!(
-                    "site=catalog-route-absent; family={family}; requested_source={source:?}; original_source={original:?}; partition={partition:?}",
-                ),
-            ));
+            return Ok(None);
         };
         if let RelationalDeclaredCoupledOwner::Surviving(previous)
         | RelationalDeclaredCoupledOwner::RequiredSurviving(previous) = &owner
@@ -206,6 +186,42 @@ impl RelationalAuthoredCoupledCandidate<'_> {
                 .0?;
         }
         Ok(Some(owner))
+    }
+
+    fn catalog_source(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        source: crate::identity::data::EntityId,
+    ) -> Result<crate::identity::data::EntityId, TransactionCommitError> {
+        execution.run_native_with_checkpoint(|context| {
+            if let Some(restoration) = self.binding.owners.source.restoration() {
+                for (old, created) in &restoration.entities {
+                    checkpoint(context, self.mutation.outcome.created_entities.resolve_work_bound(created).ok_or_else(|| custody::execution_stop(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow))?).map_err(custody::execution_stop)?;
+                    if self.mutation.outcome.created_entities.resolve(created) == Some(source) {
+                        return Ok::<_, TransactionCommitError>(*old);
+                    }
+                }
+            }
+            Ok(source)
+        }).map_err(custody::execution_stop)?.0
+    }
+
+    /// No absent catalog route may become a fresh retirement/restoration writer.
+    /// Ordinary Edit source admission is still decided by its current owner.
+    pub fn require_unlisted_writer(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        family: &str,
+        source: crate::identity::data::EntityId,
+        partition: &[u8; 32],
+    ) -> Result<(), TransactionCommitError> {
+        if self.binding.owners.source.is_edit() {
+            return Ok(());
+        }
+        let original = self.catalog_source(execution, source)?;
+        Err(part::reject_extra_owner(&self.binding.owners, source, format!(
+            "site=catalog-route-absent; family={family}; requested_source={source:?}; original_source={original:?}; partition={partition:?}",
+        )))
     }
 
     pub fn pin_source(

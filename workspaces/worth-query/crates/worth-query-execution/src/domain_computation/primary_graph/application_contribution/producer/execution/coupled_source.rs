@@ -193,20 +193,20 @@ where
     {
         return Ok(CoupledSourceRead::Prepared(index));
     }
-    let (predecessor, required_writer) =
-        match assembly.declared_owner(execution, demand.family, root, &partition)? {
+    let (predecessor, required_writer, unlisted) =
+        match assembly.read_parent_owner(execution, demand.family, root, &partition)? {
             Some(worth_relational::facade::mvcc::RelationalDeclaredCoupledOwner::Retiring) => {
                 return Ok(CoupledSourceRead::Retiring)
             }
             Some(worth_relational::facade::mvcc::RelationalDeclaredCoupledOwner::Surviving(
                 owner,
-            )) => (Some(owner.clone()), false),
+            )) => (Some(owner.clone()), false, false),
             Some(
                 worth_relational::facade::mvcc::RelationalDeclaredCoupledOwner::RequiredSurviving(
                     owner,
                 ),
-            ) => (Some(owner.clone()), true),
-            None => (None, false),
+            ) => (Some(owner.clone()), true, false),
+            None => (None, false, true),
         };
     let source = runtime
         .project_applied_source_plan(execution, plan, &candidate)
@@ -262,7 +262,6 @@ where
     };
     if demand.reuse_prepared
         && !required_writer
-        && assembly.permits_unchanged_output_selection()
         && let Some(parent) = runtime.verify_applied_output_parent::<Binding::OutputFamily>(
             execution,
             request,
@@ -273,6 +272,11 @@ where
         )?
     {
         return Ok(CoupledSourceRead::Verified(parent));
+    }
+    if unlisted {
+        // A current proof is a read, never another retiring catalog's writer.
+        // Refuse before lifecycle selection or any producer handler contact.
+        assembly.require_unlisted_writer(execution, demand.family, root, &partition)?;
     }
     let profile = <Binding::OutputFamily as super::super::WorthQueryProducerOutputFamily<Schema>>::profile_kind(&source.value);
     let lifecycle = super::super::demand::selection::retained_liveness::applied_lifecycle::<

@@ -136,7 +136,7 @@ where
     {
         return Ok(CoupledSourceRead::Prepared(index));
     }
-    match assembly.declared_owner(
+    match assembly.read_parent_owner(
         execution,
         demand.family,
         scope.entity_id(),
@@ -149,7 +149,12 @@ where
             worth_relational::facade::mvcc::RelationalDeclaredCoupledOwner::Surviving(_)
             | worth_relational::facade::mvcc::RelationalDeclaredCoupledOwner::RequiredSurviving(_),
         ) => return Err(foreign().into()),
-        None => {}
+        None => assembly.require_unlisted_writer(
+            execution,
+            demand.family,
+            scope.entity_id(),
+            parameters.parameters().identity().bytes(),
+        )?,
     }
     let source = runtime
         .project_applied_source_plan(execution, plan, candidate)
