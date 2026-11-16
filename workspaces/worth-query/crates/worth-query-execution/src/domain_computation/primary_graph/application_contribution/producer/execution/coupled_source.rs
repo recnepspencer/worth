@@ -70,7 +70,6 @@ pub(in crate::domain_computation::primary_graph::application_contribution) struc
 pub(in crate::domain_computation::primary_graph::application_contribution) enum CoupledSourceReadPurpose
 {
     Route,
-    InputPreparation,
     OutputPreparation,
 }
 

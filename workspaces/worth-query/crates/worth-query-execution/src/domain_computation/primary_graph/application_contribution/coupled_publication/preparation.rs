@@ -179,6 +179,37 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
         demand: &crate::domain_computation::primary_graph::application_attempt::coupled_outputs::DeclaredCoupledOutputDemand,
         candidate: &mut RelationalAuthoredCoupledCandidate<'_>,
     ) -> Result<Option<synchronous_outputs::AppliedOutputParent>, CoupledSourceReadStop> {
+        let read = self.read_source_one(execution, before_pin, demand, candidate)?;
+        self.prepare_read_one(execution, before_pin, demand, candidate, read)
+    }
+
+    pub(in crate::domain_computation::primary_graph::application_contribution) fn prepare_selected_one(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        before_pin: &worth_relational::facade::runtime::RelationalPinnedRead,
+        demand: &crate::domain_computation::primary_graph::application_attempt::coupled_outputs::DeclaredCoupledOutputDemand,
+        candidate: &mut RelationalAuthoredCoupledCandidate<'_>,
+        selected: SelectedCoupledSource,
+    ) -> Result<Option<synchronous_outputs::AppliedOutputParent>, CoupledSourceReadStop> {
+        let pin = candidate.pin_source(execution)?;
+        let read = if selected.pin.candidate_identity().qualification()
+            == pin.candidate_identity().qualification()
+        {
+            selected.read
+        } else {
+            self.read_source_one(execution, before_pin, demand, candidate)?
+        };
+        self.prepare_read_one(execution, before_pin, demand, candidate, read)
+    }
+
+    fn prepare_read_one(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        before_pin: &worth_relational::facade::runtime::RelationalPinnedRead,
+        demand: &crate::domain_computation::primary_graph::application_attempt::coupled_outputs::DeclaredCoupledOutputDemand,
+        candidate: &mut RelationalAuthoredCoupledCandidate<'_>,
+        source: execution::CoupledSourceRead,
+    ) -> Result<Option<synchronous_outputs::AppliedOutputParent>, CoupledSourceReadStop> {
         let principal = self.principal.ok_or_else(|| {
             WorthQueryOutputDemandDenial::new(
                 WorthQueryOutputDemandDenialKind::ForeignSource,
@@ -186,18 +217,6 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             )
         })?;
         let registry = &self.application.installed_producers;
-        let source_entry = registry.declared_coupled_source(demand)?;
-        let source = source_entry.coupled_executor().read_coupled_source(
-            execution,
-            self.application,
-            principal,
-            self.request,
-            self.before,
-            before_pin,
-            demand,
-            candidate,
-            execution::CoupledSourceReadPurpose::OutputPreparation,
-        )?;
         let source = match source {
             execution::CoupledSourceRead::Route { .. } => unreachable!("ordinary source read"),
             execution::CoupledSourceRead::Retiring => return Ok(None),
