@@ -13,7 +13,7 @@ pub struct RelationalRequiredOutputInput {
 
 #[derive(Debug)]
 pub(super) struct InputIssuance {
-    _memory: worth_execution::ExecutionMemoryReservation,
+    _memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 
 #[derive(Debug, Default)]
@@ -270,7 +270,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         } else {
             part.inputs = Some(RequiredOutputInputs {
                 meanings: retained,
-                memory: Some(memory),
+                memory,
             });
         }
         Ok(())
