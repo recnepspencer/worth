@@ -14,8 +14,10 @@ use worth_query_declaration::facade::{
     application_query::{ApplicationQueryBinding, ApplicationQueryScopeBinding},
     application_schema::{ApplicationEntityMarkerIdentity, OperationReads},
 };
+mod content;
 mod control;
 mod reads;
+mod structure;
 type Scope<S, B> = <<B as ApplicationMutationBinding<S>>::ScopeBinding as ApplicationMutationScopeBinding<S>>::Scope;
 type Parent<S, E> = <<E as ApplicationConnectionShape<S>>::Binding as WorthQueryApplicationDependentOutputConnection<S>>::RootDemand;
 
