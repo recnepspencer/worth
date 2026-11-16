@@ -12,6 +12,13 @@ struct CurrentSourceQueryControl
     held: Option<&'a crate::domain_computation::primary_graph::provider::WorthQueryApplicationBranchCommitCoordination<'a>>,
 }
 impl<'a, S: ApplicationSchema> SourceQueryReaderAccess<'a, S> {
+    pub(in crate::domain_computation::primary_graph) fn with_applied_participants(
+        mut self,
+        participants: &'a dyn crate::domain_computation::primary_graph::provider::AppliedOutputParticipants,
+    ) -> Self {
+        self.applied_participants = Some(participants);
+        self
+    }
     pub(in crate::domain_computation::primary_graph) fn with_producer_reads<B: crate::domain_computation::primary_graph::application_contribution::WorthQueryApplicationProducerBinding<S>>(
         mut self,
         authorization: Option<

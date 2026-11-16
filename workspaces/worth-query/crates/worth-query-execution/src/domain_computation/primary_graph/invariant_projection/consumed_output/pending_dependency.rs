@@ -124,7 +124,7 @@ impl ConsumedOutputEvidence {
     ) -> Result<Option<SelectedPendingConsumedOutput<'selected>>, ConsumedOutputVerificationStop>
     {
         for (index, evidence) in roots.iter().enumerate().skip(start) {
-            let observed = &evidence.selected_native_root;
+            let observed = &evidence.recorded().selected_native_root;
 
             if selected.runtime_instance_id() != observed.runtime_instance_id()
                 || selected.branch_id() != observed.branch_id()

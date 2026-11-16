@@ -104,6 +104,7 @@ where
     }
     fn prerequisites(
         _context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        _candidate: &RelationalAuthoredCoupledCandidate<'_>,
         _pin: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
         _source: worth_relational::facade::identity::EntityId,
         _demand: &D,
@@ -118,20 +119,23 @@ where
     );
     fn assemble(
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        candidate: &RelationalAuthoredCoupledCandidate<'_>,
         parent: &AppliedOutputParent,
         demand: &D,
         next: &mut SynchronousOutputWave<S>,
     ) -> Result<(), SynchronousOutputFailure>;
     fn assemble_static(
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        candidate: &RelationalAuthoredCoupledCandidate<'_>,
         parent: &AppliedOutputParent,
         demand: &D,
         next: &mut SynchronousOutputWave<S>,
     ) -> Result<(), SynchronousOutputFailure> {
-        Self::assemble(context, parent, demand, next)
+        Self::assemble(context, candidate, parent, demand, next)
     }
     fn assemble_occurrences(
         _context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        _candidate: &RelationalAuthoredCoupledCandidate<'_>,
         _parent: &AppliedOutputParent,
         _demand: &D,
         _next: &mut SynchronousOutputWave<S>,
@@ -150,6 +154,7 @@ impl<S: ApplicationSchema, D: WorthQueryApplicationOutputDemand<S>> SynchronousO
     }
     fn assemble(
         _: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        _: &RelationalAuthoredCoupledCandidate<'_>,
         _: &AppliedOutputParent,
         _: &D,
         _: &mut SynchronousOutputWave<S>,

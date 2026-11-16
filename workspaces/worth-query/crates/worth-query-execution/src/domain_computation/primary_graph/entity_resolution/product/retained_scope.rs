@@ -42,6 +42,69 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         )
     }
 
+    /// Resolve the installed retained selector on the actual candidate image.
+    /// The selector is input to the issuer, never authority for its subject.
+    pub(in crate::domain_computation::primary_graph) fn resolve_retained_applied_query_scope<
+        Field: RecordSelection,
+    >(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        field: Field,
+        selector: &WorthQueryObservedScopeSelector,
+        before: &worth_relational::facade::runtime::RelationalPinnedRead,
+        candidate: &worth_relational::facade::runtime::RelationalPinnedRead<
+            worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
+        >,
+        request: &WorthQueryRequestScope,
+    ) -> Result<
+        WorthQueryApplicationEntityIdentity<Schema, Field::Entity>,
+        WorthQueryEntityResolutionDenial,
+    > {
+        admit_request(request, field.field())?;
+        let column = self.record_selection(field)?;
+        let locus = column.recipe().locus();
+        let graph = self.application().runtime.primary_graph().ok_or_else(|| {
+            entity_denial(
+                WorthQueryEntityResolutionDenialKind::Refused(
+                    ResolutionRefusal::PrimaryGraphNotInstalled,
+                ),
+                field.entity(),
+            )
+        })?;
+        let installed = graph
+            .layout
+            .equality_field(field.entity(), locus.aspect(), field.field())
+            .ok_or_else(|| {
+                entity_denial(
+                    WorthQueryEntityResolutionDenialKind::Refused(
+                        ResolutionRefusal::FieldNotInstalled,
+                    ),
+                    field.field(),
+                )
+            })?;
+        if &installed.locator != selector.locator()
+            || selector.value().value_family() != Field::Binding::SCALAR_FAMILY
+        {
+            return Err(entity_denial(
+                WorthQueryEntityResolutionDenialKind::Refused(
+                    ResolutionRefusal::ValueEncodingRejected,
+                ),
+                field.field(),
+            ));
+        }
+        graph
+            .retain_entity_resolution_context()
+            .resolve_applied_identity(
+                execution,
+                before,
+                candidate,
+                field.entity(),
+                locus.aspect(),
+                field.field(),
+                selector.value(),
+            )
+    }
+
     /// Both retained source readmission and declared coupled roots resolve the
     /// same installed equality field through this one canonical Native lookup.
     pub(in crate::domain_computation::primary_graph) fn resolve_query_scope_value_with_native_access<

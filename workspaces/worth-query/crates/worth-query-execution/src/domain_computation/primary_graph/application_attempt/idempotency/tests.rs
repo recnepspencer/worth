@@ -168,7 +168,13 @@ fn current_intent_encoding_distinguishes_an_edit_envelope() {
             "edit",
         )
         .unwrap();
-    let envelope = request.bind_edit_envelope(&key.intent(worth_query_declaration::facade::application_operation::ApplicationEditEnvelopeOrder::DeclaredDependencies, &[]).unwrap());
+    let envelope = request.bind_edit_envelope(
+        &key.intent(
+            worth_query_declaration::facade::application_operation::ApplicationEditEnvelopeOrder::DeclaredDependencies,
+            &[],
+        )
+        .unwrap(),
+    );
     assert!(envelope.intent_text().contains(":edit-envelope="));
     assert_eq!(
         envelope.match_recorded_intent(&envelope.intent_text()),

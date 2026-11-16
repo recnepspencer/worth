@@ -86,6 +86,7 @@ pub struct WorthQueryApplicationInvariantProjectionReader<'runtime, Schema> {
             'runtime,
             'runtime,
         >,
+    pub(super) applied_consumptions: Vec<crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence>,
     pub(super) consumed_outputs: BTreeMap<
         Arc<super::super::output_lineage::RecordedSettlementIdentity>,
         super::ConsumedOutputEvidence,
@@ -212,6 +213,7 @@ where
             work,
             realized_scope,
             consumed_outputs,
+            applied_consumptions,
             dependent_source_facts,
         } = match projected {
             Ok(Ok(completed)) => completed,
@@ -224,6 +226,10 @@ where
                 resume_unwind(payload)
             }
         };
+        assert!(
+            applied_consumptions.is_empty(),
+            "committed projections have no candidate inputs"
+        );
         Ok(WorthQueryCompletedInvariantProjection {
             output,
             snapshot: WorthQueryApplicationInvariantProjectionSnapshot {

@@ -32,11 +32,9 @@ impl RelationalRuntime {
                 co_anchors,
                 roles,
             },
-            CoupledSource::Restoration { anchor, plan } => CoupledSource::MemberEditRestoration {
-                source,
-                anchor,
-                plan,
-            },
+            CoupledSource::Restoration { plan, .. } => {
+                CoupledSource::MemberEditRestoration { source, plan }
+            }
             _ => {
                 return Err(origin_denial(
                     "member edit requires genuine member lifecycle custody",

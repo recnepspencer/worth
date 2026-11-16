@@ -28,6 +28,46 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
         E: From<SourceQueryObservationStop>
             + From<worth_relational::facade::transactions::RelationalExecutionDenialCause>,
     {
+        self.with_same_scope_plan_on::<B, R, E>(
+            execution,
+            selector,
+            parent_principal,
+            allocation,
+            None,
+            native,
+            consume,
+        )
+    }
+
+    pub(in crate::domain_computation::primary_graph::application_query) fn with_same_scope_plan_on<
+        B,
+        R,
+        E,
+    >(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        selector: &WorthQueryObservedScopeSelector,
+        parent_principal: worth_relational::facade::identity::EntityId,
+        allocation: &Arc<
+            crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation,
+        >,
+        applied: Option<(
+            &worth_relational::facade::runtime::RelationalPinnedRead,
+            &worth_relational::facade::runtime::RelationalPinnedRead<
+                worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
+            >,
+        )>,
+        native: &mut ApplicationQueryNativeAccess<'_>,
+        consume: impl for<'plan> FnOnce(
+            SourceReadPlan<'plan, Schema, B>,
+            &mut ApplicationQueryNativeAccess<'_>,
+        ) -> Result<R, E>,
+    ) -> Result<R, E>
+    where
+        B: ApplicationQueryBinding<Schema>,
+        E: From<SourceQueryObservationStop>
+            + From<worth_relational::facade::transactions::RelationalExecutionDenialCause>,
+    {
         use SourceQueryObservationStop as Stop;
         let installed = self
             .application
@@ -78,6 +118,65 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
             locus.field(),
             selector,
         )?;
+        if let Some((before, candidate)) = applied {
+            if self.history.is_some()
+                || candidate
+                    .candidate_identity()
+                    .proposal()
+                    .branch_observation()
+                    != selected.product().relational_basis_descriptor().reference()
+            {
+                return Err(Stop::ForeignClosure.into());
+            }
+            let scope = selected
+                .resolve_retained_applied_query_scope(
+                    execution,
+                    field,
+                    selector,
+                    before,
+                    candidate,
+                    self.request,
+                )
+                .map_err(Stop::Scope)?;
+            if scope.entity_id() != selector.subject() {
+                return Err(Stop::ForeignClosure.into());
+            }
+            let (product, basis) = self
+                .application
+                .retain_selected_query_basis_admitted(self.shared)
+                .map_err(Stop::Basis)?;
+            let limits = self
+                .application
+                .resolve_application_query_limits(installed.limits());
+            let controls = WorthQueryApplicationQueryControls::selected_read_one_shot(
+                product,
+                basis,
+                limits.maximum_results(),
+                self.request,
+            )
+            .map_err(|cause| Stop::Read(WorthQueryAdmittedOneShotStop::Admission(cause)))?
+            .with_selection_origin(selected.selection_origin())
+            .with_original_settled_producer(selected.original_settled_producer().cloned());
+            let access =
+                WorthQueryApplicationQueryAccessContext::new(principal.principal(), &scope);
+            let plan = self
+                .application
+                .admit_fresh_applied_source_query(
+                    execution,
+                    installed.query(),
+                    access,
+                    ApplicationQueryParameterSet::new(),
+                    controls,
+                    selected,
+                    &principal,
+                    before,
+                    candidate,
+                    self.request,
+                    native,
+                )
+                .map_err(Stop::Admission)?;
+            return consume(plan, native);
+        }
         let scope = selected
             .resolve_retained_query_scope_issued_with_native_access(
                 execution,

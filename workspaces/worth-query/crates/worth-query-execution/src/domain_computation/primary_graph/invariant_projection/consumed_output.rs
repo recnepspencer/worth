@@ -31,20 +31,69 @@ pub use verification::VerificationCapacityStop;
 /// One output actually selected by a projected read. The lineage owner minted
 /// the identity; Arc only shares retained evidence and is not an identity.
 /// This runtime-only record is never serialized through a TypeId-bearing key.
+mod applied;
+pub(in crate::domain_computation::primary_graph) use applied::AppliedConsumedOutput;
+
+/// Recorded input custody and an attempt-local appended prerequisite are distinct.
+/// Only the sole final publication may fill the appended prerequisite's cell.
 #[derive(Clone, Debug)]
-pub struct ConsumedOutputEvidence {
-    _computation: crate::domain_computation::primary_graph::output_lineage::CurrentComputation,
+pub enum ConsumedOutputEvidence {
+    Recorded(RecordedConsumedOutput),
+    Appended(AppliedConsumedOutput),
+}
+#[derive(Clone, Debug)]
+pub struct RecordedConsumedOutput {
+    source: crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence,
     identity: Arc<RecordedSettlementIdentity>,
-    source_facts: crate::domain_computation::primary_graph::output_lineage::ComparableSourceFacts,
+    source_facts:
+        Option<crate::domain_computation::primary_graph::output_lineage::ComparableSourceFacts>,
     upstream: Arc<[ConsumedOutputEvidence]>,
     verification_requirement: Option<FullVerificationReason>,
     native_output_witness: Option<Arc<OnceLock<SealedNativeOutputWitness>>>,
-    selected_native_root: Arc<PositionedRelationalSnapshot>,
+    selected_native_root: ConsumedReadRoot,
 }
+#[derive(Clone, Debug)]
+enum ConsumedReadRoot {
+    Selected(Arc<PositionedRelationalSnapshot>),
+    Published(PositionedRelationalSnapshot),
+}
+impl ConsumedReadRoot {
+    fn as_ref(&self) -> &PositionedRelationalSnapshot {
+        match self {
+            Self::Selected(root) => root,
+            Self::Published(root) => root,
+        }
+    }
+}
+impl std::ops::Deref for ConsumedReadRoot {
+    type Target = PositionedRelationalSnapshot;
+    fn deref(&self) -> &Self::Target {
+        self.as_ref()
+    }
+}
+impl PartialEq for ConsumedReadRoot {
+    fn eq(&self, other: &Self) -> bool {
+        self.as_ref() == other.as_ref()
+    }
+}
+impl Eq for ConsumedReadRoot {}
 
 impl PartialEq for ConsumedOutputEvidence {
     fn eq(&self, other: &Self) -> bool {
+        match (self.applied(), other.applied()) {
+            (Some(left), Some(right)) => left.same_selection(right),
+            (None, None) => self.recorded() == other.recorded(),
+            _ => false,
+        }
+    }
+}
+
+impl Eq for ConsumedOutputEvidence {}
+
+impl PartialEq for RecordedConsumedOutput {
+    fn eq(&self, other: &Self) -> bool {
         self.identity == other.identity
+            && self.source == other.source
             && self.source_facts == other.source_facts
             && self.upstream == other.upstream
             && self.verification_requirement == other.verification_requirement
@@ -57,14 +106,29 @@ impl PartialEq for ConsumedOutputEvidence {
     }
 }
 
-impl Eq for ConsumedOutputEvidence {}
+impl Eq for RecordedConsumedOutput {}
 
 impl ConsumedOutputEvidence {
+    pub(in crate::domain_computation::primary_graph) fn applied(
+        &self,
+    ) -> Option<&AppliedConsumedOutput> {
+        match self {
+            Self::Appended(link) if !link.is_settled() => Some(link),
+            Self::Appended(_) | Self::Recorded(_) => None,
+        }
+    }
+    fn recorded(&self) -> &RecordedConsumedOutput {
+        match self {
+            Self::Recorded(recorded) => recorded,
+            Self::Appended(link) => link.recorded(),
+        }
+    }
+
     /// The exact native basis on which the read sealed this current input.
     pub(in crate::domain_computation::primary_graph) fn current_read_basis(&self) -> (u64, u64) {
         (
-            self.selected_native_root.runtime_instance_id(),
-            self.selected_native_root.root_id(),
+            self.recorded().selected_native_root.runtime_instance_id(),
+            self.recorded().selected_native_root.root_id(),
         )
     }
 
@@ -77,19 +141,43 @@ impl ConsumedOutputEvidence {
         native_output_witness: Arc<OnceLock<SealedNativeOutputWitness>>,
         selected_native_root: Arc<PositionedRelationalSnapshot>,
     ) -> Self {
-        Self {
-            _computation: computation,
+        Self::Recorded(RecordedConsumedOutput {
+            source: computation.source(),
+            identity,
+            source_facts: Some(source_facts),
+            upstream,
+            verification_requirement,
+            native_output_witness: Some(native_output_witness),
+            selected_native_root: ConsumedReadRoot::Selected(selected_native_root),
+        })
+    }
+
+    /// Final publication retains genuine settled provenance without asserting
+    /// that the performed inputs certify Current. Verification checks that state.
+    pub(in crate::domain_computation::primary_graph) fn settled(
+        source: crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence,
+        identity: Arc<RecordedSettlementIdentity>,
+        source_facts: Option<
+            crate::domain_computation::primary_graph::output_lineage::ComparableSourceFacts,
+        >,
+        upstream: Arc<[Self]>,
+        verification_requirement: Option<FullVerificationReason>,
+        native_output_witness: Option<Arc<OnceLock<SealedNativeOutputWitness>>>,
+        selected_native_root: PositionedRelationalSnapshot,
+    ) -> Self {
+        Self::Recorded(RecordedConsumedOutput {
+            source,
             identity,
             source_facts,
             upstream,
             verification_requirement,
-            native_output_witness: Some(native_output_witness),
-            selected_native_root,
-        }
+            native_output_witness,
+            selected_native_root: ConsumedReadRoot::Published(selected_native_root),
+        })
     }
 
     pub fn identity(&self) -> &Arc<RecordedSettlementIdentity> {
-        &self.identity
+        &self.recorded().identity
     }
 
     /// A consumed restored output gets its mark row at the basis this reader
@@ -99,20 +187,25 @@ impl ConsumedOutputEvidence {
         &self,
         owner: &SourceInvalidationOwner,
     ) -> Result<bool, SettlementRegistrationStop> {
-        if self.verification_requirement != Some(FullVerificationReason::CheckpointRestore) {
+        if self.recorded().verification_requirement
+            != Some(FullVerificationReason::CheckpointRestore)
+        {
             return Ok(true);
         }
-        let witness = self.native_output_witness.as_ref();
+        let witness = self.recorded().native_output_witness.as_ref();
         let Some(witness) = witness.and_then(|witness| witness.get()) else {
             return Ok(false);
         };
-        if !self.upstream.is_empty() {
+        if !self.recorded().upstream.is_empty() {
             return Ok(false);
         }
         owner.establish_verified_root(
-            &self.selected_native_root,
-            &self.identity,
-            &self.source_facts,
+            &self.recorded().selected_native_root,
+            &self.recorded().identity,
+            self.recorded()
+                .source_facts
+                .as_ref()
+                .ok_or(SettlementRegistrationStop::SourceUnavailable)?,
             witness,
         )
     }
@@ -124,9 +217,11 @@ impl ConsumedOutputEvidence {
         &self,
         owner: &SourceInvalidationOwner,
     ) -> Result<bool, SettlementRegistrationStop> {
-        if self.verification_requirement != Some(FullVerificationReason::CheckpointRestore)
-            || !self.upstream.is_empty()
+        if self.recorded().verification_requirement
+            != Some(FullVerificationReason::CheckpointRestore)
+            || !self.recorded().upstream.is_empty()
             || self
+                .recorded()
                 .native_output_witness
                 .as_ref()
                 .and_then(|witness| witness.get())
@@ -136,7 +231,7 @@ impl ConsumedOutputEvidence {
             return Ok(false);
         }
         Ok(matches!(
-            owner.currentness(&self.selected_native_root, &self.identity)?,
+            owner.currentness(&self.recorded().selected_native_root, &self.recorded().identity)?,
             crate::domain_computation::primary_graph::output_lineage::invalidation::SourceSettlementCurrentness::Clean
         ))
     }
@@ -150,11 +245,14 @@ impl ConsumedOutputEvidence {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         source_owner: &WorthQueryRelationalSourceOwner,
     ) -> Result<(), ConsumedOutputVerificationStop> {
-        if self.verification_requirement != Some(FullVerificationReason::CheckpointRestore) {
+        if self.recorded().verification_requirement
+            != Some(FullVerificationReason::CheckpointRestore)
+        {
             return Ok(());
         }
         use crate::domain_computation::primary_graph::output_lineage::invalidation::HeadCellRegistrationStop;
-        match source_owner.mint_mark_cell_at_head(execution, self.selected_native_root.branch_id())
+        match source_owner
+            .mint_mark_cell_at_head(execution, self.recorded().selected_native_root.branch_id())
         {
             Ok(()) => {}
             Err(HeadCellRegistrationStop::Admission(stop)) => return Err(map_admission_stop(stop)),

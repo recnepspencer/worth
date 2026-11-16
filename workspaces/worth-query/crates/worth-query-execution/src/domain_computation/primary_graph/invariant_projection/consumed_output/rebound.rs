@@ -28,6 +28,7 @@ impl ConsumedOutputEvidence {
         witness: &SealedNativeOutputWitness,
     ) -> Result<bool, worth_relational::facade::mvcc::CompanionPreflightStop> {
         match self
+            .recorded()
             .native_output_witness
             .as_ref()
             .and_then(|cell| cell.get())

@@ -262,6 +262,7 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             self.before,
             before_pin,
             &pin,
+            self,
             source,
             producer.edition,
             captured,
@@ -276,7 +277,8 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
         // the next actual assembly round closes it before rerunning the handler.
         let meaning = publication
             .producing_meaning()
-            .expect("installed producer participant");
+            .expect("installed producer participant")
+            .clone();
         let source_scope = meaning.source_scope;
         let position = self.applied_position() + 1;
         self.writers.borrow_mut().push(CoupledWriter {
@@ -301,6 +303,9 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             )?,
             _ => candidate.append_publication(execution, publication, &content, vec![batch])?,
         }
+        let entities = candidate
+            .appended_output_entities(execution, &producer.declaration.identity, &meaning)?
+            .expect("Native appended this participant");
         let after_own = candidate.pin_source(execution)?;
         let writers = self.writers.borrow();
         let Some(CoupledWriterStage::Inspected(writer)) =
@@ -311,7 +316,15 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
         self.application
             .runtime
             .primary_provider
-            .retain_coupled_after_own(writer.session(), after_own.clone());
+            .retain_coupled_after_own(
+                writer.session(),
+                after_own.clone(),
+                crate::domain_computation::primary_graph::provider::AppliedParticipantOutputs {
+                    producer: producer.declaration.identity.to_string(),
+                    meaning: meaning.clone(),
+                    entities,
+                },
+            );
         let meaning = &writers.last().expect("actual appended writer").meaning;
         let input = candidate.applied_output_input(execution, meaning)?;
         Ok(Some(synchronous_outputs::AppliedOutputParent::new(

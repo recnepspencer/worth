@@ -52,6 +52,11 @@ impl From<WorthQueryOutputDemandDenial> for CoupledSourceReadStop {
 
 pub(in crate::domain_computation::primary_graph::application_contribution) struct ErasedAppliedProducerSource
 {
+    pub(in crate::domain_computation::primary_graph::application_contribution) binding_order: (
+        [u8; 32],
+        [u8; 32],
+        worth_relational::facade::identity::EntityId,
+    ),
     pub(in crate::domain_computation::primary_graph::application_contribution) scope:
         worth_relational::facade::identity::EntityId,
     pub(in crate::domain_computation::primary_graph::application_contribution) partition: [u8; 32],
@@ -165,7 +170,21 @@ where
         &mut ApplicationQueryNativeAccess::acquire(),
     );
     let scope = match scope {
-        Ok(scope) => scope,
+        Ok(_) => runtime
+            .runtime
+            .primary_graph()
+            .ok_or_else(foreign)?
+            .retain_entity_resolution_context()
+            .resolve_applied_identity::<Schema, _>(
+                execution,
+                before_pin,
+                &candidate,
+                field.entity(),
+                field.aspect(),
+                field.field(),
+                &arguments.value,
+            )
+            .map_err(|cause| scope_rejected(Binding::IDENTITY, cause))?,
         Err(cause) if cause.kind() == crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind::Refused(
             crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalKind::UnknownEntity,
         ) => {
@@ -178,18 +197,54 @@ where
         }
         Err(cause) => return Err(scope_rejected(Binding::IDENTITY, cause).into()),
     };
-    let (_, product, application_basis) = selected.into_parts();
-    let query = installed.source_query.query();
+    let shared = selected
+        .prepare_shared_query_basis()
+        .map_err(|(_, stop)| source_readmission::ready_resource_denial(Binding::IDENTITY, stop))?;
+    let current = shared.selected();
+    let principal = current
+        .resolve_authenticated_principal_issued(
+            execution,
+            installed.source_query.principal_binding(),
+            external,
+            request,
+            WorthQueryPrincipalResolutionMode::Ordinary,
+            None,
+        )
+        .map_err(|cause| principal_rejected(Binding::IDENTITY, cause))?;
+    let parameters =
+        crate::domain_computation::primary_graph::application_query::capture_parameters::<
+            Schema,
+            SourceBinding<Schema, Binding>,
+        >(execution, runtime, 0, || Ok(parameters))
+        .map_err(CoupledSourceReadStop::capture)?;
+    let (product, application_basis) = runtime
+        .retain_selected_query_basis_admitted(&shared)
+        .map_err(|stop| failed(Binding::IDENTITY, stop))?;
     let maximum_results = runtime
         .resolve_application_query_limits(installed.source_query.limits())
         .maximum_results();
-    let controls = crate::domain_computation::primary_graph::WorthQueryApplicationQueryControls::product_one_shot(product, application_basis, maximum_results, request);
+    let controls = crate::domain_computation::primary_graph::WorthQueryApplicationQueryControls::selected_read_one_shot(
+        product, application_basis, maximum_results, request,
+    ).map_err(|stop| source_readmission::ready_resource_denial(Binding::IDENTITY, stop))?
+    .with_selection_origin(current.selection_origin());
     let access =
         crate::domain_computation::primary_graph::WorthQueryApplicationQueryAccessContext::new(
-            &principal, &scope,
+            principal.principal(),
+            &scope,
         );
     let plan = runtime
-        .admit_application_query(execution, query, &access, parameters, controls)
+        .admit_applied_source_query(
+            execution,
+            installed.source_query.query(),
+            access,
+            &parameters,
+            controls,
+            current,
+            &principal,
+            before_pin,
+            &candidate,
+            request,
+        )
         .map_err(|cause| query_admission_denied(Binding::IDENTITY, cause))?;
     let partition = *plan.parameter_binding_identity().bytes();
     let root = scope.entity_id();
@@ -224,9 +279,13 @@ where
             ) => (Some(owner.clone()), true, false),
             None => (None, false, true),
         };
+    let reader = crate::domain_computation::primary_graph::application_query::SourceQueryReaderAccess::ordinary(runtime, &shared, external, request);
     let source = runtime
-        .project_applied_source_plan(execution, plan, &candidate)
-        .map_err(|cause| failed(Binding::IDENTITY, cause))?;
+        .project_applied_source_plan::<SourceBinding<Schema, Binding>, SourceValue<Schema, Binding>>(
+            execution, &reader, plan, before_pin, &candidate, assembly,
+            &mut ApplicationQueryNativeAccess::acquire(),
+        )
+        .map_err(|cause| super::denial::selected_source_read_denied(Binding::IDENTITY, cause))?;
     let predecessor = if predecessor.is_some() {
         predecessor
     } else {
@@ -310,6 +369,7 @@ where
         predecessor.as_ref(),
     )?;
     Ok(CoupledSourceRead::Source(ErasedAppliedProducerSource {
+        binding_order: source.binding_order(),
         scope: source.root(),
         partition: source.partition(),
         predecessor,

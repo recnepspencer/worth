@@ -24,7 +24,10 @@ impl<Query, Value> AppliedQuerySource<Query, Value> {
         >,
         input: &Binding::Input,
         pin: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
-    ) -> Result<WorthQueryBoundSourceExpectation, WorthQuerySourceExpectationDenial>
+    ) -> Result<
+        WorthQueryBoundSourceExpectation,
+        crate::domain_computation::primary_graph::application_query::SourceQueryObservationStop,
+    >
     where
         Schema: worth_query_installation::facade::ApplicationSchema,
         Binding: ApplicationMutationBinding<Schema>,
@@ -48,14 +51,14 @@ impl<Query, Value> AppliedQuerySource<Query, Value> {
             .ok_or_else(denied)?;
         if self.runtime_authority != runtime.runtime.authority_identity().as_u64()
             || self.query != *expected_query.as_bytes()
-            || self.root() != admission.scope_entity_id()
+            || self.model_root != admission.scope_entity_id()
             || self.candidate.qualification() != pin.candidate_identity().qualification()
             || self.candidate.proposal().branch_observation()
                 != lease.product().relational_basis().reference()
         {
-            return Err(denied());
+            return Err(denied().into());
         }
-        let facts = super::super::fact_conversion::applied_facts(
+        let mut facts = super::super::fact_conversion::applied_facts(
             self.meaning.footprint(),
             checked.layout,
             Binding::IDENTITY,
@@ -64,6 +67,12 @@ impl<Query, Value> AppliedQuerySource<Query, Value> {
                 Some(admission.publication_request()),
             ),
         )?;
+        if let Some(managed) = &self.managed {
+            managed.append_facts(execution, pin.candidate_identity(), &mut facts)
+                .map_err(|cause| crate::domain_computation::primary_graph::application_query::SourceQueryObservationStop::Read(
+                    crate::domain_computation::primary_graph::application_query::WorthQueryAdmittedOneShotStop::Admission(
+                        worth_relational::facade::mvcc::CompanionPreflightStop::Execution(cause))))?;
+        }
         let bound = WorthQueryBoundSourceExpectation {
             kind: WorthQuerySourceExpectationKind::Row,
             identity: self.idempotency_identity(),

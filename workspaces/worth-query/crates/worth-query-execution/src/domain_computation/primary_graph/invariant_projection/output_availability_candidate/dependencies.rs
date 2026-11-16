@@ -39,7 +39,7 @@ impl PostingDependencies {
             }
             visited.insert(Arc::clone(evidence.identity()));
             result.push(
-                evidence.source_facts().clone(),
+                evidence.source_facts().ok_or(Stop::Unavailable)?.clone(),
                 evidence.native_output_witness(),
                 owner,
             )?;

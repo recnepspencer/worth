@@ -55,3 +55,25 @@ pub(super) fn prepared_key<Query>(
         edition,
     )))
 }
+
+/// Capture only the decision context declared by this producer. Completion
+/// still seals actual context use; this preparation alone proves no reuse.
+pub(super) fn prepared_context(
+    contract: Option<crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerInputReuseContract>,
+    key: [u8; 32],
+    principal: impl FnOnce() -> crate::domain_computation::primary_graph::freshness::WorthQueryPrincipalReuseWitness,
+    scope: impl FnOnce() -> crate::domain_computation::authorization::WorthQueryDecisionScopeWitness,
+) -> Option<crate::domain_computation::primary_graph::output_lineage::PreparedDecisionReuseContext>
+{
+    let contract = contract.filter(|contract| {
+        contract.determinism() == worth_foundational::facade::DeterminismContract::CanonicalBitwise
+    })?;
+    let declared = contract.context();
+    use super::super::WorthQueryDecisionContextDependencies as Context;
+    crate::domain_computation::primary_graph::output_lineage::PreparedDecisionReuseContext::new(
+        contract,
+        declared.contains(Context::KEY).then_some(key),
+        declared.contains(Context::PRINCIPAL).then(principal),
+        declared.contains(Context::SCOPE).then(scope),
+    )
+}

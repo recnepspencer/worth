@@ -20,6 +20,37 @@ pub(super) fn assert_member_widths(control: &Control, waves: &[Vec<u64>], worker
     }
 }
 
+/// Owner completion follows semantic binding order even when dispatch is parallel.
+pub(super) fn assert_completion_order(
+    control: &Control,
+    world: &super::super::World,
+    waves: &[Vec<usize>],
+    failure: Option<(u64, super::super::control::Phase)>,
+    expired: bool,
+) {
+    use super::super::control::Phase;
+    let mut expected = Vec::new();
+    if !expired {
+        for index in waves.iter().flatten() {
+            let key = world.members[*index].key;
+            if let Some((failed, phase)) = failure {
+                if key == failed {
+                    if phase == Phase::Complete {
+                        expected.push(key);
+                    }
+                    break;
+                }
+            }
+            expected.push(key);
+        }
+        if failure.is_none() && !world.members.is_empty() {
+            expected.push(100);
+        }
+    }
+    assert_eq!(control.state.lock().unwrap().completed, expected,
+        "canonical owner completion stops at the typed failed member; discarded compute does not complete its suffix");
+}
+
 #[cfg(test)]
 mod serial {
     use super::*;

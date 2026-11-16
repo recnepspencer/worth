@@ -39,9 +39,8 @@ pub(super) fn at_source(
         return Ok(None);
     };
     let origin = birth
-        .required_output_origin
-        .as_deref()
-        .expect(/* Proof: membership::latest returns this immutable Arc only after validate_output_membership_header succeeds on it; that method rejects a missing required_output_origin. */ "validated actual producer birth");
+        .materialization_origin_for_record(&RecordRef::Relation(relation_id), context)
+        .map_err(stop)?;
     let positions = &basis.inner.root.output_publication_positions;
     let position = match positions.get(&origin.meaning, context)? {
         Some(position) => Some(position),
@@ -72,7 +71,7 @@ pub(super) fn at_source(
                 context,
             )?
             .ok_or("current incident producer publication absent")?;
-        let current_origin = current.validate_output_membership_header()?;
+        let current_origin = current.materialization_origin_for_route(&origin.meaning, context)?;
         charge(
             context,
             current_origin.relations.len()
@@ -123,7 +122,8 @@ fn relation_birth(
             context,
         )?
         .ok_or("incident producer exact canonical birth absent")?;
-    let origin = birth.validate_output_membership_header()?;
+    let origin =
+        birth.materialization_origin_for_record(&RecordRef::Relation(relation_id), context)?;
     // Actual Created allocation/endpoints establish producer ownership. Current
     // incidence and caller-supplied restoration fields provide no such proof.
     crate::history::data::publication_relations::validate_owned(

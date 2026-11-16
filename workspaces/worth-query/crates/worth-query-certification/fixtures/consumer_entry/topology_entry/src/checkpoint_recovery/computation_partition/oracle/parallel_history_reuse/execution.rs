@@ -2,6 +2,7 @@
 use super::code_identity::ChangedCodeTotals;
 use super::computation::HistoryOwner;
 use super::*;
+use worth_query_host::facade::application_entry::WorthQueryApplicationPerformedMutationOutcome;
 use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 pub(super) struct HistoryConfiguration {
     topology: TopologyConfiguration,
@@ -91,7 +92,9 @@ impl WorthQueryApplicationContribution<CheckpointSchema> for HistoryContribution
                 REPORTS.with(|reports| reports.borrow_mut().extend(observations));
             })
         });
-        setup.handler::<RegionOutputBinding<CheckpointSchema>, _>(handler)?;
+        // The artifact retains the scope; it must not write its unchanged
+        // Length over the authored source edit on that same record.
+        setup.handler::<RegionOutputBinding<CheckpointSchema>, _>(handler.preserving_payload())?;
         setup.handler::<RegionTotalsDemandBinding<CheckpointSchema>, _>(
             super::super::super::demand::RegionTotalsHandler::idle(),
         )?;
@@ -200,9 +203,20 @@ pub(super) fn demand(
     request: &Request<'_, '_, '_>,
     application: &Application,
 ) -> (usize, Vec<OracleRun>, Vec<Option<u64>>) {
+    clear_run_observations();
+    finish_demand(request, application)
+}
+
+fn clear_run_observations() {
     room().clear();
     published_states();
     REPORTS.with(|reports| reports.borrow_mut().clear());
+}
+
+fn finish_demand(
+    request: &Request<'_, '_, '_>,
+    application: &Application,
+) -> (usize, Vec<OracleRun>, Vec<Option<u64>>) {
     let mut demand = request
         .demand(RegionOutputDemand(SCOPE.to_owned()))
         .start_dependent_in_program::<HistoryProgram, RegionConnection>(application)
@@ -263,20 +277,26 @@ pub(super) fn edit(
     );
 }
 
-/// Moves the scope's ordinate to `y`, which names the set its output totals.
-pub(super) fn adjust(
+/// Observe the real synchronous edit through read-only required-output delivery.
+pub(super) fn adjust_and_demand(
     request: &Request<'_, '_, '_>,
     application: &Application,
     y: u64,
     command: u64,
-) {
+) -> (usize, Vec<OracleRun>, Vec<Option<u64>>) {
+    clear_run_observations();
+    let before = request
+        .retain_current_read()
+        .unwrap()
+        .selected_commit()
+        .clone();
     let observed = request
         .query(PlanarRead {
             body_key: SCOPE.to_owned(),
         })
         .execute()
         .expect("the scope's source is readable");
-    request
+    let outcome = request
         .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: SCOPE.to_owned(),
@@ -289,6 +309,62 @@ pub(super) fn adjust(
             worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("the scope's ordinate moves");
+    let performed = match outcome {
+        WorthQueryApplicationPerformedMutationOutcome::Performed(performed) => performed,
+        WorthQueryApplicationPerformedMutationOutcome::NotPerformed(
+            WorthQueryApplicationMutationOutcome::Commit(
+                worth_query_host::facade::primary_graph::WorthQueryApplicationUncommitted::Denied(
+                    denial,
+                ),
+            ),
+        ) => panic!(
+            "the source edit must co-commit: producer={:?} subject={:?} invariant={:?}",
+            denial.coupled_producer_denial().map(|cause| cause.kind()),
+            denial
+                .coupled_producer_denial()
+                .map(|cause| cause.subject()),
+            denial
+                .invariant_execution_failure()
+                .map(|cause| (cause.kind(), cause.detail()))
+        ),
+        other => panic!(
+            "the source edit did not perform: {:?}",
+            std::mem::discriminant(&other)
+        ),
+    };
+    let publication = performed
+        .receipt()
+        .committed_product_publication()
+        .composite_commit();
+    assert_eq!(publication.owner_identity(), before.owner_identity());
+    assert_eq!(publication.ordinal(), before.ordinal() + 1);
+    assert_eq!(
+        request.retain_current_read().unwrap().selected_commit(),
+        publication
+    );
+    assert_eq!(
+        request
+            .query(PlanarRead {
+                body_key: SCOPE.to_owned()
+            })
+            .execute()
+            .unwrap()
+            .rows()[0]
+            .y,
+        length(y)
+    );
+    let result = finish_demand(request, application);
+    assert_eq!(
+        result.0, 0,
+        "already-published computation needs no new delivery contact"
+    );
+    assert_eq!(
+        request.retain_current_read().unwrap().selected_commit(),
+        publication,
+        "delivery publishes nothing"
+    );
+    drop(performed);
+    result
 }
 
 // These are observed full-run charges from the existing execution observer,

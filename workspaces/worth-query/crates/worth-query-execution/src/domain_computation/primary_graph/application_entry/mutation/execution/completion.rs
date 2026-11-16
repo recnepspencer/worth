@@ -88,6 +88,17 @@ where
         crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial,
     > {
         let inputs = registry.admit_prepared_inputs(self.projection.prepared_current_inputs())?;
+        let (requests, completion) = self.into_candidate_parts();
+        Ok((requests, completion, inputs))
+    }
+
+    /// Candidate inputs were admitted against its applied pin, not the committed registry.
+    pub(in crate::domain_computation::primary_graph) fn into_candidate_parts(
+        self,
+    ) -> (
+        Vec<crate::domain_computation::primary_graph::application_contribution::computation::prepared_request::PreparedCompute>,
+        MutationCompletion<'authority, Schema, Binding>,
+    ){
         let Self {
             plan,
             execution: _,
@@ -95,15 +106,14 @@ where
             projection,
         } = self;
         let (requests, decision) = plan.into_parts();
-        Ok((
+        (
             requests,
             MutationCompletion {
                 decision,
                 complete,
                 projection,
             },
-            inputs,
-        ))
+        )
     }
 }
 

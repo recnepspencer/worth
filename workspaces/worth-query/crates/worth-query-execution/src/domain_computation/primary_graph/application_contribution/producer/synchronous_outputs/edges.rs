@@ -61,6 +61,7 @@ where
     }
     fn assemble(
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        candidate: &RelationalAuthoredCoupledCandidate<'_>,
         parent: &AppliedOutputParent,
         demand: &D,
         next: &mut SynchronousOutputWave<S>,
@@ -77,7 +78,7 @@ where
         context.checkpoint(connection)?;
         let intent = Binding::<S, C>::discovery_from_root(demand).map_err(refused)?;
         let discovered = context
-            .discover::<QueryBinding<S, C>>(parent, intent)
+            .discover::<QueryBinding<S, C>>(candidate, parent, intent)
             .map_err(SynchronousOutputFailure)?;
         let children = Binding::<S, C>::demands_from_discovery(&discovered).map_err(refused)?;
         for child in children {
@@ -125,14 +126,15 @@ where
     }
     fn prerequisites(
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        candidate: &RelationalAuthoredCoupledCandidate<'_>,
         pin: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
         source: worth_relational::facade::identity::EntityId,
         demand: &D,
         inputs: &PrerequisiteInputs<'_>,
         next: &mut SynchronousOutputWave<S>,
     ) -> Result<(), SynchronousOutputFailure> {
-        L::prerequisites(context, pin, source, demand, inputs, next)?;
-        R::prerequisites(context, pin, source, demand, inputs, next)
+        L::prerequisites(context, candidate, pin, source, demand, inputs, next)?;
+        R::prerequisites(context, candidate, pin, source, demand, inputs, next)
     }
     fn declared_families(
         parent: std::any::TypeId,
@@ -143,29 +145,32 @@ where
     }
     fn assemble(
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        candidate: &RelationalAuthoredCoupledCandidate<'_>,
         parent: &AppliedOutputParent,
         demand: &D,
         next: &mut SynchronousOutputWave<S>,
     ) -> Result<(), SynchronousOutputFailure> {
-        L::assemble(context, parent, demand, next)?;
-        R::assemble(context, parent, demand, next)
+        L::assemble(context, candidate, parent, demand, next)?;
+        R::assemble(context, candidate, parent, demand, next)
     }
     fn assemble_static(
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        candidate: &RelationalAuthoredCoupledCandidate<'_>,
         parent: &AppliedOutputParent,
         demand: &D,
         next: &mut SynchronousOutputWave<S>,
     ) -> Result<(), SynchronousOutputFailure> {
-        L::assemble_static(context, parent, demand, next)?;
-        R::assemble_static(context, parent, demand, next)
+        L::assemble_static(context, candidate, parent, demand, next)?;
+        R::assemble_static(context, candidate, parent, demand, next)
     }
     fn assemble_occurrences(
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        candidate: &RelationalAuthoredCoupledCandidate<'_>,
         parent: &AppliedOutputParent,
         demand: &D,
         next: &mut SynchronousOutputWave<S>,
     ) -> Result<(), SynchronousOutputFailure> {
-        L::assemble_occurrences(context, parent, demand, next)?;
-        R::assemble_occurrences(context, parent, demand, next)
+        L::assemble_occurrences(context, candidate, parent, demand, next)?;
+        R::assemble_occurrences(context, candidate, parent, demand, next)
     }
 }

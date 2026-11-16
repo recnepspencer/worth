@@ -1,5 +1,6 @@
 //! checkpoint reopens ready output without producer contact and recomputes after source change.
 use super::*;
+use worth_query_host::facade::application_entry::WorthQueryApplicationPerformedMutationOutcome;
 
 #[cfg(test)]
 mod serial {
@@ -59,7 +60,11 @@ mod serial {
             })
             .execute()
             .expect("the recovered source is readable");
-        request
+        provider_observation.reset();
+        let before_contacts = restored.producer_contacts_on_this_thread_for_test();
+        let (edited, writes) =
+            worth_relational::facade::inspection::observe_maintenance_work(1, || {
+                request
             .advanced()
             .mutate(PlanarSourceAdjustment {
                 scope_key: "anchor-a".to_owned(),
@@ -71,9 +76,56 @@ mod serial {
                 &restored,
                 worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
             )
-            .expect("the recovered source accepts a fresh edit");
+            .expect("the recovered source accepts a fresh edit")
+            });
+        let WorthQueryApplicationPerformedMutationOutcome::Performed(edited) = edited else {
+            panic!("the recovered edit co-commits its required outputs");
+        };
+        // Cold-symbol preparation may abandon a candidate and enter handlers
+        // again. The contract is one final publication, current outputs and
+        // contact-free reuse, not an aggregate preparation-entry count.
+        let edit_entries = restored.producer_contacts_on_this_thread_for_test() - before_contacts;
+        assert!(
+            edit_entries > 0,
+            "the changed source executes real producers"
+        );
+        assert_eq!(writes.published_rows.len() + writes.omitted_publications, 1);
+        assert!(provider_observation.count() > 0);
+        let value = request
+            .query(PlanarOutputRead {
+                body_key: "anchor-a".into(),
+            })
+            .execute()
+            .unwrap();
+        assert_eq!(
+            value.rows()[0].value,
+            length(4),
+            "authored y=3 yields y+1 before delivery"
+        );
+        drop(value);
+        for (key, expected) in [("final:anchor-a", 5), ("final:anchor-b", 3)] {
+            let output = request
+                .query(PlanarOutputRead {
+                    body_key: key.into(),
+                })
+                .execute()
+                .unwrap();
+            assert_eq!(output.rows()[0].body_key, key);
+            assert_eq!(
+                output.rows()[0].value,
+                length(expected),
+                "each source y + 2 is published before delivery"
+            );
+        }
         let current = crate::checkpoint_recovery::support::retain_read(&restored, &request)
             .expect("the edited root is observable");
+        assert_eq!(
+            edited
+                .receipt()
+                .committed_product_publication()
+                .composite_commit(),
+            current.selected_commit()
+        );
         assert!(matches!(
             request.at(&current).require_current_program_output(
                 &restored_settlement),
@@ -82,9 +134,47 @@ mod serial {
         ));
         drop(restored_settlement);
 
-        provider_observation.reset();
-        let recomputed = settle(&request, &restored);
-        assert!(recomputed.work().producer_contact_count() > 0);
-        assert!(provider_observation.count() > 0);
+        let (recomputed, delivery_writes) =
+            worth_relational::facade::inspection::observe_maintenance_work(1, || {
+                settle(&request, &restored)
+            });
+        assert_eq!(recomputed.work().producer_contact_count(), 0);
+        assert_eq!(recomputed.work().derived_publication_count(), 0);
+        assert_eq!(
+            delivery_writes.published_rows.len() + delivery_writes.omitted_publications,
+            0
+        );
+        request
+            .at(&current)
+            .require_current_program_output(&recomputed)
+            .unwrap();
+        let (reused, reuse_writes) =
+            worth_relational::facade::inspection::observe_maintenance_work(1, || {
+                settle(&request, &restored)
+            });
+        assert_eq!(reused.work().producer_contact_count(), 0);
+        assert_eq!(reused.work().derived_publication_count(), 0);
+        assert_eq!(
+            reuse_writes.published_rows.len() + reuse_writes.omitted_publications,
+            0
+        );
+        assert_eq!(
+            restored.producer_contacts_on_this_thread_for_test() - before_contacts,
+            edit_entries,
+            "revalidation may call the provider but enters no producer handler"
+        );
+        assert_eq!(
+            support::retain_read(&restored, &request)
+                .unwrap()
+                .selected_commit(),
+            current.selected_commit()
+        );
+        let value = request
+            .query(PlanarOutputRead {
+                body_key: "anchor-a".into(),
+            })
+            .execute()
+            .unwrap();
+        assert_eq!(value.rows()[0].value, length(4));
     }
 }

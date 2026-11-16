@@ -5,6 +5,7 @@ use super::producer::{
     WorthQueryOutputDemandDenialKind,
 };
 use worth_query_installation::facade::ApplicationSchema;
+mod applied_outputs;
 mod authored_stages;
 mod disposal;
 mod input_preparation;

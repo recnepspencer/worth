@@ -40,7 +40,7 @@ pub(in crate::domain_computation::primary_graph) use work_budget::reserve_pendin
 pub struct EvidenceView<'a> {
     pub(super) identity: &'a Arc<RecordedSettlementIdentity>,
     pub(super) source_facts:
-        &'a crate::domain_computation::primary_graph::output_lineage::ComparableSourceFacts,
+        Option<&'a crate::domain_computation::primary_graph::output_lineage::ComparableSourceFacts>,
     pub(super) upstream: &'a [ConsumedOutputEvidence],
     pub(super) verification_requirement: Option<FullVerificationReason>,
     pub(super) native_output_witness: Option<&'a Arc<OnceLock<SealedNativeOutputWitness>>>,
@@ -55,9 +55,10 @@ impl<'a> EvidenceView<'a> {
     }
     pub(in crate::domain_computation::primary_graph) fn source_facts(
         self,
-    ) -> &'a crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload
-    {
-        self.source_facts
+    ) -> Option<
+        &'a crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
+    > {
+        self.source_facts.map(|facts| facts.facts())
     }
     pub(in crate::domain_computation::primary_graph) fn upstream(
         self,
@@ -78,9 +79,10 @@ impl<'a> EvidenceView<'a> {
 
 impl<'a> From<&'a ConsumedOutputEvidence> for EvidenceView<'a> {
     fn from(evidence: &'a ConsumedOutputEvidence) -> Self {
+        let evidence = evidence.recorded();
         Self {
             identity: &evidence.identity,
-            source_facts: &evidence.source_facts,
+            source_facts: evidence.source_facts.as_ref(),
             upstream: &evidence.upstream,
             verification_requirement: evidence.verification_requirement,
             native_output_witness: evidence.native_output_witness.as_ref(),
@@ -259,7 +261,9 @@ impl ConsumedOutputEvidence {
                     snapshot,
                     selected,
                     evidence.identity,
-                    evidence.source_facts,
+                    evidence
+                        .source_facts
+                        .expect("only certified source facts reached Current"),
                 );
             }
             // Rows answered from their marks are verified through this image.

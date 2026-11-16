@@ -49,6 +49,10 @@ pub struct WorthQueryObservedSourceMeaning {
 }
 
 impl WorthQueryObservedSourceMeaning {
+    pub(super) fn same_coordinate(&self, other: &Self) -> bool {
+        self.coordinate == other.coordinate
+    }
+
     pub fn footprint(&self) -> &WorthQueryObservedSourceFootprint {
         &self.footprint
     }

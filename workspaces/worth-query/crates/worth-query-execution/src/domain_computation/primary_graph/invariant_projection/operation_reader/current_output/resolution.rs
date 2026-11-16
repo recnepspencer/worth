@@ -8,6 +8,8 @@ use worth_query_installation::facade::ApplicationOperationDecisionReadTarget;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_query_installation::facade::OperationReads;
 
+#[path = "resolution/applied_absence.rs"]
+mod applied_absence;
 #[path = "resolution/candidate_verification.rs"]
 mod candidate_verification;
 #[path = "resolution/cardinality.rs"]
@@ -41,9 +43,7 @@ where
     Schema: ApplicationSchema,
 {
     /// Select the entity `Family` currently outputs for `producer`. Each
-    /// recorded correspondence is read under the output role its producer
-    /// binding declares, so the read cannot name a role no producer of the
-    /// family outputs.
+    /// recorded correspondence uses its producer binding's declared output role.
     /// For a bound role, native publication order selects its latest head across
     /// bindings sharing the same source partition and entity before verifying
     /// currentness. Equal-position competing settlements are unavailable. An
@@ -84,6 +84,66 @@ where
         })?;
         if !self.current_source_is_live(execution, producer)? {
             return Ok(WorthQueryCurrentOutputSelection::ObsoleteSource);
+        }
+        if let Some(pin) = self.reader.native.applied_pin() {
+            let access = self.source_query.ok_or_else(|| {
+                WorthQueryCurrentOutputDenial::new(
+                    WorthQueryCurrentOutputDenialKind::OutputUnavailable,
+                    subject,
+                )
+            })?;
+            let selected = access
+                .application
+                .runtime
+                .primary_provider
+                .applied_outputs(
+                    execution,
+                    self.binding_identity,
+                    Family::IDENTITY,
+                    producer.entity_id(),
+                    access.applied_participants.ok_or_else(|| {
+                        WorthQueryCurrentOutputDenial::new(
+                            WorthQueryCurrentOutputDenialKind::OutputUnavailable,
+                            subject,
+                        )
+                    })?,
+                    pin,
+                )?;
+            if !selected.is_empty() {
+                let mut entities = Vec::new();
+                for evidence in selected {
+                    let entity = evidence.applied().expect("appended selection").entity();
+                    entities.push(entity);
+                    if !self.reader.applied_consumptions.contains(&evidence) {
+                        self.reader.applied_consumptions.push(evidence);
+                    }
+                }
+                return Ok(match classify_current_entities(entities) {
+                    CurrentOutputCardinality::Missing => WorthQueryCurrentOutputSelection::Missing,
+                    CurrentOutputCardinality::Unique(entity) => {
+                        WorthQueryCurrentOutputSelection::Unique(
+                            self.live_current_identity::<Family::Entity>(
+                                execution, subject, entity,
+                            )?,
+                        )
+                    }
+                    CurrentOutputCardinality::Ambiguous(entities) => {
+                        WorthQueryCurrentOutputSelection::Ambiguous(
+                            entities
+                                .into_iter()
+                                .map(|entity| {
+                                    self.live_current_identity::<Family::Entity>(
+                                        execution, subject, entity,
+                                    )
+                                })
+                                .collect::<Result<Vec<_>, _>>()?,
+                        )
+                    }
+                });
+            }
+        }
+        if self.read_applied_absence::<Family>(producer.entity_id())? {
+            return Ok(WorthQueryCurrentOutputSelection::Missing);
         }
         let correspondences =
             self.current_correspondences::<Family, Producer>(execution, producer)?;

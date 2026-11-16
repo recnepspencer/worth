@@ -1,17 +1,37 @@
 //! Original Query session and authorization custody through publication.
 
 use super::*;
-use crate::domain_computation::authorization::SourceReadSupport;
-use crate::domain_computation::authorization::WorthQueryRetainedAuthorizationDecisionFacts;
+use crate::domain_computation::authorization::{
+    SourceReadSupport, WorthQueryRetainedAuthorizationDecisionFacts,
+};
+use crate::domain_computation::primary_graph::{
+    application_attempt::{
+        Movement, WorthQueryApplicationObservedFact as Fact,
+        WorthQuerySourceCurrentnessFailure as CurrentnessStop,
+    },
+    application_checkpoint::facts::FactPayload,
+    application_runtime::WorthQueryApplicationAttemptOperationControl,
+    invariant_projection::{consumed_output::map_admission_stop, ConsumedOutputVerificationStop},
+    source_facts::{map_source_authorization_currentness, SourceFactsAllocation},
+};
+use worth_relational::facade::{runtime::RelationalRuntime, snapshots::SnapshotHandle};
 
 use std::sync::Arc;
+mod applied;
+use applied::AppliedSourceQueryRead;
+
+enum SourceQueryReadAuthority {
+    Committed {
+        receipt: WorthQueryApplicationQueryAccessReceipt,
+        support: SourceReadSupport,
+    },
+    Applied(AppliedSourceQueryRead),
+}
 
 pub(in crate::domain_computation::primary_graph) struct SourceQueryReadClosure {
-    control:crate::domain_computation::primary_graph::application_runtime::WorthQueryApplicationAttemptOperationControl,
-    receipt: WorthQueryApplicationQueryAccessReceipt,
-    support: SourceReadSupport,
-    facts: crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
-
+    control: WorthQueryApplicationAttemptOperationControl,
+    authority: SourceQueryReadAuthority,
+    facts: FactPayload,
 }
 
 impl SourceQueryReadClosure {
@@ -20,13 +40,10 @@ impl SourceQueryReadClosure {
         application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         receipt: WorthQueryApplicationQueryAccessReceipt,
         authorization: WorthQueryRetainedAuthorizationDecisionFacts,
-        facts: Vec<crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact>,
+        facts: Vec<Fact>,
     ) -> Result<Arc<Self>, CompanionPreflightStop> {
         let allocation =
-            crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation::open(
-                execution,
-            )
-            .map_err(CompanionPreflightStop::Execution)?;
+            SourceFactsAllocation::open(execution).map_err(CompanionPreflightStop::Execution)?;
         allocation
             .claim_arc::<Self>(execution)
             .map_err(CompanionPreflightStop::Execution)?;
@@ -36,15 +53,14 @@ impl SourceQueryReadClosure {
             &application.runtime.authorization,
             &allocation,
         )?;
-        let facts = crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload::from(Arc::<[crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact]>::from(facts));
+        let facts = FactPayload::from(Arc::<[Fact]>::from(facts));
         Ok(Arc::new(Self {
             control: application
                 .runtime
                 .primary_provider
                 .application_attempt_operation_control
                 .clone(),
-            receipt,
-            support,
+            authority: SourceQueryReadAuthority::Committed { receipt, support },
             facts,
         }))
     }
@@ -53,36 +69,40 @@ impl SourceQueryReadClosure {
         &self,
         source: &WorthQueryObservedSource<Query>,
     ) -> bool {
-        self.receipt.query_identity() == &source.query_identity
-            && self.receipt.parameter_binding_identity() == &source.parameter_binding_identity
-            && self.receipt.basis_identity().selection() == &source.selection
-            && self
-                .support
-                .belongs_to_session(self.receipt.read_completion().session_identity())
+        let SourceQueryReadAuthority::Committed { receipt, support } = &self.authority else {
+            return false;
+        };
+        receipt.query_identity() == &source.query_identity
+            && receipt.parameter_binding_identity() == &source.parameter_binding_identity
+            && receipt.basis_identity().selection() == &source.selection
+            && support.belongs_to_session(receipt.read_completion().session_identity())
     }
 
-    pub(in crate::domain_computation::primary_graph) fn facts(
-        &self,
-    ) -> &crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload {
+    pub(in crate::domain_computation::primary_graph) fn facts(&self) -> &FactPayload {
         &self.facts
     }
 
     pub(in crate::domain_computation::primary_graph) fn source_facts_current(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        runtime: &worth_relational::facade::runtime::RelationalRuntime,
-        snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
-
-    ) -> Result<bool, crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure>{
-        use crate::domain_computation::primary_graph::application_attempt::Movement;
-        use crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure as Stop;
+        runtime: &RelationalRuntime,
+        snapshot: &SnapshotHandle,
+    ) -> Result<bool, CurrentnessStop> {
+        if let SourceQueryReadAuthority::Applied(applied) = &self.authority {
+            if applied.published.get().is_none() {
+                return applied.source_facts_at_acquisition(
+                    execution,
+                    runtime,
+                    snapshot,
+                    &self.facts,
+                );
+            }
+        }
         for fact in self.facts.iter() {
             self.control.before_source_fact_comparison();
             let movement = fact
                 .source_currentness_in(runtime, execution, snapshot)
-                .map_err(|stop| Stop::OutputObservation(
-                    crate::domain_computation::primary_graph::invariant_projection::consumed_output::map_admission_stop(stop)
-                ))??;
+                .map_err(|stop| CurrentnessStop::OutputObservation(map_admission_stop(stop)))??;
             if movement.movement() != Movement::Unmoved {
                 return Ok(false);
             }
@@ -90,19 +110,26 @@ impl SourceQueryReadClosure {
         Ok(true)
     }
 
-    pub(in crate::domain_computation::primary_graph) fn authorization_facts(
-        &self,
-    ) -> &[crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact] {
-        self.support.principal_facts()
+    pub(in crate::domain_computation::primary_graph) fn authorization_facts(&self) -> &[Fact] {
+        match &self.authority {
+            SourceQueryReadAuthority::Committed { support, .. } => support.principal_facts(),
+            SourceQueryReadAuthority::Applied(applied) => applied.authorization.principal_facts(),
+        }
     }
 
     pub(in crate::domain_computation::primary_graph) fn validate_for_publication(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        runtime: &worth_relational::facade::runtime::RelationalRuntime,
-        snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
-
-    ) -> Result<(), crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop>{
-        self.support.validate_current(execution, runtime, snapshot).map_err(crate::domain_computation::primary_graph::source_facts::map_source_authorization_currentness)
+        runtime: &RelationalRuntime,
+        snapshot: &SnapshotHandle,
+    ) -> Result<(), ConsumedOutputVerificationStop> {
+        match &self.authority {
+            SourceQueryReadAuthority::Committed { support, .. } => support
+                .validate_current(execution, runtime, snapshot)
+                .map_err(map_source_authorization_currentness),
+            SourceQueryReadAuthority::Applied(applied) => applied
+                .authorization
+                .validate_current(runtime, execution, snapshot),
+        }
     }
 }

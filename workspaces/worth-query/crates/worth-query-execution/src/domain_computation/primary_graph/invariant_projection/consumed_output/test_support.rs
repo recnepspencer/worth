@@ -19,16 +19,16 @@ impl ConsumedOutputEvidence {
     ) -> Self {
         let source_facts = source_facts.into();
 
-        Self {
-            _computation: crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence::for_test(false).certify_current().unwrap(),            identity,
-            source_facts: crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence::for_test(false).retain_facts(source_facts).for_comparison().unwrap(),
+        Self::Recorded(super::RecordedConsumedOutput {
+            source: crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence::for_test(false), identity,
+            source_facts: Some(crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence::for_test(false).retain_facts(source_facts).for_comparison().unwrap()),
             upstream: Arc::from(upstream),
             verification_requirement: requirement,
             native_output_witness: None,
-            selected_native_root: selected,
+            selected_native_root: super::ConsumedReadRoot::Selected(selected),
 
 
-        }
+        })
     }
 }
 
@@ -54,7 +54,10 @@ impl ConsumedOutputEvidence {
             Some(FullVerificationReason::CheckpointRestore),
             selected,
         );
-        retained.native_output_witness = Some(witness);
+        let Self::Recorded(recorded) = &mut retained else {
+            unreachable!()
+        };
+        recorded.native_output_witness = Some(witness);
         retained
     }
 }

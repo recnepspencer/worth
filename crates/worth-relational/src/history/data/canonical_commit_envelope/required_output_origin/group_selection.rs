@@ -262,10 +262,22 @@ impl std::ops::Deref for OwnedValidatedOutputOrigins {
 }
 
 impl OwnedValidatedOutputOrigins {
-    pub(crate) fn validate_output_membership_header(
+    pub(crate) fn materialization_origin_for_record(
         &self,
-    ) -> Result<&CanonicalRequiredOutputOrigin, Stop> {
-        self.as_view().validate_output_membership_header()
+        record: &crate::transactions::data::RecordRef,
+        context: &mut MapKernelContext<'_, '_>,
+    ) -> Result<&Arc<CanonicalRequiredOutputOrigin>, Stop> {
+        self.as_view()
+            .materialization_origin_for_record(record, context)
+    }
+
+    pub(crate) fn materialization_origin_for_route(
+        &self,
+        meaning: &crate::mvcc::RequiredOutputPublicationMeaning,
+        context: &mut MapKernelContext<'_, '_>,
+    ) -> Result<&Arc<CanonicalRequiredOutputOrigin>, Stop> {
+        self.as_view()
+            .materialization_origin_for_route(meaning, context)
     }
 
     pub(crate) fn output_origin_for_entity(

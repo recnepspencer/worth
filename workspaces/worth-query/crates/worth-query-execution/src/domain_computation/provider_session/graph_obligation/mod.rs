@@ -10,9 +10,9 @@ pub(in crate::domain_computation) use resource_terminal::WorthQueryResourceReadC
 pub(crate) mod session;
 pub use session::WorthQueryManagedGraphWorkSessionStartDenial;
 pub(in crate::domain_computation) use session::{
-    WorthQueryManagedIndexReadSession, WorthQueryManagedIndexSelectionProof,
-    WorthQueryManagedIndexSessionDenial, WorthQueryPreparedQueryPin,
-    WorthQueryPreparedReadCompletion, WorthQueryPreparedSessionRead,
+    ManagedIndexReadSource, WorthQueryManagedIndexReadSession,
+    WorthQueryManagedIndexSelectionProof, WorthQueryManagedIndexSessionDenial,
+    WorthQueryPreparedQueryPin, WorthQueryPreparedReadCompletion, WorthQueryPreparedSessionRead,
     WorthQuerySessionInspectionReadProof, WorthQuerySessionResourceReadProof,
 };
 mod session_identity;
@@ -30,8 +30,10 @@ pub(in crate::domain_computation) use mutation_progression::{
 pub(in crate::domain_computation) use owner_execution::{
     WorthQueryGraphReadOwnerPort, WorthQuerySessionGraphReadProof,
 };
-pub(in crate::domain_computation) use read_terminal::WorthQueryCompletedSourceRead;
 pub use read_terminal::WorthQueryGraphReadCompletion;
+pub(in crate::domain_computation) use read_terminal::{
+    WorthQueryAppliedSourceRead, WorthQueryCompletedSourceRead,
+};
 pub(in crate::domain_computation) use session::{
     WorthQueryGraphWorkAccessContextAffinity, WorthQueryManagedGraphWorkSession,
     WorthQueryPreparedProductReadSessionIdentity, WorthQueryQuerySourceContext,

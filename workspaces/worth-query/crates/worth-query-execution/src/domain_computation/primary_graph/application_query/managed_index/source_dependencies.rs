@@ -92,6 +92,7 @@ pub(super) fn capture<Q>(
         authorization,
         result_set: Some(Arc::clone(&result_set.source().source_meaning)),
         maintained: None,
+        applied: None,
         identity: digest.finalize().into(),
         fact_count,
         field_count,
@@ -139,6 +140,39 @@ pub(super) fn capture_maintained(
         authorization,
         result_set: None,
         maintained: Some(observation),
+        applied: None,
+        identity: digest.finalize().into(),
+        fact_count: 2,
+        field_count: 0,
+        _allocation: Arc::clone(allocation),
+    }))
+}
+
+/// Retain the actual independently admitted applied Source. Its descriptor
+/// commits to all acquisition facts; positioned correspondence is still absent.
+pub(super) fn capture_applied(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    observation: &Arc<super::applied_read::AppliedManagedSourceSupport>,
+    allocation: &Arc<SourceFactsAllocation>,
+) -> Result<Arc<ManagedSourceDependencies>, SourceDenial> {
+    let storage = MaterialCompletion::new(execution, allocation);
+    let storage_stop = |cause| SourceDenial::Work(Stop::Storage(cause).into());
+    let rows = worth_execution::ExecutionRequestArrayBuilder::allocate(*execution, 0)
+        .map_err(storage_stop)?
+        .seal()
+        .map_err(storage_stop)?;
+    storage.work(96)?;
+    let mut digest = Sha256::new();
+    digest.update(b"worth-query:applied-managed-source:v1");
+    digest.update(observation.authorization().identity());
+    digest.update(observation.commitment());
+    storage.arc::<ManagedSourceDependencies>()?;
+    Ok(Arc::new(ManagedSourceDependencies {
+        rows,
+        authorization: Arc::clone(observation.authorization()),
+        result_set: None,
+        maintained: None,
+        applied: Some(Arc::clone(observation)),
         identity: digest.finalize().into(),
         fact_count: 2,
         field_count: 0,

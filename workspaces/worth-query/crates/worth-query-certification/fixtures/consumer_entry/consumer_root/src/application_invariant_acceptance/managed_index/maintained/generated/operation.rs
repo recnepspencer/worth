@@ -24,7 +24,7 @@ worth_query_structured_value_binding!(pub InputBinding for Generate { identity: 
 worth_query_structured_value_binding!(pub ResultBinding for Generated { identity: "maintained-generated.operation-result.v1" });
 worth_query_structured_value_binding!(pub DenialBinding for Denial { identity: "maintained-generated.operation-denial.v1" });
 worth_query_operation!(pub GenerateItem for Catalog, input InputBinding);
-worth_query_operation_reads!(GenerateItem => [Directory]);
+worth_query_operation_reads!(GenerateItem => [Directory, Item]);
 worth_query_operation_creates!(GenerateItem => [Item]);
 worth_query_operation_links!(GenerateItem => [Contains]);
 
@@ -105,6 +105,7 @@ pub(super) fn declare(
         .operation(op.definition().no_external_effect().no_aftermath().finish())
         .operation_projection_work_budget(op, 64)
         .operation_read_entity(op, Directory::reference())
+        .operation_read_entity(op, Item::reference())
         .operation_read_field(op, DirectoryIdentity::at("DirectoryIdentity"))
         .operation_read_field(op, DirectoryNote::at("DirectoryNote"))
         .operation_create(op, Item::reference())

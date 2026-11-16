@@ -21,6 +21,12 @@ pub(super) fn ring_and_role(body_key: &str) -> Option<(usize, &str)> {
     Some((ring.parse().ok()?, role))
 }
 
+/// The immediate chain consumer of a ring's planar root output.
+pub(super) fn root_downstream(body_key: &str) -> Option<String> {
+    let (ring, role) = ring_and_role(body_key)?;
+    (role == "a").then(|| key(ring, "b"))
+}
+
 /// The one output a ring's chain node consumes; other bodies consume none.
 pub(super) fn upstream_of(body_key: &str) -> Option<ChainUpstream> {
     let (ring, role) = ring_and_role(body_key)?;

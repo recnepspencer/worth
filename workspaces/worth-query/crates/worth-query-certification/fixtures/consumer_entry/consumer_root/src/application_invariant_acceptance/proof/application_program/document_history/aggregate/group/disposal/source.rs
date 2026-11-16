@@ -101,6 +101,35 @@ fn live_and_terminal_unpublished_sources_keep_one_original_cleanup_ledger_throug
         );
         let contacts = planar_source_adjustment_contacts(&input);
         assert_eq!(contacts, (1, 1));
+        let group = if terminal {
+            // Terminal recovery already reported the root and first participant's
+            // captured stop. Closing reports the remaining participant's stop;
+            // the same cleanup owner, not the released predecessor, must retry.
+            let (group, cause) = match with_request(app, |request| group.abort(request)) {
+                Err(retained) => retained,
+                Ok(_) => panic!("the terminal participant's retained stop must be reported"),
+            };
+            assert!(matches!(
+                cause,
+                WorthQueryHistoryGroupDenial::Member(
+                    worth_query_host::facade::application_entry::WorthQueryHistoryEditDenial::CandidateCleanup
+                )
+            ), "{cause:?}");
+            assert_eq!(group.posture(), WorthQueryHistoryGroupPosture::Aborting);
+            assert_eq!(planar_source_adjustment_contacts(&input), contacts);
+            app.with_host_advancement(|phase| {
+                app.runtime()
+                    .on_branch(candidate)
+                    .select(&phase)
+                    .map(|_| ())
+            })
+            .unwrap()
+            .expect("refused settlement retains the same live candidate");
+            assert!(app.runtime().branches().pending_cleanup().is_empty());
+            group
+        } else {
+            group
+        };
         let document =
             with_request(app, |request| group.abort(request)).unwrap_or_else(|(_, cause)| {
                 panic!("same original partial must close after C movement: {cause:?}")
@@ -111,6 +140,23 @@ fn live_and_terminal_unpublished_sources_keep_one_original_cleanup_ledger_throug
             "disposal cannot replay source stages"
         );
         retired(app, candidate);
+        with_branch_request(
+            app,
+            source.physical_endpoint().product_branch(),
+            |request| {
+                assert_eq!(
+                    request
+                        .query(PlanarOutputRead {
+                            body_key: "anchor-a".into()
+                        })
+                        .execute()
+                        .unwrap()
+                        .rows()[0]
+                        .value,
+                    length(6)
+                );
+            },
+        );
         close(document, app);
     }
 }

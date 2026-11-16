@@ -34,11 +34,16 @@ pub(super) fn verify(
     let owner = &provider.graph.source_owner.invalidation_owner;
     let context = attempt.take_required_output_demand();
 
-    if !attempt.consumed_outputs().is_empty() {
+    let recorded = attempt
+        .consumed_outputs()
+        .iter()
+        .filter(|input| input.applied().is_none())
+        .cloned()
+        .collect::<Vec<_>>();
+    if !recorded.is_empty() {
         // A restored output's row is recorded before the check reads it, on
         // the same meter as the check.
-        attempt
-            .consumed_outputs()
+        recorded
             .iter()
             .try_for_each(|consumed| {
                 consumed
@@ -52,12 +57,7 @@ pub(super) fn verify(
                         .positioned_snapshot(before)
                         .map_err(|_| ConsumedOutputPreparationDenial::SelectedUnavailable)?;
                     let current = ConsumedOutputEvidence::verify_many_with_admission(
-                        execution,
-                        attempt.consumed_outputs(),
-                        owner,
-                        runtime,
-                        before,
-                        &selected,
+                        execution, &recorded, owner, runtime, before, &selected,
                     )
                     .map_err(ConsumedOutputPreparationDenial::Verification)?;
                     if current != ConsumedOutputVerification::Current {

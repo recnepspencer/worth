@@ -13,6 +13,9 @@ pub(in crate::domain_computation::primary_graph) struct AppliedQuerySupport {
     query: String,
     pin: RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
     facts: Vec<Fact>,
+    managed: Option<
+        std::sync::Arc<super::super::managed_index::applied_read::AppliedManagedSourceSupport>,
+    >,
 }
 impl<Q, V> AppliedQuerySource<Q, V> {
     pub(in crate::domain_computation::primary_graph) fn retain_candidate_support<
@@ -47,6 +50,7 @@ impl<Q, V> AppliedQuerySource<Q, V> {
             query: query.into(),
             pin: pin.clone(),
             facts,
+            managed: self.managed.clone(),
         })
     }
 }
@@ -61,6 +65,13 @@ impl AppliedQuerySupport {
         before: &SnapshotHandle,
         complete: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
     ) -> Result<Option<&Fact>, WorthQueryApplicationAttemptDenial> {
+        if let Some(managed) = &self.managed {
+            if let Some(fact) =
+                managed.changed_fact(execution, runtime, before, &self.pin, complete)?
+            {
+                return Ok(Some(fact));
+            }
+        }
         for fact in &self.facts {
             if !fact
                 .support_equal_after_own_effect(execution, runtime, before, &self.pin, complete)?

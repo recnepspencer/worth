@@ -60,6 +60,7 @@ struct Projector<'borrow, 'scope, 'authority> {
     graph: &'borrow WorthQueryInstalledGraphReadContract,
     allocation: Arc<SourceFactsAllocation>,
     dependencies: BTreeSet<ViewDependency>,
+    work: super::read_work::SourceProjectionWork,
 }
 #[derive(Clone, Copy)]
 enum FieldSource<'a, 'read, 'source> {
@@ -83,6 +84,17 @@ pub(super) fn project(
     graph: &WorthQueryInstalledGraphReadContract,
     support: ProjectionMembership<'_>,
 ) -> Result<Entry, MaterialDenial> {
+    project_observed(execution, program, rows, occurrence, graph, support).map(|(entry, _)| entry)
+}
+
+pub(super) fn project_observed(
+    execution: &ExecutionRequest<'_, '_>,
+    program: &ManagedIndexSourceProgram,
+    rows: &ManagedIndexSourceRows<'_>,
+    occurrence: ManagedIndexSourceOccurrence,
+    graph: &WorthQueryInstalledGraphReadContract,
+    support: ProjectionMembership<'_>,
+) -> Result<(Entry, super::read_work::SourceProjectionWork), MaterialDenial> {
     let row_read = match support {
         ProjectionMembership::Forward(read) => rows.prepare_row_from_read(read, &occurrence)?,
         ProjectionMembership::Inverse(read) => {
@@ -95,6 +107,7 @@ pub(super) fn project(
         graph,
         allocation: SourceFactsAllocation::open(execution)?,
         dependencies: BTreeSet::new(),
+        work: super::read_work::SourceProjectionWork::default(),
     };
     let fields = projector.fields(
         FieldSource::Root(&row_read),
@@ -170,14 +183,18 @@ pub(super) fn project(
         let row = Row::new(occurrence.entity(), None, true, fields, relations);
         WorkingTree::new(vec![row]).into_disclosed(&WorthQueryApplicationQueryGovernance::Public)
     };
-    Ok(Entry {
-        occurrence,
-        row,
-        dependencies: projector.dependencies,
-        content: std::sync::OnceLock::new(),
-        comparison_depth,
-        _allocation: projector.allocation,
-    })
+    let work = projector.work;
+    Ok((
+        Entry {
+            occurrence,
+            row,
+            dependencies: projector.dependencies,
+            content: std::sync::OnceLock::new(),
+            comparison_depth,
+            _allocation: projector.allocation,
+        },
+        work,
+    ))
 }
 
 impl Projector<'_, '_, '_> {
@@ -194,6 +211,16 @@ impl Projector<'_, '_, '_> {
             .iter()
             .filter(|projection| projection.parent_path() == path)
             .count();
+        self.work.projected_records = self
+            .work
+            .projected_records
+            .checked_add(1)
+            .ok_or(Storage::ChargedBytesOverflow)?;
+        self.work.projected_fields = self
+            .work
+            .projected_fields
+            .checked_add(count)
+            .ok_or(Storage::ChargedBytesOverflow)?;
         self.allocation
             .claim_slice::<Field>(self.execution, count)?;
         let mut fields = Vec::new();

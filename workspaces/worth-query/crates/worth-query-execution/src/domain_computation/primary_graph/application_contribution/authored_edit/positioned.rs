@@ -29,15 +29,16 @@ impl<S: ApplicationSchema, B: ApplicationMutationBinding<S>> TypedStage<S, B> {
         // This scalar is data retained beside the genuine original admission.
         let principal = B::PrincipalIdentityBinding::decode(&self.principal_value)
             .map_err(|cause| refuse(format!("retained principal identity: {cause:?}")))?;
-        let operation = self
+        let retained = self
             .original_admission
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .take()
             .ok_or_else(|| refuse("the positioned candidate was already consumed".into()))?;
         Ok(AuthoredEditStageAdmission {
-            operation,
+            operation: retained.operation,
             principal,
+            pending_source: retained.pending_source,
         })
     }
 }

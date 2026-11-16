@@ -1,6 +1,6 @@
 //! Immutable material from actual Native Source loans, never a retained read grant.
 use super::super::source_rows::{SourceImageRows, SourceImageView};
-use super::projection::{project, Entry, ProjectionMembership};
+use super::projection::{project, project_observed, Entry, ProjectionMembership};
 use crate::domain_computation::primary_graph::{
     application_query::{
         disclosure::WorthQueryApplicationQueryGovernance,
@@ -92,8 +92,59 @@ impl PersistentSourceRows {
         graph: &WorthQueryInstalledGraphReadContract,
         maximum: usize,
     ) -> Result<Self, MaterialDenial> {
+        Self::acquire_with_support(execution, rows, owner, graph, maximum, None)
+            .map(|(rows, _)| rows)
+    }
+    pub(in crate::domain_computation::primary_graph::application_query::managed_index) fn acquire_observed(
+        execution: &ExecutionRequest<'_, '_>,
+        rows: &ManagedIndexSourceRows<'_>,
+        owner: WorthQueryGraphWorkSessionIdentity,
+        graph: &WorthQueryInstalledGraphReadContract,
+        maximum: usize,
+    ) -> Result<
+        (
+            Self,
+            crate::domain_computation::provider_session::WorthQueryObservedGraphReadWork,
+            super::projection_support::SourceProjectionSupport,
+        ),
+        MaterialDenial,
+    > {
+        let mut captured = super::projection_support::SourceProjectionSupport::new(execution)?;
+        let (rows, work) = Self::acquire_with_support(
+            execution,
+            rows,
+            owner,
+            graph,
+            maximum,
+            Some(&mut captured),
+        )?;
+        Ok((rows, work, captured))
+    }
+    fn acquire_with_support(
+        execution: &ExecutionRequest<'_, '_>,
+        rows: &ManagedIndexSourceRows<'_>,
+        owner: WorthQueryGraphWorkSessionIdentity,
+        graph: &WorthQueryInstalledGraphReadContract,
+        maximum: usize,
+        mut captured: Option<&mut super::projection_support::SourceProjectionSupport>,
+    ) -> Result<
+        (
+            Self,
+            crate::domain_computation::provider_session::WorthQueryObservedGraphReadWork,
+        ),
+        MaterialDenial,
+    > {
         let support = rows.acquire_all()?;
+        let mut work = super::read_work::SourceProjectionWork::default();
+        if let Some(captured) = &mut captured {
+            let membership = rows.membership_support(&support)?;
+            captured.membership(execution, membership)?;
+            // Report the actual compiled membership acquisition, including
+            // explored nonmatches. This borrows the same read, never scans again.
+            work.relation_records_examined = membership.reads().relation_records;
+        }
         let occurrences = rows.occurrences(&support)?;
+        let examined_candidates = occurrences.len();
         if occurrences.len() > maximum {
             return Err(ManagedIndexSourcePreparationDenial::Source(
                 DerivedRelationReadDenial::Definition(DerivedRelationDenial::WorkBudgetExceeded),
@@ -104,7 +155,7 @@ impl PersistentSourceRows {
         let mut dependencies = OccurrencePostings::default();
         for occurrence in occurrences {
             let entity = occurrence.entity();
-            let entry = project(
+            let (entry, observed) = project_observed(
                 execution,
                 rows.program(),
                 rows,
@@ -112,6 +163,10 @@ impl PersistentSourceRows {
                 graph,
                 ProjectionMembership::Forward(&support),
             )?;
+            work.append(observed)?;
+            if let Some(captured) = &mut captured {
+                captured.row(execution, &entry.dependencies)?;
+            }
             if entries.contains_key(&entity) {
                 return Err(ManagedIndexSourcePreparationDenial::ForeignSource.into());
             }
@@ -120,13 +175,16 @@ impl PersistentSourceRows {
                 .insert_cloned_native_for_request(&entity, &entry.into_arc(execution)?, *execution)
                 .map_err(|cause| ordered_denial(execution, cause))?;
         }
-        Ok(Self {
-            owner,
-            program: rows.program().clone(),
-            scope: rows.scope(),
-            entries,
-            dependencies,
-        })
+        Ok((
+            Self {
+                owner,
+                program: rows.program().clone(),
+                scope: rows.scope(),
+                entries,
+                dependencies,
+            },
+            work.complete(examined_candidates),
+        ))
     }
 
     /// Reassociate immutable material only through Native's declared predecessor.

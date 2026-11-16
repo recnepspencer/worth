@@ -14,13 +14,28 @@ mod engagement;
 mod execution;
 mod seeded_world;
 mod worker_matrix;
-use execution::{adjust, demand, edit, install};
+use execution::{demand, edit, install};
 use seeded_world::{facts, seed, Change};
 
 fn only_run(
-    (contacts, mut runs, mut reports): (usize, Vec<OracleRun>, Vec<Option<u64>>),
+    (contacts, runs, reports): (usize, Vec<OracleRun>, Vec<Option<u64>>),
 ) -> (OracleRun, Option<u64>) {
     assert_eq!(contacts, 1, "exactly one producer execution in this demand");
+    only_observed_run(runs, reports)
+}
+fn only_edit_run(
+    (contacts, runs, reports): (usize, Vec<OracleRun>, Vec<Option<u64>>),
+) -> (OracleRun, Option<u64>) {
+    assert_eq!(
+        contacts, 0,
+        "the synchronous edit already performed the producer"
+    );
+    only_observed_run(runs, reports)
+}
+fn only_observed_run(
+    mut runs: Vec<OracleRun>,
+    mut reports: Vec<Option<u64>>,
+) -> (OracleRun, Option<u64>) {
     assert_eq!(runs.len(), 1, "exactly one observed producer run");
     assert_eq!(
         reports.len(),
@@ -33,10 +48,15 @@ fn fresh(model: &ReuseFacts) -> (OracleRun, Option<u64>) {
     let application = install(|graph| seed(model, graph));
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
-    if model.odd {
-        adjust(&request, &application, ODD_Y, 1);
-    }
     worth_query_host::facade::primary_graph::advancement_observations_on_this_thread_for_test();
+    if model.odd {
+        return only_edit_run(execution::adjust_and_demand(
+            &request,
+            &application,
+            ODD_Y,
+            1,
+        ));
+    }
     only_run(demand(&request, &application))
 }
 fn case(change: Change) {
@@ -141,19 +161,21 @@ fn case_at(change: Change, prior: usize, current: usize, reuse: bool) {
             None => request,
         },
     };
-    if let Some(edits) = change.apply(&mut model) {
-        if let Some([_, b]) = pair {
-            edit(
-                &application.request(&principal, &scope).on_branch(b),
-                &application,
-                edits.clone(),
-                2,
-            );
+    let source_adjustment = match change.apply(&mut model) {
+        Some(edits) => {
+            if let Some([_, b]) = pair {
+                edit(
+                    &application.request(&principal, &scope).on_branch(b),
+                    &application,
+                    edits.clone(),
+                    2,
+                );
+            }
+            edit(&request, &application, edits, 1);
+            false
         }
-        edit(&request, &application, edits, 1);
-    } else if !matches!(change, Change::CodeIdentity) {
-        adjust(&request, &application, ODD_Y, 1);
-    }
+        None => !matches!(change, Change::CodeIdentity),
+    };
     let declared_work = declaration::computed_work(&model);
     if matches!(change, Change::EmptyStable | Change::CodeIdentity) {
         assert_eq!(
@@ -183,7 +205,16 @@ fn case_at(change: Change, prior: usize, current: usize, reuse: bool) {
     ));
     observations();
     execution::COMPUTE_CEILING.set(ceiling_family);
-    let (retained, retained_work) = only_run(demand(&request, &application));
+    let (retained, retained_work) = if source_adjustment {
+        only_edit_run(execution::adjust_and_demand(
+            &request,
+            &application,
+            ODD_Y,
+            1,
+        ))
+    } else {
+        only_run(demand(&request, &application))
+    };
     let records = observations();
     engagement::assert_kernels(change, &before, &model, reuse, &retained);
     engagement::assert_empty_history(change, &before, &model, &first, &retained);

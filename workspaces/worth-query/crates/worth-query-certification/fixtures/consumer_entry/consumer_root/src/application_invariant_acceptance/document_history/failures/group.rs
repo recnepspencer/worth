@@ -2,7 +2,10 @@
 use super::*;
 use std::sync::atomic::Ordering;
 use worth_query_host::facade::{
+    application_entry::WorthQueryApplicationMutationOutcome,
     primary_graph::{
+        WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitDenialStage,
+        WorthQueryApplicationUncommitted, WorthQueryEntityResolutionRefusalKind,
         WorthQueryOutputDemandDenialKind as Demand,
         WorthQueryOutputDemandRecoveryPosture as Recovery,
     },
@@ -42,11 +45,17 @@ fn a_second_group_scope_refusal_preserves_actual_source_prefix_and_aborts_the_or
         });
     }
     assert_eq!(group.completed_members(), 1);
-    let candidate = {
+    let (candidate, first_endpoint) = {
         let (_, execution) = group.parts();
         let first = execution.completed_source(0).unwrap();
-        assert_eq!(first.settlement().output_count(), 1);
-        first.branch()
+        let tree = first.settlement();
+        assert_eq!(tree.output_count(), 1);
+        let performed = tree.performed_source().unwrap();
+        let endpoint = tree.observation().selected_commit();
+        assert_eq!(performed.receipt().source_commit(), endpoint);
+        assert_eq!(performed.root_fulfillment().source_commit(), endpoint);
+        assert_eq!(performed.root_fulfillment().output_commit(), endpoint);
+        (first.branch(), endpoint.clone())
     };
     // The real installed provider's next source input names an absent scope.
     // Its authorization receiver must produce the actual terminal denial.
@@ -71,15 +80,30 @@ fn a_second_group_scope_refusal_preserves_actual_source_prefix_and_aborts_the_or
     {
         let (document, execution) = group.parts();
         let terminal = execution.terminal_source().unwrap();
-        let Some(WorthQueryOperationAdvanceDenial::Outputs(
-            WorthQueryRequiredOutputPreparationDenial::Demand(
-                WorthQueryApplicationOutputDemandDenial::Demand(cause),
-            ),
-        )) = terminal.advance_denial()
+        assert!(matches!(
+            terminal.advance_denial(),
+            Some(WorthQueryOperationAdvanceDenial::NativeTerminal)
+        ));
+        // The second member's source and required participants share one transaction.
+        let Some(WorthQueryApplicationMutationOutcome::Commit(
+            WorthQueryApplicationUncommitted::Denied(denial),
+        )) = terminal.native_outcome()
         else {
-            panic!("actual second producer scope refusal");
+            panic!("the second source must retain its synchronous Commit/Denied refusal");
         };
-        assert!(matches!(cause.kind(), Demand::SourceScope(_)), "{cause:?}");
+        assert_eq!(
+            denial.kind(),
+            WorthQueryApplicationCommitDenialKind::ProviderRejected
+        );
+        assert_eq!(
+            denial.stage(),
+            WorthQueryApplicationCommitDenialStage::InvariantExecution
+        );
+        let cause = denial.coupled_producer_denial().unwrap();
+        assert_eq!(
+            cause.kind(),
+            Demand::SourceScope(WorthQueryEntityResolutionRefusalKind::UnknownEntity)
+        );
         assert_eq!(cause.recovery_posture(), Recovery::Terminal);
         assert!(execution.selected_step().is_none());
         assert!(matches!(
@@ -87,7 +111,16 @@ fn a_second_group_scope_refusal_preserves_actual_source_prefix_and_aborts_the_or
             Err(WorthQueryHistoryGroupDenial::NotReady)
         ));
         let first = execution.completed_source(0).unwrap();
+        assert_eq!(first.settlement().output_count(), 1);
+        assert_eq!(
+            first.settlement().observation().selected_commit(),
+            &first_endpoint
+        );
         with_branch_request(app, candidate, |request| {
+            assert_eq!(
+                request.retain_current_read().unwrap().selected_commit(),
+                &first_endpoint
+            );
             let original = request
                 .at(first.settlement().observation())
                 .query(PlanarRead {
@@ -108,15 +141,29 @@ fn a_second_group_scope_refusal_preserves_actual_source_prefix_and_aborts_the_or
                     .y,
                 length(43)
             );
+            // Before-effect refusal keeps the complete first member, including its child.
+            for (body, y) in [("anchor-a", 2), ("final:remote-b", 43)] {
+                assert_eq!(
+                    request
+                        .query(PlanarRead {
+                            body_key: body.into()
+                        })
+                        .execute()
+                        .unwrap()
+                        .rows()[0]
+                        .y,
+                    length(y)
+                );
+            }
             assert_eq!(
                 request
-                    .query(PlanarRead {
+                    .query(PlanarOutputRead {
                         body_key: "anchor-a".into()
                     })
                     .execute()
                     .unwrap()
                     .rows()[0]
-                    .y,
+                    .value,
                 length(3)
             );
         });

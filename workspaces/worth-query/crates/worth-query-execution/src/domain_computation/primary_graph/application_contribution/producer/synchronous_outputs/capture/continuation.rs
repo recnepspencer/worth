@@ -14,6 +14,7 @@ pub(in super::super) trait Continuation<S: ApplicationSchema, D>:
     fn prerequisites(
         &self,
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        candidate: &RelationalAuthoredCoupledCandidate<'_>,
         pin: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
         source: worth_relational::facade::identity::EntityId,
         demand: &D,
@@ -23,6 +24,7 @@ pub(in super::super) trait Continuation<S: ApplicationSchema, D>:
     fn assemble(
         &self,
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        candidate: &RelationalAuthoredCoupledCandidate<'_>,
         parent: &AppliedOutputParent,
         demand: &D,
         next: &mut SynchronousOutputWave<S>,
@@ -30,6 +32,7 @@ pub(in super::super) trait Continuation<S: ApplicationSchema, D>:
     fn assemble_static(
         &self,
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        candidate: &RelationalAuthoredCoupledCandidate<'_>,
         parent: &AppliedOutputParent,
         demand: &D,
         next: &mut SynchronousOutputWave<S>,
@@ -37,6 +40,7 @@ pub(in super::super) trait Continuation<S: ApplicationSchema, D>:
     fn assemble_occurrences(
         &self,
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        candidate: &RelationalAuthoredCoupledCandidate<'_>,
         parent: &AppliedOutputParent,
         demand: &D,
         next: &mut SynchronousOutputWave<S>,
@@ -73,39 +77,43 @@ where
     fn prerequisites(
         &self,
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        candidate: &RelationalAuthoredCoupledCandidate<'_>,
         pin: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
         source: worth_relational::facade::identity::EntityId,
         demand: &D,
         inputs: &PrerequisiteInputs<'_>,
         next: &mut SynchronousOutputWave<S>,
     ) -> Result<(), SynchronousOutputFailure> {
-        E::prerequisites(context, pin, source, demand, inputs, next)
+        E::prerequisites(context, candidate, pin, source, demand, inputs, next)
     }
     fn assemble(
         &self,
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        candidate: &RelationalAuthoredCoupledCandidate<'_>,
         parent: &AppliedOutputParent,
         demand: &D,
         next: &mut SynchronousOutputWave<S>,
     ) -> Result<(), SynchronousOutputFailure> {
-        E::assemble(context, parent, demand, next)
+        E::assemble(context, candidate, parent, demand, next)
     }
     fn assemble_static(
         &self,
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        candidate: &RelationalAuthoredCoupledCandidate<'_>,
         parent: &AppliedOutputParent,
         demand: &D,
         next: &mut SynchronousOutputWave<S>,
     ) -> Result<(), SynchronousOutputFailure> {
-        E::assemble_static(context, parent, demand, next)
+        E::assemble_static(context, candidate, parent, demand, next)
     }
     fn assemble_occurrences(
         &self,
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        candidate: &RelationalAuthoredCoupledCandidate<'_>,
         parent: &AppliedOutputParent,
         demand: &D,
         next: &mut SynchronousOutputWave<S>,
     ) -> Result<(), SynchronousOutputFailure> {
-        E::assemble_occurrences(context, parent, demand, next)
+        E::assemble_occurrences(context, candidate, parent, demand, next)
     }
 }

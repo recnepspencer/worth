@@ -12,13 +12,15 @@ use std::{
 mod candidate_read_support;
 mod candidate_support_store;
 pub(in crate::domain_computation::primary_graph) use candidate_read_support::CandidateReadSupport;
+mod applied_output;
+pub(in crate::domain_computation::primary_graph) use applied_output::AppliedOutputParticipants;
 mod commit_completion;
 mod coupled_extraction;
 mod coupled_preparation;
 mod coupled_settlement;
 pub(in crate::domain_computation::primary_graph) use coupled_preparation::{
-    CoupledApplicationMember, CoupledApplicationMemberKind, CoupledAttemptPreparation,
-    CoupledProducerPreparation,
+    AppliedParticipantOutputs, CoupledApplicationMember, CoupledApplicationMemberKind,
+    CoupledAttemptPreparation, CoupledProducerPreparation,
 };
 pub(crate) mod commit_preparation;
 pub(in crate::domain_computation::primary_graph::provider) mod coupled_publication;

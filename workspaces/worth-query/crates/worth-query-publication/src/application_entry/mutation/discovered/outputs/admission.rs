@@ -276,6 +276,7 @@ where
                         source,
                         limits,
                         prepared,
+                        std::sync::Arc::clone(&retained.retained),
                     ),
                 DiscoveredRootStartKind::Recovery => {
                     let current = match input.current.take() {

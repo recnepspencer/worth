@@ -31,7 +31,8 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
             let task = &mut remaining[0];
             if let Some(parent) = &mut earlier[canonical].parent {
                 parent.pin = pin.clone();
-                task.tree.discover_static(context, parent, &mut next)?;
+                task.tree
+                    .discover_static(context, candidate, parent, &mut next)?;
             }
             task.continuation_done = true;
         }

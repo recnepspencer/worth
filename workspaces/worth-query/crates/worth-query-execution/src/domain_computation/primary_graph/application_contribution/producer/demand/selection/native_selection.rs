@@ -80,6 +80,10 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         let lifecycle_observation = lifecycle_observation.as_ref().unwrap_or(observation);
         let output_bindings = self.installed_producers.family_output_bindings::<Family>();
         let scope = crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(source.source_root());
+        // Lineage is registered by the admitted mutation scope, which the
+        // Source expectation binds to the query scope. A projected row can
+        // have a different root; that root still identifies the demand below.
+        let lineage_scope = crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(source.model_root);
         let mut lineage = self
             .runtime
             .primary_provider
@@ -92,7 +96,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
             source.partition_identity(),
             &source.checkpoint_identity().bytes(),
             lifecycle_observation,
-            scope,
+            lineage_scope,
             &output_bindings,
             &mut lineage,
         )
@@ -101,7 +105,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
             .retained_output_candidates_metered(
                 self.runtime.authority_identity().as_u64(),
                 &self.installed_schema.binding_identity(),
-                scope,
+                lineage_scope,
                 lifecycle_observation.lifecycle_incarnation(),
                 lifecycle_observation.reference_generation().get(),
                 &output_bindings,
@@ -157,7 +161,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                 .retained_output_candidates_metered(
                     self.runtime.authority_identity().as_u64(),
                     &self.installed_schema.binding_identity(),
-                    scope,
+                    lineage_scope,
                     lifecycle_observation.lifecycle_incarnation(),
                     lifecycle_observation.reference_generation().get(),
                     &output_bindings,
@@ -273,10 +277,13 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                     };
                     if may_rejoin_ready
                         && candidate
-                            .completed_coupled_receipt(
-                                source.idempotency_identity(),
-                                source.checkpoint_identity(),
-                            )
+                            .completed_coupled_receipt_for_source(execution, source)
+                            .map_err(|cause| {
+                                selected_basis::selection_lookup_denial(
+                                    worth_relational::facade::mvcc::CompanionPreflightStop::Execution(cause),
+                                    Family::IDENTITY,
+                                )
+                            })?
                             .is_some()
                     {
                         // The completed owner will recheck the actual input,

@@ -1,7 +1,9 @@
 //! The neutral matrix's single schema and installed producer/computation.
 #[path = "application/records.rs"]
 mod storage_model;
-use super::{computation, control::Control, edit, facts, operation, producer, readiness, source};
+use super::{
+    computation, control::Control, edit, facts, operation, producer, readiness, source, topology,
+};
 use crate::principal::*;
 use std::sync::Arc;
 pub use storage_model::*;
@@ -49,8 +51,10 @@ impl<Schema: SchemaBinding>
         worth_query_decl::facade::application_schema::ApplicationSchemaDeclarationDenial,
     > {
         Ok(
-            edit::declare(operation::declare(facts::declare(source::declare(schema))))
-                .principal_binding(ConsumerPrincipalBinding::reference()),
+            topology::declare(edit::declare(operation::declare(facts::declare(
+                source::declare(schema),
+            ))))
+            .principal_binding(ConsumerPrincipalBinding::reference()),
         )
     }
 }
@@ -122,13 +126,17 @@ pub struct Feature;
 pub struct SourcePort;
 pub struct InputPort;
 pub struct OutputPort;
+pub struct PrerequisitePort;
 pub struct Connection;
 impl ApplicationFeature<Schema> for SourceFeature {
     type Inputs = ApplicationFeatureInputLeaf;
     const IDENTITY: &'static str = "matrix-source";
 }
 impl ApplicationFeature<Schema> for Feature {
-    type Inputs = ApplicationFeatureInputList<InputPort, ApplicationFeatureInputLeaf>;
+    type Inputs = ApplicationFeatureInputList<
+        InputPort,
+        ApplicationFeatureInputList<PrerequisitePort, ApplicationFeatureInputLeaf>,
+    >;
     const IDENTITY: &'static str = "matrix-output";
 }
 impl ApplicationOutputPort<Schema, SourceFeature> for SourcePort {
@@ -150,8 +158,13 @@ impl ApplicationConnectionIdentity for Connection {
 impl ApplicationOccurrenceConnectionBinding<Schema, SourceFeature, Feature> for Connection {}
 pub type Root = ApplicationOutputGraph<
     ApplicationConnectionRef<Schema, SourceFeature, SourcePort, Feature, InputPort, Connection>,
-    ApplicationOutputLeaf,
+    ApplicationOutputOccurrences<(topology::Connection,)>,
 >;
+impl ApplicationInputPort<Schema, Feature> for PrerequisitePort {
+    type Value = facts::ResultBinding;
+    const IDENTITY: &'static str = "prerequisite";
+    const REQUIRED: bool = true;
+}
 pub struct Locality;
 impl ApplicationLocalityScope for Locality {
     const IDENTITY: &'static str = "matrix-node";

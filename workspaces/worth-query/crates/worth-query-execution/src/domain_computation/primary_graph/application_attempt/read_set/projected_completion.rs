@@ -335,14 +335,9 @@ fn observe_scoped_dependency<Schema, Operation, Input, Scope>(
     lease
         .handle()
         .with_runtime(execution, |runtime| match lease.applied_projection() {
-            Some(pin) => super::fact_observation::observe_applied_fact(
-                execution,
-                runtime,
-                lease.snapshot(),
-                &lease.layout,
-                key,
-                pin,
-            ),
+            Some(pin) => {
+                super::fact_observation::observe_applied_fact(execution, &lease.layout, key, pin)
+            }
             None => super::fact_observation::observe_fact(
                 execution,
                 runtime,

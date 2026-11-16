@@ -101,7 +101,7 @@ impl ComputationSourceEvidence {
 }
 
 impl CurrentComputation {
-    pub(super) fn source(self) -> ComputationSourceEvidence {
+    pub(in crate::domain_computation::primary_graph) fn source(self) -> ComputationSourceEvidence {
         self.source
     }
 }

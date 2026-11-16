@@ -313,6 +313,9 @@ where
         >,
         limits: crate::domain_computation::execution_runtime::WorthQueryOutputDemandLimits,
         prepared: &WorthQueryPreparedRequiredOutputSource,
+        retained_program_basis: std::sync::Arc<
+            crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation,
+        >,
     ) -> Result<
         WorthQueryAdmittedProgramOutput<Schema, Program, WorthQueryProgramRootDemand<Schema, Root>>,
         WorthQueryOutputDemandDenial,
@@ -343,7 +346,7 @@ where
         self.backing.runtime()
             .admit_performed_output_demand::<
                 Family<Schema, WorthQueryProgramRootDemand<Schema, Root>>,
-            >(execution, source, limits, prepared)
+            >(execution, source, limits, prepared, retained_program_basis)
             .map(|admitted| WorthQueryAdmittedProgramOutput {
                 admitted,
                 original_result: original_result::OriginalProgramResult::Awaiting,

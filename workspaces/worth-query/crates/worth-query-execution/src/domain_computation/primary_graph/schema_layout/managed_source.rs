@@ -28,6 +28,7 @@ pub(in crate::domain_computation::primary_graph) struct ManagedSource {
     pub(in crate::domain_computation::primary_graph) definition:
         ErasedApplicationManagedIndexDefinition,
     pub(in crate::domain_computation::primary_graph) cold: Cold,
+    pub(in crate::domain_computation::primary_graph) public_parent: bool,
 }
 
 pub(super) fn requirements(schema: &ErasedApplicationSchemaDeclaration) -> BTreeMap<&str, Cold> {
@@ -117,6 +118,17 @@ pub(super) fn lower(
                 program,
                 definition: definition.clone(),
                 cold,
+                // This is the declared public Parent audience, independent of
+                // the additional public-maintenance posture. The Source is
+                // already required and compiled above; do not invent one here.
+                public_parent: schema.members().iter().any(|member| match member {
+                    Member::ApplicationQuery { definition: parent } => {
+                        parent.managed_index().is_some_and(|selection| {
+                            selection.parts().index == definition.parts().name
+                        })
+                    }
+                    _ => false,
+                }),
             },
         );
     }

@@ -26,6 +26,19 @@ pub(super) fn require(
     position: usize,
     members: &[crate::domain_computation::primary_graph::provider::CoupledApplicationMember],
 ) -> Result<(), CoupledSupportPreparationDenial> {
+    for consumed in attempt.consumed_outputs() {
+        if let Some(link) = consumed.applied() {
+            if !link.require_support(position, members, complete) {
+                return Err(CoupledSupportPreparationDenial::Changed(
+                    Failure::coupled_read_support(
+                        source,
+                        None,
+                        "same-candidate prerequisite lost its exact earlier registered writer",
+                    ),
+                ));
+            }
+        }
+    }
     let after_own = attempt
         .coupled_after_own()
         .expect("Native completed this writer before continuing");

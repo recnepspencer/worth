@@ -152,7 +152,7 @@ impl WorthQueryOutputDemandInterest {
         if !prior.is_empty() {
             return Err(coverage_denial());
         }
-        validate_predecessors(&state, &keys)?;
+        validate_predecessors(&state, &keys, std::iter::empty())?;
         let members = keys
             .iter()
             .map(|key| state.prepare_required_member(key))

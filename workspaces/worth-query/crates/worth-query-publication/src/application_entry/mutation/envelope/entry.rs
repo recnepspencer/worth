@@ -7,7 +7,7 @@ use outputs::EditStageOutputs;
 mod sealed {
     pub trait Stages {}
     impl Stages for super::NoEditStages {}
-    impl<P: Stages, R, I> Stages for super::WithEditStage<P, R, I> {}
+    impl<P: Stages, R, I, E> Stages for super::WithEditStage<P, R, I, E> {}
     impl<S, P, K> Stages for super::super::runtime::RuntimeEditStages<S, P, K>
     where
         S: super::ApplicationSchema,
@@ -30,7 +30,7 @@ impl<S: ApplicationSchema> EditStageList<S> for NoEditStages {
         0
     }
 }
-impl<S, Prev, Root, I> EditStageList<S> for WithEditStage<Prev, Root, I>
+impl<S, Prev, Root, I, E> EditStageList<S> for WithEditStage<Prev, Root, I, E>
 where
     S: ApplicationSchema,
     Prev: EditStageList<S>,
@@ -114,6 +114,7 @@ pub trait EditEntry<S: ApplicationSchema, P: ApplicationProgramDefinition<S>, K>
 pub(in crate::application_entry) struct TypedEntry<S, I, R>
 where S: ApplicationSchema, I: ApplicationMutationIntent<S> {
     pub(in crate::application_entry) intent: I,
+    pub(in crate::application_entry) expected_source: Option<crate::application_entry::mutation::request::WorthQueryMutationExpectedSource<<<I::Binding as ApplicationMutationBinding<S>>::SourceExpectation as worth_query_declaration::facade::application_operation::ApplicationMutationSourceExpectation<S>>::Query>>,
     pub(in crate::application_entry) input: ApplicationEncodedInput<<I::Binding as ApplicationMutationBinding<S>>::InputBinding>,
     pub(in crate::application_entry) marker: PhantomData<fn() -> R>,
     pub(in crate::application_entry) correction_source: Option<Arc<worth_query_execution::publication_boundary::recorded_correction::WorthQueryPreparedCorrectionSource>>,

@@ -75,7 +75,17 @@ macro_rules! settled_in_one_advance {
 /// Moves a root's source Y, which changes that root producer's input. The
 /// new Y must keep the ring's turn positive, or the commit is denied.
 macro_rules! change_root {
-    ($request:expr, $application:expr, $root:literal, $y:expr, $idempotency:expr) => {{
+    ($request:expr, $application:expr, $root:expr, $y:expr, $idempotency:expr) => {
+        change_root!(
+            $request,
+            $application,
+            $root,
+            $y,
+            $idempotency,
+            program::ChainProgram
+        )
+    };
+    ($request:expr, $application:expr, $root:expr, $y:expr, $idempotency:expr, $program:ty) => {{
         let selected = $request
             .query(PlanarRead {
                 body_key: $root.to_owned(),
@@ -84,13 +94,21 @@ macro_rules! change_root {
             .unwrap();
         let outcome = $request
             .advanced()
-            .mutate(PlanarSourceAdjustment {
+            // PlanarEdit is the installed native action without delivery.
+            // This court needs stale outputs for the later ordinary demand;
+            // the fixed source-adjustment entry would co-commit them now.
+            .mutate(PlanarEdit(PlanarMutation {
                 scope_key: $root.to_owned(),
-                replacement_y: length($y),
-            })
+                operation: worth_query_consumer_values::PlanarOperation::Adjust(vec![
+                    worth_query_consumer_values::PlanarAdjustment {
+                        body_key: $root.to_owned(),
+                        replacement_y: length($y),
+                    },
+                ]),
+            }))
             .expect_source(selected.observed_sources()[0].clone())
             .idempotency(&$idempotency)
-            .execute_performed::<program::ChainProgram, program::ChainRoot>(
+            .execute_in_program::<$program>(
                 &$application,
                 worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
             )
@@ -98,13 +116,14 @@ macro_rules! change_root {
         assert!(
             matches!(
                 outcome,
-                WorthQueryApplicationPerformedMutationOutcome::Performed(_)
+                worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome::Committed { .. }
             ),
             "the {} source change commits",
             $root
         );
     }};
 }
+pub(super) use change_root;
 
 /// The Length each named output carries now.
 macro_rules! output_lengths {

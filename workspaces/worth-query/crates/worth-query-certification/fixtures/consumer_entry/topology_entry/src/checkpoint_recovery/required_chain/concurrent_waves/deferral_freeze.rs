@@ -153,31 +153,38 @@ where
         .chain(std::iter::once(&"ring-0-a".to_owned()))
         .enumerate()
     {
-        let selected = request
-            .query(PlanarRead {
-                body_key: key.clone(),
-            })
-            .execute()
-            .unwrap();
         let y = match key.as_str() {
             "diamond-left" => 5,
             "diamond-right" => 54,
             "ring-0-a" => 2,
             _ => panic!("the seeded root is declared"),
         };
-        request
-            .advanced()
-            .mutate(PlanarSourceAdjustment {
-                scope_key: key.clone(),
-                replacement_y: length(y),
+        let output_before = request
+            .query(PlanarOutputRead {
+                body_key: key.clone(),
             })
-            .expect_source(selected.observed_sources()[0].clone())
-            .idempotency(&(0x9176_7800_u64 + rank as u64))
-            .execute_performed::<P, program::ChainRoot>(
-                &application,
-                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-            )
+            .execute()
             .unwrap();
+        let prior_value = PositiveLength::get(&output_before.rows()[0].value);
+        diamond::change_root!(
+            request,
+            application,
+            key,
+            y,
+            0x9176_7800_u64 + rank as u64,
+            P
+        );
+        let output_after = request
+            .query(PlanarOutputRead {
+                body_key: key.clone(),
+            })
+            .execute()
+            .unwrap();
+        assert_eq!(
+            PositiveLength::get(&output_after.rows()[0].value),
+            prior_value,
+            "the native Source edit leaves the output for scheduled reinspection"
+        );
     }
     let schedule = computation::Schedule::new(roots, None, false);
     let fault_owner = Arc::clone(&application);

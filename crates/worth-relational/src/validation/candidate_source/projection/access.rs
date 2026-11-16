@@ -19,6 +19,12 @@ pub(crate) enum SourceProjectionBacking<'a> {
         interpretation: &'a super::super::NativeManagedSourceInterpretation,
         before: bool,
     },
+    Applied {
+        loan: &'a super::super::ManagedIndexAppliedSourceRead<'a>,
+        execution: ExecutionRequest<'a, 'a>,
+        memory: RefCell<Option<ExecutionMemoryReservation>>,
+        bytes: Cell<u64>,
+    },
     Selected {
         loan: &'a ManagedIndexSourceRebuild,
         execution: ExecutionRequest<'a, 'a>,
@@ -32,7 +38,7 @@ pub(in crate::validation::candidate_source) enum SourceProjectionRetention {
     Invariant {
         _meter: crate::validation::CustomInvariantWorkMeter,
     },
-    Selected {
+    Request {
         _memory: Option<ExecutionMemoryReservation>,
     },
 }
@@ -45,6 +51,10 @@ pub struct PreparedManagedIndexRelationRead {
     shape: DerivedRelationReadShape,
 }
 enum PreparedBody {
+    Applied {
+        read: PinnedDerivedRelationRead,
+        affinity: Arc<super::super::applied_read::AppliedSourceAffinity>,
+    },
     Invariant(PreparedDerivedRelationRead),
     Selected {
         read: PinnedDerivedRelationRead,
@@ -53,6 +63,22 @@ enum PreparedBody {
     },
 }
 impl ManagedIndexSourceProjection<'_> {
+    pub(super) fn physical_projection(
+        &self,
+    ) -> Option<(
+        &crate::runtime::VisibilityProjectionView,
+        &ExecutionRequest<'_, '_>,
+    )> {
+        match &self.backing {
+            SourceProjectionBacking::Selected {
+                loan, execution, ..
+            } => Some((&loan.projection, execution)),
+            SourceProjectionBacking::Applied {
+                loan, execution, ..
+            } => Some((&loan.projection, execution)),
+            SourceProjectionBacking::Invariant { .. } => None,
+        }
+    }
     pub(in crate::validation::candidate_source) fn scope_identity(
         &self,
         scope: EntityId,
@@ -65,7 +91,9 @@ impl ManagedIndexSourceProjection<'_> {
                     DerivedRelationReadShape::Adjacency { reverse: false },
                 )?))
             }
-            SourceProjectionBacking::Selected { .. } => Ok(None),
+            SourceProjectionBacking::Selected { .. } | SourceProjectionBacking::Applied { .. } => {
+                Ok(None)
+            }
         }
     }
 
@@ -81,12 +109,13 @@ impl ManagedIndexSourceProjection<'_> {
                     _meter: budget.retained_payer(),
                 })
             }
-            SourceProjectionBacking::Selected { execution, .. } => {
+            SourceProjectionBacking::Selected { execution, .. }
+            | SourceProjectionBacking::Applied { execution, .. } => {
                 self.checkpoint(0)?;
                 let memory = execution
                     .reserve_retained_memory(bytes)
                     .map_err(|cause| Denial::Request(cause.into()))?;
-                Ok(SourceProjectionRetention::Selected { _memory: memory })
+                Ok(SourceProjectionRetention::Request { _memory: memory })
             }
         }
     }
@@ -97,7 +126,8 @@ impl ManagedIndexSourceProjection<'_> {
                 .read_budget()
                 .checkpoint(units)
                 .map_err(Denial::Structural),
-            SourceProjectionBacking::Selected { execution, .. } => execution
+            SourceProjectionBacking::Selected { execution, .. }
+            | SourceProjectionBacking::Applied { execution, .. } => execution
                 .run_native_with_checkpoint(|context| {
                     crate::execution::request_stage::checkpoint(context, units)
                 })
@@ -112,6 +142,12 @@ impl ManagedIndexSourceProjection<'_> {
                 .claim_retained(bytes)
                 .map_err(Denial::Structural),
             SourceProjectionBacking::Selected {
+                execution,
+                memory,
+                bytes: total,
+                ..
+            }
+            | SourceProjectionBacking::Applied {
                 execution,
                 memory,
                 bytes: total,
@@ -146,15 +182,16 @@ impl ManagedIndexSourceProjection<'_> {
             SourceProjectionBacking::Invariant { relations, .. } => relations
                 .entity_kind(row)
                 .map_err(|cause| Denial::Structural(relations.read_budget().refusal(cause))),
-            SourceProjectionBacking::Selected {
-                loan, execution, ..
-            } => {
+            SourceProjectionBacking::Selected { .. } | SourceProjectionBacking::Applied { .. } => {
+                let (projection, execution) = self
+                    .physical_projection()
+                    .ok_or(Definition::ForeignObservation)?;
                 self.checkpoint(
-                    loan.projection
+                    projection
                         .exact_entity_state_read_work_bound()
                         .ok_or(Definition::RecordUnavailable)?,
                 )?;
-                loan.projection
+                projection
                     .read_exact_entity_state(execution, row, |metadata, _| metadata)
                     .map_err(record_denial)?
                     .filter(|record| record.entity_id == row)
@@ -170,6 +207,14 @@ impl ManagedIndexSourceProjection<'_> {
         shape: DerivedRelationReadShape,
     ) -> Result<PreparedManagedIndexRelationRead, Denial> {
         let body = match &self.backing {
+            SourceProjectionBacking::Applied {
+                loan, execution, ..
+            } => PreparedBody::Applied {
+                read: loan
+                    .projection
+                    .derived_source(execution, path, root.into(), shape, None)?,
+                affinity: Arc::clone(&loan.affinity),
+            },
             SourceProjectionBacking::Invariant { relations, .. } => {
                 PreparedBody::Invariant(relations.prepare_derived_source(path, root, shape)?)
             }
@@ -206,6 +251,10 @@ impl ManagedIndexSourceProjection<'_> {
         }
         match (&self.backing, &read.body) {
             (
+                SourceProjectionBacking::Applied { loan, .. },
+                PreparedBody::Applied { read, affinity },
+            ) if Arc::ptr_eq(&loan.affinity, affinity) => Ok(read.data()),
+            (
                 SourceProjectionBacking::Invariant { relations, .. },
                 PreparedBody::Invariant(read),
             ) => {
@@ -239,15 +288,16 @@ impl ManagedIndexSourceProjection<'_> {
             SourceProjectionBacking::Invariant { .. } => {
                 self.field_at(row, kind, field).map(project)
             }
-            SourceProjectionBacking::Selected {
-                loan, execution, ..
-            } => {
+            SourceProjectionBacking::Selected { .. } | SourceProjectionBacking::Applied { .. } => {
+                let (projection, execution) = self
+                    .physical_projection()
+                    .ok_or(Definition::ForeignObservation)?;
                 self.checkpoint(
-                    loan.projection
+                    projection
                         .exact_entity_state_read_work_bound()
                         .ok_or(Definition::RecordUnavailable)?,
                 )?;
-                loan.projection
+                projection
                     .read_exact_entity_state(execution, row, |metadata, state| {
                         if metadata.entity_id != row || metadata.kind_id != kind {
                             return Err(Definition::InvalidMemberDomain.into());

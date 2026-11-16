@@ -119,8 +119,7 @@ impl WorthQueryObservedSourceFootprint {
             .managed_index
             .as_ref()?
             .dependencies
-            .maintained
-            .as_ref()
+            .maintained()
     }
     pub(in crate::domain_computation::primary_graph::application_query) fn source_authorization(
         &self,

@@ -19,6 +19,7 @@ type Row<S, B> =
 impl<S: ApplicationSchema> SynchronousOutputAssembly<'_, '_, '_, '_, S> {
     pub(super) fn discover<B>(
         &self,
+        candidate: &RelationalAuthoredCoupledCandidate<'_>,
         parent: &AppliedOutputParent,
         intent: B::Input,
     ) -> Result<Row<S, B>, CoupledSourceReadStop>
@@ -29,6 +30,7 @@ impl<S: ApplicationSchema> SynchronousOutputAssembly<'_, '_, '_, '_, S> {
         Row<S, B>: WorthQueryApplicationProjection<S, B::Query>,
     {
         self.discover_as_at::<B, Row<S, B>>(
+            candidate,
             &parent.pin,
             parent.source(),
             intent,
@@ -37,6 +39,7 @@ impl<S: ApplicationSchema> SynchronousOutputAssembly<'_, '_, '_, '_, S> {
     }
     pub(super) fn discover_outgoing<B>(
         &self,
+        candidate: &RelationalAuthoredCoupledCandidate<'_>,
         parent: &AppliedOutputParent,
         intent: B::Input,
     ) -> Result<Row<S, B>, CoupledSourceReadStop>
@@ -47,6 +50,7 @@ impl<S: ApplicationSchema> SynchronousOutputAssembly<'_, '_, '_, '_, S> {
         Row<S, B>: WorthQueryApplicationProjection<S, B::Query>,
     {
         self.discover_as_at::<B, Row<S, B>>(
+            candidate,
             &parent.pin,
             parent.source(),
             intent,
@@ -55,6 +59,7 @@ impl<S: ApplicationSchema> SynchronousOutputAssembly<'_, '_, '_, '_, S> {
     }
     pub(super) fn discover_authored<B>(
         &self,
+        candidate: &RelationalAuthoredCoupledCandidate<'_>,
         source: &AppliedAuthoredDiscovery,
         intent: B::Input,
     ) -> Result<Row<S, B>, CoupledSourceReadStop>
@@ -65,6 +70,7 @@ impl<S: ApplicationSchema> SynchronousOutputAssembly<'_, '_, '_, '_, S> {
         Row<S, B>: WorthQueryApplicationProjection<S, B::Query>,
     {
         self.discover_as_at::<B, Row<S, B>>(
+            candidate,
             &source.pin,
             source.source,
             intent,
@@ -73,6 +79,7 @@ impl<S: ApplicationSchema> SynchronousOutputAssembly<'_, '_, '_, '_, S> {
     }
     pub(super) fn discover_as_at<B, V>(
         &self,
+        candidate: &RelationalAuthoredCoupledCandidate<'_>,
         pin: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
         subject: worth_relational::facade::identity::EntityId,
         intent: B::Input,
@@ -124,14 +131,16 @@ impl<S: ApplicationSchema> SynchronousOutputAssembly<'_, '_, '_, '_, S> {
                 self.before,
                 pin,
                 &mut ApplicationQueryNativeAccess::acquire(),
-                |plan, _| {
-                    let source = runtime
-                        .project_applied_source_plan_as::<_, _, _, V, _, _, _>(
-                            self.execution,
-                            plan,
-                            pin,
-                        )
-                        .map_err(|cause| cause.into_source_query_stop(B::IDENTITY))?;
+                |plan, native| {
+                    let source = runtime.project_applied_source_plan::<B, V>(
+                        self.execution,
+                        &reader,
+                        plan,
+                        self.before,
+                        pin,
+                        candidate,
+                        native,
+                    )?;
                     let support = source
                         .retain_candidate_support(
                             runtime,

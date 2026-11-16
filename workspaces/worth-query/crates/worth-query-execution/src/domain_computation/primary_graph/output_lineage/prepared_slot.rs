@@ -172,6 +172,19 @@ impl PreparedOutputLineageSlot {
     ) {
         assert!(self.coupled_completion.replace(completion).is_none());
     }
+    pub(in crate::domain_computation::primary_graph) fn seal_published_source(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        runtime: &worth_relational::facade::runtime::RelationalRuntime,
+        after: &worth_relational::facade::snapshots::SnapshotHandle,
+    ) -> Result<(), worth_relational::facade::runtime::ManagedIndexSourcePreparationDenial> {
+        if let Some(completion) = &self.coupled_completion {
+            completion
+                .source()
+                .seal_published(execution, runtime, after)?;
+        }
+        Ok(())
+    }
     pub(in crate::domain_computation::primary_graph) fn identity(
         &self,
     ) -> &Arc<RecordedSettlementIdentity> {
@@ -183,6 +196,9 @@ impl PreparedOutputLineageSlot {
         application: &WorthQueryPrimaryGraphCommittedApplication,
         consumed_outputs: Arc<[crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence]>,
     ) -> RecordedLineageSlot {
+        if let Some(completion) = &self.coupled_completion {
+            completion.bind_lineage(&self);
+        }
         let output_witness = self.native_output_witness.as_ref().map(Arc::clone);
         let completed_handler_facts = self.completed_handler_facts.take();
         let completed_decision_reuse = self.completed_decision_reuse.take();

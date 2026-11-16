@@ -35,7 +35,7 @@ pub struct Node;
 impl fragment::Entity for Node {
     const NAME: &'static str = "Node";
     type Aspects = (NodeFacts,);
-    type Relations = ();
+    type Relations = (Prerequisite,);
 }
 impl Node {
     pub fn reference<Schema: super::SchemaBinding>() -> ApplicationEntityRef<Schema, Self> {
@@ -85,3 +85,14 @@ pub type NodeKey = FieldSelection<HistoryRecords, Node, NodeFacts, String>;
 pub type Revision = FieldSelection<HistoryRecords, Node, NodeFacts, u64>;
 pub type Value = FieldSelection<HistoryRecords, Node, NodeFacts, u64>;
 pub type Applied = FieldSelection<HistoryRecords, Node, NodeFacts, u64>;
+
+pub struct Prerequisite;
+impl fragment::Relation for Prerequisite {
+    const NAME: &'static str = "Prerequisite";
+    type To = Node;
+}
+impl Prerequisite {
+    pub fn reference<S: super::SchemaBinding>() -> ApplicationRelationRef<S, Self, Node, Node> {
+        relation(HistoryRecords, Node, Self)
+    }
+}

@@ -15,6 +15,7 @@ type Visit<'v, S> = dyn FnMut(&'static LeafExecution<S>) -> Step + 'v;
 pub(super) struct LeafExecution<S: ApplicationSchema> {
     pub(super) outgoing: fn(
         &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        &RelationalAuthoredCoupledCandidate<'_>,
         &AppliedOutputParent,
         &dyn Any,
         &mut SynchronousOutputWave<S>,
@@ -22,6 +23,7 @@ pub(super) struct LeafExecution<S: ApplicationSchema> {
     ) -> Step,
     pub(super) incoming: fn(
         &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        &RelationalAuthoredCoupledCandidate<'_>,
         &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
         worth_relational::facade::identity::EntityId,
         &dyn Any,
@@ -126,6 +128,7 @@ where
     fn prerequisites(
         &self,
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        candidate: &RelationalAuthoredCoupledCandidate<'_>,
         pin: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
         source: worth_relational::facade::identity::EntityId,
         demand: &D,
@@ -133,21 +136,25 @@ where
         next: &mut SynchronousOutputWave<S>,
     ) -> Step {
         let whole = *self;
-        (whole.each)(&mut |leaf| (leaf.incoming)(context, pin, source, demand, inputs, next, whole))
+        (whole.each)(&mut |leaf| {
+            (leaf.incoming)(context, candidate, pin, source, demand, inputs, next, whole)
+        })
     }
     fn assemble(
         &self,
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        candidate: &RelationalAuthoredCoupledCandidate<'_>,
         parent: &AppliedOutputParent,
         demand: &D,
         next: &mut SynchronousOutputWave<S>,
     ) -> Step {
         let whole = *self;
-        (whole.each)(&mut |leaf| (leaf.outgoing)(context, parent, demand, next, whole))
+        (whole.each)(&mut |leaf| (leaf.outgoing)(context, candidate, parent, demand, next, whole))
     }
     fn assemble_static(
         &self,
         _: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        _candidate: &RelationalAuthoredCoupledCandidate<'_>,
         _: &AppliedOutputParent,
         _: &D,
         _: &mut SynchronousOutputWave<S>,
@@ -157,11 +164,12 @@ where
     fn assemble_occurrences(
         &self,
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        candidate: &RelationalAuthoredCoupledCandidate<'_>,
         parent: &AppliedOutputParent,
         demand: &D,
         next: &mut SynchronousOutputWave<S>,
     ) -> Step {
-        self.assemble(context, parent, demand, next)
+        self.assemble(context, candidate, parent, demand, next)
     }
 }
 
@@ -184,6 +192,7 @@ where
     }
     fn prerequisites(
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        candidate: &RelationalAuthoredCoupledCandidate<'_>,
         pin: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
         source: worth_relational::facade::identity::EntityId,
         demand: &D,
@@ -193,6 +202,7 @@ where
         capture::Continuation::prerequisites(
             &N::EXECUTION,
             context,
+            candidate,
             pin,
             source,
             demand,
@@ -202,14 +212,16 @@ where
     }
     fn assemble(
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        candidate: &RelationalAuthoredCoupledCandidate<'_>,
         parent: &AppliedOutputParent,
         demand: &D,
         next: &mut SynchronousOutputWave<S>,
     ) -> Step {
-        capture::Continuation::assemble(&N::EXECUTION, context, parent, demand, next)
+        capture::Continuation::assemble(&N::EXECUTION, context, candidate, parent, demand, next)
     }
     fn assemble_static(
         _: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        _candidate: &RelationalAuthoredCoupledCandidate<'_>,
         _: &AppliedOutputParent,
         _: &D,
         _: &mut SynchronousOutputWave<S>,
@@ -218,10 +230,11 @@ where
     }
     fn assemble_occurrences(
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        candidate: &RelationalAuthoredCoupledCandidate<'_>,
         parent: &AppliedOutputParent,
         demand: &D,
         next: &mut SynchronousOutputWave<S>,
     ) -> Step {
-        capture::Continuation::assemble(&N::EXECUTION, context, parent, demand, next)
+        capture::Continuation::assemble(&N::EXECUTION, context, candidate, parent, demand, next)
     }
 }

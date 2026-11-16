@@ -12,6 +12,8 @@ pub struct ReadPlan<'a> {
         crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
     pub(in crate::domain_computation::primary_graph::application_query) managed_rows:
         Option<&'a super::super::managed_index::selection::SelectionRows>,
+    pub(in crate::domain_computation::primary_graph::application_query) applied_managed_rows:
+        Option<&'a super::super::managed_index::applied_read::AppliedSelectionRows<'a>>,
     pub(in crate::domain_computation::primary_graph::application_query) binding:
         &'a worth_query_installation::facade::ApplicationSchemaBindingIdentity,
     pub(in crate::domain_computation::primary_graph::application_query) name: &'a str,
@@ -40,6 +42,7 @@ impl<'a> ReadPlan<'a> {
         Self {
             parent_session: plan.graph_work.identity(),
             managed_rows: None,
+            applied_managed_rows: None,
             binding: plan.query.binding_identity(),
             name: plan.query.name(),
             contract: plan.query.read_family_binding().planning_contract(),
@@ -76,6 +79,7 @@ impl worth_execution::ChargedBytes for ReadPlan<'_> {
         let Self {
             parent_session: _parent_session,
             managed_rows: _managed_rows,
+            applied_managed_rows: _applied_managed_rows,
             binding: _binding,
             name: _name,
             contract: _contract,
@@ -102,6 +106,7 @@ impl ReadPlan<'_> {
         ReadPlan {
             parent_session: self.parent_session,
             managed_rows: self.managed_rows,
+            applied_managed_rows: self.applied_managed_rows,
             binding: self.binding,
             name: self.name,
             contract: self.contract,

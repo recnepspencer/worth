@@ -36,6 +36,11 @@ impl<'borrow, 'scope, 'authority> Projector<'borrow, 'scope, 'authority> {
                 .prepare_nested_projection(read, occurrence, index)?,
         };
         let support = self.rows.projection_support(&read)?;
+        self.work.relation_records_examined = self
+            .work
+            .relation_records_examined
+            .checked_add(support.reads().relation_records)
+            .ok_or(Storage::ChargedBytesOverflow)?;
         for &(entity, _) in support.entity_dependencies() {
             self.dependency(ViewDependency::Entity(entity))?;
         }

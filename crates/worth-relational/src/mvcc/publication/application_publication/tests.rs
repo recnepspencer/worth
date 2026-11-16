@@ -70,9 +70,12 @@ fn native_performed_origin_is_exact_and_an_ordinary_equal_write_revokes_retireme
     copied.body_mut_for_test().commit.commit_id.0 += 1;
     let copied_refusal = execution
         .run_native_with_checkpoint(|context| {
-            copied
-                .validate_output_origins(context)
-                .and_then(|view| view.validate_output_membership_header())
+            copied.validate_output_origins(context).and_then(|view| {
+                view.materialization_origin_for_record(
+                    &crate::transactions::data::RecordRef::Entity(entity),
+                    context,
+                )
+            })
         })
         .unwrap()
         .0;

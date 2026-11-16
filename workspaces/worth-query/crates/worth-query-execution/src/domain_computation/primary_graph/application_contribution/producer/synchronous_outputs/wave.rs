@@ -241,7 +241,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
                 let task = &mut self.tasks[i];
                 if let Some(parent) = &mut task.parent {
                     parent.pin = pin.clone();
-                    task.tree.discover(context, parent, &mut next)?;
+                    task.tree.discover(context, candidate, parent, &mut next)?;
                 }
                 task.continuation_done = true;
             }

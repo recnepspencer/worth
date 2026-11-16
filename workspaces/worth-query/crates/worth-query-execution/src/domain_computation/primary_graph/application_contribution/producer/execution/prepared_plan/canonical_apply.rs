@@ -11,6 +11,7 @@ pub struct CanonicalApplyCursor<
     Stop,
 > {
     basis: Option<&'owner worth_relational::facade::runtime::PositionedRelationalSnapshot>,
+    candidate_basis: Option<worth_relational::facade::runtime::RelationalPinnedRead<worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity>>,
     keys: CanonicalUniqueVec<Key>,
     slots: Vec<(
         OwnerPlan<'owner, Value, Stop>,
@@ -55,14 +56,29 @@ impl<'owner, Key, Value, Stop> CanonicalApplyCursor<'owner, Key, Value, Stop> {
         let slots = plans.into_iter().zip(computed).collect();
         Self {
             basis: None,
+            candidate_basis: None,
             keys,
             slots,
         }
     }
 
+    /// The candidate owner has admitted every plan on this one immutable wave pin.
+    pub(in crate::domain_computation::primary_graph::application_contribution) fn compute_candidate(
+        basis: &worth_relational::facade::runtime::RelationalPinnedRead<
+            worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
+        >,
+        keys: CanonicalUniqueVec<Key>,
+        plans: Vec<OwnerPlan<'owner, Value, Stop>>,
+        execution: &QueryRequestExecution<'_>,
+    ) -> Self {
+        let mut cursor = Self::compute(keys, plans, execution);
+        cursor.candidate_basis = Some(basis.clone());
+        cursor
+    }
+
     /// The owner classifies each completion: holding a queued failure continues
     /// the cursor. A caller failure or request stop drops the inaccessible suffix.
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn apply(
+    pub(in crate::domain_computation::primary_graph::application_contribution) fn apply(
         self,
 
         mut published: impl FnMut(Key, Result<Value, Stop>) -> Result<(), Stop>,
@@ -73,6 +89,7 @@ impl<'owner, Key, Value, Stop> CanonicalApplyCursor<'owner, Key, Value, Stop> {
     ) -> Result<(), Stop> {
         let Self {
             basis: _basis,
+            candidate_basis: _candidate_basis,
             keys,
             slots,
         } = self;

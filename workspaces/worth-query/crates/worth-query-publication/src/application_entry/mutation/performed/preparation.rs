@@ -202,6 +202,7 @@ RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Sche
                 phase,
                 application,
                 &prepared,
+                std::sync::Arc::clone(&retained_source.retained),
                 output_source,
             )
         {

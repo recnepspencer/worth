@@ -1,12 +1,15 @@
 //! Application bindings are measured before edits; the model receives only identity metadata.
+mod atomic_publication;
 mod interruption;
 mod kernel_observation;
 mod member_observation;
+#[cfg(test)]
+mod source_affinity;
 use super::*;
 use std::{collections::BTreeMap, num::NonZeroUsize, sync::Arc};
 use worth_query_host::facade::application_entry::{
-    WorthQueryApplicationOutputDemandProgress as Progress,
-    WorthQueryApplicationPerformedMutationOutcome as Mutation, WorthQueryApplicationRequestExt,
+    WorthQueryApplicationOutputDemandProgress as Progress, WorthQueryApplicationRequestExt,
+    WorthQueryEditEnvelopeOutcome as Envelope,
 };
 use worth_query_host::facade::primary_graph::{
     advancement_observations_on_this_thread_for_test as observations,
@@ -180,29 +183,16 @@ pub fn run(cell: cases::Cell) -> Observed {
     if cell.declaration == 1 {
         edits.reverse();
     }
-    for m in edits {
-        let source = request
-            .query(source::Read { key: m.key })
-            .execute()
-            .unwrap();
-        let outcome = request
-            .advanced()
-            .mutate(edit::Input {
-                key: m.key,
-                revision: 1,
-            })
-            .expect_source(source.observed_sources()[0].clone())
-            .idempotency(&m.key)
-            .execute_performed::<application::Program, application::Root>(
-                &app,
-                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-            )
-            .unwrap();
-        assert!(
-            matches!(outcome, Mutation::Performed(_)),
-            "source edit commits"
-        );
-    }
+    let issued = edits
+        .iter()
+        .map(|m| {
+            let rows = request
+                .query(source::Read { key: m.key })
+                .execute()
+                .unwrap();
+            (m.key, rows.observed_sources()[0].clone())
+        })
+        .collect::<Vec<_>>();
     let expected = if cell.fault == 10 {
         model::Advancement::present_interruption()
     } else {
@@ -237,31 +227,48 @@ pub fn run(cell: cases::Cell) -> Observed {
             Some(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system().now()),
             cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let expired_request = app.request(&principal, &expired_scope);
-    let outcome = caller.advance(if cell.fault == 10 {
+    let active_request = if cell.fault == 10 {
         &expired_request
     } else {
         &request
-    });
+    };
+    let mut envelope = active_request
+        .edit_envelope()
+        .idempotency(0x6a00_u64)
+        .runtime_stages(&app)
+        .ordered_authored()
+        .unwrap();
+    let tokens = issued
+        .into_iter()
+        .map(|(key, source)| {
+            envelope
+                .push_stage_with_source::<application::Root, _, _>(
+                    edit::Input { key, revision: 1 },
+                    source,
+                )
+                .unwrap()
+        })
+        .collect::<Vec<_>>();
+    let (outcome, writes) =
+        worth_relational::facade::inspection::observe_maintenance_work(1, || {
+            envelope.execute_performed(
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )
+        });
     let records = observations();
-    member_observation::assert_member_widths(&control, &expected.dispatch_waves, cell.workers);
     if cell.fault == 10 {
         interruption::assert_deadline(&outcome, &records);
     }
-    if let Some((_, phase)) = failure {
-        let Err(worth_query_host::facade::application_entry::WorthQueryApplicationOutputDemandDenial::Demand(cause))=&outcome else{panic!("declared member failure returns a typed domain refusal")};
-        assert_eq!(cause.kind(),worth_query_host::facade::primary_graph::WorthQueryOutputDemandDenialKind::ProducerDomainDenied,"declared failure keeps its domain kind");
-        assert_eq!(
-            cause.domain_reason(),
-            Some(match phase {
-                control::Phase::Prepare => "matrix prepare refusal",
-                control::Phase::Compute => "matrix compute refusal",
-                control::Phase::Complete => "matrix completion refusal",
-            }),
-            "refusal happens in the declared phase"
-        );
-    }
+    let settled = matches!(&outcome, Ok(Envelope::Committed(_)));
+    atomic_publication::assert_outcome(
+        &outcome,
+        &tokens,
+        failure,
+        cell.fault == 10,
+        writes.published_rows.len() + writes.omitted_publications,
+    );
     let [record] = records.as_slice() else {
-        panic!("one caller advancement: {records:?}")
+        panic!("one envelope advancement: {records:?}")
     };
     assert_eq!(
         record.workers,
@@ -270,48 +277,74 @@ pub fn run(cell: cases::Cell) -> Observed {
         } else {
             Some(cell.workers)
         },
-        "the request dispatch receives the width named by its cell"
-    );
-    let mut committed = Vec::new();
-    for pair in record.applied.chunks(2) {
-        assert_eq!(pair.len(), 2, "commit/publication pair");
-        assert_eq!(pair[0].kind, Kind::Commit);
-        assert_eq!(pair[1].kind, Kind::Publication);
-        assert_eq!(pair[0].identity, pair[1].identity);
-        let Identity::Producer { root, .. } = &pair[0].identity else {
-            panic!("producer binding")
-        };
-        committed.push(names[root]);
-    }
-    assert_eq!(
-        committed, expected.kept,
-        "canonical kept prefix, never completion order"
-    );
-    let settled = matches!(outcome, Ok(Progress::Settled(_)));
-    assert_eq!(
-        settled,
-        failure.is_none() && cell.fault != 10,
-        "declared failure prevents settlement: {:?}",
-        outcome.as_ref().err()
+        "the envelope receives the width named by its cell"
     );
     let old = model::values(&world, 1);
     let new = model::values(&world, 2);
+    let mut committed = Vec::new();
     let mut facts = Vec::new();
     for m in &world.members {
         let rows = request.query(facts::Read { key: m.key }).execute().unwrap();
         let value = rows.rows()[0].value;
-        let expected_value = if committed.contains(&m.key) {
+        let expected_value = if settled && expected.kept.contains(&m.key) {
             new[&m.key]
         } else {
             old[&m.key]
         };
         assert_eq!(
             value, expected_value,
-            "facts follow declared values and kept prefix"
+            "member {} facts follow the independent values and atomic publication",
+            m.key
         );
+        if value != old[&m.key] {
+            committed.push(m.key);
+        }
         facts.push((m.key, value));
     }
+    for m in &world.members {
+        let source = request
+            .query(source::Read { key: m.key })
+            .execute()
+            .unwrap();
+        assert_eq!(
+            source.rows()[0].revision,
+            u64::from(settled && m.upstream.is_empty()),
+            "only authored independent sources change, and only at final publication"
+        );
+    }
+    let aggregate = request.query(facts::Read { key: 100 }).execute().unwrap();
+    let expected_values = if settled { &new } else { &old };
+    if aggregate.rows()[0].value
+        != world
+            .requested
+            .iter()
+            .map(|i| old[&world.members[*i].key])
+            .sum::<u64>()
+    {
+        committed.push(100);
+    }
+    assert_eq!(
+        aggregate.rows()[0].value,
+        world
+            .requested
+            .iter()
+            .map(|i| expected_values[&world.members[*i].key])
+            .sum::<u64>(),
+        "the aggregate consumes the independently computed required outputs"
+    );
+    // Atomic publication has no independently committed producer prefix. Report
+    // the actual changed output set, not the model's predicted commit order.
+    committed.sort_unstable();
+    member_observation::assert_member_widths(&control, &expected.dispatch_waves, cell.workers);
     kernel_observation::assert_kernel_observations(&control, &world, &expected, cell, failure);
+    member_observation::assert_completion_order(
+        &control,
+        &world,
+        &waves,
+        failure,
+        cell.fault == 10,
+    );
+    atomic_publication::assert_current_outputs(&app, &world, &names, expected_values);
     let state = control.state.lock().unwrap();
     assert_eq!(
         state.active, 0,

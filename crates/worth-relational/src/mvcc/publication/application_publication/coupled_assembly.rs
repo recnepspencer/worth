@@ -20,6 +20,7 @@ mod aggregate_read;
 mod authored_writes;
 mod completion;
 mod continuation;
+mod managed_source;
 pub use continuation::RelationalCoupledProducerContinuation;
 mod contribution;
 mod source_effects;

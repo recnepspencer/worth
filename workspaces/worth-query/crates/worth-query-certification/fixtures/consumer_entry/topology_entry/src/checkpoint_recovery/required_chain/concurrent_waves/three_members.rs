@@ -102,19 +102,42 @@ fn run(workers: usize) -> Vec<String> {
             })
             .execute()
             .unwrap();
-        request
+        let changed = request
             .advanced()
-            .mutate(PlanarSourceAdjustment {
+            .mutate(PlanarEdit(PlanarMutation {
                 scope_key: key.clone(),
-                replacement_y: length(y),
-            })
+                operation: worth_query_consumer_values::PlanarOperation::Adjust(vec![
+                    worth_query_consumer_values::PlanarAdjustment {
+                        body_key: key.clone(),
+                        replacement_y: length(y),
+                    },
+                ]),
+            }))
             .expect_source(selected.observed_sources()[0].clone())
             .idempotency(&id)
-            .execute_performed::<application::Program, program::ChainRoot>(
+            .execute_in_program::<application::Program>(
                 &application,
                 worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
             )
             .unwrap();
+        assert!(matches!(
+            changed,
+            worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome::Committed { .. }
+        ));
+    }
+    // The native edits leave these known initial outputs for actual advancement.
+    for (key, expected) in [
+        ("diamond-left", 2),
+        ("diamond-right", 51),
+        ("diamond-join", 101),
+    ] {
+        let output = request
+            .query(PlanarOutputRead {
+                body_key: key.into(),
+            })
+            .execute()
+            .unwrap();
+        assert_eq!(output.rows()[0].value, length(expected));
     }
     let schedule = Schedule::declared(roots.to_vec(), vec![11, 3, 5], None, true);
     arm(Some(schedule.clone()));

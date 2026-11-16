@@ -2,9 +2,9 @@
 use super::*;
 
 #[allow(clippy::too_many_arguments)]
-pub(super) fn filter(
+pub(super) fn filter<ReadIdentity>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &worth_relational::facade::runtime::RelationalPinnedRead,
+    runtime: &worth_relational::facade::runtime::RelationalPinnedRead<ReadIdentity>,
     graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
     plan: &ReadPlan<'_>,
     projection: &worth_relational::facade::runtime::VisibilityProjectionView,

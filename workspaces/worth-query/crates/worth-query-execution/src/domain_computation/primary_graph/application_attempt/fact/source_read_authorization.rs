@@ -10,6 +10,9 @@ use crate::domain_computation::{
     provider_session::{WorthQueryCompletedSourceRead, WorthQueryGraphWorkSessionIdentity},
 };
 use sha2::{Digest, Sha256};
+mod applied;
+mod applied_query;
+mod candidate_support;
 use std::sync::Arc;
 use worth_query_installation::facade::WorthQueryInstalledApplicationQueryBindingObservation;
 use worth_relational::facade::{
@@ -31,6 +34,7 @@ pub struct SourceReadAuthorization {
     session: WorthQueryGraphWorkSessionIdentity,
     support: SourceReadSupport,
     identity: [u8; 32],
+    applied: Option<worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity>,
 }
 
 struct OperationReadOrigin {
@@ -88,6 +92,7 @@ impl SourceReadAuthorization {
             session: terminal.session_identity(),
             support,
             identity,
+            applied: None,
         })))
     }
     pub(in crate::domain_computation::primary_graph) fn key(&self) -> &SourceReadAuthorizationKey {
@@ -106,7 +111,8 @@ impl SourceReadAuthorization {
         &self,
         terminal: &WorthQueryCompletedSourceRead,
     ) -> bool {
-        self.binding.is_some()
+        self.applied.is_none()
+            && self.binding.is_some()
             && self.session == terminal.session_identity()
             && self.support.belongs_to_session(self.session)
             && self.key.principal == terminal.principal()
@@ -266,6 +272,7 @@ impl SourceReadAuthorization {
             session,
             support,
             identity,
+            applied: None,
         }))
     }
 }

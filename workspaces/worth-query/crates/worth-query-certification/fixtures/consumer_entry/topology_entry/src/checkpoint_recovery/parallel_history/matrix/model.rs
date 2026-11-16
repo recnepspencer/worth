@@ -125,7 +125,7 @@ pub fn advancement(
             let key = world.members[*i].key;
             if failure.is_some_and(|(failed, _)| failed == key) {
                 return Advancement {
-                    kept,
+                    kept: Vec::new(),
                     dispatched,
                     dispatch_waves,
                     witnesses,

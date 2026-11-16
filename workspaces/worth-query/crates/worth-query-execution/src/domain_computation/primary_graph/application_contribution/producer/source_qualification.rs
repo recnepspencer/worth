@@ -44,6 +44,59 @@ impl Hash for OutputSourceAddress {
         self.partition.hash(state);
     }
 }
+impl<Schema: ApplicationSchema>
+    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>
+{
+    pub(in crate::domain_computation::primary_graph::application_contribution) fn qualify_applied_output_source<
+        Family,
+        Value,
+    >(
+        &self,
+        source: &crate::domain_computation::primary_graph::application_query::AppliedQuerySource<
+            <Family::Source as worth_query_declaration::facade::application_query::ApplicationQueryBinding<Schema>>::Query, Value>,
+        before: &crate::basis::WorthQueryProductBranchLease,
+        lifecycle: super::WorthQueryProducerLifecyclePosture,
+    ) -> Result<QualifiedOutputSource, WorthQueryOutputDemandDenial>
+    where
+        Family: WorthQueryProducerOutputFamily<Schema>,
+    {
+        let foreign = || {
+            WorthQueryOutputDemandDenial::new(
+                WorthQueryOutputDemandDenialKind::ForeignSource,
+                Family::IDENTITY,
+            )
+        };
+        let installed = self
+            .installed_schema()
+            .installed_query_binding::<Family::Source>()
+            .map_err(|_| foreign())?;
+        if source.runtime_authority != self.runtime.authority_identity().as_u64()
+            || !source.has_complete_output_dependencies()
+            || source.schema_binding != self.installed_schema.binding_identity()
+            || source.binding_order().0 != *installed.query().identity().as_bytes()
+            || source.candidate.proposal().branch_observation()
+                != before.relational_basis().reference()
+            || source.closure.applied_candidate() != Some(&source.candidate)
+        {
+            return Err(foreign());
+        }
+        let observation = before.observation();
+        Ok(QualifiedOutputSource {
+            address: OutputSourceAddress {
+                runtime: source.runtime_authority,
+                schema: source.schema_binding.clone(),
+                occurrence: observation.lifecycle_incarnation(),
+                scope: WorthQueryOperationScopeEntityBinding::from_entity(source.model_root),
+                family: OutputFamilyIdentity::declared(Family::IDENTITY),
+                partition: source.partition(),
+            },
+            source_epoch: source.runtime_source_identity(),
+            generation: observation.reference_generation().get(),
+            lifecycle,
+            read_closure: std::sync::Arc::clone(&source.closure),
+        })
+    }
+}
 
 impl Ord for OutputSourceAddress {
     fn cmp(&self, other: &Self) -> Ordering {

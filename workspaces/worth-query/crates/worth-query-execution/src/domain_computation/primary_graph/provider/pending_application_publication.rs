@@ -276,6 +276,10 @@ fn prepare_writer(
         )
         .with_recovery_posture(WorthQueryProviderSessionRecoveryPosture::RecoveryRequired));
     }
+    if let Some(slot) = &pending.prepared_lineage_slot {
+        slot.seal_published_source(execution, runtime, after)
+            .map_err(WorthQueryProviderSessionFailure::managed_source_publication)?;
+    }
     aftermath::seal(execution, provider, runtime, pending, after)?;
     provider
         .seal_correction_material(

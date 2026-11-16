@@ -43,6 +43,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
             let mut incoming = Self::new();
             self.tasks[i].tree.prerequisites(
                 context,
+                candidate,
                 &pin,
                 source,
                 &PrerequisiteInputs::from(self.tasks[i].inputs.as_ref()),

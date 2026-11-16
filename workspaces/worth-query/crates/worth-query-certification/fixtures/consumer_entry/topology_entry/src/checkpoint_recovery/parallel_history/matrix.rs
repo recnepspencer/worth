@@ -16,6 +16,7 @@ mod producer;
 mod readiness;
 mod runtime;
 mod source;
+mod topology;
 
 mod table;
 
@@ -45,4 +46,6 @@ const FAMILY_NAMES: [&str; 8] = [
     "Zipped",
     "NestedParallel",
 ];
+#[cfg(test)]
+mod applied_current_output;
 mod nested_cost;

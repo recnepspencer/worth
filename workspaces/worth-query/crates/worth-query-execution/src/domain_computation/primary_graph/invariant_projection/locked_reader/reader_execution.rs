@@ -7,6 +7,7 @@ pub(super) struct ProjectionExecution<Output> {
     pub(super) output: Output,
     pub(super) work: WorthQueryInvariantProjectionWork,
     pub(super) realized_scope: WorthQueryRealizedProjectionScope,
+    pub(super) applied_consumptions: Vec<crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence>,
     pub(super) consumed_outputs: BTreeMap<Arc<super::super::super::output_lineage::RecordedSettlementIdentity>,super::super::ConsumedOutputEvidence>,
     pub(super) source_facts: Result<RetainedSourceFacts, crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial>,
     pub(super) exceeded: bool,
@@ -59,6 +60,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthorit
                     dependent_source_facts: super::super::super::application_attempt::retained_decision_facts::AuthoringSourceFacts::vacant(),
                     retention_control,
                     consumed_outputs: BTreeMap::new(),
+                    applied_consumptions: Vec::new(),
                     _schema: PhantomData,
                 };
         let output = projection(&mut reader);
@@ -68,6 +70,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthorit
             work: reader.work,
             realized_scope: reader.realized_scope,
             consumed_outputs: reader.consumed_outputs,
+            applied_consumptions: reader.applied_consumptions,
             source_facts: reader.dependent_source_facts.finish(retention_control),
             exceeded: reader.work_budget.exceeded(),
             overflowed: reader.work_budget.overflowed(),

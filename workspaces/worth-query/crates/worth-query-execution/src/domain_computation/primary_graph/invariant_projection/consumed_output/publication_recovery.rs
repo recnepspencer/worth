@@ -92,27 +92,33 @@ impl ConsumedOutputEvidence {
                             FullVerificationReason::MissingSettlement,
                         ));
                     }
-                    reserve(&mut pending, evidence.upstream.len().saturating_add(1))?;
+                    reserve(
+                        &mut pending,
+                        evidence.recorded().upstream.len().saturating_add(1),
+                    )?;
                     pending.push(Visit::Established(evidence));
-                    pending.extend(evidence.upstream.iter().map(Visit::Enter));
+                    pending.extend(evidence.recorded().upstream.iter().map(Visit::Enter));
                     continue;
                 }
                 Visit::Established(evidence) => evidence,
             };
             let witness = evidence
+                .recorded()
                 .native_output_witness
                 .as_ref()
                 .and_then(|w| w.get())
                 .ok_or(PublicationRecoveryStop::Reason(
                     FullVerificationReason::NativeRevisionUnavailable,
                 ))?;
-            let upstream = crate::domain_computation::primary_graph::output_lineage::invalidation::collect_consumed_output_upstream(&*evidence.upstream)
+            let upstream = crate::domain_computation::primary_graph::output_lineage::invalidation::collect_consumed_output_upstream(&*evidence.recorded().upstream)
             .map_err(PublicationRecoveryStop::Admission)?;
             owner
                 .establish_verified_consumed(
                     selected,
                     evidence.identity(),
-                    &evidence.source_facts,
+                    evidence.recorded().source_facts.as_ref().ok_or(
+                        PublicationRecoveryStop::Reason(FullVerificationReason::MissingSettlement),
+                    )?,
                     witness,
                     upstream,
                 )

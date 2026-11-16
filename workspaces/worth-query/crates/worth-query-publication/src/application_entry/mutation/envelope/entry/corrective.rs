@@ -81,6 +81,7 @@ where
     prepared.extension.correction = Some(correction);
     Ok(Box::new(TypedEntry::<S, I, R> {
         intent,
+        expected_source: None,
         input,
         marker: PhantomData,
         correction_source: source,

@@ -15,8 +15,10 @@ use worth_relational::facade::{
     runtime::ProjectionAspectScope, storage::RecordLifecycleState,
     transactions::RelationalExecutionDenialCause as Cause,
 };
+mod applied;
 mod predicates;
 use super::super::denial::relational_read_denial;
+pub(super) use applied::select_applied;
 
 #[allow(clippy::too_many_arguments)]
 pub(super) fn select(
@@ -33,13 +35,59 @@ pub(super) fn select(
     if !rows.admits(plan.parent_session, plan.binding, plan.root) {
         return Err(refused());
     }
+    let projection = runtime
+        .project_snapshot(plan.snapshot)
+        .ok_or_else(refused)?;
+    let result = select_roots(
+        runtime,
+        &projection,
+        execution,
+        graph,
+        plan,
+        AdmittedRootSelection {
+            roots: rows.roots(),
+            source: DeclaredManagedIndexSelection {
+                access: Arc::clone(rows.association().access_contract()),
+                dependencies: Arc::clone(rows.dependencies()),
+                coverage: rows.coverage.clone(),
+            },
+        },
+        capture_result_set,
+        spent,
+        interruption,
+    )?;
+    // The real provider proof must remain live through the physical read.
+    if !rows.admits(plan.parent_session, plan.binding, plan.root) {
+        return Err(refused());
+    }
+    Ok(result)
+}
+
+/// A borrowed sealed provider roster plus its actual Source dependencies.
+struct AdmittedRootSelection<'a> {
+    roots: &'a [EntityId],
+    source: DeclaredManagedIndexSelection,
+}
+#[allow(clippy::too_many_arguments)]
+fn select_roots<ReadIdentity>(
+    runtime: &worth_relational::facade::runtime::RelationalPinnedRead<ReadIdentity>,
+    projection: &worth_relational::facade::runtime::VisibilityProjectionView,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
+    plan: &ReadPlan<'_>,
+    selection: AdmittedRootSelection<'_>,
+    capture_result_set: bool,
+    spent: Option<&OneShotReadWorkObservation<'_>>,
+    interruption: super::super::ReadInterruption<'_>,
+) -> Result<BoundedRootSelection, WorthQueryApplicationReadExecutionDenial> {
+    let refused = || path_union::traversal_denial(plan.name);
     let allocation = plan.material_source.ok_or_else(refused)?;
     let storage = MaterialCompletion::new(execution, allocation);
     let selected = plan
         .contract
         .managed_index_selection()
         .ok_or_else(refused)?;
-    let actual_name = &rows.association().definition().parts().name;
+    let actual_name = &selection.source.access.meaning().definition().parts().name;
     let work = actual_name
         .len()
         .checked_add(selected.parts().index.len())
@@ -51,9 +99,6 @@ pub(super) fn select(
     if actual_name != &selected.parts().index {
         return Err(refused());
     }
-    let projection = runtime
-        .project_snapshot(plan.snapshot)
-        .ok_or_else(refused)?;
     let bound = graph
         .application_entity_kinds()
         .size_hint()
@@ -75,14 +120,10 @@ pub(super) fn select(
         .ok_or_else(refused)?;
     let mut work = RootSelectionWork::new(interruption, spent);
     let mut source = RootPathSourceBuilder::for_material_source(execution, Some(allocation))?;
-    source.set_managed_index(DeclaredManagedIndexSelection {
-        access: Arc::clone(rows.association().access_contract()),
-        dependencies: Arc::clone(rows.dependencies()),
-        coverage: rows.coverage.clone(),
-    });
+    source.set_managed_index(selection.source);
     source.observe_entity(execution, plan.root)?;
     let mut frontier = BTreeSet::new();
-    for root in rows.roots() {
+    for root in selection.roots {
         work.checkpoint(plan.name)?;
         work.charge(0, 0, 1, plan.name)?;
         projection
@@ -116,11 +157,6 @@ pub(super) fn select(
         &mut work,
         allocation,
     )?;
-    // The original proof was checked immediately before Native borrowing;
-    // publication/cleanup may still invalidate its exact retained epoch.
-    if !rows.admits(plan.parent_session, plan.binding, plan.root) {
-        return Err(refused());
-    }
     let source = source.finish(execution)?;
     allocation
         .claim_slice::<EntityId>(execution, frontier.len())

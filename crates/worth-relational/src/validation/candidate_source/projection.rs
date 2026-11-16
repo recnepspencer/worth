@@ -51,7 +51,9 @@ impl<'source> ManagedIndexSourceProjection<'source> {
                     .map_err(|cause| Denial::Structural(relations.read_budget().refusal(cause)))?;
                 field_value(state.get(field.locator.aspect().aspect_key()), field)
             }
-            SourceProjectionBacking::Selected { .. } => Err(Definition::ForeignObservation.into()),
+            SourceProjectionBacking::Selected { .. } | SourceProjectionBacking::Applied { .. } => {
+                Err(Definition::ForeignObservation.into())
+            }
         }
     }
 }

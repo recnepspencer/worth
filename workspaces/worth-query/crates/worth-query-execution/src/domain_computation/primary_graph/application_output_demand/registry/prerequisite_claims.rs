@@ -38,7 +38,7 @@ pub struct PreparedPrerequisiteClaims {
 impl RequiredOutputDemandContext {
     pub(in crate::domain_computation::primary_graph) fn prepare_prerequisites<'a>(
         self,
-        inputs: impl ExactSizeIterator<Item = &'a crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence>,
+        inputs: impl ExactSizeIterator<Item = &'a crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence> + Clone,
         source_owner: &crate::domain_computation::primary_graph::SourceInvalidationOwner,
     ) -> Result<PreparedPrerequisiteClaims, WorthQueryOutputDemandDenial> {
         let count = inputs.len();
@@ -69,13 +69,13 @@ impl RequiredOutputDemandContext {
         let checkpoint_predecessors = consumed_predecessors::select(
             &state,
             downstream,
-            inputs,
+            inputs.clone(),
             source_owner,
             &mut predecessors,
         )?;
         predecessors.sort_unstable();
         predecessors.dedup();
-        validate_predecessors(&state, &predecessors)?;
+        validate_predecessors(&state, &predecessors, inputs)?;
         let claim_batch = state.prepare_claim_readthrough(downstream, &predecessors)?;
         let mut downstream_record = state.records.get_mut(downstream).unwrap();
         let settlements = &mut downstream_record.settlements;

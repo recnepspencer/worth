@@ -29,7 +29,10 @@ impl FullVerificationImage<'_> {
         {
             return Ok(false);
         }
-        for fact in source.source_facts().iter() {
+        let Some(facts) = source.source_facts() else {
+            return Ok(false);
+        };
+        for fact in facts.iter() {
             if fact_is_current(execution, fact, self.runtime, self.snapshot)? {
                 continue;
             }

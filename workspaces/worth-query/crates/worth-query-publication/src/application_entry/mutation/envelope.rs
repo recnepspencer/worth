@@ -46,6 +46,8 @@ use worth_query_execution::publication_boundary::authored_edit::{
 };
 use worth_query_installation::facade::ApplicationSchema;
 mod builder;
+mod source;
+pub use source::EditStageSource;
 pub(in crate::application_entry) mod runtime;
 pub use runtime::{WorthQueryEditEnvelopeModeDenial, WorthQueryRuntimeEditEnvelope};
 mod execution_denial;

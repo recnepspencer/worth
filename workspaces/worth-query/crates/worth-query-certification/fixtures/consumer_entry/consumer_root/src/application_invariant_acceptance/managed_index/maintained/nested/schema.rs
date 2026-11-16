@@ -44,7 +44,7 @@ pub(super) fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Catalog>,
 ) -> ApplicationSchemaDeclarationBuilder<Catalog> {
     let schema = schema.principal_binding(CatalogPrincipal::reference());
-    authoring::declare(mutation::declare(schema))
+    super::required_support::declare(authoring::declare(mutation::declare(schema)))
         .application_query(query::source_definition())
         .application_query_binding::<query::SourceBinding>()
         .application_query(query::prefix_definition())

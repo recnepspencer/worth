@@ -105,25 +105,55 @@ mod serial {
             "current_output must not warm a producer"
         );
 
-        let observed = request
+        let (change_scope, change_principal) = authenticate(&restored);
+        let change_request = restored.request(&change_principal, &change_scope);
+        let observed = change_request
             .query(PlanarRead {
                 body_key: "anchor-a".into(),
             })
             .execute()
             .unwrap();
-        request
+        let changed = change_request
             .advanced()
-            .mutate(PlanarSourceAdjustment {
+            // The native action deliberately leaves the derived output stale.
+            // Fixed source adjustment now publishes its required output too.
+            .mutate(PlanarEdit(PlanarMutation {
                 scope_key: "anchor-a".into(),
-                replacement_y: length(2),
-            })
+                operation: PlanarOperation::Adjust(vec![
+                    worth_query_consumer_values::PlanarAdjustment {
+                        body_key: "anchor-a".into(),
+                        replacement_y: length(2),
+                    },
+                ]),
+            }))
             .expect_source(observed.observed_sources()[0].clone())
             .idempotency(&902_u64)
-            .execute_performed::<CheckpointProgram, CheckpointRoot>(
+            .execute_in_program::<CheckpointProgram>(
                 &restored,
                 worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
             )
             .unwrap();
+        assert!(matches!(
+            changed,
+            WorthQueryApplicationMutationOutcome::Committed { .. }
+        ));
+        assert_eq!(
+            provider_observation.count(),
+            0,
+            "native edit warms no producer"
+        );
+        let basis = || {
+            restored
+                .with_host_advancement(|phase| {
+                    restored
+                        .on_branch(restored.current_world())
+                        .select(&phase)
+                        .unwrap()
+                        .describe_basis()
+                })
+                .unwrap()
+        };
+        let before_refusal = basis();
         let denial =
             verify(903_u64).expect_err("restored facts must still reject a changed source");
         use std::error::Error;
@@ -146,6 +176,11 @@ mod serial {
             .expect("typed currentness cause");
         assert_eq!(cause.kind(), WorthQueryCurrentOutputDenialKind::StaleSource);
         assert_eq!(provider_observation.count(), 0);
+        assert_eq!(
+            basis(),
+            before_refusal,
+            "stale verification publishes no effects"
+        );
 
         drop(settle(&request, &restored));
         assert!(provider_observation.count() > 0);

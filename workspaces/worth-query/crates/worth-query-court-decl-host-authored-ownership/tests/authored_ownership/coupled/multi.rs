@@ -274,17 +274,28 @@ fn two_bodies<const MODE: u8>() {
             failure.kind(),
             WorthQueryInvariantExecutionDenialKind::CoupledReadSupportChanged
         );
-        assert_eq!(
-            failure.affected_records(),
-            [worth_relational::facade::transactions::RecordRef::Entity(
-                first
+        let mut expected_sources = vec![worth_relational::facade::transactions::RecordRef::Entity(
+            first
+                .outputs_of::<CreatedOutputs>()
+                .unwrap()
+                .entity::<Created<S<MODE>>>()
+                .unwrap()
+                .entity_id(),
+        )];
+        if MODE == 7 {
+            // Writer11 changes writer10's peer111 observation; both sources are attributed.
+            expected_sources.push(worth_relational::facade::transactions::RecordRef::Entity(
+                other
+                    .as_ref()
+                    .expect("MODE7's actual later writer source")
                     .outputs_of::<CreatedOutputs>()
                     .unwrap()
                     .entity::<Created<S<MODE>>>()
                     .unwrap()
                     .entity_id(),
-            )]
-        );
+            ));
+        }
+        assert_eq!(failure.affected_records(), expected_sources.as_slice());
         for id in [20, 101, 102, 111, 112] {
             assert!(
                 request.query(query::Input { id }).execute().is_ok(),

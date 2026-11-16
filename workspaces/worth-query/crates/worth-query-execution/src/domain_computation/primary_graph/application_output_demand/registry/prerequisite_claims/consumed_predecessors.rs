@@ -21,6 +21,18 @@ pub(super) fn select<'a>(
     let maximum = inputs.len();
     let mut checkpoint_predecessors: Option<CheckpointPrerequisiteClaims> = None;
     for consumed in inputs {
+        if let Some(link) = consumed.applied() {
+            let key = link.prerequisite_key().ok_or_else(coverage_denial)?;
+            if key.as_ref() == downstream
+                || !state.records.get(key.as_ref()).is_some_and(|record| {
+                    matches!(record.state, super::super::DemandState::Running)
+                })
+            {
+                return Err(coverage_denial());
+            }
+            predecessors.push(Arc::clone(key));
+            continue;
+        }
         let upstream = state
             .settlement_keys
             .get_exact_admitted(consumed.identity())?;

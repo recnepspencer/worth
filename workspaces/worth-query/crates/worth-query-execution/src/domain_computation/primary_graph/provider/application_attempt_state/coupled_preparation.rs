@@ -15,8 +15,9 @@ pub(in crate::domain_computation::primary_graph) enum CoupledAttemptPreparation 
     },
 }
 pub(in crate::domain_computation::primary_graph) struct CoupledProducerPreparation {
-    pub(in crate::domain_computation::primary_graph::provider) completion:
+    pub(in crate::domain_computation::primary_graph) completion:
         crate::domain_computation::primary_graph::output_lineage::CoupledOutputCompletion,
+    pub(in crate::domain_computation::primary_graph) outputs: Option<AppliedParticipantOutputs>,
     pub(in crate::domain_computation::primary_graph) after_own: Option<
         worth_relational::facade::runtime::RelationalPinnedRead<
             worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
@@ -24,13 +25,22 @@ pub(in crate::domain_computation::primary_graph) struct CoupledProducerPreparati
     >,
     pub(in crate::domain_computation::primary_graph::provider) handler: ProducerHandlerPreparation,
 }
+pub(in crate::domain_computation::primary_graph) struct AppliedParticipantOutputs {
+    pub(in crate::domain_computation::primary_graph) producer: String,
+    pub(in crate::domain_computation::primary_graph) meaning:
+        worth_relational::facade::mvcc::RequiredOutputPublicationMeaning,
+    pub(in crate::domain_computation::primary_graph) entities:
+        worth_execution::ExecutionArray<worth_relational::facade::identity::EntityId>,
+}
 impl CoupledProducerPreparation {
     pub(in crate::domain_computation::primary_graph) fn retain_after_own(
         &mut self,
         pin: worth_relational::facade::runtime::RelationalPinnedRead<
             worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
         >,
+        outputs: AppliedParticipantOutputs,
     ) {
+        assert!(self.outputs.replace(outputs).is_none());
         assert!(self.after_own.replace(pin).is_none());
     }
 }
@@ -60,6 +70,7 @@ impl super::super::WorthQueryPrimaryGraphProvider {
         pin: worth_relational::facade::runtime::RelationalPinnedRead<
             worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
         >,
+        outputs: AppliedParticipantOutputs,
     ) {
         let mut attempts = self
             .attempts
@@ -68,7 +79,7 @@ impl super::super::WorthQueryPrimaryGraphProvider {
         let state = attempts
             .attempt_state_mut(session)
             .expect("actual writer before Native append");
-        state.attempt_mut().retain_coupled_after_own(pin);
+        state.attempt_mut().retain_coupled_after_own(pin, outputs);
     }
     pub(in crate::domain_computation::primary_graph) fn retain_coupled_preparation(
         &self,
@@ -92,6 +103,7 @@ impl super::super::WorthQueryPrimaryGraphProvider {
                 completion: completion.clone(),
                 handler,
                 after_own: None,
+                outputs: None,
             });
         Ok(completion)
     }
@@ -124,6 +136,15 @@ pub(in crate::domain_computation::primary_graph) enum CoupledApplicationMemberKi
     },
 }
 impl CoupledApplicationMember {
+    pub(in crate::domain_computation::primary_graph) fn extracted_attempt(
+        &self,
+    ) -> &super::super::WorthQueryPrimaryGraphApplicationAttempt {
+        &self
+            .owned
+            .as_ref()
+            .expect("extracted registered member")
+            .attempt
+    }
     pub(in crate::domain_computation::primary_graph) fn producer_route(
         &self,
     ) -> Option<(

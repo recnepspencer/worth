@@ -1,16 +1,9 @@
 //! The materialization owner captures complete native facts before payload disappears.
 use super::*;
-use crate::branch::{
-    AdmittedRelationalBranchBasis, RelationalMaterializationCustody,
-    RelationalMaterializationRecord,
-};
+use crate::branch::{AdmittedRelationalBranchBasis, RelationalMaterializationRecord};
 use crate::history::data::canonical_commit_envelope::OutputOriginHistory;
-use crate::history::data::{
-    CanonicalRequiredOutputMaterialization as Event,
-    CanonicalRequiredOutputMaterializationRecord as Member,
-};
+use crate::history::data::CanonicalRequiredOutputMaterializationRecord as Member;
 use crate::runtime::RelationalRuntime;
-use crate::storage::overlay::WorkingState;
 use crate::transactions::data::TransactionCommitError;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, ExecutionWorkCeiling};
 
@@ -57,6 +50,20 @@ pub(crate) fn capture_materialization_producers(
                         )
                         .ok_or_else(|| stop(super::super::memory_overflow()))?;
                     let memory = super::super::reserve(lease, bytes).map_err(stop)?;
+                    let _groups_memory = super::super::reserve(
+                        lease,
+                        manifest
+                            .len()
+                            .checked_mul(std::mem::size_of::<
+                                Arc<crate::history::data::CanonicalRequiredOutputOrigin>,
+                            >())
+                            .ok_or_else(super::super::memory_overflow)
+                            .map_err(stop)?,
+                    )
+                    .map_err(stop)?;
+                    let mut complete_groups: Vec<
+                        Arc<crate::history::data::CanonicalRequiredOutputOrigin>,
+                    > = Vec::with_capacity(manifest.len());
                     let mut publications = Vec::with_capacity(manifest.len());
                     let mut records = Vec::with_capacity(manifest.len());
                     let mut origin_frames = OutputOriginHistory::default();
@@ -74,9 +81,23 @@ pub(crate) fn capture_materialization_producers(
                             Ok(None) => continue,
                             Err(cause) => return Err(cause),
                         };
-                        let origin = selected.validate_output_membership_header().map_err(stop)?;
-                        charge(context, publications.len() + 1).map_err(stop)?;
-                        if publications.contains(&origin.commit.commit_id) {
+                        let native_record = match record {
+                            RelationalMaterializationRecord::Entity { entity_id, .. } => {
+                                RecordRef::Entity(*entity_id)
+                            }
+                            RelationalMaterializationRecord::Relation { relation_id, .. } => {
+                                RecordRef::Relation(*relation_id)
+                            }
+                        };
+                        let origin = selected
+                            .materialization_origin_for_record(&native_record, context)
+                            .map_err(stop)?;
+                        charge(context, complete_groups.len() + publications.len() + 1)
+                            .map_err(stop)?;
+                        if complete_groups
+                            .iter()
+                            .any(|prior| Arc::ptr_eq(prior, origin))
+                        {
                             continue;
                         }
                         let complete = (|| {
@@ -101,12 +122,7 @@ pub(crate) fn capture_materialization_producers(
                                     lease,
                                 )?;
                             }
-                            let origin = Arc::clone(
-                                selected
-                                    .required_output_origin
-                                    .as_ref()
-                                    .ok_or("producer association absent")?,
-                            );
+                            let origin = Arc::clone(origin);
                             super::super::relations::validate_complete_publication(
                                 runtime,
                                 &basis.inner.root,
@@ -117,7 +133,12 @@ pub(crate) fn capture_materialization_producers(
                             )
                         })();
                         match complete {
-                            Ok(()) => publications.push(origin.commit.commit_id),
+                            Ok(()) => {
+                                if !publications.contains(&origin.commit.commit_id) {
+                                    publications.push(origin.commit.commit_id);
+                                }
+                                complete_groups.push(Arc::clone(origin));
+                            }
                             Err(Stop::Payload(_)) => {}
                             Err(cause) => return Err(stop(cause)),
                         }
@@ -134,13 +155,10 @@ pub(crate) fn capture_materialization_producers(
                         };
                         charge(context, publications.len() + 1).map_err(stop)?;
                         let mut owned = false;
-                        for publication in &publications {
-                            let envelope = runtime.commit(*publication).map_err(stop)?;
-                            if envelope
-                                .as_ref()
-                                .and_then(|envelope| envelope.required_output_origin.as_ref())
-                                .is_some_and(|origin| header::owns(origin, &record))
-                            {
+                        for origin in &complete_groups {
+                            charge(context, origin.members.len() + origin.relations.len() + 1)
+                                .map_err(stop)?;
+                            if header::owns(origin, &record) {
                                 owned = true;
                                 break;
                             }
@@ -190,84 +208,7 @@ pub(crate) fn capture_materialization_producers(
         .0
 }
 
-pub(crate) fn prepare_materialization_continuity(
-    execution: &ExecutionRequest<'_, '_>,
-    runtime: &RelationalRuntime,
-    basis: &AdmittedRelationalBranchBasis,
-    custody: &RelationalMaterializationCustody,
-    candidate: &WorkingState,
-) -> Result<Option<Arc<Event>>, TransactionCommitError> {
-    let runtime = &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest::new(runtime, execution);
-    let captured = custody.data();
-    if captured.producer_publications.is_empty() {
-        return Ok(None);
-    }
-    let result = execution
-        .in_scope(|lease| {
-            ExecutionWorkCeiling::new(execution.work_ceiling()).run_with_checkpoint(
-                lease,
-                None,
-                |context| {
-                    let mut publications = Vec::with_capacity(captured.producer_publications.len());
-                    for publication in &captured.producer_publications {
-                        charge(context, 1)?;
-                        let original = runtime
-                            .commit(*publication)?
-                            .ok_or("materialization original producer history absent")?;
-                        if payload::candidate_matches(
-                            runtime,
-                            basis,
-                            candidate,
-                            &original,
-                            &captured.producer_records,
-                            context,
-                            lease,
-                        )? {
-                            publications.push(*publication);
-                        }
-                    }
-                    if publications.is_empty() {
-                        return Ok(None);
-                    }
-                    let mut records = Vec::with_capacity(captured.producer_records.len());
-                    for record in &captured.producer_records {
-                        charge(context, publications.len() + 1)?;
-                        let mut owned = false;
-                        for publication in &publications {
-                            let envelope = runtime.commit(*publication)?;
-                            if envelope
-                                .as_ref()
-                                .and_then(|envelope| envelope.required_output_origin.as_ref())
-                                .is_some_and(|origin| header::owns(origin, &record.record))
-                            {
-                                owned = true;
-                                break;
-                            }
-                        }
-                        if owned {
-                            records.push(record.clone());
-                        }
-                    }
-                    Ok::<_, Stop>(Some(Arc::new(Event {
-                        source_commit: captured.source_commit,
-                        suspension_commit: captured.suspension_commit,
-                        producer_publications: publications,
-                        records,
-                    })))
-                },
-            )
-        })
-        .map_err(|cause| stop(Stop::Request(cause.into())))?
-        .map_err(|cause| stop(Stop::Request(cause.into())))?
-        .0
-        .map_err(stop)?;
-    execution
-        .consult()
-        .map_err(|cause| stop(Stop::Request(cause.into())))?;
-    Ok(result)
-}
-
-fn stop(cause: Stop) -> TransactionCommitError {
+pub(super) fn stop(cause: Stop) -> TransactionCommitError {
     match cause {
         Stop::Payload(detail) => crate::mvcc::origin_denial(detail),
         Stop::Request(cause) => {

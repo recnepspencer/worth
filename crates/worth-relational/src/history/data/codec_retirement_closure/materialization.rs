@@ -7,9 +7,11 @@ use std::sync::Arc;
 use worth_execution::MapKernelContext;
 
 mod capture;
+mod continuity;
 mod header;
 mod payload;
-pub(crate) use capture::{capture_materialization_producers, prepare_materialization_continuity};
+pub(crate) use capture::capture_materialization_producers;
+pub(crate) use continuity::prepare_materialization_continuity;
 pub(super) use header::validate as validate_header;
 
 /// A native write fence may advance only through matching physical maintenance.

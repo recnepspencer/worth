@@ -66,6 +66,25 @@ pub(in crate::domain_computation::primary_graph::application_query::managed_inde
         allocation: &Arc<SourceFactsAllocation>,
         native: &mut ApplicationQueryNativeAccess<'_>,
     ) -> Result<ManagedSelectionLease<'a, 'request, 'authority>, Denial>;
+    #[allow(clippy::too_many_arguments)]
+    fn select_applied<'a, 'request, 'authority>(
+        self: Arc<Self>,
+        execution: &ExecutionRequest<'request, 'authority>,
+        application: &'a WorthQueryPrimaryGraphApplicationRuntime<S>,
+        access: &SourceQueryReaderAccess<'_, S>,
+        parent: &'a WorthQueryManagedGraphWorkSession,
+        request: &'a WorthQueryRequestScope,
+        association: &WorthQueryInstalledManagedIndexParent,
+        selector: &WorthQueryObservedScopeSelector,
+        before: &worth_relational::facade::runtime::RelationalPinnedRead,
+        loan: &worth_relational::facade::runtime::ManagedIndexAppliedSourceRead<'_>,
+        probe: &AspectValue,
+        allocation: &Arc<SourceFactsAllocation>,
+        native: &mut ApplicationQueryNativeAccess<'_>,
+    ) -> Result<
+        super::super::applied_read::AppliedManagedSelectionLease<'a, 'request, 'authority>,
+        Denial,
+    >;
 }
 
 impl<S, I, P> ErasedIndexExecutor<S> for TypedIndexProvider<S, I, P>
@@ -185,6 +204,44 @@ where
             probe,
             parameters,
             governance,
+            allocation,
+            native,
+        )
+    }
+    fn select_applied<'a, 'request, 'authority>(
+        self: Arc<Self>,
+        execution: &ExecutionRequest<'request, 'authority>,
+        application: &'a WorthQueryPrimaryGraphApplicationRuntime<S>,
+        access: &SourceQueryReaderAccess<'_, S>,
+        parent: &'a WorthQueryManagedGraphWorkSession,
+        request: &'a WorthQueryRequestScope,
+        association: &WorthQueryInstalledManagedIndexParent,
+        selector: &WorthQueryObservedScopeSelector,
+        before: &worth_relational::facade::runtime::RelationalPinnedRead,
+        loan: &worth_relational::facade::runtime::ManagedIndexAppliedSourceRead<'_>,
+        probe: &AspectValue,
+        allocation: &Arc<SourceFactsAllocation>,
+        native: &mut ApplicationQueryNativeAccess<'_>,
+    ) -> Result<
+        super::super::applied_read::AppliedManagedSelectionLease<'a, 'request, 'authority>,
+        Denial,
+    > {
+        if !self.installed.admits_association(association) {
+            return Err(Denial::ForeignAssociation);
+        }
+        let adapter: Arc<dyn InstalledIndexProvider<S, I>> = self;
+        super::super::applied_read::select(
+            execution,
+            application,
+            access,
+            parent,
+            request,
+            association,
+            selector,
+            &adapter,
+            before,
+            loan,
+            probe,
             allocation,
             native,
         )

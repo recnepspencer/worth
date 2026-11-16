@@ -107,6 +107,11 @@ fn fixed_branch_affinity_default_switch_preserves_original_owner() {
         .application
         .request(&fresh_principal, &fresh_scope)
         .on_branch(operation.branch());
+    let before_publication = fresh
+        .retain_current_read()
+        .unwrap()
+        .selected_commit()
+        .clone();
     let operation = match operation.advance(&fresh) {
         Advance::Progress {
             operation,
@@ -115,6 +120,30 @@ fn fixed_branch_affinity_default_switch_preserves_original_owner() {
         _ => panic!("returned owner reaches genuine source publication"),
     };
     assert_eq!(planar_source_adjustment_contacts(&input), (1, 1));
+    let source_receipt = operation.prepared_source_receipt().unwrap().clone();
+    let publication = source_receipt
+        .committed_product_publication()
+        .composite_commit();
+    assert_eq!(
+        publication.owner_identity(),
+        before_publication.owner_identity()
+    );
+    assert_eq!(publication.ordinal(), before_publication.ordinal() + 1);
+    assert_eq!(
+        fresh.retain_current_read().unwrap().selected_commit(),
+        publication
+    );
+    assert_eq!(
+        fresh
+            .query(worth_query_topology_entry::PlanarOutputRead {
+                body_key: input.scope_key.clone(),
+            })
+            .execute()
+            .unwrap()
+            .rows()[0]
+            .value,
+        length(3)
+    );
     let before_queries = query_contacts();
     let operation = match operation.advance(&wrong) {
         Advance::Refused {
@@ -140,7 +169,25 @@ fn fixed_branch_affinity_default_switch_preserves_original_owner() {
         .expect("real fixed graph settles");
     assert_eq!(settled.branch(), original_branch);
     assert_eq!(settled.settlement().output_count(), 4);
+    let performed = settled.settlement().performed_source().unwrap();
+    assert!(performed
+        .receipt()
+        .retained_receipt()
+        .unwrap()
+        .is_same_authoritative_commit(&source_receipt));
+    let fulfillment = performed.root_fulfillment();
+    assert!(fulfillment.matches_source(&source_receipt));
+    assert_eq!(fulfillment.source_commit(), publication);
+    assert_eq!(fulfillment.output_commit(), publication);
+    assert_eq!(
+        settled.settlement().root_observation().selected_commit(),
+        publication
+    );
     let producer_contacts = settled.settlement().root_producer_contacts_in_this_demand();
+    assert_eq!(
+        producer_contacts, 0,
+        "delivery retains the synchronous root without another execution"
+    );
     let before_queries = query_contacts();
     assert!(matches!(
         settled.read_current(&wrong),
@@ -173,7 +220,10 @@ fn fixed_branch_affinity_default_switch_preserves_original_owner() {
         "the valid delivery twin enters the real query kernel"
     );
     assert_eq!(delivery.rows()[0].value, length(3));
-    assert_eq!(producer_contacts, 1);
+    assert_eq!(
+        settled.settlement().root_producer_contacts_in_this_demand(),
+        producer_contacts
+    );
     assert_eq!(planar_source_adjustment_contacts(&input), (1, 1));
     let after = runtime
         .with_host_advancement(|phase| wrong.retain_read(&phase).unwrap())

@@ -172,7 +172,9 @@ impl RequiredOutputDemandContext {
         self.handler.take_prepared_input_reuse_key()
     }
 
-    pub(super) fn key_arc(&self) -> &Arc<WorthQueryOutputDemandKey> {
+    pub(in crate::domain_computation::primary_graph) fn key_arc(
+        &self,
+    ) -> &Arc<WorthQueryOutputDemandKey> {
         &self.key
     }
 

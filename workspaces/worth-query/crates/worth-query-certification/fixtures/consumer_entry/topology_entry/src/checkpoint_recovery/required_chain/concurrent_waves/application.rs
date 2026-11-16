@@ -219,7 +219,8 @@ mod serial {
         computation::arm(Some(schedule.clone()));
 
         // compiled-example: begin
-        use worth_query_host::facade::application_entry::WorthQueryApplicationPerformedMutationOutcome;
+        use worth_query_consumer_values::{PlanarAdjustment, PlanarOperation};
+        use worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome;
 
         let request = application.request(&principal, &scope);
         for (key, y, idempotency) in [
@@ -234,21 +235,34 @@ mod serial {
                 .unwrap();
             let changed = request
                 .advanced()
-                .mutate(PlanarSourceAdjustment {
+                .mutate(PlanarEdit(PlanarMutation {
                     scope_key: key.to_owned(),
-                    replacement_y: length(y),
-                })
+                    operation: PlanarOperation::Adjust(vec![PlanarAdjustment {
+                        body_key: key.to_owned(),
+                        replacement_y: length(y),
+                    }]),
+                }))
                 .expect_source(selected.observed_sources()[0].clone())
                 .idempotency(&idempotency)
-                .execute_performed::<Program, program::ChainRoot>(
+                .execute_in_program::<Program>(
                     &application,
                     worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
                 )
                 .unwrap();
             assert!(matches!(
                 changed,
-                WorthQueryApplicationPerformedMutationOutcome::Performed(_)
+                WorthQueryApplicationMutationOutcome::Committed { .. }
             ));
+        }
+        // Native edits leave the initial outputs for the joined advancement.
+        for (key, expected) in [("diamond-left", 2), ("diamond-right", 51)] {
+            let output = request
+                .query(PlanarOutputRead {
+                    body_key: key.to_owned(),
+                })
+                .execute()
+                .unwrap();
+            assert_eq!(output.rows()[0].value, length(expected));
         }
         assert!(matches!(
             join.advance(&request).unwrap(),
@@ -264,6 +278,10 @@ mod serial {
             assert_eq!(output.rows()[0].value, length(expected));
         }
         // compiled-example: end
+        assert!(matches!(
+            join.advance(&request).unwrap(),
+            WorthQueryApplicationOutputDemandProgress::Settled(_)
+        ));
         assert_eq!(schedule.state.lock().unwrap().runs, [1, 1]);
     }
 }

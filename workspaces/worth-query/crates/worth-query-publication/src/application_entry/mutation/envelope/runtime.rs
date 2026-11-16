@@ -110,6 +110,7 @@ where
         stages.entries.push(Box::new(WithEditStage {
             previous: NoEditStages,
             intent,
+            source: (),
             marker: PhantomData::<fn() -> R>,
         }));
         Ok(WorthQueryEditStageToken {
@@ -156,6 +157,39 @@ where
                 None => Ok(None),
             },
         )
+    }
+
+    /// Capture this stage with its genuine issued row or result-set expectation.
+    pub fn push_stage_with_source<R, I, E>(
+        &mut self,
+        intent: I,
+        source: E,
+    ) -> Result<
+        WorthQueryEditStageToken<
+            <I::Binding as ApplicationMutationBinding<S>>::Result,
+            <I::Binding as ApplicationMutationBinding<S>>::Denial,
+        >,
+        WorthQueryEditEnvelopeExecutionDenial,
+    >
+    where
+        I: ApplicationMutationIntent<S> + 'static,
+        R: 'static,
+        E: super::source::EditStageSource<S, I>,
+        WithEditStage<NoEditStages, R, I, E>: CaptureEditStages<S, P, K>,
+    {
+        let stages = &mut self.envelope.envelope.stages;
+        let ordinal = stages.entries.len() + usize::from(self.front.is_some());
+        stages.entries.push(Box::new(WithEditStage {
+            previous: NoEditStages,
+            intent,
+            source,
+            marker: PhantomData::<fn() -> R>,
+        }));
+        Ok(WorthQueryEditStageToken {
+            brand: self.envelope.envelope.brand.clone(),
+            ordinal,
+            marker: PhantomData,
+        })
     }
 }
 
