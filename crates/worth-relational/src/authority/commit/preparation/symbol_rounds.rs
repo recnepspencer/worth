@@ -72,7 +72,6 @@ pub(crate) fn probe_symbol_rounds<T>(
                 return Err(super::storage_read_denial(basis, failure.into()));
             }
             Err(MutationApplyDenial::Symbols(SymbolReservationDenial::ColdBucket(text))) => {
-                eprintln!("WORTH-UI-TEMPORARY-INSTRUMENTATION cold symbol round text={text:?}");
                 crate::execution::phase_observation::symbol_preparation_event(
                     crate::execution::phase_observation::SymbolPreparationEvent::ColdBucketRetry,
                 );
