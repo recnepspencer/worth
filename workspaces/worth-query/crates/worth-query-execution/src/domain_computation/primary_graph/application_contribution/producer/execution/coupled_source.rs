@@ -79,6 +79,10 @@ pub(in crate::domain_computation::primary_graph::application_contribution) enum 
         partition: [u8; 32],
     },
     Retiring,
+    Restored {
+        scope: worth_relational::facade::identity::EntityId,
+        input: worth_relational::facade::mvcc::RelationalRequiredOutputInput,
+    },
     Prepared(usize),
     Verified(super::super::VerifiedAppliedParent),
     Source(ErasedAppliedProducerSource),
@@ -207,6 +211,9 @@ where
             Some(worth_relational::facade::mvcc::RelationalDeclaredCoupledOwner::Retiring) => {
                 return Ok(CoupledSourceRead::Retiring)
             }
+            Some(worth_relational::facade::mvcc::RelationalDeclaredCoupledOwner::Restored(
+                input,
+            )) => return Ok(CoupledSourceRead::Restored { scope: root, input }),
             Some(worth_relational::facade::mvcc::RelationalDeclaredCoupledOwner::Surviving(
                 owner,
             )) => (Some(owner.clone()), false, false),

@@ -148,7 +148,10 @@ pub(super) fn install(
                 after_write: envelope.commit.version_id,
             })
             .collect();
+        let input_custody = inputs::copy(&original.inputs, &[], lease, context)?;
         let origin = Arc::new(CanonicalRequiredOutputOrigin {
+            inputs: input_custody.meanings,
+            _input_memory: input_custody.memory,
             _cascade_memory: None,
             commit: envelope.commit.clone(),
             basis: basis

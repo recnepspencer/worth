@@ -7,6 +7,7 @@ mod member_inputs;
 mod ordinary_carrier;
 #[macro_use]
 mod phase;
+pub mod borrowed_inputs;
 pub mod captured_input;
 mod feature_specs;
 pub(super) use feature_specs::feature_specs;

@@ -45,7 +45,7 @@ impl CanonicalCommitEnvelopeBody {
             {
                 return Err("coupled participant has a different source obligation".into());
             }
-            self.validate_output_origin_header(&part.origin)?;
+            self.validate_output_origin_header(&part.origin, context)?;
             let producing = matches!(
                 part.origin.publication,
                 CanonicalOutputPublication::Preserve { .. }

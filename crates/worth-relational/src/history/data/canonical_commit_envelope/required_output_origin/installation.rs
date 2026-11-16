@@ -83,6 +83,7 @@ impl CanonicalCommitEnvelopeBody {
     ) -> Result<crate::history::data::RequiredOutputPublicationPositions, TransactionCommitError>
     {
         let crate::mvcc::RequiredOutputPublicationAdmission {
+            inputs,
             installed,
             publication,
         } = admission;
@@ -270,6 +271,7 @@ impl CanonicalCommitEnvelopeBody {
                 state,
                 &installed,
                 route_completion::RouteCompletion {
+                    inputs,
                     contribution_records,
                     source_input,
                     producer,
@@ -320,6 +322,7 @@ impl CanonicalCommitEnvelopeBody {
             state,
             &installed,
             route_completion::RouteCompletion {
+                inputs,
                 contribution_records,
                 source_input,
                 producer,

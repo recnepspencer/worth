@@ -319,6 +319,7 @@ pub(super) fn entry_spec_with_envelope_deliveries<
         DependentPart,
         CyclicPart,
         AfterProducerPart,
+        Completion,
     >(entry_builder::<Delivery, MemberDelivery, RestorePart>())
     .action::<synchronous_edit::interleaved::created::Binding, Completion>()
     .finish_action()
@@ -330,6 +331,7 @@ pub(super) fn with_envelope_completion_actions(
     entry: ApplicationFeatureSpecBuilder<Schema, ApplicationRootComposition, Entry>,
 ) -> ApplicationFeatureSpecBuilder<Schema, ApplicationRootComposition, Entry> {
     envelope_actions::<
+        Completion,
         Completion,
         Completion,
         Completion,
@@ -349,10 +351,13 @@ pub(super) fn envelope_actions<
     DependentPart: ApplicationActionDelivery<Schema, synchronous_edit::envelope_fixture::dependent::Binding>,
     CyclicPart: ApplicationActionDelivery<Schema, synchronous_edit::envelope_fixture::cyclic::Binding>,
     AfterProducerPart: ApplicationActionDelivery<Schema, synchronous_edit::envelope_fixture::after_producer::Binding>,
+    DisconnectPart: ApplicationActionDelivery<Schema, family::borrowed_inputs::disconnect::Binding>,
 >(
     entry: ApplicationFeatureSpecBuilder<Schema, ApplicationRootComposition, Entry>,
 ) -> ApplicationFeatureSpecBuilder<Schema, ApplicationRootComposition, Entry> {
     entry
+        .action::<family::borrowed_inputs::disconnect::Binding, DisconnectPart>()
+        .finish_action()
         .action::<synchronous_edit::interleaved::ConsumeChildBinding, Completion>()
         .finish_action()
         .action::<query::identity::expectation::Binding, Completion>()

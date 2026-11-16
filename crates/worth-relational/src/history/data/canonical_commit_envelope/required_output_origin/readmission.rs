@@ -85,7 +85,9 @@ impl CanonicalCommitEnvelopeBody {
     pub(super) fn validate_output_origin_header(
         &self,
         origin: &CanonicalRequiredOutputOrigin,
+        context: &mut worth_execution::MapKernelContext<'_, '_>,
     ) -> Result<(), Stop> {
+        origin.validate_inputs(context)?;
         if origin.commit != self.commit
             || !origin.meaning.implementation.valid()
             || (matches!(

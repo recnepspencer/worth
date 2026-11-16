@@ -242,6 +242,7 @@ impl CanonicalCommitEnvelopeBody {
                 state,
                 installed,
                 RouteCompletion {
+                    inputs: Default::default(),
                     contribution_records: None,
                     source_input: None,
                     producer: &origin.producer,

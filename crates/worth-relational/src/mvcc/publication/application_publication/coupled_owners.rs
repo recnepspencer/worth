@@ -110,6 +110,7 @@ impl std::fmt::Debug for RelationalAuthoredCoupledOwners {
 pub enum RelationalDeclaredCoupledOwner<'a> {
     Surviving(&'a RelationalRequiredOutputPublication),
     RequiredSurviving(&'a RelationalRequiredOutputPublication),
+    Restored(RelationalRequiredOutputInput),
     Retiring,
 }
 

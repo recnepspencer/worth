@@ -344,3 +344,54 @@ publication postures, while historical AuthoredRetirement/ProducerRetirement
 remains inverse provenance. Court both with existing exact refusal and cold
 restoration assertions. Application-change counts exclude only the additional
 registrar's kinds; retain exact three application edits and restored names.
+
+
+## Phase 5: borrowed required-publication consumers
+
+A source-scope-owned publication can consume required outputs without owning
+those outputs or their association edges. The existing sealed synchronous wave
+retains each actual prerequisite's Native current publication, earlier admitted
+part or actual Native-restored inverse prefix under this exact proposal and
+assembly invocation. That custody supplies a
+complete canonical consumed-publication route set for the new consumer. A current
+consumer read leaves its recorded inputs unchanged. An ordinary participant with
+no Native-owned publication supplies no publication custody and gains no ownership.
+
+Publication completion writes distinct Native-private input incidence from each
+consumed full-generation source to the consumer row. The canonical origin keeps
+full family, partition, source and producing meaning; incidence is only a local
+selector. It is not a member claim and cannot adopt another publisher's records.
+The existing one-hop reader authenticates reached row/catalog/presence pairing
+and exact touched links. Only the explicit retirement closure expands authenticated
+consuming source scopes, transitively, alongside its existing owned-edge rule.
+No global catalog scan, arbitrary business-neighborhood expansion or history walk
+is added. Every selected surviving route remains mandatory; a declared demand or
+Preserve header cannot add an unlisted writer.
+
+Birth and genuine computation succession replace the input set atomically;
+removal releases its incidence. Restoration applies its existing real entity
+correspondence to input scopes, and historical selection retains the selected
+origin's input meaning. Current-version recorded undo/reapply and recovery are
+required; there is no old-input default, stored mirror or migration lane. The
+current private storage grammar is V3, canonical commit artifact format 10 and
+Native checkpoint frame CHK23. CHK22 and artifact 9 are prior formats, refused
+rather than reinterpreted. The historical format steps above remain their own
+recorded evidence. Decoder allocation quotes include the actual input vector and
+family strings, and the request retains their funding through publication.
+
+A recorded inverse's restored parent is the actual applied image, not a Current
+producer result. Native validates the complete inverse payloads and endpoints
+before offering that parent, resolves its full-generation scope through the
+actual created-entity correspondence, and issues the same proposal-local input
+custody. Query uses its genuine applied pin without replaying the old producer.
+The consumer records that restored scope in its input meaning. This input grants
+no new writer route; ordinary Retirement still refuses an unavailable parent.
+
+Focused evidence uses the existing two-family cabinet schema and installed
+producer host. A collector owns only a header associated with its own model and
+borrows member-produced values. Removing one member must rebuild that collector
+and its genuine next consumer while an unaffected parent remains a current read.
+Assert literal values, stable surviving output identities, one commit, recorded
+reverse/reapply and checkpoint-restored selection. Keep missing/extra/unrelated
+owner, omitted participant and current-parent negatives. These focused cases do
+not imply full Native/workspace or private CAD qualification.

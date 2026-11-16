@@ -13,6 +13,9 @@ use crate::{
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
 mod adoption;
+mod inputs;
+pub use inputs::RelationalRequiredOutputInput;
+pub(crate) use inputs::RequiredOutputInputs;
 mod aggregate_read;
 mod authored_writes;
 mod completion;
@@ -113,6 +116,7 @@ pub struct RelationalAuthoredCoupledCandidate<'a> {
     pub(crate) mutation: &'a mut AppliedMutationCore,
     pub(crate) identity: &'a RelationalMutationProposalIdentity,
     pub(crate) binding: &'a BoundAuthoredCoupling,
+    input_issuance: std::cell::RefCell<Option<Arc<inputs::InputIssuance>>>,
     pub(crate) parts: Vec<CoupledPublicationPart>,
     pub(crate) stages: Vec<CoupledAuthoredStagePart>,
     /// Exact applied prefix; later authored stages retain their own spans.
@@ -124,6 +128,7 @@ pub struct RelationalAuthoredCoupledCandidate<'a> {
 }
 
 pub(crate) struct CoupledPublicationPart {
+    pub(crate) inputs: Option<RequiredOutputInputs>,
     pub(crate) ordinary_ids:
         Option<worth_execution::ExecutionArray<crate::identity::data::EntityId>>,
     pub(crate) input: RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
@@ -175,6 +180,14 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         let Some(owner) = owner else {
             return Ok(None);
         };
+        if matches!(owner, RelationalDeclaredCoupledOwner::Retiring)
+            && original != source
+            && self.binding.owners.source.restoration().is_some()
+        {
+            return self
+                .restored_output_input(execution, family, original, source, partition)
+                .map(|input| Some(RelationalDeclaredCoupledOwner::Restored(input)));
+        }
         if let RelationalDeclaredCoupledOwner::Surviving(previous)
         | RelationalDeclaredCoupledOwner::RequiredSurviving(previous) = &owner
         {

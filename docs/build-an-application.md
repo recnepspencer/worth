@@ -4995,6 +4995,22 @@ actual committed postcondition, so replacing an owned edge does not cause a
 second publication. A real upstream change still re-runs the producer, and a
 read of another publication remains a source observation. The original raw reads
 still participate in candidate admission and complete-candidate support checks.
+The synchronous prerequisite wave also retains the actual Native publications
+consumed by an opted-in writer. This includes borrowed required outputs: the
+consumer need not own their cells or add an association edge to them. Native
+records those input routes with the consumer's own origin and maintains separate
+current input incidence. Retirement selects their surviving consumers transitively
+and requires every selected successor in the same atomic candidate. Unrelated
+current parents remain reads, and an unlisted fresh writer still refuses. Ordinary
+participants that publish no Native-owned output do not acquire ownership through
+this accounting. Applications continue declaring the genuine complete prerequisite
+graph; they do not submit a writer roster, fabricate a dependency stamp or add
+synthetic ownership links. Recorded restoration carries the real input identities
+through its existing correspondence, including after checkpoint recovery.
+Within the inverse candidate, a restored parent can supply its actual
+Native-validated applied image before its consumers run. This is applied-input
+custody, not a claim that its old producer ran again or a new Current permission.
+
 If Native refuses `ExtraCoupledOwner`, its existing publication error preserves
 the actual requested family, full-generation source and partition, authored
 source kind/root, and the failed catalog site. A preserve-admission failure also

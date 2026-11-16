@@ -211,6 +211,10 @@ impl Reach<'_, '_, '_, '_, '_> {
                 self.publications.insert(publication);
             }
         }
+        for link in self.incidence(id, self.storage.input_link, Direction::Outgoing)? {
+            let publication = self.relation(link)?.target;
+            self.publications.insert(publication);
+        }
         self.presence(id)?;
         Ok(())
     }
@@ -282,6 +286,7 @@ pub(in crate::publication::ownership) fn claims(
     reach.incidence(id, storage.publication_link, Direction::Outgoing)?;
     reach.incidence(id, storage.member_link, Direction::Incoming)?;
     reach.incidence(id, storage.edge_link, Direction::Incoming)?;
+    reach.incidence(id, storage.input_link, Direction::Incoming)?;
     let witnesses = reach
         .roster
         .links

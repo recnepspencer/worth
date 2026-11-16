@@ -94,7 +94,10 @@ impl ApplicationFeature<Schema> for Child {
             SeedInput,
             ApplicationFeatureInputList<
                 super::super::synchronous_edit::interleaved::PendingSeedInput,
-                ApplicationFeatureInputLeaf,
+                ApplicationFeatureInputList<
+                    super::super::family::borrowed_inputs::program::HeaderInput,
+                    ApplicationFeatureInputLeaf,
+                >,
             >,
         >,
     >;

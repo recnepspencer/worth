@@ -176,6 +176,7 @@ pub(super) fn feature_specs<
         Completion,
         Completion,
         Completion,
+        Completion,
     >(base::entry_builder_with_retirement::<
         Completion,
         Completion,

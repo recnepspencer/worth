@@ -96,6 +96,7 @@ mod corruption;
 mod courts;
 pub(super) use courts::native_head;
 mod failure;
+pub(in crate::certification::document_history::owned_outputs) use failure::checkpoint;
 mod initial;
 mod lost_refusal;
 mod publication_count;

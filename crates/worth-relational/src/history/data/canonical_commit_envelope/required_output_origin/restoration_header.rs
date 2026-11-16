@@ -87,7 +87,7 @@ impl CanonicalCommitEnvelopeBody {
                 context,
                 origin.members.len() * 4 + origin.meaning.family.len() + 65,
             )?;
-            self.validate_output_origin_header(origin)?;
+            self.validate_output_origin_header(origin, context)?;
             if !origin.source_scope_owned
                 || !matches!(origin.publication, CanonicalOutputPublication::AuthoredRestoration { retirement, .. } if retirement == event.retirement)
                 || origin.members.iter().any(|member| {

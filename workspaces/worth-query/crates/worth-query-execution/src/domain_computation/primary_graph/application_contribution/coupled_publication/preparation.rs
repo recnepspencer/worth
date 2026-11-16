@@ -205,6 +205,13 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
         let source = match source {
             execution::CoupledSourceRead::Route { .. } => unreachable!("ordinary source read"),
             execution::CoupledSourceRead::Retiring => return Ok(None),
+            execution::CoupledSourceRead::Restored { scope, input } => {
+                return Ok(Some(synchronous_outputs::AppliedOutputParent::new(
+                    candidate.pin_source(execution)?,
+                    scope,
+                    Some(input),
+                )));
+            }
             execution::CoupledSourceRead::Prepared(index) => {
                 let writers = self.writers.borrow();
                 let writer = writers.get(index).ok_or_else(|| {
@@ -225,11 +232,12 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
                 return Ok(Some(synchronous_outputs::AppliedOutputParent::new(
                     candidate.pin_source(execution)?,
                     writer.meaning.source_scope,
+                    candidate.applied_output_input(execution, &writer.meaning)?,
                 )));
             }
             execution::CoupledSourceRead::Verified(parent) => {
                 return self
-                    .retain_verified_parent(execution, parent)
+                    .retain_verified_parent(execution, parent, candidate)
                     .map(Some)
                     .map_err(Into::into);
             }
@@ -304,9 +312,12 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             .runtime
             .primary_provider
             .retain_coupled_after_own(writer.session(), after_own.clone());
+        let meaning = &writers.last().expect("actual appended writer").meaning;
+        let input = candidate.applied_output_input(execution, meaning)?;
         Ok(Some(synchronous_outputs::AppliedOutputParent::new(
             after_own,
             source_scope,
+            input,
         )))
     }
 }

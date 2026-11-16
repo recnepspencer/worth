@@ -2,7 +2,9 @@
 use super::*;
 use worth_query_host::facade::runtime::ExecutionAllocationPolicy;
 
-pub(super) fn checkpoint<P: ApplicationProgramDefinition<Schema>>(
+pub(in crate::certification::document_history::owned_outputs) fn checkpoint<
+    P: ApplicationProgramDefinition<Schema>,
+>(
     host: &WorthQueryProgramApplicationRuntime<Schema, P>,
 ) -> WorthQueryApplicationCheckpoint {
     host.with_host_advancement(|phase| {
