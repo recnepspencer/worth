@@ -2169,24 +2169,29 @@ lease without certifying application cleanup.
 
 #### Supported Directory seeds and operations
 
-Phases 3 and 4 compose only an owner-proven InitialEmpty Signal root and Bridge
-baseline. Relational handlers, managed Native indexes, World resources and
-trusted authorization time use the shared installation path. A declaration that
-needs Signal node allocation or Bridge correspondence is unsupported. In
-particular, producers, conditionals and application resource pools return
-`WorthQueryApplicationHomeOpenRefused::Preparation` with
-`WorthQueryApplicationPreparationDenial::UnsupportedSeed` before contribution
-configuration, physical Home creation, initialization or World bootstrap.
-Its `WorthQueryDurableStateAdmissionDenial::Unsupported` cause identifies the
-family (`SignalNodeDefinitions`, `BridgeConditionalDefinitions` or
-`BridgeOwnedAsyncDefinitions`) and `supported_from_phase: 5`.
+Directory Home supports the declared track-H families: Relational and Signal
+publication, Bridge definitions, producer/output custody, workflows, managed
+cleanup, dispatch/inbound effects, adoption and retained original owners. Open the
+actual installed application on its genuine main thread with the default stack
+in the dev profile. Entry-point same-thread Execution stack growth is permitted;
+a large-stack worker is not the application entrance.
 
-Directory operations requiring unsupported Signal/Bridge, managed/workflow,
-dispatch, correction or adoption state also refuse with typed durable-state
-admission outcomes. MemoryOnly supports its ordinary installation and execution
-contracts, but adds no restart guarantee. Keep the rich producer, resource,
-workflow and adoption examples in this guide in that lane; do not fall back to
-MemoryOnly when the application requires durable state.
+Gracefully close the Home after releasing live owners, then reopen the same
+Directory in a fresh process with current installation and fresh authentication.
+Carry only recorded descriptive DATA, never live runtime or authority handles.
+The owning Home reconstructs the original occurrences and resume positions;
+initializers and business handlers are not replayed. See the executable combined
+Bank journey in `bank-courtroom/examples/h10_graceful_bank_home`.
+
+Failed live cleanup returns an owning close refusal. A pending release after
+process loss belongs to C3. Effects without a recorded World disposition retain
+`UncleanRecoveryUnsupported` (D18, C1/C5); C2 owns durable-history/branch cleanup
+C4 owns the adversarial oracle; C5 owns retirement and final certification.
+**Crash recovery is not yet certified.**
+Correction shapes without admitted relation pre-images, output material or
+coupled-output correspondence retain their specific typed refusals. The working
+no-output divergent correction does not authorize those shapes. MemoryOnly adds
+no restart guarantee and is not a persistence fallback.
 
 #### Reacquire authority after reopen
 
@@ -2524,7 +2529,7 @@ currentness owner before opening any original root or disclosing a producer
 source. They need no fallback driver. An actual fallback still freshly admits
 its source at C. A healthy leaf family remains unopened while a stale sibling falls back;
 the existing currentness owner checks skipped routes again at the one derived
-endpoint. The same-build cold-checkpoint path reconstructs original expected
+endpoint. Home readmission reconstructs original expected
 output versions from recorded facts; verification still checks those versions
 against the selected sources and current Native custody. A changed build falls
 back only for the affected family. Query role metadata that disagrees with the
@@ -2941,9 +2946,11 @@ an owning refusal if opening fails after recording the intent; inspect
 
 Resume, drift, interrupted binding and process-kill qualification remain pending.
 
-### Checkpoint admission — pending (owner P-A, D12)
+### Internal checkpoint admission — cleanup track C5
 
-Ordinary checkpoint restore has the same original-request option:
+Ordinary applications reopen their Directory Home as described above. The
+remaining internal certification door is scheduled for deletion by C5; do not
+use it as application-owned byte transport. Its original-request option is:
 `host::application_installation::WorthQueryInterimCheckpointRestore::rostered_program_in_advancement`
 takes that bootstrap phase first, followed by the validated program, roster,
 declaration, configuration, build identity, unchanged World limits and checkpoint.
@@ -8649,7 +8656,8 @@ recovery belong to track C.
 
 Use `bind_conditional_definition` to install authored conditional membership
 without a managed clock or temporal operation. Actual temporal installation and
-execution keep their typed later-phase refusals. Writeback diagnostic retention
+execution preserve declared intent, idempotency and cleanup custody through a
+graceful Home reopen. Writeback diagnostic retention
 is process-local and reports loss across reopen; diagnostic entries never
 authorize effect replay. Applications continue through the Query declaration
 and Host facades. See the [Signal owner contract](../crates/worth-signal/README.md#standalone-authored-owner-readmission)

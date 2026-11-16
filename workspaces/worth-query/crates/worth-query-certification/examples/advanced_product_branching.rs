@@ -1,6 +1,7 @@
 //! Run with `cargo run -p worth-query-certification --example advanced_product_branching`.
 //! Branch construction and bounded history inspection deliberately use the World API; all product
-//! reads and mutations use the ordinary application entry.
+//! reads and mutations use the ordinary application entry. This Memory-only branch
+//! mechanics example makes no durable branch-retirement claim (cleanup track C2).
 
 pub use worth_query_testkit_certification::facade::certification::program_example_authority::product_workflow_support;
 
@@ -14,18 +15,8 @@ use worth_query_host::facade::application_entry::{
     WorthQueryApplicationMutationOutcome, WorthQueryApplicationRequestExt,
 };
 
-#[expect(
-    clippy::disallowed_methods,
-    reason = "certification-harness thread-builder=1 thread-spawn=1: The example joins one actor with its declared bootstrap stack; native request computation retains its Execution authority."
-)]
 fn main() {
-    std::thread::Builder::new()
-        .name("advanced-product-branching".to_owned())
-        .stack_size(8 * 1024 * 1024)
-        .spawn(run)
-        .expect("the bounded example thread must start")
-        .join()
-        .expect("the advanced product workflow must complete");
+    worth_execution::run_with_execution_stack(run);
 }
 
 fn run() {

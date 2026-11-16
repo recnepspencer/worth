@@ -91,7 +91,6 @@ where
             self.build,
             self.limits,
             self.authorization_time_source,
-            super::super::support::directory_requirement_refusal,
         )
         .map_err(|cause| {
             Refused::successor(WorthQueryApplicationHomeOpenRefused::Preparation(cause))
@@ -104,7 +103,6 @@ where
             predecessor.build,
             predecessor.limits,
             predecessor.authorization_time_source,
-            super::super::support::directory_requirement_refusal,
         );
         let before = match before {
             Ok(before) => before,

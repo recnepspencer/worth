@@ -325,8 +325,9 @@ fn directory_correction_reopens_and_advances_the_same_recorded_inverse() {
 }
 
 #[test]
-fn directory_correction_keeps_unqualified_owner_and_busy_home_refusals() {
+fn directory_correction_retention_is_inert_and_busy_home_refuses() {
     use bank_domain::schema::{ReversalReason, ReverseJournal};
+    use bank_server::{BankApplication, ReverseJournalAction};
     use fixture::DirectoryWorld as World;
     use worth_query_host::facade::{
         application_contribution::with_bootstrap_advancement,
@@ -349,7 +350,9 @@ fn directory_correction_keeps_unqualified_owner_and_busy_home_refusals() {
             .without_source()
             .idempotency_owned(key("not-prepared"))
             .unwrap_or_else(|(_, _, cause)| panic!("capture: {cause:?}"));
-        assert!(matches!(description.retain_operation::<bank_server::BankApplication, bank_server::ReverseJournalAction>(home.runtime()), Err((_, WorthQueryOperationConstructionDenial::DurableStateAdmission(worth_query_host::facade::product::WorthQueryDurableStateAdmissionDenial::Unsupported { .. })))));
+        let _retained = description
+            .retain_operation::<BankApplication, ReverseJournalAction>(home.runtime())
+            .unwrap_or_else(|(_, cause)| panic!("retain Directory original: {cause:?}"));
         assert_eq!(directory_activity(&home, &principals[0]), before);
         assert_eq!(World::balances(&home, &principals), (100, 0));
     }

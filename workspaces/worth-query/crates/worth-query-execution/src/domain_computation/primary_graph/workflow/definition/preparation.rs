@@ -152,9 +152,6 @@ where
         let bound = self
             .bind_workflow_definition_contract(contract)
             .map_err(WorkflowDefinitionPreparationDenial::Binding)?;
-        application.runtime.product_runtime
-            .admit_directory_capability(crate::domain_computation::primary_graph::WorthQueryOperationDurableCapability::WorkflowExecution)
-            .map_err(WorkflowDefinitionPreparationDenial::DurableStateAdmission)?;
 
         let (_, projection, _) = self
             .application()

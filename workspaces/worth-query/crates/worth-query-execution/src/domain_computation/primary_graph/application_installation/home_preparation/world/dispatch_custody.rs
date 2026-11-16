@@ -29,9 +29,6 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
             application
                 .readmit_inbound_terminal_sources(execution, unpublished_native)
                 .map_err(Denial::Inbound)?;
-            application.runtime.product_runtime.admit_directory_capability(
-                crate::domain_computation::primary_graph::WorthQueryOperationDurableCapability::InboundCompletion,
-            ).map_err(Denial::DispatchCapability)?;
         }
         Ok(())
     }

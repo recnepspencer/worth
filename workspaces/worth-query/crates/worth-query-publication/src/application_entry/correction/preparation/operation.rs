@@ -105,9 +105,6 @@ impl<'a, S: ApplicationSchema + 'static> WorthQueryApplicationCorrectionRequest<
             return Err(Denial::SourceOperation(crate::application_entry::WorthQueryOperationConstructionDenial::RequiredOutputSource));
         }
         let product = runtime.product_runtime();
-        if !<Mode<S, Inverse<S, C>, A> as WorthQuerySourceDeliveryMode>::RETAIN_COMMIT {
-            product.admit_retained_original_operation_owner().map_err(|cause| Denial::SourceOperation(crate::application_entry::WorthQueryOperationConstructionDenial::DurableStateAdmission(cause)))?;
-        }
         let source_binding = runtime.installed_schema().installed_mutation_binding::<C::Source>()
             .map_err(|_| Denial::Derivation(worth_query_execution::facade::primary_graph::WorthQueryCorrectionDerivationDenial::UnsupportedSourceMeaning))?;
         product.admit_native_correction_source_owner(source_binding.operation().contracts(), source_binding.correction_binding())

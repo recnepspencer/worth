@@ -2,7 +2,7 @@
 use super::*;
 use crate::domain_computation::application_aftermath::dispatch_journal::QueryDispatchJournalDenial;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementDenial;
-use worth_foundational::facade::{DurableStateFamily, InboundSourceControl};
+use worth_foundational::facade::InboundSourceControl;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryInboundSourceControlDenial {
@@ -45,9 +45,6 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             let execution = phase
                 .execution_request_for(product)
                 .map_err(|cause| Denial::Execution(cause.into()))?;
-            product
-                .admit_directory_family(DurableStateFamily::InboundSourceControls)
-                .map_err(Denial::DurableStateAdmission)?;
             let journal = &self.runtime.dispatch_journal;
             if product.owner.owner_identity().durable().is_some() && !journal.is_durable() {
                 return Err(Denial::Journal(

@@ -19,7 +19,6 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             let execution = phase
                 .execution_request_for(&self.runtime.product_runtime)
                 .map_err(|cause| Denial::new(Kind::CompletionExecutionRequest(cause.into())))?;
-            self.admit_recovery_custody()?;
             self.admit_recovery_effect_authority(&handle, admission)?;
             if !self.runtime.dispatch_journal.is_durable() {
                 return Err(Denial::new(Kind::RecoveryNotAdmitted));

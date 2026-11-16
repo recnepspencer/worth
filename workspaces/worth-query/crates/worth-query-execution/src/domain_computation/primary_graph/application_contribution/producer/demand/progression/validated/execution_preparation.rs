@@ -228,9 +228,6 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         };
         let mut required_output = match interest.required_context(
             Family::IDENTITY,
-            self.runtime.product_runtime.admit_directory_capability(
-                crate::domain_computation::primary_graph::WorthQueryOperationDurableCapability::RequiredOutputDemand,
-            ),
             &self
                 .runtime
                 .primary_provider

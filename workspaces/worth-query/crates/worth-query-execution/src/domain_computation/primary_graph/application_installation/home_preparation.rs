@@ -105,7 +105,6 @@ pub fn prepare_home_program<Schema, Program>(
     authorization_time_source: Option<
         Box<dyn crate::domain_computation::runtime_time::WorthQueryRuntimeTimeSource>,
     >,
-    directory_support: fn(worth_foundational::facade::DurableStateFamily, u8) -> Option<u8>,
 ) -> Result<PreparedHomeApplication<Schema, Program>, WorthQueryApplicationPreparationDenial>
 where
     Schema: ApplicationSchemaComposition,
@@ -131,7 +130,6 @@ where
             admitted = Some((installed, supported));
             Ok(support)
         })),
-        Some(directory_support),
     )?;
     let (invariants, pending, activation) = contribution_preparation::prepare(
         configured,

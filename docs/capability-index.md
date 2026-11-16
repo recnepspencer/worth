@@ -685,7 +685,7 @@ Choose a task and follow its guide for the exact calls and result handling.
 | Validate an explicitly driven discovered aggregate at one retained observation | `request.at(&observation).require_current_discovered_program_outputs(&settlement, maximum_work)` checks the original complete root and dependent discovery facts plus every retained output settlement with one native comparison meter. Empty original discovery still carries negative evidence; native retired roots keep original membership but require no invented output settlement. Refusal borrows and preserves the aggregate. This deliberate native guard alone does not run a delivery query; the owning discovered entry composes both | `consumer_root/.../application_program/discovered/currentness.rs`, host `discovered_currentness_contract` |
 | Own a declaration-authorized no-output action | Declare `.action::<Binding, Delivery>() ... .finish_action()` with `ApplicationSourceCompletion`; `â€¦idempotency_owned(key)?.retain_operation::<Program, Action>(&runtime)` returns `WorthQuerySourceOnlyOperation`. The owner retains the exact installed runtime beyond the construction borrow; `into_runtime_for_cleanup()` explicitly abandons ordinary retry meaning and returns the exact runtime plus its actual cleanup collection. Retain both: failed managed-run cleanup has no publication recovery record. `managed_cleanup_failures()` exposes every original failure; cleanup and close retain every genuine release receipt and any remaining logical recovery owner. `release_cleanup(&fresh_request)` discharges the complete collection without settling uncertain business evidence. Each `advance(&fresh_request)` returns original custody, completion, or terminal evidence; completion and terminal custody expose refusal-preserving `close(&fresh_request)`. Unexecuted `Initial` custody also permits fresh close after a denied first advance; arbitrary unresolved advancement does not. Recovered completion carries native receipt/publication evidence, without an invented handler result. Retained mode uses `advance(&fresh_request, maximum_history_work: Option<NonZeroUsize>)`; `None` adds no history work ceiling, while a finite bound remains a caller choice. It delivers the exact native original World observation after replay/recovery; bounded history refusal retains evidence for retry | [Retained delivery guide](../workspaces/worth-query/crates/worth-query/docs/foundations/source-only-retained-delivery.md), executable [SourceOnly retention courts](../workspaces/worth-query/crates/worth-query-testkit-certification-operation/src/certification/application_graph/source_only.rs), [owning API](../workspaces/worth-query/crates/worth-query-publication/src/application_entry/operation/source_only.rs) |
 | Retry a mutation safely | Keep the stable original key, typed intent and product affinity. A journal-only Directory reopen admits fresh authority; an exact keyed retry can return `RecoveredCommitted` and the original recorded receipt without handler replay. Changed intent refuses `IdempotencyIntentDrift`; stale/foreign selection refuses before effects. Keep pending/unpublished or indeterminate owners and follow their typed recovery/close route. Response loss alone does not permit a new key or another effect. Retain the move-only MemoryOnly operation returned by `Progress` or `Refused` and supply a fresh authorized request to its next `advance`. Retry delivery through its actual settled owner; terminal custody supports evidence inspection and close. Row/result-set expectations remain tied to their original runtime. Reconcile ambiguous external effects through their domain recovery owner before choosing a new operation. | [Commit, retry and close](build-an-application.md#commit-retry-and-close-a-directory-home), [Host retry contract](../workspaces/worth-query/crates/worth-query-host/README.md#commitment-and-same-key-retry) |
-| Read what a Directory Home recorded for an external dispatch | Every physical contact is recorded in the Home before the installed transport is called, and observed exactly once after it. `runtime.durable_dispatch_custody(&correlation_token)` returns the latest recorded attempt and its observation (`Completed`, `Acknowledged`, `ProvenNoEffect`, `Unresolved`) for the token carried by the committed outbox record and by every `WorthQueryExternalDispatchRequest`. Payload rejection is a first-class `ProvenNoEffect(PayloadRejected)` outcome in live dispatch, published aftermath and the durable journal; it is never an unresolved failure. The record grants no dispatch authority and is `None` on a memory-only Home. A Directory Home retains dispatch and inbound completion custody across graceful close and reopen; readmission contacts no transport and reexecutes no handler. Home causal names bind stable Home/World coordinates and the actual journal attempt position; Product source commitments keep durable meaning across fresh admission while live epochs remain fenced. Recoverable aftermath records its claim and terminal disposition through the same Home journal; direct recovery-claim minting checks the same support policy. A Home whose journal ends inside a contact refuses to open (`UncleanRecoveryUnsupported`, owner `Dispatch`); crash recovery of that case is not yet certified. | [Durable dispatch custody](../workspaces/worth-query/crates/worth-query/docs/execution/application-aftermath-and-recovery.md#durable-dispatch-custody-on-a-directory-home) |
+| Read what a Directory Home recorded for an external dispatch | Every physical contact is recorded in the Home before the installed transport is called, and observed exactly once after it. `runtime.durable_dispatch_custody(&correlation_token)` returns the latest recorded attempt and its observation (`Completed`, `Acknowledged`, `ProvenNoEffect`, `Unresolved`) for the token carried by the committed outbox record and by every `WorthQueryExternalDispatchRequest`. Payload rejection is a first-class `ProvenNoEffect(PayloadRejected)` outcome in live dispatch, published aftermath and the durable journal; it is never an unresolved failure. The record grants no dispatch authority and is `None` on a memory-only Home. A Directory Home retains dispatch and inbound completion custody across graceful close and reopen; readmission contacts no transport and reexecutes no handler. Home causal names bind stable Home/World coordinates and the actual journal attempt position; Product source commitments keep durable meaning across fresh admission while live epochs remain fenced. Recoverable aftermath records its claim and terminal disposition through the same Home journal; direct recovery-claim minting uses that same installed custody. A Home whose journal ends inside a contact refuses to open (`UncleanRecoveryUnsupported`, owner `Dispatch`); crash recovery of that case is not yet certified. | [Durable dispatch custody](../workspaces/worth-query/crates/worth-query/docs/execution/application-aftermath-and-recovery.md#durable-dispatch-custody-on-a-directory-home) |
 | Retire or revoke an inbound source across a graceful Home reopen | `retire_inbound_occurrence_source` and `revoke_inbound_occurrence_source` record Home-level facts before Directory success. Fresh verifier installation and audience configuration preserve that posture across every slot for the same source. Retirement cannot downgrade revocation; unsettled control publication fences consumption. Source controls are supported independently of inbound-completion custody. | [Home-level source controls](../workspaces/worth-query/crates/worth-query/docs/execution/application-aftermath-and-recovery.md#home-level-inbound-source-controls) |
 | Preserve an inbound callback or transport completion across graceful reopen | Accepted message identity, original audience, pending work, deduplication, terminal acknowledgement and exact-message expiry survive. Fresh verifier configuration cannot replace an accepted or selected transport audience. `maintain_inbound_occurrences` continues retained obligations; recorded completed transport observations never contact the rail again. Canonical terminals rebuild from actual Native and World sources. A live durable `ProductUnpublished` completion follows `ReopenRequired`: close may refuse with its original Home, and the caller ends that ownership and opens through Host before continuing the original. Crash recovery remains uncertified. | [Durable inbound custody](../workspaces/worth-query/crates/worth-query/docs/execution/application-aftermath-and-recovery.md#durable-inbound-custody-on-a-directory-home) |
 | Retain an external recovery claim across graceful Home reopen | The Home records claim identity, original deadline and terminal status. A fresh selected original-intent admission reissues current-incarnation capability for the same live claim. Deferred Drop disposal and material-pin release require funded maintenance or close. | [Durable recovery claims](../workspaces/worth-query/crates/worth-query/docs/execution/application-aftermath-and-recovery.md#durable-recovery-claims-on-a-directory-home) |
@@ -711,7 +711,7 @@ The cost is the bounded relation roster traversal.
 | Keep a correction chooser across authenticated requests | Retain the native page returned by `into_page()` in the server's session lifecycle. Complete traversal, then use a fresh request's `corrections().select_alternative_coordinates(&page, &chosen_source, limits)` before preparing reapplication. Selection validates the exact target and current disclosure; refresh a stale chooser and retain the same command key for an equivalent retry. | [Chooser request lifecycle](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md#carry-a-chooser-across-requests) |
 | Correct an authored conditional definition | Capture the authored parameters in the recorded inverse. The ordinary handler prepares the installed definition with `DecisionReader::prepare_conditional_definition`, carries its owner permit in the decision, and joins it to authored field writes with `CandidateWriter::advance_conditional_definition`. Publication exposes the complete Relational and Signal successor together. | [Conditional-definition correction](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md#correct-an-authored-conditional-definition), [Ordinary handler](../workspaces/worth-query/crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/composite_definition_handler.rs) |
 | Install a conditional definition without its temporal runtime | Bind the installed node with `.bind_authored_host_predicate_provider(provider)`, declare its named clock, then call `installation.bind_conditional_definition(clocked)`. This retains genuine declaration membership; clock observation returns typed `NotReadmitted` for phase 7. Provider owners describe complete portable parameters and reconstruct them from fresh installation services. | [Definition authoring installation](../workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/conditional_operation/installation/definition_authoring.rs), [Authored provider recovery](../crates/worth-runtime-bridge/README.md#authored-conditional-definition-recovery) |
-| Publish an authored output-readiness condition with an ordinary mutation | `bind_output_readiness_definition::<Producer, ...>(installed_node, delivery_ordinal, provider)` returns the definition handle retained by the existing conditional contribution. The ordinary `DecisionReader::prepare_conditional_definition` and `CandidateWriter::advance_conditional_definition` path publishes actual Relational and Signal changes together. The authored condition is evaluated at output readiness and reconstructed by its fresh decoder; the unit clock type adds no temporal runtime. This H10 entrance is source preparation pending integrated runtime qualification. | [Readiness installation owner](../workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/conditional_operation/installation/output_readiness_definition.rs) |
+| Publish an authored output-readiness condition with an ordinary mutation | `bind_output_readiness_definition::<Producer, ...>(installed_node, delivery_ordinal, provider)` returns the definition handle retained by the existing conditional contribution. The ordinary `DecisionReader::prepare_conditional_definition` and `CandidateWriter::advance_conditional_definition` path publishes actual Relational and Signal changes together. The authored condition is evaluated at output readiness and reconstructed by its fresh decoder; the unit clock type adds no temporal runtime. The combined Bank graceful fresh-process journey exercises this entrance. | [Readiness installation owner](../workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/conditional_operation/installation/output_readiness_definition.rs) |
 | Select a correction source after normal operation close | Keep the completed receipt's `correction_source()` locator, close its operation, then call `request.corrections().select_recorded(&locator, limits)` under the current caller. For transport, serialize `locator.coordinates()` and use `select_coordinates(&coordinates, limits)`. Native evidence lookup, World ancestry and disclosure validate the selection. | [Closed source selection](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md#select-a-source-after-closing-its-operation) |
 | Reopen a directory Home's recorded correction | Keep source coordinates and select them through `corrections().select_coordinates(...)` under fresh authority. Material joins the protected World original and Native key before service. A committed retry answers `RecoveredCommitted`; owning close discharges unperformed preparation with typed `PreparationDischarged`. | [Directory corrections](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md#directory-homes-and-graceful-reopen) |
 | Expire optional directory correction material | The owning program runtime calls `expire_optional_correction_material(&execution, &coordinates)`. Mandatory uses refuse `MaterialPinned`; old and cold selections answer `RetainedMaterialExpired`. Native keys and authored state remain, and the actual obligation owner releases the matching interpretation. | [Directory corrections](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md#directory-homes-and-graceful-reopen) |
@@ -1052,40 +1052,27 @@ explicit bootstrap request and capture policy. See [original-request transitions
 
 ## Directory Home continuation limits
 
-A Directory Home preserves program support status and scalar recorded corrections
-through graceful close and reopen. Support retirement can return `AlreadyRetired`
-after reopen; retained original interpretation membership is counted once.
+A Directory Home preserves all track-H durable families through graceful close
+and fresh-process reopen. Program support, producer provenance, managed cleanup,
+conditional and temporal definitions, workflow state, external dispatch/inbound
+custody, adoption and original-operation owners use the installed Home journal.
+Mandatory prerequisites are durable; ready outputs and read leases remain derived
+or process-local. The retired phase-support table no longer gates admission.
+Freshly authenticated requests and exact recorded owner DATA are still required.
 
-General required-output and performed-source obligations, including mandatory
-prerequisites, survive graceful Directory reopen in `query.obligations`. Ready
-outputs and read leases remain derived or process-local. The Phase 6 portions of
-performed-source preparation and program output read custody use those same R8
-records; managed cleanup and correction/original-owner extensions remain refused.
-Accepted producer provenance rejoins fresh World and installed meaning: same-build
-reuse retains its ownership/equivalence checks, and changed builds regenerate
-stale output only on demand while preserving authored entity identity.
+A live resource is released by its live owner at graceful close, with the actual
+release recorded against its obligation. Failed cleanup refuses close and retains
+custody. Quiescent process loss with an outstanding live-resource release is a C3
+case; empty fresh resources cannot stand in for a recorded release.
 
-Branch adoption records the original World attempt and canonical source/target
-meaning in that same journal. Graceful stages before Native effects and after
-World occurrence/disposition preserve activation and custody. A cancelled Native
-effect without World occurrence/disposition refuses close with
+Branch adoption preserves the actual performed prefix and ordered remainder.
+A cancelled Native effect without World occurrence/disposition refuses close with
 `UnresolvedBusinessCustody` and unclean reopen with
 `UncleanRecoveryUnsupported(Relational)` (D18); continuation is C1.
-Stopped branch sets retain the actual performed prefix and ordered remainder;
-reopen readmits fresh branch selectors and resume prepares only that suffix.
-Workflow registration and specialized definition publication refuse
-`WorkflowInstances`; declared managed, resource, conditional and temporal
-operations refuse their corresponding custody family before handler contact.
-Their Memory APIs do not establish durable continuation.
-
-Retaining an original operation owner refuses `OriginalOperationDescription`.
-A supplied-handler operation with no executable body or correction binding may
-execute and recover its original external emission when its installed emission
-ceiling, external dispatch/inbound contract, reconcilable aftermath and actual
-supplier/derived custody requirements are supported. This admits the declared
-compensation/reconciliation posture, not a compensation action, historical
-correction authority or a durable source-operation owner. Typed realized-payload,
-outbox, canonical-terminal and same-original recovery checks still apply.
+Durable history and branch-publication cleanup are C2;
+C4 owns the adversarial oracle; C5 owns final retirement and certification.
+**Crash recovery is not yet certified.** Do not substitute MemoryOnly for a
+Directory application that requires persistence.
 
 Durable relation pre-images, correction-bound compensation, authored/output
 material and coupled-output corrections retain their named
@@ -1103,10 +1090,10 @@ material remains a refusal, not evidence of an empty output contract. Fresh
 source authority, canonical target membership and same-original idempotency
 checks remain required.
 
-This caller/correction cutover has source review, but integrated compilation and
-runtime qualification remain pending. Required-output correction continuation
-still needs its qualified H6/H9 material owners; the newly admitted no-output
-path does not establish that broader capability or crash certification.
+The combined Bank graceful fresh-process journey verifies the no-output divergent
+correction/reapplication path with real freeze operations and exact foreign-root
+refusal. Output-bearing cold corrections still require their authentic material;
+this result does not establish unsupported correction shapes or crash recovery.
 
 Workflow discovery locators, required assessment occurrences, retained original
 output demands and original workflow assessments expose owning recorded-DATA
@@ -1115,8 +1102,8 @@ revision with the freshly installed validated application revision. These codecs
 carry only locator, occurrence, durable position/basis, demand and restriction
 DATA; decoding does not authorize, retain, adopt or advance. Fresh authenticated
 workflow discovery, exact required-occurrence and demand equality, and actual
-Home obligation readmission still decide continuation. This fresh-process caller
-and codec correction is source preparation pending integrated qualification.
+Home obligation readmission still decide continuation. The combined Bank journey exercises this fresh-process handoff, including exact
+original-owner readmission and subsequent dependency-driven advancement.
 
 ## Known gaps
 

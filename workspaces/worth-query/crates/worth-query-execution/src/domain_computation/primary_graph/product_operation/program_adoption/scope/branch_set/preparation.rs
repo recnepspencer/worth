@@ -57,9 +57,6 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         (VecDeque<PendingBranchAdoption>, usize),
         WorthQueryBranchSetAdoptionPreparationDenial,
     > {
-        self.runtime.product_runtime
-            .admit_directory_capability(crate::domain_computation::primary_graph::WorthQueryOperationDurableCapability::ProgramAdoption)
-            .map_err(WorthQueryBranchSetAdoptionPreparationDenial::DurableStateAdmission)?;
         let mut pending = VecDeque::new();
         pending.try_reserve(branches.len()).map_err(|_| {
             WorthQueryBranchSetAdoptionPreparationDenial::RetentionAllocationRejected
