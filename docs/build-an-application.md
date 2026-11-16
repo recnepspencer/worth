@@ -4454,7 +4454,10 @@ from newly selected sources through ordinary Edit admission; an unaffected
 current source can verify without running its producer. That verification does
 not replace a mandatory linked writer. Recorded inverse, reapplication and
 canonical checkpoint recovery retain both obligations. Whole-source Retire
-and Restore keep their exact catalogs and refuse extra or missing writers.
+and Restore keep their exact writer catalogs and refuse extra or missing writers.
+They may still read an outside parent through Native's exact current-output
+proof, without enrolling another writer. If that parent needs a new publication,
+the retirement refuses `ExtraCoupledOwner` before a producer handler runs.
 
 The retained fields are the mutation's own changes: every demanded field of
 each member it retires, and each demanded field it changes on a record that
