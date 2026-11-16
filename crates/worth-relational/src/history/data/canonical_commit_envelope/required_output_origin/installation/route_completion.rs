@@ -2,6 +2,7 @@
 use super::*;
 use crate::mvcc::{RequiredOutputPublicationMeaning, RequiredOutputRoleTarget};
 pub(super) struct RouteCompletion<'a> {
+    pub(super) inputs: crate::mvcc::RequiredOutputInputs,
     pub(super) contribution_records: Option<&'a [crate::transactions::data::RecordRef]>,
     pub(super) source_input: Option<
         &'a crate::runtime::RelationalPinnedRead<
@@ -32,6 +33,7 @@ impl CanonicalCommitEnvelopeBody {
     ) -> Result<crate::history::data::RequiredOutputPublicationPositions, TransactionCommitError>
     {
         let RouteCompletion {
+            inputs,
             contribution_records,
             source_input,
             producer,
@@ -179,6 +181,8 @@ impl CanonicalCommitEnvelopeBody {
             ))
         })?;
         self.required_output_origin = Some(std::sync::Arc::new(CanonicalRequiredOutputOrigin {
+            inputs: inputs.meanings,
+            _input_memory: inputs.memory,
             commit: self.commit.clone(),
             basis: recorded_basis,
             source_scope_owned: previous.map_or_else(

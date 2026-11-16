@@ -12,10 +12,7 @@ pub(super) fn require(
 ) -> Result<(), TransactionCommitError> {
     let binding = candidate.binding;
     let foreign = || part::reject(Cause::ForeignCoupledOwner, meaning.source_scope);
-    if !matches!(
-        binding.owners.source,
-        super::super::super::CoupledSource::Edit(_)
-    ) {
+    if !binding.owners.source.is_edit() {
         return Err(foreign());
     }
     if binding

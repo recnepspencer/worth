@@ -126,7 +126,7 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
         .field_locator_for_test(label_ref.entity(), label_ref.aspect(), label_ref.field())
         .unwrap()
         .clone();
-    let changed_output_equal = world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request_for_test(); let request_execution = &host_custody.borrowed_request_for_test(); handle.with_runtime_for_test(request_execution, |runtime| {
+    let output_fields_equal = world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request_for_test(); let request_execution = &host_custody.borrowed_request_for_test(); handle.with_runtime_for_test(request_execution, |runtime| {
         let before = snapshot(runtime);
         let truth = runtime.read_truth();
         let mut facts = vec![Fact::Entity {
@@ -282,7 +282,7 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
             other => other.clone(),
         }).collect();
         let current = SealedNativeOutputWitness::from_checkpoint_facts_for_test(&correspondence, layout, &current_facts).unwrap().unwrap();
-        let changed_output_equal = restored.get().unwrap()
+        let output_fields_equal = restored.get().unwrap()
             .same_output_as_for_test(current.get().unwrap()).unwrap();
         assert!(!after_restore
             .get()
@@ -334,11 +334,11 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
 
         runtime.snapshots().release_snapshot(&before).unwrap();
         runtime.snapshots().release_snapshot(&after).unwrap();
-        changed_output_equal
+        output_fields_equal
     }) }).expect("the fixture read owns its installed host call");
 
     assert!(
-        !changed_output_equal,
+        !output_fields_equal,
         "a changed consumed output must never be equal evidence"
     );
 }

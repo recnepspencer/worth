@@ -111,41 +111,10 @@ pub type ProducedTree = ApplicationOutputGraph<
     ProducedConnection,
     ApplicationOutputEdge<ChildConnection, ApplicationOutputLeaf>,
 >;
-pub struct SealRoot;
-impl ApplicationConnectionIdentity for SealRoot {
-    const IDENTITY: &'static str = "interleaved.seal-root";
-}
-impl ApplicationOccurrenceConnectionBinding<Schema, base::Entry, hierarchy::Child> for SealRoot {}
-pub type SealConnection = ApplicationConnectionRef<
-    Schema,
-    base::Entry,
-    base::EntryOutput,
-    hierarchy::Child,
-    hierarchy::SeedInput,
-    SealRoot,
->;
-pub type SealTree = ApplicationOutputGraph<SealConnection, ApplicationOutputLeaf>;
-impl WorthQueryApplicationRequiredOutputConnection<Schema> for SealRoot {
-    type Source = seal::Binding;
-    type Demand = child::Demand;
-    const IDENTITY: &'static str = <Self as ApplicationConnectionIdentity>::IDENTITY;
-    fn demand_from_source(
-        _: &seal::Intent,
-    ) -> Result<Self::Demand, WorthQueryRequiredOutputConnectionDenial> {
-        Ok(child::Demand("m".into()))
-    }
-}
-impl WorthQueryApplicationRequiredOutputSource<Schema, SealRoot> for seal::Binding {
-    fn demand_from_source(
-        _: &seal::Intent,
-    ) -> Result<child::Demand, WorthQueryRequiredOutputConnectionDenial> {
-        Ok(child::Demand("m".into()))
-    }
-}
 pub struct Program;
 impl ApplicationProgramDefinition<Schema> for Program {
     type Contributions = (Contribution,);
-    type Outputs = ApplicationProgramOutputs<(ModelTree, (ProducedTree, SealTree))>;
+    type Outputs = ApplicationProgramOutputs<(ModelTree, ProducedTree)>;
     type Rules = ApplicationRuleLeaf;
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("owned-outputs.interleaved");
@@ -195,7 +164,7 @@ impl WorthQueryApplicationRequiredOutputConnection<Schema> for OwnedMemberRoot {
         Ok(downstream::Demand(input.0.key.clone()))
     }
 }
-fn feature_specs<
+pub(super) fn feature_specs<
     Retire: ApplicationActionDelivery<Schema, super::super::super::authored_member::retire::Binding>,
 >() -> Vec<ApplicationFeatureSpec> {
     let mut specs = hierarchy::Program::feature_specs();
@@ -207,6 +176,7 @@ fn feature_specs<
         Completion,
         Completion,
         Completion,
+        Completion,
     >(base::entry_builder_with_retirement::<
         Completion,
         Completion,
@@ -214,6 +184,8 @@ fn feature_specs<
         Retire,
     >())
     .action::<created::Binding, fixture::Delivery<ModelTree>>()
+    .finish_action()
+    .action::<super::super::super::member_retarget::operation::Binding, Completion>()
     .finish_action()
     .finish();
     specs

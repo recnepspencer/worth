@@ -2,10 +2,25 @@
 /// Source-selection facts follow this prefix in the sealed fact sequence.
 pub struct CompletedHandlerFactBoundary {
     handler_fact_count: usize,
-    historical: Option<std::sync::Arc<[crate::domain_computation::primary_graph::application_contribution::producer::predecessor_reads::WorthQueryHistoricalProducerRead]>>,
+    historical: Option<std::sync::Arc<[crate::domain_computation::primary_graph::application_contribution::producer::observation_reads::WorthQueryHistoricalProducerRead]>>,
 }
 
 impl CompletedHandlerFactBoundary {
+    pub(in crate::domain_computation) fn insert_input_facts(
+        &mut self,
+        expected: usize,
+        count: usize,
+    ) -> bool {
+        if self.handler_fact_count != expected {
+            return false;
+        }
+        let Some(total) = expected.checked_add(count) else {
+            return false;
+        };
+        self.handler_fact_count = total;
+        true
+    }
+
     pub(super) const fn from_completed_read(handler_fact_count: usize) -> Self {
         Self {
             handler_fact_count,
@@ -15,13 +30,13 @@ impl CompletedHandlerFactBoundary {
 
     pub(in crate::domain_computation::primary_graph) fn retain_historical_reads(
         &mut self,
-        reads: Option<std::sync::Arc<[crate::domain_computation::primary_graph::application_contribution::producer::predecessor_reads::WorthQueryHistoricalProducerRead]>>,
+        reads: Option<std::sync::Arc<[crate::domain_computation::primary_graph::application_contribution::producer::observation_reads::WorthQueryHistoricalProducerRead]>>,
     ) {
         self.historical = reads;
     }
     pub(in crate::domain_computation::primary_graph) fn retain_predecessor_reads(
         &self,
-    ) -> Option<std::sync::Arc<[crate::domain_computation::primary_graph::application_contribution::producer::predecessor_reads::WorthQueryHistoricalProducerRead]>>{
+    ) -> Option<std::sync::Arc<[crate::domain_computation::primary_graph::application_contribution::producer::observation_reads::WorthQueryHistoricalProducerRead]>>{
         self.historical.clone()
     }
     pub const fn completed_for_test(handler_fact_count: usize) -> Self {

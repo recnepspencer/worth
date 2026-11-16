@@ -42,10 +42,10 @@ pub use output_evaluation::WorthQueryProducerEvaluationIneligibility;
 pub(in crate::domain_computation::primary_graph) use output_evaluation::{
     ComparedProducerOutput, ProducerOutputEvaluationState,
 };
-pub(in crate::domain_computation::primary_graph) mod predecessor_reads;
-pub use predecessor_reads::{
-    WorthQueryPredecessorReadContract, WorthQueryPredecessorReadDenial,
-    WorthQueryPredecessorReadOperation,
+pub(in crate::domain_computation::primary_graph) mod observation_reads;
+pub use observation_reads::{
+    WorthQueryProducerObservationReadContract, WorthQueryProducerObservationReadDenial,
+    WorthQueryProducerObservationReadOperation,
 };
 mod input_reuse_contract;
 pub use input_reuse_contract::{
@@ -219,8 +219,16 @@ where
     /// SourceScopeCascade opts complete publications into authored cascade
     /// retirement. Installation requires an entity-specific source query scope.
     const OWNERSHIP: ProducerPublicationOwnership = ProducerPublicationOwnership::Independent;
-    const PREDECESSOR_READS: Option<WorthQueryPredecessorReadContract<Schema>> = None;
+    const PREDECESSOR_READS: Option<WorthQueryProducerObservationReadContract<Schema>> = None;
+    /// Declared readonly observations of the admitted original C, not old consumed inputs.
+    const ORIGINAL_READS: Option<WorthQueryProducerObservationReadContract<Schema>> = None;
     const INPUT_REUSE: Option<WorthQueryProducerInputReuseContract> = None;
+
+    /// The pure input preparation owned by this family. Configuration installs
+    /// its original handler through `producer_with_input_capture`.
+    fn input_capture() -> Option<WorthQueryProducerInputCaptureContract<Schema>> {
+        None
+    }
 
     /// Opt in to a bounded actual output-field evaluation. The field must belong
     /// to this producer's exactly-one output role; this grants no disclosure.
@@ -230,6 +238,12 @@ where
     }
 }
 
+pub(in crate::domain_computation::primary_graph::application_contribution) mod input_capture;
+pub(in crate::domain_computation::primary_graph) use input_capture::InputCaptureMeaning;
+pub use input_capture::{
+    WorthQueryCapturedProducerInputs, WorthQueryProducerInputCaptureContract,
+    WorthQueryProducerInputCaptureHandler, WorthQueryProducerInputReader,
+};
 pub(crate) mod registry;
 pub(super) use registry::DeclaredProducerBinding;
 pub(in crate::domain_computation::primary_graph) use registry::InstalledProducerEdition;

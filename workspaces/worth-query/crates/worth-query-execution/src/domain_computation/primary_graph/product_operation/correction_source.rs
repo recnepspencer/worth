@@ -1,4 +1,5 @@
 //! Exact performed-source selection; retained payload stays inside Query.
+use crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind;
 use std::num::NonZeroUsize;
 
 use worth_query_installation::facade::ApplicationSchema;
@@ -30,6 +31,7 @@ mod compatibility;
 pub(crate) mod restored_support;
 pub use restored_support::WorthQueryCorrectionRestoredSupportDenial;
 mod derivation;
+mod discovered_output;
 mod inspection;
 mod intent;
 mod key;

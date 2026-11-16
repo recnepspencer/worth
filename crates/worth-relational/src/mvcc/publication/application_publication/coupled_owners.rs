@@ -13,6 +13,7 @@ use std::{collections::BTreeSet, sync::Arc};
 use worth_execution::ExecutionRequest;
 mod corrective_root;
 mod edit;
+mod member_edit;
 mod stages;
 
 // Request-local correspondence only. It never admits a retirement or publication.
@@ -52,6 +53,18 @@ pub(crate) enum CoupledSource {
         anchor: EntityId,
         plan: Arc<RelationalAuthoredRestoration>,
     },
+    MemberEditRetirement {
+        source: EntityId,
+        anchor: EntityId,
+        birth: CommitId,
+        co_anchors: Vec<(EntityId, CommitId)>,
+        roles: Vec<RequiredOutputRoleTarget>,
+    },
+    MemberEditRestoration {
+        source: EntityId,
+        anchor: EntityId,
+        plan: Arc<RelationalAuthoredRestoration>,
+    },
 }
 impl CoupledSource {
     pub(crate) fn subject(&self) -> EntityId {
@@ -59,13 +72,27 @@ impl CoupledSource {
             Self::Edit(source) => *source,
             Self::Retirement { anchor, .. } => *anchor,
             Self::Restoration { anchor, .. } => *anchor,
+            Self::MemberEditRetirement { source, .. }
+            | Self::MemberEditRestoration { source, .. } => *source,
         }
     }
     pub(crate) fn restoration(&self) -> Option<&Arc<RelationalAuthoredRestoration>> {
         match self {
-            Self::Restoration { plan, .. } => Some(plan),
+            Self::Restoration { plan, .. } | Self::MemberEditRestoration { plan, .. } => Some(plan),
             _ => None,
         }
+    }
+    pub(crate) fn is_edit(&self) -> bool {
+        matches!(
+            self,
+            Self::Edit(_) | Self::MemberEditRetirement { .. } | Self::MemberEditRestoration { .. }
+        )
+    }
+    pub(crate) fn is_member_edit(&self) -> bool {
+        matches!(
+            self,
+            Self::MemberEditRetirement { .. } | Self::MemberEditRestoration { .. }
+        )
     }
 }
 
@@ -82,6 +109,8 @@ impl std::fmt::Debug for RelationalAuthoredCoupledOwners {
 /// Native classification of an installed declared producer route.
 pub enum RelationalDeclaredCoupledOwner<'a> {
     Surviving(&'a RelationalRequiredOutputPublication),
+    RequiredSurviving(&'a RelationalRequiredOutputPublication),
+    Restored(RelationalRequiredOutputInput),
     Retiring,
 }
 
@@ -124,8 +153,10 @@ impl RelationalAuthoredCoupledOwners {
                         {
                             return Ok(Some(if retiring {
                                 RelationalDeclaredCoupledOwner::Retiring
-                            } else {
+                            } else if matches!(self.source, CoupledSource::Edit(_)) {
                                 RelationalDeclaredCoupledOwner::Surviving(owner)
+                            } else {
+                                RelationalDeclaredCoupledOwner::RequiredSurviving(owner)
                             }));
                         }
                     }
@@ -151,10 +182,10 @@ impl RelationalAuthoredCoupledOwners {
     /// An ordinary edit dispatches its declared synchronous graph even when no
     /// output exists yet. Retirement keeps its established exact-owner trigger.
     pub fn requires_coupled_assembly(&self) -> bool {
-        matches!(self.source, CoupledSource::Edit(_)) || !self.owners.is_empty()
+        self.source.is_edit() || !self.owners.is_empty()
     }
 
-    pub(super) fn required_owners(&self) -> &[RelationalRequiredOutputPublication] {
+    pub(crate) fn required_owners(&self) -> &[RelationalRequiredOutputPublication] {
         if matches!(self.source, CoupledSource::Edit(_)) {
             &[]
         } else {

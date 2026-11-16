@@ -28,8 +28,9 @@ pub trait ApplicationProgramOutputRootsShape<Schema>:
 where
     Schema: ApplicationSchema,
 {
-    fn append_connections(connections: &mut Vec<ApplicationConnectionDeclaration>);
-    fn append_connection_types(connections: &mut Vec<std::any::TypeId>);
+    fn append_connections(
+        connections: &mut Vec<(std::any::TypeId, ApplicationConnectionDeclaration)>,
+    );
     fn append_root_graph_types(roots: &mut Vec<std::any::TypeId>);
 }
 
@@ -45,12 +46,18 @@ where
         let mut connections = Vec::new();
         Self::Roots::append_connections(&mut connections);
         connections
+            .into_iter()
+            .map(|(_, declaration)| declaration)
+            .collect()
     }
 
     fn connection_types() -> Vec<std::any::TypeId> {
         let mut connections = Vec::new();
-        Self::Roots::append_connection_types(&mut connections);
+        Self::Roots::append_connections(&mut connections);
         connections
+            .into_iter()
+            .map(|(identity, _)| identity)
+            .collect()
     }
 
     fn root_graph_types() -> Vec<std::any::TypeId> {
@@ -68,8 +75,7 @@ impl<Schema> ApplicationProgramOutputRootsShape<Schema> for ApplicationNoOutputG
 where
     Schema: ApplicationSchema,
 {
-    fn append_connections(_: &mut Vec<ApplicationConnectionDeclaration>) {}
-    fn append_connection_types(_: &mut Vec<std::any::TypeId>) {}
+    fn append_connections(_: &mut Vec<(std::any::TypeId, ApplicationConnectionDeclaration)>) {}
     fn append_root_graph_types(_: &mut Vec<std::any::TypeId>) {}
 }
 
@@ -97,12 +103,10 @@ where
     Schema: ApplicationSchema,
     Self: ApplicationOutputGraphShape<Schema>,
 {
-    fn append_connections(connections: &mut Vec<ApplicationConnectionDeclaration>) {
-        connections.extend(<Self as ApplicationProgramOutputShape<Schema>>::connections());
-    }
-
-    fn append_connection_types(connections: &mut Vec<std::any::TypeId>) {
-        connections.extend(<Self as ApplicationProgramOutputShape<Schema>>::connection_types());
+    fn append_connections(
+        connections: &mut Vec<(std::any::TypeId, ApplicationConnectionDeclaration)>,
+    ) {
+        append_graph::<Schema, Self>(connections);
     }
 
     fn append_root_graph_types(roots: &mut Vec<std::any::TypeId>) {
@@ -116,12 +120,10 @@ where
     Schema: ApplicationSchema,
     Self: ApplicationOutputGraphShape<Schema>,
 {
-    fn append_connections(connections: &mut Vec<ApplicationConnectionDeclaration>) {
-        connections.extend(<Self as ApplicationProgramOutputShape<Schema>>::connections());
-    }
-
-    fn append_connection_types(connections: &mut Vec<std::any::TypeId>) {
-        connections.extend(<Self as ApplicationProgramOutputShape<Schema>>::connection_types());
+    fn append_connections(
+        connections: &mut Vec<(std::any::TypeId, ApplicationConnectionDeclaration)>,
+    ) {
+        append_graph::<Schema, Self>(connections);
     }
 
     fn append_root_graph_types(roots: &mut Vec<std::any::TypeId>) {
@@ -137,14 +139,11 @@ where
     Left: ApplicationProgramOutputRootsShape<Schema>,
     Right: ApplicationProgramOutputRootsShape<Schema>,
 {
-    fn append_connections(connections: &mut Vec<ApplicationConnectionDeclaration>) {
+    fn append_connections(
+        connections: &mut Vec<(std::any::TypeId, ApplicationConnectionDeclaration)>,
+    ) {
         Left::append_connections(connections);
         Right::append_connections(connections);
-    }
-
-    fn append_connection_types(connections: &mut Vec<std::any::TypeId>) {
-        Left::append_connection_types(connections);
-        Right::append_connection_types(connections);
     }
 
     fn append_root_graph_types(roots: &mut Vec<std::any::TypeId>) {
@@ -164,15 +163,29 @@ where
     Schema: ApplicationSchema,
     Self: ApplicationOutputGraphShape<Schema>,
 {
-    fn append_connections(connections: &mut Vec<ApplicationConnectionDeclaration>) {
-        connections.extend(<Self as ApplicationProgramOutputShape<Schema>>::connections());
-    }
-
-    fn append_connection_types(connections: &mut Vec<std::any::TypeId>) {
-        connections.extend(<Self as ApplicationProgramOutputShape<Schema>>::connection_types());
+    fn append_connections(
+        connections: &mut Vec<(std::any::TypeId, ApplicationConnectionDeclaration)>,
+    ) {
+        append_graph::<Schema, Self>(connections);
     }
 
     fn append_root_graph_types(roots: &mut Vec<std::any::TypeId>) {
         roots.push(std::any::TypeId::of::<Self>());
+    }
+}
+
+/// Repeated roots share exact typed declarations, never merely textual IDs.
+fn append_graph<S, G>(out: &mut Vec<(std::any::TypeId, ApplicationConnectionDeclaration)>)
+where
+    S: ApplicationSchema,
+    G: ApplicationProgramOutputShape<S>,
+{
+    let previous_roots = out.len();
+    let mut local = std::collections::BTreeSet::new();
+    for entry in G::connection_types().into_iter().zip(G::connections()) {
+        // A duplicate INSIDE one graph remains visible to ordinary validation.
+        if !local.insert(entry.0) || !out[..previous_roots].contains(&entry) {
+            out.push(entry);
+        }
     }
 }

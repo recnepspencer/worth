@@ -3,7 +3,7 @@ use crate::domain_computation::primary_graph::application_attempt::CompletedHand
 use crate::domain_computation::primary_graph::{ComputationPrior, SealedComputationRetention};
 
 pub(in crate::domain_computation) struct ProducerHandlerPreparation {
-    predecessor_reads: Option<std::sync::Arc<super::super::application_contribution::producer::predecessor_reads::ProducerPredecessorReadState>>,
+    predecessor_reads: Option<std::sync::Arc<super::super::application_contribution::producer::observation_reads::ProducerPredecessorReadState>>,
     completed_handler_facts: Option<CompletedHandlerFactBoundary>,
     decision_context_use: Option<crate::domain_computation::primary_graph::DecisionContextUse>,
     prepared_decision_reuse: Option<
@@ -51,7 +51,7 @@ impl HandlerComputationCustody {
 impl ProducerHandlerPreparation {
     pub(in crate::domain_computation::primary_graph) fn bind_predecessor_reads(
         &mut self,
-        state: std::sync::Arc<super::super::application_contribution::producer::predecessor_reads::ProducerPredecessorReadState>,
+        state: std::sync::Arc<super::super::application_contribution::producer::observation_reads::ProducerPredecessorReadState>,
     ) {
         assert!(
             self.predecessor_reads.replace(state).is_none(),
@@ -150,6 +150,22 @@ impl ProducerHandlerPreparation {
         &mut self,
     ) -> Option<CompletedHandlerFactBoundary> {
         self.completed_handler_facts.take()
+    }
+
+    pub(in crate::domain_computation) fn completed_input_prefix(&self) -> Option<usize> {
+        self.completed_handler_facts
+            .as_ref()
+            .map(CompletedHandlerFactBoundary::handler_fact_count)
+    }
+
+    pub(in crate::domain_computation) fn insert_input_facts(
+        &mut self,
+        expected: usize,
+        count: usize,
+    ) -> bool {
+        self.completed_handler_facts
+            .as_mut()
+            .is_some_and(|boundary| boundary.insert_input_facts(expected, count))
     }
 
     pub(in crate::domain_computation::primary_graph) fn retain_prepared_input_reuse_key(

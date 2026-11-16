@@ -1,6 +1,7 @@
 //! Root selection must happen before global connection validation.
 use super::*;
 use std::marker::PhantomData;
+mod nested_components;
 
 type Repeated = ApplicationFeatureOutputs<(
     ApplicationActionOutput<RenameBinding, Delivery>,
@@ -9,9 +10,17 @@ type Repeated = ApplicationFeatureOutputs<(
         ApplicationActionOutput<RenameBinding, Delivery>,
     ),
 )>;
+struct ConflictingConnection;
+impl ApplicationConnectionIdentity for ConflictingConnection {
+    const IDENTITY: &'static str = Connection::IDENTITY;
+}
+impl ApplicationOccurrenceConnectionBinding<MutationSchema, Source, Target>
+    for ConflictingConnection
+{
+}
 type DifferentRoot = ApplicationOutputGraph<
-    <Root as ApplicationOutputGraphShape<MutationSchema>>::RootConnection,
-    (ApplicationOutputLeaf, ApplicationOutputLeaf),
+    ApplicationConnectionRef<MutationSchema, Source, Export, Target, Import, ConflictingConnection>,
+    ApplicationOutputLeaf,
 >;
 struct DifferentDelivery;
 impl ApplicationActionDelivery<MutationSchema, RenameBinding> for DifferentDelivery {

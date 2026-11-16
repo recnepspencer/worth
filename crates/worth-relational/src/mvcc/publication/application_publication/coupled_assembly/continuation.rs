@@ -88,8 +88,8 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             })
             .map_err(super::custody::execution_stop)?
             .0?;
-        // The route map's Native half: only an Edit may complete a route by
-        // verification, so only an Edit's owned route may observe it again.
+        // Only an Edit may observe its already appended owned route again;
+        // a retirement still requires its exact preserving participants.
         if !self.permits_unchanged_output_selection() {
             return Err(part::reject(
                 Cause::CoupledContinuationRequiresEditSource,

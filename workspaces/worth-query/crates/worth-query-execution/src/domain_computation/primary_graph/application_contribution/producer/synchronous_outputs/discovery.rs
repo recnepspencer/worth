@@ -2,6 +2,9 @@
 use super::*;
 use crate::domain_computation::primary_graph::application_query::output_source_observation::SourceQueryObservationStop;
 use crate::domain_computation::primary_graph::{
+    application_query::AppliedQuerySupport, provider::CandidateReadSupport,
+};
+use crate::domain_computation::primary_graph::{
     application_query::{ApplicationQueryNativeAccess, SourceQueryReaderAccess},
     WorthQueryApplicationProjection,
 };
@@ -25,7 +28,30 @@ impl<S: ApplicationSchema> SynchronousOutputAssembly<'_, '_, '_, '_, S> {
         B::ScopeBinding: ApplicationQueryScopeResolution<S, B::PrincipalIdentity>,
         Row<S, B>: WorthQueryApplicationProjection<S, B::Query>,
     {
-        self.discover_as_at::<B, Row<S, B>>(&parent.pin, parent.source(), intent)
+        self.discover_as_at::<B, Row<S, B>>(
+            &parent.pin,
+            parent.source(),
+            intent,
+            CandidateReadSupport::Query,
+        )
+    }
+    pub(super) fn discover_outgoing<B>(
+        &self,
+        parent: &AppliedOutputParent,
+        intent: B::Input,
+    ) -> Result<Row<S, B>, CoupledSourceReadStop>
+    where
+        B: ApplicationQueryBinding<S>,
+        B::Input: ApplicationQueryIntent<S, Binding = B>,
+        B::ScopeBinding: ApplicationQueryScopeResolution<S, B::PrincipalIdentity>,
+        Row<S, B>: WorthQueryApplicationProjection<S, B::Query>,
+    {
+        self.discover_as_at::<B, Row<S, B>>(
+            &parent.pin,
+            parent.source(),
+            intent,
+            CandidateReadSupport::Outgoing,
+        )
     }
     pub(super) fn discover_authored<B>(
         &self,
@@ -38,13 +64,19 @@ impl<S: ApplicationSchema> SynchronousOutputAssembly<'_, '_, '_, '_, S> {
         B::ScopeBinding: ApplicationQueryScopeResolution<S, B::PrincipalIdentity>,
         Row<S, B>: WorthQueryApplicationProjection<S, B::Query>,
     {
-        self.discover_as_at::<B, Row<S, B>>(&source.pin, source.source, intent)
+        self.discover_as_at::<B, Row<S, B>>(
+            &source.pin,
+            source.source,
+            intent,
+            CandidateReadSupport::Query,
+        )
     }
     pub(super) fn discover_as_at<B, V>(
         &self,
         pin: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
         subject: worth_relational::facade::identity::EntityId,
         intent: B::Input,
+        retain: fn(AppliedQuerySupport) -> CandidateReadSupport,
     ) -> Result<V, CoupledSourceReadStop>
     where
         B: ApplicationQueryBinding<S>,
@@ -110,7 +142,7 @@ impl<S: ApplicationSchema> SynchronousOutputAssembly<'_, '_, '_, '_, S> {
                         )
                         .map_err(SourceQueryObservationStop::SourceFacts)?;
                     self.owner
-                        .retain_discovery_support(self.execution, subject, support)
+                        .retain_discovery_support(self.execution, subject, retain(support))
                         .map_err(SourceQueryObservationStop::CurrentControl)?;
                     Ok(source.value)
                 },

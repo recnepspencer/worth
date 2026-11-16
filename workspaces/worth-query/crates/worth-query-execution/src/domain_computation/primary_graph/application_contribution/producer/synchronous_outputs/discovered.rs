@@ -46,11 +46,34 @@ where
         recipe: std::sync::Arc<<<Self::RootConnection as ApplicationConnectionShape<S>>::Binding as WorthQueryApplicationDiscoveredOutputConnection<S>>::Discovery>,
         order: &ApplicationProgramConnectionOrder,
     ) -> WorthQueryApplicationEffectProgram<S, O, I, Scope>;
+    fn dependencies(
+        stage: crate::domain_computation::primary_graph::application_contribution::authored_edit::CapturedAuthoredEditStage<S>,
+        application: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<S>,
+        recipe: std::sync::Arc<<<Self::RootConnection as ApplicationConnectionShape<S>>::Binding as WorthQueryApplicationDiscoveredOutputConnection<S>>::Discovery>,
+        order: &ApplicationProgramConnectionOrder,
+    ) -> Result<crate::domain_computation::primary_graph::application_contribution::authored_edit::CapturedAuthoredEditStage<S>, super::super::WorthQueryOutputDemandDenial>;
 }
 struct Discovered<C, E, Recipe> {
     recipe: std::sync::Arc<Recipe>,
     order: ApplicationProgramConnectionOrder,
     marker: PhantomData<fn() -> (C, E)>,
+}
+
+fn capture_discovered<S, R>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    identity: &'static str,
+    create: impl FnOnce() -> R,
+) -> CapturedSynchronousOutputs
+where
+    S: ApplicationSchema,
+    R: root::Discovered<S> + 'static,
+{
+    CapturedSynchronousOutputs::capture(
+        execution,
+        identity,
+        std::mem::size_of::<R>() + std::mem::size_of::<root::Root<S>>(),
+        || Box::new(root::Root::Discovered(Box::new(create()))),
+    )
 }
 impl<S, C, E> root::Discovered<S> for Discovered<C, E, Recipe<S, C>>
 where
@@ -145,19 +168,13 @@ where
         let recording = runtime.runtime.product_runtime.owner.owner_identity().durable().map(|_| crate::domain_computation::primary_graph::application_output_demand::discovery_recipe::capture::<S,Discovery<S,C>>(runtime,execution,recipe.as_ref().clone()));
         program
             .synchronous_outputs
-            .push(CapturedSynchronousOutputs::capture(
+            .push(capture_discovered::<S, Discovered<C, E, Recipe<S, C>>>(
                 execution,
                 Binding::<S, C>::IDENTITY,
-                std::mem::size_of::<Discovered<C, E, Recipe<S, C>>>()
-                    + std::mem::size_of::<root::Root<S>>(),
-                || {
-                    let root: root::Root<S> =
-                        root::Root::Discovered(Box::new(Discovered::<C, E, Recipe<S, C>> {
-                            recipe,
-                            order: order.clone(),
-                            marker: PhantomData,
-                        }));
-                    Box::new(root)
+                || Discovered {
+                    recipe,
+                    order: order.clone(),
+                    marker: PhantomData,
                 },
             ));
         if let Some(CapturedSynchronousOutputs::Prepared { source_recipe, .. }) =
@@ -166,5 +183,30 @@ where
             *source_recipe = recording;
         }
         program
+    }
+
+    fn dependencies(
+        stage: crate::domain_computation::primary_graph::application_contribution::authored_edit::CapturedAuthoredEditStage<S>,
+        application: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<S>,
+        recipe: std::sync::Arc<Recipe<S, C>>,
+        order: &ApplicationProgramConnectionOrder,
+    ) -> Result<crate::domain_computation::primary_graph::application_contribution::authored_edit::CapturedAuthoredEditStage<S>, super::super::WorthQueryOutputDemandDenial>{
+        type SourceBinding<S, C> =
+            <Binding<S, C> as WorthQueryApplicationDiscoveredOutputConnection<S>>::Source;
+        let mut stage = stage
+            .with_output_dependency_families::<SourceBinding<S, C>, Demand<S, C>, E>(application)?;
+        let order = order.clone();
+        stage.required = Some(std::sync::Arc::new(move |execution| {
+            capture_discovered::<S, Discovered<C, E, Recipe<S, C>>>(
+                execution,
+                Binding::<S, C>::IDENTITY,
+                || Discovered {
+                    recipe: recipe.clone(),
+                    order: order.clone(),
+                    marker: PhantomData,
+                },
+            )
+        }));
+        Ok(stage)
     }
 }

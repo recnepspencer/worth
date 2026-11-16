@@ -1,6 +1,7 @@
 use super::{
     views::{
-        guard_view, orbit_view, ordering_view, predicate_view, result_relation_view, root_step_view,
+        guard_view, orbit_view, ordering_view, predicate_view, relation_predicate_view,
+        result_relation_view, root_step_view,
     },
     WorthQueryReadGraphGuardView, WorthQueryReadGraphOrderingView,
     WorthQueryReadGraphPredicateView, WorthQueryReadGraphRelationView,
@@ -121,16 +122,13 @@ impl<'a> WorthQueryAdmittedReadGraphPlanningInventory<'a> {
         ])?;
         admit(visits, 0).map_err(WorthQueryPlanningInventoryStop::Admission)?;
         let meaning = self.meaning;
-        Ok(meaning
-            .predicates
-            .iter()
-            .chain(
-                meaning
-                    .relations
-                    .iter()
-                    .filter_map(|relation| relation.predicate()),
-            )
-            .map(predicate_view))
+        Ok(meaning.predicates.iter().map(predicate_view).chain(
+            meaning
+                .relations
+                .iter()
+                .filter_map(|relation| relation.predicate())
+                .map(relation_predicate_view),
+        ))
     }
 
     pub fn guards_admitted<Stop>(

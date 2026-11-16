@@ -2,10 +2,12 @@ use crate::portable_identity::WorthQueryPortableTypeIdentity;
 
 use super::super::{
     result_slot_key::ApplicationQueryResultRelationSlotContract, ApplicationQueryCardinality,
-    ApplicationQueryPredicate, ApplicationQueryResultSlotKey,
-    ApplicationQueryResultTraversalDirection,
+    ApplicationQueryResultSlotKey, ApplicationQueryResultTraversalDirection,
 };
 use super::ApplicationQueryResultShape;
+
+mod predicate;
+pub use predicate::ApplicationQueryRelationPredicate;
 
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub struct ApplicationQueryResultRelation {
@@ -18,7 +20,7 @@ pub struct ApplicationQueryResultRelation {
     direction: ApplicationQueryResultTraversalDirection,
     output_name: String,
     cardinality: ApplicationQueryCardinality,
-    predicate: Option<ApplicationQueryPredicate>,
+    predicate: Option<ApplicationQueryRelationPredicate>,
     nested_shape: Box<ApplicationQueryResultShape>,
 }
 
@@ -32,7 +34,7 @@ pub struct WorthQueryPortableApplicationQueryResultRelationParts {
     pub direction: ApplicationQueryResultTraversalDirection,
     pub output_name: String,
     pub cardinality: ApplicationQueryCardinality,
-    pub predicate: Option<ApplicationQueryPredicate>,
+    pub predicate: Option<ApplicationQueryRelationPredicate>,
     pub nested_shape: ApplicationQueryResultShape,
 }
 
@@ -111,7 +113,7 @@ impl ApplicationQueryResultRelation {
         self.cardinality
     }
 
-    pub fn predicate(&self) -> Option<&ApplicationQueryPredicate> {
+    pub fn predicate(&self) -> Option<&ApplicationQueryRelationPredicate> {
         self.predicate.as_ref()
     }
 

@@ -5,6 +5,18 @@ pub(super) fn append_connections(
     connections: &[ApplicationConnectionDeclaration],
 ) {
     for connection in connections {
+        if let Some(capture) = connection.input_capture_identity() {
+            facts.push(fact(
+                ApplicationSemanticFamily::Connections,
+                framed_parts(&[
+                    connection.source_instance(),
+                    connection.target_instance(),
+                    connection.identity(),
+                    "input-capture",
+                ]),
+                framed_fields([("definition", capture.to_owned())]),
+            ));
+        }
         if connection.is_occurrence_component() {
             facts.push(fact(
                 ApplicationSemanticFamily::Connections,

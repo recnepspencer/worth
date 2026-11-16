@@ -120,6 +120,7 @@ fn take_prepared_session(
     let source_fact_rebase = attempt.take_source_fact_rebase();
     let (retained_preimage, preimage_retention_work) = preimage_retention::retain_attempt_preimage(
         &attempt,
+        None,
         &candidate,
         &session.execution_request(),
         &provider.graph.layout,

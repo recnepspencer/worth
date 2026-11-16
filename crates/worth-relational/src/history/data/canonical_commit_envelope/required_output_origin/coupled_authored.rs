@@ -23,11 +23,43 @@ pub(crate) enum CanonicalCoupledAuthoredSources {
         prefix: Arc<CanonicalAuthoredRestoration>,
         later: Vec<crate::identity::data::EntityId>,
     },
+    MemberEditRetirement {
+        sources: Vec<crate::identity::data::EntityId>,
+        prefix: Arc<CanonicalAuthoredRetirement>,
+    },
+    MemberEditRestoration {
+        sources: Vec<crate::identity::data::EntityId>,
+        prefix: Arc<CanonicalAuthoredRestoration>,
+    },
+}
+impl CanonicalCoupledAuthoredSources {
+    pub(crate) fn edit_sources(&self) -> Option<&[crate::identity::data::EntityId]> {
+        match self {
+            Self::Edit { sources }
+            | Self::MemberEditRetirement { sources, .. }
+            | Self::MemberEditRestoration { sources, .. } => Some(sources),
+            _ => None,
+        }
+    }
+    pub(crate) fn is_edit(&self) -> bool {
+        self.edit_sources().is_some()
+    }
+}
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub(crate) enum CanonicalCoupledParticipation {
+    Edit,
+    Required,
 }
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub(crate) struct CanonicalCoupledParticipant {
     pub(crate) origin: Arc<CanonicalRequiredOutputOrigin>,
     pub(crate) retirement: Option<Arc<CanonicalProducerRetirement>>,
+    pub(crate) participation: CanonicalCoupledParticipation,
+}
+impl CanonicalCoupledParticipant {
+    pub(crate) fn is_required(&self) -> bool {
+        matches!(self.participation, CanonicalCoupledParticipation::Required)
+    }
 }
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) struct CanonicalCoupledAuthoredPublication {
@@ -51,8 +83,14 @@ impl CanonicalCoupledAuthoredPublication {
         &self,
     ) -> impl Iterator<Item = &Arc<CanonicalRequiredOutputOrigin>> {
         let sources: &[Arc<CanonicalRequiredOutputOrigin>] = match &self.sources {
-            CanonicalCoupledAuthoredSources::Retirement { prefix, .. } => &prefix.publications,
-            CanonicalCoupledAuthoredSources::Restoration { prefix, .. } => &prefix.publications,
+            CanonicalCoupledAuthoredSources::Retirement { prefix, .. }
+            | CanonicalCoupledAuthoredSources::MemberEditRetirement { prefix, .. } => {
+                &prefix.publications
+            }
+            CanonicalCoupledAuthoredSources::Restoration { prefix, .. }
+            | CanonicalCoupledAuthoredSources::MemberEditRestoration { prefix, .. } => {
+                &prefix.publications
+            }
             CanonicalCoupledAuthoredSources::Edit { .. } => &[],
         };
         sources
@@ -71,7 +109,10 @@ impl CanonicalCommitEnvelopeBody {
     pub(crate) fn authored_source_retirement(&self) -> Option<&Arc<CanonicalAuthoredRetirement>> {
         self.authored_cascade_retirement.as_ref().or_else(|| {
             match &self.coupled_authored_publication.as_ref()?.sources {
-                CanonicalCoupledAuthoredSources::Retirement { prefix, .. } => Some(prefix),
+                CanonicalCoupledAuthoredSources::Retirement { prefix, .. }
+                | CanonicalCoupledAuthoredSources::MemberEditRetirement { prefix, .. } => {
+                    Some(prefix)
+                }
                 _ => None,
             }
         })
@@ -79,7 +120,10 @@ impl CanonicalCommitEnvelopeBody {
     pub(crate) fn authored_source_restoration(&self) -> Option<&Arc<CanonicalAuthoredRestoration>> {
         self.authored_cascade_restoration.as_ref().or_else(|| {
             match &self.coupled_authored_publication.as_ref()?.sources {
-                CanonicalCoupledAuthoredSources::Restoration { prefix, .. } => Some(prefix),
+                CanonicalCoupledAuthoredSources::Restoration { prefix, .. }
+                | CanonicalCoupledAuthoredSources::MemberEditRestoration { prefix, .. } => {
+                    Some(prefix)
+                }
                 _ => None,
             }
         })
@@ -128,10 +172,10 @@ pub(super) fn install(
     let full = std::mem::take(&mut envelope.patch.authoritative_record_patches);
     let answer: Result<RequiredOutputPublicationPositions, TransactionCommitError> = (|| {
         // Retain the one necessary copy of the actually consumed source roster.
-        let source_count = group.stages.len().saturating_add(usize::from(matches!(
-            group.binding.owners.source,
-            crate::mvcc::CoupledSource::Edit(_)
-        )));
+        let source_count = group
+            .stages
+            .len()
+            .saturating_add(usize::from(group.binding.owners.source.is_edit()));
         let source_memory = crate::mvcc::plan_copy_admission::reserve_copy(
             execution,
             crate::mvcc::plan_copy_admission::slots::<crate::identity::data::EntityId>(
@@ -169,6 +213,35 @@ pub(super) fn install(
             else {
                 continue;
             };
+            let meaning = publication
+                .producing_meaning()
+                .expect("owned participant has a route");
+            crate::execution::request_stage::checkpoint(
+                context,
+                group
+                    .binding
+                    .owners
+                    .required_owners()
+                    .iter()
+                    .map(|owner| {
+                        (owner.origin.meaning.family.len() as u64)
+                            .saturating_add(meaning.family.len() as u64)
+                            .saturating_add(65)
+                    })
+                    .fold(0u64, u64::saturating_add),
+            )
+            .map_err(origin_request)?;
+            let participation = if group
+                .binding
+                .owners
+                .required_owners()
+                .iter()
+                .any(|owner| owner.origin.meaning.same_route(meaning))
+            {
+                CanonicalCoupledParticipation::Required
+            } else {
+                CanonicalCoupledParticipation::Edit
+            };
             restrict(
                 envelope,
                 &full,
@@ -185,6 +258,7 @@ pub(super) fn install(
                 created_relations,
                 state,
                 crate::mvcc::RequiredOutputPublicationAdmission {
+                    inputs: part.inputs.unwrap_or_default(),
                     installed: installed.clone(),
                     publication,
                 },
@@ -202,6 +276,7 @@ pub(super) fn install(
             participants.push(CanonicalCoupledParticipant {
                 origin,
                 retirement: envelope.producer_cascade_retirement.take(),
+                participation,
             });
         }
         let event = CanonicalCoupledAuthoredPublication {

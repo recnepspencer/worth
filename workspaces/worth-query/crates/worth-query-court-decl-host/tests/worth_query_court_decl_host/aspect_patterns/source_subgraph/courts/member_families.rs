@@ -6,6 +6,8 @@ use worth_query_host::facade::runtime::ExecutionAllocationPolicy;
 use worth_relational::facade::transactions::RecordRef;
 mod owner_fields;
 mod reapplication;
+mod secondary_stage;
+mod sparse_owner;
 
 fn selection(members: &[&str], operand: Option<&str>, notes: &[&str]) -> local_member::Delete {
     local_member::Delete {
@@ -190,6 +192,18 @@ fn a_demanded_mark_the_delete_never_read_is_not_taken_as_absent() {
         denial.preimage_retention_denial(),
         Some(WorthQueryPreImageRetentionDenial::MissingDemandedField)
     );
+    let detail = denial.detail().expect("original retention failure detail");
+    assert!(
+        detail.contains("site=anchored-locus-observation"),
+        "{detail}"
+    );
+    let target = format!("target=Some({:?})", RecordRef::Entity(before.notes[0].0));
+    assert!(detail.contains(&target), "{detail}");
+    assert!(detail.contains("Mark"), "{detail}");
+    assert!(detail.contains("participant=root;"), "{detail}");
+    assert!(detail.contains("correction_association=true"), "{detail}");
+    assert!(detail.contains("authored_identity=true"), "{detail}");
+    assert!(detail.contains("route=authored-anchors;"), "{detail}");
     assert_eq!(
         pinned.selected_commit(),
         request.retain_current_read().unwrap().selected_commit()

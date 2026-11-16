@@ -220,20 +220,28 @@ where
     let initial_revision = *program.revision();
     let installed = install_rostered_application_program(program, installed_schema, &closed)
         .map_err(program_support_denied)?;
+    let mut features = Vec::new();
+    let mut input_programs = Vec::new();
+    super::super::program_admission::input_capture::ProgramInputPorts::append(
+        &mut features,
+        &mut input_programs,
+        installed.features(),
+        installed.connections(),
+    );
+    for record in &supported {
+        super::super::program_admission::input_capture::ProgramInputPorts::append(
+            &mut features,
+            &mut input_programs,
+            record.installed.features(),
+            record.installed.connections(),
+        );
+    }
     Ok((
         WorthQueryAdmittedProgramSupport {
             roster: std::sync::Arc::new(closed),
             initial_revision,
-            features: installed
-                .features()
-                .iter()
-                .chain(
-                    supported
-                        .iter()
-                        .flat_map(|record| record.installed.features()),
-                )
-                .cloned()
-                .collect(),
+            features,
+            input_programs,
         },
         installed,
         supported,

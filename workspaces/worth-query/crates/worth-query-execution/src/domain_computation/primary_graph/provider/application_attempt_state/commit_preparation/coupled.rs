@@ -87,6 +87,7 @@ pub(super) fn prepare(
             })?;
         let (retained_preimage, preimage_work) = preimage_retention::retain_attempt_preimage(
             &owned.attempt,
+            Some(&member.kind),
             candidate,
             execution,
             layout,

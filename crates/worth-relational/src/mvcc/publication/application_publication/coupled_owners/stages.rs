@@ -42,7 +42,7 @@ impl RelationalRuntime {
                 self.readmit_edit_coupled_owners(execution, installed, &owners.before, *source)?;
             execution
                 .run_native_with_checkpoint(|context| {
-                    let selected = if matches!(owners.source, CoupledSource::Edit(_)) {
+                    let selected = if owners.source.is_edit() {
                         None
                     } else {
                         Some(
@@ -55,6 +55,16 @@ impl RelationalRuntime {
                         )
                     };
                     for owner in stage.owners {
+                        if owners.source.is_member_edit() {
+                            // Later ordinary stages add current-route context,
+                            // not mandatory successors of the retired members.
+                            checkpoint(context, owner.origin.relations.len() as u64 + 1)
+                                .map_err(custody::execution_stop)?;
+                            owners
+                                .deferred_edges
+                                .extend(owner.origin.relations.iter().map(|edge| edge.id));
+                            continue;
+                        }
                         if let Some(selected) = &selected {
                             checkpoint(context, selected.len() as u64 + 1)
                                 .map_err(custody::execution_stop)?;

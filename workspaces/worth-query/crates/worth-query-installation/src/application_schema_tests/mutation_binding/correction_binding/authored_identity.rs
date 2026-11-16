@@ -237,3 +237,4 @@ fn authored_family_rejects_missing_role_or_changed_logical_key_meaning() {
 }
 
 mod live_owner;
+mod sparse_root;

@@ -55,6 +55,8 @@ impl ApplicationProgramDefinition<Schema> for Program {
                 .finish_action()
                 .native_action::<roster::local_member::RestoreBinding>()
                 .finish_action()
+                .native_action::<roster::sparse_owner::ReviseBinding>()
+                .finish_action()
                 .native_action::<roster::CreateBinding>()
                 .finish_action()
                 .native_action::<roster::RetireBinding>()

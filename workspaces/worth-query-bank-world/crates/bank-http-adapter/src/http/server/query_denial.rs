@@ -46,7 +46,7 @@ pub(super) fn query_denial(denial: BankApplicationQueryDenial) -> BankHttpDenial
 }
 
 pub(super) mod managed_index;
-mod predecessor_read;
+mod observation_read;
 mod publication_read;
 mod source_observation;
 use managed_index::managed_index;

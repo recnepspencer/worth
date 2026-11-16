@@ -15,6 +15,7 @@ use worth_query_installation::facade::{
 };
 
 use super::WorthQueryApplicationPreparationDenial;
+pub(super) mod input_capture;
 
 /// The complete, immutable program support one installation admitted, together
 /// with the program its first occurrence activates.
@@ -24,6 +25,8 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryAdmittedProgra
     /// Exact initial and rostered program declarations used to check configured owners before bootstrap.
     pub(in crate::domain_computation::primary_graph) features:
         Vec<worth_query_declaration::facade::application_program::ApplicationFeatureDeclaration>,
+    pub(in crate::domain_computation::primary_graph) input_programs:
+        Vec<input_capture::ProgramInputPorts>,
     pub(in crate::domain_computation::primary_graph) initial_revision: ApplicationProgramRevision,
 }
 

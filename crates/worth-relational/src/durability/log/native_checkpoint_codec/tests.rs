@@ -330,6 +330,7 @@ fn chk6_and_retired_inner_partition_grammars_are_refused() {
         b"WORTH-REL-CHK6\n".as_slice(),
         b"WORTH-REL-CHK17\n".as_slice(),
         b"WORTH-REL-CHK18\n".as_slice(),
+        b"WORTH-REL-CHK22\n".as_slice(),
         b"WORTH-REL-CHK20\n".as_slice(),
         b"WORTH-REL-CHK20.1\n".as_slice(),
         b"WORTH-REL-CHK21\n".as_slice(),

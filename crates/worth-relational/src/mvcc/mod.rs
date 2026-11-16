@@ -32,7 +32,9 @@ pub(crate) use observation::RelationalObservationRetirement;
 pub(crate) use observation::RelationalRetainedObservationShares;
 pub(crate) use publication::PreparedCanonicalBranchMovement;
 pub use publication::RelationalInstalledApplicationPublicationAuthority;
-pub(crate) use publication::{origin_denial, RequiredOutputPublicationAdmission};
+pub(crate) use publication::{
+    origin_denial, RequiredOutputInputs, RequiredOutputPublicationAdmission,
+};
 pub use publication::{
     AuthoredOwnedMemberKind, CompanionBranchCell, CompanionBranchCellSlot, CompanionBranchImage,
     CompanionCellEditStop, CompanionDerivedRootCleanup, CompanionDerivedRootInstalled,
@@ -66,10 +68,11 @@ pub use publication::{
     RelationalCoupledProducerPosture, RelationalDeclaredCoupledOwner,
     RelationalHistoricalOutputSelection, RelationalPerformedOutputPublications,
     RelationalPredecessorBasisDenial, RelationalPredecessorBasisOrigin, RelationalPredecessorInput,
-    RelationalPreparedOutputPublications, RelationalRequiredOutputPublication,
-    RelationalRequiredOutputRouteAbsence, RelationalRestoredProducerPrior,
-    RequiredOutputProducingImplementation, RequiredOutputPublication,
-    RequiredOutputPublicationMeaning, RequiredOutputRolePosture, RequiredOutputRoleTarget,
+    RelationalPreparedOutputPublications, RelationalRequiredOutputInput,
+    RelationalRequiredOutputPublication, RelationalRequiredOutputRouteAbsence,
+    RelationalRestoredProducerPrior, RequiredOutputProducingImplementation,
+    RequiredOutputPublication, RequiredOutputPublicationMeaning, RequiredOutputRolePosture,
+    RequiredOutputRoleTarget,
 };
 pub use retained_entity_selection::{
     RelationalRetainedEntitySelection, RelationalRetainedEntitySelectionDenial,

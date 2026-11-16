@@ -25,6 +25,10 @@ impl ApplicationProgramDefinition<Schema> for Program {
             .finish_action()
             .native_action::<restore_first::Binding>()
             .finish_action()
+            .native_action::<retired_fields::retire::Binding>()
+            .finish_action()
+            .native_action::<retired_fields::restore::Binding>()
+            .finish_action()
             .native_action::<sparse::Binding>()
             .finish_action()
             .finish()]
@@ -42,6 +46,8 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
         setup.handler::<retirement::Binding, _>(retirement::Handler)?;
         setup.handler::<restore_first::Binding, _>(restore_first::Handler)?;
         setup.handler::<sparse::Binding, _>(sparse::Handler)?;
+        setup.handler::<retired_fields::retire::Binding, _>(retired_fields::retire::Handler)?;
+        setup.handler::<retired_fields::restore::Binding, _>(retired_fields::restore::Handler)?;
         setup.invariant(
             rule::OneOf::reference(),
             ApplicationInvariantExecutionPoint::CommitBoundary,
@@ -68,15 +74,19 @@ pub fn try_install_seed(
     cancellation: Option<WorthQueryCancellationSource>,
     first: Option<u64>,
 ) -> Result<Host, WorthQueryApplicationPreparationDenial> {
-    try_install_seed_with_neighbour(cancellation, first, false)
+    try_install_seed_with_neighbour(cancellation, first, false, false)
 }
 pub fn install_with_neighbour() -> Host {
-    try_install_seed_with_neighbour(None, Some(11), true).unwrap()
+    try_install_seed_with_neighbour(None, Some(11), true, false).unwrap()
+}
+pub fn install_retirement() -> Host {
+    try_install_seed_with_neighbour(None, Some(11), true, true).unwrap()
 }
 fn try_install_seed_with_neighbour(
     cancellation: Option<WorthQueryCancellationSource>,
     first: Option<u64>,
     neighbour: bool,
+    retirement: bool,
 ) -> Result<Host, WorthQueryApplicationPreparationDenial> {
     in_memory_program(
         program(),
@@ -98,12 +108,18 @@ fn try_install_seed_with_neighbour(
                 )
                 .field(Key::at("Key"), "record".to_owned());
             if let Some(first) = first { seed = seed.field(FirstValue::at("FirstValue"), first); }
+            if retirement { seed = seed.field(sparse::annotation::AnnotationValue::at("Value"), 21); }
             graph.bind_entity(seed)?;
             if neighbour {
-                graph.bind_entity(WorthQueryApplicationEntitySeed::new(
+                let seed = WorthQueryApplicationEntitySeed::new(
                     Record::reference(), WorthQueryApplicationEntityKey::new("neighbour").unwrap())
-                    .field(Key::at("Key"), "neighbour".to_owned())
-                    .field(FirstValue::at("FirstValue"), 99))?;
+                    .field(Key::at("Key"), "neighbour".to_owned());
+                let seed = if retirement {
+                    seed.field(ThirdValue::at("ThirdValue"), 33)
+                        .field(sparse::annotation::AnnotationValue::at("Value"), 81)
+                        .field(sparse::annotation::AnnotationNote::at("Note"), 77)
+                } else { seed.field(FirstValue::at("FirstValue"), 99) };
+                graph.bind_entity(seed)?;
             }
             Ok(())
         },

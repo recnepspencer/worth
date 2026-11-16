@@ -15,6 +15,7 @@ use worth_relational::facade::identity::EntityId;
 use super::decision_reads::DecisionReadOutcome;
 use super::WorthQueryApplicationOperationInvariantProjectionReader;
 mod indexed_selection;
+pub(in crate::domain_computation::primary_graph) use indexed_selection::resolution_denial;
 mod prepared_selection;
 pub use prepared_selection::WorthQueryPreparedEntitySelection;
 mod body_requirement;

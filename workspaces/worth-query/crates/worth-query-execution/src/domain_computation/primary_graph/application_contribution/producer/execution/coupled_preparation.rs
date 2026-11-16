@@ -20,6 +20,10 @@ pub(super) fn prepare<Schema, Binding>(
     erased: ErasedAppliedProducerSource,
     predecessor: Option<&worth_relational::facade::mvcc::RelationalRequiredOutputPublication>,
     edition: super::super::InstalledProducerEdition,
+    captured: Option<(
+        super::input_preparation::PreparedProducerInputs<Schema, Binding>,
+        std::any::TypeId,
+    )>,
 ) -> Result<Box<dyn std::any::Any>, ProducerExecutionStop>
 where
     Schema: ApplicationSchema,
@@ -133,7 +137,7 @@ where
         .map_err(|cause| failed(Binding::IDENTITY, cause))?;
     admission.graph_work_mut().arm_coupled_handler();
     let predecessor_reads =
-        super::super::predecessor_reads::ProducerPredecessorReadAccess::prepare_coupled::<
+        super::super::observation_reads::ProducerPredecessorReadAccess::prepare_coupled::<
             Schema,
             Binding,
         >(
@@ -162,7 +166,22 @@ where
             shared.selected().product().read_lease_ref(), &producer_request, &producer_principal,
         ), coordination,
     ).map_err(super::denial::request_admission_rejected)?
-        .with_predecessor_reads(read_admission, predecessor_reads);
+        .with_producer_reads::<Binding>(read_admission, predecessor_reads);
+    let prepared_inputs = match captured {
+        Some((inputs, component)) => Some(inputs.into_mutation_inputs(
+            installed,
+            &identities,
+            source.root(),
+            edition,
+            component,
+            &execution,
+            candidate,
+        )?),
+        None => {
+            installed.refuse_uncaptured_production()?;
+            None
+        }
+    };
     let prepared_handler = runtime
         .prepare_mutation_handler_plan_on_basis::<Operation<Schema, Binding>>(
             phase,
@@ -171,6 +190,7 @@ where
             Some(&source_query),
             admission,
             Some((before_pin, candidate)),
+            prepared_inputs,
             || {
                 contact_observation::record(
                     runtime.runtime.authority_identity().as_u64(),

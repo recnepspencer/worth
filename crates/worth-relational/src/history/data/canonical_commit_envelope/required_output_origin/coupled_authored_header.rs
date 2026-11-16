@@ -12,7 +12,10 @@ impl CanonicalCommitEnvelopeBody {
     ) -> Result<(), Stop> {
         let charge = super::super::super::codec_retirement_closure::charge;
         charge(context, event.participants.len() + 1)?;
-        if matches!(&event.sources, CanonicalCoupledAuthoredSources::Edit { sources } if sources.is_empty())
+        if event
+            .sources
+            .edit_sources()
+            .is_some_and(|sources| sources.is_empty())
         {
             return Err("coupled edit source list has no authored prefix".into());
         }
@@ -26,29 +29,33 @@ impl CanonicalCommitEnvelopeBody {
         }
         match &event.sources {
             CanonicalCoupledAuthoredSources::Edit { .. } => {}
-            CanonicalCoupledAuthoredSources::Retirement { prefix, .. } => {
+            CanonicalCoupledAuthoredSources::Retirement { prefix, .. }
+            | CanonicalCoupledAuthoredSources::MemberEditRetirement { prefix, .. } => {
                 self.validate_authored_retirement_components(prefix, true, context)?;
             }
-            CanonicalCoupledAuthoredSources::Restoration { prefix, .. } => {
+            CanonicalCoupledAuthoredSources::Restoration { prefix, .. }
+            | CanonicalCoupledAuthoredSources::MemberEditRestoration { prefix, .. } => {
                 self.validate_authored_restoration_components(prefix, true, context)?;
             }
         }
         for part in &event.participants {
-            self.validate_output_origin_header(&part.origin)?;
-            let producing =
-                matches!(
-                    part.origin.publication,
-                    CanonicalOutputPublication::Preserve { .. }
-                ) || (matches!(event.sources, CanonicalCoupledAuthoredSources::Edit { .. })
-                    && matches!(
-                        part.origin.publication,
-                        CanonicalOutputPublication::Birth
-                            | CanonicalOutputPublication::BirthAfterCodecRetirement { .. }
-                    ));
-            if (!part.origin.source_scope_owned
-                && !matches!(event.sources, CanonicalCoupledAuthoredSources::Edit { .. }))
-                || !producing
+            if (matches!(event.sources, CanonicalCoupledAuthoredSources::Edit { .. })
+                && part.is_required())
+                || (!event.sources.is_edit() && !part.is_required())
             {
+                return Err("coupled participant has a different source obligation".into());
+            }
+            self.validate_output_origin_header(&part.origin, context)?;
+            let producing = matches!(
+                part.origin.publication,
+                CanonicalOutputPublication::Preserve { .. }
+            ) || (event.sources.is_edit()
+                && matches!(
+                    part.origin.publication,
+                    CanonicalOutputPublication::Birth
+                        | CanonicalOutputPublication::BirthAfterCodecRetirement { .. }
+                ));
+            if (!part.origin.source_scope_owned && !event.sources.is_edit()) || !producing {
                 return Err("coupled participant is not an opted-in producing origin".into());
             }
             self.validate_producer_retirement_components(

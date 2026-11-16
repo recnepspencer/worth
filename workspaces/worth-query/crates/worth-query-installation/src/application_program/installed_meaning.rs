@@ -15,6 +15,10 @@ pub trait WorthQueryErasedInstalledProgramMeaning: sealed::InstalledMeaning + Se
     fn features(
         &self,
     ) -> &[worth_query_declaration::facade::application_program::ApplicationFeatureDeclaration];
+    /// The same original program's typed connection declarations.
+    fn connections(
+        &self,
+    ) -> &[worth_query_declaration::facade::application_program::ApplicationConnectionDeclaration];
 }
 impl<Schema: 'static, Program: 'static> sealed::InstalledMeaning
     for WorthQueryInstalledApplicationProgram<Schema, Program>
@@ -40,5 +44,11 @@ impl<Schema: 'static, Program: 'static> WorthQueryErasedInstalledProgramMeaning
     }
     fn action_inventory(&self) -> WorthQueryInstalledActionInventory<'_> {
         self.action_inventory()
+    }
+    fn connections(
+        &self,
+    ) -> &[worth_query_declaration::facade::application_program::ApplicationConnectionDeclaration]
+    {
+        self.connections()
     }
 }

@@ -1,10 +1,17 @@
 //! Its own installed schema: model, owned member and two derived output entities.
+pub use super::member_retarget::records::{
+    ConsumedInput, InputKey, InputMember, InputOwner, InputValue,
+};
 use super::*;
 use worth_query_decl::facade::application_schema::fragment::*;
 mod calibration;
 pub use calibration::*;
 mod cap;
 pub use cap::*;
+mod owned_orbit;
+pub use owned_orbit::{Incidence, IncidenceKey, OwnedNext};
+mod pending_child;
+pub use pending_child::PendingChildOf;
 mod records;
 pub use records::*;
 mod joined;
@@ -49,6 +56,7 @@ impl ApplicationSchemaContribution<Schema> for Contribution {
         Actor,
         Registrations,
         authored_member::correction::UndoRetire,
+        member_retarget::correction::Revision,
     );
 }
 impl Contribution {
@@ -106,6 +114,9 @@ impl Registration<Schema> for Actor {
 fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
+    let schema = member_retarget::declare(schema);
+    let schema = family::captured_input::declare(schema);
+    let schema = family::borrowed_inputs::declare(schema);
     let schema = family::convergent::declare(schema);
     let schema = family::parity_input::declare(schema);
     let schema = synchronous_edit::reconciliation::declare(schema);

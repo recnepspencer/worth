@@ -68,6 +68,7 @@ where
             &input,
         )
         .map_err(super::selected_public::preparation_stop::<Schema, Binding>)?;
+        installed.refuse_uncaptured_production()?;
         return post_authorization::execute_authorized::<Schema, Binding>(
             phase,
             runtime,
@@ -103,6 +104,7 @@ where
         request_scope,
         &input,
     )?;
+    installed.refuse_uncaptured_production()?;
     post_authorization::execute_authorized::<Schema, Binding>(
         phase,
         runtime,
@@ -111,7 +113,10 @@ where
         external_principal,
         request_scope,
         &principal,
-        Binding::PREDECESSOR_READS.as_ref().map(|_| &scope),
+        Binding::PREDECESSOR_READS
+            .or(Binding::ORIGINAL_READS)
+            .as_ref()
+            .map(|_| &scope),
         admission,
         required_output,
         provider,

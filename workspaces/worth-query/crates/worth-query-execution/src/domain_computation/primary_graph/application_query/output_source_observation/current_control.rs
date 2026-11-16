@@ -94,7 +94,8 @@ impl<'a, S: ApplicationSchema> SourceQueryReaderAccess<'a, S> {
             history: None,
             current: None,
             predecessor: None,
-            predecessor_refused: Default::default(),
+            original: None,
+            observation_refused: Default::default(),
             read_authorization: None,
             refused: Default::default(),
         }
@@ -156,16 +157,16 @@ impl<'a, S: ApplicationSchema> SourceQueryReaderAccess<'a, S> {
     pub(in crate::domain_computation::primary_graph) fn take_control_failure(
         &self,
     ) -> Option<WorthQueryOutputDemandDenial> {
-        if let Some(cause) = self.predecessor_refused.borrow_mut().take() {
+        if let Some(cause) = self.observation_refused.borrow_mut().take() {
             if let super::predecessor::Denial::Control(stop) = cause {
                 return Some(crate::domain_computation::primary_graph::invariant_projection::WorthQueryOutputAvailabilityDenial::source_query_stop(*stop).demand_stop());
             }
-            let subject = format!("producer predecessor read: {cause}");
+            let subject = format!("producer observation read: {cause}");
             let kind = match &cause {
                 super::predecessor::Denial::Authorization(cause) => {
                     WorthQueryOutputDemandDenialKind::of_request_authorization(cause.kind())
                 }
-                _ => WorthQueryOutputDemandDenialKind::PredecessorRead(Box::new(cause)),
+                _ => WorthQueryOutputDemandDenialKind::ObservationRead(Box::new(cause)),
             };
             return Some(WorthQueryOutputDemandDenial::new(kind, subject));
         }

@@ -103,7 +103,7 @@ impl QueryRequestExecution<'_> {
         source_instance: Option<u64>,
         body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
     ) -> Result<R, WorthQueryAdvancementDenial> {
-        self.run_advancement_with_maintenance(owner, source_instance, None, body)
+        self.run_advancement_with_maintenance(owner, source_instance, None, false, body)
     }
 
     fn run_advancement_with_maintenance<R>(
@@ -111,6 +111,7 @@ impl QueryRequestExecution<'_> {
         owner: Option<worth_runtime_world::facade::RuntimeWorldOwnerIdentity>,
         source_instance: Option<u64>,
         maintenance: Option<&dyn crate::domain_computation::execution_runtime::product_world::WorthQueryHomeMaintenance>,
+        retain_returned_outcome: bool,
         body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
     ) -> Result<R, WorthQueryAdvancementDenial> {
         let pending = std::cell::RefCell::new(Some(body));
@@ -120,6 +121,7 @@ impl QueryRequestExecution<'_> {
             owner,
             source_instance,
             maintenance,
+            retain_returned_outcome,
             &mut |phase| {
                 let body = pending
                     .borrow_mut()

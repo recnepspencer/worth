@@ -121,6 +121,7 @@ impl ApplicationEditIntentIdentity {
 pub struct ApplicationEditStageIntent {
     binding: &'static str,
     input: [u8; 32],
+    discovered_root: bool,
     root: Vec<EditConnectionIntent>,
 }
 #[derive(Serialize)]
@@ -141,7 +142,7 @@ impl ApplicationEditStageIntent {
     where
         S: ApplicationSchema,
         B: ApplicationMutationBinding<S>,
-        R: crate::application_program::ApplicationOutputGraphShape<S>,
+        R: crate::application_program::ApplicationProgramOutputShape<S>,
     {
         let root = R::connections()
             .into_iter()
@@ -161,6 +162,7 @@ impl ApplicationEditStageIntent {
         Self {
             binding: B::IDENTITY,
             input: *input.identity(),
+            discovered_root: R::DISCOVERED_ROOT,
             root,
         }
     }
@@ -173,7 +175,7 @@ impl<Key: Serialize> ApplicationEditEnvelopeKey<Key> {
         stages: &[ApplicationEditStageIntent],
     ) -> Result<ApplicationEditIntentIdentity, ApplicationValueEncodeDenial> {
         super::super::canonical_identity(
-            "worth-query.edit-envelope-intent.v1",
+            "worth-query.edit-envelope-intent.v2",
             &self.namespace,
             &(self.canonical.identity, order, stages),
         )

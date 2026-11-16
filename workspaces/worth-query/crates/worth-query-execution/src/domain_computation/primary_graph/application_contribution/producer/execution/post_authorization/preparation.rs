@@ -209,7 +209,7 @@ where
     }
     let publication_scope = admission.operation_scope_binding().clone();
     let predecessor_reads =
-        super::super::super::predecessor_reads::ProducerPredecessorReadAccess::prepare::<
+        super::super::super::observation_reads::ProducerPredecessorReadAccess::prepare::<
             Schema,
             Binding,
         >(&mut required_output, edition);
@@ -230,7 +230,7 @@ where
         )
         .map_err(super::super::denial::request_admission_rejected)?;
     let source_query = if commit_authority.history_control().is_none()
-        && Binding::PREDECESSOR_READS.is_some()
+        && (Binding::PREDECESSOR_READS.is_some() || Binding::ORIGINAL_READS.is_some())
     {
         source_query.with_current_control(
             crate::domain_computation::primary_graph::product_operation::current_read::CurrentReadControl::new(
@@ -248,7 +248,8 @@ where
             admission.graph_work().identity(),
         )
     });
-    let source_query = source_query.with_predecessor_reads(read_admission, predecessor_reads);
+    let source_query =
+        source_query.with_producer_reads::<Binding>(read_admission, predecessor_reads);
     let prepared = runtime
         .prepare_mutation_handler_plan_with_source_access::<Operation<Schema, Binding>>(
             phase,

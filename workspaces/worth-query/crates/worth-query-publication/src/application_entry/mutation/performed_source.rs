@@ -103,6 +103,35 @@ where
             self.request.application,
             application,
         )?;
+        self.select_envelope_owner(phase, application)
+    }
+
+    /// Shares runtime/schema/occurrence/action selection without asserting a root.
+    /// The envelope's sealed output choice supplies root or ordinary-action checks.
+    pub(in crate::application_entry) fn select_envelope_owner<Program>(
+        &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
+    ) -> Result<
+        (
+            WorthQuerySelectedProductOperation<'application, Schema>,
+            WorthQuerySelectedProgramOwner<'application, Schema>,
+        ),
+        WorthQueryPerformedMutationExecutionDenial,
+    >
+    where
+        Program: ApplicationProgramDefinition<Schema>,
+    {
+        if !std::ptr::eq(application.runtime(), self.request.application)
+            || application.installed_program().schema_binding()
+                != &self
+                    .request
+                    .application
+                    .installed_schema()
+                    .binding_identity()
+        {
+            return Err(WorthQueryPerformedMutationExecutionDenial::ForeignProgram);
+        }
         let selected = self
             .request
             .application

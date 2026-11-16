@@ -19,7 +19,7 @@ pub(super) fn output_settlement(kind: BankApplicationOutputSettlementDenialKind)
             worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenialKind::DurableStateAdmission(cause),
         ),
         Settlement::CurrentControlBusy => unavailable(),
-        Settlement::PredecessorRead(cause) => predecessor_read::denial(*cause),
+        Settlement::ObservationRead(cause) => observation_read::denial(*cause),
         Settlement::CurrentPublication(cause) => publication_read::denial(*cause),
         Settlement::RetainedVerificationFactUnavailable(cause) => verification(*cause),
         Settlement::SettlementProvenance(cause) => match cause {

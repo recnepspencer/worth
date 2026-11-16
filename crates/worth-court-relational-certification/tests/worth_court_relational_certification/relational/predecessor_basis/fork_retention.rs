@@ -125,3 +125,93 @@ fn run(managed: bool) {
         "target cleanup releases its inputs"
     );
 }
+
+#[test]
+fn managed_fork_keeps_consumed_inputs_after_its_publishing_branch_is_deleted() {
+    run_deleted_publisher(true);
+}
+
+#[test]
+fn shared_root_fork_keeps_consumed_inputs_after_its_publishing_branch_is_deleted() {
+    run_deleted_publisher(false);
+}
+
+/// The publication's decision basis names a branch that no longer exists; the
+/// fork still holds that basis, so the exact consumed input stays readable.
+fn run_deleted_publisher(managed: bool) {
+    let host = request();
+    let execution = &ExecutionRequest::serial(&host);
+    let mut world = World::new(execution);
+    let court = Arc::new(Court::default());
+    let _registration = managed.then(|| {
+        world
+            .runtime
+            .publication_companion_port()
+            .begin_required_registration()
+            .unwrap()
+            .activate(Arc::new(SourceOwner(court.clone())))
+            .unwrap()
+    });
+    let expected = world
+        .read(execution, &world.basis())
+        .authoritative_aspect_state;
+    // Measured after the opening read: nothing on main later releases its hold.
+    let baseline = world.active_holds();
+    let fork = |from: &str, to: &str| {
+        let (_, source) = world
+            .runtime
+            .observe_fork_source(&BranchId(from.into()))
+            .unwrap();
+        let branch = BranchId(to.into());
+        world
+            .runtime
+            .fork_branch(execution, branch.clone(), source)
+            .unwrap();
+        world.runtime.branch_identity(&branch).unwrap()
+    };
+    let publisher = fork("main", "publishing-branch");
+    let prior = world.birth_on(execution, &publisher);
+    let target = fork("publishing-branch", "consumed-input-fork");
+    assert!(world
+        .runtime
+        .delete_branch(execution, &publisher)
+        .unwrap()
+        .deleted()
+        .is_some());
+    let (_, selected) = world.runtime.observe_branch(&target).unwrap();
+    let current = world
+        .runtime
+        .readmit_current_owned_output_successor(
+            execution,
+            &world.installed,
+            &selected,
+            prior.producer(),
+            prior.meaning(),
+        )
+        .unwrap()
+        .expect("the fork keeps the deleted branch's owned custody");
+    assert!(current.same_origin(&prior));
+    let input = world
+        .runtime
+        .predecessor_publication_input(execution, &selected, Some(&current), Some(commit(&current)))
+        .expect("the fork retains the exact consumed input without its publishing branch");
+    assert_eq!(
+        input.before_basis().descriptor().branch_id(),
+        &BranchId("publishing-branch".into()),
+        "the input keeps the publishing branch's identity, never the reader's"
+    );
+    assert_eq!(
+        world
+            .read(execution, input.before_basis())
+            .authoritative_aspect_state,
+        expected
+    );
+    // The caller's own publication handles pin their bases; only the target holds the rest.
+    drop((input, current, selected, prior));
+    world.runtime.delete_branch(execution, &target).unwrap();
+    assert_eq!(
+        world.active_holds(),
+        baseline,
+        "target cleanup releases its inputs"
+    );
+}

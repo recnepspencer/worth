@@ -27,7 +27,7 @@ pub(super) fn derive<S, C>(
     key: &WorthQueryCorrectionCommandKey,
     maximum_history: Option<NonZeroUsize>,
     maximum_results: NonZeroUsize,
-    required_root: Option<crate::equality_type_id::EqualityTypeId>,
+    required_root: Option<PreparedOutputRootKind>,
 ) -> Result<
     (
         ApplicationEncodedInput<<C::Source as ApplicationMutationBinding<S>>::InputBinding>,

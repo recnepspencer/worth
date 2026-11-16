@@ -143,9 +143,19 @@ pub(crate) fn current(
             }
         }
         // This is the existing closure owner. Only publications selected under
-        // the actual cascade roots may contribute another ownership frontier.
+        // the actual cascade roots, or their authenticated required consumers, may
+        // contribute another ownership frontier. No unrelated member expands it.
         let retiring =
             select(&roots, &latest, context).map_err(super::authored_cascade::stopped)?;
+        let consuming = super::scope_dependents::linked_owners(&roots, &retiring, &latest, context)
+            .map_err(super::authored_cascade::stopped)?;
+        for publication in &consuming {
+            let source = publication.origin.meaning.source_scope;
+            charge(context, 1).map_err(super::authored_cascade::stopped)?;
+            if visited.insert(source) {
+                frontier.push(RecordRef::Entity(source));
+            }
+        }
         for publication in retiring {
             for member in &publication.origin.members {
                 charge(context, 1).map_err(super::authored_cascade::stopped)?;

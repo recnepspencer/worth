@@ -13,7 +13,7 @@ pub(super) struct CheckedCorrectionSource<'check, 'target, 'source, Schema, C, B
     source: &'check WorthQuerySelectedCorrectionSource<'source, Schema>,
     ancestry: ProductBranchAncestorSelection,
     interpretation: WorthQueryProgramSupportInterpretation,
-    required_root: Option<crate::equality_type_id::EqualityTypeId>,
+    required_root: Option<PreparedOutputRootKind>,
     binding: std::marker::PhantomData<fn() -> (C, Binding)>,
 }
 
@@ -27,7 +27,7 @@ impl<'check, 'target, 'source, Schema, C, Binding>
         &'check WorthQuerySelectedCorrectionSource<'source, Schema>,
         &ProductBranchAncestorSelection,
         &WorthQueryProgramSupportInterpretation,
-        Option<crate::equality_type_id::EqualityTypeId>,
+        Option<PreparedOutputRootKind>,
     ) {
         (
             self.target,
@@ -47,7 +47,7 @@ impl<'check, 'target, 'source, Schema, C, Binding>
         &'check WorthQuerySelectedCorrectionSource<'source, Schema>,
         ProductBranchAncestorSelection,
         WorthQueryProgramSupportInterpretation,
-        Option<crate::equality_type_id::EqualityTypeId>,
+        Option<PreparedOutputRootKind>,
     ) {
         (
             self.target,
@@ -78,7 +78,7 @@ pub(super) fn require_compatible_source<'check, 'target, 'source, Schema, C>(
     phase: &WorthQueryAdvancementPhase<'_>,
     source: &'check WorthQuerySelectedCorrectionSource<'source, Schema>,
     ancestry: ProductBranchAncestorSelection,
-    required_root: Option<crate::equality_type_id::EqualityTypeId>,
+    required_root: Option<PreparedOutputRootKind>,
 ) -> Result<
     CheckedCorrectionSource<
         'check,
@@ -124,7 +124,7 @@ where
 fn require_target_program<Schema, C>(
     target: &WorthQuerySelectedProductOperation<'_, Schema>,
     source: &WorthQuerySelectedCorrectionSource<'_, Schema>,
-    required_root: Option<crate::equality_type_id::EqualityTypeId>,
+    required_root: Option<PreparedOutputRootKind>,
 ) -> Result<WorthQueryProgramSupportInterpretation, Denial>
 where
     Schema: ApplicationSchema,
@@ -157,7 +157,7 @@ pub(super) fn require_reapplication_program<'check, 'target, 'source, Schema, C>
     target: &'check WorthQuerySelectedProductOperation<'target, Schema>,
     source: &'check WorthQuerySelectedCorrectionSource<'source, Schema>,
     ancestry: ProductBranchAncestorSelection,
-    required_root: Option<crate::equality_type_id::EqualityTypeId>,
+    required_root: Option<PreparedOutputRootKind>,
 ) -> Result<CheckedCorrectionSource<'check, 'target, 'source, Schema, C, C::Source>, Denial>
 where
     Schema: ApplicationSchema,
@@ -189,7 +189,7 @@ where
 fn require_action_program<Schema, Binding>(
     target: &WorthQuerySelectedProductOperation<'_, Schema>,
     source: &WorthQuerySelectedCorrectionSource<'_, Schema>,
-    required_root: Option<crate::equality_type_id::EqualityTypeId>,
+    required_root: Option<PreparedOutputRootKind>,
 ) -> Result<WorthQueryProgramSupportInterpretation, Denial>
 where
     Schema: ApplicationSchema,
@@ -233,9 +233,13 @@ where
         return Err(Denial::RequiredOutputReconciliation);
     }
     if let Some(root) = required_root {
+        let (root, discovered) = match root {
+            PreparedOutputRootKind::Required(root) => (root, false),
+            PreparedOutputRootKind::Discovered(root) => (root, true),
+        };
         let delivery = action.delivery().and_then(|delivery| delivery.output());
         if !delivery.is_some_and(|delivery| {
-            !delivery.is_discovered() && delivery.root_type() == root.into_external()
+            delivery.is_discovered() == discovered && delivery.root_type() == root.into_external()
         }) {
             return Err(Denial::Action(worth_query_installation::facade::WorthQueryActionResolutionDenial::DeliveryMismatch));
         }

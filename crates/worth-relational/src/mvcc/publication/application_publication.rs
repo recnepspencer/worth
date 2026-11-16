@@ -21,13 +21,13 @@ mod coupled_assembly;
 mod coupled_owners;
 mod custody;
 mod ownership_reach;
-pub(crate) use coupled_assembly::BoundAuthoredCoupling;
+pub(crate) use coupled_assembly::{BoundAuthoredCoupling, RequiredOutputInputs};
 pub use coupled_assembly::{
     RelationalAuthoredCoupledCandidate, RelationalAuthoredCoupledProducerAssembly,
     RelationalAuthoredCoupledTransaction, RelationalCoupledAssemblyFailure,
     RelationalCoupledAuthoredPublication, RelationalCoupledAuthoredSourceEffects,
     RelationalCoupledContribution, RelationalCoupledProducerContinuation,
-    RelationalCoupledProducerPosture,
+    RelationalCoupledProducerPosture, RelationalRequiredOutputInput,
 };
 pub(crate) use coupled_owners::CoupledSource;
 pub use coupled_owners::{RelationalAuthoredCoupledOwners, RelationalDeclaredCoupledOwner};
@@ -71,6 +71,7 @@ pub struct RelationalInstalledApplicationPublicationAuthority {
 
 #[derive(Debug)]
 pub(crate) struct RequiredOutputPublicationAdmission {
+    pub(crate) inputs: RequiredOutputInputs,
     pub(crate) installed: RelationalInstalledApplicationPublicationAuthority,
     pub(crate) publication: RequiredOutputPublication,
 }
@@ -129,6 +130,7 @@ impl crate::mvcc::ValidatedRelationalProposal {
                 .require_current_ownership_storage(self.state.validation_input.basis(), source)?;
         }
         self.state.required_output_publication = Some(RequiredOutputPublicationAdmission {
+            inputs: Default::default(),
             installed: installed.clone(),
             publication,
         });

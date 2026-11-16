@@ -20,6 +20,10 @@ pub(super) fn validate_ancestry(
                 CanonicalCoupledAuthoredSources::Retirement {
                     prefix: source,
                     later,
+                }
+                | CanonicalCoupledAuthoredSources::MemberEditRetirement {
+                    prefix: source,
+                    sources: later,
                 } => {
                     let anchors = source.anchors().collect::<Vec<_>>();
                     for (anchor, birth) in std::iter::once((source.anchor, source.birth))
@@ -64,16 +68,22 @@ pub(super) fn validate_ancestry(
                     let mut required = super::super::scope_dependents::linked_owners(
                         &anchors, &retiring, &preceding, context,
                     )?;
-                    include_later(
-                        &mut required,
-                        later,
-                        &preceding,
-                        retiring.iter().map(|item| item.origin.as_ref()),
-                        context,
-                    )?;
+                    if !group.sources.is_edit() {
+                        include_later(
+                            &mut required,
+                            later,
+                            &preceding,
+                            retiring.iter().map(|item| item.origin.as_ref()),
+                            context,
+                        )?;
+                    }
                     exact(
                         &required,
-                        group.participants.iter().map(|part| part.origin.as_ref()),
+                        group
+                            .participants
+                            .iter()
+                            .filter(|part| part.is_required())
+                            .map(|part| part.origin.as_ref()),
                         true,
                         context,
                     )?;
@@ -81,6 +91,10 @@ pub(super) fn validate_ancestry(
                 CanonicalCoupledAuthoredSources::Restoration {
                     prefix: source,
                     later,
+                }
+                | CanonicalCoupledAuthoredSources::MemberEditRestoration {
+                    prefix: source,
+                    sources: later,
                 } => {
                     charge(context, ancestry.len() + 1)?;
                     let original_envelope = ancestry
@@ -103,7 +117,11 @@ pub(super) fn validate_ancestry(
                                 )
                             })?;
                     let mut required = Vec::new();
-                    for part in original.iter().flat_map(|original| &original.participants) {
+                    for part in original
+                        .iter()
+                        .flat_map(|original| &original.participants)
+                        .filter(|part| part.is_required())
+                    {
                         let prior = &part.origin;
                         for item in &preceding {
                             charge(
@@ -129,16 +147,22 @@ pub(super) fn validate_ancestry(
                             })?;
                         required.push(current.clone());
                     }
-                    include_later(
-                        &mut required,
-                        later,
-                        &preceding,
-                        retirement.publications.iter().map(Arc::as_ref),
-                        context,
-                    )?;
+                    if !group.sources.is_edit() {
+                        include_later(
+                            &mut required,
+                            later,
+                            &preceding,
+                            retirement.publications.iter().map(Arc::as_ref),
+                            context,
+                        )?;
+                    }
                     exact(
                         &required,
-                        group.participants.iter().map(|part| part.origin.as_ref()),
+                        group
+                            .participants
+                            .iter()
+                            .filter(|part| part.is_required())
+                            .map(|part| part.origin.as_ref()),
                         true,
                         context,
                     )?;

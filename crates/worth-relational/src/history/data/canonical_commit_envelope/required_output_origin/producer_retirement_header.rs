@@ -36,7 +36,7 @@ impl CanonicalCommitEnvelopeBody {
         };
         let charge = super::super::super::codec_retirement_closure::charge;
         let root = root.ok_or("producer cascade lost generator publication")?;
-        self.validate_output_origin_header(root)?;
+        self.validate_output_origin_header(root, context)?;
         if self.authored_cascade_retirement.is_some()
             || self.authored_cascade_restoration.is_some()
             || event.anchors.is_empty()
@@ -62,7 +62,7 @@ impl CanonicalCommitEnvelopeBody {
             return Err("producer cascade anchors differ from deleted generator membership".into());
         }
         for (index, origin) in event.publications.iter().enumerate() {
-            self.validate_output_origin_header(origin)?;
+            self.validate_output_origin_header(origin, context)?;
             if !origin.source_scope_owned
                 || !matches!(
                     origin.publication,

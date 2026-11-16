@@ -1,4 +1,5 @@
 //! Request-local required graph; its parent is proposed truth, never settlement.
+use super::super::coupled_publication::{PlannedOutput, PreparedCoupledInputs};
 use super::super::CoupledApplicationAssembly;
 use super::execution::CoupledSourceReadStop;
 use crate::domain_computation::primary_graph::application_attempt::coupled_outputs::DeclaredCoupledOutputDemand;
@@ -35,10 +36,12 @@ mod root;
 pub use discovered::SynchronousDiscoveredOutputRoot;
 mod discovery;
 mod edges;
+mod input_preparation;
 mod occurrences;
 pub(in crate::domain_computation::primary_graph::application_contribution) mod rounds;
 pub(in crate::domain_computation::primary_graph::application_contribution) mod source;
 mod wave;
+pub use input_preparation::PrerequisiteInputs;
 pub use rounds::default_producer_round_bounds;
 pub use wave::SynchronousOutputWave;
 
@@ -48,6 +51,7 @@ struct AppliedAuthoredDiscovery {
     pin: RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
 }
 pub struct AppliedOutputParent {
+    input: Option<worth_relational::facade::mvcc::RelationalRequiredOutputInput>,
     source: worth_relational::facade::identity::EntityId,
     pin: RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
 }
@@ -58,8 +62,9 @@ impl AppliedOutputParent {
     pub(in crate::domain_computation::primary_graph::application_contribution) fn new(
         pin: RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
         source: worth_relational::facade::identity::EntityId,
+        input: Option<worth_relational::facade::mvcc::RelationalRequiredOutputInput>,
     ) -> Self {
-        Self { pin, source }
+        Self { pin, source, input }
     }
 }
 pub struct SynchronousOutputFailure(
@@ -89,7 +94,12 @@ where
     D: WorthQueryApplicationOutputDemand<S>,
 {
     fn occurrence_families(_visit: &mut impl FnMut(std::any::TypeId)) {}
-    fn occurrence_component() -> bool {
+    fn occurrence_context(
+        _family: std::any::TypeId,
+    ) -> Result<Option<std::any::TypeId>, SynchronousOutputFailure> {
+        Ok(None)
+    }
+    fn has_static_continuation() -> bool {
         false
     }
     fn prerequisites(
@@ -97,6 +107,7 @@ where
         _pin: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
         _source: worth_relational::facade::identity::EntityId,
         _demand: &D,
+        _inputs: &PrerequisiteInputs<'_>,
         _next: &mut SynchronousOutputWave<S>,
     ) -> Result<(), SynchronousOutputFailure> {
         Ok(())
@@ -111,6 +122,22 @@ where
         demand: &D,
         next: &mut SynchronousOutputWave<S>,
     ) -> Result<(), SynchronousOutputFailure>;
+    fn assemble_static(
+        context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        parent: &AppliedOutputParent,
+        demand: &D,
+        next: &mut SynchronousOutputWave<S>,
+    ) -> Result<(), SynchronousOutputFailure> {
+        Self::assemble(context, parent, demand, next)
+    }
+    fn assemble_occurrences(
+        _context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        _parent: &AppliedOutputParent,
+        _demand: &D,
+        _next: &mut SynchronousOutputWave<S>,
+    ) -> Result<(), SynchronousOutputFailure> {
+        Ok(())
+    }
 }
 impl sealed::Edges for ApplicationOutputLeaf {}
 impl<S: ApplicationSchema, D: WorthQueryApplicationOutputDemand<S>> SynchronousOutputEdges<S, D>

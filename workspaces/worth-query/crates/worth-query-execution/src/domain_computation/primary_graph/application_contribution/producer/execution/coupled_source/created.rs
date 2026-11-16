@@ -17,7 +17,7 @@ pub(super) fn read<S, B>(
     current_absence: crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenial,
     assembly: &worth_relational::facade::mvcc::RelationalAuthoredCoupledCandidate<'_>,
     demand: &DeclaredCoupledOutputDemand,
-    route_only: bool,
+    purpose: CoupledSourceReadPurpose,
 ) -> Result<CoupledSourceRead, CoupledSourceReadStop>
 where
     S: ApplicationSchema,
@@ -120,13 +120,14 @@ where
                 scope_rejected(B::IDENTITY, current_absence)
             } else { query_admission_denied(B::IDENTITY, cause) }
         })?;
-    if route_only {
+    if purpose == CoupledSourceReadPurpose::Route {
         return Ok(CoupledSourceRead::Route {
             scope: scope.entity_id(),
             partition: *plan.parameter_binding_identity().bytes(),
         });
     }
-    if demand.reuse_prepared
+    if purpose == CoupledSourceReadPurpose::OutputPreparation
+        && demand.reuse_prepared
         && let Some(index) = assembly.prepared_route_index(
             execution,
             demand.family,
@@ -136,7 +137,7 @@ where
     {
         return Ok(CoupledSourceRead::Prepared(index));
     }
-    match assembly.declared_owner(
+    match assembly.read_parent_owner(
         execution,
         demand.family,
         scope.entity_id(),
@@ -145,10 +146,22 @@ where
         Some(worth_relational::facade::mvcc::RelationalDeclaredCoupledOwner::Retiring) => {
             return Ok(CoupledSourceRead::Retiring)
         }
-        Some(worth_relational::facade::mvcc::RelationalDeclaredCoupledOwner::Surviving(_)) => {
-            return Err(foreign().into())
+        Some(worth_relational::facade::mvcc::RelationalDeclaredCoupledOwner::Restored(input)) => {
+            return Ok(CoupledSourceRead::Restored {
+                scope: scope.entity_id(),
+                input,
+            })
         }
-        None => {}
+        Some(
+            worth_relational::facade::mvcc::RelationalDeclaredCoupledOwner::Surviving(_)
+            | worth_relational::facade::mvcc::RelationalDeclaredCoupledOwner::RequiredSurviving(_),
+        ) => return Err(foreign().into()),
+        None => assembly.require_unlisted_writer(
+            execution,
+            demand.family,
+            scope.entity_id(),
+            parameters.parameters().identity().bytes(),
+        )?,
     }
     let source = runtime
         .project_applied_source_plan(execution, plan, candidate)

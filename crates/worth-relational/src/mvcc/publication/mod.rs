@@ -5,7 +5,9 @@ mod authority;
 mod caller_association;
 mod preparation_denial;
 pub use application_publication::RelationalInstalledApplicationPublicationAuthority;
-pub(crate) use application_publication::{origin_denial, RequiredOutputPublicationAdmission};
+pub(crate) use application_publication::{
+    origin_denial, RequiredOutputInputs, RequiredOutputPublicationAdmission,
+};
 pub use application_publication::{
     AuthoredOwnedMemberKind, RecordedRequiredOutputRole, RelationalAuthoredCoupledCandidate,
     RelationalAuthoredCoupledOwners, RelationalAuthoredCoupledProducerAssembly,
@@ -18,10 +20,10 @@ pub use application_publication::{
     RelationalPredecessorBasisDenial, RelationalPredecessorBasisOrigin, RelationalPredecessorInput,
     RelationalPreparedOutputPublications, RelationalPublicationAdoptionRequest,
     RelationalPublicationAppendix, RelationalPublicationBodySelection,
-    RelationalRequiredOutputPublication, RelationalRequiredOutputRouteAbsence,
-    RelationalRestoredProducerPrior, RequiredOutputProducingImplementation,
-    RequiredOutputPublication, RequiredOutputPublicationMeaning, RequiredOutputRolePosture,
-    RequiredOutputRoleTarget,
+    RelationalRequiredOutputInput, RelationalRequiredOutputPublication,
+    RelationalRequiredOutputRouteAbsence, RelationalRestoredProducerPrior,
+    RequiredOutputProducingImplementation, RequiredOutputPublication,
+    RequiredOutputPublicationMeaning, RequiredOutputRolePosture, RequiredOutputRoleTarget,
 };
 pub(crate) use preparation_denial::PublicationPreparationDenial;
 mod candidate;

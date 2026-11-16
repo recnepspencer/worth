@@ -45,8 +45,8 @@ pub(crate) fn select_owned_scope_dependent(
     Ok(None)
 }
 
-/// Surviving opted-in writers whose owned edges consume a retiring authored source
-/// or a member of its admitted source-scope closure. Selection uses the closure
+/// Surviving opted-in writers reached by actual retained required inputs or owned
+/// edges of a retiring authored source and its admitted source-scope closure. Selection uses the closure
 /// owner's already-authenticated current publications; this never walks history.
 pub(super) fn linked_owners(
     anchors: &[EntityId],
@@ -54,34 +54,55 @@ pub(super) fn linked_owners(
     current: &[crate::history::data::SelectedOutputPublication],
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<Vec<crate::history::data::SelectedOutputPublication>, Stop> {
-    let mut selected = Vec::new();
-    for publication in current {
-        let origin = &publication.origin;
-        charge(context, retiring.len() + origin.members.len() + 1)?;
-        if !origin.source_scope_owned
-            || origin
-                .members
-                .iter()
-                .all(|m| m.posture == RequiredOutputRolePosture::Retire)
-            || retiring.iter().any(|p| p.origin.same_publication(origin))
-        {
-            continue;
-        }
-        let mut linked = false;
-        for edge in &origin.relations {
-            charge(context, anchors.len() + 1)?;
-            linked |= anchors.contains(&edge.source) || anchors.contains(&edge.target);
-            for removed in retiring {
-                charge(context, removed.origin.members.len())?;
-                linked |= removed.origin.members.iter().any(|m| {
-                    m.posture != RequiredOutputRolePosture::Retire
-                        && (m.id == edge.source || m.id == edge.target)
-                });
+    let mut selected: Vec<crate::history::data::SelectedOutputPublication> = Vec::new();
+    loop {
+        let mut added = false;
+        for publication in current {
+            let origin = &publication.origin;
+            charge(
+                context,
+                retiring.len() + origin.members.len() + selected.len() + 1,
+            )?;
+            if !origin.source_scope_owned
+                || origin
+                    .members
+                    .iter()
+                    .all(|m| m.posture == RequiredOutputRolePosture::Retire)
+                || retiring.iter().any(|p| p.origin.same_publication(origin))
+                || selected.iter().any(|p| p.origin.same_publication(origin))
+            {
+                continue;
+            }
+            let mut linked = false;
+            for input in &origin.inputs {
+                charge(context, anchors.len() + 1)?;
+                linked |= anchors.contains(&input.source_scope);
+                for parent in retiring.iter().chain(&selected) {
+                    charge(
+                        context,
+                        input.family.len() + parent.origin.meaning.family.len() + 65,
+                    )?;
+                    linked |= input.same_route(&parent.origin.meaning);
+                }
+            }
+            for edge in &origin.relations {
+                charge(context, anchors.len() + 1)?;
+                linked |= anchors.contains(&edge.source) || anchors.contains(&edge.target);
+                for removed in retiring {
+                    charge(context, removed.origin.members.len())?;
+                    linked |= removed.origin.members.iter().any(|m| {
+                        m.posture != RequiredOutputRolePosture::Retire
+                            && (m.id == edge.source || m.id == edge.target)
+                    });
+                }
+            }
+            if linked {
+                selected.push(publication.clone());
+                added = true;
             }
         }
-        if linked {
-            selected.push(publication.clone());
+        if !added {
+            return Ok(selected);
         }
     }
-    Ok(selected)
 }

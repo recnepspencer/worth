@@ -218,6 +218,46 @@ impl InstalledProducerEdition {
             })?
             .identity(),
         };
+        let digest = match &declaration.original_reads {
+            None => digest,
+            Some(reads) => application_value_identity(
+                ApplicationValueIdentityDomain::ProducerImplementationEdition,
+                &declaration.identity,
+                &(
+                    "producer-original-reads.v1",
+                    digest,
+                    reads.iter().map(|r| (r.name, r.input)).collect::<Vec<_>>(),
+                ),
+            )
+            .map_err(|_| {
+                WorthQueryPrimaryGraphInstallationDenial::new(
+                    DenialKind::ProducerBindingMeaningMismatch,
+                    declaration.identity.clone(),
+                )
+            })?
+            .identity(),
+        };
+        let digest = match &declaration.input_capture {
+            None => digest,
+            Some(capture) => application_value_identity(
+                ApplicationValueIdentityDomain::ProducerImplementationEdition,
+                &declaration.identity,
+                &(
+                    "producer-input-capture.v1",
+                    digest,
+                    declaration.operation.as_str(),
+                    capture.portable_meaning(),
+                    "program-occurrence-preparation",
+                ),
+            )
+            .map_err(|_| {
+                WorthQueryPrimaryGraphInstallationDenial::new(
+                    DenialKind::ProducerBindingMeaningMismatch,
+                    declaration.identity.clone(),
+                )
+            })?
+            .identity(),
+        };
         let digest = application_value_identity(
             ApplicationValueIdentityDomain::ProducerImplementationEdition,
             &declaration.identity,

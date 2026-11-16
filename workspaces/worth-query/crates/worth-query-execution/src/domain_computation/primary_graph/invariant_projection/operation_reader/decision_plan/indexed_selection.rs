@@ -21,6 +21,42 @@ use crate::domain_computation::primary_graph::{
 impl<Schema: ApplicationSchema, Operation>
     WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, Operation>
 {
+    /// Shared unique-selection admission for decision and readonly input owners.
+    pub(in crate::domain_computation::primary_graph) fn resolve_optional_decision_entity<
+        Entity,
+        Aspect,
+        Field,
+        Value,
+    >(
+        &mut self,
+        field: Field,
+        value: Value,
+    ) -> Result<Option<WorthQueryInvariantEntityIdentity<Schema, Entity>>, HandlerExecutionDenial>
+    where
+        Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+            Aspect = Aspect,
+            Value = Value,
+        >,
+        Field::Binding: worth_query_installation::facade::ApplicationReadableScalarValueBinding,
+    {
+        let mut matches = self
+            .decision_select_entities(field, value, 2)
+            .map_err(|denial| resolution_denial(denial, field.field()))?;
+        if matches.len() > 1 {
+            return Err(selection_denial(
+                WorthQueryEntityResolutionDenialKind::Refused(ResolutionRefusal::AmbiguousEntity),
+                field.field(),
+            ));
+        }
+        let identity = matches.pop();
+        if let Some(ref identity) = identity {
+            self.require_decision_field(identity, field)
+                .map_err(HandlerExecutionDenial::new)?;
+        }
+        Ok(identity)
+    }
+
     /// Select the complete equality result, retaining presence and absence for
     /// commit comparison. Overflow denies rather than returning a truncated set.
     pub fn decision_select_entities<Entity, Aspect, Field, Value>(
@@ -293,4 +329,27 @@ pub(super) fn selection_denial(
     subject: &str,
 ) -> HandlerExecutionDenial {
     HandlerExecutionDenial::new(WorthQueryEntityResolutionDenial::new(kind, subject))
+}
+
+pub(in crate::domain_computation::primary_graph) fn resolution_denial(
+    denial: HandlerExecutionDenial,
+    subject: &str,
+) -> HandlerExecutionDenial {
+    match denial.downcast::<WorthQueryEntityResolutionDenial>() {
+        Ok(denial)
+            if matches!(
+                denial.kind(),
+                WorthQueryEntityResolutionDenialKind::Refused(
+                    ResolutionRefusal::CandidateLimitExceeded { .. }
+                )
+            ) =>
+        {
+            HandlerExecutionDenial::new(WorthQueryEntityResolutionDenial::new(
+                WorthQueryEntityResolutionDenialKind::Refused(ResolutionRefusal::AmbiguousEntity),
+                subject,
+            ))
+        }
+        Ok(denial) => HandlerExecutionDenial::new(denial),
+        Err(denial) => denial,
+    }
 }

@@ -37,6 +37,20 @@ impl BranchBoundRelationalTransaction {
                             )
                         })?;
                 }
+                Ok::<_, MutationApplyDenial>(())
+            })
+            .map_err(request_stop)?
+            .0?;
+        // The producer has already prepared this closed suffix. Admit only its
+        // actual keys before the no-I/O reservation phase; a dictionary miss
+        // must not discard the prefix and invoke the producer a second time.
+        for text in &raw {
+            symbols.demand_text(execution, text).map_err(|failure| {
+                crate::authority::commit::preparation::storage_read_denial(&self.basis, failure)
+            })?;
+        }
+        execution
+            .run_native_with_checkpoint(|context| {
                 self.overlay.reserve_cache_replacement(&raw, execution)?;
                 let mut normalized = Vec::with_capacity(raw.len());
                 for text in raw {

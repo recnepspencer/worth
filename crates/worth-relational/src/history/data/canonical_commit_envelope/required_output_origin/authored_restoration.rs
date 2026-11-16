@@ -274,7 +274,10 @@ pub(super) fn install(
         let funding =
             worth_execution::ExecutionMemoryReservation::reserve_in_scope(lease, bytes)
                 .map_err(|cause| origin_request(crate::execution::denial::lease_denial(cause)))?;
+        let input_custody = inputs::copy(&origin.inputs, &entities, lease, context)?;
         let restored = Arc::new(CanonicalRequiredOutputOrigin {
+            inputs: input_custody.meanings,
+            _input_memory: input_custody.memory,
             _cascade_memory: None,
             commit: envelope.commit.clone(),
             basis: basis

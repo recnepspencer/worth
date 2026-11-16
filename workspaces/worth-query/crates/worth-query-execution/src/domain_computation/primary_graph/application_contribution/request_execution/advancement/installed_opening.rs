@@ -25,7 +25,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     worth_execution::CancellationToken::new(),
                     None,
                 );
-                execution.run_product_advancement(&self.runtime.product_runtime, body)
+                execution.run_product_advancement(&self.runtime.product_runtime, false, body)
             })?
     }
 
@@ -54,6 +54,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             allocation_policy,
             worth_execution::CancellationToken::new(),
             None,
+            false,
             body,
         )
     }
@@ -72,6 +73,27 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             self.with_funded_application_advancement_on_execution_stack(
                 request,
                 allocation_policy,
+                false,
+                body,
+            )
+        })
+    }
+
+    /// Runs an effectful application call under the original request and funding.
+    /// Once its callback returns, transfers that exact owned outcome even if
+    /// nested work stopped. This is not a commit certificate and does not clear
+    /// cancellation or admit any further effects. Pre-entry refusal still wins.
+    pub fn with_funded_application_completion<R>(
+        &self,
+        request: &WorthQueryRequestScope,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+        body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
+    ) -> Result<R, WorthQueryAdvancementDenial> {
+        worth_execution::run_with_execution_stack(move || {
+            self.with_funded_application_advancement_on_execution_stack(
+                request,
+                allocation_policy,
+                true,
                 body,
             )
         })
@@ -82,16 +104,21 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         &self,
         request: &WorthQueryRequestScope,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+        retain_returned_outcome: bool,
         body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
     ) -> Result<R, WorthQueryAdvancementDenial> {
         match allocation_policy {
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation => {
-                self.with_application_advancement(request, body)
-            }
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation => self
+                .with_application_advancement_on_execution_stack(
+                    request,
+                    retain_returned_outcome,
+                    body,
+                ),
             worth_execution::ExecutionAllocationPolicy::Execution(_) => self.open_funded(
                 allocation_policy,
                 request.cancellation().execution_token(),
                 request.deadline(),
+                retain_returned_outcome,
                 body,
             ),
         }
@@ -102,6 +129,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
         cancellation: worth_execution::CancellationToken,
         deadline: Option<worth_execution::MonotonicDeadline>,
+        retain_returned_outcome: bool,
         body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
     ) -> Result<R, WorthQueryAdvancementDenial> {
         let _custody = OpeningCustody::enter()?;
@@ -116,7 +144,11 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                         QueryRequestExecution::under_lease(lease, cancellation, deadline)
                     }
                 };
-                execution.run_product_advancement(&self.runtime.product_runtime, body)
+                execution.run_product_advancement(
+                    &self.runtime.product_runtime,
+                    retain_returned_outcome,
+                    body,
+                )
             })?
     }
 
@@ -140,7 +172,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
     ) -> Result<R, WorthQueryAdvancementDenial> {
         worth_execution::run_with_execution_stack(move || {
-            self.with_application_advancement_on_execution_stack(request, body)
+            self.with_application_advancement_on_execution_stack(request, false, body)
         })
     }
 
@@ -148,6 +180,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     fn with_application_advancement_on_execution_stack<R>(
         &self,
         request: &WorthQueryRequestScope,
+        retain_returned_outcome: bool,
         body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
     ) -> Result<R, WorthQueryAdvancementDenial> {
         let _custody = OpeningCustody::enter()?;
@@ -155,7 +188,11 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .product_runtime
             .with_execution_placement(|placement| {
                 let execution = QueryRequestExecution::open(placement, request);
-                execution.run_product_advancement(&self.runtime.product_runtime, body)
+                execution.run_product_advancement(
+                    &self.runtime.product_runtime,
+                    retain_returned_outcome,
+                    body,
+                )
             })?
     }
 }
@@ -216,7 +253,7 @@ impl crate::domain_computation::execution_runtime::product_world::WorthQueryProd
         let _custody = OpeningCustody::enter()?;
         self.with_execution_placement(|placement| {
             QueryRequestExecution::open_control(placement, cancellation, deadline)
-                .run_product_advancement(self, body)
+                .run_product_advancement(self, false, body)
         })?
     }
 }

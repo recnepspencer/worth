@@ -37,6 +37,16 @@ fn inconsistent(core: &WorthQueryAdmittedOperation) -> Denial {
 impl<Schema, Operation, Input, Scope>
     WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>
 {
+    /// Consume the operation brand when a completed pure read becomes Source
+    /// support. The original decisions move; no successor write brand is issued.
+    pub(in crate::domain_computation) fn into_read_authorization(
+        mut self,
+    ) -> Option<
+        crate::domain_computation::authorization::WorthQueryRetainedAuthorizationDecisionFacts,
+    > {
+        self.core.data.authorization.take()
+    }
+
     /// Brands a freshly admitted core. A conventional admission carries no
     /// typed capability input; every capability mode carries exactly one.
     pub(super) fn mint(
