@@ -15,5 +15,6 @@ pub(in super::super) fn feature_specs(
         synchronous_edit::reconciliation::feature(),
         synchronous_edit::reconciliation::child_feature(),
         captured,
+        borrowed_inputs::program::feature(),
     ]
 }

@@ -136,9 +136,17 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         parent: super::producer::VerifiedAppliedParent,
-    ) -> Result<synchronous_outputs::AppliedOutputParent, WorthQueryOutputDemandDenial> {
-        let applied =
-            synchronous_outputs::AppliedOutputParent::new(parent.pin().clone(), parent.source());
+        candidate: &RelationalAuthoredCoupledCandidate<'_>,
+    ) -> Result<synchronous_outputs::AppliedOutputParent, CoupledSourceReadStop> {
+        let input = parent
+            .publication()
+            .map(|publication| candidate.current_output_input(execution, publication))
+            .transpose()?;
+        let applied = synchronous_outputs::AppliedOutputParent::new(
+            parent.pin().clone(),
+            parent.source(),
+            input,
+        );
         self.application
             .runtime
             .primary_provider

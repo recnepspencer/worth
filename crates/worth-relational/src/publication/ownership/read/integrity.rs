@@ -85,6 +85,15 @@ pub(super) fn validate(
             ));
         }
         let o = &row.value.origin;
+        o.validate_inputs(context).map_err(|cause| match cause {
+            crate::history::data::CodecRetirementClosureStop::Request(cause) => {
+                super::super::request(cause)
+            }
+            _ => corrupt(
+                o.commit.commit_id,
+                RecordRef::Entity(o.meaning.source_scope),
+            ),
+        })?;
         let owner = o.meaning.source_scope;
         let publication = o.commit.commit_id;
         let (catalog, _payload) = catalogs
@@ -133,6 +142,21 @@ pub(super) fn validate(
                 }
             }
         }
+        if live.contains(&row.entity) {
+            for input in &o.inputs {
+                checkpoint(context, 1)?;
+                if roster.reached_scopes.contains(&input.source_scope)
+                    && !links.contains_key(&(
+                        storage.input_link,
+                        input.source_scope,
+                        row.entity,
+                        row.value.custody(),
+                    ))
+                {
+                    return Err(corrupt(publication, RecordRef::Entity(input.source_scope)));
+                }
+            }
+        }
         for edge in &o.relations {
             checkpoint(context, 1)?;
             edges.insert((row.entity, edge.id), edge);
@@ -140,14 +164,26 @@ pub(super) fn validate(
     }
     for link in &roster.links {
         checkpoint(context, 1)?;
-        if link.kind == storage.member_link || link.kind == storage.edge_link {
+        if [storage.member_link, storage.edge_link, storage.input_link].contains(&link.kind) {
             let row = publications
                 .get(&link.target)
                 .ok_or_else(|| corrupt(link.publication, RecordRef::Relation(link.id)))?;
             if link.publication != row.value.custody() {
                 return Err(corrupt(link.publication, RecordRef::Relation(link.id)));
             }
-            if link.kind == storage.member_link {
+            if link.kind == storage.input_link {
+                checkpoint(context, row.value.origin.inputs.len() as u64)?;
+                if !live.contains(&row.entity)
+                    || !row
+                        .value
+                        .origin
+                        .inputs
+                        .iter()
+                        .any(|input| input.source_scope == link.source)
+                {
+                    return Err(corrupt(link.publication, RecordRef::Entity(link.source)));
+                }
+            } else if link.kind == storage.member_link {
                 if !members.contains(&(row.entity, link.source)) {
                     return Err(corrupt(link.publication, RecordRef::Entity(link.source)));
                 }

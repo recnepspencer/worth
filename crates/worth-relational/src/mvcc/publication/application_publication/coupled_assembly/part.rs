@@ -97,6 +97,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         let ordinary_ids = publication
             .resolve_ordinary_roles(execution, &self.mutation.outcome.created_entities)?;
         self.parts.push(CoupledPublicationPart {
+            inputs: None,
             ordinary_ids,
             input: applied.read,
             publication,

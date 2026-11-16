@@ -258,6 +258,7 @@ pub(super) fn install(
                 created_relations,
                 state,
                 crate::mvcc::RequiredOutputPublicationAdmission {
+                    inputs: part.inputs.unwrap_or_default(),
                     installed: installed.clone(),
                     publication,
                 },

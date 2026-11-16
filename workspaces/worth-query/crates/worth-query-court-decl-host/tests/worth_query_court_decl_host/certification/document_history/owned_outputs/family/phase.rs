@@ -54,21 +54,21 @@ macro_rules! producer_operation {
     };
 }
 macro_rules! producer_decision_dependency {
-    (ConvergentPreserve, $reader:ident) => {{
+    (ConvergentPreserve, $reader:ident, $source:ident) => {{
         let member = $reader.resolve_entity(MemberKey::at("MemberKey"), "m".to_owned())?;
         $reader.field(&member, CalibrationReady::at("Ready"))?.unwrap_or(0)
     }};
-    (OrdinaryInputInitial, $reader:ident) => { producer_decision_dependency!(@member_read $reader) };
-    (OrdinaryInputPreserve, $reader:ident) => { producer_decision_dependency!(@member_read $reader) };
-    (DecisionInputInitial, $reader:ident) => { producer_decision_dependency!(@member_read $reader) };
-    (DecisionInputPreserve, $reader:ident) => { producer_decision_dependency!(@member_read $reader) };
-    (ParityInputInitial, $reader:ident) => { producer_decision_dependency!(@member_read $reader) };
-    (ParityInputPreserve, $reader:ident) => { producer_decision_dependency!(@member_read $reader) };
+    (OrdinaryInputInitial, $reader:ident, $source:ident) => { producer_decision_dependency!(@member_read $reader) };
+    (OrdinaryInputPreserve, $reader:ident, $source:ident) => { producer_decision_dependency!(@member_read $reader) };
+    (DecisionInputInitial, $reader:ident, $source:ident) => { producer_decision_dependency!(@member_read $reader) };
+    (DecisionInputPreserve, $reader:ident, $source:ident) => { producer_decision_dependency!(@member_read $reader) };
+    (ParityInputInitial, $reader:ident, $source:ident) => { producer_decision_dependency!(@member_read $reader) };
+    (ParityInputPreserve, $reader:ident, $source:ident) => { producer_decision_dependency!(@member_read $reader) };
     (@member_read $reader:ident) => {{
         let member = $reader.resolve_entity(MemberKey::at("MemberKey"), "m".to_owned())?;
         $reader.field(&member, MemberValue::at("MemberValue"))?.expect("seeded decision member has its required value")
     }};
-    ($operation:ident, $reader:ident) => { 0 };
+    ($operation:ident, $reader:ident, $source:ident) => { 0 };
 }
 macro_rules! producer_member_target {
     (ConvergentPreserve, $reader:ident) => {{
@@ -250,7 +250,7 @@ macro_rules! phase {
                         let source = reader.resolve_entity(source_key(), input.0.key.clone())?;
                         reader.field(&source, source_value())?;
                         predecessor_hook!($operation, reader, source);
-                        let member_value = producer_decision_dependency!($operation, reader);
+                        let member_value = producer_decision_dependency!($operation, reader, source);
                         let member_target = producer_member_target!($operation, reader);
                         let prior = if $preserve { Some(reader.prior_output_preserved_or_created::<preserve::Binding, preserve::Output, initial::Binding, initial::Output>()?) }
                             else { reader.resolve_optional_entity($key::at(stringify!($key)), output_key(&input.0))? };

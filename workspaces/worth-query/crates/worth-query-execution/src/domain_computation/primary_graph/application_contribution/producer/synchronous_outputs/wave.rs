@@ -1,6 +1,7 @@
 //! Every prepared parent precedes discovery and preparation of the next wave.
 use super::*;
 mod continuations;
+mod inputs;
 mod occurrences;
 mod outgoing;
 mod prerequisites;
@@ -230,6 +231,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
                         break;
                     }
                 }
+                self.retain_parent_inputs(context, candidate, *i)?;
             }
             let pin = candidate
                 .pin_source(context.execution)

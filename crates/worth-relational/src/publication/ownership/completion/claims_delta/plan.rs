@@ -7,10 +7,15 @@ use crate::{
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) enum Claim {
     Member(EntityId),
+    Input(EntityId),
     Relation(RelationClaim),
 }
 #[derive(Debug, Clone)]
 pub(super) enum StoredClaim {
+    Input {
+        entity: EntityId,
+        link: RelationId,
+    },
     Member {
         entity: EntityId,
         link: RelationId,
@@ -28,28 +33,33 @@ pub(super) enum Change {
     Revise { previous: usize, next: usize },
 }
 impl Claim {
-    pub(super) fn key(&self) -> RecordRef {
+    pub(super) fn key(&self) -> (u8, RecordRef) {
         match self {
-            Self::Member(id) => RecordRef::Entity(*id),
-            Self::Relation(edge) => RecordRef::Relation(edge.id),
+            Self::Member(id) => (0, RecordRef::Entity(*id)),
+            Self::Input(id) => (2, RecordRef::Entity(*id)),
+            Self::Relation(edge) => (1, RecordRef::Relation(edge.id)),
         }
     }
 }
 impl StoredClaim {
-    pub(super) fn key(&self) -> RecordRef {
+    pub(super) fn key(&self) -> (u8, RecordRef) {
         match self {
-            Self::Member { entity, .. } => RecordRef::Entity(*entity),
-            Self::Relation { edge, .. } => RecordRef::Relation(edge.id),
+            Self::Member { entity, .. } => (0, RecordRef::Entity(*entity)),
+            Self::Input { entity, .. } => (2, RecordRef::Entity(*entity)),
+            Self::Relation { edge, .. } => (1, RecordRef::Relation(edge.id)),
         }
     }
     pub(super) fn link(&self) -> RelationId {
         match self {
-            Self::Member { link, .. } | Self::Relation { link, .. } => *link,
+            Self::Member { link, .. } | Self::Relation { link, .. } | Self::Input { link, .. } => {
+                *link
+            }
         }
     }
     fn equals(&self, claim: &Claim) -> bool {
         match (self, claim) {
-            (Self::Member { entity, .. }, Claim::Member(next)) => entity == next,
+            (Self::Member { entity, .. }, Claim::Member(next))
+            | (Self::Input { entity, .. }, Claim::Input(next)) => entity == next,
             (Self::Relation { edge, .. }, Claim::Relation(next)) => edge == next,
             _ => false,
         }

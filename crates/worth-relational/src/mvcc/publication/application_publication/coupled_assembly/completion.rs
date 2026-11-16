@@ -122,6 +122,7 @@ pub(crate) fn prepare_coupled_candidate(
         .retain(execution, 0, authored_commands.plan(), &authored_records)
         .map_err(|failure| failure.cause)?;
     let mut candidate = RelationalAuthoredCoupledCandidate {
+        input_issuance: std::cell::RefCell::new(None),
         runtime: &runtime,
         transaction,
         prepared: &mut prepared,
@@ -209,6 +210,7 @@ pub(crate) fn prepare_coupled_candidate(
         None,
     );
     mutation.coupled_publication = Some(RequiredOutputPublicationAdmission {
+        inputs: Default::default(),
         installed: binding.installed.clone(),
         publication: RequiredOutputPublication::CoupledAuthored {
             group: RelationalCoupledAuthoredPublication {

@@ -35,6 +35,7 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
         restricted_from_first::contracts(contracts)?;
         first::contracts(contracts)?;
         family::captured_input::contracts(contracts)?;
+        family::borrowed_inputs::contracts(contracts)?;
         second::contracts(contracts)?;
         child::contracts(contracts)?;
         restricted::contracts(contracts)?;
@@ -86,6 +87,7 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
         restricted_from_first::install(setup)?;
         first::install(setup)?;
         family::captured_input::install(setup)?;
+        family::borrowed_inputs::install(setup)?;
         match configuration.second_derivation {
             Some(derive) => second::install_with_derivation(setup, derive)?,
             None => second::install(setup)?,

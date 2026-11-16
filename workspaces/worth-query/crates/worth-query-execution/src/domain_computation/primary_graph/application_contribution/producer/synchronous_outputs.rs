@@ -45,6 +45,7 @@ struct AppliedAuthoredDiscovery {
     pin: RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
 }
 pub struct AppliedOutputParent {
+    input: Option<worth_relational::facade::mvcc::RelationalRequiredOutputInput>,
     source: worth_relational::facade::identity::EntityId,
     pin: RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
 }
@@ -55,8 +56,9 @@ impl AppliedOutputParent {
     pub(in crate::domain_computation::primary_graph::application_contribution) fn new(
         pin: RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
         source: worth_relational::facade::identity::EntityId,
+        input: Option<worth_relational::facade::mvcc::RelationalRequiredOutputInput>,
     ) -> Self {
-        Self { pin, source }
+        Self { pin, source, input }
     }
 }
 pub struct SynchronousOutputFailure(
