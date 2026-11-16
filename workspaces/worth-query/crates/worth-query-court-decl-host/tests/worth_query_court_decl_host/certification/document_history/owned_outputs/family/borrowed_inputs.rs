@@ -109,7 +109,9 @@ phase!(
 pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
-    header_owners::declare(owners::declare(preserve::declare(initial::declare(schema))))
+    disconnect::declare(header_owners::declare(owners::declare(preserve::declare(
+        initial::declare(schema),
+    ))))
 }
 pub fn contracts(
     contracts: &mut WorthQueryApplicationContributionContracts<Schema>,
@@ -123,6 +125,7 @@ pub fn contracts(
 pub fn install(
     setup: &mut WorthQueryApplicationContributionSetup<'_, Schema>,
 ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+    setup.handler::<disconnect::Binding, _>(disconnect::Handler)?;
     setup.handler::<initial::Binding, _>(initial::Handler { derive: derived })?;
     setup.handler::<preserve::Binding, _>(preserve::Handler { derive: derived })?;
     setup.producer::<initial::Producer>(initial::Provider)?;
@@ -133,6 +136,7 @@ pub fn install(
 
 #[cfg(test)]
 mod courts;
+mod disconnect;
 mod header_owners;
 mod owners;
 pub mod program;

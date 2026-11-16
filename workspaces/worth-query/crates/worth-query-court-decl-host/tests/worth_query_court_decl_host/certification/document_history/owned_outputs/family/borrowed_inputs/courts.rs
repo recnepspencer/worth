@@ -249,3 +249,84 @@ fn retirement_rebuilds_a_borrowed_only_owner_and_its_transitive_consumer() {
 fn cold_retirement_rebuilds_borrowed_owners_and_retains_recorded_reverse_and_reapply() {
     exercise(true);
 }
+
+#[test]
+fn a_removed_live_input_has_no_surviving_consumer_when_it_is_later_retired() {
+    let _observation = WorthQueryExecutionObservation::install_on_this_thread();
+    let host = install();
+    initialize(&host);
+    let scope = request_scope();
+    let principal = authenticate_operator(host.installed_schema(), &scope);
+    let request = host.request(&principal, &scope);
+    let before = first(&request);
+    let next = child(&request, "from-first:borrowed:a");
+    let m = child(&request, "downstream:m");
+    let n = child(&request, "downstream:n");
+    let mut disconnect = request
+        .edit_envelope()
+        .idempotency("disconnect-live-input".to_owned())
+        .runtime_stages(&host)
+        .ordered_authored()
+        .unwrap();
+    disconnect
+        .push_stage::<program::Tree, _>(disconnect::Intent)
+        .unwrap();
+    let outcome = disconnect
+        .execute_performed(ExecutionAllocationPolicy::SystemAllocation)
+        .unwrap();
+    assert!(matches!(outcome, Outcome::Committed(_)), "{outcome:?}");
+    assert_eq!(
+        (first(&request).native_id, first(&request).value),
+        (before.native_id, 701)
+    );
+    assert_eq!(
+        (
+            child(&request, "from-first:borrowed:a").native_id,
+            child(&request, "from-first:borrowed:a").value
+        ),
+        (next.native_id, 70100)
+    );
+    assert_eq!(
+        child(&request, "downstream:m"),
+        m,
+        "disconnection leaves the real parent publication live"
+    );
+    assert_eq!(child(&request, "downstream:n"), n);
+    let contacts = host.producer_contacts_on_this_thread_for_test();
+    let head = synchronous_edit::native_head(&host).0;
+    let mut retire = request
+        .edit_envelope()
+        .idempotency("retire-unconsumed-input".to_owned())
+        .runtime_stages(&host)
+        .ordered_authored()
+        .unwrap();
+    retire
+        .push_stage::<program::Tree, _>(authored_member::retire::Intent)
+        .unwrap();
+    let outcome = retire
+        .execute_performed(ExecutionAllocationPolicy::SystemAllocation)
+        .unwrap();
+    assert!(matches!(outcome, Outcome::Committed(_)), "{outcome:?}");
+    assert_eq!(
+        host.producer_contacts_on_this_thread_for_test(),
+        contacts,
+        "no surviving consumer is enrolled from the removed input"
+    );
+    assert_eq!(synchronous_edit::native_head(&host).1, [head]);
+    assert!(request
+        .query(query::child_output::Read("downstream:m".into()))
+        .execute()
+        .is_err());
+    assert_eq!(
+        (first(&request).native_id, first(&request).value),
+        (before.native_id, 701)
+    );
+    assert_eq!(
+        (
+            child(&request, "from-first:borrowed:a").native_id,
+            child(&request, "from-first:borrowed:a").value
+        ),
+        (next.native_id, 70100)
+    );
+    assert_eq!(child(&request, "downstream:n"), n);
+}

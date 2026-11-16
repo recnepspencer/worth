@@ -67,6 +67,7 @@ macro_rules! model_root {
 }
 model_root!(edit::Binding, edit::Intent);
 model_root!(member_edit::Binding, member_edit::Intent);
+model_root!(disconnect::Binding, disconnect::Intent);
 model_root!(
     super::super::super::synchronous_edit::interleaved::created::Binding,
     super::super::super::synchronous_edit::interleaved::created::Intent
@@ -172,6 +173,8 @@ impl ApplicationProgramDefinition<Schema> for Program {
         )
         .finish_action()
         .action::<member_retarget::operation::Binding, Completion>()
+        .finish_action()
+        .action::<disconnect::Binding, fixture::Delivery<Tree>>()
         .finish_action()
         .finish();
         specs
