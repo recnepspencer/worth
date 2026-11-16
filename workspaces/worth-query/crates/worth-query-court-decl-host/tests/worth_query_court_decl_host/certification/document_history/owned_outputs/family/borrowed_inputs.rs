@@ -136,7 +136,7 @@ pub fn install(
 
 #[cfg(test)]
 mod courts;
-mod disconnect;
+pub(in super::super) mod disconnect;
 mod header_owners;
 mod owners;
 pub mod program;

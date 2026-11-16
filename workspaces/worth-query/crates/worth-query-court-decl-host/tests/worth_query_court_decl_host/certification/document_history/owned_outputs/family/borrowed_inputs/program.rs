@@ -174,8 +174,6 @@ impl ApplicationProgramDefinition<Schema> for Program {
         .finish_action()
         .action::<member_retarget::operation::Binding, Completion>()
         .finish_action()
-        .action::<disconnect::Binding, fixture::Delivery<Tree>>()
-        .finish_action()
         .finish();
         specs
     }
