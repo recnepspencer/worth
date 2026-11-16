@@ -7,7 +7,9 @@ use worth_query_host::facade::runtime::{
 };
 
 // Twice the 64 MiB preparation ceiling leaves framework memory headroom.
-// The 16 million work ceiling bounds ordinary advancements in both placements.
+// The first authenticated read after Directory reopen also verifies the recorded
+// index checkpoint and its projections. The full Bank journey exceeds 16M there;
+// the finite 128M window covers that recovery and ordinary advancement alike.
 const BANK_EXECUTION_POLICY: worth_foundational::ExecutionRequestPolicy =
     worth_foundational::ExecutionRequestPolicy::new(
         worth_foundational::ExecutionPosture::Serial,
@@ -15,7 +17,7 @@ const BANK_EXECUTION_POLICY: worth_foundational::ExecutionRequestPolicy =
         worth_foundational::ExecutionBudget::new(
             std::num::NonZeroUsize::MIN,
             Some(128 * 1024 * 1024),
-            Some(16_000_000),
+            Some(128_000_000),
         ),
     );
 
@@ -55,8 +57,7 @@ pub(crate) fn bank_product_world_resources() -> WorthQueryProductWorldResources 
 }
 
 /// Initial construction admits the whole supplied source graph at once.
-/// Eight ordinary work windows fund that bounded host setup; the installed
-/// runtime still receives BANK_EXECUTION_POLICY, including its 16M ceiling.
+/// It uses the same finite recovery window as the installed runtime.
 pub(super) fn bank_bootstrap_policy() -> worth_foundational::ExecutionRequestPolicy {
     worth_foundational::ExecutionRequestPolicy::new(
         worth_foundational::ExecutionPosture::Serial,
@@ -64,7 +65,7 @@ pub(super) fn bank_bootstrap_policy() -> worth_foundational::ExecutionRequestPol
         worth_foundational::ExecutionBudget::new(
             std::num::NonZeroUsize::MIN,
             Some(128 * 1024 * 1024),
-            Some(8 * 16_000_000),
+            Some(128_000_000),
         ),
     )
 }
