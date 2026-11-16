@@ -16,6 +16,7 @@ pub(in super::super) mod prerequisite_partition;
 mod prerequisite_path;
 mod program;
 mod reading;
+pub(in super::super) mod retirement_parent;
 pub(in super::super) mod seal;
 pub(in super::super) use program::{ModelTree, RetirementProgram};
 use program::{ProducedTree, Program};

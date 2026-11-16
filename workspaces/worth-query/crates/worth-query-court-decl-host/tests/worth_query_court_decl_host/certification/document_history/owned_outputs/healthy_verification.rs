@@ -252,10 +252,17 @@ fn worker_only_healthy_verification_needs_no_source_admission() {
 }
 
 // Whole-source retirement distinguishes a current read from an extra writer.
-fn exercise_retirement_parent(current: bool) {
+#[derive(Debug)]
+enum RetirementParent {
+    Absent,
+    Current,
+    Changed,
+}
+fn exercise_retirement_parent(state: RetirementParent) {
+    let current = matches!(state, RetirementParent::Current);
     let _execution = WorthQueryExecutionObservation::install_on_this_thread();
     use super::authored_member as member;
-    use super::synchronous_edit::interleaved::{ModelTree, RetirementProgram as Program};
+    use super::synchronous_edit::interleaved::retirement_parent::{Program, Tree as ModelTree};
     use worth_query_host::facade::{
         application_entry::WorthQueryEditEnvelopeOutcome as Outcome,
         runtime::ExecutionAllocationPolicy,
@@ -264,15 +271,15 @@ fn exercise_retirement_parent(current: bool) {
         inspection::observe_maintenance_work, publication::AuthoredRetirementRefusal,
     };
     let host = world::install_configured::<Program>(host_limits(
-        worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()), 1, None,
+        worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()), 1, Some(7),
         world::Configuration { envelope_records:true, interleaved_records:true, ..Default::default() });
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.request(&principal, &scope);
     let mut original = None;
-    if current {
+    if !matches!(state, RetirementParent::Absent) {
         let mut demand = request
-            .demand(first::Demand("a".into()))
+            .demand(first::Demand("b".into()))
             .start_in_program::<Program, ModelTree>(&host)
             .unwrap();
         loop {
@@ -288,18 +295,37 @@ fn exercise_retirement_parent(current: bool) {
         demand.close();
         original = Some(
             request
-                .query(query::first_output::Read("first:a".into()))
+                .query(query::first_output::Read("first:b".into()))
                 .execute()
                 .unwrap()
                 .rows()[0]
                 .clone(),
         );
     }
+    if matches!(state, RetirementParent::Changed) {
+        let changed = request
+            .advanced()
+            .mutate(edit::Intent {
+                key: "b".into(),
+                value: 8,
+            })
+            .without_source()
+            .idempotency(&"dirty-independent-parent".to_owned())
+            .execute_in_program(&host, ExecutionAllocationPolicy::SystemAllocation)
+            .unwrap();
+        assert!(
+            matches!(
+                changed,
+                WorthQueryApplicationMutationOutcome::Committed { .. }
+            ),
+            "{changed:?}"
+        );
+    }
     let before = super::synchronous_edit::native_head(&host);
     let contacts = host.producer_contacts_on_this_thread_for_test();
     let mut edit = request
         .edit_envelope()
-        .idempotency(format!("retire-with-parent-{current}"))
+        .idempotency(format!("retire-with-parent-{state:?}"))
         .runtime_stages(&host)
         .ordered_authored()
         .unwrap();
@@ -322,12 +348,12 @@ fn exercise_retirement_parent(current: bool) {
             .execute()
             .is_err());
         let row = request
-            .query(query::first_output::Read("first:a".into()))
+            .query(query::first_output::Read("first:b".into()))
             .execute()
             .unwrap();
         let original = original.unwrap();
         assert_eq!(row.rows()[0].native_id, original.native_id);
-        assert_eq!((row.rows()[0].value, original.value), (10, 10));
+        assert_eq!((row.rows()[0].value, original.value), (70, 70));
     } else {
         let Outcome::Uncommitted(WorthQueryApplicationUncommitted::Denied(denial)) = outcome else {
             panic!("{outcome:?}");
@@ -354,9 +380,14 @@ fn exercise_retirement_parent(current: bool) {
 }
 #[test]
 fn retirement_reads_a_current_parent_outside_its_writer_catalog() {
-    exercise_retirement_parent(true);
+    exercise_retirement_parent(RetirementParent::Current);
 }
 #[test]
 fn retirement_cannot_create_a_parent_outside_its_writer_catalog() {
-    exercise_retirement_parent(false);
+    exercise_retirement_parent(RetirementParent::Absent);
+}
+
+#[test]
+fn retirement_cannot_recompute_a_parent_outside_its_writer_catalog() {
+    exercise_retirement_parent(RetirementParent::Changed);
 }

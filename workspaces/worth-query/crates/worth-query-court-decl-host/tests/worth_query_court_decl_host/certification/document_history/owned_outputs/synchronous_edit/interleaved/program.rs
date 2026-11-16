@@ -164,7 +164,7 @@ impl WorthQueryApplicationRequiredOutputConnection<Schema> for OwnedMemberRoot {
         Ok(downstream::Demand(input.0.key.clone()))
     }
 }
-fn feature_specs<
+pub(super) fn feature_specs<
     Retire: ApplicationActionDelivery<Schema, super::super::super::authored_member::retire::Binding>,
 >() -> Vec<ApplicationFeatureSpec> {
     let mut specs = hierarchy::Program::feature_specs();
