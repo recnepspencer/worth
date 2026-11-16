@@ -78,7 +78,6 @@ where
         FamilySourceValue<Schema, Family>: 'static,
         FamilySourceQuery<Schema, Family>: 'static,
     {
-        if demand.admission_kind.is_required() {}
         let mut pass = AdvancePass::Initial;
         loop {
             let result = self.advance_caller_pass(

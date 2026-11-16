@@ -977,9 +977,9 @@ The [ordinary workflow example](../workspaces/worth-query/crates/worth-query-cer
 uses shared authoring and actual Directory Home installation. It hands off its
 recorded original, reopens the same Home, readmits the input under fresh authority,
 then checks the native result and retained read. The target scope belongs to the
-encoded input. This caller cutover awaits focused qualification at the integrated
-H6 source epoch; crash recovery and the full-family positive divergent correction
-journey remain uncertified.
+encoded input. The combined Bank journey verifies graceful fresh-process
+readmission and no-output divergent correction under the integrated owners.
+Crash recovery is not yet certified.
 The existing [managed-index setup consumer](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/refusing/host.rs)
 teaches typed provider setup and initialization without adding an index to an
 application that has none. These descriptive contracts confer no extra read,
@@ -1102,8 +1102,9 @@ revision with the freshly installed validated application revision. These codecs
 carry only locator, occurrence, durable position/basis, demand and restriction
 DATA; decoding does not authorize, retain, adopt or advance. Fresh authenticated
 workflow discovery, exact required-occurrence and demand equality, and actual
-Home obligation readmission still decide continuation. The combined Bank journey exercises this fresh-process handoff, including exact
-original-owner readmission and subsequent dependency-driven advancement.
+Home obligation readmission still decide continuation. The combined Bank journey
+exercises this fresh-process handoff, including exact original-owner readmission
+and subsequent dependency-driven advancement.
 
 ## Known gaps
 

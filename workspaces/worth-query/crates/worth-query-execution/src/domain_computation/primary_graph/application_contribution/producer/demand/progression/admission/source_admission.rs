@@ -32,7 +32,6 @@ where
     where
         Family: WorthQueryProducerOutputFamily<Schema>,
     {
-        if admission_kind.is_required() || performed_source.is_some() {}
         let selected_product = source_selection.selected_product();
         let limits = self.output_demand_resource_profile().constrain(limits);
 

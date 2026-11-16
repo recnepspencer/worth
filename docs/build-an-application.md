@@ -2185,7 +2185,7 @@ Bank journey in `bank-courtroom/examples/h10_graceful_bank_home`.
 
 Failed live cleanup returns an owning close refusal. A pending release after
 process loss belongs to C3. Effects without a recorded World disposition retain
-`UncleanRecoveryUnsupported` (D18, C1/C5); C2 owns durable-history/branch cleanup
+`UncleanRecoveryUnsupported` (D18, C1/C5); C2 owns durable-history/branch cleanup;
 C4 owns the adversarial oracle; C5 owns retirement and final certification.
 **Crash recovery is not yet certified.**
 Correction shapes without admitted relation pre-images, output material or

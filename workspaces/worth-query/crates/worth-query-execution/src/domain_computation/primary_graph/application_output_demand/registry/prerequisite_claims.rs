@@ -41,10 +41,6 @@ impl RequiredOutputDemandContext {
         inputs: impl ExactSizeIterator<Item = &'a crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence>,
         source_owner: &crate::domain_computation::primary_graph::SourceInvalidationOwner,
     ) -> Result<PreparedPrerequisiteClaims, WorthQueryOutputDemandDenial> {
-        if self.work_membership().is_some() {
-            // The performed path can require a local Full cue after World has
-            // committed. Its token and queue link were admitted with the row.
-        }
         let count = inputs.len();
         let mut predecessors = Vec::new();
         predecessors
