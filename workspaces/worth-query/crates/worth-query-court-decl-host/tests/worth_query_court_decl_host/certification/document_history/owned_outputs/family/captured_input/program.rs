@@ -192,6 +192,7 @@ where
 
 pub(in super::super::super) fn seed(
     graph: &mut WorthQueryPrimaryGraphBootstrap<Schema>,
+    parent_switch: Option<bool>,
 ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
     graph.bind_entity(
         WorthQueryApplicationEntitySeed::new(
@@ -201,11 +202,22 @@ pub(in super::super::super) fn seed(
         .field(ModelKey::at("ModelKey"), "capture:child".to_owned())
         .field(ModelValue::at("ModelValue"), 3),
     )?;
-    for (key, parent, weight) in [
+    let ordinary = [
         ("capture:seed-a", "a", 1),
         ("capture:seed-late", "carriage:late", 1),
         ("capture:anchor-d", "carriage:d", 2),
-    ] {
+    ];
+    let switching = [
+        ("capture:trigger-a", "a", 0),
+        ("capture:choice", "carriage:late", 2),
+        ("capture:retained-late", "carriage:late", 1),
+    ];
+    let members: &[_] = match parent_switch {
+        None => &ordinary,
+        Some(false) => &switching[..2],
+        Some(true) => &switching,
+    };
+    for &(key, parent, weight) in members {
         graph.bind_entity(
             WorthQueryApplicationEntitySeed::new(
                 Member::reference(),
@@ -225,6 +237,14 @@ pub(in super::super::super) fn seed(
             format!("uses:{key}"),
             WorthQueryApplicationEntityKey::new(key).unwrap(),
             WorthQueryApplicationEntityKey::new(parent).unwrap(),
+        ))?;
+    }
+    if parent_switch.is_some() {
+        graph.bind_relation(WorthQueryApplicationRelationSeed::new(
+            UpstreamOf::reference(),
+            "capture:choice:ready",
+            WorthQueryApplicationEntityKey::new("capture:choice").unwrap(),
+            WorthQueryApplicationEntityKey::new("carriage:d").unwrap(),
         ))?;
     }
     Ok(())

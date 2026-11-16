@@ -45,7 +45,7 @@ fn omitting_one_declared_capture_port_refuses_before_bootstrap() {
             world::seed(graph, installed, 1, None)?;
             fixture::seed(graph)?;
             interleaved::seed(graph)?;
-            program::seed(graph)
+            program::seed(graph, None)
         },
     );
     let Err(WorthQueryApplicationPreparationDenial::Contributions(cause)) = result else {

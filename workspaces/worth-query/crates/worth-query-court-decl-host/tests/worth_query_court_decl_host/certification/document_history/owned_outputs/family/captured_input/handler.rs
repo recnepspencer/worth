@@ -32,12 +32,55 @@ macro_rules! producer_capture_handler {
             > {
                 let result = (|| {
                     let source = reader.scope().clone();
+                    let members = reader.relations_from(ModelMember::reference(), &source)?;
+                    let mut trigger_ready = true;
+                    // A zero-weight control parent changes the authored choice
+                    // only after its actual output exists on this candidate.
+                    for member in &members {
+                        if reader.field(member.to(), MemberValue::at("MemberValue"))? == Some(0) {
+                            for link in
+                                reader.relations_from(UpstreamOf::reference(), member.to())?
+                            {
+                                let key = reader
+                                    .field(link.to(), ModelKey::at("ModelKey"))?
+                                    .expect("required control key");
+                                trigger_ready &= reader
+                                    .resolve_optional_entity(
+                                        FirstKey::at("FirstKey"),
+                                        format!("first:{key}"),
+                                    )?
+                                    .is_some();
+                            }
+                        }
+                    }
                     let mut parents = Vec::new();
-                    for member in reader.relations_from(ModelMember::reference(), &source)? {
+                    for member in members {
                         let weight = reader
                             .field(member.to(), MemberValue::at("MemberValue"))?
                             .expect("required authored weight");
-                        for link in reader.relations_from(UpstreamOf::reference(), member.to())? {
+                        let links = reader.relations_from(UpstreamOf::reference(), member.to())?;
+                        // Before the control is ready choose the largest
+                        // authored priority; afterwards choose the smallest.
+                        let mut selected = links.first();
+                        if links.len() > 1 {
+                            let mut priority = None;
+                            for link in &links {
+                                let value = reader
+                                    .field(link.to(), ModelValue::at("ModelValue"))?
+                                    .expect("required authored priority");
+                                if priority.is_none_or(|old| {
+                                    if trigger_ready {
+                                        value < old
+                                    } else {
+                                        value > old
+                                    }
+                                }) {
+                                    priority = Some(value);
+                                    selected = Some(link);
+                                }
+                            }
+                        }
+                        if let Some(link) = selected {
                             let key = reader
                                 .field(link.to(), ModelKey::at("ModelKey"))?
                                 .expect("required parent key");

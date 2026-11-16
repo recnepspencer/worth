@@ -8,6 +8,8 @@ mod cold_contract;
 #[cfg(test)]
 mod courts;
 pub mod program;
+#[cfg(test)]
+mod recapture;
 
 type Scope = ApplicationMutationFieldScope<ModelKey>;
 fn source_key() -> ModelKey {
