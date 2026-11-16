@@ -27,10 +27,8 @@ fn child(request: &Request<'_, '_, '_>, key: &str) -> query::Row {
         .clone()
 }
 fn install() -> Host {
-    world::install_configured(
+    world::install_program(
         host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
-        1, None,
-        world::Configuration { envelope_records: true, interleaved_records: true, ..Default::default() },
     )
 }
 fn initialize(host: &Host) {
