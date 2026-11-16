@@ -136,9 +136,12 @@ fn exercise(cold: bool) {
     retire
         .push_stage::<program::Tree, _>(authored_member::retire::Intent)
         .unwrap();
-    let outcome = retire
-        .execute_performed(ExecutionAllocationPolicy::SystemAllocation)
-        .unwrap();
+    let (outcome, native_work) =
+        worth_relational::facade::inspection::observe_maintenance_work(128, || {
+            retire
+                .execute_performed(ExecutionAllocationPolicy::SystemAllocation)
+                .unwrap()
+        });
     let Outcome::Committed(done) = outcome else {
         panic!("{outcome:?}")
     };
@@ -146,10 +149,12 @@ fn exercise(cold: bool) {
     assert_eq!(
         host.producer_contacts_on_this_thread_for_test() - contacts,
         2,
-        "only the collector and its transitive consumer produce; n is a current read; values=({}, {}); roots={:?}",
+        "only the collector and its transitive consumer produce; n is a current read; values=({}, {}); roots={:?}; symbol_rounds={:?}; omitted_events={}",
         first(&request).value,
         child(&request, "from-first:borrowed:a").value,
         roots.iter().zip(root_contacts).map(|((name, root), before)| (*name, before, host.producer_contacts_at_root_on_this_thread_for_test(*root))).collect::<Vec<_>>(),
+        native_work.symbol_preparation,
+        native_work.omitted_symbol_preparation_events,
     );
     assert_eq!(synchronous_edit::native_head(&host).1, [head]);
     assert_eq!(

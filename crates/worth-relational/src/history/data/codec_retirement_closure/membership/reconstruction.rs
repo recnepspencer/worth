@@ -105,7 +105,12 @@ fn reconstruct_chain(
                     return Err("publication birth identity differs".into());
                 }
                 super::super::codec_disposition::validate_birth(
-                    runtime, &current, context, lease, schema,
+                    runtime,
+                    &current,
+                    &current_origin.meaning,
+                    context,
+                    lease,
+                    schema,
                 )?;
                 break;
             }
