@@ -12,6 +12,8 @@ where
 {
     /// Numerical input admission borrows this same request; it opens no writer.
     pub fn execution(&self) -> &QueryRequestExecution<'_> {
+        self.context_use
+            .set(self.context_use.get().request_context());
         self.execution
     }
 

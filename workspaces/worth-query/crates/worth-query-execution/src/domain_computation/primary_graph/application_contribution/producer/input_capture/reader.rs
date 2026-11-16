@@ -37,6 +37,8 @@ where
     parents: Option<Vec<CapturedParent>>,
     storage: Option<super::super::super::request_execution::QueryMemoryReservation>,
     stopped: std::cell::RefCell<Option<InputCaptureStop>>,
+    context_use:
+        std::cell::Cell<crate::domain_computation::primary_graph::handler::DecisionContextUse>,
     marker: PhantomData<fn() -> C>,
 }
 
@@ -92,12 +94,20 @@ where
             parents: Some(Vec::new()),
             storage: None,
             stopped: std::cell::RefCell::new(None),
+            context_use: std::cell::Cell::new(Default::default()),
             marker: PhantomData,
         }
     }
 
     pub fn scope(&self) -> &WorthQueryInvariantEntityIdentity<S, Scope<S, B>> {
+        self.context_use.set(self.context_use.get().scope());
         self.scope
+    }
+
+    pub(super) fn context_use(
+        &self,
+    ) -> crate::domain_computation::primary_graph::handler::DecisionContextUse {
+        self.context_use.get()
     }
 
     /// Retain a genuine read-issued source and its one declared parent demand.

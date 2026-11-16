@@ -35,6 +35,7 @@ where
     value: Box<dyn Any>,
     retained: CapturedInputRetention<S, B>,
     prepare: Prepare<S, B>,
+    context_use: crate::domain_computation::primary_graph::handler::DecisionContextUse,
 }
 
 pub(super) struct CapturedInputRetention<S, B>
@@ -52,12 +53,20 @@ impl<S: ApplicationSchema, B: ApplicationMutationBinding<S>> PreparedMutationInp
         reads: Reads<S, B>,
         memory: Option<QueryMemoryReservation>,
         prepare: Prepare<S, B>,
+        context_use: crate::domain_computation::primary_graph::handler::DecisionContextUse,
     ) -> Self {
         Self {
             value,
             retained: CapturedInputRetention { reads, memory },
             prepare,
+            context_use,
         }
+    }
+
+    pub(super) fn context_use(
+        &self,
+    ) -> crate::domain_computation::primary_graph::handler::DecisionContextUse {
+        self.context_use
     }
 
     pub(super) fn prepare(

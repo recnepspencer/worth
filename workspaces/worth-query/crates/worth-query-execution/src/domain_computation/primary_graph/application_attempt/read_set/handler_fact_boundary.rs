@@ -6,6 +6,21 @@ pub struct CompletedHandlerFactBoundary {
 }
 
 impl CompletedHandlerFactBoundary {
+    pub(in crate::domain_computation) fn insert_input_facts(
+        &mut self,
+        expected: usize,
+        count: usize,
+    ) -> bool {
+        if self.handler_fact_count != expected {
+            return false;
+        }
+        let Some(total) = expected.checked_add(count) else {
+            return false;
+        };
+        self.handler_fact_count = total;
+        true
+    }
+
     pub(super) const fn from_completed_read(handler_fact_count: usize) -> Self {
         Self {
             handler_fact_count,

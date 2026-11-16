@@ -146,6 +146,18 @@ impl RequiredOutputDemandContext {
         self.handler.take_completed_handler_facts()
     }
 
+    pub(in crate::domain_computation) fn completed_input_prefix(&self) -> Option<usize> {
+        self.handler.completed_input_prefix()
+    }
+
+    pub(in crate::domain_computation) fn insert_input_facts(
+        &mut self,
+        expected: usize,
+        count: usize,
+    ) -> bool {
+        self.handler.insert_input_facts(expected, count)
+    }
+
     pub(in crate::domain_computation::primary_graph) fn retain_prepared_input_reuse_key(
         &mut self,
         key: crate::domain_computation::primary_graph::output_lineage::PreparedInputReuseKey,

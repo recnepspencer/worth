@@ -5,6 +5,32 @@ use crate::domain_computation::primary_graph::{
 };
 
 impl WorthQueryAdmittedOperation {
+    pub(in crate::domain_computation) fn completed_input_prefix(&self) -> Option<usize> {
+        if let Some(context) = &self.data.required_output_demand {
+            context.completed_input_prefix()
+        } else {
+            self.data
+                .graph_work
+                .coupled_handler()
+                .and_then(|handler| handler.completed_input_prefix())
+        }
+    }
+
+    pub(in crate::domain_computation) fn insert_input_facts(
+        &mut self,
+        expected: usize,
+        count: usize,
+    ) -> bool {
+        if let Some(context) = &mut self.data.required_output_demand {
+            context.insert_input_facts(expected, count)
+        } else {
+            self.data
+                .graph_work
+                .coupled_handler_mut()
+                .is_some_and(|handler| handler.insert_input_facts(expected, count))
+        }
+    }
+
     pub(in crate::domain_computation) fn record_decision_context_use(
         &mut self,
         use_mask: crate::domain_computation::primary_graph::DecisionContextUse,

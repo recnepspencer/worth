@@ -71,6 +71,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution) struc
     value: Box<dyn Any>,
     parents: fn(&dyn Any) -> &[CapturedParent],
     memory: Option<super::super::super::request_execution::QueryMemoryReservation>,
+    context_use: crate::domain_computation::primary_graph::handler::DecisionContextUse,
 }
 impl ErasedCapturedInputs {
     pub(in crate::domain_computation::primary_graph::application_contribution) fn parents(
@@ -83,8 +84,9 @@ impl ErasedCapturedInputs {
     ) -> (
         Box<dyn Any>,
         Option<super::super::super::request_execution::QueryMemoryReservation>,
+        crate::domain_computation::primary_graph::handler::DecisionContextUse,
     ) {
-        (self.value, self.memory)
+        (self.value, self.memory, self.context_use)
     }
 }
 
@@ -143,6 +145,7 @@ where
         reader, scope, execution, ports, affinity,
     );
     let result = handler.capture_inputs(input, &mut loan);
+    let context_use = loan.context_use();
     match loan.complete_call(result) {
         HandlerResult::Completed(mut captured) => {
             let memory = captured._data_memory.take();
@@ -151,6 +154,7 @@ where
                 value: Box::new(captured),
                 parents: parents::<S, C, H::Captured>,
                 memory,
+                context_use,
             })
         }
         HandlerResult::DomainDenied(cause) => HandlerResult::DomainDenied(cause),

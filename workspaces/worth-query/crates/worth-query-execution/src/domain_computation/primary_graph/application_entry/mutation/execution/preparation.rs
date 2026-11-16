@@ -191,9 +191,10 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             allocation_policy,
         );
         let operation_scope_binding = admission.operation_scope_binding().clone();
-        let context_use = std::cell::Cell::new(
-            crate::domain_computation::primary_graph::handler::DecisionContextUse::default(),
-        );
+        let context_use = std::cell::Cell::new(prepared_inputs.as_ref().map_or_else(
+            crate::domain_computation::primary_graph::handler::DecisionContextUse::default,
+            PreparedMutationInputs::context_use,
+        ));
         let interruption = std::cell::Cell::new(None);
         let mut handler_contacted = false;
         let phase_request = match phase.execution_request_for(&self.runtime.product_runtime) {

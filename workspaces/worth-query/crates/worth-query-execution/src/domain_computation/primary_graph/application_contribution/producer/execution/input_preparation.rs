@@ -48,7 +48,7 @@ impl<S: ApplicationSchema, B: WorthQueryApplicationProducerBinding<S>>
         component: std::any::TypeId,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         candidate: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
-    ) -> Result<crate::domain_computation::primary_graph::application_entry::mutation::execution::PreparedMutationInputs<S, Operation<S, B>>, ProducerExecutionStop>{
+    ) -> Result<crate::domain_computation::primary_graph::application_entry::mutation::PreparedMutationInputs<S, Operation<S, B>>, ProducerExecutionStop>{
         let foreign = || denial(WorthQueryOutputDemandDenialKind::ForeignSource, B::IDENTITY);
         let owner = installed.input_capture.ok_or_else(foreign)?;
         if self.edition != edition
@@ -72,9 +72,9 @@ impl<S: ApplicationSchema, B: WorthQueryApplicationProducerBinding<S>>
                 ),
             )));
         }
-        let (value, memory) = self.inputs.into_parts();
-        Ok(crate::domain_computation::primary_graph::application_entry::mutation::execution::PreparedMutationInputs::new(
-            value, self.reads, memory, owner.prepare,
+        let (value, memory, context_use) = self.inputs.into_parts();
+        Ok(crate::domain_computation::primary_graph::application_entry::mutation::PreparedMutationInputs::new(
+            value, self.reads, memory, owner.prepare, context_use,
         ))
     }
 }

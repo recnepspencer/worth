@@ -12,6 +12,7 @@ pub use home_retirement::{
 };
 mod completed_candidate;
 mod execution;
+pub(in crate::domain_computation::primary_graph) use execution::PreparedMutationInputs;
 mod execution_report;
 mod failure;
 pub use completed_candidate::WorthQueryCompletedMutationCandidate;

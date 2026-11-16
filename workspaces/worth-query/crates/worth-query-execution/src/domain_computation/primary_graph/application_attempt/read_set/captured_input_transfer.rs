@@ -82,7 +82,38 @@ impl<S, O, I, E>
                 super::super::retained_decision_facts::StorageControl::new(policy, Some(request)),
             )
             .map_err(|cause| cause.into_attempt_denial(self.admission.operation()))?;
-        self.append_completed_fact_payload(captured_facts, policy)?;
+        // A normal input cutoff replaces ONLY the producer-source suffix.
+        // Capture data remains part of the handler input prefix across reuse.
+        let boundary = self
+            .admission
+            .completed_input_prefix()
+            .ok_or_else(mismatch)?;
+        let prefix = self.facts.checked_slice(0..boundary).ok_or_else(mismatch)?;
+        let suffix = self
+            .facts
+            .checked_slice(boundary..self.facts.len())
+            .ok_or_else(mismatch)?;
+        let count = captured_facts.len();
+        boundary.checked_add(count).ok_or_else(mismatch)?;
+        let control =
+            super::super::retained_decision_facts::StorageControl::new(policy, Some(request));
+        let joined = prefix
+            .append_completed(captured_facts, control)
+            .and_then(|facts| facts.append_completed(suffix, control))
+            .map_err(|cause| cause.into_attempt_denial(self.admission.operation()))?;
+        let routes = super::super::CompletedFactRoutes::from_facts(joined.clone(), control)
+            .map_err(|cause| cause.into_attempt_denial(self.admission.operation()))?;
+        self.admission
+            .validate_current_authority()
+            .map_err(WorthQueryApplicationAttemptDenial::request_authority_lost)?;
+        if !self.admission.insert_input_facts(boundary, count) {
+            return Err(denial(
+                WorthQueryApplicationAttemptDenialKind::ProjectionAdmissionMismatch,
+                self.admission.operation(),
+            ));
+        }
+        self.effect_routes = routes;
+        self.facts = joined;
         self.consumed_outputs.extend(captured.consumed_outputs);
         Ok(())
     }
