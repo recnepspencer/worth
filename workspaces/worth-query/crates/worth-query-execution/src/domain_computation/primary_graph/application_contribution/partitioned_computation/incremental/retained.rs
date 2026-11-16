@@ -57,11 +57,6 @@ pub enum WorthQueryPartitionedComputationFullCause {
     OtherEdition,
     /// The observation bound exceeds the request's work policy.
     ObservationOverBudget,
-    /// Complete structural reads require fresh issuance under this admission;
-    /// their live carried-value handoff is not yet qualified for reuse.
-    StructuralWalkRead,
-    /// Aggregate decision inputs require fresh Native identity and membership reads.
-    AggregateRead,
     /// A prior was already consumed by an earlier invocation in this handler.
     NoPriorHanded,
     /// This reader belongs to an operation outside a producer invocation.

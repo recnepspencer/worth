@@ -72,7 +72,29 @@ impl DecisionReads {
         execution: &ExecutionRequest<'_, '_>,
         context: &mut MapKernelContext<'_, '_>,
     ) -> Result<(), WalkRecordDenial> {
-        let body = walk.observation();
+        self.issue_walk_body(
+            walk.observation(),
+            admission,
+            contracts,
+            walk.cookie(),
+            execution,
+            context,
+        )?;
+        self.record(
+            WorthQueryApplicationFactKey::StructuralWalk(walk.observation().key().clone()),
+            DecisionReadOutcome::Observed,
+        );
+        Ok(())
+    }
+    pub(in crate::domain_computation::primary_graph::invariant_projection::operation_reader) fn issue_walk_body(
+        &mut self,
+        body: &Arc<StructuralWalkObservation>,
+        admission: Admission,
+        contracts: Arc<Contracts>,
+        cookie: u64,
+        execution: &ExecutionRequest<'_, '_>,
+        context: &mut MapKernelContext<'_, '_>,
+    ) -> Result<(), WalkRecordDenial> {
         // Bound the new variable-width key comparisons before the map descent.
         let levels =
             (usize::BITS - self.walks.values.len().saturating_add(1).leading_zeros()) as usize + 1;
@@ -95,8 +117,8 @@ impl DecisionReads {
         if let Some(prior) = prior {
             if prior.admission != admission
                 || !Arc::ptr_eq(&prior.contracts, &contracts)
-                || walk.observation().source() != prior.body.source()
-                || walk.cookie() != prior.cookie
+                || body.source() != prior.body.source()
+                || cookie != prior.cookie
             {
                 return Err(WalkRecordDenial::Conflict);
             }
@@ -171,7 +193,7 @@ impl DecisionReads {
             self.walks.values.insert(
                 body.key().clone(),
                 Issued {
-                    cookie: walk.cookie(),
+                    cookie,
                     body: Arc::clone(body),
                     admission,
                     contracts,
@@ -179,7 +201,6 @@ impl DecisionReads {
             );
         }
         self.walks.bytes = bytes;
-        self.record(key, DecisionReadOutcome::Observed);
         Ok(())
     }
 }
