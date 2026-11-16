@@ -65,7 +65,8 @@ pub(super) fn connect(
     let transport = Arc::new(BankEstateRailTransport::connected_to(rail, control));
     home.runtime()
         .runtime()
-        .install_external_effect_transport(transport.clone());
+        .install_external_effect_transport(transport.clone())
+        .expect("install the independent rail on this fresh Home runtime");
     transport
 }
 pub(super) fn dispatch_ambiguously(
