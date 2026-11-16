@@ -7,6 +7,7 @@ mod handler;
 mod cold_contract;
 #[cfg(test)]
 mod courts;
+mod prerequisites;
 pub mod program;
 #[cfg(test)]
 mod recapture;
