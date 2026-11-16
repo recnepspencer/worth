@@ -146,6 +146,12 @@ where
         Some(worth_relational::facade::mvcc::RelationalDeclaredCoupledOwner::Retiring) => {
             return Ok(CoupledSourceRead::Retiring)
         }
+        Some(worth_relational::facade::mvcc::RelationalDeclaredCoupledOwner::Restored(input)) => {
+            return Ok(CoupledSourceRead::Restored {
+                scope: scope.entity_id(),
+                input,
+            })
+        }
         Some(
             worth_relational::facade::mvcc::RelationalDeclaredCoupledOwner::Surviving(_)
             | worth_relational::facade::mvcc::RelationalDeclaredCoupledOwner::RequiredSurviving(_),

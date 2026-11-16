@@ -180,6 +180,14 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         let Some(owner) = owner else {
             return Ok(None);
         };
+        if matches!(owner, RelationalDeclaredCoupledOwner::Retiring)
+            && original != source
+            && self.binding.owners.source.restoration().is_some()
+        {
+            return self
+                .restored_output_input(execution, family, original, source, partition)
+                .map(|input| Some(RelationalDeclaredCoupledOwner::Restored(input)));
+        }
         if let RelationalDeclaredCoupledOwner::Surviving(previous)
         | RelationalDeclaredCoupledOwner::RequiredSurviving(previous) = &owner
         {

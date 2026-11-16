@@ -205,6 +205,13 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
         let source = match source {
             execution::CoupledSourceRead::Route { .. } => unreachable!("ordinary source read"),
             execution::CoupledSourceRead::Retiring => return Ok(None),
+            execution::CoupledSourceRead::Restored { scope, input } => {
+                return Ok(Some(synchronous_outputs::AppliedOutputParent::new(
+                    candidate.pin_source(execution)?,
+                    scope,
+                    Some(input),
+                )));
+            }
             execution::CoupledSourceRead::Prepared(index) => {
                 let writers = self.writers.borrow();
                 let writer = writers.get(index).ok_or_else(|| {

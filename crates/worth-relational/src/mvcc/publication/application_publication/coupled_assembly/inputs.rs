@@ -26,9 +26,86 @@ pub(crate) struct RequiredOutputInputs {
 enum InputOrigin {
     Current(RelationalRequiredOutputPublication),
     Applied(usize),
+    Restored {
+        index: usize,
+        source: crate::identity::data::EntityId,
+    },
 }
 
 impl RelationalAuthoredCoupledCandidate<'_> {
+    // The inverse prefix has already passed Native's exact payload/endpoint
+    // validation. Only its resolved full-generation source can borrow a route.
+    pub(super) fn restored_output_input(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        family: &str,
+        original: crate::identity::data::EntityId,
+        source: crate::identity::data::EntityId,
+        partition: &[u8; 32],
+    ) -> Result<RelationalRequiredOutputInput, TransactionCommitError> {
+        let restoration = self
+            .binding
+            .owners
+            .source
+            .restoration()
+            .expect("restored owner");
+        let index = execution
+            .run_native_with_checkpoint(|context| {
+                for (index, publication) in restoration.publications.iter().enumerate() {
+                    let meaning = &publication.origin.meaning;
+                    checkpoint(context, (family.len() + meaning.family.len() + 65) as u64)
+                        .map_err(custody::execution_stop)?;
+                    if meaning.family == family
+                        && meaning.source_scope == original
+                        && meaning.source_partition.bytes() == partition
+                    {
+                        return Ok(index);
+                    }
+                }
+                Err(part::reject(Cause::ForeignCoupledOwner, source))
+            })
+            .map_err(custody::execution_stop)?
+            .0?;
+        Ok(RelationalRequiredOutputInput {
+            proposal: self.identity.clone(),
+            issuance: self.input_issuance(execution)?,
+            origin: InputOrigin::Restored { index, source },
+        })
+    }
+
+    fn input_route<'a>(
+        &'a self,
+        input: &'a InputOrigin,
+    ) -> (
+        &'a RequiredOutputPublicationMeaning,
+        crate::identity::data::EntityId,
+    ) {
+        match input {
+            InputOrigin::Current(publication) => (
+                &publication.origin.meaning,
+                publication.origin.meaning.source_scope,
+            ),
+            InputOrigin::Applied(index) => {
+                let meaning = self.parts[*index]
+                    .publication
+                    .producing_meaning()
+                    .expect("admitted earlier part");
+                (meaning, meaning.source_scope)
+            }
+            InputOrigin::Restored { index, source } => (
+                &self
+                    .binding
+                    .owners
+                    .source
+                    .restoration()
+                    .expect("issued restored input")
+                    .publications[*index]
+                    .origin
+                    .meaning,
+                *source,
+            ),
+        }
+    }
     fn input_issuance(
         &self,
         execution: &ExecutionRequest<'_, '_>,
@@ -153,7 +230,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         }
         let index = match &consumer.origin {
             InputOrigin::Applied(index) => *index,
-            InputOrigin::Current(_) => return Ok(()),
+            InputOrigin::Current(_) | InputOrigin::Restored { .. } => return Ok(()),
         };
         let part = self
             .parts
@@ -174,23 +251,17 @@ impl RelationalAuthoredCoupledCandidate<'_> {
                     {
                         return Err(part::reject(Cause::ForeignCoupledOwner, subject));
                     }
-                    let meaning = match &parent.origin {
-                        InputOrigin::Current(publication) => &publication.origin.meaning,
-                        InputOrigin::Applied(previous) if *previous < index => self.parts
-                            [*previous]
-                            .publication
-                            .producing_meaning()
-                            .expect("admitted earlier part"),
-                        InputOrigin::Applied(_) => {
-                            return Err(part::reject(Cause::ForeignCoupledOwner, subject))
-                        }
-                    };
+                    if matches!(&parent.origin, InputOrigin::Applied(previous) if *previous >= index) {
+                        return Err(part::reject(Cause::ForeignCoupledOwner, subject));
+                    }
+                    let (meaning, source) = self.input_route(&parent.origin);
                     checkpoint(
                         context,
                         (own.family.len() + meaning.family.len() + 65) as u64,
                     )
                     .map_err(custody::execution_stop)?;
-                    if own.same_route(meaning) {
+                    if own.family == meaning.family && own.source_scope == source
+                        && own.source_partition == meaning.source_partition {
                         return Err(part::reject(Cause::ForeignCoupledOwner, subject));
                     }
                     bytes = bytes.checked_add(meaning.family.len()).ok_or_else(|| {
@@ -211,13 +282,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
                     super::super::origin_denial("consumed-output allocation unavailable")
                 })?;
                 for parent in parents {
-                    let meaning = match &parent.origin {
-                        InputOrigin::Current(publication) => &publication.origin.meaning,
-                        InputOrigin::Applied(previous) => self.parts[*previous]
-                            .publication
-                            .producing_meaning()
-                            .expect("validated earlier part"),
-                    };
+                    let (meaning, source) = self.input_route(&parent.origin);
                     checkpoint(context, (meaning.family.len() + retained.len() + 65) as u64)
                         .map_err(custody::execution_stop)?;
                     let mut found = None;
@@ -227,17 +292,24 @@ impl RelationalAuthoredCoupledCandidate<'_> {
                             (prior.family.len() + meaning.family.len() + 65) as u64,
                         )
                         .map_err(custody::execution_stop)?;
-                        if prior.same_route(meaning) {
+                        if prior.family == meaning.family
+                            && prior.source_scope == source
+                            && prior.source_partition == meaning.source_partition
+                        {
                             found = Some(prior);
                             break;
                         }
                     }
                     if let Some(prior) = found {
-                        if prior != meaning {
+                        if prior.implementation != meaning.implementation
+                            || prior.source_epoch != meaning.source_epoch
+                        {
                             return Err(part::reject(Cause::ForeignCoupledOwner, subject));
                         }
                     } else {
-                        retained.push(meaning.clone());
+                        let mut meaning = meaning.clone();
+                        meaning.source_scope = source;
+                        retained.push(meaning);
                     }
                 }
                 let comparisons = retained.len().saturating_mul(

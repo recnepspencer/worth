@@ -95,6 +95,22 @@ pub(crate) fn prepare_coupled_candidate(
             owned_symbols,
             &transaction.content,
         )?;
+    if let Some(restoration) = binding.owners.source.restoration() {
+        execution
+            .run_native_with_checkpoint(|context| {
+                crate::history::data::validate_authored_restoration_candidate(
+                    &binding.owners.before,
+                    &mutation.state,
+                    &mutation.outcome.created_entities,
+                    &mutation.outcome.created_relations,
+                    restoration,
+                    crate::authority::commit::pipeline::request_lease(execution),
+                    context,
+                )
+            })
+            .map_err(custody::execution_stop)?
+            .0?;
+    }
     let authored_records_memory = crate::mvcc::plan_copy_admission::reserve_copy(
         execution,
         crate::mvcc::plan_copy_admission::slots::<crate::transactions::data::RecordRef>(
