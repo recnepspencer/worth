@@ -30,6 +30,7 @@ fn omitting_one_declared_capture_port_refuses_before_bootstrap() {
     let configuration = world::Configuration {
         envelope_records: true,
         interleaved_records: true,
+        captured_inputs: true,
         ..Default::default()
     };
     let bootstrapped = std::cell::Cell::new(false);
@@ -43,7 +44,8 @@ fn omitting_one_declared_capture_port_refuses_before_bootstrap() {
             bootstrapped.set(true);
             world::seed(graph, installed, 1, None)?;
             fixture::seed(graph)?;
-            interleaved::seed(graph)
+            interleaved::seed(graph)?;
+            program::seed(graph)
         },
     );
     let Err(WorthQueryApplicationPreparationDenial::Contributions(cause)) = result else {

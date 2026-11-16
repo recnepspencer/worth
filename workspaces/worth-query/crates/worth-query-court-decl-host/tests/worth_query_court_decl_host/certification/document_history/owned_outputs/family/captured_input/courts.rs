@@ -9,7 +9,7 @@ use worth_query_host::facade::{
 fn a_born_output_consumes_every_seed_and_anchor_before_publication() {
     let host: WorthQueryProgramApplicationRuntime<Schema, program::Program> = world::install_configured(
         host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()), 1, None,
-        world::Configuration { envelope_records: true, interleaved_records: true, ..Default::default() });
+        world::Configuration { envelope_records: true, interleaved_records: true, captured_inputs: true, ..Default::default() });
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.request(&principal, &scope);
@@ -60,7 +60,7 @@ fn a_born_output_consumes_every_seed_and_anchor_before_publication() {
 fn capture_only_data_changes_survive_ordinary_input_cutoff_and_key_replay() {
     let host: WorthQueryProgramApplicationRuntime<Schema, program::Program> = world::install_configured(
         host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()), 1, None,
-        world::Configuration { envelope_records: true, interleaved_records: true, ..Default::default() });
+        world::Configuration { envelope_records: true, interleaved_records: true, captured_inputs: true, ..Default::default() });
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.request(&principal, &scope);

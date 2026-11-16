@@ -14,6 +14,7 @@ pub struct Configuration {
     pub reconciliation_owned_orbits: bool,
     pub envelope_records: bool,
     pub interleaved_records: bool,
+    pub captured_inputs: bool,
     pub wrong_inverse_member: bool,
 }
 impl WorthQueryApplicationContribution<Schema> for Contribution {
@@ -217,6 +218,9 @@ where
             }
             if configuration.interleaved_records {
                 synchronous_edit::interleaved::seed(graph)?;
+            }
+            if configuration.captured_inputs {
+                family::captured_input::program::seed(graph)?;
             }
             if configuration.reconciliation_peer_caps {
                 synchronous_edit::reconciliation::peer_caps::seed(graph)?;

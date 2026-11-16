@@ -46,7 +46,6 @@ pub fn seed(
     occurrences::seed(graph)?;
     component_carriage::seed(graph)?;
     prerequisite_partition::seed(graph)?;
-    family::captured_input::program::seed(graph)?;
     for key in ["m", "envelope-calibration"] {
         // Distinct authored records preserve the existing disjoint-write rule.
         graph.bind_entity(
