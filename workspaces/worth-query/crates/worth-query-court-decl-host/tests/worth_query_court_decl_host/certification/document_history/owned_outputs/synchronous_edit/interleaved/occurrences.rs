@@ -85,6 +85,7 @@ impl ApplicationProgramDefinition<Schema> for Program {
             Completion,
             Completion,
             Completion,
+            Completion,
         >(base::entry_builder::<Completion, Completion, Completion>())
         .action::<created::Binding, Completion>()
         .finish_action()

@@ -218,6 +218,7 @@ where
         Completion,
         Completion,
         AfterDelivery,
+        Completion,
     >(entry::entry_builder::<Completion, Completion, Completion>())
     .action::<created::Binding, Completion>()
     .finish_action()

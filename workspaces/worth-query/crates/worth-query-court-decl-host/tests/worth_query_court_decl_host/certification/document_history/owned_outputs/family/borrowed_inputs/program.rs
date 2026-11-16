@@ -163,6 +163,7 @@ impl ApplicationProgramDefinition<Schema> for Program {
             Completion,
             Completion,
             Completion,
+            fixture::Delivery<Tree>,
         >(entry::entry_builder_with_retirement::<
             fixture::Delivery<Tree>,
             fixture::Delivery<Tree>,
