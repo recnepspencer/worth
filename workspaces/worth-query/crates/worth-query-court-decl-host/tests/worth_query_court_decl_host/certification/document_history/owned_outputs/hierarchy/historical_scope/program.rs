@@ -65,7 +65,7 @@ impl ApplicationProgramDefinition<Schema> for Program {
         ApplicationProgramIdentity::new("owned-outputs.historical-scope.program");
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
         let entry = super::super::super::program::Program::feature_specs().remove(0);
-        vec![
+        let mut features = vec![
             entry,
             ApplicationFeatureSpec::root::<Schema, Parent>()
                 .provides::<Output>()
@@ -90,15 +90,10 @@ impl ApplicationProgramDefinition<Schema> for Program {
                 .conditional_operation::<restricted_owned::initial::Operation>()
                 .conditional_operation::<restricted_owned::preserve::Operation>()
                 .finish(),
-            super::super::super::predecessor::program::feature(),
-            family::diamond::feature(),
-            family::decision_input::feature(),
-            family::parity_input::feature(),
-            family::convergent::feature(),
-            family::ordinary_input::feature(),
-            family::decision_write::feature(),
-            synchronous_edit::reconciliation::feature(),
-            synchronous_edit::reconciliation::child_feature(),
-        ]
+        ];
+        features.extend(family::feature_specs(
+            family::captured_input::program::conditional_feature(),
+        ));
+        features
     }
 }

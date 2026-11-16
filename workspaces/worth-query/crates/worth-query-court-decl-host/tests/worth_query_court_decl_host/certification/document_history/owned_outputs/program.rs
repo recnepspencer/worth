@@ -180,7 +180,7 @@ impl ApplicationProgramDefinition<Schema> for Program {
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("owned-outputs.program.v1");
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
-        vec![
+        let mut features = vec![
             entry_spec::<Completion>(),
             ApplicationFeatureSpec::root::<Schema, Derived>()
                 .conditional_operation::<from_first::initial::Operation>()
@@ -202,16 +202,11 @@ impl ApplicationProgramDefinition<Schema> for Program {
                 .conditional_operation::<restricted_owned::initial::Operation>()
                 .conditional_operation::<restricted_owned::preserve::Operation>()
                 .finish(),
-            predecessor::program::feature(),
-            family::diamond::feature(),
-            family::decision_input::feature(),
-            family::parity_input::feature(),
-            family::convergent::feature(),
-            family::ordinary_input::feature(),
-            family::decision_write::feature(),
-            synchronous_edit::reconciliation::feature(),
-            synchronous_edit::reconciliation::child_feature(),
-        ]
+        ];
+        features.extend(family::feature_specs(
+            family::captured_input::program::conditional_feature(),
+        ));
+        features
     }
 }
 /// The recorded history action of the model edit.

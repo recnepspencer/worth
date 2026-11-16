@@ -142,7 +142,10 @@ fn capture_only_data_changes_survive_ordinary_input_cutoff_and_key_replay() {
     let replay = edit
         .execute_performed(ExecutionAllocationPolicy::SystemAllocation)
         .unwrap();
-    assert!(matches!(replay, Outcome::Committed(_)), "{replay:?}");
+    assert!(
+        matches!(replay, Outcome::RecoveredCommitted(_)),
+        "the original full key must return its retained receipt"
+    );
     let after = request
         .query(query::first_output::Read("captured:capture:child".into()))
         .execute()

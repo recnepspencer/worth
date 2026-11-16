@@ -244,12 +244,15 @@ where
         edition: super::super::InstalledProducerEdition,
         component: std::any::TypeId,
     ) -> Result<Box<dyn CapturedProducerInputRead>, ProducerExecutionStop> {
-        Ok(Box::new(super::input_preparation::capture::<
-            Schema,
-            Binding,
-        >(
+        let owner = self.input_capture.ok_or_else(|| {
+            denial(
+                WorthQueryOutputDemandDenialKind::ForeignSource,
+                Binding::IDENTITY,
+            )
+        })?;
+        (owner.admit)(
             self, phase, runtime, principal, request, before, before_pin, candidate, source,
             edition, component,
-        )?))
+        )
     }
 }

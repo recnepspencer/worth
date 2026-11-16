@@ -16,6 +16,24 @@ type Scope<S, B> = <<Operation<S, B> as ApplicationMutationBinding<S>>::ScopeBin
 type Op<S, B> = <Operation<S, B> as ApplicationMutationBinding<S>>::Operation;
 type Input<S, B> = <Operation<S, B> as ApplicationMutationBinding<S>>::Input;
 
+/// Only the opted-in cold owner instantiates the complete admission prelude.
+pub(in crate::domain_computation::primary_graph::application_contribution::producer) type CaptureAdmission<
+    S,
+    B,
+> = fn(
+    &TypedInstalledProducer<S, B>,
+    &WorthQueryAdvancementPhase<'_>,
+    &WorthQueryPrimaryGraphApplicationRuntime<S>,
+    &WorthQueryAuthenticatedExternalPrincipal<S>,
+    &WorthQueryRequestScope,
+    &crate::basis::WorthQueryProductBranchLease,
+    &RelationalPinnedRead,
+    &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
+    ErasedAppliedProducerSource,
+    super::super::InstalledProducerEdition,
+    std::any::TypeId,
+) -> Result<Box<dyn CapturedProducerInputRead>, ProducerExecutionStop>;
+
 pub(in crate::domain_computation::primary_graph::application_contribution) trait CapturedProducerInputRead:
     std::any::Any
 {
@@ -120,7 +138,10 @@ impl<S: ApplicationSchema, B: WorthQueryApplicationProducerBinding<S>>
     }
 }
 
-pub(super) fn capture<S, B>(
+pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn capture<
+    S,
+    B,
+>(
     installed: &TypedInstalledProducer<S, B>,
     phase: &WorthQueryAdvancementPhase<'_>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
@@ -132,7 +153,7 @@ pub(super) fn capture<S, B>(
     erased: ErasedAppliedProducerSource,
     edition: super::super::InstalledProducerEdition,
     component: std::any::TypeId,
-) -> Result<PreparedProducerInputs<S, B>, ProducerExecutionStop>
+) -> Result<Box<dyn CapturedProducerInputRead>, ProducerExecutionStop>
 where
     S: ApplicationSchema,
     B: WorthQueryApplicationProducerBinding<S>,
@@ -319,7 +340,7 @@ where
                 B::IDENTITY,
             )
         })?;
-    Ok(PreparedProducerInputs {
+    Ok(Box::new(PreparedProducerInputs {
         inputs,
         reads,
         identities,
@@ -327,5 +348,5 @@ where
         definition: owner.definition,
         _memory: memory,
         _input: retained_input,
-    })
+    }))
 }

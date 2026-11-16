@@ -62,6 +62,13 @@ pub fn feature() -> ApplicationFeatureSpec {
         .required_pair::<Roles>()
         .finish()
 }
+/// Available operations do not imply this program requests the captured artifact.
+pub fn conditional_feature() -> ApplicationFeatureSpec {
+    ApplicationFeatureSpec::root::<Schema, Feature>()
+        .conditional_operation::<initial::Operation>()
+        .conditional_operation::<preserve::Operation>()
+        .finish()
+}
 pub struct Start;
 impl ApplicationConnectionIdentity for Start {
     const IDENTITY: &'static str = "captured-input.start";
@@ -165,7 +172,7 @@ where
     Delivery: ApplicationActionDelivery<Schema, fixture::model::Binding>
         + ApplicationActionDelivery<Schema, fixture::member::Binding>,
 {
-    let mut features = hierarchy::Program::feature_specs();
+    let mut features = hierarchy::feature_specs(feature());
     features[0] = entry::envelope_actions::<
         Delivery,
         Delivery,
@@ -180,7 +187,6 @@ where
     .action::<member_retarget::operation::Binding, Completion>()
     .finish_action()
     .finish();
-    features.push(feature());
     features
 }
 

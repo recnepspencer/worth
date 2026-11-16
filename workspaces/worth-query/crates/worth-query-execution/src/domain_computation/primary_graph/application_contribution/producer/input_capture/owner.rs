@@ -5,7 +5,8 @@ use crate::domain_computation::primary_graph::application_contribution::{
 };
 use crate::domain_computation::primary_graph::{
     HandlerExecutionDenial, WorthQueryApplicationOperationInvariantProjectionReader,
-    WorthQueryInvariantEntityIdentity, WorthQueryPrimaryGraphApplicationRuntime,
+    WorthQueryApplicationProjection, WorthQueryInvariantEntityIdentity,
+    WorthQueryPrimaryGraphApplicationRuntime,
 };
 use crate::equality_type_id::EqualityTypeId;
 use worth_query_declaration::facade::application_operation::ApplicationMutationScopeBinding;
@@ -47,6 +48,8 @@ pub(in crate::domain_computation::primary_graph::application_contribution) struc
         Capture<S, P>,
     pub(in crate::domain_computation::primary_graph::application_contribution) prepare:
         Prepare<S, P>,
+    pub(in crate::domain_computation::primary_graph::application_contribution::producer) admit:
+        super::super::execution::CaptureAdmission<S, P>,
 }
 impl<S, P> Copy for InputCaptureOwner<S, P>
 where
@@ -99,11 +102,14 @@ where
     where
         C: WorthQueryProducerInputCaptureDefinition<S, OutputFamily = P::OutputFamily>,
         H: WorthQueryProducerInputCaptureHandler<S, P, C>,
+        super::super::ProducerSourceValue<S, P>:
+            WorthQueryApplicationProjection<S, super::super::ProducerSourceQuery<S, P>>,
     {
         Self {
             definition: EqualityTypeId::of::<C>(),
             capture: capture::<S, P, C, H>,
             prepare: prepare::<S, P, C, H>,
+            admit: super::super::execution::capture_producer_inputs::<S, P>,
         }
     }
 }
