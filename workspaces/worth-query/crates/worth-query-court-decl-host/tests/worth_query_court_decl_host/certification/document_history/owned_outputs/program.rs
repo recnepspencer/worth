@@ -260,6 +260,8 @@ pub(super) fn entry_spec_with_member_delivery<
     MemberDelivery: ApplicationActionDelivery<Schema, member_edit::Binding>,
 >() -> ApplicationFeatureSpec {
     with_envelope_completion_actions(entry_builder::<Delivery, MemberDelivery, Completion>())
+        .action::<member_retarget::operation::Binding, Completion>()
+        .finish_action()
         .finish()
 }
 pub(super) fn entry_builder<

@@ -4744,6 +4744,61 @@ inter-position producer, repeated predecessor plus foreign input, and a genuine
 recorded inverse followed by ordinary authoring. CAD numerical reuse and the
 private whole-stage/final-body translation remain their own consumer work.
 
+
+### Capture producer inputs before preparing required parents
+
+When the current required parents come from authored data rather than a stored
+output roster, use `ApplicationCapturedInputConnection<Base, Capture>` inside
+the same complete `ApplicationOccurrenceComponent<S>`. `Base` remains the real
+connection, including its ports, demand types and complete outgoing discovery.
+`Capture` implements `WorthQueryProducerInputCaptureDefinition<S>` with one
+`OutputFamily`, stable `IDENTITY` and finite `Parents` naming the **base**
+connections, without their capture wrappers.
+
+Declare `input_capture()` on each applicable producer binding using
+`WorthQueryProducerInputCaptureContract::new::<Capture>()`. Its mutation binding
+must require an application program. Configure the original handler once with
+`setup.producer_with_input_capture::<Producer, Capture, _>(provider, handler)`.
+The installed required feature and complete component must contain every
+capture port; an incomplete or different contract refuses during installation.
+Available conditional bindings alone do not request an artifact or a component.
+
+The same handler implements
+`WorthQueryProducerInputCaptureHandler<S, Producer, Capture>`:
+
+- `capture_inputs` receives `WorthQueryProducerInputReader` under the actual
+  installed operation's read authority. Read the genuine authored fields,
+  relations and indexed selections, then call `parent::<Base, _>(&source,
+  typed_demand)` for every currently required entry on each fixed port. The
+  source must be issued by this reader, and the demand must resolve to its exact
+  generation. An empty required set must follow from those actual reads.
+- Finish with `reader.finish(data)`, where the owned data implements
+  `ChargedBytes`. The returned `WorthQueryCapturedProducerInputs` carries the
+  original read custody, complete parent set and request allocation. The loan
+  exposes no candidate writer, mutation target or producer invocation.
+- `prepare_captured_decision` consumes that exact container once, after every
+  required parent is ready. `into_data()` yields numerical input data; use the
+  fresh `DecisionReader` to obtain actual D mutation targets. Captured data grants
+  no writes or Current authority.
+
+Query first uses normal Native output readiness. An already-current output does
+not run this prelude or require a capture-only mutation admission. For a source
+requiring computation, Query compares complete captured support before the next
+supplier and before consuming the data. A changed **unconsumed** pure capture is
+reacquired on the current candidate using the same request and work budget; its
+superseded incoming edges do not become independent delivery roots. Other real
+roots, still-required parents and every alias's static selector remain active.
+A supplier already performed is not replayed. Once computation consumes the
+capture, its read support stays strict through publication and participates in
+normal input-reuse classification; it is not the replaceable source suffix.
+
+Keep consumer recipes in their own inventory or pack. Capture the complete
+admitted input set, including referenced owners and absence support; do not run
+a producer to discover dependencies or substitute a prior publication's roster
+for newly authored inputs. Unavailable, denied or interrupted reads remain typed
+failures. See the same-world executable examples in
+[`captured_input`](../workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/owned_outputs/family/captured_input.rs).
+
 ### Independent authored prefixes
 
 `OperationHandler::supports_candidate_planning()` defaults to false. Opt in
