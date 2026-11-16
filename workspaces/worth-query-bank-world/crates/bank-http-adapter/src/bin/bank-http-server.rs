@@ -3,7 +3,7 @@
     clippy::disallowed_methods,
     reason = "async-runtime async-runtime=1: Bank HTTP ingress owns this I/O executor; computation retains its installed Execution authority"
 )]
-fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     worth_execution::run_with_execution_stack(|| {
         tokio::runtime::Builder::new_current_thread()
             .enable_all()

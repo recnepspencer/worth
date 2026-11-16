@@ -20,12 +20,13 @@ struct ProcessPosture<'a> {
     address: String,
 }
 
-pub async fn run() -> Result<(), Box<dyn Error + Send + Sync>> {
-    let lifecycle = lifecycle_funding()?;
+pub async fn run() -> Result<(), Box<dyn Error>> {
+    let lifecycle = lifecycle_funding().map_err(|cause| cause as Box<dyn Error>)?;
     let binding =
         BankHttpServerBinding::bind(BankHttpServerConfiguration::local_ephemeral()).await?;
-    write_posture("bound", binding.local_address())?;
-    let configuration: BankHttpProcessConfiguration = read_json_line()?;
+    write_posture("bound", binding.local_address()).map_err(|cause| cause as Box<dyn Error>)?;
+    let configuration: BankHttpProcessConfiguration =
+        read_json_line().map_err(|cause| cause as Box<dyn Error>)?;
     let identity = Arc::new(configuration.install_identity().await?);
     let installation = binding
         .install_shared(Arc::clone(&identity))

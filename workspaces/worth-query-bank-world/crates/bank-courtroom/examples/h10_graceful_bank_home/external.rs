@@ -151,18 +151,29 @@ pub(super) fn observe_and_replay(
     let outbox = receipt
         .dispatch_outbox()
         .expect("original native outbox is recovered");
-    assert_eq!(OutboxObservation::capture(outbox), pending.outbox);
     let observed = runtime
         .with_application_advancement(&scope, |phase| {
             runtime.observe_committed_dispatch_outbox_by_correlation(&phase, outbox.correlation())
         })
         .unwrap()
         .unwrap();
+    let record = observed.record();
+    assert_eq!(OutboxObservation::capture(record), pending.outbox);
+    assert_eq!(record.correlation(), outbox.correlation());
     assert_eq!(
-        observed.record(),
-        outbox,
-        "both fresh native paths recover the same installed outbox"
+        record.correlation_family().as_str(),
+        outbox.correlation_family()
     );
+    assert_eq!(record.effect(), outbox.effect());
+    assert_eq!(record.protocol_identity(), outbox.protocol_identity());
+    assert_eq!(record.protocol_version(), outbox.protocol_version());
+    assert_eq!(
+        record.maximum_payload_bytes(),
+        outbox.maximum_payload_bytes()
+    );
+    assert_eq!(record.payload(), outbox.payload());
+    assert_eq!(record.outcome_identity(), outbox.outcome_identity());
+    assert_eq!(record.operation_slot(), outbox.operation_slot());
     assert_eq!(observed.commit_reference(), pending.source.relational());
     drop(observed);
     assert_eq!(receipt.emitted_effect_count(), 1);

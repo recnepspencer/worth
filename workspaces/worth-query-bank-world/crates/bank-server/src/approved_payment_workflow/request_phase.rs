@@ -176,6 +176,7 @@ fn owner_acceptance_and_recovery_doors_open_before_their_first_reader() {
             .rail
             .under(FaultScript::Succeed, Duration::from_millis(150));
         let recovery = vocabulary
+            .program_runtime()
             .runtime()
             .with_host_advancement(|phase| prepared.safe_retry(&phase))
             .expect("fixture retry owns its host call")

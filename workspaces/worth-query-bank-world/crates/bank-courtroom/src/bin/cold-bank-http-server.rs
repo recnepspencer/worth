@@ -4,6 +4,6 @@
     reason = "async-runtime async-runtime=1: This Bank process owns its I/O executor; computation retains installed Execution authority"
 )]
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     bank_http_adapter::run_bank_http_server_process().await
 }

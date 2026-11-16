@@ -54,7 +54,8 @@ impl BankApprovalAuthenticationConfiguration {
         }
     }
 
-    pub(crate) fn denying() -> Self {
+    /// Install an explicit configuration that rejects every approval credential.
+    pub fn denying() -> Self {
         Self::new(DenyApprovalVerifier)
     }
 }

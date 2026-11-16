@@ -162,6 +162,11 @@ pub fn reacquire(
             assert_eq!(observation.selected_commit(), basis.selected_commit());
             (definition.clone(), instance)
         }
-        other => panic!("the original proposal wait must remain live: {other:?}"),
+        WorthQueryWorkflowInstanceRead::Missing { .. } => {
+            panic!("the original proposal wait must not disappear")
+        }
+        WorthQueryWorkflowInstanceRead::Historical { .. } => {
+            panic!("the original proposal wait must remain live")
+        }
     }
 }

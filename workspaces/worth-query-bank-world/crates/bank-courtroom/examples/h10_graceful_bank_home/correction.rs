@@ -116,7 +116,7 @@ pub(super) fn reapply_recovered_child(
                     .select(&phase)
                     .unwrap()
                     .product()
-                    .observation()
+                    .selected_commit()
                     .clone()
             })
             .unwrap()

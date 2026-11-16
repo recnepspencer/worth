@@ -33,6 +33,13 @@ impl BankIdempotencyKey {
     }
 }
 
+impl<'de> serde::Deserialize<'de> for BankIdempotencyKey {
+    fn deserialize<D: serde::Deserializer<'de>>(decoder: D) -> Result<Self, D::Error> {
+        let value = <String as serde::Deserialize>::deserialize(decoder)?;
+        Self::new(value).map_err(|_| serde::de::Error::custom("invalid Bank idempotency key"))
+    }
+}
+
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct BankOperationScopeSchemaBinding {
     runtime_ordinal: u64,

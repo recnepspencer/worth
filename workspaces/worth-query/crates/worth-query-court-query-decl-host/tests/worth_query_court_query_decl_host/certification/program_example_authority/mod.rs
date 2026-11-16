@@ -92,7 +92,7 @@ fn program_example_denies_plain_commit_and_conditional_client_admission() {
                 .resolve_entity(
                     &host_phase,
                     IntentIdentityField::at("IntentIdentityField"),
-                    intent.identity.clone(),
+                    intent.amendment.identity.clone(),
                     &scope,
                     WorthQueryPrincipalResolutionMode::Ordinary,
                 )

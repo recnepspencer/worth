@@ -9,7 +9,7 @@ use worth_relational::facade::identity::{EntityId, PartitionId};
 #[test]
 fn discovery_decoder_requires_the_current_validated_program_revision() {
     use worth_query_host::facade::application_entry::WorthQueryWorkflowInstanceDiscoveryIntent;
-    use worth_query_testkit_certification_canonical::certification::application_graph::canonical_transition::{
+    use worth_query_testkit_certification_canonical::facade::certification::application_graph::canonical_transition::{
         host, schema::CanonicalSchema,
     };
 
