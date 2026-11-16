@@ -255,7 +255,7 @@ fn worker_only_healthy_verification_needs_no_source_admission() {
 fn exercise_retirement_parent(current: bool) {
     let _execution = WorthQueryExecutionObservation::install_on_this_thread();
     use super::authored_member as member;
-    use super::synchronous_edit::interleaved::{ModelTree, Program};
+    use super::synchronous_edit::interleaved::{ModelTree, RetirementProgram as Program};
     use worth_query_host::facade::{
         application_entry::WorthQueryEditEnvelopeOutcome as Outcome,
         runtime::ExecutionAllocationPolicy,
