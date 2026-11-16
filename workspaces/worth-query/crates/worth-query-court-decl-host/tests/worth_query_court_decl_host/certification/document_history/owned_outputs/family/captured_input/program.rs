@@ -153,7 +153,6 @@ impl ApplicationOccurrenceComponent<Schema> for Component {
     type Connections = (
         ApplicationCapturedInputConnection<SeedConnection, Capture>,
         ApplicationCapturedInputConnection<AnchorConnection, Capture>,
-        super::prerequisites::Connection,
     );
 }
 pub type Tree = ApplicationOutputGraph<Root, ApplicationOutputOccurrences<Component>>;
@@ -241,31 +240,6 @@ pub(in super::super::super) fn seed(
         ))?;
     }
     if parent_switch.is_some() {
-        // A genuine prerequisite makes late ineligible until a has supplied its
-        // output, so supersession is tested before late can ever execute.
-        graph.bind_entity(
-            WorthQueryApplicationEntitySeed::new(
-                Member::reference(),
-                WorthQueryApplicationEntityKey::new("carriage:late:previous").unwrap(),
-            )
-            .field(
-                MemberKey::at("MemberKey"),
-                "carriage:late:previous".to_owned(),
-            )
-            .field(MemberValue::at("MemberValue"), 1),
-        )?;
-        graph.bind_relation(WorthQueryApplicationRelationSeed::new(
-            ModelMember::reference(),
-            "capture:late:owns-previous",
-            WorthQueryApplicationEntityKey::new("carriage:late").unwrap(),
-            WorthQueryApplicationEntityKey::new("carriage:late:previous").unwrap(),
-        ))?;
-        graph.bind_relation(WorthQueryApplicationRelationSeed::new(
-            UpstreamOf::reference(),
-            "capture:late:previous",
-            WorthQueryApplicationEntityKey::new("carriage:late:previous").unwrap(),
-            WorthQueryApplicationEntityKey::new("a").unwrap(),
-        ))?;
         graph.bind_relation(WorthQueryApplicationRelationSeed::new(
             UpstreamOf::reference(),
             "capture:choice:ready",

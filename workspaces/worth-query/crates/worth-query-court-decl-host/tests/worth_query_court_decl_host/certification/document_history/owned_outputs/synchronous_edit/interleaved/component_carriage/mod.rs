@@ -6,7 +6,7 @@ pub(in super::super::super) mod outgoing;
 mod parent;
 pub(in super::super::super) mod pending;
 pub(in super::super::super) mod pending_consumer;
-pub(in super::super::super) mod topology;
+mod topology;
 use super::*;
 mod connections;
 use connections::*;
