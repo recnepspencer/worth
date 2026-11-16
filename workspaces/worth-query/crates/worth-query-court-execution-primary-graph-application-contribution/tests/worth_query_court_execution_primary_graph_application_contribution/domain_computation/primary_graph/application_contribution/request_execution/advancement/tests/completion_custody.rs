@@ -2,9 +2,9 @@
 use super::*;
 use super::panic_custody::ResultDrop;
 use std::cell::Cell;
+use worth_query_admission::facade::authenticated_principal::{WorthQueryCancellationSource, WorthQueryRequestScope};
 use worth_query_execution::facade::domain_computation::{
-    advancement_observations_on_this_thread_for_test, WorthQueryCancellationSource,
-    WorthQueryExecutionObservation, WorthQueryRequestScope,
+    advancement_observations_on_this_thread_for_test, WorthQueryExecutionObservation,
 };
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world;
 
