@@ -66,7 +66,7 @@ fn inspect(
         .without_source()
         .idempotency(&8001_u64)
         .execute_capability_in_program(
-            application.program_runtime(),
+            application.runtime(),
             worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();

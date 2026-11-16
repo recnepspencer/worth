@@ -33,6 +33,7 @@ pub(super) fn prepare(
         .retain_current_read()
         .unwrap();
     let target = *application
+        .runtime()
         .supported_program::<crate::program::MixedProgramP1>()
         .expect("the actual alternate program is rostered")
         .owned_revision();
