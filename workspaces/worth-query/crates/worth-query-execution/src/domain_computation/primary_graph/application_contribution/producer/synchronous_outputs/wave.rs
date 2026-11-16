@@ -5,10 +5,12 @@ mod occurrences;
 mod outgoing;
 mod prerequisites;
 struct Scheduled<S: ApplicationSchema> {
+    root: bool,
     key: Option<super::occurrences::OccurrenceKey>,
     component: Option<std::any::TypeId>,
     identified: bool,
     closed: bool,
+    inputs: Option<PreparedCoupledInputs>,
     prerequisite_queued: bool,
     next_prerequisite: Option<usize>,
     done: bool,
@@ -21,6 +23,14 @@ struct Scheduled<S: ApplicationSchema> {
     tree: Box<dyn capture::RequiredTree<S>>,
     parent: Option<AppliedOutputParent>,
     _memory: Option<worth_execution::ExecutionMemoryReservation>,
+}
+impl<S: ApplicationSchema> Scheduled<S> {
+    fn clear_input_capture(&mut self) {
+        self.closed = false;
+        self.inputs = None;
+        self.prerequisites = Vec::new();
+        self._prerequisite_memory = None;
+    }
 }
 pub struct SynchronousOutputWave<S: ApplicationSchema> {
     tasks: Vec<Scheduled<S>>,
@@ -78,10 +88,12 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
         let tree = tree();
         let continuation_done = !tree.has_static_continuation();
         self.tasks.push(Scheduled {
+            root: true,
             key: None,
             component: None,
             identified: false,
             closed: false,
+            inputs: None,
             prerequisite_queued: false,
             next_prerequisite: None,
             done: false,
@@ -195,17 +207,35 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
                     ready.push(i);
                 }
             }
+            let mut completed = 0;
             for i in &ready {
+                // Earlier real suppliers can change a still-unconsumed child's
+                // desired parents. Reclose before computing any orphaned row.
+                if self.refresh_input_captures(context, candidate, allowed)? {
+                    break;
+                }
                 let task = &mut self.tasks[*i];
                 context.checkpoint(task.subject)?;
-                task.parent = task.tree.prepare(context, candidate)?;
-                task.done = true;
+                match task
+                    .tree
+                    .prepare(context, candidate, task.inputs.take(), task.component)?
+                {
+                    PlannedOutput::Prepared(parent) => {
+                        task.parent = parent;
+                        task.done = true;
+                        completed += 1;
+                    }
+                    PlannedOutput::Recapture => {
+                        task.clear_input_capture();
+                        break;
+                    }
+                }
             }
             let pin = candidate
                 .pin_source(context.execution)
                 .map_err(CoupledSourceReadStop::from)?;
             let mut next = Self::new();
-            for i in ready {
+            for i in ready.into_iter().take(completed) {
                 let task = &mut self.tasks[i];
                 if let Some(parent) = &mut task.parent {
                     parent.pin = pin.clone();

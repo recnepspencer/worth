@@ -7,7 +7,11 @@ use super::producer::{
 use worth_query_installation::facade::ApplicationSchema;
 mod authored_stages;
 mod disposal;
+mod input_preparation;
 mod preparation;
+mod source_selection;
+pub(in crate::domain_computation::primary_graph::application_contribution) use input_preparation::{PreparedCoupledInputs, PlannedOutput};
+pub(in crate::domain_computation::primary_graph::application_contribution) use source_selection::SelectedCoupledSource;
 mod validation;
 use crate::domain_computation::primary_graph::{
     application_attempt::coupled_outputs::DeclaredCoupledOutputDemands, WorthQueryAdvancementPhase,

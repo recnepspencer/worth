@@ -2,6 +2,7 @@ mod collection;
 mod derived_relation;
 mod feature;
 mod managed_index;
+mod producer;
 pub use managed_index::WorthQueryManagedIndexProviderRegistration;
 mod resource;
 
@@ -142,31 +143,6 @@ impl<'a, Schema: ApplicationSchema> WorthQueryApplicationContributionSetup<'a, S
         Ok(super::WorthQueryInstalledPartitionedComputation::new(
             owner, retention,
         ))
-    }
-
-    pub fn producer<Binding>(
-        &mut self,
-        provider: Binding::Provider,
-    ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>
-    where
-        Binding: WorthQueryApplicationProducerBinding<Schema>,
-        ProducerSourceValue<Schema, Binding>: super::super::WorthQueryApplicationProjection<
-            Schema,
-            ProducerSourceQuery<Schema, Binding>,
-        >,
-    {
-        let source_query = self.require_owned_query::<ProducerSourceBinding<Schema, Binding>>()?;
-        let mutation = self.require_owned_mutation::<Binding::Operation>()?;
-        for requirement in Binding::REQUIRED_INVARIANTS {
-            self.require_owned_invariant(*requirement)?;
-        }
-        self.producers.register::<Binding>(
-            self.contribution.identity().as_str(),
-            provider,
-            mutation,
-            self.installed_schema,
-            source_query,
-        )
     }
 
     fn require_owned_mutation<Binding>(

@@ -13,6 +13,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
         candidate: &RelationalAuthoredCoupledCandidate<'_>,
         allowed: Option<&[String]>,
     ) -> Result<(), SynchronousOutputFailure> {
+        self.refresh_input_captures(context, candidate, allowed)?;
         // Identity remains eager: an alias of a supplied occurrence still owns
         // its distinct static selector even when no supplier is needed here.
         for i in 0..self.tasks.len() {
@@ -31,16 +32,68 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
         while let Some(i) = self.pop_prerequisite(&mut frontier) {
             context.checkpoint(self.tasks[i].subject)?;
             self.tasks[i].closed = true;
-            let Some(key) = &self.tasks[i].key else {
+            let Some(source) = self.tasks[i].key.as_ref().map(|key| key.scope) else {
                 continue;
             };
+            let inputs =
+                self.tasks[i]
+                    .tree
+                    .capture_inputs(context, candidate, self.tasks[i].component)?;
+            self.tasks[i].inputs = inputs;
             let mut incoming = Self::new();
-            self.tasks[i]
-                .tree
-                .prerequisites(context, &pin, key.scope, &mut incoming)?;
+            self.tasks[i].tree.prerequisites(
+                context,
+                &pin,
+                source,
+                &PrerequisiteInputs::from(self.tasks[i].inputs.as_ref()),
+                &mut incoming,
+            )?;
+            if let Some(PreparedCoupledInputs::Captured(inputs)) = &self.tasks[i].inputs {
+                let drained = incoming
+                    .tasks
+                    .iter()
+                    .filter(|task| task.tree.expected_source().is_some())
+                    .count();
+                if drained != inputs.parents().len() {
+                    return Err(super::super::occurrences::refusal(
+                        self.tasks[i].subject,
+                        "incomplete captured parent roster",
+                    ));
+                }
+            }
             self.append_prerequisites(context, candidate, i, incoming, &mut frontier)?;
         }
         Ok(())
+    }
+    pub(super) fn refresh_input_captures(
+        &mut self,
+        context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        candidate: &RelationalAuthoredCoupledCandidate<'_>,
+        allowed: Option<&[String]>,
+    ) -> Result<bool, SynchronousOutputFailure> {
+        if !self.tasks.iter().any(|task| {
+            !task.done && matches!(task.inputs, Some(PreparedCoupledInputs::Captured(_)))
+        }) {
+            return Ok(false);
+        }
+        let _planning = self.quote_frontier(context, allowed.map_or(0, |values| values.len()))?;
+        let needed = self.needed(allowed);
+        let pin = candidate
+            .pin_source(context.execution)
+            .map_err(CoupledSourceReadStop::from)?;
+        let mut changed = false;
+        for (index, task) in self.tasks.iter_mut().enumerate() {
+            if !needed[index] || task.done {
+                continue;
+            }
+            if let Some(inputs) = &task.inputs
+                && !inputs.support_equal(context.execution, &pin)?
+            {
+                task.clear_input_capture();
+                changed = true;
+            }
+        }
+        Ok(changed)
     }
     fn append_prerequisites(
         &mut self,
@@ -69,7 +122,10 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
         parents.try_reserve_exact(count).map_err(|_| {
             super::super::occurrences::refusal(self.tasks[i].subject, "prerequisite allocation")
         })?;
-        for task in incoming.tasks {
+        for mut task in incoming.tasks {
+            // A prerequisite is reached through this owner's current parent
+            // set; it never becomes an independent final delivery root.
+            task.root = false;
             self.reserve_slot(context, task.subject)?;
             let index = self.tasks.len();
             parents.push(index);

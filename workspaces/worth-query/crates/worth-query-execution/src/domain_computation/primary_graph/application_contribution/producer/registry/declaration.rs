@@ -56,6 +56,7 @@ impl DeclaredProducerBinding {
             predecessor_reads: Binding::PREDECESSOR_READS.map(|contract| contract.meaning()),
             original_reads: Binding::ORIGINAL_READS.map(|contract| contract.meaning()),
             input_reuse: Binding::INPUT_REUSE,
+            input_capture: Binding::input_capture().map(|contract| contract.meaning),
             output_equivalence: Binding::output_equivalence().map(|contract| contract.into_field()),
             installed_output_equivalence: None,
             binding_type: TypeId::of::<Binding>(),
@@ -112,6 +113,7 @@ impl DeclaredProducerBinding {
             && self.predecessor_reads == expected.predecessor_reads
             && self.original_reads == expected.original_reads
             && self.input_reuse == expected.input_reuse
+            && self.input_capture == expected.input_capture
             && self.output_equivalence == expected.output_equivalence
             && self.binding_type == expected.binding_type
             && self.source_type == expected.source_type

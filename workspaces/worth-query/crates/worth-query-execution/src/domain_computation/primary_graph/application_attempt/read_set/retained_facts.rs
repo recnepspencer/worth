@@ -44,6 +44,18 @@ impl<Schema, Operation, Input, Scope, Phase>
             operation,
             check,
         )?;
+        self.append_completed_fact_payload(tail, policy)
+    }
+
+    /// Move a completed native body without deep-copying or reissuing its facts.
+    pub(super) fn append_completed_fact_payload(
+        &mut self,
+        tail: crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
+        policy: ExecutionAllocationPolicy<'_, '_>,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial> {
+        let operation = self.admission.operation();
+        let request = self.admission.publication_request();
+        check_request_live(request, operation)?;
         let joined = self
             .facts
             .append_completed(tail, StorageControl::new(policy, Some(request)))
@@ -53,7 +65,9 @@ impl<Schema, Operation, Input, Scope, Phase>
             StorageControl::new(policy, Some(request)),
         )
         .map_err(|cause| cause.into_attempt_denial(operation))?;
-        check()?;
+        self.admission
+            .validate_current_authority()
+            .map_err(WorthQueryApplicationAttemptDenial::request_authority_lost)?;
         self.effect_routes = routes;
         self.facts = joined;
         Ok(())

@@ -69,7 +69,16 @@ pub fn require_family_agreement(
     declarations: &std::collections::BTreeMap<String, DeclaredProducerBinding>,
 ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
     let mut families = std::collections::BTreeMap::new();
+    let mut captures = std::collections::BTreeMap::new();
     for declaration in declarations.values() {
+        if let Some(prior) = captures.insert(&declaration.output_family, &declaration.input_capture)
+            && prior != &declaration.input_capture
+        {
+            return Err(denial(
+                DenialKind::ProducerBindingMeaningMismatch,
+                &declaration.identity,
+            ));
+        }
         let meaning = (
             declaration.ownership,
             declaration.owned_scope_entity.as_deref(),

@@ -140,6 +140,18 @@ impl<Schema, Operation, Input, Scope>
         self.core.computation_prior()
     }
 
+    pub(in crate::domain_computation) fn completed_input_prefix(&self) -> Option<usize> {
+        self.core.completed_input_prefix()
+    }
+
+    pub(in crate::domain_computation) fn insert_input_facts(
+        &mut self,
+        expected: usize,
+        count: usize,
+    ) -> bool {
+        self.core.insert_input_facts(expected, count)
+    }
+
     #[inline]
     pub(in crate::domain_computation) fn retain_delegation_proposal_canonical_work(
         &mut self,

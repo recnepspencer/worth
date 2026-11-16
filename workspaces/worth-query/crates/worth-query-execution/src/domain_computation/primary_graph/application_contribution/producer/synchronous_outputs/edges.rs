@@ -128,10 +128,11 @@ where
         pin: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
         source: worth_relational::facade::identity::EntityId,
         demand: &D,
+        inputs: &PrerequisiteInputs<'_>,
         next: &mut SynchronousOutputWave<S>,
     ) -> Result<(), SynchronousOutputFailure> {
-        L::prerequisites(context, pin, source, demand, next)?;
-        R::prerequisites(context, pin, source, demand, next)
+        L::prerequisites(context, pin, source, demand, inputs, next)?;
+        R::prerequisites(context, pin, source, demand, inputs, next)
     }
     fn declared_families(
         parent: std::any::TypeId,

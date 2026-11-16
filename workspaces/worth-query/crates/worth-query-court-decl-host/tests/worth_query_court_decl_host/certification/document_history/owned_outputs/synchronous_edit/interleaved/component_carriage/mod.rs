@@ -2,7 +2,7 @@
 use super::super::super::hierarchy::program as hierarchy;
 use super::super::super::program as entry;
 pub(in super::super::super) mod attach;
-mod outgoing;
+pub(in super::super::super) mod outgoing;
 mod parent;
 pub(in super::super::super) mod pending;
 pub(in super::super::super) mod pending_consumer;
@@ -220,6 +220,8 @@ where
         AfterDelivery,
     >(entry::entry_builder::<Completion, Completion, Completion>())
     .action::<created::Binding, Completion>()
+    .finish_action()
+    .action::<member_retarget::operation::Binding, Completion>()
     .finish_action()
     .finish();
     specs

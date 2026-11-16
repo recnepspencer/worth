@@ -177,42 +177,41 @@ impl ApplicationProgramDefinition<Schema> for Program {
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("owned-outputs.hierarchy.program");
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
-        let entry = super::super::program::Program::feature_specs().remove(0);
-        vec![
-            entry,
-            ApplicationFeatureSpec::root::<Schema, Parent>()
-                .provides::<Output>()
-                .conditional_operation::<first::initial::Operation>()
-                .conditional_operation::<first::preserve::Operation>()
-                .finish(),
-            ApplicationFeatureSpec::root::<Schema, Child>()
-                .provides::<ChildOutput>()
-                .conditional_operation::<from_first::initial::Operation>()
-                .conditional_operation::<from_first::preserve::Operation>()
-                .conditional_operation::<restricted_from_first::initial::Operation>()
-                .conditional_operation::<restricted_from_first::preserve::Operation>()
-                .conditional_operation::<second::initial::Operation>()
-                .conditional_operation::<second::preserve::Operation>()
-                .conditional_operation::<child::initial::Operation>()
-                .conditional_operation::<child::preserve::Operation>()
-                .conditional_operation::<restricted::initial::Operation>()
-                .conditional_operation::<restricted::preserve::Operation>()
-                .conditional_operation::<upstream::initial::Operation>()
-                .conditional_operation::<upstream::preserve::Operation>()
-                .conditional_operation::<downstream::initial::Operation>()
-                .conditional_operation::<downstream::preserve::Operation>()
-                .conditional_operation::<restricted_owned::initial::Operation>()
-                .conditional_operation::<restricted_owned::preserve::Operation>()
-                .finish(),
-            super::super::predecessor::program::feature(),
-            family::diamond::feature(),
-            family::decision_input::feature(),
-            family::parity_input::feature(),
-            family::convergent::feature(),
-            family::ordinary_input::feature(),
-            family::decision_write::feature(),
-            synchronous_edit::reconciliation::feature(),
-            synchronous_edit::reconciliation::child_feature(),
-        ]
+        feature_specs(family::captured_input::program::conditional_feature())
     }
+}
+
+pub(in super::super) fn feature_specs(
+    captured: ApplicationFeatureSpec,
+) -> Vec<ApplicationFeatureSpec> {
+    let entry = super::super::program::Program::feature_specs().remove(0);
+    let mut features = vec![
+        entry,
+        ApplicationFeatureSpec::root::<Schema, Parent>()
+            .provides::<Output>()
+            .conditional_operation::<first::initial::Operation>()
+            .conditional_operation::<first::preserve::Operation>()
+            .finish(),
+        ApplicationFeatureSpec::root::<Schema, Child>()
+            .provides::<ChildOutput>()
+            .conditional_operation::<from_first::initial::Operation>()
+            .conditional_operation::<from_first::preserve::Operation>()
+            .conditional_operation::<restricted_from_first::initial::Operation>()
+            .conditional_operation::<restricted_from_first::preserve::Operation>()
+            .conditional_operation::<second::initial::Operation>()
+            .conditional_operation::<second::preserve::Operation>()
+            .conditional_operation::<child::initial::Operation>()
+            .conditional_operation::<child::preserve::Operation>()
+            .conditional_operation::<restricted::initial::Operation>()
+            .conditional_operation::<restricted::preserve::Operation>()
+            .conditional_operation::<upstream::initial::Operation>()
+            .conditional_operation::<upstream::preserve::Operation>()
+            .conditional_operation::<downstream::initial::Operation>()
+            .conditional_operation::<downstream::preserve::Operation>()
+            .conditional_operation::<restricted_owned::initial::Operation>()
+            .conditional_operation::<restricted_owned::preserve::Operation>()
+            .finish(),
+    ];
+    features.extend(family::feature_specs(captured));
+    features
 }

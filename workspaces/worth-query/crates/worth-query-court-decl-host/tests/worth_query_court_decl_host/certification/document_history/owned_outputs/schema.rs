@@ -115,6 +115,7 @@ fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
     let schema = member_retarget::declare(schema);
+    let schema = family::captured_input::declare(schema);
     let schema = family::convergent::declare(schema);
     let schema = family::parity_input::declare(schema);
     let schema = synchronous_edit::reconciliation::declare(schema);

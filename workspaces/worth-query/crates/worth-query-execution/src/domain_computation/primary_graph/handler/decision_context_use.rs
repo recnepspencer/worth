@@ -36,7 +36,7 @@ impl DecisionContextUse {
         Self(self.0 | Self::PRINCIPAL)
     }
 
-    pub(super) const fn scope(self) -> Self {
+    pub(in crate::domain_computation::primary_graph) const fn scope(self) -> Self {
         Self(self.0 | Self::SCOPE)
     }
 
@@ -54,7 +54,7 @@ impl DecisionContextUse {
         Self(self.0 | Self::SOURCE_QUERY_PERMISSION)
     }
 
-    pub(super) const fn request_context(self) -> Self {
+    pub(in crate::domain_computation::primary_graph) const fn request_context(self) -> Self {
         Self(self.0 | Self::REQUEST_CONTEXT)
     }
 

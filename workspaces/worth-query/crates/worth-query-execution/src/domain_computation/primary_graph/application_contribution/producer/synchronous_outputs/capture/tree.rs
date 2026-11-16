@@ -24,13 +24,23 @@ pub(in super::super) trait RequiredTree<S: ApplicationSchema>:
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
         pin: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
         source: worth_relational::facade::identity::EntityId,
+        inputs: &PrerequisiteInputs<'_>,
         next: &mut SynchronousOutputWave<S>,
     ) -> Result<(), SynchronousOutputFailure>;
+    fn capture_inputs(
+        &self,
+        context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        candidate: &RelationalAuthoredCoupledCandidate<'_>,
+        component: Option<std::any::TypeId>,
+    ) -> Result<Option<PreparedCoupledInputs>, SynchronousOutputFailure>;
+    fn expected_source(&self) -> Option<worth_relational::facade::identity::EntityId>;
     fn prepare(
         &self,
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
         candidate: &mut RelationalAuthoredCoupledCandidate<'_>,
-    ) -> Result<Option<AppliedOutputParent>, SynchronousOutputFailure>;
+        inputs: Option<PreparedCoupledInputs>,
+        component: Option<std::any::TypeId>,
+    ) -> Result<PlannedOutput, SynchronousOutputFailure>;
     fn discover(
         &self,
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
@@ -57,6 +67,7 @@ pub(super) struct Tree<D, K> {
     pub(super) order:
         worth_query_declaration::facade::application_program::ApplicationProgramConnectionOrder,
     pub(super) demand: D,
+    pub(super) expected_source: Option<worth_relational::facade::identity::EntityId>,
     pub(super) continuation: K,
 }
 impl<S, D, K> RequiredTree<S> for Tree<D, K>
@@ -92,6 +103,7 @@ where
                     position: self.position.clone(),
                     order: self.order.clone(),
                     demand: self.demand.clone(),
+                    expected_source: self.expected_source,
                     continuation: self.continuation.clone(),
                 })
             },
@@ -128,10 +140,19 @@ where
             context.before,
             &demand,
             candidate,
-            true,
+            super::super::super::execution::CoupledSourceReadPurpose::Route,
         )?;
         match route {
             super::super::super::execution::CoupledSourceRead::Route { scope, partition } => {
+                if self
+                    .expected_source
+                    .is_some_and(|expected| expected != scope)
+                {
+                    return Err(occurrences::refusal(
+                        self.connection,
+                        "captured parent source changed",
+                    ));
+                }
                 Ok(Some((
                     occurrences::OccurrenceKey {
                         family: demand.family,
@@ -156,21 +177,50 @@ where
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
         pin: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
         source: worth_relational::facade::identity::EntityId,
+        inputs: &PrerequisiteInputs<'_>,
         next: &mut SynchronousOutputWave<S>,
     ) -> Result<(), SynchronousOutputFailure> {
         self.continuation
-            .prerequisites(context, pin, source, &self.demand, next)
+            .prerequisites(context, pin, source, &self.demand, inputs, next)
+    }
+    fn capture_inputs(
+        &self,
+        context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        candidate: &RelationalAuthoredCoupledCandidate<'_>,
+        component: Option<std::any::TypeId>,
+    ) -> Result<Option<PreparedCoupledInputs>, SynchronousOutputFailure> {
+        let Some(component) = component else {
+            return Ok(None);
+        };
+        let demand = source::capture::<S, D>(self.connection, self.demand.clone());
+        Ok(context.owner.capture_inputs_one(
+            context.execution,
+            context.before,
+            &demand,
+            candidate,
+            component,
+        )?)
+    }
+    fn expected_source(&self) -> Option<worth_relational::facade::identity::EntityId> {
+        self.expected_source
     }
     fn prepare(
         &self,
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
         candidate: &mut RelationalAuthoredCoupledCandidate<'_>,
-    ) -> Result<Option<AppliedOutputParent>, SynchronousOutputFailure> {
+        inputs: Option<PreparedCoupledInputs>,
+        component: Option<std::any::TypeId>,
+    ) -> Result<PlannedOutput, SynchronousOutputFailure> {
         context.checkpoint(self.connection)?;
         let demand = source::capture::<S, D>(self.connection, self.demand.clone());
-        Ok(context
-            .owner
-            .prepare_one(context.execution, context.before, &demand, candidate)?)
+        Ok(context.owner.prepare_planned_one(
+            context.execution,
+            context.before,
+            &demand,
+            candidate,
+            inputs,
+            component,
+        )?)
     }
     fn discover(
         &self,

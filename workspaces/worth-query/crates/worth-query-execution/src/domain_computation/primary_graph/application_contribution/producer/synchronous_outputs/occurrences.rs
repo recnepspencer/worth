@@ -7,8 +7,11 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrerequisiteSelection,
 };
 use std::any::Any;
+mod captured_prerequisites;
 mod component;
+mod prerequisites;
 use component::{ComponentExecution, LeafExecution};
+use prerequisites::PrerequisiteExecution;
 use worth_query_declaration::facade::{
     application_program::{
         ApplicationConnectionShape, ApplicationOccurrenceComponent, ApplicationOccurrenceGroup,
@@ -41,43 +44,8 @@ type Parent<S, C> =
     <Binding<S, C> as WorthQueryApplicationDependentOutputConnection<S>>::RootDemand;
 type Child<S, C> = <Binding<S, C> as WorthQueryApplicationDependentOutputConnection<S>>::Demand;
 type Discovery<S,C> = <<Binding<S,C> as WorthQueryApplicationDependentOutputConnection<S>>::Discovery as ApplicationQueryIntent<S>>::Binding;
-type Prerequisites<S, C> = <<Binding<S, C> as WorthQueryApplicationPrerequisiteOutputConnection<
-    S,
->>::Prerequisites as ApplicationQueryIntent<S>>::Binding;
-type Row<S,C> = <<Binding<S,C> as WorthQueryApplicationPrerequisiteOutputConnection<S>>::PrerequisiteRow as ApplicationStructuredValueBinding>::Value;
 type DeclaredRow<S, B> =
     <<B as ApplicationQueryBinding<S>>::ResultBinding as ApplicationStructuredValueBinding>::Value;
-
-struct PrerequisiteRows<S: ApplicationSchema, C: ApplicationConnectionShape<S>>(Vec<Row<S, C>>)
-where
-    Binding<S, C>: WorthQueryApplicationPrerequisiteOutputConnection<S>;
-impl<S, C>
-    WorthQueryApplicationProjection<S, <Prerequisites<S, C> as ApplicationQueryBinding<S>>::Query>
-    for PrerequisiteRows<S, C>
-where
-    S: ApplicationSchema,
-    C: ApplicationConnectionShape<S>,
-    Binding<S, C>: WorthQueryApplicationPrerequisiteOutputConnection<S>,
-    Row<S, C>: WorthQueryApplicationProjection<
-        S,
-        <Prerequisites<S, C> as ApplicationQueryBinding<S>>::Query,
-    >,
-    <Binding<S, C> as WorthQueryApplicationPrerequisiteOutputConnection<S>>::Selection:
-        WorthQueryPrerequisiteSelection<
-            S,
-            <Prerequisites<S, C> as ApplicationQueryBinding<S>>::Query,
-        >,
-{
-    fn project(
-        row: &WorthQueryApplicationProjectionRow<
-            '_,
-            S,
-            <Prerequisites<S, C> as ApplicationQueryBinding<S>>::Query,
-        >,
-    ) -> Result<Self, WorthQueryApplicationProjectionDenial> {
-        Ok(Self(Binding::<S, C>::prerequisite_rows().project_all(row)?))
-    }
-}
 
 /// One typed connection of a component. Its executable entry points are
 /// instantiated per connection only; the complete component they continue
@@ -100,6 +68,7 @@ trait ConnectionExecution<S: ApplicationSchema>: ApplicationConnectionShape<S> {
         pin: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
         source: worth_relational::facade::identity::EntityId,
         demand: &dyn Any,
+        inputs: &PrerequisiteInputs<'_>,
         next: &mut SynchronousOutputWave<S>,
         whole: &'static ComponentExecution<S>,
     ) -> Result<(), SynchronousOutputFailure>;
@@ -108,33 +77,16 @@ impl<S, C> ConnectionExecution<S> for C
 where
     S: ApplicationSchema,
     C: ApplicationConnectionShape<S>,
-    Binding<S, C>: WorthQueryApplicationPrerequisiteOutputConnection<S>,
+    Binding<S, C>: WorthQueryApplicationDependentOutputConnection<S>,
+    C::Prerequisites: PrerequisiteExecution<S, C>,
     Parent<S, C>: Clone + Send,
     Child<S, C>: Clone + Send,
     <Discovery<S, C> as ApplicationQueryBinding<S>>::ScopeBinding: ApplicationQueryScopeResolution<
         S,
         <Discovery<S, C> as ApplicationQueryBinding<S>>::PrincipalIdentity,
     >,
-    <Prerequisites<S, C> as ApplicationQueryBinding<S>>::ScopeBinding:
-        ApplicationQueryScopeResolution<
-            S,
-            <Prerequisites<S, C> as ApplicationQueryBinding<S>>::PrincipalIdentity,
-        >,
     DeclaredRow<S, Discovery<S, C>>:
         WorthQueryApplicationProjection<S, <Discovery<S, C> as ApplicationQueryBinding<S>>::Query>,
-    DeclaredRow<S, Prerequisites<S, C>>: WorthQueryApplicationProjection<
-        S,
-        <Prerequisites<S, C> as ApplicationQueryBinding<S>>::Query,
-    >,
-    Row<S, C>: WorthQueryApplicationProjection<
-        S,
-        <Prerequisites<S, C> as ApplicationQueryBinding<S>>::Query,
-    >,
-    <Binding<S, C> as WorthQueryApplicationPrerequisiteOutputConnection<S>>::Selection:
-        WorthQueryPrerequisiteSelection<
-            S,
-            <Prerequisites<S, C> as ApplicationQueryBinding<S>>::Query,
-        >,
     source::SourceInput<S, Parent<S, C>>:
         ApplicationQueryIntent<S, Binding = source::Source<S, Parent<S, C>>>,
     source::SourceInput<S, Child<S, C>>:
@@ -191,7 +143,15 @@ where
             ))
         })?;
         for child in children {
-            capture::schedule_continued(context, next, connection, C::declaration(), child, whole)?;
+            capture::schedule_continued(
+                context,
+                next,
+                connection,
+                C::declaration(),
+                child,
+                whole,
+                None,
+            )?;
         }
         Ok(())
     }
@@ -200,43 +160,10 @@ where
         pin: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
         source: worth_relational::facade::identity::EntityId,
         demand: &dyn Any,
+        inputs: &PrerequisiteInputs<'_>,
         next: &mut SynchronousOutputWave<S>,
         whole: &'static ComponentExecution<S>,
     ) -> Result<(), SynchronousOutputFailure> {
-        let Some(demand) = demand.downcast_ref::<Child<S, C>>() else {
-            return Ok(());
-        };
-        let connection = Binding::<S, C>::IDENTITY;
-        let intent = Binding::<S, C>::prerequisites_from_target(demand).map_err(|cause| {
-            SynchronousOutputFailure(CoupledSourceReadStop::from(
-                super::super::WorthQueryOutputDemandDenial::discovery_connection_denied(
-                    connection, cause,
-                ),
-            ))
-        })?;
-        let rows = context.discover_as_at::<Prerequisites<S, C>, PrerequisiteRows<S, C>>(
-            pin,
-            source,
-            intent,
-            crate::domain_computation::primary_graph::provider::CandidateReadSupport::Query,
-        )?;
-        for row in rows.0 {
-            let parent = Binding::<S, C>::parent_from_prerequisite(&row).map_err(|cause| {
-                SynchronousOutputFailure(CoupledSourceReadStop::from(
-                    super::super::WorthQueryOutputDemandDenial::discovery_connection_denied(
-                        connection, cause,
-                    ),
-                ))
-            })?;
-            capture::schedule_continued(
-                context,
-                next,
-                connection,
-                C::declaration(),
-                parent,
-                whole,
-            )?;
-        }
-        Ok(())
+        C::Prerequisites::incoming(context, pin, source, demand, inputs, next, whole)
     }
 }

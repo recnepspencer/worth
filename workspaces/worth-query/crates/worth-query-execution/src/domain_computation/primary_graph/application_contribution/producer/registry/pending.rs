@@ -36,6 +36,20 @@ where
         self.declared.is_empty() && self.providers.is_empty()
     }
 
+    pub(in crate::domain_computation::primary_graph) fn input_capture_contracts(
+        &self,
+    ) -> impl Iterator<Item = (&str, &str, &super::super::InputCaptureMeaning)> {
+        self.declared.values().filter_map(|producer| {
+            producer.input_capture.as_ref().map(|capture| {
+                (
+                    producer.identity.as_str(),
+                    producer.output_family.as_str(),
+                    capture,
+                )
+            })
+        })
+    }
+
     /// Whether a declared producer runs `Operation`, whose partitioned
     /// computation is being installed; when one does, that producer's runs
     /// retain the computation's state. Every producer is declared before any
@@ -71,6 +85,7 @@ where
             Schema,
             super::super::ProducerSourceBinding<Schema, Binding>,
         >,
+        input_capture: Option<super::super::input_capture::InputCaptureOwner<Schema, Binding>>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>
     where
         Binding: WorthQueryApplicationProducerBinding<Schema>,
@@ -91,6 +106,17 @@ where
             ));
         }
         if !declared.meaning_matches::<Schema, Binding>() {
+            return Err(denial(
+                DenialKind::ProducerBindingMeaningMismatch,
+                Binding::IDENTITY,
+            ));
+        }
+        if declared
+            .input_capture
+            .as_ref()
+            .map(|capture| capture.definition)
+            != input_capture.as_ref().map(|owner| owner.definition)
+        {
             return Err(denial(
                 DenialKind::ProducerBindingMeaningMismatch,
                 Binding::IDENTITY,
@@ -141,6 +167,7 @@ where
                     provider,
                     mutation,
                     source_query,
+                    input_capture,
                 )),
             ),
         );

@@ -30,6 +30,8 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     /// Static graph/resource decisions compiled against final provider support.
     pub(super) prepared_graph:
         worth_query_admission::integration::WorthQueryPreparedApplicationOperationGraphWork,
+    pub(super) input_capture:
+        Option<super::super::input_capture::InputCaptureOwner<Schema, Binding>>,
     marker: PhantomData<fn() -> Schema>,
 }
 
@@ -38,6 +40,20 @@ where
     Schema: ApplicationSchema,
     Binding: WorthQueryApplicationProducerBinding<Schema>,
 {
+    /// Ordinary Fresh has no occurrence input-preparation payload. Healthy
+    /// output verification happens before Fresh and remains a genuine read.
+    pub(super) fn refuse_uncaptured_production(&self) -> Result<(), super::ProducerExecutionStop> {
+        if self.input_capture.is_some() {
+            return Err(super::denial(
+                super::WorthQueryOutputDemandDenialKind::ForeignDemand,
+                "producer requires its complete occurrence input preparation",
+            ).with_commit_denial_kind(
+                crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialKind::RequiredOutputPreparationMissing,
+            ).into());
+        }
+        Ok(())
+    }
+
     pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn new(
         provider: Arc<Binding::Provider>,
         mutation: WorthQueryInstalledApplicationMutationBinding<Schema, Operation<Schema, Binding>>,
@@ -47,6 +63,7 @@ where
             SourceBinding<Schema, Binding>,
         >,
         principal_validation: WorthQueryValidatedPrincipalBinding,
+        input_capture: Option<super::super::input_capture::InputCaptureOwner<Schema, Binding>>,
     ) -> Self {
         Self {
             provider,
@@ -54,6 +71,7 @@ where
             source_query,
             principal_validation,
             prepared_graph,
+            input_capture,
             marker: PhantomData,
         }
     }
