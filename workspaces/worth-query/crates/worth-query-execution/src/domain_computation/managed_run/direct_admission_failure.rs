@@ -5,6 +5,7 @@ use crate::domain_computation::WorthQueryDirectExecutionResourceAttempt;
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryManagedDirectRunAdmissionFailureKind {
     QueryAuthority,
+    DurableCustody,
     ProductBasisMismatch,
     RelationalBasis,
     RetentionCapacityExhausted,
@@ -25,7 +26,10 @@ pub enum WorthQueryManagedDirectRunAdmissionFailureKind {
 pub struct WorthQueryManagedDirectRunAdmissionFailure {
     kind: WorthQueryManagedDirectRunAdmissionFailureKind,
     detail: Arc<str>,
+    custody_denial:
+        Option<crate::domain_computation::primary_graph::query_obligations::QueryObligationDenial>,
     resource_attempt: WorthQueryDirectExecutionResourceAttempt,
+    custody: Option<Arc<super::durable_custody::ManagedRunCustody>>,
 }
 
 impl WorthQueryManagedDirectRunAdmissionFailure {
@@ -37,10 +41,32 @@ impl WorthQueryManagedDirectRunAdmissionFailure {
         Self {
             kind,
             detail: detail.into(),
+            custody_denial: None,
             resource_attempt,
+            custody: None,
         }
     }
 
+    pub(super) fn with_custody(
+        mut self,
+        custody: Option<Arc<super::durable_custody::ManagedRunCustody>>,
+    ) -> Self {
+        self.custody = custody;
+        self
+    }
+    pub(super) fn with_custody_denial(
+        mut self,
+        denial: crate::domain_computation::primary_graph::query_obligations::QueryObligationDenial,
+    ) -> Self {
+        self.custody_denial = Some(denial);
+        self
+    }
+    pub fn custody_denial(
+        &self,
+    ) -> Option<&crate::domain_computation::primary_graph::query_obligations::QueryObligationDenial>
+    {
+        self.custody_denial.as_ref()
+    }
     pub fn kind(&self) -> WorthQueryManagedDirectRunAdmissionFailureKind {
         self.kind
     }
@@ -50,13 +76,20 @@ impl WorthQueryManagedDirectRunAdmissionFailure {
     }
 
     pub fn into_resource_attempt(self) -> WorthQueryDirectExecutionResourceAttempt {
-        self.resource_attempt
+        self.resource_attempt.with_managed_custody(self.custody)
     }
 
     pub fn release(
         self,
     ) -> crate::domain_computation::WorthQueryDirectExecutionAttemptReleaseReceipt {
-        self.resource_attempt.release()
+        let attempt = self.resource_attempt.attempt_identity().as_str().to_owned();
+        let released = self.resource_attempt.release();
+        if released.capacity().released_reservation_count() != 0 {
+            if let Some(custody) = self.custody {
+                custody.record_admission_release(&attempt);
+            }
+        }
+        released
     }
 }
 

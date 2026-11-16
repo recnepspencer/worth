@@ -20,7 +20,7 @@ where
         {
             return Err((self, WorthQueryOperationCloseDenial::FreshRequestMismatch));
         }
-        if !matches!(&self.state, State::Initial) {
+        if self.readmitted_recovery.is_some() || !matches!(&self.state, State::Initial) {
             return Err((
                 self,
                 WorthQueryOperationCloseDenial::NativeObligationRetained,
@@ -30,6 +30,42 @@ where
         terminal
             .close(request)
             .map_err(|(terminal, denial)| (terminal.operation, denial))
+    }
+    pub fn handoff_for_reopen(
+        mut self,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
+    ) -> Result<
+        (
+            WorthQueryOriginalOperation,
+            WorthQueryOperationCleanupReceipt,
+        ),
+        (Self, WorthQueryOperationCloseDenial),
+    > {
+        let original = match self.description.original_lookup() {
+            Ok(original) => original,
+            Err(cause) => return Err((self, WorthQueryOperationCloseDenial::Original(cause))),
+        };
+        if let Err(cause) = original.admit(request) {
+            return Err((self, WorthQueryOperationCloseDenial::Original(cause)));
+        }
+        if self.readmitted_recovery.is_some()
+            || !matches!(
+                self.state,
+                State::Initial
+                    | State::Outputs(_)
+                    | State::ReplayRetained(_)
+                    | State::ReplayRecorded(_)
+            )
+        {
+            return Err((
+                self,
+                WorthQueryOperationCloseDenial::NativeObligationRetained,
+            ));
+        }
+        match self.release_cleanup(request) {
+            Ok(cleanup) => Ok((original, cleanup)),
+            Err(cause) => Err((self, cause)),
+        }
     }
     /// Retries only issuer-owned cleanup; it does not complete source or output work.
     pub fn release_cleanup(
@@ -96,35 +132,65 @@ where
     ) -> Option<worth_query_execution::facade::runtime::ProductUnpublishedCause> {
         self.initial_cause
     }
-    /// Releases actual cleanup under one admitted phase; refusal returns the entire settlement.
+    pub fn handoff_for_reopen(
+        mut self,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
+    ) -> Result<
+        (WorthQueryOriginalOperation, WorthQueryClosedOperation),
+        (Self, WorthQueryOperationCloseDenial),
+    > {
+        let original = match self.description.original_lookup() {
+            Ok(original) => original,
+            Err(cause) => return Err((self, WorthQueryOperationCloseDenial::Original(cause))),
+        };
+        if let Err(cause) = original.admit(request) {
+            return Err((self, WorthQueryOperationCloseDenial::Original(cause)));
+        }
+        match self.release_native_cleanup(request) {
+            Ok(closed) => Ok((original, closed)),
+            Err(cause) => Err((self, cause)),
+        }
+    }
+    /// Releases actual cleanup before discharging the logical original.
     pub fn close(
         mut self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ) -> Result<WorthQueryClosedOperation, (Self, WorthQueryOperationCloseDenial)> {
+        let closed = match self.release_native_cleanup(request) {
+            Ok(closed) => closed,
+            Err(cause) => return Err((self, cause)),
+        };
+        if let Err(cause) = self.description.discharge_original(request) {
+            self.cleanup.retain_release_receipt(closed.into_cleanup());
+            return Err((self, cause));
+        }
+        Ok(closed)
+    }
+    fn release_native_cleanup(
+        &mut self,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
+    ) -> Result<WorthQueryClosedOperation, WorthQueryOperationCloseDenial> {
         if !std::ptr::eq(self.runtime.runtime(), request.application)
             || self.description.branch != request.branch
         {
-            return Err((self, WorthQueryOperationCloseDenial::FreshRequestMismatch));
+            return Err(WorthQueryOperationCloseDenial::FreshRequestMismatch);
         }
-        let runtime = request.application;
-        let closed = runtime.with_application_advancement(request.scope, |phase| {
-            while !self.prior_cleanup.is_empty() {
-                self.cleanup.reserve_release_failure()?;
+        request
+            .application
+            .with_application_advancement(request.scope, |phase| {
+                while !self.prior_cleanup.is_empty() {
+                    self.cleanup.reserve_release_failure()?;
+                    self.cleanup
+                        .absorb_release_failure(self.prior_cleanup.pop());
+                }
+                if let Some(performed) = self.recovered.as_mut() {
+                    self.cleanup.absorb_recovered(performed)?;
+                }
                 self.cleanup
-                    .absorb_release_failure(self.prior_cleanup.pop());
-            }
-            if let Some(performed) = self.recovered.as_mut() {
-                self.cleanup.absorb_recovered(performed)?;
-            }
-            self.cleanup
-                .close_in_advancement(&phase, runtime)
-                .map(WorthQueryClosedOperation::from_cleanup)
-        });
-        match closed {
-            Ok(Ok(closed)) => Ok(closed),
-            Ok(Err(denial)) => Err((self, denial)),
-            Err(denial) => Err((self, WorthQueryOperationCloseDenial::Execution(denial))),
-        }
+                    .close_in_advancement(&phase, request.application)
+                    .map(WorthQueryClosedOperation::from_cleanup)
+            })
+            .map_err(WorthQueryOperationCloseDenial::Execution)?
     }
 }
 impl<S, I, P, R, A> WorthQueryTerminalDiscoveredOperation<S, I, P, R, A>
@@ -200,7 +266,15 @@ where
                 .map(WorthQueryClosedOperation::from_cleanup)
         });
         match result {
-            Ok(Ok(closed)) => Ok(closed),
+            Ok(Ok(closed)) => {
+                if let Err(cause) = self.operation.description.discharge_original(request) {
+                    self.operation
+                        .cleanup
+                        .retain_release_receipt(closed.into_cleanup());
+                    return Err((self, cause));
+                }
+                Ok(closed)
+            }
             Ok(Err(denial)) => Err((self, denial)),
             Err(denial) => Err((self, WorthQueryOperationCloseDenial::Execution(denial))),
         }

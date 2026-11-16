@@ -44,3 +44,6 @@ fn inspection_refusal_types_are_nameable_and_comparable_through_host() {
 
 #[path = "worth_query_court_decl_host/inspection_refusal.rs"]
 mod inspection_refusal;
+
+#[path = "worth_query_court_decl_host/recorded_original_descriptors.rs"]
+mod recorded_original_descriptors;

@@ -96,6 +96,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationResourcesRequest<'_, '_, '_
                 |principal, scope| pending(&installed, principal, scope),
                 ResourceStorage::take,
                 |row, _| {
+                    super::super::custody::retain(self.runtime, execution, &installed, row)?;
                     super::super::progression::close::close(
                         self.runtime,
                         execution,
@@ -104,24 +105,28 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationResourcesRequest<'_, '_, '_
                         false,
                     )
                 },
-                |row, ()| match row.recycle() {
-                    Ok(mut evidence) => {
-                        if purpose == Purpose::CloseDetail {
-                            // These facts follow actual provider/queue/Native
-                            // cleanup and this exact admitted CloseDetail leaf.
-                            evidence.detail = Some(super::super::WorthQueryResourceCleanupDetail {
-                                provider_closed: true,
-                                queue_drained: true,
-                                native_released: true,
-                            });
+                |mut row, ()| {
+                    super::super::custody::discharge(self.runtime, execution, &mut row)?;
+                    match row.recycle() {
+                        Ok(mut evidence) => {
+                            if purpose == Purpose::CloseDetail {
+                                // These facts follow actual provider/queue/Native
+                                // cleanup and this exact admitted CloseDetail leaf.
+                                evidence.detail =
+                                    Some(super::super::WorthQueryResourceCleanupDetail {
+                                        provider_closed: true,
+                                        queue_drained: true,
+                                        native_released: true,
+                                    });
+                            }
+                            handle.closed();
+                            closed = Some(evidence);
+                            Ok(())
                         }
-                        handle.closed();
-                        closed = Some(evidence);
-                        Ok(())
-                    }
-                    Err((row, cause)) => {
-                        drop(row);
-                        Err(ResourceCause::Storage(cause))
+                        Err((row, cause)) => {
+                            drop(row);
+                            Err(ResourceCause::Storage(cause))
+                        }
                     }
                 },
             )

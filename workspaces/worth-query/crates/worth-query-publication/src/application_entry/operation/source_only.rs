@@ -10,6 +10,7 @@ mod advancement;
 mod authorization;
 mod binding;
 mod history;
+mod original;
 pub(super) use advancement::Step as SourceStep;
 pub(in crate::application_entry) use binding::sealed::Driver as SourceAssessmentDriver;
 pub use binding::WorthQuerySourceOperationBinding;
@@ -128,6 +129,7 @@ pub enum WorthQuerySourceOnlyAdvance<Operation, Completed, Terminal> {
 /// Native refusal returned alongside the retained operation for a fresh-authorized retry.
 #[derive(Debug)]
 pub enum WorthQuerySourceOnlyDenial {
+    Original(worth_query_execution::publication_boundary::original_operation::WorthQueryOriginalOperationDenial),
     Execution(worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial),
     Mutation(WorthQueryApplicationRequestMutationDenial),
     Recovery(WorthQueryApplicationRecoveryRequestDenial),

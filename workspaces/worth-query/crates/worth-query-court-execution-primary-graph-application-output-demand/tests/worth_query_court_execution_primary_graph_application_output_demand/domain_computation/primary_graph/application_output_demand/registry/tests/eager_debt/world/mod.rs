@@ -7,7 +7,7 @@ use worth_query_execution::facade::domain_computation::WorthQueryApplicationComm
 use worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId;
 use worth_runtime_world::facade::CompositeCommitIdentity;
 pub struct Context {
-    pub source: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryPerformedOutputDemandSource,
+    pub source: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryRetainedOutputDemandSource,
     pub completed: WorthQueryApplicationCommitReceipt,
     pub scope: worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding,
     pub ready: DemandState,
@@ -27,7 +27,7 @@ impl Context {
             .committed_product_publication()
             .take_output_demand_observation_for_test()
             .unwrap();
-        let source = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryPerformedOutputDemandSource::new_for_test(receipt, change, observation, None);
+        let source = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryRetainedOutputDemandSource::new_for_test(receipt, change, observation, None);
         Self {
             source,
             completed: worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::recoverable_commit_support::commit_on_world_with_output_demand_observation(

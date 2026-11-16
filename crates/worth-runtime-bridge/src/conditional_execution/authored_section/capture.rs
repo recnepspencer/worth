@@ -18,6 +18,7 @@ use worth_signal::facade::durability::SignalBridgeAuthoredSection;
 use worth_signal::facade::{NodeId, SignalGraph};
 
 pub(in crate::conditional_execution) struct Capture<'a> {
+    pub(in crate::conditional_execution) owned_async: &'a [&'a crate::conditional_execution::owned_async::definition_source::OwnedAsyncDefinitionSource],
     pub(in crate::conditional_execution) bridge: &'a RuntimeBridge,
     pub(in crate::conditional_execution) graph: &'a SignalGraph,
     pub(in crate::conditional_execution) branch: DurableSignalBranchIdentity,
@@ -122,7 +123,8 @@ impl Capture<'_> {
                     })?;
                 }
                 Ok(())
-            })
+            })?;
+            out.record(&mut |out| super::owned_async::write(out, self.branch, self.owned_async))
         })?;
         let source =
             SignalBridgeAuthoredSection::from_bridge_bytes(source).map_err(D::SignalCarrier)?;

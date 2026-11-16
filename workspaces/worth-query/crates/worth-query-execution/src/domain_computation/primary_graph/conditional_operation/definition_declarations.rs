@@ -13,6 +13,18 @@ pub(in crate::domain_computation::primary_graph) struct ConditionalDefinitionDec
     rows: BTreeMap<Arc<str>, InstalledDefinitionDeclaration>,
 }
 impl ConditionalDefinitionDeclarations {
+    pub(in crate::domain_computation::primary_graph) fn install_readiness(
+        &mut self,
+        identity: Arc<str>,
+        lease: Arc<ConditionalClockLease>,
+        route: InstalledConditionalRoute,
+    ) {
+        self.install(InstalledDefinitionDeclaration {
+            identity,
+            lease,
+            route,
+        });
+    }
     pub(super) fn install(&mut self, declaration: InstalledDefinitionDeclaration) {
         assert!(
             !self.rows.contains_key(&declaration.identity),

@@ -50,7 +50,8 @@ impl BankIdentityRuntime {
         >,
         crate::BankOperationConstructionRefusal<ProgramDeploymentRevocationIntent>,
     > {
-        self.request(principal, scope)
+        let request = self.request(principal, scope);
+        request
             .mutate(ProgramDeploymentRevocationIntent { input })
             .without_source()
             .preconditions(preconditions)
@@ -60,7 +61,8 @@ impl BankIdentityRuntime {
                     builder.into_capture_refusal(key, denial),
                 )
             })?
-            .retain_operation::<BankApplication, ProgramDeploymentRevocationAction>(
+            .retain_durable_operation::<BankApplication, ProgramDeploymentRevocationAction>(
+                &request,
                 self.application_program(),
             )
             .map_err(

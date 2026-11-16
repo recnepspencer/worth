@@ -29,7 +29,7 @@ pub enum CompositeAttemptCancellationPosture {
 
 /// The successor address reserved by this exact World attempt. It describes
 /// where a performed product movement will land; it cannot perform one.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PlannedProductReferenceSuccessor {
     attempt: CompositePublicationAttemptIdentity,
     occurrence: ProductBranchIncarnation,
@@ -37,6 +37,20 @@ pub struct PlannedProductReferenceSuccessor {
 }
 
 impl PlannedProductReferenceSuccessor {
+    pub(super) fn from_expected(
+        attempt: CompositePublicationAttemptIdentity,
+        expected: &ProductBranchObservation,
+    ) -> Self {
+        Self {
+            attempt,
+            occurrence: expected.lifecycle_incarnation(),
+            generation: expected
+                .reference_generation()
+                .advance()
+                .expect("World validates successor generation before reservation"),
+        }
+    }
+
     pub fn attempt_identity(&self) -> &CompositePublicationAttemptIdentity {
         &self.attempt
     }
@@ -162,14 +176,8 @@ impl ReservedCompositePublicationAttempt {
         custody: super::ActiveAttemptCustody,
         deadline: Option<RuntimeWorldInstant>,
     ) -> Self {
-        let planned_successor = PlannedProductReferenceSuccessor {
-            attempt: identity.clone(),
-            occurrence: expected_head.lifecycle_incarnation(),
-            generation: expected_head
-                .reference_generation()
-                .advance()
-                .expect("the World owner validates successor generation before reservation"),
-        };
+        let planned_successor =
+            PlannedProductReferenceSuccessor::from_expected(identity.clone(), &expected_head);
         let progress = custody.progress();
         Self {
             identity,

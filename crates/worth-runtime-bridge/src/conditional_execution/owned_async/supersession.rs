@@ -1,8 +1,8 @@
 use crate::facade::{BridgeAsyncCompletionRejection, BridgeAsyncCompletionRejectionKind};
 
-use super::super::BridgeOwnedSignalRuntime;
+use super::super::BridgeConditionalExecutionView;
 
-impl BridgeOwnedSignalRuntime {
+impl BridgeConditionalExecutionView<'_> {
     pub fn validate_owned_async_request_occurrence<'a>(
         &self,
         request: &'a super::super::BridgeOwnedAsyncRequestAdmission,

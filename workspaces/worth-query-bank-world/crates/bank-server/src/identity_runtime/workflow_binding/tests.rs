@@ -1,7 +1,8 @@
 //! One installed Bank world exercises binding refusal, native close and vocabulary retry.
 use super::*;
 use crate::{
-    application_definition::BankApplicationP1,
+    application_definition::{BankApplication, BankApplicationP1},
+    identity_runtime::application_custody::{BankApplicationCustody, BankUnboundApplication},
     identity_runtime::{installation, prepare_seeds},
     support::{
         authentication_configuration, block_on, request_scope, CausalBankAuthenticationAdapter,
@@ -25,7 +26,9 @@ use worth_query_host::facade::{
         WorthQueryApplicationRequestExt, WorthQueryOperationCloseDenial,
         WorthQuerySourceOnlyOperation,
     },
-    application_installation::WorthQueryWorkflowRuntimeBindingDenial,
+    application_installation::{
+        WorthQueryProgramApplicationRuntime, WorthQueryWorkflowRuntimeBindingDenial,
+    },
     declaration::application_program::ApplicationSourceCompletion,
 };
 
@@ -56,7 +59,7 @@ fn workflow_binding_refusal_preserves_inputs_until_real_operation_closes() {
     let configuration = authentication_configuration();
     let authentication = BankAuthenticationBoundary::new(
         admit_authentication_adapter(
-            pending.runtime.installed_schema(),
+            unbound_runtime(&pending.runtime).installed_schema(),
             WorthQueryAuthenticationAdapterAdmission::new(
                 configuration.audience,
                 configuration.method, worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
@@ -68,7 +71,13 @@ fn workflow_binding_refusal_preserves_inputs_until_real_operation_closes() {
     let principal =
         block_on(authentication.authenticate(CausalCredential::for_identity(&identity), &scope))
             .expect("the installing principal authenticates");
-    let operation = retain_unexecuted(&pending.runtime, &principal, &scope, owner, "binding");
+    let operation = retain_unexecuted(
+        unbound_runtime(&pending.runtime),
+        &principal,
+        &scope,
+        owner,
+        "binding",
+    );
     let pending = expect_binding_refusal(
         pending.bind(),
         WorthQueryWorkflowRuntimeBindingDenial::RuntimeKeepaliveRetained,
@@ -78,9 +87,8 @@ fn workflow_binding_refusal_preserves_inputs_until_real_operation_closes() {
 
     // An editable refusal preserves both the replaced original and the submitted successor.
     let successor = installation::install_payment_workflow_spec(
-        pending.runtime.installed_schema(),
-        pending
-            .runtime
+        unbound_runtime(&pending.runtime).installed_schema(),
+        unbound_runtime(&pending.runtime)
             .supported_program::<BankApplicationP1>()
             .expect("P1 is genuinely rostered")
             .installed_program(),
@@ -105,11 +113,12 @@ fn workflow_binding_refusal_preserves_inputs_until_real_operation_closes() {
     )
     .expect("authentication precedes cancellation");
     cancellation.cancel();
-    let (operation, denial) =
-        match operation.close(&pending.runtime.request(&stopped_principal, &stopped_scope)) {
-            Err(refused) => refused,
-            Ok(_) => panic!("cancelled close must preserve the real operation"),
-        };
+    let (operation, denial) = match operation
+        .close(&unbound_runtime(&pending.runtime).request(&stopped_principal, &stopped_scope))
+    {
+        Err(refused) => refused,
+        Ok(_) => panic!("cancelled close must preserve the real operation"),
+    };
     assert!(matches!(denial, WorthQueryOperationCloseDenial::Execution(
         worth_query_host::facade::application_contribution::WorthQueryAdvancementDenial::Interrupted(
             worth_query_host::facade::application_contribution::WorthQueryManagedComputationInterruption::Cancelled
@@ -125,7 +134,7 @@ fn workflow_binding_refusal_preserves_inputs_until_real_operation_closes() {
     )
     .expect("lawful close receives freshly authenticated request context");
     operation
-        .close(&pending.runtime.request(&fresh_principal, &fresh_scope))
+        .close(&unbound_runtime(&pending.runtime).request(&fresh_principal, &fresh_scope))
         .unwrap_or_else(|(_, denial)| panic!("actual Initial owner closes: {denial:?}"));
     let mut bank = pending
         .bind()
@@ -134,10 +143,13 @@ fn workflow_binding_refusal_preserves_inputs_until_real_operation_closes() {
         *bank.approved_payment_workflow_spec().program_revision(),
         revision
     );
-    assert_eq!(
-        bank.runtime.authentication_owner().binding_identity(),
-        &signing_binding
-    );
+    match &bank.runtime {
+        BankApplicationCustody::Memory(runtime) => assert_eq!(
+            runtime.authentication_owner().binding_identity(),
+            &signing_binding
+        ),
+        BankApplicationCustody::Home(_) => panic!("this court retains its actual Memory world"),
+    }
     let admitted = block_on(bank.authenticate_with(
         &authentication,
         CausalCredential::for_identity(&identity),
@@ -155,7 +167,11 @@ fn workflow_binding_refusal_preserves_inputs_until_real_operation_closes() {
         owner,
         "support",
     );
-    let (successor, denial) = match bank.runtime.support_workflow_spec(successor) {
+    let result = match &mut bank.runtime {
+        BankApplicationCustody::Memory(runtime) => runtime.support_workflow_spec(successor),
+        BankApplicationCustody::Home(_) => panic!("this court retains its actual Memory world"),
+    };
+    let (successor, denial) = match result {
         Err(refused) => refused,
         Ok(()) => panic!("a retained operation prevents vocabulary growth"),
     };
@@ -170,11 +186,22 @@ fn workflow_binding_refusal_preserves_inputs_until_real_operation_closes() {
                 .request(&fresh_principal, &fresh_scope),
         )
         .unwrap_or_else(|(_, denial)| panic!("support keepalive closes lawfully: {denial:?}"));
-    bank.runtime
-        .support_workflow_spec(successor)
-        .unwrap_or_else(|(_, denial)| {
-            panic!("the original supported vocabulary retries: {denial:?}")
-        });
+    match &mut bank.runtime {
+        BankApplicationCustody::Memory(runtime) => runtime.support_workflow_spec(successor),
+        BankApplicationCustody::Home(_) => panic!("this court retains its actual Memory world"),
+    }
+    .unwrap_or_else(|(_, denial)| panic!("the original supported vocabulary retries: {denial:?}"));
+}
+
+fn unbound_runtime(
+    custody: &BankUnboundApplication,
+) -> &WorthQueryProgramApplicationRuntime<BankSchema, BankApplication> {
+    match custody {
+        BankUnboundApplication::Memory(runtime) => runtime,
+        BankUnboundApplication::Home(_) => {
+            panic!("this binding court installs its actual Memory world")
+        }
+    }
 }
 
 fn expect_binding_refusal(

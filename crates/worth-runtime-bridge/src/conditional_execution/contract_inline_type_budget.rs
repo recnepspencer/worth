@@ -44,6 +44,9 @@ pub(crate) fn collect(census: &mut crate::inline_type_sizes::Census) {
         owner.field::<OrdinaryBridgeCustody>("bridge");
         owner.field::<Arc<super::super::retention::BridgeRetentionLedger>>("retention");
         owner.field::<usize>("baseline_semantic_dependency_count");
+        owner.field::<worth_signal::facade::runtime::SignalConditionalEvaluationBudget>(
+            "conditional_evaluation_budget",
+        );
         owner.field::<Mutex<Option<SignalRuntime<(), (), (), (), ()>>>>("signal_runtime");
         owner.field::<u64>("signal_graph_instance_id");
         owner.field::<worth_signal::facade::SignalGraphLifecycleProbe>(

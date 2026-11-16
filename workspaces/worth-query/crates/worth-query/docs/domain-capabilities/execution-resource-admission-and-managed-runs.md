@@ -14,6 +14,27 @@ execution is explicit advanced control.
 Omitting a narrower policy still uses the installed finite ceiling.
 
 
+## Directory handoff
+
+A Directory Home's installed Relational primary records managed work before
+handing it to a caller. The logical identity, original and current attempts,
+World original when assigned, first failure and actual terminal remain visible
+through `managed_run_obligations()`. Abandoned work remains Failed after reopen.
+
+Release the original live resources before graceful close. A refused release
+keeps close refused; an empty fresh arena cannot settle it. After reopen,
+`discharge_managed_run(&phase, identity)` uses fresh advancement and discharges
+only a logical obligation whose actual resource release was recorded. Failed
+mutation cleanup uses the corresponding `managed_cleanup_obligations()` and
+`discharge_managed_cleanup` doors. Neither discharge changes the original
+business result.
+
+Home installation currently exposes the Relational primary, without generic
+managed providers or raw workflow computations. Their yield, suspension,
+restore and artifact postures have owner DATA courts; these do not add a Home
+installation route or serialize checkpoints. A quiescent kill with no recorded
+live release retains typed pending custody for the later owner crash work.
+
 ## What This Feature Is
 
 Execution resource admission and managed runs let Query govern domain work that

@@ -60,6 +60,37 @@ correction receives current authorization and preserves the workflow's progress.
 32. [Worked example: purchase-request approval](#worked-example-purchase-request-approval)
 33. [Related documents](#related-documents)
 
+## Durable workflow records on a Directory Home
+
+A Directory Home retains workflow lineages, definitions, nodes, connections,
+instances, transitions, proposals, proposal coverage, assessment evidence and
+its dependencies, approvals, operation outputs and captured inputs in the
+Relational graph. A graceful close between completed steps preserves those
+facts. Progress and replay retention are derived and reconstruct from the graph
+on reopen; required approvals remain required.
+
+Open the same Directory through the ordinary Host request, install the workflow
+spec against the newly installed schema/program, and retain it with
+`home.retain_workflow_spec(spec, fresh_authentication.signing_owner())`. Keep the
+original logical operation keys. Reacquire command locators through freshly
+authorized workflow discovery, such as `read_original_workflow` with the original
+start discovery intent; old runtime references and signing authority do not
+become current authority. Each continuation receives fresh request admission.
+
+For a Home program transition, use `with_workflow_dispositions` on the transition
+request. The ordinary adoption inventory, legality and staging owner decides
+whether each definition and instance can carry, retire or cancel. Home opening
+has no executable target workflow vocabulary, so it cannot establish compatible
+carriage. Explicit `retire_and_cancel_unperformed()` can retire definitions and
+cancel unperformed instances; outstanding approvals, performed effects or owner
+custody must settle under their source meaning first. Missing or illegal choices
+refuse before the transition intent is recorded. Completed dispositions survive
+graceful close and successor-only reopen.
+
+These guarantees cover quiescent boundaries between operations. Executing
+managed runs and cleanup have separate lifecycle contracts. Crash recovery and
+resuming an interrupted program transition are not yet certified.
+
 ## Terms
 
 | Term | Meaning |

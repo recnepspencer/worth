@@ -3,8 +3,8 @@ use worth_query_declaration::facade::application_program::ApplicationProgramRevi
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::{
-    BranchSetAdoptionResolution, WorthQueryBranchSetAdoptionCancellation,
-    WorthQueryBranchSetAdoptionPreparationDenial, WorthQueryPreparedBranchSetAdoption,
+    WorthQueryBranchSetAdoptionCancellation, WorthQueryBranchSetAdoptionPreparationDenial,
+    WorthQueryPreparedBranchSetAdoption,
 };
 use crate::basis::WorthQueryProductBranch;
 use crate::domain_computation::primary_graph::{
@@ -17,10 +17,13 @@ use crate::domain_computation::primary_graph::{
 /// every branch that did not perform.
 #[must_use = "a stopped branch-set adoption must be resumed or cancelled"]
 pub struct WorthQueryStoppedBranchSetAdoption {
-    remaining: Box<[WorthQueryProductBranch]>,
-    progress: Vec<WorthQueryBranchSetAdoptionProgress>,
-    target: ApplicationProgramRevision,
-    total_selection_work_units: usize,
+    pub(super) owner: worth_runtime_world::facade::RuntimeWorldOwnerIdentity,
+    pub(super) durable: Option<worth_foundational::facade::DurableCompositePublicationAttemptIdentity>,
+    pub(super) _support_custody: Vec<crate::domain_computation::primary_graph::program_occurrence::WorthQueryProgramSupportCustody>,
+    pub(super) remaining: Box<[WorthQueryProductBranch]>,
+    pub(super) progress: Vec<WorthQueryBranchSetAdoptionProgress>,
+    pub(super) target: ApplicationProgramRevision,
+    pub(super) total_selection_work_units: usize,
 }
 
 impl WorthQueryStoppedBranchSetAdoption {
@@ -41,24 +44,20 @@ impl WorthQueryStoppedBranchSetAdoption {
     pub const fn total_selection_work_units(&self) -> usize {
         self.total_selection_work_units
     }
-
-    /// Cancels every branch retained by the stopped adoption.
-    ///
-    /// This is infallible because stopping releases every prepared publication
-    /// and is available only for a no-effect outcome, never unpublished custody.
-    pub fn cancel(self) -> WorthQueryBranchSetAdoptionCancellation {
-        WorthQueryBranchSetAdoptionCancellation {
-            cancelled_branch_count: self.remaining.len(),
-            progress: self.progress,
-            total_selection_work_units: self.total_selection_work_units,
-        }
-    }
 }
 
 /// Why a stopped branch-set adoption could not be resumed. Nothing was
 /// published.
 #[derive(Debug)]
 pub enum WorthQueryBranchSetAdoptionResumeDenial {
+    NotStopped,
+    Inventory(
+        worth_runtime_world::facade::RuntimeWorldServiceDenial<
+            worth_runtime_world::facade::ProductBranchInventoryDenial,
+        >,
+    ),
+    ForeignRuntime,
+    Obligation(crate::domain_computation::primary_graph::query_obligations::QueryObligationDenial),
     /// The ordered coverage is not exactly the remaining branches, in order.
     CoverageMismatch,
     /// Memory to hold the prepared branches could not be allocated.
@@ -86,27 +85,8 @@ impl WorthQueryBranchSetAdoptionResumeFailure {
     }
 }
 
-impl WorthQueryPreparedBranchSetAdoption {
-    /// Releases the obsolete prepared suffix while retaining exact progress,
-    /// target meaning, and the ordered set that must be freshly admitted.
-    pub fn begin_resume(self) -> Result<WorthQueryStoppedBranchSetAdoption, Self> {
-        let Some(BranchSetAdoptionResolution::NoEffect(blocked)) = self.resolution_required else {
-            return Err(self);
-        };
-        let mut remaining = Vec::new();
-        if remaining.try_reserve_exact(self.pending.len() + 1).is_err() {
-            return Err(self);
-        }
-        remaining.push(blocked);
-        remaining.extend(self.pending.iter().map(|pending| pending.branch));
-        Ok(WorthQueryStoppedBranchSetAdoption {
-            remaining: remaining.into_boxed_slice(),
-            progress: self.progress,
-            target: self.target,
-            total_selection_work_units: self.total_selection_work_units,
-        })
-    }
-}
+mod durable;
+mod readmit;
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub fn resume_branch_set_adoption(
@@ -128,6 +108,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             let execution = &phase_request;
             let mut adoption = retained.take().expect("one admitted resume");
 
+        if adoption.owner != self.runtime.product_runtime.owner.owner_identity() {
+            return Err(resume_failure(WorthQueryBranchSetAdoptionResumeDenial::ForeignRuntime,adoption));
+        }
         if coverage.branches() != adoption.remaining.as_ref() {
             return Err(resume_failure(
                 WorthQueryBranchSetAdoptionResumeDenial::CoverageMismatch,
@@ -165,6 +148,11 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 adoption,
             ));
         };
+        if let Some(attempt) = adoption.durable {
+            if let Err(cause) = self.installed_program_support().expect("retained support").lifecycle().release_stopped_adoption(execution,attempt) {
+                return Err(resume_failure(WorthQueryBranchSetAdoptionResumeDenial::Obligation(cause),adoption));
+            }
+        }
         let superseded = adoption
             .progress
             .pop()
@@ -172,7 +160,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         assert!(
             matches!(
                 &superseded,
-                WorthQueryBranchSetAdoptionProgress::NoEffect { branch, .. } | WorthQueryBranchSetAdoptionProgress::ExecutionDenied { branch, .. }
+                WorthQueryBranchSetAdoptionProgress::NoEffect { branch, .. } | WorthQueryBranchSetAdoptionProgress::RecordedNoEffect { branch, .. } | WorthQueryBranchSetAdoptionProgress::ProductUnpublished {branch,..} | WorthQueryBranchSetAdoptionProgress::ExecutionDenied { branch, .. }
                     if Some(*branch) == adoption.remaining.first().copied()
             ),
             "a stopped branch-set adoption retains the no-effect disposition for its first remaining branch"

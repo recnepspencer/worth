@@ -5,7 +5,9 @@ use worth_foundational::facade::AspectValue;
 
 use super::ApplicationEncodedScalarValue;
 
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(
+    Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd, serde::Serialize, serde::Deserialize,
+)]
 pub enum ApplicationMutationPreconditionFamily {
     ExpectedVersion,
     ExpectedFact,
@@ -20,7 +22,7 @@ impl ApplicationMutationPreconditionFamily {
     }
 }
 
-#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd, serde::Serialize, serde::Deserialize)]
 pub struct ApplicationMutationPreconditionTarget {
     family: ApplicationMutationPreconditionFamily,
     entity: String,
@@ -79,7 +81,7 @@ impl ApplicationMutationPreconditionTarget {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct TypedMutationPrecondition {
     target: ApplicationMutationPreconditionTarget,
     expected_value: AspectValue,
@@ -95,9 +97,11 @@ impl TypedMutationPrecondition {
     }
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(bound = "")]
 pub struct TypedMutationPreconditions<Schema, Operation, Scope> {
     entries: Vec<TypedMutationPrecondition>,
+    #[serde(skip)]
     _marker: PhantomData<fn() -> (Schema, Operation, Scope)>,
 }
 

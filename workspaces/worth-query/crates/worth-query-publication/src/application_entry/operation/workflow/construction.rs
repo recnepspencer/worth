@@ -11,7 +11,8 @@ use worth_query_execution::publication_boundary::workflow_advance::{
 /// Binds an immutable operation description to its issued workflow requirement.
 ///
 /// Construction verifies the original input, binding, branch and authority slot
-/// without executing the effect. `retain_operation` selects the installed action;
+/// without executing the effect. `retain_durable_operation` records the original
+/// through a current request before selecting the installed source-only action;
 /// fresh advancement still performs native admission before using the slot.
 #[must_use = "retain the bound original description before effectful advancement"]
 pub struct WorthQueryOwnedWorkflowBinding<'w, S: ApplicationSchema, I: ApplicationMutationIntent<S>>
@@ -121,6 +122,35 @@ impl<S: ApplicationSchema, I: ApplicationMutationIntent<S>> WorthQueryOperationD
 impl<'w, S: ApplicationSchema + 'static, I: ApplicationMutationIntent<S>>
     WorthQueryOwnedWorkflowBinding<'w, S, I>
 {
+    /// Retains the original description without replacing its issued workflow context.
+    /// Refusal returns this binding, including any recorded original custody.
+    pub fn retain_durable_operation<P, A>(
+        mut self,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
+        runtime: &WorthQueryProgramApplicationRuntime<S, P>,
+    ) -> Result<
+        WorthQueryWorkflowOperation<S, I, P, A>,
+        (Self, WorthQueryOperationConstructionDenial),
+    >
+    where
+        P: ApplicationProgramDefinition<S>,
+        A: ApplicationAction<S, I::Binding>,
+        A::Delivery: ApplicationActionDelivery<S, I::Binding, Mode = ApplicationSourceCompletion>,
+        MutationInput<S, I>: serde::Serialize,
+        <I::Binding as ApplicationMutationBinding<S>>::IdempotencyKey: serde::Serialize,
+    {
+        if !std::ptr::eq(self.runtime, runtime.runtime()) {
+            return Err((self, WorthQueryOperationConstructionDenial::ForeignRuntime));
+        }
+        if let Err(cause) = self
+            .description
+            .retain_original_for_request::<P, A>(request, runtime)
+        {
+            return Err((self, cause));
+        }
+        self.retain_operation::<P, A>(runtime)
+    }
+
     pub fn retain_operation<P, A>(
         self,
         runtime: &WorthQueryProgramApplicationRuntime<S, P>,

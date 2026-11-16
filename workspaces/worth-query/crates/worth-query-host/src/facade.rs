@@ -386,3 +386,7 @@ pub use worth_foundational::facade::{
 
 /// Typed refusal from fresh authored-program installation before Home service.
 pub use worth_query_execution::facade::application_home_integration::QueryHomeSignalProgramPreparationDenial;
+
+/// Existing owner refusal vocabulary for retained Home custody.
+pub use crate::application_home::ApplicationHomeCloseDenial;
+pub use worth_runtime_world::facade::{RuntimeWorldCloseDenial, RuntimeWorldServiceDenial};

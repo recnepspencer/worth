@@ -2,14 +2,12 @@
 use bank_domain::schema::{ApprovedBusinessPaymentWorkflow, BankSchema};
 use worth_query_host::facade::{
     admission::authentication_event::WorthQueryAuthenticationEventSigningOwner,
-    application_installation::WorthQueryProgramApplicationRuntime,
     domain::WorthQueryInstalledApplicationWorkflowSpec,
     primary_graph::WorthQueryApplicationInvariantProjectionAuthority,
 };
 
 use super::{BankIdentityRuntime, InstalledBankPrincipalBinding};
 use crate::{
-    application_definition::BankApplication,
     approval_authentication::BankApprovalAuthenticationOwner, BankIdentityRuntimeBuildError,
 };
 
@@ -26,12 +24,12 @@ pub struct BankIdentityRuntimeWorkflowBinding {
     approval_authentication: BankApprovalAuthenticationOwner,
     account_index_work:
         std::sync::Arc<crate::application_definition::current_accounts::AccountIndexWork>,
-    runtime: WorthQueryProgramApplicationRuntime<BankSchema, BankApplication>,
+    runtime: super::application_custody::BankUnboundApplication,
 }
 
 impl BankIdentityRuntimeWorkflowBinding {
     pub(super) fn new(
-        runtime: WorthQueryProgramApplicationRuntime<BankSchema, BankApplication>,
+        runtime: impl Into<super::application_custody::BankUnboundApplication>,
         workflow: WorthQueryInstalledApplicationWorkflowSpec<
             BankSchema,
             ApprovedBusinessPaymentWorkflow,
@@ -50,7 +48,7 @@ impl BankIdentityRuntimeWorkflowBinding {
             invariant_projection,
             approval_authentication,
             account_index_work,
-            runtime,
+            runtime: runtime.into(),
         }
     }
 
@@ -92,8 +90,7 @@ impl BankIdentityRuntimeWorkflowBinding {
                 approval_authentication,
                 account_index_work,
             }),
-            Err(refusal) => {
-                let (runtime, workflow, authentication, denial) = refusal.into_parts();
+            Err((runtime, workflow, authentication, denial)) => {
                 Err(BankIdentityRuntimeBuildError::WorkflowRuntimeBinding {
                     binding: Box::new(Self {
                         workflow,

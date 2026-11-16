@@ -39,8 +39,8 @@ impl
         crate::BankOperationConstructionRefusal<RecognizeEstateExecutor>,
     > {
         let (scope, key) = self.controls.into_parts();
-        self.runtime
-            .request(self.principal, &scope)
+        let request = self.runtime.request(self.principal, &scope);
+        request
             .mutate(self.mutation.input)
             .without_source()
             .preconditions(self.preconditions)
@@ -50,7 +50,8 @@ impl
                     builder.into_capture_refusal(key, denial),
                 )
             })?
-            .retain_operation::<BankApplication, crate::ExecutorRecognitionAction>(
+            .retain_durable_operation::<BankApplication, crate::ExecutorRecognitionAction>(
+                &request,
                 self.runtime.application_program(),
             )
             .map_err(
@@ -88,8 +89,8 @@ impl
         crate::BankOperationConstructionRefusal<ReleaseEstate>,
     > {
         let (scope, key) = self.controls.into_parts();
-        self.runtime
-            .request(self.principal, &scope)
+        let request = self.runtime.request(self.principal, &scope);
+        request
             .mutate(self.mutation.input)
             .without_source()
             .preconditions(self.preconditions)
@@ -99,7 +100,8 @@ impl
                     builder.into_capture_refusal(key, denial),
                 )
             })?
-            .retain_operation::<BankApplication, crate::EstateReleaseAction>(
+            .retain_durable_operation::<BankApplication, crate::EstateReleaseAction>(
+                &request,
                 self.runtime.application_program(),
             )
             .map_err(
@@ -143,8 +145,8 @@ impl
         crate::BankOperationConstructionRefusal<DisburseEstate>,
     > {
         let (scope, key) = self.controls.into_parts();
-        self.runtime
-            .request(self.principal, &scope)
+        let request = self.runtime.request(self.principal, &scope);
+        request
             .mutate(self.mutation.input)
             .without_source()
             .preconditions(self.preconditions)
@@ -154,7 +156,8 @@ impl
                     builder.into_capture_refusal(key, denial),
                 )
             })?
-            .retain_operation::<BankApplication, crate::EstateDisbursementAction>(
+            .retain_durable_operation::<BankApplication, crate::EstateDisbursementAction>(
+                &request,
                 self.runtime.application_program(),
             )
             .map_err(

@@ -21,15 +21,16 @@ pub struct WorthQueryAdmittedDirectRun {
 }
 
 impl WorthQueryAdmittedDirectRun {
-    pub(in crate::domain_computation) fn new(
+    pub(super) fn new(
         _operation: &WorthQueryExecutionBoundOperationAuthority,
         resource_attempt: WorthQueryDirectExecutionResourceAttempt,
         bridge_basis: BridgeBoundExecutionBasis,
         relational_basis: WorthQueryManagedRelationalObservation,
         counters: WorthQueryManagedRunCounters,
+        identity: super::durable_custody::ManagedRunIdentity,
     ) -> Self {
         Self {
-            affinity: WorthQueryDirectRunAffinity::initial(resource_attempt),
+            affinity: WorthQueryDirectRunAffinity::initial(resource_attempt, identity),
             bridge_basis,
             relational_basis,
             counters,
@@ -73,6 +74,12 @@ pub struct WorthQueryRunningDirectRun {
 }
 
 impl WorthQueryRunningDirectRun {
+    pub(in crate::domain_computation) fn managed_home_custody(
+        &self,
+    ) -> Option<std::sync::Arc<super::durable_custody::ManagedRunCustody>> {
+        self.affinity.custody()
+    }
+
     /// Borrows the request for this run only after checking its installed owner.
     /// This view carries custody into the host executor; it starts no work itself.
     pub fn request_in_advancement<'a>(

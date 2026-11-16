@@ -32,6 +32,8 @@ url = { workspace = true }
 worth-query-bank-testkit = { path = "../worth-query-bank-testkit" }
 worth-query-bank-testkit-server = { path = "../worth-query-bank-testkit-server" }
 worth-query-host = { workspace = true }
+worth-execution = { workspace = true }
+worth-foundational = { workspace = true }
 worth-query-package-archive = { path = "../../../worth-query/crates/worth-query-package-archive" }
 
 [lints]

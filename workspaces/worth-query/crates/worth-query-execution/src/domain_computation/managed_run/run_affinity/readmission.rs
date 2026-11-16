@@ -1,6 +1,11 @@
 use super::*;
 
 impl WorthQueryDirectRunReadmissionPending {
+    pub(in crate::domain_computation::managed_run) fn custody(
+        &self,
+    ) -> Option<Arc<super::super::durable_custody::ManagedRunCustody>> {
+        self.custody.clone()
+    }
     pub(in crate::domain_computation::managed_run) fn bridge_readmission_intent(
         &self,
         owner: &crate::domain_computation::managed_run::WorthQueryDirectReadmissionTransitionPermit,
@@ -28,6 +33,7 @@ impl WorthQueryDirectRunReadmissionPending {
             });
         WorthQueryDirectRunAffinity {
             logical: self.logical,
+            custody: self.custody,
             provider_work,
             attempt,
         }
@@ -39,6 +45,7 @@ impl WorthQueryDirectRunReadmissionPending {
     ) -> WorthQueryDirectRunAffinity {
         WorthQueryDirectRunAffinity {
             logical: self.logical,
+            custody: self.custody,
             attempt: self.attempt.abort(owner),
             provider_work: self.provider_work,
         }

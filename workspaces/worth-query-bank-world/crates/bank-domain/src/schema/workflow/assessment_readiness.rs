@@ -132,8 +132,8 @@ fn operation_definition(
     .build_typed()
 }
 
-fn canonical_query() -> worth_query_host::facade::declaration::canonicalization::CanonicalQueryBundle
-{
+pub(super) fn canonical_query(
+) -> worth_query_host::facade::declaration::canonicalization::CanonicalQueryBundle {
     let query = DetailQueryBuilder::new(RootEntityKey::new("PaymentIntent").unwrap())
         .project(
             AspectFieldSelector::new(

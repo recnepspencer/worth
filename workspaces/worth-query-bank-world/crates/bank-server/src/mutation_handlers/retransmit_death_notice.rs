@@ -14,6 +14,18 @@ pub(crate) struct RetransmitEstateDeathNoticeHandler;
 impl OperationHandler<BankSchema, RetransmitEstateDeathNoticeMutationBinding>
     for RetransmitEstateDeathNoticeHandler
 {
+    fn declared_durable_capabilities() -> Option<
+        &'static [worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability],
+    > {
+        use worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability as Capability;
+        Some(&[
+            Capability::RelationalMutation,
+            Capability::ExternalEmission,
+            Capability::ExternalDispatch,
+            Capability::InboundCompletion,
+        ])
+    }
+
     fn decide(
         &self,
         input: &EstateAction,

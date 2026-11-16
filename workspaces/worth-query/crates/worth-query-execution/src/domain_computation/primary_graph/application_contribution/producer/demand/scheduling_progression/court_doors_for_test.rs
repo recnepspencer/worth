@@ -14,7 +14,7 @@ where
         branch: crate::basis::WorthQueryProductBranch,
         observed_source: &WorthQueryObservedSource<Query>,
         performed_source: Option<
-            &crate::domain_computation::primary_graph::application_output_demand::WorthQueryPerformedOutputDemandSource,
+            &crate::domain_computation::primary_graph::application_output_demand::WorthQueryRetainedOutputDemandSource,
         >,
     ) -> Result<WorthQueryOutputSchedulingResult, WorthQueryOutputDemandDenial> {
         Self::schedule_selected_output_producer::<Query>(

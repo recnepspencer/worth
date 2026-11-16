@@ -63,4 +63,34 @@ impl<'a> EnvelopeCandidates<'a> {
         }
         Ok(false)
     }
+
+    /// The sealed Native/World receipt owns the already performed handler's
+    /// definition. Reopening never reruns that handler to obtain its binding.
+    /// Fresh request slots and an explicitly supplied definition still compare
+    /// exactly, as in live managed recovery's bind_original_definition.
+    pub(in crate::domain_computation::primary_graph) fn match_performed(
+        &self,
+        receipt: &crate::domain_computation::primary_graph::provider::WorthQueryRecoveredApplicationCommitReceipt,
+    ) -> Result<bool, Denial> {
+        self.match_performed_intent(receipt.recorded_intent())
+    }
+
+    fn match_performed_intent(&self, recorded: &str) -> Result<bool, Denial> {
+        let original = Binding::observe_recorded_intent(recorded)?;
+        let bindings = self
+            .bindings
+            .iter()
+            .map(|binding| {
+                if binding.conditional_definition_identity().is_none() {
+                    binding.bind_conditional_definition(original.conditional.as_ref())
+                } else {
+                    *binding
+                }
+            })
+            .collect::<Vec<_>>();
+        EnvelopeCandidates::new(&bindings)?.match_text(recorded)
+    }
 }
+
+#[cfg(test)]
+mod tests;

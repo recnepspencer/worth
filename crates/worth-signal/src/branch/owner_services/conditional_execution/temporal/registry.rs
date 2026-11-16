@@ -1,4 +1,4 @@
-mod initial_empty_stop;
+mod stop_admission;
 use std::collections::BTreeMap;
 use std::num::NonZeroUsize;
 use std::sync::{Arc, Mutex, Weak};

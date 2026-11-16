@@ -58,6 +58,7 @@ where
     ) -> Result<Self, WorthQueryOperationConstructionDenial> {
         let input = identities.borrow().encoded_input();
         let description = WorthQueryOperationDescription {
+            original: None,
             producer_round_limits: Default::default(),
             intent: WorthQueryCapturedMutationInput::new(input.clone()),
             encoded_input: Ok(input),

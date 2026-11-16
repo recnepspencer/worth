@@ -4,18 +4,18 @@ use super::{
 };
 use std::{collections::BTreeMap, sync::Arc};
 use worth_query_installation::facade::WorthQueryTemporalIntentLifecycle;
+use worth_runtime_bridge::facade::BridgeConditionalExecutionView;
 use worth_runtime_bridge::facade::{
     BridgeManagedClockBinding, BridgeManagedTemporalDenial, BridgeManagedTemporalIntentIdentity,
     BridgeManagedTemporalIntentLifecycle, BridgeManagedTemporalIntentReconciliation,
     BridgeManagedTemporalIntentReconciliationParts, BridgePreparedConditionalReconstitution,
-    BridgeSealedRuntimeAssembly,
 };
 
 pub(in crate::domain_computation::primary_graph::conditional_operation) fn reconcile_temporal_intents<
     Clock,
     Input,
 >(
-    bridge: &BridgeSealedRuntimeAssembly,
+    bridge: &BridgeConditionalExecutionView<'_>,
     clock: &BridgeManagedClockBinding,
     candidates: &mut BTreeMap<String, WorthQueryReconstructedTemporalIntent<Clock, Input>>,
 ) -> Result<(), WorthQueryConditionalRuntimeInstallationDenial> {

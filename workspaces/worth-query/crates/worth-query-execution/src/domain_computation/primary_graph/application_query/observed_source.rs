@@ -154,6 +154,12 @@ impl<Query> Clone for WorthQueryObservedSource<Query> {
 }
 
 impl<Query> WorthQueryObservedSource<Query> {
+    pub(in crate::domain_computation::primary_graph) fn retained_parameters(
+        &self,
+    ) -> &std::sync::Arc<WorthQueryRetainedObservedParameters> {
+        &self.parameters
+    }
+
     /// The immutable native row and its exact expression schema, if requested
     /// during the read. Operand `source` is a record in declared projection
     /// order. This is descriptive data, never read or mutation permission.
@@ -254,3 +260,6 @@ mod court_doors_for_test;
 
 mod applied_support;
 pub(in crate::domain_computation::primary_graph) use applied_support::AppliedQuerySupport;
+
+mod original_operation;
+pub use original_operation::{WorthQueryOriginalSourceData, WorthQueryReadmittedOriginalSource};

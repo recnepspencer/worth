@@ -21,6 +21,13 @@ pub struct WorthQueryProductUnpublishedApplication {
 }
 
 impl WorthQueryProductUnpublishedApplication {
+    pub(in crate::domain_computation) fn is_recovered(&self) -> bool {
+        matches!(
+            self.effects,
+            WorthQueryProductUnpublishedOwnerEffects::Recovered(_)
+        )
+    }
+
     pub(in crate::domain_computation) fn retains_conditional_definition(&self) -> bool {
         matches!(
             self.effects,

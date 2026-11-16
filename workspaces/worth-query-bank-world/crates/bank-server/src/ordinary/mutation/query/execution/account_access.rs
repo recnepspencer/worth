@@ -35,8 +35,8 @@ impl
         crate::BankOperationConstructionRefusal<GrantAccountAuthorization>,
     > {
         let (scope, key) = self.controls.into_parts();
-        self.runtime
-            .request(self.principal, &scope)
+        let request = self.runtime.request(self.principal, &scope);
+        request
             .mutate(self.mutation.input)
             .without_source()
             .preconditions(self.preconditions)
@@ -46,7 +46,8 @@ impl
                     builder.into_capture_refusal(key, denial),
                 )
             })?
-            .retain_operation::<BankApplication, crate::AccountAccessGrantAction>(
+            .retain_durable_operation::<BankApplication, crate::AccountAccessGrantAction>(
+                &request,
                 self.runtime.application_program(),
             )
             .map_err(
@@ -86,8 +87,8 @@ impl
         crate::BankOperationConstructionRefusal<RevokeAccountAuthorization>,
     > {
         let (scope, key) = self.controls.into_parts();
-        self.runtime
-            .request(self.principal, &scope)
+        let request = self.runtime.request(self.principal, &scope);
+        request
             .mutate(self.mutation.input)
             .without_source()
             .preconditions(self.preconditions)
@@ -97,7 +98,8 @@ impl
                     builder.into_capture_refusal(key, denial),
                 )
             })?
-            .retain_operation::<BankApplication, crate::AccountAccessRevocationAction>(
+            .retain_durable_operation::<BankApplication, crate::AccountAccessRevocationAction>(
+                &request,
                 self.runtime.application_program(),
             )
             .map_err(

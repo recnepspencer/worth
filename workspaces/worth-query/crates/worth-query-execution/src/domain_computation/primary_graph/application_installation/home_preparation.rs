@@ -17,6 +17,16 @@ use worth_relational::facade::runtime::{
     RelationalInitialSchemaInstallationReceipt, RelationalRuntime, RelationalRuntimeDefinition,
 };
 mod binding;
+/// Closed Host handoff of the projection already minted during Home installation.
+/// It retains that authority; it does not derive authority from a runtime identity.
+pub fn retain_home_invariant_projection<Schema: ApplicationSchemaComposition, Program>(
+    runtime: &WorthQueryProgramApplicationRuntime<Schema, Program>,
+) -> super::super::WorthQueryApplicationInvariantProjectionAuthority<Schema> {
+    runtime
+        .runtime()
+        .mutation_projection
+        .retain_for_installation()
+}
 mod transition;
 pub use transition::{
     PreparedHomeProgramTransitionTarget, QueryHomeProgramTransitionSourceDenial,

@@ -58,6 +58,8 @@ impl WorthQueryConditionalClockObservationDenial {
 /// Why a clock observation failed.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryConditionalClockObservationFailureKind {
+    /// Durable continuation could not settle; the original live wake remains owned.
+    Obligation(super::super::query_obligations::QueryObligationDenial),
     /// Delivery retained the original Bridge or Signal cause.
     AuthoritativeDelivery(super::WorthQueryConditionalAuthoritativeDeliveryFailure),
     /// The host's request could not enter this wake advancement.
@@ -297,19 +299,14 @@ where
                 let bridge = bridge_root
                     .read()
                     .unwrap_or_else(std::sync::PoisonError::into_inner);
-                let memory = match bridge.memory() {
-                    Ok(memory) => memory,
+                let outcome = match bridge.with_view(self.truth.signal_basis(), |view| {
+                    self.operation.observe_clock(execution, phase, &view, self.runtime, &self.truth)
+                }) {
+                    Ok(outcome) => outcome,
                     Err(cause) => return WorthQueryConditionalClockObservationOutcome::Failed(WorthQueryConditionalClockObservationFailure {
                         kind: WorthQueryConditionalClockObservationFailureKind::ReconstructionDenied(super::installation::WorthQueryConditionalRuntimeInstallationDenialKind::BridgeConditional(Box::new(cause.kind()))), detail: cause.detail().to_owned(),
                     }),
                 };
-                let outcome = self.operation.observe_clock(
-                    execution,
-                    phase,
-                    memory,
-                    self.runtime,
-                    &self.truth,
-                );
                 outcome.typed(
                     granular_invalidation_installation,
                     Some(granular_source_read_basis),

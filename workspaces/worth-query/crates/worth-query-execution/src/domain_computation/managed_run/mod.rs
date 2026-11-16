@@ -15,6 +15,7 @@ mod direct_yield_cleanup;
 mod direct_yield_eligibility;
 mod direct_yield_recovery;
 mod direct_yield_transition;
+pub(in crate::domain_computation) mod durable_custody;
 mod interruption_classification;
 pub(crate) mod lower_admission;
 mod managed_graph_execution;

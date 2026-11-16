@@ -14,6 +14,47 @@ where
     I: Copy + Ord,
     T: Copy + Ord,
 {
+    pub(crate) fn readmit_owned_async_definition(
+        &mut self,
+        declaration: crate::data::resource::ResourceNodeDeclaration,
+    ) -> Result<
+        crate::data::resource::LoweredResourceDescriptor,
+        SignalConditionalServiceExecutionDenial,
+    > {
+        use SignalConditionalServiceExecutionDenial as D;
+        let node = declaration.node();
+        if !self.graph().is_alive(node.node()) {
+            return Err(D::DefinitionMismatch);
+        }
+        if let Some(existing) = self.derived.resource.descriptor_for_node(node) {
+            let payload = declaration.payload_contract();
+            if existing.payload_contract_digest()
+                != &crate::data::resource::ResourcePayloadContractDigest::from_contract(
+                    payload.id(),
+                    payload.max_payload_bytes(),
+                )
+                || !self
+                    .derived
+                    .resource
+                    .classify_policy_compatibility_optional(&declaration, None)
+                    .map_err(D::SlotAdmission)?
+                    .is_compatible()
+            {
+                return Err(D::DefinitionMismatch);
+            }
+            return Ok(existing.clone());
+        }
+        self.derived
+            .resource
+            .declare_resource_node(declaration, None)
+            .map_err(D::SlotAdmission)?;
+        self.derived
+            .resource
+            .descriptor_for_node(node)
+            .cloned()
+            .ok_or(D::DefinitionMismatch)
+    }
+
     pub(crate) fn admit_owned_async_source(
         &mut self,
         node: ResourceNodeId,

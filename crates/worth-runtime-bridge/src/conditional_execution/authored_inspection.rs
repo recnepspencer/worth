@@ -6,6 +6,7 @@ impl BridgeReadmittedAuthoredAssembly {
         let mut providers = Vec::new();
         let mut retention = Vec::new();
         let mut signal_graphs = Vec::new();
+        let mut managed_clocks = Vec::new();
         let slots = self
             .branches
             .slots
@@ -26,6 +27,21 @@ impl BridgeReadmittedAuthoredAssembly {
                             .values()
                             .map(Arc::downgrade),
                     );
+                    let clocks = state
+                        .managed_clock_lanes
+                        .lock()
+                        .unwrap_or_else(std::sync::PoisonError::into_inner)
+                        .values()
+                        .cloned()
+                        .collect::<Vec<_>>();
+                    managed_clocks.extend(clocks.iter().map(|clock| {
+                        Arc::downgrade(
+                            &clock
+                                .lock()
+                                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                                .lifecycle_token,
+                        )
+                    }));
                     retention.push(Arc::downgrade(&state.retention));
                     signal_graphs.push(state.graph_lifecycle.clone());
                 }
@@ -37,7 +53,7 @@ impl BridgeReadmittedAuthoredAssembly {
             signal_graphs,
             conditional_port: None,
             providers,
-            managed_clocks: Vec::new(),
+            managed_clocks,
             retention,
         }
     }

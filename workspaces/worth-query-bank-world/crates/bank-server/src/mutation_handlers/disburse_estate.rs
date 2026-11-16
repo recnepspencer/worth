@@ -16,6 +16,13 @@ use super::journal::author_journal;
 pub(crate) struct DisburseEstateHandler;
 
 impl OperationHandler<BankSchema, DisburseEstateMutationBinding> for DisburseEstateHandler {
+    fn declared_durable_capabilities() -> Option<
+        &'static [worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability],
+    > {
+        use worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability as Capability;
+        Some(&[Capability::RelationalMutation])
+    }
+
     fn decide(
         &self,
         input: &EstateAction,

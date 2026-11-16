@@ -64,7 +64,7 @@ where
         worth_query_execution::facade::primary_graph::WorthQueryPreparedRequiredOutputSource,
     >,
     source_receipt:
-        Option<worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt>,
+        Option<worth_query_execution::facade::primary_graph::WorthQueryOutputSourceEvidence>,
     source_observation: crate::application_entry::WorthQueryApplicationReadObservation,
     root:
         Option<WorthQueryApplicationProgramDemandHandle<Schema, Program, RootDemand<Schema, Root>>>,
@@ -105,7 +105,9 @@ where
         self
     }
     pub(in crate::application_entry) fn new(
-        source_receipt: worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt,
+        source_receipt: impl Into<
+            worth_query_execution::facade::primary_graph::WorthQueryOutputSourceEvidence,
+        >,
         preparation: worth_query_execution::facade::primary_graph::WorthQueryPreparedRequiredOutputSource,
         source_observation: crate::application_entry::WorthQueryApplicationReadObservation,
         root: WorthQueryApplicationProgramDemandHandle<Schema, Program, RootDemand<Schema, Root>>,
@@ -119,7 +121,7 @@ where
             recording_recipes: None,
             source_binding: Some(source_binding::RequiredSourceBinding::of::<Root>()),
             source_preparation: Some(preparation),
-            source_receipt: Some(source_receipt),
+            source_receipt: Some(source_receipt.into()),
             source_observation,
             root: Some(root),
             root_demand,

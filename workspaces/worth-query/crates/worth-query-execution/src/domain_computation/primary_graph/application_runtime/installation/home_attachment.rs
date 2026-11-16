@@ -31,7 +31,6 @@ pub(in crate::domain_computation::primary_graph) fn prepare_home_application_ser
     authority: &WorthQueryExecutionInstallationAuthority,
     installed: &WorthQueryInstalledApplicationSchema<Schema>,
 ) -> Result<HomeApplicationServices<Schema>, WorthQueryPrimaryGraphInstallationDenial> {
-    bootstrap.resources.require_home_recovery_support()?;
     if !bootstrap.product_world_resources.admits_clock(
         &worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     ) {
@@ -71,17 +70,12 @@ pub(in crate::domain_computation::primary_graph) fn prepare_home_application_ser
         );
     let participation =
         super::super::graph_participation::install(authority, truth_partition_role, anchor)?;
-    let resources = std::mem::take(&mut bootstrap.resources).install(
-        &phase.execution_request(),
-        None,
-        provider.application_resource_support_ref(),
-    )?;
     Ok(HomeApplicationServices {
         provider,
         participation,
         authorization,
         handlers,
-        resources,
+        resources: Default::default(),
         mutation_partitions,
     })
 }

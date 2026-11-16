@@ -89,7 +89,10 @@ impl BridgeAuthoredSection {
                         })
                     })
                 })
-            })
+            })?;
+            let definitions = super::owned_async::read(layout.owned_async, layout.branch)?;
+            let rows: Vec<_> = definitions.values().collect();
+            out.record(&mut |out| super::owned_async::write(out, target, &rows))
         })?;
         let source =
             SignalBridgeAuthoredSection::from_bridge_bytes(source).map_err(D::SignalCarrier)?;

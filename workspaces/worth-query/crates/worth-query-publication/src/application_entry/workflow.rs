@@ -23,8 +23,8 @@ pub use condition::WorthQueryWorkflowConditionAcceptance;
 
 pub use assessment::{
     WorthQueryAdvancedAssessmentObservation, WorthQueryAdvancedAssessmentRequest,
-    WorthQueryClosedAssessmentObservation, WorthQueryWorkflowAssessmentDemandHandle,
-    WorthQueryWorkflowAssessmentDemandPreparationDenial,
+    WorthQueryClosedAssessmentObservation, WorthQueryOriginalWorkflowAssessment,
+    WorthQueryWorkflowAssessmentDemandHandle, WorthQueryWorkflowAssessmentDemandPreparationDenial,
     WorthQueryWorkflowAssessmentDemandPreparationDenialKind,
     WorthQueryWorkflowAssessmentDemandProgress, WorthQueryWorkflowAssessmentDemandRequest,
     WorthQueryWorkflowAssessmentDemandSettlement, WorthQueryWorkflowAssessmentOperation,

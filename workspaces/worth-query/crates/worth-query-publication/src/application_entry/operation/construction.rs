@@ -6,6 +6,7 @@ use super::*;
 #[derive(Debug)]
 /// Explains construction refusal; the caller receives its original operation description.
 pub enum WorthQueryOperationConstructionDenial {
+    Original(worth_query_execution::publication_boundary::original_operation::WorthQueryOriginalOperationDenial),
     DurableStateAdmission(
         worth_query_execution::facade::product::WorthQueryDurableStateAdmissionDenial,
     ),
@@ -59,6 +60,7 @@ impl<Schema: ApplicationSchema, Intent: ApplicationMutationIntent<Schema>>
         };
         let self_native = self.native;
         Ok(WorthQueryOperationDescription {
+            original: None,
             intent: self_native.intent,
             producer_round_limits: self_native.producer_round_limits,
             encoded_input: Ok(encoded_input),
@@ -114,15 +116,8 @@ impl<Schema: ApplicationSchema + 'static, Intent: ApplicationMutationIntent<Sche
         {
             return Err((self, WorthQueryOperationConstructionDenial::ForeignRuntime));
         }
-        if let Err(cause) = program
-            .runtime()
-            .product_runtime()
-            .admit_retained_original_operation_owner()
-        {
-            return Err((
-                self,
-                WorthQueryOperationConstructionDenial::DurableStateAdmission(cause),
-            ));
+        if let Err(cause) = self.admit_original_retention(program) {
+            return Err((self, cause));
         }
         let installed_action = match program
             .installed_program()
@@ -133,6 +128,9 @@ impl<Schema: ApplicationSchema + 'static, Intent: ApplicationMutationIntent<Sche
                 return Err((self, WorthQueryOperationConstructionDenial::Action(denial)));
             }
         };
+        if let Err(cause) = self.admit_original_action(&installed_action) {
+            return Err((self, cause));
+        }
         if !installed_action.required_output_source()
             || installed_action
                 .delivery()
@@ -160,6 +158,7 @@ impl<Schema: ApplicationSchema + 'static, Intent: ApplicationMutationIntent<Sche
             return Err((self, WorthQueryOperationConstructionDenial::OutputSource(denial)));
         }
         Ok(WorthQueryFixedOperation {
+            readmitted_recovery: None,
             installed_action: installed_action.clone(),
             runtime: program.clone(),
             description: self,

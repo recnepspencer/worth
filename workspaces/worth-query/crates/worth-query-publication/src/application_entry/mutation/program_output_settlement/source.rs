@@ -1,6 +1,6 @@
 //! Original performed-source provenance survives its real output completion.
 use worth_query_execution::facade::primary_graph::{
-    WorthQueryApplicationCommitReceipt, WorthQueryFulfilledRequiredRoot,
+    WorthQueryFulfilledRequiredRoot, WorthQueryOutputSourceEvidence,
 };
 
 /// Actual performed source and its exact retained occurrence, moved by the
@@ -8,8 +8,8 @@ use worth_query_execution::facade::primary_graph::{
 /// It does not identify the root producer's later publication as the source action.
 /// ```compile_fail,E0451
 /// use worth_query_publication::facade::application_entry::WorthQueryPerformedProgramOutputSource;
-/// use worth_query_execution::facade::primary_graph::{WorthQueryApplicationCommitReceipt, WorthQueryFulfilledRequiredRoot};
-/// fn forge(receipt: WorthQueryApplicationCommitReceipt, fulfillment: WorthQueryFulfilledRequiredRoot) -> WorthQueryPerformedProgramOutputSource {
+/// use worth_query_execution::facade::primary_graph::{WorthQueryOutputSourceEvidence, WorthQueryFulfilledRequiredRoot};
+/// fn forge(receipt: WorthQueryOutputSourceEvidence, fulfillment: WorthQueryFulfilledRequiredRoot) -> WorthQueryPerformedProgramOutputSource {
 ///     WorthQueryPerformedProgramOutputSource { receipt, fulfillment }
 /// }
 /// ```
@@ -23,13 +23,13 @@ use worth_query_execution::facade::primary_graph::{
 /// }
 /// ```
 pub struct WorthQueryPerformedProgramOutputSource {
-    receipt: WorthQueryApplicationCommitReceipt,
+    receipt: WorthQueryOutputSourceEvidence,
     fulfillment: WorthQueryFulfilledRequiredRoot,
 }
 
 impl WorthQueryPerformedProgramOutputSource {
     pub(in crate::application_entry::mutation) fn capture(
-        receipt: WorthQueryApplicationCommitReceipt,
+        receipt: WorthQueryOutputSourceEvidence,
         fulfillment: WorthQueryFulfilledRequiredRoot,
     ) -> Self {
         Self {
@@ -39,7 +39,7 @@ impl WorthQueryPerformedProgramOutputSource {
     }
 
     /// Original action receipt. Inspection still requires fresh current access.
-    pub fn receipt(&self) -> &WorthQueryApplicationCommitReceipt {
+    pub fn receipt(&self) -> &WorthQueryOutputSourceEvidence {
         &self.receipt
     }
     /// Retrospective native root fulfillment; this grants no current permission.

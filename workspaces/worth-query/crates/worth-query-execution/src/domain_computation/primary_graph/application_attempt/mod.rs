@@ -6,6 +6,7 @@ pub(in crate::domain_computation::primary_graph) use fact::ManagedSourceRead;
 pub use fact::ManagedSourceReadKey;
 pub use fact::SourcePublicationRead;
 pub use output_field_capture::{OutputFieldCaptureFailure, StoreDenial};
+pub(in crate::domain_computation::primary_graph) mod business_original;
 mod capability_revocation_program;
 pub(crate) mod commit_authority_binding;
 mod commit_outcome_identity;

@@ -170,6 +170,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationResourcesRequest<'_, '_, '_
             )
             .map_err(ResourceCause::Admission)?;
             let access = Arc::new(OriginalResourceAccess {
+                obligation: Default::default(),
                 branch: self.branch,
                 scope: selector,
                 parameters,
@@ -186,6 +187,10 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationResourcesRequest<'_, '_, '_
                 )?;
             }
             let occurrence = ResourceOccurrence {
+                disposal: Default::default(),
+                obligation: None,
+                handoff: None,
+                ingress_frozen: false,
                 access: Arc::clone(&access),
                 business_product: selected.product().retained_clone(),
                 input: encoded,

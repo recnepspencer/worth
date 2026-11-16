@@ -173,6 +173,7 @@ impl WorthQueryDirectYieldCheckpointPending {
             mut yield_counters,
         } = self;
         yield_counters.attempted_checkpoint_suspension();
+        let memory = execution.memory.clone();
         let retained = match execution.suspend() {
             Ok(suspension) => {
                 yield_counters.observed_checkpoint_retained_bytes(1);
@@ -188,10 +189,11 @@ impl WorthQueryDirectYieldCheckpointPending {
                 affinity
                     .provider_work_mut()
                     .record_provider_execution_release(failure.provider_execution_release());
+                affinity.provider_work_mut().retain_provider_memory(memory);
                 affinity.provider_work_mut().abandon();
                 let kind = failure.kind();
                 let detail = Arc::from(failure.detail());
-                let (affinity, provider_work, _) = affinity.into_terminal_parts();
+                let (affinity, provider_work, provider_cleanup) = affinity.into_terminal_parts();
                 return Err(terminalized_recovery(
                     WorthQueryYieldRecoveryKind::ProviderCheckpointSuspension(kind),
                     detail,
@@ -202,6 +204,7 @@ impl WorthQueryDirectYieldCheckpointPending {
                         bridge,
                         run_counters,
                         provider_work,
+                        provider_cleanup,
                     },
                     WorthQueryYieldRecoveryResourceEvidence::provider_checkpoint_suspension(
                         failure,
@@ -220,11 +223,19 @@ impl WorthQueryDirectYieldCheckpointPending {
     }
 
     fn recovery(
-        self,
+        mut self,
         kind: WorthQueryYieldRecoveryKind,
         detail: Arc<str>,
     ) -> WorthQueryDirectYieldOutcome {
-        let (affinity, provider_work, _) = self.affinity.into_terminal_parts();
+        let release = self.execution.release_provider_execution();
+        let (release_evidence, memory) = release.into_parts();
+        self.affinity
+            .provider_work_mut()
+            .record_provider_execution_release(&release_evidence);
+        self.affinity
+            .provider_work_mut()
+            .retain_provider_memory(memory);
+        let (affinity, provider_work, provider_cleanup) = self.affinity.into_terminal_parts();
         terminalized_recovery(
             kind,
             detail,
@@ -235,6 +246,7 @@ impl WorthQueryDirectYieldCheckpointPending {
                 bridge: self.bridge,
                 run_counters: self.run_counters,
                 provider_work,
+                provider_cleanup,
             },
             WorthQueryYieldRecoveryResourceEvidence::default(),
         )
@@ -258,10 +270,14 @@ impl WorthQueryDirectYieldRetained {
             .expect("eligibility established the installed yield contract");
         self.yield_counters.validated_retained_resources();
         if self.retained.checkpoint_evidence().retained_bytes() > ceiling {
+            let memory = self.retained.memory.clone();
             let checkpoint_release = self.retained.release();
+            self.affinity
+                .provider_work_mut()
+                .retain_provider_memory(memory);
             let release_recovery_required = checkpoint_release.disposition().recovery_required();
             self.affinity.provider_work_mut().abandon();
-            let (affinity, provider_work, _) = self.affinity.into_terminal_parts();
+            let (affinity, provider_work, provider_cleanup) = self.affinity.into_terminal_parts();
             return terminalized_recovery(
                 WorthQueryYieldRecoveryKind::RetainedBytesExceeded,
                 Arc::from(if release_recovery_required {
@@ -276,6 +292,7 @@ impl WorthQueryDirectYieldRetained {
                     bridge: self.bridge,
                     run_counters: self.run_counters,
                     provider_work,
+                    provider_cleanup,
                 },
                 WorthQueryYieldRecoveryResourceEvidence::retained_bytes_exceeded(
                     checkpoint_release,

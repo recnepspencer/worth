@@ -26,9 +26,15 @@ where
             .runtime
             .bridge
             .conditional()
-            .memory()
+            .with_view(
+                occurrence
+                    .business_product
+                    .observation()
+                    .basis()
+                    .signal_basis(),
+                |bridge| bridge.release_process_local_completion_denial(owner, admission),
+            )
             .map_err(ResourceCause::Bridge)?
-            .release_process_local_completion_denial(owner, admission)
             .map_err(ResourceCause::Managed)?;
     }
     if matches!(candidate.queue, ResourceCandidateQueue::Admitted(_)) {
@@ -39,9 +45,15 @@ where
             .runtime
             .bridge
             .conditional()
-            .memory()
+            .with_view(
+                occurrence
+                    .business_product
+                    .observation()
+                    .basis()
+                    .signal_basis(),
+                |bridge| bridge.dequeue_managed_owned_async_queue(owner, 1),
+            )
             .map_err(ResourceCause::Bridge)?
-            .dequeue_managed_owned_async_queue(owner, 1)
             .map_err(ResourceCause::Managed)?;
         candidate.queue = ResourceCandidateQueue::Drained(drained);
     }
@@ -105,9 +117,15 @@ where
             .runtime
             .bridge
             .conditional()
-            .memory()
+            .with_view(
+                occurrence
+                    .business_product
+                    .observation()
+                    .basis()
+                    .signal_basis(),
+                |bridge| bridge.finish_managed_owned_async_wake_cleanup(owner),
+            )
             .map_err(ResourceCause::Bridge)?
-            .finish_managed_owned_async_wake_cleanup(owner)
             .map_err(ResourceCause::Managed)?;
     }
     if let Some(completion) = completion.as_mut()
@@ -117,9 +135,15 @@ where
             .runtime
             .bridge
             .conditional()
-            .memory()
+            .with_view(
+                occurrence
+                    .business_product
+                    .observation()
+                    .basis()
+                    .signal_basis(),
+                |bridge| bridge.finish_owned_async_completion_timeout_cleanup(completion),
+            )
             .map_err(ResourceCause::Bridge)?
-            .finish_owned_async_completion_timeout_cleanup(completion)
             .map_err(ResourceCause::Completion)?;
     }
     if owner.has_pending_retry() {
@@ -127,9 +151,15 @@ where
             .runtime
             .bridge
             .conditional()
-            .memory()
+            .with_view(
+                occurrence
+                    .business_product
+                    .observation()
+                    .basis()
+                    .signal_basis(),
+                |bridge| bridge.abort_process_local_owned_async_retry(owner),
+            )
             .map_err(ResourceCause::Bridge)?
-            .abort_process_local_owned_async_retry(owner)
             .map_err(ResourceCause::Managed)?;
     }
     occurrence.retry = None;
@@ -138,35 +168,47 @@ where
             .runtime
             .bridge
             .conditional()
-            .memory()
+            .with_view(
+                occurrence
+                    .business_product
+                    .observation()
+                    .basis()
+                    .signal_basis(),
+                |bridge| bridge.cancel_managed_owned_async_request(owner),
+            )
             .map_err(ResourceCause::Bridge)?
-            .cancel_managed_owned_async_request(owner)
             .map_err(ResourceCause::Managed)?;
     }
-    // No request callback or allocation runs between the consuming Native
-    // release and installation of its genuine Released/refused-owner outcome.
-    let prior = std::mem::replace(
-        &mut occurrence.lifecycle,
-        ResourceLifecycle::Reserved { clock: None },
-    );
-    let ResourceLifecycle::Live { owner, completion } = prior else {
-        unreachable!()
-    };
-    match runtime
+    // Resolve the actual receiver before taking the original Native owner.
+    // A refused branch lookup leaves the row's live custody untouched.
+    let basis = occurrence
+        .business_product
+        .observation()
+        .basis()
+        .signal_basis();
+    let lifecycle = &mut occurrence.lifecycle;
+    runtime
         .runtime
         .bridge
         .conditional()
-        .memory()
-        .map_err(ResourceCause::Bridge)?
-        .release_process_local_managed_request(owner, completion)
-    {
-        Ok(released) => occurrence.lifecycle = ResourceLifecycle::Released(released),
-        Err(refused) => {
-            let (owner, completion, cause) = refused.into_parts();
-            occurrence.lifecycle = ResourceLifecycle::Live { owner, completion };
-            return Err(ResourceCause::Managed(cause));
-        }
-    }
+        .with_view(basis, |bridge| {
+            let prior = std::mem::replace(lifecycle, ResourceLifecycle::Reserved { clock: None });
+            let ResourceLifecycle::Live { owner, completion } = prior else {
+                unreachable!()
+            };
+            match bridge.release_process_local_managed_request(owner, completion) {
+                Ok(released) => {
+                    *lifecycle = ResourceLifecycle::Released(released);
+                    Ok(())
+                }
+                Err(refused) => {
+                    let (owner, completion, cause) = refused.into_parts();
+                    *lifecycle = ResourceLifecycle::Live { owner, completion };
+                    Err(ResourceCause::Managed(cause))
+                }
+            }
+        })
+        .map_err(ResourceCause::Bridge)??;
     occurrence.timeout = None;
     Ok(())
 }

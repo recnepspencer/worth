@@ -18,13 +18,14 @@ use worth_query_declaration::facade::{
 
 pub(in crate::domain_computation::primary_graph) struct InstalledResourceRegistry<Schema> {
     // Pending installation supplies canonical resource-name order.
-    entries: Vec<InstalledResourceEntry>,
+    entries: Vec<InstalledResourceEntry<Schema>>,
     by_binding: HashMap<TypeId, usize>,
     marker: PhantomData<fn() -> Schema>,
 }
 
-struct InstalledResourceEntry {
+struct InstalledResourceEntry<Schema> {
     binding: Arc<dyn Any + Send + Sync>,
+    custody: Arc<dyn super::custody::HomeResourceCustody<Schema>>,
     storage: Arc<super::storage::ResourceStorage>,
 }
 
@@ -39,18 +40,6 @@ impl<Schema> Default for InstalledResourceRegistry<Schema> {
 }
 
 impl<Schema> InstalledResourceRegistry<Schema> {
-    pub(in crate::domain_computation::primary_graph) fn preflight_home_retirement(
-        &self,
-    ) -> Result<(), super::super::WorthQueryHomeRetirementDenial> {
-        if self.entries.is_empty() {
-            Ok(())
-        } else {
-            Err(super::super::WorthQueryHomeRetirementDenial::Unsupported(
-                super::super::WorthQueryHomeRetirementOwner::InstalledResources,
-            ))
-        }
-    }
-
     pub(in crate::domain_computation::primary_graph) fn cleanup_retained(&self) -> bool {
         self.entries
             .iter()
@@ -63,6 +52,16 @@ impl<Schema> InstalledResourceRegistry<Schema> {
 }
 
 impl<Schema: ApplicationSchema> InstalledResourceRegistry<Schema> {
+    pub(in crate::domain_computation::primary_graph) fn handoff_home(
+        &self,
+        runtime: &super::super::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<(), super::super::WorthQueryHomeRetirementDenial> {
+        for entry in &self.entries {
+            entry.custody.handoff(runtime, request)?;
+        }
+        Ok(())
+    }
     pub(super) fn binding<Binding: ApplicationResourceBinding<Schema>>(
         &self,
     ) -> Option<Arc<InstalledResourceBinding<Schema, Binding>>> {

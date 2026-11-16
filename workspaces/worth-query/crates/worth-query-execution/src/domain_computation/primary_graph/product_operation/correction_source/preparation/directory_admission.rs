@@ -1,13 +1,10 @@
-//! Landing 2a admits only correction shapes with qualified durable continuation.
+//! Directory admission retains the declared correction shape.
 use super::*;
 pub(super) fn admit<Schema: ApplicationSchema>(
     target: &WorthQuerySelectedProductOperation<'_, Schema>,
     source: &WorthQuerySelectedCorrectionSource<'_, Schema>,
-    ancestry: &ProductBranchAncestorSelection,
-    lineage: &WorthQueryCorrectionLineageBinding,
     required_output: bool,
 ) -> Result<(), WorthQueryCorrectionDerivationDenial> {
-    use crate::domain_computation::execution_runtime::product_world::WorthQueryDurableStateAdmissionDenial as Durable;
     use WorthQueryCorrectionDerivationDenial as Denial;
     let runtime = &target.application().runtime.product_runtime;
     if !runtime.is_directory_home() {
@@ -45,23 +42,8 @@ pub(super) fn admit<Schema: ApplicationSchema>(
         runtime.admit_directory_capability(crate::domain_computation::primary_graph::WorthQueryOperationDurableCapability::RequiredOutputDemand)
             .map_err(Denial::DurableStateAdmission)?;
     }
-    if target.product().product_branch() != runtime.root_product_branch()
-        || ancestry
-            .source()
-            .basis()
-            .relational_basis()
-            .identity()
-            .branch_id()
-            != target.product().relational_basis().identity().branch_id()
-    {
-        return Err(Denial::DurableStateAdmission(
-            Durable::UnsupportedDivergentCorrection,
-        ));
-    }
-    match lineage.role() {
-        WorthQueryAftermathCausalRole::RecordedReverse => Ok(()),
-        WorthQueryAftermathCausalRole::RecordedReapply => Err(Denial::DurableStateAdmission(
-            Durable::UnsupportedCorrectionReapplication,
-        )),
-    }
+    // CheckedCorrectionSource already carries exact owner-selected ancestry,
+    // including inherited originals. Home preparation binds this target
+    // observation; native branch-ID equality is not an ancestry condition.
+    Ok(())
 }

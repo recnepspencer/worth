@@ -1,7 +1,7 @@
 //! Query-free authored values, with deliberately nondefault nested contents.
 pub use worth_foundational::facade::WorthValue;
 
-#[derive(Clone, Debug, PartialEq, WorthValue)]
+#[derive(Clone, Debug, PartialEq, serde::Deserialize, WorthValue)]
 pub struct NestedValue {
     pub title: String,
     #[serde(rename = "selection")]
@@ -10,21 +10,21 @@ pub struct NestedValue {
     pub notes: Option<String>,
 }
 
-#[derive(Clone, Debug, PartialEq, WorthValue)]
+#[derive(Clone, Debug, PartialEq, serde::Deserialize, WorthValue)]
 pub enum Selection {
     Idle,
     #[serde(rename = "chosen")]
     Selected(Child),
 }
 
-#[derive(Clone, Debug, PartialEq, WorthValue)]
+#[derive(Clone, Debug, PartialEq, serde::Deserialize, WorthValue)]
 pub struct Child {
     pub tag: Tag,
     pub active: bool,
     pub rank: i32,
 }
 
-#[derive(Clone, Debug, PartialEq, WorthValue)]
+#[derive(Clone, Debug, PartialEq, serde::Deserialize, WorthValue)]
 pub struct Tag(pub String);
 
 pub fn authored_value() -> NestedValue {

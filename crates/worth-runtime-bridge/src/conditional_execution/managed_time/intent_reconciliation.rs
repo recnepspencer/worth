@@ -2,9 +2,9 @@ use super::{
     contract::validate_identity, BridgeManagedTemporalDenial, BridgeManagedTemporalIntentLifecycle,
     BridgeManagedTemporalIntentReconciliation, BridgeManagedTemporalIntentReconciliationParts,
 };
-use crate::conditional_execution::BridgeOwnedSignalRuntime;
+use crate::conditional_execution::execution_view::BridgeConditionalExecutionView;
 
-impl BridgeOwnedSignalRuntime {
+impl BridgeConditionalExecutionView<'_> {
     pub fn reconcile_managed_temporal_intent(
         &self,
         parts: BridgeManagedTemporalIntentReconciliationParts<'_>,

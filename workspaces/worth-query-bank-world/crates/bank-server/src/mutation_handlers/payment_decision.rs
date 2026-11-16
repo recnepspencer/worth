@@ -7,7 +7,9 @@ use bank_domain::schema::{
     ApprovedPaymentSettlementEffect, ApprovedPaymentSettlementRequest, BankSchema,
     DecidedPaymentOutput, PaymentApproval, PaymentDecisionResult, PaymentIdentityField,
     PaymentIntent, PaymentStatusField, PrincipalIdentityField, RejectPayment,
-    RejectPaymentMutationBinding,
+    RejectPaymentMutationBinding, RejectedPaymentAssessmentPredicate,
+    RejectedPaymentAssessmentReadiness, RejectedPaymentAssessmentReadyNode,
+    RejectedPaymentDecision,
 };
 use worth_query_host::facade::declaration::application_operation::ApplicationMutationBinding;
 use worth_query_host::facade::domain::{OperationCreates, OperationLinks};
@@ -24,6 +26,18 @@ use crate::operation_admission::bank_operation_scope_binding;
 pub(crate) struct ApprovePaymentHandler;
 
 impl OperationHandler<BankSchema, ApprovePaymentMutationBinding> for ApprovePaymentHandler {
+    fn declared_durable_capabilities() -> Option<
+        &'static [worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability],
+    > {
+        use worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability as Capability;
+        Some(&[
+            Capability::RelationalMutation,
+            Capability::ExternalEmission,
+            Capability::ExternalDispatch,
+            Capability::InboundCompletion,
+        ])
+    }
+
     fn decide(
         &self,
         input: &ApprovePayment,
@@ -70,11 +84,22 @@ impl OperationHandler<BankSchema, ApprovePaymentMutationBinding> for ApprovePaym
 pub(crate) struct RejectPaymentHandler;
 
 impl OperationHandler<BankSchema, RejectPaymentMutationBinding> for RejectPaymentHandler {
+    fn declared_durable_capabilities() -> Option<
+        &'static [worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability],
+    > {
+        use worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability as Capability;
+        Some(&[
+            Capability::RelationalMutation,
+            Capability::SignalMutation,
+            Capability::ConditionalExecution,
+        ])
+    }
+
     fn decide(
         &self,
         input: &RejectPayment,
         reader: &mut DecisionReader<'_, '_, '_, BankSchema, RejectPaymentMutationBinding>,
-    ) -> HandlerResult<BankInvariantApprovedProposal, BankProposalDenial> {
+    ) -> HandlerResult<RejectedPaymentDecision, BankProposalDenial> {
         if let Err(interruption) = reader.checkpoint() {
             return interrupted(interruption);
         }
@@ -86,27 +111,38 @@ impl OperationHandler<BankSchema, RejectPaymentMutationBinding> for RejectPaymen
             Ok(decision) => decision,
             Err(error) => return execution_denied(error),
         };
-        match BankProposalEngine::prepare_reject_payment_from_decision(
+        let proposal = match BankProposalEngine::prepare_reject_payment_from_decision(
             decision,
             bank_operation_scope_binding(reader.operation_scope_binding()),
             reader.idempotency_key(),
             input,
         ) {
-            Ok(proposal) => HandlerResult::Completed(proposal),
-            Err(denial) => HandlerResult::DomainDenied(denial),
-        }
+            Ok(proposal) => proposal,
+            Err(denial) => return HandlerResult::DomainDenied(denial),
+        };
+        let definition = match reader.prepare_conditional_definition::<
+            RejectedPaymentAssessmentReadiness, RejectedPaymentAssessmentReadyNode, (),
+            RejectedPaymentAssessmentPredicate,
+        >(std::sync::Arc::new(RejectedPaymentAssessmentPredicate::rejected())) {
+            Ok(definition) => definition,
+            Err(cause) => return HandlerResult::ExecutionDenied(cause),
+        };
+        HandlerResult::Completed(RejectedPaymentDecision {
+            proposal,
+            definition,
+        })
     }
 
     fn build_candidate(
         &self,
         _: &RejectPayment,
-        decision: BankInvariantApprovedProposal,
+        decision: RejectedPaymentDecision,
         candidate: &mut CandidateWriter<'_, BankSchema, RejectPaymentMutationBinding>,
     ) -> HandlerResult<PaymentDecisionResult, BankProposalDenial> {
         if let Err(interruption) = candidate.checkpoint() {
             return interrupted(interruption);
         }
-        match author_rejection_candidate(&decision, candidate) {
+        match author_rejection_candidate(decision, candidate) {
             Ok(result) => HandlerResult::Completed(result),
             Err(error) => HandlerResult::ExecutionDenied(error),
         }
@@ -145,13 +181,16 @@ fn author_approval_candidate(
 }
 
 fn author_rejection_candidate(
-    proposal: &BankInvariantApprovedProposal,
+    decision: RejectedPaymentDecision,
     candidate: &mut CandidateWriter<'_, BankSchema, RejectPaymentMutationBinding>,
 ) -> Result<PaymentDecisionResult, HandlerExecutionDenial> {
-    let payment = exact_updated_payment(proposal.effects())?;
+    let payment = exact_updated_payment(decision.proposal.effects())?;
     let payment_entity = author_payment_decision(candidate, payment)?;
     candidate
         .preserve_output::<DecidedPaymentOutput>(&payment_entity)
+        .map_err(HandlerExecutionDenial::new)?;
+    candidate
+        .advance_conditional_definition(decision.definition)
         .map_err(HandlerExecutionDenial::new)?;
     Ok(PaymentDecisionResult {
         payment: payment.id(),

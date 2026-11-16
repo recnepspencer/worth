@@ -55,6 +55,24 @@ fn bank_feature_specs_with_optional_effects(
     include_estate_notification: bool,
     include_ordinary_payment_approval: bool,
 ) -> Vec<ApplicationFeatureSpec> {
+    bank_features_with_rejection::<super::payment_actions::PaymentRejectionDelivery>(
+        include_estate_notification,
+        include_ordinary_payment_approval,
+        false,
+    )
+}
+
+pub(super) fn bank_features_with_rejection<Delivery>(
+    include_estate_notification: bool,
+    include_ordinary_payment_approval: bool,
+    assessed_rejection: bool,
+) -> Vec<ApplicationFeatureSpec>
+where
+    Delivery: worth_query_host::facade::declaration::application_program::ApplicationActionDelivery<
+        BankSchema,
+        bank_domain::schema::RejectPaymentMutationBinding,
+    >,
+{
     use bank_domain::schema::*;
 
     let payments = ApplicationFeatureSpec::root::<BankSchema, BankPaymentsFeature>()
@@ -69,6 +87,11 @@ fn bank_feature_specs_with_optional_effects(
         .native_action::<ApprovedBusinessPaymentInstanceStartBinding>().finish_action()
         .native_action::<ApprovedBusinessPaymentAdvanceBinding>().finish_action()
         .conditional_operation::<PublishApprovedPaymentAssessment>();
+    let payments = if assessed_rejection {
+        payments.provides::<super::assessed_payments::RejectedPaymentPort>()
+    } else {
+        payments
+    };
     let payments = if include_ordinary_payment_approval {
         payments.action::<ApprovePaymentMutationBinding, super::workflow_actions::ApprovedPaymentEffectDelivery>().finish_action()
     } else {
@@ -77,8 +100,10 @@ fn bank_feature_specs_with_optional_effects(
     vec![
         bank_account_feature_spec(),
         payments
-            .action::<RejectPaymentMutationBinding, super::payment_actions::PaymentRejectionDelivery>().finish_action()
-            .action::<ReverseJournalMutationBinding, super::money_actions::ReverseJournalDelivery>().finish_action()
+            .action::<RejectPaymentMutationBinding, Delivery>()
+            .finish_action()
+            .action::<ReverseJournalMutationBinding, super::money_actions::ReverseJournalDelivery>()
+            .finish_action()
             .finish(),
         bank_estate_feature_spec(include_estate_notification),
     ]

@@ -50,15 +50,32 @@ where
         contract,
         location: super::lower_location(node.location()),
         dependencies,
-        providers: BridgeConditionalProviderSet::new()
-            .authored_condition(QueryOutputReadinessPredicate::new(
-                Arc::clone(&node_authority),
-                Arc::clone(&portable_node),
-                node.declaration().condition().dependencies().len(),
-            ))
-            .authored_compute(QueryAuthoredConditionalComputeProvider::<Node>::new(
+        providers: output_readiness_providers::<Node, _>(
+            Arc::clone(&portable_node),
+            QueryOutputReadinessPredicate::new(
+                node_authority,
                 portable_node,
-                None,
-            )),
+                node.declaration().condition().dependencies().len(),
+            ),
+        ),
     })
+}
+
+pub(in crate::domain_computation::primary_graph) fn output_readiness_providers<
+    Node: 'static,
+    Predicate,
+>(
+    portable_node: Arc<str>,
+    condition: Predicate,
+) -> BridgeConditionalProviderSet
+where
+    Predicate: worth_runtime_bridge::facade::BridgeConditionalConditionProvider
+        + worth_runtime_bridge::facade::BridgeAuthoredConditionalProvider,
+{
+    BridgeConditionalProviderSet::new()
+        .authored_condition(condition)
+        .authored_compute(QueryAuthoredConditionalComputeProvider::<Node>::new(
+            portable_node,
+            None,
+        ))
 }

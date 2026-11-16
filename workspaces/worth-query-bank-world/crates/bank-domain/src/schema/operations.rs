@@ -103,9 +103,11 @@ pub struct ApprovePayment {
     pub approver: BankPrincipalId,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct RejectPayment {
+    #[serde(deserialize_with = "super::correction_input::payment_identity")]
     pub payment: PaymentId,
+    #[serde(deserialize_with = "super::correction_input::principal_identity")]
     pub rejecting_principal: BankPrincipalId,
 }
 

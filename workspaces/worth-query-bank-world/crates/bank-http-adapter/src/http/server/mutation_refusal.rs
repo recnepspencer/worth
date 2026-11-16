@@ -11,6 +11,7 @@ pub(super) const fn denial(kind: Kind) -> BankHttpDenial {
 }
 pub(super) fn source_denial(cause: WorthQuerySourceOnlyDenial) -> BankHttpDenial {
     match cause {
+        WorthQuerySourceOnlyDenial::Original(cause) => original(&cause),
         WorthQuerySourceOnlyDenial::Mutation(cause) => {
             super::mutation_application::request_mutation_denial(cause.kind())
         }
@@ -31,6 +32,29 @@ pub(super) fn close_denial(cause: WorthQueryOperationCloseDenial) -> BankHttpDen
             super::advancement_denial::advancement(cause)
         }
         WorthQueryOperationCloseDenial::FreshRequestMismatch => denial(Kind::PermissionDenied),
-        _ => denial(Kind::Unavailable),
+        WorthQueryOperationCloseDenial::Original(cause) => original(&cause),
+        WorthQueryOperationCloseDenial::DeferredFixedCompletionUnsupported { .. }
+        | WorthQueryOperationCloseDenial::ManagedCleanup(_)
+        | WorthQueryOperationCloseDenial::CleanupCapacity
+        | WorthQueryOperationCloseDenial::NativeObligationRetained
+        | WorthQueryOperationCloseDenial::HistoryGroup(_)
+        | WorthQueryOperationCloseDenial::OutputRead(_)
+        | WorthQueryOperationCloseDenial::Outputs(_)
+        | WorthQueryOperationCloseDenial::Recovery(_)
+        | WorthQueryOperationCloseDenial::Owner(_) => denial(Kind::Unavailable),
+    }
+}
+
+pub(super) fn original(
+    cause: &worth_query_host::facade::primary_graph::WorthQueryOriginalOperationDenial,
+) -> BankHttpDenial {
+    use worth_query_host::facade::primary_graph::WorthQueryOriginalOperationDenial::*;
+    match cause {
+        StaleIncarnation | ForeignHome => denial(Kind::Stale),
+        Principal(_) | Scope(_) => denial(Kind::PermissionDenied),
+        Execution(cause) => super::advancement_denial::advancement(*cause),
+        OwnershipMaterialUnavailable | QueryAdmission(_) | QueryExecution(_) | Obligation(_) => {
+            denial(Kind::Unavailable)
+        }
     }
 }

@@ -107,7 +107,7 @@ impl CorrectionMaterialOwner {
 impl MaterialPublication<'_> {
     pub(in crate::domain_computation::primary_graph) fn admit_obligation_scope(
         &self,
-        medium: &dyn crate::facade::program_support::QueryObligationsMedium,
+        medium: &dyn crate::facade::query_obligations::QueryObligationsMedium,
     ) -> Result<(), Denial> {
         let actual = self.owner.medium()?;
         if actual.home() != medium.home() {

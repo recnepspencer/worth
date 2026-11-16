@@ -13,7 +13,7 @@ pub struct BridgeConditionalSignalBasisBinding {
 }
 
 impl super::execution_view::BridgeConditionalExecutionView<'_> {
-    pub(super) fn admit_exact_conditional_signal_basis(
+    pub fn admit_exact_conditional_signal_basis(
         &self,
         anchor: &Arc<BridgeInstalledConditionalLowering>,
         basis: &worth_signal::facade::branch::AdmittedSignalBranchBasis,
@@ -57,7 +57,7 @@ impl super::execution_view::BridgeConditionalExecutionView<'_> {
         self.admit_conditional_signal_basis(&lowering, basis)
     }
 
-    pub(super) fn admit_conditional_signal_basis(
+    pub fn admit_conditional_signal_basis(
         &self,
         lowering: &Arc<BridgeInstalledConditionalLowering>,
         basis: &worth_signal::facade::branch::AdmittedSignalBranchBasis,

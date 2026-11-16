@@ -45,7 +45,7 @@ where
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         prepared: &WorthQueryPreparedRequiredOutputSource,
-        receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
+        receipt: &crate::domain_computation::primary_graph::WorthQueryOutputSourceEvidence,
         observation: &crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation,
         principal: &worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
@@ -65,7 +65,7 @@ where
         self.require_discovered_root::<Root>()?;
         if prepared.runtime_authority
             != self.backing.runtime().runtime.authority_identity().as_u64()
-            || &prepared.source_commit != receipt.committed_product_publication().composite_commit()
+            || &prepared.source_commit != receipt.source_commit()
             || &prepared.source_commit != observation.selected_commit()
             || prepared.product_occurrence != observation.branch_incarnation()
             || branch.occurrence() != observation.branch_incarnation()
@@ -167,6 +167,7 @@ where
 
     pub fn bind_prepared_discovered_program_root_sources<Root>(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         prepared: &WorthQueryPreparedRequiredOutputSource,
         sources: &[WorthQueryApplicationOutputDemandSource<
@@ -182,7 +183,7 @@ where
         self.require_discovered_root::<Root>()?;
         self.backing
             .runtime()
-            .bind_prepared_output_sources(prepared, sources)
+            .bind_prepared_output_sources(phase, prepared, sources)
     }
 
     pub fn admit_performed_discovered_program_root_output<Root>(
@@ -253,7 +254,7 @@ where
             SourceValue<Schema, Root>,
         >,
         limits: crate::domain_computation::execution_runtime::WorthQueryOutputDemandLimits,
-        source_receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
+        source_receipt: &crate::domain_computation::primary_graph::WorthQueryOutputSourceEvidence,
     ) -> Result<
         WorthQueryAdmittedProgramOutput<
             Schema,

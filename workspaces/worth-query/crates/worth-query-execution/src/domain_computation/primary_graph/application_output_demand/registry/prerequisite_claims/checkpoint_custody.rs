@@ -22,6 +22,9 @@ impl CheckpointPrerequisiteClaims {
         Ok(Self { identities })
     }
 
+    pub(super) fn identities(&self) -> &[Arc<RecordedSettlementIdentity>] {
+        &self.identities
+    }
     pub(super) fn retain_verified(&mut self, identity: &Arc<RecordedSettlementIdentity>) {
         assert!(self.identities.len() < self.identities.capacity());
         self.identities.push(Arc::clone(identity));

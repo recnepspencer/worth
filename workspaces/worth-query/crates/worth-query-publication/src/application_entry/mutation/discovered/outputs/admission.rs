@@ -1,8 +1,8 @@
 //! Incremental discovery and root admission at one retained source observation.
 use super::*;
 use worth_query_execution::facade::primary_graph::{
-    WorthQueryApplicationCommitReceipt, WorthQueryApplicationOutputDemandSource,
-    WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
+    WorthQueryApplicationOutputDemandSource, WorthQueryOutputDemandDenial,
+    WorthQueryOutputDemandDenialKind, WorthQueryOutputSourceEvidence,
     WorthQueryPreparedRequiredOutputSource,
 };
 
@@ -34,7 +34,7 @@ where
         + worth_query_declaration::facade::application_program::ApplicationDiscoveredOutputRoot,
     RootConnection<Schema, Root>: WorthQueryApplicationDiscoveredOutputConnection<Schema>,
 {
-    discovery: Discovery<Schema, Root>,
+    discovery: worth_query_execution::facade::primary_graph::WorthQueryOutputDiscoveryRecipe<Discovery<Schema,Root>>,
     discovery_source: Option<WorthQueryApplicationOutputDemandSource<DiscoveryQuery<Schema, Root>, DiscoveryValue<Schema, Root>>>,
     pub(super) dependencies: Option<worth_query_execution::publication_boundary::discovery_currentness::WorthQueryRetainedQueryDependencies>,
     kind: DiscoveredRootStartKind,
@@ -55,9 +55,16 @@ where
         + worth_query_declaration::facade::application_program::ApplicationDiscoveredOutputRoot,
     RootConnection<Schema, Root>: WorthQueryApplicationDiscoveredOutputConnection<Schema>,
 {
-    pub(super) fn new(discovery: Discovery<Schema, Root>, kind: DiscoveredRootStartKind) -> Self {
+    pub(super) fn new(
+        discovery: impl Into<
+            worth_query_execution::facade::primary_graph::WorthQueryOutputDiscoveryRecipe<
+                Discovery<Schema, Root>,
+            >,
+        >,
+        kind: DiscoveredRootStartKind,
+    ) -> Self {
         Self {
-            discovery,
+            discovery: discovery.into(),
             discovery_source: None,
             dependencies: None,
             kind,
@@ -107,7 +114,7 @@ where
         >,
         application: &WorthQueryProgramApplicationRuntime<Schema, Program>,
         request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
-        receipt: &WorthQueryApplicationCommitReceipt,
+        receipt: &WorthQueryOutputSourceEvidence,
         prepared: &WorthQueryPreparedRequiredOutputSource,
         retained: &WorthQueryApplicationReadObservation,
         controls: WorthQueryOutputDemandControls,
@@ -118,12 +125,26 @@ where
         Program: ApplicationProgramDefinition<Schema>,
     {
         if self.discovery_source.is_none() && self.dependencies.is_none() {
-            let discovered = request
-                .at(retained)
-                .query(self.discovery.clone())
-                .execute_in_advancement(phase)
-                .map_err(WorthQueryRequiredOutputPreparationDenial::SourceQuery)?;
-            self.discovery_source = Some(discovered.into_output_demand_source());
+            let discovered = match self.discovery.live() {
+                Some(live) => request
+                    .at(retained)
+                    .query(live.clone())
+                    .execute_in_advancement(phase)
+                    .map_err(WorthQueryRequiredOutputPreparationDenial::SourceQuery)?
+                    .into_output_demand_source(),
+                None => application
+                    .runtime()
+                    .read_recorded_output_discovery::<DiscoveryBinding<Schema, Root>>(
+                        phase,
+                        &worth_query_execution::publication_boundary::program_publication_access(),
+                        &self.discovery,
+                        request.principal,
+                        request.scope,
+                        &retained.retained,
+                    )
+                    .map_err(WorthQueryRequiredOutputPreparationDenial::DemandExecution)?,
+            };
+            self.discovery_source = Some(discovered);
         }
         if self.demands.is_none() {
             let discovered = self
@@ -199,6 +220,7 @@ where
             }
             application
                 .bind_prepared_discovered_program_root_sources::<Root>(
+                    phase,
                     &worth_query_execution::publication_boundary::program_publication_access(),
                     prepared,
                     &self.sources,

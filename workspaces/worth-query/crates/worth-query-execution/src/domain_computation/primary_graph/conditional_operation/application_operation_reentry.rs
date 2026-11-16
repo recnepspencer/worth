@@ -2,6 +2,7 @@ use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 mod admitted_projection;
 mod attempt_progression;
 mod denial;
+pub(super) mod durable_decision;
 mod invoker_isolation;
 mod outcome_application;
 mod processing;
@@ -92,6 +93,7 @@ pub enum WorthQueryTemporalAdmissionTerminalFailure {
 
 pub(super) struct WorthQueryTemporalReentryAttempt {
     pub(super) outcome: WorthQueryTemporalReentryOutcome,
+    pub(super) continuation_identity: Option<([u8; 32], [u8; 32])>,
     pub(super) admission_canonical_work:
         worth_query_installation::facade::WorthQueryCanonicalWorkEvidence,
 }
@@ -158,7 +160,7 @@ pub(super) fn reenter_temporal_operation<
     >,
     candidate: &WorthQueryTemporalIntentCandidate<Clock, Input>,
     runtime_binding: &super::canonical_identity::WorthQueryTemporalRuntimeBindingIdentity,
-) -> WorthQueryTemporalReentryAttempt
+) -> Result<WorthQueryTemporalReentryAttempt, super::super::query_obligations::QueryObligationDenial>
 where
     Schema: ApplicationSchema,
     Operation: 'static,
@@ -218,15 +220,23 @@ where
         {
             Ok(idempotency) => idempotency,
             Err(denial) => {
-                return WorthQueryTemporalReentryAttempt {
+                return Ok(WorthQueryTemporalReentryAttempt {
+                    continuation_identity: None,
                     outcome: WorthQueryTemporalReentryOutcome::RetryableFailure(
                         super::WorthQueryConditionalReentryFailure::Idempotency(denial),
                     ),
                     admission_canonical_work:
                         worth_query_installation::facade::WorthQueryCanonicalWorkEvidence::zero(),
-                }
+                })
             }
         };
+    if let Some(support) = runtime.installed_program_support() {
+        support.lifecycle().admit_conditional_retry(
+            request_execution,
+            *idempotency.binding().key_identity(),
+            *idempotency.binding().intent_identity(),
+        )?;
+    }
     let admission_canonical_work = idempotency.canonical_work();
     let result = attempt_progression::try_reentry(
         request_execution,
@@ -266,8 +276,13 @@ where
             )
         }
     };
-    WorthQueryTemporalReentryAttempt {
+    let continuation_identity = Some((
+        *idempotency.binding().key_identity(),
+        *idempotency.binding().intent_identity(),
+    ));
+    Ok(WorthQueryTemporalReentryAttempt {
         outcome,
+        continuation_identity,
         admission_canonical_work,
-    }
+    })
 }

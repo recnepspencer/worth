@@ -92,8 +92,8 @@ impl ApplicationProgramDefinition<TemporalHostSchema> for MissingConditionalActi
 
 pub fn amendment(input: &str, revision: u64) -> AmendTemporalIntent {
     AmendTemporalIntent {
-        identity: "intent-1".to_owned(),
         amendment: AmendTemporalInput {
+            identity: "intent-1".to_owned(),
             revision,
             due: 11,
             lifecycle: "active".to_owned(),

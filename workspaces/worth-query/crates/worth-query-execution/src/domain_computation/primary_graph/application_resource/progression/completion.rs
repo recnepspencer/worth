@@ -64,9 +64,15 @@ where
             .runtime
             .bridge
             .conditional()
-            .memory()
+            .with_view(
+                occurrence
+                    .business_product
+                    .observation()
+                    .basis()
+                    .signal_basis(),
+                |bridge| bridge.enqueue_managed_owned_async_queue(owner, 1),
+            )
             .map_err(ResourceCause::Bridge)?
-            .enqueue_managed_owned_async_queue(owner, 1)
             .map_err(ResourceCause::Managed)?;
         candidate.queue = ResourceCandidateQueue::Admitted(admitted);
     }
@@ -134,9 +140,15 @@ where
                     .runtime
                     .bridge
                     .conditional()
-                    .memory()
+                    .with_view(
+                        occurrence
+                            .business_product
+                            .observation()
+                            .basis()
+                            .signal_basis(),
+                        |bridge| bridge.admit_owned_async_effects_indeterminate(issued),
+                    )
                     .map_err(ResourceCause::Bridge)?
-                    .admit_owned_async_effects_indeterminate(issued)
                     .map_err(ResourceCause::Completion)?,
             );
         }
@@ -149,9 +161,15 @@ where
                 .runtime
                 .bridge
                 .conditional()
-                .memory()
+                .with_view(
+                    occurrence
+                        .business_product
+                        .observation()
+                        .basis()
+                        .signal_basis(),
+                    |bridge| bridge.release_process_local_completion_denial(owner, admission),
+                )
                 .map_err(ResourceCause::Bridge)?
-                .release_process_local_completion_denial(owner, admission)
                 .map_err(ResourceCause::Managed)?;
             return Err(ResourceCause::DeniedCompletion(
                 candidate.admission.take().expect("actual denied admission"),
@@ -193,17 +211,29 @@ where
             .runtime
             .bridge
             .conditional()
-            .memory()
+            .with_view(
+                occurrence
+                    .business_product
+                    .observation()
+                    .basis()
+                    .signal_basis(),
+                |bridge| bridge.validate_owned_async_completion_envelope(witness, raw),
+            )
             .map_err(ResourceCause::Bridge)?
-            .validate_owned_async_completion_envelope(witness, raw)
             .map_err(ResourceCause::Completion)?;
         let admitted = runtime
             .runtime
             .bridge
             .conditional()
-            .memory()
+            .with_view(
+                occurrence
+                    .business_product
+                    .observation()
+                    .basis()
+                    .signal_basis(),
+                |bridge| bridge.admit_owned_async_completion(witness, &validated),
+            )
             .map_err(ResourceCause::Bridge)?
-            .admit_owned_async_completion(witness, &validated)
             .map_err(ResourceCause::Completion)?;
         candidate.admission = Some(admitted);
     }
@@ -216,9 +246,15 @@ where
             .runtime
             .bridge
             .conditional()
-            .memory()
+            .with_view(
+                occurrence
+                    .business_product
+                    .observation()
+                    .basis()
+                    .signal_basis(),
+                |bridge| bridge.release_process_local_completion_denial(owner, admission),
+            )
             .map_err(ResourceCause::Bridge)?
-            .release_process_local_completion_denial(owner, admission)
             .map_err(ResourceCause::Managed)?;
         // Preserve the actual denied admission as the stop, after its real
         // Native denial record has been released by the genuine owner.
@@ -231,9 +267,15 @@ where
         .runtime
         .bridge
         .conditional()
-        .memory()
+        .with_view(
+            occurrence
+                .business_product
+                .observation()
+                .basis()
+                .signal_basis(),
+            |bridge| bridge.commit_owned_async_completion(witness, admission),
+        )
         .map_err(ResourceCause::Bridge)?
-        .commit_owned_async_completion(witness, admission)
         .map_err(ResourceCause::Completion)?;
     // This is a genuine committed result even when timeout cleanup or the
     // later original request handoff refuses. Store all custody first.

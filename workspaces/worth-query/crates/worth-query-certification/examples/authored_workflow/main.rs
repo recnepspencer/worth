@@ -25,10 +25,11 @@ mod actions;
 #[allow(dead_code, unused_imports)]
 use worth_query_testkit_document_retention::facade::document_retention_model;
 mod information;
+mod installation;
 mod review;
 
 use document_retention_model::{
-    host::{publish_workflow_on_first_program, DocumentWorkflowRuntime},
+    host::DocumentWorkflowRuntime,
     operator_identity::{authenticate_operator, request_scope},
     readback::read_retention,
     retention_entry::{ReviewedSetRetentionBinding, ReviewedSetRetentionIntent, DOCUMENT_IDENTITY},
@@ -55,18 +56,8 @@ use worth_query_host::facade::{
     },
 };
 
-#[expect(
-    clippy::disallowed_methods,
-    reason = "certification-harness thread-builder=1 thread-spawn=1: The example joins one actor with its declared bootstrap stack; native request computation retains its Execution authority."
-)]
 fn main() {
-    std::thread::Builder::new()
-        .name("authored-workflow".to_owned())
-        .stack_size(8 * 1024 * 1024)
-        .spawn(run)
-        .expect("the bounded example thread must start")
-        .join()
-        .expect("the authored workflow must not unwind");
+    worth_execution::run_with_execution_stack(run);
 }
 
 /// A rejected approval asks for a revised proposal, at most twice; the
@@ -155,7 +146,8 @@ fn reviewed_document(
 
 fn run() {
     information::run();
-    let application = publish_workflow_on_first_program();
+    let directory = installation::location("review");
+    let (home, application) = installation::open(&directory);
     let review = review();
     let first = reviewed_document(&review, "applied");
     let identity = first.identity().clone();
@@ -232,11 +224,21 @@ fn run() {
         500,
     );
     assert_discovery_disabled(&application, &identity);
+    drop(application);
+    installation::close(home);
+    let (home, application) = installation::open(&directory);
+    assert_discovery_disabled(&application, &identity);
     let current = expect_superseded_start(start_instance(&application, first, 501));
     assert_eq!(
         current, second,
         "the native refusal names the replacement publication"
     );
+    assert_eq!(
+        read_retention(application.runtime(), application.runtime().current_world()),
+        9
+    );
+    drop(application);
+    installation::close(home);
     println!("authored, reused, rejected, revised, approved, completed; this ReviewedDocumentWorkflow Spec deliberately disables metadata disclosure");
 }
 
@@ -335,9 +337,10 @@ fn apply_approved_retention(
     let runtime = application.runtime();
     let scope = request_scope();
     let principal = authenticate_operator(runtime.installed_schema(), &scope);
-    let effect = runtime
+    let request = runtime
         .request(&principal, &scope)
-        .on_branch(instance.branch())
+        .on_branch(instance.branch());
+    let effect = request
         .mutate(ReviewedSetRetentionIntent {
             input: SetRetentionInput {
                 identity: DOCUMENT_IDENTITY.to_owned(),
@@ -348,18 +351,14 @@ fn apply_approved_retention(
         .idempotency_owned(key + 1).unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
         .for_workflow_operation(application, &required)
         .unwrap_or_else(|_|panic!("exact original approved occurrence"))
-        .retain_operation::<document_retention_model::programs::RetentionProgramP0,actions::ReviewedAction>(application.program_runtime())
+        .retain_durable_operation::<document_retention_model::programs::RetentionProgramP0,actions::ReviewedAction>(&request, application.program_runtime())
         .unwrap_or_else(|_|panic!("installed approved effect action"));
-    let effect=match effect.advance(&runtime.request(&principal,&scope).on_branch(instance.branch())) {
+    let effect=match effect.advance(&request) {
         worth_query_host::facade::application_entry::WorthQueryWorkflowOperationAdvance::Completed(done)=>done,
         _=>panic!("lawful approved effect"),
     };
     effect
-        .close(
-            &runtime
-                .request(&principal, &scope)
-                .on_branch(instance.branch()),
-        )
+        .close(&request)
         .unwrap_or_else(|_| panic!("native effect cleanup"));
     assert_eq!(read_retention(runtime, instance.branch()), days);
     // compiled-example: end

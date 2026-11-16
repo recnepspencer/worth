@@ -71,8 +71,6 @@ where
             true,
         )
     } else {
-        // The explicit Memory profile may author an installed temporal
-        // operation. Directory definitions use the declaration route above.
         let operation = application
             .conditional_cleanup
             .operations
@@ -80,28 +78,36 @@ where
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .admit_clock(handle.binding_identity(), handle.lease())
             .ok_or(WorthQueryConditionalDefinitionPublicationDenial::ForeignConditionalOperation)?;
-        let anchor = operation.operation_anchor();
-        (
-            bridge
-                .memory()
-                .and_then(|owner| {
-                    owner.admit_exact_conditional_signal_basis(&anchor, product.signal_basis())
-                })
-                .map_err(WorthQueryConditionalDefinitionPublicationDenial::BridgePreparation)?
-                .installed_lowering(),
-            false,
-        )
+        let (binding, authored) = bridge
+            .with_view(product.signal_basis(), |view| {
+                operation.admit_operation_binding(&view, product.signal_basis())
+            })
+            .map_err(WorthQueryConditionalDefinitionPublicationDenial::BridgePreparation)?
+            .map_err(WorthQueryConditionalDefinitionPublicationDenial::BridgePreparation)?;
+        (binding.installed_lowering(), authored)
     };
     let request = if authored {
         let source =
             worth_query_installation::facade::WorthQueryAuthoredHostPredicateBinding::from_provider(
                 provider,
             );
-        predecessor.successor_with_authored_wake_provider(QueryAuthoredPredicateProvider::new(
+        let provider = QueryAuthoredPredicateProvider::new(
             source,
             Arc::from(predecessor.contract().identity()),
             Arc::clone(handle.node_authority()),
-        ))
+        );
+        match predecessor.contract().condition() {
+            worth_runtime_bridge::facade::BridgeConditionalCondition::RuntimePredicate => {
+                predecessor.successor_with_authored_condition_provider(provider)
+            }
+            worth_runtime_bridge::facade::BridgeConditionalCondition::Always
+            | worth_runtime_bridge::facade::BridgeConditionalCondition::AspectFiltered
+            | worth_runtime_bridge::facade::BridgeConditionalCondition::DeltaThreshold(_)
+            | worth_runtime_bridge::facade::BridgeConditionalCondition::OnDemand
+            | worth_runtime_bridge::facade::BridgeConditionalCondition::TemporalWake => {
+                predecessor.successor_with_authored_wake_provider(provider)
+            }
+        }
     } else {
         predecessor.successor_with_wake_provider(
             crate::domain_computation::primary_graph::conditional_operation::QueryTemporalPredicateProvider::<Node, Provider>::new(

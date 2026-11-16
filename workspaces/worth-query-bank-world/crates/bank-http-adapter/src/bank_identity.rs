@@ -18,6 +18,31 @@ pub struct AuthentikBankIdentity {
 }
 
 impl AuthentikBankIdentity {
+    pub(crate) fn attach_runtime(
+        runtime: BankIdentityRuntime,
+        configuration: bank_server::BankAuthenticationConfiguration,
+        adapter: AuthentikOidcAdapter,
+    ) -> Result<
+        Self,
+        (
+            BankIdentityRuntime,
+            bank_server::BankAuthenticationBoundaryBuildError,
+        ),
+    > {
+        match runtime.admit_authentication_adapter(configuration, adapter) {
+            Ok(authentication) => Ok(Self {
+                runtime,
+                authentication,
+            }),
+            Err(denial) => Err((runtime, denial)),
+        }
+    }
+
+    /// Release HTTP authentication before returning the actual application lifecycle owner.
+    pub fn into_runtime(self) -> BankIdentityRuntime {
+        self.runtime
+    }
+
     pub async fn install(
         configuration: AuthentikOidcConfiguration,
         seeds: impl IntoIterator<Item = BankPrincipalSeed>,

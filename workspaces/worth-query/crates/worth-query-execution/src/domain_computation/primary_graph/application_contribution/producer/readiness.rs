@@ -1,12 +1,15 @@
 use crate::domain_computation::primary_graph::{
+    conditional_operation::definition_declarations::ConditionalDefinitionDeclarations,
     conditional_operation::installation::route_binding::InstalledConditionalRoute,
+    conditional_operation::installation::ConditionalClockLease,
     managed_bridge::conditional_execution::ConditionalExecutionOwner,
 };
 use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryInstalledApplicationConditionalNode,
 };
 use worth_runtime_bridge::facade::{
-    BridgeConditionalExecutionRequest, BridgeConditionalRuntimeBuilder,
+    BridgeConditionalExecutionRequest, BridgeConditionalProviderSet,
+    BridgeConditionalRuntimeBuilder,
 };
 
 use crate::domain_computation::primary_graph::conditional_operation::QueryConditionalComputeContext;
@@ -22,6 +25,7 @@ pub(in crate::domain_computation::primary_graph) trait PendingOutputReadiness<Sc
         &self,
         bridge: &mut BridgeConditionalRuntimeBuilder,
         graph: &worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority,
+        definitions: &mut ConditionalDefinitionDeclarations,
     ) -> Result<
         WorthQueryInstalledOutputReadinessRoute,
         WorthQueryConditionalRuntimeInstallationDenial,
@@ -111,12 +115,13 @@ pub(in crate::domain_computation::primary_graph) fn install_output_readiness_rou
     pending: &[Box<dyn PendingOutputReadiness<Schema>>],
     bridge: &mut BridgeConditionalRuntimeBuilder,
     graph: &worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority,
+    definitions: &mut ConditionalDefinitionDeclarations,
 ) -> Result<WorthQueryInstalledOutputReadinessRoutes, WorthQueryConditionalRuntimeInstallationDenial>
 {
     let mut installed = WorthQueryInstalledOutputReadinessRoutes::new();
     for route in pending {
         let identity = route.producer_identity().to_owned();
-        let lowering = route.install(bridge, graph)?;
+        let lowering = route.install(bridge, graph, definitions)?;
         if installed.insert(identity.clone(), lowering).is_some() {
             return Err(WorthQueryConditionalRuntimeInstallationDenial::new(
                 WorthQueryConditionalRuntimeInstallationDenialKind::DuplicateBinding,
@@ -138,6 +143,11 @@ pub(in crate::domain_computation::primary_graph) struct TypedPendingOutputReadin
 > {
     producer_identity: String,
     delivery_dependency_ordinal: usize,
+    definition: Option<(
+        std::sync::Arc<str>,
+        std::sync::Arc<ConditionalClockLease>,
+        BridgeConditionalProviderSet,
+    )>,
     node: WorthQueryInstalledApplicationConditionalNode<
         Schema,
         ApplicationOperation,
@@ -164,10 +174,16 @@ impl<Schema, ApplicationOperation, Input, D, O, F, Node>
             F,
             Node,
         >,
+        definition: Option<(
+            std::sync::Arc<str>,
+            std::sync::Arc<ConditionalClockLease>,
+            BridgeConditionalProviderSet,
+        )>,
     ) -> Self {
         Self {
             producer_identity: producer_identity.into(),
             delivery_dependency_ordinal,
+            definition,
             node,
         }
     }
@@ -192,11 +208,15 @@ where
         &self,
         bridge: &mut BridgeConditionalRuntimeBuilder,
         graph: &worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority,
+        definitions: &mut ConditionalDefinitionDeclarations,
     ) -> Result<
         WorthQueryInstalledOutputReadinessRoute,
         WorthQueryConditionalRuntimeInstallationDenial,
     > {
-        let request = prepare_dependency_conditional_installation(&self.node, graph)?;
+        let mut request = prepare_dependency_conditional_installation(&self.node, graph)?;
+        if let Some((_, _, providers)) = &self.definition {
+            request.providers = providers.clone();
+        }
         let lowering = bridge
             .install_owned_conditional(request)
             .map_err(|denial| {
@@ -205,8 +225,12 @@ where
                     format!("{:?}: {}", denial.kind(), denial.detail()),
                 )
             })?;
+        let lowering = InstalledConditionalRoute::from_installation(lowering);
+        if let Some((identity, lease, _)) = &self.definition {
+            definitions.install_readiness(identity.clone(), lease.clone(), lowering.clone());
+        }
         Ok(WorthQueryInstalledOutputReadinessRoute {
-            lowering: InstalledConditionalRoute::from_installation(lowering),
+            lowering,
             delivery_dependency_ordinal: self.delivery_dependency_ordinal,
         })
     }

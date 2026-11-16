@@ -42,6 +42,7 @@ where
         program: WorthQueryApplicationEffectProgram<S, O, I, Scope>,
         access: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
+        runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<S>,
         recipe: std::sync::Arc<<<Self::RootConnection as ApplicationConnectionShape<S>>::Binding as WorthQueryApplicationDiscoveredOutputConnection<S>>::Discovery>,
         order: &ApplicationProgramConnectionOrder,
     ) -> WorthQueryApplicationEffectProgram<S, O, I, Scope>;
@@ -160,9 +161,11 @@ where
         mut program: WorthQueryApplicationEffectProgram<S, O, I, Scope>,
         _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
+        runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<S>,
         recipe: std::sync::Arc<Recipe<S, C>>,
         order: &ApplicationProgramConnectionOrder,
     ) -> WorthQueryApplicationEffectProgram<S, O, I, Scope> {
+        let recording = runtime.runtime.product_runtime.owner.owner_identity().durable().map(|_| crate::domain_computation::primary_graph::application_output_demand::discovery_recipe::capture::<S,Discovery<S,C>>(runtime,execution,recipe.as_ref().clone()));
         program
             .synchronous_outputs
             .push(capture_discovered::<S, Discovered<C, E, Recipe<S, C>>>(
@@ -174,6 +177,11 @@ where
                     marker: PhantomData,
                 },
             ));
+        if let Some(CapturedSynchronousOutputs::Prepared { source_recipe, .. }) =
+            program.synchronous_outputs.last_mut()
+        {
+            *source_recipe = recording;
+        }
         program
     }
 

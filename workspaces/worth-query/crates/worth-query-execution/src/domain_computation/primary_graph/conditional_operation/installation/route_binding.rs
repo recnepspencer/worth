@@ -36,9 +36,27 @@ impl InstalledConditionalRoute {
         owner: &ConditionalExecutionOwner<'_>,
         basis: &worth_signal::facade::branch::AdmittedSignalBranchBasis,
     ) -> Result<BridgeConditionalSignalBasisBinding, BridgeConditionalDenial> {
+        owner.with_view(basis, |view| self.admit_view_signal_basis(&view, basis))?
+    }
+    pub(in crate::domain_computation::primary_graph) fn admit_view_signal_basis(
+        &self,
+        view: &worth_runtime_bridge::facade::BridgeConditionalExecutionView<'_>,
+        basis: &worth_signal::facade::branch::AdmittedSignalBranchBasis,
+    ) -> Result<BridgeConditionalSignalBasisBinding, BridgeConditionalDenial> {
         match self {
-            Self::Memory(lowering) => owner.admit_memory_signal_basis(lowering, basis),
-            Self::Authored(declaration) => owner.admit_declaration_signal_basis(declaration, basis),
+            Self::Memory(lowering) => view.admit_exact_conditional_signal_basis(lowering, basis),
+            Self::Authored(declaration) => view.admit_declaration_signal_basis(declaration, basis),
+        }
+    }
+    pub(in crate::domain_computation::primary_graph) fn is_authored(&self) -> bool {
+        matches!(self, Self::Authored(_))
+    }
+    pub(in crate::domain_computation::primary_graph) fn memory_anchor(
+        &self,
+    ) -> Option<&Arc<BridgeInstalledConditionalLowering>> {
+        match self {
+            Self::Memory(anchor) => Some(anchor),
+            Self::Authored(_) => None,
         }
     }
 }

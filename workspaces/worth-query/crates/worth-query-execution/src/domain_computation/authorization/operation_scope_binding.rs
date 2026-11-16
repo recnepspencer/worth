@@ -22,6 +22,18 @@ impl WorthQueryOperationScopeEntityBinding {
         }
     }
 
+    pub(crate) const fn from_recorded_parts(
+        partition_id: u32,
+        local_slot: u64,
+        generation: u32,
+    ) -> Self {
+        Self {
+            partition_id,
+            local_slot,
+            generation,
+        }
+    }
+
     pub const fn partition_id(self) -> u32 {
         self.partition_id
     }

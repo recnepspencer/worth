@@ -1,8 +1,10 @@
+mod closure;
 mod configuration;
 mod rail_transport;
 mod runtime;
 mod world;
 
+pub use closure::BankHttpProcessCloseRefused;
 pub use configuration::{
     BankHttpProcessColdCertification, BankHttpProcessConfiguration,
     BankHttpProcessConfigurationError, BankHttpProcessOidcConfiguration,

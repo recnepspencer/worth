@@ -33,7 +33,7 @@ where
         branch: crate::basis::WorthQueryProductBranch,
         observed_source: &WorthQueryObservedSource<Query>,
         performed_source: Option<
-            &crate::domain_computation::primary_graph::application_output_demand::WorthQueryPerformedOutputDemandSource,
+            &crate::domain_computation::primary_graph::application_output_demand::WorthQueryRetainedOutputDemandSource,
         >,
     ) -> Result<WorthQueryOutputSchedulingResult, WorthQueryOutputDemandDenial> {
         let route = self
@@ -114,7 +114,7 @@ where
         branch: crate::basis::WorthQueryProductBranch,
         observed_source: &WorthQueryObservedSource<Query>,
         performed_source: Option<
-            &crate::domain_computation::primary_graph::application_output_demand::WorthQueryPerformedOutputDemandSource,
+            &crate::domain_computation::primary_graph::application_output_demand::WorthQueryRetainedOutputDemandSource,
         >,
         shared: &SharedSelectedProductOperation<'_, Schema>,
     ) -> Result<WorthQueryOutputSchedulingResult, WorthQueryOutputDemandDenial> {
@@ -179,7 +179,7 @@ where
         selected: &WorthQuerySelectedApplicationProducer,
         observed_source: &WorthQueryObservedSource<Query>,
         performed_source: Option<
-            &crate::domain_computation::primary_graph::application_output_demand::WorthQueryPerformedOutputDemandSource,
+            &crate::domain_computation::primary_graph::application_output_demand::WorthQueryRetainedOutputDemandSource,
         >,
         route: &InstalledConditionalRoute,
         current_signal_basis: &worth_signal::facade::branch::AdmittedSignalBranchBasis,
@@ -195,9 +195,11 @@ where
         >,
     ) -> Result<WorthQueryOutputSchedulingResult, WorthQueryOutputDemandDenial> {
         if performed_source.is_some_and(|source| {
-            let publication = source.receipt.committed_product_publication();
-            publication.product_branch() != source.change.product_branch_identity()
-                || publication.composite_commit() != source.change.product_commit()
+            !source.receipt.is_selected_at(&source.observation)
+                || source.change.as_ref().is_some_and(|change| {
+                    change.product_branch_identity() != source.observation.branch_identity()
+                        || change.product_commit() != source.observation.selected_commit()
+                })
         }) {
             return Err(denial(
                 WorthQueryOutputDemandDenialKind::ForeignSource,
@@ -206,7 +208,12 @@ where
         }
         let signal_basis = performed_source.map_or_else(
             || current_signal_basis,
-            |source| source.change.signal_basis(),
+            |source| {
+                source.change.as_ref().map_or_else(
+                    || source.observation.basis().signal_basis(),
+                    |change| change.signal_basis(),
+                )
+            },
         );
         let attempt = {
             let update_counter = &self.runtime.next_output_producer_attempt;

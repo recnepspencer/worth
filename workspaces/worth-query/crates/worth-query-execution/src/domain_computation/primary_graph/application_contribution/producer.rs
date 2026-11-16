@@ -15,15 +15,17 @@ mod denial_value;
 pub(in crate::domain_computation::primary_graph) use demand::MatchedRequiredPredecessors;
 pub(in crate::domain_computation::primary_graph) use demand::{CurrentBasis, CurrentProof};
 pub use demand::{
-    WorthQueryAdmittedOutputDemand, WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial,
-    WorthQueryOutputDemandDenialKind, WorthQueryOutputDemandRecoveryPosture,
-    WorthQueryOutputReadCleanup, WorthQueryOutputReadCloseDenial,
-    WorthQueryOutputSettlementProvenanceDenial, WorthQuerySelectedApplicationProducer,
+    WorthQueryAdmittedOutputDemand, WorthQueryOriginalOutputDemand, WorthQueryOutputDemandAdvance,
+    WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
+    WorthQueryOutputDemandRecoveryPosture, WorthQueryOutputReadCleanup,
+    WorthQueryOutputReadCloseDenial, WorthQueryOutputSettlementProvenanceDenial,
+    WorthQuerySelectedApplicationProducer,
 };
 pub use denial_value::{
     WorthQueryProducerDenialDeclaration, WorthQueryProducerDenialDecodeDenial,
     WorthQueryProducerDenialEncodingRefusal, WorthQueryProducerDenialProjection,
     WorthQueryProducerDenialValue, WorthQueryProjectedProducerDenial,
+    WorthQueryRecordedProducerDenialEncodingRefusal, WorthQueryRecordedProducerDenialValue,
     WorthQueryUndeclaredProducerDenial,
 };
 pub(crate) mod execution;

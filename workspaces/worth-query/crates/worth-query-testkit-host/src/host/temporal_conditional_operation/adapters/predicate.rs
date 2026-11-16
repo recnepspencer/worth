@@ -115,7 +115,7 @@ pub fn evaluate_predicate(
         };
         matches!(
             artifact.field(&FieldKey::new("IntentGateField").unwrap()),
-            Some(AspectValue::String(InternedString::Raw(value))) if value == "ready"
+            Some(AspectValue::String(value)) if value.raw_text() == Some("ready")
         ) && artifact
             .field(&FieldKey::new("IntentEffectField").unwrap())
             .is_none()

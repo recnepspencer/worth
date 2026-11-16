@@ -116,6 +116,7 @@ pub struct TemporalContributionConfiguration {
 }
 
 pub struct InstalledTemporalConditional {
+    pub preconditions_panic: Option<super::adapters::PanicController>,
     pub clock: primary_graph::WorthQueryConditionalClockHandle<
         TemporalHostSchema,
         TemporalReadyNode,
@@ -179,12 +180,9 @@ impl WorthQueryApplicationConditionalBinding<TemporalHostSchema> for TemporalCon
             .unwrap()
             .bind_node(TemporalReadyNode::reference())
             .unwrap();
-        let provider = if configuration.definition_only {
-            node.bind_authored_host_predicate_provider(configuration.installation_predicate)
-        } else {
-            node.bind_host_predicate_provider(configuration.installation_predicate)
-        }
-        .unwrap();
+        let provider = node
+            .bind_authored_host_predicate_provider(configuration.installation_predicate)
+            .unwrap();
         let clocked = provider
             .bind_named_clock::<CourtroomClock, _>(configuration.clock_source)
             .unwrap();
@@ -193,6 +191,7 @@ impl WorthQueryApplicationConditionalBinding<TemporalHostSchema> for TemporalCon
             let clock = installation.bind_conditional_definition(clocked)?;
             return Ok(Some(InstalledTemporalConditional {
                 clock,
+                preconditions_panic: None,
                 definition_predicate: configuration.definition_predicate,
                 clock_control: configuration.clock_control,
                 contacts: configuration.contacts,
@@ -208,7 +207,7 @@ impl WorthQueryApplicationConditionalBinding<TemporalHostSchema> for TemporalCon
             )
             .unwrap();
         let invariant = Arc::new(installation.retain_invariant_projection_authority());
-        let (invoker, _) = Invoker::controlled(configuration.contacts.clone());
+        let (invoker, preconditions_panic) = Invoker::controlled(configuration.contacts.clone());
         let execution = primary_graph::WorthQueryTemporalOperationExecution::with_authorization(
             Arc::clone(&invariant),
             invoker,
@@ -231,6 +230,7 @@ impl WorthQueryApplicationConditionalBinding<TemporalHostSchema> for TemporalCon
         let clock = installation.bind_temporal_operation(conditional, execution, reconstruction)?;
         Ok(Some(InstalledTemporalConditional {
             clock,
+            preconditions_panic: Some(preconditions_panic),
             definition_predicate: configuration.definition_predicate,
             clock_control: configuration.clock_control,
             contacts: configuration.contacts,
@@ -320,3 +320,6 @@ pub mod application_fixture;
 pub mod definition_only;
 #[path = "contribution_installation/request_cancellation.rs"]
 pub mod request_cancellation;
+
+#[path = "contribution_installation/directory.rs"]
+pub mod directory;

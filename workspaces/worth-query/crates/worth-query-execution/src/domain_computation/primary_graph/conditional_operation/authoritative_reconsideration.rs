@@ -1,8 +1,8 @@
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use worth_relational::facade::publication::PatchStreamPosition;
+use worth_runtime_bridge::facade::BridgeConditionalExecutionView;
 use worth_runtime_bridge::facade::{
-    BridgeConditionalSignalBasisBinding, BridgeSealedRuntimeAssembly,
-    RelationalCommittedPatchRequest, TruthCommitIdentity,
+    BridgeConditionalSignalBasisBinding, RelationalCommittedPatchRequest, TruthCommitIdentity,
 };
 
 use super::signal_decision_reentry::{
@@ -60,7 +60,7 @@ pub(super) fn relevant_authoritative_commits<Schema>(
 pub(super) fn deliver_authoritative_commits(
     phase: &WorthQueryAdvancementPhase<'_>,
 
-    bridge: &BridgeSealedRuntimeAssembly,
+    bridge: &BridgeConditionalExecutionView<'_>,
     signal_basis: &BridgeConditionalSignalBasisBinding,
     cursor: &mut Option<PatchStreamPosition>,
     commits: WorthQueryRelevantAuthoritativeCommits,
@@ -171,7 +171,7 @@ pub(super) fn promote_performed_signal_deliveries(
 pub(super) fn reconsider_retained_wakes_for_deliveries(
     phase: &WorthQueryAdvancementPhase<'_>,
 
-    bridge: &BridgeSealedRuntimeAssembly,
+    bridge: &BridgeConditionalExecutionView<'_>,
     deliveries: &[worth_runtime_bridge::facade::BridgeGranularInvalidationDelivery],
     wakes: &mut [WorthQueryRetainedConditionalWake],
     signal_basis: &BridgeConditionalSignalBasisBinding,
@@ -237,7 +237,7 @@ struct CommitDeliveryFailure {
 fn deliver_commit_dependencies(
     execution: worth_execution::ExecutionRequest<'_, '_>,
 
-    bridge: &BridgeSealedRuntimeAssembly,
+    bridge: &BridgeConditionalExecutionView<'_>,
     signal_basis: &BridgeConditionalSignalBasisBinding,
     commit: worth_relational::facade::history::CommitId,
     truth: &WorthQueryConditionalTruthBasis,

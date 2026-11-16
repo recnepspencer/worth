@@ -1,5 +1,48 @@
 use super::*;
 
+impl<'a, 'p, 's, S, D> WorthQueryApplicationOutputDemandRequest<'a, 'p, 's, S, D>
+where
+    S: ApplicationSchema + 'static,
+    D: WorthQueryApplicationOutputDemand<S> + PartialEq,
+    SourceValue<S, D>: WorthQueryApplicationProjection<S, SourceQuery<S, D>> + 'static,
+    SourceQuery<S, D>: 'static,
+{
+    pub(in crate::application_entry) fn readmit_original_for_workflow<Spec>(
+        self,
+        workflow: worth_query_execution::facade::application_installation::WorthQueryWorkflowVocabulary<'a, S, Spec>,
+        original: &worth_query_execution::facade::primary_graph::WorthQueryOriginalOutputDemand,
+        expected: &D,
+    ) -> Result<
+        (WorthQueryAdmittedOutputDemand<S, Family<S, D>>, D),
+        WorthQueryApplicationOutputDemandDenial,
+    >
+    where
+        Spec: worth_query_declaration::facade::application_program::ApplicationWorkflowSpec<
+            Schema = S,
+        >,
+    {
+        if !std::ptr::eq(self.application, workflow.runtime()) || &self.demand != expected {
+            return Err(WorthQueryApplicationOutputDemandDenial::FreshRequestMismatch);
+        }
+        let admitted = self
+            .application
+            .with_application_advancement(self.scope, |phase| {
+                workflow
+                    .runtime()
+                    .readmit_original_output_demand::<Family<S, D>>(
+                        &phase,
+                        self.principal,
+                        self.scope,
+                        self.branch,
+                        original,
+                    )
+                    .map_err(WorthQueryApplicationOutputDemandDenial::Demand)
+            })
+            .map_err(WorthQueryApplicationOutputDemandDenial::advancement)??;
+        Ok((admitted, self.demand))
+    }
+}
+
 impl<'application, 'principal, 'scope, Schema, Demand>
     WorthQueryApplicationOutputDemandRequest<'application, 'principal, 'scope, Schema, Demand>
 where

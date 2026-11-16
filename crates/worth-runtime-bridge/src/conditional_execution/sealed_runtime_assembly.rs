@@ -23,7 +23,6 @@ use crate::facade::RuntimeWorldCorrespondencePort;
 /// tied to one physical owner state.
 pub struct BridgeSealedRuntimeAssembly {
     runtime: BridgeOwnedSignalRuntime,
-    conditional_evaluation_budget: worth_signal::facade::runtime::SignalConditionalEvaluationBudget,
     signal_services: SignalOwnerServicePorts<(), (), (), (), ()>,
     signal_definition_publication: Option<
         worth_signal::facade::branch::SignalConditionalDefinitionPublicationPort<
@@ -47,6 +46,11 @@ struct BridgeSealedOwnerAffinity {
 }
 
 impl BridgeSealedRuntimeAssembly {
+    /// Borrows this exact sealed owner's conditional and managed-clock receiver.
+    pub fn conditional_execution_view(&self) -> super::BridgeConditionalExecutionView<'_> {
+        self.runtime.execution_view()
+    }
+
     #[cfg(test)]
     pub(super) fn test_runtime(&self) -> &super::BridgeOwnedSignalRuntime {
         &self.runtime
@@ -133,10 +137,6 @@ impl BridgeSealedRuntimeAssembly {
     pub(super) fn from_sealed_runtime(
         mut runtime: BridgeOwnedSignalRuntime,
     ) -> Result<Self, BridgeConditionalDenial> {
-        let conditional_evaluation_budget = runtime
-            .lock_signal_runtime()
-            .runtime_policy()
-            .conditional_evaluation_budget;
         let signal_services = runtime.signal_services()?.owner_services();
         let signal_definition_publication = runtime
             .signal_services_mut()?
@@ -156,7 +156,6 @@ impl BridgeSealedRuntimeAssembly {
         };
         Ok(Self {
             runtime,
-            conditional_evaluation_budget,
             signal_services,
             signal_definition_publication: Some(signal_definition_publication),
             signal_basis,
@@ -191,7 +190,7 @@ impl BridgeSealedRuntimeAssembly {
     pub const fn conditional_evaluation_budget(
         &self,
     ) -> worth_signal::facade::runtime::SignalConditionalEvaluationBudget {
-        self.conditional_evaluation_budget
+        self.runtime.conditional_evaluation_budget
     }
 
     /// Move the sole Signal definition-publication capability into Runtime World.

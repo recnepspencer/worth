@@ -84,6 +84,23 @@ independently of chooser token expiry.
    and cancel active live responses.
 7. Send `{ "command": "shutdown" }` on stdin for deterministic shutdown.
 
+The `bank-http-server` executable enters on its real main thread with the
+default stack in the dev profile. Execution provides same-thread stack growth;
+installation does not move to a separate large-stack actor. The process retains
+the listener-independent mutation continuation and the returned rail close owner
+through mutation-worker shutdown. Listener shutdown that refuses with retained
+mutation custody reports `shutdown_refused` and preserves the live server for
+another shutdown command.
+
+The installation document supplies `home_directory`. The process opens that
+Directory Home with Bank's installed schema and program; only a fresh Home runs
+the supplied initializer. After listener, dispatch and mutation workers quiesce,
+the process closes and reclaims the actual Home. A later process opens the same
+directory and attaches fresh authentication to its readmitted installation.
+Close refusals retain their actual owner and are returned to the process caller.
+This lifecycle is source preparation pending integrated runtime qualification;
+crash recovery is not certified.
+
 Requests and active streams have separate concurrency ceilings. Deadlines
 cover node-to-server connection, headers, JSON bodies, and the full SSE
 lifetime. Capacity is reserved before a recovery-producing domain effect.

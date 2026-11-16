@@ -2031,9 +2031,24 @@ supply and embed their own fresh UUID. Tests use explicit fixture identities.
 
 A journal-only Directory Home with the same supported program/schema opens under
 a new build UUID. Authored binding and durable history remain intact; the
-initializer does not run and nothing regenerates eagerly. Producers are not
-supported in this Directory lane. Accepted-output reuse and regeneration on demand
-are Phase 6 behavior, not a promise of rebuild admission.
+initializer does not run and nothing regenerates eagerly. Accepted producer outputs
+retain their original correspondence and dependency facts. Same-build demand
+verifies those facts before reuse. A changed build makes incompatible output
+stale; the normal demand and settlement owners regenerate it only when demanded,
+keeping its authored entity identities.
+
+Required demand records, performed-source obligations, consumed prerequisites and
+source custody use `query.obligations`. After reopening, recover the original
+keyed source receipt and pass it to `request.advanced().recover_required_outputs`
+(or `recover_discovered_outputs`). The recorded receipt supplies original data;
+fresh authentication, scope and World observation supply authority. A live receipt
+from an earlier Home is not readmitted. Completing the source/output tree records
+its discharge, so another reopen cannot resurrect completed custody. Producer
+domain denials retain their declared value data rather than rerunning the producer.
+
+These are graceful or quiescent reopen guarantees. Oversize obligation records
+receive the existing typed `MalformedFrame` refusal at the 16 KiB frame boundary;
+larger provenance support and crash/fault certification belong to track C.
 
 ### One process execution service
 
@@ -2045,8 +2060,9 @@ through `limits.with_execution_authority(Arc::clone(&service))`. Retain the
 process handle while applications close and reopen.
 
 The runnable [shared execution example](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/examples/shared_execution.rs)
-shows two MemoryOnly applications sharing one service. Its app-owned interim
-checkpoint is separate from the Directory contract documented here. Construct
+opens two independent Directory Homes with one service, closes the first and
+reopens that same location under fresh authentication. The reopened first Home
+advances its output from 3 to 11 while the second remains at 3. Construct
 the authority once per process: later construction returns
 `ConstructionDenial::AlreadyConstructed`, including after the final handle drops.
 For an application installation retry, reuse the retained process service.
@@ -2866,6 +2882,13 @@ process-local selection provenance; fresh original-branch action and requested
 facet admission precede protected row/provider/clock access. Explicit runtime
 close refuses allocated rows and preserves their owners. Rust Drop/process
 termination does not attest to provider or Native cleanup.
+For a Directory Home, graceful Home close instead hands each original row to
+its existing live release transitions and persists the actual terminal. Failed
+provider/queue/Native cleanup refuses that close. Reopen installs fresh declared
+providers and clocks. Use the resource request's `retained_state::<Binding>(&input, identity)`,
+`with_retained_result` and `discharge_retained` to consume the original logical
+custody under fresh State, Result or Close admission. No provider is replayed;
+unverified ingress remains distinct from a committed result.
 The existing lower World/Bridge path already preserves the
 exact committed source through request admission and revalidation; an empty
 source returns `NoCommittedSource` before creating a Signal request. This source
@@ -3215,7 +3238,7 @@ impl ApplicationMutationIntent<TemporalHostSchema> for AmendTemporalIntent {
     type Binding = AmendTemporalBinding;
     fn input(&self) -> &AmendTemporalInput { &self.amendment }
     fn scope_binding(&self) -> AmendTemporalScope {
-        AmendTemporalScope::new(IntentIdentityField::reference(), self.identity.clone())
+        AmendTemporalScope::new(IntentIdentityField::at("IntentIdentityField"), self.amendment.identity.clone())
     }
 }
 
@@ -3417,7 +3440,8 @@ ordered:
 ## 5.3 Execute through the program
 
 Open a program Home as described in [§4](#4-install-or-reopen), then borrow
-its installed runtime. The owning-action examples here use MemoryOnly. Declare a no-output action with
+its installed runtime. The ordinary product example records its original owner
+in a Directory Home before retaining it. Declare a no-output action with
 `.action::<Binding, Delivery>() ... .finish_action()`; its delivery mode is
 `ApplicationSourceCompletion` or `ApplicationRetainedCommit`. Select the exact
 `ApplicationActionReference`, rather than a first matching binding.
@@ -3429,7 +3453,7 @@ let operation = request.mutate(intent)
     .without_source()
     .preconditions(original_conditions)
     .idempotency_owned(key)?
-    .retain_operation::<Program, Action>(&runtime)?;
+    .retain_durable_operation::<Program, Action>(&request, &runtime)?;
 let next = operation.advance(&fresh_request);
 // Retain Progress/Refused custody for a later fresh-authorized attempt.
 // Completed owns evidence and lawful close; Terminal has no advance method.
@@ -3443,8 +3467,13 @@ its original descriptor. Source-only completion may be followed by a separate
 declared demand or assessment; it cannot replace required-output settlement.
 
 The runnable `ordinary_product_workflow` declares a real source-only action,
-advances its owner, observes native fresh receipt/result evidence, closes cleanup,
-and reads both current and retained product truth through the public facade.
+records it with `retain_durable_operation(&request, runtime)` and transfers its
+original through `handoff_for_reopen`. It closes and reopens the same Directory
+Home, then uses `WorthQueryOriginalOperation::readmit` with fresh authentication
+to retain and advance that recorded owner. It checks native Fresh receipt/result
+evidence, current and retained product truth, lawful cleanup, and the persisted
+successor after another graceful reopen. The target identity is part of the
+encoded input, so readmission derives the same authored scope from recorded data.
 
 #### Execute a stored typed edit
 
@@ -3795,7 +3824,9 @@ an actual post-effect append failure. It reads the resulting source and outputs
 independently after native recovery. No original intent clone is required per pump.
 
 The ordinary workflow binding retains `WorthQueryWorkflowOperation` through
-`for_workflow_operation(..)?.retain_operation::<Program, Action>(program)`.
+`for_workflow_operation(..)?.retain_durable_operation::<Program, Action>(&request, program)`.
+The actual request records Directory original custody while the issued workflow
+requirement, actor context and runtime stay attached to the binding.
 Advance it with a fresh request; retain the returned owner on refusal or progress.
 The original slot, native recovery and cleanup remain owned by Query.
 
@@ -4047,26 +4078,28 @@ Discovered: the existing public journey carries its original input through requi
         .unwrap_or_else(|(_, denial)| panic!("lawful discovered close: {denial:?}"));
 ```
 
-Source-only: the runnable ordinary product example retains a no-output action, distinguishes real Fresh evidence from recovery and closes.
+Source-only: the runnable ordinary product example readmits its recorded no-output
+action after graceful Home reopen, distinguishes real Fresh evidence from recovery
+and closes the original cleanup.
 
 <!-- compiled: owning_source_only.rs -->
 ```rust
-    let operation = request
-        .mutate(AmendTemporalIntent {
-            identity: "intent-1".to_owned(),
-            amendment: AmendTemporalInput {
-                revision: 2,
-                due: 11,
-                lifecycle: "active".to_owned(),
-                input: "published-through-application-entry".to_owned(),
-                gate: "ready".to_owned(),
-            },
-        })
-        .without_source()
-        .idempotency_owned(0x51_u64).unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
-        .retain_operation::<product_workflow_support::program::TemporalExampleProgram,
-            product_workflow_support::program::AmendTemporalAction>(&application.runtime)
-        .unwrap_or_else(|(_, denial)| panic!("declared temporal action: {denial:?}"));
+    let description = WorthQueryOriginalOperation::readmit::<
+        _,
+        product_workflow_support::application_entry::AmendTemporalBinding,
+        product_workflow_support::program::TemporalExampleProgram,
+        product_workflow_support::program::AmendTemporalAction,
+    >(
+        identity,
+        &request,
+        &application.runtime,
+        worth_foundational::facade::ValueDecodeBounds::new(8192, 1024, 128, 32),
+    )
+    .unwrap_or_else(|cause| panic!("fresh original readmission: {cause:?}"));
+    let operation = description.retain_operation::<
+        product_workflow_support::program::TemporalExampleProgram,
+        product_workflow_support::program::AmendTemporalAction>(&application.runtime)
+        .unwrap_or_else(|(_, cause)| panic!("readmitted operation: {cause:?}"));
     let completed = match operation.advance(&request) {
         WorthQuerySourceOnlyAdvance::Completed(completed) => completed,
         WorthQuerySourceOnlyAdvance::Refused { denial, .. } => {
@@ -4096,7 +4129,7 @@ Source-only: the runnable ordinary product example retains a no-output action, d
         .unwrap_or_else(|(_, denial)| panic!("native cleanup refused: {denial:?}"));
 ```
 
-Workflow: the runnable authored example obtains the actual awaited slot, captures before binding it, advances the exact installed action and closes. A later workflow advance remains separate.
+Workflow: the runnable authored example obtains the actual awaited slot, captures and binds it, records its durable original through the actual request, advances the exact installed source-only action and closes. A later workflow advance remains separate.
 
 <!-- compiled: owning_workflow.rs -->
 ```rust
@@ -4109,9 +4142,10 @@ Workflow: the runnable authored example obtains the actual awaited slot, capture
     let runtime = application.runtime();
     let scope = request_scope();
     let principal = authenticate_operator(runtime.installed_schema(), &scope);
-    let effect = runtime
+    let request = runtime
         .request(&principal, &scope)
-        .on_branch(instance.branch())
+        .on_branch(instance.branch());
+    let effect = request
         .mutate(ReviewedSetRetentionIntent {
             input: SetRetentionInput {
                 identity: DOCUMENT_IDENTITY.to_owned(),
@@ -4122,18 +4156,14 @@ Workflow: the runnable authored example obtains the actual awaited slot, capture
         .idempotency_owned(key + 1).unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
         .for_workflow_operation(application, &required)
         .unwrap_or_else(|_|panic!("exact original approved occurrence"))
-        .retain_operation::<document_retention_model::programs::RetentionProgramP0,actions::ReviewedAction>(application.program_runtime())
+        .retain_durable_operation::<document_retention_model::programs::RetentionProgramP0,actions::ReviewedAction>(&request, application.program_runtime())
         .unwrap_or_else(|_|panic!("installed approved effect action"));
-    let effect=match effect.advance(&runtime.request(&principal,&scope).on_branch(instance.branch())) {
+    let effect=match effect.advance(&request) {
         worth_query_host::facade::application_entry::WorthQueryWorkflowOperationAdvance::Completed(done)=>done,
         _=>panic!("lawful approved effect"),
     };
     effect
-        .close(
-            &runtime
-                .request(&principal, &scope)
-                .on_branch(instance.branch()),
-        )
+        .close(&request)
         .unwrap_or_else(|_| panic!("native effect cleanup"));
     assert_eq!(read_retention(runtime, instance.branch()), days);
 ```
@@ -5912,12 +5942,13 @@ quantum exhaustion as a failed output, and does not limit total work or depth.
 ## 6. Author, publish, and run workflows
 
 Guarded no-output effects use the original descriptor and issued requirement:
-`for_workflow_operation(..)?.retain_operation::<Program, Action>(program)`.
-A refusal from this effect-free `retain_operation` returns the bound owner.
-Use its consuming `into_parts()` to recover the original description and issued
-requirement outside the borrowed workflow runtime, then correct the declared
-action/runtime and rebind that same description and requirement. No effect has
-run and no slot has been consumed at this construction boundary.
+`for_workflow_operation(..)?.retain_durable_operation::<Program, Action>(&request, program)`.
+This workflow-bound entry requires `ApplicationSourceCompletion`; its type
+bounds preserve that delivery restriction.
+A construction refusal returns the same bound owner, including any recorded
+original custody. Keep that binding when correcting the declared action/runtime;
+its issued requirement and actor context remain attached. Construction executes
+no effect and consumes no workflow slot.
 Every `advance(&fresh_request)` rechecks current native authority. Effect
 completion retains native cleanup; workflow acceptance returns that completed
 owner on refusal and keeps it alongside successful native progression.
@@ -6681,7 +6712,10 @@ assessment demand's notifications, and from the adoption workflow inventory
 Run the full authored-workflow journey. The example first runs
 [`information.rs`](../workspaces/worth-query/crates/worth-query-certification/examples/authored_workflow/information.rs),
 an unsigned, occurrence-only operation, then the signed review journey in
-`main.rs`:
+`main.rs`. Each uses a Directory Home and fresh admission after graceful
+close/reopen. The signed journey retains its disabled-disclosure policy and checks
+that the original definition remains superseded by its recorded replacement;
+these terminal readbacks do not substitute for the live wait/resume journey below:
 
 ```bash
 cargo run --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-certification --example authored_workflow
@@ -6697,7 +6731,8 @@ retention, checks the retained value, requires a different admitted approver,
 and waits for the original archive operation's inbound completion. Use this
 shape for a process that combines local data and an external effect.
 
-Run the complete example target:
+Run the complete example target in the default dev profile. Its main thread uses
+the existing execution-stack entry; it creates no actor thread or custom OS stack:
 
 ```sh
 cargo run --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-certification --example observable_workflow
@@ -6709,6 +6744,14 @@ explicitly installs subject, definition, metadata and audit read rules and a
 recorded-actor policy. Capture declares occurrence-only requirements; archival
 requires the authored approval. The admitted proposal and approval supply their
 actors. Business input never supplies an actor override.
+
+These examples describe graceful current-version Home handoffs. Crash recovery is
+not yet certified. Their caller cutover still needs focused execution at the
+integrated H6 source epoch; it does not certify the milestone's full-family
+positive divergent-correction/materialization journey. That positive journey
+remains a separate H10 prerequisite, including the currently refused coupled or
+authored correction output shapes. C1–C5 own unclean recovery and retirement
+certification.
 
 #### Keep a basis, reacquire a locator
 
@@ -6741,12 +6784,14 @@ Subject read and audit use independent disclosure: approvals, pending owners and
 incomplete recovery remain visible according to subject-read permission even
 when actor details are withheld.
 
-For current-format restore, retain the typed original start intent as ordinary
-intent data and use a new authenticated request against the restored runtime's
-own retained basis. Reacquire references there; do not serialize live locators,
-reuse an old runtime's retained basis, or interpret a format refusal as Missing.
-Unsupported displaced artifacts are refused intact before installation. Logical
-migration and native fork continuation remain separate current operations; see
+The example closes its actual Directory Home at AwaitingProposal, releases the
+live runtime, and opens the same location again. Only the Home location and typed
+original start intent cross that handoff. A fresh authenticated request discovers
+the current definition and the same live instance at the reopened runtime's own
+basis; another advance must still report the original proposal wait. After real
+archival ingress and terminal settlement, it closes and reopens again for the
+independently admitted history and exact archive-cardinality checks. Do not
+serialize live locators or reuse an old runtime's retained basis. See
 [discovery and observation](../workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md).
 
 #### Publish a proposal when the owner asks for one
@@ -6758,24 +6803,6 @@ against the native receipt, not business input or a source of authority.
 
 <!-- compiled: observable_proposal.rs -->
 ```rust
-    let waiting = advance(&application, &instance, &[10, 11]);
-    let WorthQueryOrdinaryWorkflowRunStop::Outcome(WorkflowProgressOutcome::AwaitingProposal(need)) =
-        waiting.stop()
-    else {
-        panic!("the first node must expose its actual proposal need: {waiting:?}");
-    };
-    assert_eq!(need.node_path(), "propose");
-    assert_eq!(
-        need.operation(),
-        WorkflowDefinitionAuthoringOperation::reference().name()
-    );
-    assert_eq!(
-        need.input_type(),
-        WorkflowDefinitionAuthoringOperation::reference()
-            .input_identity()
-            .as_str()
-    );
-    assert!(waiting.transitions().is_empty());
     let proposal = runtime
         .request(&actor, &scope)
         .on_branch(instance.branch())
@@ -6844,7 +6871,8 @@ admission and independently closing cleanup:
         .unwrap_or_else(|(_, _, cause)| panic!("original archive capture: {cause:?}"))
         .for_workflow_operation(application, &required)
         .unwrap_or_else(|_| panic!("exact approved occurrence"))
-        .retain_operation::<MixedProgram, crate::effect::ArchiveAction>(
+        .retain_durable_operation::<MixedProgram, crate::effect::ArchiveAction>(
+            &request,
             application.program_runtime(),
         )
         .unwrap_or_else(|_| panic!("installed archive action"));
@@ -7213,6 +7241,13 @@ The same chain in production code is
 | Prepare | `.prepare(maximum_selection_work)` | `WorthQueryPreparedBranchAdoption` (move-only, fields private) |
 | Publish | `programs.publish(prepared)` | `WorthQueryBranchAdoptionPublicationOutcome` |
 | Recover | `programs().recover(unpublished.into_recovery())` | `Result<WorthQueryBranchAdoptionRecoveryOutcome, WorthQueryApplicationProgramAdoptionRecoveryFailure>` |
+| Readmit after Directory reopen | `runtime.readmit_branch_adoption(fresh_world_recovery_handle)` | Exact original adoption custody where D18 admits the tail; then ordinary `programs().recover` with fresh authentication |
+
+Directory close succeeds before preparation starts and after the World occurrence or
+disposition settles. A cancelled adoption with a Native effect but no World
+occurrence or disposition refuses close with `UnresolvedBusinessCustody`; the
+returned Home remains usable. Abandoning that prefix refuses reopen with
+`UncleanRecoveryUnsupported(Relational)` (D18); its continuation belongs to C1.
 
 `compare` comes first because the requirements are the input to `adopt`.
 `WorthQueryProgramAdoptionRequirements` exposes `semantic_diff()`,
@@ -7353,7 +7388,10 @@ This prepares adoption across a set of branches. It is **not atomic**:
   It returns `Result<WorthQueryBranchSetAdoptionCancellation, Self>`: while a
   branch awaits resolution it hands the adoption back, so resolve it and
   `advance` first.
-- `resume(stopped, max)` continues a stopped set.
+- `begin_resume(runtime, &scope)` acknowledges stopped custody before releasing the old suffix.
+- After Directory reopen, `runtime.readmit_stopped_branch_set_adoptions(&phase)` rejoins fresh selectors.
+- `resume(stopped, max)` prepares only that ordered remainder; historical progress is descriptive.
+- `stopped.cancel(runtime, &scope)` acknowledges release of the retained custody.
 
 Coverage comes from `runtime.branches().program_adoption_coverage(..)`;
 `on_branches` orders it against your target list and refuses a mismatch with

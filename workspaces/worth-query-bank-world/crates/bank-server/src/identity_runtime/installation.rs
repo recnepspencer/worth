@@ -163,7 +163,7 @@ pub(super) fn prepare_installation(
     ))
 }
 
-pub(super) fn install_payment_workflow_spec<Program>(
+pub fn install_payment_workflow_spec<Program>(
     schema: &WorthQueryInstalledApplicationSchema<BankSchema>,
     program: &worth_query_host::facade::domain::WorthQueryInstalledApplicationProgram<
         BankSchema,

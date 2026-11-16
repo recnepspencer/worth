@@ -115,6 +115,11 @@ where
     Schema: ApplicationSchema,
     Binding: ApplicationResourceBinding<Schema>,
 {
+    if row.occurrence().ingress_frozen {
+        return Err(ResourceCause::Storage(
+            super::super::storage::ResourceStorageDenial::CleanupPending,
+        ));
+    }
     if let Some(handle) = row.occurrence().recovery.as_ref() {
         super::super::recovery::require_unresolved(
             runtime,
@@ -139,18 +144,27 @@ where
     execution.consult().map_err(ResourceCause::Request)?;
     let clock = runtime
         .runtime
-        .product_runtime
-        .advance_owned_async_source_clock(
-            runtime
-                .runtime
-                .bridge
-                .conditional()
-                .memory()
-                .map_err(ResourceCause::Bridge)?,
-            &installed.storage.nodes[index].declaration,
-            selected,
-            reading.nanoseconds,
+        .bridge
+        .conditional()
+        .with_view(
+            row.occurrence()
+                .business_product
+                .observation()
+                .basis()
+                .signal_basis(),
+            |bridge| {
+                runtime
+                    .runtime
+                    .product_runtime
+                    .advance_owned_async_source_clock(
+                        &bridge,
+                        &installed.storage.nodes[index].declaration,
+                        selected,
+                        reading.nanoseconds,
+                    )
+            },
         )
+        .map_err(ResourceCause::Bridge)?
         .map_err(ResourceCause::Native)?;
     row.occurrence_mut().last_clock = Some(clock);
     execution.consult().map_err(ResourceCause::Request)?;
@@ -191,9 +205,15 @@ where
             .runtime
             .bridge
             .conditional()
-            .memory()
+            .with_view(
+                occurrence
+                    .business_product
+                    .observation()
+                    .basis()
+                    .signal_basis(),
+                |bridge| bridge.finish_managed_owned_async_wake_cleanup(owner),
+            )
             .map_err(ResourceCause::Bridge)?
-            .finish_managed_owned_async_wake_cleanup(owner)
             .map_err(ResourceCause::Managed)?;
     }
     if occurrence.timeout.is_none() && occurrence.retry.is_none() {
@@ -201,9 +221,18 @@ where
             .runtime
             .bridge
             .conditional()
-            .memory()
+            .with_view(
+                occurrence
+                    .business_product
+                    .observation()
+                    .basis()
+                    .signal_basis(),
+                |bridge| {
+                    bridge
+                        .advance_managed_owned_async_request_to_timeout(owner, reading.nanoseconds)
+                },
+            )
             .map_err(ResourceCause::Bridge)?
-            .advance_managed_owned_async_request_to_timeout(owner, reading.nanoseconds)
             .map_err(ResourceCause::Managed)?;
         occurrence.timeout = Some(timeout);
     }
@@ -225,9 +254,15 @@ where
             .runtime
             .bridge
             .conditional()
-            .memory()
+            .with_view(
+                occurrence
+                    .business_product
+                    .observation()
+                    .basis()
+                    .signal_basis(),
+                |bridge| bridge.schedule_managed_owned_async_retry(owner, timeout),
+            )
             .map_err(ResourceCause::Bridge)?
-            .schedule_managed_owned_async_retry(owner, timeout)
             .map_err(ResourceCause::Managed)?;
         occurrence.retry = Some(scheduled);
     }
@@ -236,13 +271,21 @@ where
         .runtime
         .bridge
         .conditional()
-        .memory()
-        .map_err(ResourceCause::Bridge)?
-        .advance_managed_owned_async_retry(
-            owner,
-            occurrence.retry.as_ref().expect("actual issued schedule"),
-            reading.nanoseconds,
-        );
+        .with_view(
+            occurrence
+                .business_product
+                .observation()
+                .basis()
+                .signal_basis(),
+            |bridge| {
+                bridge.advance_managed_owned_async_retry(
+                    owner,
+                    occurrence.retry.as_ref().expect("actual issued schedule"),
+                    reading.nanoseconds,
+                )
+            },
+        )
+        .map_err(ResourceCause::Bridge)?;
     // A post-admission Bridge refusal can already own the successor. Keep that
     // true new occurrence, never an apparently live old provider attempt.
     if owner.request_handle() != before {
@@ -280,17 +323,15 @@ where
     let before = owner.request_handle();
     let result = runtime
         .runtime
-        .product_runtime
-        .revalidate_custodied_owned_async_request(
+        .bridge
+        .conditional()
+        .with_view(selected.observation().basis().signal_basis(), |bridge| {
             runtime
                 .runtime
-                .bridge
-                .conditional()
-                .memory()
-                .map_err(ResourceCause::Bridge)?,
-            owner,
-            selected,
-        );
+                .product_runtime
+                .revalidate_custodied_owned_async_request(&bridge, owner, selected)
+        })
+        .map_err(ResourceCause::Bridge)?;
     if owner.request_handle() != before {
         occurrence.retry = None;
         occurrence.timeout = None;

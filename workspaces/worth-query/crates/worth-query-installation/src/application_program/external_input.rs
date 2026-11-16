@@ -149,3 +149,64 @@ where
         self.resolution
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::super::program_support_fixture::{SupportSchema, UnknownOperation};
+    use super::*;
+    struct Provider(u64);
+    impl ApplicationExternalInputProvider<SupportSchema, UnknownOperation> for Provider {
+        const IDENTITY: &'static str = "external-capture-boundary";
+        type Selection = String;
+        type Values = Vec<u8>;
+        type Revision = u64;
+        type Provenance = String;
+        type Denial = (u64, u64);
+        fn resolve(
+            &self,
+            selection: &String,
+        ) -> Result<ApplicationExternalInputResolution<Vec<u8>, u64, String>, Self::Denial>
+        {
+            Ok(ApplicationExternalInputResolution::new(
+                selection.as_bytes().to_vec(),
+                self.0,
+                "original external source".to_owned(),
+            ))
+        }
+        fn validate_revision(&self, _: &String, revision: &u64) -> Result<(), Self::Denial> {
+            if *revision == self.0 {
+                Ok(())
+            } else {
+                Err((*revision, self.0))
+            }
+        }
+    }
+    #[test]
+    fn external_input_capture_refusal_preserves_selection_values_revision_and_provenance() {
+        // Pure caller-owned DATA, not a Home record or operation capability.
+        let selection = "original selection".to_owned();
+        let resolution = Provider(7).resolve(&selection).unwrap();
+        let capture = WorthQueryCapturedExternalInput::<SupportSchema, UnknownOperation, Provider> {
+            selection: selection.clone(),
+            resolution,
+            marker: PhantomData,
+        };
+        let (capture, denial) = capture
+            .admit_preserving(&Provider(8))
+            .err()
+            .expect("changed original revision refuses");
+        assert_eq!(denial, (7, 8));
+        assert_eq!(capture.selection(), &selection);
+        assert_eq!(capture.resolution().values(), selection.as_bytes());
+        assert_eq!(capture.resolution().revision(), &7);
+        assert_eq!(
+            capture.resolution().provenance(),
+            "original external source"
+        );
+        let admitted = capture
+            .admit_preserving(&Provider(7))
+            .unwrap_or_else(|_| panic!("fresh provider must validate the retained original"));
+        assert_eq!(admitted.selection(), &selection);
+        assert_eq!(admitted.into_resolution().values(), selection.as_bytes());
+    }
+}

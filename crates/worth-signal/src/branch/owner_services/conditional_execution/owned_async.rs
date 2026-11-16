@@ -145,6 +145,26 @@ where
     I: Copy + Ord,
     T: Copy + Ord,
 {
+    /// Install a declared resource against this genuine recovered branch.
+    /// This issues fresh derived state; it restores no request, queue or port.
+    pub fn readmit_owned_async_source_definition(
+        &self,
+        basis: &AdmittedSignalBranchBasis,
+        declaration: crate::data::resource::ResourceNodeDeclaration,
+    ) -> Result<
+        crate::data::resource::LoweredResourceDescriptor,
+        SignalConditionalServiceExecutionDenial,
+    > {
+        self.with_owned_async_cell(basis, |cell, admission| {
+            cell.readmit_conditional_owned_async_definition(
+                admission,
+                basis,
+                &self.definition,
+                declaration,
+            )
+        })
+    }
+
     pub fn bind_owned_async_source(
         &self,
         basis: &AdmittedSignalBranchBasis,

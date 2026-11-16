@@ -1,8 +1,8 @@
 //! Join original recorded meaning to an actual retained source; never reconstruct custody.
 use super::{PreparedOutputRootKind, WorthQueryOutputDemandRegistry};
 use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationCommitReceipt, WorthQueryOutputDemandDenial,
-    WorthQueryOutputDemandDenialKind, WorthQueryOutputSourceReplay,
+    WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind, WorthQueryOutputSourceEvidence,
+    WorthQueryOutputSourceReplay,
 };
 impl WorthQueryOutputDemandRegistry {
     pub(in crate::domain_computation::primary_graph) fn resolve_replay_source(
@@ -10,11 +10,12 @@ impl WorthQueryOutputDemandRegistry {
         context: &mut worth_execution::MapKernelContext<'_, '_>,
         selector: WorthQueryOutputSourceReplay<'_>,
         kind: PreparedOutputRootKind,
-    ) -> Result<WorthQueryApplicationCommitReceipt, WorthQueryOutputDemandDenial> {
+    ) -> Result<WorthQueryOutputSourceEvidence, WorthQueryOutputDemandDenial> {
         checkpoint(context)?;
         if let WorthQueryOutputSourceReplay::Retained(receipt) = selector {
-            self.validate_recovery_root_kind(receipt, kind)?;
-            return Ok(receipt.clone());
+            let receipt: WorthQueryOutputSourceEvidence = receipt.clone().into();
+            self.validate_recovery_root_kind(&receipt, kind)?;
+            return Ok(receipt);
         }
         let WorthQueryOutputSourceReplay::Recorded(recorded) = selector else {
             unreachable!("retained selector returned above")

@@ -207,6 +207,18 @@ impl CoupledAdoption {
             .invalidation_owner;
         let mut claims =
             required.prepare_prerequisites(self.candidate.consumed_outputs().iter(), owner)?;
+        let execution = phase
+            .execution_request_for(&runtime.runtime.product_runtime)
+            .map_err(|cause| {
+                denial(
+                    WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
+                    producer,
+                )
+            })?;
+        claims.record_durable_prerequisites(
+            &execution,
+            &runtime.runtime.primary_provider.graph.output_lineage,
+        )?;
         claims.reserve_identity(self.candidate.settlement_identity())?;
         claims
             .publish(std::sync::Arc::clone(self.candidate.settlement_identity()))

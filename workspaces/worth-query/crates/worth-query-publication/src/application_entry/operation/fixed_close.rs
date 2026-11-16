@@ -24,7 +24,9 @@ where
         {
             return Err((self, WorthQueryOperationCloseDenial::FreshRequestMismatch));
         }
-        if !matches!(&self.state, super::fixed::FixedState::Initial) {
+        if self.readmitted_recovery.is_some()
+            || !matches!(&self.state, super::fixed::FixedState::Initial)
+        {
             return Err((
                 self,
                 WorthQueryOperationCloseDenial::NativeObligationRetained,
@@ -33,6 +35,42 @@ where
         WorthQueryTerminalFixedOperation::new(self)
             .close(request)
             .map_err(|(terminal, denial)| (terminal.operation, denial))
+    }
+    pub fn handoff_for_reopen(
+        mut self,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
+    ) -> Result<
+        (
+            WorthQueryOriginalOperation,
+            WorthQueryOperationCleanupReceipt,
+        ),
+        (Self, WorthQueryOperationCloseDenial),
+    > {
+        let original = match self.description.original_lookup() {
+            Ok(original) => original,
+            Err(cause) => return Err((self, WorthQueryOperationCloseDenial::Original(cause))),
+        };
+        if let Err(cause) = original.admit(request) {
+            return Err((self, WorthQueryOperationCloseDenial::Original(cause)));
+        }
+        if self.readmitted_recovery.is_some()
+            || !matches!(
+                self.state,
+                super::fixed::FixedState::Initial
+                    | super::fixed::FixedState::Outputs(_)
+                    | super::fixed::FixedState::ReplayRetained(_)
+                    | super::fixed::FixedState::ReplayRecorded(_)
+            )
+        {
+            return Err((
+                self,
+                WorthQueryOperationCloseDenial::NativeObligationRetained,
+            ));
+        }
+        match self.release_cleanup(request) {
+            Ok(cleanup) => Ok((original, cleanup)),
+            Err(cause) => Err((self, cause)),
+        }
     }
     /// Releases only the absorbed cleanup collection, without source/output progress.
     pub fn release_cleanup(

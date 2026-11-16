@@ -23,7 +23,7 @@ impl PreparedPrerequisiteClaims {
             let Some(mut record) = state.records.get_mut(upstream.as_ref()) else {
                 continue;
             };
-            record.framework_required_count -= 1;
+            record.release_framework_claim();
             let pending = record.pending_cleanup_queued;
             record.finish();
             if !pending && !state.defer_terminal_cleanup(upstream) {

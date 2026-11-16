@@ -1,11 +1,12 @@
 use super::super::canonical_identity::WorthQueryTemporalRuntimeBindingIdentity;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use std::collections::BTreeMap;
+use worth_runtime_bridge::facade::BridgeConditionalExecutionView;
 
 use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryInstalledApplicationOperation,
 };
-use worth_runtime_bridge::facade::{BridgeManagedClockBinding, BridgeSealedRuntimeAssembly};
+use worth_runtime_bridge::facade::BridgeManagedClockBinding;
 
 use super::{
     outcome_application::apply_reentry_outcome, reenter_temporal_operation,
@@ -55,7 +56,7 @@ pub(in crate::domain_computation::primary_graph::conditional_operation) fn reent
 
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     product: &crate::basis::WorthQueryProductBranchLease,
-    bridge: &BridgeSealedRuntimeAssembly,
+    bridge: &BridgeConditionalExecutionView<'_>,
     clock: &BridgeManagedClockBinding,
     operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
     access: &WorthQueryTemporalReconstructionAccess<
@@ -92,7 +93,10 @@ pub(in crate::domain_computation::primary_graph::conditional_operation) fn reent
     >,
     wakes: &mut [WorthQueryRetainedConditionalWake],
     runtime_binding: &WorthQueryTemporalRuntimeBindingIdentity,
-) -> WorthQueryTemporalReentryCounts
+) -> Result<
+    WorthQueryTemporalReentryCounts,
+    super::super::super::query_obligations::QueryObligationDenial,
+>
 where
     Schema: ApplicationSchema,
     Operation: 'static,
@@ -140,6 +144,9 @@ where
         super::super::WorthQueryTemporalOperationAuthorization<Schema, Operation, Input, Scope>,
 {
     let mut counts = WorthQueryTemporalReentryCounts::default();
+    for wake in wakes.iter_mut() {
+        super::durable_decision::flush_record(runtime, request_execution, wake)?;
+    }
     for wake in wakes.iter_mut() {
         wake.application_attempted = false;
         wake.application_admission_canonical_work =
@@ -200,7 +207,7 @@ where
             continue;
         }
         wake.application_attempted = true;
-        let attempt = reenter_temporal_operation(
+        let attempt = match reenter_temporal_operation(
             request_execution,
             phase,
             runtime,
@@ -210,7 +217,14 @@ where
             execution,
             candidate.candidate(),
             runtime_binding,
-        );
+        ) {
+            Ok(attempt) => attempt,
+            Err(cause) => {
+                wake.decision = WorthQueryRetainedConditionalDecision::Eligible(evidence);
+                return Err(cause);
+            }
+        };
+        wake.continuation_identity = attempt.continuation_identity;
         wake.application_admission_canonical_work = attempt.admission_canonical_work;
         apply_reentry_outcome(
             bridge,
@@ -222,6 +236,7 @@ where
             attempt.outcome,
             &mut counts,
         );
+        super::durable_decision::flush_record(runtime, request_execution, wake)?;
     }
-    counts
+    Ok(counts)
 }

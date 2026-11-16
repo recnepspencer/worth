@@ -9,14 +9,20 @@ use worth_query_declaration::facade::application_schema::{
 };
 
 mod declaration;
+mod recorded;
 pub use declaration::{
     WorthQueryProducerDenialDeclaration, WorthQueryProducerDenialProjection,
     WorthQueryProjectedProducerDenial, WorthQueryUndeclaredProducerDenial,
+};
+pub use recorded::{
+    WorthQueryRecordedProducerDenialEncodingRefusal, WorthQueryRecordedProducerDenialValue,
 };
 
 /// The domain value a rejected producer decision carries to its caller.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryProducerDenialValue {
+    /// Data readmitted from the original acknowledged terminal record.
+    Recorded(Box<WorthQueryRecordedProducerDenialValue>),
     /// The producer explicitly declares no domain value for its denials.
     Undeclared,
     /// Canonical bytes from the declared binding; only that binding decodes them.
@@ -46,6 +52,11 @@ pub enum WorthQueryProducerDenialEncodingRefusal {
 /// Why a caller's binding cannot read the demand's producer denial value.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryProducerDenialDecodeDenial {
+    RecordedTypeMismatch {
+        expected: &'static str,
+        observed: String,
+    },
+    RecordedEncodingRefused(WorthQueryRecordedProducerDenialEncodingRefusal),
     /// The demand was not refused by a producer's domain decision.
     NotDomainDenied,
     /// The producer declares no domain value for its denials.
@@ -70,8 +81,12 @@ impl WorthQueryProducerDenialValue {
         &self,
     ) -> Result<Binding::Value, WorthQueryProducerDenialDecodeDenial> {
         use WorthQueryProducerDenialDecodeDenial as Denial;
+        if let Self::Recorded(value) = self {
+            return value.decode::<Binding>();
+        }
         let expected = Binding::IDENTITY_NAME;
         let (observed, bytes) = match self {
+            Self::Recorded(_) => unreachable!("recorded values decoded above"),
             Self::Undeclared => return Err(Denial::Undeclared),
             Self::Absent { value_identity } => {
                 return Err(mismatch_or(expected, value_identity, Denial::Absent))
@@ -105,14 +120,16 @@ impl WorthQueryProducerDenialValue {
     /// The exact canonical bytes the declared binding encoded.
     pub fn bytes(&self) -> Option<&[u8]> {
         match self {
+            Self::Recorded(value) => value.bytes(),
             Self::DeclaredValue { bytes, .. } => Some(bytes),
             Self::Undeclared | Self::Absent { .. } | Self::EncodingRefused { .. } => None,
         }
     }
 
     /// The declared binding's identity, when the producer declares one.
-    pub const fn value_identity(&self) -> Option<&'static str> {
+    pub fn value_identity(&self) -> Option<&str> {
         match self {
+            Self::Recorded(value) => value.identity(),
             Self::Undeclared => None,
             Self::DeclaredValue { value_identity, .. }
             | Self::Absent { value_identity }
@@ -122,6 +139,8 @@ impl WorthQueryProducerDenialValue {
 
     pub(in crate::domain_computation::primary_graph) fn owned_capacity_bytes(&self) -> u64 {
         match self {
+            Self::Recorded(value) => (std::mem::size_of_val(value.as_ref()) as u64)
+                .saturating_add(value.owned_capacity_bytes()),
             Self::DeclaredValue { bytes, .. } => bytes.capacity() as u64,
             Self::Undeclared | Self::Absent { .. } | Self::EncodingRefused { .. } => 0,
         }

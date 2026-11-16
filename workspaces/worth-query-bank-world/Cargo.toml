@@ -30,6 +30,7 @@ license = "BUSL-1.1"
 [workspace.dependencies]
 worth-query-bank-testkit = { path = "crates/worth-query-bank-testkit" }
 worth-foundational = { path = "../../crates/worth-foundational" }
+worth-execution = { path = "../../crates/worth-execution" }
 worth-query-decl = { path = "../worth-query/crates/worth-query-decl" }
 worth-query-host = { path = "../worth-query/crates/worth-query-host" }
 bank-domain = { path = "crates/bank-domain" }

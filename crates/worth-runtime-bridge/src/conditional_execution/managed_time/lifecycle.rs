@@ -4,7 +4,7 @@ use super::{
     BridgeManagedClockBinding, BridgeManagedClockClosure, BridgeManagedClockLane,
     BridgeManagedTemporalDenial, BridgeManagedTemporalDenialKind,
 };
-use crate::conditional_execution::BridgeOwnedSignalRuntime;
+use crate::conditional_execution::execution_view::BridgeConditionalExecutionView;
 
 pub(super) fn require_clock_lane(
     lane: &BridgeManagedClockLane,
@@ -27,7 +27,7 @@ fn require_clock_affinity(
     Ok(())
 }
 
-impl BridgeOwnedSignalRuntime {
+impl BridgeConditionalExecutionView<'_> {
     pub(in crate::conditional_execution) fn admit_managed_clock_lane(
         &self,
         binding: &BridgeManagedClockBinding,
@@ -48,13 +48,13 @@ impl BridgeOwnedSignalRuntime {
 
     pub fn close_managed_clock(
         &self,
-        binding: BridgeManagedClockBinding,
+        binding: &BridgeManagedClockBinding,
     ) -> Result<BridgeManagedClockClosure, BridgeManagedTemporalDenial> {
-        let retained = self.admit_managed_clock_lane(&binding)?;
+        let retained = self.admit_managed_clock_lane(binding)?;
         let lane = retained
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        require_clock_affinity(&lane, &binding)?;
+        require_clock_affinity(&lane, binding)?;
         let (active_intents, scheduled_wakes, ready_wakes) = lane.closure_counts()?;
         lane.lease.revoke();
         drop(lane);
@@ -83,19 +83,7 @@ impl BridgeOwnedSignalRuntime {
     }
 
     pub(in crate::conditional_execution) fn revoke_managed_clock_liveness(&self) {
-        let lanes = self
-            .managed_clock_lanes
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .values()
-            .cloned()
-            .collect::<Vec<_>>();
-        for lane in lanes {
-            lane.lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner)
-                .lease
-                .revoke();
-        }
+        revoke_clock_lanes(self.managed_clock_lanes);
     }
 
     pub fn managed_clock_count(&self) -> usize {
@@ -117,4 +105,21 @@ fn closed_binding_denial() -> BridgeManagedTemporalDenial {
         BridgeManagedTemporalDenialKind::ClosedClockBinding,
         "managed clock binding is no longer installed",
     )
+}
+
+pub(in crate::conditional_execution) fn revoke_clock_lanes(
+    lanes: &Mutex<std::collections::BTreeMap<Arc<str>, Arc<Mutex<BridgeManagedClockLane>>>>,
+) {
+    let lanes = lanes
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+        .values()
+        .cloned()
+        .collect::<Vec<_>>();
+    for lane in lanes {
+        lane.lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .lease
+            .revoke();
+    }
 }

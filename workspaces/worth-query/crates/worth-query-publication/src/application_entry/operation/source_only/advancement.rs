@@ -31,10 +31,29 @@ where
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
         maximum_history_work: Option<std::num::NonZeroUsize>,
     ) -> Advance<S, I, P, A, M> {
+        if let Some(original) = &self.admission.description.original {
+            if let Err(cause) = request.application.admit_original_operation_owner(
+                &original.owner,
+                &worth_query_execution::publication_boundary::program_publication_access(),
+            ) {
+                return self.into_advance(Err(WorthQuerySourceOnlyDenial::Original(cause)));
+            }
+        }
         let phase_keepalive = self.admission.runtime.clone();
         let runtime = phase_keepalive.runtime();
         let outcome = runtime.with_application_advancement(request.scope, |phase| {
             let result = self.step(&phase, request, maximum_history_work);
+            if matches!(self.state, SourceState::<S, I>::RetryableNoEffect(_)) {
+                if let Some(original) = &mut self.admission.description.original {
+                    original
+                        .mark(
+                            &phase,
+                            request.application,
+                            worth_query_execution::publication_boundary::original_operation::QueryOriginalOperationPosition::Initial,
+                        )
+                        .map_err(WorthQuerySourceOnlyDenial::Original)?;
+                }
+            }
             if matches!(&result, Ok(Step::Completed))
                 && let Some(control) = &self.completion_handoff
             {
@@ -58,15 +77,33 @@ where
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
         maximum_history_work: Option<std::num::NonZeroUsize>,
     ) -> Result<Step, WorthQuerySourceOnlyDenial> {
+        if self
+            .admission
+            .description
+            .original
+            .as_ref()
+            .is_some_and(|original| original.readmission)
+        {
+            return self.readmit_original(phase, request);
+        }
         match &mut self.state {
             SourceState::<S, I>::Initial | SourceState::<S, I>::RetryableNoEffect(_) => {
+                if let Some(original) = &mut self.admission.description.original {
+                    original.mark(phase,request.application,worth_query_execution::publication_boundary::original_operation::QueryOriginalOperationPosition::Resolving).map_err(WorthQuerySourceOnlyDenial::Original)?;
+                }
                 let outcome = match self.admission.execute_in_advancement(phase, request) {
                     Ok(outcome) => outcome,
                     Err(denial) if native_posture::pinned_source_moved(&denial) => {
                         self.state = SourceState::<S, I>::AdmissionStopped(denial);
                         return Ok(Step::Terminal);
                     }
-                    Err(denial) => return Err(WorthQuerySourceOnlyDenial::Mutation(denial)),
+                    Err(denial) => {
+                        if let Some(original) = &mut self.admission.description.original {
+                            original.mark(phase, request.application, worth_query_execution::publication_boundary::original_operation::QueryOriginalOperationPosition::Initial)
+                                .map_err(WorthQuerySourceOnlyDenial::Original)?;
+                        }
+                        return Err(WorthQuerySourceOnlyDenial::Mutation(denial));
+                    }
                 };
                 match outcome {
                     WorthQueryApplicationRetainedMutationOutcome::Committed {

@@ -5,6 +5,7 @@
 /// again can succeed.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryOutputDemandDenialKind {
+    ObligationPublication(crate::domain_computation::primary_graph::query_obligations::QueryObligationDenial),
     ConflictingIntent { target: worth_relational::facade::transactions::RecordRef, earlier: usize, later: usize },
     AuthoredStageRefused { ordinal: usize, binding: &'static str },
     DurableStateAdmission(crate::domain_computation::execution_runtime::product_world::WorthQueryDurableStateAdmissionDenial),

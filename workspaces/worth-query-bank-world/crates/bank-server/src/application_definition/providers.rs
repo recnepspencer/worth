@@ -8,6 +8,8 @@ use bank_domain::schema::{
     GrantAccountAccessMutationBinding, InitiateBusinessPaymentMutationBinding,
     NotifyEstateDeathMutationBinding, OpenEstateCaseMutationBinding,
     RecognizeEstateExecutorMutationBinding, RejectPaymentMutationBinding,
+    RejectedPaymentAssessmentBinding, RejectedPaymentAssessmentProducer,
+    RejectedPaymentAssessmentProvider, RejectedPaymentAssessmentReadiness,
     ReleaseEstateMutationBinding, RestoreFrozenEstateAccountBinding,
     RetransmitEstateDeathNoticeMutationBinding, ReverseJournalMutationBinding,
     RevokeAccountAccessMutationBinding, SendMoneyMutationBinding, WithdrawMutationBinding,
@@ -29,9 +31,9 @@ use crate::mutation_handlers::{
     CreateBusinessAccountHandler, CreatePersonalAccountHandler, DepositHandler,
     DisburseEstateHandler, FreezeEstateAccountHandler, GrantAccountAccessHandler,
     InitiateBusinessPaymentHandler, NotifyEstateDeathHandler, OpenEstateCaseHandler,
-    RecognizeEstateExecutorHandler, RejectPaymentHandler, ReleaseEstateHandler,
-    RestoreFrozenEstateAccountHandler, RetransmitEstateDeathNoticeHandler, ReverseJournalHandler,
-    RevokeAccountAccessHandler, SendMoneyHandler, WithdrawHandler,
+    RecognizeEstateExecutorHandler, RejectPaymentHandler, RejectedPaymentAssessmentHandler,
+    ReleaseEstateHandler, RestoreFrozenEstateAccountHandler, RetransmitEstateDeathNoticeHandler,
+    ReverseJournalHandler, RevokeAccountAccessHandler, SendMoneyHandler, WithdrawHandler,
 };
 
 pub struct BankAccountsProvider;
@@ -80,6 +82,8 @@ impl WorthQueryApplicationContribution<BankSchema> for BankPaymentsProvider {
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
         contracts.producer::<ApprovedPaymentAssessmentProducer>()?;
         contracts.conditional::<ApprovedPaymentAssessmentReadiness>()?;
+        contracts.producer::<RejectedPaymentAssessmentProducer>()?;
+        contracts.conditional::<RejectedPaymentAssessmentReadiness>()?;
         Ok(())
     }
 
@@ -101,6 +105,9 @@ impl WorthQueryApplicationContribution<BankSchema> for BankPaymentsProvider {
         setup.handler::<ApprovedPaymentAssessmentBinding, _>(ApprovedPaymentAssessmentHandler)?;
         setup.producer::<ApprovedPaymentAssessmentProducer>(ApprovedPaymentAssessmentProvider)?;
         setup.conditional::<ApprovedPaymentAssessmentReadiness>(())?;
+        setup.handler::<RejectedPaymentAssessmentBinding, _>(RejectedPaymentAssessmentHandler)?;
+        setup.producer::<RejectedPaymentAssessmentProducer>(RejectedPaymentAssessmentProvider)?;
+        setup.conditional::<RejectedPaymentAssessmentReadiness>(())?;
         setup.handler::<ApprovePaymentMutationBinding, _>(ApprovePaymentHandler)?;
         setup.handler::<RejectPaymentMutationBinding, _>(RejectPaymentHandler)?;
         setup.handler::<ReverseJournalMutationBinding, _>(ReverseJournalHandler)

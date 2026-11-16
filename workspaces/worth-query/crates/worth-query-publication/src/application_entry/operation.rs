@@ -48,6 +48,8 @@ mod batch_delivery;
 mod current_delivery;
 mod delivery_policy;
 mod descriptor;
+mod durable_original;
+pub use durable_original::WorthQueryOriginalOperation;
 mod discovered;
 pub use discovered::{
     WorthQueryDiscoveredOperation, WorthQuerySettledDiscoveredOperation,

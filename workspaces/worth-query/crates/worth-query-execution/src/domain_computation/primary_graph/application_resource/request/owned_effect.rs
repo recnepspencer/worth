@@ -172,6 +172,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationResourcesRequest<'_, '_, '_
                         &occurrence.access,
                         &occurrence.business_product,
                     )?;
+                    super::super::custody::retain(self.runtime, execution, &installed, row)?;
                     super::super::progression::close::close(
                         self.runtime,
                         execution,
@@ -181,6 +182,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationResourcesRequest<'_, '_, '_
                     )
                 },
                 |mut row, ()| {
+                    super::super::custody::discharge(self.runtime, execution, &mut row)?;
                     let recovery = row
                         .occurrence_mut()
                         .recovery

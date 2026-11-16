@@ -3,12 +3,15 @@ use std::marker::PhantomData;
 use worth_relational::facade::identity::EntityId;
 
 mod committed_observation;
+mod recorded;
 
 /// Opaque creation-intent data issued by an authentic prepared workflow start.
 ///
 /// Retain this before execution to locate the original instance in a later
 /// governed read. It proves neither existence nor permission. Migration and fork
 /// preparation issue their successor's intent without changing the source's.
+/// Recorded decoding reconstructs locator DATA against an installed revision;
+/// only fresh governed discovery can establish its meaning in the current Home.
 ///
 /// The native getter returns owned data without input or schema Clone bounds.
 /// ```
@@ -24,7 +27,7 @@ mod committed_observation;
 ///     original
 /// }
 /// ```
-/// Construction is confined to the native canonical owner.
+/// Canonical issuance is confined to the native owner; recorded decoding grants no proof.
 /// ```compile_fail,E0624
 /// use worth_query_execution::publication_boundary::workflow_instance::WorthQueryWorkflowInstanceDiscoveryIntent;
 /// fn forge<S>() -> WorthQueryWorkflowInstanceDiscoveryIntent<S> {

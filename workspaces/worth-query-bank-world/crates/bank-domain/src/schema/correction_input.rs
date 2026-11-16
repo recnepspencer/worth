@@ -1,4 +1,4 @@
-//! Checked reconstruction of the three declared correctable source inputs.
+//! Checked reconstruction of recorded Bank input DATA.
 mod identities;
 mod inverse;
 pub(super) use inverse::{frozen, journal};
@@ -16,6 +16,22 @@ use identities::*;
 use serde::{de::DeserializeSeed, Deserialize};
 use std::marker::PhantomData;
 use worth_query_decl::facade::{application_operation::*, application_schema::*};
+
+pub(super) fn payment_identity<'de, D: serde::Deserializer<'de>>(
+    decoder: D,
+) -> Result<crate::model::PaymentId, D::Error> {
+    RecordedPaymentId::deserialize(decoder)?
+        .restore()
+        .ok_or_else(|| serde::de::Error::custom("invalid payment identity"))
+}
+
+pub(super) fn principal_identity<'de, D: serde::Deserializer<'de>>(
+    decoder: D,
+) -> Result<crate::model::BankPrincipalId, D::Error> {
+    RecordedPrincipalId::deserialize(decoder)?
+        .restore()
+        .ok_or_else(|| serde::de::Error::custom("invalid principal identity"))
+}
 
 pub(super) fn sent(
     bytes: &[u8],

@@ -145,6 +145,7 @@ where
             Ok(receipt) => receipt,
             Err(denial) => return Err((denial, recovery)),
         };
+        let advancement = phase;
         let WorthQueryUnpublishedRequiredApplicationMutation {
             recorded_input,
             source,
@@ -175,6 +176,7 @@ where
             }
         };
         let (prepared, retained) = match application.promote_program_output_source(
+            advancement,
             &worth_query_execution::publication_boundary::program_publication_access(),
             source,
             carrier,

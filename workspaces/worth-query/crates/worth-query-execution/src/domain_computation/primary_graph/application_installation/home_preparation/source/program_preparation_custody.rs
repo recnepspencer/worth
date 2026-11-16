@@ -58,6 +58,8 @@ pub(super) struct HomeProgramInstallationCustody<S:ApplicationSchemaComposition,
     pub(super) services:Option<HomeApplicationServices<S>>,
     pub(super) builder:Option<Box<BridgeConditionalRuntimeBuilder>>,
     pub(super) readiness:Vec<Box<dyn PendingOutputReadiness<S>>>,
+    temporal_pending: Vec<Box<dyn crate::domain_computation::primary_graph::conditional_operation::WorthQueryPendingConditionalOperation<S>>>,
+    pub(super) operations: Option<crate::domain_computation::primary_graph::conditional_operation::lifecycle::WorthQueryConditionalOperationRegistry<S>>,
     pub(super) definition_pending: Vec<Box<dyn crate::domain_computation::primary_graph::conditional_operation::PendingDefinitionDeclaration>>,
     pub(super) definition_routes: Option<crate::domain_computation::primary_graph::conditional_operation::definition_declarations::ConditionalDefinitionDeclarations>,
     pub(super) producer_routes:Option<WorthQueryInstalledOutputProducerRoutes>,
@@ -159,6 +161,8 @@ impl<S: ApplicationSchemaComposition, P> HomeProgramInstallationCustody<S, P> {
             services: None,
             builder: None,
             readiness: Vec::new(),
+            temporal_pending: Vec::new(),
+            operations: None,
             definition_pending: Vec::new(),
             definition_routes: None,
             producer_routes: None,
@@ -233,6 +237,7 @@ impl<S: ApplicationSchemaComposition, P> HomeProgramInstallationCustody<S, P> {
                 .producer_routes
                 .take()
                 .expect("original producer routes"),
+            operations: self.operations.take().expect("installed temporal routes"),
             definition_routes: self
                 .definition_routes
                 .take()

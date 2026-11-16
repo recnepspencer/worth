@@ -87,6 +87,7 @@ impl super::execution_view::BridgeConditionalExecutionView<'_> {
         let prepared = match self
             .bridge
             .prepare_installed_correspondence_envelope_to_targets(
+                self.correspondence_allocations,
                 correspondence,
                 targets,
                 self.signal_graph_instance_id,

@@ -1,10 +1,10 @@
 use crate::facade::{BridgeAsyncCompletionRejection, BridgeAsyncCompletionRejectionKind};
 
 use super::super::{
-    BridgeConditionalDenial, BridgeConditionalDenialKind, BridgeOwnedSignalRuntime,
+    BridgeConditionalDenial, BridgeConditionalDenialKind, BridgeConditionalExecutionView,
 };
 
-impl BridgeOwnedSignalRuntime {
+impl BridgeConditionalExecutionView<'_> {
     pub fn retire_owned_async_request(
         &self,
         request: &super::super::BridgeOwnedAsyncRequestAdmission,
@@ -22,20 +22,6 @@ impl BridgeOwnedSignalRuntime {
         Ok(report.cancelled_request().is_some())
     }
 
-    pub fn owned_signal_active_node_count(&self) -> Result<usize, BridgeConditionalDenial> {
-        self.signal_services()?
-            .conditional_extension_port()
-            .active_node_count()
-            .map_err(|denial| {
-                BridgeConditionalDenial::new(
-                    BridgeConditionalDenialKind::SignalExecution(
-                        super::super::BridgeSignalDenial::ConditionalExecution(denial.clone()),
-                    ),
-                    format!("Signal topology inspection failed: {denial:?}"),
-                )
-            })
-    }
-
     pub fn owned_async_active_request_count(
         &self,
         request: &super::super::BridgeOwnedAsyncRequestAdmission,
@@ -47,6 +33,22 @@ impl BridgeOwnedSignalRuntime {
                 BridgeAsyncCompletionRejection::new(
                     BridgeAsyncCompletionRejectionKind::SignalCompletionAdmissionUnavailable,
                     format!("owned async cleanup inspection denied: {denial:?}"),
+                )
+            })
+    }
+}
+
+impl super::super::BridgeOwnedSignalRuntime {
+    pub fn owned_signal_active_node_count(&self) -> Result<usize, BridgeConditionalDenial> {
+        self.signal_services()?
+            .conditional_extension_port()
+            .active_node_count()
+            .map_err(|denial| {
+                BridgeConditionalDenial::new(
+                    BridgeConditionalDenialKind::SignalExecution(
+                        super::super::BridgeSignalDenial::ConditionalExecution(denial.clone()),
+                    ),
+                    format!("Signal topology inspection failed: {denial:?}"),
                 )
             })
     }

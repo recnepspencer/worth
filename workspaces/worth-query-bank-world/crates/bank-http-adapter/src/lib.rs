@@ -56,7 +56,7 @@ pub use http::{
     BankHttpMutationRequest, BankHttpNativeCleanupDescription,
     BankHttpNativeCleanupFailureDescription, BankHttpNextAction, BankHttpPostingPurpose,
     BankHttpPreparedListener, BankHttpProcessAccount, BankHttpProcessAccountStatus,
-    BankHttpProcessColdCertification, BankHttpProcessConfiguration,
+    BankHttpProcessCloseRefused, BankHttpProcessColdCertification, BankHttpProcessConfiguration,
     BankHttpProcessConfigurationError, BankHttpProcessEstateAftermathWorld,
     BankHttpProcessEstateElevationWorld, BankHttpProcessEstateWorld,
     BankHttpProcessOidcConfiguration, BankHttpProcessParticipant, BankHttpProcessWorld,

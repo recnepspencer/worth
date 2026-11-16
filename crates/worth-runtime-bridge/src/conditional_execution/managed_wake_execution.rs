@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
 use super::{
-    BridgeConditionalDecisionEvidence, BridgeConditionalDenial, BridgeConditionalDenialKind,
-    BridgeConditionalExecutionRequest, BridgeInstalledConditionalLowering, BridgeManagedDueWake,
-    BridgeOwnedSignalRuntime,
+    execution_view::BridgeConditionalExecutionView, BridgeConditionalDecisionEvidence,
+    BridgeConditionalDenial, BridgeConditionalDenialKind, BridgeConditionalExecutionRequest,
+    BridgeInstalledConditionalLowering, BridgeManagedDueWake,
 };
 
 /// Exact managed-wake input for one Bridge-owned conditional evaluation.
@@ -22,7 +22,7 @@ pub struct BridgeManagedConditionalExecutionRequest<'a> {
     pub attempt: u64,
 }
 
-impl BridgeOwnedSignalRuntime {
+impl BridgeConditionalExecutionView<'_> {
     pub fn execute_managed_due_wake(
         &self,
         execution: worth_execution::ExecutionRequest<'_, '_>,

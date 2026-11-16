@@ -16,6 +16,7 @@ use super::BankHttpProcessWorld;
 
 #[derive(Deserialize)]
 pub struct BankHttpProcessConfiguration {
+    pub home_directory: std::path::PathBuf,
     pub oidc: BankHttpProcessOidcConfiguration,
     pub world: BankHttpProcessWorld,
     #[serde(default)]
@@ -41,12 +42,19 @@ pub struct BankHttpProcessOidcConfiguration {
     pub revocation_url: String,
 }
 
-#[derive(Debug)]
 pub enum BankHttpProcessConfigurationError {
     Oidc(AuthentikOidcConfigurationError),
     World,
     Identity(AuthentikBankIdentityBuildError),
-    ExternalRail(bank_server::BankExternalEffectTransportDenial),
+    Home(Box<bank_server::BankHomeOpenRefused>),
+    Authentication {
+        runtime: bank_server::BankIdentityRuntime,
+        denial: bank_server::BankAuthenticationBoundaryBuildError,
+    },
+    ExternalRail {
+        identity: AuthentikBankIdentity,
+        denial: bank_server::BankExternalEffectTransportDenial,
+    },
 }
 
 impl BankHttpProcessConfiguration {
@@ -66,14 +74,23 @@ impl BankHttpProcessConfiguration {
         let scope = WorthQueryRequestScope::new(
             Some(Instant::now() + Duration::from_secs(300)),
             cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
-        let identity = install_identity(oidc, world, self.cold_certification, &scope).await?;
+        let identity = install_identity(
+            oidc,
+            world,
+            self.home_directory,
+            self.cold_certification,
+            &scope,
+        )
+        .await?;
         if let Some(address) = external_rail {
-            identity
+            if let Err(denial) = identity
                 .runtime()
                 .install_external_effect_transport(Arc::new(
                     BankProcessRailTransport::connected_to(address),
                 ))
-                .map_err(BankHttpProcessConfigurationError::ExternalRail)?;
+            {
+                return Err(BankHttpProcessConfigurationError::ExternalRail { identity, denial });
+            }
         }
         Ok(identity)
     }
@@ -95,31 +112,33 @@ impl BankHttpProcessOidcConfiguration {
 async fn install_identity(
     oidc: AuthentikOidcConfiguration,
     world: bank_server::BankWorldSeed,
+    home_directory: std::path::PathBuf,
     cold_certification: Option<BankHttpProcessColdCertification>,
     scope: &WorthQueryRequestScope,
 ) -> Result<AuthentikBankIdentity, BankHttpProcessConfigurationError> {
-    if let Some(cold) = cold_certification {
-        return install_cold_identity(oidc, world, &cold.trusted_root_pem, scope).await;
+    use BankHttpProcessConfigurationError as Error;
+    let authentication = oidc
+        .bank_authentication_configuration()
+        .map_err(|cause| Error::Identity(AuthentikBankIdentityBuildError::Configuration(cause)))?;
+    let adapter = match cold_certification {
+        Some(cold) => {
+            crate::cold_certification_for_test::discover_adapter_for_test(
+                oidc,
+                Some(cold.trusted_root_pem.as_bytes()),
+                scope,
+            )
+            .await
+        }
+        None => crate::AuthentikOidcAdapter::discover(oidc, scope).await,
     }
-    AuthentikBankIdentity::install_world(oidc, world, scope)
-        .await
-        .map_err(BankHttpProcessConfigurationError::Identity)
-}
-
-async fn install_cold_identity(
-    oidc: AuthentikOidcConfiguration,
-    world: bank_server::BankWorldSeed,
-    trusted_root_pem: &str,
-    scope: &WorthQueryRequestScope,
-) -> Result<AuthentikBankIdentity, BankHttpProcessConfigurationError> {
-    crate::cold_certification_for_test::install_world_for_test(
-        oidc,
+    .map_err(|cause| Error::Identity(AuthentikBankIdentityBuildError::Adapter(cause)))?;
+    let runtime = bank_server::open_bank_application_home(
+        worth_query_host::facade::WorthQueryApplicationHomeLocation::Directory(home_directory),
         world,
-        Some(trusted_root_pem.as_bytes()),
-        scope,
     )
-    .await
-    .map_err(BankHttpProcessConfigurationError::Identity)
+    .map_err(|cause| Error::Home(Box::new(cause)))?;
+    AuthentikBankIdentity::attach_runtime(runtime, authentication, adapter)
+        .map_err(|(runtime, denial)| Error::Authentication { runtime, denial })
 }
 
 impl std::fmt::Display for BankHttpProcessConfigurationError {
@@ -128,9 +147,17 @@ impl std::fmt::Display for BankHttpProcessConfigurationError {
             Self::Oidc(error) => error.fmt(formatter),
             Self::World => formatter.write_str("invalid Bank HTTP process world"),
             Self::Identity(error) => error.fmt(formatter),
-            Self::ExternalRail(error) => error.fmt(formatter),
+            Self::Home(error) => error.fmt(formatter),
+            Self::Authentication { denial, .. } => denial.fmt(formatter),
+            Self::ExternalRail { denial, .. } => denial.fmt(formatter),
         }
     }
 }
 
 impl std::error::Error for BankHttpProcessConfigurationError {}
+
+impl std::fmt::Debug for BankHttpProcessConfigurationError {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(self, formatter)
+    }
+}

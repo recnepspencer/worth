@@ -47,11 +47,20 @@ where
                     .filter_map(|root| root.dependencies.as_ref()),
             ),
         )?;
+        application
+            .complete_program_output_source(
+                phase,
+                &worth_query_execution::publication_boundary::program_publication_access(),
+                &self.source_receipt,
+            )
+            .map_err(|cause| {
+                WorthQueryRequiredOutputPreparationDenial::Demand(
+                    crate::application_entry::WorthQueryApplicationOutputDemandDenial::Demand(
+                        cause,
+                    ),
+                )
+            })?;
         self.admission.dependencies = None;
-        application.complete_program_output_source(
-            &worth_query_execution::publication_boundary::program_publication_access(),
-            &self.source_receipt,
-        );
         self.source_lease.take();
         self.complete = true;
         let settled_count = self

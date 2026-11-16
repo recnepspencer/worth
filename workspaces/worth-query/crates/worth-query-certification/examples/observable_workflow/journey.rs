@@ -10,36 +10,39 @@ use std::{
 use worth_query_host::facade::application_entry::*;
 
 pub fn run() {
-    // Bootstrap runs before any workflow request/progress frame is active.
-    let application = crate::document_retention_model::installation::publish();
-    // All original native owners and references die when execute returns.
-    let captured = execute(application);
-    crate::restoration::inspect(captured);
-}
-
-// Keep the workflow request frame separate from bootstrap and restoration.
-#[inline(never)]
-fn execute(application: MixedApplication) -> crate::restoration::CapturedJourney {
-    let runtime = application.runtime();
-    let directory = std::env::temp_dir().join(format!(
-        "worth-observable-{}-{}",
+    let home_directory = std::env::temp_dir().join(format!(
+        "worth-observable-home-{}-{}",
         std::process::id(),
         SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_nanos()
     ));
-    let archive = Arc::new(crate::archive::ArchiveTransport::new(directory.clone()));
-    runtime
-        .install_external_effect_transport(archive.clone())
-        .expect("install the actual archive transport");
-    let operation = runtime
-        .installed_schema()
-        .installed_operation(crate::effect::ArchiveOperation::reference())
-        .unwrap();
-    let verifier = runtime
-        .install_inbound_occurrence_verifier(&operation, archive.clone())
-        .unwrap();
+    let (home, application) = crate::document_retention_model::installation::open(
+        &home_directory,
+        crate::resource_monitor::Configuration::default(),
+    );
+    let (original_start, expected_start) = start_and_wait(&application);
+    drop(application);
+    crate::document_retention_model::installation::close(home);
+
+    let (home, application) = crate::document_retention_model::installation::open(
+        &home_directory,
+        crate::resource_monitor::Configuration::default(),
+    );
+    let captured = execute(application, original_start, expected_start, home_directory);
+    crate::document_retention_model::installation::close(home);
+    crate::restoration::inspect(captured);
+}
+
+#[inline(never)]
+fn start_and_wait(
+    application: &MixedApplication,
+) -> (
+    WorthQueryWorkflowInstanceDiscoveryIntent<DocumentRetentionSchema>,
+    [u64; 3],
+) {
+    let runtime = application.runtime();
     let scope = request_scope();
     let actor = authenticate_operator(runtime.installed_schema(), &scope);
     let definition = crate::definition::definition();
@@ -70,10 +73,10 @@ fn execute(application: MixedApplication) -> crate::restoration::CapturedJourney
         })
         .without_source()
         .idempotency(&2_u64)
-        .prepare_workflow_instance_start(&application, definition.clone())
+        .prepare_workflow_instance_start(application, definition.clone())
         .unwrap();
     let original_start = prepared.discovery_intent();
-    crate::discovery::inspect_missing(&application, &original_start);
+    crate::discovery::inspect_missing(application, &original_start);
     let (instance, expected_start) = match prepared.execute() {
         WorkflowInstanceStartOutcome::Started(started) => {
             let principal = started.receipt().principal_scope().principal();
@@ -88,8 +91,7 @@ fn execute(application: MixedApplication) -> crate::restoration::CapturedJourney
         }
         other => panic!("original native start: {other:?}"),
     };
-    // compiled-example: begin
-    let waiting = advance(&application, &instance, &[10, 11]);
+    let waiting = advance(application, &instance, &[10, 11]);
     let WorthQueryOrdinaryWorkflowRunStop::Outcome(WorkflowProgressOutcome::AwaitingProposal(need)) =
         waiting.stop()
     else {
@@ -107,6 +109,39 @@ fn execute(application: MixedApplication) -> crate::restoration::CapturedJourney
             .as_str()
     );
     assert!(waiting.transitions().is_empty());
+    (original_start, expected_start)
+}
+
+#[inline(never)]
+fn execute(
+    application: MixedApplication,
+    original_start: WorthQueryWorkflowInstanceDiscoveryIntent<DocumentRetentionSchema>,
+    expected_start: [u64; 3],
+    home_directory: std::path::PathBuf,
+) -> crate::restoration::CapturedJourney {
+    let (definition, instance) = crate::discovery::reacquire(&application, &original_start);
+    let runtime = application.runtime();
+    let scope = request_scope();
+    let actor = authenticate_operator(runtime.installed_schema(), &scope);
+    let waiting = advance(&application, &instance, &[10, 11]);
+    assert!(
+        matches!(waiting.stop(), WorthQueryOrdinaryWorkflowRunStop::Outcome(
+        WorkflowProgressOutcome::AwaitingProposal(need)) if need.node_path() == "propose"),
+        "reopen must preserve the original proposal wait: {waiting:?}"
+    );
+    let directory = home_directory.with_extension("archive");
+    let archive = Arc::new(crate::archive::ArchiveTransport::new(directory.clone()));
+    runtime
+        .install_external_effect_transport(archive.clone())
+        .expect("install the actual archive transport");
+    let operation = runtime
+        .installed_schema()
+        .installed_operation(crate::effect::ArchiveOperation::reference())
+        .unwrap();
+    let verifier = runtime
+        .install_inbound_occurrence_verifier(&operation, archive.clone())
+        .unwrap();
+    // compiled-example: begin
     let proposal = runtime
         .request(&actor, &scope)
         .on_branch(instance.branch())
@@ -192,14 +227,8 @@ fn execute(application: MixedApplication) -> crate::restoration::CapturedJourney
         .iter()
         .any(|transition| transition.node_path() == "archive-completion"));
     crate::restoration::assert_archive(&directory);
-    let checkpoint = runtime.with_host_advancement(|phase| {
-        runtime.capture_application_checkpoint(
-            &phase,
-            worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy::SystemAllocation,
-        ).expect("capture current native terminal truth after original operation cleanup")
-    }).expect("installed host capture opens");
     crate::restoration::CapturedJourney {
-        checkpoint,
+        home_directory,
         original_start,
         expected_start,
         expected_proposer,

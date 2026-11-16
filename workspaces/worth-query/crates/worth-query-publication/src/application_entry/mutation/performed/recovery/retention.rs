@@ -142,6 +142,7 @@ where
         } = failure;
         let (_, _, source, carrier) = custody.into_parts();
         match application.promote_program_output_source(
+            phase,
             &worth_query_execution::publication_boundary::program_publication_access(),
             source,
             carrier,

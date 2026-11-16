@@ -10,6 +10,7 @@ mod fork_publication;
 mod fork_section;
 mod framing;
 mod layout;
+mod owned_async;
 mod programme_affinity;
 mod provider_source;
 pub(super) mod publication;
@@ -37,7 +38,7 @@ use worth_signal::facade::durability::SignalBridgeAuthoredSection;
 pub const BRIDGE_AUTHORED_SECTION_PROTOCOL: BoundaryProtocolIdentity =
     BoundaryProtocolIdentity::new("worth.bridge.authored-section");
 pub const BRIDGE_AUTHORED_SECTION_VERSION: BoundaryProtocolVersion =
-    BoundaryProtocolVersion::new(2);
+    BoundaryProtocolVersion::new(3);
 
 #[derive(Debug)]
 pub enum BridgeAuthoredSectionDenial {

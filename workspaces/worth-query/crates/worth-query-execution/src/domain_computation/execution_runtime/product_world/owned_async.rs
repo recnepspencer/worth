@@ -3,7 +3,7 @@ use super::WorthQueryProductRuntime;
 impl WorthQueryProductRuntime {
     pub(in crate::domain_computation) fn admit_managed_owned_async_request(
         &self,
-        bridge: &worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly,
+        bridge: &worth_runtime_bridge::facade::BridgeConditionalExecutionView<'_>,
         declaration: &worth_runtime_bridge::facade::LoweredBridgeAsyncSourceDeclaration,
         selected: &crate::basis::WorthQueryProductBranchLease,
     ) -> Result<
@@ -22,7 +22,7 @@ impl WorthQueryProductRuntime {
 
     pub(in crate::domain_computation) fn advance_owned_async_source_clock(
         &self,
-        bridge: &worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly,
+        bridge: &worth_runtime_bridge::facade::BridgeConditionalExecutionView<'_>,
         declaration: &worth_runtime_bridge::facade::LoweredBridgeAsyncSourceDeclaration,
         selected: &crate::basis::WorthQueryProductBranchLease,
         coordinate: u64,
@@ -43,7 +43,7 @@ impl WorthQueryProductRuntime {
 
     pub fn admit_unqueued_owned_async_request(
         &self,
-        bridge: &worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly,
+        bridge: &worth_runtime_bridge::facade::BridgeConditionalExecutionView<'_>,
         declaration: &worth_runtime_bridge::facade::LoweredBridgeAsyncSourceDeclaration,
         selected: &crate::basis::WorthQueryProductBranchLease,
     ) -> Result<
@@ -62,7 +62,7 @@ impl WorthQueryProductRuntime {
 
     pub fn admit_unqueued_owned_async_request_at_branch_head(
         &self,
-        bridge: &worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly,
+        bridge: &worth_runtime_bridge::facade::BridgeConditionalExecutionView<'_>,
         declaration: &worth_runtime_bridge::facade::LoweredBridgeAsyncSourceDeclaration,
         selected: &crate::basis::WorthQueryProductBranchLease,
     ) -> Result<
@@ -81,7 +81,7 @@ impl WorthQueryProductRuntime {
 
     pub fn revalidate_custodied_owned_async_request(
         &self,
-        bridge: &worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly,
+        bridge: &worth_runtime_bridge::facade::BridgeConditionalExecutionView<'_>,
         request: &mut worth_runtime_bridge::facade::BridgeOwnedAsyncManagedRequestAdmission,
         selected: &crate::basis::WorthQueryProductBranchLease,
     ) -> Result<

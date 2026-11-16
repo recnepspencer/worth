@@ -1,4 +1,4 @@
-use super::super::BridgeOwnedSignalRuntime;
+use super::super::BridgeConditionalExecutionView;
 use super::{
     BridgeOwnedAsyncCommittedCompletion, BridgeOwnedAsyncManagedDenial as Denial,
     BridgeOwnedAsyncManagedRequestAdmission as Custodian,
@@ -38,7 +38,7 @@ impl BridgeOwnedAsyncResourceReleaseRefusal {
     }
 }
 
-impl BridgeOwnedSignalRuntime {
+impl BridgeConditionalExecutionView<'_> {
     pub fn abort_process_local_owned_async_retry(
         &self,
         owner: &mut Custodian,

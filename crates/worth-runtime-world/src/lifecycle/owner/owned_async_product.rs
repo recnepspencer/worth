@@ -35,7 +35,6 @@ pub enum RuntimeWorldOwnedAsyncManagedRevalidationDenial {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum RuntimeWorldOwnedAsyncProductValidationDenial {
     StaleIncarnation,
-    DurablePublicationRequired,
     ForeignOwner,
     RelationalSourceMismatch,
     NoCommittedSource,
@@ -51,7 +50,7 @@ where
 {
     pub(crate) fn advance_owned_async_source_clock(
         &self,
-        bridge: &worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly,
+        bridge: &worth_runtime_bridge::facade::BridgeConditionalExecutionView<'_>,
         declaration: &worth_runtime_bridge::facade::LoweredBridgeAsyncSourceDeclaration,
         observation: &ProductBranchObservation,
         relational_source: &worth_runtime_bridge::facade::RelationalBridgeObservationLease,
@@ -75,7 +74,7 @@ where
 
     pub(crate) fn revalidate_managed_owned_async_request(
         &self,
-        bridge: &worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly,
+        bridge: &worth_runtime_bridge::facade::BridgeConditionalExecutionView<'_>,
         request: &mut worth_runtime_bridge::facade::BridgeOwnedAsyncManagedRequestAdmission,
         observation: &ProductBranchObservation,
         relational_source: &worth_runtime_bridge::facade::RelationalBridgeObservationLease,
@@ -89,9 +88,6 @@ where
                 RuntimeWorldOwnedAsyncProductValidationDenial::StaleIncarnation => {
                     RuntimeWorldOwnedAsyncManagedRevalidationDenial::StaleIncarnation
                 }
-                RuntimeWorldOwnedAsyncProductValidationDenial::DurablePublicationRequired => {
-                    RuntimeWorldOwnedAsyncManagedRevalidationDenial::DurablePublicationRequired
-                }
                 RuntimeWorldOwnedAsyncProductValidationDenial::ForeignOwner => {
                     RuntimeWorldOwnedAsyncManagedRevalidationDenial::ForeignOwner
                 }
@@ -102,6 +98,11 @@ where
                     RuntimeWorldOwnedAsyncManagedRevalidationDenial::NoCommittedSource
                 }
             })?;
+        if self.state.durable.is_some() {
+            bridge
+                .require_process_local_owned_async_owner(request)
+                .map_err(RuntimeWorldOwnedAsyncManagedRevalidationDenial::Bridge)?;
+        }
         bridge
             .revalidate_managed_owned_async_request(
                 request,
@@ -113,7 +114,7 @@ where
 
     pub(crate) fn admit_managed_owned_async_request(
         &self,
-        bridge: &worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly,
+        bridge: &worth_runtime_bridge::facade::BridgeConditionalExecutionView<'_>,
         declaration: &worth_runtime_bridge::facade::LoweredBridgeAsyncSourceDeclaration,
         observation: &ProductBranchObservation,
         relational_source: &worth_runtime_bridge::facade::RelationalBridgeObservationLease,
@@ -124,6 +125,11 @@ where
         let truth_basis = self
             .validate_owned_async_product(observation, relational_source)
             .map_err(request_product_denial)?;
+        if self.state.durable.is_some() {
+            bridge
+                .require_process_local_owned_async_declaration(declaration)
+                .map_err(RuntimeWorldOwnedAsyncRequestAdmissionDenial::Bridge)?;
+        }
         bridge
             .admit_managed_owned_async_request_identity(
                 declaration,
@@ -135,7 +141,7 @@ where
 
     pub(crate) fn admit_unqueued_owned_async_request(
         &self,
-        bridge: &worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly,
+        bridge: &worth_runtime_bridge::facade::BridgeConditionalExecutionView<'_>,
         declaration: &worth_runtime_bridge::facade::LoweredBridgeAsyncSourceDeclaration,
         observation: &ProductBranchObservation,
         relational_source: &worth_runtime_bridge::facade::RelationalBridgeObservationLease,
@@ -143,6 +149,10 @@ where
         worth_runtime_bridge::facade::BridgeOwnedAsyncManagedRequestAdmission,
         RuntimeWorldOwnedAsyncRequestAdmissionDenial,
     > {
+        if self.state.durable.is_some() {
+            return Err(RuntimeWorldOwnedAsyncRequestAdmissionDenial::DurablePublicationRequired);
+        }
+
         let truth = self
             .validate_owned_async_product(observation, relational_source)
             .map_err(request_product_denial)?;
@@ -159,7 +169,7 @@ where
     /// or fresh currentness. The committed entrance remains separate.
     pub(crate) fn admit_unqueued_owned_async_request_at_branch_head(
         &self,
-        bridge: &worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly,
+        bridge: &worth_runtime_bridge::facade::BridgeConditionalExecutionView<'_>,
         declaration: &worth_runtime_bridge::facade::LoweredBridgeAsyncSourceDeclaration,
         observation: &ProductBranchObservation,
         relational_source: &worth_runtime_bridge::facade::RelationalBridgeObservationLease,
@@ -167,6 +177,10 @@ where
         worth_runtime_bridge::facade::BridgeOwnedAsyncManagedRequestAdmission,
         RuntimeWorldOwnedAsyncRequestAdmissionDenial,
     > {
+        if self.state.durable.is_some() {
+            return Err(RuntimeWorldOwnedAsyncRequestAdmissionDenial::DurablePublicationRequired);
+        }
+
         self.require_owned_async_source(observation, relational_source)
             .map_err(request_product_denial)?;
         let relational = observation.basis().relational_basis().observation();
@@ -225,9 +239,6 @@ where
             }
             Err(worth_proof::HomeIncarnationDenial::ForeignHome) | Ok(()) => {}
         }
-        if self.state.durable.is_some() {
-            return Err(RuntimeWorldOwnedAsyncProductValidationDenial::DurablePublicationRequired);
-        }
         if observation.owner_identity() != self.owner_identity() {
             return Err(RuntimeWorldOwnedAsyncProductValidationDenial::ForeignOwner);
         }
@@ -244,9 +255,6 @@ fn request_product_denial(
     match denial {
         RuntimeWorldOwnedAsyncProductValidationDenial::StaleIncarnation => {
             RuntimeWorldOwnedAsyncRequestAdmissionDenial::StaleIncarnation
-        }
-        RuntimeWorldOwnedAsyncProductValidationDenial::DurablePublicationRequired => {
-            RuntimeWorldOwnedAsyncRequestAdmissionDenial::DurablePublicationRequired
         }
         RuntimeWorldOwnedAsyncProductValidationDenial::ForeignOwner => {
             RuntimeWorldOwnedAsyncRequestAdmissionDenial::ForeignOwner

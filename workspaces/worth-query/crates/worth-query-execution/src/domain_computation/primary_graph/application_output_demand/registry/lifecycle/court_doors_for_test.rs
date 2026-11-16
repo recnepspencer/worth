@@ -7,7 +7,7 @@ impl WorthQueryOutputDemandRegistry {
         &self,
         receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
     ) {
-        Self::complete_prepared_source(self, receipt)
+        Self::complete_prepared_source(self, &receipt.into())
     }
 }
 

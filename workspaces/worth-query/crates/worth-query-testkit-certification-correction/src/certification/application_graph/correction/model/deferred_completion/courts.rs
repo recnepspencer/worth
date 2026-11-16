@@ -191,6 +191,8 @@ pub(super) fn run(worker: bool) {
     let unavailable = unavailable.unwrap();
     assert!(unavailable
         .source_receipt()
+        .retained_receipt()
+        .expect("the actual deferred inverse retains its performed source receipt")
         .is_same_authoritative_commit(&source));
     assert_eq!(
         unavailable

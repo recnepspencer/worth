@@ -10,10 +10,10 @@ impl<'application, 'principal, 'scope, Schema>
 where
     Schema: ApplicationSchema + 'static,
 {
-    pub fn recover_discovered_required_outputs<Program, Root>(
+    pub fn recover_discovered_required_outputs<'receipt, Program, Root>(
         &self,
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
-        receipt: &WorthQueryApplicationCommitReceipt,
+        receipt: impl Into<worth_query_execution::facade::primary_graph::WorthQueryOutputSourceReplay<'receipt>>,
         controls: WorthQueryOutputDemandControls,
     ) -> Result<
         WorthQueryDiscoveredProgramOutputHandle<Schema, Program, Root>,
@@ -44,6 +44,6 @@ where
             >,
 {
         self.request
-            .recover_discovered_required_outputs(application, receipt, controls)
+            .recover_discovered_required_outputs(application, receipt.into(), controls)
     }
 }

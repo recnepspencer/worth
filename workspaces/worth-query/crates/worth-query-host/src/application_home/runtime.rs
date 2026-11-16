@@ -9,6 +9,20 @@ pub struct WorthQueryApplicationHome<Schema, Program> {
     pub(super) directory: Option<DirectoryHome>,
     pub(super) checkpoint_limits: worth_store_application::ApplicationHomeCheckpointLimits,
 }
+impl<Schema, Program> WorthQueryApplicationHome<Schema, Program>
+where
+    Schema: worth_query_declaration::facade::application_schema::ApplicationSchemaComposition,
+{
+    /// Retain this installation's invariant projection for application command owners.
+    /// Reopening retains the readmitted installation; no initializer is replayed.
+    pub fn retain_invariant_projection_authority(
+        &self,
+    ) -> worth_query_execution::facade::primary_graph::WorthQueryApplicationInvariantProjectionAuthority<Schema>{
+        worth_query_execution::facade::application_home_integration::retain_home_invariant_projection(
+            &self.query,
+        )
+    }
+}
 impl<Schema, Program> WorthQueryApplicationHome<Schema, Program> {
     pub fn runtime(&self) -> &WorthQueryProgramApplicationRuntime<Schema, Program> {
         &self.query

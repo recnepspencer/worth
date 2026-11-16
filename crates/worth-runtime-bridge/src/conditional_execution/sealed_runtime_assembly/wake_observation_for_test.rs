@@ -14,7 +14,9 @@ impl BridgeSealedRuntimeAssembly {
         ),
         crate::facade::BridgeAsyncCompletionRejection,
     > {
-        self.runtime.owned_async_retention_storage_for_test(request)
+        self.runtime
+            .execution_view()
+            .owned_async_retention_storage_for_test(request)
     }
 
     #[doc(hidden)]
@@ -23,6 +25,8 @@ impl BridgeSealedRuntimeAssembly {
         request: &BridgeOwnedAsyncRequestAdmission,
     ) -> Result<(TemporalWakeSummary, TemporalFrontierSnapshot), BridgeAsyncCompletionRejection>
     {
-        self.runtime.owned_async_wake_frontier_for_test(request)
+        self.runtime
+            .execution_view()
+            .owned_async_wake_frontier_for_test(request)
     }
 }

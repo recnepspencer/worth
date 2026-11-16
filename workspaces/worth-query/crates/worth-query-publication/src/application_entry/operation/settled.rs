@@ -81,6 +81,25 @@ where
         ApplicationFixedActionDelivery<Schema, Binding<Schema, Intent>, Root = Root>,
 {
     /// The original owner-issued branch selector for fresh delivery and close context.
+    pub fn handoff_for_reopen(
+        mut self,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
+    ) -> Result<
+        (WorthQueryOriginalOperation, WorthQueryClosedOperation),
+        (Self, WorthQueryOperationCloseDenial),
+    > {
+        let original = match self.delivery.description.original_lookup() {
+            Ok(original) => original,
+            Err(cause) => return Err((self, WorthQueryOperationCloseDenial::Original(cause))),
+        };
+        if let Err(cause) = original.admit(request) {
+            return Err((self, WorthQueryOperationCloseDenial::Original(cause)));
+        }
+        match self.release_native_cleanup(request) {
+            Ok(cleanup) => Ok((original, cleanup)),
+            Err(cause) => Err((self, cause)),
+        }
+    }
     pub fn branch(&self) -> worth_query_execution::facade::product::WorthQueryProductBranch {
         self.delivery.description.branch
     }

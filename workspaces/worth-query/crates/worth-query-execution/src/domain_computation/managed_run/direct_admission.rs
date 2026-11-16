@@ -61,6 +61,30 @@ impl WorthQueryManagedRunAdmission<'_> {
                 resource_attempt,
             ));
         }
+        let (identity, pending) = match self
+            .query
+            .managed_run_custody
+            .issue(resource_attempt.attempt_identity().as_str(), &execution)
+        {
+            Ok(issued) => issued,
+            Err(cause) => {
+                return Err(WorthQueryManagedDirectRunAdmissionFailure::new(
+                    WorthQueryManagedDirectRunAdmissionFailureKind::DurableCustody,
+                    format!("managed work retention: {cause:?}"),
+                    resource_attempt,
+                )
+                .with_custody_denial(cause))
+            }
+        };
+        if let Some(cause) = pending {
+            return Err(WorthQueryManagedDirectRunAdmissionFailure::new(
+                WorthQueryManagedDirectRunAdmissionFailureKind::DurableCustody,
+                format!("managed work retention pending: {cause:?}"),
+                resource_attempt,
+            )
+            .with_custody(identity.custody)
+            .with_custody_denial(cause));
+        }
         let admit_lower = match resource_attempt.resources().envelope().boundary() {
             WorthQueryExecutionBoundary::Atomic => admit_atomic_lower_execution_basis,
             WorthQueryExecutionBoundary::BoundedStep => admit_managed_lower_execution_basis,
@@ -111,7 +135,8 @@ impl WorthQueryManagedRunAdmission<'_> {
                     kind,
                     failure.detail,
                     resource_attempt,
-                ));
+                )
+                .with_custody(identity.custody));
             }
         };
         let counters = match validate_direct_run_lower(
@@ -128,7 +153,8 @@ impl WorthQueryManagedRunAdmission<'_> {
                     WorthQueryManagedDirectRunAdmissionFailureKind::ManagedAuthorityJoin,
                     denial.detail(),
                     resource_attempt,
-                ));
+                )
+                .with_custody(identity.custody));
             }
         };
         Ok(WorthQueryAdmittedDirectRun::new(
@@ -137,6 +163,7 @@ impl WorthQueryManagedRunAdmission<'_> {
             lower.bridge,
             lower.relational,
             counters,
+            identity,
         ))
     }
 }

@@ -1,5 +1,5 @@
 use super::super::{
-    BridgeOwnedAsyncRetrySchedule, BridgeOwnedAsyncTimeoutAdmission, BridgeOwnedSignalRuntime,
+    BridgeConditionalExecutionView, BridgeOwnedAsyncRetrySchedule, BridgeOwnedAsyncTimeoutAdmission,
 };
 use super::{
     BridgeOwnedAsyncManagedDenial as Denial, BridgeOwnedAsyncManagedRequestAdmission as Custodian,
@@ -8,7 +8,7 @@ use worth_signal::facade::branch::{
     SignalOwnedAsyncManagedProgress, SignalOwnedAsyncManagedReport,
 };
 
-impl BridgeOwnedSignalRuntime {
+impl BridgeConditionalExecutionView<'_> {
     pub fn advance_managed_owned_async_request_to_timeout(
         &self,
         owner: &mut Custodian,

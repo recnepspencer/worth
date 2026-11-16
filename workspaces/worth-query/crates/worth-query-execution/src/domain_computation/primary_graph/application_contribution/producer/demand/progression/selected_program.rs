@@ -175,7 +175,13 @@ where
                 format!("selected-program output {identity:?} revision {revision} is not active"),
             ));
         }
-        self.advance_as_caller(demand, |demand, performed| {
+        self.readmit_recorded_prerequisites(
+            &execution,
+            principal,
+            request_scope,
+            demand.interest.as_ref(),
+        )?;
+        self.advance_as_caller(&execution, demand, |demand, performed| {
             self.advance_output_demand_with_prepared_source(
                 execution,
                 phase,

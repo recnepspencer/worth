@@ -28,45 +28,64 @@ where
     Schema: ApplicationSchema,
     Binding: ApplicationResourceBinding<Schema>,
 {
-    let index = installed
-        .storage
-        .take_native()
-        .map_err(ResourceCause::Storage)?;
-    row.occurrence_mut().native_slot = Some(index);
+    let slot = installed.storage.take_native();
+    if let Ok(index) = slot {
+        row.occurrence_mut().native_slot = Some(index);
+    }
+    super::custody::retain(runtime, execution, installed, row)?;
+    let index = slot.map_err(ResourceCause::Storage)?;
     let slot = &installed.storage.nodes[index];
     execution.consult().map_err(ResourceCause::Request)?;
     let reading = installed.clock.observe().map_err(ResourceCause::Clock)?;
     execution.consult().map_err(ResourceCause::Request)?;
     let clock = runtime
         .runtime
-        .product_runtime
-        .advance_owned_async_source_clock(
-            runtime
-                .runtime
-                .bridge
-                .conditional()
-                .memory()
-                .map_err(ResourceCause::Bridge)?,
-            &slot.declaration,
-            &row.occurrence().business_product,
-            reading.nanoseconds,
+        .bridge
+        .conditional()
+        .with_view(
+            row.occurrence()
+                .business_product
+                .observation()
+                .basis()
+                .signal_basis(),
+            |bridge| {
+                runtime
+                    .runtime
+                    .product_runtime
+                    .advance_owned_async_source_clock(
+                        &bridge,
+                        &slot.declaration,
+                        &row.occurrence().business_product,
+                        reading.nanoseconds,
+                    )
+            },
         )
+        .map_err(ResourceCause::Bridge)?
         .map_err(ResourceCause::Native)?;
     row.occurrence_mut().lifecycle = ResourceLifecycle::Reserved { clock: Some(clock) };
     execution.consult().map_err(ResourceCause::Request)?;
     let owner = runtime
         .runtime
-        .product_runtime
-        .admit_managed_owned_async_request(
-            runtime
-                .runtime
-                .bridge
-                .conditional()
-                .memory()
-                .map_err(ResourceCause::Bridge)?,
-            &slot.declaration,
-            &row.occurrence().business_product,
+        .bridge
+        .conditional()
+        .with_view(
+            row.occurrence()
+                .business_product
+                .observation()
+                .basis()
+                .signal_basis(),
+            |bridge| {
+                runtime
+                    .runtime
+                    .product_runtime
+                    .admit_managed_owned_async_request(
+                        &bridge,
+                        &slot.declaration,
+                        &row.occurrence().business_product,
+                    )
+            },
         )
+        .map_err(ResourceCause::Bridge)?
         .map_err(ResourceCause::Native)?;
     let refused = owner.refusal();
     let clock = std::mem::replace(
@@ -92,6 +111,7 @@ where
             &row.occurrence().business_product,
         )?;
     }
+    super::custody::record_request(runtime, execution, row)?;
     start_provider(execution, installed, row, input)
 }
 

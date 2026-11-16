@@ -89,7 +89,6 @@ impl ApplicationQueryIntent<TemporalHostSchema> for TemporalIntentRead {
 
 #[derive(Clone, Debug)]
 pub struct AmendTemporalIntent {
-    pub identity: String,
     pub amendment: AmendTemporalInput,
 }
 
@@ -170,6 +169,17 @@ impl ApplicationMutationIntent<TemporalHostSchema> for AmendTemporalIntent {
     }
 
     fn scope_binding(&self) -> AmendTemporalScope {
+        <AmendTemporalInput as worth_query_decl::facade::application_operation::ApplicationMutationInputScope<TemporalHostSchema, AmendTemporalBinding>>::scope_for_binding(&self.amendment)
+    }
+}
+
+impl
+    worth_query_decl::facade::application_operation::ApplicationMutationInputScope<
+        TemporalHostSchema,
+        AmendTemporalBinding,
+    > for AmendTemporalInput
+{
+    fn scope_for_binding(&self) -> AmendTemporalScope {
         AmendTemporalScope::new(
             IntentIdentityField::at("IntentIdentityField"),
             self.identity.clone(),
@@ -190,7 +200,7 @@ impl OperationHandler<TemporalHostSchema, AmendTemporalBinding> for AmendTempora
     > {
         let entity = match reader.resolve_entity(
             IntentIdentityField::at("IntentIdentityField"),
-            "intent-1".to_owned(),
+            input.identity.clone(),
         ) {
             Ok(entity) => entity,
             Err(error) => return HandlerResult::ExecutionDenied(error),

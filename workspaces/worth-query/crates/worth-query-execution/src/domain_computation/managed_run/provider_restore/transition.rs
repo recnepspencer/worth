@@ -199,6 +199,7 @@ fn finish_restore(
                 "provider checkpoint panicked after replacement execution was restored",
                 checkpoint_release,
                 restored_execution,
+                memory,
             ),
         );
     }

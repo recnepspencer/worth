@@ -154,6 +154,31 @@ not reconstruct custody from a receipt, slot ordinal or display digest. Missing
 original scope similarly retains the old obligation rather than assigning it to
 a same-name successor.
 
+## Declared resources across graceful Home reopen
+
+Directory installation records the owned-async declaration meaning and issues
+fresh Native ports after reopen. A resource records its original binding,
+branch/commit, input and scope/parameter provenance before provider contact.
+Graceful Home close freezes accepted ingress before discarding its backing,
+then invokes the same original provider, queue and Native cleanup owners.
+A Pending provider or refused Native release refuses Home close and retains the
+original owner. An owned-effect resource still requires its explicit
+`close_for_effect_recovery` handoff; Home cannot discard that recovery handle.
+
+Retain `handle.obligation_identity()` (also on its receipt) for that exact
+original work. It is descriptive DATA and grants no action or disclosure.
+After close/reopen, `application_resources(...).retained_state::<Binding>(&input, identity)`
+returns the original obligation and recorded terminal posture under fresh
+State admission. `with_retained_result` uses the Result facet and admitted typed
+decoder. When metadata is governed, supply the fresh admitted capability to
+`retained_state_governed` or `with_retained_result_governed`; action permission
+alone does not disclose metadata. Accepted but unverified ingress is retained as bytes and cannot become
+a result. `discharge_retained` uses Close admission to discharge only logical
+custody with a recorded actual release. It neither starts a replacement provider
+nor manufactures a Native released capability from the record. A quiescent kill
+without recorded release leaves typed pending custody; cold physical discharge
+is the C3 owner contract.
+
 ## External work across graceful Home reopen
 
 A supported Directory Home records an external dispatch attempt before contact

@@ -29,6 +29,7 @@ pub(super) enum ResourceStorageDenial {
 
 pub(super) struct NativeResourceSlot {
     pub(super) declaration: LoweredBridgeAsyncSourceDeclaration,
+    pub(super) source: worth_runtime_bridge::facade::BridgeOwnedAsyncDeclarationDescription,
     pub(super) ingress: Arc<IngressBacking>,
     next_free: Mutex<Option<usize>>,
 }
@@ -67,6 +68,33 @@ impl ResourceStorage {
         &self,
     ) -> bool {
         self.rows.iter().any(|slot| lock(slot).allocated)
+    }
+    /// Home retirement has exclusive application custody; Busy still refuses.
+    pub(super) fn allocated_keys(&self) -> Vec<ResourceRowKey> {
+        self.rows
+            .iter()
+            .enumerate()
+            .filter_map(|(index, slot)| {
+                let slot = lock(slot);
+                slot.allocated.then_some(ResourceRowKey {
+                    index,
+                    generation: slot.generation,
+                })
+            })
+            .collect()
+    }
+    pub(super) fn retains_obligation(
+        &self,
+        identity: worth_foundational::facade::OwnedAsyncObligationIdentity,
+    ) -> bool {
+        self.rows.iter().any(|slot| {
+            let slot = lock(slot);
+            slot.allocated
+                && slot
+                    .occurrence
+                    .as_ref()
+                    .is_none_or(|row| row.obligation == Some(identity))
+        })
     }
     /// Called only after the genuine fresh action/facets have been admitted.
     /// The fixed row remains allocated while an action has its payload out.

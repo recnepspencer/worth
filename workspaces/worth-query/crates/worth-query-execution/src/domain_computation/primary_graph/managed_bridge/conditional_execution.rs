@@ -2,10 +2,10 @@
 use std::sync::{Arc, RwLockReadGuard};
 use worth_execution::ExecutionRequest;
 use worth_runtime_bridge::facade::{
-    BridgeAuthoredConditionalDeclaration, BridgeAuthoredConditionalExecution,
-    BridgeConditionalDecisionEvidence, BridgeConditionalDenial, BridgeConditionalExecutionRequest,
-    BridgeConditionalSignalBasisBinding, BridgeExactOutputComparison, BridgeOutputComparisonDenial,
-    BridgeReadmittedAuthoredAssembly, BridgeSealedRuntimeAssembly,
+    BridgeAuthoredConditionalExecution, BridgeConditionalDecisionEvidence, BridgeConditionalDenial,
+    BridgeConditionalExecutionRequest, BridgeConditionalSignalBasisBinding,
+    BridgeExactOutputComparison, BridgeOutputComparisonDenial, BridgeReadmittedAuthoredAssembly,
+    BridgeSealedRuntimeAssembly,
 };
 use worth_signal::facade::branch::AdmittedSignalBranchBasis;
 
@@ -18,6 +18,21 @@ fn unavailable(detail: impl Into<String>) -> BridgeConditionalDenial {
     BridgeConditionalDenial::operation_route_refused(detail)
 }
 impl ConditionalExecutionOwner<'_> {
+    pub(in crate::domain_computation) fn with_view<R>(
+        &self,
+        basis: &AdmittedSignalBranchBasis,
+        execute: impl FnOnce(worth_runtime_bridge::facade::BridgeConditionalExecutionView<'_>) -> R,
+    ) -> Result<R, BridgeConditionalDenial> {
+        match self {
+            Self::Memory(owner) => Ok(execute(owner.conditional_execution_view())),
+            Self::Authored(owner) => {
+                let receiver = Self::authored_at(owner, basis)?;
+                Ok(execute(receiver.view()))
+            }
+            Self::Stopped => Err(unavailable("conditional owner has stopped")),
+        }
+    }
+
     pub(in crate::domain_computation) fn memory(
         &self,
     ) -> Result<&BridgeSealedRuntimeAssembly, BridgeConditionalDenial> {
@@ -105,22 +120,6 @@ impl ConditionalExecutionOwner<'_> {
                 "authored conditional branch is unavailable: {cause:?}"
             ))
         })
-    }
-    pub(in crate::domain_computation) fn admit_declaration_signal_basis(
-        &self,
-        declaration: &BridgeAuthoredConditionalDeclaration,
-        basis: &AdmittedSignalBranchBasis,
-    ) -> Result<BridgeConditionalSignalBasisBinding, BridgeConditionalDenial> {
-        match self {
-            Self::Memory(_) => Err(unavailable(
-                "authored declaration cannot select a memory owner",
-            )),
-            Self::Authored(owner) => {
-                Self::authored_at(owner, basis)?.admit_declaration_signal_basis(declaration, basis)
-            }
-
-            Self::Stopped => Err(unavailable("conditional owner has stopped")),
-        }
     }
     pub(in crate::domain_computation) fn admit_memory_signal_basis(
         &self,

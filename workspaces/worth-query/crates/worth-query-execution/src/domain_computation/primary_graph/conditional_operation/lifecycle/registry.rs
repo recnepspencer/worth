@@ -24,6 +24,16 @@ impl<Schema> Default for WorthQueryConditionalOperationRegistry<Schema> {
 impl<Schema> WorthQueryConditionalOperationRegistry<Schema> {
     /// Snapshot only routing and managed ownership; no operation callback runs
     /// while the application registry is borrowed.
+    pub(in crate::domain_computation::primary_graph) fn admit_authored_routes(
+        &self,
+        fresh: &worth_runtime_bridge::facade::BridgeFreshAuthoredBindings,
+    ) -> Result<(), worth_runtime_bridge::facade::BridgeAuthoredReadmissionDenial> {
+        for operation in self.installed.values() {
+            operation.lock_operation().admit_authored_route(fresh)?;
+        }
+        Ok(())
+    }
+
     pub(in crate::domain_computation::primary_graph) fn snapshot(&self) -> Self {
         Self {
             installed: Arc::clone(&self.installed),
@@ -43,6 +53,16 @@ impl<Schema> WorthQueryConditionalOperationRegistry<Schema> {
         )
     }
 
+    pub(in crate::domain_computation::primary_graph) fn handoff_to_home(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    ) -> Result<(), crate::domain_computation::primary_graph::WorthQueryHomeRetirementDenial> {
+        for cell in self.installed.values() {
+            cell.lock_operation().handoff_to_home(request, runtime)?;
+        }
+        Ok(())
+    }
     pub(in crate::domain_computation::primary_graph) fn len(&self) -> usize {
         self.installed.len()
     }

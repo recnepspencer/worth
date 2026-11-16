@@ -39,6 +39,50 @@ where
         F: 'static,
         Node: 'static,
     {
+        self.validate_output_readiness_node::<Producer, _, _, _, _, _, _>(
+            &node,
+            delivery_dependency_ordinal,
+        )?;
+        self.output_readiness
+            .push(Box::new(TypedPendingOutputReadiness::new(
+                Producer::IDENTITY,
+                delivery_dependency_ordinal,
+                node,
+                None,
+            )));
+        Ok(())
+    }
+
+    pub(super) fn validate_output_readiness_node<
+        Producer,
+        ApplicationOperation,
+        Input,
+        D,
+        O,
+        F,
+        Node,
+    >(
+        &self,
+        node: &WorthQueryInstalledApplicationConditionalNode<
+            Schema,
+            ApplicationOperation,
+            Input,
+            D,
+            O,
+            F,
+            Node,
+        >,
+        delivery_dependency_ordinal: usize,
+    ) -> Result<(), WorthQueryConditionalRuntimeInstallationDenial>
+    where
+        Producer: WorthQueryApplicationProducerBinding<Schema>,
+        ApplicationOperation: 'static,
+        Input: 'static,
+        D: 'static,
+        O: 'static,
+        F: 'static,
+        Node: 'static,
+    {
         let scope = self.application_binding_scope.as_ref().ok_or_else(|| {
             denial("output readiness must be bound inside an application contribution")
         })?;
@@ -58,12 +102,6 @@ where
         if node.operation().binding() != &scope.binding || node.location() != &scope.target {
             return Err(denial(format!("{:?}", scope.target)));
         }
-        self.output_readiness
-            .push(Box::new(TypedPendingOutputReadiness::new(
-                Producer::IDENTITY,
-                delivery_dependency_ordinal,
-                node,
-            )));
         Ok(())
     }
 }

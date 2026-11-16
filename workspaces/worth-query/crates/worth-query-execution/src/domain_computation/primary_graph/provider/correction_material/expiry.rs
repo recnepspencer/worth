@@ -1,10 +1,8 @@
 //! Retention joins the actual current material receiver and original support owner.
 use super::*;
+use crate::domain_computation::primary_graph::query_obligations::QueryObligationsMedium;
 use crate::domain_computation::primary_graph::{
-    program_occurrence::support_lifecycle::{
-        journal::QueryObligationsMedium, WorthQueryProgramSupportLifecycle,
-    },
-    retained_correction::MaterialPublication,
+    query_obligations::history::QueryObligationHistory, retained_correction::MaterialPublication,
     WorthQueryCorrectionRetentionDenial as Failure,
 };
 impl WorthQueryPrimaryGraphProvider {
@@ -19,7 +17,7 @@ impl WorthQueryPrimaryGraphProvider {
     }
     pub(in crate::domain_computation::primary_graph) fn readmit_retained_program_support(
         &self,
-        support: &WorthQueryProgramSupportLifecycle,
+        support: &QueryObligationHistory,
         medium: Arc<dyn QueryObligationsMedium>,
         originals: &WorldProgramActivationHistory,
         request: &ExecutionRequest<'_, '_>,
@@ -62,7 +60,7 @@ impl WorthQueryPrimaryGraphProvider {
             .original_meaning_support
             .get()
             .and_then(std::sync::Weak::upgrade)
-            .ok_or(crate::facade::program_support::QueryProgramSupportDenial::SupportUnavailable)?;
+            .ok_or(crate::facade::query_obligations::QueryObligationDenial::SupportUnavailable)?;
         support.dispose_expired_interpretations(material, request)
     }
 }

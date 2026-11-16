@@ -42,5 +42,6 @@ pub use worth_store_application::{
     ApplicationHomeCheckpoint as WorthQueryApplicationHomeCheckpoint,
     ApplicationHomeCheckpointInspection as WorthQueryApplicationHomeCheckpointInspection,
     ApplicationHomeCheckpointJournalObservation as WorthQueryApplicationHomeCheckpointJournalObservation,
+    ApplicationHomeCloseDenial,
     ApplicationHomeCloseOutcome as WorthQueryApplicationHomeCloseOutcome,
 };

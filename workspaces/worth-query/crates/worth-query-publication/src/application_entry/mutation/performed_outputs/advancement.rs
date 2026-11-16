@@ -209,18 +209,20 @@ where
                 Ok(WorthQueryApplicationProgramOutputProgress::Pending)
             }
             ProgramOutputContinuationProgress::Settled { outputs, work, dependencies } => {
+                if let Some(source) = &self.source_receipt {
+                    application.complete_program_output_source(
+                        phase,
+                        &worth_query_execution::publication_boundary::program_publication_access(),
+                        source,
+                    ).map_err(|cause| crate::application_entry::WorthQueryRequiredOutputPreparationDenial::Demand(
+                        crate::application_entry::WorthQueryApplicationOutputDemandDenial::Demand(cause)))?;
+                }
                 let performed_source = match (&self.source_receipt, &self.source_preparation) {
                     (Some(receipt), Some(_)) => Some(
                         super::super::program_output_settlement::WorthQueryPerformedProgramOutputSource::capture(receipt.clone(), self.pending_root_fulfillment.take().expect("a performed root seals fulfillment before descendants"))),
                     (None, None) => None,
                     _ => return Err(crate::application_entry::WorthQueryRequiredOutputPreparationDenial::MissingPerformedDelivery),
                 };
-                if let Some(source) = &performed_source {
-                    application.complete_program_output_source(
-                        &worth_query_execution::publication_boundary::program_publication_access(),
-                        source.receipt(),
-                    );
-                }
                 let original_root = self.root.as_ref().and_then(|demand| demand.original_root_result());
                 self.complete = true;
                 self.source_preparation = None;

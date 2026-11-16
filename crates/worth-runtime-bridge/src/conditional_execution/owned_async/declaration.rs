@@ -12,7 +12,101 @@ pub struct BridgeOwnedAsyncRequestResponseDeclaration {
     pub(super) process_local_retention: bool,
 }
 
+/// Declaration meaning only; it recreates no installed Signal source or port.
+#[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
+pub enum BridgeOwnedAsyncRetention {
+    Mandatory,
+    ProcessLocal,
+}
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
+pub struct BridgeOwnedAsyncDeclarationDescription {
+    pub identity: String,
+    pub payload_contract: u64,
+    pub max_payload_bytes: u64,
+    pub retry_max_attempts: u32,
+    pub retry_delay_ticks: u64,
+    pub timeout_ticks: u64,
+    pub managed_queue_capacity: Option<std::num::NonZeroU64>,
+    pub retention: BridgeOwnedAsyncRetention,
+}
 impl BridgeOwnedAsyncRequestResponseDeclaration {
+    pub(super) fn signal_declaration(
+        &self,
+        node: worth_signal::facade::NodeId,
+    ) -> Result<
+        worth_signal::facade::ResourceNodeDeclaration,
+        crate::facade::BridgeAsyncSourceDeclarationRejection,
+    > {
+        let retry_delay =
+            worth_signal::facade::TemporalDuration::temporal_duration(self.retry_delay_ticks)
+                .map_err(|error| {
+                    crate::facade::BridgeAsyncSourceDeclarationRejection::new(
+                crate::facade::BridgeAsyncSourceDeclarationRejectionKind::SignalDeclarationRejected,
+                error.to_string(),
+            )
+                })?;
+        let timeout = worth_signal::facade::TemporalDuration::temporal_duration(self.timeout_ticks)
+            .map_err(|error| {
+                crate::facade::BridgeAsyncSourceDeclarationRejection::new(
+                crate::facade::BridgeAsyncSourceDeclarationRejectionKind::SignalDeclarationRejected,
+                error.to_string(),
+            )
+            })?;
+        let mut resource = worth_signal::facade::ResourceNodeDeclaration::new(
+            worth_signal::facade::ResourceNodeId::from_node(node),
+            worth_signal::facade::ResourcePayloadContract::new(
+                worth_signal::facade::ResourcePayloadContractId::new(self.payload_contract),
+            )
+            .with_max_payload_bytes(self.max_payload_bytes),
+        )
+        .with_observation_policy(
+            worth_signal::facade::ResourceObservationPolicyDeclaration::LifecycleOnly,
+        )
+        .with_retry_policy(
+            worth_signal::facade::ResourceRetryPolicyDeclaration::FixedDelay { delay: retry_delay },
+        )
+        .with_timeout_policy(
+            worth_signal::facade::ResourceTimeoutPolicyDeclaration::PerAttemptTimeout { timeout },
+        )
+        .with_retry_max_attempts(self.retry_max_attempts);
+        if self.process_local_retention {
+            resource = resource.with_retention_policy(
+                worth_signal::facade::ResourceRetentionPolicyDeclaration::TerminalSummariesOnly,
+            );
+        }
+        Ok(resource)
+    }
+
+    /// Reconstruct declaration meaning. Installation still issues fresh Native owners.
+    pub fn from_description(description: BridgeOwnedAsyncDeclarationDescription) -> Self {
+        Self {
+            identity: Arc::from(description.identity),
+            payload_contract: description.payload_contract,
+            max_payload_bytes: description.max_payload_bytes,
+            retry_max_attempts: description.retry_max_attempts,
+            retry_delay_ticks: description.retry_delay_ticks,
+            timeout_ticks: description.timeout_ticks,
+            managed_queue_capacity: description.managed_queue_capacity,
+            process_local_retention: description.retention
+                == BridgeOwnedAsyncRetention::ProcessLocal,
+        }
+    }
+    pub fn description(&self) -> BridgeOwnedAsyncDeclarationDescription {
+        BridgeOwnedAsyncDeclarationDescription {
+            identity: self.identity.to_string(),
+            payload_contract: self.payload_contract,
+            max_payload_bytes: self.max_payload_bytes,
+            retry_max_attempts: self.retry_max_attempts,
+            retry_delay_ticks: self.retry_delay_ticks,
+            timeout_ticks: self.timeout_ticks,
+            managed_queue_capacity: self.managed_queue_capacity,
+            retention: if self.process_local_retention {
+                BridgeOwnedAsyncRetention::ProcessLocal
+            } else {
+                BridgeOwnedAsyncRetention::Mandatory
+            },
+        }
+    }
     pub fn new(
         identity: impl Into<Arc<str>>,
         payload_contract: u64,

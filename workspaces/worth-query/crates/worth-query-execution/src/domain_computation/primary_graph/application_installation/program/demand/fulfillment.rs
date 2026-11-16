@@ -1,8 +1,8 @@
 //! The installed root binds its prepared source to the actual admitted demand.
 use super::*;
 use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationCommitReceipt, WorthQueryFulfilledRequiredRoot,
-    WorthQueryOutputDemandDenialKind as Kind,
+    WorthQueryFulfilledRequiredRoot, WorthQueryOutputDemandDenialKind as Kind,
+    WorthQueryOutputSourceEvidence,
 };
 impl<Schema, Program, Demand> WorthQueryAdmittedProgramOutput<Schema, Program, Demand>
 where
@@ -16,7 +16,7 @@ where
         _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         program: &WorthQueryProgramApplicationRuntime<Schema, Program>,
         prepared: &WorthQueryPreparedRequiredOutputSource,
-        receipt: &WorthQueryApplicationCommitReceipt,
+        receipt: &WorthQueryOutputSourceEvidence,
         settlement: &WorthQueryOutputDemandSettlement,
     ) -> Result<WorthQueryFulfilledRequiredRoot, WorthQueryOutputDemandDenial>
     where

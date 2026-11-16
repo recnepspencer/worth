@@ -70,7 +70,8 @@ impl BridgeAuthoredSection {
                     }
                 }
                 rows.finish()
-            })
+            })?;
+            out.blob(layout.owned_async)
         })?;
         Ok(BridgeAuthoredSection {
             source: SignalBridgeAuthoredSection::from_bridge_bytes(bytes)

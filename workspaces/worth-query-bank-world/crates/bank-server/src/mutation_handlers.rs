@@ -15,6 +15,7 @@ pub(crate) use program_deployment_revocation::ProgramDeploymentRevocationHandler
 mod payment_decision;
 mod payment_workflow_assessment;
 mod recognize_estate_executor;
+mod rejected_payment_assessment;
 mod release_estate;
 mod retransmit_death_notice;
 mod reverse_journal;
@@ -34,6 +35,7 @@ pub(crate) use open_estate_case::OpenEstateCaseHandler;
 pub(crate) use payment_decision::{ApprovePaymentHandler, RejectPaymentHandler};
 pub(crate) use payment_workflow_assessment::ApprovedPaymentAssessmentHandler;
 pub(crate) use recognize_estate_executor::RecognizeEstateExecutorHandler;
+pub(crate) use rejected_payment_assessment::RejectedPaymentAssessmentHandler;
 pub(crate) use release_estate::ReleaseEstateHandler;
 pub(crate) use restore_frozen_estate_account::RestoreFrozenEstateAccountHandler;
 pub(crate) use retransmit_death_notice::RetransmitEstateDeathNoticeHandler;

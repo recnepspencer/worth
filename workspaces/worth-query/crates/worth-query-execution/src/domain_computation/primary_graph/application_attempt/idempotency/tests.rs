@@ -154,7 +154,7 @@ fn a_reinstall_at_another_runtime_or_generation_records_the_same_intent() {
 }
 
 #[test]
-fn an_ordinary_recorded_intent_keeps_its_pre_envelope_bytes() {
+fn current_intent_encoding_distinguishes_an_edit_envelope() {
     let request = WorthQueryApplicationIdempotencyBinding::new([1; 32], [2; 32]);
     let recorded = format!("v2:{}:source=-:operation=-:scope=-:precondition=-:input=-:proposal=-:conditional-definition=-", "02".repeat(32));
     assert_eq!(request.intent_text(), recorded);

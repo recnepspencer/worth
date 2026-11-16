@@ -1,0 +1,102 @@
+//! Process orchestration transports only descriptive DATA and passive observations.
+use std::{
+    net::SocketAddr,
+    num::NonZeroU64,
+    path::{Path, PathBuf},
+};
+
+pub(super) enum Stage {
+    Preclose,
+    Reopen,
+}
+impl Stage {
+    pub fn name(&self) -> &str {
+        match self {
+            Self::Preclose => "preclose",
+            Self::Reopen => "reopen",
+        }
+    }
+}
+pub(super) struct Arguments {
+    pub stage: Stage,
+    pub directory: PathBuf,
+    pub recipe: String,
+    pub rail: SocketAddr,
+    pub control: SocketAddr,
+    pub handoff: PathBuf,
+}
+impl Arguments {
+    pub fn read() -> Self {
+        let mut values = std::env::args_os().skip(1);
+        let stage = match values
+            .next()
+            .and_then(|value| value.into_string().ok())
+            .as_deref()
+        {
+            Some("preclose") => Stage::Preclose,
+            Some("reopen") => Stage::Reopen,
+            _ => panic!("expected preclose or reopen stage"),
+        };
+        let directory = values.next().expect("Home directory").into();
+        let recipe = values
+            .next()
+            .expect("bootstrap recipe")
+            .into_string()
+            .expect("UTF-8 recipe");
+        let rail = values
+            .next()
+            .expect("rail address")
+            .into_string()
+            .unwrap()
+            .parse()
+            .unwrap();
+        let control = values
+            .next()
+            .expect("rail control address")
+            .into_string()
+            .unwrap()
+            .parse()
+            .unwrap();
+        let handoff = values.next().expect("descriptive handoff file").into();
+        assert!(values.next().is_none(), "unexpected stage argument");
+        Self {
+            stage,
+            directory,
+            recipe,
+            rail,
+            control,
+            handoff,
+        }
+    }
+}
+
+/// Platform descriptors use their owning codecs. Native obligation coordinates
+/// use the existing public DATA identity and are checked by real Home readmission.
+/// No installed contract, issued workflow reference, snapshot or principal crosses.
+#[derive(serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(super) struct Handoff {
+    pub preclose_pid: u32,
+    pub workflow: Vec<u8>,
+    pub required: Vec<u8>,
+    pub assessment: Vec<u8>,
+    pub rejection_home: worth_foundational::facade::HomeIdentity,
+    pub rejection_position: NonZeroU64,
+    pub pending: super::external::Pending,
+    pub reversals: super::correction::Reversals,
+}
+impl Handoff {
+    pub fn write(&self, path: &Path) {
+        let file = std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(path)
+            .expect("create one graceful DATA handoff after Home close");
+        serde_json::to_writer(&file, self).expect("encode descriptive process DATA");
+        file.sync_all().expect("finish descriptive process DATA");
+    }
+    pub fn read(path: &Path) -> Self {
+        serde_json::from_reader(std::fs::File::open(path).expect("preclose DATA handoff"))
+            .expect("decode descriptive process DATA; this does not readmit any owner")
+    }
+}

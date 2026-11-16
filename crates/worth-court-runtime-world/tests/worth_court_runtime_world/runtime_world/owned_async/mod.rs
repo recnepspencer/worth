@@ -226,3 +226,5 @@ pub(crate) mod process_local_retention;
 pub(crate) mod service_affinity;
 #[path = "source_clock/mod.rs"]
 pub(crate) mod source_clock;
+
+mod retained_definition;

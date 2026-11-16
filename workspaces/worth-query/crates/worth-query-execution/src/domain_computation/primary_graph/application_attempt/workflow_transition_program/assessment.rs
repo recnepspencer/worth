@@ -112,6 +112,16 @@ where
         .charging_evidence(retained_bytes);
         let mut read_set = self.admitted.into_read_set();
         bind_currentness_facts(execution, &mut read_set, &currentness_facts, &node_path)?;
+        // These verified dependencies become this assessment's completed
+        // program read, including when their original backing was decoded.
+        let currentness_facts = super::super::OutputCurrentnessFacts::admit_owned_program_facts(
+            currentness_facts.iter().cloned().collect(),
+            super::super::retained_decision_facts::StorageControl::new(
+                execution.allocation_policy(),
+                Some(read_set.admission.publication_request()),
+            ),
+        )
+        .map_err(|cause| cause.into_attempt_denial(&node_path))?;
         let program = WorthQueryApplicationEffectProgram {
             synchronous_outputs: Vec::new(),
             authored_stages: Vec::new(),
@@ -125,7 +135,7 @@ where
             retain_output_demand_observation: false,
             retain_client_observation: false,
             producer_required_invariants: &[],
-            output_currentness_facts: Some(currentness_facts.into()),
+            output_currentness_facts: Some(currentness_facts),
         };
         let assessment = Some(projection(&self.layout, meaning));
         let replays = self.replays;
@@ -271,20 +281,37 @@ where
         .lease
         .product()
         .product_branch();
-    let authority_matches = if let Some(receipt) = settlement.application_commit_receipt() {
+    let authority_matches = if let Some(receipt) = settlement.publication_view() {
         source.selected_product_occurrence() == Some(receipt.product_branch().occurrence())
             && receipt.idempotency_binding().source_identity()
                 == Some(source.idempotency_identity().bytes())
             && receipt.product_branch() == fresh_branch
     } else if let Some(stable) = settlement.stable.as_ref() {
         source.selected_product_occurrence() == Some(stable.observation().lifecycle_incarnation())
-            && stable.source_identity()
-                == Some(crate::domain_computation::primary_graph::output_lineage::RecordedSourceIdentity::Runtime(
-                    source.idempotency_identity(),
-                ))
+            && stable.source_identity().is_some_and(|identity| {
+                identity
+                    .matches_current(source.idempotency_identity(), source.checkpoint_identity())
+            })
             && stable.source_partition_identity() == Some(source.partition_identity())
             && crate::basis::WorthQueryProductBranch::from_occurrence(
                 stable.observation().lifecycle_incarnation(),
+            ) == fresh_branch
+    } else if let Some(restored) = settlement.restored_source.as_ref() {
+        use crate::domain_computation::primary_graph::application_output_demand::RestoredOutputOrigin;
+        let identity = match &restored.origin {
+            RestoredOutputOrigin::Checkpoint(_) => Some(
+                crate::domain_computation::primary_graph::output_lineage::RecordedSourceIdentity::Checkpoint(restored.source_identity),
+            ),
+            RestoredOutputOrigin::HistoricalSelection(origin) => origin.source_identity(),
+        };
+        source.selected_product_occurrence() == Some(restored.observation.lifecycle_incarnation())
+            && identity.is_some_and(|identity| {
+                identity
+                    .matches_current(source.idempotency_identity(), source.checkpoint_identity())
+            })
+            && restored.origin.partition() == source.partition_identity()
+            && crate::basis::WorthQueryProductBranch::from_occurrence(
+                restored.observation.lifecycle_incarnation(),
             ) == fresh_branch
     } else {
         false

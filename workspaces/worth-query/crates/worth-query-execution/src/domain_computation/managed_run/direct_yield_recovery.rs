@@ -20,6 +20,7 @@ pub(super) enum WorthQueryDirectYieldRecoveryState {
         bridge: BridgeYieldedExecutionBasis,
         run_counters: WorthQueryManagedRunCounters,
         provider_work: WorthQueryManagedProviderWorkEvidence,
+        provider_cleanup: super::provider_work::WorthQueryManagedProviderCleanupAuthority,
     },
 }
 
@@ -92,6 +93,7 @@ impl WorthQueryDirectYieldRecoveryRequired {
             BridgeYieldedExecutionBasis,
             WorthQueryManagedRunCounters,
             WorthQueryManagedProviderWorkEvidence,
+            super::provider_work::WorthQueryManagedProviderCleanupAuthority,
             WorthQueryYieldTransitionCounters,
             WorthQueryYieldRecoveryResourceEvidence,
         ),
@@ -103,6 +105,7 @@ impl WorthQueryDirectYieldRecoveryRequired {
             bridge,
             run_counters,
             provider_work,
+            provider_cleanup,
         } = self.state
         else {
             return Err(self);
@@ -116,6 +119,7 @@ impl WorthQueryDirectYieldRecoveryRequired {
             bridge,
             run_counters,
             provider_work,
+            provider_cleanup,
             self.counters,
             self.resource_evidence,
         ))
@@ -128,6 +132,9 @@ pub(super) fn running_recovery(
     counters: WorthQueryYieldTransitionCounters,
     paused: WorthQueryPausedDirectGraphExecution,
 ) -> WorthQueryDirectYieldOutcome {
+    if let Some(custody) = paused.active.running.affinity.custody() {
+        custody.record_recovery(crate::domain_computation::primary_graph::query_obligations::QueryManagedRunRecovery::Yield { cause: kind, state: crate::domain_computation::primary_graph::query_obligations::QueryManagedYieldRecoveryState::Running });
+    }
     WorthQueryDirectYieldOutcome::RecoveryRequired(WorthQueryDirectYieldRecoveryRequired {
         kind,
         detail,
@@ -143,6 +150,7 @@ pub(super) struct WorthQueryTerminalizedDirectYieldRecovery {
     pub(super) bridge: BridgeYieldedExecutionBasis,
     pub(super) run_counters: WorthQueryManagedRunCounters,
     pub(super) provider_work: WorthQueryManagedProviderWorkEvidence,
+    pub(super) provider_cleanup: super::provider_work::WorthQueryManagedProviderCleanupAuthority,
 }
 
 pub(super) fn terminalized_recovery(
@@ -152,6 +160,9 @@ pub(super) fn terminalized_recovery(
     state: WorthQueryTerminalizedDirectYieldRecovery,
     resource_evidence: WorthQueryYieldRecoveryResourceEvidence,
 ) -> WorthQueryDirectYieldOutcome {
+    if let Some(custody) = state.affinity.custody() {
+        custody.record_recovery(crate::domain_computation::primary_graph::query_obligations::QueryManagedRunRecovery::Yield { cause: kind, state: crate::domain_computation::primary_graph::query_obligations::QueryManagedYieldRecoveryState::Terminalized });
+    }
     WorthQueryDirectYieldOutcome::RecoveryRequired(WorthQueryDirectYieldRecoveryRequired {
         kind,
         detail,
@@ -163,6 +174,7 @@ pub(super) fn terminalized_recovery(
             bridge: state.bridge,
             run_counters: state.run_counters,
             provider_work: state.provider_work,
+            provider_cleanup: state.provider_cleanup,
         },
     })
 }

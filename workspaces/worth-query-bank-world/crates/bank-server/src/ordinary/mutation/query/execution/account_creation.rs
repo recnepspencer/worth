@@ -42,8 +42,8 @@ impl
         crate::BankOperationConstructionRefusal<CreatePersonalAccount>,
     > {
         let (scope, key) = self.controls.into_parts();
-        self.runtime
-            .request(self.principal, &scope)
+        let request = self.runtime.request(self.principal, &scope);
+        request
             .mutate(self.mutation.input)
             .without_source()
             .preconditions(self.preconditions)
@@ -53,7 +53,8 @@ impl
                     builder.into_capture_refusal(key, denial),
                 )
             })?
-            .retain_operation::<BankApplication, crate::PersonalAccountCreationAction>(
+            .retain_durable_operation::<BankApplication, crate::PersonalAccountCreationAction>(
+                &request,
                 self.runtime.application_program(),
             )
             .map_err(
@@ -93,8 +94,8 @@ impl
         crate::BankOperationConstructionRefusal<CreateBusinessAccount>,
     > {
         let (scope, key) = self.controls.into_parts();
-        self.runtime
-            .request(self.principal, &scope)
+        let request = self.runtime.request(self.principal, &scope);
+        request
             .mutate(self.mutation.input)
             .without_source()
             .preconditions(self.preconditions)
@@ -104,7 +105,8 @@ impl
                     builder.into_capture_refusal(key, denial),
                 )
             })?
-            .retain_operation::<BankApplication, crate::BusinessAccountCreationAction>(
+            .retain_durable_operation::<BankApplication, crate::BusinessAccountCreationAction>(
+                &request,
                 self.runtime.application_program(),
             )
             .map_err(

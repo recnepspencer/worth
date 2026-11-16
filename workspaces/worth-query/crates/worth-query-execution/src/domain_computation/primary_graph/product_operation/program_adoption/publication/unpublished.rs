@@ -4,8 +4,8 @@ use worth_runtime_world::facade::{
     ProductUnpublishedOwnerEffects, RuntimeWorldRecoveryPort,
 };
 
-/// A branch adoption whose publication moved some owners but not the product
-/// head.
+/// An adoption retaining a World Open or owner effects without moving its
+/// product head.
 ///
 /// Inspect the cause and next actions, then turn it into a recovery with
 /// `into_recovery` and continue with `recover_branch_adoption`.
@@ -24,6 +24,20 @@ pub struct WorthQueryUnpublishedBranchAdoption {
 }
 
 impl WorthQueryUnpublishedBranchAdoption {
+    pub(in crate::domain_computation::primary_graph::product_operation::program_adoption) fn has_no_owner_effects(
+        &self,
+    ) -> bool {
+        self.product.owner_effect_count() == 0
+    }
+    pub(in crate::domain_computation::primary_graph::product_operation::program_adoption) fn attempt_identity(
+        &self,
+    ) -> &worth_runtime_world::facade::CompositePublicationAttemptIdentity {
+        self.product.attempt_identity()
+    }
+    pub fn before_effect_refusal(&self) -> Option<worth_runtime_world::facade::NoEffectCause> {
+        self.product.before_effect_refusal()
+    }
+
     pub(in crate::domain_computation::primary_graph::product_operation::program_adoption) fn new(
         source: ApplicationProgramRevision,
         target: ApplicationProgramRevision,

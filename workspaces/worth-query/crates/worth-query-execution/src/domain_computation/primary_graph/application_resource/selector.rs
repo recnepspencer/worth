@@ -36,6 +36,17 @@ impl<Schema: ApplicationSchema, Binding: ApplicationResourceBinding<Schema>> Clo
     }
 }
 
+impl<Schema: ApplicationSchema, Binding: ApplicationResourceBinding<Schema>>
+    WorthQueryApplicationResourceReceipt<Schema, Binding>
+{
+    /// Original recorded work identity only; fresh admission is required at use.
+    pub fn obligation_identity(
+        &self,
+    ) -> Option<worth_foundational::facade::OwnedAsyncObligationIdentity> {
+        self.access.obligation.get().copied()
+    }
+}
+
 /// Move-only public custody of an allocated runtime row. The row, rather than
 /// this selector, owns pending provider, queue, Native and recovery obligations.
 /// Drop marks that exact generation abandoned and performs no cancellation.
@@ -50,6 +61,13 @@ pub struct WorthQueryApplicationResource<
 impl<Schema: ApplicationSchema, Binding: ApplicationResourceBinding<Schema>>
     WorthQueryApplicationResource<Schema, Binding>
 {
+    /// Retain this descriptive identity to address logical custody after reopen.
+    pub fn obligation_identity(
+        &self,
+    ) -> Option<worth_foundational::facade::OwnedAsyncObligationIdentity> {
+        self.receipt.obligation_identity()
+    }
+
     pub fn receipt(&self) -> WorthQueryApplicationResourceReceipt<Schema, Binding> {
         self.receipt.clone()
     }

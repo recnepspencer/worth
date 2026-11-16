@@ -9,7 +9,7 @@ use worth_runtime_world::facade::{
 /// revalidation, any migration, the custody dispositions, and the product
 /// commit.
 pub struct WorthQueryPerformedBranchAdoption {
-    publication: ConsumedCompositePublication,
+    publication: AdoptionPublication,
     source: ApplicationProgramRevision,
     target: ApplicationProgramRevision,
     selected_entity_count: usize,
@@ -17,6 +17,13 @@ pub struct WorthQueryPerformedBranchAdoption {
     custody: super::super::preparation::WorthQueryProgramCustodyDispositionInventory,
 }
 
+enum AdoptionPublication {
+    Live(ConsumedCompositePublication),
+    Recovered {
+        commit: CompositeCommitIdentity,
+        branch: ProductBranchIdentity,
+    },
+}
 impl WorthQueryPerformedBranchAdoption {
     pub(in crate::domain_computation::primary_graph::product_operation::program_adoption) fn new(
         publication: ConsumedCompositePublication,
@@ -27,7 +34,7 @@ impl WorthQueryPerformedBranchAdoption {
         custody: super::super::preparation::WorthQueryProgramCustodyDispositionInventory,
     ) -> Self {
         Self {
-            publication,
+            publication: AdoptionPublication::Live(publication),
             source,
             target,
             selected_entity_count,
@@ -36,6 +43,24 @@ impl WorthQueryPerformedBranchAdoption {
         }
     }
 
+    pub(in crate::domain_computation::primary_graph::product_operation::program_adoption) fn recovered(
+        commit: CompositeCommitIdentity,
+        branch: ProductBranchIdentity,
+        source: ApplicationProgramRevision,
+        target: ApplicationProgramRevision,
+        selected_entity_count: usize,
+        migration: Option<super::super::preparation::WorthQueryProgramMigrationDescription>,
+        custody: super::super::preparation::WorthQueryProgramCustodyDispositionInventory,
+    ) -> Self {
+        Self {
+            publication: AdoptionPublication::Recovered { commit, branch },
+            source,
+            target,
+            selected_entity_count,
+            migration,
+            custody,
+        }
+    }
     pub fn source(&self) -> &ApplicationProgramRevision {
         &self.source
     }
@@ -61,11 +86,19 @@ impl WorthQueryPerformedBranchAdoption {
     }
 
     pub fn product_branch_identity(&self) -> &ProductBranchIdentity {
-        self.publication.new_product_head().branch_identity()
+        match &self.publication {
+            AdoptionPublication::Live(publication) => {
+                publication.new_product_head().branch_identity()
+            }
+            AdoptionPublication::Recovered { branch, .. } => branch,
+        }
     }
 
     pub fn product_commit(&self) -> &CompositeCommitIdentity {
-        self.publication.commit().identity()
+        match &self.publication {
+            AdoptionPublication::Live(publication) => publication.commit().identity(),
+            AdoptionPublication::Recovered { commit, .. } => commit,
+        }
     }
 
     /// Exact Signal publication retained or produced by this adopted target.
@@ -73,10 +106,21 @@ impl WorthQueryPerformedBranchAdoption {
     pub fn signal_publication(
         &self,
     ) -> Option<&worth_runtime_world::facade::CompositeSignalPublicationIdentity> {
-        self.publication.commit().signal_publication_identity()
+        match &self.publication {
+            AdoptionPublication::Live(publication) => {
+                publication.commit().signal_publication_identity()
+            }
+            AdoptionPublication::Recovered { .. } => None,
+        }
     }
 
-    pub fn relational_owner_contacts(&self) -> u64 {
-        self.publication.cost_counters().relational_owner_contacts()
+    /// Historical live work observations are not reconstructed after restart.
+    pub fn relational_owner_contacts(&self) -> Option<u64> {
+        match &self.publication {
+            AdoptionPublication::Live(publication) => {
+                Some(publication.cost_counters().relational_owner_contacts())
+            }
+            AdoptionPublication::Recovered { .. } => None,
+        }
     }
 }

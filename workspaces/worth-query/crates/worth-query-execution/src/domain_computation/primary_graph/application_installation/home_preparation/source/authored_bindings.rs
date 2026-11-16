@@ -15,6 +15,7 @@ impl QueryHomeAuthoredBindings {
         producers: &mut crate::domain_computation::primary_graph::application_contribution::WorthQueryInstalledOutputProducerRoutes,
         readiness: &mut crate::domain_computation::primary_graph::application_contribution::WorthQueryInstalledOutputReadinessRoutes,
         definitions: &mut crate::domain_computation::primary_graph::conditional_operation::definition_declarations::ConditionalDefinitionDeclarations,
+        operations: &crate::domain_computation::primary_graph::conditional_operation::lifecycle::WorthQueryConditionalOperationRegistry<impl worth_query_installation::facade::ApplicationSchema>,
     ) -> Result<(), BridgeAuthoredReadmissionDenial> {
         for route in producers.values_mut() {
             route.scheduling.admit_authored_declaration(&self.fresh)?;
@@ -23,6 +24,7 @@ impl QueryHomeAuthoredBindings {
             }
         }
         definitions.admit_authored_declarations(&self.fresh)?;
+        operations.admit_authored_routes(&self.fresh)?;
         for route in readiness.values_mut() {
             route.lowering.admit_authored_declaration(&self.fresh)?;
         }

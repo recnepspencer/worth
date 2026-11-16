@@ -10,6 +10,7 @@ impl BridgeSealedRuntimeAssembly {
         crate::facade::BridgeOwnedAsyncManagedDenial,
     > {
         self.runtime
+            .execution_view()
             .advance_managed_owned_async_request_to_timeout(owner, coordinate)
     }
 
@@ -22,6 +23,7 @@ impl BridgeSealedRuntimeAssembly {
         crate::facade::BridgeOwnedAsyncManagedDenial,
     > {
         self.runtime
+            .execution_view()
             .schedule_managed_owned_async_retry(owner, timeout)
     }
 
@@ -33,6 +35,7 @@ impl BridgeSealedRuntimeAssembly {
     ) -> Result<crate::facade::BridgeAsyncRetryLineage, crate::facade::BridgeOwnedAsyncManagedDenial>
     {
         self.runtime
+            .execution_view()
             .advance_managed_owned_async_retry(owner, schedule, coordinate)
     }
 
@@ -40,7 +43,9 @@ impl BridgeSealedRuntimeAssembly {
         &self,
         owner: &mut crate::facade::BridgeOwnedAsyncManagedRequestAdmission,
     ) -> Result<(), crate::facade::BridgeOwnedAsyncManagedDenial> {
-        self.runtime.finish_managed_owned_async_wake_cleanup(owner)
+        self.runtime
+            .execution_view()
+            .finish_managed_owned_async_wake_cleanup(owner)
     }
 
     /// Lower composition door; World qualifies the genuine product source first.
@@ -55,6 +60,7 @@ impl BridgeSealedRuntimeAssembly {
         crate::facade::BridgeOwnedAsyncManagedDenial,
     > {
         self.runtime
+            .execution_view()
             .revalidate_managed_owned_async_request(owner, signal_basis, truth_basis)
     }
 
@@ -65,7 +71,9 @@ impl BridgeSealedRuntimeAssembly {
         worth_signal::facade::ResourceSafePointObservationReport,
         crate::facade::BridgeOwnedAsyncManagedDenial,
     > {
-        self.runtime.observe_managed_owned_async_safe_point(request)
+        self.runtime
+            .execution_view()
+            .observe_managed_owned_async_safe_point(request)
     }
 
     pub fn admit_managed_owned_async_request_identity(
@@ -77,11 +85,9 @@ impl BridgeSealedRuntimeAssembly {
         crate::facade::BridgeOwnedAsyncManagedRequestAdmission,
         crate::facade::BridgeAsyncRequestIdentityRejection,
     > {
-        self.runtime.admit_managed_owned_async_request_identity(
-            declaration,
-            signal_basis,
-            truth_basis,
-        )
+        self.runtime
+            .execution_view()
+            .admit_managed_owned_async_request_identity(declaration, signal_basis, truth_basis)
     }
 
     pub fn commit_owned_async_completion(
@@ -93,6 +99,7 @@ impl BridgeSealedRuntimeAssembly {
         crate::facade::BridgeAsyncCompletionRejection,
     > {
         self.runtime
+            .execution_view()
             .commit_owned_async_completion(request, completion)
     }
 
@@ -101,6 +108,7 @@ impl BridgeSealedRuntimeAssembly {
         committed: &mut crate::facade::BridgeOwnedAsyncCommittedCompletion,
     ) -> Result<(), crate::facade::BridgeAsyncCompletionRejection> {
         self.runtime
+            .execution_view()
             .finish_owned_async_completion_timeout_cleanup(committed)
     }
 
@@ -113,6 +121,7 @@ impl BridgeSealedRuntimeAssembly {
         crate::facade::BridgeOwnedAsyncManagedDenial,
     > {
         self.runtime
+            .execution_view()
             .enqueue_managed_owned_async_queue(request, width)
     }
 
@@ -125,6 +134,7 @@ impl BridgeSealedRuntimeAssembly {
         crate::facade::BridgeOwnedAsyncManagedDenial,
     > {
         self.runtime
+            .execution_view()
             .dequeue_managed_owned_async_queue(request, width)
     }
 
@@ -135,14 +145,18 @@ impl BridgeSealedRuntimeAssembly {
         worth_signal::facade::ResourceCancellationReport,
         crate::facade::BridgeOwnedAsyncManagedDenial,
     > {
-        self.runtime.cancel_managed_owned_async_request(request)
+        self.runtime
+            .execution_view()
+            .cancel_managed_owned_async_request(request)
     }
 
     pub fn installed_owned_async_declaration(
         &self,
         identity: &str,
     ) -> Option<crate::facade::LoweredBridgeAsyncSourceDeclaration> {
-        self.runtime.installed_owned_async_declaration(identity)
+        self.runtime
+            .execution_view()
+            .installed_owned_async_declaration(identity)
     }
 
     pub fn advance_owned_async_source_clock(
@@ -156,6 +170,7 @@ impl BridgeSealedRuntimeAssembly {
         crate::facade::BridgeAsyncRequestIdentityRejection,
     > {
         self.runtime
+            .execution_view()
             .advance_owned_async_source_clock(declaration, basis, truth, coordinate)
     }
 
@@ -174,6 +189,7 @@ impl BridgeSealedRuntimeAssembly {
         crate::facade::BridgeAsyncCompletionRejection,
     > {
         self.runtime
+            .execution_view()
             .validate_owned_async_completion_envelope(request, raw)
     }
 
@@ -186,6 +202,7 @@ impl BridgeSealedRuntimeAssembly {
         crate::facade::BridgeAsyncCompletionRejection,
     > {
         self.runtime
+            .execution_view()
             .admit_owned_async_completion(request, validated)
     }
 
@@ -197,6 +214,7 @@ impl BridgeSealedRuntimeAssembly {
         crate::facade::BridgeAsyncCompletionRejection,
     > {
         self.runtime
+            .execution_view()
             .admit_owned_async_effects_indeterminate(observation)
     }
 
@@ -204,7 +222,9 @@ impl BridgeSealedRuntimeAssembly {
         &self,
         request: &super::super::BridgeOwnedAsyncRequestAdmission,
     ) -> Result<bool, crate::facade::BridgeAsyncCompletionRejection> {
-        self.runtime.retire_owned_async_request(request)
+        self.runtime
+            .execution_view()
+            .retire_owned_async_request(request)
     }
 
     /// Revalidate through Bridge's lower Signal/truth basis contract.
@@ -213,7 +233,9 @@ impl BridgeSealedRuntimeAssembly {
         &self,
         request: &super::super::BridgeOwnedAsyncRequestAdmission,
     ) -> Result<usize, crate::facade::BridgeAsyncCompletionRejection> {
-        self.runtime.owned_async_active_request_count(request)
+        self.runtime
+            .execution_view()
+            .owned_async_active_request_count(request)
     }
 
     pub fn admit_owned_async_supersession<'a>(
@@ -225,6 +247,7 @@ impl BridgeSealedRuntimeAssembly {
         crate::facade::BridgeAsyncCompletionRejection,
     > {
         self.runtime
+            .execution_view()
             .admit_owned_async_supersession(prior, displacing)
     }
 
@@ -236,6 +259,7 @@ impl BridgeSealedRuntimeAssembly {
         crate::facade::BridgeAsyncCompletionRejection,
     > {
         self.runtime
+            .execution_view()
             .validate_owned_async_request_occurrence(request)
     }
 
@@ -246,10 +270,14 @@ impl BridgeSealedRuntimeAssembly {
         crate::facade::BridgeMixedCauseOrdering,
         crate::facade::BridgeAsyncCompletionRejection,
     > {
-        self.runtime.order_owned_async_completion_report(completion)
+        self.runtime
+            .execution_view()
+            .order_owned_async_completion_report(completion)
     }
 
     pub fn owned_async_declaration_count(&self) -> usize {
-        self.runtime.owned_async_declaration_count()
+        self.runtime
+            .execution_view()
+            .owned_async_declaration_count()
     }
 }

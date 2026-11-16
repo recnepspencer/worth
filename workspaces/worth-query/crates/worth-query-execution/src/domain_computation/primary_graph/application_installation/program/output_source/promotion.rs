@@ -115,6 +115,7 @@ where
     /// receipt exists. Every refusal returns both native owners unchanged.
     pub fn promote_program_output_source(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         _: &WorthQueryProgramPublicationAccess,
         source: WorthQueryUnpublishedProgramOutputSource,
         carrier: WorthQueryRecoveredProgramOutputSource,
@@ -128,6 +129,14 @@ where
         ),
     > {
         let retained = (|| {
+            let execution = phase
+                .execution_request_for(&self.runtime().runtime.product_runtime)
+                .map_err(|cause| {
+                    WorthQueryOutputDemandDenial::new(
+                        WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
+                        "source promotion",
+                    )
+                })?;
             if source.runtime_authority
                 != self.backing.runtime().runtime.authority_identity().as_u64()
                 || source.branch != receipt.product_branch()
@@ -151,9 +160,36 @@ where
                     "original recovered source has no retained output observation",
                 )
             })?;
+            if let Some(owner) = observation.owner_identity().durable() {
+                let commit =
+                    worth_foundational::facade::DurableCompositeCommitIdentity::from_recorded(
+                        owner,
+                        observation.selected_commit().ordinal(),
+                    );
+                let support = self.runtime().installed_program_support().ok_or_else(|| {
+                    denied(
+                        WorthQueryOutputDemandDenialKind::ForeignSource,
+                        "source has no installed support owner",
+                    )
+                })?;
+                support.lifecycle().retain_output_source(&execution,
+                    crate::domain_computation::primary_graph::query_obligations::QueryOutputSourceObligation {
+                        commit, revision: source.revision, root: source.root_identity.to_owned(),
+                        branch: observation.branch_identity().name().as_str().to_owned(),
+                        lifecycle: observation.lifecycle_incarnation().ordinal(),
+                        generation: observation.reference_generation().get(),
+                        scope: { let scope = receipt.principal_scope().scope(); (scope.partition_id(), scope.local_slot(), scope.generation()) },
+                        key: *receipt.idempotency_binding().key_identity(),
+                        intent: receipt.idempotency_binding().intent_text(), bindings: None, discovery_recipe: source.discovery_recipe.clone(),
+                    }).map_err(|cause| WorthQueryOutputDemandDenial::new(
+                        WorthQueryOutputDemandDenialKind::ObligationPublication(cause), "required source retention"))?;
+            }
+            self.runtime()
+                .retain_coupled_output_records(&execution, &receipt, observation)?;
             self.backing
                 .runtime()
                 .retain_required_output_source_carrier(
+                    &execution,
                     receipt,
                     Arc::clone(change),
                     observation.clone(),

@@ -38,6 +38,8 @@ pub struct BridgeOwnedSignalRuntime {
     pub(super) bridge: OrdinaryBridgeCustody,
     pub(super) retention: Arc<super::retention::BridgeRetentionLedger>,
     pub(super) baseline_semantic_dependency_count: usize,
+    pub(super) conditional_evaluation_budget:
+        worth_signal::facade::runtime::SignalConditionalEvaluationBudget,
     pub(super) signal_runtime: Mutex<Option<SignalRuntime<(), (), (), (), ()>>>,
     pub(super) signal_graph_instance_id: u64,
     pub(super) signal_graph_lifecycle_probe: worth_signal::facade::SignalGraphLifecycleProbe,
@@ -115,6 +117,7 @@ impl BridgeOwnedSignalRuntime {
             retention,
             bridge: OrdinaryBridgeCustody::new(bridge),
             baseline_semantic_dependency_count,
+            conditional_evaluation_budget: evaluation_budget,
             signal_runtime: Mutex::new(Some(signal_runtime)),
             signal_graph_instance_id,
             signal_graph_lifecycle_probe,

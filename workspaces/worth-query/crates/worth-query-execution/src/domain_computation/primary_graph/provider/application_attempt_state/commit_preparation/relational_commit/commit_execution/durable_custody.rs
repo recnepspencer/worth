@@ -95,7 +95,7 @@ pub(in crate::domain_computation::primary_graph::provider) enum QueryDurablePrep
         reason = "The typed diagnostic or custody payload stays owned through return and Drop; this owner does not inspect it"
     )]
     Request(worth_execution::WorkCeilingDenial),
-    OriginalMeaning(crate::facade::program_support::QueryProgramSupportDenial),
+    OriginalMeaning(crate::facade::query_obligations::QueryObligationDenial),
     CorrectionMaterial(crate::facade::correction_material::QueryCorrectionMaterialDenial),
     #[allow(
         dead_code,

@@ -4,9 +4,19 @@ pub(crate) use worth_query_bank_testkit_courtroom::facade::transport_process_cou
     clippy::disallowed_methods,
     reason = "This process court owns the Tokio executor for its real transport and shutdown boundary."
 )]
-#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[test]
 #[ignore = "needs Docker: cargo test --manifest-path workspaces/worth-query-bank-world/Cargo.toml -p worth-query-bank-court-user-node --test worth_query_bank_court_user_node process::transport::courtroom::transport_process_courtroom::rail_completion::completed_rail_callback_survives_lost_ack_and_publishes_world_once -- --ignored --exact"]
-async fn completed_rail_callback_survives_lost_ack_and_publishes_world_once() {
+fn completed_rail_callback_survives_lost_ack_and_publishes_world_once() {
+    run_with_execution_stack(|| {
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .expect("callback I/O runtime")
+            .block_on(completed_rail_callback());
+    });
+}
+
+async fn completed_rail_callback() {
     let mut rail = RailProcessHandle::spawn_awaiting_completion_installation(
         worth_query_bank_testkit::facade::binary_path("cold-bank-rail"),
         "127.0.0.1:0",
@@ -35,11 +45,13 @@ async fn completed_rail_callback_survives_lost_ack_and_publishes_world_once() {
         .await
         .expect("Bank HTTP callback should bind");
     let bank_address = bank_binding.local_address();
+    let home_directory = std::env::temp_dir().join(format!("{}-home", fixture.slug()));
     let configuration: BankHttpProcessConfiguration = serde_json::from_value(server_configuration(
         &fixture,
         &endpoints,
         &redirect,
         rail.local_addr(),
+        &home_directory,
     ))
     .expect("Bank process configuration should parse");
     let identity = Arc::new(
@@ -48,7 +60,7 @@ async fn completed_rail_callback_survives_lost_ack_and_publishes_world_once() {
             .expect("Bank identity installation should finish within its 300-second scope"),
     );
     eprintln!("rail completion court: Bank identity installed");
-    let (bank, _mutation_continuation) = bank_binding
+    let (bank, mutation_continuation) = bank_binding
         .install_shared_with_rail_completion(
             Arc::clone(&identity),
             BankRailCompletionServerInstallation::new(
@@ -326,7 +338,31 @@ async fn completed_rail_callback_survives_lost_ack_and_publishes_world_once() {
 
     proxy.shutdown().await;
     node.shutdown().await.expect("user node should stop");
-    bank.shutdown().await.expect("Bank HTTP should stop");
+    let close = bank.shutdown().await.expect("Bank HTTP should stop");
+    mutation_continuation
+        .finish()
+        .await
+        .unwrap_or_else(|_| panic!("mutation workers must quiesce"));
+    drop(close);
+    let home = Arc::try_unwrap(identity)
+        .unwrap_or_else(|_| panic!("all HTTP borrowers must release"))
+        .into_runtime()
+        .into_home()
+        .unwrap_or_else(|_| panic!("actual Directory Home retained"));
+    let lifecycle = ExecutionResourceLease::serial(LeaseRequest {
+        policy: ExecutionRequestPolicy::new(
+            ExecutionPosture::Serial,
+            DeterminismContract::CanonicalBitwise,
+            ExecutionBudget::new(std::num::NonZeroUsize::MIN, Some(128 << 20), None),
+        ),
+        cancellation: CancellationToken::new(),
+        deadline: None,
+    })
+    .expect("bounded Home close request");
+    home.close(&ExecutionRequest::leased(&lifecycle))
+        .expect("Bank Home must close")
+        .reclaim();
+    std::fs::remove_dir_all(&home_directory).expect("closed fixture Home directory");
     let project = docker.project_name();
     drop(docker);
     DockerIdentityWorld::require_project_absent(&project)

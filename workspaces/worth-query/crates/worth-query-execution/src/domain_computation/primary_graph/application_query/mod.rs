@@ -201,3 +201,5 @@ pub(in crate::domain_computation::primary_graph::application_query) use read_exe
 #[cfg(test)]
 #[path = "mod_inline_type_budget.rs"]
 pub(crate) mod inline_type_budget;
+
+pub(in crate::domain_computation::primary_graph) use observed_source::retained_parameters::WorthQueryRetainedObservedParameters;

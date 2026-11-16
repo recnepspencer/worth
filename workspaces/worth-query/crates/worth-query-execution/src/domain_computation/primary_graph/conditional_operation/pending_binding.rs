@@ -251,7 +251,9 @@ where
                 reconstruction: self.reconstruction,
                 execution: self.execution,
             }),
-            bootstrap_lowering: lowering,
+            bootstrap_route: super::installation::route_binding::InstalledConditionalRoute::Memory(
+                lowering,
+            ),
             active_affinity: None,
             managed_clock: None,
             runtime_binding_identity,

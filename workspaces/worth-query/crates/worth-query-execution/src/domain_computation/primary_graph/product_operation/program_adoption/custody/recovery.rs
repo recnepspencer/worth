@@ -1,5 +1,7 @@
 use crate::basis::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
 pub(crate) mod readmission;
+mod readmit;
+pub use readmit::WorthQueryBranchAdoptionReadmissionDenial;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_declaration::facade::application_program::ApplicationProgramRevision;
 use worth_query_installation::facade::ApplicationSchema;
@@ -14,6 +16,7 @@ use crate::domain_computation::{
     WorthQueryProductUnpublishedRecovery, WorthQueryProductUnpublishedRecoveryReleaseFailure,
 };
 
+mod cold;
 mod release;
 pub use release::WorthQueryBranchAdoptionRecoveryReleaseFailure;
 
@@ -63,6 +66,10 @@ impl WorthQueryBranchAdoptionRecovery {
         }
     }
 
+    pub(in crate::domain_computation::primary_graph::product_operation::program_adoption) fn support_custody(&self)->&crate::domain_computation::primary_graph::program_occurrence::WorthQueryProgramSupportCustody{
+        &self.support_custody
+    }
+
     pub fn source(&self) -> &ApplicationProgramRevision {
         &self.source
     }
@@ -88,6 +95,13 @@ impl WorthQueryBranchAdoptionRecovery {
 /// published, and the recovery is handed back to continue again.
 #[derive(Debug)]
 pub enum WorthQueryBranchAdoptionRecoveryDenial {
+    RecoveredPending,
+    RecoveredEvidenceRequired,
+    RecoveredIndeterminate,
+    RecoveredRefused(worth_runtime_world::facade::WorldRecoveredContinuationDenial),
+    ObligationPublication(
+        crate::domain_computation::primary_graph::query_obligations::QueryObligationDenial,
+    ),
     Authorization(super::super::authorization::WorthQueryProgramAdoptionAuthorizationDenial),
     /// The recovery call was refused before inspecting its owners.
     ExecutionDenied(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial),
@@ -122,6 +136,12 @@ impl WorthQueryBranchAdoptionRecoveryFailure {
 /// What continuing a branch adoption recovery did. Returned by
 /// `recover_branch_adoption`.
 pub enum WorthQueryBranchAdoptionRecoveryOutcome {
+    /// Original World completion is preserved while Query custody discharge
+    /// still awaits acknowledgement; never repeat the carried disposition.
+    ObligationDischargePending {
+        cause: crate::domain_computation::primary_graph::query_obligations::QueryObligationDenial,
+        outcome: Box<WorthQueryBranchAdoptionRecoveryOutcome>,
+    },
     /// The adoption is published. `cleanup` reports releasing the recovery's
     /// owner custody; a cleanup failure does not undo the adoption.
     Performed {

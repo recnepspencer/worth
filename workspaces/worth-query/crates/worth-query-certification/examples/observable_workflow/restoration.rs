@@ -1,4 +1,4 @@
-//! Current-format restore reacquires descriptive history with fresh disclosure.
+//! Graceful Directory reopen reacquires descriptive history with fresh disclosure.
 use crate::{
     definition::MixedWorkflow,
     document_retention_model::{
@@ -12,14 +12,11 @@ use crate::{
     },
 };
 use std::path::{Path, PathBuf};
-use worth_query_host::facade::{
-    application_discovery::*, application_entry::*,
-    application_installation::WorthQueryApplicationCheckpoint,
-};
+use worth_query_host::facade::{application_discovery::*, application_entry::*};
 
-/// Only bytes, non-authoritative intent and plain oracles cross the runtime boundary.
+/// Only the Home location, non-authoritative intent and plain oracles cross close.
 pub struct CapturedJourney {
-    pub checkpoint: WorthQueryApplicationCheckpoint,
+    pub home_directory: PathBuf,
     pub original_start: WorthQueryWorkflowInstanceDiscoveryIntent<DocumentRetentionSchema>,
     pub expected_start: [u64; 3],
     pub expected_proposer: [u64; 3],
@@ -29,25 +26,22 @@ pub struct CapturedJourney {
 }
 
 pub fn inspect(captured: CapturedJourney) {
-    // Restore before entering the fresh request/audit inspection frame.
-    // The retained checkpoint shares the actual input backing passed to restore.
-    let retained = captured.checkpoint.clone();
-    let before = retained.bytes().to_vec();
-    let backing = retained.bytes().as_ptr();
-    let application = crate::document_retention_model::installation::restore(retained.clone());
-    assert_eq!(retained.bytes(), before);
-    assert_eq!(retained.bytes().as_ptr(), backing);
-    inspect_restored(application, captured);
+    let (home, application) = crate::document_retention_model::installation::open(
+        &captured.home_directory,
+        crate::resource_monitor::Configuration::default(),
+    );
+    inspect_reopened(application, captured);
+    crate::document_retention_model::installation::close(home);
 }
 
-// Do not merge the request/audit temporaries into the native restore call frame.
+// Do not merge the request/audit temporaries into the native reopen call frame.
 #[inline(never)]
-fn inspect_restored(
+fn inspect_reopened(
     application: crate::document_retention_model::MixedApplication,
     captured: CapturedJourney,
 ) {
     let CapturedJourney {
-        checkpoint: _,
+        home_directory: _,
         original_start,
         expected_start,
         expected_proposer,
@@ -64,7 +58,7 @@ fn inspect_restored(
     let request = runtime.request(&operator, &scope);
     let basis = request
         .retain_current_read()
-        .expect("retain one exact restored data basis");
+        .expect("retain one exact reopened data basis");
     let discovered = request
         .at(&basis)
         .read_original_workflow::<MixedWorkflow, SubjectRead, AuditRead>(
@@ -73,7 +67,7 @@ fn inspect_restored(
             input(),
             input(),
         )
-        .expect("fresh restored subject admission must disclose the original start");
+        .expect("fresh reopened subject admission must disclose the original start");
     let observation = match discovered {
         WorthQueryWorkflowInstanceRead::Historical {
             posture: WorthQueryWorkflowHistoricalPosture::Ended,
@@ -83,10 +77,10 @@ fn inspect_restored(
             panic!("the original completed main occurrence must be Ended")
         }
         WorthQueryWorkflowInstanceRead::Live { .. } => {
-            panic!("completed original workflow cannot become executable after restore")
+            panic!("completed original workflow cannot become executable after reopen")
         }
         WorthQueryWorkflowInstanceRead::Missing { .. } => {
-            panic!("current restore must retain the performed original start")
+            panic!("current reopen must retain the performed original start")
         }
     };
     assert_eq!(
@@ -111,7 +105,7 @@ fn inspect_restored(
             input(),
             input(),
         )
-        .expect("restored audit requires its own freshly admitted reviewer");
+        .expect("reopened audit requires its own freshly admitted reviewer");
     let WorthQueryWorkflowInstanceRead::Historical {
         posture: WorthQueryWorkflowHistoricalPosture::Ended,
         observation: audit,
@@ -141,7 +135,7 @@ fn inspect_restored(
                 }
             }
         }
-        _ => panic!("restored audit must retain genuine start and terminal advancer"),
+        _ => panic!("reopened audit must retain genuine start and terminal advancer"),
     }
     let page = crate::history::page(&application, &reviewer, &scope, &basis, audit.target());
     let withheld = crate::history::page(
@@ -166,20 +160,20 @@ fn inspect_restored(
         .entries()
         .iter()
         .find(|entry| entry.proposal().is_some())
-        .expect("original proposal survives restore");
+        .expect("original proposal survives reopen");
     assert_eq!(proposed.proposal().unwrap().identity(), proposal_identity);
     match proposed.audit() {
         WorthQueryWorkflowHistoryAudit::Visible {
             proposer: Some(proposer),
             ..
         } => assert_eq!(actor(proposer), expected_proposer),
-        _ => panic!("restore must retain the original admitted proposer"),
+        _ => panic!("reopen must retain the original admitted proposer"),
     }
     let approved = page
         .entries()
         .iter()
         .find(|entry| entry.approval().is_some())
-        .expect("original approval survives restore");
+        .expect("original approval survives reopen");
     assert_eq!(
         approved.approval().unwrap().proposal_identity(),
         proposal_identity
@@ -189,7 +183,7 @@ fn inspect_restored(
             approver: Some(approver),
             ..
         } => assert_eq!(actor(approver), expected_approver),
-        _ => panic!("restore must retain the distinct admitted approver"),
+        _ => panic!("reopen must retain the distinct admitted approver"),
     }
     assert_ne!(expected_proposer, expected_approver);
     let denied = runtime
@@ -213,10 +207,10 @@ fn inspect_restored(
     assert_eq!(
         request.retain_current_read().unwrap().selected_commit(),
         basis.selected_commit(),
-        "read-only restoration inspection must not publish"
+        "read-only reopening inspection must not publish"
     );
     assert_archive(&directory);
-    println!("restored the original completed workflow and independent audit without repeating its archive: {}", directory.display());
+    println!("reopened the original completed workflow and independent audit without repeating its archive: {}", directory.display());
 }
 
 pub fn assert_archive(directory: &Path) {

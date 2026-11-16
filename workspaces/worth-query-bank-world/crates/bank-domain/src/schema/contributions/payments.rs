@@ -11,7 +11,7 @@ use super::super::{
     decision_read_manifest::install_payment_decision_reads,
     governance::{AccountActivityEffect, DistinctApproverPolicy},
     install_approved_business_payment_authority, install_approved_payment_assessment,
-    install_payment_approval_grant_minting,
+    install_payment_approval_grant_minting, install_rejected_payment_assessment,
     operations::*,
     posting_integrity::posting_integrity_invariant,
     precondition_manifest::install_payment_preconditions,
@@ -92,6 +92,7 @@ impl Registration<BankSchema> for Contracts {
                 .application_mutation_binding::<ReverseJournalMutationBinding>();
             let schema = install_approved_business_payment_authority(schema);
             let schema = install_approved_payment_assessment(schema);
+            let schema = install_rejected_payment_assessment(schema);
             let schema = install_money_programs(schema);
             let schema = install_payment_program(schema);
             let schema = install_payment_approval_grant_minting(schema);

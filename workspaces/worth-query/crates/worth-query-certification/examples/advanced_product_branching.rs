@@ -192,8 +192,8 @@ fn mutate(
         .on_branch(branch)
         .advanced()
         .mutate(AmendTemporalIntent {
-            identity: "intent-1".to_owned(),
             amendment: AmendTemporalInput {
+                identity: "intent-1".to_owned(),
                 revision,
                 due: 11,
                 lifecycle: "active".to_owned(),

@@ -1,5 +1,5 @@
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
-use worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly;
+use worth_runtime_bridge::facade::BridgeConditionalExecutionView;
 
 use super::{
     authoritative_clock_progression::AuthoritativeClockProgress, ErasedClockObservationReceipt,
@@ -16,7 +16,7 @@ pub(super) fn retain_due(
     phase: &WorthQueryAdvancementPhase<'_>,
 
     accepted: worth_runtime_bridge::facade::BridgeManagedClockAcceptedObservation,
-    bridge: &BridgeSealedRuntimeAssembly,
+    bridge: &BridgeConditionalExecutionView<'_>,
     truth: &WorthQueryConditionalTruthBasis,
     authoritative_deliveries: &[worth_runtime_bridge::facade::BridgeGranularInvalidationDelivery],
     signal_basis: &worth_runtime_bridge::facade::BridgeConditionalSignalBasisBinding,
@@ -103,11 +103,12 @@ pub(super) fn complete_clock_receipt(
     receipt.execution_provenance =
         super::super::execution_provenance::execution_provenance(retained_wakes);
     retained_wakes.retain(|wake| {
-        !matches!(
-            wake.decision,
-            WorthQueryRetainedConditionalDecision::OperationCommitted(_)
-                | WorthQueryRetainedConditionalDecision::OperationAlreadyCommitted(_)
-        )
+        wake.continuation_identity.is_some()
+            || !matches!(
+                wake.decision,
+                WorthQueryRetainedConditionalDecision::OperationCommitted(_)
+                    | WorthQueryRetainedConditionalDecision::OperationAlreadyCommitted(_)
+            )
     });
     let decisions = retained_decision_counts(retained_wakes);
     receipt.retained_due_wake_count = retained_wakes.len();

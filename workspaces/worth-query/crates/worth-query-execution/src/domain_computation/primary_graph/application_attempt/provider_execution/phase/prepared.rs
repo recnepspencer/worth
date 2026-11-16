@@ -215,7 +215,7 @@ where
     let effect_posture = provider.effect_posture;
     let native_reference_invariants = match native_reference_invariants::derive(
         &application.runtime.primary_provider.graph.layout,
-        application.installed_schema.invariants(),
+        &application.installed_schema,
         &provider.effects,
     ) {
         Ok(requirements) => requirements,

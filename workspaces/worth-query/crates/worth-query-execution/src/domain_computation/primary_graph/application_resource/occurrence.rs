@@ -15,13 +15,12 @@ use worth_runtime_bridge::facade::{
 /// Issued selector data, never a cached action or disclosure permission. It
 /// intentionally owns no Product observation or Native cleanup capability.
 pub(super) struct OriginalResourceAccess {
+    // Descriptive original identity, published before any external effect.
+    pub(super) obligation:
+        std::sync::OnceLock<worth_foundational::facade::OwnedAsyncObligationIdentity>,
     pub(super) branch: crate::basis::WorthQueryProductBranch,
     pub(super) scope: Arc<WorthQueryObservedScopeSelector>,
     pub(super) parameters: CapturedApplicationQueryParameters,
-    #[expect(
-        dead_code,
-        reason = "issued selector retains its original principal provenance; fresh actions reauthorize"
-    )]
     pub(super) birth_principal: worth_relational::facade::identity::EntityId,
     // The original parameter admission includes this shared wrapper backing.
 }
@@ -74,6 +73,10 @@ pub(super) enum ResourceCandidateQueue {
 /// One row owns every unresolved obligation, including refused provider starts
 /// and accepted clock-only progress. Public handle Drop cannot discard it.
 pub(super) struct ResourceOccurrence {
+    pub(super) disposal: super::super::query_obligations::history::ResourceDisposal,
+    pub(super) obligation: Option<worth_foundational::facade::OwnedAsyncObligationIdentity>,
+    pub(super) ingress_frozen: bool,
+    pub(super) handoff: Option<super::super::query_obligations::QueryResourceHandoff>,
     pub(super) access: Arc<OriginalResourceAccess>,
     pub(super) business_product: WorthQueryProductBranchLease,
     pub(super) input: RetainedResourceValue,

@@ -151,6 +151,9 @@ impl WorthQueryDirectReadmissionRecoveryRequired {
         progress: WorthQueryReadmissionProgress,
         recovery: WorthQueryDirectBridgeCleanupRecoveryState,
     ) -> Self {
+        if let Some(custody) = recovery.affinity.custody() {
+            custody.record_recovery(crate::domain_computation::primary_graph::query_obligations::QueryManagedRunRecovery::Readmission(WorthQueryDirectReadmissionRecoveryKind::BridgeCleanupFailed));
+        }
         Self::YieldReassembly(WorthQueryDirectReadmissionYieldReassemblyRecovery {
             kind: WorthQueryDirectReadmissionRecoveryKind::BridgeCleanupFailed,
             detail: detail.into(),
@@ -165,6 +168,9 @@ impl WorthQueryDirectReadmissionRecoveryRequired {
         progress: WorthQueryReadmissionProgress,
         recovery: WorthQueryDirectProviderRecoveryState,
     ) -> Self {
+        if let Some(custody) = recovery.resource.custody() {
+            custody.record_recovery(crate::domain_computation::primary_graph::query_obligations::QueryManagedRunRecovery::Readmission(kind));
+        }
         Self::TerminalCleanup(WorthQueryDirectReadmissionTerminalRecovery {
             kind,
             detail: detail.into(),

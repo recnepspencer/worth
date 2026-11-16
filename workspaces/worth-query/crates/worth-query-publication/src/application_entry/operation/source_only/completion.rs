@@ -212,8 +212,12 @@ where
         &mut self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ) -> Result<WorthQueryClosedOperation, WorthQueryOperationCloseDenial> {
-        self.release_cleanup(request)
-            .map(WorthQueryClosedOperation::from_cleanup)
+        let cleanup = self.release_cleanup(request)?;
+        if let Err(cause) = self.admission.description.discharge_original(request) {
+            self.cleanup.retain_release_receipt(cleanup);
+            return Err(cause);
+        }
+        Ok(WorthQueryClosedOperation::from_cleanup(cleanup))
     }
 
     /// Discharges this cleanup collection only; original business evidence stays owned.

@@ -1,4 +1,4 @@
-use super::super::BridgeOwnedSignalRuntime;
+use super::super::BridgeConditionalExecutionView;
 use super::admission::{request_denial, BridgeBoundOwnedAsyncBasis};
 use super::{
     BridgeOwnedAsyncManagedDenial as Denial, BridgeOwnedAsyncManagedRequestAdmission as Custodian,
@@ -6,7 +6,7 @@ use super::{
 use crate::facade::{BridgeAsyncRequestTruthViewBasis, LoweredBridgeAsyncSourceDeclaration};
 use std::sync::Arc;
 
-impl BridgeOwnedSignalRuntime {
+impl BridgeConditionalExecutionView<'_> {
     pub fn observe_managed_owned_async_safe_point(
         &self,
         request: &Custodian,

@@ -30,7 +30,9 @@ mod output_readiness_installation;
 mod providers;
 use authored_outputs::{QueryAuthoredConditionalComputeProvider, QueryAuthoredOutputComparator};
 mod readiness_provider;
-pub(in crate::domain_computation::primary_graph) use output_readiness_installation::prepare_dependency_conditional_installation;
+pub(in crate::domain_computation::primary_graph) use output_readiness_installation::{
+    output_readiness_providers, prepare_dependency_conditional_installation,
+};
 pub(in crate::domain_computation::primary_graph) use providers::QueryConditionalComputeContext;
 use providers::{
     QueryConditionalComputeProvider, QueryConditionalComputeSemanticContract,

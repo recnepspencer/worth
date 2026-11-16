@@ -25,6 +25,13 @@ impl std::error::Error for RestorationDenial {}
 impl OperationHandler<BankSchema, RestoreFrozenEstateAccountBinding>
     for RestoreFrozenEstateAccountHandler
 {
+    fn declared_durable_capabilities() -> Option<
+        &'static [worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability],
+    > {
+        use worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability as Capability;
+        Some(&[Capability::RelationalMutation])
+    }
+
     fn decide(
         &self,
         input: &RestoreFrozenEstateAccount,

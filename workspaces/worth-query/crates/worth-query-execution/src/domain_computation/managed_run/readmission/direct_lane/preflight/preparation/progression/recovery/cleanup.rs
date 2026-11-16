@@ -21,6 +21,10 @@ use crate::domain_computation::{
 };
 
 mod inspection;
+use crate::domain_computation::managed_run::durable_custody::ManagedRunCustody;
+use crate::domain_computation::primary_graph::query_obligations::{
+    QueryManagedExecutionRelease, QueryManagedRunPosture, QueryManagedRunResources,
+};
 
 use inspection::WorthQueryCompletedDirectReadmissionCleanup;
 pub use inspection::{
@@ -57,6 +61,8 @@ pub struct WorthQueryDirectReadmissionCleanupReceipt {
 }
 
 struct WorthQueryDirectReadmissionPartialCleanupReceipt {
+    custody: Option<Arc<ManagedRunCustody>>,
+    resources: QueryManagedRunResources,
     logical_run_identity: Arc<str>,
     yielded_attempt_identity: Arc<str>,
     checkpoint_release: WorthQueryProviderCheckpointReleaseEvidence,
@@ -109,15 +115,31 @@ impl WorthQueryDirectReadmissionCleanupRequired {
 
     #[must_use = "finishing direct readmission cleanup returns the exact cleanup posture"]
     pub fn finish(mut self) -> WorthQueryDirectReadmissionCleanupOutcome {
+        let custody = self.affinity.custody();
+        let mut resources =
+            QueryManagedRunResources::observe(false, &self.affinity.provider_work_snapshot());
         let provider = self.provider.finish();
+        self.affinity
+            .provider_work_mut()
+            .retain_provider_memory(provider.memory);
+        resources.checkpoint = Some(provider.checkpoint_release.disposition());
+        resources.restored_execution = provider
+            .restored_execution_release
+            .as_ref()
+            .map(QueryManagedExecutionRelease::observe);
         if let Some(release) = &provider.restored_execution_release {
             self.affinity
                 .provider_work_mut()
                 .record_provider_execution_release(release);
         }
-        let (affinity, provider_work, _) = self.affinity.into_terminal_parts();
+        let (affinity, mut provider_work, mut provider_cleanup) =
+            self.affinity.into_terminal_parts();
+        provider_work
+            .reconcile_provider_retained_bytes(provider_cleanup.reconcile_provider_memory());
         let (logical_run_identity, yielded_attempt_identity) = affinity.terminal_descriptions();
         let partial = WorthQueryDirectReadmissionPartialCleanupReceipt {
+            custody,
+            resources,
             logical_run_identity,
             yielded_attempt_identity,
             checkpoint_release: provider.checkpoint_release,
@@ -182,6 +204,21 @@ fn finish_bridge_cleanup(
                     readmission_evidence: partial.readmission_progress.evidence(),
                 },
             );
+            partial.resources.native_released = receipt.inspection().resources_released()
+                && receipt
+                    .inspection()
+                    .provider_work()
+                    .provider_retained_bytes()
+                    == 0;
+            if let Some(custody) = partial.custody {
+                custody.record(
+                    QueryManagedRunPosture::ReadmissionCleanup {
+                        disposition,
+                        resources: partial.resources,
+                    },
+                    receipt.inspection().yielded_attempt_identity(),
+                );
+            }
             if recovery_required {
                 WorthQueryDirectReadmissionCleanupOutcome::RecoveryRequired(receipt)
             } else {
@@ -189,6 +226,15 @@ fn finish_bridge_cleanup(
             }
         }
         BridgeExecutionBasisReadmissionCleanupOutcome::RecoveryRequired(bridge) => {
+            if let Some(custody) = &partial.custody {
+                custody.record(
+                    QueryManagedRunPosture::ReadmissionCleanup {
+                        disposition: WorthQueryManagedRunCleanupDisposition::CleanupPending,
+                        resources: partial.resources,
+                    },
+                    &partial.yielded_attempt_identity,
+                );
+            }
             partial
                 .readmission_progress
                 .observe_bridge(bridge.counters());
@@ -208,7 +254,8 @@ fn finish_bridge_cleanup(
 fn direct_cleanup_recovery_required(
     receipt: &WorthQueryDirectReadmissionPartialCleanupReceipt,
 ) -> bool {
-    receipt.checkpoint_release.disposition().recovery_required()
+    receipt.provider_work.provider_retained_bytes() != 0
+        || receipt.checkpoint_release.disposition().recovery_required()
         || receipt
             .restored_execution_release
             .as_ref()
