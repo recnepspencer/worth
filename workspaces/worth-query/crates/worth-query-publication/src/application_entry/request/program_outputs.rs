@@ -145,7 +145,7 @@ where
     pub(in crate::application_entry) fn recover_required_outputs<Program, Root>(
         &self,
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
-        source_receipt: &worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt,
+        source_receipt: worth_query_execution::facade::primary_graph::WorthQueryOutputSourceReplay<'_>,
         root_demand: RootDemand<Schema, Root>,
         controls: crate::application_entry::WorthQueryOutputDemandControls,
     ) -> Result<
@@ -180,7 +180,7 @@ where
                 self.recover_required_outputs_in_advancement::<Program, Root>(
                     &phase,
                     application,
-                    worth_query_execution::facade::primary_graph::WorthQueryOutputSourceReplay::Retained(source_receipt),
+                    source_receipt,
                     root_demand,
                     controls,
                 )

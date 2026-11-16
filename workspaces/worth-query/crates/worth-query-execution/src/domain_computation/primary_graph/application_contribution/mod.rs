@@ -101,7 +101,8 @@ pub use producer::{
     WorthQueryProducerLifecyclePosture, WorthQueryProducerObservationReadContract,
     WorthQueryProducerObservationReadDenial, WorthQueryProducerObservationReadOperation,
     WorthQueryProducerOutputEquivalence, WorthQueryProducerOutputFamily,
-    WorthQueryProjectedProducerDenial, WorthQuerySelectedApplicationProducer,
+    WorthQueryProjectedProducerDenial, WorthQueryRecordedProducerDenialEncodingRefusal,
+    WorthQueryRecordedProducerDenialValue, WorthQuerySelectedApplicationProducer,
     WorthQueryUndeclaredProducerDenial, WorthQueryWorkflowAssessmentOutputFamily,
     WorthQueryWorkflowAssessmentPosture,
 };

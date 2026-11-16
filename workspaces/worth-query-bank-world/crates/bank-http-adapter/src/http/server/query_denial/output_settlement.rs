@@ -11,6 +11,7 @@ use worth_query_host::facade::primary_graph::{
 pub(super) fn output_settlement(kind: BankApplicationOutputSettlementDenialKind) -> BankHttpDenial {
     use BankApplicationOutputSettlementDenialKind as Settlement;
     match kind {
+        Settlement::ObligationPublication(cause) => obligation_publication(cause),
         Settlement::WorldRecovery(cause) => world_denial::recovery(cause),
         Settlement::RecoveryPublication(cause) => world_denial::publication(cause),
         Settlement::PublicationReceipt(cause) => original_receipt(cause),
@@ -77,10 +78,48 @@ pub(super) fn output_settlement(kind: BankApplicationOutputSettlementDenialKind)
         | Settlement::NoEffect => unavailable(),
         Settlement::ProductSelection(kind) => product_selection(kind),
         Settlement::RequiredSuccessorStateUnavailable
+        | Settlement::CyclicRequiredOutputOccurrences { .. }
+        | Settlement::RequiredOutputParentUnavailable { .. }
         | Settlement::DuplicatePerformedSource
         | Settlement::IncompleteDependencyCoverage
         | Settlement::ManagedSourceExpansionUnsupported
         | Settlement::UnobservedWrite(_) => internal_denied(),
+    }
+}
+
+fn obligation_publication(
+    cause: worth_query_host::facade::primary_graph::QueryObligationDenial,
+) -> BankHttpDenial {
+    use worth_query_host::facade::primary_graph::QueryObligationDenial as D;
+    match cause {
+        D::Execution(cause) => advancement_denial::request(cause),
+        D::PublicationPending
+        | D::PublicationNoEffect
+        | D::PublicationUnresolved
+        | D::Storage(_) => unavailable(),
+        D::StaleIncarnation => stale(),
+        D::UnsupportedVersion(_)
+        | D::MalformedFrame
+        | D::Checksum
+        | D::ForeignHome
+        | D::PrefixMismatch
+        | D::IdentityExhausted
+        | D::DuplicateProgram
+        | D::UnrosteredProgram(_)
+        | D::StatusMismatch
+        | D::IllegalStatusTransition
+        | D::ObligationIdentityMismatch
+        | D::ObligationSubjectMismatch
+        | D::SupportUnavailable
+        | D::UnknownObligation
+        | D::DuplicateObligation
+        | D::AdoptionReadmissionRequired
+        | D::CleanupReleaseUnrecorded { .. }
+        | D::CleanupInconsistent { .. }
+        | D::MissingOriginalInterpretationSource { .. }
+        | D::OriginalInterpretationProgramMismatch { .. }
+        | D::OwnerUnavailable
+        | D::PublicationGenerationMismatch => operator(),
     }
 }
 

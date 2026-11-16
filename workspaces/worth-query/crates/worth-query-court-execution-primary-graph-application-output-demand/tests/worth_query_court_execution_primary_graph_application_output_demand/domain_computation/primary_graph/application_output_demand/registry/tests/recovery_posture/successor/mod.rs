@@ -4,7 +4,7 @@ use crate::domain_computation::primary_graph::application_output_demand::registr
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputAdvancement;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::DemandAdmissionKind;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::refresh_predecessor::OutputRefreshPredecessor;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryPerformedOutputDemandSource;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryRetainedOutputDemandSource;
 
 #[test]
 fn stale_ready_successor_admission_forces_a_new_execution_cycle() {
@@ -70,7 +70,7 @@ fn stale_ready_successor_admission_forces_a_new_execution_cycle() {
             .unwrap();
         (*record.state_mut_for_test()) = DemandState::Running;
         (*record.performed_source_mut_for_test()) =
-            Some(WorthQueryPerformedOutputDemandSource::new_for_test(
+            Some(WorthQueryRetainedOutputDemandSource::new_for_test(
                 performed,
                 Arc::new(change),
                 observation,

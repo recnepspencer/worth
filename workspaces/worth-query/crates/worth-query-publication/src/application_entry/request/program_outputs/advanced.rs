@@ -43,10 +43,10 @@ where
         self.request
             .start_program_outputs(application, root_demand, controls)
     }
-    pub fn recover_required_outputs<Program, Root>(
+    pub fn recover_required_outputs<'receipt, Program, Root>(
         &self,
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
-        source_receipt: &worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt,
+        source_receipt: impl Into<worth_query_execution::facade::primary_graph::WorthQueryOutputSourceReplay<'receipt>>,
         root_demand: RootDemand<Schema, Root>,
         controls: crate::application_entry::WorthQueryOutputDemandControls,
     ) -> Result<
@@ -76,7 +76,11 @@ where
         RootValue<Schema, Root>:
             WorthQueryApplicationProjection<Schema, RootQuery<Schema, Root>> + Clone,
 {
-        self.request
-            .recover_required_outputs(application, source_receipt, root_demand, controls)
+        self.request.recover_required_outputs(
+            application,
+            source_receipt.into(),
+            root_demand,
+            controls,
+        )
     }
 }

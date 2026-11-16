@@ -64,15 +64,13 @@ impl WorthQueryOutputDemandRegistry {
 
     pub(in crate::domain_computation::primary_graph) fn complete_prepared_source(
         &self,
-        receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
+        receipt: &crate::domain_computation::primary_graph::WorthQueryOutputSourceEvidence,
     ) {
         let mut state = self
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        if let Some(custody) = state
-            .source_custody
-            .get_mut(receipt.committed_product_publication().composite_commit())
+        if let Some(custody) = state.source_custody.get_mut(receipt.source_commit())
             && custody
                 .source
                 .as_ref()
@@ -82,7 +80,7 @@ impl WorthQueryOutputDemandRegistry {
             custody.source = None;
             custody.discovery = None;
         }
-        state.note_custody(receipt.committed_product_publication().composite_commit());
+        state.note_custody(receipt.source_commit());
     }
 
     pub(in crate::domain_computation::primary_graph) fn begin_source_preparation(

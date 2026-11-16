@@ -13,7 +13,7 @@ impl SourceCustody {
     pub fn new_for_test(
         occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
         root_kind: PreparedOutputRootKind,
-        source: Option<WorthQueryPerformedOutputDemandSource>,
+        source: Option<WorthQueryRetainedOutputDemandSource>,
         discovery: Option<DiscoveredSourceRecovery>,
         consumed_sources: Vec<SourceEpoch>,
         retired_sources: Vec<(SourceEpoch, WorthQueryOutputDemandDenial)>,
@@ -83,7 +83,7 @@ impl SourceCustody {
 
 impl SourceCustody {
     #[doc(hidden)]
-    pub fn source_for_test(&self) -> &Option<WorthQueryPerformedOutputDemandSource> {
+    pub fn source_for_test(&self) -> &Option<WorthQueryRetainedOutputDemandSource> {
         &self.source
     }
 }

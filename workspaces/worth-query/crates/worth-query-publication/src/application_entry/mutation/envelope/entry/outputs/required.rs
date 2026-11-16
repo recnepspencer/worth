@@ -24,7 +24,7 @@ where
         let demand = <B as WorthQueryApplicationRequiredOutputSource<S, Connection<S, Self>>>::demand_from_source(input.input()).map_err(Failure::Connection)?;
         stage.with_required_output_dependencies::<B, Demand<S, Self>, <Self as ApplicationOutputGraphShape<S>>::Dependents>(application, demand, <Self as ApplicationOutputGraphShape<S>>::RootConnection::declaration(), owner.connection_order().clone()).map_err(|cause| Failure::Mutation(WorthQueryApplicationRequestMutationDenial::Handler(MutationHandlerExecutionDenial::Handler(HandlerExecutionDenial::new(cause)))))
     }
-    fn capture(program: CandidateProgram<S, B>, execution: &worth_execution::ExecutionRequest<'_, '_>, input: &ApplicationEncodedInput<B::InputBinding>, owner: &WorthQuerySelectedProgramOwner<'_, S>) -> Result<CandidateProgram<S, B>, Failure> {
+    fn capture(program: CandidateProgram<S, B>, execution: &worth_execution::ExecutionRequest<'_, '_>, _: &WorthQueryPrimaryGraphApplicationRuntime<S>, input: &ApplicationEncodedInput<B::InputBinding>, owner: &WorthQuerySelectedProgramOwner<'_, S>) -> Result<CandidateProgram<S, B>, Failure> {
         let demand = <B as WorthQueryApplicationRequiredOutputSource<S, Connection<S, Self>>>::demand_from_source(input.input()).map_err(Failure::Connection)?;
         Ok(program.with_synchronous_required_outputs::<Connection<S, Self>, <Self as ApplicationOutputGraphShape<S>>::Dependents>(&worth_query_execution::publication_boundary::program_publication_access(), execution, demand, <Self as ApplicationOutputGraphShape<S>>::RootConnection::declaration(), owner.connection_order()))
     }

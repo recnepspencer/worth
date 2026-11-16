@@ -29,7 +29,13 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
             .execution_request_for(&self.runtime.product_runtime)
             .map_err(|cause| WorthQueryOutputDemandDenial::request_admission(cause.into()))?;
         let mut demand = self
-            .admit_recovered_output_demand::<Family>(&execution, retained, current, limits, receipt)
+            .admit_recovered_output_demand::<Family>(
+                &execution,
+                retained,
+                current,
+                limits,
+                &receipt.clone().into(),
+            )
             .expect("certification admits Recovery before exercising its refresh door");
         let (value, source) = redisclosed.into_single_source().ok_or_else(|| {
             denial(

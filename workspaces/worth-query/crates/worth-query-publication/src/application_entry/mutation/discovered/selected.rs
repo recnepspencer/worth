@@ -133,6 +133,7 @@ where
                                     program,
                                     &worth_query_execution::publication_boundary::program_publication_access(),
                                     &execution,
+                                    application.runtime(),
                                     std::sync::Arc::clone(&retained_discovery),
                                     owner.connection_order(),
                                 ),

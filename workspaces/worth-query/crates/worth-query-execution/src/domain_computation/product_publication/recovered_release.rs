@@ -14,6 +14,15 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             Ok(effects) => effects,
             Err(cause) => return Err(recovery::recovery_failure(recovery, cause.into())),
         };
+        let adoption = match self.is_branch_adoption_original(&effects) {
+            Ok(adoption) => adoption,
+            Err(_) => {
+                return Err(recovery::recovery_failure(
+                    recovery,
+                    WorthQueryProductUnpublishedRecoveryReleaseDenial::OriginalBindingMismatch,
+                ))
+            }
+        };
         let reservation = match self
             .runtime
             .product_runtime
@@ -30,10 +39,12 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let cause = match port.release_recovered_effects(execution, effects) {
             Outcome::Released(released) => {
                 let (original, cleanup) = released.into_parts();
-                self.runtime
-                    .primary_provider
-                    .unpublished_idempotency_disposition()
-                    .finish_recovered_release(&handle, original);
+                if !adoption {
+                    self.runtime
+                        .primary_provider
+                        .unpublished_idempotency_disposition()
+                        .finish_recovered_release(&handle, original);
+                }
                 let identity = reservation.install_unpublished(cleanup);
                 return Ok(crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanup::new(self.runtime.product_runtime.clone(), identity));
             }

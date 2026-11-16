@@ -22,7 +22,7 @@ impl WorthQueryOutputDemandRegistry {
     pub fn finish_scheduling_for_test(
         &self,
         interest: &WorthQueryOutputDemandInterest,
-        performed_source: Option<WorthQueryPerformedOutputDemandSource>,
+        performed_source: Option<WorthQueryRetainedOutputDemandSource>,
         result: &mut Result<WorthQueryOutputSchedulingResult, WorthQueryOutputDemandDenial>,
     ) {
         Self::finish_scheduling(self, interest, performed_source, result)

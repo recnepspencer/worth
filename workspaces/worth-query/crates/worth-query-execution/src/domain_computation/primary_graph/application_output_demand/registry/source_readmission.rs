@@ -4,6 +4,10 @@ use std::any::Any;
 use std::ops::Deref;
 use std::sync::Arc;
 mod cached_successor;
+mod durable_membership;
+pub(in crate::domain_computation::primary_graph) use durable_membership::{
+    DurableDemandMembership, DurableDemandRecording,
+};
 
 use super::WorthQueryOutputDemandInterest;
 use super::WorthQueryOutputDemandRegistry;
@@ -38,6 +42,12 @@ impl<Query> RetainedOutputReadmissionSource<Query> {
 /// Erasure transports an owner-issued source to its installed typed executor.
 /// It does not authorize a read, a branch selection, or producer execution.
 pub struct RequiredOutputReadmission {
+    pub(in crate::domain_computation::primary_graph) recorded_prerequisites:
+        std::sync::Mutex<Option<Vec<std::num::NonZeroU64>>>,
+    pub(in crate::domain_computation::primary_graph) durable:
+        std::sync::Mutex<Option<DurableDemandMembership>>,
+    pub(in crate::domain_computation::primary_graph) recording:
+        std::sync::OnceLock<DurableDemandRecording>,
     pub(in crate::domain_computation::primary_graph) source: Arc<dyn Any + Send + Sync>,
     /// Transport the immutable installed entry selected for this exact row.
     /// The typed demand validates its family and identity after downcasting.
@@ -83,6 +93,9 @@ impl WorthQueryOutputDemandRegistry {
             owner: self.clone(),
             source,
             readmission: Arc::new(RequiredOutputReadmission {
+                durable: std::sync::Mutex::new(None),
+                recorded_prerequisites: std::sync::Mutex::new(None),
+                recording: std::sync::OnceLock::new(),
                 source: erased,
                 producer: std::sync::OnceLock::new(),
                 limits,

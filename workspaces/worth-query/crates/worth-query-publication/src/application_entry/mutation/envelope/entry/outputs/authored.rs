@@ -41,6 +41,7 @@ where
     fn capture(
         program: CandidateProgram<S, B>,
         _: &worth_execution::ExecutionRequest<'_, '_>,
+        _: &WorthQueryPrimaryGraphApplicationRuntime<S>,
         _: &ApplicationEncodedInput<B::InputBinding>,
         _: &WorthQuerySelectedProgramOwner<'_, S>,
     ) -> Result<CandidateProgram<S, B>, Failure> {

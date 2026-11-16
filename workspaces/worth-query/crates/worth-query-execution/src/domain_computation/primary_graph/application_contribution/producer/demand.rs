@@ -275,3 +275,16 @@ mod court_doors_for_test;
 #[cfg(test)]
 #[path = "demand_inline_type_budget.rs"]
 pub(crate) mod inline_type_budget;
+
+impl<S, F> WorthQueryAdmittedOutputDemand<S, F>
+where
+    S: worth_query_installation::facade::ApplicationSchema,
+    F: WorthQueryProducerOutputFamily<S>,
+{
+    pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn into_durable_interest(
+        mut self,
+    ) -> Option<super::super::super::application_output_demand::WorthQueryOutputDemandInterest>
+    {
+        self.interest.take()
+    }
+}

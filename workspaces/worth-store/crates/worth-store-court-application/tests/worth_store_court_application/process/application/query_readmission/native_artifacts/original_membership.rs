@@ -2,7 +2,9 @@
 use super::*;
 use crate::process::application::query_original_membership::MembershipJournal;
 use worth_foundational::facade::{CanonicalDigestId, WorldOriginalFate};
-use worth_query_execution::facade::program_support::QueryProgramSupportRecord;
+use worth_query_execution::facade::query_obligations::{
+    QueryObligationRecord, QueryProgramSupportRecord,
+};
 use worth_query_host::facade::{
     application_installation::WorthQueryProgramSupportRetirementFailure,
     domain::WorthQueryProgramSupportRetirementDenial, WorthQueryApplicationHome,
@@ -201,7 +203,7 @@ fn home_custody_disposes_released_original_membership_before_service_after_grace
         assert!(journal.ledger.obligations().next().is_none());
         let frame = journal.read_frame(3, &execution);
         assert!(matches!(frame.record(),
-            QueryProgramSupportRecord::Release { identity: actual } if *actual == identity));
+            QueryObligationRecord::ProgramSupport(QueryProgramSupportRecord::Release { identity: actual }) if *actual == identity));
         assert_eq!(
             journal.ledger.position(),
             5,

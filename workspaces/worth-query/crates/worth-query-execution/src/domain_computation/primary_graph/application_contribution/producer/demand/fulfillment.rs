@@ -1,9 +1,9 @@
 //! Lend only the real settled required demand's private interest to its owner.
 use super::*;
 use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationCommitReceipt, WorthQueryFulfilledRequiredRoot,
-    WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind as Kind,
-    WorthQueryOutputDemandSettlement, WorthQueryPreparedRequiredOutputSource,
+    WorthQueryFulfilledRequiredRoot, WorthQueryOutputDemandDenial,
+    WorthQueryOutputDemandDenialKind as Kind, WorthQueryOutputDemandSettlement,
+    WorthQueryOutputSourceEvidence, WorthQueryPreparedRequiredOutputSource,
     WorthQueryPrimaryGraphApplicationRuntime,
 };
 impl<Schema: ApplicationSchema, Family: WorthQueryProducerOutputFamily<Schema>>
@@ -14,7 +14,7 @@ impl<Schema: ApplicationSchema, Family: WorthQueryProducerOutputFamily<Schema>>
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         prepared: &WorthQueryPreparedRequiredOutputSource,
-        receipt: &WorthQueryApplicationCommitReceipt,
+        receipt: &WorthQueryOutputSourceEvidence,
         settlement: &WorthQueryOutputDemandSettlement,
     ) -> Result<WorthQueryFulfilledRequiredRoot, WorthQueryOutputDemandDenial> {
         if self.runtime_authority != runtime.runtime.authority_identity().as_u64()

@@ -20,6 +20,7 @@ fn stale_suffix_resumes_only_after_exact_fresh_coverage_and_preflight() {
         .expect("declared adoption capability admits")
         .prepare(64)
         .expect("the initial target set preflights");
+    let initial_work = adoption.total_selection_work_units();
     let d = fork(&host, a);
     assert_eq!(
         settle(set_retention(&host, b, SEED_RETENTION + 1, 0x9175_4060)),
@@ -34,7 +35,7 @@ fn stale_suffix_resumes_only_after_exact_fresh_coverage_and_preflight() {
         WorthQueryBranchSetAdoptionProgress::NoEffect { branch, .. } if *branch == b
     ));
     let stopped = adoption
-        .begin_resume()
+        .begin_resume(host.runtime(), &scope)
         .unwrap_or_else(|_| panic!("a stale stop must release its obsolete prepared suffix"));
     assert_eq!(stopped.remaining_branches(), &[b, c]);
 
@@ -62,11 +63,44 @@ fn stale_suffix_resumes_only_after_exact_fresh_coverage_and_preflight() {
         .unwrap()
         .programs()
         .resume(stopped, 64);
-    let mut resumed = match resumed {
+    let resumed = match resumed {
         Ok(resumed) => resumed,
         Err(_) => panic!("the exact remaining branches must freshly preflight"),
     };
     assert_eq!(resumed.progress().len(), 1);
+    let mut resumed = match resumed.begin_resume(host.runtime(), &scope) {
+        Ok(_) => panic!("historical no-effect cannot stop a fresh suffix"),
+        Err((denial, resumed)) => {
+            assert!(matches!(
+                denial,
+                WorthQueryBranchSetAdoptionResumeDenial::NotStopped
+            ));
+            resumed
+        }
+    };
+    let first_work = resumed.total_selection_work_units();
+    assert!(first_work > initial_work);
+    assert_eq!(
+        settle(set_retention(&host, b, SEED_RETENTION + 2, 0x9175_4065)),
+        RetentionVerdict::Performed(SEED_RETENTION + 2)
+    );
+    assert!(
+        matches!(resumed.advance(host.runtime(),&principal,&scope).unwrap().unwrap(),WorthQueryBranchSetAdoptionProgress::NoEffect { branch,.. } if *branch == b)
+    );
+    let stopped = resumed
+        .begin_resume(host.runtime(), &scope)
+        .unwrap_or_else(|_| panic!("second stale stop"));
+    assert_eq!(stopped.progress().len(), 2);
+    let mut resumed = host
+        .runtime()
+        .request(&principal, &scope)
+        .on_branches(coverage(&host, &[b, c]), &[b, c])
+        .unwrap()
+        .programs()
+        .resume(stopped, 64)
+        .unwrap_or_else(|_| panic!("fresh second suffix"));
+    assert_eq!(resumed.progress().len(), 1);
+    assert!(resumed.total_selection_work_units() > first_work);
     for expected in [b, c] {
         assert!(matches!(
             resumed.advance(host.runtime(), &principal, &scope).unwrap().unwrap(),
@@ -186,7 +220,7 @@ fn cancellation_after_fresh_resume_counts_each_unperformed_branch_once() {
         WorthQueryBranchSetAdoptionProgress::NoEffect { branch, .. } if *branch == b
     ));
     let stopped = adoption
-        .begin_resume()
+        .begin_resume(host.runtime(), &scope)
         .unwrap_or_else(|_| panic!("the stale suffix must become resumable"));
     let resumed = host
         .runtime()
@@ -202,151 +236,4 @@ fn cancellation_after_fresh_resume_counts_each_unperformed_branch_once() {
         .unwrap_or_else(|_| panic!("freshly prepared work has no unresolved custody"));
     assert_eq!(cancelled.cancelled_branch_count(), 2);
     assert_eq!(cancelled.progress().len(), 1);
-}
-
-#[test]
-fn historical_no_effect_cannot_stop_a_freshly_resumed_suffix_again() {
-    let host = publish_on_first_program();
-    let a = host.current_world();
-    let b = fork(&host, a);
-    let c = fork(&host, a);
-    let target = target_revision(&host);
-    let scope = request_scope();
-    let principal = authenticate_operator(host.installed_schema(), &scope);
-    let mut adoption = host
-        .runtime()
-        .request(&principal, &scope)
-        .on_branches(coverage(&host, &[a, b, c]), &[a, b, c])
-        .unwrap()
-        .programs()
-        .adopt(&target)
-        .expect("declared adoption capability admits")
-        .prepare(64)
-        .expect("the initial target set preflights");
-    assert_eq!(
-        settle(set_retention(&host, b, SEED_RETENTION + 1, 0x9175_4090)),
-        RetentionVerdict::Performed(SEED_RETENTION + 1)
-    );
-    assert!(matches!(
-        adoption.advance(host.runtime(), &principal, &scope).unwrap().unwrap(),
-        WorthQueryBranchSetAdoptionProgress::Performed { branch, .. } if *branch == a
-    ));
-    assert!(matches!(
-        adoption.advance(host.runtime(), &principal, &scope).unwrap().unwrap(),
-        WorthQueryBranchSetAdoptionProgress::NoEffect { branch, .. } if *branch == b
-    ));
-    let stopped = adoption
-        .begin_resume()
-        .unwrap_or_else(|_| panic!("the active stale stop must become resumable"));
-    let resumed = host
-        .runtime()
-        .request(&principal, &scope)
-        .on_branches(coverage(&host, &[b, c]), &[b, c])
-        .unwrap()
-        .programs()
-        .resume(stopped, 64)
-        .unwrap_or_else(|_| panic!("the exact remaining set must freshly preflight"));
-
-    let mut resumed = match resumed.begin_resume() {
-        Ok(_) => panic!("historical no-effect progress cannot reopen a resolved stop"),
-        Err(resumed) => resumed,
-    };
-    assert_eq!(resumed.pending_branches().collect::<Vec<_>>(), [b, c]);
-    assert!(matches!(
-        resumed.advance(host.runtime(), &principal, &scope).unwrap().unwrap(),
-        WorthQueryBranchSetAdoptionProgress::Performed { branch, .. } if *branch == b
-    ));
-    assert!(matches!(
-        resumed.advance(host.runtime(), &principal, &scope).unwrap().unwrap(),
-        WorthQueryBranchSetAdoptionProgress::Performed { branch, .. } if *branch == c
-    ));
-    let closed = resumed
-        .close()
-        .unwrap_or_else(|_| panic!("refusing a duplicate stop must preserve the fresh suffix"));
-    assert_eq!(closed.progress().len(), 3);
-}
-
-#[test]
-fn repeated_staleness_replaces_superseded_no_effect_history() {
-    let host = publish_on_first_program();
-    let a = host.current_world();
-    let b = fork(&host, a);
-    let c = fork(&host, a);
-    let target = target_revision(&host);
-    let scope = request_scope();
-    let principal = authenticate_operator(host.installed_schema(), &scope);
-    let mut adoption = host
-        .runtime()
-        .request(&principal, &scope)
-        .on_branches(coverage(&host, &[a, b, c]), &[a, b, c])
-        .unwrap()
-        .programs()
-        .adopt(&target)
-        .expect("declared adoption capability admits")
-        .prepare(64)
-        .expect("the initial target set preflights");
-    let initial_work = adoption.total_selection_work_units();
-
-    assert_eq!(
-        settle(set_retention(&host, b, SEED_RETENTION + 1, 0x9175_40a0)),
-        RetentionVerdict::Performed(SEED_RETENTION + 1)
-    );
-    assert!(matches!(
-        adoption.advance(host.runtime(), &principal, &scope).unwrap().unwrap(),
-        WorthQueryBranchSetAdoptionProgress::Performed { branch, .. } if *branch == a
-    ));
-    assert!(matches!(
-        adoption.advance(host.runtime(), &principal, &scope).unwrap().unwrap(),
-        WorthQueryBranchSetAdoptionProgress::NoEffect { branch, .. } if *branch == b
-    ));
-
-    let stopped = adoption
-        .begin_resume()
-        .unwrap_or_else(|_| panic!("the first stale disposition must release its prepared suffix"));
-    assert_eq!(stopped.progress().len(), 2);
-    let mut resumed = host
-        .runtime()
-        .request(&principal, &scope)
-        .on_branches(coverage(&host, &[b, c]), &[b, c])
-        .unwrap()
-        .programs()
-        .resume(stopped, 64)
-        .unwrap_or_else(|_| panic!("the first fresh suffix preflights"));
-    assert_eq!(resumed.progress().len(), 1);
-    let first_resumed_work = resumed.total_selection_work_units();
-    assert!(first_resumed_work > initial_work);
-
-    assert_eq!(
-        settle(set_retention(&host, b, SEED_RETENTION + 2, 0x9175_40a1)),
-        RetentionVerdict::Performed(SEED_RETENTION + 2)
-    );
-    assert!(matches!(
-        resumed.advance(host.runtime(), &principal, &scope).unwrap().unwrap(),
-        WorthQueryBranchSetAdoptionProgress::NoEffect { branch, .. } if *branch == b
-    ));
-    let stopped = resumed.begin_resume().unwrap_or_else(|_| {
-        panic!("the second stale disposition must release its prepared suffix")
-    });
-    assert_eq!(stopped.progress().len(), 2);
-    let mut resumed = host
-        .runtime()
-        .request(&principal, &scope)
-        .on_branches(coverage(&host, &[b, c]), &[b, c])
-        .unwrap()
-        .programs()
-        .resume(stopped, 64)
-        .unwrap_or_else(|_| panic!("the second fresh suffix preflights"));
-    assert_eq!(resumed.progress().len(), 1);
-    assert!(resumed.total_selection_work_units() > first_resumed_work);
-
-    for expected in [b, c] {
-        assert!(matches!(
-            resumed.advance(host.runtime(), &principal, &scope).unwrap().unwrap(),
-            WorthQueryBranchSetAdoptionProgress::Performed { branch, .. } if *branch == expected
-        ));
-    }
-    let closed = resumed
-        .close()
-        .unwrap_or_else(|_| panic!("the repeatedly refreshed suffix must close"));
-    assert_eq!(closed.progress().len(), 3);
 }

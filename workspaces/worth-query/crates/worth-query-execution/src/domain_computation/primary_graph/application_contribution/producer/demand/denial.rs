@@ -3,6 +3,7 @@ pub use settlement_provenance::WorthQueryOutputSettlementProvenanceDenial;
 pub(super) mod cleanup_custody;
 mod diagnostic_copy;
 mod discovery_connection;
+mod domain_failure;
 mod history_source;
 mod invariant_refusal;
 mod kind;
@@ -304,12 +305,6 @@ impl WorthQueryOutputDemandDenial {
         &self.subject
     }
 
-    /// Domain-owned diagnostic words, when the rejected producer supplies them.
-    /// These words do not replace the typed denial kind or confer authority.
-    pub fn domain_reason(&self) -> Option<&'static str> {
-        self.domain.as_ref().and_then(|domain| domain.reason)
-    }
-
     /// Why an exact failed native read could not join retained required work.
     /// Diagnostic only; this does not change the denial kind or retry posture.
     pub const fn readmission_failure(&self) -> Option<&'static str> {
@@ -334,22 +329,6 @@ impl WorthQueryOutputDemandDenial {
             subject: subject.into(),
             recovery_posture,
         }
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn producer_domain_denied(
-        subject: impl Into<std::borrow::Cow<'static, str>>,
-        reason: Option<&'static str>,
-        value: super::super::WorthQueryProducerDenialValue,
-    ) -> Self {
-        let mut denial = Self::new(
-            WorthQueryOutputDemandDenialKind::ProducerDomainDenied,
-            subject,
-        );
-        denial.domain = Some(Box::new(producer_value::ProducerDomainDenial {
-            reason,
-            value,
-        }));
-        denial
     }
 
     pub(in crate::domain_computation::primary_graph) fn product_selection(

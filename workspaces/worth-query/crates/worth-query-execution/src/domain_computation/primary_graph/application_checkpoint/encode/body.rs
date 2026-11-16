@@ -31,40 +31,7 @@ pub fn write(
     writer.bytes(native_image)?;
     writer.bytes(world_originals)?;
     for accepted in accepted_outputs {
-        writer.length(accepted.producer.len())?;
-        writer.bytes(accepted.producer.as_bytes())?;
-        writer.bytes(&[match accepted.posture {
-            WorthQueryAcceptedOutputCheckpointPosture::Performed => 0,
-            WorthQueryAcceptedOutputCheckpointPosture::StableReused => 1,
-        }])?;
-        writer.bytes(&accepted.implementation.build_identity())?;
-        writer.bytes(&accepted.implementation.edition())?;
-        writer.bytes(&accepted.source)?;
-        writer.scope(accepted.scope)?;
-        writer.bytes(&accepted.source_partition)?;
-        writer.bytes(&[u8::from(accepted.producer_dependency.is_some())])?;
-        writer.bytes(&accepted.producer_dependency.unwrap_or_default())?;
-        writer.bytes(&accepted.idempotency_key)?;
-        writer.length(accepted.roles.len())?;
-        for role in accepted.roles.iter() {
-            writer.length(role.role.len())?;
-            writer.bytes(role.role.as_bytes())?;
-            writer.bytes(&[match role.posture {
-                WorthQueryApplicationOutputPosture::Preserve => 0,
-                WorthQueryApplicationOutputPosture::Create => 1,
-                WorthQueryApplicationOutputPosture::Retire => 2,
-            }])?;
-            writer.length(role.entity_name.len())?;
-            writer.bytes(role.entity_name.as_bytes())?;
-            writer.entity(role.entity)?;
-        }
-        let facts = accepted
-            .producer_facts
-            .as_ref()
-            .map_or(&[][..], |bytes| bytes.as_slice());
-        writer.bytes(&accepted.producer_fact_wire_version.to_be_bytes())?;
-        writer.length(facts.len())?;
-        writer.bytes(facts)?;
+        write_accepted(&mut writer, accepted)?;
     }
     writer.finish()
 }
@@ -132,4 +99,59 @@ fn size_mismatch() -> DurabilityError {
         RecoveryFailureClass::CheckpointFrameSizeMismatch,
         "Query application checkpoint emission differs from its reserved frame size",
     )
+}
+
+fn write_accepted(
+    writer: &mut ReservedFrameWriter<'_>,
+    accepted: &WorthQueryAcceptedOutputCheckpointIdentity,
+) -> Result<(), WorthQueryCheckpointCaptureDenial> {
+    writer.length(accepted.producer.len())?;
+    writer.bytes(accepted.producer.as_bytes())?;
+    writer.bytes(&[match accepted.posture {
+        WorthQueryAcceptedOutputCheckpointPosture::Performed => 0,
+        WorthQueryAcceptedOutputCheckpointPosture::StableReused => 1,
+    }])?;
+    writer.bytes(&accepted.implementation.build_identity())?;
+    writer.bytes(&accepted.implementation.edition())?;
+    writer.bytes(&accepted.source)?;
+    writer.scope(accepted.scope)?;
+    writer.bytes(&accepted.source_partition)?;
+    writer.bytes(&[u8::from(accepted.producer_dependency.is_some())])?;
+    writer.bytes(&accepted.producer_dependency.unwrap_or_default())?;
+    writer.bytes(&accepted.idempotency_key)?;
+    writer.length(accepted.roles.len())?;
+    for role in accepted.roles.iter() {
+        writer.length(role.role.len())?;
+        writer.bytes(role.role.as_bytes())?;
+        writer.bytes(&[match role.posture {
+            WorthQueryApplicationOutputPosture::Preserve => 0,
+            WorthQueryApplicationOutputPosture::Create => 1,
+            WorthQueryApplicationOutputPosture::Retire => 2,
+        }])?;
+        writer.length(role.entity_name.len())?;
+        writer.bytes(role.entity_name.as_bytes())?;
+        writer.entity(role.entity)?;
+    }
+    let facts = accepted
+        .producer_facts
+        .as_ref()
+        .map_or(&[][..], |bytes| bytes.as_slice());
+    writer.bytes(&accepted.producer_fact_wire_version.to_be_bytes())?;
+    writer.length(facts.len())?;
+    writer.bytes(facts)?;
+    Ok(())
+}
+
+pub(in crate::domain_computation::primary_graph) fn encode_accepted(
+    accepted: &WorthQueryAcceptedOutputCheckpointIdentity,
+    policy: super::super::WorthQueryCheckpointCapturePolicy<'_, '_>,
+) -> Result<Vec<u8>, WorthQueryCheckpointCaptureDenial> {
+    let size =
+        super::sizing::ValidatedCheckpointSize::new(0, std::slice::from_ref(accepted), policy)?;
+    let total = size.accepted();
+    let mut bytes = super::reserve_buffer(total, policy)?;
+    let mut writer = ReservedFrameWriter::new(&mut bytes, total)?;
+    write_accepted(&mut writer, accepted)?;
+    writer.finish()?;
+    Ok(bytes.bytes().to_vec())
 }

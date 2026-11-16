@@ -5,6 +5,7 @@ mod historical_restoration;
 mod restoration;
 mod retained_observation;
 
+mod durable_obligation;
 mod selection_mode;
 mod source_admission;
 mod source_custody;
@@ -114,7 +115,7 @@ where
             FamilySourceValue<Schema, Family>,
         >,
         limits: crate::domain_computation::execution_runtime::WorthQueryOutputDemandLimits,
-        source_receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
+        source_receipt: &crate::domain_computation::primary_graph::WorthQueryOutputSourceEvidence,
     ) -> Result<WorthQueryAdmittedOutputDemand<Schema, Family>, WorthQueryOutputDemandDenial>
     where
         Family: WorthQueryProducerOutputFamily<Schema>,
@@ -160,7 +161,7 @@ where
             limits,
             None,
             crate::domain_computation::primary_graph::application_output_demand::DemandAdmissionKind::Recovery,
-            Some(source_receipt.committed_product_publication().composite_commit()),
+            Some(source_receipt.source_commit()),
             None,
             None,
         )

@@ -68,6 +68,9 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                 .graph
                 .source_owner
                 .invalidation_owner,
+            self.installed_program_support()
+                .map(|support| support.lifecycle()),
+            execution,
         )?;
         demand.close();
         Ok(result)

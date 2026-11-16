@@ -3,7 +3,7 @@ use super::super::{WorthQueryFulfilledRequiredRoot, WorthQueryOutputDemandSettle
 use super::*;
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind as Kind;
 use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationCommitReceipt, WorthQueryPreparedRequiredOutputSource,
+    WorthQueryOutputSourceEvidence, WorthQueryPreparedRequiredOutputSource,
 };
 use worth_execution::{ExecutionRequest, MapKernelContext, WorkCeilingDenial};
 
@@ -12,7 +12,7 @@ impl WorthQueryOutputDemandRegistry {
         &self,
         execution: &ExecutionRequest<'_, '_>,
         prepared: &WorthQueryPreparedRequiredOutputSource,
-        receipt: &WorthQueryApplicationCommitReceipt,
+        receipt: &WorthQueryOutputSourceEvidence,
         interest: &WorthQueryOutputDemandInterest,
         settlement: &WorthQueryOutputDemandSettlement,
     ) -> Result<WorthQueryFulfilledRequiredRoot, WorthQueryOutputDemandDenial> {
@@ -47,7 +47,7 @@ impl WorthQueryOutputDemandRegistry {
         &self,
         context: &mut MapKernelContext<'_, '_>,
         prepared: &WorthQueryPreparedRequiredOutputSource,
-        receipt: &WorthQueryApplicationCommitReceipt,
+        receipt: &WorthQueryOutputSourceEvidence,
         interest: &WorthQueryOutputDemandInterest,
         settlement: &WorthQueryOutputDemandSettlement,
         memory: Option<worth_execution::ExecutionMemoryReservation>,
@@ -77,10 +77,8 @@ impl WorthQueryOutputDemandRegistry {
             .as_ref()
             .ok_or_else(|| refused(Kind::RetainedBasisUnavailable))?;
         if !source.receipt.same_retained_output_source_as(receipt)
-            || receipt.committed_product_publication().composite_commit() != &prepared.source_commit
-            || !receipt
-                .committed_product_publication()
-                .is_selected_at(&source.observation)
+            || receipt.source_commit() != &prepared.source_commit
+            || !receipt.is_selected_at(&source.observation)
         {
             return Err(refused(Kind::ForeignSource));
         }
@@ -134,7 +132,7 @@ impl WorthQueryOutputDemandRegistry {
         Ok(WorthQueryFulfilledRequiredRoot {
             source: source.observation.clone(),
             output: Arc::clone(settlement.retained_read_ref()),
-            source_intent: receipt.idempotency_binding(),
+            source_intent: receipt.subject(),
             posture: settlement.posture(),
             _memory: memory,
         })

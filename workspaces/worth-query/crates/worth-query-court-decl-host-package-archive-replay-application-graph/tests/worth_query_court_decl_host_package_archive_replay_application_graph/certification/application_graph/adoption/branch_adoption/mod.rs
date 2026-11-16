@@ -45,6 +45,9 @@ fn one_branch_adopts_p1_while_its_sibling_keeps_running_p0() {
         "adoption validates both seeded documents, including the related workflow subject"
     );
     let performed = match prepared.publish(host.runtime(), &principal, &scope) {
+        WorthQueryBranchAdoptionPublicationOutcome::ObligationDischargePending {
+            cause, ..
+        } => panic!("unexpected journal refusal: {cause:?}"),
         WorthQueryBranchAdoptionPublicationOutcome::AuthorizationDenied { cause, .. } => {
             panic!("authorized adoption refused: {cause:?}")
         }
@@ -183,6 +186,9 @@ fn prepared_adoption_refuses_a_branch_head_that_moved() {
         RetentionVerdict::Performed(SEED_RETENTION + 1)
     );
     match prepared.publish(host.runtime(), &principal, &scope) {
+        WorthQueryBranchAdoptionPublicationOutcome::ObligationDischargePending {
+            cause, ..
+        } => panic!("unexpected journal refusal: {cause:?}"),
         WorthQueryBranchAdoptionPublicationOutcome::AuthorizationDenied { cause, .. } => {
             panic!("authorized adoption refused: {cause:?}")
         }

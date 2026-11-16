@@ -48,7 +48,7 @@ use worth_store::physical_runtime::{
 
 #[derive(Debug)]
 pub enum ApplicationHomeOwnerAdmissionDenial {
-    QueryObligations(worth_query_execution::facade::program_support::QueryProgramSupportDenial),
+    QueryObligations(worth_query_execution::facade::query_obligations::QueryObligationDenial),
     QueryCorrections(
         worth_query_execution::facade::correction_material::QueryCorrectionMaterialDenial,
     ),

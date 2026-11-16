@@ -5,3 +5,5 @@ mod compile_fail;
 mod cost;
 #[path = "worth_query_court_execution/domain_computation/mod.rs"]
 pub mod domain_computation;
+
+mod query_obligations;

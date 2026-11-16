@@ -47,6 +47,7 @@ impl CapturedSynchronousOutputs {
         match root {
             Ok(root) => Self::Prepared {
                 root,
+                source_recipe: None,
                 _memory: memory,
             },
             Err(CaptureStop::Request(cause)) => refused(cause.into()),

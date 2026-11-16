@@ -119,6 +119,7 @@ pub use super::application_contribution::{
     WorthQueryProducerObservationReadOperation, WorthQueryProducerOutputEquivalence,
     WorthQueryProducerOutputFamily, WorthQueryProjectedProducerDenial,
     WorthQueryPublishedComputationStateForTest, WorthQueryReadinessFieldUse,
+    WorthQueryRecordedProducerDenialEncodingRefusal, WorthQueryRecordedProducerDenialValue,
     WorthQueryReductionInputDenial, WorthQueryRequiredFeatureContract,
     WorthQueryRequiredFeaturePair, WorthQuerySelectedApplicationProducer,
     WorthQueryUndeclaredProducerDenial, WorthQueryWorkflowAssessmentOutputFamily,

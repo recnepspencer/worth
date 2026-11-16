@@ -35,14 +35,18 @@ fn recorded_fixed_steps_preview_the_qualified_old_output_after_later_edits() {
             .completed_source()
             .expect("actual original Fixed settlement");
         let source = completed.settlement().performed_source().unwrap();
-        let description = source.receipt().descriptive_copy();
+        let receipt = source
+            .receipt()
+            .retained_receipt()
+            .expect("this original Fixed settlement retains its performed source");
+        let description = receipt.descriptive_copy();
         assert_eq!(
             description.idempotency_binding(),
-            source.receipt().idempotency_binding()
+            receipt.idempotency_binding()
         );
         assert_eq!(
             description.committed_product_publication(),
-            source.receipt().committed_product_publication()
+            receipt.committed_product_publication()
         );
         assert!(
             source.root_fulfillment().matches_source(source.receipt()),
@@ -60,8 +64,7 @@ fn recorded_fixed_steps_preview_the_qualified_old_output_after_later_edits() {
                 .y),
             length(y)
         );
-        let action = source
-            .receipt()
+        let action = receipt
             .committed_product_publication()
             .composite_commit()
             .clone();

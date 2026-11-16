@@ -2,7 +2,7 @@
 use super::*;
 use worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot;
 use worth_query_execution::facade::primary_graph::{
-    WorthQueryApplicationCommitReceipt, WorthQueryFulfilledRequiredRoot,
+    WorthQueryFulfilledRequiredRoot, WorthQueryOutputSourceEvidence,
     WorthQueryPreparedRequiredOutputSource,
 };
 pub(super) struct RequiredSourceBinding<S, P, D>
@@ -19,7 +19,7 @@ type RequiredSourceFulfillment<S, P, D> = fn(
     &WorthQueryProgramApplicationRuntime<S, P>,
     &WorthQueryApplicationProgramDemandHandle<S, P, D>,
     &WorthQueryPreparedRequiredOutputSource,
-    &WorthQueryApplicationCommitReceipt,
+    &WorthQueryOutputSourceEvidence,
     &crate::application_entry::WorthQueryApplicationOutputDemandSettlement<Query<S, D>>,
 ) -> Result<
     WorthQueryFulfilledRequiredRoot,
@@ -47,7 +47,7 @@ fn fulfill<S, P, D, R>(
     application: &WorthQueryProgramApplicationRuntime<S, P>,
     demand: &WorthQueryApplicationProgramDemandHandle<S, P, D>,
     prepared: &WorthQueryPreparedRequiredOutputSource,
-    receipt: &WorthQueryApplicationCommitReceipt,
+    receipt: &WorthQueryOutputSourceEvidence,
     settlement: &crate::application_entry::WorthQueryApplicationOutputDemandSettlement<Query<S, D>>,
 ) -> Result<
     WorthQueryFulfilledRequiredRoot,

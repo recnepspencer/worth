@@ -61,6 +61,7 @@ where
     fn capture(
         program: CandidateProgram<S, B>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
+        application: &WorthQueryPrimaryGraphApplicationRuntime<S>,
         input: &ApplicationEncodedInput<B::InputBinding>,
         owner: &WorthQuerySelectedProgramOwner<'_, S>,
     ) -> Result<CandidateProgram<S, B>, Failure> {
@@ -70,6 +71,7 @@ where
             program,
             &worth_query_execution::publication_boundary::program_publication_access(),
             execution,
+            application,
             Arc::new(recipe),
             owner.connection_order(),
         ))

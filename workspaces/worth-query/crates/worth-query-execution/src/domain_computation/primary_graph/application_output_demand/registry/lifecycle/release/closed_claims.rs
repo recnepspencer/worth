@@ -92,7 +92,7 @@ impl DemandRegistryState {
                 self.records
                     .get_mut(upstream)
                     .expect("claimed row is retained")
-                    .framework_required_count -= 1;
+                    .release_framework_claim();
             }
             slot.member = self.remove_required_member_if_released_detached(key);
 

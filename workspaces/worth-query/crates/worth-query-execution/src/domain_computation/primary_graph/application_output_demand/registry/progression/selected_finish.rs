@@ -27,7 +27,7 @@ impl<'a> PreparedSelectedSchedulingFinish<'a> {
     /// retains its diagnostic clone, which carries no cleanup authority.
     pub(in crate::domain_computation::primary_graph) fn finish(
         self,
-        mut performed_source: Option<WorthQueryPerformedOutputDemandSource>,
+        mut performed_source: Option<WorthQueryRetainedOutputDemandSource>,
         result: &mut Result<WorthQueryOutputSchedulingResult, WorthQueryOutputDemandDenial>,
     ) {
         let interrupted = match result {

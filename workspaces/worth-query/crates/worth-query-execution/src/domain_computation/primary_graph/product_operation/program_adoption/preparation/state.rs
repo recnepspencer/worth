@@ -138,7 +138,7 @@ pub(super) fn prepare<Schema: ApplicationSchema, Operation, Input, Scope>(
     let support = application
         .installed_program_support()
         .ok_or(WorthQueryBranchAdoptionPreparationDenial::ProgramSupportUnavailable)?;
-    let support_custody = support
+    let mut support_custody = support
         .retain_custody(&source, target)
         .ok_or(WorthQueryBranchAdoptionPreparationDenial::ProgramSupportRetirementInProgress)?;
     let activation = support
@@ -194,7 +194,7 @@ pub(super) fn prepare<Schema: ApplicationSchema, Operation, Input, Scope>(
     );
     let target_rendering = program_revision_rendering(target);
     admission.validate_current_authority().map_err(|cause| WorthQueryBranchAdoptionPreparationDenial::Authorization(super::super::authorization::WorthQueryProgramAdoptionAuthorizationDenial::Authorization(cause)))?;
-    let candidate = graph.with_runtime(execution, |runtime| {
+    let proposal = graph.with_runtime(execution, |runtime| {
         let mut batch =
             WorkerIntentBatch::new("application-program-adoption").push(MutationIntent::Entity(
                 EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
@@ -237,10 +237,9 @@ pub(super) fn prepare<Schema: ApplicationSchema, Operation, Input, Scope>(
             )
             .map_err(WorthQueryBranchAdoptionPreparationDenial::TransactionStaging)?;
         runtime
-            .prepare_branch_transaction(execution, transaction)
+            .validate_branch_transaction(execution, transaction)
             .map_err(map_relational_preparation_denial)
     })?;
-    let successor_observation_requested = false;
     let recovery = selected.product().publication_binding().recovery();
     let disposition = selected
         .application()
@@ -248,21 +247,29 @@ pub(super) fn prepare<Schema: ApplicationSchema, Operation, Input, Scope>(
         .primary_provider
         .unpublished_idempotency_disposition();
     admission.validate_current_authority().map_err(|cause| WorthQueryBranchAdoptionPreparationDenial::Authorization(super::super::authorization::WorthQueryProgramAdoptionAuthorizationDenial::Authorization(cause)))?;
-    let publication = selected
-        .product()
-        .publication_binding()
-        .prepare_relational_candidate(candidate, request, successor_observation_requested)
-        .map_err(|denial| match denial {
-            PublicationDenial::ClockMismatch => {
-                WorthQueryBranchAdoptionPreparationDenial::ExecutionDenied(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock))
-            },
-PublicationDenial::Stopped(stop) => {
-                WorthQueryBranchAdoptionPreparationDenial::ExecutionDenied(advancement_denial(stop))
-            }
-            PublicationDenial::Refused(no_effect) => {
-                WorthQueryBranchAdoptionPreparationDenial::WorldPreparation(no_effect)
-            }
-        })?;
+    use super::super::publication::preparation::{
+        AdoptionRecordDetails, PreparationFailure, PreparedAdoptionPublication,
+    };
+    let publication=match PreparedAdoptionPublication::prepare(selected,proposal,request,execution,&mut support_custody,AdoptionRecordDetails {
+        source:worth_foundational::facade::CanonicalDigestId::new(*source.as_bytes()),target:worth_foundational::facade::CanonicalDigestId::new(*target.as_bytes()),selected:selected_entity_count as u64,migration:migration_description.as_ref().map(|m|(m.operation().to_owned(),m.effect_count() as u64)),
+    }) {
+        Ok(prepared)=>prepared,
+        Err(PreparationFailure::Native(cause))=>return Err(map_relational_preparation_denial(cause)),
+        Err(PreparationFailure::Obligation(cause))=>return Err(WorthQueryBranchAdoptionPreparationDenial::ObligationPublication(cause)),
+        Err(PreparationFailure::Opening(cause))=>return Err(WorthQueryBranchAdoptionPreparationDenial::DurableOpening(cause)),
+        Err(PreparationFailure::Request(cause))=>return Err(match cause {
+            PublicationDenial::ClockMismatch=>WorthQueryBranchAdoptionPreparationDenial::ExecutionDenied(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock)),
+            PublicationDenial::Stopped(stop)=>WorthQueryBranchAdoptionPreparationDenial::ExecutionDenied(advancement_denial(stop)),
+            PublicationDenial::Refused(no_effect)=>WorthQueryBranchAdoptionPreparationDenial::WorldPreparation(no_effect),
+        }),
+        Err(PreparationFailure::Retained { effects,opening,native })=> {
+            let unpublished=Box::new(super::super::publication::WorthQueryUnpublishedBranchAdoption::new(source,*target,selected_entity_count,migration_description,custody,effects,recovery,disposition,support_custody));
+            return Err(match native {
+                Some(cause)=>WorthQueryBranchAdoptionPreparationDenial::DurableNativePreparation {cause,unpublished},
+                None=>WorthQueryBranchAdoptionPreparationDenial::DurableOpeningRetained {cause:opening,unpublished},
+            });
+        }
+    };
     Ok(WorthQueryPreparedBranchAdoption {
         branch: selected.product().product_branch(),
         owner_identity: selected

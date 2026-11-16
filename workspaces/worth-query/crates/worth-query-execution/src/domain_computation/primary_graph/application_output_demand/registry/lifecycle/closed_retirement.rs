@@ -192,7 +192,7 @@ impl DemandRegistryState {
             self.records
                 .get_mut(upstream)
                 .expect("the claimed row is retained")
-                .framework_required_count -= 1;
+                .release_framework_claim();
             Some(())
         })();
         if followed.is_some() {

@@ -16,7 +16,7 @@ where
         selector: crate::domain_computation::primary_graph::WorthQueryOutputSourceReplay<'_>,
     ) -> Result<
         (
-            crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
+            crate::domain_computation::primary_graph::WorthQueryOutputSourceEvidence,
             std::sync::Arc<
                 crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation,
             >,
@@ -39,6 +39,7 @@ where
             phase,
             selector,
             crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind::Required(TypeId::of::<Root>()),
+            RootConnectionRef::<Schema, Root>::declaration().identity(),
         )?;
         let (observation, prepared) = self.backing.runtime()
             .recover_prepared_output_source(&receipt, TypeId::of::<Root>())

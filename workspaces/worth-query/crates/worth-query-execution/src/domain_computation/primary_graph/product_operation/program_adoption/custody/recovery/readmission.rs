@@ -37,6 +37,10 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 ))
             }
         };
+        if inspected.is_recovered() {
+            drop(inspected);
+            return self.continue_recovered_adoption(execution, recovery);
+        }
         if inspected.expected_product() != self.product().publication_binding().observation() {
             drop(inspected);
             return Err(failure(

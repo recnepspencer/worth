@@ -5,6 +5,18 @@ use crate::basis::WorthQueryProductBranch;
 
 /// The disposition of one branch already attempted in a branch-set adoption.
 pub enum WorthQueryBranchSetAdoptionProgress {
+    /// Historical DATA after reopen; no live publication receipt is reconstructed.
+    RecordedPerformed {
+        branch: WorthQueryProductBranch,
+        commit: worth_foundational::facade::DurableCompositeCommitIdentity,
+        source: worth_foundational::facade::CanonicalDigestId,
+        target: worth_foundational::facade::CanonicalDigestId,
+    },
+    /// The recorded stop had no owner effect; diagnostic text grants no authority.
+    RecordedNoEffect {
+        branch: WorthQueryProductBranch,
+        diagnostic: String,
+    },
     /// The host call was refused before any owner effects.
     ExecutionDenied {
         branch: WorthQueryProductBranch,
@@ -31,7 +43,9 @@ pub enum WorthQueryBranchSetAdoptionProgress {
 impl WorthQueryBranchSetAdoptionProgress {
     pub const fn branch(&self) -> WorthQueryProductBranch {
         match self {
-            Self::ExecutionDenied { branch, .. }
+            Self::RecordedPerformed { branch, .. }
+            | Self::RecordedNoEffect { branch, .. }
+            | Self::ExecutionDenied { branch, .. }
             | Self::Performed { branch, .. }
             | Self::NoEffect { branch, .. }
             | Self::ProductUnpublished { branch, .. } => *branch,
@@ -41,7 +55,9 @@ impl WorthQueryBranchSetAdoptionProgress {
     pub const fn performed(&self) -> Option<&WorthQueryPerformedBranchAdoption> {
         match self {
             Self::Performed { adoption, .. } => Some(adoption),
-            Self::ExecutionDenied { .. }
+            Self::RecordedPerformed { .. }
+            | Self::RecordedNoEffect { .. }
+            | Self::ExecutionDenied { .. }
             | Self::NoEffect { .. }
             | Self::ProductUnpublished { .. } => None,
         }
@@ -50,7 +66,9 @@ impl WorthQueryBranchSetAdoptionProgress {
     pub const fn no_effect(&self) -> Option<&NoEffectCompositePublication> {
         match self {
             Self::NoEffect { no_effect, .. } => Some(no_effect),
-            Self::ExecutionDenied { .. }
+            Self::RecordedPerformed { .. }
+            | Self::RecordedNoEffect { .. }
+            | Self::ExecutionDenied { .. }
             | Self::Performed { .. }
             | Self::ProductUnpublished { .. } => None,
         }
@@ -59,7 +77,11 @@ impl WorthQueryBranchSetAdoptionProgress {
     pub const fn unpublished(&self) -> Option<&WorthQueryUnpublishedBranchAdoption> {
         match self {
             Self::ProductUnpublished { adoption, .. } => Some(adoption),
-            Self::ExecutionDenied { .. } | Self::Performed { .. } | Self::NoEffect { .. } => None,
+            Self::RecordedPerformed { .. }
+            | Self::RecordedNoEffect { .. }
+            | Self::ExecutionDenied { .. }
+            | Self::Performed { .. }
+            | Self::NoEffect { .. } => None,
         }
     }
 }

@@ -4,17 +4,17 @@ use worth_query_declaration::facade::application_program::{
     ApplicationOutputLeaf, ApplicationRequiredOutputRoot,
 };
 use worth_query_execution::facade::primary_graph::{
-    WorthQueryApplicationCommitReceipt, WorthQueryOutputDemandDenial,
+    WorthQueryOutputDemandDenial, WorthQueryOutputSourceEvidence,
 };
 
 /// The source is saved and its root has terminally refused its inputs before any
 /// output publication. This is descriptive completion, not a Ready settlement.
 pub struct WorthQueryApplicationProgramOutputUnavailable {
-    receipt: WorthQueryApplicationCommitReceipt,
+    receipt: WorthQueryOutputSourceEvidence,
     denial: WorthQueryOutputDemandDenial,
 }
 impl WorthQueryApplicationProgramOutputUnavailable {
-    pub fn source_receipt(&self) -> &WorthQueryApplicationCommitReceipt {
+    pub fn source_receipt(&self) -> &WorthQueryOutputSourceEvidence {
         &self.receipt
     }
     pub fn denial(&self) -> &WorthQueryOutputDemandDenial {
@@ -61,7 +61,7 @@ where Schema: ApplicationSchema + 'static, Program: ApplicationProgramDefinition
             &self.source_observation.retained, request.principal, request.scope, request.branch)
             .map_err(|d| Denial::Demand(crate::application_entry::WorthQueryApplicationOutputDemandDenial::Demand(d)))?;
         // Prepare the descriptive receipt before the native terminal transition.
-        let receipt = receipt.descriptive_copy();
+        let receipt = receipt.clone();
         let denial = root.finish_unavailable::<Root>(phase, application, request, prepared).map_err(Denial::Demand)?;
         self.complete = true;
         self.root = None;

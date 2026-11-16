@@ -545,6 +545,7 @@ the publication. It returns `WorthQueryPreparedBranchAdoption`:
 |---|---|---|
 | `AuthorizationDenied { cause, prepared }` | The fresh capability progression refused; no adoption effects. | Retain `prepared` and retry with current authorization. |
 | `AdmissionDenied { cause, prepared }` | Execution admission refused before effects. | Retain `prepared` for a later request. |
+| `ObligationDischargePending { cause, outcome }` | The carried native disposition is exact; only its custody discharge is pending. | Keep the actual disposition and do not repeat its owner effects. |
 | `ExecutionDenied(cause)` | The native publication attempt stopped. | Handle the native stop. |
 | `Performed(WorthQueryPerformedBranchAdoption)` | The branch now runs the target. `target()`, `migration()`, `custody()` describe it. | None. |
 | `NoEffect(NoEffectCompositePublication)` | Nothing was published. The branch still runs the source. | Prepare again if you still want the move. |
@@ -574,6 +575,7 @@ let outcome = runtime
 | `WorthQueryBranchAdoptionRecoveryOutcome` | Meaning |
 |---|---|
 | `Performed { adoption, cleanup }` | Recovery completed the adoption. |
+| `ObligationDischargePending { cause, outcome }` | The carried native disposition is exact; Query's durable custody discharge still needs acknowledgement. Preserve that disposition and never repeat its effects. |
 | `NoEffect { no_effect, recovery }` | This attempt published nothing. Custody is returned in `recovery`. |
 | `ProductUnpublished { next, prior_cleanup }` | Still unpublished. Continue with `next`. |
 
@@ -584,6 +586,20 @@ let outcome = runtime
   with the exact recovery custody retained.
 - On failure, `WorthQueryApplicationProgramAdoptionRecoveryFailure` hands the
   custody back through `into_recovery()`.
+
+On a Directory Home, the journal retains canonical source/target and the actual
+World attempt. A live recovery object is not a durable token. Fresh authentication
+and a fresh World catalogue handle are required by `runtime.readmit_branch_adoption`
+and the ordinary `programs().recover` entrance. Historical work measurements are
+not reconstructed: recovered `relational_owner_contacts()` returns `None`.
+
+Graceful close and reopen work before Native preparation starts and after World
+occurrence or disposition settles. A cancelled adoption whose Native effect is
+acknowledged but has no World occurrence or disposition is the C1 prefix:
+close refuses `UnresolvedBusinessCustody` and returns a usable Home; abandoning it
+refuses reopen with `UncleanRecoveryUnsupported(Relational)` (D18). This refusal
+is not a successful graceful close, and graceful evidence does not replace that
+original continuation obligation.
 
 ## Branch-set adoption
 
@@ -641,9 +657,9 @@ After a `NoEffect` or `ProductUnpublished` step, `advance(runtime, &principal, &
 
 | Situation | Call | Result |
 |---|---|---|
-| Stopped on `NoEffect`, want to continue | `begin_resume()` | `WorthQueryStoppedBranchSetAdoption`. It releases the prepared suffix and keeps exact progress. |
+| Stopped on `NoEffect`, want to continue | `begin_resume(runtime, &scope)` | `WorthQueryStoppedBranchSetAdoption`. It releases the prepared suffix and keeps exact progress. |
 | Continue the stopped set | Issue fresh coverage for `stopped.remaining_branches()`, then `request.on_branches(coverage, stopped.remaining_branches())?.programs().resume(stopped, max)` | A new `WorthQueryPreparedBranchSetAdoption`. Every remaining branch is preflighted again. |
-| Give up on a stopped set | `stopped.cancel()` | `WorthQueryBranchSetAdoptionCancellation`. |
+| Give up on a stopped set | `stopped.cancel(runtime, &scope)` | `WorthQueryBranchSetAdoptionCancellation`. |
 | Give up before finishing | `cancel()` | Cancels branches whose owner effects have not started. Completed branches stay completed. A `NoEffect` stop is resolved by cancellation. Refused while a `ProductUnpublished` branch holds custody. |
 | Stopped on `ProductUnpublished` | `begin_recovery()`, then `request.recover_branch_set_adoption(recovery)` | Continues exact unpublished custody with the performed prefix and untouched suffix kept together. |
 | Abandon unpublished custody | `request.release_branch_set_adoption_recovery(recovery, minimum_age_ticks)` | Releases the custody and cancels only the untouched suffix. The performed prefix remains as terminal evidence. |
@@ -651,8 +667,31 @@ After a `NoEffect` or `ProductUnpublished` step, `advance(runtime, &principal, &
 - `resume` requires coverage that matches the stopped operation's exact
   remaining order. Otherwise `WorthQueryBranchSetAdoptionResumeFailure` returns
   the stopped adoption through `into_adoption()`; its `denial()` is one of
-  `CoverageMismatch`, `RetentionAllocationRejected`, `Preparation(..)`, or
-  `WorkAccountingOverflow`.
+  `CoverageMismatch`, `ForeignRuntime`, `Obligation(..)`,
+  `RetentionAllocationRejected`, `Preparation(..)`, or `WorkAccountingOverflow`.
+Directory preparation acknowledges a real World Open before Native prepares its
+associated candidate. Dropping that preparation publishes no Native effect;
+exclusive reopen releases the empty original through World and discharges its
+Query record. `DurableNativePreparation` and `DurableOpeningRetained` refusals
+carry the exact unpublished adoption. Keep that custody rather than treating an
+acknowledged Open as a Memory-only `NoEffect`.
+
+A stale prepared Directory head can therefore return `ProductUnpublished` with
+an actual before-effect refusal. `begin_resume(runtime, &scope)` also accepts this
+specific zero-owner-effect stop; it never accepts a Native-bearing original.
+Reopen releases the empty original before preparing that stopped remainder.
+
+After Directory reopen, call
+`runtime.readmit_stopped_branch_set_adoptions(&phase)` inside an advancement.
+The result rejoins ordered branch names and lifecycle descriptions to World's
+fresh selectors. Issue exact coverage for each remainder, then use the ordinary
+`programs().resume`. Historical progress is `RecordedPerformed` or
+`RecordedNoEffect`; it carries DATA rather than a reconstructed live receipt.
+The completed prefix is never prepared again. Stopping and cancellation now
+require the runtime and request scope because their journal writes can refuse;
+a refusal returns the original operation. Fresh suffix preparation discharges
+the stopped record only after every remaining branch has prepared successfully.
+
 - `WorthQueryBranchSetAdoptionCancellation` offers `cancelled_branch_count()`,
   `progress()`, and `total_selection_work_units()`.
 - `WorthQueryBranchSetAdoptionRecoveryOutcome` is `Performed { adoption, cleanup }`
@@ -707,9 +746,24 @@ Use the Home's ordinary `close(&execution)` and retain any close refusal for
 retry; after successful close call `reclaim()`. Reopen the same location with
 fresh authority. The initializer is not rerun, and retiring an unused revision
 does not retire the main program. This status journey is qualified across
-graceful reopen and in a fresh process. Durable adoption recovery and its
-branch-set resume remain separate work; this retirement journey does not
-claim they are installed.
+graceful reopen and in a fresh process. Adoption recovery and stopped branch
+sets separately retain their mandatory program custody in `query.obligations`.
+
+Producer execution in a Directory Home uses the actual readmitted Signal
+branch's allocation registry. Accepted output data retains canonical role/entity
+correspondence and its dependency facts. Same-build reads verify before reuse;
+a changed build leaves incompatible output stale until normal demand regenerates
+it with the original entities. Opening the Home never runs producers.
+
+Required demand and source custody are recorded in the common `query.obligations`
+journal, including consumed prerequisites and source bindings. Recover the source
+operation by its original idempotency key, then present its recovered receipt to
+`request.advanced().recover_required_outputs` or `recover_discovered_outputs`.
+The recorded input is data: fresh principal, scope and actual World observation
+are still required. Completion discharges the obligation across another reopen.
+A recorded producer domain denial preserves its value and does not contact the
+producer again. These guarantees cover graceful or quiescent reopen; crash/fault
+certification and payloads above the 16 KiB frame remain track C work.
 
 ## Denials
 

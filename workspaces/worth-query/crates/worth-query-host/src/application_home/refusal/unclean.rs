@@ -28,8 +28,10 @@ impl<Schema: ApplicationSchemaComposition, Program>
                 effect: *effect,
             });
         }
-        let (Self::WorldReadmission { home, .. } | Self::ExistingWorldReadmission { home, .. }) =
-            self
+        let (Self::WorldReadmission { home, .. }
+        | Self::ExistingWorldReadmission { home, .. }
+        | Self::WorldSourcePreparation { home, .. }
+        | Self::ExistingWorldSourcePreparation { home, .. }) = self
         else {
             return None;
         };

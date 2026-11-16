@@ -55,18 +55,29 @@ pub const fn directory_family_support(family: DurableStateFamily) -> DirectoryFa
         | BridgeDiagnosticRetention => DirectoryFamilySupport::Supported(5),
         BridgeOwnedAsyncDefinitions => DirectoryFamilySupport::RefusedUntil(7),
         ProgramSupportLifecycle => DirectoryFamilySupport::Supported(6),
-        BranchAdoptionRecovery
-        | StoppedBranchSetAdoption
-        | OutputDemandRecords
+        // R8 owns the Phase 6 performed-source/prepared-output obligations;
+        // read leases remain local. Managed/correction extensions still refuse.
+        OutputDemandRecords
         | OutputSourceCustody
         | PerformedSourcePreparation
-        | ProgramOutputReadCustody => DirectoryFamilySupport::RefusedUntil(6),
-        SignalOwnedAsyncCustody
+        | ProgramOutputReadCustody => DirectoryFamilySupport::Supported(6),
+        // Graceful stages only; Native effect without World occurrence/disposition is C1 (D18).
+        BranchAdoptionRecovery => DirectoryFamilySupport::Supported(6),
+        StoppedBranchSetAdoption => DirectoryFamilySupport::Supported(6),
+        // The logical cleanup stays in Query's one journal. Native resources
+        // must have an actual live release before graceful Home handoff.
+        PendingApplicationCleanup => DirectoryFamilySupport::Supported(7),
+        ProducerCleanupCustody
+        | OperationCleanupCustody
+        | SourceOperationCustody
+        | FixedOperationCustody
+        | BankManagedCleanup
+        | HttpNativeCleanup
+        | DirectTerminalCleanup
+        | SignalOwnedAsyncCustody
         | SignalOwnedAsyncQueue
         | BridgeManagedTemporalIntents
         | BridgeOwnedAsyncCustody
-        | PendingApplicationCleanup
-        | ProducerCleanupCustody
         | ConditionalDecisions
         | RetainedConditionalCleanup
         | TemporalIdempotency
@@ -81,7 +92,6 @@ pub const fn directory_family_support(family: DurableStateFamily) -> DirectoryFa
         | DirectYieldRecovery
         | WorkflowYieldRecovery
         | ManagedRestoreRecovery
-        | DirectTerminalCleanup
         | WorkflowTerminalCleanup
         | WorkflowLineages
         | WorkflowDefinitions
@@ -96,13 +106,8 @@ pub const fn directory_family_support(family: DurableStateFamily) -> DirectoryFa
         | WorkflowApprovals
         | WorkflowOperationOutputs
         | WorkflowCapturedInputs
-        | SourceOperationCustody
-        | OperationCleanupCustody
-        | BankManagedCleanup
-        | HttpNativeCleanup
         | UiPresentationCustody
         | CapturedExternalInput
-        | FixedOperationCustody
         | SignalResourceRequestCustody => DirectoryFamilySupport::RefusedUntil(7),
         RecoveryClaims | RecoveryClaimDispositions | RecoveryHandleCustody | BankRecoveryClaim => {
             DirectoryFamilySupport::Supported(8)

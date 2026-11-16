@@ -10,6 +10,8 @@ impl WorthQueryOutputDemandRegistry {
         prepared: &WorthQueryPreparedRequiredOutputSource,
         interest: &WorthQueryOutputDemandInterest,
         owner: &SourceInvalidationOwner,
+        history: Option<&crate::domain_computation::primary_graph::query_obligations::history::QueryObligationHistory>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenial> {
         if !Arc::ptr_eq(&self.state, &interest.owner.state)
             || !Arc::ptr_eq(&self.state, &prepared.owner.state)
@@ -45,6 +47,7 @@ impl WorthQueryOutputDemandRegistry {
             return Err(refusal(Kind::SchedulingDeferred));
         }
         let result = denial.clone();
+        let durable = record.readmission_source.clone();
         let custody = state
             .source_custody
             .get_mut(&prepared.source_commit)
@@ -64,6 +67,27 @@ impl WorthQueryOutputDemandRegistry {
             })
         {
             return Err(refusal(Kind::ForeignSource));
+        }
+        if let Some(history) = history {
+            if let Some(readmission) = durable {
+                readmission.complete_durable();
+            }
+            history
+                .flush_output_discharges(execution)
+                .map_err(|cause| refusal(Kind::ObligationPublication(cause)))?;
+        }
+        if let (Some(history), Some(owner)) =
+            (history, prepared.source_commit.owner_identity().durable())
+        {
+            history
+                .discharge_output_source(
+                    execution,
+                    worth_foundational::facade::DurableCompositeCommitIdentity::from_recorded(
+                        owner,
+                        prepared.source_commit.ordinal(),
+                    ),
+                )
+                .map_err(|cause| refusal(Kind::ObligationPublication(cause)))?;
         }
         // This is terminal unavailability, never a Ready output. No change,
         // candidate, receipt or output authority is synthesized here.

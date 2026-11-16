@@ -1,4 +1,5 @@
 mod dispositions;
+pub(super) use dispositions::derive as derive_custody_dispositions;
 mod migration;
 mod selection;
 mod state;
@@ -44,9 +45,15 @@ pub enum WorthQueryBranchAdoptionActivationDenial {
     ProgramSupportUnavailable,
 }
 
-/// Why a branch adoption could not be prepared. Nothing was published.
+/// Why preparation stopped before any Native effect. Retained variants carry
+/// the actual acknowledged World Open and its support custody.
 #[derive(Debug)]
 pub enum WorthQueryBranchAdoptionPreparationDenial {
+    ObligationPublication(crate::domain_computation::primary_graph::query_obligations::QueryObligationDenial),
+    DurableOpening(worth_runtime_world::facade::WorldOpenAttemptRefusal),
+    /// The original World open remains retained; Native published no effect.
+    DurableNativePreparation { cause: worth_runtime_world::facade::WorldNativePreparationDenial, unpublished: Box<super::publication::WorthQueryUnpublishedBranchAdoption> },
+    DurableOpeningRetained { cause: Option<worth_runtime_world::facade::WorldOpenAttemptRefusal>, unpublished: Box<super::publication::WorthQueryUnpublishedBranchAdoption> },
     DurableStateAdmission(crate::domain_computation::execution_runtime::product_world::WorthQueryDurableStateAdmissionDenial),
     Authorization(super::authorization::WorthQueryProgramAdoptionAuthorizationDenial),
     /// The caller's read request stopped.
@@ -170,7 +177,7 @@ pub struct WorthQueryPreparedBranchAdoption {
     pub(super) selection_work_units: usize,
     pub(super) migration: Option<WorthQueryProgramMigrationDescription>,
     pub(super) custody: WorthQueryProgramCustodyDispositionInventory,
-    pub(super) publication: crate::domain_computation::execution_runtime::product_world::WorthQueryPreparedProductPublication,
+    pub(super) publication: super::publication::preparation::PreparedAdoptionPublication,
     pub(super) recovery: worth_runtime_world::facade::RuntimeWorldRecoveryPort,
     pub(super) disposition:
         crate::domain_computation::primary_graph::WorthQueryUnpublishedIdempotencyDisposition,

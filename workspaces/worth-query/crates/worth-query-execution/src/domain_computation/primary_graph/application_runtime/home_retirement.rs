@@ -30,6 +30,7 @@ pub enum WorthQueryHomeRetirementOwner {
 pub enum WorthQueryHomeRetirementDenial {
     RecoveryCustody(crate::domain_computation::application_aftermath::WorthQueryRecoveryHandleDenial),
     CorrectionRetention(super::super::WorthQueryCorrectionRetentionDenial),
+    ManagedCleanup(super::super::query_obligations::QueryObligationDenial),
     CorrectionMaterial(crate::facade::correction_material::QueryCorrectionMaterialDenial),
     Busy(WorthQueryHomeRetirementOwner),
     Unsupported(WorthQueryHomeRetirementOwner),
@@ -87,6 +88,12 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .map_err(WorthQueryHomeRetirementDenial::Execution)?;
         self.settle_recovery_custody(request)
             .map_err(WorthQueryHomeRetirementDenial::RecoveryCustody)?;
+        if let Some(support) = self.installed_program_support() {
+            support
+                .lifecycle()
+                .preflight_managed_cleanup_close(request)
+                .map_err(WorthQueryHomeRetirementDenial::ManagedCleanup)?;
+        }
         self.mutation_handlers.preflight_home_retirement(request)?;
         self.conditional_cleanup
             .preflight_home_retirement(request)?;

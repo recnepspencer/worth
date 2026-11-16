@@ -119,6 +119,7 @@ impl RuntimeBridge {
     ) -> CorrespondenceDeliveryOutcome {
         let graph_instance_id = graph.installed_graph_capability().graph_instance_id();
         let prepared = match self.prepare_installed_correspondence_envelope_to_targets(
+            &self.correspondence_allocations,
             correspondence,
             targets,
             graph_instance_id,
@@ -194,13 +195,13 @@ impl RuntimeBridge {
     }
 
     pub(super) fn admit_delivery_target_allocations(
-        &self,
+        allocations: &super::SharedCorrespondenceAllocationRegistry,
         correspondence: &BridgeInstalledSemanticCorrespondence,
         targets: &[super::InstalledCorrespondenceTarget],
         counters: &mut CorrespondenceDeliveryCounters,
     ) -> Result<(), CorrespondenceDeliveryOutcome> {
         counters.allocation_registry_lock_attempts += 1;
-        let allocation_registry = match self.correspondence_allocations.try_read() {
+        let allocation_registry = match allocations.try_read() {
             Ok(registry) => registry,
             Err(std::sync::TryLockError::WouldBlock) => {
                 return Err(TransitionOutcome::Deferred(
