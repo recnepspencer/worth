@@ -4772,6 +4772,13 @@ The same handler implements
   typed_demand)` for every currently required entry on each fixed port. The
   source must be issued by this reader, and the demand must resolve to its exact
   generation. An empty required set must follow from those actual reads.
+  The same loan supplies `walk`, `orbit`, `entity_member`,
+  `derived_member_relations_from` and admitted `content` reads through the
+  existing decision-read owners. Their Native cursor/member identity, complete
+  structural/aggregate/derived support and original request remain intact.
+  Errors stay with the loan even if the handler catches them. No raw projection
+  reader or writer is exposed. `RecordSelection` already requires a readable
+  binding; the scalar `field` signature imposes no additional codec capability.
 - Finish with `reader.finish(data)`, where the owned data implements
   `ChargedBytes`. The returned `WorthQueryCapturedProducerInputs` carries the
   original read custody, complete parent set and request allocation. The loan

@@ -81,16 +81,19 @@ macro_rules! producer_capture_handler {
                             }
                         }
                         if let Some(link) = selected {
+                            let member = reader.entity_member(link.to())?;
+                            let source =
+                                member.as_entity().expect("this parent is an actual Entity");
                             let key = reader
-                                .field(link.to(), ModelKey::at("ModelKey"))?
+                                .field(source, ModelKey::at("ModelKey"))?
                                 .expect("required parent key");
                             let demand = first::Demand(key.clone());
                             // The control uses the first declared port, which
                             // this sequential wave drains before anchor rows.
                             if weight == 0 || weight % 2 == 1 {
-                                reader.parent::<program::SeedConnection, _>(link.to(), demand)?;
+                                reader.parent::<program::SeedConnection, _>(source, demand)?;
                             } else {
-                                reader.parent::<program::AnchorConnection, _>(link.to(), demand)?;
+                                reader.parent::<program::AnchorConnection, _>(source, demand)?;
                             }
                             parents.push(handler::ParentData { key, weight });
                         }
