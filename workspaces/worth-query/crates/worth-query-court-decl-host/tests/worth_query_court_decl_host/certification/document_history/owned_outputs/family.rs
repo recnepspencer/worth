@@ -7,6 +7,7 @@ mod member_inputs;
 mod ordinary_carrier;
 #[macro_use]
 mod phase;
+pub mod captured_input;
 mod readiness;
 pub(super) use readiness::readiness_query;
 #[derive(Clone, Debug)]

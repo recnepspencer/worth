@@ -1,4 +1,17 @@
 //! Optional predecessor observations and lifecycle bindings stay at their fixture owner.
+macro_rules! producer_capture_contract {
+    () => {
+        None
+    };
+}
+macro_rules! producer_program_required {
+    () => {
+        false
+    };
+}
+macro_rules! producer_capture_handler {
+    () => {};
+}
 macro_rules! producer_operation {
     (FirstInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { member_input_operation!(FirstInitial, $entity, $key, $value, $of); };
     (FirstPreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { member_input_operation!(FirstPreserve, $entity, $key, $value, $of); };
@@ -156,6 +169,7 @@ macro_rules! phase {
                 type PrincipalIdentity = u64; type PrincipalIdentityBinding = U64ApplicationValueBinding;
                 type SourceExpectation = ApplicationQueryMutationSource<query::$source_query::Query>;
                 const IDENTITY: &'static str = $identity; const HANDLER_IDENTITY: &'static str = $identity; const IDEMPOTENCY_IDENTITY: &'static str = $identity;
+                const REQUIRES_APPLICATION_PROGRAM: bool = producer_program_required!();
                 fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements { ApplicationWorkflowExecutionRequirements::not_applicable() }
                 fn scope_field() -> SourceKey { source_key() }
                 fn principal_binding() -> ApplicationPrincipalBindingRef<Schema, Actor, Mapping, Principal, u64, U64ApplicationValueBinding> { Actor::reference() }
@@ -176,6 +190,7 @@ macro_rules! phase {
                 const PREDECESSOR_READS: Option<WorthQueryProducerObservationReadContract<Schema>> = predecessor_contract!($operation);
                 const ORIGINAL_READS: Option<WorthQueryProducerObservationReadContract<Schema>> = original_contract!($operation);
                 const REUSE_POLICY: &'static str = "exact-source";
+                fn input_capture() -> Option<WorthQueryProducerInputCaptureContract<Schema>> { producer_capture_contract!() }
             }
             impl WorthQueryApplicationProducerProvider<Schema, Producer> for Provider {
                 type DenialValue = WorthQueryUndeclaredProducerDenial;
@@ -272,6 +287,7 @@ macro_rules! phase {
             pub fn declare(schema: ApplicationSchemaDeclarationBuilder<Schema>) -> ApplicationSchemaDeclarationBuilder<Schema> {
                 schema.declared_operation::<Operation>(Operation::reference().definition().no_external_effect().no_aftermath().finish()).application_mutation_binding::<Binding>()
             }
+            producer_capture_handler!();
         }
     };
 }
