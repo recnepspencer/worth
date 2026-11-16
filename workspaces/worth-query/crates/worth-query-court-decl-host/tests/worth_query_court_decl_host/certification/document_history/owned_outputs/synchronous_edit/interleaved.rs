@@ -17,7 +17,8 @@ mod prerequisite_path;
 mod program;
 mod reading;
 pub(in super::super) mod seal;
-use program::{ModelTree, ProducedTree, Program};
+use program::ProducedTree;
+pub(in super::super) use program::{ModelTree, Program};
 pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
