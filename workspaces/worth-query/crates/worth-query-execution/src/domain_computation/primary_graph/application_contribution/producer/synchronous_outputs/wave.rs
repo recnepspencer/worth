@@ -5,6 +5,7 @@ mod occurrences;
 mod outgoing;
 mod prerequisites;
 struct Scheduled<S: ApplicationSchema> {
+    root: bool,
     key: Option<super::occurrences::OccurrenceKey>,
     component: Option<std::any::TypeId>,
     identified: bool,
@@ -78,6 +79,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
         let tree = tree();
         let continuation_done = !tree.has_static_continuation();
         self.tasks.push(Scheduled {
+            root: true,
             key: None,
             component: None,
             identified: false,

@@ -69,7 +69,10 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
         parents.try_reserve_exact(count).map_err(|_| {
             super::super::occurrences::refusal(self.tasks[i].subject, "prerequisite allocation")
         })?;
-        for task in incoming.tasks {
+        for mut task in incoming.tasks {
+            // A prerequisite is reached through this owner's current parent
+            // set; it never becomes an independent final delivery root.
+            task.root = false;
             self.reserve_slot(context, task.subject)?;
             let index = self.tasks.len();
             parents.push(index);

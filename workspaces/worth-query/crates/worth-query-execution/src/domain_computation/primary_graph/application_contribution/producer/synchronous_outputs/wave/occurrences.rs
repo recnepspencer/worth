@@ -97,7 +97,9 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
             .tasks
             .iter()
             .map(|t| {
-                !t.done
+                // A real root alias remains a seed even when coalescing marked
+                // its row done: its authentic supplier may still be pending.
+                t.root
                     && allowed.is_none_or(|families| families.iter().any(|f| f == t.tree.family()))
             })
             .collect::<Vec<_>>();
