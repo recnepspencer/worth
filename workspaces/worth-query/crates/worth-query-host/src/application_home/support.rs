@@ -140,24 +140,17 @@ pub const fn directory_family_support(family: DurableStateFamily) -> DirectoryFa
     }
 }
 
-/// Operation intent can require a later extension of an already-supported family.
+/// Supported families remain available to consumers from later phases.
 ///
-/// Phase 8's external dispatch custody is delivered for exactly the outbox
-/// row and the attempt journal. A non-inbound emission and dispatch are
-/// admitted, and their recorded custody survives graceful close and reopen.
-/// Inbound completion and recovery claims retain their own family requirements.
+/// The support phase records when a family became available, not the latest
+/// consumer phase it can serve. Pending families retain their own lower bound
+/// together with the operation's requirement.
 pub(crate) fn directory_requirement_refusal(
     family: DurableStateFamily,
     required_phase: u8,
 ) -> Option<u8> {
     match directory_family_support(family) {
-        DirectoryFamilySupport::Supported(phase) => {
-            if required_phase <= phase {
-                None
-            } else {
-                Some(required_phase)
-            }
-        }
+        DirectoryFamilySupport::Supported(_) => None,
         DirectoryFamilySupport::RefusedUntil(phase) => Some(phase.max(required_phase)),
     }
 }
