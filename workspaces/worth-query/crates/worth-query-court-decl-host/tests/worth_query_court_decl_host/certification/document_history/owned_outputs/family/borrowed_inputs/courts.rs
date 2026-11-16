@@ -77,6 +77,7 @@ fn initialize(host: &Host) {
 }
 
 fn exercise(cold: bool) {
+    let _observation = WorthQueryExecutionObservation::install_on_this_thread();
     let host = install();
     initialize(&host);
     let host = if cold {
@@ -113,7 +114,9 @@ fn exercise(cold: bool) {
     assert_eq!(
         host.producer_contacts_on_this_thread_for_test() - contacts,
         2,
-        "only the collector and its transitive consumer produce; n is a current read"
+        "only the collector and its transitive consumer produce; n is a current read; values=({}, {})",
+        first(&request).value,
+        child(&request, "from-first:borrowed:a").value,
     );
     assert_eq!(synchronous_edit::native_head(&host).1, [head]);
     assert_eq!(
