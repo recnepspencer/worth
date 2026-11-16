@@ -39,7 +39,7 @@ fn initialize(host: &Host) {
     let request = host.request(&principal, &scope);
     let mut create = request
         .edit_envelope()
-        .idempotency("borrowed-add-n")
+        .idempotency("borrowed-add-n".to_owned())
         .runtime_stages(host)
         .ordered_authored()
         .unwrap();
@@ -56,7 +56,7 @@ fn initialize(host: &Host) {
     assert!(matches!(outcome, Outcome::Committed(_)), "{outcome:?}");
     let mut edit = request
         .edit_envelope()
-        .idempotency("borrowed-initialize")
+        .idempotency("borrowed-initialize".to_owned())
         .runtime_stages(host)
         .ordered_authored()
         .unwrap();
@@ -96,7 +96,7 @@ fn exercise(cold: bool) {
     let contacts = host.producer_contacts_on_this_thread_for_test();
     let mut retire = request
         .edit_envelope()
-        .idempotency("borrowed-retire-m")
+        .idempotency("borrowed-retire-m".to_owned())
         .runtime_stages(&host)
         .ordered_authored()
         .unwrap();
@@ -146,7 +146,7 @@ fn exercise(cold: bool) {
     let undo = request
         .corrections()
         .reverse(&source)
-        .idempotency("borrowed-undo")
+        .idempotency("borrowed-undo".to_owned())
         .limits(limits)
         .edit_envelope::<authored_member::correction::UndoRetire, program::Program, program::Tree>(
             &host,
@@ -180,7 +180,7 @@ fn exercise(cold: bool) {
     let reapply = request
         .corrections()
         .reapply(&alternative)
-        .idempotency("borrowed-reapply")
+        .idempotency("borrowed-reapply".to_owned())
         .limits(limits)
         .edit_envelope::<authored_member::correction::UndoRetire, program::Program, program::Tree>(
             &host,

@@ -1,4 +1,5 @@
 //! A produced header resolves its actual owning model for the next consumer.
+use super::query::{ParametersBinding, Row, RowBinding};
 use super::*;
 worth_query_application_query!(pub Query for Schema, identity "owned-outputs.borrowed-header-owners-query.v1",
     parameters ParametersBinding, result OwnersBinding, scope FirstOutput => "FirstOutput", name "OwnedOwners");

@@ -174,7 +174,9 @@ pub(super) fn advance(
             .map(|input| plan::Claim::Input(input.source_scope)),
     );
     desired.sort_unstable_by_key(plan::Claim::key);
-    desired.dedup_by_key(|claim| claim.key());
+    desired.dedup_by(
+        |a, b| matches!((a, b), (plan::Claim::Input(a), plan::Claim::Input(b)) if a == b),
+    );
     let changes = plan::changes(&before, &desired);
     for change in changes {
         writer.checkpoint(1)?;

@@ -1,4 +1,5 @@
 //! A member discovers only its actual owning models.
+use super::query::{ParametersBinding, Row, RowBinding};
 use super::*;
 worth_query_application_query!(pub Query for Schema, identity "owned-outputs.borrowed-owners-query.v1",
     parameters ParametersBinding, result OwnersBinding, scope Member => "Member", name "OwnedOwners");
@@ -14,8 +15,8 @@ pub(super) fn owners() -> ApplicationQueryResultRelationRef<
     OwnersSlot,
     Schema,
     ModelMember,
-    Member,
     Model,
+    Member,
     ReverseResultTraversal,
     ManyResults,
 > {
