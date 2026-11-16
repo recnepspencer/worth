@@ -115,7 +115,7 @@ pub fn retain_mixed_workflow(application: installation::Home) -> MixedApplicatio
     }
 }
 
-/// The example retains the native workflow runtime and its signing owner.
+/// The example retains its installed workflow Home and signing owner.
 pub struct MixedApplication {
     pub workflow: worth_query_host::facade::WorthQueryWorkflowApplicationHome<
         schema::DocumentRetentionSchema,
@@ -126,12 +126,11 @@ pub struct MixedApplication {
 }
 
 impl std::ops::Deref for MixedApplication {
-    type Target =
-        worth_query_host::facade::application_installation::WorthQueryWorkflowApplicationRuntime<
-            schema::DocumentRetentionSchema,
-            crate::definition::MixedWorkflow,
-            crate::program::MixedProgram,
-        >;
+    type Target = worth_query_host::facade::WorthQueryWorkflowApplicationHome<
+        schema::DocumentRetentionSchema,
+        crate::definition::MixedWorkflow,
+        crate::program::MixedProgram,
+    >;
     fn deref(&self) -> &Self::Target {
         &self.workflow
     }
