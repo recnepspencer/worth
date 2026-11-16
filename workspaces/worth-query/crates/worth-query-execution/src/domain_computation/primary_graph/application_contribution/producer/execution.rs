@@ -34,6 +34,7 @@ mod admitted;
 mod coupled_adoption;
 mod coupled_preparation;
 mod input_preparation;
+pub(in crate::domain_computation::primary_graph::application_contribution) use input_preparation::CapturedProducerInputRead;
 pub(in crate::domain_computation::primary_graph::application_contribution) use coupled_preparation::preparation_denial as coupled_preparation_denial;
 mod coupled;
 mod coupled_source;

@@ -16,6 +16,20 @@ type Scope<S, B> = <<Operation<S, B> as ApplicationMutationBinding<S>>::ScopeBin
 type Op<S, B> = <Operation<S, B> as ApplicationMutationBinding<S>>::Operation;
 type Input<S, B> = <Operation<S, B> as ApplicationMutationBinding<S>>::Input;
 
+pub(in crate::domain_computation::primary_graph::application_contribution) trait CapturedProducerInputRead:
+    std::any::Any
+{
+    fn producer(&self) -> &'static str;
+    fn definition(&self) -> crate::equality_type_id::EqualityTypeId;
+    fn affinity(&self) -> super::super::input_capture::InputCaptureAffinity;
+    fn parents(&self) -> &[super::super::input_capture::CapturedParent];
+    fn support_equal(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        current: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
+    ) -> Result<bool, crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial>;
+}
+
 /// The original complete read set stays owned, not copied into a later admission.
 pub(super) struct PreparedProducerInputs<S, B>
 where
@@ -32,8 +46,35 @@ where
     >,
     pub(super) identities: ApplicationOwnedMutationIdentities<S, Operation<S, B>>,
     pub(super) edition: super::super::InstalledProducerEdition,
+    definition: crate::equality_type_id::EqualityTypeId,
+    _memory: Option<worth_execution::ExecutionMemoryReservation>,
     // Keeps the exact encoded input's original request allocation alive.
     _input: unpublished::PreparedProducerPublication,
+}
+
+impl<S: ApplicationSchema, B: WorthQueryApplicationProducerBinding<S>> CapturedProducerInputRead
+    for PreparedProducerInputs<S, B>
+{
+    fn producer(&self) -> &'static str {
+        B::IDENTITY
+    }
+    fn definition(&self) -> crate::equality_type_id::EqualityTypeId {
+        self.definition
+    }
+    fn affinity(&self) -> super::super::input_capture::InputCaptureAffinity {
+        self.inputs.affinity
+    }
+    fn parents(&self) -> &[super::super::input_capture::CapturedParent] {
+        self.inputs.parents()
+    }
+    fn support_equal(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        current: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
+    ) -> Result<bool, crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial>
+    {
+        self.reads.captured_inputs_remain_equal(execution, current)
+    }
 }
 
 impl<S: ApplicationSchema, B: WorthQueryApplicationProducerBinding<S>>
@@ -268,11 +309,23 @@ where
         .map_err(|cause| {
             execution_failed(B::IDENTITY, MutationHandlerExecutionDenial::Attempt(cause))
         })?;
+    let memory = execution
+        .reserve_retained_memory(std::mem::size_of::<PreparedProducerInputs<S, B>>() as u64)
+        .map_err(|stop| {
+            crate::domain_computation::primary_graph::output_reuse::retained_fact_denial(
+                crate::domain_computation::primary_graph::output_reuse::RetainedFactStop::Execution(
+                    stop.into(),
+                ),
+                B::IDENTITY,
+            )
+        })?;
     Ok(PreparedProducerInputs {
         inputs,
         reads,
         identities,
         edition,
+        definition: owner.definition,
+        _memory: memory,
         _input: retained_input,
     })
 }

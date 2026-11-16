@@ -271,6 +271,7 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             &pin,
             source,
             producer.edition,
+            None,
         )?;
         let PreparedCoupledWriter {
             writer,
