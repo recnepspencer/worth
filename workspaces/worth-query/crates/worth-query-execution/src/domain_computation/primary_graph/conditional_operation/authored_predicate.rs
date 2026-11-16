@@ -71,6 +71,16 @@ impl<Node: 'static, Provider: WorthQueryHostConditionalPredicateProvider<Node>>
     }
 }
 impl<Node: 'static, Provider: WorthQueryHostConditionalPredicateProvider<Node>>
+    BridgeConditionalConditionProvider for QueryAuthoredPredicateProvider<Node, Provider>
+{
+    fn resolve(
+        &self,
+        context: BridgeConditionalResolverContext,
+    ) -> Result<worth_signal::facade::InstalledSignalConditionDecision, String> {
+        BridgeConditionalWakeProvider::resolve(&self.evaluator, context)
+    }
+}
+impl<Node: 'static, Provider: WorthQueryHostConditionalPredicateProvider<Node>>
     BridgeConditionalWakeProvider for QueryAuthoredPredicateProvider<Node, Provider>
 {
     fn resolve(

@@ -44,10 +44,17 @@ path = "examples/inbound_completion.rs"
 test = true
 harness = false
 
+[[example]]
+name = "h10_graceful_bank_home"
+path = "examples/h10_graceful_bank_home/main.rs"
+test = false
+
 [lints]
 workspace = true
 
 [dev-dependencies]
+worth-execution.workspace = true
+worth-foundational.workspace = true
 worth-query-bank-testkit-server = { path = "../worth-query-bank-testkit-server" }
 
 [lib]

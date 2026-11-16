@@ -122,8 +122,15 @@ pub(in crate::domain_computation::primary_graph::application_installation::home_
             std::mem::take(&mut ctx.definition_pending), builder, &services.participation)
             .map_err(|cause| D::Conditional(Box::new(cause)))?);
         ctx.readiness_routes = Some(
-            install_output_readiness_routes(&ctx.readiness, builder, &services.participation)
-                .map_err(|cause| D::Conditional(Box::new(cause)))?,
+            install_output_readiness_routes(
+                &ctx.readiness,
+                builder,
+                &services.participation,
+                ctx.definition_routes
+                    .as_mut()
+                    .expect("actual installed definition owner"),
+            )
+            .map_err(|cause| D::Conditional(Box::new(cause)))?,
         );
         producers
             .validate_readiness_routes(

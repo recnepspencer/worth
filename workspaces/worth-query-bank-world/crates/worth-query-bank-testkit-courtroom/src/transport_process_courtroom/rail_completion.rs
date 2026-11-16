@@ -15,7 +15,13 @@ pub use bank_http_adapter::{
 };
 pub use bank_user_node::BankUserNodeRecoverySafeRetryOutcome;
 pub use ed25519_dalek::{Signer, SigningKey};
-pub use tokio::sync::oneshot;
+pub use worth_execution::{
+    run_with_execution_stack, CancellationToken, ExecutionRequest, ExecutionResourceLease,
+    LeaseRequest,
+};
+pub use worth_foundational::{
+    DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
+};
 
 pub use super::identity_world::docker_world::DockerIdentityWorld;
 pub use super::identity_world::fixture::IdentityFixture;
@@ -48,28 +54,11 @@ pub const BANK_PUBLIC_KEY: [u8; 32] = [
     107, 19, 197, 142, 215, 2, 234, 200, 53, 233, 246, 24,
 ];
 
-#[expect(
-    clippy::disallowed_methods,
-    reason = "async-runtime async-runtime=1; certification-harness thread-builder=1: Testkit current-thread event loop drives real endpoint I/O for consumer courts; it is not a production computation pool."
-)]
 pub async fn install_identity(
     configuration: BankHttpProcessConfiguration,
 ) -> bank_http_adapter::AuthentikBankIdentity {
-    let (sender, receiver) = oneshot::channel();
-    std::thread::Builder::new()
-        .name("callback-court-installation".to_owned())
-        .stack_size(16 * 1024 * 1024)
-        .spawn(move || {
-            let runtime = tokio::runtime::Builder::new_current_thread()
-                .enable_all()
-                .build()
-                .expect("installation runtime should build");
-            let result = runtime.block_on(configuration.install_identity());
-            let _ = sender.send(result);
-        })
-        .expect("Bank installation thread should start");
-    receiver
+    configuration
+        .install_identity()
         .await
-        .expect("Bank installation should report")
         .expect("Bank world should install")
 }

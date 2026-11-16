@@ -26,7 +26,10 @@ pub fn capture(application: &MixedApplication, required: RequiredWorkflowOperati
         })
         .for_workflow_operation(application, &required)
         .unwrap_or_else(|_| panic!("exact occurrence-only capture"))
-        .retain_operation::<MixedProgram, OccurrenceAction>(application.program_runtime())
+        .retain_durable_operation::<MixedProgram, OccurrenceAction>(
+            &request,
+            application.program_runtime(),
+        )
         .unwrap_or_else(|_| panic!("installed capture action"));
     loop {
         match owner.advance(&request) {
@@ -71,7 +74,8 @@ pub fn archive(
         .unwrap_or_else(|(_, _, cause)| panic!("original archive capture: {cause:?}"))
         .for_workflow_operation(application, &required)
         .unwrap_or_else(|_| panic!("exact approved occurrence"))
-        .retain_operation::<MixedProgram, crate::effect::ArchiveAction>(
+        .retain_durable_operation::<MixedProgram, crate::effect::ArchiveAction>(
+            &request,
             application.program_runtime(),
         )
         .unwrap_or_else(|_| panic!("installed archive action"));

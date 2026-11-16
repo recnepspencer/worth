@@ -177,7 +177,8 @@ impl WorthQueryWorkflowAssessmentOutputFamily<BankSchema>
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ApprovedPaymentAssessmentDemand {
     payment: PaymentId,
 }

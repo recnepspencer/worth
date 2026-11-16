@@ -4,9 +4,12 @@ use crate::domain_computation::primary_graph::application_output_demand::WorthQu
 use crate::domain_computation::primary_graph::query_obligations::QueryOutputDemandObligation;
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationQueryAccessContext, WorthQueryApplicationReadObservation,
-    WorthQueryObservedScopeSelector, WorthQueryProductQueryControls,
+    WorthQueryObservedScopeSelector, WorthQueryProducerOutputFamily,
+    WorthQueryProductQueryControls,
 };
 use worth_query_declaration::facade::application_query::ApplicationQueryBinding;
+use worth_query_installation::facade::WorthQueryInstalledApplicationQueryBinding;
+
 pub(super) fn readmit<S, B>(
     installed: &TypedInstalledProducer<S, B>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -24,13 +27,55 @@ where
         > + 'static,
     SourceQuery<S, B>: 'static,
 {
-    let binding = &installed.source_query;
+    if row.producer != B::IDENTITY {
+        return Err(unavailable());
+    }
+    let source = readmit_source::<S, B::OutputFamily>(
+        &installed.source_query,
+        execution,
+        runtime,
+        external,
+        request,
+        row,
+    )?;
+    let demand = runtime.admit_required_output_demand::<B::OutputFamily>(
+        execution,
+        source,
+        runtime.output_demand_resource_profile().limits(),
+    )?;
+    demand.adopt_recorded_membership(runtime, row)?;
+    demand.into_durable_interest().ok_or_else(unavailable)
+}
+
+type SourceValueFor<S, F> = <<<F as WorthQueryProducerOutputFamily<S>>::Source as ApplicationQueryBinding<S>>::ResultBinding as worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding>::Value;
+type SourceQueryFor<S, F> =
+    <<F as WorthQueryProducerOutputFamily<S>>::Source as ApplicationQueryBinding<S>>::Query;
+
+pub(in crate::domain_computation::primary_graph) fn readmit_source<S, F>(
+    binding: &WorthQueryInstalledApplicationQueryBinding<S, F::Source>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+    external: &WorthQueryAuthenticatedExternalPrincipal<S>,
+    request: &WorthQueryRequestScope,
+    row: &QueryOutputDemandObligation,
+) -> Result<
+    crate::domain_computation::primary_graph::WorthQueryApplicationOutputDemandSource<
+        SourceQueryFor<S, F>,
+        SourceValueFor<S, F>,
+    >,
+    WorthQueryOutputDemandDenial,
+>
+where
+    S: ApplicationSchema + 'static,
+    F: WorthQueryProducerOutputFamily<S>,
+    SourceValueFor<S, F>: crate::domain_computation::primary_graph::WorthQueryApplicationProjection<
+            S,
+            SourceQueryFor<S, F>,
+        > + 'static,
+    SourceQueryFor<S, F>: 'static,
+{
     let query = binding.query();
-    if query.identity().as_bytes() != &row.query
-        || row.producer != B::IDENTITY
-        || row.family
-            != <B::OutputFamily as super::super::WorthQueryProducerOutputFamily<S>>::IDENTITY
-    {
+    if query.identity().as_bytes() != &row.query || row.family != F::IDENTITY {
         return Err(unavailable());
     }
     let basis = runtime.readmit_output_observation(execution, row.basis, &row.branch)?;
@@ -41,11 +86,11 @@ where
     );
     let retained = runtime
         .select_application_read_observation_with_request(execution, &observation)
-        .map_err(|cause| WorthQueryOutputDemandDenial::product_selection(cause, B::IDENTITY))?;
+        .map_err(|cause| WorthQueryOutputDemandDenial::product_selection(cause, F::IDENTITY))?;
     let current = runtime
         .on_branch(branch)
         .select_with_request(execution)
-        .map_err(|cause| WorthQueryOutputDemandDenial::product_selection(cause, B::IDENTITY))?;
+        .map_err(|cause| WorthQueryOutputDemandDenial::product_selection(cause, F::IDENTITY))?;
     let principal = current
         .resolve_authenticated_principal_admitted(
             execution,
@@ -54,7 +99,7 @@ where
             request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
-        .map_err(|cause| principal_rejected(B::IDENTITY, cause).into_output_denial())?;
+        .map_err(|cause| principal_rejected(F::IDENTITY, cause).into_output_denial())?;
     let (aspect, fields, value, subject): (
         String,
         Vec<String>,
@@ -68,11 +113,11 @@ where
     let scope = current
         .resolve_retained_query_scope(
             execution,
-            SourceBinding::<S, B>::scope_field(),
+            <F::Source as ApplicationQueryBinding<S>>::scope_field(),
             &selector,
             request,
         )
-        .map_err(|cause| scope_rejected(B::IDENTITY, cause).into_output_denial())?;
+        .map_err(|cause| scope_rejected(F::IDENTITY, cause).into_output_denial())?;
     let access = WorthQueryApplicationQueryAccessContext::new(&principal, &scope);
     let values = rmp_serde::from_slice(&row.parameters).map_err(|_| unavailable())?;
     let parameters = worth_query_admission::facade::application_query::readmit_recorded_application_query_parameters(query,values).map_err(|_| unavailable())?;
@@ -89,27 +134,13 @@ where
         .map_err(|_| unavailable())?;
     let plan = runtime
         .finish_application_query_readmission(execution, query, &access, parameters, controls, None)
-        .map_err(|cause| query_admission_denied(B::IDENTITY, cause).into_output_denial())?;
+        .map_err(|cause| query_admission_denied(F::IDENTITY, cause).into_output_denial())?;
     let source = runtime
         .execute_application_query_one_shot_with_request(execution, plan)
-        .map_err(|cause| query_execution_denied(B::IDENTITY, cause).into_output_denial())?
+        .map_err(|cause| query_execution_denied(F::IDENTITY, cause).into_output_denial())?
         .into_admitted_disclosed()
         .into_output_demand_source();
-    let demand = runtime.admit_required_output_demand::<B::OutputFamily>(
-        execution,
-        source,
-        runtime.output_demand_resource_profile().limits(),
-    )?;
-    let interest = demand.into_durable_interest().ok_or_else(unavailable)?;
-    let history = runtime
-        .installed_program_support()
-        .ok_or_else(unavailable)?
-        .obligation_history();
-    interest
-        .durable_readmission()
-        .ok_or_else(unavailable)?
-        .adopt_durable(history, row.acquire_position);
-    Ok(interest)
+    Ok(source)
 }
 fn unavailable() -> WorthQueryOutputDemandDenial {
     WorthQueryOutputDemandDenial::new(

@@ -36,6 +36,13 @@ worth_query_structured_value_binding!(
 
 pub struct PaymentDecisionOutputs;
 
+/// The rejected payment and its admitted readiness definition publish together.
+pub struct RejectedPaymentDecision {
+    pub proposal: BankInvariantApprovedProposal,
+    pub definition:
+        worth_query_host::facade::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition,
+}
+
 /// The payment intent preserved by a rejection.
 pub struct DecidedPaymentOutput;
 
@@ -94,7 +101,7 @@ worth_query_mutation_binding!(
     result PaymentDecisionResultBinding,
     idempotency BankIdempotencyKey,
         identity "bank.application-mutation-client-key.v1",
-    decision BankInvariantApprovedProposal,
+    decision RejectedPaymentDecision,
     denial PaymentDecisionDenialBinding,
     handler identity "bank.operation.reject-payment.handler.v1",
     program required,

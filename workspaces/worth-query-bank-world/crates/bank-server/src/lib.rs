@@ -46,8 +46,9 @@ mod world_seed;
 
 pub use application_definition::{
     approved_business_payment_definition, ApprovedBusinessPaymentDefinitionDenial, BankApplication,
-    BankApplicationP1, BankApplicationP2, DepositAction, DepositDelivery, OpeningFundingAction,
-    OpeningFundingDelivery, PostingIntegrityRefusal, PostingIntegrityRefusalBinding,
+    BankApplicationP1, BankApplicationP2, BankAssessedPaymentsApplication, DepositAction,
+    DepositDelivery, OpeningFundingAction, OpeningFundingDelivery, PostingIntegrityRefusal,
+    PostingIntegrityRefusalBinding, RejectedPaymentAssessmentAction, RejectedPaymentAssessmentRoot,
     ReverseJournalAction, ReverseJournalDelivery, SendMoneyAction, SendMoneyDelivery,
     WithdrawalAction, WithdrawalDelivery, APPROVAL_LIMIT, APPROVAL_LIMIT_OPERAND,
 };
@@ -75,7 +76,9 @@ pub use application_query::{
     BankPreviewSessionDiscardReceipt, BankProductSelectionDenialKind,
 };
 pub use approval_authentication::{
-    BankApprovalAuthenticationConfiguration, BankApprovalCredential,
+    install_approval_authentication, BankApprovalAuthenticationConfiguration,
+    BankApprovalAuthenticationOwner, BankApprovalClock, BankApprovalClockSource,
+    BankApprovalCredential, BankApprovalVerifier,
 };
 pub use approved_payment_workflow::{
     BankApprovedPaymentApplyOutcome, BankApprovedPaymentAssessment,
@@ -119,8 +122,9 @@ pub use estate_progression::{
 };
 pub use external_effect_transport::BankExternalEffectTransportDenial;
 pub use identity_runtime::{
-    bank_application_home, BankAuthenticationConfiguration, BankHomeRuntime, BankIdentityRuntime,
-    BankIdentityRuntimeWorkflowBinding,
+    bank_application_home, bank_assessed_payments_home, install_payment_workflow_spec,
+    open_bank_application_home, BankAuthenticationConfiguration, BankHomeOpenRefused,
+    BankHomeRuntime, BankIdentityRuntime, BankIdentityRuntimeWorkflowBinding, BankWorkflowHome,
 };
 pub use inbound_completion::{
     BankEstateRailCompletionInstallationDenial, BankEstateRailCompletionRoute,

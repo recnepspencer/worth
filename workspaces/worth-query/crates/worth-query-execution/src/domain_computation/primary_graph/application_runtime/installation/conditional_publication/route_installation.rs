@@ -45,7 +45,7 @@ pub(super) fn install<S: ApplicationSchema + 'static>(
             graph.primary_graph_authority.provider_identity(),
             crate::domain_computation::primary_graph::application_branch::PRIMARY_APPLICATION_BRANCH,
         )?;
-    let definition_routes = crate::domain_computation::primary_graph::conditional_operation::install_pending_definitions(
+    let mut definition_routes = crate::domain_computation::primary_graph::conditional_operation::install_pending_definitions(
         definitions, graph.bridge.conditional_builder(), &graph.primary_graph_authority)?;
     let output_producer_routes = producers
         .install_signal_routes(graph.bridge.conditional_builder())
@@ -57,6 +57,7 @@ pub(super) fn install<S: ApplicationSchema + 'static>(
             &output_readiness,
             graph.bridge.conditional_builder(),
             &graph.primary_graph_authority,
+            &mut definition_routes,
         )?;
     producers
         .validate_readiness_routes(&output_readiness_routes)

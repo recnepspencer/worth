@@ -29,6 +29,7 @@ mod application_binding_scope;
 mod definition_authoring;
 mod output_producer_installation;
 mod output_readiness;
+mod output_readiness_definition;
 mod temporal_binding;
 mod temporal_binding_validation;
 type InstalledOutputProducers<Schema> =

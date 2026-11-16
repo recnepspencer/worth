@@ -120,3 +120,48 @@ pub fn inspect_missing(
         }
     }
 }
+
+/// Fresh governed admission readmits the original live instance after Home reopen.
+pub fn reacquire(
+    application: &MixedApplication,
+    original_start: &WorthQueryWorkflowInstanceDiscoveryIntent<DocumentRetentionSchema>,
+) -> (PublishedWorkflowDefinitionRef, PublishedWorkflowInstanceRef) {
+    let runtime = application.runtime();
+    let scope = request_scope();
+    let principal = authenticate_operator(runtime.installed_schema(), &scope);
+    let request = runtime.request(&principal, &scope);
+    let basis = request.retain_current_read().expect("fresh reopened basis");
+    let read = request.at(&basis);
+    let target = ApplicationWorkflowDefinitionReadTarget::<MixedWorkflow>::new(
+        ApplicationWorkflowDefinitionIdentity::new("observable-document-archive").unwrap(),
+    );
+    let metadata = read
+        .discover_workflow_definition::<MixedWorkflow, MetadataRead>(
+            application.vocabulary(),
+            &target,
+            input(),
+        )
+        .expect("fresh definition admission");
+    let WorthQueryWorkflowDefinitionDiscovery::Current(definition) = metadata.definition() else {
+        panic!("the reopened original definition remains current");
+    };
+    assert_eq!(metadata.basis().selected_commit(), basis.selected_commit());
+    match read
+        .read_original_workflow::<MixedWorkflow, SubjectRead, AuditRead>(
+            application.vocabulary(),
+            original_start,
+            input(),
+            input(),
+        )
+        .expect("fresh authority readmits the original start")
+    {
+        WorthQueryWorkflowInstanceRead::Live {
+            instance,
+            observation,
+        } => {
+            assert_eq!(observation.selected_commit(), basis.selected_commit());
+            (definition.clone(), instance)
+        }
+        other => panic!("the original proposal wait must remain live: {other:?}"),
+    }
+}

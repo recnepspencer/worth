@@ -51,7 +51,7 @@ mod post_authorization;
 pub(crate) mod prepared_plan;
 pub(in crate::domain_computation::primary_graph) mod unpublished;
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) use prepared_plan::canonical_apply;
-mod recorded_demand;
+pub(in crate::domain_computation::primary_graph) mod recorded_demand;
 mod required_cue;
 mod selected;
 mod selected_public;

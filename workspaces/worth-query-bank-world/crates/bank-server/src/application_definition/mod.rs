@@ -1,4 +1,8 @@
 mod account_actions;
+mod assessed_payments;
+pub use assessed_payments::{
+    BankAssessedPaymentsApplication, RejectedPaymentAssessmentAction, RejectedPaymentAssessmentRoot,
+};
 mod composition;
 mod deployment_actions;
 mod estate_actions;

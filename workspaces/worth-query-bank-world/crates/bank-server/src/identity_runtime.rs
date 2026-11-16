@@ -1,6 +1,12 @@
 mod advancement;
+mod application_custody;
+use application_custody::BankApplicationCustody;
+pub use application_custody::BankWorkflowHome;
 mod home;
-pub use home::{bank_application_home, BankHomeRuntime};
+pub use home::{
+    bank_application_home, bank_assessed_payments_home, open_bank_application_home,
+    BankHomeOpenRefused, BankHomeRuntime,
+};
 mod workflow_binding;
 use std::collections::BTreeSet;
 pub use workflow_binding::BankIdentityRuntimeWorkflowBinding;
@@ -9,6 +15,7 @@ pub use workflow_binding::BankIdentityRuntimeWorkflowBinding;
 mod certification_controls;
 #[path = "identity_runtime/installation.rs"]
 mod installation;
+pub use installation::install_payment_workflow_spec;
 pub(crate) mod product_world_resources;
 
 #[cfg(test)]
@@ -83,11 +90,7 @@ type InstalledBankPrincipalBinding = WorthQueryInstalledPrincipalBinding<
 >;
 
 pub struct BankIdentityRuntime {
-    runtime: WorthQueryWorkflowApplicationRuntime<
-        BankSchema,
-        ApprovedBusinessPaymentWorkflow,
-        BankApplication,
-    >,
+    runtime: BankApplicationCustody,
     binding: InstalledBankPrincipalBinding,
     invariant_projection:
         std::sync::Arc<WorthQueryApplicationInvariantProjectionAuthority<BankSchema>>,
@@ -105,19 +108,13 @@ impl BankIdentityRuntime {
         crate::BankApprovedPaymentWorkflow::new(self, principal, scope)
     }
 
-    pub(crate) const fn approved_payment_workflow_runtime(
-        &self,
-    ) -> &WorthQueryWorkflowApplicationRuntime<
-        BankSchema,
-        ApprovedBusinessPaymentWorkflow,
-        BankApplication,
-    > {
+    pub(crate) fn approved_payment_workflow_runtime(&self) -> &BankApplicationCustody {
         &self.runtime
     }
 
     /// The installed Bank vocabulary used to readmit portable payment workflow
     /// definitions before they can be bound or published.
-    pub const fn approved_payment_workflow_spec(
+    pub fn approved_payment_workflow_spec(
         &self,
     ) -> &worth_query_host::facade::domain::WorthQueryInstalledApplicationWorkflowSpec<
         BankSchema,
@@ -130,7 +127,7 @@ impl BankIdentityRuntime {
         &self.approval_authentication
     }
 
-    pub(crate) const fn application_program(
+    pub(crate) fn application_program(
         &self,
     ) -> &WorthQueryProgramApplicationRuntime<BankSchema, BankApplication> {
         self.runtime.program_runtime()
@@ -141,7 +138,8 @@ impl BankIdentityRuntime {
         principal: &'principal BankAuthenticatedPrincipal,
         scope: &'scope WorthQueryRequestScope,
     ) -> WorthQueryApplicationRequest<'application, 'principal, 'scope, BankSchema> {
-        self.runtime.request(principal.external(), scope)
+        self.application_program()
+            .request(principal.external(), scope)
     }
 
     pub fn install(
@@ -238,7 +236,9 @@ impl BankIdentityRuntime {
     }
 
     pub fn mapped_principal_count(&self) -> usize {
-        self.runtime.publication().principal_binding_count()
+        self.application_runtime()
+            .publication()
+            .principal_binding_count()
     }
 
     pub fn open_preview(
@@ -247,7 +247,7 @@ impl BankIdentityRuntime {
     ) -> Result<BankPreviewSession, BankApplicationQueryDenial> {
         self.application_runtime()
             .with_application_advancement(request, |phase| {
-                BankPreviewSession::open(&phase, &self.runtime, request)
+                BankPreviewSession::open(&phase, self.application_runtime(), request)
             })
             .map_err(BankApplicationQueryDenial::ExecutionRequest)?
     }

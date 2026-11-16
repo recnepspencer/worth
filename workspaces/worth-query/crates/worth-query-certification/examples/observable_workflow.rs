@@ -31,23 +31,13 @@ mod resource_monitor;
 #[path = "observable_workflow/restoration.rs"]
 mod restoration;
 
-#[expect(
-    clippy::disallowed_methods,
-    reason = "certification-harness thread-builder=1 thread-spawn=1: The example joins one actor with its declared bootstrap stack; native request computation retains its Execution authority."
-)]
 fn main() {
     match archive::handle_worker() {
         Ok(true) => (),
-        Ok(false) => std::thread::Builder::new()
-            .name("observable-workflow".to_owned())
-            .stack_size(8 * 1024 * 1024)
-            .spawn(|| {
-                journey::run();
-                resource_monitor::run();
-            })
-            .expect("the bounded example thread must start")
-            .join()
-            .expect("the observable workflow must not unwind"),
+        Ok(false) => worth_execution::run_with_execution_stack(|| {
+            journey::run();
+            resource_monitor::run();
+        }),
         Err(cause) => {
             eprintln!("archive worker failed: {cause}");
             std::process::exit(1);

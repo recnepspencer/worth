@@ -56,16 +56,6 @@ where
         maximum_history,
         maximum_results,
     )?;
-    if target
-        .application()
-        .runtime
-        .product_runtime
-        .is_directory_home()
-    {
-        return Err(Denial::DurableStateAdmission(
-            crate::domain_computation::execution_runtime::product_world::WorthQueryDurableStateAdmissionDenial::UnsupportedCorrectionReapplication,
-        ));
-    }
     let selected =
         target.select_alternative_ancestry(phase, &alternative.selected, maximum_history)?;
     let active = alternative
@@ -86,7 +76,7 @@ where
     {
         return Err(Denial::ActiveReversalConsumed);
     }
-    live_outputs::require(target, execution, active)?;
+    live_outputs::require::<S, C>(target, execution, active)?;
     let checked = super::compatibility::require_reapplication_program::<S, C>(
         target,
         source,

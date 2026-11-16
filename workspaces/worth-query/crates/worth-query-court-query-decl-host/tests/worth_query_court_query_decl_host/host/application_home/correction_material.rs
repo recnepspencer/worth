@@ -1,10 +1,8 @@
 //! Public directory originals and corrections use the shared installed handler.
-mod divergent_refusal;
 mod expiry;
 mod original_operation;
 mod prepared_reopen;
 mod program;
-mod reapplication_refusal;
 mod refused_custody;
 use program::*;
 use super::*;

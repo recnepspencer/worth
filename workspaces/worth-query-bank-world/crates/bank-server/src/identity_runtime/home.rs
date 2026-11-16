@@ -1,6 +1,8 @@
 //! Bank's command attachment borrows the full generic Home's real program owner.
 use super::*;
 use crate::BankApplication;
+mod attachment;
+pub use attachment::{open_bank_application_home, BankHomeOpenRefused};
 use worth_query_host::facade::admission::authenticated_principal::WorthQueryAuthenticationAdapterAdmission;
 use worth_query_host::facade::{
     WorthQueryApplicationHomeLocation, WorthQueryApplicationHomeRequest,
@@ -16,13 +18,27 @@ pub fn bank_application_home(
     WorthQueryApplicationHomeRequest<'static, BankSchema, BankApplication>,
     BankIdentityRuntimeBuildError,
 > {
+    bank_application_home_with_index(
+        location,
+        seed,
+        std::sync::Arc::new(
+            crate::application_definition::current_accounts::AccountIndexWork::default(),
+        ),
+    )
+}
+
+fn bank_application_home_with_index(
+    location: WorthQueryApplicationHomeLocation,
+    seed: BankWorldSeed,
+    index: std::sync::Arc<crate::application_definition::current_accounts::AccountIndexWork>,
+) -> Result<
+    WorthQueryApplicationHomeRequest<'static, BankSchema, BankApplication>,
+    BankIdentityRuntimeBuildError,
+> {
     use crate::application_definition::{
         validated_bank_application, validated_bank_application_p1, validated_bank_application_p2,
     };
-    use worth_query_host::facade::application_installation::{
-        ApplicationBuildIdentity, WorthQueryApplicationProgramRoster,
-    };
-    let (principals, world) = prepare_world(seed)?;
+    use worth_query_host::facade::application_installation::WorthQueryApplicationProgramRoster;
     let program = validated_bank_application()
         .map_err(BankIdentityRuntimeBuildError::ApplicationProgramValidation)?;
     let successor = validated_bank_application_p1()
@@ -34,18 +50,67 @@ pub fn bank_application_home(
         *successor.revision(),
         *successor_p2.revision(),
     ];
-    let declaration =
-        worth_query_host::facade::declaration::application_schema::fragment::declare(BankSchema)
-            .map_err(|cause| BankIdentityRuntimeBuildError::SchemaDeclaration(Box::new(cause)))?;
-    let index = std::sync::Arc::new(
-        crate::application_definition::current_accounts::AccountIndexWork::default(),
-    );
-    Ok(WorthQueryApplicationHomeRequest::new(
+    home_with_program(
         location,
+        seed,
+        index,
         program,
         WorthQueryApplicationProgramRoster::new()
             .support(successor)
             .support(successor_p2),
+        revisions.to_vec(),
+    )
+}
+
+/// Bank's assessed-rejection composition uses the same genuine Home installation recipe.
+pub fn bank_assessed_payments_home(
+    location: WorthQueryApplicationHomeLocation,
+    seed: BankWorldSeed,
+) -> Result<
+    WorthQueryApplicationHomeRequest<'static, BankSchema, crate::BankAssessedPaymentsApplication>,
+    BankIdentityRuntimeBuildError,
+> {
+    use worth_query_host::facade::{
+        application_installation::WorthQueryApplicationProgramRoster,
+        declaration::application_program::ApplicationProgramAuthoring,
+    };
+    let program =
+        ApplicationProgramAuthoring::<BankSchema, crate::BankAssessedPaymentsApplication>::begin()
+            .validated_program()
+            .map_err(BankIdentityRuntimeBuildError::ApplicationProgramValidation)?;
+    let revisions = vec![*program.revision()];
+    home_with_program(
+        location,
+        seed,
+        std::sync::Arc::new(
+            crate::application_definition::current_accounts::AccountIndexWork::default(),
+        ),
+        program,
+        WorthQueryApplicationProgramRoster::new(),
+        revisions,
+    )
+}
+
+fn home_with_program<Program>(
+    location: WorthQueryApplicationHomeLocation,
+    seed: BankWorldSeed,
+    index: std::sync::Arc<crate::application_definition::current_accounts::AccountIndexWork>,
+    program: worth_query_host::facade::declaration::application_program::ValidatedApplicationProgram<BankSchema, Program>,
+    roster: worth_query_host::facade::application_installation::WorthQueryApplicationProgramRoster<'static, BankSchema>,
+    revisions: Vec<worth_query_host::facade::declaration::application_program::ApplicationProgramRevision>,
+) -> Result<WorthQueryApplicationHomeRequest<'static, BankSchema, Program>, BankIdentityRuntimeBuildError>
+where Program: worth_query_host::facade::declaration::application_program::ApplicationProgramDefinition<
+    BankSchema, Contributions = <BankApplication as worth_query_host::facade::declaration::application_program::ApplicationProgramDefinition<BankSchema>>::Contributions>,
+{
+    use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
+    let (principals, world) = prepare_world(seed)?;
+    let declaration =
+        worth_query_host::facade::declaration::application_schema::fragment::declare(BankSchema)
+            .map_err(|cause| BankIdentityRuntimeBuildError::SchemaDeclaration(Box::new(cause)))?;
+    Ok(WorthQueryApplicationHomeRequest::new(
+        location,
+        program,
+        roster,
         declaration,
         (index, (), ()),
         ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID"))
@@ -60,22 +125,32 @@ pub fn bank_application_home(
 }
 
 /// A borrowed Bank command/authentication view; it neither clones nor owns Home.
-pub struct BankHomeRuntime<'home> {
-    runtime: &'home WorthQueryProgramApplicationRuntime<BankSchema, BankApplication>,
+pub struct BankHomeRuntime<'home, Program = BankApplication>
+where
+    Program:
+        worth_query_host::facade::declaration::application_program::ApplicationProgramDefinition<
+            BankSchema,
+        >,
+{
+    runtime: &'home WorthQueryProgramApplicationRuntime<BankSchema, Program>,
     binding: InstalledBankPrincipalBinding,
 }
-impl<'home> BankHomeRuntime<'home> {
+impl<'home, Program> BankHomeRuntime<'home, Program>
+where
+    Program:
+        worth_query_host::facade::declaration::application_program::ApplicationProgramDefinition<
+            BankSchema,
+        >,
+{
     pub fn attach(
-        runtime: &'home WorthQueryProgramApplicationRuntime<BankSchema, BankApplication>,
+        runtime: &'home WorthQueryProgramApplicationRuntime<BankSchema, Program>,
     ) -> Result<Self, BankIdentityRuntimeBuildError> {
         Ok(Self {
             runtime,
             binding: installation::resolve_installed_principal_binding(runtime.runtime())?,
         })
     }
-    pub fn runtime(
-        &self,
-    ) -> &'home WorthQueryProgramApplicationRuntime<BankSchema, BankApplication> {
+    pub fn runtime(&self) -> &'home WorthQueryProgramApplicationRuntime<BankSchema, Program> {
         self.runtime
     }
     pub fn request<'principal, 'scope>(
@@ -107,6 +182,9 @@ impl<'home> BankHomeRuntime<'home> {
         )
         .await
     }
+}
+
+impl BankHomeRuntime<'_> {
     pub fn prepare_send_money_correction<'a>(
         &'a self,
         principal: &BankAuthenticatedPrincipal,

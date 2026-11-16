@@ -7,49 +7,60 @@ use crate::document_retention_model::{
 };
 use worth_query_host::facade::application_contribution::WorthQueryBootstrapAdvancementPhase;
 use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
-use worth_query_host::facade::application_installation::{
-    in_memory_rostered_program, WorthQueryApplicationCheckpoint,
-    WorthQueryApplicationProgramRoster, WorthQueryInterimCheckpointRestore,
-};
+use worth_query_host::facade::application_installation::WorthQueryApplicationProgramRoster;
 use worth_query_host::facade::domain::WorthQueryInstalledApplicationSchema;
 use worth_query_host::facade::{declaration, primary_graph};
+use worth_query_host::facade::{
+    WorthQueryApplicationHome, WorthQueryApplicationHomeLocation, WorthQueryApplicationHomeRequest,
+};
 
-pub fn publish() -> crate::document_retention_model::MixedApplication {
-    publish_monitor(crate::resource_monitor::Configuration::default())
-}
-pub fn publish_monitor(
+pub type Home = WorthQueryApplicationHome<DocumentRetentionSchema, crate::program::MixedProgram>;
+
+pub fn open(
+    directory: &std::path::Path,
     configuration: crate::resource_monitor::Configuration,
-) -> crate::document_retention_model::MixedApplication {
-    let application = in_memory_rostered_program(
-        crate::program::validated_program(),
-        roster(),
-        DocumentRetentionSchema::declaration().expect("the neutral schema validates"),
-        ((), (), configuration),
-        ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID"))
-            .expect("embedded application build identity"),
-        host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
-        seed_host,
-    )
-    .expect("the neutral mixed program installs through the real bootstrap");
-    crate::document_retention_model::retain_mixed_workflow(application)
+) -> (Home, crate::document_retention_model::MixedApplication) {
+    let funding = funding();
+    let home = worth_query_host::facade::application_contribution::with_bootstrap_advancement_from_request(
+        worth_execution::ExecutionRequest::leased(&funding),
+        |phase| WorthQueryApplicationHomeRequest::new(
+            WorthQueryApplicationHomeLocation::Directory(directory.to_owned()),
+            crate::program::validated_program(), roster(),
+            DocumentRetentionSchema::declaration().expect("the neutral schema validates"),
+            ((), (), configuration),
+            ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID")).unwrap(),
+            host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
+            seed_host,
+        ).open_in_advancement(&phase),
+    ).expect("the original bootstrap request opens")
+        .unwrap_or_else(|cause| panic!("neutral Directory Home: {cause:?}"));
+    let application =
+        crate::document_retention_model::retain_mixed_workflow(home.runtime().clone());
+    (home, application)
 }
 
-/// Reconstructs current native truth with the same composition, never reseeding.
-pub fn restore(
-    checkpoint: WorthQueryApplicationCheckpoint,
-) -> crate::document_retention_model::MixedApplication {
-    let application = WorthQueryInterimCheckpointRestore::rostered_program(
-        crate::program::validated_program(),
-        roster(),
-        DocumentRetentionSchema::declaration().expect("the same neutral schema validates"),
-        ((), (), crate::resource_monitor::Configuration::default()),
-        ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID"))
-            .expect("embedded application build identity"),
-        host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
-        checkpoint,
-    )
-    .expect("the current neutral checkpoint restores without a seed callback");
-    crate::document_retention_model::retain_mixed_workflow(application)
+pub fn close(home: Home) {
+    let funding = funding();
+    home.close(&worth_execution::ExecutionRequest::leased(&funding))
+        .unwrap_or_else(|cause| panic!("neutral Home close retains its refusal: {cause:?}"))
+        .reclaim();
+}
+
+fn funding() -> worth_execution::ExecutionResourceLease<'static> {
+    use worth_execution::{CancellationToken, ExecutionResourceLease, LeaseRequest};
+    use worth_foundational::{
+        DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
+    };
+    ExecutionResourceLease::serial(LeaseRequest {
+        policy: ExecutionRequestPolicy::new(
+            ExecutionPosture::Serial,
+            DeterminismContract::CanonicalBitwise,
+            ExecutionBudget::new(std::num::NonZeroUsize::MIN, Some(256 << 20), None),
+        ),
+        cancellation: CancellationToken::new(),
+        deadline: None,
+    })
+    .expect("bounded Home lifecycle request")
 }
 
 fn roster() -> WorthQueryApplicationProgramRoster<'static, DocumentRetentionSchema> {

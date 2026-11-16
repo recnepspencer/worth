@@ -1,11 +1,12 @@
 use std::error::Error;
 use std::io::{BufRead, Write};
+use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
 
-use crate::{AuthentikBankIdentity, BankHttpServerBinding, BankHttpServerConfiguration};
+use crate::{BankHttpServerBinding, BankHttpServerConfiguration};
 
-use super::BankHttpProcessConfiguration;
+use super::{BankHttpProcessCloseRefused, BankHttpProcessConfiguration};
 
 #[derive(Deserialize)]
 struct ProcessCommand {
@@ -19,75 +20,112 @@ struct ProcessPosture<'a> {
     address: String,
 }
 
-#[expect(
-    clippy::disallowed_methods,
-    reason = "async-runtime async-blocking=1: Bank process and HTTP transport own this Tokio or dedicated process executor thread."
-)]
 pub async fn run() -> Result<(), Box<dyn Error + Send + Sync>> {
+    let lifecycle = lifecycle_funding()?;
     let binding =
         BankHttpServerBinding::bind(BankHttpServerConfiguration::local_ephemeral()).await?;
     write_posture("bound", binding.local_address())?;
     let configuration: BankHttpProcessConfiguration = read_json_line()?;
-    let identity = install_identity_on_dedicated_stack(configuration).await?;
-    let (server, _mutation_continuation) = binding.install(identity)?.into_parts();
+    let identity = Arc::new(configuration.install_identity().await?);
+    let installation = binding
+        .install_shared(Arc::clone(&identity))
+        .map_err(|cause| BankHttpProcessCloseRefused::Installation {
+            identity: Arc::clone(&identity),
+            cause,
+        })?;
+    let (server, mutation_continuation) = installation.into_parts();
     let server = server.activate();
-    write_posture("ready", server.local_address())?;
+    let server_address = server.local_address();
+    if let Err(cause) = write_posture("ready", server_address) {
+        return Err(Box::new(BankHttpProcessCloseRefused::Running {
+            identity,
+            server,
+            mutations: mutation_continuation,
+            cause,
+        }));
+    }
     let mut server = server;
-    loop {
-        let command = tokio::task::spawn_blocking(read_json_line::<ProcessCommand>).await??;
-        if command.command != "shutdown" {
-            write_posture("command_refused", server.local_address())?;
-            continue;
-        }
+    let close = loop {
+        match shutdown_requested(server.local_address()).await {
+            Ok(false) => continue,
+            Ok(true) => {}
+            Err(cause) => {
+                return Err(Box::new(BankHttpProcessCloseRefused::Running {
+                    identity,
+                    server,
+                    mutations: mutation_continuation,
+                    cause,
+                }))
+            }
+        };
         let address = server.local_address();
         match server.shutdown().await {
-            Ok(_) => break,
+            Ok(close) => break close,
             Err(failure) => match failure.into_server() {
                 Ok(retained) => {
                     server = retained;
-                    write_posture("shutdown_refused", address)?;
+                    if let Err(cause) = write_posture("shutdown_refused", address) {
+                        return Err(Box::new(BankHttpProcessCloseRefused::Running {
+                            identity,
+                            server,
+                            mutations: mutation_continuation,
+                            cause,
+                        }));
+                    }
                 }
-                Err(failure) => return Err(Box::new(failure)),
+                Err(failure) => {
+                    return Err(Box::new(BankHttpProcessCloseRefused::Workers {
+                        identity,
+                        mutations: mutation_continuation,
+                        failure,
+                    }))
+                }
             },
         }
-    }
-    if _mutation_continuation.finish().await.is_err() {
-        return Err("mutation worker finish refused".into());
-    }
-
+    };
+    super::closure::finish(
+        identity,
+        mutation_continuation,
+        close,
+        &worth_execution::ExecutionRequest::leased(&lifecycle),
+    )
+    .await?;
     Ok(())
 }
 
 #[expect(
     clippy::disallowed_methods,
-    reason = "async-runtime async-runtime=1; async-runtime thread-builder=1: Bank process and HTTP transport own this Tokio or dedicated process executor thread."
+    reason = "async-runtime async-blocking=1: Bank process reads command input through its Tokio I/O executor."
 )]
-async fn install_identity_on_dedicated_stack(
-    configuration: BankHttpProcessConfiguration,
-) -> Result<AuthentikBankIdentity, Box<dyn Error + Send + Sync>> {
-    const INSTALLATION_STACK_BYTES: usize = 16 * 1024 * 1024;
+async fn shutdown_requested(
+    address: std::net::SocketAddr,
+) -> Result<bool, Box<dyn Error + Send + Sync>> {
+    let command = tokio::task::spawn_blocking(read_json_line::<ProcessCommand>).await??;
+    if command.command == "shutdown" {
+        return Ok(true);
+    }
+    write_posture("command_refused", address)?;
+    Ok(false)
+}
 
-    let (result_sender, result_receiver) = tokio::sync::oneshot::channel();
-    std::thread::Builder::new()
-        .name("bank-world-installation".to_owned())
-        .stack_size(INSTALLATION_STACK_BYTES)
-        .spawn(move || {
-            let result = tokio::runtime::Builder::new_current_thread()
-                .enable_all()
-                .build()
-                .map_err(|error| Box::new(error) as Box<dyn Error + Send + Sync>)
-                .and_then(|runtime| {
-                    runtime
-                        .block_on(configuration.install_identity())
-                        .map_err(|error| Box::new(error) as Box<dyn Error + Send + Sync>)
-                });
-            let _ = result_sender.send(result);
-        })?;
-    result_receiver.await.map_err(|_| {
-        Box::<dyn Error + Send + Sync>::from(
-            "Bank world installation thread stopped before reporting its result",
-        )
-    })?
+fn lifecycle_funding(
+) -> Result<worth_execution::ExecutionResourceLease<'static>, Box<dyn Error + Send + Sync>> {
+    use worth_execution::{CancellationToken, ExecutionResourceLease, LeaseRequest};
+    use worth_foundational::{
+        DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
+    };
+    ExecutionResourceLease::serial(LeaseRequest {
+        policy: ExecutionRequestPolicy::new(
+            ExecutionPosture::Serial,
+            DeterminismContract::CanonicalBitwise,
+            ExecutionBudget::new(std::num::NonZeroUsize::MIN, Some(128 << 20), None),
+        ),
+        cancellation: CancellationToken::new(),
+        deadline: None,
+    })
+    .map_err(|denial| {
+        std::io::Error::other(format!("Bank Home lifecycle funding: {denial:?}")).into()
+    })
 }
 
 fn read_json_line<T>() -> Result<T, Box<dyn Error + Send + Sync>>

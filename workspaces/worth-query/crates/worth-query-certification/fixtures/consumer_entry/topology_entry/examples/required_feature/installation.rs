@@ -78,51 +78,62 @@ pub fn install_rings_configured<const ERASE: bool>(
         limits,
         |_, graph, installed| {
             seeded();
-            let principal = installed
-                .principal_binding(ConsumerPrincipalBinding::reference::<ExampleSchema>())
-                .unwrap();
-            graph.bind_principal(
-                &principal,
-                primary_graph::WorthQueryApplicationPrincipalKey::new("model-owner").unwrap(),
-                1_u64,
-                external_identity(),
-                WorthQueryPrincipalMappingStatus::Enabled,
-            )?;
-            for ring in 0..=extra_rings {
-                let prefix = if ring == 0 {
-                    "anchor".to_owned()
-                } else {
-                    format!("ring-{}", ring - 1)
-                };
-                for (name, x, y) in [("a", 1, 1), ("b", 10, 1), ("c", 1, 10)] {
-                    let key = format!("{prefix}-{name}");
-                    graph.bind_entity(
-                        primary_graph::WorthQueryApplicationEntitySeed::new(
-                            Body::reference::<ExampleSchema>(),
-                            entity_key(&key),
-                        )
-                        .field(BodyKey::at("BodyKey"), key)
-                        .field(Length::at("Length"), length(y + 1))
-                        .field(PositionX::at("PositionX"), length(x))
-                        .field(PositionY::at("PositionY"), length(y)),
-                    )?;
-                }
-                for (from, to) in [("a", "b"), ("b", "c"), ("c", "a")] {
-                    graph.bind_relation(primary_graph::WorthQueryApplicationRelationSeed::new(
-                        PlanarSuccessor::reference::<ExampleSchema>(),
-                        if ring == 0 {
-                            format!("successor-{from}-{to}")
-                        } else {
-                            format!("{prefix}-successor-{from}-{to}")
-                        },
-                        entity_key(&format!("{prefix}-{from}")),
-                        entity_key(&format!("{prefix}-{to}")),
-                    ))?;
-                }
-            }
+            seed_graph(graph, installed, extra_rings)?;
             Ok(())
         },
     )
+}
+/// Actual bootstrap records shared by the Memory and Directory entrances.
+pub fn seed_graph(
+    graph: &mut primary_graph::WorthQueryPrimaryGraphBootstrap<ExampleSchema>,
+    installed: &worth_query_host::facade::domain::WorthQueryInstalledApplicationSchema<
+        ExampleSchema,
+    >,
+    extra_rings: usize,
+) -> Result<(), primary_graph::WorthQueryPrimaryGraphInstallationDenial> {
+    let principal = installed
+        .principal_binding(ConsumerPrincipalBinding::reference::<ExampleSchema>())
+        .unwrap();
+    graph.bind_principal(
+        &principal,
+        primary_graph::WorthQueryApplicationPrincipalKey::new("model-owner").unwrap(),
+        1_u64,
+        external_identity(),
+        WorthQueryPrincipalMappingStatus::Enabled,
+    )?;
+    for ring in 0..=extra_rings {
+        let prefix = if ring == 0 {
+            "anchor".to_owned()
+        } else {
+            format!("ring-{}", ring - 1)
+        };
+        for (name, x, y) in [("a", 1, 1), ("b", 10, 1), ("c", 1, 10)] {
+            let key = format!("{prefix}-{name}");
+            graph.bind_entity(
+                primary_graph::WorthQueryApplicationEntitySeed::new(
+                    Body::reference::<ExampleSchema>(),
+                    entity_key(&key),
+                )
+                .field(BodyKey::at("BodyKey"), key)
+                .field(Length::at("Length"), length(y + 1))
+                .field(PositionX::at("PositionX"), length(x))
+                .field(PositionY::at("PositionY"), length(y)),
+            )?;
+        }
+        for (from, to) in [("a", "b"), ("b", "c"), ("c", "a")] {
+            graph.bind_relation(primary_graph::WorthQueryApplicationRelationSeed::new(
+                PlanarSuccessor::reference::<ExampleSchema>(),
+                if ring == 0 {
+                    format!("successor-{from}-{to}")
+                } else {
+                    format!("{prefix}-successor-{from}-{to}")
+                },
+                entity_key(&format!("{prefix}-{from}")),
+                entity_key(&format!("{prefix}-{to}")),
+            ))?;
+        }
+    }
+    Ok(())
 }
 fn entity_key(key: &str) -> primary_graph::WorthQueryApplicationEntityKey<ExampleSchema, Body> {
     primary_graph::WorthQueryApplicationEntityKey::new(key).unwrap()

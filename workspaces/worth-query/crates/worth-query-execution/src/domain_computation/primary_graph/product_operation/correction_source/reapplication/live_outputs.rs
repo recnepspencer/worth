@@ -8,14 +8,31 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationOutputPosture as Posture,
 };
 use worth_execution::ExecutionRequest;
+use worth_query_declaration::facade::{
+    application_aftermath::{ApplicationCorrectionBinding, ApplicationInverseBinding},
+    application_operation::{ApplicationMutationBinding, ApplicationMutationOutputContract},
+};
 use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::runtime::RelationalBorrowedRecordReadDenial as ReadDenial;
 
-pub(super) fn require<S: ApplicationSchema>(
+pub(super) fn require<S: ApplicationSchema, C: ApplicationCorrectionBinding<S>>(
     target: &WorthQuerySelectedProductOperation<'_, S>,
     execution: ExecutionRequest<'_, '_>,
     active: &WorthQueryRecordedCorrectionSource,
 ) -> Result<(), Denial> {
+    // Fresh disclosure verified C's declared source/inverse association. Only
+    // the declared empty contract proves there are no generations to inspect
+    // after reopen; an absent cache or empty observed list cannot.
+    target
+        .application()
+        .installed_schema()
+        .installed_mutation_binding::<ApplicationInverseBinding<S, C>>()
+        .map_err(|_| Denial::UnsupportedSourceMeaning)?;
+    if <<ApplicationInverseBinding<S, C> as ApplicationMutationBinding<S>>::Output as ApplicationMutationOutputContract<S>>::ROLES.is_empty()
+        && <<ApplicationInverseBinding<S, C> as ApplicationMutationBinding<S>>::Output as ApplicationMutationOutputContract<S>>::ROLE_FAMILIES.is_empty()
+    {
+        return Ok(());
+    }
     let provider = &target.application().runtime.primary_provider;
     // The caller already selected this occurrence's ancestry. This is an exact
     // completed-occurrence lookup, not another history traversal.

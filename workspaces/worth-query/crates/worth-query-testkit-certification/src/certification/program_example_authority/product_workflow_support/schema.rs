@@ -204,8 +204,9 @@ impl TemporalPrincipalBinding {
 pub struct TemporalInput(pub String);
 worth_query_portable_type!(TemporalInput => "worth.query.test.host.temporal.input.v1");
 
-#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct AmendTemporalInput {
+    pub identity: String,
     pub revision: u64,
     pub due: u64,
     pub lifecycle: String,

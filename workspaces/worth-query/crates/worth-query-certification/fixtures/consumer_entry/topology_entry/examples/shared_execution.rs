@@ -1,4 +1,4 @@
-//! Two installed applications and a restored root share one process service.
+//! Two independent Directory Homes and a reopened root share one process service.
 // The mounted test inherits its crate root's limit; this example is test=false.
 #![cfg_attr(not(test), recursion_limit = "256")]
 use std::sync::{
@@ -20,6 +20,8 @@ use worth_query_topology_entry::*;
 #[path = "required_feature/program.rs"]
 mod program;
 // The required_feature example owns and lints this setup; this example uses a part.
+#[path = "shared_execution/home.rs"]
+mod home;
 #[allow(dead_code)]
 #[path = "required_feature/installation.rs"]
 mod setup;
@@ -28,12 +30,8 @@ type Application =
     installation::WorthQueryProgramApplicationRuntime<ExampleSchema, ExampleProgram<false>>;
 
 #[cfg(not(test))]
-#[expect(
-    clippy::disallowed_methods,
-    reason = "The example entry supplies a bootstrap stack before constructing the shared execution authority"
-)]
 fn main() {
-    run();
+    worth_execution::run_with_execution_stack(run);
 }
 
 pub(crate) fn run() {
@@ -51,41 +49,27 @@ pub(crate) fn run() {
         workers,
     );
     let limits = || setup::limits_for_policy(policy).with_execution_authority(Arc::clone(&service));
-    let mut first =
-        setup::install_configured::<false>(setup::configuration(), build, limits(), || {}).unwrap();
-    let mut second =
-        setup::install_configured::<false>(setup::configuration(), build, limits(), || {}).unwrap();
-    settle_and_check(&first, 3);
-    settle_and_check(&second, 3);
-    let checkpoint = first
-        .with_host_advancement(|phase| {
-            first.capture_application_checkpoint(
-                &phase,
-                installation::WorthQueryCheckpointCapturePolicy::SystemAllocation,
-            )
-        })
-        .unwrap()
-        .unwrap();
-    close(&mut first);
-    drop(first);
-
-    let program = ApplicationProgramAuthoring::<ExampleSchema, ExampleProgram<false>>::begin()
-        .with_schema(&<ExampleSchema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().expect("the completed schema is valid"))
-        .validated_program()
-        .unwrap();
-    let mut reopened = installation::WorthQueryInterimCheckpointRestore::program(
-        program,
-        <ExampleSchema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().unwrap(),
-        (setup::configuration(),),
-        build,
-        limits(),
-        checkpoint,
-    )
-    .unwrap();
-    settle_and_check(&reopened, 3);
+    let directory = std::env::temp_dir().join(format!(
+        "worth-shared-home-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    let first_directory = directory.join("first");
+    let second_directory = directory.join("second");
+    let first = home::open(&first_directory, build, limits());
+    let second = home::open(&second_directory, build, limits());
+    settle_and_check(first.runtime(), 3);
+    settle_and_check(second.runtime(), 3);
+    home::close(first);
+    let reopened = home::open(&first_directory, build, limits());
+    let application = reopened.runtime();
+    settle_and_check(application, 3);
     {
-        let (scope, principal) = setup::authenticate(&reopened);
-        let request = reopened.request(&principal, &scope);
+        let (scope, principal) = setup::authenticate(application);
+        let request = application.request(&principal, &scope);
         let source = request
             .query(PlanarRead {
                 body_key: "anchor-a".into(),
@@ -101,27 +85,21 @@ pub(crate) fn run() {
             .expect_source(source.observed_sources()[0].clone())
             .idempotency(&91_u64)
             .execute_performed::<ExampleProgram<false>, Root>(
-                &reopened,
+                application,
                 ExecutionAllocationPolicy::SystemAllocation,
             )
             .unwrap();
     }
-    settle_and_check(&reopened, 11);
+    settle_and_check(application, 11);
     // A different installed root still owns independent model state.
-    settle_and_check(&second, 3);
-    close(&mut reopened);
-    close(&mut second);
-    drop((reopened, second));
+    settle_and_check(second.runtime(), 3);
+    home::close(reopened);
+    home::close(second);
     drop(service);
     assert!(matches!(
         ExecutionAuthority::try_construct(ExecutionAuthorityConfig::for_workers(workers)),
         Err(ConstructionDenial::AlreadyConstructed)
     ));
-}
-
-fn close(application: &mut Application) {
-    assert!(application.close_live_delivery().owner_terminal());
-    application.close_conditional_runtime().unwrap();
 }
 
 fn settle_and_check(application: &Application, expected: u64) {

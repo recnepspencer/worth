@@ -91,11 +91,23 @@ where
             worth_query_installation::facade::WorthQueryAuthoredHostPredicateBinding::from_provider(
                 provider,
             );
-        predecessor.successor_with_authored_wake_provider(QueryAuthoredPredicateProvider::new(
+        let provider = QueryAuthoredPredicateProvider::new(
             source,
             Arc::from(predecessor.contract().identity()),
             Arc::clone(handle.node_authority()),
-        ))
+        );
+        match predecessor.contract().condition() {
+            worth_runtime_bridge::facade::BridgeConditionalCondition::RuntimePredicate => {
+                predecessor.successor_with_authored_condition_provider(provider)
+            }
+            worth_runtime_bridge::facade::BridgeConditionalCondition::Always
+            | worth_runtime_bridge::facade::BridgeConditionalCondition::AspectFiltered
+            | worth_runtime_bridge::facade::BridgeConditionalCondition::DeltaThreshold(_)
+            | worth_runtime_bridge::facade::BridgeConditionalCondition::OnDemand
+            | worth_runtime_bridge::facade::BridgeConditionalCondition::TemporalWake => {
+                predecessor.successor_with_authored_wake_provider(provider)
+            }
+        }
     } else {
         predecessor.successor_with_wake_provider(
             crate::domain_computation::primary_graph::conditional_operation::QueryTemporalPredicateProvider::<Node, Provider>::new(

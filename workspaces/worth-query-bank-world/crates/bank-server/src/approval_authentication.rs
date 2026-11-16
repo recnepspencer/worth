@@ -78,7 +78,7 @@ impl WorthQueryAuthenticationEventVerifier for DenyApprovalVerifier {
     }
 }
 
-pub(crate) struct BankApprovalVerifier(
+pub struct BankApprovalVerifier(
     Arc<dyn WorthQueryAuthenticationEventVerifier<Credential = BankApprovalCredential>>,
 );
 
@@ -99,13 +99,13 @@ impl WorthQueryAuthenticationEventVerifier for BankApprovalVerifier {
     }
 }
 
-pub(crate) struct BankApprovalClock;
+pub struct BankApprovalClock;
 
 impl WorthQueryNamedClock for BankApprovalClock {
     const PORTABLE_IDENTITY: &'static str = "bank.workflow-approval.monotonic.v1";
 }
 
-pub(crate) struct BankApprovalClockSource {
+pub struct BankApprovalClockSource {
     started: Instant,
     timeline: WorthQueryClockTimelineIdentity,
     sequence: AtomicU64,
@@ -178,7 +178,7 @@ fn clock_range_exceeded() -> WorthQueryNamedClockFailure {
     )
 }
 
-pub(crate) type BankApprovalAuthenticationOwner = Arc<
+pub type BankApprovalAuthenticationOwner = Arc<
     WorthQueryInstalledAuthenticationEventOwner<
         BankSchema,
         BankApprovalClock,
@@ -187,7 +187,7 @@ pub(crate) type BankApprovalAuthenticationOwner = Arc<
     >,
 >;
 
-pub(crate) fn install_approval_authentication(
+pub fn install_approval_authentication(
     schema: &WorthQueryInstalledApplicationSchema<BankSchema>,
     configuration: BankApprovalAuthenticationConfiguration,
 ) -> Result<BankApprovalAuthenticationOwner, WorthQueryAuthenticationEventDenial> {

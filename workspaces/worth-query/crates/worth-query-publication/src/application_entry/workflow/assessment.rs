@@ -328,7 +328,10 @@ where
 }
 
 mod owning;
-pub use owning::{WorthQueryClosedAssessmentObservation, WorthQueryWorkflowAssessmentOperation};
+pub use owning::{
+    WorthQueryClosedAssessmentObservation, WorthQueryOriginalWorkflowAssessment,
+    WorthQueryWorkflowAssessmentOperation,
+};
 
 mod advancement;
 use advancement::advance_assessment_in_advancement;

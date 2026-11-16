@@ -132,7 +132,7 @@ impl WorthQueryPreparedCorrectionSource {
     {
         use WorthQueryCorrectionDerivationDenial as Denial;
         let (target, source, ancestry, target_program, required_root) = checked.into_parts();
-        directory_admission::admit(target, source, &ancestry, &lineage, required_root.is_some())?;
+        directory_admission::admit(target, source, required_root.is_some())?;
         let basis = target.product().relational_basis();
         let target_parent = basis
             .observation()

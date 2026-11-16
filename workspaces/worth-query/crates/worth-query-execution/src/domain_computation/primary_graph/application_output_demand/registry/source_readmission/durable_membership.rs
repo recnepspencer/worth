@@ -39,7 +39,9 @@ pub(in crate::domain_computation::primary_graph) struct DurableDemandRecording {
     pub scope: Arc<crate::domain_computation::primary_graph::WorthQueryObservedScopeSelector>,
 }
 impl DurableDemandRecording {
-    fn capture(&self) -> Result<QueryOutputDemandObligation, WorthQueryOutputDemandDenial> {
+    pub(in crate::domain_computation::primary_graph) fn capture(
+        &self,
+    ) -> Result<QueryOutputDemandObligation, WorthQueryOutputDemandDenial> {
         let mut root = [0; 16];
         root[..4].copy_from_slice(&self.root.partition_value().to_le_bytes());
         root[4..12].copy_from_slice(&self.root.local_slot_value().to_le_bytes());

@@ -6,7 +6,7 @@ mod server;
 
 pub use process::{
     run_bank_http_server_process, BankHttpProcessAccount, BankHttpProcessAccountStatus,
-    BankHttpProcessColdCertification, BankHttpProcessConfiguration,
+    BankHttpProcessCloseRefused, BankHttpProcessColdCertification, BankHttpProcessConfiguration,
     BankHttpProcessConfigurationError, BankHttpProcessEstateAftermathWorld,
     BankHttpProcessEstateElevationWorld, BankHttpProcessEstateWorld,
     BankHttpProcessOidcConfiguration, BankHttpProcessParticipant, BankHttpProcessWorld,

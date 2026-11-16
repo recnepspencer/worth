@@ -235,16 +235,8 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
             .owner_identity()
             .durable()
             .is_some();
-        let selected = if home {
-            super::exact_original::performed(self, execution, &selected.fact, maximum_history)
-                .map_err(|cause| Denial::Selection(Box::new(cause)))?
-        } else {
-            provider
-                .performed_correction_source(&selected.fact)
-                .ok_or(Denial::SemanticMaterialUnavailable)?
-        };
-        let operated = if home {
-            super::exact_original::resolve(
+        let (operated, retained_selected) = if home {
+            let world = super::exact_original::resolve(
                 execution,
                 &self
                     .application()
@@ -256,14 +248,18 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
                 &expected_fact.source,
                 maximum_history,
             )
-            .map(|world| {
+            .map_err(|cause| Denial::Selection(Box::new(cause)))?;
+            (
                 WorthQueryRecordedCorrectionSource::from_untrusted_parts(
                     world,
                     expected_fact.source.relational().clone(),
-                )
-            })
-            .map_err(|cause| Denial::Selection(Box::new(cause)))?
+                ),
+                None,
+            )
         } else {
+            let selected = provider
+                .performed_correction_source(expected_fact)
+                .ok_or(Denial::SemanticMaterialUnavailable)?;
             let occurrence = provider
                 .observe_completed_application(selected.relational())
                 .ok_or(Denial::SemanticMaterialUnavailable)?;
@@ -272,16 +268,26 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
                 .ok_or(Denial::ForeignAlternative)?;
             if fact.correction_lineage().role() != crate::domain_computation::application_aftermath::WorthQueryAftermathCausalRole::RecordedReverse
                 || fact.correction_lineage().root() != &resolution.root { return Err(Denial::ForeignAlternative); }
-            fact.recorded_source().clone()
+            (fact.recorded_source().clone(), Some(selected))
         };
+        // Reject a foreign offered reversal against the genuine target basis
+        // before trying to resolve that reversal in this target's World ancestry.
+        // Failure to read canonical history keeps its actual history denial.
         let canonical = provider
             .reversal_of_source_at_basis(&execution, self.product().relational_basis(), &operated)
             .map_err(Denial::History)?
             .ok_or(Denial::ForeignAlternative)?;
-        if canonical != *expected_fact
-            || canonical.child != *selected.relational()
-            || canonical.root != resolution.root.coordinates()
-        {
+        if canonical != *expected_fact || canonical.root != resolution.root.coordinates() {
+            return Err(Denial::ForeignAlternative);
+        }
+        let selected = match retained_selected {
+            Some(selected) => selected,
+            None => {
+                super::exact_original::performed(self, execution, expected_fact, maximum_history)
+                    .map_err(|cause| Denial::Selection(Box::new(cause)))?
+            }
+        };
+        if canonical.child != *selected.relational() {
             return Err(Denial::ForeignAlternative);
         }
         let active = resolution

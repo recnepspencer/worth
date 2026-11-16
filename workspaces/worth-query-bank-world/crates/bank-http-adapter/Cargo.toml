@@ -24,6 +24,7 @@ tokio-stream.workspace = true
 url.workspace = true
 worth-query-host.workspace = true
 worth-foundational.workspace = true
+worth-execution.workspace = true
 
 [dev-dependencies]
 bank-server = { workspace = true }

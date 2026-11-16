@@ -26,8 +26,24 @@ impl WorthQueryExternalEffectTransport for LostResponseTransport {
 
 pub fn run() {
     let configuration = Configuration::default();
-    let application =
-        crate::document_retention_model::installation::publish_monitor(configuration.clone());
+    let directory = std::env::temp_dir().join(format!(
+        "worth-monitor-home-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    let (home, application) =
+        crate::document_retention_model::installation::open(&directory, configuration.clone());
+    inspect(application, configuration);
+    crate::document_retention_model::installation::close(home);
+}
+
+fn inspect(
+    application: crate::document_retention_model::MixedApplication,
+    configuration: Configuration,
+) {
     let runtime = application.runtime();
     let transport = Arc::new(LostResponseTransport {
         state: configuration.state.clone(),

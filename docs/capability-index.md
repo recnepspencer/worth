@@ -690,6 +690,7 @@ Choose a task and follow its guide for the exact calls and result handling.
 | Keep a correction chooser across authenticated requests | Retain the native page returned by `into_page()` in the server's session lifecycle. Complete traversal, then use a fresh request's `corrections().select_alternative_coordinates(&page, &chosen_source, limits)` before preparing reapplication. Selection validates the exact target and current disclosure; refresh a stale chooser and retain the same command key for an equivalent retry. | [Chooser request lifecycle](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md#carry-a-chooser-across-requests) |
 | Correct an authored conditional definition | Capture the authored parameters in the recorded inverse. The ordinary handler prepares the installed definition with `DecisionReader::prepare_conditional_definition`, carries its owner permit in the decision, and joins it to authored field writes with `CandidateWriter::advance_conditional_definition`. Publication exposes the complete Relational and Signal successor together. | [Conditional-definition correction](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md#correct-an-authored-conditional-definition), [Ordinary handler](../workspaces/worth-query/crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/composite_definition_handler.rs) |
 | Install a conditional definition without its temporal runtime | Bind the installed node with `.bind_authored_host_predicate_provider(provider)`, declare its named clock, then call `installation.bind_conditional_definition(clocked)`. This retains genuine declaration membership; clock observation returns typed `NotReadmitted` for phase 7. Provider owners describe complete portable parameters and reconstruct them from fresh installation services. | [Definition authoring installation](../workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/conditional_operation/installation/definition_authoring.rs), [Authored provider recovery](../crates/worth-runtime-bridge/README.md#authored-conditional-definition-recovery) |
+| Publish an authored output-readiness condition with an ordinary mutation | `bind_output_readiness_definition::<Producer, ...>(installed_node, delivery_ordinal, provider)` returns the definition handle retained by the existing conditional contribution. The ordinary `DecisionReader::prepare_conditional_definition` and `CandidateWriter::advance_conditional_definition` path publishes actual Relational and Signal changes together. The authored condition is evaluated at output readiness and reconstructed by its fresh decoder; the unit clock type adds no temporal runtime. This H10 entrance is source preparation pending integrated runtime qualification. | [Readiness installation owner](../workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/conditional_operation/installation/output_readiness_definition.rs) |
 | Select a correction source after normal operation close | Keep the completed receipt's `correction_source()` locator, close its operation, then call `request.corrections().select_recorded(&locator, limits)` under the current caller. For transport, serialize `locator.coordinates()` and use `select_coordinates(&coordinates, limits)`. Native evidence lookup, World ancestry and disclosure validate the selection. | [Closed source selection](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md#select-a-source-after-closing-its-operation) |
 | Reopen a directory Home's recorded correction | Keep source coordinates and select them through `corrections().select_coordinates(...)` under fresh authority. Material joins the protected World original and Native key before service. A committed retry answers `RecoveredCommitted`; owning close discharges unperformed preparation with typed `PreparationDischarged`. | [Directory corrections](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md#directory-homes-and-graceful-reopen) |
 | Expire optional directory correction material | The owning program runtime calls `expire_optional_correction_material(&execution, &coordinates)`. Mandatory uses refuse `MaterialPinned`; old and cold selections answer `RetainedMaterialExpired`. Native keys and authored state remain, and the actual obligation owner releases the matching interpretation. | [Directory corrections](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md#directory-homes-and-graceful-reopen) |
@@ -705,11 +706,12 @@ Choose a task and follow its guide for the exact calls and result handling.
 | Run a multi-step process | A workflow: `decl::application_program::ApplicationWorkflowSpec`, `ApplicationWorkflowDefinitionBuilder`; host lanes `prepare_workflow_publication`, `prepare_workflow_instance_start`, `prepare_workflow_proposal`, `prepare_workflow_advance` | [Build Â§6](build-an-application.md#6-author-publish-and-run-workflows), [Workflows](../workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md) |
 | Retain workflow vocabulary with its Home | `home.retain_workflow_spec(installed_spec, signing_owner)` returns `WorthQueryWorkflowApplicationHome`. Borrow `vocabulary()` for requests; binding refusal returns all original inputs. Its close/refusal/resume/retry and closed reclamation retain the same Home and configuration. Directory workflow records survive graceful close between completed steps; reinstall vocabulary and fresh signing authority, then reacquire current locators through governed discovery. Progress and replay retention rebuild from graph records. Crash recovery remains uncertified. | [Host workflow configuration](../workspaces/worth-query/crates/worth-query-host/README.md#workflow-configuration-and-home-custody) |
 | Resume a workflow after graceful Home reopen | Open the same Directory, reinstall its workflow spec and signing owner, retain original logical keys, and reacquire the instance through fresh governed `read_original_workflow` disclosure with its original start intent. Definitions, transitions, proposals/coverage, assessment evidence/dependencies, approvals, outputs and captured inputs remain graph records; required approvals remain required. Close between completed steps. | [Durable workflow records](../workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md#durable-workflow-records-on-a-directory-home) |
+| Retain the same workflow assessment original across graceful Home reopen | `WorthQueryWorkflowAssessmentOperation::graceful_handoff` releases actual process cleanup and retains original demand DATA in the existing Home obligation journal. After fresh authentication and governed workflow discovery, the genuine workflow assessment request uses `readmit_operation(program, &original)`; it checks the required occurrence, selected branch, typed source and original membership before ordinary advancement. Refusal preserves the live handoff owner or original DATA. The descriptor grants no authority. This H10 entrance is source preparation pending integrated runtime qualification. | [Assessment handoff owner](../workspaces/worth-query/crates/worth-query-publication/src/application_entry/workflow/assessment/owning/durable.rs) |
 | Transition a Home holding workflows | `with_program_transition(...).with_workflow_dispositions(choices)` uses the live-adoption inventory and disposition rules. Opening has no executable target workflow vocabulary, so compatible carriage refuses; `retire_and_cancel_unperformed()` retires definitions and cancels legally unperformed instances. Outstanding approvals/effects/custody require source settlement. Missing/illegal choices refuse before intent; completed dispositions survive successor-only reopen. | [Durable workflow records](../workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md#durable-workflow-records-on-a-directory-home) |
 | Start a fresh episode after a completed workflow | Scope/Preserve body `.succeed_workflow::<Spec, Binding, Role>()`; install `.succession_operation::<Binding, Role>()`, then native `prepare_workflow_succession` / `for_workflow_succession` with the same logical input/key. Preparation accepts the runtime-owned published reference or original pure start descriptor; after checkpoint restore, the latter requires fresh command admission and tracked native lookup. | [Completed-chain succession](../workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md#completed-chain-succession) |
 | Retain the actual outputs of a performed workflow operation | Native guarded settlement records the binding and actual role/entity/posture/reference inventory atomically with the transition; Existing, Created and Retire identities survive audit retention. No additional supplier flag or host write. | [Retained operation correspondence](../workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md#retained-operation-correspondence) |
 | Require succession to continue the selected round or revision | Body `require_predecessor_output::<Binding, SelectedRole, Producer, ProducedRole>()` compares its sealed Preserve/ExactlyOne output with the latest performed occurrence of the declared guarded producer; both roles must name the same entity. Exact replay precedes fresh mismatch refusal. | [Succession output affinity](../workspaces/worth-query/crates/worth-query/docs/foundations/workflow-succession-output-affinity.md) |
-| Run a workflow step that needs no signature | Guarded operation with `workflow_authority required, workflow_requirements ApplicationWorkflowExecutionRequirements::occurrence_only()` in `decl::worth_query_mutation_binding!`; on `AwaitingOperation`, `â€¦for_workflow_operation(&workflow, &required)?.retain_operation::<Program, Action>(program)` then `advance(&fresh_request)` | [Build Â§6.5](build-an-application.md#65-who-may-run-a-guarded-operation), [Workflows: Operations](../workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md#operations); example `workspaces/worth-query/crates/worth-query-certification/examples/authored_workflow/information.rs` |
+| Run a workflow step that needs no signature | Guarded operation with `workflow_authority required, workflow_requirements ApplicationWorkflowExecutionRequirements::occurrence_only()` in `decl::worth_query_mutation_binding!`; on `AwaitingOperation`, `â€¦for_workflow_operation(&workflow, &required)?.retain_durable_operation::<Program, Action>(&request, program)` then `advance(&fresh_request)`. The source-only workflow binding retains its issued requirement/actor context and records Directory original custody through the current request; construction refusal returns that same binding and custody. Its delivery bound remains `ApplicationSourceCompletion`. | [Build Â§6.5](build-an-application.md#65-who-may-run-a-guarded-operation), [Workflows: Operations](../workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md#operations); example `workspaces/worth-query/crates/worth-query-certification/examples/authored_workflow/information.rs` |
 | Certify shared and row-local facts without copying their source truth | A native signed creation uses `capture_from_path(ApplicationQueryRootPath, source, snapshot, Subject/AuditContext)` with v3 graph provenance. The existing lifecycle derives source-identity and selection-scoped supersession; `bound_subject_impacts` bounds the union of affected subjects. | [Graph-certified subjects](../workspaces/worth-query/crates/worth-query/docs/authoring/graph-certified-subjects.md) |
 | Own capability delegation or revocation across fresh requests | `request.retain_capability_delegation_in_program(..)` / `retain_capability_revocation_in_program(..)` own original input, key, conditions and principal association. `advance(&fresh_request)` returns progress, same-owner refusal, native completion or terminal custody; `close_with_evidence` discharges cleanup before moving the receipt | [Owning capability commands](../workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md#owning-capability-commands) |
 | Own a guarded workflow effect across fresh requests | Effect-free bound construction refusal returns the original binding; consuming `into_parts()` extracts its original description and requirement beyond the runtime borrow. `WorthQueryWorkflowOperation` retains the original description and issued slot; explicit `advance(&fresh_request)` delegates native unpublished, keyed and dispatch recovery. `accept_owned_operation(completed)` returns the completed owner on refusal and retains it beside successful workflow progression; `close(&fresh_request)` discharges actual cleanup | [Workflow operations](../workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md#operations), [Bank owning workflow](../workspaces/worth-query-bank-world/crates/bank-server/src/approved_payment_workflow/owning.rs) |
@@ -802,9 +804,9 @@ its release before changing the count. Missing originals and mismatched revision
 refuse with typed outcomes. Correction material admission remains a separate gate.
 Query's retained candidate and Source types can make a deeply composed entry
 crate exceed Rust's default auto-trait recursion depth, even without declaring a
-coupled producer. `observable_workflow` uses `#![recursion_limit = "130"]`, the
-minimum verified for both its binary and test builds; 129 still refuses with
-`E0275`. This compiler limit is separate from runtime cascade and request work
+coupled producer. `observable_workflow` uses `#![recursion_limit = "256"]`, the
+retained setting for its concrete entry graph. This is not a newly qualified
+minimum. This compiler limit is separate from runtime cascade and request work
 bounds. Other entry crates may need a limit appropriate to their concrete types.
 
 
@@ -951,7 +953,12 @@ Export the retained package through Host and use the existing SDK reconstruction
 and fresh validation with an independently obtained installed identity.
 
 The [ordinary workflow example](../workspaces/worth-query/crates/worth-query-certification/examples/ordinary_product_workflow.rs)
-compiles shared authoring, production installation and actual export/readmission.
+uses shared authoring and actual Directory Home installation. It hands off its
+recorded original, reopens the same Home, readmits the input under fresh authority,
+then checks the native result and retained read. The target scope belongs to the
+encoded input. This caller cutover awaits focused qualification at the integrated
+H6 source epoch; crash recovery and the full-family positive divergent correction
+journey remain uncertified.
 The existing [managed-index setup consumer](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/refusing/host.rs)
 teaches typed provider setup and initialization without adding an index to an
 application that has none. These descriptive contracts confer no extra read,
@@ -1059,13 +1066,36 @@ compensation/reconciliation posture, not a compensation action, historical
 correction authority or a durable source-operation owner. Typed realized-payload,
 outbox, canonical-terminal and same-original recovery checks still apply.
 
-Durable relation pre-images, correction-bound compensation, authored/output material, coupled-output
-corrections and reapplication refuse with named
+Durable relation pre-images, correction-bound compensation, authored/output
+material and coupled-output corrections retain their named
 `UnsupportedCorrectionRelationPreimage`, `UnsupportedCorrectionCompensation`,
-`UnsupportedCorrectionOutputMaterial`, `UnsupportedCorrectionCoupledOutputs` and
-`UnsupportedCorrectionReapplication` causes. Scalar reversal and its original durable idempotency key remain available.
-Required-output and divergent-branch correction continuation wait for their
-qualified H6/H9 owners. These entry refusals leave with that clean cutover.
+`UnsupportedCorrectionOutputMaterial` and `UnsupportedCorrectionCoupledOutputs`
+refusals. Scalar reversal and its original durable idempotency key remain available.
+
+The source implementation admits divergent Directory correction targets through
+existing exact ancestry and Home target custody. Reapplication no longer has a
+blanket Directory entry refusal. A verified inverse declaration with both zero
+fixed output roles and zero output role families proves there are no output
+generations to inspect after reopen. An output-bearing inverse still requires
+its authentic active-reversal output correspondence and material; unavailable
+material remains a refusal, not evidence of an empty output contract. Fresh
+source authority, canonical target membership and same-original idempotency
+checks remain required.
+
+This caller/correction cutover has source review, but integrated compilation and
+runtime qualification remain pending. Required-output correction continuation
+still needs its qualified H6/H9 material owners; the newly admitted no-output
+path does not establish that broader capability or crash certification.
+
+Workflow discovery locators, required assessment occurrences, retained original
+output demands and original workflow assessments expose owning recorded-DATA
+codecs for a graceful process handoff. Discovery decoding compares the recorded
+revision with the freshly installed validated application revision. These codecs
+carry only locator, occurrence, durable position/basis, demand and restriction
+DATA; decoding does not authorize, retain, adopt or advance. Fresh authenticated
+workflow discovery, exact required-occurrence and demand equality, and actual
+Home obligation readmission still decide continuation. This fresh-process caller
+and codec correction is source preparation pending integrated qualification.
 
 ## Known gaps
 

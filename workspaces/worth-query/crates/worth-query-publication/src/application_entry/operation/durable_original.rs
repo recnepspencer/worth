@@ -84,24 +84,37 @@ impl<S: ApplicationSchema + 'static, I: ApplicationMutationIntent<S>>
         MutationInput<S, I>: serde::Serialize,
         <I::Binding as ApplicationMutationBinding<S>>::IdempotencyKey: serde::Serialize,
 {
-        if !std::ptr::eq(request.application, runtime.runtime()) || request.branch != self.branch {
-            return Err((self, WorthQueryOperationConstructionDenial::ForeignRuntime));
+        if let Err(cause) = self.retain_original_for_request::<P, A>(request, runtime) {
+            return Err((self, cause));
         }
-        let result = runtime
+        self.retain_operation::<P, A>(runtime)
+    }
+
+    pub(super) fn retain_original_for_request<P, A>(
+        &mut self,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
+        runtime: &WorthQueryProgramApplicationRuntime<S, P>,
+    ) -> Result<(), WorthQueryOperationConstructionDenial>
+    where
+        P: ApplicationProgramDefinition<S>,
+        A: ApplicationAction<S, I::Binding>,
+        MutationInput<S, I>: serde::Serialize,
+        <I::Binding as ApplicationMutationBinding<S>>::IdempotencyKey: serde::Serialize,
+    {
+        if !std::ptr::eq(request.application, runtime.runtime()) || request.branch != self.branch {
+            return Err(WorthQueryOperationConstructionDenial::ForeignRuntime);
+        }
+        runtime
             .runtime()
             .with_application_advancement(request.scope, |phase| {
                 self.retain_original_in_phase::<P, A>(&phase, runtime)
-            });
-        match result {
-            Ok(Ok(())) => self.retain_operation::<P, A>(runtime),
-            Ok(Err(cause)) => Err((self, WorthQueryOperationConstructionDenial::Original(cause))),
-            Err(cause) => Err((
-                self,
+            })
+            .map_err(|cause| {
                 WorthQueryOperationConstructionDenial::Original(
                     WorthQueryOriginalOperationDenial::Execution(cause),
-                ),
-            )),
-        }
+                )
+            })?
+            .map_err(WorthQueryOperationConstructionDenial::Original)
     }
 
     fn retain_original_in_phase<P, A>(

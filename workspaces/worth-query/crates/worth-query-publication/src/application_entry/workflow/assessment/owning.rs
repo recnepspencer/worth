@@ -5,6 +5,8 @@ use worth_query_declaration::facade::application_program::ApplicationProgramDefi
 use worth_query_execution::facade::application_installation::WorthQueryProgramApplicationRuntime;
 mod advance;
 mod close;
+mod durable;
+pub use durable::WorthQueryOriginalWorkflowAssessment;
 /// Owns an assessment's original admitted demand and native cleanup custody.
 ///
 /// Call `advance` with a fresh request for the same runtime and branch. Close

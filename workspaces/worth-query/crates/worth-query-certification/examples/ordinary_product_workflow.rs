@@ -1,5 +1,7 @@
 //! Run with `cargo run -p worth-query-certification --example ordinary_product_workflow`.
 
+#[path = "ordinary_product_workflow/installation.rs"]
+mod installation;
 #[path = "ordinary_product_workflow/installed_package.rs"]
 mod installed_package;
 
@@ -10,25 +12,78 @@ use product_workflow_support::{
     principal, AmendTemporalIntent, ExampleApplication, TemporalIntentRead,
 };
 use worth_query_host::facade::application_entry::{
-    WorthQueryApplicationRequestExt, WorthQuerySourceCompletion, WorthQuerySourceOnlyAdvance,
+    WorthQueryApplicationRequestExt, WorthQueryOriginalOperation, WorthQuerySourceCompletion,
+    WorthQuerySourceOnlyAdvance,
 };
 
-#[expect(
-    clippy::disallowed_methods,
-    reason = "certification-harness thread-builder=1 thread-spawn=1: The example joins one actor with its declared bootstrap stack; native request computation retains its Execution authority."
-)]
 fn main() {
-    std::thread::Builder::new()
-        .name("ordinary-product-workflow".to_owned())
-        .stack_size(8 * 1024 * 1024)
-        .spawn(run)
-        .expect("the bounded example thread must start")
-        .join()
-        .expect("the ordinary product workflow must not unwind");
+    worth_execution::run_with_execution_stack(run);
 }
 
 fn run() {
-    let mut application = ExampleApplication::publish("blocked");
+    let directory = std::env::temp_dir().join(format!(
+        "worth-ordinary-home-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    let (home, application) = installation::open(&directory);
+    let original = {
+        let scope = product_workflow_support::adapters::request_scope();
+        let principal = principal(&application, &scope);
+        let request = application.runtime.request(&principal, &scope);
+        let operation = request
+        .mutate(AmendTemporalIntent {
+            amendment: AmendTemporalInput {
+                identity: "intent-1".to_owned(),
+                revision: 2,
+                due: 11,
+                lifecycle: "active".to_owned(),
+                input: "published-through-application-entry".to_owned(),
+                gate: "ready".to_owned(),
+            },
+        })
+        .without_source()
+        .idempotency_owned(0x51_u64).unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
+        .retain_durable_operation::<product_workflow_support::program::TemporalExampleProgram,
+            product_workflow_support::program::AmendTemporalAction>(&request, &application.runtime)
+        .unwrap_or_else(|(_, denial)| panic!("declared temporal action: {denial:?}"));
+
+        operation
+            .handoff_for_reopen(&request)
+            .unwrap_or_else(|(_, cause)| panic!("original handoff: {cause:?}"))
+            .0
+    };
+    let identity = original.identity();
+    drop(original);
+    drop(application);
+    installation::close(home);
+    let (home, application) = installation::open(&directory);
+    advance(application, identity);
+    installation::close(home);
+    let (home, application) = installation::open(&directory);
+    let scope = product_workflow_support::adapters::request_scope();
+    let principal = principal(&application, &scope);
+    let row = product_workflow_support::read_row(
+        &application,
+        application.runtime.current_world(),
+        &principal,
+        &scope,
+    );
+    assert_eq!(row.revision, 2);
+    assert_eq!(row.due, 11);
+    assert_eq!(row.input, "published-through-application-entry");
+    drop(application);
+    installation::close(home);
+    println!("readmitted, advanced, retained, and reopened through the ordinary entry");
+}
+
+fn advance(
+    application: ExampleApplication,
+    identity: worth_foundational::facade::ProgramSupportObligationIdentity,
+) {
     installed_package::verify(&application);
     let scope = product_workflow_support::adapters::request_scope();
     let principal = principal(&application, &scope);
@@ -50,22 +105,22 @@ fn run() {
     assert_eq!(initial.rows()[0].input, "payload");
 
     // compiled-example: begin
-    let operation = request
-        .mutate(AmendTemporalIntent {
-            identity: "intent-1".to_owned(),
-            amendment: AmendTemporalInput {
-                revision: 2,
-                due: 11,
-                lifecycle: "active".to_owned(),
-                input: "published-through-application-entry".to_owned(),
-                gate: "ready".to_owned(),
-            },
-        })
-        .without_source()
-        .idempotency_owned(0x51_u64).unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
-        .retain_operation::<product_workflow_support::program::TemporalExampleProgram,
-            product_workflow_support::program::AmendTemporalAction>(&application.runtime)
-        .unwrap_or_else(|(_, denial)| panic!("declared temporal action: {denial:?}"));
+    let description = WorthQueryOriginalOperation::readmit::<
+        _,
+        product_workflow_support::application_entry::AmendTemporalBinding,
+        product_workflow_support::program::TemporalExampleProgram,
+        product_workflow_support::program::AmendTemporalAction,
+    >(
+        identity,
+        &request,
+        &application.runtime,
+        worth_foundational::facade::ValueDecodeBounds::new(8192, 1024, 128, 32),
+    )
+    .unwrap_or_else(|cause| panic!("fresh original readmission: {cause:?}"));
+    let operation = description.retain_operation::<
+        product_workflow_support::program::TemporalExampleProgram,
+        product_workflow_support::program::AmendTemporalAction>(&application.runtime)
+        .unwrap_or_else(|(_, cause)| panic!("readmitted operation: {cause:?}"));
     let completed = match operation.advance(&request) {
         WorthQuerySourceOnlyAdvance::Completed(completed) => completed,
         WorthQuerySourceOnlyAdvance::Refused { denial, .. } => {
@@ -122,10 +177,4 @@ fn run() {
         .execute()
         .expect("the retained application request must preserve the original basis");
     assert_eq!(original.rows()[0].input, "payload");
-
-    application
-        .runtime
-        .close_conditional_runtime()
-        .expect("the application runtime must cleanly close");
-    println!("read, mutated, retained, and cleaned up through the application entry");
 }

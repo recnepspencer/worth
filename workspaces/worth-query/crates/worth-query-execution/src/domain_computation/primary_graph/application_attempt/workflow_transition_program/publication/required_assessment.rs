@@ -1,6 +1,7 @@
 /// An assessment the instance waits on: the query, binding, proposal and coverage it must
 /// be computed for, at the program revision the instance runs.
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct RequiredWorkflowAssessment {
     pub(super) instance: worth_relational::facade::identity::EntityId,
     pub(super) node_path: String,
@@ -16,6 +17,15 @@ pub struct RequiredWorkflowAssessment {
 }
 
 impl RequiredWorkflowAssessment {
+    /// Required-occurrence DATA only. A fresh workflow preparation must match it exactly.
+    pub fn to_recorded_bytes(&self) -> Result<Vec<u8>, rmp_serde::encode::Error> {
+        rmp_serde::to_vec(self)
+    }
+
+    pub fn from_recorded_bytes(bytes: &[u8]) -> Result<Self, rmp_serde::decode::Error> {
+        rmp_serde::from_slice(bytes)
+    }
+
     pub(in crate::domain_computation::primary_graph) fn from_selected(
         instance: worth_relational::facade::identity::EntityId,
         node_path: String,

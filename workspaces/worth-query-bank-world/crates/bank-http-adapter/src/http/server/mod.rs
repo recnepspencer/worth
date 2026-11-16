@@ -111,8 +111,16 @@ impl BankHttpServerBinding {
         self,
         identity: AuthentikBankIdentity,
     ) -> io::Result<BankHttpServerInstallation> {
+        self.install_shared(Arc::new(identity))
+    }
+
+    /// Keep the actual Home-owning identity with the process until workers quiesce.
+    pub fn install_shared(
+        self,
+        identity: Arc<AuthentikBankIdentity>,
+    ) -> io::Result<BankHttpServerInstallation> {
         installation::bind_application_to_listener(
-            Arc::new(identity),
+            identity,
             self.listener,
             self.configuration,
             None,

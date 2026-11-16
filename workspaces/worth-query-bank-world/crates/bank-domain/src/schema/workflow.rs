@@ -14,13 +14,21 @@ mod authority;
 #[path = "workflow/control.rs"]
 mod control;
 mod grant_minting;
+mod observation;
+mod rejection_assessment;
+mod rejection_readiness;
+mod rejection_readiness_predicate;
 mod settlement;
+pub use observation::ApprovedBusinessPaymentRead;
 
 pub use assessment::*;
 pub use assessment_readiness::*;
 pub use authority::*;
 pub use control::*;
 pub(crate) use grant_minting::install_payment_approval_grant_minting;
+pub use rejection_assessment::*;
+pub use rejection_readiness::*;
+pub use rejection_readiness_predicate::RejectedPaymentAssessmentPredicate;
 pub use settlement::*;
 
 pub struct ApprovedBusinessPaymentWorkflow;
@@ -28,7 +36,7 @@ pub struct ApprovedBusinessPaymentWorkflow;
 impl ApplicationWorkflowSpec for ApprovedBusinessPaymentWorkflow {
     fn observation_policy(
     ) -> worth_query_decl::facade::application_program::ApplicationWorkflowObservationPolicy {
-        worth_query_decl::facade::application_program::ApplicationWorkflowObservationPolicy::disabled()
+        observation::policy()
     }
     fn actor_policy(
     ) -> worth_query_decl::facade::application_program::ApplicationWorkflowActorPolicy {

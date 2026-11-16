@@ -134,8 +134,8 @@ pub const fn directory_family_support(family: DurableStateFamily) -> DirectoryFa
         // No Home installation admits this generic adapter; owner-boundary court
         // original_operation_data_preserves_identity_and_resume_position qualifies its Query owner.
         ServerSourceCustody => DirectoryFamilySupport::Supported(9),
-        // Bank HTTP installs Memory-only BankIdentityRuntime; owner-boundary court
-        // original_operation_data_preserves_identity_and_resume_position qualifies its Query owner.
+        // Bank HTTP retains the installed Directory Home through process shutdown;
+        // its logical original uses the same Query original-owner durable carrier.
         HttpOriginalOwners => DirectoryFamilySupport::Supported(9),
     }
 }
