@@ -8,6 +8,17 @@ use worth_query_host::facade::primary_graph::*;
 
 pub struct Handler;
 impl OperationHandler<DocumentRetentionSchema, MonitorBinding> for Handler {
+    fn declared_durable_capabilities() -> Option<&'static [WorthQueryOperationDurableCapability]> {
+        use WorthQueryOperationDurableCapability::*;
+        Some(&[
+            RelationalMutation,
+            ExternalEmission,
+            ExternalDispatch,
+            RecoveryCustody,
+            RetainedCorrectionMaterial,
+        ])
+    }
+
     fn decide(
         &self,
         input: &MonitorInput,

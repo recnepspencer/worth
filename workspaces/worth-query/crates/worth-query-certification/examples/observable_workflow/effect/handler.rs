@@ -11,6 +11,16 @@ pub(super) fn invocation_counts() -> [usize; 2] {
 }
 pub(super) struct ArchiveHandler;
 impl OperationHandler<DocumentRetentionSchema, ArchiveBinding> for ArchiveHandler {
+    fn declared_durable_capabilities() -> Option<&'static [WorthQueryOperationDurableCapability]> {
+        use WorthQueryOperationDurableCapability::*;
+        Some(&[
+            ExternalEmission,
+            ExternalDispatch,
+            InboundCompletion,
+            WorkflowExecution,
+        ])
+    }
+
     fn decide(
         &self,
         input: &SetRetentionInput,
