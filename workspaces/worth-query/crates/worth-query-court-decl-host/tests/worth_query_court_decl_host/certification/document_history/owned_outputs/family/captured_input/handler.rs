@@ -85,7 +85,9 @@ macro_rules! producer_capture_handler {
                                 .field(link.to(), ModelKey::at("ModelKey"))?
                                 .expect("required parent key");
                             let demand = first::Demand(key.clone());
-                            if weight % 2 == 1 {
+                            // The control uses the first declared port, which
+                            // this sequential wave drains before anchor rows.
+                            if weight == 0 || weight % 2 == 1 {
                                 reader.parent::<program::SeedConnection, _>(link.to(), demand)?;
                             } else {
                                 reader.parent::<program::AnchorConnection, _>(link.to(), demand)?;
