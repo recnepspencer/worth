@@ -1,5 +1,6 @@
 //! Canonical reissue of every recorded route in one Native inverse candidate.
 use super::*;
+use crate::execution::request_stage::checkpoint;
 use crate::{
     history::data::RequiredOutputPublicationPositions,
     mvcc::*,
@@ -75,20 +76,22 @@ pub(super) fn install(
     let anchor = created.resolve(&restoration.anchor).ok_or_else(refuse)?;
     let mut entities = Vec::with_capacity(restoration.entities.len());
     for (prior, target) in &restoration.entities {
-        context
-            .checkpoint(created.resolve_work_bound(target).ok_or_else(refuse)?)
-            .map_err(origin_request)?;
+        checkpoint(
+            context,
+            created.resolve_work_bound(target).ok_or_else(refuse)?,
+        )
+        .map_err(origin_request)?;
         entities.push((*prior, created.resolve(target).ok_or_else(refuse)?));
     }
     let mut relations = Vec::with_capacity(restoration.relations.len());
     for (prior, target) in &restoration.relations {
-        context
-            .checkpoint(
-                created_relations
-                    .resolve_work_bound(target)
-                    .ok_or_else(refuse)?,
-            )
-            .map_err(origin_request)?;
+        checkpoint(
+            context,
+            created_relations
+                .resolve_work_bound(target)
+                .ok_or_else(refuse)?,
+        )
+        .map_err(origin_request)?;
         relations.push((
             *prior,
             created_relations.resolve(target).ok_or_else(refuse)?,
@@ -96,9 +99,7 @@ pub(super) fn install(
     }
     let mut co_anchors = Vec::with_capacity(old.co_anchors.len());
     for &(old, _) in &old.co_anchors {
-        context
-            .checkpoint(entities.len() as u64)
-            .map_err(origin_request)?;
+        checkpoint(context, entities.len() as u64).map_err(origin_request)?;
         let target = entities
             .iter()
             .find(|(id, _)| *id == old)
@@ -136,15 +137,14 @@ pub(super) fn install(
             .get(&anchor)
             .filter(|row| row.is_live())
             .ok_or_else(refuse_source)?;
-        context
-            .checkpoint(
-                source
-                    .extra()
-                    .authoritative_aspect_state()
-                    .map_or(1, |state| state.owned_allocation_capacity_bytes())
-                    as u64,
-            )
-            .map_err(origin_request)?;
+        checkpoint(
+            context,
+            source
+                .extra()
+                .authoritative_aspect_state()
+                .map_or(1, |state| state.owned_allocation_capacity_bytes()) as u64,
+        )
+        .map_err(origin_request)?;
         if source.extra().authoritative_aspect_state()
             != new_source.extra().authoritative_aspect_state()
         {
@@ -181,9 +181,7 @@ pub(super) fn install(
             .iter()
             .filter(|member| member.posture != RequiredOutputRolePosture::Retire)
         {
-            context
-                .checkpoint(restoration.entities.len() as u64)
-                .map_err(origin_request)?;
+            checkpoint(context, restoration.entities.len() as u64).map_err(origin_request)?;
             let target = &restoration
                 .entities
                 .iter()
@@ -212,8 +210,7 @@ pub(super) fn install(
         )?;
         let mut edges = Vec::with_capacity(live.relations.len());
         for edge in &live.relations {
-            context
-                .checkpoint((relations.len() + entities.len() * 2) as u64)
+            checkpoint(context, (relations.len() + entities.len() * 2) as u64)
                 .map_err(origin_request)?;
             if let Some(membership) = restoration
                 .aggregate_memberships
@@ -256,9 +253,7 @@ pub(super) fn install(
             });
         }
         let mut meaning = origin.meaning.clone();
-        context
-            .checkpoint(entities.len() as u64)
-            .map_err(origin_request)?;
+        checkpoint(context, entities.len() as u64).map_err(origin_request)?;
         meaning.source_scope = entities
             .iter()
             .find(|(old, _)| *old == meaning.source_scope)
