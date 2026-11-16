@@ -350,8 +350,9 @@ registrar's kinds; retain exact three application edits and restored names.
 
 A source-scope-owned publication can consume required outputs without owning
 those outputs or their association edges. The existing sealed synchronous wave
-retains each actual prerequisite's Native current publication or earlier admitted
-part under this exact proposal and assembly invocation. That custody supplies a
+retains each actual prerequisite's Native current publication, earlier admitted
+part or actual Native-restored inverse prefix under this exact proposal and
+assembly invocation. That custody supplies a
 complete canonical consumed-publication route set for the new consumer. A current
 consumer read leaves its recorded inputs unchanged. An ordinary participant with
 no Native-owned publication supplies no publication custody and gains no ownership.
@@ -377,6 +378,14 @@ Native checkpoint frame CHK23. CHK22 and artifact 9 are prior formats, refused
 rather than reinterpreted. The historical format steps above remain their own
 recorded evidence. Decoder allocation quotes include the actual input vector and
 family strings, and the request retains their funding through publication.
+
+A recorded inverse's restored parent is the actual applied image, not a Current
+producer result. Native validates the complete inverse payloads and endpoints
+before offering that parent, resolves its full-generation scope through the
+actual created-entity correspondence, and issues the same proposal-local input
+custody. Query uses its genuine applied pin without replaying the old producer.
+The consumer records that restored scope in its input meaning. This input grants
+no new writer route; ordinary Retirement still refuses an unavailable parent.
 
 Focused evidence uses the existing two-family cabinet schema and installed
 producer host. A collector owns only a header associated with its own model and

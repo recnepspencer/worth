@@ -5007,6 +5007,9 @@ this accounting. Applications continue declaring the genuine complete prerequisi
 graph; they do not submit a writer roster, fabricate a dependency stamp or add
 synthetic ownership links. Recorded restoration carries the real input identities
 through its existing correspondence, including after checkpoint recovery.
+Within the inverse candidate, a restored parent can supply its actual
+Native-validated applied image before its consumers run. This is applied-input
+custody, not a claim that its old producer ran again or a new Current permission.
 
 If Native refuses `ExtraCoupledOwner`, its existing publication error preserves
 the actual requested family, full-generation source and partition, authored
