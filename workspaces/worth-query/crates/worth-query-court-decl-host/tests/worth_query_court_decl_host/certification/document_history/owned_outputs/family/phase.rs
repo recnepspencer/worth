@@ -9,6 +9,11 @@ macro_rules! producer_program_required {
         false
     };
 }
+macro_rules! producer_input_reuse_contract {
+    () => {
+        None
+    };
+}
 macro_rules! producer_capture_handler {
     () => {};
 }
@@ -190,6 +195,7 @@ macro_rules! phase {
                 const PREDECESSOR_READS: Option<WorthQueryProducerObservationReadContract<Schema>> = predecessor_contract!($operation);
                 const ORIGINAL_READS: Option<WorthQueryProducerObservationReadContract<Schema>> = original_contract!($operation);
                 const REUSE_POLICY: &'static str = "exact-source";
+                const INPUT_REUSE: Option<WorthQueryProducerInputReuseContract> = producer_input_reuse_contract!();
                 fn input_capture() -> Option<WorthQueryProducerInputCaptureContract<Schema>> { producer_capture_contract!() }
             }
             impl WorthQueryApplicationProducerProvider<Schema, Producer> for Provider {

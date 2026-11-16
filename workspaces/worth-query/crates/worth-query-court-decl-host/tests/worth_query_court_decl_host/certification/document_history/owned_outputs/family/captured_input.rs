@@ -58,6 +58,13 @@ macro_rules! producer_program_required {
         true
     };
 }
+macro_rules! producer_input_reuse_contract {
+    () => {
+        Some(WorthQueryProducerInputReuseContract::canonical_bitwise(
+            WorthQueryDecisionContextDependencies::SCOPE,
+        ))
+    };
+}
 macro_rules! producer_operation {
     ($operation:ident, $entity:ident, $key:ident, $value:ident, $of:ident) => {
         worth_query_operation!(pub $operation for Schema, input InputBinding; access {
