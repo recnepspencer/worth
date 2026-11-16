@@ -44,6 +44,7 @@ pub(super) trait PrerequisiteExecution<S: ApplicationSchema, C: ApplicationConne
         pin: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
         source: worth_relational::facade::identity::EntityId,
         demand: &dyn Any,
+        _inputs: &PrerequisiteInputs<'_>,
         next: &mut SynchronousOutputWave<S>,
         whole: &'static ComponentExecution<S>,
     ) -> Result<(), SynchronousOutputFailure>;
@@ -85,6 +86,7 @@ where
         pin: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
         source: worth_relational::facade::identity::EntityId,
         demand: &dyn Any,
+        _inputs: &PrerequisiteInputs<'_>,
         next: &mut SynchronousOutputWave<S>,
         whole: &'static ComponentExecution<S>,
     ) -> Result<(), SynchronousOutputFailure> {
@@ -120,6 +122,7 @@ where
                 C::declaration(),
                 parent,
                 whole,
+                None,
             )?;
         }
         Ok(())

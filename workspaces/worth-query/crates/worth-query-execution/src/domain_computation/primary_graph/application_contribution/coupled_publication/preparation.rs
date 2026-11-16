@@ -180,35 +180,20 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
         candidate: &mut RelationalAuthoredCoupledCandidate<'_>,
     ) -> Result<Option<synchronous_outputs::AppliedOutputParent>, CoupledSourceReadStop> {
         let read = self.read_source_one(execution, before_pin, demand, candidate)?;
-        self.prepare_read_one(execution, before_pin, demand, candidate, read)
+        self.prepare_read_one(execution, before_pin, demand, candidate, read, None)
     }
 
-    pub(in crate::domain_computation::primary_graph::application_contribution) fn prepare_selected_one(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        before_pin: &worth_relational::facade::runtime::RelationalPinnedRead,
-        demand: &crate::domain_computation::primary_graph::application_attempt::coupled_outputs::DeclaredCoupledOutputDemand,
-        candidate: &mut RelationalAuthoredCoupledCandidate<'_>,
-        selected: SelectedCoupledSource,
-    ) -> Result<Option<synchronous_outputs::AppliedOutputParent>, CoupledSourceReadStop> {
-        let pin = candidate.pin_source(execution)?;
-        let read = if selected.pin.candidate_identity().qualification()
-            == pin.candidate_identity().qualification()
-        {
-            selected.read
-        } else {
-            self.read_source_one(execution, before_pin, demand, candidate)?
-        };
-        self.prepare_read_one(execution, before_pin, demand, candidate, read)
-    }
-
-    fn prepare_read_one(
+    pub(super) fn prepare_read_one(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         before_pin: &worth_relational::facade::runtime::RelationalPinnedRead,
         demand: &crate::domain_computation::primary_graph::application_attempt::coupled_outputs::DeclaredCoupledOutputDemand,
         candidate: &mut RelationalAuthoredCoupledCandidate<'_>,
         source: execution::CoupledSourceRead,
+        captured: Option<(
+            Box<dyn execution::CapturedProducerInputRead>,
+            std::any::TypeId,
+        )>,
     ) -> Result<Option<synchronous_outputs::AppliedOutputParent>, CoupledSourceReadStop> {
         let principal = self.principal.ok_or_else(|| {
             WorthQueryOutputDemandDenial::new(
@@ -271,7 +256,7 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             &pin,
             source,
             producer.edition,
-            None,
+            captured,
         )?;
         let PreparedCoupledWriter {
             writer,

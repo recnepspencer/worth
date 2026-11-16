@@ -1,4 +1,5 @@
 //! Request-local required graph; its parent is proposed truth, never settlement.
+use super::super::coupled_publication::{PlannedOutput, PreparedCoupledInputs};
 use super::super::CoupledApplicationAssembly;
 use super::execution::CoupledSourceReadStop;
 use crate::domain_computation::primary_graph::application_attempt::coupled_outputs::DeclaredCoupledOutputDemand;
@@ -29,10 +30,12 @@ mod root;
 pub use discovered::SynchronousDiscoveredOutputRoot;
 mod discovery;
 mod edges;
+mod input_preparation;
 mod occurrences;
 pub(in crate::domain_computation::primary_graph::application_contribution) mod rounds;
 pub(in crate::domain_computation::primary_graph::application_contribution) mod source;
 mod wave;
+pub use input_preparation::PrerequisiteInputs;
 pub use rounds::default_producer_round_bounds;
 pub use wave::SynchronousOutputWave;
 
@@ -96,6 +99,7 @@ where
         _pin: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
         _source: worth_relational::facade::identity::EntityId,
         _demand: &D,
+        _inputs: &PrerequisiteInputs<'_>,
         _next: &mut SynchronousOutputWave<S>,
     ) -> Result<(), SynchronousOutputFailure> {
         Ok(())

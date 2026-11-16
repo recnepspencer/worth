@@ -25,6 +25,7 @@ pub(super) struct LeafExecution<S: ApplicationSchema> {
         &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
         worth_relational::facade::identity::EntityId,
         &dyn Any,
+        &PrerequisiteInputs<'_>,
         &mut SynchronousOutputWave<S>,
         &'static ComponentExecution<S>,
     ) -> Step,
@@ -38,6 +39,9 @@ pub(super) struct ComponentExecution<S: ApplicationSchema> {
     each: fn(&mut Visit<'_, S>) -> Step,
 }
 impl<S: ApplicationSchema> ComponentExecution<S> {
+    pub(super) fn identity(&self) -> TypeId {
+        (self.context)()
+    }
     fn occurrence_context(&self, family: TypeId) -> Option<TypeId> {
         let mut member = false;
         (self.families)(&mut |candidate| member |= candidate == family);
@@ -125,10 +129,11 @@ where
         pin: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
         source: worth_relational::facade::identity::EntityId,
         demand: &D,
+        inputs: &PrerequisiteInputs<'_>,
         next: &mut SynchronousOutputWave<S>,
     ) -> Step {
         let whole = *self;
-        (whole.each)(&mut |leaf| (leaf.incoming)(context, pin, source, demand, next, whole))
+        (whole.each)(&mut |leaf| (leaf.incoming)(context, pin, source, demand, inputs, next, whole))
     }
     fn assemble(
         &self,
@@ -182,9 +187,18 @@ where
         pin: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
         source: worth_relational::facade::identity::EntityId,
         demand: &D,
+        inputs: &PrerequisiteInputs<'_>,
         next: &mut SynchronousOutputWave<S>,
     ) -> Step {
-        capture::Continuation::prerequisites(&N::EXECUTION, context, pin, source, demand, next)
+        capture::Continuation::prerequisites(
+            &N::EXECUTION,
+            context,
+            pin,
+            source,
+            demand,
+            inputs,
+            next,
+        )
     }
     fn assemble(
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,

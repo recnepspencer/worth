@@ -7,6 +7,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrerequisiteSelection,
 };
 use std::any::Any;
+mod captured_prerequisites;
 mod component;
 mod prerequisites;
 use component::{ComponentExecution, LeafExecution};
@@ -67,6 +68,7 @@ trait ConnectionExecution<S: ApplicationSchema>: ApplicationConnectionShape<S> {
         pin: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
         source: worth_relational::facade::identity::EntityId,
         demand: &dyn Any,
+        inputs: &PrerequisiteInputs<'_>,
         next: &mut SynchronousOutputWave<S>,
         whole: &'static ComponentExecution<S>,
     ) -> Result<(), SynchronousOutputFailure>;
@@ -141,7 +143,15 @@ where
             ))
         })?;
         for child in children {
-            capture::schedule_continued(context, next, connection, C::declaration(), child, whole)?;
+            capture::schedule_continued(
+                context,
+                next,
+                connection,
+                C::declaration(),
+                child,
+                whole,
+                None,
+            )?;
         }
         Ok(())
     }
@@ -150,9 +160,10 @@ where
         pin: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
         source: worth_relational::facade::identity::EntityId,
         demand: &dyn Any,
+        inputs: &PrerequisiteInputs<'_>,
         next: &mut SynchronousOutputWave<S>,
         whole: &'static ComponentExecution<S>,
     ) -> Result<(), SynchronousOutputFailure> {
-        C::Prerequisites::incoming(context, pin, source, demand, next, whole)
+        C::Prerequisites::incoming(context, pin, source, demand, inputs, next, whole)
     }
 }

@@ -17,6 +17,7 @@ pub(in super::super) trait Continuation<S: ApplicationSchema, D>:
         pin: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
         source: worth_relational::facade::identity::EntityId,
         demand: &D,
+        inputs: &PrerequisiteInputs<'_>,
         next: &mut SynchronousOutputWave<S>,
     ) -> Result<(), SynchronousOutputFailure>;
     fn assemble(
@@ -75,9 +76,10 @@ where
         pin: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
         source: worth_relational::facade::identity::EntityId,
         demand: &D,
+        inputs: &PrerequisiteInputs<'_>,
         next: &mut SynchronousOutputWave<S>,
     ) -> Result<(), SynchronousOutputFailure> {
-        E::prerequisites(context, pin, source, demand, next)
+        E::prerequisites(context, pin, source, demand, inputs, next)
     }
     fn assemble(
         &self,

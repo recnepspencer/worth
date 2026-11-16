@@ -36,6 +36,7 @@ where
         position,
         demand,
         Static::<E>::new(),
+        None,
     )
 }
 /// Schedule `demand` with an explicit continuation value.
@@ -46,6 +47,7 @@ pub(super) fn schedule_continued<S, D, K>(
     position: worth_query_declaration::facade::application_program::ApplicationConnectionDeclaration,
     demand: D,
     continuation: K,
+    expected_source: Option<worth_relational::facade::identity::EntityId>,
 ) -> Result<(), SynchronousOutputFailure>
 where
     S: ApplicationSchema,
@@ -66,6 +68,7 @@ where
                 order: context.order.clone(),
                 demand,
                 continuation,
+                expected_source,
             })
         },
     )
@@ -96,6 +99,7 @@ impl CapturedSynchronousOutputs {
                     order: order.clone(),
                     demand,
                     continuation: Static::new(),
+                    expected_source: None,
                 })))
             },
         )
@@ -205,6 +209,7 @@ impl<S: ApplicationSchema, O, I, Scope>
                         order: order.clone(),
                         demand,
                         continuation: Static::new(),
+                        expected_source: None,
                     });
                     Box::new(root::Root::Fixed(tree))
                 },
