@@ -59,7 +59,7 @@ pub fn resolve_at_snapshot(
     if receipt.idempotency_key_identity() != binding.key_identity() {
         return Err(WorthQueryProviderIdempotencyResolutionDenial::Unavailable);
     }
-    Ok(if candidates.match_text(receipt.recorded_intent())? {
+    Ok(if candidates.match_performed(&receipt)? {
         WorthQueryProviderIdempotencyResolution::Readmitted(receipt)
     } else {
         WorthQueryProviderIdempotencyResolution::Drift
