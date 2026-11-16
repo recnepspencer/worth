@@ -85,11 +85,12 @@ where
         .native_action::<ApprovedBusinessPaymentAuthoringBinding>().finish_action()
         .native_action::<ApprovedBusinessPaymentApprovalBinding>().finish_action()
         .native_action::<ApprovedBusinessPaymentInstanceStartBinding>().finish_action()
-        .native_action::<ApprovedBusinessPaymentAdvanceBinding>().finish_action();
+        .native_action::<ApprovedBusinessPaymentAdvanceBinding>().finish_action()
+        .conditional_operation::<PublishApprovedPaymentAssessment>();
     let payments = if assessed_rejection {
         payments.provides::<super::assessed_payments::RejectedPaymentPort>()
     } else {
-        payments.conditional_operation::<PublishApprovedPaymentAssessment>()
+        payments
     };
     let payments = if include_ordinary_payment_approval {
         payments.action::<ApprovePaymentMutationBinding, super::workflow_actions::ApprovedPaymentEffectDelivery>().finish_action()

@@ -120,7 +120,7 @@ impl ApplicationProgramDefinition<BankSchema> for BankAssessedPaymentsApplicatio
             bank_features_with_rejection::<RejectedPaymentAssessmentDelivery>(true, true, true);
         features.push(
             ApplicationFeatureSpec::root::<BankSchema, RejectedPaymentAssessmentFeature>()
-                .conditional_operation::<PublishApprovedPaymentAssessment>()
+                .conditional_operation::<PublishRejectedPaymentAssessment>()
                 .finish(),
         );
         features

@@ -35,8 +35,8 @@ impl
         crate::BankOperationConstructionRefusal<InitiateBusinessPayment>,
     > {
         let (scope, key) = self.controls.into_parts();
-        self.runtime
-            .request(self.principal, &scope)
+        let request = self.runtime.request(self.principal, &scope);
+        request
             .mutate(self.mutation.input)
             .without_source()
             .preconditions(self.preconditions)
@@ -46,7 +46,8 @@ impl
                     builder.into_capture_refusal(key, denial),
                 )
             })?
-            .retain_operation::<BankApplication, crate::PaymentInitiationAction>(
+            .retain_durable_operation::<BankApplication, crate::PaymentInitiationAction>(
+                &request,
                 self.runtime.application_program(),
             )
             .map_err(
@@ -86,8 +87,8 @@ impl
         crate::BankOperationConstructionRefusal<RejectPayment>,
     > {
         let (scope, key) = self.controls.into_parts();
-        self.runtime
-            .request(self.principal, &scope)
+        let request = self.runtime.request(self.principal, &scope);
+        request
             .mutate(self.mutation.input)
             .without_source()
             .preconditions(self.preconditions)
@@ -97,7 +98,8 @@ impl
                     builder.into_capture_refusal(key, denial),
                 )
             })?
-            .retain_operation::<BankApplication, crate::PaymentRejectionAction>(
+            .retain_durable_operation::<BankApplication, crate::PaymentRejectionAction>(
+                &request,
                 self.runtime.application_program(),
             )
             .map_err(
@@ -141,8 +143,8 @@ impl
             rejecting_principal: self.principal.principal_id(),
         };
         let (scope, key) = self.controls.into_parts();
-        self.runtime
-            .request(self.principal, &scope)
+        let request = self.runtime.request(self.principal, &scope);
+        request
             .mutate(input)
             .without_source()
             .preconditions(self.preconditions)
@@ -152,7 +154,8 @@ impl
                     builder.into_capture_refusal(key, denial),
                 )
             })?
-            .retain_operation::<BankApplication, crate::PaymentRejectionAction>(
+            .retain_durable_operation::<BankApplication, crate::PaymentRejectionAction>(
+                &request,
                 self.runtime.application_program(),
             )
             .map_err(

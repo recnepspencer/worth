@@ -21,6 +21,13 @@ pub(crate) struct WithdrawHandler;
 macro_rules! institution_movement_handler {
     ($Handler:ty, $Binding:ty, $Input:ty, $balance:expr, $prepare:ident) => {
         impl OperationHandler<BankSchema, $Binding> for $Handler {
+    fn declared_durable_capabilities() -> Option<
+        &'static [worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability],
+    > {
+        use worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability as Capability;
+        Some(&[Capability::RelationalMutation])
+    }
+
             fn decide(
                 &self,
                 input: &$Input,

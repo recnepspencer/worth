@@ -2,7 +2,7 @@
 use worth_query_host::facade::{application_contribution, domain};
 
 use super::{
-    ApprovedPaymentAssessmentInput, PublishApprovedPaymentAssessment,
+    PublishRejectedPaymentAssessment, RejectedPaymentAssessmentInput,
     RejectedPaymentAssessmentProducer,
 };
 use crate::schema::{BankSchema, PaymentStatusField};
@@ -32,14 +32,14 @@ impl RejectedPaymentAssessmentReadiness {
         contract: &ReadinessContract,
     ) -> domain::WorthQueryApplicationConditionalOperationBinding<
         BankSchema,
-        PublishApprovedPaymentAssessment,
-        ApprovedPaymentAssessmentInput,
+        PublishRejectedPaymentAssessment,
+        RejectedPaymentAssessmentInput,
         RejectedPaymentAssessmentReadinessDomain,
         RejectedPaymentAssessmentReadinessOperation,
         RejectedPaymentAssessmentReadinessFamily,
     > {
         domain::WorthQueryApplicationConditionalOperationBinding::declare(
-            PublishApprovedPaymentAssessment::reference(),
+            PublishRejectedPaymentAssessment::reference(),
             contract.definition().reference(),
         )
     }
@@ -54,7 +54,7 @@ impl application_contribution::WorthQueryApplicationConditionalBinding<BankSchem
         RejectedPaymentAssessmentReadyNode,
         (),
     >;
-    type Operation = PublishApprovedPaymentAssessment;
+    type Operation = PublishRejectedPaymentAssessment;
     const IDENTITY: &'static str = "worth.bank.rejected-payment-assessment.readiness.v1";
     const REQUIRED_PRODUCERS: &'static [&'static str] =
         &["worth.bank.rejected-payment-assessment.producer.v1"];
@@ -90,7 +90,7 @@ impl application_contribution::WorthQueryApplicationConditionalBinding<BankSchem
         )?;
         let operation = installation
             .installed_schema()
-            .installed_operation(PublishApprovedPaymentAssessment::reference())
+            .installed_operation(PublishRejectedPaymentAssessment::reference())
             .expect("the payment assessment publication operation is installed");
         let node = installation
             .installed_packages()

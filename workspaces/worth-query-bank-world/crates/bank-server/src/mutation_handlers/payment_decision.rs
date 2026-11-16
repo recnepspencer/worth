@@ -26,6 +26,18 @@ use crate::operation_admission::bank_operation_scope_binding;
 pub(crate) struct ApprovePaymentHandler;
 
 impl OperationHandler<BankSchema, ApprovePaymentMutationBinding> for ApprovePaymentHandler {
+    fn declared_durable_capabilities() -> Option<
+        &'static [worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability],
+    > {
+        use worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability as Capability;
+        Some(&[
+            Capability::RelationalMutation,
+            Capability::ExternalEmission,
+            Capability::ExternalDispatch,
+            Capability::InboundCompletion,
+        ])
+    }
+
     fn decide(
         &self,
         input: &ApprovePayment,
@@ -72,6 +84,17 @@ impl OperationHandler<BankSchema, ApprovePaymentMutationBinding> for ApprovePaym
 pub(crate) struct RejectPaymentHandler;
 
 impl OperationHandler<BankSchema, RejectPaymentMutationBinding> for RejectPaymentHandler {
+    fn declared_durable_capabilities() -> Option<
+        &'static [worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability],
+    > {
+        use worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability as Capability;
+        Some(&[
+            Capability::RelationalMutation,
+            Capability::SignalMutation,
+            Capability::ConditionalExecution,
+        ])
+    }
+
     fn decide(
         &self,
         input: &RejectPayment,

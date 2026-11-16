@@ -39,8 +39,8 @@ impl
         crate::BankOperationConstructionRefusal<NotifyEstateDeath>,
     > {
         let (scope, key) = self.controls.into_parts();
-        self.runtime
-            .request(self.principal, &scope)
+        let request = self.runtime.request(self.principal, &scope);
+        request
             .mutate(self.mutation.input)
             .without_source()
             .preconditions(self.preconditions)
@@ -50,7 +50,8 @@ impl
                     builder.into_capture_refusal(key, denial),
                 )
             })?
-            .retain_operation::<BankApplication, crate::DeathNotificationAction>(
+            .retain_durable_operation::<BankApplication, crate::DeathNotificationAction>(
+                &request,
                 self.runtime.application_program(),
             )
             .map_err(
@@ -94,8 +95,8 @@ impl
         crate::BankOperationConstructionRefusal<FreezeEstateAccount>,
     > {
         let (scope, key) = self.controls.into_parts();
-        self.runtime
-            .request(self.principal, &scope)
+        let request = self.runtime.request(self.principal, &scope);
+        request
             .mutate(self.mutation.input)
             .without_source()
             .preconditions(self.preconditions)
@@ -105,7 +106,8 @@ impl
                     builder.into_capture_refusal(key, denial),
                 )
             })?
-            .retain_operation::<BankApplication, crate::EstateAccountFreezeAction>(
+            .retain_durable_operation::<BankApplication, crate::EstateAccountFreezeAction>(
+                &request,
                 self.runtime.application_program(),
             )
             .map_err(
@@ -149,8 +151,8 @@ impl
         crate::BankOperationConstructionRefusal<OpenEstateCase>,
     > {
         let (scope, key) = self.controls.into_parts();
-        self.runtime
-            .request(self.principal, &scope)
+        let request = self.runtime.request(self.principal, &scope);
+        request
             .mutate(self.mutation.input)
             .without_source()
             .preconditions(self.preconditions)
@@ -160,7 +162,8 @@ impl
                     builder.into_capture_refusal(key, denial),
                 )
             })?
-            .retain_operation::<BankApplication, crate::EstateCaseOpeningAction>(
+            .retain_durable_operation::<BankApplication, crate::EstateCaseOpeningAction>(
+                &request,
                 self.runtime.application_program(),
             )
             .map_err(
@@ -204,8 +207,8 @@ impl
         crate::BankOperationConstructionRefusal<RetransmitEstateDeathNotice>,
     > {
         let (scope, key) = self.controls.into_parts();
-        self.runtime
-            .request(self.principal, &scope)
+        let request = self.runtime.request(self.principal, &scope);
+        request
             .mutate(self.mutation.input)
             .without_source()
             .preconditions(self.preconditions)
@@ -215,7 +218,8 @@ impl
                     builder.into_capture_refusal(key, denial),
                 )
             })?
-            .retain_operation::<BankApplication, crate::DeathNoticeRetransmissionAction>(
+            .retain_durable_operation::<BankApplication, crate::DeathNoticeRetransmissionAction>(
+                &request,
                 self.runtime.application_program(),
             )
             .map_err(

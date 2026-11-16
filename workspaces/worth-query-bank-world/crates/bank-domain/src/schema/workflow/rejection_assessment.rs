@@ -1,7 +1,7 @@
 //! Rejection assessment preserves the actual rejected payment through its native producer.
 use super::{
-    ApprovedPaymentAssessmentBinding, ApprovedPaymentAssessmentInput,
-    ApprovedPaymentAssessmentOutput, ApprovedPaymentAssessmentProvider,
+    RejectedPaymentAssessmentBinding, RejectedPaymentAssessmentInput,
+    RejectedPaymentAssessmentOutput,
 };
 use crate::{
     model::PaymentId,
@@ -51,23 +51,24 @@ impl WorthQueryApplicationOutputDemand<BankSchema> for RejectedPaymentAssessment
     }
 }
 pub struct RejectedPaymentAssessmentProducer;
+pub struct RejectedPaymentAssessmentProvider;
 impl WorthQueryApplicationProducerBinding<BankSchema> for RejectedPaymentAssessmentProducer {
-    type Operation = ApprovedPaymentAssessmentBinding;
+    type Operation = RejectedPaymentAssessmentBinding;
     type OutputFamily = RejectedPaymentAssessmentOutputFamily;
-    type Provider = ApprovedPaymentAssessmentProvider;
-    type OutputRole = ApprovedPaymentAssessmentOutput;
+    type Provider = RejectedPaymentAssessmentProvider;
+    type OutputRole = RejectedPaymentAssessmentOutput;
     const IDENTITY: &'static str = "worth.bank.rejected-payment-assessment.producer.v1";
     const APPLICABILITY: &'static [WorthQueryProducerApplicability] = APPLICABILITY;
     const REQUIRED_INVARIANTS: &'static [WorthQueryProducerInvariantRequirement] = &[];
     const REUSE_POLICY: &'static str = "exact-source";
 }
 impl WorthQueryApplicationProducerProvider<BankSchema, RejectedPaymentAssessmentProducer>
-    for ApprovedPaymentAssessmentProvider
+    for RejectedPaymentAssessmentProvider
 {
     type DenialValue = WorthQueryUndeclaredProducerDenial;
     const SEMANTIC_IDENTITY: &'static str = "worth.bank.rejected-payment-assessment.provider.v1";
-    fn operation_input(&self, source: &PaymentSummary) -> ApprovedPaymentAssessmentInput {
-        ApprovedPaymentAssessmentInput {
+    fn operation_input(&self, source: &PaymentSummary) -> RejectedPaymentAssessmentInput {
+        RejectedPaymentAssessmentInput {
             payment: source.id(),
             status: source.status(),
         }

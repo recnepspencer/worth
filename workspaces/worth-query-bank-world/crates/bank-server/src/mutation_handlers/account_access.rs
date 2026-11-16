@@ -24,6 +24,13 @@ pub(crate) struct GrantAccountAccessHandler;
 pub(crate) struct RevokeAccountAccessHandler;
 
 impl OperationHandler<BankSchema, GrantAccountAccessMutationBinding> for GrantAccountAccessHandler {
+    fn declared_durable_capabilities() -> Option<
+        &'static [worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability],
+    > {
+        use worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability as Capability;
+        Some(&[Capability::RelationalMutation])
+    }
+
     fn decide(
         &self,
         input: &GrantAccountAuthorization,
@@ -62,6 +69,13 @@ impl OperationHandler<BankSchema, GrantAccountAccessMutationBinding> for GrantAc
 impl OperationHandler<BankSchema, RevokeAccountAccessMutationBinding>
     for RevokeAccountAccessHandler
 {
+    fn declared_durable_capabilities() -> Option<
+        &'static [worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability],
+    > {
+        use worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability as Capability;
+        Some(&[Capability::RelationalMutation])
+    }
+
     fn decide(
         &self,
         input: &RevokeAccountAuthorization,

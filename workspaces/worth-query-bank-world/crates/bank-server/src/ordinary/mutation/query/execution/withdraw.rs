@@ -36,8 +36,8 @@ impl<'runtime>
         crate::BankOperationConstructionRefusal<Withdraw>,
     > {
         let (scope, key) = self.controls.into_parts();
-        self.runtime
-            .request(self.principal, &scope)
+        let request = self.runtime.request(self.principal, &scope);
+        request
             .mutate(self.mutation.input)
             .without_source()
             .preconditions(self.preconditions)
@@ -47,7 +47,8 @@ impl<'runtime>
                     builder.into_capture_refusal(key, denial),
                 )
             })?
-            .retain_operation::<BankApplication, WithdrawalAction>(
+            .retain_durable_operation::<BankApplication, WithdrawalAction>(
+                &request,
                 self.runtime.application_program(),
             )
             .map_err(

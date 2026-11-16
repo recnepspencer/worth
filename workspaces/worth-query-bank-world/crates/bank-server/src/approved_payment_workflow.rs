@@ -255,9 +255,11 @@ impl<'runtime, 'principal, 'scope> BankApprovedPaymentWorkflow<'runtime, 'princi
         >,
         BankApprovedPaymentWorkflowError,
     > {
-        self.runtime
+        let request = self
+            .runtime
             .request(self.principal, self.scope)
-            .on_branch(required.branch())
+            .on_branch(required.branch());
+        request
             .mutate(ApprovedBusinessPaymentApplyIntent { input: operation })
             .without_source()
             .idempotency_owned(command_key)
@@ -268,7 +270,8 @@ impl<'runtime, 'principal, 'scope> BankApprovedPaymentWorkflow<'runtime, 'princi
             })?
             .for_workflow_operation(self.runtime.approved_payment_workflow_runtime(), required)
             .map_err(|(_, cause)| BankApprovedPaymentWorkflowError::OperationBinding(cause))?
-            .retain_operation::<crate::BankApplication, crate::ApprovedPaymentEffectAction>(
+            .retain_durable_operation::<crate::BankApplication, crate::ApprovedPaymentEffectAction>(
+                &request,
                 self.runtime.application_program(),
             )
             .map_err(|(_, cause)| BankApprovedPaymentWorkflowError::OperationConstruction(cause))
