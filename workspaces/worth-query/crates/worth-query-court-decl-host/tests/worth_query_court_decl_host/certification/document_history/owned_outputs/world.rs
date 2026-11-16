@@ -84,7 +84,9 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
         from_first::install(setup)?;
         restricted_from_first::install(setup)?;
         first::install(setup)?;
-        family::captured_input::install(setup)?;
+        if configuration.captured_inputs {
+            family::captured_input::install(setup)?;
+        }
         match configuration.second_derivation {
             Some(derive) => second::install_with_derivation(setup, derive)?,
             None => second::install(setup)?,
