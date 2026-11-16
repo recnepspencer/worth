@@ -146,7 +146,7 @@ fn exercise(cold: bool) {
     let undo = request
         .corrections()
         .reverse(&source)
-        .idempotency("borrowed-undo".to_owned())
+        .idempotency("borrowed-undo")
         .limits(limits)
         .edit_envelope::<authored_member::correction::UndoRetire, program::Program, program::Tree>(
             &host,
@@ -180,7 +180,7 @@ fn exercise(cold: bool) {
     let reapply = request
         .corrections()
         .reapply(&alternative)
-        .idempotency("borrowed-reapply".to_owned())
+        .idempotency("borrowed-reapply")
         .limits(limits)
         .edit_envelope::<authored_member::correction::UndoRetire, program::Program, program::Tree>(
             &host,
