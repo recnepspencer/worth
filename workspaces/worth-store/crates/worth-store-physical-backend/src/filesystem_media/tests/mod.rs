@@ -8,6 +8,7 @@ mod artifact_new_write;
 mod artifact_publication_effect;
 mod capability_profile;
 mod capability_qualification;
+mod directory_synchronization;
 mod durability_admission;
 mod fault_interposition;
 mod fault_schedule_validation;
