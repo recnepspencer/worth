@@ -65,8 +65,8 @@ pub fn feature() -> ApplicationFeatureSpec {
 /// Available operations do not imply this program requests the captured artifact.
 pub fn conditional_feature() -> ApplicationFeatureSpec {
     ApplicationFeatureSpec::root::<Schema, Feature>()
-        .conditional_operation::<initial::Operation>()
-        .conditional_operation::<preserve::Operation>()
+        .conditional_mutation::<initial::Binding>()
+        .conditional_mutation::<preserve::Binding>()
         .finish()
 }
 pub struct Start;
