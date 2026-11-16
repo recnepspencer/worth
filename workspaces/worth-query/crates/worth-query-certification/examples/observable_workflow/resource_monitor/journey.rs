@@ -34,14 +34,14 @@ pub fn run() {
             .unwrap()
             .as_nanos()
     ));
-    let (home, application) =
+    let application =
         crate::document_retention_model::installation::open(&directory, configuration.clone());
-    inspect(application, configuration);
-    crate::document_retention_model::installation::close(home);
+    inspect(&application, configuration);
+    crate::document_retention_model::installation::close(application);
 }
 
 fn inspect(
-    application: crate::document_retention_model::MixedApplication,
+    application: &crate::document_retention_model::MixedApplication,
     configuration: Configuration,
 ) {
     let runtime = application.runtime();
@@ -54,7 +54,7 @@ fn inspect(
         .unwrap();
     let scope = request_scope();
     let actor = authenticate_operator(runtime.installed_schema(), &scope);
-    let source = super::source_binding::prepare(&application, &actor, &scope);
+    let source = super::source_binding::prepare(application, &actor, &scope);
     let original = MonitorInput {
         identity: DOCUMENT_IDENTITY.to_owned(),
         retention_days: 9,
@@ -172,5 +172,5 @@ fn inspect(
     // Resource cleanup returned the unresolved effect owner. Dropping the
     // process-local fixture makes no external rollback/reconciliation claim.
     drop(returned);
-    super::source_binding::run(&application, &configuration, &actor, &scope, source);
+    super::source_binding::run(application, &configuration, &actor, &scope, source);
 }

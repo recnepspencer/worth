@@ -19,7 +19,7 @@ pub type Home = WorthQueryApplicationHome<DocumentRetentionSchema, crate::progra
 pub fn open(
     directory: &std::path::Path,
     configuration: crate::resource_monitor::Configuration,
-) -> (Home, crate::document_retention_model::MixedApplication) {
+) -> crate::document_retention_model::MixedApplication {
     let funding = funding();
     let home = worth_query_host::facade::application_contribution::with_bootstrap_advancement_from_request(
         worth_execution::ExecutionRequest::leased(&funding),
@@ -34,14 +34,18 @@ pub fn open(
         ).open_in_advancement(&phase),
     ).expect("the original bootstrap request opens")
         .unwrap_or_else(|cause| panic!("neutral Directory Home: {cause:?}"));
-    let application =
-        crate::document_retention_model::retain_mixed_workflow(home.runtime().clone());
-    (home, application)
+    crate::document_retention_model::retain_mixed_workflow(home)
 }
 
-pub fn close(home: Home) {
+pub fn close(application: crate::document_retention_model::MixedApplication) {
     let funding = funding();
-    home.close(&worth_execution::ExecutionRequest::leased(&funding))
+    let crate::document_retention_model::MixedApplication {
+        workflow,
+        authentication,
+    } = application;
+    drop(authentication);
+    workflow
+        .close(&worth_execution::ExecutionRequest::leased(&funding))
         .unwrap_or_else(|cause| panic!("neutral Home close retains its refusal: {cause:?}"))
         .reclaim();
 }

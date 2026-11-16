@@ -47,9 +47,7 @@ pub mod workflow;
 pub mod actor_generation;
 
 /// Retains the example's complete installed vocabulary in the existing owner.
-pub fn retain_mixed_workflow(
-    application: host::DocumentRetentionRuntime<crate::program::MixedProgram>,
-) -> MixedApplication {
+pub fn retain_mixed_workflow(application: installation::Home) -> MixedApplication {
     use self::workflow::{
         install_certification_authentication_with_clock, WorkflowAdvanceCapability,
         WorkflowAdvanceInput, WorkflowAdvanceOperation, WorkflowApprovalCapability,
@@ -70,7 +68,7 @@ pub fn retain_mixed_workflow(
     use worth_query_host::facade::domain::WorthQueryApplicationWorkflowSpecInstallation;
 
     let schema = application.runtime().installed_schema();
-    let program = application.installed_program();
+    let program = application.runtime().installed_program();
     let resources = workflow::workflow_resources();
     type Program = crate::program::MixedProgram;
     let specification = {
@@ -119,12 +117,11 @@ pub fn retain_mixed_workflow(
 
 /// The example retains the native workflow runtime and its signing owner.
 pub struct MixedApplication {
-    pub workflow:
-        worth_query_host::facade::application_installation::WorthQueryWorkflowApplicationRuntime<
-            schema::DocumentRetentionSchema,
-            crate::definition::MixedWorkflow,
-            crate::program::MixedProgram,
-        >,
+    pub workflow: worth_query_host::facade::WorthQueryWorkflowApplicationHome<
+        schema::DocumentRetentionSchema,
+        crate::definition::MixedWorkflow,
+        crate::program::MixedProgram,
+    >,
     pub authentication: workflow::CertificationAuthenticationOwner,
 }
 

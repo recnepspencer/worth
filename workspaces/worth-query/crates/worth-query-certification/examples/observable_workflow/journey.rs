@@ -18,20 +18,19 @@ pub fn run() {
             .unwrap()
             .as_nanos()
     ));
-    let (home, application) = crate::document_retention_model::installation::open(
+    let application = crate::document_retention_model::installation::open(
         &home_directory,
         crate::resource_monitor::Configuration::default(),
     );
     let (original_start, expected_start) = start_and_wait(&application);
-    drop(application);
-    crate::document_retention_model::installation::close(home);
+    crate::document_retention_model::installation::close(application);
 
-    let (home, application) = crate::document_retention_model::installation::open(
+    let application = crate::document_retention_model::installation::open(
         &home_directory,
         crate::resource_monitor::Configuration::default(),
     );
-    let captured = execute(application, original_start, expected_start, home_directory);
-    crate::document_retention_model::installation::close(home);
+    let captured = execute(&application, original_start, expected_start, home_directory);
+    crate::document_retention_model::installation::close(application);
     crate::restoration::inspect(captured);
 }
 
@@ -114,16 +113,16 @@ fn start_and_wait(
 
 #[inline(never)]
 fn execute(
-    application: MixedApplication,
+    application: &MixedApplication,
     original_start: WorthQueryWorkflowInstanceDiscoveryIntent<DocumentRetentionSchema>,
     expected_start: [u64; 3],
     home_directory: std::path::PathBuf,
 ) -> crate::restoration::CapturedJourney {
-    let (definition, instance) = crate::discovery::reacquire(&application, &original_start);
+    let (definition, instance) = crate::discovery::reacquire(application, &original_start);
     let runtime = application.runtime();
     let scope = request_scope();
     let actor = authenticate_operator(runtime.installed_schema(), &scope);
-    let waiting = advance(&application, &instance, &[10, 11]);
+    let waiting = advance(application, &instance, &[10, 11]);
     assert!(
         matches!(waiting.stop(), WorthQueryOrdinaryWorkflowRunStop::Outcome(
         WorkflowProgressOutcome::AwaitingProposal(need)) if need.node_path() == "propose"),
@@ -148,7 +147,7 @@ fn execute(
         .mutate(WorkflowDefinitionAuthoringIntent { input: input() })
         .without_source()
         .idempotency(&20_u64)
-        .prepare_workflow_proposal(&application, instance.clone())
+        .prepare_workflow_proposal(application, instance.clone())
         .unwrap()
         .execute();
     let (proposal, expected_proposer) = match proposal {
@@ -166,13 +165,13 @@ fn execute(
         other => panic!("original proposal publication: {other:?}"),
     };
     // compiled-example: end
-    let capture = operation_need(advance(&application, &instance, &[30, 31, 32]), "capture");
-    crate::operations::capture(&application, capture);
+    let capture = operation_need(advance(application, &instance, &[30, 31, 32]), "capture");
+    crate::operations::capture(application, capture);
     assert_eq!(
         crate::document_retention_model::readback::read_retention(runtime, instance.branch()),
         9
     );
-    let condition = advance(&application, &instance, &[48]);
+    let condition = advance(application, &instance, &[48]);
     let WorthQueryOrdinaryWorkflowRunStop::Outcome(WorkflowProgressOutcome::AwaitingCondition(
         required,
     )) = condition.stop()
@@ -180,13 +179,13 @@ fn execute(
         panic!("the native cursor must require the real retention condition: {condition:?}");
     };
     assert_eq!(required.node_path(), "positive-retention");
-    crate::operations::condition(&application, &instance, required);
+    crate::operations::condition(application, &instance, required);
     // Each assessment retains, drives and closes its actual output-demand owner.
     for (path, run_keys, demand_key, acceptance_key) in [
         ("checks/first", [50, 51], 52, 53),
         ("checks/confirmation", [54, 55], 56, 57),
     ] {
-        let progress = advance(&application, &instance, &run_keys);
+        let progress = advance(application, &instance, &run_keys);
         assert!(
             matches!(
                 progress.stop(),
@@ -196,9 +195,9 @@ fn execute(
             ),
             "the native cursor must require the exact assessment: {progress:?}"
         );
-        crate::operations::assess(&application, &instance, path, demand_key, acceptance_key);
+        crate::operations::assess(application, &instance, path, demand_key, acceptance_key);
     }
-    let progress = advance(&application, &instance, &[58, 59]);
+    let progress = advance(application, &instance, &[58, 59]);
     let WorthQueryOrdinaryWorkflowRunStop::Outcome(WorkflowProgressOutcome::AwaitingApproval(
         required,
     )) = progress.stop()
@@ -206,18 +205,18 @@ fn execute(
         panic!("a true native condition must expose the authored approval: {progress:?}");
     };
     let expected_approver = crate::history::observe_approval(
-        &application,
+        application,
         &instance,
         &original_start,
         &proposal,
         expected_proposer,
-        || approve(&application, &instance, required, &proposal),
+        || approve(application, &instance, required, &proposal),
     );
     // A new admitted request reacquires the exact original live instance.
-    crate::discovery::inspect(&application, &definition, &instance, &original_start);
-    let required = operation_need(advance(&application, &instance, &[70, 71, 72]), "archive");
-    crate::operations::archive(&application, &instance, required, &archive, &verifier);
-    let finished = advance(&application, &instance, &[100, 101, 102, 103]);
+    crate::discovery::inspect(application, &definition, &instance, &original_start);
+    let required = operation_need(advance(application, &instance, &[70, 71, 72]), "archive");
+    crate::operations::archive(application, &instance, required, &archive, &verifier);
+    let finished = advance(application, &instance, &[100, 101, 102, 103]);
     assert!(
         matches!(finished.stop(), WorthQueryOrdinaryWorkflowRunStop::Terminal),
         "the native inbound successor and terminal must finish: {finished:?}"
