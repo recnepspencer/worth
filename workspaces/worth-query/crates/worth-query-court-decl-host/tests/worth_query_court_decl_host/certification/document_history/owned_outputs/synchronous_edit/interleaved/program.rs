@@ -184,6 +184,8 @@ fn feature_specs<
     >())
     .action::<created::Binding, fixture::Delivery<ModelTree>>()
     .finish_action()
+    .action::<super::super::super::member_retarget::operation::Binding, Completion>()
+    .finish_action()
     .finish();
     specs
 }
