@@ -3,15 +3,6 @@ use super::*;
 use crate::certification::document_history::owned_outputs::authored_member as member;
 use worth_relational::facade::publication::AuthoredRetirementRefusal;
 
-impl WorthQueryApplicationRequiredOutputSource<Schema, program::ModelRoot>
-    for member::retire::Binding
-{
-    fn demand_from_source(
-        _: &member::retire::Intent,
-    ) -> Result<first::Demand, WorthQueryRequiredOutputConnectionDenial> {
-        Ok(first::Demand("a".into()))
-    }
-}
 fn exercise(current: bool) {
     let _execution = WorthQueryExecutionObservation::install_on_this_thread();
     let host = host(None, None);
