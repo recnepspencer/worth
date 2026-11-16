@@ -121,6 +121,10 @@ where
     let access = WorthQueryApplicationQueryAccessContext::new(&principal, &scope);
     let values = rmp_serde::from_slice(&row.parameters).map_err(|_| unavailable())?;
     let parameters = worth_query_admission::facade::application_query::readmit_recorded_application_query_parameters(query,values).map_err(|_| unavailable())?;
+    let graph = runtime.runtime.primary_graph().ok_or_else(unavailable)?;
+    crate::domain_computation::primary_graph::application_query::basis::recover_recorded_query_indexes(
+        execution, graph, query, scope.identity_index_id(), retained.product().relational_basis(),
+    ).map_err(|cause| query_admission_denied(F::IDENTITY, cause).into_output_denial())?;
     let maximum = runtime
         .resolve_application_query_limits(binding.limits())
         .maximum_results();

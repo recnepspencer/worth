@@ -72,8 +72,87 @@ fn prepare_selected_basis<Schema, Query, Parameters, QueryResult, Scope>(
 
     native: &mut super::super::ApplicationQueryNativeAccess<'_>,
 ) -> Result<PreparedSelectedReadIndexes, WorthQueryApplicationQueryAdmissionDenial> {
-    // Installed contract, root-selection mode, and optional live-target visits.
+    let indexes = selected_indexes(graph, query, scope_index)?;
+    // The actual admitted basis pins currency; current security is still
+    // selected and checked by the existing World/session owner on each read.
+    let retained_basis = basis.clone();
+    native.with_runtime(graph, execution, || SelectedFieldIndexAdmissionStop::Admission(CompanionPreflightStop::ForeignCell), |runtime| {
+            ensure_selected_field_indexes_admitted(execution, runtime, basis, indexes)
+        })
+        .map_err(|stop| match stop {
+            SelectedFieldIndexAdmissionStop::Admission( CompanionPreflightStop::PreparationMemoryCounterOverflow,
+            ) => WorthQueryApplicationQueryAdmissionDenial::new(
+                WorthQueryApplicationQueryAdmissionDenialKind::ReadmissionPreparationMemoryExhausted,
+                query.name(),
+            ),
+            SelectedFieldIndexAdmissionStop::Admission(_) => WorthQueryApplicationQueryAdmissionDenial::new(
+                WorthQueryApplicationQueryAdmissionDenialKind::WorkLimitExceeded,
+                query.name(),
+            ),
+            SelectedFieldIndexAdmissionStop::Native => denial(query.name()),
+        })?;
+    Ok(PreparedSelectedReadIndexes::for_query(retained_basis))
+}
 
+/// Recorded original DATA may name a historical basis whose disposable indexes
+/// were reclaimed. Only this explicit readmission door reconstructs those
+/// installed indexes; fresh authority and scope admission precede the call.
+pub(in crate::domain_computation::primary_graph) fn recover_recorded_query_indexes<
+    Schema,
+    Query,
+    Parameters,
+    QueryResult,
+    Scope,
+>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    graph: &WorthQueryPrimaryGraph,
+    query: &WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
+    scope_index: DerivedIndexId,
+    basis: &AdmittedRelationalBranchBasis,
+) -> Result<(), WorthQueryApplicationQueryAdmissionDenial> {
+    use crate::domain_computation::primary_graph::index_currency::selected_index_is_current;
+    use worth_relational::facade::indexes::{
+        DerivedIndexBuildRequest, DerivedIndexMaintenanceDenialKind,
+    };
+    let indexes = selected_indexes(graph, query, scope_index)?;
+    super::super::ApplicationQueryNativeAccess::acquire().with_runtime(
+        graph, execution, || denial(query.name()), |runtime| {
+            let mut missing = Vec::new();
+            for index in indexes.into_iter().flatten() {
+                if !missing.contains(&index) && !selected_index_is_current(execution, runtime, basis, index)
+                    .map_err(|_| WorthQueryApplicationQueryAdmissionDenial::new(
+                        WorthQueryApplicationQueryAdmissionDenialKind::WorkLimitExceeded, query.name()))? {
+                    missing.push(index);
+                }
+            }
+            if missing.is_empty() { return Ok(()); }
+            let observation = basis.observation();
+            let source_commit_id = observation.commit_id().ok_or_else(|| denial(query.name()))?;
+            runtime.index_authority().reconstruct_for_basis(
+                execution,
+                DerivedIndexBuildRequest {
+                    source_commit_id,
+                    branch_id: observation.identity().branch_id().clone(),
+                    index_ids: missing,
+                },
+                basis,
+                crate::domain_computation::primary_graph::index_maintenance_budget::cold_index_reconstruction_budget(),
+            ).map_err(|stop| match stop.kind {
+                DerivedIndexMaintenanceDenialKind::Execution(_) => WorthQueryApplicationQueryAdmissionDenial::new(
+                    WorthQueryApplicationQueryAdmissionDenialKind::WorkLimitExceeded, query.name()),
+                _ => denial(query.name()),
+            })?;
+            Ok(())
+        },
+    )
+}
+
+fn selected_indexes<Schema, Query, Parameters, QueryResult, Scope>(
+    graph: &WorthQueryPrimaryGraph,
+    query: &WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
+    scope_index: DerivedIndexId,
+) -> Result<[Option<DerivedIndexId>; 3], WorthQueryApplicationQueryAdmissionDenial> {
+    // Installed contract, root-selection mode, and optional live-target visits.
     let contract = query.read_family_binding().planning_contract();
     let root = if contract.root_paths().is_empty() {
         match contract.predicates() {
@@ -91,26 +170,7 @@ fn prepare_selected_basis<Schema, Query, Parameters, QueryResult, Scope>(
             selected_field_id(graph, (field.entity(), field.aspect(), field.field()))
         })
         .transpose()?;
-    // The actual admitted basis pins currency; current security is still
-    // selected and checked by the existing World/session owner on each read.
-
-    let retained_basis = basis.clone();
-    native.with_runtime(graph, execution, || SelectedFieldIndexAdmissionStop::Admission(CompanionPreflightStop::ForeignCell), |runtime| {
-            ensure_selected_field_indexes_admitted(execution, runtime, basis, [root, target, Some(scope_index)])
-        })
-        .map_err(|stop| match stop {
-            SelectedFieldIndexAdmissionStop::Admission( CompanionPreflightStop::PreparationMemoryCounterOverflow,
-            ) => WorthQueryApplicationQueryAdmissionDenial::new(
-                WorthQueryApplicationQueryAdmissionDenialKind::ReadmissionPreparationMemoryExhausted,
-                query.name(),
-            ),
-            SelectedFieldIndexAdmissionStop::Admission(_) => WorthQueryApplicationQueryAdmissionDenial::new(
-                WorthQueryApplicationQueryAdmissionDenialKind::WorkLimitExceeded,
-                query.name(),
-            ),
-            SelectedFieldIndexAdmissionStop::Native => denial(query.name()),
-        })?;
-    Ok(PreparedSelectedReadIndexes::for_query(retained_basis))
+    Ok([root, target, Some(scope_index)])
 }
 
 fn selected_field_id(
