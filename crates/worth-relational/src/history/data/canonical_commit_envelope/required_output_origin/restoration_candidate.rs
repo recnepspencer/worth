@@ -1,5 +1,6 @@
 //! Compare the actual inverse candidate against Native's complete recorded payload plan.
 use super::*;
+use crate::execution::request_stage::checkpoint;
 use crate::{storage::overlay::*, transactions::data::*};
 use worth_execution::MapKernelContext;
 use worth_foundational::facade::*;
@@ -15,12 +16,12 @@ pub(crate) fn validate(
 ) -> Result<(), TransactionCommitError> {
     let after = OverlayStateView::new(basis.inner.root.as_ref(), state);
     for intent in &restoration.inverse {
-        context
-            .checkpoint(
-                (restoration.entities.len() + restoration.relations.len()) as u64
-                    * intent.owned_allocation_capacity_bytes().saturating_add(1),
-            )
-            .map_err(origin_request)?;
+        checkpoint(
+            context,
+            (restoration.entities.len() + restoration.relations.len()) as u64
+                * intent.owned_allocation_capacity_bytes().saturating_add(1),
+        )
+        .map_err(origin_request)?;
         let subject = match intent {
             MutationIntent::Create(CreateIntent::EntityAspects(spec)) => restoration
                 .entities
@@ -50,9 +51,11 @@ pub(crate) fn validate(
                 .anchor,
         ));
         let refused = || incomplete(subject.clone());
-        context
-            .checkpoint(intent.owned_allocation_capacity_bytes().saturating_add(1))
-            .map_err(origin_request)?;
+        checkpoint(
+            context,
+            intent.owned_allocation_capacity_bytes().saturating_add(1),
+        )
+        .map_err(origin_request)?;
         match intent {
             MutationIntent::Create(CreateIntent::EntityAspects(spec)) => {
                 let target = CreatedEntityRef {
@@ -60,9 +63,11 @@ pub(crate) fn validate(
                     kind_id: spec.kind_id,
                     client_key: spec.client_key.clone(),
                 };
-                context
-                    .checkpoint(created.resolve_work_bound(&target).ok_or_else(refused)?)
-                    .map_err(origin_request)?;
+                checkpoint(
+                    context,
+                    created.resolve_work_bound(&target).ok_or_else(refused)?,
+                )
+                .map_err(origin_request)?;
                 let id = created.resolve(&target).ok_or_else(refused)?;
                 let (_, partition) = current_entity_partition_source_for_slot(
                     &after,
@@ -95,13 +100,13 @@ pub(crate) fn validate(
                     source: spec.source.clone(),
                     target: spec.target.clone(),
                 };
-                context
-                    .checkpoint(
-                        created_relations
-                            .resolve_work_bound(&target)
-                            .ok_or_else(refused)?,
-                    )
-                    .map_err(origin_request)?;
+                checkpoint(
+                    context,
+                    created_relations
+                        .resolve_work_bound(&target)
+                        .ok_or_else(refused)?,
+                )
+                .map_err(origin_request)?;
                 let id = created_relations.resolve(&target).ok_or_else(refused)?;
                 let (_, partition) = current_relation_partition_source_for_slot(
                     &after,
@@ -117,9 +122,11 @@ pub(crate) fn validate(
                 let mut resolve = |target: &EntityReference| match target {
                     EntityReference::Existing(id) => Ok(*id),
                     EntityReference::Created(target) => {
-                        context
-                            .checkpoint(created.resolve_work_bound(target).ok_or_else(refused)?)
-                            .map_err(origin_request)?;
+                        checkpoint(
+                            context,
+                            created.resolve_work_bound(target).ok_or_else(refused)?,
+                        )
+                        .map_err(origin_request)?;
                         created.resolve(target).ok_or_else(refused)
                     }
                 };
