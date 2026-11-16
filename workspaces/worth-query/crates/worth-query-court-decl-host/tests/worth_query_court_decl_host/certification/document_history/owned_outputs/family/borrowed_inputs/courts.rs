@@ -91,6 +91,40 @@ fn exercise(cold: bool) {
     let before = first(&request);
     let downstream = child(&request, "from-first:borrowed:a");
     let unaffected = child(&request, "downstream:n");
+    let model = request
+        .query(query::model::Read("a".into()))
+        .execute()
+        .unwrap()
+        .rows()[0]
+        .native_id;
+    let members = request
+        .query(query::members::Read("a".into()))
+        .execute()
+        .unwrap();
+    let roots = [
+        ("model", model),
+        (
+            "m",
+            members.rows()[0]
+                .members
+                .iter()
+                .find(|row| row.key == "m")
+                .unwrap()
+                .native_id,
+        ),
+        (
+            "n",
+            members.rows()[0]
+                .members
+                .iter()
+                .find(|row| row.key == "n")
+                .unwrap()
+                .native_id,
+        ),
+        ("header", before.native_id),
+    ];
+    let root_contacts =
+        roots.map(|(_, root)| host.producer_contacts_at_root_on_this_thread_for_test(root));
     let head = synchronous_edit::native_head(&host).0;
     let contacts = host.producer_contacts_on_this_thread_for_test();
     let mut retire = request
@@ -112,9 +146,10 @@ fn exercise(cold: bool) {
     assert_eq!(
         host.producer_contacts_on_this_thread_for_test() - contacts,
         2,
-        "only the collector and its transitive consumer produce; n is a current read; values=({}, {})",
+        "only the collector and its transitive consumer produce; n is a current read; values=({}, {}); roots={:?}",
         first(&request).value,
         child(&request, "from-first:borrowed:a").value,
+        roots.iter().zip(root_contacts).map(|((name, root), before)| (*name, before, host.producer_contacts_at_root_on_this_thread_for_test(*root))).collect::<Vec<_>>(),
     );
     assert_eq!(synchronous_edit::native_head(&host).1, [head]);
     assert_eq!(

@@ -7,6 +7,7 @@ pub(super) use companion::{companion_failure, head_cell_failure, readmission_fai
 pub(super) fn map_transaction_admission_failure(
     denial: worth_relational::facade::mvcc::RelationalBranchTransactionAdmissionDenial,
 ) -> WorthQueryInvariantExecutionFailure {
+    eprintln!("TEMP required-input Native transaction admission: {denial:#?}");
     use worth_relational::facade::mvcc::RelationalBranchTransactionAdmissionDenial as Denial;
     match denial {
         Denial::StaleBasis => WorthQueryInvariantExecutionFailure::new(
@@ -31,6 +32,7 @@ pub(super) fn map_transaction_admission_failure(
 pub(super) fn map_transaction_staging_failure(
     denial: worth_relational::facade::mvcc::RelationalTransactionStagingDenial,
 ) -> WorthQueryInvariantExecutionFailure {
+    eprintln!("TEMP required-input Native staging: {denial:#?}");
     use worth_relational::facade::mvcc::RelationalTransactionStagingDenial as Denial;
     let kind = match denial {
         native @ (Denial::SymbolIdentityExhausted
@@ -70,6 +72,7 @@ pub(super) fn map_transaction_staging_failure(
 pub fn map_validation_failure(
     failure: worth_relational::facade::mvcc::TransactionCommitError,
 ) -> WorthQueryInvariantExecutionFailure {
+    eprintln!("TEMP required-input Native validation: {failure:#?}");
     use worth_relational::facade::mvcc::{
         RelationalPublicationDeferred as Deferred, RelationalPublicationFailureKind as Failure,
         TransactionCommitError as Error,
