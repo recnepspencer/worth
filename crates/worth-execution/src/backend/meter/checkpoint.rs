@@ -23,6 +23,10 @@ impl KernelContext<'_, '_> {
     /// cancellation/deadline reports faithful to work already performed.
     pub fn account_completed_work(&mut self, units: u64) -> Result<(), KernelStop> {
         if !self.has_accounting() {
+            eprintln!(
+                "WORTH-UI-TEMPORARY-INSTRUMENTATION unaccounted checkpoint units={units}: {}",
+                std::backtrace::Backtrace::force_capture(),
+            );
             return self.latch_checkpoint_result(Err(KernelStop::AccountingUnavailable));
         }
         if let Some(capture) = self.meter.borrow_mut().capture_mut() {
@@ -124,6 +128,10 @@ impl KernelContext<'_, '_> {
         crate::authority::consult_observation::reached();
         self.poll_inner(settling_frontier)?;
         if !self.has_accounting() {
+            eprintln!(
+                "WORTH-UI-TEMPORARY-INSTRUMENTATION unaccounted checkpoint units={units}: {}",
+                std::backtrace::Backtrace::force_capture(),
+            );
             return self.latch_checkpoint_result(Err(KernelStop::AccountingUnavailable));
         }
         if units > 0 {
