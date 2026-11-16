@@ -157,24 +157,31 @@ impl ApplicationProgramDefinition<Schema> for Program {
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("owned-outputs.captured-input.program");
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
-        let mut features = hierarchy::Program::feature_specs();
-        features[0] = entry::envelope_actions::<
-            fixture::Delivery<Tree>,
-            fixture::Delivery<Tree>,
-            Completion,
-            Completion,
-            Completion,
-            Completion,
-            Completion,
-        >(entry::entry_builder::<Completion, Completion, Completion>())
-        .action::<interleaved::created::Binding, Completion>()
-        .finish_action()
-        .action::<member_retarget::operation::Binding, Completion>()
-        .finish_action()
-        .finish();
-        features.push(feature());
-        features
+        feature_specs::<fixture::Delivery<Tree>>()
     }
+}
+pub(super) fn feature_specs<Delivery>() -> Vec<ApplicationFeatureSpec>
+where
+    Delivery: ApplicationActionDelivery<Schema, fixture::model::Binding>
+        + ApplicationActionDelivery<Schema, fixture::member::Binding>,
+{
+    let mut features = hierarchy::Program::feature_specs();
+    features[0] = entry::envelope_actions::<
+        Delivery,
+        Delivery,
+        Completion,
+        Completion,
+        Completion,
+        Completion,
+        Completion,
+    >(entry::entry_builder::<Completion, Completion, Completion>())
+    .action::<interleaved::created::Binding, Completion>()
+    .finish_action()
+    .action::<member_retarget::operation::Binding, Completion>()
+    .finish_action()
+    .finish();
+    features.push(feature());
+    features
 }
 
 pub(in super::super::super) fn seed(

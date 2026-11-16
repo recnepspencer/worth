@@ -4,6 +4,8 @@ use super::*;
 #[macro_use]
 mod handler;
 #[cfg(test)]
+mod cold_contract;
+#[cfg(test)]
 mod courts;
 pub mod program;
 
