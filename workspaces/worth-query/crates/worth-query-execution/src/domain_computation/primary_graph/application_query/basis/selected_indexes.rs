@@ -24,6 +24,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn ensure_qu
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     graph: &WorthQueryPrimaryGraph,
     query: &WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
+    scope_index: DerivedIndexId,
     truth: &AdmittedRelationalBranchBasis,
     security: &AdmittedRelationalBranchBasis,
 ) -> Result<PreparedSelectedReadIndexes, WorthQueryApplicationQueryAdmissionDenial> {
@@ -31,6 +32,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn ensure_qu
         execution,
         graph,
         query,
+        scope_index,
         truth,
         security,
         &mut super::super::ApplicationQueryNativeAccess::acquire(),
@@ -47,15 +49,17 @@ pub(in crate::domain_computation::primary_graph::application_query) fn ensure_qu
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     graph: &WorthQueryPrimaryGraph,
     query: &WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
+    scope_index: DerivedIndexId,
     truth: &AdmittedRelationalBranchBasis,
     security: &AdmittedRelationalBranchBasis,
     native: &mut super::super::ApplicationQueryNativeAccess<'_>,
 ) -> Result<PreparedSelectedReadIndexes, WorthQueryApplicationQueryAdmissionDenial> {
-    let truth_indexes = prepare_selected_basis(execution, graph, query, truth, native)?;
+    let truth_indexes =
+        prepare_selected_basis(execution, graph, query, scope_index, truth, native)?;
     if truth.admission_identity() == security.admission_identity() {
         Ok(truth_indexes)
     } else {
-        prepare_selected_basis(execution, graph, query, security, native)
+        prepare_selected_basis(execution, graph, query, scope_index, security, native)
     }
 }
 
@@ -63,6 +67,7 @@ fn prepare_selected_basis<Schema, Query, Parameters, QueryResult, Scope>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     graph: &WorthQueryPrimaryGraph,
     query: &WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
+    scope_index: DerivedIndexId,
     basis: &AdmittedRelationalBranchBasis,
 
     native: &mut super::super::ApplicationQueryNativeAccess<'_>,
@@ -91,7 +96,7 @@ fn prepare_selected_basis<Schema, Query, Parameters, QueryResult, Scope>(
 
     let retained_basis = basis.clone();
     native.with_runtime(graph, execution, || SelectedFieldIndexAdmissionStop::Admission(CompanionPreflightStop::ForeignCell), |runtime| {
-            ensure_selected_field_indexes_admitted(execution, runtime, basis, [root, target])
+            ensure_selected_field_indexes_admitted(execution, runtime, basis, [root, target, Some(scope_index)])
         })
         .map_err(|stop| match stop {
             SelectedFieldIndexAdmissionStop::Admission( CompanionPreflightStop::PreparationMemoryCounterOverflow,

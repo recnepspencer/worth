@@ -85,6 +85,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     execution,
                     graph,
                     query,
+                    access.scope().identity_index_id(),
                     selected.selected_product().relational_basis(),
                     security.relational_basis(),
                 )?;
