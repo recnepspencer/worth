@@ -1,13 +1,11 @@
-//! Positioned authoring waits only for producers an earlier stage actually left
-//! pending. The declared graph is planned once, before any stage runs; each
-//! position's barrier is resolved when its stage is reached.
+//! Positioned authoring waits only for the roots available before that position.
 use super::*;
 
 pub(super) fn barriers<S: worth_query_installation::facade::ApplicationSchema>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     stages: &[super::super::CapturedAuthoredEditStage<S>],
     nodes: &[Node<'_>],
-) -> Result<Vec<PositionedBarrier>, DeclaredEditOrderRefusal> {
+) -> Result<Vec<Vec<String>>, DeclaredEditOrderRefusal> {
     let family = |i: usize| match &nodes[i].subject {
         DeclaredEditParticipant::Producer { family, .. } => family.as_str(),
         _ => unreachable!("producer node"),
@@ -27,11 +25,18 @@ pub(super) fn barriers<S: worth_query_installation::facade::ApplicationSchema>(
                 kind(parent) == Some(family(writer)) && kind(child) == Some(family(reader))
             })
     };
-    plan(
+    close(
         Closure {
             stages: stages.len(),
             nodes: nodes.len(),
             family: &family,
+            available: &|position| {
+                stages[..position]
+                    .iter()
+                    .flat_map(|s| &s.producers)
+                    .map(|p| p.family)
+                    .collect()
+            },
             overlaps: &|reader, writer| {
                 overlap(&nodes[reader], &nodes[writer], &stages[0].schema).is_some()
             },
@@ -46,47 +51,36 @@ struct Closure<'a, 'f> {
     stages: usize,
     nodes: usize,
     family: &'a dyn Fn(usize) -> &'f str,
+    /// The producer families that run before the stage at this position.
+    available: &'a dyn Fn(usize) -> Vec<&'f str>,
     /// `reader` declares a read that `writer` may write.
     overlaps: &'a dyn Fn(usize, usize) -> bool,
     /// An installed producer connection feeds `reader` from `writer`.
     declared: &'a dyn Fn(usize, usize) -> bool,
 }
 
-/// Every declared producer family, and what each one reads or is fed from.
-#[derive(Debug)]
-struct ProducerGraph {
-    families: Vec<String>,
-    /// `needs[reader]`: producers `reader` may read, or is connected from.
-    needs: Vec<Vec<usize>>,
-}
-
-/// One stage's planned barrier: the producers its own reads may overlap, over
-/// the envelope's shared declared graph. Declarations only say what may run;
-/// [`PositionedBarrier::resolve`] decides from what actually is pending.
-#[derive(Clone, Debug)]
-pub struct PositionedBarrier {
-    graph: std::sync::Arc<ProducerGraph>,
-    direct: Vec<usize>,
-}
-
-impl PositionedBarrier {
-    /// Each stage waits for the pending producers it reads, and for every
-    /// pending producer those need in turn. `pending` holds the families with
-    /// a source or root that the earlier stages actually left unprepared; a
-    /// family that is only declared has nothing to settle. The closure follows
-    /// only pending producers: one that does not run before the stage is not
-    /// its prerequisite, and neither are its inputs. With no pending source a
-    /// read remains an ordinary current read; a future reference is not
-    /// supplied, and the real projected query refuses it. A producer that
-    /// runs later and changes what the stage read is a final-support refusal
-    /// (`require_read_support`), never a stale result.
-    pub(in crate::domain_computation::primary_graph::application_contribution) fn resolve(
-        &self,
-        pending: &[&str],
-    ) -> Vec<String> {
-        let graph = &*self.graph;
-        let runs_before = |producer: usize| pending.contains(&graph.families[producer].as_str());
-        let mut required = self.direct.clone();
+/// Each stage waits for the available producers it reads, and for every
+/// available producer those need in turn. The closure follows only producers
+/// available before the position: a later producer does not run before the
+/// stage, so its own inputs are not the stage's prerequisites. With no pending
+/// source a read remains an ordinary current read; a future reference is not
+/// supplied, and the real projected query refuses it. Later invalidation is
+/// still a final-support failure.
+fn close<E>(
+    graph: Closure<'_, '_>,
+    mut checkpoint: impl FnMut() -> Result<(), E>,
+) -> Result<Vec<Vec<String>>, E> {
+    let mut barriers = Vec::new();
+    for position in 0..graph.stages {
+        let available = (graph.available)(position);
+        let runs_before = |producer: usize| available.contains(&(graph.family)(producer));
+        let mut required = Vec::new();
+        for producer in graph.stages..graph.nodes {
+            checkpoint()?;
+            if (graph.overlaps)(position, producer) {
+                required.push(producer);
+            }
+        }
         let mut cursor = 0;
         while cursor < required.len() {
             let reader = required[cursor];
@@ -94,59 +88,22 @@ impl PositionedBarrier {
             if !runs_before(reader) {
                 continue;
             }
-            for writer in &graph.needs[reader] {
-                if !required.contains(writer) {
-                    required.push(*writer);
+            for writer in graph.stages..graph.nodes {
+                checkpoint()?;
+                if writer == reader || required.contains(&writer) {
+                    continue;
+                }
+                if (graph.declared)(reader, writer) || (graph.overlaps)(reader, writer) {
+                    required.push(writer);
                 }
             }
         }
-        required
+        let barrier = required
             .into_iter()
             .filter(|producer| runs_before(*producer))
-            .map(|producer| graph.families[producer].clone())
-            .collect()
-    }
-}
-
-/// Pays every declared overlap once, before the first stage runs.
-fn plan<E>(
-    graph: Closure<'_, '_>,
-    mut checkpoint: impl FnMut() -> Result<(), E>,
-) -> Result<Vec<PositionedBarrier>, E> {
-    let producers = graph.stages..graph.nodes;
-    let mut needs = Vec::new();
-    for reader in producers.clone() {
-        let mut row = Vec::new();
-        for writer in producers.clone() {
-            checkpoint()?;
-            if writer != reader
-                && ((graph.declared)(reader, writer) || (graph.overlaps)(reader, writer))
-            {
-                row.push(writer - graph.stages);
-            }
-        }
-        needs.push(row);
-    }
-    let shared = std::sync::Arc::new(ProducerGraph {
-        families: producers
-            .clone()
-            .map(|i| (graph.family)(i).to_owned())
-            .collect(),
-        needs,
-    });
-    let mut barriers = Vec::new();
-    for position in 0..graph.stages {
-        let mut direct = Vec::new();
-        for producer in producers.clone() {
-            checkpoint()?;
-            if (graph.overlaps)(position, producer) {
-                direct.push(producer - graph.stages);
-            }
-        }
-        barriers.push(PositionedBarrier {
-            graph: shared.clone(),
-            direct,
-        });
+            .map(|producer| (graph.family)(producer).to_owned())
+            .collect();
+        barriers.push(barrier);
     }
     Ok(barriers)
 }

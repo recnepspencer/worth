@@ -153,16 +153,6 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
         self.storage = memory;
         Ok(())
     }
-    /// Families of every placement not yet prepared: the roots seeded so far
-    /// and the children their prepared parents discovered.
-    pub(in crate::domain_computation::primary_graph::application_contribution) fn pending_families(
-        &self,
-    ) -> impl Iterator<Item = &'static str> + '_ {
-        self.tasks
-            .iter()
-            .filter(|task| !task.done)
-            .map(|task| task.tree.family())
-    }
     pub(in crate::domain_computation::primary_graph::application_contribution) fn drive(
         &mut self,
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,

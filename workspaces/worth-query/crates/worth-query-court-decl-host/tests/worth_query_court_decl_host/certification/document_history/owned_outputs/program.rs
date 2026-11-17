@@ -370,8 +370,6 @@ pub(super) fn envelope_actions<
         .finish_action()
         .action::<synchronous_edit::interleaved::seal::Binding, Completion>()
         .finish_action()
-        .action::<synchronous_edit::interleaved::input_arrival::Binding, Completion>()
-        .finish_action()
         .action::<synchronous_edit::envelope_fixture::model::Binding, ModelPart>()
         .finish_action()
         .action::<synchronous_edit::envelope_fixture::member::Binding, MemberPart>()
