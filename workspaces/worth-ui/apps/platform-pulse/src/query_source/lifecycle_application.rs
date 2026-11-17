@@ -5,7 +5,6 @@ pub(crate) use continuation::PlatformPulseQueryContinuation;
 use continuation::{PlatformPulseQueryMutation, PlatformPulseQueryMutationPurpose};
 pub(crate) use error::{PlatformPulseQueryActionOutcome, PlatformPulseQueryLifecycleDenial};
 
-use worth_query_host::facade::publication::domain_computation::WorthQueryApplicationQueryPublicationReceipt;
 use worth_ui::facade::query_binding::{
     UiApplicationScalarProjectionObservation, UiProjectionObservation,
     WorthUiScalarProjectionSourceRecord, WorthUiStatusSourceOwner,
@@ -30,11 +29,7 @@ enum PlatformPulseQueryOwnerState {
 }
 
 struct ExpectedPublication {
-    identity: String,
-    status: String,
-    revision: u64,
-    owner_order: u64,
-    receipt: WorthQueryApplicationQueryPublicationReceipt,
+    observation: UiApplicationScalarProjectionObservation,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -229,23 +224,13 @@ impl PlatformPulseQueryLifecycle {
 
 impl ExpectedPublication {
     fn from_observation(observation: &UiApplicationScalarProjectionObservation) -> Self {
-        let fact = observation.fact();
         Self {
-            identity: fact.value().identity.clone(),
-            status: fact.value().status.clone(),
-            revision: fact.value().revision,
-            owner_order: fact.owner_order(),
-            receipt: fact.query_receipt().clone(),
+            observation: observation.clone(),
         }
     }
 
     fn admits(&self, observation: &UiApplicationScalarProjectionObservation) -> bool {
-        let fact = observation.fact();
-        self.identity == fact.value().identity
-            && self.status == fact.value().status
-            && self.revision == fact.value().revision
-            && self.owner_order == fact.owner_order()
-            && self.receipt == *fact.query_receipt()
+        self.observation == *observation
     }
 }
 

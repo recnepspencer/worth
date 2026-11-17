@@ -9,7 +9,7 @@ use super::{
     UiProjectionFactStopKind, UiProjectionRetainedActivityKind, UiProjectionUnavailableKind,
     UiScalarProjectionFactReceipt,
 };
-use application_identity::ApplicationProjectionInputIdentity;
+pub(crate) use application_identity::ApplicationProjectionInputIdentity;
 
 #[path = "intent_input/application_identity.rs"]
 mod application_identity;
@@ -127,7 +127,7 @@ impl UiProjectionInputRevision {
                 projection: fact.projection_identity().clone(),
                 observation_order: fact.owner_order(),
                 authority: UiProjectionInputAuthority::Application(
-                    ApplicationProjectionInputIdentity::capture(fact.query_receipt()),
+                    fact.publication_identity().clone(),
                 ),
             }),
         }

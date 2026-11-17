@@ -5,15 +5,15 @@ use worth_query_host::facade::publication::domain_computation::{
 /// Correlation captured only from Query-issued publication. An intent revision
 /// needs the exact query, parameters and basis, not the original observation
 /// and its retained native source custody. It issues no Query authority.
-#[derive(Debug, Eq, PartialEq)]
-pub(super) struct ApplicationProjectionInputIdentity {
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub(crate) struct ApplicationProjectionInputIdentity {
     query: String,
     parameters: String,
     basis: WorthQueryPublishedApplicationBasis,
 }
 
 impl ApplicationProjectionInputIdentity {
-    pub(super) fn capture(receipt: &WorthQueryApplicationQueryPublicationReceipt) -> Self {
+    pub(crate) fn capture(receipt: &WorthQueryApplicationQueryPublicationReceipt) -> Self {
         let inspection = receipt.inspect();
         Self {
             query: inspection.query_identity().to_owned(),
@@ -22,7 +22,15 @@ impl ApplicationProjectionInputIdentity {
         }
     }
 
-    pub(super) fn has_same_authority(&self, other: &Self) -> bool {
+    pub(crate) fn basis(&self) -> &WorthQueryPublishedApplicationBasis {
+        &self.basis
+    }
+
+    pub(crate) fn parameter_binding_identity(&self) -> &str {
+        &self.parameters
+    }
+
+    pub(crate) fn has_same_authority(&self, other: &Self) -> bool {
         self.query == other.query
             && self.parameters == other.parameters
             && self.basis.runtime_instance() == other.basis.runtime_instance()
