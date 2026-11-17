@@ -16,6 +16,8 @@ mod provider;
 mod source_action;
 #[derive(Default)]
 pub struct Calls {
+    // Fixed before installation; the field-only world protects sparse completion.
+    field_only: bool,
     gathers: AtomicUsize,
     outcomes: Mutex<Vec<u64>>,
 }
@@ -140,6 +142,73 @@ fn worker_only_committed_walk_producer_accepts_native_carry_and_declines_changed
 #[test]
 fn worker_only_call_roster_decline_seals_carried_walk_without_fresh_owner_reread() {
     worker_only_successor(false);
+}
+
+#[test]
+fn worker_only_nonstructural_native_carry_does_not_visit_fallback_metadata() {
+    let _observe = WorthQueryExecutionObservation::install_on_this_thread();
+    let calls = Arc::new(Calls {
+        field_only: true,
+        ..Calls::default()
+    });
+    let app = producer_world::install(calls.clone(), true);
+    let (scope, principal, _cancel) = world::authenticate_cancellable(&app);
+    let request = app.runtime().request(&principal, &scope);
+    source_action::perform(&app, &request, 0, 1500);
+    publications();
+    let mut prior = None;
+    for (width, nonce, expected, gathers) in [
+        (1, 1501, Run::Full(Cause::FirstRun), 1),
+        (0, 1502, Run::Incremental, 0),
+    ] {
+        fact_verification_on_this_thread_for_test();
+        partitioned_computation_runs_on_this_thread_for_test();
+        let before = calls.gathers.load(Ordering::Relaxed);
+        source_action::perform(&app, &request, width, nonce);
+        let verification = fact_verification_on_this_thread_for_test();
+        let runs = partitioned_computation_runs_on_this_thread_for_test();
+        assert!(
+            matches!(runs.as_slice(), [(actual, _)] if *actual == expected),
+            "{runs:?}"
+        );
+        assert_eq!(calls.gathers.load(Ordering::Relaxed) - before, gathers);
+        assert_eq!(
+            calls.outcomes.lock().unwrap().last(),
+            Some(&1),
+            "the seeded Value survives actual carriage"
+        );
+        let published = publications();
+        assert_eq!(published.len(), 1);
+        let current = published.into_iter().next().unwrap();
+        if let Some(prior) = &prior {
+            assert_eq!(
+                current.structural_walk_body_sharing_with_for_test(prior),
+                Some(vec![]),
+                "this is the field-only native population"
+            );
+            assert_eq!(
+                verification.native_completion_last_decline, None,
+                "{verification:?}"
+            );
+            assert!(
+                verification.completion_fresh_key_visits > 0
+                    && verification.native_patch_path_visits > 0,
+                "actual native completion must execute: {verification:?}"
+            );
+            assert_eq!(verification.fallback_carried_metadata_visits, 0, "nonstructural native completion must not enumerate retained metadata: {verification:?}");
+            assert_eq!(
+                verification.carried_key_expansion_visits, 0,
+                "{verification:?}"
+            );
+        } else {
+            assert!(runs[0]
+                .1
+                .expect("the real Full report")
+                .accounted_cost()
+                .is_none());
+        }
+        prior = Some(current);
+    }
 }
 
 #[test]

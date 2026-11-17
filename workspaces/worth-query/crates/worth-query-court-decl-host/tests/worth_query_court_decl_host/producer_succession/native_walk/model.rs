@@ -99,7 +99,7 @@ impl WorthQueryPartitionedComputationOwner<Schema, program::SplitParent, Computa
         self.0
             .gathers
             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-        if members.key().0 == 0 {
+        if members.key().0 == 0 && !self.0.field_only {
             Ok(reader
                 .walk(GeneratedBy::reference(), RelationDirection::Forward, root)?
                 .len() as u64)
