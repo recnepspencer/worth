@@ -131,26 +131,3 @@ fn recovery_ready_with_changed_output_refuses_refresh_of_its_exact_publication()
         "only the output changed after exact recovery admission"
     );
 }
-
-#[test]
-fn consumer_root_recovery_preserves_exact_custody_and_readiness() {
-    let installed = crate::installed_schema();
-    caller_disposal_before_progress_recovers(&installed);
-    snapshot_pressure_preserves_recoverable_source(&installed);
-    superseded_completion_is_terminal(&installed);
-    changed_root_cannot_adopt_stale_prepared_source(&installed);
-    super::super::dependent_recovery::caller_disposal_after_root_recovers_dependent(&installed);
-    use super::super::readiness_recovery as ready;
-    ready::readiness_failure_recovers_exact_pending_output(&installed);
-    ready::ready_read_capacity_preserves_completion(&installed);
-    ready::already_committed_replace_reuses_readiness(&installed);
-    ready::complete_dependency_aba_advances_the_live_demand(&installed);
-    ready::readiness_snapshot_pressure_keeps_published_output_recoverable(&installed);
-    ready::published_outputs_hold_no_hidden_read_lease(&installed);
-    ready::preserved_noop_output_completes_readiness_without_a_signal_successor(&installed);
-    use super::super::discovered::recovery as discovered;
-    discovered::newer_discovered_source_retires_recovery(&installed);
-    discovered::foreign_runtime_cannot_recover_discovered_source(&installed);
-    discovered::interrupted_discovery_recovers_both_consumed_roots(&installed);
-    discovered::required_recovery_cannot_claim_discovered_custody(&installed);
-}

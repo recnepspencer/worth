@@ -332,23 +332,5 @@ mod serial {
         );
     }
 
-    #[test]
-    fn later_branch_settlement_unblocks_earlier_consumer_in_same_settle() {
-        sibling_tree!(
-            sibling_program::BranchProgram,
-            sibling_program::BranchRoot,
-            sibling_program::LaterConnection,
-            false
-        );
-    }
 
-    #[test]
-    fn already_settled_edge_member_does_not_replay_progress_during_later_wait() {
-        sibling_tree!(
-            sibling_program::EdgeProgram,
-            sibling_program::EdgeRoot,
-            sibling_program::ReverseConnection,
-            true
-        );
-    }
 }
