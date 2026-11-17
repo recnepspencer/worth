@@ -1,5 +1,5 @@
-//! A positioned edit commits exactly what its stages commit one at a time, or
-//! refuses atomically: never a third, different committed world.
+//! A positioned edit commits exactly when its stages commit one at a time, and
+//! commits the same world: never a refusal of a valid edit, never a third world.
 //!
 //! The world holds the shape a CAD seed edit has: `first:a` is a parent whose
 //! driving discovers the child `from-first:first:a`, and the child is derived
@@ -59,8 +59,9 @@ fn world() -> Host {
 
 /// Runs `stages` (each with its position in the generated edit, which names
 /// its attached member) as one positioned edit. `Ok` holds each stage's
-/// result; `Err` is a refusal that published nothing and kept the head.
-fn execute(host: &Host, key: &str, stages: &[(usize, Stage)]) -> Result<Vec<u64>, ()> {
+/// result; `Err` is a refusal that published nothing and kept the head,
+/// holding the conflicting stages when the envelope refused a same-target pair.
+fn execute(host: &Host, key: &str, stages: &[(usize, Stage)]) -> Result<Vec<u64>, Option<(usize, usize)>> {
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.request(&principal, &scope);
@@ -114,7 +115,25 @@ fn execute(host: &Host, key: &str, stages: &[(usize, Stage)]) -> Result<Vec<u64>
     );
     assert_eq!(writes.published_rows.len() + writes.omitted_publications, 0, "a refusal published");
     assert_eq!(native_head(host), before, "a refusal moved the head");
-    Err(())
+    Err(conflict(&outcome))
+}
+
+/// The envelope's own rule (pinned by the positioned conflicting-intent
+/// court): two authored stages that write one target refuse as
+/// `ConflictingIntent`. `None` for any other refusal.
+fn conflict<E>(
+    outcome: &Result<Outcome, E>,
+) -> Option<(usize, usize)> {
+    use worth_query_host::facade::primary_graph::{
+        WorthQueryApplicationUncommitted as Uncommitted, WorthQueryOutputDemandDenialKind as Kind,
+    };
+    let Ok(Outcome::Uncommitted(Uncommitted::Denied(cause))) = outcome else {
+        return None;
+    };
+    match cause.coupled_producer_denial()?.kind() {
+        Kind::ConflictingIntent { earlier, later, .. } => Some((earlier, later)),
+        _ => None,
+    }
 }
 
 fn observe(host: &Host, stages: &[(usize, Stage)], results: Vec<u64>) -> World {
@@ -140,11 +159,11 @@ fn observe(host: &Host, stages: &[(usize, Stage)], results: Vec<u64>) -> World {
     }
 }
 
-/// The stages as one positioned edit: `None` when it refused atomically.
-fn positioned(stages: &[(usize, Stage)]) -> Option<World> {
+/// The stages as one positioned edit: `Err` when it refused atomically.
+fn positioned(stages: &[(usize, Stage)]) -> Result<World, Option<(usize, usize)>> {
     let host = world();
-    let results = execute(&host, "positioned", stages).ok()?;
-    Some(observe(&host, stages, results))
+    let results = execute(&host, "positioned", stages)?;
+    Ok(observe(&host, stages, results))
 }
 
 /// The stages one commit each, in order: `None` when any one refuses.
@@ -161,17 +180,27 @@ fn sequential(stages: &[(usize, Stage)]) -> Option<World> {
 proptest! {
     #![proptest_config(ProptestConfig { cases: 32, max_shrink_iters: 64, ..ProptestConfig::default() })]
     #[test]
-    fn a_positioned_edit_commits_what_one_commit_per_stage_commits_or_refuses(
+    fn a_positioned_edit_commits_exactly_what_one_commit_per_stage_commits(
         stages in proptest::collection::vec(stage(), 2..=4)
     ) {
         let stages: Vec<_> = stages.into_iter().enumerate().collect();
         let outcome = positioned(&stages);
-        eprintln!("{:?}: {}", stages, if outcome.is_some() { "committed" } else { "refused" });
-        if let Some(committed) = outcome {
+        eprintln!("{:?}: {}", stages, if outcome.is_ok() { "committed" } else { "refused" });
+        if let Err(Some((earlier, later))) = outcome {
+            // The envelope refuses two stages that write one target.
             prop_assert_eq!(
-                Some(committed),
+                std::mem::discriminant(&stages[earlier].1),
+                std::mem::discriminant(&stages[later].1),
+                "{:?}: a conflict between stages that write different targets",
+                stages
+            );
+        } else {
+            // Liveness and safety (#224): otherwise the positioned edit commits
+            // exactly when one commit per stage commits, the same world.
+            prop_assert_eq!(
+                outcome.ok(),
                 sequential(&stages),
-                "{:?}: a positioned commit differs from one commit per stage",
+                "{:?}: a positioned edit differs from one commit per stage",
                 stages
             );
         }

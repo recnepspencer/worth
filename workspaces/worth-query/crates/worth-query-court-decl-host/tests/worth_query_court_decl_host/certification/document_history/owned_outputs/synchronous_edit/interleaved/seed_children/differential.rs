@@ -1,10 +1,10 @@
 //! A positioned edit over a parent whose discovered child reads the parent's
-//! input commits what its stages commit one at a time, or refuses atomically.
+//! input commits exactly what its stages commit one at a time.
 //!
 //! This is the CAD seed-edit shape: a stage that reads the parent settles the
 //! parent and its discovered child; a later stage writes the seed (the input
 //! both of them read) without reading either. The child must then commit from
-//! the final seed, or the edit must refuse.
+//! the final seed.
 use super::*;
 use crate::certification::document_history::owned_outputs::synchronous_edit::courts::native_head;
 use proptest::prelude::*;
@@ -54,7 +54,11 @@ fn world() -> Host {
 }
 
 /// `Ok` holds each Read stage's result; `Err` is an atomic refusal.
-fn execute(host: &Host, key: &str, stages: &[Stage]) -> Result<Vec<u64>, String> {
+fn execute(
+    host: &Host,
+    key: &str,
+    stages: &[Stage],
+) -> Result<Vec<u64>, (Option<(usize, usize)>, String)> {
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.request(&principal, &scope);
@@ -103,7 +107,25 @@ fn execute(host: &Host, key: &str, stages: &[Stage]) -> Result<Vec<u64>, String>
     );
     assert_eq!(writes.published_rows.len() + writes.omitted_publications, 0, "a refusal published");
     assert_eq!(native_head(host), before, "a refusal moved the head");
-    Err(format!("{outcome:?}").chars().take(1200).collect())
+    Err((conflict(&outcome), format!("{outcome:?}").chars().take(1200).collect()))
+}
+
+/// The envelope's own rule (pinned by the positioned conflicting-intent
+/// court): two authored stages that write one target refuse as
+/// `ConflictingIntent`. `None` for any other refusal.
+fn conflict<E>(
+    outcome: &Result<Outcome, E>,
+) -> Option<(usize, usize)> {
+    use worth_query_host::facade::primary_graph::{
+        WorthQueryApplicationUncommitted as Uncommitted, WorthQueryOutputDemandDenialKind as Kind,
+    };
+    let Ok(Outcome::Uncommitted(Uncommitted::Denied(cause))) = outcome else {
+        return None;
+    };
+    match cause.coupled_producer_denial()?.kind() {
+        Kind::ConflictingIntent { earlier, later, .. } => Some((earlier, later)),
+        _ => None,
+    }
 }
 
 fn observe(host: &Host, results: Vec<u64>) -> World {
@@ -128,13 +150,34 @@ fn observe(host: &Host, results: Vec<u64>) -> World {
     }
 }
 
-fn positioned(stages: &[Stage]) -> Option<World> {
+fn positioned(stages: &[Stage]) -> Result<World, Option<(usize, usize)>> {
     let host = world();
     match execute(&host, "positioned", stages) {
-        Ok(results) => Some(observe(&host, results)),
-        Err(refusal) => {
+        Ok(results) => Ok(observe(&host, results)),
+        Err((conflict, refusal)) => {
             eprintln!("{stages:?} refused: {refusal}");
-            None
+            Err(conflict)
+        }
+    }
+}
+
+/// Liveness and safety (#224): a positioned edit commits exactly when one
+/// commit per stage commits, the same world. The one admitted refusal is the
+/// envelope's own: two stages that write one target.
+fn equals_sequential(stages: &[Stage]) -> Result<(), String> {
+    match positioned(stages) {
+        Err(Some((earlier, later)))
+            if std::mem::discriminant(&stages[earlier])
+                == std::mem::discriminant(&stages[later]) =>
+        {
+            Ok(())
+        }
+        outcome => {
+            let sequential = sequential(stages);
+            let positioned = outcome.as_ref().ok();
+            (positioned == sequential.as_ref()).then_some(()).ok_or_else(|| {
+                format!("{stages:?}: positioned {outcome:?} differs from one commit per stage {sequential:?}")
+            })
         }
     }
 }
@@ -152,18 +195,11 @@ fn sequential(stages: &[Stage]) -> Option<World> {
 proptest! {
     #![proptest_config(ProptestConfig { cases: 32, max_shrink_iters: 64, ..ProptestConfig::default() })]
     #[test]
-    fn a_seed_write_after_its_child_settled_commits_current_or_refuses(
+    fn a_seed_write_after_its_child_settled_commits_what_one_commit_per_stage_commits(
         stages in proptest::collection::vec(stage(), 2..=4)
     ) {
-        let outcome = positioned(&stages);
-        eprintln!("{:?}: {:?}", stages, outcome);
-        if let Some(committed) = outcome {
-            prop_assert_eq!(
-                Some(committed),
-                sequential(&stages),
-                "{:?}: a positioned commit differs from one commit per stage",
-                stages
-            );
+        if let Err(difference) = equals_sequential(&stages) {
+            prop_assert!(false, "{}", difference);
         }
     }
 }
@@ -179,7 +215,7 @@ fn a_seed_write_then_a_parent_read_commits_the_current_child() {
 
 /// The CAD seed edit itself: a source stage writes the seed and a final
 /// stage demands nothing; or the parent and child settle, then a stage
-/// writes the seed. Committed or refused, never a stale child.
+/// writes the seed. It commits exactly what one commit per stage commits.
 #[test]
 fn a_seed_write_after_a_settled_child_never_commits_a_stale_child() {
     for stages in [
@@ -188,10 +224,6 @@ fn a_seed_write_after_a_settled_child_never_commits_a_stale_child() {
         vec![Stage::Write(4), Stage::Frontier(5)],
         vec![Stage::Read(7), Stage::Write(4), Stage::Frontier(6)],
     ] {
-        let outcome = positioned(&stages);
-        eprintln!("{stages:?}: {outcome:?}");
-        if let Some(committed) = outcome {
-            assert_eq!(Some(committed), sequential(&stages), "{stages:?}");
-        }
+        equals_sequential(&stages).unwrap();
     }
 }
