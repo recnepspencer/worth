@@ -352,7 +352,7 @@ impl DirectoryWorld {
             .without_source()
             .idempotency_owned(key(command))
             .unwrap_or_else(|(_, _, cause)| panic!("send capture: {cause:?}"))
-            .retain_operation::<BankApplication, SendMoneyAction>(home.runtime())
+            .retain_durable_operation::<BankApplication, SendMoneyAction>(&request, home.runtime())
             .unwrap_or_else(|(_, cause)| panic!("send owner: {cause:?}"));
         match operation.advance(&request, None) {
             WorthQuerySourceOnlyAdvance::Completed(done) => done,
