@@ -30,6 +30,8 @@ pub enum PhysicalMutationCheckpoint {
     DuringRootPublication,
     AfterRootReplacement,
     BeforeTerminalFinalization,
+    /// Journal settlement is retained, before releasing its visible terminal.
+    BeforeJournalTerminalVisibility,
     RuntimeClosingMarked,
 }
 

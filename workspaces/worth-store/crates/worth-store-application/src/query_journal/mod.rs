@@ -1,6 +1,8 @@
 //! Store owns one original opaque Query journal endpoint through its terminal.
 #[cfg(test)]
 mod admission_contention;
+#[cfg(test)]
+mod admission_visibility;
 mod publication;
 use publication::{QueryJournalNativeProgress, QueryJournalPublication};
 use std::sync::{Arc, Mutex, Weak};
