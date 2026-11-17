@@ -80,7 +80,7 @@ fn invalid_measurement_write(value: runtime::WorthQueryAuthoredAspectValue) -> S
     let runtime::WorthQueryRuntimeError::MutationContractDenied(denial) = error else {
         panic!("invalid native shape must retain Query's mutation-contract denial")
     };
-    assert_eq!(denial.touch(), &measurement_touch());
+    assert_eq!(denial.touch(), Some(&measurement_touch()));
     denial.detail().to_owned()
 }
 

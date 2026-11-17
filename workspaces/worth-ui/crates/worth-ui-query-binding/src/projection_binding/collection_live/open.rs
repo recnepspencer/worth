@@ -113,6 +113,7 @@ pub(super) fn open_collection_projection(
             budget,
         },
     );
+    let fact = fact.map_err(StopKind::EvidenceIdentity)?;
     let promoted = match settled
         .into_lifecycle()
         .promote_in_advancement(phase, workspace)

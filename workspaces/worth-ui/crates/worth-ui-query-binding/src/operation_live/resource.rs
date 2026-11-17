@@ -40,6 +40,7 @@ pub struct WorthUiOperationLiveCloseReceipt {
 }
 
 pub enum WorthUiOperationLiveRefreshError {
+    EvidenceIdentity(runtime::WorthQueryEvidenceIdentityDerivationDenial),
     Ui(WorthUiOperationLiveRefreshDenial),
     Drain(Box<observation::WorthQuerySharedProjectionDrainStop>),
     Delta(Box<observation::WorthQueryConsumerInvalidationDeltaStop>),
@@ -58,6 +59,10 @@ pub enum WorthUiOperationLiveRefreshDenial {
 impl std::fmt::Debug for WorthUiOperationLiveRefreshError {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::EvidenceIdentity(cause) => formatter
+                .debug_tuple("EvidenceIdentity")
+                .field(cause)
+                .finish(),
             Self::Ui(denial) => formatter.debug_tuple("Ui").field(denial).finish(),
             Self::Drain(stop) => formatter.debug_tuple("Drain").field(stop.error()).finish(),
             Self::Delta(stop) => formatter.debug_tuple("Delta").field(&stop.kind()).finish(),
@@ -168,7 +173,11 @@ impl WorthUiOperationLiveResource {
         self.consumer
             .bind_shared_target(&admitted, workspace)
             .map_err(|stop| WorthUiOperationLiveRefreshError::Delivery(Box::new(stop)))?;
-        let patch = match self.consumer.plan_patch(execution, &admitted, workspace) {
+        let patch = match self
+            .consumer
+            .plan_patch(execution, &admitted, workspace)
+            .map_err(WorthUiOperationLiveRefreshError::EvidenceIdentity)?
+        {
             collection::WorthQueryCollectionDeliveryOutcome::Patch(patch) => patch,
             collection::WorthQueryCollectionDeliveryOutcome::NoDelivery(stop) => {
                 return Err(WorthUiOperationLiveRefreshError::Delivery(Box::new(stop)));
