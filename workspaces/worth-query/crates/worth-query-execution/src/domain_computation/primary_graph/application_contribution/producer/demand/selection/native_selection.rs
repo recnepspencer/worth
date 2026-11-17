@@ -255,6 +255,27 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                 if !live {
                     continue;
                 }
+                if !facts_current {
+                    let (mut exact, entry) = self
+                        .installed_producers
+                        .select_exact::<Family>(candidate.binding)?;
+                    if exact.reuses_live_output_only
+                        && !Family::SUPPORTED.iter().any(|applicability| {
+                            applicability.profile_kind() == profile_kind
+                                && applicability.lifecycle()
+                                    == WorthQueryProducerLifecyclePosture::Preserve
+                        })
+                        && entry.declaration.input_reuse.is_some_and(|contract| {
+                            contract.determinism()
+                                == worth_foundational::facade::DeterminismContract::CanonicalBitwise
+                        })
+                    {
+                        // This selects only the guarded input cutoff. It cannot
+                        // execute a fresh producer over the existing live output.
+                        exact.exact_retained_output = false;
+                        return Ok((exact, entry));
+                    }
+                }
                 if facts_current {
                     let (mut selected, entry) = self
                         .installed_producers
