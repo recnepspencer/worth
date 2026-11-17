@@ -79,7 +79,6 @@ where
         inspection: RuntimeWorldInspectionPort,
         recovery: RuntimeWorldRecoveryPort,
         root: ProductBranchObservation,
-        directory_support: fn(worth_foundational::facade::DurableStateFamily, u8) -> Option<u8>,
         maintenance: std::sync::Arc<dyn crate::domain_computation::execution_runtime::product_world::WorthQueryHomeMaintenance>,
         branch_program_source_owner: std::sync::Arc<worth_proof::InstalledBranchProgramSourceOwner>,
     ) -> Result<
@@ -104,7 +103,6 @@ where
             inspection,
             recovery,
             root,
-            directory_support,
             maintenance,
             branch_program_source_owner,
         )
@@ -127,7 +125,6 @@ where
         inspection: RuntimeWorldInspectionPort,
         recovery: RuntimeWorldRecoveryPort,
         root: ProductBranchObservation,
-        directory_support: fn(worth_foundational::facade::DurableStateFamily, u8) -> Option<u8>,
         maintenance: std::sync::Arc<dyn crate::domain_computation::execution_runtime::product_world::WorthQueryHomeMaintenance>,
         branch_program_source_owner: std::sync::Arc<worth_proof::InstalledBranchProgramSourceOwner>,
     ) -> Result<
@@ -179,7 +176,6 @@ where
                 inspection,
                 recovery,
                 root.clone(),
-                directory_support,
                 maintenance,
                 branch_program_source_owner,
                 &branches,

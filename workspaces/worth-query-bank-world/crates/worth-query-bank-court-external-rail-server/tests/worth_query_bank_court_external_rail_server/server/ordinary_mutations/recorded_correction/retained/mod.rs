@@ -324,51 +324,6 @@ fn directory_correction_reopens_and_advances_the_same_recorded_inverse() {
     close_directory(home);
 }
 
-#[test]
-fn directory_correction_keeps_unqualified_owner_and_busy_home_refusals() {
-    use bank_domain::schema::{ReversalReason, ReverseJournal};
-    use fixture::DirectoryWorld as World;
-    use worth_query_host::facade::{
-        application_contribution::with_bootstrap_advancement,
-        primary_graph::WorthQueryHomeRetirementDenial,
-    };
-    let world = World::new();
-    let home = world.open();
-    {
-        let principals = world.authenticate(&home);
-        let scope = request_scope();
-        let bank = bank_server::BankHomeRuntime::attach(home.runtime()).unwrap();
-        let request = bank.request(&principals[2], &scope);
-        let before = directory_activity(&home, &principals[0]);
-        let description = request
-            .mutate(ReverseJournal {
-                institution: fixture::InstitutionId::new(91).unwrap(),
-                journal: JournalEntryId::new(15).unwrap(),
-                reason: ReversalReason::OperatorCorrection,
-            })
-            .without_source()
-            .idempotency_owned(key("not-prepared"))
-            .unwrap_or_else(|(_, _, cause)| panic!("capture: {cause:?}"));
-        assert!(matches!(description.retain_operation::<bank_server::BankApplication, bank_server::ReverseJournalAction>(home.runtime()), Err((_, WorthQueryOperationConstructionDenial::DurableStateAdmission(worth_query_host::facade::product::WorthQueryDurableStateAdmissionDenial::Unsupported { .. })))));
-        assert_eq!(directory_activity(&home, &principals[0]), before);
-        assert_eq!(World::balances(&home, &principals), (100, 0));
-    }
-    let alias = home.runtime().clone();
-    let refused = with_bootstrap_advancement(fixture::home_policy(), |phase| {
-        home.close(&phase.execution_request())
-    })
-    .unwrap()
-    .err()
-    .expect("real alias must refuse Home close");
-    assert!(matches!(
-        refused.query_denial(),
-        Some(WorthQueryHomeRetirementDenial::Busy(_))
-    ));
-    drop(alias);
-    let home = refused.resume().unwrap();
-    close_directory(home);
-}
-
 fn directory_activity(
     home: &fixture::BankHome,
     owner: &bank_server::BankAuthenticatedPrincipal,

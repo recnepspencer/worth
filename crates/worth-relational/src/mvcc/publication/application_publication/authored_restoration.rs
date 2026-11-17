@@ -44,26 +44,20 @@ impl RelationalAuthoredRestoration {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         mut batch: WorkerIntentBatch,
     ) -> Result<WorkerIntentBatch, TransactionCommitError> {
-        let result = execution.in_scope(|lease| {
-            worth_execution::ExecutionWorkCeiling::new(execution.work_ceiling())
-                .run_with_checkpoint(lease, None, |context| {
-                    for intent in &self.inverse {
-                        context.checkpoint(
-                            intent.owned_allocation_capacity_bytes().saturating_add(1),
-                        )?;
-                        batch = batch.push(intent.clone());
-                    }
-                    Ok::<_, crate::execution::RelationalExecutionDenialCause>(batch)
-                })
-        });
         execution
-            .consult()
-            .map_err(super::custody::execution_stop)?;
-        result
-            .map_err(super::custody::execution_stop)?
+            .run_native_with_checkpoint(|context| {
+                for intent in &self.inverse {
+                    crate::execution::request_stage::checkpoint(
+                        context,
+                        intent.owned_allocation_capacity_bytes().saturating_add(1),
+                    )
+                    .map_err(super::custody::execution_stop)?;
+                    batch = batch.push(intent.clone());
+                }
+                Ok(batch)
+            })
             .map_err(super::custody::execution_stop)?
             .0
-            .map_err(super::custody::execution_stop)
     }
 }
 #[cfg(test)]

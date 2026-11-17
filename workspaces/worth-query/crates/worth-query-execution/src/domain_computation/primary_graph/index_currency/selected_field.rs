@@ -18,16 +18,16 @@ pub(crate) enum SelectedFieldIndexAdmissionStop {
 /// principal/scope request. Missing generations require an authentic native seed;
 /// this ordinary selector never reconstructs the population. Every action uses the caller's
 /// original cumulative admission and the native maintenance owner.
-pub(crate) fn ensure_selected_field_indexes_admitted(
+pub(crate) fn ensure_selected_field_indexes_admitted<const N: usize>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     basis: &AdmittedRelationalBranchBasis,
-    indexes: [Option<DerivedIndexId>; 2],
+    indexes: [Option<DerivedIndexId>; N],
 ) -> Result<(), SelectedFieldIndexAdmissionStop> {
     use SelectedFieldIndexAdmissionStop as Stop;
-    let mut stale = [None, None];
+    let mut stale = [None; N];
     let mut stale_count = 0_usize;
-    let mut seen = [None, None];
+    let mut seen = [None; N];
     let mut seen_count = 0_usize;
     for index in indexes.into_iter().flatten() {
         if seen[..seen_count].contains(&Some(index)) {

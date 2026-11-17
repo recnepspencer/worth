@@ -26,10 +26,7 @@ pub fn capture(application: &MixedApplication, required: RequiredWorkflowOperati
         })
         .for_workflow_operation(application, &required)
         .unwrap_or_else(|_| panic!("exact occurrence-only capture"))
-        .retain_durable_operation::<MixedProgram, OccurrenceAction>(
-            &request,
-            application.program_runtime(),
-        )
+        .retain_durable_operation::<MixedProgram, OccurrenceAction>(&request, application.runtime())
         .unwrap_or_else(|_| panic!("installed capture action"));
     loop {
         match owner.advance(&request) {
@@ -76,7 +73,7 @@ pub fn archive(
         .unwrap_or_else(|_| panic!("exact approved occurrence"))
         .retain_durable_operation::<MixedProgram, crate::effect::ArchiveAction>(
             &request,
-            application.program_runtime(),
+            application.runtime(),
         )
         .unwrap_or_else(|_| panic!("installed archive action"));
     let receive = |envelope: &[u8]| {
@@ -192,7 +189,7 @@ pub fn assess(
         .expect("fresh admission at the waiting assessment")
         .into_assessment_demand(RetentionAssessmentDemand::new(DOCUMENT_IDENTITY))
         .expect("installed retention query and producer contract")
-        .retain_operation(application.program_runtime())
+        .retain_operation(application.runtime())
         .expect("retain the actual assessment producer owner");
     let settlement = loop {
         match owner

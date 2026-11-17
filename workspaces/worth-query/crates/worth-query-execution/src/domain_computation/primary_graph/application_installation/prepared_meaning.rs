@@ -33,7 +33,6 @@ pub(super) fn prepare<Schema, Contributions>(
     configuration: <Contributions as WorthQueryApplicationContributionTuple<Schema>>::Configuration,
     limits: &WorthQueryApplicationLimits,
     program_admission: Option<WorthQueryProgramAdmissionStep<'_, Schema>>,
-    directory_support: Option<fn(worth_foundational::facade::DurableStateFamily, u8) -> Option<u8>>,
 ) -> Result<PreparedInstalledMeaning<Schema>, Denial>
 where
     Schema: ApplicationSchemaComposition,
@@ -46,11 +45,6 @@ where
     ));
     let contracts =
         Contributions::contracts(declaration.erased()).map_err(Denial::Contributions)?;
-    if let Some(support) = directory_support {
-        contracts
-            .admit_home_seed(declaration.erased(), support)
-            .map_err(Denial::UnsupportedSeed)?;
-    }
     let package = contracts
         .compose_package(package.application_schema(declaration.clone()))
         .validate()

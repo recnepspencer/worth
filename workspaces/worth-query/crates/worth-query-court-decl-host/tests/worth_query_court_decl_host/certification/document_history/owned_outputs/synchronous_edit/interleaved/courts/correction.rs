@@ -187,11 +187,30 @@ fn a_wrong_inverse_root_cannot_borrow_a_later_correct_member_and_owner_link() {
 
 #[test]
 fn a_real_retirement_and_restoration_each_keep_their_final_edit_and_owned_history() {
+    retirement_and_restoration(false);
+}
+#[test]
+fn worker_only_retirement_and_restoration_keep_their_final_edit_and_owned_history() {
+    retirement_and_restoration(true);
+}
+fn retirement_and_restoration(worker_only: bool) {
     let (checkpoint, expected_head, expected_member, expected_downstream) = {
         use program::RetirementProgram;
         let host: WorthQueryProgramApplicationRuntime<Schema, RetirementProgram> =
-        world::install_configured(host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()), 1, None,
-            world::Configuration { envelope_records:true,interleaved_records:true,..Default::default() });
+            world::install_configured(
+                if worker_only {
+                    world::worker_limits()
+                } else {
+                    host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system())
+                },
+                1,
+                None,
+                world::Configuration {
+                    envelope_records: true,
+                    interleaved_records: true,
+                    ..Default::default()
+                },
+            );
         let scope = request_scope();
         let principal = authenticate_operator(host.installed_schema(), &scope);
         let request = host.request(&principal, &scope);

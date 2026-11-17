@@ -320,8 +320,7 @@ pub(super) fn charge(
             crate::execution::RelationalExecutionDenialCause::WorkCounterOverflow,
         )
     })?;
-    context
-        .checkpoint(units)
+    crate::execution::request_stage::checkpoint(context, units)
         .map_err(|cause| OutputPayloadCoverageFailure::Request(cause.into()))
 }
 

@@ -13,7 +13,6 @@ impl WorthQueryProductRuntime {
         inspection: RuntimeWorldInspectionPort,
         recovery: RuntimeWorldRecoveryPort,
         root: ProductBranchObservation,
-        directory_support: fn(worth_foundational::facade::DurableStateFamily, u8) -> Option<u8>,
         maintenance: std::sync::Arc<dyn super::WorthQueryHomeMaintenance>,
         branch_program_source_owner: std::sync::Arc<worth_proof::InstalledBranchProgramSourceOwner>,
         branches: &ObservedProductBranches,
@@ -88,7 +87,6 @@ impl WorthQueryProductRuntime {
             None,
         );
         product.branch_program_source_owner = Some(branch_program_source_owner);
-        product.directory_support = Some(directory_support);
         product.home_maintenance = Some(maintenance);
         Ok(product)
     }

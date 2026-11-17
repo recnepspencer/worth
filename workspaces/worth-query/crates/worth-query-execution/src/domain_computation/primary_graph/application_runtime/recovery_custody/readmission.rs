@@ -27,7 +27,6 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let execution = phase
             .execution_request_for(&self.runtime.product_runtime)
             .map_err(|cause| Denial::new(Kind::CompletionExecutionRequest(cause.into())))?;
-        self.admit_recovery_custody()?;
         self.settle_recovery_custody(&execution)?;
         let read = self
             .resolve_admitted_application_idempotency(phase, admission, binding)

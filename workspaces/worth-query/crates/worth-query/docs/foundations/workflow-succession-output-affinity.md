@@ -142,8 +142,8 @@ does not automatically decide destinations, business-current policy, actor
 policy, or cross-release adoption.
 
 Completed predecessor preparation can use the original pure start descriptor
-after native checkpoint restoration and fresh command admission through the
-[same succession funnel](workflows.md#reacquire-a-completed-predecessor-after-checkpoint-restoration).
+after Home reopen and fresh command admission through the
+[same succession funnel](workflows.md#reacquire-a-completed-predecessor-after-home-reopen).
 It does not serialize live authority or the descriptor, or establish process or
 Store crash durability. Old published-reference ForeignOwner checks remain intact.
 

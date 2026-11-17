@@ -81,7 +81,6 @@ where
         configuration,
         &limits,
         program_admission,
-        None,
     )?;
     let (
         invariants,

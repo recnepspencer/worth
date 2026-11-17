@@ -152,6 +152,13 @@ work evidence remain unchanged.
 
 ## Directory Homes and graceful reopen
 
+Open the same installed Home in a fresh process, authenticate again and readmit
+the original description/owner through the public request. The real Bank freeze
+journey covers divergent root/child reversals and exact foreign-alternative
+refusal without duplicate publication. No-output reapplication uses the declared
+zero-role contract; an empty cache is not evidence for output-bearing corrections.
+Crash recovery is not yet certified (C1–C5).
+
 A directory Home records the original canonical input, disclosure parameters,
 pre-image and output correspondence in `query.corrections`. Readmission joins
 that material to the protected World original and its Native idempotency row
@@ -162,7 +169,7 @@ Selection still requires the original program to be rostered, current disclosure
 and retained ancestry. Recorded bytes grant no mutation authority.
 
 The acknowledged World open transfers its existing `OriginalProgramMeaning`
-interpretation into `query.obligations`. It replaces the local count; reopening
+interpretation into `primary_graph/query_obligations`. It replaces the local count; reopening
 retains the durable count. The original Native key and complete intent remain the
 source of correction retry. A repeated successful command answers
 `RecoveredCommitted`, using its recorded inverse input instead of deriving a

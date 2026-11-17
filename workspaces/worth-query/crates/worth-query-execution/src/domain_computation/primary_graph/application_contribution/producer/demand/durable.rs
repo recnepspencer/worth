@@ -158,13 +158,14 @@ impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S>
             .installed_schema
             .installed_query_binding::<F::Source>()
             .map_err(|_| unavailable())?;
-        let source = super::super::execution::recorded_demand::readmit_source::<S, F>(
+        let (source, retained) = super::super::execution::recorded_demand::readmit_source::<S, F>(
             &binding, &execution, self, principal, request, &row,
         )?;
-        let demand = self.admit_output_demand::<F>(
-            phase,
+        let demand = self.admit_dependent_output_demand::<F>(
+            &execution,
             source,
             self.output_demand_resource_profile().limits(),
+            retained,
         )?;
         demand.adopt_recorded_membership(self, &row)?;
         Ok(demand)

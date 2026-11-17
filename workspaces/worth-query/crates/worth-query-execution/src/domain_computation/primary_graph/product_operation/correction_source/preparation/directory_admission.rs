@@ -3,7 +3,6 @@ use super::*;
 pub(super) fn admit<Schema: ApplicationSchema>(
     target: &WorthQuerySelectedProductOperation<'_, Schema>,
     source: &WorthQuerySelectedCorrectionSource<'_, Schema>,
-    required_output: bool,
 ) -> Result<(), WorthQueryCorrectionDerivationDenial> {
     use WorthQueryCorrectionDerivationDenial as Denial;
     let runtime = &target.application().runtime.product_runtime;
@@ -38,10 +37,6 @@ pub(super) fn admit<Schema: ApplicationSchema>(
                 .map(|value| value.association()),
         )
         .map_err(Denial::DurableStateAdmission)?;
-    if required_output {
-        runtime.admit_directory_capability(crate::domain_computation::primary_graph::WorthQueryOperationDurableCapability::RequiredOutputDemand)
-            .map_err(Denial::DurableStateAdmission)?;
-    }
     // CheckedCorrectionSource already carries exact owner-selected ancestry,
     // including inherited originals. Home preparation binds this target
     // observation; native branch-ID equality is not an ancestry condition.

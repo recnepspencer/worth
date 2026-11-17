@@ -30,7 +30,7 @@ where
     if row.producer != B::IDENTITY {
         return Err(unavailable());
     }
-    let source = readmit_source::<S, B::OutputFamily>(
+    let (source, retained) = readmit_source::<S, B::OutputFamily>(
         &installed.source_query,
         execution,
         runtime,
@@ -38,10 +38,11 @@ where
         request,
         row,
     )?;
-    let demand = runtime.admit_required_output_demand::<B::OutputFamily>(
+    let demand = runtime.admit_dependent_output_demand::<B::OutputFamily>(
         execution,
         source,
         runtime.output_demand_resource_profile().limits(),
+        retained,
     )?;
     demand.adopt_recorded_membership(runtime, row)?;
     demand.into_durable_interest().ok_or_else(unavailable)
@@ -59,10 +60,13 @@ pub(in crate::domain_computation::primary_graph) fn readmit_source<S, F>(
     request: &WorthQueryRequestScope,
     row: &QueryOutputDemandObligation,
 ) -> Result<
-    crate::domain_computation::primary_graph::WorthQueryApplicationOutputDemandSource<
-        SourceQueryFor<S, F>,
-        SourceValueFor<S, F>,
-    >,
+    (
+        crate::domain_computation::primary_graph::WorthQueryApplicationOutputDemandSource<
+            SourceQueryFor<S, F>,
+            SourceValueFor<S, F>,
+        >,
+        std::sync::Arc<WorthQueryApplicationReadObservation>,
+    ),
     WorthQueryOutputDemandDenial,
 >
 where
@@ -121,6 +125,10 @@ where
     let access = WorthQueryApplicationQueryAccessContext::new(&principal, &scope);
     let values = rmp_serde::from_slice(&row.parameters).map_err(|_| unavailable())?;
     let parameters = worth_query_admission::facade::application_query::readmit_recorded_application_query_parameters(query,values).map_err(|_| unavailable())?;
+    let graph = runtime.runtime.primary_graph().ok_or_else(unavailable)?;
+    crate::domain_computation::primary_graph::application_query::basis::recover_recorded_query_indexes(
+        execution, graph, query, scope.identity_index_id(), retained.product().relational_basis(),
+    ).map_err(|cause| query_admission_denied(F::IDENTITY, cause).into_output_denial())?;
     let maximum = runtime
         .resolve_application_query_limits(binding.limits())
         .maximum_results();
@@ -140,7 +148,7 @@ where
         .map_err(|cause| query_execution_denied(F::IDENTITY, cause).into_output_denial())?
         .into_admitted_disclosed()
         .into_output_demand_source();
-    Ok(source)
+    Ok((source, observation))
 }
 fn unavailable() -> WorthQueryOutputDemandDenial {
     WorthQueryOutputDemandDenial::new(

@@ -56,49 +56,27 @@ never run again. Reads use that published World basis even when an independent
 Native commit is newer. Recovered index definitions and their selected-basis
 generations must be admitted before service escapes.
 
-### Relational-only Directory installation
+### Directory installation and graceful continuation
 
-Phases 3 and 4 support an owner-proven InitialEmpty Signal root and Bridge
-baseline. Ordinary Relational handlers, managed Native indexes, World resources
-and trusted authorization time use the shared installation owner. Arbitrary
-Signal graphs and installation that allocates Signal nodes or Bridge
-correspondence are unsupported, even when the first requested action would not
-change them.
+Directory installation admits declared Relational, Signal and Bridge components,
+producers, managed resources, conditionals, temporal definitions and workflows.
+There is no family-phase support gate. Opening readmits recorded owners against
+current installed meaning; it does not replay initializers or business handlers.
+Original descriptions, assessments and output demands are descriptive DATA; fresh
+authentication and actual Home readmission supply authority after reopen.
 
-Declared producers, conditionals and application resource pools refuse through
-one preparation check, before contribution configuration, initialization,
-physical Home creation or World bootstrap. Match
-`WorthQueryApplicationHomeOpenRefused::Preparation` and its
-`WorthQueryApplicationPreparationDenial::UnsupportedSeed` cause. The cause carries
-`WorthQueryDurableStateAdmissionDenial::Unsupported { family, supported_from_phase }`:
+External dispatch, inbound completion and aftermath custody survive graceful
+close/reopen without duplicate contact. A failed live resource release refuses
+close and preserves its owner. Unclean effects retain the D18
+`UncleanRecoveryUnsupported` refusal (C1/C5); outstanding resource cleanup after
+process loss belongs to C3. C2 owns durable-history/branch cleanup, and C4 owns
+the adversarial oracle; C5 owns retirement and final certification. **Crash recovery is not yet certified.**
 
-Inspect `next_actions()` through `facade::primary_graph::ProductUnpublishedNextAction`
-and the canonical `RuntimeWorldRecoveryDenial`. A persistent live open reports
-`ReopenRequired`, with actions `[Inspect, ReopenRequired]`. Preserve stable
-request/correlation data, end ownership of the current Home, and reopen the same
-location under Store's new mutation lease for recovered reconciliation. Close
-can retain or refuse accepted custody; ordinary disposal is not release or a
-successful close. The old Home's lease blocks concurrent opening, and old
-recovery handles cannot cross incarnations: obtain claims from the newly
-readmitted Home. Neither zero observed effects nor this diagnostic proves
-release, restores a proposal, or permits resubmission.
-Reopen admits actual recovered World custody and its original source-backed Query
-key before service. The original key returns `ProductUnpublished` with
-`RecoveredWithoutProductMovement`; its Native semantic result and predecessor
-remain original, without a reconstructed Rust return value. Obtain a fresh
-recovery claim from this Home. `continue_original_in_request` publishes that
-original occurrence without handler/effect replay; release records the durable
-disposition before removing live custody. Pending and refused actions retain the
-same catalog owner. An acknowledged `Continued` permits continuation, never
-release, including after another reopen. Persisted outbox, inbound-completion and aftermath rows also
-refuse cold service. Workflow graph records have the graceful reopen contract
-described under [workflow configuration](#workflow-configuration-and-home-custody).
-
-MemoryOnly keeps its ordinary producer, conditional and resource installation.
-The richer contribution, output, workflow and adoption examples below use that
-lane. Directory operations requiring unsupported families return typed durable
-state admission refusals before effects. Do not substitute a MemoryOnly Home
-when persistence is required.
+Correction contracts still refuse unsupported relation pre-images, compensation,
+output material and coupled outputs with their named shape denials. Genuine
+no-output divergent corrections and reapplication use exact ancestry and target
+custody. A fresh empty cache is never proof that an output-bearing contract has
+no generations. MemoryOnly remains available without a restart guarantee.
 
 `WorthQueryApplicationHomeRequest::with_authorization_time_source(source)`
 installs a trusted `WorthQueryRuntimeTimeSource` for capability admission and
@@ -136,11 +114,11 @@ live capabilities.
 ### Rebuild with a new implementation identity
 
 Issue a fresh `ApplicationBuildIdentity` UUID for every complete build. Opening
-the same supported Relational-only program/schema with that new identity is
-admitted, preserves authored binding and durable history, and does not rerun the
-initializer or eagerly regenerate anything. Producer installation is unsupported
-in this Directory lane. Same-build accepted-output reuse and regeneration on
-demand belong to Phase 6; rebuild admission alone does not qualify them.
+the same supported program/schema with that new identity is admitted, preserves
+authored binding and durable history, and does not rerun the initializer or
+eagerly regenerate outputs. Same-build demand verifies recorded accepted output;
+a changed build regenerates stale output on demand under its original owner.
+Freshly authenticate and readmit that owner through the reopened Home.
 
 ## Commitment and same-key retry
 
@@ -173,9 +151,9 @@ stable data, end current Home ownership and reopen the same location. Old
 recovery handles cannot cross incarnations. Zero observed effects are not proof
 of no effect, and lower recovery does not recreate a Rust business result.
 
-Existing service refuses retained World recovery custody and unsupported
-persisted outbox, inbound-completion or aftermath state. Keep the owning
-opening refusal and follow its close route. `ProductPreparationRefused` is a
+Existing service readmits graceful World recovery, outbox, inbound-completion
+and aftermath custody. An unclean effect retains the named C1/C5 D18 refusal;
+keep that owning opening refusal and follow its close route. `ProductPreparationRefused` is a
 terminal preparation failure, with no publication/retry door; its carrier may
 still own partial reservations until ordinary unbudgeted destruction.
 

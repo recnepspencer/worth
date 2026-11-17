@@ -36,18 +36,8 @@ use worth_query_decl::facade::application_schema::OperationEmits;
 
 use rail_transport::BankEstateRailTransport;
 
-#[expect(
-    clippy::disallowed_methods,
-    reason = "owner-thread thread-builder=1: The example retains native World and final disposal on its joined owner thread"
-)]
 fn main() -> Result<(), ExampleFailure> {
-    let close = std::thread::Builder::new()
-        .name("inbound-completion-example".to_owned())
-        .stack_size(16 * 1024 * 1024)
-        .spawn(run)
-        .map_err(|error| format!("example thread refused: {error}"))?
-        .join()
-        .map_err(|_| "example thread panicked".to_owned())??;
+    let close = worth_execution::run_with_execution_stack(run)?;
     // The returned continuation remains owned through the reported assessment.
     // Final example exit is not a promise of native disposal or crash durability.
     println!("callback host stopped: {:?}", close.assessment());

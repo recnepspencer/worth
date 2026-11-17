@@ -1,16 +1,19 @@
-//! Both recovery inspection doors consume real current admission evidence.
+//! Recovery inspection and reconciliation consume real current admission evidence.
 use super::declaration::{MonitorInput, MonitorInspectionCapability, MonitorOperation};
 use crate::document_retention_model::schema::*;
 use worth_query_decl::facade::application_schema::*;
 use worth_query_host::facade::{admission::authenticated_principal::*, primary_graph::*};
 
-pub fn inspect(
+pub fn admit(
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<DocumentRetentionSchema>,
     handle: &WorthQueryRecoveryHandle,
     actor: &WorthQueryAuthenticatedExternalPrincipal<DocumentRetentionSchema>,
     request: &WorthQueryRequestScope,
     original: &MonitorInput,
-) -> WorthQueryRecoveryInspectAuthority {
+) -> (
+    WorthQueryRecoveryInspectAuthority,
+    WorthQueryRecoveryEffectAuthority,
+) {
     runtime
         .with_application_advancement(request, |phase| {
             let selected = runtime
@@ -56,9 +59,13 @@ pub fn inspect(
                     TypedMutationPreconditions::default(),
                 )
                 .unwrap();
-            runtime
+            let inspect = runtime
                 .admit_recovery_inspect_authority(handle, &operation, &disclosure)
-                .unwrap()
+                .unwrap();
+            let effect = runtime
+                .admit_recovery_effect_authority(handle, &operation)
+                .unwrap();
+            (inspect, effect)
         })
         .unwrap()
 }

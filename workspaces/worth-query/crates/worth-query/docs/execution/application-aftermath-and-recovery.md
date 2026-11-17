@@ -237,11 +237,12 @@ keeps its source controls for that runtime's lifetime.
 A control with an unsettled physical fate fences consumption until its original
 record settles; it is not reported as a committed security fact. Retry the
 control on a fresh host request or settle it through graceful close. A refusal
-preserves the exact execution, support-policy or journal cause.
+preserves the exact execution or journal cause.
 
-This source-control support does not yet admit inbound completion on a Directory
-Home. Accepted-message, terminal and recovery-claim durability have separate
-requirements.
+Directory Home also readmits accepted-message, canonical-terminal and recovery-claim
+custody after graceful close/reopen. Those records retain their independent owner
+requirements; source control never supplies callback authority. Crash recovery is
+not yet certified (C1–C5).
 
 ## Core Mental Model
 

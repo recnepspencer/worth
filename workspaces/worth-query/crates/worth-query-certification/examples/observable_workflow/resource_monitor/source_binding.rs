@@ -17,22 +17,14 @@ pub(super) fn prepare(
     scope: &WorthQueryRequestScope,
 ) -> PreparedSource {
     let runtime = application.runtime();
-    let fork = runtime
-        .with_host_advancement(|phase| {
-            runtime
-                .branches()
-                .fork(runtime.current_world())
-                .components(|components| components.fork_relational().reuse_exact_signal_basis())
-                .create(&phase)
-                .unwrap()
-        })
-        .unwrap();
+    let fork = fork(application, scope);
     let original = runtime
         .request(actor, scope)
         .on_branch(fork)
         .retain_current_read()
         .unwrap();
     let target = *application
+        .runtime()
         .supported_program::<crate::program::MixedProgramP1>()
         .expect("the actual alternate program is rostered")
         .owned_revision();
@@ -40,8 +32,12 @@ pub(super) fn prepare(
     let requirements = programs.compare(&target).unwrap();
     let prepared = programs.adopt(&requirements).unwrap().prepare(64).unwrap();
     assert_eq!(prepared.selected_entity_count(), 2);
-    // This is the real Native prepared transaction, not an unstaged EffectProgram.
-    drop(prepared);
+    match runtime.request(actor, scope).programs().publish(prepared) {
+        WorthQueryBranchAdoptionPublicationOutcome::Performed(adoption) => {
+            assert_eq!(adoption.target(), &target);
+        }
+        _ => panic!("the current prepared adoption must publish before the monitor edit"),
+    }
     PreparedSource { fork, original }
 }
 
@@ -93,7 +89,7 @@ pub(super) fn run(
     assert!(!same, "the genuine sibling is not the Resource source");
     assert!(
         sibling_native > original_native + 1,
-        "dropping the real prepared adoption burns Native issuance before sibling publication"
+        "the real prepared adoption burns Native issuance before sibling publication"
     );
     configuration.state.send(index, 6161).unwrap();
     resources.advance(&mut handle).unwrap();
@@ -104,4 +100,53 @@ pub(super) fn run(
         Some(6161)
     );
     resources.close(&mut handle).unwrap();
+}
+
+// Keep the original unpublished fork owner until World completes its publication.
+fn fork(application: &MixedApplication, scope: &WorthQueryRequestScope) -> WorthQueryProductBranch {
+    use worth_query_host::facade::product::{
+        WorthQueryProductBranchCreateError as Created,
+        WorthQueryProductBranchCreationContinuation as Continued,
+        WorthQueryProductBranchRecoveryDenial,
+    };
+    let runtime = application.runtime();
+    let created = runtime
+        .with_application_advancement(scope, |phase| {
+            runtime
+                .branches()
+                .fork(runtime.current_world())
+                .components(|parts| parts.fork_relational().reuse_exact_signal_basis())
+                .create(&phase)
+        })
+        .unwrap();
+    let mut original = match created {
+        Ok(branch) => return branch,
+        Err(Created::ProductUnpublished(original)) => original,
+        Err(cause) => panic!("resource source fork: {cause:?}"),
+    };
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(120);
+    loop {
+        assert!(
+            std::time::Instant::now() < deadline,
+            "original resource source fork must settle"
+        );
+        match runtime
+            .with_application_advancement(scope, |phase| original.continue_in_advancement(&phase))
+            .unwrap()
+        {
+            Ok(Continued::Performed(branch)) => return branch,
+            Ok(Continued::NoEffect(cause)) => panic!("resource source fork no effect: {cause:?}"),
+            Ok(Continued::ReleasedOriginal(cause)) => {
+                panic!("resource source fork released: {cause:?}")
+            }
+            Err(failure) => {
+                assert_eq!(
+                    failure.denial(),
+                    WorthQueryProductBranchRecoveryDenial::Busy
+                );
+                original = failure.into_recovery();
+                std::thread::yield_now();
+            }
+        }
+    }
 }

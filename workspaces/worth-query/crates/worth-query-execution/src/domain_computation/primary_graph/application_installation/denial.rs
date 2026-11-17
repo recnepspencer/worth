@@ -12,7 +12,6 @@ pub enum WorthQueryApplicationPreparationDenial {
     Runtime(WorthQueryInstalledPackageIndexDenial),
     Schema(WorthQueryInstalledApplicationSchemaDenial),
     Contributions(WorthQueryPrimaryGraphInstallationDenial),
-    UnsupportedSeed(crate::domain_computation::execution_runtime::product_world::WorthQueryDurableStateAdmissionDenial),
     Graph(WorthQueryPrimaryGraphInstallationDenial),
     /// Native target publication settled; a later installation phase refused.
     /// The checkpoint preserves that actual successor for ordinary target restore.
@@ -60,7 +59,6 @@ impl std::error::Error for WorthQueryApplicationPreparationDenial {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
             Self::Package(error) => Some(error),
-            Self::UnsupportedSeed(error) => Some(error),
             Self::Admission(_)
             | Self::Runtime(_)
             | Self::ConditionalProgramMismatch

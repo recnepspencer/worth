@@ -159,10 +159,8 @@ where
             }
         }
         let product = runtime.runtime().product_runtime();
-        let admission = if description.original.is_some() {
+        let admission = if description.original.is_some() || !Mode::RETAIN_COMMIT {
             Ok(())
-        } else if !Mode::RETAIN_COMMIT {
-            product.admit_retained_original_operation_owner()
         } else if correction.is_some() {
             product.admit_native_correction_inverse(binding.operation().contracts())
         } else {
