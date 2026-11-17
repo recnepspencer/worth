@@ -241,7 +241,12 @@ where
         )
     };
     let ordinary = all.chain(dirty).filter(|(key, _, _)| !structural(key));
-    let issued = retained.facts.facts().filter(|(key, _, _)| structural(key));
+    // Keep the existing sparse path when the sealed index has no structural keys.
+    let issued = (retained.facts.has_aggregate() || retained.facts.has_structural_walk())
+        .then(|| retained.facts.facts())
+        .into_iter()
+        .flatten()
+        .filter(|(key, _, _)| structural(key));
     for (key, fact, readers) in ordinary.chain(issued) {
         super::super::super::fact_verification_observation::retained_computation();
         let _read = observed::RetainedFactComparison::enter();
