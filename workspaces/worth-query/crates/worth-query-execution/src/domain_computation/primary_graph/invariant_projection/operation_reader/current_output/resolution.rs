@@ -131,7 +131,11 @@ where
                 })?;
             replaced.push((None, partition));
         }
-        let correspondences = if let Some(native) = self.reader.native.committed_runtime() {
+        let committed = match &self.reader.native {
+            crate::domain_computation::primary_graph::invariant_projection::NativeProjectionRead::Committed(native) => Some(*native),
+            crate::domain_computation::primary_graph::invariant_projection::NativeProjectionRead::Applied { .. } => None,
+        };
+        let correspondences = if let Some(native) = committed {
             self.current_correspondences::<Family, Producer>(
                 execution, producer, native, &replaced,
             )?
