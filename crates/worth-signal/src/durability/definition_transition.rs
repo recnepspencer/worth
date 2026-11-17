@@ -236,7 +236,9 @@ impl SignalDefinitionTransitionArtifact {
         &self,
     ) -> impl ExactSizeIterator<Item = DurableSignalConditionalDefinitionOccurrence> + '_ {
         self.bytes.bytes()[self.conditional.clone()]
-            .chunks_exact(80)
+            .as_chunks::<80>()
+            .0
+            .iter()
             .map(|bytes| {
                 let mut input = frame::Reader { bytes, position: 0 };
                 input

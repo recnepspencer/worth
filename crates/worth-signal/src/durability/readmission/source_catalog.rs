@@ -193,15 +193,14 @@ impl SignalOwnerSourceReadmission {
             {
                 return Err(D::DuplicateDefinition(artifact.identity()));
             }
-            if let Some(previous) = artifact.predecessor() {
-                if !self
+            if let Some(previous) = artifact.predecessor()
+                && !self
                     .definitions_by_identity
                     .get(&previous.identity())
                     .and_then(|index| self.definitions.get(*index))
                     .is_some_and(|location| location.reference == previous)
-                {
-                    return Err(D::MissingDefinition(previous));
-                }
+            {
+                return Err(D::MissingDefinition(previous));
             }
             self.definitions_by_identity
                 .insert(artifact.identity(), self.definitions.len());

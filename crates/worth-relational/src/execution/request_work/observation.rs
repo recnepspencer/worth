@@ -12,6 +12,11 @@ impl Drop for Restore {
 /// Scoped observer of actual original-account settlements on the current thread.
 /// It grants no request, budget or publication authority.
 pub struct RelationalWorkAccountRecorderForTest;
+impl Default for RelationalWorkAccountRecorderForTest {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 impl RelationalWorkAccountRecorderForTest {
     pub const fn new() -> Self {
         Self

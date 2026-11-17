@@ -66,7 +66,7 @@ impl Artifact {
         let artifact = Self { bytes, header };
         request
             .consult()
-            .map_err(|cause| MemoryFramePreparationDenial::Request(cause))?;
+            .map_err(MemoryFramePreparationDenial::Request)?;
         Ok(artifact)
     }
 }

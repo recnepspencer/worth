@@ -197,6 +197,10 @@ impl HistorySubsystem {
         )
     }
 
+    #[expect(
+        clippy::arc_with_non_send_sync,
+        reason = "Canonical route custody is shared inside its same-thread Relational runtime"
+    )]
     pub(crate) fn rebuild_recovered_canonical_routes(
         &mut self,
         commits: impl IntoIterator<Item = Arc<crate::history::data::PositionedCanonicalCommit>>,
