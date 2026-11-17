@@ -1,4 +1,3 @@
 error[E0432]: unresolved import `worth_ui::facade::app::WorthUiPreparedApplicationAuthority`
  --> $WORKSPACE/crates/worth-ui/tests/ui/runtime_authority/fail/prepared_application_authority_fields_not_public.rs
  help: a similar name exists in the module
- help: consider importing this struct instead

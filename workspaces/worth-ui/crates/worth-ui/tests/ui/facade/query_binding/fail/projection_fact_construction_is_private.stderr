@@ -6,7 +6,7 @@ error[E0308]: mismatched types
 error[E0308]: mismatched types
  --> $WORKSPACE/crates/worth-ui/tests/ui/facade/query_binding/fail/projection_fact_reassembly_is_private.rs
  note: expected struct `UiScalarProjectionObservation`
-    found tuple `(&WorthQueryEvidenceIdentity, &WorthQueryEvidenceIdentity, &..., ...)`
+    found tuple `(&worth_query_execution::domain_computation::evidence_identity::artifact::WorthQueryEvidenceIdentity, &worth_query_execution::domain_computation::evidence_identity::artifact::WorthQueryEvidenceIdentity, &worth_query_execution::domain_computation::evidence_identity::artifact::WorthQueryEvidenceIdentity, &worth_query_execution::domain_computation::evidence_identity::artifact::WorthQueryEvidenceIdentity)`
  note: function defined here
 
 error[E0308]: mismatched types

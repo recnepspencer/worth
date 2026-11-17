@@ -1,6 +1,5 @@
 error[E0432]: unresolved import `worth_ui::facade::entry::WorthUi`
  --> $WORKSPACE/crates/worth-ui/tests/ui/facade/topology/facade_reexports/facade_reexport_does_not_expose_internal_topology.rs
- help: consider importing one of these structs instead
 
 error[E0432]: unresolved imports `worth_ui::facade::CommandRegistry`, `worth_ui::facade::ComponentRegistry`
  --> $WORKSPACE/crates/worth-ui/tests/ui/facade_visibility/topology/facade_does_not_reexport_registry_types.rs
@@ -9,7 +8,7 @@ error[E0603]: module `entry` is private
  --> $WORKSPACE/crates/worth-ui/tests/ui/facade/topology/facade_reexports/facade_reexport_does_not_expose_internal_topology.rs
  note: the module `entry` is defined here
 
-error[E0277]: the trait bound `FakeCapabilityId: Sealed` is not satisfied
+error[E0277]: the trait bound `FakeCapabilityId: worth_ui_runtime::capability::support::capability_support_id::sealed::Sealed` is not satisfied
  --> $WORKSPACE/crates/worth-ui/tests/ui/facade/support/construction/external_support_id_impl_is_forbidden.rs
  help: the trait `worth_ui_runtime::capability::support::capability_support_id::sealed::Sealed` is not implemented for `FakeCapabilityId`
  note: `FakeCapabilityId` implements similarly named trait `unicode_width::private::Sealed`, but not `worth_ui_runtime::capability::support::capability_support_id::sealed::Sealed`
@@ -22,7 +21,14 @@ error[E0277]: the trait bound `FakeCapabilityId: Sealed` is not satisfied
   MosaicRegionKindId
   MosaicSizingContractId
   MosaicStateSlotId
-and $N others
+  NativeCapabilityId
+  PluginSlotId
+  RuntimeOutcomeProjectionId
+  SettingId
+  SurfaceId
+  TaskPresentationId
+  ThemeTokenId
+  ViewBindingId
  note: required by a bound in `CapabilitySupportId`
  note: `CapabilitySupportId` is a "sealed trait", because to implement it you also need to implement `worth_ui_runtime::capability::support::capability_support_id::sealed::Sealed`, which is not accessible; this is usually done to force you to use one of the provided types that already implement it
  help: the following types implement the trait:
@@ -89,7 +95,14 @@ error[E0277]: the trait bound `&str: CapabilitySupportId` is not satisfied
   MosaicRegionKindId
   MosaicSizingContractId
   MosaicStateSlotId
-and $N others
+  NativeCapabilityId
+  PluginSlotId
+  RuntimeOutcomeProjectionId
+  SettingId
+  SurfaceId
+  TaskPresentationId
+  ThemeTokenId
+  ViewBindingId
  note: required by a bound in `CapabilitySupportPosture::<T>::admitted`
 
 error[E0277]: the trait bound `&str: CapabilitySupportId` is not satisfied
@@ -103,7 +116,14 @@ error[E0277]: the trait bound `&str: CapabilitySupportId` is not satisfied
   MosaicRegionKindId
   MosaicSizingContractId
   MosaicStateSlotId
-and $N others
+  NativeCapabilityId
+  PluginSlotId
+  RuntimeOutcomeProjectionId
+  SettingId
+  SurfaceId
+  TaskPresentationId
+  ThemeTokenId
+  ViewBindingId
  note: required by a bound in `CapabilitySupportPosture`
 
 error[E0308]: mismatched types
@@ -133,11 +153,11 @@ error[E0599]: no method named `with_ambient_host_check` found for struct `Native
  --> $WORKSPACE/crates/worth-ui/tests/ui/facade/native_capability/construction/ambient_host_check_cannot_replace_native_capability_posture.rs
  help: there is a method `with_ambient_host_check_for_diagnostics` with a similar name
 
-error[E0599]: no function or associated item named `current_host` found for struct `AmbientHostCheck` in the current scope
+error[E0599]: no associated function or constant named `current_host` found for struct `AmbientHostCheck` in the current scope
  --> $WORKSPACE/crates/worth-ui/tests/ui/facade/native_capability/construction/ambient_host_check_cannot_replace_native_capability_posture.rs
  note: if you're trying to build a new `AmbientHostCheck`, consider using `AmbientHostCheck::current_host_for_diagnostics` which returns `AmbientHostCheck`
 
-error[E0599]: no function or associated item named `global_mutation_hook` found for struct `PluginContributionFamily` in the current scope
+error[E0599]: no associated function or constant named `global_mutation_hook` found for struct `PluginContributionFamily` in the current scope
  --> $WORKSPACE/crates/worth-ui/tests/ui/facade/plugin_slot/construction/plugin_global_mutation_hook_is_diagnostic_only.rs
  note: if you're trying to build a new `PluginContributionFamily` consider using one of the following associated functions:
 PluginContributionFamily::command
@@ -150,7 +170,7 @@ error[E0599]: no method named `with_global_mutation_hook` found for struct `Plug
  --> $WORKSPACE/crates/worth-ui/tests/ui/facade/plugin_slot/construction/plugin_global_mutation_hook_is_diagnostic_only.rs
  help: there is a method `with_global_mutation_hook_for_diagnostics` with a similar name
 
-error[E0599]: no function or associated item named `opaque_callback` found for struct `PluginSlotGlobalMutationHook` in the current scope
+error[E0599]: no associated function or constant named `opaque_callback` found for struct `PluginSlotGlobalMutationHook` in the current scope
  --> $WORKSPACE/crates/worth-ui/tests/ui/facade/plugin_slot/construction/plugin_global_mutation_hook_is_diagnostic_only.rs
  note: if you're trying to build a new `PluginSlotGlobalMutationHook`, consider using `PluginSlotGlobalMutationHook::opaque_callback_for_diagnostics` which returns `PluginSlotGlobalMutationHook`
 
@@ -177,7 +197,7 @@ error[E0308]: mismatched types
 
 error[E0277]: the trait bound `WorthUiQueryViewRegistration: From<WorthUiQueryViewDefinition>` is not satisfied
  --> $WORKSPACE/crates/worth-ui/tests/ui/facade/query_binding/construction/query_registration_requires_installed_view.rs
- help: the following other types implement trait `From<T>`
+ help: `WorthUiQueryViewRegistration` implements trait `From<T>`
  note: required for `WorthUiQueryViewDefinition` to implement `Into<WorthUiQueryViewRegistration>`
  note: required by a bound in `entry::app_builder::query_registration::<impl WorthUiApplicationBuilder<ChangeProfileState, IntentWiringState>>::register_query_view`
 
@@ -190,4 +210,4 @@ error[E0624]: associated function `from_definition` is private
 
 error[E0382]: use of moved value: `builder`
  --> $WORKSPACE/crates/worth-ui/tests/ui/facade/lifecycle/freeze/register_after_snapshot_freeze_fails.rs
- note: `entry::app_builder::freeze::<impl WorthUiApplicationBuilder>::freeze` takes ownership of the receiver `self`, which moves `builder`
+ note: `worth_ui_runtime::facade::entry::app_builder::freeze::<impl worth_ui_runtime::facade::WorthUiApplicationBuilder>::freeze` takes ownership of the receiver `self`, which moves `builder`

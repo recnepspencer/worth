@@ -1,4 +1,4 @@
-error[E0599]: no function or associated item named `from_host_observation` found for struct `UiMeasurementResult` in the current scope
+error[E0599]: no associated function or constant named `from_host_observation` found for struct `UiMeasurementResult` in the current scope
  --> tests/ui/measurement_authority/external_callers_cannot_mint_measurement_result_via_from_host_observation.rs
 
 error[E0560]: struct `UiSettledQueryFactReceipt` has no field named `query_basis_digest`
@@ -29,10 +29,10 @@ error[E0560]: struct `UiSettledQueryFactReceipt` has no field named `projection_
  --> tests/ui/measurement_authority/external_callers_cannot_mint_projection_fact_receipt_via_struct_literal.rs
  note: all struct fields are already assigned
 
-error[E0599]: no variant or associated item named `FinalLayoutSize` found for enum `UiMeasurementRequestFamily` in the current scope
+error[E0599]: no variant, associated function, or constant named `FinalLayoutSize` found for enum `UiMeasurementRequestFamily` in the current scope
  --> tests/ui/measurement_boundary_purity/forbidden_measurement_request_family_variant.rs
 
-error[E0599]: no function or associated item named `final_layout_size` found for struct `UiHostMeasurementRequest` in the current scope
+error[E0599]: no associated function or constant named `final_layout_size` found for struct `UiHostMeasurementRequest` in the current scope
  --> tests/ui/measurement_boundary_purity/forbidden_measurement_request_constructor.rs
  note: if you're trying to build a new `UiHostMeasurementRequest` consider using one of the following associated functions:
 UiHostMeasurementRequest::text_intrinsic_size

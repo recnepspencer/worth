@@ -1,17 +1,5 @@
 error[E0432]: unresolved imports `worth_ui_runtime::facade::UiAspectContract`, `worth_ui_runtime::facade::UiDeclarationArtifact`, `worth_ui_runtime::facade::UiDeclarationGraphHandoff`, `worth_ui_runtime::facade::UiDeclaredPostureContract`
  --> tests/ui/declaration_boundary/runtime_facade_root_does_not_export_declaration_surface.rs
- help: consider importing one of these structs instead:
-worth_ui::facade::declaration::UiAspectContract
-worth_ui_runtime::facade::declaration::UiAspectContract
- help: consider importing one of these structs instead:
-worth_ui::facade::declaration::UiDeclarationArtifact
-worth_ui_runtime::facade::declaration::UiDeclarationArtifact
- help: consider importing one of these structs instead:
-worth_ui::facade::declaration::UiDeclarationGraphHandoff
-worth_ui_runtime::facade::declaration::UiDeclarationGraphHandoff
- help: consider importing one of these structs instead:
-worth_ui::facade::declaration::UiDeclaredPostureContract
-worth_ui_runtime::facade::declaration::UiDeclaredPostureContract
 
 error[E0432]: unresolved imports `worth_ui_runtime::facade::WorthUiQuerySupportReceipt`, `worth_ui_runtime::facade::WorthUiRuntimeHandleAllocationReceipt`
  --> tests/ui/declaration_posture/declared_posture_cannot_promote_to_runtime_receipts.rs
@@ -49,7 +37,7 @@ error[E0061]: this function takes 2 arguments but 1 argument was supplied
  note: associated function defined here
  help: provide the argument
 
-error[E0599]: no function or associated item named `declaration` found for struct `UiAdmissionTarget` in the current scope
+error[E0599]: no associated function or constant named `declaration` found for struct `UiAdmissionTarget` in the current scope
  --> tests/ui/admission/external_callers_cannot_construct_or_promote_admission_artifacts.rs
  note: if you're trying to build a new `UiAdmissionTarget`, consider using `UiAdmissionTarget::graph_node` which returns `UiAdmissionTarget`
 
