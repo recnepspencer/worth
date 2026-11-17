@@ -3,12 +3,14 @@ use super::{resource::Monitor, Configuration};
 use crate::document_retention_model::{schema::DocumentRetentionSchema, MixedApplication};
 use worth_query_host::facade::{
     admission::authenticated_principal::*, application_entry::*,
-    application_installation::WorthQueryProgramOwner, product::WorthQueryProductBranch,
+    application_installation::WorthQueryProgramOwner,
+    primary_graph::WorthQueryPreparedBranchAdoption, product::WorthQueryProductBranch,
 };
 
 pub(super) struct PreparedSource {
     fork: WorthQueryProductBranch,
     original: WorthQueryApplicationReadObservation,
+    adoption: WorthQueryPreparedBranchAdoption,
 }
 
 pub(super) fn prepare(
@@ -32,9 +34,13 @@ pub(super) fn prepare(
     let requirements = programs.compare(&target).unwrap();
     let prepared = programs.adopt(&requirements).unwrap().prepare(64).unwrap();
     assert_eq!(prepared.selected_entity_count(), 2);
-    // This is the real Native prepared transaction, not an unstaged EffectProgram.
-    drop(prepared);
-    PreparedSource { fork, original }
+    // Keep the actual Native preparation until the intervening operation makes
+    // its expected root stale; its owner must record that no-effect disposition.
+    PreparedSource {
+        fork,
+        original,
+        adoption: prepared,
+    }
 }
 
 pub(super) fn run(
@@ -46,6 +52,20 @@ pub(super) fn run(
 ) {
     let runtime = application.runtime();
     let sibling = runtime.request(actor, scope).retain_current_read().unwrap();
+    match runtime
+        .request(actor, scope)
+        .programs()
+        .publish(prepared.adoption)
+    {
+        WorthQueryBranchAdoptionPublicationOutcome::NoEffect(_) => {}
+        _ => panic!("the intervening monitor mutation must refuse stale adoption"),
+    }
+    let after = runtime.request(actor, scope).retain_current_read().unwrap();
+    assert_eq!(
+        sibling.selected_commit(),
+        after.selected_commit(),
+        "stale adoption must not publish another root or change its program"
+    );
     assert_ne!(
         prepared.original.selected_commit(),
         sibling.selected_commit()
@@ -85,7 +105,7 @@ pub(super) fn run(
     assert!(!same, "the genuine sibling is not the Resource source");
     assert!(
         sibling_native > original_native + 1,
-        "dropping the real prepared adoption burns Native issuance before sibling publication"
+        "the real prepared adoption burns Native issuance before sibling publication"
     );
     configuration.state.send(index, 6161).unwrap();
     resources.advance(&mut handle).unwrap();
