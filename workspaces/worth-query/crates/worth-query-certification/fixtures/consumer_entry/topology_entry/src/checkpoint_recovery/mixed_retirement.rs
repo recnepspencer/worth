@@ -67,7 +67,7 @@ mod serial {
             .unwrap();
         assert!(matches!(
             committed,
-            WorthQueryApplicationMutationOutcome::Committed { .. }
+            worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome::Committed { .. }
         ));
         let mut outputs = request
             .advanced()
