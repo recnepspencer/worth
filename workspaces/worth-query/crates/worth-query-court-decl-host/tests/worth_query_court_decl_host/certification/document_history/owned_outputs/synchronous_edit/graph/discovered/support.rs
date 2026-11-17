@@ -81,3 +81,56 @@ fn a_discovered_producer_cannot_invalidate_its_own_root_discovery() {
 fn worker_only_a_discovered_producer_cannot_invalidate_its_own_root_discovery() {
     exercise(true)
 }
+/// The same root as the envelope's only (prefix) stage (#224): its producer is
+/// owed at the prefix's own position and changes the member that selected
+/// route `a`. No position settles a selection, so the envelope refuses
+/// atomically, attributed to that producer, with no #229 hold.
+#[test]
+fn an_ordered_prefix_producer_cannot_invalidate_its_own_root_selection() {
+    use worth_query_host::facade::application_entry::WorthQueryEditEnvelopeOutcome as Outcome;
+    let _execution = WorthQueryExecutionObservation::install_on_this_thread();
+    let host = world::install_program_with_other_model::<support_program::Program>(
+        host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
+        2,
+        Some(3),
+    );
+    let scope = request_scope();
+    let principal = authenticate_operator(host.installed_schema(), &scope);
+    let request = host.request(&principal, &scope);
+    let before = super::super::super::failure::checkpoint(&host);
+    let mut edit = request
+        .edit_envelope()
+        .idempotency("ordered-invalidated-root-query".to_owned())
+        .runtime_stages(&host)
+        .ordered_authored()
+        .unwrap();
+    edit.push_stage::<support_program::Tree, _>(edit::Intent {
+        key: "a".into(),
+        value: 7,
+    })
+    .unwrap();
+    let outcome = edit
+        .execute_performed(ExecutionAllocationPolicy::SystemAllocation)
+        .unwrap();
+    let Outcome::Uncommitted(WorthQueryApplicationUncommitted::Denied(cause)) = outcome else {
+        panic!("{outcome:?}")
+    };
+    let refusal = cause
+        .invariant_execution_failure()
+        .expect("the final support owner refuses");
+    assert_eq!(
+        refusal.kind(),
+        WorthQueryInvariantExecutionDenialKind::CoupledReadSupportChanged
+    );
+    assert!(
+        refusal.detail().contains("owned-outputs.member-public-binding.v1")
+            && refusal.detail().contains("later writer producer"),
+        "{refusal:?}"
+    );
+    assert_eq!(refusal.coupled_support_hold(), None);
+    super::super::super::failure::assert_model_unchanged(&host, &before);
+    assert!(request
+        .query(query::second_output::Read("second:a".into()))
+        .execute()
+        .is_err());
+}

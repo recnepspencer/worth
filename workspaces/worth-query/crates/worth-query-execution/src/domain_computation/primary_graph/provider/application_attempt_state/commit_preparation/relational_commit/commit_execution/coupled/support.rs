@@ -129,12 +129,10 @@ pub(super) fn require_read_support(
     Ok(())
 }
 
-/// Discovery support decides which outputs a candidate holds, so a producer
-/// reader's stays strict, and so does any change an authored stage makes. An
-/// authored stage's discovery settles at its position when the change is a
-/// producer re-derivation owed at or after it: that producer's own reads and
-/// discovery are checked against the complete candidate. A verified output
-/// the stage read settles only when a producer owed at or after the stage
+/// Discovery support selected which outputs the candidate holds. No writer's
+/// change to it is accepted, not even a producer owed later: nothing proves
+/// the selection it governed was derived again. A verified output an authored
+/// stage read settles only when a producer owed at or after the stage
 /// re-derived that same output, so no stale output can commit.
 fn settles_read_support(
     reader: &WorthQueryPrimaryGraphApplicationAttempt,
@@ -150,9 +148,7 @@ fn settles_read_support(
         return false;
     }
     match support {
-        CandidateReadSupport::Query(_) | CandidateReadSupport::Outgoing(_) => {
-            matches!(writer.kind, CoupledApplicationMemberKind::Producer { .. })
-        }
+        CandidateReadSupport::Query(_) | CandidateReadSupport::Outgoing(_) => false,
         CandidateReadSupport::Parent(parent) => members.iter().any(|member| {
             matches!(&member.kind, CoupledApplicationMemberKind::Producer { meaning, .. }
                 if meaning.family == parent.family() && meaning.source_scope == parent.source())
