@@ -3,14 +3,12 @@ use super::{resource::Monitor, Configuration};
 use crate::document_retention_model::{schema::DocumentRetentionSchema, MixedApplication};
 use worth_query_host::facade::{
     admission::authenticated_principal::*, application_entry::*,
-    application_installation::WorthQueryProgramOwner,
-    primary_graph::WorthQueryPreparedBranchAdoption, product::WorthQueryProductBranch,
+    application_installation::WorthQueryProgramOwner, product::WorthQueryProductBranch,
 };
 
 pub(super) struct PreparedSource {
     fork: WorthQueryProductBranch,
     original: WorthQueryApplicationReadObservation,
-    adoption: WorthQueryPreparedBranchAdoption,
 }
 
 pub(super) fn prepare(
@@ -34,13 +32,13 @@ pub(super) fn prepare(
     let requirements = programs.compare(&target).unwrap();
     let prepared = programs.adopt(&requirements).unwrap().prepare(64).unwrap();
     assert_eq!(prepared.selected_entity_count(), 2);
-    // Keep Native preparation until the intervening publication makes its
-    // expected root stale; release its exact losing attempt before Home close.
-    PreparedSource {
-        fork,
-        original,
-        adoption: prepared,
+    match programs.publish(prepared) {
+        WorthQueryBranchAdoptionPublicationOutcome::Performed(adoption) => {
+            assert_eq!(adoption.target(), &target);
+        }
+        _ => panic!("the current prepared adoption must publish before the monitor edit"),
     }
+    PreparedSource { fork, original }
 }
 
 pub(super) fn run(
@@ -52,52 +50,6 @@ pub(super) fn run(
 ) {
     let runtime = application.runtime();
     let sibling = runtime.request(actor, scope).retain_current_read().unwrap();
-    match runtime
-        .request(actor, scope)
-        .programs()
-        .publish(prepared.adoption)
-    {
-        WorthQueryBranchAdoptionPublicationOutcome::NoEffect(no_effect) => {
-            assert_eq!(
-                no_effect.cause(),
-                worth_query_host::facade::runtime::NoEffectCause::StaleExpectedProductHead
-            );
-        }
-        WorthQueryBranchAdoptionPublicationOutcome::AuthorizationDenied { cause, .. } => {
-            panic!("adoption authorization: {cause:?}")
-        }
-        WorthQueryBranchAdoptionPublicationOutcome::AdmissionDenied { cause, .. } => {
-            panic!("adoption admission: {cause:?}")
-        }
-        WorthQueryBranchAdoptionPublicationOutcome::ExecutionDenied(cause) => {
-            panic!("adoption execution: {cause:?}")
-        }
-        WorthQueryBranchAdoptionPublicationOutcome::ObligationDischargePending {
-            cause, ..
-        } => panic!("adoption discharge: {cause:?}"),
-        WorthQueryBranchAdoptionPublicationOutcome::Performed(_) => {
-            panic!("adoption performed after monitor mutation")
-        }
-        WorthQueryBranchAdoptionPublicationOutcome::ProductUnpublished(unpublished) => {
-            assert_eq!(
-                unpublished.cause(),
-                worth_query_host::facade::runtime::ProductUnpublishedCause::OpenAttemptRetained
-            );
-            assert_eq!(
-                unpublished.before_effect_refusal(),
-                Some(worth_query_host::facade::runtime::NoEffectCause::StaleExpectedProductHead)
-            );
-            runtime
-                .release_branch_adoption_recovery(unpublished.into_recovery(), 0)
-                .expect("the stale prepared adoption releases its exact retained owner");
-        }
-    }
-    let after = runtime.request(actor, scope).retain_current_read().unwrap();
-    assert_eq!(
-        sibling.selected_commit(),
-        after.selected_commit(),
-        "stale adoption must not publish another root or change its program"
-    );
     assert_ne!(
         prepared.original.selected_commit(),
         sibling.selected_commit()

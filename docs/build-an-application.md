@@ -6816,7 +6816,7 @@ against the native receipt, not business input or a source of authority.
         .mutate(WorkflowDefinitionAuthoringIntent { input: input() })
         .without_source()
         .idempotency(&20_u64)
-        .prepare_workflow_proposal(&application, instance.clone())
+        .prepare_workflow_proposal(application, instance.clone())
         .unwrap()
         .execute();
     let (proposal, expected_proposer) = match proposal {
@@ -6880,7 +6880,7 @@ admission and independently closing cleanup:
         .unwrap_or_else(|_| panic!("exact approved occurrence"))
         .retain_durable_operation::<MixedProgram, crate::effect::ArchiveAction>(
             &request,
-            application.program_runtime(),
+            application.runtime(),
         )
         .unwrap_or_else(|_| panic!("installed archive action"));
     let receive = |envelope: &[u8]| {
