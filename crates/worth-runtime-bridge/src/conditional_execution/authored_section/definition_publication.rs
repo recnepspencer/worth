@@ -69,15 +69,14 @@ impl Drop for Reservation {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        if let Some(slot) = self.slot.take() {
-            if let Some(lowering) = branch
+        if let Some(slot) = self.slot.take()
+            && let Some(lowering) = branch
                 .lowerings
                 .write()
                 .unwrap_or_else(std::sync::PoisonError::into_inner)
                 .remove(&slot)
-            {
-                lowering.lease.revoke_liveness();
-            }
+        {
+            lowering.lease.revoke_liveness();
         }
         branch.posture = match readmission {
             Some(original) => {

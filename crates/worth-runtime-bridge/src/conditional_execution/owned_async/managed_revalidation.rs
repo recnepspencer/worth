@@ -20,7 +20,7 @@ impl BridgeConditionalExecutionView<'_> {
         signal_basis: &worth_signal::facade::branch::AdmittedSignalBranchBasis,
         truth_basis: crate::facade::BridgeAsyncRequestTruthViewBasis,
     ) -> Result<BridgeOwnedAsyncManagedRevalidation, Denial> {
-        owner.require_owner(&self.async_observation_authority)?;
+        owner.require_owner(self.async_observation_authority)?;
         let business = owner
             .business
             .as_ref()

@@ -4,6 +4,10 @@ use super::provider_semantics::BridgeErasedProviderSemanticContract;
 use super::*;
 use std::sync::Arc;
 impl BridgeConditionalProviderSet {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "The live provider address deduplicates retained allocation charges; it does not order semantic identity"
+    )]
     pub fn authored_condition<P>(mut self, provider: P) -> Self
     where
         P: BridgeConditionalConditionProvider + BridgeAuthoredConditionalProvider,
@@ -35,6 +39,10 @@ impl BridgeConditionalProviderSet {
         });
         self
     }
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "The live provider address deduplicates retained allocation charges; it does not order semantic identity"
+    )]
     pub fn authored_dependency_comparator<P>(mut self, provider: P) -> Self
     where
         P: BridgeConditionalComparatorProvider + BridgeAuthoredConditionalProvider,
@@ -66,6 +74,10 @@ impl BridgeConditionalProviderSet {
         });
         self
     }
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "The live provider address deduplicates retained allocation charges; it does not order semantic identity"
+    )]
     pub fn authored_output_comparator<P>(mut self, provider: P) -> Self
     where
         P: BridgeConditionalComparatorProvider + BridgeAuthoredConditionalProvider,
@@ -97,6 +109,10 @@ impl BridgeConditionalProviderSet {
         });
         self
     }
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "The live provider address deduplicates retained allocation charges; it does not order semantic identity"
+    )]
     pub fn authored_reuse_comparator<P>(mut self, provider: P) -> Self
     where
         P: BridgeConditionalComparatorProvider + BridgeAuthoredConditionalProvider,
@@ -128,6 +144,10 @@ impl BridgeConditionalProviderSet {
         });
         self
     }
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "The live provider address deduplicates retained allocation charges; it does not order semantic identity"
+    )]
     pub fn authored_trigger<P>(mut self, provider: P) -> Self
     where
         P: BridgeConditionalTriggerProvider + BridgeAuthoredConditionalProvider,
@@ -159,6 +179,10 @@ impl BridgeConditionalProviderSet {
         });
         self
     }
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "The live provider address deduplicates retained allocation charges; it does not order semantic identity"
+    )]
     pub fn authored_wake<P>(mut self, provider: P) -> Self
     where
         P: BridgeConditionalWakeProvider + BridgeAuthoredConditionalProvider,
@@ -190,6 +214,10 @@ impl BridgeConditionalProviderSet {
         });
         self
     }
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "The live provider address deduplicates retained allocation charges; it does not order semantic identity"
+    )]
     pub fn authored_compute<P>(mut self, provider: P) -> Self
     where
         P: BridgeConditionalComputeProvider + BridgeAuthoredConditionalProvider,

@@ -36,7 +36,7 @@ fn actual_successor_supplements_equal_independent_head_and_full_closure_differen
                 ))),
             )]);
             let mut transaction = crate::tests::support::test_owner_begin_transaction_for_branch(
-                &runtime,
+                runtime,
                 crate::history::data::BranchId("main".into()),
             );
             transaction
@@ -50,8 +50,8 @@ fn actual_successor_supplements_equal_independent_head_and_full_closure_differen
                     execution.allocation_policy(),
                 )
                 .unwrap();
-            let committed = transaction.commit(&execution, &runtime).unwrap();
-            release_test_commit_snapshot(&runtime, &committed);
+            let committed = transaction.commit(&execution, runtime).unwrap();
+            release_test_commit_snapshot(runtime, &committed);
             let current = root()
                 .demand_region_full(&execution, id.partition_id)
                 .unwrap()

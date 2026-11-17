@@ -36,7 +36,7 @@ pub(crate) fn writeback_admission_digest(
 ) -> Result<BridgeIdentityEvidence, crate::diagnostics::causal_envelope::BridgeCausalDigestRefusal>
 {
     let replay_permitted = record.replay_artifacts_permitted().to_string();
-    Ok(compose_retained_causal_mapping_evidence_identity(
+    compose_retained_causal_mapping_evidence_identity(
         RetainedCausalMappingDigestArtifact::WritebackAdmissionRecord,
         &[
             retained_mapping_bridge_identity_part(record.record_identity()),
@@ -46,7 +46,7 @@ pub(crate) fn writeback_admission_digest(
             retained_mapping_shape_part(diagnostics_tier_label(record.diagnostics_tier())),
             retained_mapping_shape_part(replay_permitted.as_str()),
         ],
-    )?)
+    )
 }
 
 pub(crate) fn writeback_mapper_envelope_digest(
@@ -70,7 +70,7 @@ pub(crate) fn writeback_mapper_envelope_artifact_digest(
     envelope: &crate::writeback::BridgeWritebackMapperEnvelope,
 ) -> Result<BridgeIdentityEvidence, crate::diagnostics::causal_envelope::BridgeCausalDigestRefusal>
 {
-    Ok(compose_retained_causal_mapping_evidence_identity(
+    compose_retained_causal_mapping_evidence_identity(
         RetainedCausalMappingDigestArtifact::WritebackMapperEnvelope,
         &[
             retained_mapping_bridge_identity_part(envelope.envelope_identity()),
@@ -78,7 +78,7 @@ pub(crate) fn writeback_mapper_envelope_artifact_digest(
             retained_mapping_shape_part(writeback_effect_class_label(envelope.effect_class())),
             retained_mapping_shape_part(writeback_strategy_class_label(envelope.strategy_class())),
         ],
-    )?)
+    )
 }
 
 pub(crate) fn writeback_mapped_family_input_digest(
@@ -102,7 +102,7 @@ pub(crate) fn writeback_mapped_family_input_artifact_digest(
     mapped_input: &crate::writeback::BridgeMappedWritebackFamilyInput,
 ) -> Result<BridgeIdentityEvidence, crate::diagnostics::causal_envelope::BridgeCausalDigestRefusal>
 {
-    Ok(compose_retained_causal_mapping_evidence_identity(
+    compose_retained_causal_mapping_evidence_identity(
         RetainedCausalMappingDigestArtifact::WritebackMappedFamilyInput,
         &[
             retained_mapping_bridge_identity_part(mapped_input.mapped_input_identity()),
@@ -112,7 +112,7 @@ pub(crate) fn writeback_mapped_family_input_artifact_digest(
                 mapped_input.strategy_class(),
             )),
         ],
-    )?)
+    )
 }
 
 pub(crate) fn writeback_mapper_record_digest(
@@ -136,7 +136,7 @@ pub(crate) fn writeback_mapper_record_artifact_digest(
     record: &crate::writeback::BridgeWritebackMapperRecord,
 ) -> Result<BridgeIdentityEvidence, crate::diagnostics::causal_envelope::BridgeCausalDigestRefusal>
 {
-    Ok(compose_retained_causal_mapping_evidence_identity(
+    compose_retained_causal_mapping_evidence_identity(
         RetainedCausalMappingDigestArtifact::WritebackMapperRecord,
         &[
             retained_mapping_bridge_identity_part(record.record_identity()),
@@ -144,7 +144,7 @@ pub(crate) fn writeback_mapper_record_artifact_digest(
             retained_mapping_shape_part(writeback_effect_class_label(record.effect_class())),
             retained_mapping_shape_part(writeback_strategy_class_label(record.strategy_class())),
         ],
-    )?)
+    )
 }
 
 pub(crate) fn writeback_execution_record_digest(
@@ -188,7 +188,7 @@ pub(crate) fn writeback_execution_artifact_digest(
         .failure_class()
         .map(writeback_failure_class_label)
         .unwrap_or("none");
-    Ok(compose_retained_causal_mapping_evidence_identity(
+    compose_retained_causal_mapping_evidence_identity(
         RetainedCausalMappingDigestArtifact::WritebackExecutionRecord,
         &[
             retained_mapping_bridge_identity_part(record.record_identity()),
@@ -199,7 +199,7 @@ pub(crate) fn writeback_execution_artifact_digest(
             retained_mapping_shape_part(record.receipt_digest().unwrap_or("none")),
             retained_mapping_shape_part(failure_class),
         ],
-    )?)
+    )
 }
 
 pub(crate) fn writeback_replay_record_digest(
@@ -239,14 +239,14 @@ pub(crate) fn writeback_replay_artifact_digest(
         .failure_class()
         .map(writeback_failure_class_label)
         .unwrap_or("none");
-    Ok(compose_retained_causal_mapping_evidence_identity(
+    compose_retained_causal_mapping_evidence_identity(
         RetainedCausalMappingDigestArtifact::WritebackReplayRecord,
         &[
             retained_mapping_bridge_identity_part(record.record_identity()),
             retained_mapping_shape_part(writeback_family_kind_label(record.family_kind())),
             retained_mapping_shape_part(failure_class),
         ],
-    )?)
+    )
 }
 
 fn writeback_family_kind_label(value: BridgeWritebackFamilyKind) -> &'static str {

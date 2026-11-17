@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::invariant_projection::read_basis::NativeProjectionRead;
 use crate::equality_type_id::EqualityTypeId as TypeId;
 
 use worth_query_declaration::facade::application_query::ApplicationQueryBinding;
@@ -132,8 +133,8 @@ where
             replaced.push((None, partition));
         }
         let committed = match &self.reader.native {
-            crate::domain_computation::primary_graph::invariant_projection::NativeProjectionRead::Committed(native) => Some(*native),
-            crate::domain_computation::primary_graph::invariant_projection::NativeProjectionRead::Applied { .. } => None,
+            NativeProjectionRead::Committed(native) => Some(*native),
+            NativeProjectionRead::Applied { .. } => None,
         };
         let correspondences = if let Some(native) = committed {
             self.current_correspondences::<Family, Producer>(

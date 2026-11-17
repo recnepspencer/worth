@@ -41,6 +41,10 @@ impl BridgeConditionalRuntimeBuilder {
         };
         self.readmit_source(source, bindings, execution)
     }
+    #[expect(
+        clippy::boxed_local,
+        reason = "The large runtime builder remains in its existing allocation during default-stack readmission"
+    )]
     pub(super) fn readmit_source(
         mut self: Box<Self>,
         source: AuthoredSignalSource,
@@ -291,6 +295,10 @@ pub(in crate::conditional_execution) fn finish(
         );
         registry.install(key, lowering);
     }
+    #[expect(
+        clippy::mutable_key_type,
+        reason = "DeclarationKey orders only immutable location and contract identity, never the retained codec seal"
+    )]
     let mut declarations =
         crate::conditional_execution::authored_declaration::DeclarationIndex::new();
     for lowering in registry.values() {

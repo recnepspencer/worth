@@ -14,7 +14,7 @@ impl BridgeConditionalExecutionView<'_> {
         owner: &mut Custodian,
         coordinate: u64,
     ) -> Result<BridgeOwnedAsyncTimeoutAdmission, Denial> {
-        owner.require_owner(&self.async_observation_authority)?;
+        owner.require_owner(self.async_observation_authority)?;
         let port = owner.port.clone();
         port.advance_managed_owned_async_request_to_timeout(&mut owner.native, coordinate)
             .map_err(Denial::Signal)?;
@@ -26,7 +26,7 @@ impl BridgeConditionalExecutionView<'_> {
             return Err(Denial::ProgressDenied);
         }
         Ok(BridgeOwnedAsyncTimeoutAdmission::new(
-            &self.async_observation_authority,
+            self.async_observation_authority,
             owner.request_handle(),
             report.clone(),
         ))
@@ -37,8 +37,8 @@ impl BridgeConditionalExecutionView<'_> {
         owner: &mut Custodian,
         timeout: &BridgeOwnedAsyncTimeoutAdmission,
     ) -> Result<BridgeOwnedAsyncRetrySchedule, Denial> {
-        owner.require_owner(&self.async_observation_authority)?;
-        if !timeout.matches(&self.async_observation_authority, owner.request_handle()) {
+        owner.require_owner(self.async_observation_authority)?;
+        if !timeout.matches(self.async_observation_authority, owner.request_handle()) {
             return Err(Denial::ForeignOwner);
         }
         let port = owner.port.clone();
@@ -50,7 +50,7 @@ impl BridgeConditionalExecutionView<'_> {
             return Err(Denial::ProgressDenied);
         }
         Ok(BridgeOwnedAsyncRetrySchedule::new(
-            &self.async_observation_authority,
+            self.async_observation_authority,
             owner.request_handle(),
             timeout.report().clone(),
             native,
@@ -63,8 +63,8 @@ impl BridgeConditionalExecutionView<'_> {
         schedule: &BridgeOwnedAsyncRetrySchedule,
         coordinate: u64,
     ) -> Result<crate::facade::BridgeAsyncRetryLineage, Denial> {
-        owner.require_owner(&self.async_observation_authority)?;
-        if !schedule.matches(&self.async_observation_authority, owner.request_handle()) {
+        owner.require_owner(self.async_observation_authority)?;
+        if !schedule.matches(self.async_observation_authority, owner.request_handle()) {
             return Err(Denial::ForeignOwner);
         }
         let prior = owner

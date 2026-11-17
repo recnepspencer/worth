@@ -3,6 +3,10 @@ use super::retention::{self, BridgeRetentionDenial as D};
 use super::{BridgeConditionalProviderRole, BridgeConditionalProviderSet};
 use std::sync::Arc;
 impl BridgeConditionalProviderSet {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Live allocation equality avoids charging an active provider twice; addresses do not order semantic identity"
+    )]
     pub(super) fn authored_retained_arc_bytes(&self) -> Result<u64, D> {
         let mut bytes = retention::array_charge::<
             super::authored_provider::BridgeAuthoredProviderBinding,

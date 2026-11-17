@@ -43,31 +43,31 @@ impl BridgeCausalEvidenceBinding {
         reference: &BridgeCausalEvidenceReference,
         retained_record_identity: BridgeIdentityEvidence,
     ) -> Result<Self, crate::diagnostics::causal_envelope::BridgeCausalDigestRefusal> {
-        Ok(Self::new(
+        Self::new(
             reference,
             BridgeCausalEvidenceBindingClass::RetainedBridgeRecord,
             Some(retained_record_identity),
-        )?)
+        )
     }
 
     pub(super) fn external(
         reference: &BridgeCausalEvidenceReference,
     ) -> Result<Self, crate::diagnostics::causal_envelope::BridgeCausalDigestRefusal> {
-        Ok(Self::new(
+        Self::new(
             reference,
             BridgeCausalEvidenceBindingClass::ExternalAuthorityReference,
             None,
-        )?)
+        )
     }
 
     pub(super) fn native(
         reference: &BridgeCausalEvidenceReference,
     ) -> Result<Self, crate::diagnostics::causal_envelope::BridgeCausalDigestRefusal> {
-        Ok(Self::new(
+        Self::new(
             reference,
             BridgeCausalEvidenceBindingClass::RetainedNativeObservation,
             None,
-        )?)
+        )
     }
 
     fn new(
@@ -146,8 +146,8 @@ impl BridgeCausalEvidenceBinding {
 fn external_retained_record_identity(
 ) -> Result<BridgeIdentityEvidence, crate::diagnostics::causal_envelope::BridgeCausalDigestRefusal>
 {
-    Ok(compose_bridge_causal_envelope_evidence_identity(
+    compose_bridge_causal_envelope_evidence_identity(
         BridgeCausalEnvelopeDigestArtifact::EvidenceBinding,
         &[shape_part("external-authority-reference")],
-    )?)
+    )
 }

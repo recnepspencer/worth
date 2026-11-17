@@ -186,12 +186,12 @@ fn native_required(
     BridgeCausalEnvelopeDenial,
     crate::diagnostics::causal_envelope::BridgeCausalDigestRefusal,
 > {
-    Ok(BridgeCausalEnvelopeDenial::new(
+    BridgeCausalEnvelopeDenial::new(
         BridgeCausalEnvelopeDenialKind::NativeObservationRequired,
         reference.family(),
         reference.owner(),
         reference.family().expected_owner(),
         reference.reference_evidence_identity().clone(),
         counters,
-    )?)
+    )
 }

@@ -192,9 +192,8 @@ impl<'a> DefinitionView<'a> {
             return Err(D::Malformed);
         }
         let mut previous = None;
-        for bytes in ordinals.chunks_exact(8) {
-            let ordinal = usize::try_from(u64::from_le_bytes(bytes.try_into().unwrap()))
-                .map_err(|_| D::SizeLimit)?;
+        for bytes in ordinals.as_chunks::<8>().0 {
+            let ordinal = usize::try_from(u64::from_le_bytes(*bytes)).map_err(|_| D::SizeLimit)?;
             if ordinal >= dependencies || previous.is_some_and(|old| old >= ordinal) {
                 return Err(D::Malformed);
             }
@@ -252,8 +251,10 @@ impl<'a> DefinitionView<'a> {
                 dependency_count: self.dependencies,
                 condition_dependency_ordinals: self
                     .ordinals
-                    .chunks_exact(8)
-                    .map(|bytes| u64::from_le_bytes(bytes.try_into().unwrap()) as usize)
+                    .as_chunks::<8>()
+                    .0
+                    .iter()
+                    .map(|bytes| u64::from_le_bytes(*bytes) as usize)
                     .collect(),
                 condition,
                 dependency_comparator: definition.dependency_comparator,

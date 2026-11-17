@@ -11,7 +11,7 @@ impl BridgeConditionalExecutionView<'_> {
         &self,
         request: &Custodian,
     ) -> Result<worth_signal::facade::ResourceSafePointObservationReport, Denial> {
-        request.require_owner(&self.async_observation_authority)?;
+        request.require_owner(self.async_observation_authority)?;
         let queue = request.native.queue().ok_or(Denial::QueueUnavailable)?;
         request
             .port
@@ -48,7 +48,7 @@ impl BridgeConditionalExecutionView<'_> {
         native: worth_signal::facade::branch::SignalOwnedAsyncManagedAdmission,
     ) -> Custodian {
         let mut custodian = Custodian {
-            authority: Arc::clone(&self.async_observation_authority),
+            authority: Arc::clone(self.async_observation_authority),
             port: bound.port,
             native,
             business: Some(bound.request),
@@ -76,7 +76,7 @@ impl BridgeConditionalExecutionView<'_> {
                 Ok(request) => {
                     owner.request = Some(Arc::new(
                         super::super::BridgeOwnedAsyncRequestAdmission::new(
-                            &self.async_observation_authority,
+                            self.async_observation_authority,
                             request,
                             owner.port.clone(),
                             owner.native.source_binding().clone(),
@@ -95,7 +95,7 @@ impl BridgeConditionalExecutionView<'_> {
         request: &Custodian,
         width: u64,
     ) -> Result<worth_signal::facade::ResourceManagedQueueMutationReport, Denial> {
-        request.require_owner(&self.async_observation_authority)?;
+        request.require_owner(self.async_observation_authority)?;
         let queue = request.native.queue().ok_or(Denial::QueueUnavailable)?;
         request
             .port
@@ -108,7 +108,7 @@ impl BridgeConditionalExecutionView<'_> {
         request: &Custodian,
         width: u64,
     ) -> Result<worth_signal::facade::ResourceManagedQueueMutationReport, Denial> {
-        request.require_owner(&self.async_observation_authority)?;
+        request.require_owner(self.async_observation_authority)?;
         let queue = request.native.queue().ok_or(Denial::QueueUnavailable)?;
         request
             .port
@@ -121,7 +121,7 @@ impl BridgeConditionalExecutionView<'_> {
         &self,
         request: &Custodian,
     ) -> Result<worth_signal::facade::ResourceCancellationReport, Denial> {
-        request.require_owner(&self.async_observation_authority)?;
+        request.require_owner(self.async_observation_authority)?;
         request
             .port
             .cancel_owned_async_request(request.native.source_binding(), request.request_handle())

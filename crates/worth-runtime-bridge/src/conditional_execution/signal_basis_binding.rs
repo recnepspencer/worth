@@ -20,7 +20,7 @@ impl super::execution_view::BridgeConditionalExecutionView<'_> {
     ) -> Result<BridgeConditionalSignalBasisBinding, BridgeConditionalDenial> {
         self.require_live_installed_lowering(anchor)?;
         let lookup = super::lowering_registry::BridgeConditionalLoweringRegistry::prepare_exact_basis_resolution(
-            &self.conditional_lowerings,
+            self.conditional_lowerings,
             anchor,
             basis,
         )?;

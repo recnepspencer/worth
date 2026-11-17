@@ -63,7 +63,7 @@ impl super::execution_view::BridgeConditionalExecutionView<'_> {
         }
         counters.query_continuation_rebindings = 1;
         let reservation =
-            super::retention::reserve_reentry(&self.retention, request.query_binding_identity)?;
+            super::retention::reserve_reentry(self.retention, request.query_binding_identity)?;
         Ok(BridgeConditionalDecisionEvidence {
             _reservation: reservation,
             core: Arc::clone(core),

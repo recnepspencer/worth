@@ -28,7 +28,7 @@ impl BridgeConditionalExecutionView<'_> {
         &self,
         owner: &mut Custodian,
     ) -> Result<(), Denial> {
-        owner.require_owner(&self.async_observation_authority)?;
+        owner.require_owner(self.async_observation_authority)?;
         owner
             .port
             .finish_managed_owned_async_wake_cleanup(&mut owner.native)

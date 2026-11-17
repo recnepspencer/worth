@@ -182,14 +182,14 @@ pub(crate) fn bulk_planning_failure_evidence_identity(
 ) -> Result<BridgeIdentityEvidence, BridgeCausalDigestRefusal> {
     use crate::routing::planning::planning_failure_kind_label;
 
-    Ok(compose_retained_causal_mapping_evidence_identity(
+    compose_retained_causal_mapping_evidence_identity(
         RetainedCausalMappingDigestArtifact::BulkPlanningFailureRecord,
         &[
             retained_mapping_shape_part(planning_failure_kind_label(failure.kind())),
             retained_mapping_shape_part(failure.boundary()),
             retained_mapping_shape_part(failure.detail()),
         ],
-    )?)
+    )
 }
 
 pub(crate) fn retained_mapping_evidence_part(
@@ -218,22 +218,22 @@ pub(crate) fn compose_retained_causal_mapping_evidence_identity(
     artifact: RetainedCausalMappingDigestArtifact,
     parts: &[RetainedCausalMappingIdentityPart],
 ) -> Result<BridgeIdentityEvidence, BridgeCausalDigestRefusal> {
-    Ok(compose_retained_causal_mapping_evidence_identity_for_parts(
+    compose_retained_causal_mapping_evidence_identity_for_parts(
         artifact,
         parts
             .iter()
             .map(RetainedCausalMappingIdentityPart::as_borrowed),
-    )?)
+    )
 }
 
 pub(crate) fn compose_retained_causal_mapping_evidence_identity_for_basis(
     artifact: RetainedCausalMappingDigestArtifact,
     basis: &RetainedCausalMappingDigestBasis,
 ) -> Result<BridgeIdentityEvidence, BridgeCausalDigestRefusal> {
-    Ok(compose_retained_causal_mapping_evidence_identity_for_parts(
+    compose_retained_causal_mapping_evidence_identity_for_parts(
         artifact,
         basis.entries().iter().map(|entry| entry.part()),
-    )?)
+    )
 }
 
 fn compose_retained_causal_mapping_evidence_identity_for_parts(

@@ -49,11 +49,11 @@ impl BridgeCausalEvidenceReferenceIdentity {
         identity: BridgeIdentityEvidence,
     ) -> Result<Self, crate::diagnostics::causal_envelope::BridgeCausalEnvelopeConstructionStop>
     {
-        Ok(Self::for_owner(
+        Self::for_owner(
             BridgeCausalEvidenceOwner::Query,
             BridgeCausalEvidenceFamily::QueryObservation,
             identity,
-        )?)
+        )
     }
 
     pub fn runtime_bridge(
@@ -61,22 +61,18 @@ impl BridgeCausalEvidenceReferenceIdentity {
         identity: BridgeIdentityEvidence,
     ) -> Result<Self, crate::diagnostics::causal_envelope::BridgeCausalEnvelopeConstructionStop>
     {
-        Ok(Self::for_owner(
-            BridgeCausalEvidenceOwner::RuntimeBridge,
-            family,
-            identity,
-        )?)
+        Self::for_owner(BridgeCausalEvidenceOwner::RuntimeBridge, family, identity)
     }
 
     pub fn relational_authority(
         identity: BridgeIdentityEvidence,
     ) -> Result<Self, crate::diagnostics::causal_envelope::BridgeCausalEnvelopeConstructionStop>
     {
-        Ok(Self::for_owner(
+        Self::for_owner(
             BridgeCausalEvidenceOwner::Relational,
             BridgeCausalEvidenceFamily::RelationalAuthority,
             identity,
-        )?)
+        )
     }
 
     pub fn signal(
@@ -84,11 +80,7 @@ impl BridgeCausalEvidenceReferenceIdentity {
         identity: BridgeIdentityEvidence,
     ) -> Result<Self, crate::diagnostics::causal_envelope::BridgeCausalEnvelopeConstructionStop>
     {
-        Ok(Self::for_owner(
-            BridgeCausalEvidenceOwner::Signal,
-            family,
-            identity,
-        )?)
+        Self::for_owner(BridgeCausalEvidenceOwner::Signal, family, identity)
     }
 
     pub fn family(&self) -> BridgeCausalEvidenceFamily {

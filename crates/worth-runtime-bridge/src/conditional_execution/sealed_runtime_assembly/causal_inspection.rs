@@ -13,7 +13,7 @@ impl BridgeSealedRuntimeAssembly {
         BridgeCausalExplanationEnvelope,
         crate::diagnostics::causal_envelope::BridgeCausalEnvelopeConstructionStop,
     > {
-        Ok(crate::diagnostics::causal_envelope::assembly::assemble_native(&self.runtime, request)?)
+        crate::diagnostics::causal_envelope::assembly::assemble_native(&self.runtime, request)
     }
 }
 
