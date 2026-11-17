@@ -64,13 +64,14 @@ fn worker_only_successor(include_native_carry: bool) {
         source_action::perform(&app, &request, width, nonce);
         let verification = fact_verification_on_this_thread_for_test();
         let runs = partitioned_computation_runs_on_this_thread_for_test();
+        // `None` is an incremental run.
         let expected = if width == 1 {
-            Run::Full(Cause::FirstRun)
+            Some(Cause::FirstRun)
         } else {
-            Run::Incremental
+            None
         };
         assert!(
-            matches!(runs.as_slice(), [(actual, _)] if *actual == expected),
+            matches!(runs.as_slice(), [(actual, _)] if actual.full_cause() == expected),
             "width={width}: {runs:?}"
         );
         assert_eq!(
@@ -157,10 +158,9 @@ fn worker_only_nonstructural_native_carry_does_not_visit_fallback_metadata() {
     source_action::perform(&app, &request, 0, 1500);
     publications();
     let mut prior = None;
-    for (width, nonce, expected, gathers) in [
-        (1, 1501, Run::Full(Cause::FirstRun), 1),
-        (0, 1502, Run::Incremental, 0),
-    ] {
+    for (width, nonce, expected, gathers) in
+        [(1, 1501, Some(Cause::FirstRun), 1), (0, 1502, None, 0)]
+    {
         fact_verification_on_this_thread_for_test();
         partitioned_computation_runs_on_this_thread_for_test();
         let before = calls.gathers.load(Ordering::Relaxed);
@@ -168,7 +168,7 @@ fn worker_only_nonstructural_native_carry_does_not_visit_fallback_metadata() {
         let verification = fact_verification_on_this_thread_for_test();
         let runs = partitioned_computation_runs_on_this_thread_for_test();
         assert!(
-            matches!(runs.as_slice(), [(actual, _)] if *actual == expected),
+            matches!(runs.as_slice(), [(actual, _)] if actual.full_cause() == expected),
             "{runs:?}"
         );
         assert_eq!(calls.gathers.load(Ordering::Relaxed) - before, gathers);

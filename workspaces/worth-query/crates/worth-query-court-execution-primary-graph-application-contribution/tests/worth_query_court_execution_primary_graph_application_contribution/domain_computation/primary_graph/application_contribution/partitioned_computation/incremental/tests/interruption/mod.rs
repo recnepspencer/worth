@@ -142,7 +142,7 @@ fn an_incremental_run_cancelled_inside_a_recombine_stops_and_does_not_rebuild() 
     let [tree] = stopped.tree_runs.as_slice() else {
         panic!("one stopped tree report")
     };
-    assert_eq!(tree.partitions_for_test(), Run::Incremental);
+    assert_eq!(tree.full_cause_for_test(), None);
     assert!(matches!(
         tree,
         worth_query_execution::facade::application_contribution::WorthQueryPartitionedTreeRun::Edited(_)

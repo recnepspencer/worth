@@ -145,7 +145,10 @@ fn a_clone_of_the_installation_reuses_its_state() {
 
     *installed.owner_for_test().calls.lock().unwrap() = [0; 4];
     let next = attempt(&world, &installed.clone(), Some(prior_of(first, false)));
-    assert!(matches!(next.runs.as_slice(), [(Run::Incremental, None)]));
+    assert!(matches!(
+        next.runs.as_slice(),
+        [(Run::Incremental { .. }, None)]
+    ));
     assert!(next.gathered.is_empty(), "nothing is gathered again");
     assert_eq!(*installed.owner_for_test().calls.lock().unwrap(), [0; 4]);
 }
@@ -188,7 +191,10 @@ fn retained_reads_require_the_actual_installed_value_catalogue() {
         *installed.owner_for_test().calls.lock().unwrap() = [0; 4];
         let next = attempt(&world, &installed, Some(prior));
         if same {
-            assert!(matches!(next.runs.as_slice(), [(Run::Incremental, None)]));
+            assert!(matches!(
+                next.runs.as_slice(),
+                [(Run::Incremental { .. }, None)]
+            ));
             assert!(next.gathered.is_empty());
             assert_eq!(*installed.owner_for_test().calls.lock().unwrap(), [0; 4]);
         } else {

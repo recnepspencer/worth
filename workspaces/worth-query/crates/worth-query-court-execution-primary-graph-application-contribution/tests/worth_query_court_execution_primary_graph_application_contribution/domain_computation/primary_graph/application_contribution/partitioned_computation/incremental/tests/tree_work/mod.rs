@@ -296,11 +296,14 @@ fn public_incremental_observation_reports_actual_work_apart_from_charge() {
     *installed.owner_for_test().bump.lock().unwrap() = 10;
     reset_counts();
     let next = attempt(&world, &installed, Some(prior_of(first, true)));
-    assert_eq!(next.runs, [(Run::Incremental, None)]);
+    assert!(matches!(
+        next.runs.as_slice(),
+        [(Run::Incremental { .. }, None)]
+    ));
     let [tree] = next.tree_runs.as_slice() else {
         panic!("one terminal report")
     };
-    assert_eq!(tree.partitions_for_test(), Run::Incremental);
+    assert_eq!(tree.full_cause_for_test(), None);
     reconcile(*tree);
     assert!(matches!(tree, TreeRun::Edited(_)));
     assert_eq!(next.outcome.unwrap().1, charge);

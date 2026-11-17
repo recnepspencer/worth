@@ -43,7 +43,7 @@ fn walk_reuse_issues_fresh_bodies_and_accounting_runs_full_over_budget() {
                 None,
             )),
             accounted,
-            Run::Full(Cause::FirstRun),
+            Some(Cause::FirstRun),
         );
         assert!((*(*first.state_for_test()).facts_for_test()).has_structural_walk_for_test());
         let original = body(&first);
@@ -53,7 +53,7 @@ fn walk_reuse_issues_fresh_bodies_and_accounting_runs_full_over_budget() {
             &installed,
             Some(prior),
             accounted,
-            if accounted { Run::Full(Cause::ObservationOverBudget) } else { Run::Incremental },
+            if accounted { Some(Cause::ObservationOverBudget) } else { None },
         );
         assert_eq!(
             installed.owner_for_test().gathers.load(Ordering::Relaxed),

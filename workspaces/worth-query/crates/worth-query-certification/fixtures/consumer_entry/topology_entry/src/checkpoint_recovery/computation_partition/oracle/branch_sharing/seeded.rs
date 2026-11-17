@@ -34,11 +34,7 @@ mod serial {
             &mut 0x610f,
         );
         apply(&fresh, full_parent, step.changes, &mut 0x610f);
-        judge(
-            &run(&kept, parent),
-            &run(&fresh, full_parent),
-            Some(Run::Incremental),
-        );
+        judge(&run(&kept, parent), &run(&fresh, full_parent), Some(None));
         let child = fork(&kept, parent);
         let full_child = fork(&fresh, full_parent);
         let nested = fork(&kept, child);
@@ -66,7 +62,7 @@ mod serial {
             judge(
                 &run(&kept, branches[index]),
                 &run(&fresh, full_branches[index]),
-                Some(Run::Incremental),
+                Some(None),
             );
         }
         // Every semantic input of the existing edit alphabet is exercised on
@@ -216,7 +212,7 @@ mod serial {
             &mut 0x6111,
         );
         let later = run(&kept, parent);
-        judge(&later, &run(&fresh, full_parent), Some(Run::Incremental));
+        judge(&later, &run(&fresh, full_parent), Some(None));
         assert_ne!(
             captured[0].outcome.as_ref().unwrap().0,
             later[0].outcome.as_ref().unwrap().0
@@ -236,7 +232,7 @@ mod serial {
             &mut 0x6112,
         );
         let inherited = run(&kept, child);
-        judge(&inherited, &run(&fresh, full_child), Some(Run::Incremental));
+        judge(&inherited, &run(&fresh, full_child), Some(None));
         assert_eq!(
             inherited[0].calls,
             OwnerCalls {

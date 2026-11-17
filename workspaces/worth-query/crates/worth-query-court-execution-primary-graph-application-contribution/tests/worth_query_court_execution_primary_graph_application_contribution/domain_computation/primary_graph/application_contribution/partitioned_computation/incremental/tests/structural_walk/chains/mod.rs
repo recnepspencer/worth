@@ -2,7 +2,7 @@
 mod attempt;
 mod model;
 mod property;
-use super::{Cause, ComputationPrior, ComputationRetention, Run, world};
+use super::{Cause, ComputationPrior, ComputationRetention, world};
 use attempt::Attempt;
 use model::{Installed, Owner};
 use std::sync::Arc;
@@ -43,7 +43,7 @@ fn editing_adding_or_removing_one_walk_member_regathers_only_its_partition() {
         }
         let world = world::install(graph);
         let installed = Installed::new(Owner::default(), ComputationRetention::ProducerOperation);
-        let before = attempt::run(&world, &installed, first(), Run::Full(Cause::FirstRun));
+        let before = attempt::run(&world, &installed, first(), Some(Cause::FirstRun));
         assert_eq!(before.outcome, 7);
         let request = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope();
         let program = match change {
@@ -55,19 +55,19 @@ fn editing_adding_or_removing_one_walk_member_regathers_only_its_partition() {
             fixture::commit(&world, &request, program, 90 + change),
             WorthQueryApplicationCommitOutcome::Committed(_)
         ));
-        let carried = attempt::run(&world, &installed, prior(before), Run::Incremental);
+        let carried = attempt::run(&world, &installed, prior(before), None);
         assert_eq!(
             carried.gathered,
             [0],
             "the disjoint chain is carried for change {change}"
         );
-        let full = attempt::run(&world, &installed, first(), Run::Full(Cause::FirstRun));
+        let full = attempt::run(&world, &installed, first(), Some(Cause::FirstRun));
         assert_eq!(
             carried.outcome, full.outcome,
             "fresh full execution is the outcome oracle"
         );
         assert_eq!(carried.outcome, if change == 2 { 6 } else { 8 });
-        let again = attempt::run(&world, &installed, prior(carried), Run::Incremental);
+        let again = attempt::run(&world, &installed, prior(carried), None);
         assert!(again.gathered.is_empty());
         assert_eq!(again.outcome, full.outcome);
     }
@@ -78,11 +78,11 @@ fn unchanged_independent_walks_carry_across_consecutive_current_body_seals() {
     let _observation = worth_query_execution::facade::domain_computation::WorthQueryExecutionObservation::install_on_this_thread();
     let world = world::install(graph());
     let installed = Installed::new(Owner::default(), ComputationRetention::ProducerOperation);
-    let first = attempt::run(&world, &installed, first(), Run::Full(Cause::FirstRun));
-    let second = attempt::run(&world, &installed, prior(first), Run::Incremental);
+    let first = attempt::run(&world, &installed, first(), Some(Cause::FirstRun));
+    let second = attempt::run(&world, &installed, prior(first), None);
     assert!(second.gathered.is_empty());
     assert_eq!(second.outcome, 7);
-    let third = attempt::run(&world, &installed, prior(second), Run::Incremental);
+    let third = attempt::run(&world, &installed, prior(second), None);
     assert!(third.gathered.is_empty());
     assert_eq!(third.outcome, 7);
 }

@@ -35,7 +35,10 @@ mod serial {
             3.25_f64.to_bits(),
         ));
         apply(&app, parent, vec![Change::Entry(advance)], &mut 0x6118);
-        assert_eq!(run(&app, parent).last().unwrap().runs, [Run::Incremental]);
+        assert!(matches!(
+            run(&app, parent).last().unwrap().runs.as_slice(),
+            [Run::Incremental { .. }]
+        ));
         let edit = at_demand_scope(EntryEdit::new(
             "even",
             7,
@@ -44,7 +47,10 @@ mod serial {
         ));
         apply(&app, child, vec![Change::Entry(edit)], &mut 0x6119);
         let child_run = run(&app, child).pop().unwrap();
-        assert_eq!(child_run.runs, [Run::Incremental]);
+        assert!(matches!(
+            child_run.runs.as_slice(),
+            [Run::Incremental { .. }]
+        ));
         assert_eq!(
             child_run.calls,
             OwnerCalls {

@@ -65,11 +65,12 @@ fn outcomes(
 /// How a step's run must run when it and the run before it completed: every
 /// edit of the facts or the entries reuses, and only a new input runs in
 /// full.
-fn expected(kind: Kind) -> Option<Run> {
+/// The outer `None` asserts nothing; the inner one is an incremental run.
+fn expected(kind: Kind) -> Option<Option<FullCause>> {
     match kind {
-        Kind::Input => Some(Run::Full(FullCause::InputChanged)),
+        Kind::Input => Some(Some(FullCause::InputChanged)),
         Kind::Fault => None,
-        _ => Some(Run::Incremental),
+        _ => Some(None),
     }
 }
 
@@ -225,11 +226,14 @@ mod serial {
                 return;
             };
             for rerun in &demanded.runs[1..] {
-                assert_eq!(rerun.runs, [Run::Incremental], "{at}: a rerun reuses");
+                assert!(
+                    matches!(rerun.runs.as_slice(), [Run::Incremental { .. }]),
+                    "{at}: a rerun reuses"
+                );
             }
             let run = &demanded.runs[0];
             match run.runs.as_slice() {
-                [Run::Incremental] => incremental += 1,
+                [Run::Incremental { .. }] => incremental += 1,
                 [Run::Full(_)] => full += 1,
                 _ => {}
             }
@@ -237,7 +241,7 @@ mod serial {
                 demanded.kind.and_then(expected),
                 last_run.outcome.is_ok() && run.outcome.is_ok(),
             ) {
-                assert_eq!(run.runs, [expected], "{at}: the run's kind");
+                assert_eq!(run.kinds(), [expected], "{at}: the run's kind");
             }
             last = demanded.runs.pop();
         });

@@ -140,7 +140,10 @@ fn carrying_every_partition_has_the_full_bill_and_the_same_one_unit_short_stop()
 
     let carried = billed(Some(prior_of(full, false)), u64::MAX);
 
-    assert_eq!(carried.runs, [(Run::Incremental, None)]);
+    assert!(matches!(
+        carried.runs.as_slice(),
+        [(Run::Incremental { .. }, None)]
+    ));
     assert!(
         carried.gathered.is_empty(),
         "the proof carries every partition"

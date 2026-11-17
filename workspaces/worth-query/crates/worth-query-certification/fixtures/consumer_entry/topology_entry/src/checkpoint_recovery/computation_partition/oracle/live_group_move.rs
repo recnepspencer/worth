@@ -50,7 +50,10 @@ fn moves(destinations: [u32; 2]) {
                     }
                 }
             );
-            assert_eq!(moved[0].runs, [Run::Incremental]);
+            assert!(matches!(
+                moved[0].runs.as_slice(),
+                [Run::Incremental { .. }]
+            ));
             assert_eq!(
                 moved[0].outcome.as_ref().unwrap().0,
                 total,

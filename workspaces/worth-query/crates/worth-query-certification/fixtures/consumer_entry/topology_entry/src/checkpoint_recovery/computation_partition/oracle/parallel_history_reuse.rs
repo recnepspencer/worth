@@ -288,9 +288,8 @@ fn case_at(change: Change, prior: usize, current: usize, reuse: bool) {
                     "{label}: declared compute-charge model"
                 );
             } else {
-                assert_eq!(
-                    run.runs,
-                    [Run::Incremental],
+                assert!(
+                    matches!(run.runs.as_slice(), [Run::Incremental { .. }]),
                     "only incremental runs omit the execution report"
                 );
             }
@@ -323,15 +322,16 @@ fn case_at(change: Change, prior: usize, current: usize, reuse: bool) {
         "reuse-on and reuse-off keep the outcome"
     );
     if !matches!(change, Change::Fault) {
+        // `None` is an incremental run.
         let expected = if matches!(change, Change::Input | Change::EmptyStable) {
-            Run::Full(Cause::InputChanged)
+            Some(Cause::InputChanged)
         } else if matches!(change, Change::CodeIdentity) {
-            Run::Full(Cause::OtherInstallation)
+            Some(Cause::OtherInstallation)
         } else {
-            Run::Incremental
+            None
         };
         if reuse {
-            assert_eq!(retained.runs, [expected], "sensitive run kind");
+            assert_eq!(retained.kinds(), [expected], "sensitive run kind");
         } else {
             assert_eq!(
                 retained.runs,

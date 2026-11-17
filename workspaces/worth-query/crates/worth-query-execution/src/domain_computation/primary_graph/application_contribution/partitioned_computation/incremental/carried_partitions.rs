@@ -17,6 +17,10 @@ impl CarriedPartitions {
     pub(super) fn contains(&self, id: &PartitionIdentity) -> bool {
         self.routing.digest(*id).is_some() && !self.fresh.contains(id)
     }
+    /// The partitions gathered and computed again, in ascending identity order.
+    pub(super) fn fresh(&self) -> impl Iterator<Item = PartitionIdentity> + '_ {
+        self.fresh.iter().copied()
+    }
     pub(super) fn iter(&self) -> impl Iterator<Item = PartitionIdentity> + '_ {
         // Full read-closure verification deliberately remains visible here.
         self.routing

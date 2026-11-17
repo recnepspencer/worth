@@ -261,7 +261,7 @@ fn worker_only_partition_run_retains_facts_reuses_and_observes_a_real_source_edi
     );
     assert!(matches!(
         unchanged.runs.as_slice(),
-        [(Run::Incremental, None)]
+        [(Run::Incremental { .. }, None)]
     ));
     let subject = (*(*unchanged.sealed.state_for_test()).facts_for_test())
         .facts_for_test()
@@ -314,7 +314,10 @@ fn worker_only_partition_run_retains_facts_reuses_and_observes_a_real_source_edi
         [1],
         "only the partition consuming the edited field gathers again"
     );
-    assert!(matches!(edited.runs.as_slice(), [(Run::Incremental, None)]));
+    assert!(matches!(
+        edited.runs.as_slice(),
+        [(Run::Incremental { .. }, None)]
+    ));
     assert!(edited
         .trees
         .iter()
