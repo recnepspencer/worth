@@ -101,7 +101,11 @@ fn same_input_source_edit_carries_unchanged_partitions_in_the_candidate() {
         EVEN_Y + 2,
         1,
     ));
-    assert_eq!(carried.runs, [Run::Incremental]);
+    assert!(
+        matches!(carried.runs.as_slice(), [Run::Incremental { .. }]),
+        "expected one incremental run, got {:?}",
+        carried.runs
+    );
     assert_eq!(
         carried.calls.kernels, 0,
         "unchanged calls are carried, never recomputed"
