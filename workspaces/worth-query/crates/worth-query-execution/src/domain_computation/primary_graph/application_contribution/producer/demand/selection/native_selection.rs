@@ -255,7 +255,9 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                 if !live {
                     continue;
                 }
-                if !facts_current {
+                // A row that retains no fact has no Source evidence for the
+                // cutoff to compare; it keeps its ordinary Preserve selection.
+                if !facts_current && candidate.observed_source_facts.is_some() {
                     let (mut exact, entry) = self
                         .installed_producers
                         .select_exact::<Family>(candidate.binding)?;
