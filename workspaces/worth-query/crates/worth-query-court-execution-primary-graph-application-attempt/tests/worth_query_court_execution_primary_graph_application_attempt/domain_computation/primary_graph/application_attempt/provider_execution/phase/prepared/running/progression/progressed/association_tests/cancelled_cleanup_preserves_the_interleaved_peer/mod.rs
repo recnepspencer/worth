@@ -65,6 +65,7 @@ fn cancelled_cleanup_preserves_the_interleaved_peer() {
                     victim,
                     None,
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                    None,
                 ),
             );
             assert!(
