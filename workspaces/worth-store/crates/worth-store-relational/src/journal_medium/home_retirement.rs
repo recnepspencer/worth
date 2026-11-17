@@ -35,6 +35,8 @@ impl StoreJournalMedium {
         // The validated borrowed original source owns another Serving share;
         // neither release can destroy an original provider payload here.
         drop(self.serving.take());
+        #[cfg(debug_assertions)]
+        self.physical_owner_label.take();
         drop(self.cold_source.take());
         Ok(Progress::Complete)
     }

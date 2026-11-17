@@ -23,6 +23,8 @@ pub(super) struct StoreCheckpointReadCut {
     issuer: Weak<StoreColdSource>,
     pub(super) bounds: Bounds,
     pub(super) serving: Arc<ServingPhysicalRuntime>,
+    #[cfg(debug_assertions)]
+    _physical_owner_label: Arc<()>,
     _memory: Option<ExecutionMemoryReservation>,
 }
 impl StoreColdSource {
@@ -90,6 +92,10 @@ impl StoreColdSource {
                 membership,
                 issuer: self.weak_self.clone(),
                 bounds,
+                #[cfg(debug_assertions)]
+                _physical_owner_label: crate::physical_owner_labels::register::<
+                    StoreCheckpointReadCut,
+                >(self.serving()),
                 serving: Arc::clone(self.serving()),
                 _memory: memory,
             }),

@@ -2,6 +2,8 @@
 //! Physical lifecycle and checkpoint selection belong to Store Application.
 mod cold_source;
 mod journal_medium;
+#[cfg(debug_assertions)]
+mod physical_owner_labels;
 mod recovered_history;
 mod recovered_transitions;
 mod resolution;

@@ -89,6 +89,8 @@ impl StoreColdSourceClose {
                         Ok(Progress::Advanced)
                     } else {
                         source.serving.take();
+                        #[cfg(debug_assertions)]
+                        source.physical_owner_label.take();
                         *complete = true;
                         Ok(Progress::Complete)
                     };
@@ -109,6 +111,8 @@ impl StoreColdSourceClose {
                             .unwrap_or_else(|_| unreachable!("actual owner reported Complete")),
                     );
                     source.serving.take();
+                    #[cfg(debug_assertions)]
+                    source.physical_owner_label.take();
                     *complete = true;
                     return Ok(Progress::Complete);
                 }

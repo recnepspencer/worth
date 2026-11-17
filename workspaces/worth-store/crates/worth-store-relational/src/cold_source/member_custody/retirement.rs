@@ -67,6 +67,8 @@ impl StoreColdSource {
             // The exact borrowed source owns another immutable Arc throughout;
             // this cannot invoke the physical provider's final destructor.
             drop(owner.serving.take());
+            #[cfg(debug_assertions)]
+            owner.physical_owner_label.take();
             O::Complete
         } else {
             O::Advanced

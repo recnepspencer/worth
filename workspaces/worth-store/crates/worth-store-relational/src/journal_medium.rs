@@ -33,6 +33,8 @@ pub(crate) struct StoreJournalMedium {
     transition: Option<worth_proof::HomeProgramTransitionAuthority>,
     transition_required: Option<worth_proof::HomeProgramTransitionRequired>,
     serving: Option<Arc<ServingPhysicalRuntime>>,
+    #[cfg(debug_assertions)]
+    physical_owner_label: Option<Arc<()>>,
     placement: AdmittedRecordPlacementPolicy,
     cold_source: Option<Arc<crate::cold_source::StoreColdSource>>,
     checkpoint_selection: Arc<dyn crate::section::RelationalCheckpointSelectionSource>,
@@ -49,6 +51,8 @@ impl StoreJournalMedium {
             world_selection: None,
             transition: None,
             transition_required: None,
+            #[cfg(debug_assertions)]
+            physical_owner_label: Some(crate::physical_owner_labels::register::<Self>(&serving)),
             serving: Some(serving),
             placement,
             cold_source: Some(cold_source),

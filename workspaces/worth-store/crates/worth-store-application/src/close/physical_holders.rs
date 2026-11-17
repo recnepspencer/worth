@@ -8,6 +8,8 @@ pub struct ApplicationHomePhysicalCustodyHolders {
     pub serving_shares: usize,
     pub signal: HomeSignalPhysicalHolder,
     pub unidentified_shares: usize,
+    #[cfg(debug_assertions)]
+    pub relational_owner_labels: Vec<&'static str>,
 }
 #[derive(Debug)]
 pub enum HomeSignalPhysicalHolder {
@@ -34,6 +36,8 @@ pub(super) fn observe(
     };
     ApplicationHomePhysicalCustodyHolders {
         serving_shares,
+        #[cfg(debug_assertions)]
+        relational_owner_labels: worth_store_relational::relational_physical_owner_labels(actual),
         signal,
         unidentified_shares: serving_shares.saturating_sub(1 + named),
     }
