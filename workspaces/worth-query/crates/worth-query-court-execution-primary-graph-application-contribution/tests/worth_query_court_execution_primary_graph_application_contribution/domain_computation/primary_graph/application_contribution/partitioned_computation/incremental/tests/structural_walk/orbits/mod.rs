@@ -1,6 +1,7 @@
 //! Orbit comparisons use projected completion and preserve disjoint partitions.
 mod attempt;
 mod model;
+mod property;
 use super::{Cause, ComputationPrior, ComputationRetention, Run};
 use attempt::Attempt;
 use model::{Installed, Owner};

@@ -1,6 +1,7 @@
 //! Structural carriage must isolate changed topology and survive another seal.
 mod attempt;
 mod model;
+mod property;
 use super::{Cause, ComputationPrior, ComputationRetention, Run, world};
 use attempt::Attempt;
 use model::{Installed, Owner};
