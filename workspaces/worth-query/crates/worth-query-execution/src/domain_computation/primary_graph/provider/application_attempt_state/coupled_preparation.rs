@@ -101,6 +101,9 @@ impl super::super::WorthQueryPrimaryGraphProvider {
 /// This contains no executable input and cannot publish an independent proposal.
 pub(in crate::domain_computation::primary_graph) struct CoupledApplicationMember {
     pub(in crate::domain_computation::primary_graph) position: usize,
+    /// For a producer: the applied position of the stage whose effect owed
+    /// this run. Work owed before a reader's position settles before it.
+    pub(in crate::domain_computation::primary_graph) owed: Option<usize>,
     pub(in crate::domain_computation::primary_graph::provider) terminal:
         crate::domain_computation::provider_session::WorthQueryProviderSessionTerminalBinding,
     pub(in crate::domain_computation::primary_graph::provider) pending: Option<
@@ -137,6 +140,20 @@ impl CoupledApplicationMember {
             CoupledApplicationMemberKind::AuthoredStage { .. } => None,
         }
     }
+    /// Sequentially this member runs after the stage at `reader`: an
+    /// authored stage applied later, or a producer owed by that stage or a
+    /// later one. A producer owed earlier belongs before the reader.
+    pub(in crate::domain_computation::primary_graph) fn settles_after(
+        &self,
+        reader: usize,
+    ) -> bool {
+        match &self.kind {
+            CoupledApplicationMemberKind::AuthoredStage { .. } => self.position > reader,
+            CoupledApplicationMemberKind::Producer { .. } => {
+                self.owed.is_some_and(|owed| owed >= reader)
+            }
+        }
+    }
     pub(in crate::domain_computation::primary_graph) fn source(
         &self,
     ) -> worth_relational::facade::identity::EntityId {
@@ -154,6 +171,7 @@ impl CoupledApplicationMember {
     ) -> Self {
         Self {
             position: 0,
+            owed: None,
             terminal,
             owned: None,
             pending: None,
@@ -172,6 +190,7 @@ impl CoupledApplicationMember {
     ) -> Self {
         Self {
             position: 0,
+            owed: None,
             terminal,
             owned: None,
             pending: None,

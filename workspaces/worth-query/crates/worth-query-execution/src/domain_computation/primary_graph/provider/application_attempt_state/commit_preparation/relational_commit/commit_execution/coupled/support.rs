@@ -1,4 +1,10 @@
 //! Final support compares genuine post-own and complete candidate images before World.
+//!
+//! Staged settlement (#224): an authored stage's read is checked as of its own
+//! position. A later change by a member that sequentially runs after the stage
+//! (a later stage, or a producer owed by this stage or a later one) is what
+//! one commit per stage would commit too. A change by a producer owed before
+//! the stage means the stage read a value that was not yet settled; that refuses.
 use super::*;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationDecisionFact as Fact;
 use crate::domain_computation::WorthQueryInvariantExecutionFailure as Failure;
@@ -37,32 +43,36 @@ pub(super) fn require(
             // Real typed writer authorization is independently revalidated at cutover.
             Fact::Principal(_) | Fact::Authorization { .. } => continue,
         };
-        let compare = |image: &Candidate| {
+        let compare = |earlier: &Candidate, image: &Candidate| {
             provider.graph.with_runtime(execution, |runtime| {
                 if let Some(rebase) = rebase {
                     rebase.support_equal_after_own_effect(
-                        execution, runtime, before, &fact, after_own, image,
+                        execution, runtime, before, &fact, earlier, image,
                     )
                 } else {
                     fact.support_equal_after_own_effect(
-                        execution, runtime, before, after_own, image,
+                        execution, runtime, before, earlier, image,
                     )
                 }
             })
         };
-        let answer = compare(complete);
+        let answer = compare(after_own, complete);
         if matches!(answer, Ok(false)) {
-            return changed(
+            changed(
                 attempt,
                 source,
                 position,
                 members,
+                after_own,
+                // Only an authored stage's own decision reads settle by position.
+                attempt.coupled_authored_subject().is_some(),
                 compare,
                 format!(
                     "a later coupled contribution changed decision support: {}",
                     fact.locator_identity(),
                 ),
-            );
+            )?;
+            continue;
         }
         require_answer(answer, source, || {
             format!(
@@ -83,6 +93,9 @@ pub(super) fn require_read_support(
     >,
     members: &[crate::domain_computation::primary_graph::provider::CoupledApplicationMember],
 ) -> Result<(), CoupledSupportPreparationDenial> {
+    let after_own = attempt
+        .coupled_after_own()
+        .expect("Native completed this writer before continuing");
     for (source, position, support) in attempt.candidate_read_support() {
         let answer = provider.graph.with_runtime(execution, |runtime| {
             support.changed_fact(execution, runtime, before, complete)
@@ -94,7 +107,11 @@ pub(super) fn require_read_support(
                 *source,
                 *position,
                 members,
-                |image| {
+                after_own,
+                // Discovery support decides which outputs this candidate
+                // holds; a later change to it stays a refusal.
+                false,
+                |_, image| {
                     provider.graph.with_runtime(execution, |runtime| {
                         support
                             .changed_fact(execution, runtime, before, image)
@@ -114,23 +131,25 @@ pub(super) fn require_read_support(
     Ok(())
 }
 
-/// Only a real final refusal needs attribution. Reuse the post-own pins already
+/// Only a changed fact walks the later writers. Reuse the post-own pins already
 /// held by the admitted writers; healthy facts pay no intermediate comparisons.
+/// An authored reader accepts changes made by members that sequentially run
+/// after it; any other change refuses, attributed to its writer.
 fn changed(
     reader: &WorthQueryPrimaryGraphApplicationAttempt,
     source: worth_relational::facade::identity::EntityId,
     position: usize,
     members: &[crate::domain_computation::primary_graph::provider::CoupledApplicationMember],
-    compare: impl Fn(
-        &worth_relational::facade::runtime::RelationalPinnedRead<
-            worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
-        >,
-    ) -> Result<
+    after_own: &Candidate,
+    staged: bool,
+    compare: impl Fn(&Candidate, &Candidate) -> Result<
         bool,
         crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
     >,
     detail: String,
 ) -> Result<(), CoupledSupportPreparationDenial> {
+    let mut settled = false;
+    let mut earlier = after_own;
     for writer in members.iter().filter(|writer| writer.position > position) {
         let attempt = &writer
             .owned
@@ -140,9 +159,12 @@ fn changed(
         let pin = attempt
             .coupled_after_own()
             .expect("actual writer post-own image");
-        match compare(pin) {
+        let answer = compare(earlier, pin);
+        earlier = pin;
+        match answer {
             Ok(true) => continue,
             Err(cause) => return require_answer(Err(cause), source, || detail.clone()),
+            Ok(false) if staged && writer.settles_after(position) => settled = true,
             Ok(false) => {
                 let earlier = reader
                     .coupled_authored_subject()
@@ -162,6 +184,9 @@ fn changed(
                 ));
             }
         }
+    }
+    if settled {
+        return Ok(());
     }
     require_answer(Ok(false), source, || {
         format!("{detail}; no admitted later writer could be attributed")

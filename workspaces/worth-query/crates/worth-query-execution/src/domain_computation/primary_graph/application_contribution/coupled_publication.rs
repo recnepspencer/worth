@@ -48,6 +48,8 @@ pub(in crate::domain_computation::primary_graph) struct CoupledApplicationAssemb
     abort_failures: RefCell<Vec<crate::domain_computation::primary_graph::WorthQueryApplicationUncommitted>>,
     /// The last assembly round ended the edit (`Break`).
     broke: std::cell::Cell<bool>,
+    /// Applied position of the stage that owes the work now being prepared.
+    owing: std::cell::Cell<usize>,
 }
 struct AuthoredWriter<'run, S> {
     capture: crate::domain_computation::primary_graph::application_contribution::authored_edit::CapturedAuthoredEditStage<S>,
@@ -57,6 +59,7 @@ struct AuthoredWriter<'run, S> {
 }
 struct CoupledWriter<'run, S> {
     position: usize,
+    owed: usize,
     producer: std::sync::Arc<registry::InstalledProducerProvider<S>>,
     stage: Option<CoupledWriterStage<'run>>,
     meaning: worth_relational::facade::mvcc::RequiredOutputPublicationMeaning,
@@ -102,7 +105,19 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             denial: RefCell::new(None),
             abort_failures: RefCell::new(Vec::new()),
             broke: std::cell::Cell::new(false),
+            owing: std::cell::Cell::new(0),
         }
+    }
+    pub(in crate::domain_computation::primary_graph::application_contribution) fn owing(
+        &self,
+    ) -> usize {
+        self.owing.get()
+    }
+    pub(in crate::domain_computation::primary_graph::application_contribution) fn owe(
+        &self,
+        position: usize,
+    ) {
+        self.owing.set(position);
     }
     pub(in crate::domain_computation::primary_graph::application_contribution) fn retain_discovery_support(
         &self,
