@@ -85,6 +85,17 @@ def consumer_doctest_commands():
     ]
 
 
+def bank_format_commands():
+    # Bank exceeds Windows' rustfmt argument limit when formatted as one workspace.
+    base = (ROOT / BANK).parent
+    members = tomllib.loads((base / "Cargo.toml").read_text(encoding="utf-8"))["workspace"]["members"]
+    manifests = {directory / "Cargo.toml" for member in members for directory in base.glob(member)}
+    names = sorted(tomllib.loads(path.read_text(encoding="utf-8"))["package"]["name"]
+                   for path in manifests)
+    return [("fmt-" + name, ["cargo", "fmt", "--manifest-path", BANK, "-p", name, "--", "--check"])
+            for name in names]
+
+
 # suite -> [(label, command)], one command at a time
 COMMAND_SUITES = {
     "tooling": [
@@ -98,8 +109,7 @@ COMMAND_SUITES = {
         ("fmt-query", ["cargo", "fmt", "--manifest-path", QUERY, "--all", "--", "--check"]),
         ("fmt-fixture",
          ["cargo", "fmt", "--manifest-path", FIXTURE, "--all", "--", "--check"]),
-        ("fmt-bank", ["cargo", "fmt", "--manifest-path", BANK, "--all", "--", "--check"]),
-    ],
+    ] + bank_format_commands(),
     "lint-lower": [("clippy-lower", clippy(*packages(*LOWER)))],
     "lint-query": [
         ("clippy-query",
