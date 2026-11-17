@@ -52,7 +52,7 @@ impl<S: ApplicationSchema, F: WorthQueryProducerOutputFamily<S>>
             .checked_execution_request_for(runtime.product_runtime())
             .map_err(|cause| {
                 WorthQueryOutputDemandDenial::new(
-                    WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
+                    WorthQueryOutputDemandDenialKind::ExecutionRequest(cause),
                     F::IDENTITY,
                 )
             })?;
@@ -129,7 +129,7 @@ impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S>
             .checked_execution_request_for(self.product_runtime())
             .map_err(|cause| {
                 WorthQueryOutputDemandDenial::new(
-                    WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
+                    WorthQueryOutputDemandDenialKind::ExecutionRequest(cause),
                     F::IDENTITY,
                 )
             })?;

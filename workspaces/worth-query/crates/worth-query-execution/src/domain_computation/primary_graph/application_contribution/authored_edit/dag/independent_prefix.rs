@@ -24,7 +24,7 @@ pub(super) fn refine<S: worth_query_installation::facade::ApplicationSchema>(
             stage
                 .executor
                 .plan(context, unseen)
-                .map_err(|cause| DeclaredEditOrderRefusal::Planning(cause))?;
+                .map_err(DeclaredEditOrderRefusal::Planning)?;
         }
     }
     let footprints = stages

@@ -84,10 +84,10 @@ impl WorthQueryManagedDirectRunAdmissionFailure {
     ) -> crate::domain_computation::WorthQueryDirectExecutionAttemptReleaseReceipt {
         let attempt = self.resource_attempt.attempt_identity().as_str().to_owned();
         let released = self.resource_attempt.release();
-        if released.capacity().released_reservation_count() != 0 {
-            if let Some(custody) = self.custody {
-                custody.record_admission_release(&attempt);
-            }
+        if released.capacity().released_reservation_count() != 0
+            && let Some(custody) = self.custody
+        {
+            custody.record_admission_release(&attempt);
         }
         released
     }

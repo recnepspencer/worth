@@ -68,9 +68,4 @@ impl SourceProjectionSupport {
         }
         Ok(())
     }
-    pub(in crate::domain_computation::primary_graph::application_query::managed_index) fn dependencies(
-        &self,
-    ) -> impl Iterator<Item = &ViewDependency> {
-        self.dependencies.iter()
-    }
 }

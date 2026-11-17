@@ -56,7 +56,11 @@ pub(super) enum InputCaptureStop {
 }
 impl std::fmt::Display for InputCaptureStop {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "producer input preparation: {self:?}")
+        match self {
+            Self::Resource(cause) => write!(f, "producer input preparation: Resource({cause:?})"),
+            Self::Work(cause) => write!(f, "producer input preparation: Work({cause:?})"),
+            _ => write!(f, "producer input preparation: {self:?}"),
+        }
     }
 }
 impl std::error::Error for InputCaptureStop {
@@ -114,6 +118,10 @@ where
 
     /// Retain a genuine read-issued source and its one declared parent demand.
     /// Query validates the resolved demand's full route and drains every entry.
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "TypeId matches the exact declared port; it never orders parents"
+    )]
     pub fn parent<E, Entity>(
         &mut self,
         source: &WorthQueryInvariantEntityIdentity<S, Entity>,

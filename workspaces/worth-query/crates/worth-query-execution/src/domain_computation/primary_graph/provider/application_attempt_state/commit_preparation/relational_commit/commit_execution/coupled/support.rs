@@ -27,16 +27,16 @@ pub(super) fn require(
     members: &[crate::domain_computation::primary_graph::provider::CoupledApplicationMember],
 ) -> Result<(), CoupledSupportPreparationDenial> {
     for consumed in attempt.consumed_outputs() {
-        if let Some(link) = consumed.applied() {
-            if !link.require_support(position, members, complete) {
-                return Err(CoupledSupportPreparationDenial::Changed(
-                    Failure::coupled_read_support(
-                        source,
-                        None,
-                        "same-candidate prerequisite lost its exact earlier registered writer",
-                    ),
-                ));
-            }
+        if let Some(link) = consumed.applied()
+            && !link.require_support(position, members, complete)
+        {
+            return Err(CoupledSupportPreparationDenial::Changed(
+                Failure::coupled_read_support(
+                    source,
+                    None,
+                    "same-candidate prerequisite lost its exact earlier registered writer",
+                ),
+            ));
         }
     }
     let after_own = attempt

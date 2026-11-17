@@ -229,24 +229,24 @@ impl WorthQueryApplicationManagedCleanup {
         } = state.take().expect("native cleanup owns initialized state");
         match failure.retry_retaining_release() {
             Ok((native, retained)) => {
-                if let Some(owner_publication) = publication.as_ref() {
-                    if let Err(cause) = owner_publication.record_release(&execution, &native) {
-                        *state = Some(ManagedCleanupState {
-                            failure: retained,
-                            business_original,
-                            history,
-                            publication,
-                            journal_denial: Some(cause),
-                            original,
-                            runtime,
-                            bridge,
-                            last_denial: None,
-                        });
-                        return Err(Self {
-                            state,
-                            return_owner,
-                        });
-                    }
+                if let Some(owner_publication) = publication.as_ref()
+                    && let Err(cause) = owner_publication.record_release(execution, &native)
+                {
+                    *state = Some(ManagedCleanupState {
+                        failure: retained,
+                        business_original,
+                        history,
+                        publication,
+                        journal_denial: Some(cause),
+                        original,
+                        runtime,
+                        bridge,
+                        last_denial: None,
+                    });
+                    return Err(Self {
+                        state,
+                        return_owner,
+                    });
                 }
                 let receipt = super::super::WorthQueryApplicationManagedCleanupReceipt::new(
                     native,
@@ -262,7 +262,7 @@ impl WorthQueryApplicationManagedCleanup {
             Err(failure) => {
                 let journal_denial = publication
                     .as_ref()
-                    .and_then(|publication| publication.record_failure(&execution, &failure).err());
+                    .and_then(|publication| publication.record_failure(execution, &failure).err());
                 *state = Some(ManagedCleanupState {
                     failure,
                     business_original,

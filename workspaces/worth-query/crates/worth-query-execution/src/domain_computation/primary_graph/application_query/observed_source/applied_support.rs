@@ -65,12 +65,11 @@ impl AppliedQuerySupport {
         before: &SnapshotHandle,
         complete: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
     ) -> Result<Option<&Fact>, WorthQueryApplicationAttemptDenial> {
-        if let Some(managed) = &self.managed {
-            if let Some(fact) =
+        if let Some(managed) = &self.managed
+            && let Some(fact) =
                 managed.changed_fact(execution, runtime, before, &self.pin, complete)?
-            {
-                return Ok(Some(fact));
-            }
+        {
+            return Ok(Some(fact));
         }
         for fact in &self.facts {
             if !fact

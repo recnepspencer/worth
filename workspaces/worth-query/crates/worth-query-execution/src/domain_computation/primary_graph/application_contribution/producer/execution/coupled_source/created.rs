@@ -183,7 +183,6 @@ where
             &source.value,
         );
     Ok(CoupledSourceRead::Source(ErasedAppliedProducerSource {
-        binding_order: source.binding_order(),
         scope: source.root(),
         partition: source.partition(),
         lifecycle: super::super::super::WorthQueryProducerLifecyclePosture::Initial,

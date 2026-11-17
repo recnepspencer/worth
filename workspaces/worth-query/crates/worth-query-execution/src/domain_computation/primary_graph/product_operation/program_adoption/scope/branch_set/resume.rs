@@ -148,11 +148,10 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 adoption,
             ));
         };
-        if let Some(attempt) = adoption.durable {
-            if let Err(cause) = self.installed_program_support().expect("retained support").lifecycle().release_stopped_adoption(execution,attempt) {
+        if let Some(attempt) = adoption.durable
+            && let Err(cause) = self.installed_program_support().expect("retained support").lifecycle().release_stopped_adoption(execution,attempt) {
                 return Err(resume_failure(WorthQueryBranchSetAdoptionResumeDenial::Obligation(cause),adoption));
             }
-        }
         let superseded = adoption
             .progress
             .pop()

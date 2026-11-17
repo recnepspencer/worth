@@ -104,10 +104,10 @@ impl WorthQueryDirectExecutionResourceAttempt {
             provider_session_identity,
             capacity: self.reserved.release(),
         };
-        if receipt.capacity().released_reservation_count() != 0 {
-            if let Some(custody) = self.custody {
-                custody.record_admission_release(&attempt);
-            }
+        if receipt.capacity().released_reservation_count() != 0
+            && let Some(custody) = self.custody
+        {
+            custody.record_admission_release(&attempt);
         }
         receipt
     }

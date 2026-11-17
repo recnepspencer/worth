@@ -52,11 +52,6 @@ impl From<WorthQueryOutputDemandDenial> for CoupledSourceReadStop {
 
 pub(in crate::domain_computation::primary_graph::application_contribution) struct ErasedAppliedProducerSource
 {
-    pub(in crate::domain_computation::primary_graph::application_contribution) binding_order: (
-        [u8; 32],
-        [u8; 32],
-        worth_relational::facade::identity::EntityId,
-    ),
     pub(in crate::domain_computation::primary_graph::application_contribution) scope:
         worth_relational::facade::identity::EntityId,
     pub(in crate::domain_computation::primary_graph::application_contribution) partition: [u8; 32],
@@ -369,7 +364,6 @@ where
         predecessor.as_ref(),
     )?;
     Ok(CoupledSourceRead::Source(ErasedAppliedProducerSource {
-        binding_order: source.binding_order(),
         scope: source.root(),
         partition: source.partition(),
         predecessor,

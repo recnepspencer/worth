@@ -151,7 +151,7 @@ fn select_roots<ReadIdentity>(
         runtime,
         graph,
         plan,
-        &projection,
+        projection,
         frontier,
         &mut source,
         &mut work,

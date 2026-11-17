@@ -315,6 +315,12 @@ fn next_managed_logical_run_ordinal(counter: &AtomicU64) -> Option<u64> {
     .ok()
 }
 
+pub(super) fn fresh_logical_identity() -> Arc<str> {
+    let ordinal = next_managed_logical_run_ordinal(&NEXT_MANAGED_LOGICAL_RUN)
+        .expect("managed logical-run identity space must not be exhausted");
+    Arc::from(format!("managed-logical-run:{ordinal}"))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -330,10 +336,4 @@ mod tests {
         assert_eq!(next_managed_logical_run_ordinal(&counter), None);
         assert_eq!(counter.load(Ordering::Relaxed), u64::MAX);
     }
-}
-
-pub(super) fn fresh_logical_identity() -> Arc<str> {
-    let ordinal = next_managed_logical_run_ordinal(&NEXT_MANAGED_LOGICAL_RUN)
-        .expect("managed logical-run identity space must not be exhausted");
-    Arc::from(format!("managed-logical-run:{ordinal}"))
 }

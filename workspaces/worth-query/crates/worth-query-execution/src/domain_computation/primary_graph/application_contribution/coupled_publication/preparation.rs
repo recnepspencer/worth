@@ -238,8 +238,7 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             execution::CoupledSourceRead::Verified(parent) => {
                 return self
                     .retain_verified_parent(execution, parent, candidate)
-                    .map(Some)
-                    .map_err(Into::into);
+                    .map(Some);
             }
             execution::CoupledSourceRead::Source(source) => source,
         };

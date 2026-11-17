@@ -113,6 +113,10 @@ where
             },
         )
     }
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "TypeId selects the declared output family by equality; occurrence order is explicit"
+    )]
     fn occurrence(
         &self,
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,

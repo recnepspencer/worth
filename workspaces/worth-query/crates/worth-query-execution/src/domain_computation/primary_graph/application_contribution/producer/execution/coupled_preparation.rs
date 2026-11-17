@@ -50,7 +50,7 @@ where
         .checked_execution_request_for(&runtime.runtime.product_runtime)
         .map_err(|stop| {
             denial(
-                WorthQueryOutputDemandDenialKind::ExecutionRequest(stop.into()),
+                WorthQueryOutputDemandDenialKind::ExecutionRequest(stop),
                 Binding::IDENTITY,
             )
         })?;

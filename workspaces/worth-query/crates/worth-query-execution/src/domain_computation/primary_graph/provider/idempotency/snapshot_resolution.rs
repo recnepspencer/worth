@@ -23,7 +23,7 @@ pub use original_receipt::{
     WorthQueryRecoveredDispatchOutbox,
 };
 
-pub fn resolve_at_snapshot(
+pub(super) fn resolve_at_snapshot(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     provider: &WorthQueryPrimaryGraphProvider,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
