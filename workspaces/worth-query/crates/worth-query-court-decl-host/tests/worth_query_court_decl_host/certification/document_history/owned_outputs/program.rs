@@ -358,7 +358,9 @@ pub(super) fn envelope_actions<
     entry
         .action::<family::borrowed_inputs::disconnect::Binding, DisconnectPart>()
         .finish_action()
-        .action::<synchronous_edit::interleaved::ConsumeChildBinding, Completion>()
+        .action::<synchronous_edit::interleaved::ObserveValueBinding, Completion>()
+        .finish_action()
+        .action::<synchronous_edit::interleaved::AuthoredParentBinding, Completion>()
         .finish_action()
         .action::<query::identity::expectation::Binding, Completion>()
         .finish_action()

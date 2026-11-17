@@ -204,9 +204,9 @@ fn run(consumed: bool) {
         .unwrap();
         // Admission stays on the existing authored Model; the actual child
         // value is read only after its producer barrier has run.
-        edit.push_stage::<ApplicationNoOutputGraph, _>(pending_consumer::Intent {
+        edit.push_stage::<ApplicationNoOutputGraph, _>(value_observation::Intent {
             model: "a".into(),
-            key: "from-first:first:a".into(),
+            source: value_observation::ValueSource::Child("from-first:first:a".into()),
         })
         .unwrap();
     }
@@ -234,6 +234,11 @@ fn run(consumed: bool) {
         assert_eq!(
             cause.invariant_execution_failure().unwrap().kind(),
             WorthQueryInvariantExecutionDenialKind::CoupledReadSupportChanged
+        );
+        // The late link changes the prepared parent's input: held on #229.
+        assert_eq!(
+            cause.invariant_execution_failure().unwrap().coupled_support_hold(),
+            Some(worth_query_host::facade::primary_graph::WorthQueryCoupledSupportHold::ProducerSupersession)
         );
         assert_eq!(writes.published_rows.len() + writes.omitted_publications, 0);
         assert_eq!(native_head(&host), before);
@@ -281,4 +286,62 @@ fn a_pending_child_acquires_its_incoming_parents_when_needed() {
 #[test]
 fn a_consumed_child_keeps_its_incoming_support_strict() {
     run(true);
+}
+
+/// Held on #229 (in-envelope producer supersession). The observation stage's
+/// barrier prepares `first:a`; the later authored link then changes its
+/// incoming parent set, so committing needs a second derivation of that route.
+/// Until #229 lands the edit refuses atomically with that hold and nothing
+/// else. On #229 it commits: observation 5 (ordinal 1), one publication, first
+/// values late 50, a 530, d 40, b 5720, the four real suppliers run once each,
+/// and no `from-first:first:a` child.
+#[test]
+fn an_absent_supplier_does_not_force_its_prerequisite_at_an_authored_barrier() {
+    let _execution = WorthQueryExecutionObservation::install_on_this_thread();
+    let host: WorthQueryProgramApplicationRuntime<Schema, Program> = world::install_configured(
+        host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()), 1, None,
+        world::Configuration { envelope_records:true, interleaved_records:true, ..Default::default() });
+    let scope = request_scope();
+    let principal = authenticate_operator(host.installed_schema(), &scope);
+    let request = host.request(&principal, &scope);
+    let before = native_head(&host);
+    let mut edit = request
+        .edit_envelope()
+        .idempotency("absent-child-barrier".to_owned())
+        .runtime_stages(&host)
+        .ordered_authored()
+        .unwrap();
+    edit.push_stage::<Tree, _>(fixture::model::Intent {
+        key: "a".into(),
+        value: 3,
+        key_derived_target: false,
+    })
+    .unwrap();
+    // Child is an installed possible writer for this binding, but this actual
+    // observation reads a Model and no Child occurrence has been requested.
+    edit.push_stage::<ApplicationNoOutputGraph, _>(value_observation::Intent {
+        model: "carriage:late".into(),
+        source: value_observation::ValueSource::Model,
+    })
+    .unwrap();
+    // This actual authored link changes First:a's incoming parent set.
+    edit.push_stage::<ApplicationNoOutputGraph, _>(authored_parent::Intent {
+        parent: "carriage:late".into(),
+        child: "a".into(),
+    })
+    .unwrap();
+    let (outcome, writes) = observe_maintenance_work(24, || {
+        edit.execute_performed(ExecutionAllocationPolicy::SystemAllocation)
+            .unwrap()
+    });
+    let Outcome::Uncommitted(WorthQueryApplicationUncommitted::Denied(cause)) = outcome else {
+        panic!("{outcome:?}")
+    };
+    assert_eq!(
+        cause.invariant_execution_failure().unwrap().coupled_support_hold(),
+        Some(worth_query_host::facade::primary_graph::WorthQueryCoupledSupportHold::ProducerSupersession),
+        "{cause:?}"
+    );
+    assert_eq!(writes.published_rows.len() + writes.omitted_publications, 0);
+    assert_eq!(native_head(&host), before);
 }

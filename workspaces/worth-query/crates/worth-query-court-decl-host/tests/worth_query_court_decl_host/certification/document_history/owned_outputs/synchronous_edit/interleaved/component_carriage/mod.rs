@@ -2,11 +2,12 @@
 use super::super::super::hierarchy::program as hierarchy;
 use super::super::super::program as entry;
 pub(in super::super::super) mod attach;
+pub(in super::super::super) mod authored_parent;
 pub(in super::super::super) mod outgoing;
 pub(in super::super::super) mod parent;
 pub(in super::super::super) mod pending;
-pub(in super::super::super) mod pending_consumer;
 mod topology;
+pub(in super::super::super) mod value_observation;
 use super::*;
 mod connections;
 use connections::*;
@@ -270,13 +271,16 @@ pub(super) fn seed(
 pub(super) fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
-    pending_consumer::declare(pending::declare(parent::declare(outgoing::declare(
-        topology::declare(attach::declare(schema)),
-    ))))
+    authored_parent::declare(value_observation::declare(pending::declare(
+        parent::declare(outgoing::declare(topology::declare(attach::declare(
+            schema,
+        )))),
+    )))
 }
 pub(super) fn install(
     setup: &mut WorthQueryApplicationContributionSetup<'_, Schema>,
 ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
-    setup.handler::<pending_consumer::Binding, _>(pending_consumer::Handler)?;
+    setup.handler::<value_observation::Binding, _>(value_observation::Handler)?;
+    setup.handler::<authored_parent::Binding, _>(authored_parent::Handler)?;
     setup.handler::<attach::Binding, _>(attach::Handler)
 }

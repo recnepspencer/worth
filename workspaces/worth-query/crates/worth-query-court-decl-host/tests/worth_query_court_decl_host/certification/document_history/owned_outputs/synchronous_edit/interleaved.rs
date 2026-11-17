@@ -4,7 +4,8 @@ use super::*;
 pub(in super::super) mod component_carriage;
 pub(in super::super) use component_carriage::attach;
 pub(in super::super) use component_carriage::{
-    pending::Input as PendingSeedInput, pending_consumer::Binding as ConsumeChildBinding,
+    authored_parent::Binding as AuthoredParentBinding, pending::Input as PendingSeedInput,
+    value_observation::Binding as ObserveValueBinding,
 };
 mod courts;
 pub(in super::super) mod created;
