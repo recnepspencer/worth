@@ -7,7 +7,6 @@ use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_co
 use worth_query_execution::facade::application_contribution::WorthQueryManagedComputationExecution;
 use worth_execution::ExecutionAllocationPolicy as Allocation;
 use worth_foundational::facade::DeterminismContract;
-use worth_foundational::facade::ExecutionBudget;
 use worth_foundational::facade::ExecutionPosture;
 use worth_foundational::facade::ExecutionRequestPolicy;
 use worth_runtime_world::facade::RuntimeWorldExecutionPlacement;
@@ -15,7 +14,6 @@ pub fn run(
     world: &worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::world::World,
     installed: &Installed,
     prior: Option<ComputationPrior>,
-    accounted: bool,
     expected: Run,
 ) -> Attempt {
     let request = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope();
@@ -37,30 +35,21 @@ pub fn run(
             .0
         })
         .unwrap();
-    let policy = if accounted {
-        ExecutionRequestPolicy::new(
-            ExecutionPosture::Serial,
-            DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(std::num::NonZeroUsize::MIN, None, None),
-        )
-    } else {
-        ExecutionRequestPolicy::for_workers(
-            ExecutionPosture::Serial,
-            DeterminismContract::CanonicalBitwise,
-            std::num::NonZeroUsize::MIN,
-        )
-    };
+    let policy = ExecutionRequestPolicy::for_workers(
+        ExecutionPosture::Serial,
+        DeterminismContract::CanonicalBitwise,
+        std::num::NonZeroUsize::MIN,
+    );
     let execution = QueryRequestExecution::open_for_test(
         RuntimeWorldExecutionPlacement::Serial(policy),
         &request,
     );
-    assert_eq!(
-        execution.has_accounting_for_test(),
-        accounted,
-        "the real computation request uses the tested posture"
+    assert!(
+        !execution.has_accounting_for_test(),
+        "these projected fixtures use an actual unaccounted request"
     );
     let native = execution.execution_request().unwrap();
-    assert_eq!(native.has_accounting(), accounted);
+    assert!(!native.has_accounting());
     worth_query_execution::facade::domain_computation::partitioned_computation_runs_on_this_thread_for_test();
     ComputationPrior::hand_in_test_for_test(prior);
     SealedComputationRun::keep_in_test_for_test(None);
@@ -98,13 +87,14 @@ pub fn run(
         let issued: Vec<_> = expected.iter_for_test().filter_map(|key| {
             use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationFactKey as Key;
             match key {
-                Key::StructuralWalk(key) => Some(Fact::StructuralWalk { observation: Arc::clone(expected.structural_walk_for_test(key, admission.admission_identity(), &admission.retain_graph_contract(), reads.lease_for_test().snapshot_for_test()).unwrap()) }),
-                Key::Aggregate(key) => Some(Fact::Aggregate { observation: Arc::clone(expected.aggregate_for_test(key, admission.admission_identity(), &admission.retain_graph_contract(), reads.lease_for_test().snapshot_for_test()).unwrap()) }),
+                Key::StructuralWalk(key) => Some(expected.structural_walk_for_test(key, admission.admission_identity(), &admission.retain_graph_contract(), reads.lease_for_test().snapshot_for_test()).cloned().map(|observation| Fact::StructuralWalk { observation })),
+                Key::Aggregate(key) => Some(expected.aggregate_for_test(key, admission.admission_identity(), &admission.retain_graph_contract(), reads.lease_for_test().snapshot_for_test()).cloned().map(|observation| Fact::Aggregate { observation })),
                 _ => None,
             }
         }).collect();
         let completed = reads.complete_projected_dependencies(&phase, Allocation::SystemAllocation).unwrap();
         for body in issued {
+            let body = body.expect("a successful seal consumed a currently issued structural body");
             assert!(completed.facts_for_test().iter_for_test().any(|fact| match (&body, fact) {
                 (Fact::StructuralWalk { observation: a }, Fact::StructuralWalk { observation: b }) => Arc::ptr_eq(a, b),
                 (Fact::Aggregate { observation: a }, Fact::Aggregate { observation: b }) => Arc::ptr_eq(a, b),
