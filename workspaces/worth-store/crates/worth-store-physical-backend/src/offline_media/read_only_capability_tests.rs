@@ -8,7 +8,9 @@ use super::{
 #[test]
 fn consumed_path_vector_is_included_in_peak_allocation_admission() {
     let directory = tempfile::tempdir().expect("directory");
-    let mut paths = Vec::new();
+    // Spare consumed vector capacity must be admitted even when later file
+    // bookkeeping would otherwise dominate the peak on this platform.
+    let mut paths = Vec::with_capacity(4096);
     let mut entries = Vec::new();
     for index in 0..16 {
         let path = directory.path().join(format!(
@@ -29,7 +31,11 @@ fn consumed_path_vector_is_included_in_peak_allocation_admission() {
     )
     .expect("basis");
     let owned = ReadOnlyOfflineMediaCapability::open_bounded_from_owned_paths(
-        paths.clone(),
+        {
+            let mut input = Vec::with_capacity(paths.capacity());
+            input.extend(paths.iter().cloned());
+            input
+        },
         basis.clone(),
         u64::MAX,
     )

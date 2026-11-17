@@ -71,7 +71,7 @@ fn stops(
 /// What the storage reader meets on a platform whose path storage is never
 /// qualified.
 fn stored(stop: Option<Stop>) -> Option<Stop> {
-    if cfg!(windows) {
+    if cfg!(any(windows, target_os = "macos", target_os = "linux")) {
         stop
     } else {
         Some(Stop::InvalidAddress)
@@ -95,7 +95,11 @@ fn a_range_exactly_at_its_grant_reads_and_one_past_names_its_length() {
     );
     assert_eq!(
         discovery.counters().bytes_read,
-        if cfg!(windows) { 21 } else { 14 }
+        if cfg!(any(windows, target_os = "macos", target_os = "linux")) {
+            21
+        } else {
+            14
+        }
     );
 }
 
@@ -118,9 +122,19 @@ fn a_range_within_its_grant_past_the_observation_is_the_observations() {
 
 #[test]
 fn a_range_counts_the_bytes_the_observation_already_gave() {
-    let (_parent, mut discovery) = arena_discovery(if cfg!(windows) { 9 } else { 6 });
+    let (_parent, mut discovery) = arena_discovery(
+        if cfg!(any(windows, target_os = "macos", target_os = "linux")) {
+            9
+        } else {
+            6
+        },
+    );
     assert_eq!(stops(&mut discovery, 3, None), each(None));
-    let spent = if cfg!(windows) { 9 } else { 6 };
+    let spent = if cfg!(any(windows, target_os = "macos", target_os = "linux")) {
+        9
+    } else {
+        6
+    };
     let refused = Some(Stop::Observation(
         FilesystemObservationBound::ObservationBytes,
         spent + 1,

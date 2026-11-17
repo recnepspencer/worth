@@ -114,7 +114,16 @@ mod tests {
         }
         let directory =
             cap_std::fs::Dir::open_ambient_dir(root.path(), cap_std::ambient_authority()).unwrap();
-        let mut entries = rustix::fs::Dir::new(directory.into_std_file()).unwrap();
+        let fd = rustix::fs::openat(
+            &directory,
+            c".",
+            rustix::fs::OFlags::RDONLY
+                | rustix::fs::OFlags::DIRECTORY
+                | rustix::fs::OFlags::CLOEXEC,
+            rustix::fs::Mode::empty(),
+        )
+        .unwrap();
+        let mut entries = rustix::fs::Dir::new(fd).unwrap();
         let (peak, _) = provider_bounds().expect("qualified native provider");
         let mut count = 0;
         loop {
