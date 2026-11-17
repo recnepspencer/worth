@@ -17,8 +17,12 @@ type Candidate = RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>;
 pub(super) struct AppliedSourceQueryRead {
     proof: WorthQuerySessionGraphReadProof,
     pub(super) authorization: Arc<SourceReadAuthorization>,
-    pin: Candidate,
-    pub(super) published: std::sync::OnceLock<PositionedRelationalSnapshot>,
+    candidate: RelationalAppliedCandidateReadIdentity,
+    state: std::sync::Mutex<AppliedReadState>,
+}
+enum AppliedReadState {
+    Unpublished(Candidate),
+    Published(PositionedRelationalSnapshot),
 }
 impl SourceQueryReadClosure {
     pub(in crate::domain_computation::primary_graph::application_query) fn retain_applied<
@@ -52,8 +56,8 @@ impl SourceQueryReadClosure {
             authority: SourceQueryReadAuthority::Applied(AppliedSourceQueryRead {
                 proof,
                 authorization,
-                pin: pin.clone(),
-                published: Default::default(),
+                candidate: pin.candidate_identity().clone(),
+                state: std::sync::Mutex::new(AppliedReadState::Unpublished(pin.clone())),
             }),
         }))
     }
@@ -61,12 +65,12 @@ impl SourceQueryReadClosure {
         &self,
     ) -> Option<&RelationalAppliedCandidateReadIdentity> {
         match &self.authority {
-            SourceQueryReadAuthority::Applied(applied) => Some(applied.pin.candidate_identity()),
+            SourceQueryReadAuthority::Applied(applied) => Some(&applied.candidate),
             SourceQueryReadAuthority::Committed { .. } => None,
         }
     }
     pub(in crate::domain_computation::primary_graph) fn is_unpublished_applied(&self) -> bool {
-        matches!(&self.authority, SourceQueryReadAuthority::Applied(applied) if applied.published.get().is_none())
+        matches!(&self.authority, SourceQueryReadAuthority::Applied(applied) if applied.is_unpublished())
     }
     pub(in crate::domain_computation::primary_graph) fn admits_applied_read(
         &self,
@@ -79,7 +83,7 @@ impl SourceQueryReadClosure {
         };
         applied.authorization.key().principal == principal
             && applied.authorization.key().scope == scope
-            && applied.pin.candidate_identity() == candidate
+            && &applied.candidate == candidate
             && applied
                 .authorization
                 .admits_applied_query(&applied.proof, candidate)
@@ -96,22 +100,22 @@ impl SourceQueryReadClosure {
             .read_truth()
             .positioned_snapshot(after)
             .map_err(|_| ManagedIndexSourcePreparationDenial::ForeignSource)?;
-        let proposal = applied.pin.candidate_identity().proposal();
+        let proposal = applied.candidate.proposal();
         if published.runtime_instance_id() != proposal.runtime_instance_id()
             || published.version_id() != proposal.proposed_version_id()
         {
             return Err(ManagedIndexSourcePreparationDenial::ForeignSource);
         }
-        if let Some(prior) = applied.published.get() {
+        let mut state = applied.state.lock().unwrap();
+        if let AppliedReadState::Published(prior) = &*state {
             if prior.root_id() != published.root_id() || prior.commit_id() != published.commit_id()
             {
                 return Err(ManagedIndexSourcePreparationDenial::ForeignSource);
             }
         } else {
-            applied
-                .published
-                .set(published)
-                .map_err(|_| ManagedIndexSourcePreparationDenial::ForeignSource)?;
+            // Publication retains the positioned proof, not its preparation image.
+            // The pin owns cold source custody and must retire at this transition.
+            *state = AppliedReadState::Published(published);
         }
         Ok(())
     }
@@ -128,7 +132,7 @@ impl SourceQueryReadClosure {
         };
         if !after_own
             .candidate_identity()
-            .includes_assembly_prefix(applied.pin.candidate_identity())
+            .includes_assembly_prefix(&applied.candidate)
             || !complete
                 .candidate_identity()
                 .includes_assembly_prefix(after_own.candidate_identity())
@@ -149,24 +153,34 @@ impl SourceQueryReadClosure {
     }
 }
 impl AppliedSourceQueryRead {
+    pub(super) fn is_unpublished(&self) -> bool {
+        matches!(
+            &*self.state.lock().unwrap(),
+            AppliedReadState::Unpublished(_)
+        )
+    }
     pub(super) fn source_facts_at_acquisition(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &RelationalRuntime,
         before: &SnapshotHandle,
         facts: &FactPayload,
-    ) -> Result<bool, crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure>{
+    ) -> Result<Option<bool>, crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure>{
+        let state = self.state.lock().unwrap();
+        let AppliedReadState::Unpublished(pin) = &*state else {
+            return Ok(None);
+        };
         if !self
             .authorization
-            .admits_applied_query(&self.proof, self.pin.candidate_identity())
+            .admits_applied_query(&self.proof, &self.candidate)
         {
-            return Ok(false);
+            return Ok(Some(false));
         }
         for fact in facts.iter() {
-            if !fact.comparison_in_image(runtime, execution, before, Some(&self.pin))? {
-                return Ok(false);
+            if !fact.comparison_in_image(runtime, execution, before, Some(pin))? {
+                return Ok(Some(false));
             }
         }
-        Ok(true)
+        Ok(Some(true))
     }
 }

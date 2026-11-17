@@ -89,9 +89,10 @@ impl SourceQueryReadClosure {
         snapshot: &SnapshotHandle,
     ) -> Result<bool, CurrentnessStop> {
         if let SourceQueryReadAuthority::Applied(applied) = &self.authority
-            && applied.published.get().is_none()
+            && let Some(current) =
+                applied.source_facts_at_acquisition(execution, runtime, snapshot, &self.facts)?
         {
-            return applied.source_facts_at_acquisition(execution, runtime, snapshot, &self.facts);
+            return Ok(current);
         }
         for fact in self.facts.iter() {
             self.control.before_source_fact_comparison();
