@@ -163,7 +163,7 @@ impl NativeDecision<'_> {
         );
     }
 }
-pub(super) fn admit_target(
+pub(in crate::domain_computation::primary_graph::invariant_projection::operation_reader) fn admit_target(
     contracts: Option<&Contracts>,
     target: &ApplicationOperationDecisionReadTarget,
 ) -> Result<(), WorthQueryInvariantDecisionPlanDenial> {

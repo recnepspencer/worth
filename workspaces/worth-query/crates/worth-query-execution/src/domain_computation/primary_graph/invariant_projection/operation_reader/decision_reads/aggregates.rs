@@ -43,6 +43,21 @@ impl DecisionReads {
         cookie: u64,
         context: &mut MapKernelContext<'_, '_>,
     ) -> Result<(), Denial> {
+        self.issue_aggregate_body(body, admission, contracts, cookie, context)?;
+        self.record(
+            WorthQueryApplicationFactKey::Aggregate(body.key().clone()),
+            DecisionReadOutcome::Observed,
+        );
+        Ok(())
+    }
+    pub(in crate::domain_computation::primary_graph::invariant_projection::operation_reader) fn issue_aggregate_body(
+        &mut self,
+        body: &Arc<AggregateObservation>,
+        admission: Admission,
+        contracts: Arc<Contracts>,
+        cookie: u64,
+        context: &mut MapKernelContext<'_, '_>,
+    ) -> Result<(), Denial> {
         AggregateObservation::checkpoint(context)?;
         if let Some(prior) = self.aggregates.values.get(body.key()) {
             if prior.admission != admission
@@ -66,10 +81,6 @@ impl DecisionReads {
                 },
             );
         }
-        self.record(
-            WorthQueryApplicationFactKey::Aggregate(body.key().clone()),
-            DecisionReadOutcome::Observed,
-        );
         Ok(())
     }
 }

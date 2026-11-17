@@ -30,6 +30,7 @@ pub(crate) use collection_derivation::{
 pub use collection_work_counters::UiCollectionProjectionWorkCounters;
 pub use fact_receipt::UiProjectionFactReceipt;
 pub(crate) use fact_receipt::UiProjectionFactReceiptInput;
+pub(crate) use intent_input::ApplicationProjectionInputIdentity;
 pub use intent_input::{
     UiCollectionProjectionInputFact, UiProjectionInputCollectionRow,
     UiProjectionInputFactReference, UiProjectionInputFactTransition, UiProjectionInputPosture,

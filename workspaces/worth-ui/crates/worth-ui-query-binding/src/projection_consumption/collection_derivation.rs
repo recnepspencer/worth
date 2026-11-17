@@ -21,7 +21,10 @@ pub(crate) struct UiCollectionDerivationContext<'a> {
 
 pub(crate) fn derive_initial_collection_projection(
     context: UiCollectionDerivationContext<'_>,
-) -> UiCollectionProjectionFactReceipt {
+) -> Result<
+    UiCollectionProjectionFactReceipt,
+    worth_query::facade::runtime::WorthQueryEvidenceIdentityDerivationDenial,
+> {
     let rows = context.consumer.rows().iter().collect::<Vec<_>>();
     derive_collection_projection(
         context,
@@ -36,14 +39,17 @@ pub(crate) fn derive_collection_projection(
     rows: &[&collection::WorthQueryCollectionRowHandle],
     delivery: UiCollectionProjectionDelivery,
     changes: Box<[UiCollectionProjectionChange]>,
-) -> UiCollectionProjectionFactReceipt {
-    let result_identity = context.consumer.result_generation_identity_evidence();
+) -> Result<
+    UiCollectionProjectionFactReceipt,
+    worth_query::facade::runtime::WorthQueryEvidenceIdentityDerivationDenial,
+> {
+    let result_identity = context.consumer.result_generation_identity_evidence()?;
     let core = UiProjectionFactReceipt::admitted(super::UiProjectionFactReceiptInput {
         projection_identity: context.binding.view_identity().clone(),
         observation_order: context.binding.issue_observation_order(),
         query_world_identity: context.binding.query_world_identity().clone(),
-        binding_identity: context.consumer.binding_identity_evidence(),
-        source_generation_identity: context.consumer.source_generation_identity_evidence(),
+        binding_identity: context.consumer.binding_identity_evidence()?,
+        source_generation_identity: context.consumer.source_generation_identity_evidence()?,
         result_generation_identity: result_identity.clone(),
     });
     let mut work = UiCollectionProjectionWorkCounters::default();
@@ -69,9 +75,15 @@ pub(crate) fn derive_collection_projection(
             "Query requires explicit collection replacement",
         )
     } else {
-        derive_availability(&context, rows, &result_identity, &mut work)
+        derive_availability(&context, rows, &result_identity, &mut work)?
     };
-    UiCollectionProjectionFactReceipt::admitted(core, delivery, availability, work, changes)
+    Ok(UiCollectionProjectionFactReceipt::admitted(
+        core,
+        delivery,
+        availability,
+        work,
+        changes,
+    ))
 }
 
 fn derive_availability(
@@ -79,8 +91,11 @@ fn derive_availability(
     rows: &[&collection::WorthQueryCollectionRowHandle],
     result_identity: &worth_query::facade::runtime::WorthQueryEvidenceIdentity,
     work: &mut UiCollectionProjectionWorkCounters,
-) -> UiProjectionAvailability<UiCollectionProjectionValue> {
-    match context.consumer.result_state() {
+) -> Result<
+    UiProjectionAvailability<UiCollectionProjectionValue>,
+    worth_query::facade::runtime::WorthQueryEvidenceIdentityDerivationDenial,
+> {
+    Ok(match context.consumer.result_state() {
         operation::WorthQueryOperationResultState::Pending => {
             UiProjectionAvailability::Unavailable(UiProjectionUnavailableReceipt::query_issued(
                 UiProjectionUnavailableKind::Pending,
@@ -95,9 +110,9 @@ fn derive_availability(
         operation::WorthQueryOperationResultState::Ready
         | operation::WorthQueryOperationResultState::Advisory
         | operation::WorthQueryOperationResultState::Partial => {
-            derive_present(context, rows, result_identity, work)
+            derive_present(context, rows, result_identity, work)?
         }
-    }
+    })
 }
 
 fn derive_present(
@@ -105,7 +120,10 @@ fn derive_present(
     selected_rows: &[&collection::WorthQueryCollectionRowHandle],
     result_identity: &worth_query::facade::runtime::WorthQueryEvidenceIdentity,
     work: &mut UiCollectionProjectionWorkCounters,
-) -> UiProjectionAvailability<UiCollectionProjectionValue> {
+) -> Result<
+    UiProjectionAvailability<UiCollectionProjectionValue>,
+    worth_query::facade::runtime::WorthQueryEvidenceIdentityDerivationDenial,
+> {
     let completeness =
         if context.consumer.result_state() == operation::WorthQueryOperationResultState::Partial {
             UiCollectionCompleteness::Partial
@@ -115,26 +133,26 @@ fn derive_present(
     if completeness == UiCollectionCompleteness::Partial
         && context.binding.requirement().requires_complete_result()
     {
-        return stopped(
+        return Ok(stopped(
             UiProjectionFactStopKind::PayloadShapeMismatch,
             result_identity,
             "the binding requires a complete Query result",
-        );
+        ));
     }
-    let continuation = match context.consumer.continuation().identity_evidence() {
+    let continuation = match context.consumer.continuation().identity_evidence()? {
         Some(_identity) if !context.binding.requirement().permits_continuation() => {
-            return stopped(
+            return Ok(stopped(
                 UiProjectionFactStopKind::PayloadShapeMismatch,
                 result_identity,
                 "the binding forbids Query continuation",
-            );
+            ));
         }
         Some(_) if context.budget.max_continuation_operations() == 0 => {
-            return stopped(
+            return Ok(stopped(
                 UiProjectionFactStopKind::BudgetExceeded,
                 result_identity,
                 "the collection continuation budget is exhausted",
-            );
+            ));
         }
         Some(identity) => {
             work.record_continuation();
@@ -142,18 +160,23 @@ fn derive_present(
         }
         None => None,
     };
-    let rows = match derive_rows(context, selected_rows, work) {
+    let rows = match derive_rows(context, selected_rows, result_identity, work) {
         Ok(rows) => rows,
-        Err(stop) => return UiProjectionAvailability::Stopped(*stop),
+        Err(stop) => return Ok(UiProjectionAvailability::Stopped(*stop)),
     };
-    UiProjectionAvailability::Present(UiPresentProjection::Current(
-        UiCollectionProjectionValue::admitted(rows, completeness, continuation),
+    Ok(UiProjectionAvailability::Present(
+        UiPresentProjection::Current(UiCollectionProjectionValue::admitted(
+            rows,
+            completeness,
+            continuation,
+        )),
     ))
 }
 
 fn derive_rows(
     context: &UiCollectionDerivationContext<'_>,
     selected_rows: &[&collection::WorthQueryCollectionRowHandle],
+    result_identity: &worth_query::facade::runtime::WorthQueryEvidenceIdentity,
     work: &mut UiCollectionProjectionWorkCounters,
 ) -> Result<Box<[UiCollectionProjectionTextRow]>, Box<UiProjectionFactStopReceipt>> {
     let mut rows = Vec::with_capacity(selected_rows.len());
@@ -167,16 +190,17 @@ fn derive_rows(
                 .map_err(|_| {
                     Box::new(stop_receipt(
                         UiProjectionFactStopKind::WrongWorld,
-                        &context.consumer.result_generation_identity_evidence(),
+                        result_identity,
                         "Query rejected the collection row or native key authority",
                     ))
                 })?;
             let text = match fact.native_value().scalar() {
                 Some(AspectValue::String(InternedString::Raw(text))) => text.clone(),
+                Some(AspectValue::String(InternedString::Stored(text))) => text.as_str().to_owned(),
                 _ => {
                     return Err(Box::new(stop_receipt(
                         UiProjectionFactStopKind::NativeFamilyMismatch,
-                        &context.consumer.result_generation_identity_evidence(),
+                        result_identity,
                         "the selected Query native value is not direct raw text",
                     )));
                 }
@@ -186,7 +210,7 @@ fn derive_rows(
             {
                 return Err(Box::new(stop_receipt(
                     UiProjectionFactStopKind::BudgetExceeded,
-                    &context.consumer.result_generation_identity_evidence(),
+                    result_identity,
                     "the collection native-text byte budget is exhausted",
                 )));
             }
@@ -195,7 +219,7 @@ fn derive_rows(
         }
         let application_item_key = context
             .application_item_key_access
-            .map(|access| derive_application_item_key(context, row, access, work))
+            .map(|access| derive_application_item_key(context, row, access, result_identity, work))
             .transpose()?;
         rows.push(UiCollectionProjectionTextRow::admitted(
             UiCollectionProjectionRowReference::query_issued(
@@ -212,6 +236,7 @@ fn derive_application_item_key(
     context: &UiCollectionDerivationContext<'_>,
     row: &collection::WorthQueryCollectionRowHandle,
     access: &crate::application_binding::WorthUiCollectionTextNativeAccess,
+    result_identity: &worth_query::facade::runtime::WorthQueryEvidenceIdentity,
     work: &mut UiCollectionProjectionWorkCounters,
 ) -> Result<core::num::NonZeroU64, Box<UiProjectionFactStopReceipt>> {
     let fact = context
@@ -220,21 +245,21 @@ fn derive_application_item_key(
         .map_err(|_| {
             Box::new(stop_receipt(
                 UiProjectionFactStopKind::WrongWorld,
-                &context.consumer.result_generation_identity_evidence(),
+                result_identity,
                 "Query rejected the application item-key authority",
             ))
         })?;
     let Some(AspectValue::UInt64(value)) = fact.native_value().scalar() else {
         return Err(Box::new(stop_receipt(
             UiProjectionFactStopKind::NativeFamilyMismatch,
-            &context.consumer.result_generation_identity_evidence(),
+            result_identity,
             "the application item-key value is not unsigned64",
         )));
     };
     let Some(value) = core::num::NonZeroU64::new(*value) else {
         return Err(Box::new(stop_receipt(
             UiProjectionFactStopKind::PayloadShapeMismatch,
-            &context.consumer.result_generation_identity_evidence(),
+            result_identity,
             "the application item-key value is zero",
         )));
     };

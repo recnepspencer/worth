@@ -1,4 +1,4 @@
-//! Genuine sealed structural inputs force fresh owner calls in both postures.
+//! Fresh issuance preserves unchanged structural carriage and accounting fallback.
 
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::carriage::ComputationPrior;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::retained::SealedComputationRun;
@@ -28,7 +28,7 @@ pub fn body(
     bodies.into_iter().next().unwrap()
 }
 #[test]
-fn actual_retained_walk_runs_fresh_before_incremental_shortcuts_in_both_postures() {
+fn walk_reuse_issues_fresh_bodies_and_accounting_runs_full_over_budget() {
     let _observation =
         worth_query_execution::facade::domain_computation::WorthQueryExecutionObservation::install_on_this_thread();
     for accounted in [true, false] {
@@ -43,7 +43,7 @@ fn actual_retained_walk_runs_fresh_before_incremental_shortcuts_in_both_postures
                 None,
             )),
             accounted,
-            Cause::FirstRun,
+            Run::Full(Cause::FirstRun),
         );
         assert!((*(*first.state_for_test()).facts_for_test()).has_structural_walk_for_test());
         let original = body(&first);
@@ -53,12 +53,12 @@ fn actual_retained_walk_runs_fresh_before_incremental_shortcuts_in_both_postures
             &installed,
             Some(prior),
             accounted,
-            Cause::StructuralWalkRead,
+            if accounted { Run::Full(Cause::ObservationOverBudget) } else { Run::Incremental },
         );
         assert_eq!(
             installed.owner_for_test().gathers.load(Ordering::Relaxed),
-            2,
-            "the real gather ran again"
+            if accounted { 2 } else { 1 },
+            "only the accounted posture gathers unchanged truth again"
         );
         let current = body(&next);
         assert!(
@@ -85,3 +85,7 @@ pub mod aggregate_model;
 pub mod attempt;
 #[path = "model/mod.rs"]
 pub mod model;
+
+mod chains;
+
+mod orbits;

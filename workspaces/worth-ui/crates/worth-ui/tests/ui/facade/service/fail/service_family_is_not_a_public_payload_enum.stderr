@@ -1,2 +1,2 @@
-error[E0433]: failed to resolve: could not find `UiRuntimeServiceFamily` in `service`
+error[E0433]: cannot find `UiRuntimeServiceFamily` in `service`
  --> $WORKSPACE/crates/worth-ui/tests/ui/facade/service/fail/service_family_is_not_a_public_payload_enum.rs

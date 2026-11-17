@@ -21,6 +21,7 @@ type QueryLease = observation::WorthQuerySharedLiveProjectionLease<
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum UiCollectionProjectionOpenStopKind {
     AlreadyOpened,
+    EvidenceIdentity(worth_query::facade::runtime::WorthQueryEvidenceIdentityDerivationDenial),
     AdvancementDenied(
         worth_query_host::facade::application_contribution::WorthQueryAdvancementDenial,
     ),
@@ -87,6 +88,7 @@ pub struct UiLiveCollectionProjectionCloseStop {
 }
 
 pub enum UiCollectionProjectionRefreshError {
+    EvidenceIdentity(worth_query::facade::runtime::WorthQueryEvidenceIdentityDerivationDenial),
     Drain(Box<observation::WorthQuerySharedProjectionDrainStop>),
     Delta(Box<observation::WorthQueryConsumerInvalidationDeltaStop>),
     Readmission(Box<observation::WorthQueryConsumerInvalidationAdmissionStop>),

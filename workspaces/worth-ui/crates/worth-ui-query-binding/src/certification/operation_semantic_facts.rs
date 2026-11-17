@@ -76,6 +76,7 @@ impl WorthUiInstalledQueryTestFixture {
             )
             .unwrap()
             .start_workflow(&mut self.workspace)
+            .expect("workflow start identity derives")
             .unwrap()
             .advance(
                 IDENTIFY_STAGE,

@@ -15,7 +15,7 @@ pub fn run(
     installed: &Installed,
     prior: Option<ComputationPrior>,
     accounted: bool,
-    cause: Cause,
+    expected: Run,
 ) -> SealedComputationRun {
     let request = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope();
     let admission = world
@@ -102,8 +102,8 @@ pub fn run(
     let runs =
         worth_query_execution::facade::domain_computation::partitioned_computation_runs_on_this_thread_for_test();
     assert!(
-        matches!(runs.as_slice(),[(Run::Full(actual),_)] if *actual==cause),
-        "the actual comparator chose the required full cause: {runs:?}"
+        matches!(runs.as_slice(), [(actual, _)] if *actual == expected),
+        "the actual comparator chose {expected:?}: {runs:?}"
     );
     SealedComputationRun::kept_in_test_for_test()
         .expect("the real completed read sealed the owner run")
@@ -114,7 +114,7 @@ pub fn run_aggregate(
     installed: &crate::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::tests::structural_walk::aggregate_model::Installed,
     prior: Option<ComputationPrior>,
     accounted: bool,
-    cause: Cause,
+    expected: Run,
 ) -> SealedComputationRun {
     let request = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope();
     let admission = world
@@ -196,8 +196,8 @@ pub fn run_aggregate(
     let runs =
         worth_query_execution::facade::domain_computation::partitioned_computation_runs_on_this_thread_for_test();
     assert!(
-        matches!(runs.as_slice(),[(Run::Full(actual),_)] if *actual==cause),
-        "the actual comparator chose the required full cause: {runs:?}"
+        matches!(runs.as_slice(), [(actual, _)] if *actual == expected),
+        "the actual comparator chose {expected:?}: {runs:?}"
     );
     SealedComputationRun::kept_in_test_for_test()
         .expect("the real completed read sealed the owner run")

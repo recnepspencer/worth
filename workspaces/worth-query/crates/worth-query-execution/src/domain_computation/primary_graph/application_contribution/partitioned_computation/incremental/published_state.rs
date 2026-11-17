@@ -198,6 +198,44 @@ impl WorthQueryPublishedComputationStateForTest {
     }
 }
 
+impl WorthQueryPublishedComputationStateForTest {
+    /// Actual existing body relations for matching walk keys, in retained order.
+    /// Each pair is (same Arc, same source origin). No bodies or authority leave
+    /// this passive observer, and a different key roster returns None.
+    pub fn structural_walk_body_sharing_with_for_test(
+        &self,
+        prior: &Self,
+    ) -> Option<Vec<(bool, bool)>> {
+        use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact as Fact;
+        let walks = |state: &RetainedComputation| {
+            state
+                .original_facts()
+                .iter()
+                .filter_map(|fact| match fact {
+                    Fact::StructuralWalk { observation } => Some(Arc::clone(observation)),
+                    _ => None,
+                })
+                .collect::<Vec<_>>()
+        };
+        let current = walks(self.state.as_deref()?);
+        let old = walks(prior.state.as_deref()?);
+        if !current
+            .iter()
+            .map(|body| body.key())
+            .eq(old.iter().map(|body| body.key()))
+        {
+            return None;
+        }
+        Some(
+            current
+                .iter()
+                .zip(&old)
+                .map(|(a, b)| (Arc::ptr_eq(a, b), a.source() == b.source()))
+                .collect(),
+        )
+    }
+}
+
 fn bits(value: &impl CanonicalBits) -> Vec<u8> {
     let mut bytes = Vec::new();
     assert!(value.visit_canonical_bits(&mut |chunk| {

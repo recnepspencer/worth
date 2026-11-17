@@ -28,7 +28,7 @@ error[E0603]: module `evidence` is private
  --> tests/ui/evidence_construction/external_callers_cannot_import_evidence_slice_helper.rs
  note: the module `evidence` is defined here
 
-error[E0599]: no function or associated item named `new` found for struct `UiInspectionReceipt` in the current scope
+error[E0599]: no associated function or constant named `new` found for struct `UiInspectionReceipt` in the current scope
  --> tests/ui/inspection/external_callers_cannot_mint_inspection_receipts.rs
  help: there is a method `ne` with a similar name, but with different arguments
 
@@ -51,7 +51,7 @@ error[E0061]: this function takes 1 argument but 13 arguments were supplied
  note: associated function defined here
  help: remove the extra arguments
 
-error[E0599]: no function or associated item named `new` found for struct `WorthUiRuntimeSupportInventory` in the current scope
+error[E0599]: no associated function or constant named `new` found for struct `WorthUiRuntimeSupportInventory` in the current scope
  --> tests/ui/lifecycle/external_runtime_support_inventory_construction_is_private.rs
  help: there is a method `ne` with a similar name
 

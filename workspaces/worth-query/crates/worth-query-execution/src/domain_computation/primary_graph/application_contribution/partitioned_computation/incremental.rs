@@ -188,21 +188,6 @@ where
     if super::certification_reuse::disabled() {
         return full(basis, WorthQueryPartitionedComputationFullCause::Unretained);
     }
-    if let Ok(retained) = &prior.retained
-        && (retained.facts.has_aggregate() || retained.facts.has_structural_walk())
-    {
-        if let Some(cause) = basis.drift(&retained.basis) {
-            return full(basis, cause);
-        }
-        return full(
-            basis,
-            if retained.facts.has_aggregate() {
-                WorthQueryPartitionedComputationFullCause::AggregateRead
-            } else {
-                WorthQueryPartitionedComputationFullCause::StructuralWalkRead
-            },
-        );
-    }
     let changes = reader.computation_changes(&COMPARATOR, &prior);
     let rebase_changes = changes.clone();
     let retained = match prior.retained {
@@ -248,10 +233,24 @@ where
         .iter()
         .flat_map(|changes| changes.ordinals().iter())
         .filter_map(|ordinal| retained.facts.at_ordinal(*ordinal));
-    for (key, fact, readers) in all.chain(dirty) {
+    let structural = |key: &WorthQueryApplicationFactKey| {
+        matches!(
+            key,
+            WorthQueryApplicationFactKey::StructuralWalk(_)
+                | WorthQueryApplicationFactKey::Aggregate(_)
+        )
+    };
+    let ordinary = all.chain(dirty).filter(|(key, _, _)| !structural(key));
+    // Keep the existing sparse path when the sealed index has no structural keys.
+    let issued = (retained.facts.has_aggregate() || retained.facts.has_structural_walk())
+        .then(|| retained.facts.facts())
+        .into_iter()
+        .flatten()
+        .filter(|(key, _, _)| structural(key));
+    for (key, fact, readers) in ordinary.chain(issued) {
         super::super::super::fact_verification_observation::retained_computation();
         let _read = observed::RetainedFactComparison::enter();
-        let movement = match reader.observe_retained(execution, &COMPARATOR, key) {
+        let movement = match reader.issue_retained(execution, &COMPARATOR, key, fact) {
             Ok(observed) => match FactMovement::between(fact, &observed).movement() {
                 Movement::Unmoved => KeyMovement::Unchanged,
                 Movement::Moved => KeyMovement::Changed,

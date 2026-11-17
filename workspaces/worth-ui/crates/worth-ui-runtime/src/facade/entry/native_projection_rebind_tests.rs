@@ -88,7 +88,7 @@ fn authored_application_scalar_reaches_native_publication_and_returns_its_exact_
     assert_eq!(pending.fact().value().status, "PENDING");
     assert_eq!(
         pending.owner_order(),
-        pending.fact().query_receipt().inspect().basis().version()
+        pending.fact().publication_basis().version()
     );
     let (_, historical) = owner
         .initial_projection()
@@ -117,13 +117,9 @@ fn authored_application_scalar_reaches_native_publication_and_returns_its_exact_
     assert_eq!(current.fact().value().revision, 1);
     assert_eq!(
         current.owner_order(),
-        current.fact().query_receipt().inspect().basis().version()
+        current.fact().publication_basis().version()
     );
-    assert!(current
-        .fact()
-        .query_receipt()
-        .inspect()
-        .terminal_resources_released());
+    assert!(current.fact().terminal_resources_released());
     assert_eq!(host.presentation_calls(), 2);
     assert!(matches!(
         shell.begin_projection_rebind(

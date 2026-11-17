@@ -148,6 +148,7 @@ pub fn assert_interleaved_terminal(
                     victim,
                     None,
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                    None,
                 ),
             );
             assert_victim(&victim);
@@ -221,6 +222,7 @@ pub fn finish_peer(
             peer,
             None,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            None,
         ),
     );
     match (expectation, peer) {

@@ -1,7 +1,6 @@
 error[E0432]: unresolved import `worth_ui::facade::app::WorthUiPreparedApplicationAuthority`
  --> $WORKSPACE/crates/worth-ui/tests/ui/runtime_authority/fail/prepared_application_authority_has_no_canonical_extraction.rs
  help: a similar name exists in the module
- help: consider importing this struct instead
 
 error[E0599]: no method named `query_key` found for reference `&UiMountedProjectionView` in the current scope
  --> $WORKSPACE/crates/worth-ui/tests/ui/runtime_authority/fail/prepared_application_authority_has_no_canonical_extraction.rs

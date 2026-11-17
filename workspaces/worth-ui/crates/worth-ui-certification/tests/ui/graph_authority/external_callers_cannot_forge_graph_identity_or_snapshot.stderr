@@ -6,19 +6,11 @@ error[E0432]: unresolved imports `worth_ui::facade::graph::UiGraphCoreIndexes`, 
 
 error[E0432]: unresolved imports `worth_ui::facade::obligations::UiObligationDispatchPlan`, `worth_ui::facade::obligations::UiObligationVerdict`
  --> tests/ui/obligation_dispatch/external_callers_cannot_mint_dispatch_plans_or_verdicts.rs
- help: consider importing this struct instead:
-worth_ui_runtime::facade::obligations::UiObligationDispatchPlan
- help: consider importing this struct instead:
-worth_ui_runtime::facade::obligations::UiObligationVerdict
  help: a similar name exists in the module
  help: a similar name exists in the module
 
 error[E0432]: unresolved imports `worth_ui::facade::obligations::UiSelectedObligationIdentity`, `worth_ui::facade::obligations::UiSelectedObligationSet`
  --> tests/ui/obligation_selection/external_callers_cannot_mint_selected_obligation_artifacts.rs
- help: consider importing this struct instead:
-worth_ui_runtime::facade::obligations::UiSelectedObligationIdentity
- help: consider importing this struct instead:
-worth_ui_runtime::facade::obligations::UiSelectedObligationSet
  help: a similar name exists in the module
  help: a similar name exists in the module
 
@@ -48,7 +40,7 @@ error[E0599]: no method named `host_capability` found for reference `&UiGraphNod
 error[E0599]: no method named `committed_snapshot` found for struct `UiGraphInstantiationPlan` in the current scope
  --> tests/ui/graph_instantiation/external_callers_cannot_construct_or_substitute_graph_instantiation_plan.rs
 
-error[E0599]: no function or associated item named `from_node_changed` found for struct `UiGraphTouchAuthority<'a>` in the current scope
+error[E0599]: no associated function or constant named `from_node_changed` found for struct `UiGraphTouchAuthority<'a>` in the current scope
  --> tests/ui/graph_touch/external_callers_cannot_forge_touch_descriptors.rs
  help: there is a method `from_node` with a similar name
 
@@ -58,7 +50,7 @@ error[E0624]: associated function `new` is private
 error[E0624]: associated function `declaration_change` is private
  --> tests/ui/graph_touch/external_callers_cannot_forge_touch_descriptors.rs
 
-error[E0599]: no function or associated item named `query_fact_change` found for struct `UiGraphTouchOriginReceipt` in the current scope
+error[E0599]: no associated function or constant named `query_fact_change` found for struct `UiGraphTouchOriginReceipt` in the current scope
  --> tests/ui/graph_touch/external_callers_cannot_forge_touch_descriptors.rs
 
 error[E0624]: associated function `host_observation` is private
@@ -76,7 +68,7 @@ error[E0624]: associated function `diagnostic_only` is private
 error[E0624]: associated function `declaration_instances` is private
  --> tests/ui/graph_touch/external_callers_cannot_forge_touch_descriptors.rs
 
-error[E0599]: no function or associated item named `mount_eligibility_transition_only` found for struct `UiGraphTouchOriginWitness` in the current scope
+error[E0599]: no associated function or constant named `mount_eligibility_transition_only` found for struct `UiGraphTouchOriginWitness` in the current scope
  --> tests/ui/graph_touch/external_callers_cannot_forge_touch_descriptors.rs
 
 error[E0624]: associated function `authored_provenance_digests` is private

@@ -26,7 +26,6 @@ fn successor() -> PreparedHomeApplication<SuccessorSchema, SuccessorProgram> {
             SignalConditionalEvaluationBudget::development(),
         ),
         None,
-        |_, _| panic!("Relational-only B has no authored Signal/Bridge seed"),
     )
     .unwrap()
 }

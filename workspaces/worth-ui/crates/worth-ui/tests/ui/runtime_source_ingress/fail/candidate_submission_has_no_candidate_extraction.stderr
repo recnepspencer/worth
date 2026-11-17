@@ -15,7 +15,6 @@ error[E0432]: unresolved imports `worth_ui::facade::WorthUiReloadCertificationBu
 
 error[E0432]: unresolved import `worth_ui::facade::WorthUiWatcherEvent`
  --> $WORKSPACE/crates/worth-ui/tests/ui/runtime_source_ingress/fail/raw_watcher_event_cannot_declare_dependency_impact.rs
- help: consider importing one of these structs instead
 
 error[E0599]: no method named `into_candidate` found for struct `WorthUiWatchedCandidateSubmission` in the current scope
  --> $WORKSPACE/crates/worth-ui/tests/ui/runtime_source_ingress/fail/candidate_submission_has_no_candidate_extraction.rs

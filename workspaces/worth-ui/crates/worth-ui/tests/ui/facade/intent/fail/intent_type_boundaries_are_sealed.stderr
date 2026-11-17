@@ -27,6 +27,6 @@ error[E0308]: mismatched types
 
 error[E0308]: mismatched types
  --> $WORKSPACE/crates/worth-ui/tests/ui/facade/intent/fail/intent_type_boundaries_are_sealed.rs
- note: expected struct `UiIntentPayloadField<ForeignPayload, _>`
-   found struct `UiIntentPayloadField<Payload, _>`
+ note: expected struct `UiIntentPayloadField<ForeignPayload, UiIntentText>`
+   found struct `UiIntentPayloadField<Payload, UiIntentText>`
  note: method defined here

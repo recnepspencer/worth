@@ -1,9 +1,3 @@
 error[E0432]: unresolved imports `worth_ui::facade::inspection::FrozenCommandCapabilities`, `worth_ui::facade::inspection::UiEvidenceSliceAssembly`, `worth_ui::facade::inspection::UiEvidenceSliceAssemblyInput`, `worth_ui::facade::inspection::WorthUiFrameReportMaterializationBoundary`, `worth_ui::facade::inspection::WorthUiSteadyFrameReportPlanner`
  --> $WORKSPACE/crates/worth-ui/tests/ui/facade/inspection/inspection_authority_is_not_product_surface.rs
- help: consider importing this struct instead:
-worth_ui_runtime::facade::registry::snapshot::FrozenCommandCapabilities
- help: consider importing this enum instead:
-worth_ui_runtime::facade::evidence::WorthUiFrameReportMaterializationBoundary
- help: consider importing this struct instead:
-worth_ui_runtime::facade::evidence::WorthUiSteadyFrameReportPlanner
  help: a similar name exists in the module

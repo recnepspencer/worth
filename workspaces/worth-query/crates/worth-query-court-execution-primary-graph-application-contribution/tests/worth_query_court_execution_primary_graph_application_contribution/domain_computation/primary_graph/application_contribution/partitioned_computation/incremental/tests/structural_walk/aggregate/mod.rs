@@ -1,4 +1,5 @@
-//! A genuinely sealed aggregate input requires a fresh run in both request postures.
+//! Orbit carriage uses current bodies; accounted requests retain the full fallback.
+use super::Run;
 use crate::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::tests::structural_walk::aggregate_model::Installed;
 use crate::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::tests::structural_walk::aggregate_model::Owner;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::carriage::ComputationPrior;
@@ -21,7 +22,7 @@ pub fn body(run: &SealedComputationRun) -> Arc<AggregateObservation> {
     values.into_iter().next().unwrap()
 }
 #[test]
-fn actual_aggregate_inputs_force_fresh_computation_before_reuse_in_both_postures() {
+fn orbit_reuse_issues_fresh_bodies_and_accounting_runs_full_over_budget() {
     let _observation =
         worth_query_execution::facade::domain_computation::WorthQueryExecutionObservation::install_on_this_thread();
     for accounted in [true, false] {
@@ -36,7 +37,7 @@ fn actual_aggregate_inputs_force_fresh_computation_before_reuse_in_both_postures
                 None,
             )),
             accounted,
-            Cause::FirstRun,
+            Run::Full(Cause::FirstRun),
         );
         assert!((*(*first.state_for_test()).facts_for_test()).has_aggregate_for_test());
         let original = body(&first);
@@ -46,11 +47,11 @@ fn actual_aggregate_inputs_force_fresh_computation_before_reuse_in_both_postures
             &installed,
             Some(prior),
             accounted,
-            Cause::AggregateRead,
+            if accounted { Run::Full(Cause::ObservationOverBudget) } else { Run::Incremental },
         );
         assert_eq!(
             installed.owner_for_test().gathers.load(Ordering::Relaxed),
-            2
+            if accounted { 2 } else { 1 }
         );
         let current = body(&next);
         assert!(!Arc::ptr_eq(&original, &current));

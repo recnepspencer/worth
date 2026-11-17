@@ -34,7 +34,7 @@ mod successor_compilation;
 use native_preparation::{transition_unshared, unshared};
 mod observation_policy;
 mod operations;
-use observation_policy::{no_operation_admission, ObservationMaintenanceMustRemainUnentered};
+use observation_policy::ObservationMaintenanceMustRemainUnentered;
 mod original_image;
 mod original_membership;
 mod selected;
@@ -216,7 +216,6 @@ fn unassociated_native_nine_cannot_replace_selected_world_eight_or_preflight_bri
                 ports.inspection_port(),
                 ports.recovery_port(),
                 root.clone(),
-                no_operation_admission,
                 Arc::new(ObservationMaintenanceMustRemainUnentered),
                 home.branch_program_source_owner(),
             )
@@ -294,7 +293,6 @@ fn another_actual_home_world_basis_cannot_attach_to_this_existing_source() {
                 ports.inspection_port(),
                 ports.recovery_port(),
                 root_a.clone(),
-                no_operation_admission,
                 Arc::new(ObservationMaintenanceMustRemainUnentered),
                 home_b.branch_program_source_owner(),
             )
