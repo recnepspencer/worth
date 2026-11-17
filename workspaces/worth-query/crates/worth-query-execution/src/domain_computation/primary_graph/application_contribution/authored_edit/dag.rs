@@ -3,6 +3,7 @@ use super::*;
 mod cycle;
 mod independent_prefix;
 mod positioned;
+pub(in crate::domain_computation::primary_graph::application_contribution) use positioned::PositionedBarrier;
 use worth_query_installation::facade::{
     WorthQueryOperationGraphReadScope, WorthQueryOperationReadTouchOverlapIndex,
     WorthQueryOperationTouchScope,
@@ -127,7 +128,7 @@ where
         let barriers = positioned::barriers(execution, stages, &nodes)?;
         drop(nodes);
         for (stage, barrier) in stages.iter_mut().zip(barriers) {
-            stage.producer_barrier = barrier;
+            stage.positioned_barrier = Some(barrier);
             stage.ordered = true;
             stage.executor.order_authored();
         }
