@@ -162,7 +162,7 @@ where
             Ok(subject) => subject,
             Err(cause) => return Outcome::Refused(Refusal::Medium(cause)),
         };
-        #[expect(
+        #[allow(
             clippy::arc_with_non_send_sync,
             reason = "bootstrap custody shares the existing World owner on its execution thread"
         )]
