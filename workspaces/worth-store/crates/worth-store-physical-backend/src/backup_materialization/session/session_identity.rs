@@ -66,6 +66,15 @@ impl PhysicalBackupSessionIdentityGuard {
     }
 }
 
+impl Drop for PhysicalBackupSessionIdentityGuard {
+    fn drop(&mut self) {
+        // A concurrent fork can inherit the open-file description until exec. Release
+        // this owner's lock now; closing the file alone waits for every duplicate.
+        // Drop has no error channel, and file close remains the fallback on failure.
+        let _ = FileExt::unlock(&self._lock);
+    }
+}
+
 fn admit_or_create_descriptor(
     staging_root: &Path,
     session_identity: &str,
@@ -172,4 +181,23 @@ fn update_field(
 
 pub(super) fn descriptor_path(staging_root: &Path) -> PathBuf {
     staging_root.join(SESSION_DESCRIPTOR_NAME)
+}
+
+#[cfg(all(test, unix))]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn dropping_session_releases_ownership_even_with_a_duplicated_descriptor() {
+        let directory = tempfile::tempdir().expect("directory");
+        let guard = PhysicalBackupSessionIdentityGuard::acquire(directory.path(), "session")
+            .expect("session owner");
+        // A concurrently forked process temporarily inherits this same open-file description.
+        let inherited = guard._lock.try_clone().expect("duplicate descriptor");
+        drop(guard);
+        let next = PhysicalBackupSessionIdentityGuard::acquire(directory.path(), "session")
+            .expect("the live owner released its lock before the duplicate closes");
+        drop(inherited);
+        drop(next);
+    }
 }
