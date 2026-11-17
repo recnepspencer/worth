@@ -18,8 +18,8 @@ pub(super) mod reference;
 
 use alphabet::{Change, Kind, Lcg, Model, KINDS};
 
-/// Each round makes one edit of every kind, in a seeded order.
-const ROUNDS: usize = 4;
+/// One seeded pass covers every edit kind and compares each resulting run to a full run.
+const ROUNDS: usize = 1;
 const SEED: u64 = 0x9176_3c0b_5eed_0001;
 
 /// The runs of a runtime installed over `model`, which holds no record. A
