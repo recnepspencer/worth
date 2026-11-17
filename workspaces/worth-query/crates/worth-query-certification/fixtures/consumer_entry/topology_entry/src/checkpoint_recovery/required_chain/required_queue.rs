@@ -31,65 +31,33 @@ macro_rules! settled_in_one_advance {
     };
 }
 
-/// Change the root producer's declared input.
+/// Leave required outputs stale after an installed native source action.
+/// The coupled source-adjustment entry would already publish them in setup.
 macro_rules! change_root_input {
-    ($request:expr, $application:expr, $y:expr, $idempotency:expr) => {{
-        let selected = $request
-            .query(PlanarRead {
-                body_key: "anchor-a".to_owned(),
-            })
-            .execute()
-            .unwrap();
-        let outcome = $request
-            .advanced()
-            .mutate(PlanarSourceAdjustment {
-                scope_key: "anchor-a".to_owned(),
-                replacement_y: length($y),
-            })
-            .expect_source(selected.observed_sources()[0].clone())
-            .idempotency(&$idempotency)
-            .execute_performed::<program::ChainProgram, program::ChainRoot>(
-                &$application,
-                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-            )
-            .unwrap();
-        assert!(
-            matches!(
-                outcome,
-                WorthQueryApplicationPerformedMutationOutcome::Performed(_)
-            ),
-            "the root input change commits"
-        );
-    }};
+    ($request:expr, $application:expr, $y:expr, $idempotency:expr) => {
+        diamond::change_root!(
+            $request,
+            $application,
+            "anchor-a",
+            $y,
+            $idempotency,
+            program::ChainProgram
+        )
+    };
 }
 
-/// Writes the Y of `$key`; every legal source write must be performed.
+/// Change an independent source without delivering its required output.
 macro_rules! writes_y {
-    ($request:expr, $application:expr, $key:expr, $y:expr, $idempotency:expr) => {{
-        let selected = $request
-            .query(PlanarRead {
-                body_key: $key.to_owned(),
-            })
-            .execute()
-            .unwrap();
-        let changed = $request
-            .advanced()
-            .mutate(PlanarSourceAdjustment {
-                scope_key: $key.to_owned(),
-                replacement_y: length($y),
-            })
-            .expect_source(selected.observed_sources()[0].clone())
-            .idempotency(&$idempotency)
-            .execute_performed::<program::ChainProgram, program::ChainRoot>(
-                &$application,
-                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-            );
-        match changed {
-            Ok(WorthQueryApplicationPerformedMutationOutcome::Performed(_)) => (),
-            Err(stop) => panic!("a legal source write must commit: {stop:?}"),
-            Ok(_) => panic!("a legal source write was not performed"),
-        }
-    }};
+    ($request:expr, $application:expr, $key:expr, $y:expr, $idempotency:expr) => {
+        diamond::change_root!(
+            $request,
+            $application,
+            $key,
+            $y,
+            $idempotency,
+            program::ChainProgram
+        )
+    };
 }
 
 fn chain_application() -> application_installation::WorthQueryProgramApplicationRuntime<
