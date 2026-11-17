@@ -15,6 +15,7 @@ use worth_query_host::facade::{
 pub(super) fn begin() {
     full_partitioned_computation_preparations_on_this_thread_for_test();
     take_calls();
+    take_gathered();
 }
 
 pub(super) fn prepared<Computation, Owner>(
@@ -96,6 +97,7 @@ where
                 gathers: calls.gathers + computed_calls.gathers,
                 kernels: calls.kernels + computed_calls.kernels,
             },
+            gathered: take_gathered(),
             combines,
             tree_nodes: nodes,
             placement,

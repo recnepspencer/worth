@@ -21,6 +21,18 @@ pub(super) static PLANS: AtomicUsize = AtomicUsize::new(0);
 pub(super) static KEYS: AtomicUsize = AtomicUsize::new(0);
 pub(super) static GATHERS: AtomicUsize = AtomicUsize::new(0);
 pub(super) static KERNELS: AtomicUsize = AtomicUsize::new(0);
+/// The partitions the owner was asked to gather: an owner-side witness that
+/// never reads the run report.
+pub(super) static GATHERED: Mutex<
+    std::collections::BTreeSet<worth_foundational::facade::PartitionIdentity>,
+> = Mutex::new(std::collections::BTreeSet::new());
+
+/// Takes the partitions gathered since the last take, in identity order.
+pub(super) fn take_gathered() -> Vec<worth_foundational::facade::PartitionIdentity> {
+    std::mem::take(&mut *GATHERED.lock().unwrap_or_else(PoisonError::into_inner))
+        .into_iter()
+        .collect()
+}
 
 /// How often a decision's run entered each of the owner's calls.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
@@ -90,6 +102,10 @@ impl<const WORK: usize, const MODE: u8>
         partition: WorthQueryComputationPartitionMembers<'_, RegionKey, Entry>,
     ) -> Result<Vec<EntryData>, InputDenial> {
         GATHERS.fetch_add(1, Ordering::Relaxed);
+        GATHERED
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .insert(partition.identity());
         let mut gathered = Vec::new();
         if partition.key().0.is_multiple_of(2) {
             gathered.push(EntryData {

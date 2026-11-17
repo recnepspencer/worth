@@ -124,7 +124,7 @@ mod serial {
             9902,
         );
         let (_, kept) = demand(&request, &application);
-        assert_eq!(kept[0].runs, [Run::Incremental]);
+        assert!(matches!(kept[0].runs.as_slice(), [Run::Incremental { .. }]));
         let fresh =
             installation::install_variant::<false, 1_024, 1, 1>(None, Default::default(), seed);
         let (fresh_scope, fresh_principal) = authenticate(&fresh);

@@ -14,7 +14,7 @@ pub fn run(
     world: &worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_walks::world::World,
     installed: &Installed,
     prior: Option<ComputationPrior>,
-    expected: Run,
+    expected: Option<Cause>,
 ) -> Attempt {
     let request = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope();
     let admission = world
@@ -102,7 +102,7 @@ pub fn run(
     let runs =
         worth_query_execution::facade::domain_computation::partitioned_computation_runs_on_this_thread_for_test();
     assert!(
-        matches!(runs.as_slice(), [(actual, _)] if *actual == expected),
+        matches!(runs.as_slice(), [(actual, _)] if actual.full_cause() == expected),
         "the actual comparator chose {expected:?}: {runs:?}"
     );
     Attempt {

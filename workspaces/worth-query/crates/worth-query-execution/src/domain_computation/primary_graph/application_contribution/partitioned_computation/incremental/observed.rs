@@ -37,14 +37,16 @@ pub fn full_partitioned_computation_preparations_on_this_thread_for_test(
 }
 
 /// Shows a completed run to the test observer. The handler and the owner
-/// never see how a run ran.
+/// never see how a run ran. The run is built only when an observer is
+/// installed, so an unobserved run pays nothing for its diagnostic.
 pub(super) fn observe(
-    run: WorthQueryPartitionedComputationRunForTest,
+    run: impl FnOnce() -> WorthQueryPartitionedComputationRunForTest,
     report: Option<ExecutionReport>,
 ) {
     if !crate::domain_computation::execution_observation::is_installed() {
         return;
     }
+    let run = run();
     if CLEANUP_REGISTERED.with(|registered| !registered.replace(true)) {
         crate::domain_computation::execution_observation::register_cleanup(clear_observations);
     }
@@ -142,4 +144,36 @@ impl Drop for RetainedFactComparison {
 pub fn retained_fact_comparison_is_active_for_test() -> bool {
     crate::domain_computation::execution_observation::is_installed()
         && RETAINED_FACT_READ.get() != 0
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::domain_computation::execution_observation::WorthQueryExecutionObservation;
+
+    /// An unobserved run never builds its diagnostic payload: the payload
+    /// closure is not called, so no partition list is collected.
+    #[test]
+    fn an_unobserved_run_builds_no_payload() {
+        assert!(!crate::domain_computation::execution_observation::is_installed());
+        observe(|| panic!("payload built without an observer"), None);
+        let observation = WorthQueryExecutionObservation::install_on_this_thread();
+        let mut built = 0;
+        observe(
+            || {
+                built += 1;
+                WorthQueryPartitionedComputationRunForTest::Incremental {
+                    recomputed: Vec::new(),
+                    membership_recomputed: false,
+                }
+            },
+            None,
+        );
+        assert_eq!(built, 1);
+        assert_eq!(
+            partitioned_computation_runs_on_this_thread_for_test().len(),
+            1
+        );
+        drop(observation);
+    }
 }

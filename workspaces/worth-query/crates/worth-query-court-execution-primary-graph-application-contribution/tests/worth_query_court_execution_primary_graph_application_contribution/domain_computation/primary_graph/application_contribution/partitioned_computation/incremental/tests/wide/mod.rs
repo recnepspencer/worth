@@ -176,7 +176,10 @@ fn ten_thousand_partitions_gather_and_compute_only_the_one_whose_fact_moved() {
     let prior = ComputationPrior::new_for_test(edition(), Ok(std::sync::Arc::new(state)), None);
 
     let next = attempt(&world, &installed, Some(prior));
-    assert!(matches!(next.runs.as_slice(), [(Run::Incremental, None)]));
+    assert!(matches!(
+        next.runs.as_slice(),
+        [(Run::Incremental { .. }, None)]
+    ));
     assert_eq!(next.gathered, [1]);
     assert_eq!((*installed.owner_for_test()).take_calls(), [0, 0, 1]);
     assert_eq!(

@@ -315,7 +315,10 @@ where
             });
 
         observe(
-            WorthQueryPartitionedComputationRunForTest::Incremental,
+            || WorthQueryPartitionedComputationRunForTest::Incremental {
+                recomputed: carried.fresh().collect(),
+                membership_recomputed: !next.carried_membership,
+            },
             None,
         );
         Ok(ComputedIncremental {

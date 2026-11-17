@@ -55,7 +55,10 @@ fn an_unobservable_key_gathers_its_partition_again_and_denies_nothing() {
     let prior = ComputationPrior::new_for_test(edition(), Ok(std::sync::Arc::new(state)), None);
 
     let next = attempt(&world, &installed, Some(prior));
-    assert!(matches!(next.runs.as_slice(), [(Run::Incremental, None)]));
+    assert!(matches!(
+        next.runs.as_slice(),
+        [(Run::Incremental { .. }, None)]
+    ));
     assert_eq!(next.gathered, [1], "only the partition that read it");
     assert_eq!(next.outcome.unwrap(), outcome);
     assert!(

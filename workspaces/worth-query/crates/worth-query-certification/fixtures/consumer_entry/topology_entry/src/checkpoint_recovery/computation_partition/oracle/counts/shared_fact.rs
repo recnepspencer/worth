@@ -45,7 +45,7 @@ mod serial {
             let [run] = runs.as_slice() else {
                 panic!("one real shared-fact publication");
             };
-            assert_eq!(run.runs, [Run::Incremental]);
+            assert!(matches!(run.runs.as_slice(), [Run::Incremental { .. }]));
             assert_eq!(
                 run.calls,
                 OwnerCalls {
@@ -77,7 +77,10 @@ mod serial {
             let aba = fact_verification();
             assert_eq!(contacts, 1, "native field revision preserves the ABA fence");
             assert_eq!(aba_runs.len(), 1);
-            assert_eq!(aba_runs[0].runs, [Run::Incremental]);
+            assert!(matches!(
+                aba_runs[0].runs.as_slice(),
+                [Run::Incremental { .. }]
+            ));
             assert_eq!(
                 aba_runs[0].calls,
                 OwnerCalls {
@@ -102,7 +105,10 @@ mod serial {
             let (_, after_aba) = demand(&request, &application);
             let consumed = fact_verification();
             assert_eq!(after_aba.len(), 1);
-            assert_eq!(after_aba[0].runs, [Run::Incremental]);
+            assert!(matches!(
+                after_aba[0].runs.as_slice(),
+                [Run::Incremental { .. }]
+            ));
             assert_eq!(
                 after_aba[0].outcome.as_ref().map(|(bits, _)| *bits),
                 Ok((3.0 * size as f64).to_bits())

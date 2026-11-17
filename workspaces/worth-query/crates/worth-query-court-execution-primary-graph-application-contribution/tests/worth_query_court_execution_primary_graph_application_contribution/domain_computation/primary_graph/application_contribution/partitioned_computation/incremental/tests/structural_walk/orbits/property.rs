@@ -21,7 +21,7 @@ proptest! {
         let _observation = worth_query_execution::facade::domain_computation::WorthQueryExecutionObservation::install_on_this_thread();
         let world = fixture::decision::identity::install();
         let installed = Installed::new(Owner::default(), ComputationRetention::ProducerOperation);
-        let mut current = attempt::run(&world, &installed, first(), Run::Full(Cause::FirstRun));
+        let mut current = attempt::run(&world, &installed, first(), Some(Cause::FirstRun));
         let request = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope();
         let mut merged = false;
         // A required first edit prevents an all-unchanged generated sequence.
@@ -31,20 +31,20 @@ proptest! {
                 prop_assert!(matches!(fixture::commit(&world, &request, program, 140 + step as u8), WorthQueryApplicationCommitOutcome::Committed(_)));
                 merged = !merged;
             }
-            current = attempt::run(&world, &installed, prior(current), Run::Incremental);
+            current = attempt::run(&world, &installed, prior(current), None);
             if swap {
                 prop_assert_eq!(&current.gathered, &[0], "the independent second orbit is carried");
             } else {
                 prop_assert!(current.gathered.is_empty(), "unchanged source carries both orbits");
             }
-            let full = attempt::run(&world, &installed, first(), Run::Full(Cause::FirstRun));
+            let full = attempt::run(&world, &installed, first(), Some(Cause::FirstRun));
             prop_assert_eq!(current.outcome, full.outcome, "same committed source Full oracle");
             prop_assert_eq!(current.outcome, if merged { 8 } else { 6 }, "independent membership total");
             let facts = (*current.sealed.state_for_test()).facts_for_test();
             prop_assert!(facts.has_structural_walk_for_test());
             prop_assert!(facts.has_aggregate_for_test());
             // The helper asserts the current-issued walk and aggregate Arc custody.
-            current = attempt::run(&world, &installed, prior(current), Run::Incremental);
+            current = attempt::run(&world, &installed, prior(current), None);
             prop_assert!(current.gathered.is_empty(), "consecutive unchanged seal");
             prop_assert_eq!(current.outcome, full.outcome);
             let facts = (*current.sealed.state_for_test()).facts_for_test();

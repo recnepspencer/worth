@@ -4,7 +4,6 @@ use worth_execution::{ReductionDenial, ReductionMetrics, ReductionRunStop};
 
 use super::super::WorthQueryPartitionedComputationDenial;
 use super::retained::WorthQueryPartitionedComputationFullCause;
-use super::retained::WorthQueryPartitionedComputationRunForTest;
 
 /// Why an incremental tree rebuilt its leaves instead of editing retained paths.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -111,12 +110,13 @@ impl WorthQueryPartitionedTreeRun {
         self.metrics()
     }
 
-    pub const fn partitions_for_test(self) -> WorthQueryPartitionedComputationRunForTest {
+    /// Why the tree was built in full, or `None` when it was edited or
+    /// rebuilt from a carried run. A tree report does not know which
+    /// partitions recomputed; the run observer does.
+    pub const fn full_cause_for_test(self) -> Option<WorthQueryPartitionedComputationFullCause> {
         match self {
-            Self::Full(cause, _) => WorthQueryPartitionedComputationRunForTest::Full(cause),
-            Self::Edited(_) | Self::Rebuilt(_, _) => {
-                WorthQueryPartitionedComputationRunForTest::Incremental
-            }
+            Self::Full(cause, _) => Some(cause),
+            Self::Edited(_) | Self::Rebuilt(_, _) => None,
         }
     }
 }

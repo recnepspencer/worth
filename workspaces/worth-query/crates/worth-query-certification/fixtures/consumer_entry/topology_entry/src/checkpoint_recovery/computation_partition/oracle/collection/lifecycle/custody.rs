@@ -271,9 +271,11 @@ mod serial {
         {
             let runs = room();
             assert_eq!(runs.len(), 1);
-            assert_eq!(
-                runs[0].runs,
-                [WorthQueryPartitionedComputationRunForTest::Incremental],
+            assert!(
+                matches!(
+                    runs[0].runs.as_slice(),
+                    [WorthQueryPartitionedComputationRunForTest::Incremental { .. }]
+                ),
                 "same Preserve edition accepts its real retained comparison"
             );
             assert_eq!(

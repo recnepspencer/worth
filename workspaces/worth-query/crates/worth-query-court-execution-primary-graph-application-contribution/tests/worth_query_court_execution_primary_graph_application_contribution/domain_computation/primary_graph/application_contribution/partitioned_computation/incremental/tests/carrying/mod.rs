@@ -26,7 +26,10 @@ fn unchanged_facts_carry_every_partition_to_the_same_outcome() {
         0,
         "carriage performs no owner field reads"
     );
-    assert!(matches!(next.runs.as_slice(), [(Run::Incremental, None)]));
+    assert!(matches!(
+        next.runs.as_slice(),
+        [(Run::Incremental { .. }, None)]
+    ));
     assert!(next.gathered.is_empty(), "no partition is gathered again");
     assert_eq!(
         *installed.owner_for_test().calls.lock().unwrap(),
@@ -51,7 +54,10 @@ fn a_moved_gather_fact_gathers_only_its_partition_again() {
         *installed.owner_for_test().bump.lock().unwrap() = 10;
 
         let next = attempt(&world, &installed, Some(prior_of(first, true)));
-        assert!(matches!(next.runs.as_slice(), [(Run::Incremental, None)]));
+        assert!(matches!(
+            next.runs.as_slice(),
+            [(Run::Incremental { .. }, None)]
+        ));
         assert_eq!(next.gathered, [1], "only the odd partition read the status");
         let full = attempt(&world, &installed, None);
         assert!(matches!(
@@ -79,7 +85,10 @@ fn a_moved_key_fact_keys_its_items_again_and_carries_their_unmoved_partitions() 
     let outcome = *first.outcome.as_ref().unwrap();
 
     let next = attempt(&world, &installed, Some(prior_of(first, true)));
-    assert!(matches!(next.runs.as_slice(), [(Run::Incremental, None)]));
+    assert!(matches!(
+        next.runs.as_slice(),
+        [(Run::Incremental { .. }, None)]
+    ));
     assert!(
         next.gathered.is_empty(),
         "every item keeps its partition, so no partition is gathered again"

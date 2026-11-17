@@ -209,10 +209,10 @@ mod serial {
                 kernels: 1
             }
         );
-        assert_eq!(
-            next[0].runs,
-            [WorthQueryPartitionedComputationRunForTest::Incremental]
-        );
+        assert!(matches!(
+            next[0].runs.as_slice(),
+            [WorthQueryPartitionedComputationRunForTest::Incremental { .. }]
+        ));
         assert_edited(&next[0], 0);
         assert_eq!(
             next[0].outcome.as_ref().unwrap().0,

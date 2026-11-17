@@ -206,7 +206,7 @@ fn every_edit_retains_what_a_fresh_full_run_retains() {
             let full = attempt(&world, &installed, fresh());
             let context = format!("seed {seed:#x}, step {step}, {edit:?}, items {entries:?}");
             assert!(
-                matches!(next.runs.as_slice(), [(Run::Incremental, None)]),
+                matches!(next.runs.as_slice(), [(Run::Incremental { .. }, None)]),
                 "{context}"
             );
             assert_eq!(keyed, touched, "{context}: only touched items are keyed");

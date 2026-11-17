@@ -48,7 +48,7 @@ fn directly_undone<const REUSE: bool, const MODE: u8>() -> OracleRun {
         );
         assert_eq!(run.calls.kernels, 0);
         assert_eq!(tree_work::completed_nodes(&run), 0);
-        assert_eq!(run.runs, [Run::Incremental]);
+        assert!(matches!(run.runs.as_slice(), [Run::Incremental { .. }]));
     } else {
         assert_eq!(run.runs, [Run::Full(Cause::Unretained)]);
     }

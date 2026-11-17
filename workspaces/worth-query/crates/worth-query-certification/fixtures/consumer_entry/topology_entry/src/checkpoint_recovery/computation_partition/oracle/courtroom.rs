@@ -84,21 +84,19 @@ mod serial {
                             tree::expected_nodes(&now, prior.as_ref()),
                             "{at}: model recombinations, rotations and cutoff"
                         );
+                        // `None` is an incremental run.
                         let expected = match prior.as_ref() {
-                            None => Run::Full(absence),
-                            Some(old) if old.odd != now.odd => Run::Full(Cause::InputChanged),
-                            Some(_) => Run::Incremental,
+                            None => Some(absence),
+                            Some(old) if old.odd != now.odd => Some(Cause::InputChanged),
+                            Some(_) => None,
                         };
-                        let full_causes = match expected {
-                            Run::Full(cause) => vec![cause],
-                            Run::Incremental => Vec::new(),
-                        };
+                        let full_causes: Vec<_> = expected.into_iter().collect();
                         assert_eq!(
                             run.full_preparations, full_causes,
                             "{at}: preparation cause, including failed full runs"
                         );
                         if now.completes() {
-                            assert_eq!(run.runs, [expected], "{at}: exact run cause");
+                            assert_eq!(run.kinds(), [expected], "{at}: exact run cause");
                         } else {
                             assert!(
                                 run.runs.is_empty(),

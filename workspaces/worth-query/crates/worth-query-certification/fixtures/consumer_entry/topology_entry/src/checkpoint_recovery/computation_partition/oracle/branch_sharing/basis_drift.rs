@@ -44,7 +44,7 @@ mod serial {
         judge(
             &run(&kept, child),
             &run(&fresh, full_child),
-            Some(Run::Full(Cause::OtherInstallation)),
+            Some(Some(Cause::OtherInstallation)),
         );
     }
 }

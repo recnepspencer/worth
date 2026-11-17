@@ -1,5 +1,4 @@
 //! Orbit carriage uses current bodies; accounted requests retain the full fallback.
-use super::Run;
 use crate::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::tests::structural_walk::aggregate_model::Installed;
 use crate::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::tests::structural_walk::aggregate_model::Owner;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::carriage::ComputationPrior;
@@ -37,7 +36,7 @@ fn orbit_reuse_issues_fresh_bodies_and_accounting_runs_full_over_budget() {
                 None,
             )),
             accounted,
-            Run::Full(Cause::FirstRun),
+            Some(Cause::FirstRun),
         );
         assert!((*(*first.state_for_test()).facts_for_test()).has_aggregate_for_test());
         let original = body(&first);
@@ -47,7 +46,7 @@ fn orbit_reuse_issues_fresh_bodies_and_accounting_runs_full_over_budget() {
             &installed,
             Some(prior),
             accounted,
-            if accounted { Run::Full(Cause::ObservationOverBudget) } else { Run::Incremental },
+            if accounted { Some(Cause::ObservationOverBudget) } else { None },
         );
         assert_eq!(
             installed.owner_for_test().gathers.load(Ordering::Relaxed),

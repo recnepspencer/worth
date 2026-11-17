@@ -78,11 +78,26 @@ struct OracleRun {
     runs: Vec<WorthQueryPartitionedComputationRunForTest>,
     full_preparations: Vec<worth_query_host::facade::application_contribution::WorthQueryPartitionedComputationFullCause>,
     calls: OwnerCalls,
+    /// The partitions the owner gathered, from its own record.
+    gathered: Vec<worth_foundational::facade::PartitionIdentity>,
     tree_runs:
         Vec<worth_query_host::facade::application_contribution::WorthQueryPartitionedTreeRun>,
     combines: usize,
     tree_nodes: usize,
     placement: worth_query_host::facade::primary_graph::WorthQueryExecutionPlacementForTest,
+}
+impl OracleRun {
+    /// How each completed run ran: `None` when incremental, the cause when full.
+    /// Courts that know which partitions recomputed assert them directly.
+    fn kinds(
+        &self,
+    ) -> Vec<Option<worth_query_host::facade::application_contribution::WorthQueryPartitionedComputationFullCause>>
+{
+        self.runs
+            .iter()
+            .map(WorthQueryPartitionedComputationRunForTest::full_cause)
+            .collect()
+    }
 }
 
 /// The runs of the current demand. The tests that fill it hold the
