@@ -48,8 +48,36 @@ pub(in crate::domain_computation::primary_graph) struct CoupledApplicationAssemb
     abort_failures: RefCell<Vec<crate::domain_computation::primary_graph::WorthQueryApplicationUncommitted>>,
     /// The last assembly round ended the edit (`Break`).
     broke: std::cell::Cell<bool>,
-    /// Applied position of the stage that owes the work now being prepared.
-    owing: std::cell::Cell<usize>,
+    /// The demand that owes the work now being prepared.
+    owing: RefCell<OwedDemand>,
+}
+/// The applied position of the earliest stage whose effect demands some work.
+/// Work demanded through it (prerequisites, discovered children, continuations
+/// and the writers they prepare) shares the same cell. A route that an earlier
+/// demand also reaches lowers it to that demand, so the position is a lower
+/// bound: settlement by position can only refuse more, never accept a stale read.
+#[derive(Clone)]
+pub(in crate::domain_computation::primary_graph::application_contribution) struct OwedDemand(
+    std::rc::Rc<std::cell::Cell<usize>>,
+);
+impl OwedDemand {
+    pub(in crate::domain_computation::primary_graph::application_contribution) fn at(
+        position: usize,
+    ) -> Self {
+        Self(std::rc::Rc::new(std::cell::Cell::new(position)))
+    }
+    pub(in crate::domain_computation::primary_graph::application_contribution) fn position(
+        &self,
+    ) -> usize {
+        self.0.get()
+    }
+    /// Coalesce another demand for the same route: the earliest one owes it.
+    pub(in crate::domain_computation::primary_graph::application_contribution) fn coalesce(
+        &self,
+        other: &Self,
+    ) {
+        self.0.set(self.position().min(other.position()));
+    }
 }
 struct AuthoredWriter<'run, S> {
     capture: crate::domain_computation::primary_graph::application_contribution::authored_edit::CapturedAuthoredEditStage<S>,
@@ -59,7 +87,7 @@ struct AuthoredWriter<'run, S> {
 }
 struct CoupledWriter<'run, S> {
     position: usize,
-    owed: usize,
+    owed: OwedDemand,
     producer: std::sync::Arc<registry::InstalledProducerProvider<S>>,
     stage: Option<CoupledWriterStage<'run>>,
     meaning: worth_relational::facade::mvcc::RequiredOutputPublicationMeaning,
@@ -105,19 +133,27 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             denial: RefCell::new(None),
             abort_failures: RefCell::new(Vec::new()),
             broke: std::cell::Cell::new(false),
-            owing: std::cell::Cell::new(0),
+            owing: RefCell::new(OwedDemand::at(0)),
         }
     }
     pub(in crate::domain_computation::primary_graph::application_contribution) fn owing(
         &self,
-    ) -> usize {
-        self.owing.get()
+    ) -> OwedDemand {
+        self.owing.borrow().clone()
     }
+    /// The work prepared next is owed by this demand.
     pub(in crate::domain_computation::primary_graph::application_contribution) fn owe(
+        &self,
+        demand: &OwedDemand,
+    ) {
+        *self.owing.borrow_mut() = demand.clone();
+    }
+    /// The work prepared next is owed by a new demand at this position.
+    pub(in crate::domain_computation::primary_graph::application_contribution) fn owe_at(
         &self,
         position: usize,
     ) {
-        self.owing.set(position);
+        *self.owing.borrow_mut() = OwedDemand::at(position);
     }
     pub(in crate::domain_computation::primary_graph::application_contribution) fn retain_discovery_support(
         &self,
@@ -296,6 +332,9 @@ impl<S: ApplicationSchema> RelationalAuthoredCoupledProducerAssembly
             return Ok(ControlFlow::Break(()));
         }
         self.broke.set(false);
+        // Every round, including a cold-symbol retry, starts at the prefix;
+        // no position survives from an abandoned candidate.
+        self.owe_at(0);
         if !self.abort_writers(execution) {
             self.broke.set(true);
             return Ok(ControlFlow::Break(()));

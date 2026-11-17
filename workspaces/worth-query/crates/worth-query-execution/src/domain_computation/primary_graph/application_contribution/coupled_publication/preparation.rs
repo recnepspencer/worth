@@ -84,6 +84,8 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             .chain(captured.iter())
             .collect::<Vec<_>>();
         let mut wave = synchronous_outputs::SynchronousOutputWave::new();
+        // The prefix's own roots are owed at the first applied position.
+        self.owe_at(0);
         let mut order = synchronous_outputs::CapturedSynchronousOutputs::seed(
             &roots,
             self,
@@ -123,7 +125,7 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             }
             // Work this stage's effect owes settles after it, never before.
             let owed = self.authored.borrow().last().expect("prepared stage").position;
-            self.owe(owed);
+            self.owe_at(owed);
             if positioned && let Some(required) = &capture.required {
                 // Only this actual append makes its required root available.
                 demands.synchronous.push(required(execution));
@@ -176,7 +178,7 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
                     .any(|family| family == pending[position].demand().family)
             }) {
                 let demand = pending.remove(position);
-                self.owe(demand.owed());
+                self.owe_at(demand.owed());
                 self.prepare_one(execution, before, demand.demand(), candidate)?;
             } else {
                 position += 1;

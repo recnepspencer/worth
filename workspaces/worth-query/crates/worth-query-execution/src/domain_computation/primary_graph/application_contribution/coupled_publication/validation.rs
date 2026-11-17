@@ -43,7 +43,7 @@ impl<S: ApplicationSchema>
                 writer.meaning.clone(),
             );
             member.position = writer.position;
-            member.owed = Some(writer.owed);
+            member.owed = Some(writer.owed.position());
             member
         }));
         members.sort_by_key(|member| member.position);
