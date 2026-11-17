@@ -185,8 +185,6 @@ where
     >(entry::entry_builder::<Completion, Completion, Completion>())
     .action::<interleaved::created::Binding, Completion>()
     .finish_action()
-    .action::<member_retarget::operation::Binding, Completion>()
-    .finish_action()
     .finish();
     features
 }

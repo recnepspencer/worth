@@ -60,6 +60,7 @@ impl ApplicationProgramDefinition<Schema> for DifferentConditional {
             Completion,
             Delivery<OtherRestore>,
             Delivery<OtherRetire>,
+            Completion,
         >())
         .finish();
         specs

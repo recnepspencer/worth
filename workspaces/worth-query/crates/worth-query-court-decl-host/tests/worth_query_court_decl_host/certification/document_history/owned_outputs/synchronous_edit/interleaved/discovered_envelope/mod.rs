@@ -109,6 +109,7 @@ impl ApplicationProgramDefinition<Schema> for Program {
             Completion,
             Delivery<RestoreTree>,
             Delivery<RetireTree>,
+            Completion,
         >())
         .finish();
         specs
