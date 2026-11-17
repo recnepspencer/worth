@@ -15,7 +15,7 @@ proptest! {
     #[test]
     fn projected_walk_carry_matches_full_after_generated_committed_edits(
         change in 0u8..3,
-        activations in proptest::collection::vec(any::<bool>(), 1..4),
+        edited_nodes in proptest::collection::vec(any::<bool>(), 1..4),
     ) {
         let _observation = worth_query_execution::facade::domain_computation::WorthQueryExecutionObservation::install_on_this_thread();
         let mut graph = graph();
@@ -35,7 +35,8 @@ proptest! {
         let mut current = attempt::run(&world, &installed, prior(before), Run::Incremental);
         prop_assert_eq!(&current.gathered, &[0], "the second chain is unchanged");
         prop_assert_eq!(current.outcome, if change == 2 { 6 } else { 8 });
-        for (step, active) in activations.into_iter().enumerate() {
+        let mut active = [false; 2];
+        for (step, second_node) in edited_nodes.into_iter().enumerate() {
             let full = attempt::run(&world, &installed, first(), Run::Full(Cause::FirstRun));
             prop_assert_eq!(current.outcome, full.outcome, "same committed source Full oracle");
             prop_assert!((*(*current.sealed.state_for_test()).facts_for_test()).has_structural_walk_for_test());
@@ -44,7 +45,9 @@ proptest! {
             prop_assert!(carried.gathered.is_empty(), "consecutive unchanged seal");
             prop_assert_eq!(carried.outcome, full.outcome);
             // Active is outside this owner's walk input. There are no blocked members.
-            let program = fixture::program::set_node_active(&world, &request, 7, active);
+            let slot = usize::from(second_node);
+            active[slot] = !active[slot];
+            let program = fixture::program::set_node_active(&world, &request, 6 + slot as u64, active[slot]);
             prop_assert!(matches!(fixture::commit(&world, &request, program, 121 + step as u8), WorthQueryApplicationCommitOutcome::Committed(_)));
             current = attempt::run(&world, &installed, prior(carried), Run::Incremental);
             prop_assert!(current.gathered.is_empty(), "unread field edits preserve both walks");
