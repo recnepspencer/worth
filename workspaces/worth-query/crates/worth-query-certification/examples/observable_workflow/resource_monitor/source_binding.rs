@@ -32,7 +32,7 @@ pub(super) fn prepare(
     let requirements = programs.compare(&target).unwrap();
     let prepared = programs.adopt(&requirements).unwrap().prepare(64).unwrap();
     assert_eq!(prepared.selected_entity_count(), 2);
-    match programs.publish(prepared) {
+    match runtime.request(actor, scope).programs().publish(prepared) {
         WorthQueryBranchAdoptionPublicationOutcome::Performed(adoption) => {
             assert_eq!(adoption.target(), &target);
         }
