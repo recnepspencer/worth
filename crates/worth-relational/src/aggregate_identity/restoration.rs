@@ -1,4 +1,5 @@
 //! Rebind private memberships only to actual Native consequence allocations.
+use crate::execution::request_stage::checkpoint;
 use crate::{
     identity::data::{EntityId, KindId, RelationId},
     publication::data::{AuthoredRetirementRefusal, PublicationError},
@@ -45,7 +46,7 @@ impl RestoredMembership {
                 RecordRef::Relation(self.original),
             ))
         };
-        context.checkpoint(entities.len() as u64).map_err(stop)?;
+        checkpoint(context, entities.len() as u64).map_err(stop)?;
         let source = entities
             .iter()
             .find(|(old, _)| *old == self.source)
@@ -55,7 +56,7 @@ impl RestoredMembership {
         let aspect = AspectKey::new(super::projected_storage::MEMBERSHIP_ASPECT)
             .expect("fixed Native membership aspect");
         for (reference, id) in created.iter() {
-            context.checkpoint(1).map_err(stop)?;
+            checkpoint(context, 1).map_err(stop)?;
             if reference.kind_id != self.kind {
                 continue;
             }
@@ -72,16 +73,15 @@ impl RestoredMembership {
                 continue;
             }
             let current = row.extra().authoritative_aspect_state();
-            context
-                .checkpoint(
-                    self.payload
-                        .as_ref()
-                        .map_or(0, |p| p.owned_allocation_capacity_bytes())
-                        as u64
-                        + current.map_or(0, |p| p.owned_allocation_capacity_bytes()) as u64
-                        + 1,
-                )
-                .map_err(stop)?;
+            checkpoint(
+                context,
+                self.payload
+                    .as_ref()
+                    .map_or(0, |p| p.owned_allocation_capacity_bytes()) as u64
+                    + current.map_or(0, |p| p.owned_allocation_capacity_bytes()) as u64
+                    + 1,
+            )
+            .map_err(stop)?;
             // The canonical case roster is carrier-independent. Endpoints come
             // from the actual fresh allocations; no old aggregate ID is revived.
             if self.payload.as_ref().and_then(|p| p.get(&aspect))
