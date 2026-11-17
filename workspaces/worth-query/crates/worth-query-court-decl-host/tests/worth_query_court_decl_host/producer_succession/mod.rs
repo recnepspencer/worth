@@ -21,3 +21,5 @@ mod materialization;
 mod root_retirement;
 
 mod installed_export;
+
+mod native_walk;
