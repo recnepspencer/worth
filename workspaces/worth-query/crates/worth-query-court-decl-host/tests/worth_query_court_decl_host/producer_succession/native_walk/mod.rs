@@ -40,8 +40,7 @@ fn fresh_full(width: u64) -> u64 {
     let outcome = *calls.outcomes.lock().unwrap().last().unwrap();
     outcome
 }
-#[test]
-fn worker_only_committed_walk_producer_accepts_native_carry_and_declines_changed_call_roster() {
+fn worker_only_successor(include_native_carry: bool) {
     let _observe = WorthQueryExecutionObservation::install_on_this_thread();
     let calls = Arc::new(Calls::default());
     let app = producer_world::install(calls.clone(), true);
@@ -51,7 +50,12 @@ fn worker_only_committed_walk_producer_accepts_native_carry_and_declines_changed
     publications();
     let mut prior = None;
     let mut outcomes = Vec::new();
-    for (width, nonce) in [(1, 1200), (0, 1201), (2, 1202)] {
+    let changes: &[(u64, u64)] = if include_native_carry {
+        &[(1, 1200), (0, 1201), (2, 1202)]
+    } else {
+        &[(1, 1200), (2, 1202)]
+    };
+    for &(width, nonce) in changes {
         fact_verification_on_this_thread_for_test();
         partitioned_computation_runs_on_this_thread_for_test();
         let before = calls.gathers.load(Ordering::Relaxed);
@@ -112,17 +116,30 @@ fn worker_only_committed_walk_producer_accepts_native_carry_and_declines_changed
         outcomes.push(*calls.outcomes.lock().unwrap().last().unwrap());
         prior = Some(current);
     }
-    assert_eq!(outcomes, [1, 1, 2]);
+    if include_native_carry {
+        assert_eq!(outcomes, [1, 1, 2]);
+        assert_eq!(
+            outcomes[1],
+            fresh_full(0),
+            "independent first-preserve Full reference"
+        );
+    } else {
+        assert_eq!(outcomes, [1, 2]);
+    }
     assert_eq!(
-        outcomes[1],
-        fresh_full(0),
-        "independent first-preserve Full reference"
-    );
-    assert_eq!(
-        outcomes[2],
+        *outcomes.last().unwrap(),
         fresh_full(2),
         "changed membership matches independent Full reference"
     );
+}
+
+#[test]
+fn worker_only_committed_walk_producer_accepts_native_carry_and_declines_changed_call_roster() {
+    worker_only_successor(true);
+}
+#[test]
+fn worker_only_call_roster_decline_seals_carried_walk_without_fresh_owner_reread() {
+    worker_only_successor(false);
 }
 
 #[test]

@@ -2022,3 +2022,6 @@ workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crat
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-contribution/tests/worth_query_court_execution_primary_graph_application_contribution/domain_computation/primary_graph/application_contribution/partitioned_computation/incremental/tests/structural_walk/orbits/mod.rs
 
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/producer_succession/native_walk/mod.rs
+
+# #209 records the actual native fallback reason only after a demand refusal.
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/producer_succession/native_walk/source_action.rs

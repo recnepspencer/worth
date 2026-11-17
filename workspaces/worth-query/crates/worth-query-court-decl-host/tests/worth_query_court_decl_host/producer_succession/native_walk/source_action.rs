@@ -124,10 +124,15 @@ fn demand(app: &producer_world::App, request: &settlement::Request<'_, '_, '_>) 
                 return;
             }
             WorthQueryProgramOutputOperationAdvance::Refused { denial, .. } => {
-                panic!("demand: {denial:?}")
+                let decline = worth_query_host::facade::primary_graph::fact_verification_on_this_thread_for_test().native_completion_last_decline;
+                panic!("demand: {denial:?}; observed native decline: {decline:?}")
             }
             WorthQueryProgramOutputOperationAdvance::Terminal(terminal) => {
-                panic!("demand: {:?}", terminal.denial())
+                let decline = worth_query_host::facade::primary_graph::fact_verification_on_this_thread_for_test().native_completion_last_decline;
+                panic!(
+                    "demand: {:?}; observed native decline: {decline:?}",
+                    terminal.denial()
+                )
             }
         }
     }

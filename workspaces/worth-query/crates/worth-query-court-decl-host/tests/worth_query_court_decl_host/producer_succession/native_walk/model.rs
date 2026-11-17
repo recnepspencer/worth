@@ -1,4 +1,4 @@
-//! One installed producer computation reads a homogeneous walk through its owner.
+//! A carried walk stays independent from the added ordinary-field partition.
 use super::*;
 use worth_execution::PartitionItemId;
 use worth_query_decl::facade::application_program::*;
@@ -36,7 +36,7 @@ impl ApplicationDerivedArtifact<Schema, program::SplitParent> for Artifact {
         &[ApplicationArtifactDependency::new(
             <source_control::Binding as ApplicationMutationBinding<Schema>>::IDENTITY,
         )];
-    const REUSE_RULE: &'static str = "same-walk";
+    const REUSE_RULE: &'static str = "same-observed-inputs";
     const STOPPED_OUTCOME: &'static str = "walk-refused";
 }
 pub struct Reuse;
@@ -94,14 +94,19 @@ impl WorthQueryPartitionedComputationOwner<Schema, program::SplitParent, Computa
         &self,
         reader: &mut Reader<'_, '_, '_>,
         root: &Root,
-        _: WorthQueryComputationPartitionMembers<'_, Part, Part>,
+        members: WorthQueryComputationPartitionMembers<'_, Part, Part>,
     ) -> Result<u64, WorthQueryComputationInputDenial<u32>> {
         self.0
             .gathers
             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-        Ok(reader
-            .walk(GeneratedBy::reference(), RelationDirection::Forward, root)?
-            .len() as u64)
+        if members.key().0 == 0 {
+            Ok(reader
+                .walk(GeneratedBy::reference(), RelationDirection::Forward, root)?
+                .len() as u64)
+        } else {
+            // A fresh owner call must not rescue missing issuance for the carried walk.
+            Ok(reader.field(root, Value::at("Value"))?.unwrap())
+        }
     }
     fn compute_partition(
         &self,
