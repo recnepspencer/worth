@@ -33,7 +33,7 @@ use worth_relational::facade::transactions::RelationalExecutionDenialCause as Ca
 
 pub(in crate::domain_computation::primary_graph::application_query) mod temporary;
 
-pub(super) struct AcquisitionDenial {
+pub(in crate::domain_computation::primary_graph::application_query) struct AcquisitionDenial {
     pub(super) cause: AcquisitionCause,
     // Diagnostic names may share the newly admitted source/temporary backing.
     // Preserve both real owners through the error's final lifetime.
