@@ -185,13 +185,18 @@ mod serial {
             .unwrap();
         request
             .advanced()
-            .mutate(PlanarSourceAdjustment {
+            .mutate(PlanarEdit(PlanarMutation {
                 scope_key: "anchor-a".to_owned(),
-                replacement_y: length(3),
-            })
+                operation: worth_query_consumer_values::PlanarOperation::Adjust(vec![
+                    worth_query_consumer_values::PlanarAdjustment {
+                        body_key: "anchor-a".to_owned(),
+                        replacement_y: length(3),
+                    },
+                ]),
+            }))
             .expect_source(source.observed_sources()[0].clone())
             .idempotency(&991_u64)
-            .execute_performed::<CheckpointProgram, CheckpointRoot>(
+            .execute_in_program::<CheckpointProgram>(
                 &application,
                 worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
             )

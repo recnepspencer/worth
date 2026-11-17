@@ -96,15 +96,28 @@ mod serial {
                         })
                         .execute()
                         .unwrap();
-                    request
-                    .advanced().mutate(PlanarSourceAdjustment {
-                        scope_key: body.to_owned(),
-                        replacement_y: length(replacement),
-                    })
-                    .expect_source(source.observed_sources()[0].clone())
-                    .idempotency(&idempotency)
-                    .execute_performed::<program::ChainProgram, program::ChainRoot>(&application, worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation)
-                    .expect("the selected source edit commits through the real mutation owner");
+                    let outcome = request
+                        .advanced()
+                        .mutate(PlanarEdit(PlanarMutation {
+                            scope_key: body.to_owned(),
+                            operation: worth_query_consumer_values::PlanarOperation::Adjust(vec![
+                                worth_query_consumer_values::PlanarAdjustment {
+                                    body_key: body.to_owned(),
+                                    replacement_y: length(replacement),
+                                },
+                            ]),
+                        }))
+                        .expect_source(source.observed_sources()[0].clone())
+                        .idempotency(&idempotency)
+                        .execute_in_program::<program::ChainProgram>(
+                            &application,
+                            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+                        )
+                        .expect("the native source edit commits before the tested demand");
+                    assert!(matches!(
+                        outcome,
+                        WorthQueryApplicationMutationOutcome::Committed { .. }
+                    ));
                     model_y[index] = replacement;
                 }
 
