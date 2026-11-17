@@ -31,7 +31,7 @@ from query_gate_diagnostics import failed_tests, report_failed_command
 from query_gate_environment import environment, require_build_identity, verification_identity
 from query_gate_prebuild import GatePrebuild, PrerequisiteFailure, refused_scale_suites
 from query_gate_cost import CostGate, DOC_SUITES, SUITE_ALIASES, governed
-from cargo_capture import CargoRunner
+from query_gate_cargo import GateCargoRunner as CargoRunner
 from lane_environment import validate as validate_environment
 
 from query_gate_courts import (

@@ -10,6 +10,9 @@ toolchain and Rust flag overrides before discovery or execution, including
 direct census commands, wrapper commands and standalone prebuilds. Build
 identity and cache/parallelism settings retain their existing owners. Explicit
 IR instrumentation remains a separate measurement, not landing qualification.
+The Query full gate owns a nonincremental Cargo invocation to avoid rustc
+incremental-state crashes during qualification. Its unit graph and compiler
+capture record that resolved mode; ordinary builds keep the checkout defaults.
 Historical captures with the earlier debug/cold-probe overrides remain honest
 records of those inputs; they are not clean qualification of a newer checkout.
 
