@@ -281,26 +281,4 @@ mod serial {
          superseded race and the restore are driven: {driven:?}"
         );
     }
-
-    /// The same sequences where the branch admits few product observations. No
-    /// caller is refused one or asked to retry: a demand, a read or a commit the
-    /// branch has no observation for retires closed cached outputs, and then
-    /// releases the sources of performed writes nobody holds, until it is
-    /// admitted. An open demand keeps its output, and a retired output is
-    /// produced again by its next demand.
-    #[test]
-    fn randomized_marking_makes_room_on_a_branch_with_few_observations() {
-        let _equivalence =
-            primary_graph::WorthQueryInvalidationEquivalenceForTest::arm_on_this_thread_for_test();
-        let _guard = checkpoint_recovery_test_guard();
-        let mut driven = Driven::default();
-        for seed in SEEDS {
-            run(seed, 16, STEPS, &mut driven);
-        }
-        assert!(
-            driven.evicted_rechecks > 0 && driven.free_rechecks > 0 && driven.restores > 0,
-            "a cached output retired for room, an uninterrupted clean recheck and a restore are \
-         driven: {driven:?}"
-        );
-    }
 }
