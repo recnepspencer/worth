@@ -16,9 +16,9 @@ impl WorthUiStatusMutation {
         match self.state.native.as_ref().expect("one retained original owner") {
             NativeCustody::Source(native::State::Completed(_)) | NativeCustody::Action(native::State::Completed(_)) =>
                 Err(self.refused(WorthUiStatusMutationStop::PublicationPending)),
-            NativeCustody::Source(native::State::Terminal(terminal)) if matches!(terminal.native_outcome(), Some(worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome::AlreadyCommitted(_) | worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome::PreviouslyCommitted(_))) =>
+            NativeCustody::Source(native::State::Terminal(terminal)) if matches!(terminal.native_outcome(), Some(worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome::AlreadyCommitted(_) | worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome::RecoveredCommitted(_))) =>
                 Err(self.refused(WorthUiStatusMutationStop::PublicationPending)),
-            NativeCustody::Action(native::State::Terminal(terminal)) if matches!(terminal.native_outcome(), Some(worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome::AlreadyCommitted(_) | worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome::PreviouslyCommitted(_))) =>
+            NativeCustody::Action(native::State::Terminal(terminal)) if matches!(terminal.native_outcome(), Some(worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome::AlreadyCommitted(_) | worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome::RecoveredCommitted(_))) =>
                 Err(self.refused(WorthUiStatusMutationStop::PublicationPending)),
             _ => self.close(scope),
         }

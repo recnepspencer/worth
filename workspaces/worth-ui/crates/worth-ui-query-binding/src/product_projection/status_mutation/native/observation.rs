@@ -6,7 +6,8 @@ impl<I: ApplicationMutationIntent<WorthUiApplicationSchema> + 'static, A> State<
         };
         match completed.evidence() {
             WorthQuerySourceCompletion::Fresh { retained, .. }
-            | WorthQuerySourceCompletion::Recovered { retained, .. } => retained.as_ref(),
+            | WorthQuerySourceCompletion::Recovered { retained, .. }
+            | WorthQuerySourceCompletion::Recorded { retained, .. } => retained.as_ref(),
         }
     }
 }

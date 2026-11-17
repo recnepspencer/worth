@@ -5,6 +5,7 @@ use worth_query::facade::runtime::WorthQueryEvidenceIdentity;
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum UiProjectionBindingStopKind {
     MissingInstalledView,
+    EvidenceIdentity(worth_query::facade::runtime::WorthQueryEvidenceIdentityDerivationDenial),
     ShapeMismatch,
     SchemaMismatch,
     NativeFamilyMismatch,

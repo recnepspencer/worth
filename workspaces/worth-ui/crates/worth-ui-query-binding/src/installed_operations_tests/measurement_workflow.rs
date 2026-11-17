@@ -31,6 +31,7 @@ fn registered_snapshot_and_recording_workflow_execute_real_query_mechanics() {
         )
         .unwrap()
         .start_workflow(&mut workspace)
+        .expect("workflow start identity derives")
         .unwrap()
         .advance(
             IDENTIFY_STAGE,
@@ -125,6 +126,7 @@ fn recording_workflow_rejects_invalid_value_without_a_partial_write() {
         )
         .unwrap()
         .start_workflow(&mut workspace)
+        .expect("workflow start identity derives")
         .unwrap()
         .advance(
             IDENTIFY_STAGE,

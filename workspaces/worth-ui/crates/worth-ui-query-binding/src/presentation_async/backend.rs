@@ -9,6 +9,13 @@ pub(super) fn configure(
     builder: runtime::WorthQueryRuntimeBuilder,
 ) -> Result<runtime::WorthQueryRuntimeBuilder, super::WorthUiPresentationAsyncInstallationError> {
     let source = source::initialize()?;
+    let subscription_identity =
+        runtime::runtime_subscription_support_evidence_identity("presentation-async-live")
+            .map_err(|cause| {
+                super::WorthUiPresentationAsyncInstallationError::Runtime(Box::new(
+                    runtime::WorthQueryRuntimeError::from(cause),
+                ))
+            })?;
     Ok(presentation_consumer_support(builder)
         .relational_runtime(source)
         .relational_product_bridge("worth-ui-presentation-async", presentation_bridge)
@@ -17,7 +24,7 @@ pub(super) fn configure(
         .snapshot_identity(PresentationSnapshot)
         .write_authority(PresentationWriteDenial)
         .signal_sink(PresentationSignalSink)
-        .subscription_activation(PresentationSubscription)
+        .subscription_activation(PresentationSubscription(subscription_identity))
         .preview_basis(PresentationPreviewDenial)
         .inspector_evidence(PresentationInspectionDenial)
         .support_profile(presentation_support_profile())
@@ -114,8 +121,8 @@ impl runtime::WorthQueryRuntimeSchemaAdapter for PresentationSchema {
         runtime::LiveViewDeclarationAdmissionBoundaryReceipt,
         foundation::WorthQueryWorkspaceError,
     > {
-        let admitted = self.build_live_view_declaration_admission_receipt(name, request);
-        Ok(self.build_live_view_declaration_boundary_receipt(name, request, admitted))
+        let admitted = self.build_live_view_declaration_admission_receipt(name, request)?;
+        Ok(self.build_live_view_declaration_boundary_receipt(name, request, admitted)?)
     }
 }
 
@@ -170,7 +177,7 @@ impl runtime::WorthQueryRuntimeWriteAuthorityAdapter for PresentationWriteDenial
         &mut self,
         _execution: &worth_runtime_bridge::facade::ExecutionRequest<'_, '_>,
         _bridge: &RuntimeBridge,
-        _relational_runtime: Option<&mut worth_relational::facade::runtime::RelationalRuntime>,
+        _relational_runtime: Option<&worth_relational::facade::runtime::RelationalRuntime>,
         _mutation: runtime::WorthQueryBackendAdmissibleMutation,
     ) -> Result<runtime::WriteAuthorityExecutionReceipt, foundation::WorthQueryWorkspaceError> {
         Err(foundation::WorthQueryWorkspaceError::new(
@@ -192,10 +199,10 @@ impl runtime::WorthQueryRuntimeSignalSinkAdapter for PresentationSignalSink {
     }
 }
 
-struct PresentationSubscription;
+struct PresentationSubscription(runtime::WorthQueryEvidenceIdentity);
 impl runtime::WorthQueryRuntimeSubscriptionActivationAdapter for PresentationSubscription {
     fn support_evidence_identity(&self) -> runtime::WorthQueryEvidenceIdentity {
-        runtime::runtime_subscription_support_evidence_identity("presentation-async-live")
+        self.0.clone()
     }
     fn admit_activation(
         &mut self,
@@ -203,8 +210,8 @@ impl runtime::WorthQueryRuntimeSubscriptionActivationAdapter for PresentationSub
         activation: &runtime::SubscriptionActivationInput,
     ) -> Result<runtime::SubscriptionActivationBoundaryReceipt, foundation::WorthQueryWorkspaceError>
     {
-        let admitted = self.build_subscription_activation_receipt(view_name, activation);
-        Ok(self.build_subscription_activation_boundary_receipt(view_name, activation, admitted))
+        let admitted = self.build_subscription_activation_receipt(view_name, activation)?;
+        Ok(self.build_subscription_activation_boundary_receipt(view_name, activation, admitted)?)
     }
 }
 

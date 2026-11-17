@@ -64,12 +64,21 @@ pub(crate) fn admit_scalar_registration(
                     denial,
                 ),
             ),
-        ) => UiScalarProjectionBindingAdmission::Unavailable(
-            crate::UiProjectionUnavailableReceipt::query_issued(
-                crate::UiProjectionUnavailableKind::Unsupported,
-                denial.evidence_identity().clone(),
+        ) => match denial.evidence_identity() {
+            Ok(identity) => UiScalarProjectionBindingAdmission::Unavailable(
+                crate::UiProjectionUnavailableReceipt::query_issued(
+                    crate::UiProjectionUnavailableKind::Unsupported,
+                    identity.clone(),
+                ),
             ),
-        ),
+            Err(cause) => UiScalarProjectionBindingAdmission::Stopped(
+                UiProjectionBindingStopReceipt::initial(
+                    super::UiProjectionBindingStopKind::EvidenceIdentity(cause),
+                    attempt_identity,
+                    "Query could not derive the consumer compatibility identity",
+                ),
+            ),
+        },
         Err(denial) => UiScalarProjectionBindingAdmission::Stopped(preparation_stop(
             attempt_identity,
             denial,

@@ -301,6 +301,7 @@ impl WorthUiSettledScalarTextProjection {
         let access_counters = access.counters();
         let text = match access.fact().as_interned_string() {
             Ok(InternedString::Raw(text)) => text.clone(),
+            Ok(InternedString::Stored(text)) => text.as_str().to_owned(),
             Ok(InternedString::Symbol(_)) => {
                 return Err(Box::new(WorthUiScalarTextDerivationStop::SymbolicText {
                     resolution_counters,

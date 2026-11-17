@@ -125,6 +125,7 @@ impl UiLiveCollectionProjection {
             },
             receipt,
         )
+        .expect("certification collection identities derive")
     }
 
     pub(crate) fn certification_state_snapshot(&self) -> CollectionProjectionStateSnapshot {
@@ -164,14 +165,17 @@ impl UiLiveCollectionProjection {
                 .consumer
                 .continuation()
                 .identity_evidence()
+                .expect("certification continuation identity derives")
                 .map(|identity| identity.operational_key()),
             source_generation: self
                 .consumer
                 .source_generation_identity_evidence()
+                .expect("certification source identity derives")
                 .operational_key(),
             result_generation: self
                 .consumer
                 .result_generation_identity_evidence()
+                .expect("certification result identity derives")
                 .operational_key(),
             warnings: self.consumer.warnings().into(),
             reset_pending: self.consumer.reset_pending(),
@@ -185,7 +189,10 @@ fn required_patch(
     admitted: &observation::WorthQueryAdmittedConsumerInvalidation<'_>,
     workspace: &runtime::WorthQueryWorkspace,
 ) -> QueryPatch {
-    match consumer.plan_patch(request_execution, admitted, workspace) {
+    match consumer
+        .plan_patch(request_execution, admitted, workspace)
+        .expect("certification patch identities derive")
+    {
         collection::WorthQueryCollectionDeliveryOutcome::Patch(patch) => patch,
         collection::WorthQueryCollectionDeliveryOutcome::NoDelivery(stop) => {
             panic!(

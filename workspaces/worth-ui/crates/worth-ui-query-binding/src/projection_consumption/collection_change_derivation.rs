@@ -14,7 +14,10 @@ use super::{
 pub(crate) fn derive_applied_collection_projection(
     context: UiCollectionDerivationContext<'_>,
     receipt: &WorthQueryCollectionPatchApplicationReceipt,
-) -> UiCollectionProjectionFactReceipt {
+) -> Result<
+    UiCollectionProjectionFactReceipt,
+    worth_query::facade::runtime::WorthQueryEvidenceIdentityDerivationDenial,
+> {
     let mut changed_rows = BTreeMap::new();
     let mut changes = Vec::new();
     for operation in receipt.operations() {

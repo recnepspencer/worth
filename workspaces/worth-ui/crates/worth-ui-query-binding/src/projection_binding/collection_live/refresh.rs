@@ -29,7 +29,11 @@ impl UiLiveCollectionProjection {
         self.consumer
             .bind_shared_target(&admitted, workspace)
             .map_err(|stop| UiCollectionProjectionRefreshError::Delivery(Box::new(stop)))?;
-        let patch = match self.consumer.plan_patch(execution, &admitted, workspace) {
+        let patch = match self
+            .consumer
+            .plan_patch(execution, &admitted, workspace)
+            .map_err(UiCollectionProjectionRefreshError::EvidenceIdentity)?
+        {
             collection::WorthQueryCollectionDeliveryOutcome::Patch(patch) => patch,
             collection::WorthQueryCollectionDeliveryOutcome::NoDelivery(stop) => {
                 return Err(UiCollectionProjectionRefreshError::Delivery(Box::new(stop)));
@@ -48,7 +52,8 @@ impl UiLiveCollectionProjection {
                 budget: self.budget,
             },
             &receipt,
-        );
+        )
+        .map_err(UiCollectionProjectionRefreshError::EvidenceIdentity)?;
         Ok(UiCollectionProjectionRefreshOutcome::Applied(
             UiCollectionProjectionRefreshReceipt {
                 fact,
@@ -63,6 +68,10 @@ impl UiLiveCollectionProjection {
 impl std::fmt::Debug for UiCollectionProjectionRefreshError {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::EvidenceIdentity(cause) => formatter
+                .debug_tuple("EvidenceIdentity")
+                .field(cause)
+                .finish(),
             Self::Drain(stop) => formatter.debug_tuple("Drain").field(stop.error()).finish(),
             Self::Delta(stop) => formatter.debug_tuple("Delta").field(&stop.kind()).finish(),
             Self::Readmission(stop) => formatter
