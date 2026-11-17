@@ -144,6 +144,19 @@ pub struct WorthQueryInvariantExecutionFailure {
     custom_invariant: Option<WorthQueryCustomInvariantDenial>,
     native: Option<NativeDenial>,
     affected_records: Option<Arc<[worth_relational::facade::transactions::RecordRef]>>,
+    hold: Option<WorthQueryCoupledSupportHold>,
+}
+
+/// A coupled support refusal the platform holds for a named public issue.
+/// The edit is valid sequentially; it refuses atomically until the issue lands.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum WorthQueryCoupledSupportHold {
+    /// A later authored stage changed what an output derived earlier in the
+    /// same envelope depends on: its input, the discovery it was prepared
+    /// under, or a verified output an earlier stage read. Committing it needs a
+    /// second derivation of that route, which waits on in-envelope producer
+    /// supersession (public #229).
+    ProducerSupersession,
 }
 
 impl WorthQueryInvariantExecutionFailure {
@@ -236,6 +249,14 @@ impl WorthQueryInvariantExecutionFailure {
         self.affected_records = Some(Arc::from(records));
         self
     }
+    pub(crate) fn held(mut self, hold: WorthQueryCoupledSupportHold) -> Self {
+        self.hold = Some(hold);
+        self
+    }
+    /// The public issue this refusal is held for, when it is a hold.
+    pub fn coupled_support_hold(&self) -> Option<WorthQueryCoupledSupportHold> {
+        self.hold
+    }
     /// Exact records whose Query settlement could not be admitted.
     pub fn affected_records(&self) -> &[worth_relational::facade::transactions::RecordRef] {
         self.affected_records.as_deref().unwrap_or(&[])
@@ -250,6 +271,7 @@ impl WorthQueryInvariantExecutionFailure {
             custom_invariant: None,
             native: None,
             affected_records: None,
+            hold: None,
         }
     }
 
@@ -264,6 +286,7 @@ impl WorthQueryInvariantExecutionFailure {
             custom_invariant: None,
             native: None,
             affected_records: None,
+            hold: None,
         }
     }
 
@@ -278,6 +301,7 @@ impl WorthQueryInvariantExecutionFailure {
             custom_invariant: Some(custom_invariant),
             native: None,
             affected_records: None,
+            hold: None,
         }
     }
 
@@ -362,6 +386,7 @@ impl WorthQueryInvariantExecutionFailure {
             custom_invariant: None,
             native: Some(native),
             affected_records: None,
+            hold: None,
         }
     }
     /// Exact physical owner cause, including its original checked quote.

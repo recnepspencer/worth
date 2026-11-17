@@ -209,14 +209,22 @@ fn changed(
                     crate::domain_computation::primary_graph::provider::CoupledApplicationMemberKind::AuthoredStage { identity, binding, .. } => format!("authored stage {} {binding}", identity.ordinal()),
                     crate::domain_computation::primary_graph::provider::CoupledApplicationMemberKind::Producer { producer, meaning } => format!("producer {producer} {}", meaning.family),
                 };
-                return Err(CoupledSupportPreparationDenial::Changed(
-                    Failure::coupled_read_support(
-                        source,
-                        None,
-                        format!("{earlier}; later writer {later}: {detail}"),
-                    )
-                    .with_coupled_writer(writer.source()),
-                ));
+                let failure = Failure::coupled_read_support(
+                    source,
+                    None,
+                    format!("{earlier}; later writer {later}: {detail}"),
+                )
+                .with_coupled_writer(writer.source());
+                // An authored stage's change is what one commit per stage
+                // commits too; it refuses here only because an output derived
+                // before it was not derived again. That needs a second derivation
+                // of the route in this envelope: held on #229.
+                let held = matches!(writer.kind, crate::domain_computation::primary_graph::provider::CoupledApplicationMemberKind::AuthoredStage { .. });
+                return Err(CoupledSupportPreparationDenial::Changed(if held {
+                    failure.held(crate::domain_computation::WorthQueryCoupledSupportHold::ProducerSupersession)
+                } else {
+                    failure
+                }));
             }
         }
     }
