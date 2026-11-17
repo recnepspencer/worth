@@ -1,11 +1,76 @@
 //! Match original observations only while the final revision still equals restoration.
+use super::super::{RelationalAdjacencyDirection, RelationalAdjacencyVisit};
 use super::*;
 use crate::execution::request_stage::{checkpoint, optional_stage};
-use crate::identity::data::EntityId;
+use crate::identity::data::{EntityId, KindId, VersionId};
 use crate::storage::data::RelationalFieldRevision;
 use worth_foundational::facade::{AspectFieldLocator, AspectKey};
 
 impl HistoricalSelectionStage {
+    /// A graph selection may leave external incoming edges or a transferred
+    /// member's ordinary outgoing edges current. Both exact lists must be
+    /// wholly covered by its canonical selected relation roster; equal list
+    /// counts then establish complete restoration without copying records.
+    fn restored_adjacency_complete(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        anchor: EntityId,
+        kind: KindId,
+        direction: RelationalAdjacencyDirection,
+    ) -> Result<bool, RelationalHistoricalSelectionReadDenial> {
+        use RelationalHistoricalSelectionReadDenial as Denial;
+        optional_stage(
+            execution,
+            |context, _| {
+                let roster = self.graph().selected_relations();
+                let mut complete = true;
+                let mut counts = [0u64; 2];
+                for (index, view) in [&self.selected, &self.restored].into_iter().enumerate() {
+                    view.try_visit_adjacency_ids(execution, anchor, kind, direction, |visit| {
+                        match visit {
+                            RelationalAdjacencyVisit::Prepare { work, .. } => {
+                                checkpoint(context, work)
+                                    .map_err(crate::execution::denial::kernel_stop)?;
+                            }
+                            RelationalAdjacencyVisit::Relation(id) => {
+                                checkpoint(
+                                    context,
+                                    roster.len().checked_ilog2().unwrap_or(0) as u64 + 1,
+                                )
+                                .map_err(crate::execution::denial::kernel_stop)?;
+                                let edge = roster
+                                    .binary_search_by_key(&id, |edge| edge.relation_id)
+                                    .ok()
+                                    .map(|index| &roster[index]);
+                                complete &= edge.is_some_and(|edge| {
+                                    edge.kind_id == kind
+                                        && match direction {
+                                            RelationalAdjacencyDirection::Outgoing => {
+                                                edge.source == anchor
+                                            }
+                                            RelationalAdjacencyDirection::Incoming => {
+                                                edge.target == anchor
+                                            }
+                                        }
+                                });
+                                counts[index] += 1;
+                            }
+                            RelationalAdjacencyVisit::List | RelationalAdjacencyVisit::Acquired => {
+                                checkpoint(context, 1)
+                                    .map_err(crate::execution::denial::kernel_stop)?;
+                            }
+                        }
+                        Ok::<_, Cause>(())
+                    })??;
+                }
+                Ok(complete && counts[0] == counts[1])
+            },
+            |_| 0,
+        )
+        .map_err(Denial::Execution)?
+        .map_err(Denial::Execution)
+    }
+
     fn member(
         &self,
         execution: &ExecutionRequest<'_, '_>,
@@ -78,6 +143,68 @@ enum RevisionComparison {
 }
 
 impl RelationalHistoricalSelectionRead {
+    /// Match an original adjacency revision only through complete, authentic
+    /// relation restoration. Later structural edits, including ABA, end proof.
+    pub fn matches_adjacency_revision(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        current: &VisibilityProjectionView,
+        anchor: EntityId,
+        kind: KindId,
+        direction: RelationalAdjacencyDirection,
+        expected: Option<VersionId>,
+    ) -> Result<bool, RelationalHistoricalSelectionReadDenial> {
+        use RelationalHistoricalSelectionReadDenial as Denial;
+        let mut current = current;
+        for stage in self.stages.iter().rev() {
+            if !stage.member(execution, current, anchor)? {
+                return Ok(false);
+            }
+            let comparison = optional_stage(
+                execution,
+                |context, _| {
+                    let mut read = |view: &VisibilityProjectionView| {
+                        view.read_exact_adjacency_structural_revision_admitted(
+                            execution,
+                            anchor,
+                            kind,
+                            direction,
+                            |work| checkpoint(context, work),
+                        )?
+                        .map_err(|cause| match cause {
+                            RelationalBorrowedRecordReadDenial::Execution(cause) => cause,
+                            RelationalBorrowedRecordReadDenial::ExactBasisRequired => {
+                                Cause::NestedStopped
+                            }
+                        })
+                    };
+                    if read(current)? != read(&stage.restored)? {
+                        return Ok(RevisionComparison::Changed);
+                    }
+                    Ok(if read(&stage.selected)? == expected {
+                        RevisionComparison::Current
+                    } else {
+                        RevisionComparison::Prior
+                    })
+                },
+                |_| 0,
+            )
+            .map_err(Denial::Execution)?
+            .map_err(Denial::Execution)?;
+            if matches!(comparison, RevisionComparison::Changed)
+                || !stage.restored_adjacency_complete(execution, anchor, kind, direction)?
+            {
+                return Ok(false);
+            }
+            match comparison {
+                RevisionComparison::Current => return Ok(true),
+                RevisionComparison::Prior => current = &stage.selected,
+                RevisionComparison::Changed => unreachable!("changed revision declined above"),
+            }
+        }
+        Ok(false)
+    }
+
     /// Match an immutable producer field observation through every restoration
     /// it needs. A changed intermediate revision, including ABA, ends the proof.
     pub fn matches_field_revision(

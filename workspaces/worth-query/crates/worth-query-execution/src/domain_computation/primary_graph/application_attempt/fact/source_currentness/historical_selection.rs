@@ -14,6 +14,20 @@ impl Fact {
         evidence: &RelationalHistoricalSelectionRead,
     ) -> Result<bool, RelationalHistoricalSelectionReadDenial> {
         match self {
+            Self::SourceAdjacencyRevision {
+                relation_kind,
+                anchor,
+                direction,
+                native_revision,
+                ..
+            } => evidence.matches_adjacency_revision(
+                execution,
+                current,
+                *anchor,
+                *relation_kind,
+                *direction,
+                *native_revision,
+            ),
             Self::SourceFieldRevision {
                 entity_id,
                 locator,

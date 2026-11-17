@@ -10,6 +10,7 @@ mod graph_publication;
 mod graph_refusals;
 mod graph_resources;
 mod historical_absence;
+mod historical_adjacency;
 mod historical_foreign;
 mod historical_publication;
 mod historical_read_chain;
