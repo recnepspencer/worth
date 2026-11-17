@@ -5,3 +5,4 @@
 # It is recommended to check this file in to source control so that
 # everyone who runs the test benefits from these saved cases.
 cc 58e97cb28545bfb58e86228940d3a4f4648dd4d9ad940f6b17218c14eebae8d6 # shrinks to stages = [Model(1), Model(1)]
+cc 8b68441762a8f88295728bee38787827d25749c351cde978551b3c0c6d9616ee # shrinks to stages = [After(1), Consume, Model(3)]

@@ -59,9 +59,8 @@ fn world() -> Host {
 
 /// Runs `stages` (each with its position in the generated edit, which names
 /// its attached member) as one positioned edit. `Ok` holds each stage's
-/// result; `Err` is a refusal that published nothing and kept the head,
-/// holding the conflicting stages when the envelope refused a same-target pair.
-fn execute(host: &Host, key: &str, stages: &[(usize, Stage)]) -> Result<Vec<u64>, Option<(usize, usize)>> {
+/// result; `Err` is a refusal that published nothing and kept the head.
+fn execute(host: &Host, key: &str, stages: &[(usize, Stage)]) -> Result<Vec<u64>, Refusal> {
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.request(&principal, &scope);
@@ -82,9 +81,9 @@ fn execute(host: &Host, key: &str, stages: &[(usize, Stage)]) -> Result<Vec<u64>
                 value: *value,
                 key_derived_target: false,
             }),
-            Stage::Consume => edit.push_stage::<ApplicationNoOutputGraph, _>(pending_consumer::Intent {
+            Stage::Consume => edit.push_stage::<ApplicationNoOutputGraph, _>(value_observation::Intent {
                 model: "a".into(),
-                key: "from-first:first:a".into(),
+                source: value_observation::ValueSource::Child("from-first:first:a".into()),
             }),
             Stage::Attach { pending } => edit.push_stage::<ApplicationNoOutputGraph, _>(attach::Intent {
                 parent: "a".into(),
@@ -115,25 +114,46 @@ fn execute(host: &Host, key: &str, stages: &[(usize, Stage)]) -> Result<Vec<u64>
     );
     assert_eq!(writes.published_rows.len() + writes.omitted_publications, 0, "a refusal published");
     assert_eq!(native_head(host), before, "a refusal moved the head");
-    Err(conflict(&outcome))
+    Err(refusal(&outcome))
 }
 
-/// The envelope's own rule (pinned by the positioned conflicting-intent
-/// court): two authored stages that write one target refuse as
-/// `ConflictingIntent`. `None` for any other refusal.
-fn conflict<E>(
-    outcome: &Result<Outcome, E>,
-) -> Option<(usize, usize)> {
+/// Why a positioned edit refused atomically.
+#[derive(Debug, PartialEq, Eq)]
+enum Refusal {
+    /// The envelope's own rule (pinned by the positioned conflicting-intent
+    /// court): two authored stages that write one target, `(earlier, later)`.
+    Conflict(usize, usize),
+    /// A later stage changed the input of a producer prepared earlier in the
+    /// envelope; held until in-envelope producer supersession (#229).
+    Supersession,
+    /// Any other refusal, as it was reported.
+    Other(String),
+}
+
+fn refusal<E: std::fmt::Debug>(outcome: &Result<Outcome, E>) -> Refusal {
     use worth_query_host::facade::primary_graph::{
-        WorthQueryApplicationUncommitted as Uncommitted, WorthQueryOutputDemandDenialKind as Kind,
+        WorthQueryApplicationUncommitted as Uncommitted, WorthQueryCoupledSupportHold as Hold,
+        WorthQueryOutputDemandDenialKind as Kind,
     };
     let Ok(Outcome::Uncommitted(Uncommitted::Denied(cause))) = outcome else {
-        return None;
+        return Refusal::Other(format!("{outcome:?}"));
     };
-    match cause.coupled_producer_denial()?.kind() {
-        Kind::ConflictingIntent { earlier, later, .. } => Some((earlier, later)),
-        _ => None,
+    if let Some(Kind::ConflictingIntent { earlier, later, .. }) =
+        cause.coupled_producer_denial().map(|denial| denial.kind())
+    {
+        return Refusal::Conflict(earlier, later);
     }
+    match cause.invariant_execution_failure().and_then(|failure| failure.coupled_support_hold()) {
+        Some(Hold::ProducerSupersession) => Refusal::Supersession,
+        None => Refusal::Other(format!("{cause:?}")),
+    }
+}
+
+/// The held shape (#229): a later stage changes the input (the model, or the
+/// members linked to it) of `first:a` after an earlier stage's producers were
+/// prepared.
+fn needs_supersession(stages: &[(usize, Stage)]) -> bool {
+    (stages.iter().skip(1)).any(|(_, later)| matches!(later, Stage::Model(_) | Stage::Attach { .. }))
 }
 
 fn observe(host: &Host, stages: &[(usize, Stage)], results: Vec<u64>) -> World {
@@ -160,7 +180,7 @@ fn observe(host: &Host, stages: &[(usize, Stage)], results: Vec<u64>) -> World {
 }
 
 /// The stages as one positioned edit: `Err` when it refused atomically.
-fn positioned(stages: &[(usize, Stage)]) -> Result<World, Option<(usize, usize)>> {
+fn positioned(stages: &[(usize, Stage)]) -> Result<World, Refusal> {
     let host = world();
     let results = execute(&host, "positioned", stages)?;
     Ok(observe(&host, stages, results))
@@ -186,7 +206,7 @@ proptest! {
         let stages: Vec<_> = stages.into_iter().enumerate().collect();
         let outcome = positioned(&stages);
         eprintln!("{:?}: {}", stages, if outcome.is_ok() { "committed" } else { "refused" });
-        if let Err(Some((earlier, later))) = outcome {
+        if let Err(Refusal::Conflict(earlier, later)) = outcome {
             // The envelope refuses two stages that write one target.
             prop_assert_eq!(
                 std::mem::discriminant(&stages[earlier].1),
@@ -194,6 +214,9 @@ proptest! {
                 "{:?}: a conflict between stages that write different targets",
                 stages
             );
+        } else if let Err(Refusal::Supersession) = outcome {
+            // Held on #229, and only for its shape.
+            prop_assert!(needs_supersession(&stages), "{:?}: a supersession hold without its shape", stages);
         } else {
             // Liveness and safety (#224): otherwise the positioned edit commits
             // exactly when one commit per stage commits, the same world.
@@ -214,4 +237,15 @@ fn the_differential_world_commits_a_settled_child_read() {
     let stages = [(0, Stage::Model(3)), (1, Stage::After(1)), (2, Stage::Consume)];
     let committed = positioned(&stages).expect("this edit commits");
     assert_eq!(Some(committed), sequential(&stages));
+}
+
+/// The held shape (#229): `first:a` is prepared for the consumer, then a later
+/// stage changes its model. One commit per stage commits first 30; the
+/// positioned edit refuses atomically with the supersession hold and nothing
+/// else, attributed to the later authored stage.
+#[test]
+fn a_later_stage_changing_a_prepared_producers_input_is_held_on_supersession() {
+    let stages = [(0, Stage::After(1)), (1, Stage::Consume), (2, Stage::Model(3))];
+    assert!(sequential(&stages).is_some_and(|world| world.first == Some(30)));
+    assert_eq!(positioned(&stages), Err(Refusal::Supersession));
 }
