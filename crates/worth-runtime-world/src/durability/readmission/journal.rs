@@ -264,12 +264,11 @@ impl WorldCheckpointImage {
                 if commits.contains_key(&intent.destination.commit) {
                     return Err(WorldReadmissionDenial::DuplicateIdentity);
                 }
-                if let Some(selected) = self.history.get(&intent.destination.commit) {
-                    if !matches!(&selected.record().record,
+                if let Some(selected) = self.history.get(&intent.destination.commit)
+                    && !matches!(&selected.record().record,
                         WorldRecord::BranchCreated(created) if &created.intent == intent)
-                    {
-                        return Err(WorldReadmissionDenial::DuplicateIdentity);
-                    }
+                {
+                    return Err(WorldReadmissionDenial::DuplicateIdentity);
                 }
                 insert(&mut commits, &intent.destination.commit, &(), execution)?;
             }

@@ -22,10 +22,10 @@ impl WorldCheckpointImage {
         if owners.component_intent() != open.component_intent {
             return Err(WorldReadmissionDenial::OccurrenceEvidenceMismatch);
         }
-        if let Some(signal) = owners.signal() {
-            if signal.point().descriptor().owner().home() != self.binding.owner().home() {
-                return Err(WorldReadmissionDenial::ForeignOwner);
-            }
+        if let Some(signal) = owners.signal()
+            && signal.point().descriptor().owner().home() != self.binding.owner().home()
+        {
+            return Err(WorldReadmissionDenial::ForeignOwner);
         }
         if publishing_incarnation > self.binding.incarnation() {
             return Err(WorldReadmissionDenial::FutureIncarnation);
