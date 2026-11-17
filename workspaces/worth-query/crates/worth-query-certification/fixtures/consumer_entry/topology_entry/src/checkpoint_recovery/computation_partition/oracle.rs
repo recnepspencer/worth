@@ -55,7 +55,6 @@ mod branch_sharing;
 mod differential;
 mod parallel_history_reuse;
 mod program;
-mod worker_axis;
 
 use program::{OracleRoot, RegionArtifact, RegionConnection, TOTALS_WORK};
 
