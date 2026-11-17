@@ -8,6 +8,7 @@ use super::super::super::program as base;
 use super::*;
 #[cfg(test)]
 mod differential;
+pub(super) mod frontier;
 
 macro_rules! root {
     ($start:ident, $connection:ident, $port:ty, $binding:ty, $identity:literal, |$input:ident| $demand:expr) => {

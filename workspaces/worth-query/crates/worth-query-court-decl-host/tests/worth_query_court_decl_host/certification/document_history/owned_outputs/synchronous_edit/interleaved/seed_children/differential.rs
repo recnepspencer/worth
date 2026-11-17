@@ -21,10 +21,17 @@ enum Stage {
     Write(u64),
     /// Reads `first:a`, so the parent and its child settle before it.
     Read(u64),
+    /// Demands no output and moves a record no producer reads: the CAD
+    /// correction's final document stage, after its source stage.
+    Frontier(u64),
 }
 
 fn stage() -> impl Strategy<Value = Stage> {
-    prop_oneof![(1..6u64).prop_map(Stage::Write), (1..9u64).prop_map(Stage::Read)]
+    prop_oneof![
+        3 => (1..6u64).prop_map(Stage::Write),
+        2 => (1..9u64).prop_map(Stage::Read),
+        2 => (5..9u64).prop_map(Stage::Frontier),
+    ]
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -32,6 +39,7 @@ struct World {
     model: u64,
     parent: Option<u64>,
     child: Option<u64>,
+    frontier: u64,
     results: Vec<u64>,
 }
 
@@ -46,7 +54,7 @@ fn world() -> Host {
 }
 
 /// `Ok` holds each Read stage's result; `Err` is an atomic refusal.
-fn execute(host: &Host, key: &str, stages: &[Stage]) -> Result<Vec<u64>, ()> {
+fn execute(host: &Host, key: &str, stages: &[Stage]) -> Result<Vec<u64>, String> {
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.request(&principal, &scope);
@@ -64,6 +72,10 @@ fn execute(host: &Host, key: &str, stages: &[Stage]) -> Result<Vec<u64>, ()> {
                     key_derived_target: false,
                 })
                 .unwrap();
+            }
+            Stage::Frontier(frontier) => {
+                edit.push_stage::<ApplicationNoOutputGraph, _>(frontier::Intent { frontier: *frontier })
+                    .unwrap();
             }
             Stage::Read(add) => tokens.push(
                 edit.push_stage::<SeedReadTree, _>(dependent::Intent { add: *add }).unwrap(),
@@ -91,15 +103,21 @@ fn execute(host: &Host, key: &str, stages: &[Stage]) -> Result<Vec<u64>, ()> {
     );
     assert_eq!(writes.published_rows.len() + writes.omitted_publications, 0, "a refusal published");
     assert_eq!(native_head(host), before, "a refusal moved the head");
-    Err(())
+    Err(format!("{outcome:?}").chars().take(1200).collect())
 }
 
 fn observe(host: &Host, results: Vec<u64>) -> World {
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.request(&principal, &scope);
+    let model = |key: &str| {
+        (request.query(query::model::Read(key.into())).execute())
+            .ok()
+            .and_then(|rows| rows.rows().first().map(|row| row.value))
+    };
     World {
-        model: request.query(query::model::Read("a".into())).execute().unwrap().rows()[0].value,
+        model: model("a").expect("model a exists"),
+        frontier: request.query(super::super::reading::Read).execute().unwrap().rows()[0].frontier,
         parent: (request.query(query::first_output::Read("first:a".into())).execute())
             .ok()
             .and_then(|rows| rows.rows().first().map(|row| row.value)),
@@ -112,8 +130,13 @@ fn observe(host: &Host, results: Vec<u64>) -> World {
 
 fn positioned(stages: &[Stage]) -> Option<World> {
     let host = world();
-    let results = execute(&host, "positioned", stages).ok()?;
-    Some(observe(&host, results))
+    match execute(&host, "positioned", stages) {
+        Ok(results) => Some(observe(&host, results)),
+        Err(refusal) => {
+            eprintln!("{stages:?} refused: {refusal}");
+            None
+        }
+    }
 }
 
 fn sequential(stages: &[Stage]) -> Option<World> {
@@ -154,13 +177,16 @@ fn a_seed_write_then_a_parent_read_commits_the_current_child() {
     assert_eq!(Some(committed), sequential(&stages));
 }
 
-/// The CAD seed edit itself: the parent and child settled, then one stage
+/// The CAD seed edit itself: a source stage writes the seed and a final
+/// stage demands nothing; or the parent and child settle, then a stage
 /// writes the seed. Committed or refused, never a stale child.
 #[test]
 fn a_seed_write_after_a_settled_child_never_commits_a_stale_child() {
     for stages in [
         vec![Stage::Read(7), Stage::Write(4)],
         vec![Stage::Write(3), Stage::Read(7), Stage::Write(5)],
+        vec![Stage::Write(4), Stage::Frontier(5)],
+        vec![Stage::Read(7), Stage::Write(4), Stage::Frontier(6)],
     ] {
         let outcome = positioned(&stages);
         eprintln!("{stages:?}: {outcome:?}");

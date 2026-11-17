@@ -17,6 +17,7 @@ mod prerequisite_path;
 mod program;
 mod reading;
 mod seed_children;
+pub(in super::super) use seed_children::frontier::Binding as SeedFrontierBinding;
 pub(in super::super) mod retirement_parent;
 pub(in super::super) mod seal;
 pub(in super::super) use program::{ModelTree, RetirementProgram};
@@ -26,7 +27,7 @@ pub fn declare(
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
     prerequisite_path::declare(component_carriage::declare(
         prerequisite_partition::declare(occurrence_topology::declare(created::declare(
-            reading::declare(seal::declare(dependent::declare(schema))),
+            reading::declare(seal::declare(dependent::declare(seed_children::frontier::declare(schema)))),
         ))),
     ))
 }
@@ -39,6 +40,7 @@ pub fn install(
     )?;
     setup.handler::<created::Binding, _>(created::Handler)?;
     setup.handler::<dependent::Binding, _>(dependent::Handler)?;
+    setup.handler::<seed_children::frontier::Binding, _>(seed_children::frontier::Handler)?;
     setup.handler::<seal::Binding, _>(seal::Handler)
 }
 pub fn seed(
