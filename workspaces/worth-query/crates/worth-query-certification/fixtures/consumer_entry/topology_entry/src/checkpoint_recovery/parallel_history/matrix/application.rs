@@ -156,9 +156,13 @@ impl ApplicationConnectionIdentity for Connection {
     const IDENTITY: &'static str = "matrix-source-output";
 }
 impl ApplicationOccurrenceConnectionBinding<Schema, SourceFeature, Feature> for Connection {}
+pub struct PrerequisiteOccurrences;
+impl ApplicationOccurrenceComponent<Schema> for PrerequisiteOccurrences {
+    type Connections = (topology::Connection,);
+}
 pub type Root = ApplicationOutputGraph<
     ApplicationConnectionRef<Schema, SourceFeature, SourcePort, Feature, InputPort, Connection>,
-    ApplicationOutputOccurrences<(topology::Connection,)>,
+    ApplicationOutputOccurrences<PrerequisiteOccurrences>,
 >;
 impl ApplicationInputPort<Schema, Feature> for PrerequisitePort {
     type Value = facts::ResultBinding;
