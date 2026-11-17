@@ -77,6 +77,8 @@ impl ApplicationProgramDefinition<Schema> for Program {
         .finish_action()
         .action::<authored_member::restore::Binding, Completion>()
         .finish_action()
+        .action::<member_retarget::operation::Binding, Completion>()
+        .finish_action()
         .action::<member_delete::Binding, Completion>()
         .finish_action()
         .finish();
