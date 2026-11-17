@@ -3688,12 +3688,10 @@ supports serialization for ordinary mutation identity, with no deserialization
 or construction from a stored result row. Fresh results retain their actual
 returned values; recovered completions remain explicitly recovered.
 
-If a request stops after a source write completes, keep the refused owning
-operation. Advance that same owner with a fresh request: native authorization
-and key resolution run again, and its retained Fresh result remains Fresh. The
-[compiled late-stop example](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/proposal_acceptance/courts/attempts/handoff.rs)
-preserves the original returned value and input while the committed basis stays
-unchanged on retry. Close the completed owner after consuming its evidence.
+Fresh completion carries the original returned value. If the reply is lost,
+use a fresh request to resume the retained operation and recover the original
+commit, as shown in the [retained source completion court](../workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/application_graph/source_only/retained/mod.rs).
+Close the completed owner after consuming its evidence.
 
 The [ordinary result handler](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/proposal_acceptance/attempts/recording/handler.rs)
 readmits actual claim membership and full-generation identity, observes caller correspondence
