@@ -10,6 +10,7 @@ mod courts;
 pub(in super::super) mod created;
 pub(in super::super) mod dependent;
 mod discovered_envelope;
+pub(in super::super) mod input_arrival;
 mod occurrence_topology;
 mod occurrences;
 pub(in super::super) mod prerequisite_partition;
@@ -25,7 +26,7 @@ pub fn declare(
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
     prerequisite_path::declare(component_carriage::declare(
         prerequisite_partition::declare(occurrence_topology::declare(created::declare(
-            reading::declare(seal::declare(dependent::declare(schema))),
+            reading::declare(seal::declare(dependent::declare(input_arrival::declare(schema)))),
         ))),
     ))
 }
@@ -38,6 +39,7 @@ pub fn install(
     )?;
     setup.handler::<created::Binding, _>(created::Handler)?;
     setup.handler::<dependent::Binding, _>(dependent::Handler)?;
+    setup.handler::<input_arrival::Binding, _>(input_arrival::Handler)?;
     setup.handler::<seal::Binding, _>(seal::Handler)
 }
 pub fn seed(
