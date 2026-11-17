@@ -22,7 +22,7 @@ impl RelationalAuthoredCoupledProducerAssembly for Refresh<'_> {
     ) -> Result<ControlFlow<()>, RelationalCoupledAssemblyFailure> {
         assert!(
             candidate
-                .declared_owner(
+                .read_parent_owner(
                     execution,
                     "source-owned",
                     self.prior.meaning().source_scope,

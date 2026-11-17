@@ -64,7 +64,7 @@ impl RelationalAuthoredCoupledProducerAssembly for PreserveAfterStage<'_> {
         // running its producer: the stage source's route must be surviving.
         assert!(
             matches!(
-                candidate.declared_owner(execution, "owned", self.world.carrier, &[0; 32])?,
+                candidate.read_parent_owner(execution, "owned", self.world.carrier, &[0; 32])?,
                 Some(RelationalDeclaredCoupledOwner::Surviving(_))
             ),
             "the stage source's owned route is in the envelope's owner set"
