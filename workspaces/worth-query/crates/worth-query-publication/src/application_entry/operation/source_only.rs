@@ -17,9 +17,7 @@ pub use binding::WorthQuerySourceOperationBinding;
 mod completion;
 mod disposal;
 pub(in crate::application_entry) use disposal::WorthQueryClosingSourceOperation;
-mod handoff_control;
 #[doc(hidden)]
-pub use handoff_control::WorthQuerySourceCompletionHandoffPauseForTest;
 mod entrance;
 mod native_posture;
 mod recorded_correction;
@@ -56,7 +54,6 @@ where
     keyed_terminal: Option<
         worth_query_execution::facade::primary_graph::WorthQueryApplicationIdempotencyResolution,
     >,
-    completion_handoff: Option<std::sync::Arc<handoff_control::CompletionHandoff>>,
     // Keep the authentic runtime alive while every bounded native carrier drops.
     pub(in crate::application_entry) admission:
         WorthQuerySourceOperationAdmission<S, I, P, A, Mode>,
@@ -245,7 +242,6 @@ where
             state: SourceState::<S, I>::Initial,
             keyed_terminal: None,
             guarded_abort: None,
-            completion_handoff: None,
         }
     }
 }
