@@ -3,7 +3,7 @@ use super::super::super::hierarchy::program as hierarchy;
 use super::super::super::program as entry;
 pub(in super::super::super) mod attach;
 pub(in super::super::super) mod outgoing;
-mod parent;
+pub(in super::super::super) mod parent;
 pub(in super::super::super) mod pending;
 pub(in super::super::super) mod pending_consumer;
 mod topology;

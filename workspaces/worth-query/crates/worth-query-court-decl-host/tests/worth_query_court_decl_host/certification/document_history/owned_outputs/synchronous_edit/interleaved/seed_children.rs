@@ -9,6 +9,9 @@ use super::*;
 #[cfg(test)]
 mod differential;
 pub(super) mod frontier;
+#[cfg(test)]
+mod replay;
+use super::component_carriage::parent as owner;
 
 macro_rules! root {
     ($start:ident, $connection:ident, $port:ty, $binding:ty, $identity:literal, |$input:ident| $demand:expr) => {
@@ -90,7 +93,34 @@ impl WorthQueryApplicationDependentOutputConnection<Schema> for Discover {
         )])
     }
 }
+// The child's genuine parent is the first output whose source model it reads.
+impl WorthQueryApplicationPrerequisiteOutputConnection<Schema> for Discover {
+    type Prerequisites = owner::Read;
+    type PrerequisiteRow = owner::ParentBinding;
+    type Selection = owner::Selection;
+    fn prerequisite_rows() -> Self::Selection {
+        owner::owner()
+    }
+    fn prerequisites_from_target(
+        target: &second::Demand,
+    ) -> Result<owner::Read, WorthQueryRequiredOutputConnectionDenial> {
+        Ok(owner::Read(format!("first:{}", target.0)))
+    }
+    fn parent_from_prerequisite(
+        row: &owner::Parent,
+    ) -> Result<first::Demand, WorthQueryRequiredOutputConnectionDenial> {
+        Ok(first::Demand(row.key.clone()))
+    }
+}
 type Children = ApplicationOutputEdge<ChildConnection, ApplicationOutputLeaf>;
+/// The same child reached only through an occurrence arc: the tree declares
+/// no parent-to-child edge, as a CAD seed's occurrence-discovered consumers.
+pub struct Occurrence;
+impl ApplicationOccurrenceComponent<Schema> for Occurrence {
+    type Connections = (ChildConnection,);
+}
+pub type OccurrenceWriteTree =
+    ApplicationOutputGraph<SeedWriteConnection, ApplicationOutputOccurrences<Occurrence>>;
 pub type SeedWriteTree = ApplicationOutputGraph<SeedWriteConnection, Children>;
 pub type SeedReadTree = ApplicationOutputGraph<SeedReadConnection, Children>;
 
@@ -104,6 +134,21 @@ impl ApplicationProgramDefinition<Schema> for Program {
     type Rules = ApplicationRuleLeaf;
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("owned-outputs.interleaved-seed-children");
+    fn feature_specs() -> Vec<ApplicationFeatureSpec> {
+        super::program::feature_specs::<Completion>()
+    }
+}
+
+pub struct OccurrenceProgram;
+impl ApplicationProgramDefinition<Schema> for OccurrenceProgram {
+    type Contributions = (Contribution,);
+    type Outputs = ApplicationProgramOutputs<(
+        super::program::ModelTree,
+        (super::program::ProducedTree, OccurrenceWriteTree),
+    )>;
+    type Rules = ApplicationRuleLeaf;
+    const IDENTITY: ApplicationProgramIdentity =
+        ApplicationProgramIdentity::new("owned-outputs.interleaved-seed-occurrences");
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
         super::program::feature_specs::<Completion>()
     }

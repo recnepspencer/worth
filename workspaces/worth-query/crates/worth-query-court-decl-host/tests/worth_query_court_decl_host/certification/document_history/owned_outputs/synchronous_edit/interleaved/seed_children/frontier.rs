@@ -1,6 +1,6 @@
-//! A final authored stage that demands no output and reads no producer: it
-//! only moves the progress frontier, as a CAD correction's document stage
-//! follows its source stage.
+//! A final authored stage that demands no output: it moves the progress
+//! frontier and declares a read of the discovered child's family, as a CAD
+//! correction's document stage declares reads over every output family.
 use super::*;
 #[derive(Clone, Debug, WorthValue)]
 #[worth_value(crate = "worth_query_decl::facade::application_schema")]
@@ -14,7 +14,7 @@ worth_query_structured_value_binding!(pub Input for Intent { identity: "owned-ou
 worth_query_structured_value_binding!(pub DenialBinding for Denial { identity: "owned-outputs.interleaved.seed-frontier-denial" });
 worth_query_structured_value_binding!(pub ResultBinding for u64 { identity: "owned-outputs.interleaved.seed-frontier-result" });
 worth_query_operation!(pub Advance for Schema, input Input; access {
-    read_fields: [MemberKey::at("MemberKey"), EnvelopeFrontier::at("Frontier")];
+    read_fields: [MemberKey::at("MemberKey"), EnvelopeFrontier::at("Frontier"), SecondKey::at("SecondKey"), SecondValue::at("SecondValue")];
     writes: [EnvelopeFrontier::at("Frontier")];
 });
 fn scope(_: &Intent) -> String {
