@@ -31,6 +31,18 @@ pub(super) fn prepare_members(
                 .expect("Native retained genuine coupled proposal read custody"),
         )
     };
+    // A #229 hold is reported only after everything else validates: any other
+    // stale read, cycle or refusal in the group takes precedence over it.
+    let mut held = None;
+    let mut admit = |answer: Result<(), CoupledSupportPreparationDenial>| match answer {
+        Err(CoupledSupportPreparationDenial::Changed(failure))
+            if failure.coupled_support_hold().is_some() =>
+        {
+            held.get_or_insert(failure);
+            Ok(())
+        }
+        answer => answer.map_err(Denial::CoupledSupport),
+    };
     if let Some(complete) = &complete {
         if root.coupled_after_own().is_some() {
             let scope = root.affinity().operation_scope().scope();
@@ -39,17 +51,17 @@ pub(super) fn prepare_members(
                 scope.local_slot(),
                 scope.generation(),
             );
-            support::require(
-                execution, provider, root, before, complete, source, None, 0, members,
-            )
-            .map_err(Denial::CoupledSupport)?;
+            admit(support::require(
+                execution, provider, root, before, complete, source, None, 0, members, false,
+            ))?;
         }
-        support::require_read_support(execution, provider, root, before, complete, members)
-            .map_err(Denial::CoupledSupport)?;
+        admit(support::require_read_support(
+            execution, provider, root, before, complete, members,
+        ))?;
         for member in members.iter() {
             let source = member.source();
             let owned = member.owned.as_ref().expect("atomic group extraction");
-            support::require(
+            admit(support::require(
                 execution,
                 provider,
                 &owned.attempt,
@@ -62,17 +74,16 @@ pub(super) fn prepare_members(
                     .and_then(|prepared| prepared.rebase.as_ref()),
                 member.position,
                 members,
-            )
-            .map_err(Denial::CoupledSupport)?;
-            support::require_read_support(
+                member.producer_route().is_some(),
+            ))?;
+            admit(support::require_read_support(
                 execution,
                 provider,
                 &owned.attempt,
                 before,
                 complete,
                 members,
-            )
-            .map_err(Denial::CoupledSupport)?;
+            ))?;
         }
     }
     for member in members {
@@ -106,7 +117,9 @@ pub(super) fn prepare_members(
             )).map_err(Denial::SourceFacts)?);
         }
     }
-    Ok(())
+    held.map_or(Ok(()), |failure| {
+        Err(Denial::CoupledSupport(CoupledSupportPreparationDenial::Changed(failure)))
+    })
 }
 
 pub(super) fn prepare_lineage(
