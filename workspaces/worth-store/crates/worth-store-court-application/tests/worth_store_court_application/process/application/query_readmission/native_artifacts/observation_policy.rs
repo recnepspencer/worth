@@ -7,11 +7,3 @@ impl WorthQueryHomeMaintenance for ObservationMaintenanceMustRemainUnentered {
         panic!("the observational attachment must never advance or schedule maintenance");
     }
 }
-
-/// This observational attachment has no permission to admit an operation.
-pub(super) fn no_operation_admission(
-    _: worth_foundational::facade::DurableStateFamily,
-    _: u8,
-) -> Option<u8> {
-    panic!("the Bridge/source observation proof must never invoke Directory operation admission")
-}
