@@ -125,7 +125,12 @@ impl ExpectedFactKeys {
     pub(in crate::domain_computation::primary_graph) fn refresh_keys(
         &self,
     ) -> impl Iterator<Item = &Key> {
-        union(self.handler.iter(), self.computation.keys())
+        // Comparator-issued structural bodies must patch native completion too,
+        // without reclassifying a carried owner call as a fresh call or handler.
+        union(
+            union(self.handler.iter(), self.computation.keys()),
+            self.computation.carried_structural_keys(),
+        )
     }
     pub fn attribution(&self) -> &ComputationFactAttribution {
         &self.computation

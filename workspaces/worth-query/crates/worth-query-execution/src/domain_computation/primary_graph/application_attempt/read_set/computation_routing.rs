@@ -210,6 +210,24 @@ impl ComputationFactAttribution {
             .filter(|(_, fact)| fact.readers.reads().any(|read| self.is_carried(read)))
             .map(|(key, _)| key)
     }
+    pub(in crate::domain_computation::primary_graph) fn carried_structural_keys(
+        &self,
+    ) -> impl Iterator<Item = &WorthQueryApplicationFactKey> {
+        let has_structural = self.native.as_ref().is_some_and(|native| {
+            native.facts().has_structural_walk() || native.facts().has_aggregate()
+        });
+        has_structural
+            .then(|| self.carried_keys())
+            .into_iter()
+            .flatten()
+            .filter(|key| {
+                matches!(
+                    key,
+                    WorthQueryApplicationFactKey::StructuralWalk(_)
+                        | WorthQueryApplicationFactKey::Aggregate(_)
+                )
+            })
+    }
     pub(in crate::domain_computation::primary_graph) fn retain_handler(
         &mut self,
         handler: std::sync::Arc<BTreeSet<WorthQueryApplicationFactKey>>,

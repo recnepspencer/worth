@@ -246,7 +246,7 @@ fn retiring_the_selected_anchor_does_not_retire_the_surviving_group_read() {
                 snapshot,
                 fact,
                 &BTreeSet::from([anchor]),
-                None,
+                None
             )
             .unwrap()
             .is_none());

@@ -1,4 +1,5 @@
 //! idempotency inspection denies before receipt after grant revocation.
+use worth_query_execution::facade::domain_computation::WorthQueryRecoveryHandleDenialKind;
 use crate::domain_computation::primary_graph::tests::authorization::capability_commit_revalidation::*;
 use worth_query_execution::facade::domain_computation::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_query_execution::facade::domain_computation::WorthQueryRecoveryHandleDenialKind;

@@ -23,6 +23,7 @@ use crate::domain_computation::primary_graph::application_attempt::{
 use crate::domain_computation::primary_graph::application_contribution::Comparator;
 use crate::domain_computation::primary_graph::invariant_projection::work::WorthQueryInvariantProjectionWorkBudget;
 
+mod issue_retained;
 mod ranges;
 pub(crate) mod sequence;
 pub(in crate::domain_computation::primary_graph) use sequence::{
