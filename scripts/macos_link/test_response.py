@@ -24,7 +24,7 @@ class ResponseTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             output, response = root/'out', root/'args'
-            response.write_text(('object.o ' * 50000)+'-o '+str(output))
+            response.write_text(('object.o ' * 50000)+'-o '+f'"{output.as_posix()}"')
             arguments = ['@'+str(response)]
             high = Image(2, 0x200000, (Segment('__LINKEDIT', HIGH_BASE, 0x4000, 1),), False)
             def compiler(command):
@@ -49,6 +49,6 @@ class ResponseTests(unittest.TestCase):
     def test_response_cycles_are_command_refusals(self):
         with tempfile.TemporaryDirectory() as directory:
             response = Path(directory)/'recursive'
-            response.write_text('@'+str(response))
+            response.write_text('@'+f'"{response.as_posix()}"')
             with self.assertRaises(ResponseFileError):
                 expanded(['@'+str(response)])
