@@ -129,9 +129,7 @@ impl ExpectedFactKeys {
         // without reclassifying a carried owner call as a fresh call or handler.
         union(
             union(self.handler.iter(), self.computation.keys()),
-            self.computation
-                .carried_keys()
-                .filter(|key| matches!(key, Key::StructuralWalk(_) | Key::Aggregate(_))),
+            self.computation.carried_structural_keys(),
         )
     }
     pub fn attribution(&self) -> &ComputationFactAttribution {
