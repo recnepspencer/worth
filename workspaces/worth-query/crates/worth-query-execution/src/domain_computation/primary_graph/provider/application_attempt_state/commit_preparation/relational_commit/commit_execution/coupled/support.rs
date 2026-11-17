@@ -5,6 +5,9 @@
 //! (a later stage, or a producer owed by this stage or a later one) is what
 //! one commit per stage would commit too. A change by a producer owed before
 //! the stage means the stage read a value that was not yet settled; that refuses.
+//! The stage's discovery support settles only through such a producer's
+//! re-derivation, and a verified output it read only when such a producer
+//! re-derived that output. Producer readers stay strict.
 use super::*;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationDecisionFact as Fact;
 use crate::domain_computation::WorthQueryInvariantExecutionFailure as Failure;
@@ -65,7 +68,9 @@ pub(super) fn require(
                 members,
                 after_own,
                 // Only an authored stage's own decision reads settle by position.
-                attempt.coupled_authored_subject().is_some(),
+                |writer| {
+                    attempt.coupled_authored_subject().is_some() && writer.settles_after(position)
+                },
                 compare,
                 format!(
                     "a later coupled contribution changed decision support: {}",
@@ -108,9 +113,7 @@ pub(super) fn require_read_support(
                 *position,
                 members,
                 after_own,
-                // Discovery support decides which outputs this candidate
-                // holds; a later change to it stays a refusal.
-                false,
+                |writer| settles_read_support(attempt, support, *position, members, writer),
                 |_, image| {
                     provider.graph.with_runtime(execution, |runtime| {
                         support
@@ -131,6 +134,38 @@ pub(super) fn require_read_support(
     Ok(())
 }
 
+/// Discovery support decides which outputs a candidate holds, so a producer
+/// reader's stays strict, and so does any change an authored stage makes. An
+/// authored stage's discovery settles at its position when the change is a
+/// producer re-derivation owed at or after it: that producer's own reads and
+/// discovery are checked against the complete candidate. A verified output
+/// the stage read settles only when a producer owed at or after the stage
+/// re-derived that same output, so no stale output can commit.
+fn settles_read_support(
+    reader: &WorthQueryPrimaryGraphApplicationAttempt,
+    support: &crate::domain_computation::primary_graph::provider::CandidateReadSupport,
+    position: usize,
+    members: &[crate::domain_computation::primary_graph::provider::CoupledApplicationMember],
+    writer: &crate::domain_computation::primary_graph::provider::CoupledApplicationMember,
+) -> bool {
+    use crate::domain_computation::primary_graph::provider::{
+        CandidateReadSupport, CoupledApplicationMemberKind,
+    };
+    if reader.coupled_authored_subject().is_none() || !writer.settles_after(position) {
+        return false;
+    }
+    match support {
+        CandidateReadSupport::Query(_) | CandidateReadSupport::Outgoing(_) => {
+            matches!(writer.kind, CoupledApplicationMemberKind::Producer { .. })
+        }
+        CandidateReadSupport::Parent(parent) => members.iter().any(|member| {
+            matches!(&member.kind, CoupledApplicationMemberKind::Producer { meaning, .. }
+                if meaning.family == parent.family() && meaning.source_scope == parent.source())
+                && member.settles_after(position)
+        }),
+    }
+}
+
 /// Only a changed fact walks the later writers. Reuse the post-own pins already
 /// held by the admitted writers; healthy facts pay no intermediate comparisons.
 /// An authored reader accepts changes made by members that sequentially run
@@ -141,7 +176,7 @@ fn changed(
     position: usize,
     members: &[crate::domain_computation::primary_graph::provider::CoupledApplicationMember],
     after_own: &Candidate,
-    staged: bool,
+    settles: impl Fn(&crate::domain_computation::primary_graph::provider::CoupledApplicationMember) -> bool,
     compare: impl Fn(&Candidate, &Candidate) -> Result<
         bool,
         crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
@@ -164,7 +199,7 @@ fn changed(
         match answer {
             Ok(true) => continue,
             Err(cause) => return require_answer(Err(cause), source, || detail.clone()),
-            Ok(false) if staged && writer.settles_after(position) => settled = true,
+            Ok(false) if settles(writer) => settled = true,
             Ok(false) => {
                 let earlier = reader
                     .coupled_authored_subject()
