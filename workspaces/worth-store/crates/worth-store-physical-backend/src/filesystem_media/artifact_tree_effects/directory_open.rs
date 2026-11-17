@@ -1,7 +1,7 @@
 use crate::filesystem_media::{
     ArtifactTreeFailure, ArtifactTreeFailureKind, FilesystemMediaOwner, MediaOperationRole,
 };
-#[cfg(not(target_os = "macos"))]
+#[cfg(not(any(target_os = "macos", target_os = "linux")))]
 use cap_fs_ext::DirExt;
 use cap_std::fs::Dir;
 
@@ -25,9 +25,9 @@ pub(in crate::filesystem_media) fn open_directory_with_backing<B>(
         attempt.denied();
         return Err(super::denied(&error));
     }
-    #[cfg(not(target_os = "macos"))]
+    #[cfg(not(any(target_os = "macos", target_os = "linux")))]
     let result = parent.open_dir_nofollow(name);
-    #[cfg(target_os = "macos")]
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
     let result = super::super::artifact_tree::native_component::directory(parent, name);
     // Native component scratch is gone on return. PauseAfter retains no grant.
     drop(backing);

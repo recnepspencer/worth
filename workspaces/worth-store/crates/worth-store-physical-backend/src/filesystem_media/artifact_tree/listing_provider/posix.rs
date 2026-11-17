@@ -1,6 +1,6 @@
 //! A streaming iterator consuming exactly the independently opened, observed fd.
 use super::super::{
-    listing_admission::change, listing_storage::macos::provider_bounds,
+    listing_admission::change, listing_storage::posix::provider_bounds,
     ArtifactTreeAllocatedListingFailure as Failure, ArtifactTreeFailure, ArtifactTreeFailureKind,
     ArtifactTreeListingAllocationBoundary as Boundary, ArtifactTreeListingAllocator,
     ArtifactTreeListingStorageChange as Change,
@@ -49,6 +49,7 @@ pub(in crate::filesystem_media::artifact_tree) fn open_with_allocator<
         rustix::fs::Mode::empty(),
     )
     .map_err(|error| provider_failure(error.into()))?;
+    #[cfg(target_os = "macos")]
     require_streaming(
         rustix::fs::fstatfs(&fd)
             .map(|observed| observed.f_flags)
@@ -80,6 +81,7 @@ fn provider_failure(error: io::Error) -> ArtifactTreeFailure {
     ArtifactTreeFailure::io(ArtifactTreeFailureKind::DeniedBeforeEffect, &error)
 }
 
+#[cfg(target_os = "macos")]
 fn require_streaming(observed: io::Result<u32>) -> io::Result<()> {
     if observed? & libc::MNT_UNION as u32 != 0 {
         return Err(io::ErrorKind::Unsupported.into());
@@ -101,7 +103,7 @@ impl Iterator for DirectoryEntries {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, target_os = "macos"))]
 mod tests {
     use super::require_streaming;
     #[test]

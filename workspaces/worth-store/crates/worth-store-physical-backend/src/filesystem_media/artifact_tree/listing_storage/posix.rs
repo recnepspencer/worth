@@ -1,15 +1,21 @@
-//! Audited Darwin LP64 streaming provider storage, not an OS capability claim.
+//! Audited native streaming provider storage, not an OS capability claim.
 use super::ArtifactTreeListingStorageRequirement;
-use std::{alloc::Layout, mem::size_of};
+#[cfg(target_os = "macos")]
+use std::alloc::Layout;
+use std::mem::size_of;
 
 // Darwin readdir may return a name beyond the inline d_name array. Its actual
 // d_namlen ABI is u16; do not infer a bound from sizeof(d_name) or NAME_MAX.
+#[cfg(target_os = "macos")]
 const _: fn(&libc::dirent) -> u16 = |entry| entry.d_namlen;
 pub(in crate::filesystem_media::artifact_tree) const CSTRING_BYTES: u64 = u16::MAX as u64 + 1;
 pub(in crate::filesystem_media::artifact_tree) const NAME_BYTES: u64 = u16::MAX as u64;
+#[cfg(target_os = "macos")]
 const INITIAL_BUFFER: u64 = 2 * 1024;
+#[cfg(target_os = "macos")]
 const LARGE_BUFFER: u64 = 8 * 1024;
 
+#[cfg(target_os = "macos")]
 fn struct_bytes(fields: &[Layout]) -> Option<u64> {
     let mut layout = Layout::from_size_align(0, 1).ok()?;
     for field in fields {
@@ -18,6 +24,7 @@ fn struct_bytes(fields: &[Layout]) -> Option<u64> {
     u64::try_from(layout.pad_to_align().size()).ok()
 }
 
+#[cfg(target_os = "macos")]
 pub(in crate::filesystem_media::artifact_tree) fn provider_bounds() -> Option<(u64, u64)> {
     if !super::super::path_storage::qualified() {
         return None;
@@ -45,6 +52,19 @@ pub(in crate::filesystem_media::artifact_tree) fn provider_bounds() -> Option<(u
     let retained = header.checked_add(position)?.checked_add(LARGE_BUFFER)?;
     // malloc(new) precedes free(old) during the single 2 KiB -> 8 KiB growth.
     Some((retained.checked_add(INITIAL_BUFFER)?, retained))
+}
+
+#[cfg(target_os = "linux")]
+pub(in crate::filesystem_media::artifact_tree) fn provider_bounds() -> Option<(u64, u64)> {
+    if !super::super::path_storage::qualified() {
+        return None;
+    }
+    // Pinned rustix 1.1.5 linux_raw Dir uses getdents64, not libc DIR.
+    // linux_dirent64 is 24 bytes on the qualified x86_64 ABI. Its Vec starts
+    // at 32 records and doubles only below 1024 records: maximum 2048 records.
+    // Charge the old plus replacement buffer during that last growth.
+    let retained = 2048 * 24;
+    Some((retained + retained / 2, retained))
 }
 
 pub(super) fn requirement(maximum_entries: usize) -> Option<ArtifactTreeListingStorageRequirement> {
@@ -77,6 +97,44 @@ pub(super) fn requirement(maximum_entries: usize) -> Option<ArtifactTreeListingS
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn linux_getdents_buffer_growth_and_record_name_bounds_are_qualified() {
+        use crate::filesystem_media::tests::allocation_probe;
+        if !allocation_probe::alone_in_its_process(
+            module_path!(),
+            "linux_getdents_buffer_growth_and_record_name_bounds_are_qualified",
+        ) {
+            return;
+        }
+        let root = tempfile::tempdir().unwrap();
+        for index in 0..320 {
+            let name = format!("{index:03}-{}", "x".repeat(240));
+            std::fs::write(root.path().join(name), []).unwrap();
+        }
+        let directory =
+            cap_std::fs::Dir::open_ambient_dir(root.path(), cap_std::ambient_authority()).unwrap();
+        let mut entries = rustix::fs::Dir::new(directory.into_std_file()).unwrap();
+        let (peak, _) = provider_bounds().expect("qualified native provider");
+        let mut count = 0;
+        loop {
+            let mut observed = None;
+            let allocated = allocation_probe::allocated_bytes_during(|| observed = entries.read());
+            assert!(allocated as u64 <= peak + 245);
+            let Some(entry) = observed else {
+                break;
+            };
+            let entry = entry.unwrap();
+            assert!(entry.file_name().to_bytes_with_nul().len() as u64 <= CSTRING_BYTES);
+            if !matches!(entry.file_name().to_bytes(), b"." | b"..") {
+                count += 1;
+            }
+        }
+        assert_eq!(count, 320);
+        assert!(requirement(0).is_none());
+        assert!(requirement(usize::MAX).is_none());
+    }
+    #[cfg(target_os = "macos")]
     #[test]
     fn supported_darwin_layout_includes_header_position_and_buffer_overlap() {
         // Independent native SDK probe: sizeof(DIR)=136, pthread_mutex=64,

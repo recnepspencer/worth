@@ -3,7 +3,7 @@ use super::{
     ArtifactTreeFailure, ArtifactTreeFailureKind, ArtifactTreeListingAllocator, ArtifactTreeMedia,
 };
 
-#[cfg(any(windows, target_os = "macos"))]
+#[cfg(any(windows, target_os = "macos", target_os = "linux"))]
 use super::{
     listing_admission::change, ArtifactTreeListingAllocationBoundary as Boundary,
     ArtifactTreeListingStorageChange as Change,
@@ -24,12 +24,12 @@ impl ArtifactTreeMedia<'_> {
         if self.listing_storage_requirement(maximum_entries).is_none() {
             return Err(unqualified().into());
         }
-        #[cfg(not(any(windows, target_os = "macos")))]
+        #[cfg(not(any(windows, target_os = "macos", target_os = "linux")))]
         {
             let _ = (directory, allocator);
             Err(unqualified().into())
         }
-        #[cfg(any(windows, target_os = "macos"))]
+        #[cfg(any(windows, target_os = "macos", target_os = "linux"))]
         {
             use crate::filesystem_media::{artifact_tree_effects::begin, MediaOperationRole};
             let directory = self
@@ -93,7 +93,7 @@ fn unqualified() -> ArtifactTreeFailure {
     ArtifactTreeFailure::structural(ArtifactTreeFailureKind::AccessLimitExceeded)
 }
 
-#[cfg(any(windows, target_os = "macos"))]
+#[cfg(any(windows, target_os = "macos", target_os = "linux"))]
 fn enumerate<A: ArtifactTreeListingAllocator>(
     directory: cap_std::fs::Dir,
     maximum_entries: usize,
@@ -134,16 +134,16 @@ fn enumerate<A: ArtifactTreeListingAllocator>(
                 NamespaceEntryType::Other
             }
         };
-        #[cfg(target_os = "macos")]
+        #[cfg(any(target_os = "macos", target_os = "linux"))]
         let entry_type = entry.entry_type();
-        #[cfg(target_os = "macos")]
+        #[cfg(any(target_os = "macos", target_os = "linux"))]
         let entry_storage = entry.name_storage();
         #[cfg(windows)]
         let entry_storage = 0_u64;
-        #[cfg(target_os = "macos")]
-        if entry_storage > super::listing_storage::macos::CSTRING_BYTES {
+        #[cfg(any(target_os = "macos", target_os = "linux"))]
+        if entry_storage > super::listing_storage::posix::CSTRING_BYTES {
             return Err(ArtifactTreeAllocatedListingFailure::BufferLengthMismatch {
-                requested: super::listing_storage::macos::CSTRING_BYTES as usize,
+                requested: super::listing_storage::posix::CSTRING_BYTES as usize,
                 observed: entry_storage as usize,
             });
         }
@@ -156,10 +156,10 @@ fn enumerate<A: ArtifactTreeListingAllocator>(
             .ok_or_else(unqualified)?;
         #[cfg(windows)]
         let (copy_peak, maximum_name) = (3_120_u64, 1_560_usize);
-        #[cfg(target_os = "macos")]
+        #[cfg(any(target_os = "macos", target_os = "linux"))]
         let (copy_peak, maximum_name) = (
-            super::listing_storage::macos::NAME_BYTES,
-            super::listing_storage::macos::NAME_BYTES as usize,
+            super::listing_storage::posix::NAME_BYTES,
+            super::listing_storage::posix::NAME_BYTES as usize,
         );
         change(
             allocator,
@@ -196,7 +196,7 @@ fn enumerate<A: ArtifactTreeListingAllocator>(
 
 /// Native iteration may allocate even when it returns EOF or an extra entry.
 /// Keep admission and advancement in one step, before the caller inspects it.
-#[cfg(any(windows, target_os = "macos"))]
+#[cfg(any(windows, target_os = "macos", target_os = "linux"))]
 fn next_admitted<A: ArtifactTreeListingAllocator, I: Iterator>(
     entries: &mut I,
     capacity: usize,
@@ -204,7 +204,7 @@ fn next_admitted<A: ArtifactTreeListingAllocator, I: Iterator>(
     provider: u64,
     allocator: &mut A,
 ) -> Result<Option<I::Item>, ArtifactTreeAllocatedListingFailure<A::Denial>> {
-    #[cfg(target_os = "macos")]
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
     {
         let live = listing_bytes(capacity, names)?
             .checked_add(provider)
@@ -214,7 +214,7 @@ fn next_admitted<A: ArtifactTreeListingAllocator, I: Iterator>(
             Change::Admit {
                 boundary: Boundary::EntryName,
                 required_bytes: live
-                    .checked_add(super::listing_storage::macos::CSTRING_BYTES)
+                    .checked_add(super::listing_storage::posix::CSTRING_BYTES)
                     .ok_or_else(unqualified)?,
             },
         )?;
@@ -224,7 +224,7 @@ fn next_admitted<A: ArtifactTreeListingAllocator, I: Iterator>(
     Ok(entries.next())
 }
 
-#[cfg(any(windows, target_os = "macos"))]
+#[cfg(any(windows, target_os = "macos", target_os = "linux"))]
 fn reserve_slot<A: ArtifactTreeListingAllocator>(
     observed: &mut Vec<ArtifactTreeDirectoryEntry>,
     maximum_entries: usize,
@@ -285,7 +285,7 @@ fn reserve_slot<A: ArtifactTreeListingAllocator>(
     )
 }
 
-#[cfg(any(windows, target_os = "macos"))]
+#[cfg(any(windows, target_os = "macos", target_os = "linux"))]
 fn slot_bytes(capacity: usize) -> Result<u64, ArtifactTreeFailure> {
     let bytes = capacity
         .checked_mul(std::mem::size_of::<ArtifactTreeDirectoryEntry>())
@@ -294,17 +294,17 @@ fn slot_bytes(capacity: usize) -> Result<u64, ArtifactTreeFailure> {
     u64::try_from(bytes).map_err(|_| unqualified())
 }
 
-#[cfg(any(windows, target_os = "macos"))]
+#[cfg(any(windows, target_os = "macos", target_os = "linux"))]
 fn listing_bytes(capacity: usize, names: u64) -> Result<u64, ArtifactTreeFailure> {
     slot_bytes(capacity)?
         .checked_add(names)
         .ok_or_else(unqualified)
 }
 
-#[cfg(any(windows, target_os = "macos"))]
+#[cfg(any(windows, target_os = "macos", target_os = "linux"))]
 fn entry_failure(error: std::io::Error) -> ArtifactTreeFailure {
     ArtifactTreeFailure::io(ArtifactTreeFailureKind::DeniedBeforeEffect, &error)
 }
 
-#[cfg(all(test, target_os = "macos"))]
-mod macos_tests;
+#[cfg(all(test, any(target_os = "macos", target_os = "linux")))]
+mod posix_tests;

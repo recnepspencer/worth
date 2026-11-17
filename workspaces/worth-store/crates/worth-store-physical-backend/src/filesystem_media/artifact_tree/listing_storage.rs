@@ -1,6 +1,6 @@
 use super::ArtifactTreeMedia;
-#[cfg(target_os = "macos")]
-pub(super) mod macos;
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+pub(super) mod posix;
 
 /// Requested application-heap bounds for listing an already-confined directory.
 /// This is a mechanical cost description, not allocation or filesystem authority.
@@ -58,12 +58,12 @@ impl ArtifactTreeMedia<'_> {
     }
 }
 
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "linux"))]
 fn qualified_requirement(maximum_entries: usize) -> Option<ArtifactTreeListingStorageRequirement> {
-    macos::requirement(maximum_entries)
+    posix::requirement(maximum_entries)
 }
 
-#[cfg(not(any(windows, target_os = "macos")))]
+#[cfg(not(any(windows, target_os = "macos", target_os = "linux")))]
 fn qualified_requirement(_: usize) -> Option<ArtifactTreeListingStorageRequirement> {
     // The Windows envelope is not evidence about libc or other providers.
     None

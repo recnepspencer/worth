@@ -14,12 +14,12 @@ fn qualified_component_open_bounds_cover_unicode_growth_and_missing_file() {
     let directory =
         cap_std::fs::Dir::open_ambient_dir(root.path(), cap_std::ambient_authority()).unwrap();
     // Small-buffer growth, Unicode uppercase expansion, leading-dot stems,
-    // supplementary characters, and a near-maximum single Windows component.
+    // supplementary characters, and a long native component.
     for name in [
         "a".to_owned(),
         "ßﬃ-界-🦀.wal".to_owned(),
         ".ßﬃ.wal".to_owned(),
-        format!("{}.wal", "界".repeat(246)),
+        format!("{}.wal", "界".repeat(if cfg!(windows) { 246 } else { 83 })),
     ] {
         std::fs::write(root.path().join(&name), b"payload").unwrap();
         let bound = open_bytes(&name).unwrap();
@@ -32,9 +32,9 @@ fn qualified_component_open_bounds_cover_unicode_growth_and_missing_file() {
         let uppercase = allocation_probe::allocated_bytes_during(|| {
             drop(stem.trim_end().to_uppercase());
         });
-        #[cfg(target_os = "macos")]
+        #[cfg(any(target_os = "macos", target_os = "linux"))]
         let uppercase = 0;
-        #[cfg(target_os = "macos")]
+        #[cfg(any(target_os = "macos", target_os = "linux"))]
         let _ = stem;
         assert!(uppercase as u64 <= bound);
         let mut opened = None;
@@ -72,7 +72,7 @@ fn component_read(directory: &cap_std::fs::Dir, name: &str) -> std::io::Result<c
     {
         directory.open(name)
     }
-    #[cfg(target_os = "macos")]
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
     {
         super::super::native_component::file(
             directory,
