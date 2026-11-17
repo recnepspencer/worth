@@ -9,7 +9,10 @@ use super::{
     UiProjectionFactStopKind, UiProjectionRetainedActivityKind, UiProjectionUnavailableKind,
     UiScalarProjectionFactReceipt,
 };
-use worth_query_host::facade::publication::domain_computation::WorthQueryApplicationQueryPublicationReceipt;
+use application_identity::ApplicationProjectionInputIdentity;
+
+#[path = "intent_input/application_identity.rs"]
+mod application_identity;
 
 #[path = "intent_input/collection_catalog.rs"]
 mod collection_catalog;
@@ -54,7 +57,7 @@ enum UiProjectionInputAuthority {
         source_generation: WorthQueryEvidenceIdentity,
         result_generation: WorthQueryEvidenceIdentity,
     },
-    Application(WorthQueryApplicationQueryPublicationReceipt),
+    Application(ApplicationProjectionInputIdentity),
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -123,7 +126,9 @@ impl UiProjectionInputRevision {
                 slot,
                 projection: fact.projection_identity().clone(),
                 observation_order: fact.owner_order(),
-                authority: UiProjectionInputAuthority::Application(fact.query_receipt().clone()),
+                authority: UiProjectionInputAuthority::Application(
+                    ApplicationProjectionInputIdentity::capture(fact.query_receipt()),
+                ),
             }),
         }
     }
@@ -189,14 +194,7 @@ impl UiProjectionInputRevision {
             (
                 UiProjectionInputAuthority::Application(left),
                 UiProjectionInputAuthority::Application(right),
-            ) => {
-                let left = left.inspect();
-                let right = right.inspect();
-                left.query_identity() == right.query_identity()
-                    && left.parameter_binding_identity() == right.parameter_binding_identity()
-                    && left.basis().runtime_instance() == right.basis().runtime_instance()
-                    && left.basis().branch() == right.basis().branch()
-            }
+            ) => left.has_same_authority(right),
             _ => false,
         }
     }
