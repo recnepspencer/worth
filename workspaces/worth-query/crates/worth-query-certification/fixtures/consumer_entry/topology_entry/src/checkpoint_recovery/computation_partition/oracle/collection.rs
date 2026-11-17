@@ -167,10 +167,10 @@ mod serial {
         assert_eq!(next[0].outcome.as_ref().unwrap().0, 14.0_f64.to_bits());
         assert_eq!(next[0].calls.gathers, 1);
         assert_eq!(next[0].calls.kernels, 1);
-        assert_eq!(
-            next[0].runs,
-            [WorthQueryPartitionedComputationRunForTest::Incremental]
-        );
+        assert!(matches!(
+            next[0].runs.as_slice(),
+            [WorthQueryPartitionedComputationRunForTest::Incremental { .. }]
+        ));
         assert!(!next[0].published.is_empty());
     }
 

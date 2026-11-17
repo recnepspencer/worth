@@ -24,7 +24,7 @@ proptest! {
         }
         let world = world::install(graph);
         let installed = Installed::new(Owner::default(), ComputationRetention::ProducerOperation);
-        let before = attempt::run(&world, &installed, first(), Run::Full(Cause::FirstRun));
+        let before = attempt::run(&world, &installed, first(), Some(Cause::FirstRun));
         let request = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope();
         let program = match change {
             0 => fixture::program::replace_next(&world, &request, 7),
@@ -32,16 +32,16 @@ proptest! {
             _ => fixture::program::replace_next(&world, &request, 2),
         };
         prop_assert!(matches!(fixture::commit(&world, &request, program, 120), WorthQueryApplicationCommitOutcome::Committed(_)));
-        let mut current = attempt::run(&world, &installed, prior(before), Run::Incremental);
+        let mut current = attempt::run(&world, &installed, prior(before), None);
         prop_assert_eq!(&current.gathered, &[0], "the second chain is unchanged");
         prop_assert_eq!(current.outcome, if change == 2 { 6 } else { 8 });
         let mut active = [false; 2];
         for (step, second_node) in edited_nodes.into_iter().enumerate() {
-            let full = attempt::run(&world, &installed, first(), Run::Full(Cause::FirstRun));
+            let full = attempt::run(&world, &installed, first(), Some(Cause::FirstRun));
             prop_assert_eq!(current.outcome, full.outcome, "same committed source Full oracle");
             prop_assert!((*(*current.sealed.state_for_test()).facts_for_test()).has_structural_walk_for_test());
             // The helper also asserts real projected completion consumes current-issued Arcs.
-            let carried = attempt::run(&world, &installed, prior(current), Run::Incremental);
+            let carried = attempt::run(&world, &installed, prior(current), None);
             prop_assert!(carried.gathered.is_empty(), "consecutive unchanged seal");
             prop_assert_eq!(carried.outcome, full.outcome);
             // Active is outside this owner's walk input. There are no blocked members.
@@ -49,10 +49,10 @@ proptest! {
             active[slot] = !active[slot];
             let program = fixture::program::set_node_active(&world, &request, 6 + slot as u64, active[slot]);
             prop_assert!(matches!(fixture::commit(&world, &request, program, 121 + step as u8), WorthQueryApplicationCommitOutcome::Committed(_)));
-            current = attempt::run(&world, &installed, prior(carried), Run::Incremental);
+            current = attempt::run(&world, &installed, prior(carried), None);
             prop_assert!(current.gathered.is_empty(), "unread field edits preserve both walks");
         }
-        let full = attempt::run(&world, &installed, first(), Run::Full(Cause::FirstRun));
+        let full = attempt::run(&world, &installed, first(), Some(Cause::FirstRun));
         prop_assert_eq!(current.outcome, full.outcome, "last committed edit is also checked");
         prop_assert!((*(*current.sealed.state_for_test()).facts_for_test()).has_structural_walk_for_test());
     }

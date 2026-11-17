@@ -75,7 +75,7 @@ mod serial {
             1,
             "managed execution has untracked context and cannot publish an alias"
         );
-        assert_eq!(runs[0].runs, [Run::Incremental]);
+        assert!(matches!(runs[0].runs.as_slice(), [Run::Incremental { .. }]));
         assert_eq!(
             runs[0].calls,
             OwnerCalls {
@@ -107,9 +107,8 @@ mod serial {
                 kernels: 1
             }
         );
-        assert_eq!(
-            runs[0].runs,
-            [Run::Incremental],
+        assert!(
+            matches!(runs[0].runs.as_slice(), [Run::Incremental { .. }]),
             "edit, source no-op, edit never loses the prior"
         );
     }

@@ -41,7 +41,10 @@ fn retained_fact_comparison_is_dirty_bounded_as_one_native_population_grows() {
             let [run] = runs.as_slice() else {
                 panic!("{size}: one output decision publishes the edited sum: {runs:?}")
             };
-            assert_eq!(run.runs, [Run::Incremental], "{size}: native reuse");
+            assert!(
+                matches!(run.runs.as_slice(), [Run::Incremental { .. }]),
+                "{size}: native reuse"
+            );
             assert_eq!(
                 run.outcome.as_ref().map(|(bits, _)| *bits),
                 Ok((size as f64 - 1.0 + value).to_bits()),
@@ -274,6 +277,17 @@ fn one_entry_edit_gathers_and_computes_one_partition_at_every_size() {
         );
         edit(&request, &application, edited, 1);
         let next = reused(&request, &application, size, "the value edit");
+        let (recomputed, membership) = reported(&next, size);
+        assert_eq!(
+            recomputed,
+            [tree_work::identity(u32::try_from(EDITED).unwrap())],
+            "size {size}: exactly the edited region recomputes"
+        );
+        assert!(
+            !recomputed.contains(&tree_work::identity(0)),
+            "size {size}: a far region is carried"
+        );
+        assert!(!membership, "size {size}: a value edit carries membership");
         assert_eq!(
             next.calls,
             OwnerCalls {
@@ -310,6 +324,11 @@ fn one_entry_edit_gathers_and_computes_one_partition_at_every_size() {
         edit(&request, &application, created, 2);
         let next = reused(&request, &application, size, "the new entry");
         assert_eq!(
+            reported(&next, size),
+            (vec![tree_work::identity(JOINED)], true),
+            "size {size}: only the joined region recomputes, and membership runs again"
+        );
+        assert_eq!(
             next.calls,
             OwnerCalls {
                 plans: 1,
@@ -331,6 +350,11 @@ fn one_entry_edit_gathers_and_computes_one_partition_at_every_size() {
         with_inserted.sort();
         edit(&request, &application, EntryEdit::delete(number), 3);
         let next = reused(&request, &application, size, "the deleted entry");
+        assert_eq!(
+            reported(&next, size),
+            (Vec::new(), true),
+            "size {size}: the removed region has nothing to recompute; membership runs again"
+        );
         tree_work::assert_edited(&next, tree_work::delete_bound(&with_inserted, inserted));
         assert_eq!(
             next.calls,
@@ -348,4 +372,29 @@ fn one_entry_edit_gathers_and_computes_one_partition_at_every_size() {
             "size {size}: the total no longer holds the deleted entry"
         );
     }
+}
+
+/// The partitions a reused run reports recomputing, and whether membership ran
+/// again, after checking the report against the owner's own gather record.
+fn reported(
+    next: &OracleRun,
+    size: usize,
+) -> (Vec<worth_foundational::facade::PartitionIdentity>, bool) {
+    let [Run::Incremental {
+        recomputed,
+        membership_recomputed,
+    }] = next.runs.as_slice()
+    else {
+        panic!("size {size}: one incremental run, observed {:?}", next.runs)
+    };
+    assert_eq!(
+        recomputed, &next.gathered,
+        "size {size}: the run reports exactly the partitions the owner gathered"
+    );
+    assert_eq!(
+        recomputed.len(),
+        next.calls.gathers,
+        "size {size}: one gather per partition"
+    );
+    (recomputed.clone(), *membership_recomputed)
 }

@@ -38,7 +38,10 @@ fn reused(
         "size {size}: one decision, observed {runs:?}"
     );
     let next = runs.pop().unwrap();
-    assert_eq!(next.runs, [Run::Incremental], "size {size}: {what}");
+    assert!(
+        matches!(next.runs.as_slice(), [Run::Incremental { .. }]),
+        "size {size}: {what}"
+    );
     next
 }
 

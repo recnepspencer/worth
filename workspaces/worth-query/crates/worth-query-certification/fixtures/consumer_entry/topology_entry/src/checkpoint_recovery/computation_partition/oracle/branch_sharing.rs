@@ -49,7 +49,9 @@ fn apply<const MODE: u8>(
     }
 }
 
-fn judge(kept: &[OracleRun], fresh: &[OracleRun], expected: Option<Run>) {
+/// `expected`: `None` asserts no kind; `Some(None)` an incremental run;
+/// `Some(Some(cause))` a full one.
+fn judge(kept: &[OracleRun], fresh: &[OracleRun], expected: Option<Option<Cause>>) {
     assert_eq!(
         kept.iter().map(|r| &r.outcome).collect::<Vec<_>>(),
         fresh.iter().map(|r| &r.outcome).collect::<Vec<_>>(),
@@ -64,7 +66,7 @@ fn judge(kept: &[OracleRun], fresh: &[OracleRun], expected: Option<Run>) {
     }
     assert_published_state(kept, fresh);
     if let Some(expected) = expected {
-        assert_eq!(kept[0].runs, [expected]);
+        assert_eq!(kept[0].kinds(), [expected]);
     }
     assert!(
         fresh

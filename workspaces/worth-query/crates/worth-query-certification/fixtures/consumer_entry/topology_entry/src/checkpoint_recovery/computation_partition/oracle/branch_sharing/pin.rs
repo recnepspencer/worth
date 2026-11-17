@@ -51,9 +51,8 @@ mod serial {
             &mut 0x6119,
         );
         let child_run = run(&app, child).pop().unwrap();
-        assert_eq!(
-            child_run.runs,
-            [Run::Incremental],
+        assert!(
+            matches!(child_run.runs.as_slice(), [Run::Incremental { .. }]),
             "the fork alone keeps the captured prior retained"
         );
         assert_eq!(

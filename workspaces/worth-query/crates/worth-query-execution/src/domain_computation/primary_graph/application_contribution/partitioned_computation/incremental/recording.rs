@@ -123,7 +123,7 @@ impl<Key: Send + Sync + 'static, Item> FullRecording<Key, Item> {
         Reduced: Send + Sync + 'static,
     {
         observe(
-            WorthQueryPartitionedComputationRunForTest::Full(cause),
+            || WorthQueryPartitionedComputationRunForTest::Full(cause),
             Some(report),
         );
         let Some(native_run) = results.filter(|run| {
@@ -230,7 +230,7 @@ pub(in super::super) fn observe_unretained(
     report: ExecutionReport,
 ) {
     observe(
-        WorthQueryPartitionedComputationRunForTest::Full(cause),
+        || WorthQueryPartitionedComputationRunForTest::Full(cause),
         Some(report),
     );
 }

@@ -60,7 +60,7 @@ mod serial {
         let (contacts, runs) = demand(&request, &application);
         assert_eq!((contacts, runs.len()), (1, 1));
         assert_eq!(runs[0].calls, case.before.expected_calls(Some(&case.after)));
-        assert_eq!(runs[0].runs, [Run::Incremental]);
+        assert!(matches!(runs[0].runs.as_slice(), [Run::Incremental { .. }]));
         assert_eq!(demand(&request, &application).0, 0);
     }
 

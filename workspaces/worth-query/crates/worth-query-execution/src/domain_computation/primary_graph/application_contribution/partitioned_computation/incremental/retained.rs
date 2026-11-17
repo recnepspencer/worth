@@ -24,12 +24,30 @@ use crate::domain_computation::primary_graph::application_contribution::Installe
 use crate::domain_computation::primary_graph::invariant_projection::ComputationCallCharge;
 
 /// How one run of a partitioned computation ran.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryPartitionedComputationRunForTest {
-    /// Only the partitions whose facts changed were gathered and computed.
-    Incremental,
+    /// Only the partitions whose facts changed were gathered and computed;
+    /// every other live partition was carried.
+    Incremental {
+        /// The partitions gathered and computed again, in ascending identity
+        /// order.
+        recomputed: Vec<worth_foundational::facade::PartitionIdentity>,
+        /// Whether the membership call ran again because a fact it read
+        /// moved. It does not claim that membership changed.
+        membership_recomputed: bool,
+    },
     /// Every partition was gathered and computed.
     Full(WorthQueryPartitionedComputationFullCause),
+}
+
+impl WorthQueryPartitionedComputationRunForTest {
+    /// Why every partition ran, or `None` for an incremental run.
+    pub const fn full_cause(&self) -> Option<WorthQueryPartitionedComputationFullCause> {
+        match self {
+            Self::Full(cause) => Some(*cause),
+            Self::Incremental { .. } => None,
+        }
+    }
 }
 
 /// Why a run recomputed every partition.
