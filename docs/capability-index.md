@@ -1157,7 +1157,7 @@ Applications must not introduce a separate byte store. See the
 For implementation identity, use the whole-application
 [`ApplicationBuildIdentity`](build-an-application.md#application-build-identity).
 The build pipeline embeds one UUID; installation binds it to every producer.
-A changed build UUID admits the same supported Relational-only Directory program/schema
+A changed build UUID admits the same supported Directory program/schema
 without eager regeneration. Directory demand verifies original accepted output before
 same-build reuse and regenerates incompatible output only on demand, preserving
 authored entity identities. Required-output records and source custody use the

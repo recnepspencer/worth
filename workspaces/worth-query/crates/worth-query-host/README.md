@@ -114,11 +114,11 @@ live capabilities.
 ### Rebuild with a new implementation identity
 
 Issue a fresh `ApplicationBuildIdentity` UUID for every complete build. Opening
-the same supported Relational-only program/schema with that new identity is
-admitted, preserves authored binding and durable history, and does not rerun the
-initializer or eagerly regenerate anything. Producer installation is unsupported
-in this Directory lane. Same-build accepted-output reuse and regeneration on
-demand belong to Phase 6; rebuild admission alone does not qualify them.
+the same supported program/schema with that new identity is admitted, preserves
+authored binding and durable history, and does not rerun the initializer or
+eagerly regenerate outputs. Same-build demand verifies recorded accepted output;
+a changed build regenerates stale output on demand under its original owner.
+Freshly authenticate and readmit that owner through the reopened Home.
 
 ## Commitment and same-key retry
 

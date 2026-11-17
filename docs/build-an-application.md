@@ -16,10 +16,10 @@ feature's schema members, actions, required lifecycle roles and runtime slots
 together; the SDK derives their projections. The lower-level builders later in
 this guide explain the underlying contracts and support specialized composition.
 
-Directory Homes currently support only the Relational-only lane in [§4](#4-install-or-reopen).
-Producer, resource, conditional, workflow and branch-adoption examples use
-MemoryOnly unless stated otherwise. They do not acquire durability by being
-part of the same program.
+Directory Homes support the declared track-H families through the real installed
+owners in [§4](#4-install-or-reopen). Use graceful close and fresh-process reopen
+for durable continuation; MemoryOnly carries no restart guarantee. Crash recovery
+is not yet certified.
 
 | Your next task | Start here | What you supply |
 |---|---|---|
@@ -1990,7 +1990,7 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, RegionTotalsDemandB
 
 `WorthQueryApplicationHomeRequest` is the Host entry point for a new or existing
 application Home. Choose `WorthQueryApplicationHomeLocation::Directory(path)` for
-the supported durable Relational-only lane, or `MemoryOnly` for process-local
+durable installation and graceful continuation, or `MemoryOnly` for process-local
 installation. Keep the returned Home while borrowing `home.runtime()` to serve
 requests. Applications do not open Store or reconstruct lower owners themselves.
 
@@ -2106,7 +2106,7 @@ setup already has an original execution request, borrow it with
 The following
 shape is used by the real Directory Home court; `MySchema`, `MyProgram`,
 `seed_graph`, the configuration, limits and original execution request belong to
-the application. The program must satisfy the Relational-only restrictions below.
+the application. Install the declared components through their owning contribution.
 
 <!-- illustrative -->
 ```rust,ignore
@@ -2933,8 +2933,8 @@ and remaining resources still apply.
 The Host records the intent before performing any step. It uses the same Native,
 World and registered Source owners throughout and returns the Home only after
 the final binding is acknowledged. User bodies cannot address private Query
-records or materialization maintenance. Signal node allocation, Bridge
-correspondence, producers and conditionals retain their Relational-only refusals.
+records or materialization maintenance. Authored Signal, Bridge, producer and
+conditional state use their existing owner readmission.
 
 A fresh or already-current Home skips the author. After a successful transition,
 close normally; subsequent opens need only the successor request. Original
