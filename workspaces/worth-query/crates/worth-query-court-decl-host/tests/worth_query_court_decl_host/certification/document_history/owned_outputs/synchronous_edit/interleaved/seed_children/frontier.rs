@@ -1,6 +1,6 @@
-//! A final authored stage that demands no output: it moves the progress
-//! frontier and declares a read of the discovered child's family, as a CAD
-//! correction's document stage declares reads over every output family.
+//! A final authored stage that demands no output: it reads the discovered
+//! child `second:a` and records it in the progress frontier, as a CAD
+//! correction's document stage reads the outputs its source stage changed.
 use super::*;
 #[derive(Clone, Debug, WorthValue)]
 #[worth_value(crate = "worth_query_decl::facade::application_schema")]
@@ -27,7 +27,7 @@ worth_query_mutation_binding!(pub Binding for Intent, schema Schema,
     principal Actor, mapping Mapping, principal_entity Principal, principal_identity u64, identity_binding U64ApplicationValueBinding,
     scope MemberKey, field MemberKey::at("MemberKey"), value scope,
 );
-pub struct Decision(WorthQueryInvariantMutationTarget<Schema, Member>);
+pub struct Decision(WorthQueryInvariantMutationTarget<Schema, Member>, u64);
 pub struct Handler;
 impl OperationHandler<Schema, Binding> for Handler {
     fn decide(
@@ -39,24 +39,27 @@ impl OperationHandler<Schema, Binding> for Handler {
         let target = (reader.resolve_entity(MemberKey::at("MemberKey"), scope(input)))
             .and_then(|target| {
                 reader.field(&target, EnvelopeFrontier::at("Frontier"))?;
-                reader.mutation_target(&target)
+                let child = reader.resolve_entity(SecondKey::at("SecondKey"), "second:a".to_owned())?;
+                let child = reader.field(&child, SecondValue::at("SecondValue"))?.unwrap();
+                Ok(Decision(reader.mutation_target(&target)?, input.frontier * 10_000 + child))
             });
         match target {
-            Ok(target) => HandlerResult::Completed(Decision(target)),
+            Ok(target) => HandlerResult::Completed(target),
             Err(cause) => HandlerResult::ExecutionDenied(cause),
         }
     }
     fn build_candidate(
         &self,
-        input: &Intent,
+        _: &Intent,
         decision: Decision,
         writer: &mut CandidateWriter<'_, Schema, Binding>,
     ) -> HandlerResult<u64, Denial> {
+        let frontier = decision.1;
         let write = (writer.projected_entity(&decision.0)).and_then(|target| {
-            writer.write_field(&target, EnvelopeFrontier::at("Frontier"), input.frontier)
+            writer.write_field(&target, EnvelopeFrontier::at("Frontier"), frontier)
         });
         match write {
-            Ok(()) => HandlerResult::Completed(input.frontier),
+            Ok(()) => HandlerResult::Completed(frontier),
             Err(cause) => HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause)),
         }
     }

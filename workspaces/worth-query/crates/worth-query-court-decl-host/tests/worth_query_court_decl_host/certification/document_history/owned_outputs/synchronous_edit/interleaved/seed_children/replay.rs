@@ -1,9 +1,9 @@
 //! Replays the CAD seed edit traced on ef4a3304fb: a source stage writes the
 //! seed of a parent whose child is reached only through an occurrence arc,
-//! then a document stage that declares a read of the child's family. The
+//! then a document stage that reads that child and records it. The
 //! traced barrier at that stage held only the seed's own family; the rule
 //! of 63eafee holds every family the source stage made available. The edit
-//! must commit what two separate commits commit, or refuse atomically.
+//! must commit what two separate commits commit.
 use super::*;
 use crate::certification::document_history::owned_outputs::synchronous_edit::courts::native_head;
 use worth_query_host::facade::{
@@ -69,7 +69,7 @@ fn observe(host: &Host) -> (u64, Option<u64>, u64) {
 }
 
 #[test]
-fn a_seed_write_before_a_document_stage_never_commits_a_stale_occurrence_child() {
+fn a_document_stage_reads_the_child_a_seed_discovers_through_an_occurrence_arc() {
     let positioned = world();
     let outcome = execute(&positioned, "positioned", Some(4), Some(5));
     eprintln!("positioned: {outcome:?} -> {:?}", observe(&positioned));
@@ -77,7 +77,9 @@ fn a_seed_write_before_a_document_stage_never_commits_a_stale_occurrence_child()
     execute(&sequential, "sequential:0", Some(4), None).expect("the seed write commits alone");
     execute(&sequential, "sequential:1", None, Some(5)).expect("the document stage commits alone");
     eprintln!("sequential: {:?}", observe(&sequential));
-    if outcome.is_ok() {
-        assert_eq!(observe(&positioned), observe(&sequential), "a positioned commit kept a stale child");
-    }
+    // The child the seed's occurrence arc discovers must settle before the
+    // document stage reads it: the edit commits what two commits commit.
+    // Leaving it out of the barrier either reads it stale or, as here on
+    // ef4a3304fb, refuses a valid edit as a later support change.
+    assert_eq!(outcome.map(|()| observe(&positioned)), Ok(observe(&sequential)));
 }
