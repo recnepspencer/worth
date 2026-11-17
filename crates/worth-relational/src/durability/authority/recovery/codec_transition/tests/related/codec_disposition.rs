@@ -20,7 +20,7 @@ fn cold_retirement_requires_every_sibling_group_before_route_eligibility() {
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let (runtime, receipt) = installed(1);
     let (world, publisher) = world_with_publication(execution, runtime, receipt);
-    let sibling = coupled_sibling::publish(execution, &world, &publisher);
+    let sibling = super::coupled_sibling::publish(execution, &world, &publisher);
     let (mut target, mut recovered, _) = recover(execution, &world);
     let candidate = candidate(
         execution,
@@ -323,7 +323,6 @@ pub(super) fn cold_retired_route(
 }
 
 mod boundary_rosters;
-mod coupled_sibling;
 mod incidental_birth;
 
 #[test]
