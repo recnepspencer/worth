@@ -4,7 +4,10 @@ use crate::facade::{
 };
 use worth_execution::{CancellationSource, ExecutionRequest, SerialMemoryBudget, SerialRequest};
 
-fn open(path: &std::path::Path, execution: &ExecutionRequest<'_, '_>) -> ReadmittedApplicationHome {
+pub(crate) fn open(
+    path: &std::path::Path,
+    execution: &ExecutionRequest<'_, '_>,
+) -> ReadmittedApplicationHome {
     let recovered = recover_home(super::program::request(path), execution).unwrap();
     let admitted = admit_home(recovered, execution).unwrap();
     readmit_relational(admitted, execution)
