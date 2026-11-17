@@ -99,15 +99,34 @@ impl ApplicationProgramDefinition<Schema> for NativeProgram {
     }
 }
 pub type App = installation::WorthQueryProgramApplicationRuntime<Schema, NativeProgram>;
-pub fn install(calls: Arc<Calls>) -> App {
+pub fn install(calls: Arc<Calls>, worker_only: bool) -> App {
     let schema = Schema::declaration().unwrap();
     let program = ApplicationProgramAuthoring::<Schema, NativeProgram>::begin()
         .with_schema(&schema)
         .validated_program()
         .unwrap();
-    let limits=installation::WorthQueryApplicationLimits::new(
-        worth_query_testkit_document_retention::facade::document_world_resources::world_resources(256,4*1024*1024,256,worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
-        worth_query_host::facade::runtime::WorthQueryApplicationQueryResourceProfile::new(std::num::NonZeroUsize::new(128).unwrap()),
+    use worth_query_host::facade::runtime::{
+        DeterminismContract, ExecutionPosture, ExecutionRequestPolicy,
+    };
+    let resources = worth_query_testkit_document_retention::facade::document_world_resources::world_resources(
+        256, 4 * 1024 * 1024, 256,
+        worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
+    let resources = if worker_only {
+        // The existing public host-selected mode; default accounting is unchanged.
+        resources.with_execution_policy(ExecutionRequestPolicy::for_workers(
+            ExecutionPosture::Serial,
+            DeterminismContract::CanonicalBitwise,
+            std::num::NonZeroUsize::MIN,
+        ))
+    } else {
+        resources
+    };
+    let limits = installation::WorthQueryApplicationLimits::new(
+        resources,
+        worth_query_host::facade::runtime::WorthQueryApplicationQueryResourceProfile::new(
+            std::num::NonZeroUsize::new(128).unwrap(),
+        ),
         worth_query_host::facade::primary_graph::SignalConditionalEvaluationBudget::development(),
     );
     installation::in_memory_program(

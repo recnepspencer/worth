@@ -1,4 +1,4 @@
-//! An authored source edit owns its real Width effect and required parent output.
+//! An authored source completion precedes its explicit committed parent demand.
 use super::*;
 use worth_query_decl::facade::application_program::*;
 
@@ -40,15 +40,11 @@ impl WorthQueryApplicationRequiredOutputSource<Schema, Start> for source_control
         <Start as WorthQueryApplicationRequiredOutputConnection<Schema>>::demand_from_source(input)
     }
 }
-pub type Tree = ApplicationOutputGraph<Connection, ApplicationOutputLeaf>;
+pub type Tree = ApplicationDemandOutputGraph<Connection, ApplicationOutputLeaf>;
 pub struct Delivery;
 impl ApplicationActionDelivery<Schema, source_control::Binding> for Delivery {
-    type Mode = ApplicationFixedDeliveryMode<Tree, ApplicationNoProjection>;
+    type Mode = ApplicationSourceCompletion;
     const IDENTITY: &'static str = "succession.walk.source-delivery";
-}
-impl ApplicationFixedActionDelivery<Schema, source_control::Binding> for Delivery {
-    type Root = Tree;
-    type Projection = ApplicationNoProjection;
 }
 type Action = ApplicationActionReference<
     Schema,
@@ -81,30 +77,59 @@ pub fn perform(
         .unwrap_or_else(|(_, cause)| panic!("installed source action: {cause:?}"));
     for _ in 0..32 {
         match operation.advance(request) {
-            WorthQueryOperationAdvance::Progress {
-                operation: next, ..
-            } => operation = next,
-            WorthQueryOperationAdvance::Settled(settled) => {
-                assert_eq!(
-                    settled.declared_action().binding(),
-                    <source_control::Binding as ApplicationMutationBinding<Schema>>::IDENTITY
+            WorthQuerySourceOnlyAdvance::Progress(next) => operation = next,
+            WorthQuerySourceOnlyAdvance::Completed(completed) => {
+                assert!(
+                    matches!(
+                        completed.evidence(),
+                        WorthQuerySourceCompletion::Fresh { .. }
+                    ),
+                    "the actual authored source committed freshly"
                 );
-                settled.deliver_current(request).unwrap();
-                settled
+                completed
                     .close(request)
                     .unwrap_or_else(|(_, cause)| panic!("source close: {cause:?}"));
                 assert_eq!(
                     request.query(Read("root".into())).execute().unwrap().rows()[0].width,
                     width,
-                    "the actual source handler committed the requested Width"
+                    "source completion is committed before output demand"
                 );
+                demand(app, request);
                 return;
             }
-            WorthQueryOperationAdvance::Refused { denial, .. }
-            | WorthQueryOperationAdvance::Terminal { denial, .. } => {
+            WorthQuerySourceOnlyAdvance::Refused { denial, .. } => {
                 panic!("source action: {denial:?}")
+            }
+            WorthQuerySourceOnlyAdvance::Terminal(terminal) => {
+                panic!("source action: {:?}", terminal.native_outcome())
             }
         }
     }
     panic!("bounded authored source action did not finish");
+}
+
+fn demand(app: &producer_world::App, request: &settlement::Request<'_, '_, '_>) {
+    let mut operation = request
+        .demand(producers::parent::Demand("root".into()))
+        .retain_program_outputs::<producer_world::NativeProgram, Tree>(app)
+        .unwrap_or_else(|cause| panic!("installed demand: {:?}", cause.denial()));
+    for _ in 0..32 {
+        match operation.advance(request) {
+            WorthQueryProgramOutputOperationAdvance::Pending(next) => operation = next,
+            WorthQueryProgramOutputOperationAdvance::Settled(settled) => {
+                settled.deliver_current(request).unwrap();
+                settled
+                    .close(request)
+                    .unwrap_or_else(|cause| panic!("demand close: {:?}", cause.denial()));
+                return;
+            }
+            WorthQueryProgramOutputOperationAdvance::Refused { denial, .. } => {
+                panic!("demand: {denial:?}")
+            }
+            WorthQueryProgramOutputOperationAdvance::Terminal(terminal) => {
+                panic!("demand: {:?}", terminal.denial())
+            }
+        }
+    }
+    panic!("bounded committed-source demand did not finish");
 }
