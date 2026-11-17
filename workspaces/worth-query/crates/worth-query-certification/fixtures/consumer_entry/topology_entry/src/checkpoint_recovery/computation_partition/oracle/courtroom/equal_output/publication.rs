@@ -70,6 +70,10 @@ impl ApplicationMutationIntent<Schema> for Input {
     }
 }
 
+static CALLS: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+pub(super) fn take_calls() -> usize {
+    CALLS.swap(0, std::sync::atomic::Ordering::SeqCst)
+}
 pub(super) struct Handler;
 impl OperationHandler<Schema, Binding> for Handler {
     fn decide(
@@ -77,6 +81,7 @@ impl OperationHandler<Schema, Binding> for Handler {
         input: &Input,
         reader: &mut DecisionReader<'_, '_, '_, Schema, Binding>,
     ) -> HandlerResult<PositiveLength, PlanarMutationDenial> {
+        CALLS.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
         let value = (|| {
             let entity = reader.resolve_entity(BodyKey::at("BodyKey"), input.scope_key.clone())?;
             let _ = reader.field(&entity, Length::at("Length"))?;

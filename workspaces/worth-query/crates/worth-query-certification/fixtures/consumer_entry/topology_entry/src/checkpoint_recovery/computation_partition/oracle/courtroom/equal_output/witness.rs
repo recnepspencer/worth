@@ -43,6 +43,7 @@ mod serial {
                 // A changed then restored encoding has moved its revision: Fresh, one contact.
                 let changed_revision = changes.iter().any(|value| value.div_ceil(2) != 1);
                 for (index, value) in changes.into_iter().enumerate() {
+                    publication::take_calls();
                     let observed = request
                         .query(PlanarRead {
                             body_key: "anchor-b".to_owned(),
@@ -58,14 +59,24 @@ mod serial {
                     .idempotency(&(0x61400 + index as u64))
                     .execute_performed::<installation::Program, installation::Root>(&app, worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation)
                     .unwrap();
+                    assert_eq!(
+                        publication::take_calls(),
+                        1,
+                        "one changed producer executes during the coupled edit"
+                    );
                     let mut root = request
                         .demand(Demand(OUTPUT))
                         .start_in_program::<installation::Program, installation::Root>(&app)
                         .unwrap();
                     assert_eq!(
                         settle!(root, request).0,
-                        1,
-                        "witnesses {witnesses}, index {index}, value {value}"
+                        0,
+                        "coupled output delivery: witnesses {witnesses}, index {index}, value {value}"
+                    );
+                    assert_eq!(
+                        publication::take_calls(),
+                        0,
+                        "delivery cannot execute a second time"
                     );
                 }
                 assert_eq!(input(), before, "the canonical source value is equal");
