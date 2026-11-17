@@ -138,6 +138,23 @@ pub(super) enum Endpoint {
     NoEffect,
     Unresolved,
 }
+impl Endpoint {
+    fn after_observation(self, result: &Option<WorldPublicationObservation>) -> Self {
+        use worth_foundational::facade::DurablePublicationFate;
+        match result {
+            Some(WorldPublicationObservation::Finished(completion)) => match completion.fate() {
+                DurablePublicationFate::Committed => self,
+                DurablePublicationFate::ProvenNoEffect { .. } => Self::NoEffect,
+                DurablePublicationFate::Indeterminate { .. } => Self::Unresolved,
+            },
+            Some(
+                WorldPublicationObservation::Pending
+                | WorldPublicationObservation::EvidenceRequired,
+            )
+            | None => self,
+        }
+    }
+}
 impl WorldPublicationTask {
     pub(super) fn try_driver(&self) -> Option<WorldPublicationDriver<'_>> {
         self.driver
@@ -347,7 +364,7 @@ impl WorldPublicationTask {
                 Endpoint::Ready(_) | Endpoint::Stopped(_) => None,
             }
         };
-        self.restore(endpoint);
+        self.restore(endpoint.after_observation(&result));
         result
     }
 }
