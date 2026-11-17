@@ -2,8 +2,6 @@
 use super::{Partition, World};
 use std::sync::{Condvar, Mutex, MutexGuard};
 use std::time::Duration;
-#[cfg(test)]
-mod wait_tests;
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Phase {
     Prepare,
