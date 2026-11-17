@@ -93,12 +93,23 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             .map(PendingOutputDemand::Prefix)
             .collect::<Vec<_>>();
         for (physical, capture) in self.stage_captures().iter().enumerate() {
+            // Only the sources and roots earlier stages actually left pending
+            // can settle before this position; declarations alone cannot.
+            let barrier = match &capture.positioned_barrier {
+                Some(planned) => planned.resolve(
+                    &wave
+                        .pending_families()
+                        .chain(pending.iter().map(|demand| demand.demand().family))
+                        .collect::<Vec<_>>(),
+                ),
+                None => capture.producer_barrier.clone(),
+            };
             self.prepare_pending(
                 execution,
                 &before_pin,
                 candidate,
                 &mut pending,
-                Some(&capture.producer_barrier),
+                Some(&barrier),
             )?;
             if let Some(order) = &order {
                 let context = synchronous_outputs::SynchronousOutputAssembly {
@@ -107,7 +118,7 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
                     before: &before_pin,
                     order,
                 };
-                wave.drive(&context, candidate, Some(&capture.producer_barrier))
+                wave.drive(&context, candidate, Some(&barrier))
                     .map_err(|cause| cause.0)?;
             }
             let mut demands = self.prepare_stage(execution, &before_pin, candidate, physical)?;

@@ -46,6 +46,9 @@ pub struct CapturedAuthoredEditStage<S> {
         Vec<(std::any::TypeId, std::any::TypeId)>,
     pub(in crate::domain_computation::primary_graph::application_contribution) producer_barrier:
         Vec<String>,
+    /// Ordered authoring resolves its barrier when the stage is reached.
+    pub(in crate::domain_computation::primary_graph::application_contribution) positioned_barrier:
+        Option<super::dag::PositionedBarrier>,
     pub(in crate::domain_computation::primary_graph::application_contribution) required: Option<
         Arc<
             dyn Fn(
@@ -74,6 +77,7 @@ impl<S> Clone for CapturedAuthoredEditStage<S> {
             producers: self.producers.clone(),
             producer_connections: self.producer_connections.clone(),
             producer_barrier: self.producer_barrier.clone(),
+            positioned_barrier: self.positioned_barrier.clone(),
             required: self.required.clone(),
             ordered: self.ordered,
         }
@@ -272,6 +276,7 @@ impl<S: ApplicationSchema> CapturedAuthoredEditStage<S> {
             producers: Vec::new(),
             producer_connections: Vec::new(),
             producer_barrier: Vec::new(),
+            positioned_barrier: None,
             required: None,
             ordered: false,
             identity,
