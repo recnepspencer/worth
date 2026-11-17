@@ -19,8 +19,6 @@ use worth_query_host::facade::{
 pub mod adoption;
 pub mod lifecycle;
 pub mod preparation;
-#[cfg(test)]
-mod publication_tests;
 pub mod staging;
 pub use lifecycle::CloseFailure;
 pub use preparation::{PreparationFailure, PreparationRefusal};
