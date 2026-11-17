@@ -105,7 +105,7 @@ macro_rules! string_enum_binding {
             }
 
             fn decode(value: InternedString) -> Option<Self> {
-                let InternedString::Raw(value) = value else { return None; };
+                let value = value.into_raw_text()?;
                 match value.as_str() { $($text => Some($Variant),)+ _ => None }
             }
         }

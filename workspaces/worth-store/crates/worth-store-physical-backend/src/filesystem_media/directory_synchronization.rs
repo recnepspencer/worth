@@ -310,7 +310,9 @@ pub(super) fn synchronize_directory_handle(directory: &cap_std::fs::Dir) -> std:
 }
 
 #[cfg(windows)]
-fn open_directory_sync_handle(directory: &cap_std::fs::Dir) -> std::io::Result<std::fs::File> {
+pub(super) fn open_directory_sync_handle(
+    directory: &cap_std::fs::Dir,
+) -> std::io::Result<std::fs::File> {
     use cap_std::fs::OpenOptionsExt;
     const FILE_FLAG_BACKUP_SEMANTICS: u32 = 0x0200_0000;
     let mut options = cap_std::fs::OpenOptions::new();
@@ -324,8 +326,12 @@ fn open_directory_sync_handle(directory: &cap_std::fs::Dir) -> std::io::Result<s
 }
 
 #[cfg(not(windows))]
-fn open_directory_sync_handle(directory: &cap_std::fs::Dir) -> std::io::Result<std::fs::File> {
-    directory.try_clone().map(cap_std::fs::Dir::into_std_file)
+pub(super) fn open_directory_sync_handle(
+    directory: &cap_std::fs::Dir,
+) -> std::io::Result<std::fs::File> {
+    // Capability directory handles can be O_PATH on Linux; fsync requires
+    // a readable directory descriptor opened under the same capability.
+    directory.open(".").map(cap_std::fs::File::into_std)
 }
 
 fn directory_failure(

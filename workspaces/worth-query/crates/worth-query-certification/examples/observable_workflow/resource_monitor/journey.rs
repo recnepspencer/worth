@@ -34,14 +34,14 @@ pub fn run() {
             .unwrap()
             .as_nanos()
     ));
-    let (home, application) =
+    let application =
         crate::document_retention_model::installation::open(&directory, configuration.clone());
-    inspect(application, configuration);
-    crate::document_retention_model::installation::close(home);
+    inspect(&application, configuration);
+    crate::document_retention_model::installation::close(application);
 }
 
 fn inspect(
-    application: crate::document_retention_model::MixedApplication,
+    application: &crate::document_retention_model::MixedApplication,
     configuration: Configuration,
 ) {
     let runtime = application.runtime();
@@ -54,7 +54,7 @@ fn inspect(
         .unwrap();
     let scope = request_scope();
     let actor = authenticate_operator(runtime.installed_schema(), &scope);
-    let source = super::source_binding::prepare(&application, &actor, &scope);
+    let source = super::source_binding::prepare(application, &actor, &scope);
     let original = MonitorInput {
         identity: DOCUMENT_IDENTITY.to_owned(),
         retention_days: 9,
@@ -66,7 +66,7 @@ fn inspect(
         .without_source()
         .idempotency(&8001_u64)
         .execute_capability_in_program(
-            application.program_runtime(),
+            application.runtime(),
             worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
@@ -79,7 +79,7 @@ fn inspect(
         .unwrap()
         .unwrap();
     let original_identity = handle.opaque_wire_identity();
-    let authority = super::authority::inspect(runtime, &handle, &actor, &scope, &original);
+    let (authority, _) = super::authority::admit(runtime, &handle, &actor, &scope, &original);
 
     let cancelled = WorthQueryCancellationSource::new();
     let refused_scope = WorthQueryRequestScope::new(
@@ -169,8 +169,20 @@ fn inspect(
         "monitoring/timeout/cleanup never redispatches"
     );
     assert_eq!(configuration.state.counts(), (2, 2, 3));
-    // Resource cleanup returned the unresolved effect owner. Dropping the
-    // process-local fixture makes no external rollback/reconciliation claim.
-    drop(returned);
-    super::source_binding::run(&application, &configuration, &actor, &scope, source);
+    // Cleanup returns the live original; its declared external-owner procedure
+    // admits reconciliation without claiming delivery or contacting the rail.
+    let (_, effect_authority) =
+        super::authority::admit(runtime, &returned, &actor, &scope, &original);
+    runtime
+        .with_application_advancement(&scope, |phase| {
+            reconcile_recovery_handle(&phase, returned, &effect_authority)
+        })
+        .unwrap()
+        .expect("the declared external owner admits original reconciliation");
+    assert_eq!(
+        runtime.recovery_claim_status(&receipt).unwrap(),
+        WorthQueryRecoveryClaimStatus::Consumed
+    );
+    assert_eq!(transport.calls.load(Ordering::SeqCst), 1);
+    super::source_binding::run(application, &configuration, &actor, &scope, source);
 }

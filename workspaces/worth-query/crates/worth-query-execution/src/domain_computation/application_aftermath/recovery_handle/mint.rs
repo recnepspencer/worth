@@ -54,7 +54,6 @@ where
             self.runtime.authority_identity(),
             receipt.runtime_authority(),
         )?;
-        self.admit_recovery_custody()?;
         let registry = Arc::clone(&self.runtime.recovery_handles);
         let mut binding = WorthQueryRecoveryHandleBinding::from_receipt(
             receipt,
@@ -98,7 +97,6 @@ where
             self.runtime.authority_identity(),
             original.original_authority().runtime_authority(),
         )?;
-        self.admit_recovery_custody()?;
         let registry = Arc::clone(&self.runtime.recovery_handles);
         let mut binding = WorthQueryRecoveryHandleBinding::from_pending_original(
             original,
@@ -115,16 +113,6 @@ where
             slot,
             original.canonical_work(),
             registry,
-        ))
-    }
-
-    pub(in crate::domain_computation) fn admit_recovery_custody(
-        &self,
-    ) -> Result<(), WorthQueryRecoveryHandleDenial> {
-        self.runtime.product_runtime.admit_directory_capability(
-            crate::domain_computation::primary_graph::WorthQueryOperationDurableCapability::RecoveryCustody,
-        ).map_err(|cause| WorthQueryRecoveryHandleDenial::new(
-            WorthQueryRecoveryHandleDenialKind::DurableStateAdmission(cause),
         ))
     }
 

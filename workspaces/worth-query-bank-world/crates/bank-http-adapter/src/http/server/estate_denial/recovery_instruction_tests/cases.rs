@@ -69,12 +69,8 @@ pub(super) fn every_kind() -> Vec<(Kind, Denial, Next)> {
         (Kind::AdmissionAuthorization(bank_server::BankAuthorizationDenialKind::DeadlineExceeded), (Denial::DeadlineExceeded, Next::Retry)),
         (Kind::AdmissionAuthorization(bank_server::BankAuthorizationDenialKind::ExpiredAuthentication), (Denial::Unauthenticated, Next::Authenticate)),
         (Kind::AdmissionAuthorization(bank_server::BankAuthorizationDenialKind::PermissionDenied), (Denial::PermissionDenied, Next::None)),
-        (Kind::DurableStateAdmission(worth_query_host::facade::product::WorthQueryDurableStateAdmissionDenial::PolicyUnavailable), server_fault),
         (Kind::DurableStateAdmission(worth_query_host::facade::product::WorthQueryDurableStateAdmissionDenial::UndeclaredSupplierCapabilities), server_fault),
-        (Kind::DurableStateAdmission(worth_query_host::facade::product::WorthQueryDurableStateAdmissionDenial::Unsupported {
-            family: worth_foundational::facade::DurableStateFamily::RecoveryHandleCustody,
-            supported_from_phase: 8,
-        }), (Denial::Unavailable, Next::ContactOperator)),
+        (Kind::DurableStateAdmission(worth_query_host::facade::product::WorthQueryDurableStateAdmissionDenial::UnsupportedCorrectionCompensation), (Denial::Unavailable, Next::ContactOperator)),
         (Kind::RecoveryNotAdmitted, refused),
         (Kind::CompensationNotAdmitted, refused),
         (Kind::ReconciliationNotAdmitted, refused),

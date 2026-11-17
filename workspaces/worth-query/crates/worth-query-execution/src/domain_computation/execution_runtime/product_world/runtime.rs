@@ -26,8 +26,6 @@ pub struct WorthQueryProductRuntime {
         Option<Arc<dyn super::WorthQueryHomeMaintenance>>,
     pub(super) named_read_probe: Arc<super::read_consult::NamedReadProbe>,
     pub(super) adoption_preparation: Arc<super::adoption_preparation::AdoptionPreparationControl>,
-    pub(in crate::domain_computation) directory_support:
-        Option<fn(worth_foundational::facade::DurableStateFamily, u8) -> Option<u8>>,
     pub(crate) owner: super::world_ports::WorthQueryProductWorldPorts,
     pub(crate) source: Option<RuntimeBridgeRelationalSource>,
     pub(crate) activations: Arc<WorthQueryProductActivationRegistry>,
@@ -79,7 +77,6 @@ impl WorthQueryProductRuntime {
             home_maintenance: None,
             branch_program_source_owner: None,
             owner,
-            directory_support: None,
             adoption_preparation: Arc::default(),
             named_read_probe: Arc::default(),
             source: Some(source),

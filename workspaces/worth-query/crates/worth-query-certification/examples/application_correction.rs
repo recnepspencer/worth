@@ -24,50 +24,32 @@ use worth_query_host::facade::application_entry::{
 use worth_query_host::facade::primary_graph::WorthQueryCorrectionDerivationDenial;
 use worth_query_testkit_certification_correction::facade::certification::application_graph::correction::model as application_correction_support;
 
-#[expect(
-    clippy::disallowed_methods,
-    reason = "certification-harness thread-builder=1 thread-spawn=1: The example joins one actor with its declared bootstrap stack; native request computation retains its Execution authority."
-)]
 fn main() {
     let court = std::env::args().nth(1);
-    let (done, completion) = std::sync::mpsc::channel();
-    let worker = std::thread::Builder::new()
-        .name("application-correction".to_owned())
-        .stack_size(64 * 1024 * 1024)
-        .spawn(move || {
-            match court.as_deref() {
-                None => run(),
-                Some("composite") => application_correction_support::composite_definition_court::run(),
-                Some("authored") => application_correction_support::authored_identity_courts::run(),
-                Some("race") => application_correction_support::correction_race_court::run(),
-                Some("tree-controls") => application_correction_support::tree_controls::run(),
-                Some("tree-history") => application_correction_support::history_reapplication::run(),
-                Some("tree-outputs") => application_correction_support::required_reapplication::run(),
-                Some("ordinary-outputs") => application_correction_support::required_reapplication::ordinary_outputs(),
-                Some("tree-output-overlap") => application_correction_support::required_reapplication::overlapping_fields(),
-                Some("adoption-cycles") => application_correction_support::fork_head_adoption::run(),
-                Some("tree") => {
-                    application_correction_support::tree_reapplication::run();
-                    application_correction_support::tree_controls::run();
-                    application_correction_support::required_reapplication::run();
-                    application_correction_support::history_reapplication::run();
-                }
-                Some("outputs") => {
-                    application_correction_support::required_output_courts::run();
-                }
-                Some(other) => panic!("unknown correction court {other:?}; expected composite, composite-recovery, composite-unwind, authored, race, tree, tree-controls, tree-history, tree-outputs, tree-output-overlap, ordinary-outputs, adoption-cycles, outputs, or no argument for all"),
-            }
-            let _ = done.send(());
-        })
-        .expect("start the application thread");
-    if let Err(std::sync::mpsc::RecvTimeoutError::Timeout) =
-        completion.recv_timeout(std::time::Duration::from_secs(60))
-    {
-        panic!("the application correction runtime court stalled");
+    worth_execution::run_with_execution_stack(|| {
+        match court.as_deref() {
+        None => run(),
+        Some("composite") => application_correction_support::composite_definition_court::run(),
+        Some("authored") => application_correction_support::authored_identity_courts::run(),
+        Some("race") => application_correction_support::correction_race_court::run(),
+        Some("tree-controls") => application_correction_support::tree_controls::run(),
+        Some("tree-history") => application_correction_support::history_reapplication::run(),
+        Some("tree-outputs") => application_correction_support::required_reapplication::run(),
+        Some("ordinary-outputs") => application_correction_support::required_reapplication::ordinary_outputs(),
+        Some("tree-output-overlap") => application_correction_support::required_reapplication::overlapping_fields(),
+        Some("adoption-cycles") => application_correction_support::fork_head_adoption::run(),
+        Some("tree") => {
+            application_correction_support::tree_reapplication::run();
+            application_correction_support::tree_controls::run();
+            application_correction_support::required_reapplication::run();
+            application_correction_support::history_reapplication::run();
+        }
+        Some("outputs") => {
+            application_correction_support::required_output_courts::run();
+        }
+        Some(other) => panic!("unknown correction court {other:?}; expected composite, composite-recovery, composite-unwind, authored, race, tree, tree-controls, tree-history, tree-outputs, tree-output-overlap, ordinary-outputs, adoption-cycles, outputs, or no argument for all"),
     }
-    worker
-        .join()
-        .unwrap_or_else(|panic| std::panic::resume_unwind(panic));
+    });
 }
 
 fn run() {

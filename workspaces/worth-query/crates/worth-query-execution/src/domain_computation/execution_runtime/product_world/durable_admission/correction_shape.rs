@@ -8,8 +8,7 @@ use worth_query_installation::facade::{
     InstalledCorrectionBinding, InstalledCorrectionMechanism, WorthQueryInstalledAftermathContract,
 };
 impl WorthQueryProductRuntime {
-    /// Narrow installed native source qualification. Other original owners keep
-    /// the whole-family gate; installed meaning grants no current request authority.
+    /// Qualify installed native source meaning without granting current request authority.
     pub fn admit_native_correction_source_owner(
         &self,
         contracts: &worth_query_installation::facade::WorthQueryCompiledApplicationOperationContracts,
@@ -18,12 +17,8 @@ impl WorthQueryProductRuntime {
         if !self.is_directory_home() {
             return Ok(());
         }
-        match self.admit_directory_original_shape(contracts, correction)? {
-            Admission::NativeRecordedCorrection => Ok(()),
-            Admission::ExistingShape | Admission::ExternalOriginalRecoveryOnly => {
-                self.admit_retained_original_operation_owner()
-            }
-        }
+        self.admit_directory_original_shape(contracts, correction)
+            .map(|_| ())
     }
 
     /// Preflight of the installed inverse for a genuine correction handoff.

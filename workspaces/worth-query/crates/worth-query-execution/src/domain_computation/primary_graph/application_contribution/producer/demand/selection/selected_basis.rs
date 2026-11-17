@@ -210,10 +210,24 @@ pub(super) fn require_retained_source<Schema: ApplicationSchema + 'static>(
                 retained.product().observation(),
             ) != *observation
             {
-                return Err(WorthQueryOutputDemandDenial::new(
-                    WorthQueryOutputDemandDenialKind::ForeignSource,
-                    family,
-                ));
+                // A retained original may advance under a fresh disclosure at
+                // the current head of its same occurrence. An arbitrary older
+                // disclosure still cannot replace its admitted source.
+                let current = runtime
+                    .on_branch(observation.product_branch())
+                    .select_with_request(execution)
+                    .map_err(|cause| {
+                        WorthQueryOutputDemandDenial::product_selection(cause, family)
+                    })?;
+                let current_observation = current.product().observation();
+                if !observation.matches_observation(current_observation)
+                    || !retained_basis.belongs_to_selected_occurrence(runtime, current_observation)
+                {
+                    return Err(WorthQueryOutputDemandDenial::new(
+                        WorthQueryOutputDemandDenialKind::ForeignSource,
+                        family,
+                    ));
+                }
             }
         }
     }

@@ -160,7 +160,6 @@ where
         ports.inspection_port(),
         ports.recovery_port(),
         root,
-        directory_requirement_refusal,
         maintenance,
         home.branch_program_source_owner(),
     ) {

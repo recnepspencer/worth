@@ -26,18 +26,18 @@ pub struct CapturedJourney {
 }
 
 pub fn inspect(captured: CapturedJourney) {
-    let (home, application) = crate::document_retention_model::installation::open(
+    let application = crate::document_retention_model::installation::open(
         &captured.home_directory,
         crate::resource_monitor::Configuration::default(),
     );
-    inspect_reopened(application, captured);
-    crate::document_retention_model::installation::close(home);
+    inspect_reopened(&application, captured);
+    crate::document_retention_model::installation::close(application);
 }
 
 // Do not merge the request/audit temporaries into the native reopen call frame.
 #[inline(never)]
 fn inspect_reopened(
-    application: crate::document_retention_model::MixedApplication,
+    application: &crate::document_retention_model::MixedApplication,
     captured: CapturedJourney,
 ) {
     let CapturedJourney {
@@ -137,14 +137,9 @@ fn inspect_reopened(
         }
         _ => panic!("reopened audit must retain genuine start and terminal advancer"),
     }
-    let page = crate::history::page(&application, &reviewer, &scope, &basis, audit.target());
-    let withheld = crate::history::page(
-        &application,
-        &operator,
-        &scope,
-        &basis,
-        observation.target(),
-    );
+    let page = crate::history::page(application, &reviewer, &scope, &basis, audit.target());
+    let withheld =
+        crate::history::page(application, &operator, &scope, &basis, observation.target());
     assert_eq!(page.basis().selected_commit(), basis.selected_commit());
     assert_eq!(page.entries().len(), withheld.entries().len());
     for (entry, hidden) in page.entries().iter().zip(withheld.entries()) {

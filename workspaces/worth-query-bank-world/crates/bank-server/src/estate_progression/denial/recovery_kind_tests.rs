@@ -52,14 +52,8 @@ fn redispatch_refusals_keep_distinct_bank_kinds() {
         ),
         (Query::TimeObservationDenied, Bank::TimeObservationDenied),
         (
-            Query::DurableStateAdmission(worth_query_host::facade::product::WorthQueryDurableStateAdmissionDenial::Unsupported {
-                family: worth_foundational::facade::DurableStateFamily::RecoveryHandleCustody,
-                supported_from_phase: 8,
-            }),
-            Bank::DurableStateAdmission(worth_query_host::facade::product::WorthQueryDurableStateAdmissionDenial::Unsupported {
-                family: worth_foundational::facade::DurableStateFamily::RecoveryHandleCustody,
-                supported_from_phase: 8,
-            }),
+            Query::DurableStateAdmission(worth_query_host::facade::product::WorthQueryDurableStateAdmissionDenial::UnsupportedCorrectionCompensation),
+            Bank::DurableStateAdmission(worth_query_host::facade::product::WorthQueryDurableStateAdmissionDenial::UnsupportedCorrectionCompensation),
         ),
         (Query::RecoveryNotAdmitted, Bank::RecoveryNotAdmitted),
         (Query::StaleIncarnation, Bank::StaleIncarnation),
