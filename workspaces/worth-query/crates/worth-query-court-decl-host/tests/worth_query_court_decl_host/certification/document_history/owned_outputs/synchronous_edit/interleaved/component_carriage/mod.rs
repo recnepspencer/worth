@@ -12,6 +12,7 @@ mod connections;
 use connections::*;
 #[cfg(test)]
 mod courts;
+mod differential;
 
 #[derive(Clone)]
 pub struct Demand {
