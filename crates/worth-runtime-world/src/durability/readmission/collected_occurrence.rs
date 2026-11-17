@@ -26,10 +26,10 @@ impl super::WorldCheckpointImage {
         if owners.component_intent() != open.component_intent {
             return Err(Denial::OccurrenceEvidenceMismatch);
         }
-        if let Some(signal) = owners.signal() {
-            if signal.point().descriptor().owner().home() != self.binding.owner().home() {
-                return Err(Denial::ForeignOwner);
-            }
+        if let Some(signal) = owners.signal()
+            && signal.point().descriptor().owner().home() != self.binding.owner().home()
+        {
+            return Err(Denial::ForeignOwner);
         }
         if publishing_incarnation > self.binding.incarnation() {
             return Err(Denial::FutureIncarnation);
