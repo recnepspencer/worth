@@ -1,4 +1,7 @@
-use worth_query_host::facade::publication::domain_computation::WorthQueryApplicationQueryPublicationReceipt;
+use super::ApplicationProjectionInputIdentity;
+use worth_query_host::facade::publication::domain_computation::{
+    WorthQueryPublishedApplicationBasis, WorthQueryPublishedApplicationQueryTerminalRelease,
+};
 
 use crate::{
     WorthUiQueryViewIdentity, WorthUiQueryViewIdentityError, WorthUiStatusPublication,
@@ -6,12 +9,13 @@ use crate::{
 };
 
 #[must_use]
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct UiApplicationScalarProjectionFactReceipt {
     projection_identity: WorthUiQueryViewIdentity,
     owner_order: u64,
     value: WorthUiStatusQueryResult,
-    query_receipt: WorthQueryApplicationQueryPublicationReceipt,
+    publication_identity: ApplicationProjectionInputIdentity,
+    terminal_release: WorthQueryPublishedApplicationQueryTerminalRelease,
 }
 
 impl UiApplicationScalarProjectionFactReceipt {
@@ -21,11 +25,14 @@ impl UiApplicationScalarProjectionFactReceipt {
         let (value, query_receipt) = publication.into_parts();
         let projection_identity = WorthUiQueryViewIdentity::new(value.identity.clone())?;
         let owner_order = query_receipt.inspect().basis().version();
+        let publication_identity = ApplicationProjectionInputIdentity::capture(&query_receipt);
+        let terminal_release = query_receipt.inspect().terminal_release();
         Ok(Self {
             projection_identity,
             owner_order,
             value,
-            query_receipt,
+            publication_identity,
+            terminal_release,
         })
     }
 
@@ -41,8 +48,17 @@ impl UiApplicationScalarProjectionFactReceipt {
         &self.value
     }
 
-    pub fn query_receipt(&self) -> &WorthQueryApplicationQueryPublicationReceipt {
-        &self.query_receipt
+    /// Descriptive basis captured from the genuine publication; no read authority.
+    pub fn publication_basis(&self) -> &WorthQueryPublishedApplicationBasis {
+        self.publication_identity.basis()
+    }
+
+    pub fn terminal_resources_released(&self) -> bool {
+        self.terminal_release.resources_released()
+    }
+
+    pub(crate) fn publication_identity(&self) -> &ApplicationProjectionInputIdentity {
+        &self.publication_identity
     }
 
     pub fn into_observation(self) -> crate::UiApplicationScalarProjectionObservation {
@@ -59,3 +75,6 @@ impl WorthUiStatusPublication {
         ))
     }
 }
+
+#[cfg(test)]
+mod tests;

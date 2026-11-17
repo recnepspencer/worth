@@ -36,7 +36,7 @@ impl UiQueryObservationReportingProjection {
         let core = match observation {
             crate::UiProjectionObservation::Scalar(observation) => observation.fact().core(),
             crate::UiProjectionObservation::ApplicationScalar(observation) => {
-                let query = observation.fact().query_receipt().inspect();
+                let query = observation.fact().publication_identity();
                 let basis = query.basis();
                 return Self {
                     query_world: UiQueryIdentityReportingProjection::from_query_reporting_text(

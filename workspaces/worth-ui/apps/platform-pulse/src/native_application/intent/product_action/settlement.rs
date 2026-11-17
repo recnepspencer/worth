@@ -178,7 +178,7 @@ impl PlatformPulseApplicationRuntime {
             recording.issued.push(evidence.clone());
             recording
                 .basis_versions
-                .push(scalar.fact().query_receipt().inspect().basis().version());
+                .push(scalar.fact().publication_basis().version());
             recording.revisions.push(scalar.fact().value().revision);
         }
         if !request.complete(observation) {
