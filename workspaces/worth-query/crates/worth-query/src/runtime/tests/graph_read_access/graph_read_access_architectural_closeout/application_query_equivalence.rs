@@ -17,6 +17,7 @@ use worth_query_admission::facade::{
 use worth_query_admission::integration::derive_graph_read_access_requirements_for_contract;
 use worth_query_installation::facade::{
     WorthQueryReadGraphOrderingMechanism, WorthQueryReadGraphPlanningContract,
+    WorthQueryReadGraphPredicateTarget,
 };
 
 use crate::runtime::graph_read_access::explain_graph_read_access_requirements_for_family;
@@ -216,10 +217,15 @@ fn planning_semantics(graph: &impl WorthQueryReadGraphPlanningContract) -> Plann
         predicates: (0..graph.predicate_count())
             .map(|index| {
                 let predicate = graph.predicate(index).unwrap();
+                let target = match predicate.target {
+                    WorthQueryReadGraphPredicateTarget::Field { aspect, field } => {
+                        format!("field:{}:{}", aspect.as_str(), field.as_str())
+                    }
+                    WorthQueryReadGraphPredicateTarget::EntityIdentity => "entity-identity".into(),
+                };
                 format!(
-                    "{}:{}:{:?}:{}",
-                    predicate.aspect.as_str(),
-                    predicate.field.as_str(),
+                    "{}:{:?}:{}",
+                    target,
                     predicate.parameter,
                     predicate.scalar_family.canonical_name()
                 )

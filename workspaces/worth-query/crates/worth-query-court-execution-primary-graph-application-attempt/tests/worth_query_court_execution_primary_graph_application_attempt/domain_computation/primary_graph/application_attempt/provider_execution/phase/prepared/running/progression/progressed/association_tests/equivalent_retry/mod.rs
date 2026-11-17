@@ -33,6 +33,7 @@ fn interleaved_retry_reads_original_after_discarding_derived_evidence() {
                     left,
                     None,
                     ExecutionAllocationPolicy::SystemAllocation,
+                    None,
                 );
                 let left = finish_application_commit(
                     &phase.borrowed_request_for_test(),
@@ -49,6 +50,7 @@ fn interleaved_retry_reads_original_after_discarding_derived_evidence() {
                     right,
                     None,
                     ExecutionAllocationPolicy::SystemAllocation,
+                    None,
                 );
                 let right = finish_application_commit(
                     &phase.borrowed_request_for_test(),
@@ -148,6 +150,7 @@ fn genuinely_interleaved_equivalent_sessions_validate_retry_cleanup_separately()
                     left,
                     None,
                     ExecutionAllocationPolicy::SystemAllocation,
+                    None,
                 );
                 // Measure one progressed owner while its equivalent peer still
                 // owns its original admission custody. Do not count scratch
@@ -162,6 +165,7 @@ fn genuinely_interleaved_equivalent_sessions_validate_retry_cleanup_separately()
                     right,
                     None,
                     ExecutionAllocationPolicy::SystemAllocation,
+                    None,
                 );
                 let progressed_pair = snapshot_baseline + 2 * one_progressed;
                 assert_eq!(

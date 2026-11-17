@@ -59,7 +59,7 @@ fn whole_structural_retirement_requires_complete_correspondence_and_keeps_extern
     at_current(&world, &execution, |runtime, snapshot| {
         for fact in &owned {
             assert!(
-                prepare(runtime, &execution, snapshot, fact, &retired)
+                prepare(runtime, &execution, snapshot, fact, &retired, None)
                     .unwrap()
                     .is_none(),
                 "a live record cannot supply retirement proof"
@@ -79,18 +79,18 @@ fn whole_structural_retirement_requires_complete_correspondence_and_keeps_extern
     );
     let rebased = at_current(&world, &execution, |runtime, snapshot| {
         for fact in &owned {
-            assert!(prepare(runtime, &execution, snapshot, fact, &missing)
+            assert!(prepare(runtime, &execution, snapshot, fact, &missing, None)
                 .unwrap()
                 .is_none());
             assert!(
-                prepare(runtime, &execution, snapshot, fact, &BTreeSet::new())
+                prepare(runtime, &execution, snapshot, fact, &BTreeSet::new(), None)
                     .unwrap()
                     .is_none()
             );
         }
         for fact in &foreign {
             assert!(
-                prepare(runtime, &execution, snapshot, fact, &retired)
+                prepare(runtime, &execution, snapshot, fact, &retired, None)
                     .unwrap()
                     .is_none(),
                 "coincident foreign-runtime IDs grant no retirement custody"
@@ -99,7 +99,7 @@ fn whole_structural_retirement_requires_complete_correspondence_and_keeps_extern
         let rebased: Vec<_> = owned
             .iter()
             .map(|fact| {
-                prepare(runtime, &execution, snapshot, fact, &retired)
+                prepare(runtime, &execution, snapshot, fact, &retired, None)
                     .unwrap()
                     .unwrap()
             })
@@ -119,7 +119,7 @@ fn whole_structural_retirement_requires_complete_correspondence_and_keeps_extern
             );
         }
         for fact in &external {
-            assert!(prepare(runtime, &execution, snapshot, fact, &retired)
+            assert!(prepare(runtime, &execution, snapshot, fact, &retired, None)
                 .unwrap()
                 .is_none());
             assert_eq!(
@@ -245,7 +245,8 @@ fn retiring_the_selected_anchor_does_not_retire_the_surviving_group_read() {
                 &execution,
                 snapshot,
                 fact,
-                &BTreeSet::from([anchor])
+                &BTreeSet::from([anchor]),
+                None,
             )
             .unwrap()
             .is_none());
@@ -258,7 +259,7 @@ fn retiring_the_selected_anchor_does_not_retire_the_surviving_group_read() {
     cancellation.cancel();
     at_current(&world, &execution, |runtime, snapshot| {
         assert!(matches!(
-            prepare(runtime, &stopped, snapshot, &facts[0], &nodes(facts)),
+            prepare(runtime, &stopped, snapshot, &facts[0], &nodes(facts), None),
             Err(CompanionPreflightStop::Execution(Cause::Cancelled))
         ));
     });
