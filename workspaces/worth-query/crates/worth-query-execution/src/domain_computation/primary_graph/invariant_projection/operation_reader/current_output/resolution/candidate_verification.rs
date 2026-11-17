@@ -33,6 +33,7 @@ where
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         candidate: &WorthQueryCurrentOutputCandidate,
+        native: &worth_relational::facade::runtime::RelationalRuntime,
         selected: &PositionedRelationalSnapshot,
         subject: &str,
     ) -> Result<Option<VerifiedCandidate>, WorthQueryCurrentOutputDenial> {
@@ -63,12 +64,7 @@ where
                 candidate.verification_requirement,
                 witness,
                 &self.reader.invalidation_owner,
-                self.reader.native.committed_runtime().ok_or_else(|| {
-                    WorthQueryCurrentOutputDenial::new(
-                        WorthQueryCurrentOutputDenialKind::OutputUnavailable,
-                        subject,
-                    )
-                })?,
+                native,
                 self.reader.snapshot,
                 selected,
             )
@@ -86,12 +82,7 @@ where
                 &candidate.correspondence,
                 &facts,
                 self.reader.layout,
-                self.reader.native.committed_runtime().ok_or_else(|| {
-                    WorthQueryCurrentOutputDenial::new(
-                        WorthQueryCurrentOutputDenialKind::OutputUnavailable,
-                        subject,
-                    )
-                })?,
+                native,
                 self.reader.snapshot,
             )
             .map(|witness| {

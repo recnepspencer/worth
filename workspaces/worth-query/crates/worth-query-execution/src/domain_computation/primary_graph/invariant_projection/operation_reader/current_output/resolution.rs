@@ -85,6 +85,8 @@ where
         if !self.current_source_is_live(execution, producer)? {
             return Ok(WorthQueryCurrentOutputSelection::ObsoleteSource);
         }
+        let mut replaced = Vec::new();
+        let mut entities = Vec::new();
         if let Some(pin) = self.reader.native.applied_pin() {
             let access = self.source_query.ok_or_else(|| {
                 WorthQueryCurrentOutputDenial::new(
@@ -109,45 +111,48 @@ where
                     })?,
                     pin,
                 )?;
-            if !selected.is_empty() {
-                let mut entities = Vec::new();
-                for evidence in selected {
-                    let entity = evidence.applied().expect("appended selection").entity();
-                    entities.push(entity);
-                    if !self.reader.applied_consumptions.contains(&evidence) {
-                        self.reader.applied_consumptions.push(evidence);
-                    }
+            replaced = selected.replaced;
+            for evidence in selected.outputs {
+                entities.push(evidence.applied().expect("appended selection").entity());
+                if !self.reader.applied_consumptions.contains(&evidence) {
+                    self.reader.applied_consumptions.push(evidence);
                 }
-                return Ok(match classify_current_entities(entities) {
-                    CurrentOutputCardinality::Missing => WorthQueryCurrentOutputSelection::Missing,
-                    CurrentOutputCardinality::Unique(entity) => {
-                        WorthQueryCurrentOutputSelection::Unique(
-                            self.live_current_identity::<Family::Entity>(
-                                execution, subject, entity,
-                            )?,
-                        )
-                    }
-                    CurrentOutputCardinality::Ambiguous(entities) => {
-                        WorthQueryCurrentOutputSelection::Ambiguous(
-                            entities
-                                .into_iter()
-                                .map(|entity| {
-                                    self.live_current_identity::<Family::Entity>(
-                                        execution, subject, entity,
-                                    )
-                                })
-                                .collect::<Result<Vec<_>, _>>()?,
-                        )
-                    }
-                });
             }
         }
         if self.read_applied_absence::<Family>(producer.entity_id())? {
-            return Ok(WorthQueryCurrentOutputSelection::Missing);
+            let partition = self
+                .reader
+                .selected_source_partition_identity
+                .ok_or_else(|| {
+                    WorthQueryCurrentOutputDenial::new(
+                        WorthQueryCurrentOutputDenialKind::OutputUnavailable,
+                        subject,
+                    )
+                })?;
+            replaced.push((None, partition));
         }
-        let correspondences =
-            self.current_correspondences::<Family, Producer>(execution, producer)?;
-        let mut entities = Vec::new();
+        let correspondences = if let Some(native) = self.reader.native.committed_runtime() {
+            self.current_correspondences::<Family, Producer>(
+                execution, producer, native, &replaced,
+            )?
+        } else {
+            let access = self.source_query.ok_or_else(|| {
+                WorthQueryCurrentOutputDenial::new(
+                    WorthQueryCurrentOutputDenialKind::OutputUnavailable,
+                    subject,
+                )
+            })?;
+            access
+                .application
+                .runtime
+                .primary_provider
+                .graph
+                .with_runtime(execution, |native| {
+                    self.current_correspondences::<Family, Producer>(
+                        execution, producer, native, &replaced,
+                    )
+                })?
+        };
         for (correspondence, output_role) in correspondences {
             self.charge_current_output_work(1, &output_role)?;
             self.reader.work.record_output_lineage_role_lookup();
@@ -185,6 +190,8 @@ where
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         producer: &WorthQueryInvariantEntityIdentity<Schema, Producer>,
+        native: &worth_relational::facade::runtime::RelationalRuntime,
+        replaced: &[(Option<TypeId>, [u8; 32])],
     ) -> Result<
         Vec<(
             std::sync::Arc<WorthQueryApplicationOutputCorrespondence>,
@@ -200,7 +207,9 @@ where
         Producer: ApplicationEntityMarkerIdentity<Schema> + OperationReads<Operation> + 'static,
     {
         let cache_key = (TypeId::of::<Family>(), producer.entity_id());
-        if let Some(cached) = self.reader.current_output_families.get(&cache_key) {
+        if replaced.is_empty()
+            && let Some(cached) = self.reader.current_output_families.get(&cache_key)
+        {
             return Ok(cached
                 .iter()
                 .map(super::CertifiedOutputCorrespondence::pair)
@@ -224,7 +233,7 @@ where
             .output_lineage
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .resolve_current_family(
+            .resolve_current_family_overlaid(
                 execution,
                 self.runtime_authority.as_u64(),
                 self.binding_identity,
@@ -234,6 +243,7 @@ where
                 Family::IDENTITY,
                 occurrence,
                 generation,
+                replaced,
             )
             .map_err(|stop| {
                 if let worth_relational::facade::mvcc::CompanionPreflightStop::Execution(cause) = stop {
@@ -260,16 +270,7 @@ where
         }
 
         self.charge_current_output_work(1, Family::IDENTITY)?;
-        let selected_native_root = self
-            .reader
-            .native
-            .committed_runtime()
-            .ok_or_else(|| {
-                WorthQueryCurrentOutputDenial::new(
-                    WorthQueryCurrentOutputDenialKind::OutputUnavailable,
-                    Family::IDENTITY,
-                )
-            })?
+        let selected_native_root = native
             .read_truth()
             .positioned_snapshot(self.reader.snapshot)
             .map_err(|_| {
@@ -288,6 +289,7 @@ where
             let Some(verification) = self.verify_current_candidate(
                 execution,
                 &candidate,
+                native,
                 &selected_native_root,
                 Family::IDENTITY,
             )?
@@ -353,9 +355,11 @@ where
             denial.requested_output = requested_output;
             return Err(denial);
         }
-        self.reader
-            .current_output_families
-            .insert(cache_key, current.clone());
+        if replaced.is_empty() {
+            self.reader
+                .current_output_families
+                .insert(cache_key, current.clone());
+        }
         Ok(current
             .iter()
             .map(super::CertifiedOutputCorrespondence::pair)

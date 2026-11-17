@@ -15,6 +15,11 @@ pub(in crate::domain_computation::primary_graph) trait AppliedOutputParticipants
         ) -> Result<(), WorthQueryCurrentOutputDenial>,
     ) -> Result<(), WorthQueryCurrentOutputDenial>;
 }
+pub(in crate::domain_computation::primary_graph) struct AppliedFamilyOutputs {
+    pub(in crate::domain_computation::primary_graph) outputs: Vec<ConsumedOutputEvidence>,
+    pub(in crate::domain_computation::primary_graph) replaced:
+        Vec<(Option<crate::equality_type_id::EqualityTypeId>, [u8; 32])>,
+}
 impl super::super::WorthQueryPrimaryGraphProvider {
     pub(in crate::domain_computation::primary_graph) fn applied_outputs(
         &self,
@@ -26,7 +31,7 @@ impl super::super::WorthQueryPrimaryGraphProvider {
         selected: &worth_relational::facade::runtime::RelationalPinnedRead<
             worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
         >,
-    ) -> Result<Vec<ConsumedOutputEvidence>, WorthQueryCurrentOutputDenial> {
+    ) -> Result<AppliedFamilyOutputs, WorthQueryCurrentOutputDenial> {
         let unavailable = || WorthQueryCurrentOutputDenial::new(Kind::OutputUnavailable, family);
         let attempts = self
             .attempts
@@ -37,7 +42,10 @@ impl super::super::WorthQueryPrimaryGraphProvider {
             .output_lineage
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let mut found = Vec::new();
+        let mut found = AppliedFamilyOutputs {
+            outputs: Vec::new(),
+            replaced: Vec::new(),
+        };
         participants.visit(execution, family, source, &mut |session| {
             let state = attempts.attempt_state(session).ok_or_else(unavailable)?;
             let attempt = state.attempt();
@@ -74,6 +82,7 @@ impl super::super::WorthQueryPrimaryGraphProvider {
             {
                 return Err(unavailable());
             }
+            found.replaced.push((attempt.output_binding_type(), *outputs.meaning.source_partition.bytes()));
             let Some((_, entity)) = attempt.native_publication_roles().zip(outputs.entities.iter())
                 .find(|((actual, posture, _, _), _)| *actual == role && *posture != crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationOutputPosture::Retire) else { return Ok(()); };
             let link = AppliedConsumedOutput::capture(
@@ -93,7 +102,7 @@ impl super::super::WorthQueryPrimaryGraphProvider {
                     WorthQueryCurrentOutputDenial::new(Kind::WorkBudgetExceeded, family)
                 }
             })?;
-            found.push(ConsumedOutputEvidence::Appended(link));
+            found.outputs.push(ConsumedOutputEvidence::Appended(link));
             Ok(())
         })?;
         Ok(found)
