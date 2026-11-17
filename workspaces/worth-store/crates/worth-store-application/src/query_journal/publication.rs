@@ -1,7 +1,7 @@
 //! The original physical journal endpoint, retained across invoking requests.
 use super::*;
 use sha2::{Digest, Sha256};
-use worth_execution::{ExecutionInterruptionView, ExecutionResourceLease};
+use worth_execution::ExecutionResourceLease;
 mod execution;
 mod terminal;
 
@@ -21,8 +21,7 @@ pub(super) struct QueryJournalPublication {
     physical: Mutex<PhysicalPublication>,
 }
 struct PhysicalPublication {
-    payload: Option<OrderedJournalPublication>,
-    view: Option<ExecutionInterruptionView>,
+    admission: Option<OrderedJournalPublicationAdmission>,
     endpoint: Endpoint,
     recovery: Option<OrderedJournalPublicationRecovery>,
     invalid: bool,
@@ -71,6 +70,7 @@ impl QueryJournalPublication {
             PhysicalMutationDeadline::after_milliseconds(milliseconds)
                 .ok_or(QueryJournalDenial::Unavailable)?,
         );
+        let admission = super::journal(serving, journal)?.prepare_publication(payload, view);
         Ok(Self {
             journal,
             position,
@@ -78,8 +78,7 @@ impl QueryJournalPublication {
             bytes: bytes.len() as u64,
             runtime: serving.runtime_identity(),
             physical: Mutex::new(PhysicalPublication {
-                payload: Some(payload),
-                view: Some(view),
+                admission: Some(admission),
                 endpoint: Endpoint::Unstarted,
                 recovery: None,
                 invalid: false,
@@ -202,6 +201,7 @@ impl QueryJournalPublication {
     }
     fn stop(&self) {
         let mut state = self.state();
+        state.admission = None;
         state.recovery = state
             .recovery
             .take()

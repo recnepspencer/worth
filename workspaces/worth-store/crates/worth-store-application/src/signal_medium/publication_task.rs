@@ -94,6 +94,7 @@ impl Drop for SignalPublicationDriver<'_> {
 }
 #[derive(Default)]
 struct TaskState {
+    admission: Option<(u64, OrderedJournalPublicationAdmission)>,
     recovery: Option<OrderedJournalPublicationRecovery>,
     endpoint: Option<Endpoint>,
     source: Option<OrderedJournalPublicationSource>,
@@ -175,6 +176,23 @@ impl SignalPublicationTask {
         state.endpoint = Some(endpoint);
         observation
     }
+    pub(super) fn take_admission(&self) -> Option<(u64, OrderedJournalPublicationAdmission)> {
+        self.state
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .admission
+            .take()
+    }
+    pub(super) fn retain_admission(
+        &self,
+        position: u64,
+        original: OrderedJournalPublicationAdmission,
+    ) {
+        self.state
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .admission = Some((position, original));
+    }
     pub(super) fn started(&self) -> bool {
         self.state
             .lock()
@@ -252,10 +270,16 @@ impl SignalPublicationTask {
         }
     }
     pub(super) fn stop(&self) {
-        let (recovery, endpoint) = {
+        let (admission, recovery, endpoint) = {
             let mut s = self.state.lock().unwrap_or_else(|e| e.into_inner());
-            (s.recovery.take(), s.endpoint.take())
+            (s.admission.take(), s.recovery.take(), s.endpoint.take())
         };
+        let endpoint = if admission.is_some() && endpoint.is_none() {
+            Some(Endpoint::NoEffect)
+        } else {
+            endpoint
+        };
+        drop(admission);
         let recovery = recovery.map(OrderedJournalPublicationRecovery::stop);
         let endpoint = match endpoint {
             Some(Endpoint::Ready(operation)) => Some(Endpoint::Stopped(operation.stop())),

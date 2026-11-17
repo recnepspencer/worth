@@ -12,19 +12,17 @@ impl QueryObligationHistory {
     pub(super) fn lock_publication(
         &self,
     ) -> Result<QueryObligationPublication<'_>, QueryObligationDenial> {
-        match self.publication_driver.try_lock() {
-            Ok(guard) => Ok(QueryObligationPublication {
-                lifecycle: self,
-                _driver: guard,
-            }),
-            Err(std::sync::TryLockError::Poisoned(cause)) => Ok(QueryObligationPublication {
-                lifecycle: self,
-                _driver: cause.into_inner(),
-            }),
-            Err(std::sync::TryLockError::WouldBlock) => {
-                Err(QueryObligationDenial::PublicationPending)
-            }
-        }
+        // Admission belongs to this journal owner. A competing synchronous
+        // caller waits for the current original instead of receiving a retry
+        // instruction. The driver holds no journal-state lock while doing IO.
+        let guard = self
+            .publication_driver
+            .lock()
+            .unwrap_or_else(|p| p.into_inner());
+        Ok(QueryObligationPublication {
+            lifecycle: self,
+            _driver: guard,
+        })
     }
 }
 impl QueryObligationPublication<'_> {

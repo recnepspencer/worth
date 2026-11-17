@@ -66,12 +66,25 @@ pub(super) fn publish(
                         )
                         .map_err(|cause| Denial::Storage(format!("{cause:?}")))?;
                     if !task.started() {
-                        let (position, publication) =
-                            prepare(medium, &journal, subject, execution)?;
-                        let view = context
-                            .retain_interruption_view(lease)
-                            .map_err(|cause| Denial::Storage(format!("{cause:?}")))?;
-                        match journal.start_publication(publication, view) {
+                        let (position, admission) = match task.take_admission() {
+                            Some(original) => original,
+                            None => {
+                                let (position, publication) =
+                                    prepare(medium, &journal, subject, execution)?;
+                                let view = context
+                                    .retain_interruption_view(lease)
+                                    .map_err(|cause| Denial::Storage(format!("{cause:?}")))?;
+                                (position, journal.prepare_publication(publication, view))
+                            }
+                        };
+                        let start = match admission.advance(&journal) {
+                            OrderedJournalPublicationAdmissionProgress::Pending(original) => {
+                                task.retain_admission(position, original);
+                                return Ok(None);
+                            }
+                            OrderedJournalPublicationAdmissionProgress::Started(start) => start,
+                        };
+                        match start {
                             OrderedJournalPublicationStart::Ready {
                                 operation,
                                 recovery,

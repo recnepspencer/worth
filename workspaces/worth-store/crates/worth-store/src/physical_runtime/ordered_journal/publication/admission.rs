@@ -3,6 +3,37 @@ use super::{operation::*, outcome::*, recovery::*, *};
 use std::sync::{Arc, Mutex, Weak};
 use worth_proof::LinearResource;
 use worth_store_physical_format::{RecordAnchor, MAXIMUM_RECORD_ANCHORS};
+
+/// One original input waiting for the Home journal writer, including its original
+/// cancellation lineage and input charge. Contention does not dispose it.
+pub struct OrderedJournalPublicationAdmission {
+    runtime: crate::physical_runtime::RuntimeIdentity,
+    journal: OrderedJournalName,
+    publication: Option<OrderedJournalPublication>,
+    interruption: Option<Arc<worth_execution::ExecutionInterruptionView>>,
+}
+pub enum OrderedJournalPublicationAdmissionProgress {
+    Pending(OrderedJournalPublicationAdmission),
+    Started(OrderedJournalPublicationStart),
+}
+impl OrderedJournalPublicationAdmission {
+    pub fn advance(
+        mut self,
+        journal: &OrderedJournal<'_>,
+    ) -> OrderedJournalPublicationAdmissionProgress {
+        use OrderedJournalPublicationAdmissionProgress::{Pending, Started};
+        if self.runtime != journal.runtime.runtime_identity() || self.journal != journal.name {
+            return Started(OrderedJournalPublicationStart::Refused(
+                OrderedJournalOperationFailure::ForeignReceiver,
+            ));
+        }
+        match journal.admit_owned(&mut self.publication, &mut self.interruption) {
+            Ok(start) => Started(start),
+            Err(OrderedJournalOperationFailure::Busy) => Pending(self),
+            Err(cause) => Started(OrderedJournalPublicationStart::Refused(cause)),
+        }
+    }
+}
 struct AdmissionReservation {
     owner: Arc<Mutex<OrderedJournalState>>,
 }
@@ -15,6 +46,20 @@ impl Drop for AdmissionReservation {
     }
 }
 impl OrderedJournal<'_> {
+    /// Retain the original before contended admission. Advancing this carrier
+    /// never reconstructs its payload, deadline, charge, or interruption view.
+    pub fn prepare_publication(
+        &self,
+        publication: OrderedJournalPublication,
+        interruption: worth_execution::ExecutionInterruptionView,
+    ) -> OrderedJournalPublicationAdmission {
+        OrderedJournalPublicationAdmission {
+            runtime: self.runtime.runtime_identity(),
+            journal: self.name,
+            publication: Some(publication),
+            interruption: Some(Arc::new(interruption)),
+        }
+    }
     /// Reads the protected head and encodes one successor. I/O, hashing,
     /// allocation and short locks are cooperative, not hard real-time.
     pub fn start_publication(
@@ -27,17 +72,17 @@ impl OrderedJournal<'_> {
     pub(super) fn start_owned(
         &self,
         publication: OrderedJournalPublication,
-        interruption: Option<Arc<worth_execution::ExecutionInterruptionView>>,
+        mut interruption: Option<Arc<worth_execution::ExecutionInterruptionView>>,
     ) -> OrderedJournalPublicationStart {
-        match self.admit_owned(publication, interruption) {
+        match self.admit_owned(&mut Some(publication), &mut interruption) {
             Ok(start) => start,
             Err(cause) => OrderedJournalPublicationStart::Refused(cause),
         }
     }
     fn admit_owned(
         &self,
-        mut publication: OrderedJournalPublication,
-        interruption: Option<Arc<worth_execution::ExecutionInterruptionView>>,
+        publication: &mut Option<OrderedJournalPublication>,
+        interruption: &mut Option<Arc<worth_execution::ExecutionInterruptionView>>,
     ) -> Result<OrderedJournalPublicationStart, OrderedJournalOperationFailure> {
         if let Some(stop) = interruption.as_ref().and_then(|v| v.check_live().err()) {
             return Err(OrderedJournalOperationFailure::OriginalRequestStopped(stop));
@@ -64,6 +109,8 @@ impl OrderedJournal<'_> {
         let _reservation = AdmissionReservation {
             owner: owner.clone(),
         };
+        let mut publication = publication.take().expect("one original admission input");
+        let interruption = interruption.take();
         if publication.payload.is_empty() {
             return Err(Failure::EmptyPayload.into());
         }

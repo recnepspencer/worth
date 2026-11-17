@@ -6,6 +6,9 @@ use crate::physical_runtime::record_serving::{AnchoredRecordAppend, DurableRecor
 use sha2::{Digest, Sha256};
 worth_proof::authority_marker!(OrderedJournalPublicationAuthority);
 mod admission;
+pub use admission::{
+    OrderedJournalPublicationAdmission, OrderedJournalPublicationAdmissionProgress,
+};
 mod operation;
 mod outcome;
 mod progression;
