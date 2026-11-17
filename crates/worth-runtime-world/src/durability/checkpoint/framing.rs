@@ -14,7 +14,13 @@ pub(super) const MAXIMUM: usize = 1 << 30;
 pub(super) fn charge(request: &ExecutionRequest<'_, '_>, bytes: usize) -> Result<(), Denial> {
     let work = u64::try_from(bytes).map_err(|_| Frame::SizeLimit)?;
     request
-        .run_native_with_checkpoint(|context| context.checkpoint(work))
+        .run_native_with_checkpoint(|context| {
+            if context.has_accounting() {
+                context.checkpoint(work)
+            } else {
+                context.poll()
+            }
+        })
         .map_err(Denial::Request)?
         .0
         .map_err(|cause| Denial::Request(worth_execution::WorkCeilingDenial::Stopped(cause)))

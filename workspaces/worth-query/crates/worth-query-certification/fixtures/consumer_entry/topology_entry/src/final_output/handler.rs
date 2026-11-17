@@ -1,6 +1,7 @@
 use super::*;
 use worth_query_host::facade::primary_graph::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
+    WorthQueryOperationDurableCapability,
 };
 
 pub struct FinalPlanarMutationHandler;
@@ -8,6 +9,10 @@ pub struct FinalPlanarMutationHandler;
 impl<Schema: TopologySchemaBinding> OperationHandler<Schema, FinalPlanarMutationBinding<Schema>>
     for FinalPlanarMutationHandler
 {
+    fn declared_durable_capabilities() -> Option<&'static [WorthQueryOperationDurableCapability]> {
+        Some(&[WorthQueryOperationDurableCapability::RelationalMutation])
+    }
+
     fn decide(
         &self,
         input: &FinalPlanarMutation,

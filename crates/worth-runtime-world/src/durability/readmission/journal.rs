@@ -31,7 +31,13 @@ impl WorldCheckpointImage {
             ));
         }
         execution
-            .run_native_with_checkpoint(|context| context.checkpoint(bytes.len() as u64))
+            .run_native_with_checkpoint(|context| {
+                if context.has_accounting() {
+                    context.checkpoint(bytes.len() as u64)
+                } else {
+                    context.poll()
+                }
+            })
             .map_err(|cause| {
                 WorldReadmissionDenial::Medium(WorldDurableMediumDenial::Request(cause))
             })?

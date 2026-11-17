@@ -7,6 +7,37 @@ use worth_foundational::facade::WorldDurableJournal;
 mod records;
 
 #[test]
+fn native_only_image_and_journal_readmission_preserve_cancellation() {
+    use worth_foundational::{DeterminismContract, ExecutionPosture, ExecutionRequestPolicy};
+    let policy = ExecutionRequestPolicy::for_workers(
+        ExecutionPosture::Serial,
+        DeterminismContract::CanonicalBitwise,
+        std::num::NonZeroUsize::MIN,
+    );
+    let cancellation = CancellationSource::new();
+    let serial = SerialRequest::from_policy(&policy, cancellation.token(), None);
+    assert!(serial.memory().is_none());
+    let request = ExecutionRequest::serial(&serial);
+    let (image, _) = records::published(&request);
+    let bytes = image.encode(&request).unwrap();
+    let recovered =
+        WorldCheckpointImage::decode_selected(bytes.as_ref(), &image.binding, &request).unwrap();
+    assert_eq!(recovered.occurrences.len(), 1);
+    recovered.validate_open_identities(&request).unwrap();
+    cancellation.cancel();
+    assert!(matches!(
+        WorldCheckpointImage::decode_selected(bytes.as_ref(), &image.binding, &request),
+        Err(Denial::Medium(
+            crate::durability::WorldDurableMediumDenial::Request(
+                worth_execution::WorkCeilingDenial::Stopped(
+                    worth_execution::MapKernelStop::Cancelled
+                )
+            )
+        ))
+    ));
+}
+
+#[test]
 fn decoded_owner_description_clones_retain_actual_original_memory_grants() {
     // Intrinsic grant lifetime only, not a whole-heap quote or Native authority.
     let budget = SerialMemoryBudget::new(Some(1 << 20));

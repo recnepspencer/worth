@@ -76,7 +76,7 @@ pub(crate) fn run() {
             })
             .execute()
             .unwrap();
-        request
+        let outcome = request
             .advanced()
             .mutate(PlanarSourceAdjustment {
                 scope_key: "anchor-a".into(),
@@ -89,6 +89,24 @@ pub(crate) fn run() {
                 ExecutionAllocationPolicy::SystemAllocation,
             )
             .unwrap();
+        match outcome {
+            WorthQueryApplicationPerformedMutationOutcome::Performed(_) => {}
+            WorthQueryApplicationPerformedMutationOutcome::NotPerformed(outcome) => {
+                panic!("source adjustment was not performed: {outcome:?}");
+            }
+            WorthQueryApplicationPerformedMutationOutcome::CleanupRequired { .. } => {
+                panic!("source adjustment requires cleanup");
+            }
+            WorthQueryApplicationPerformedMutationOutcome::ProductUnpublished(_) => {
+                panic!("source adjustment product is unpublished");
+            }
+            WorthQueryApplicationPerformedMutationOutcome::RequiredOutputDenied(_) => {
+                panic!("source adjustment required output was denied");
+            }
+            WorthQueryApplicationPerformedMutationOutcome::Blocked(_) => {
+                panic!("source adjustment is blocked");
+            }
+        }
     }
     settle_and_check(application, 11);
     // A different installed root still owns independent model state.

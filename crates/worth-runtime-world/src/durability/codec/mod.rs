@@ -84,7 +84,13 @@ pub(crate) fn decode(
         return Err(Denial::SizeLimit.into());
     }
     execution
-        .run_native_with_checkpoint(|context| context.checkpoint(bytes.len() as u64))
+        .run_native_with_checkpoint(|context| {
+            if context.has_accounting() {
+                context.checkpoint(bytes.len() as u64)
+            } else {
+                context.poll()
+            }
+        })
         .map_err(WorldDurableMediumDenial::Request)?
         .0
         .map_err(|cause| {
