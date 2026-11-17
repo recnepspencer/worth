@@ -94,9 +94,7 @@ fn positioned_prefix_keeps_current_reads_future_absence_and_final_support() {
             };
             let value = receipt.result(&prefix).unwrap();
             assert_eq!((value.value, value.ordinal), (17, 0));
-            if !change {
-                assert_eq!(publications, 1);
-            }
+            assert_eq!(publications, 1);
             assert_eq!(
                 super::super::super::courts::native_head(&host).1,
                 [before.0]
