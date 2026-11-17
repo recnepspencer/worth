@@ -12,7 +12,6 @@ mod contact_readings;
 mod custody_source;
 mod diamond;
 mod exact_invalidation;
-mod mixed_mode;
 mod producer;
 mod program;
 mod readiness;

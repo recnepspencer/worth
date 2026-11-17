@@ -17,7 +17,6 @@ use worth_query_host::facade::{
     application_entry::*, product::*, runtime::ExecutionAllocationPolicy,
 };
 mod disclosure;
-mod handoff;
 
 fn adopt<'host>(
     model: &mut Model<'host>,
