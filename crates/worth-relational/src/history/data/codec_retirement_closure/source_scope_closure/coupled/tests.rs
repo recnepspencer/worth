@@ -21,7 +21,7 @@ pub(crate) fn assert_exact_owner_refusals(
         "commit": original.commit, "basis": basis,
         "producer": "owner-selection-data", "source_scope_owned": true,
         "dependency_identity": worth_foundational::CanonicalDigestId::new([5;32]),
-        "outputs": [], "relations": [], "meaning": meaning, "publication": "Birth",
+        "inputs": [], "outputs": [], "relations": [], "meaning": meaning, "publication": "Birth",
         "birth": original.commit.commit_id, "birth_producer": "owner-selection-data",
         "birth_dependency": worth_foundational::CanonicalDigestId::new([6;32]), "members": []
     });

@@ -301,12 +301,23 @@ pub(super) fn cold_retired_route(
                 &crate::mvcc::native_meaning_fixture("native.closed.producer"),
             )
             .unwrap_err();
-        let expected = if incomplete {
-            "actual protected program contract"
+        if incomplete {
+            assert!(
+                format!("{denied:?}").contains("actual protected program contract"),
+                "{denied:?}"
+            );
         } else {
-            "no installed producer publication"
-        };
-        assert!(format!("{denied:?}").contains(expected), "{denied:?}");
+            let crate::transactions::data::TransactionCommitError::Publication { error, .. } =
+                &denied
+            else {
+                panic!("foreign publication must fail canonical route validation: {denied:?}");
+            };
+            assert_eq!(
+                error.stage,
+                crate::publication::bundle::PublicationStage::BundleAssembly
+            );
+            assert_eq!(error.detail, "exact route has no canonical publication");
+        }
         assert_eq!(capture(execution, &rejected), before);
     }
 }
