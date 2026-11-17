@@ -40,7 +40,13 @@ pub(super) fn decode(
 ) -> Result<RecordedRuntimeWorldBaseline, Denial> {
     let work = u64::try_from(bytes.len()).map_err(|_| Denial::Description)?;
     execution
-        .run_native_with_checkpoint(|context| context.checkpoint(work))
+        .run_native_with_checkpoint(|context| {
+            if context.has_accounting() {
+                context.checkpoint(work)
+            } else {
+                context.poll()
+            }
+        })
         .map_err(Denial::Request)?
         .0
         .map_err(|cause| Denial::Request(worth_execution::WorkCeilingDenial::Stopped(cause)))?;
