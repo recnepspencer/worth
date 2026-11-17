@@ -34,8 +34,8 @@ pub(super) fn prepare(
     let requirements = programs.compare(&target).unwrap();
     let prepared = programs.adopt(&requirements).unwrap().prepare(64).unwrap();
     assert_eq!(prepared.selected_entity_count(), 2);
-    // Keep the actual Native preparation until the intervening operation makes
-    // its expected root stale; its owner must record that no-effect disposition.
+    // Keep Native preparation until the intervening publication makes its
+    // expected root stale; release its exact losing attempt before Home close.
     PreparedSource {
         fork,
         original,
@@ -57,8 +57,36 @@ pub(super) fn run(
         .programs()
         .publish(prepared.adoption)
     {
-        WorthQueryBranchAdoptionPublicationOutcome::NoEffect(_) => {}
-        _ => panic!("the intervening monitor mutation must refuse stale adoption"),
+        WorthQueryBranchAdoptionPublicationOutcome::NoEffect(no_effect) => {
+            assert_eq!(
+                no_effect.cause(),
+                worth_query_host::facade::runtime::NoEffectCause::StaleExpectedProductHead
+            );
+        }
+        WorthQueryBranchAdoptionPublicationOutcome::AuthorizationDenied { cause, .. } => {
+            panic!("adoption authorization: {cause:?}")
+        }
+        WorthQueryBranchAdoptionPublicationOutcome::AdmissionDenied { cause, .. } => {
+            panic!("adoption admission: {cause:?}")
+        }
+        WorthQueryBranchAdoptionPublicationOutcome::ExecutionDenied(cause) => {
+            panic!("adoption execution: {cause:?}")
+        }
+        WorthQueryBranchAdoptionPublicationOutcome::ObligationDischargePending {
+            cause, ..
+        } => panic!("adoption discharge: {cause:?}"),
+        WorthQueryBranchAdoptionPublicationOutcome::Performed(_) => {
+            panic!("adoption performed after monitor mutation")
+        }
+        WorthQueryBranchAdoptionPublicationOutcome::ProductUnpublished(unpublished) => {
+            assert_eq!(
+                unpublished.cause(),
+                worth_query_host::facade::runtime::ProductUnpublishedCause::ProductPublicationLost
+            );
+            runtime
+                .release_branch_adoption_recovery(unpublished.into_recovery(), 0)
+                .expect("the stale prepared adoption releases its exact retained owner");
+        }
     }
     let after = runtime.request(actor, scope).retain_current_read().unwrap();
     assert_eq!(
