@@ -12,8 +12,6 @@ error[E0432]: unresolved import `worth_ui::facade::runtime`
 
 error[E0432]: unresolved import `worth_ui::facade::app::WorthUiHostMeasurementSessionInput`
  --> $WORKSPACE/crates/worth-ui/tests/ui/runtime_authority/fail/raw_host_adapter_cannot_submit_to_framework_turn.rs
- help: consider importing this struct instead:
-worth_ui_runtime::facade::WorthUiHostMeasurementSessionInput
 
 error[E0432]: unresolved import `worth_ui::facade::host`
  --> $WORKSPACE/crates/worth-ui/tests/ui/runtime_authority/fail/raw_host_adapter_cannot_submit_to_framework_turn.rs
@@ -71,11 +69,9 @@ error[E0432]: unresolved imports `worth_ui::facade::WorthUiReplacementCandidate`
 
 error[E0432]: unresolved import `worth_ui::facade::WorthUiSpatialHitTestRequest`
  --> $WORKSPACE/crates/worth-ui/tests/ui/runtime_authority/fail/raw_domain_geometry_cannot_execute_canvas_lane.rs
- help: consider importing this struct instead
 
 error[E0432]: unresolved import `worth_ui::facade::WorthUiCanvasSpatialFrameTarget`
  --> $WORKSPACE/crates/worth-ui/tests/ui/runtime_authority/fail/raw_renderer_pointer_cannot_execute_canvas_lane.rs
- help: consider importing this struct instead
 
 error[E0432]: unresolved import `worth_ui::facade::WorthUiExecutionLane`
  --> $WORKSPACE/crates/worth-ui/tests/ui/runtime_authority/fail/private_component_lane_string_cannot_enter_lane_admission.rs
@@ -85,24 +81,18 @@ error[E0432]: unresolved import `worth_ui::facade::WorthUiLaneAdapterHook`
 
 error[E0432]: unresolved import `worth_ui::facade::WorthUiOrdinaryFrameTarget`
  --> $WORKSPACE/crates/worth-ui/tests/ui/runtime_authority/fail/ordinary_frame_target_string_constructor_missing.rs
- help: consider importing this struct instead
 
 error[E0432]: unresolved imports `worth_ui::facade::WorthUiExecutionPlanInput`, `worth_ui::facade::WorthUiOrdinaryFrameTarget`, `worth_ui::facade::runtime`
  --> $WORKSPACE/crates/worth-ui/tests/ui/runtime_authority/fail/raw_plan_input_cannot_execute_ordinary_lane.rs
- help: consider importing this struct instead:
-worth_ui_runtime::facade::application::WorthUiOrdinaryFrameTarget
 
 error[E0432]: unresolved import `worth_ui::facade::WorthUiQueryInspectionLinks`
  --> $WORKSPACE/crates/worth-ui/tests/ui/runtime_authority/fail/local_query_explanation_record_cannot_replace_query_inspection_link.rs
 
 error[E0432]: unresolved import `worth_ui::facade::WorthUiRealtimeFrameTarget`
  --> $WORKSPACE/crates/worth-ui/tests/ui/runtime_authority/fail/raw_renderer_pointer_cannot_execute_realtime_lane.rs
- help: consider importing this struct instead
 
 error[E0432]: unresolved imports `worth_ui::facade::WorthUiComponentHandle`, `worth_ui::facade::WorthUiRealtimeFrameTarget`
  --> $WORKSPACE/crates/worth-ui/tests/ui/runtime_authority/fail/ordinary_widget_fallback_cannot_execute_realtime_lane.rs
- help: consider importing this struct instead:
-worth_ui_runtime::facade::execution::WorthUiRealtimeFrameTarget
 
 error[E0432]: unresolved import `worth_ui::facade::WorthUiQueryBindingUiRequirements`
  --> $WORKSPACE/crates/worth-ui/tests/ui/runtime_authority/fail/local_query_result_state_enum_cannot_replace_query_binding_posture.rs
@@ -112,8 +102,6 @@ error[E0432]: unresolved import `worth_ui::facade::WorthUiQueryBindingRebind`
 
 error[E0432]: unresolved import `worth_ui::facade::WorthUiVisibleRange`
  --> $WORKSPACE/crates/worth-ui/tests/ui/runtime_authority/fail/visible_range_offset_pagination_constructor_missing.rs
- help: consider importing one of these structs instead
 
 error[E0432]: unresolved import `worth_ui::facade::WorthUiVirtualizedDataFrameTarget`
  --> $WORKSPACE/crates/worth-ui/tests/ui/runtime_authority/fail/raw_query_string_cannot_execute_virtualized_data_lane.rs
- help: consider importing this struct instead

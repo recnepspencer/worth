@@ -1,4 +1,4 @@
-error[E0433]: failed to resolve: could not find `UiMountedPresentationAuthority` in `worth_ui_host_contract`
+error[E0433]: cannot find `UiMountedPresentationAuthority` in `worth_ui_host_contract`
  --> tests/ui/host/external_callers_cannot_forge_mounted_runtime_authority.rs
  help: a struct with a similar name exists
 

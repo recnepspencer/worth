@@ -1,7 +1,6 @@
-error[E0599]: no method named `freeze` found for struct `WorthUiApplicationBuilder<UiChangeProfileInstalled, ...>` in the current scope
+error[E0599]: no method named `freeze` found for struct `WorthUiApplicationBuilder<UiChangeProfileInstalled, worth_ui_runtime::facade::entry::app_builder::UiIntentProviderRequired<FirstIntent>>` in the current scope
  --> $WORKSPACE/crates/worth-ui/tests/ui/facade/intent/fail/provider_wiring_is_type_total.rs
- note: the method was found for
-- `WorthUiApplicationBuilder`
+ note: the method was found for `WorthUiApplicationBuilder`
 
 error[E0277]: the trait bound `SecondProvider: UiIntentExecutionProvider<FirstIntent>` is not satisfied
  --> $WORKSPACE/crates/worth-ui/tests/ui/facade/intent/fail/provider_wiring_is_type_total.rs

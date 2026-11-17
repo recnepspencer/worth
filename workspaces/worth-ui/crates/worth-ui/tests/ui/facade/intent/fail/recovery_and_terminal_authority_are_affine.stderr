@@ -11,4 +11,4 @@ error[E0382]: use of moved value: `recovery`
 
 error[E0382]: borrow of moved value: `transition`
  --> $WORKSPACE/crates/worth-ui/tests/ui/facade/intent/fail/recovery_and_terminal_authority_are_affine.rs
- note: `UiIntentExecutionTransition::into_recovery` takes ownership of the receiver `self`, which moves `transition`
+ note: `worth_ui::facade::intent::UiIntentExecutionTransition::into_recovery` takes ownership of the receiver `self`, which moves `transition`

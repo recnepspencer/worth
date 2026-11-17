@@ -6,5 +6,3 @@ error[E0432]: unresolved imports `worth_ui::facade::WorthUiCandidateAdmissionCou
 
 error[E0432]: unresolved imports `worth_ui::facade::WorthUiFrameExecutionReceipt`, `worth_ui::facade::WorthUiSteadyFrameFoundationalBridge`
  --> $WORKSPACE/crates/worth-ui/tests/ui/runtime_steady_frame_counter_boundary/fail/raw_steady_frame_receipt_cannot_lower_to_foundational.rs
- help: consider importing this struct instead:
-worth_ui_runtime::facade::execution::WorthUiFrameExecutionReceipt
