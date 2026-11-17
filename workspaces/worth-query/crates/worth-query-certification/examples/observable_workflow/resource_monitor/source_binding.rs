@@ -81,7 +81,11 @@ pub(super) fn run(
         WorthQueryBranchAdoptionPublicationOutcome::ProductUnpublished(unpublished) => {
             assert_eq!(
                 unpublished.cause(),
-                worth_query_host::facade::runtime::ProductUnpublishedCause::ProductPublicationLost
+                worth_query_host::facade::runtime::ProductUnpublishedCause::OpenAttemptRetained
+            );
+            assert_eq!(
+                unpublished.before_effect_refusal(),
+                Some(worth_query_host::facade::runtime::NoEffectCause::StaleExpectedProductHead)
             );
             runtime
                 .release_branch_adoption_recovery(unpublished.into_recovery(), 0)
