@@ -27,18 +27,29 @@ impl CandidateReadSupport {
             Self::Parent(_) => "verified output support",
         }
     }
+    /// The candidate image the read observed: its own position's evidence.
+    pub(in crate::domain_computation::primary_graph) fn pin(
+        &self,
+    ) -> &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity> {
+        match self {
+            Self::Query(support) | Self::Outgoing(support) => support.pin(),
+            Self::Parent(parent) => parent.pin(),
+        }
+    }
+    /// The first observed fact whose support differs between two images.
     pub(in crate::domain_computation::primary_graph) fn changed_fact(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &RelationalRuntime,
         before: &SnapshotHandle,
-        complete: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
+        earlier: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
+        image: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
     ) -> Result<Option<&Fact>, WorthQueryApplicationAttemptDenial> {
         match self {
             Self::Query(support) | Self::Outgoing(support) => {
-                support.changed_fact(execution, runtime, before, complete)
+                support.changed_fact(execution, runtime, before, earlier, image)
             }
-            Self::Parent(parent) => parent.changed_fact(execution, runtime, before, complete),
+            Self::Parent(parent) => parent.changed_fact(execution, runtime, before, earlier, image),
         }
     }
 }

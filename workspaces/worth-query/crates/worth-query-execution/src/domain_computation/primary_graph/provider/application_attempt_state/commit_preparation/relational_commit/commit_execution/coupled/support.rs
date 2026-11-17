@@ -98,29 +98,24 @@ pub(super) fn require_read_support(
     >,
     members: &[crate::domain_computation::primary_graph::provider::CoupledApplicationMember],
 ) -> Result<(), CoupledSupportPreparationDenial> {
-    let after_own = attempt
-        .coupled_after_own()
-        .expect("Native completed this writer before continuing");
+    // Each retained read is attributed from its own observed image, so an
+    // ordinary root without a coupled post-own pin validates the same way.
     for (source, position, support) in attempt.candidate_read_support() {
-        let answer = provider.graph.with_runtime(execution, |runtime| {
-            support.changed_fact(execution, runtime, before, complete)
-        });
-        match answer {
+        let compare = |earlier: &Candidate, image: &Candidate| {
+            provider.graph.with_runtime(execution, |runtime| {
+                support.changed_fact(execution, runtime, before, earlier, image)
+            })
+        };
+        match compare(support.pin(), complete) {
             Ok(None) => {}
             Ok(Some(fact)) => changed(
                 attempt,
                 *source,
                 *position,
                 members,
-                after_own,
+                support.pin(),
                 |writer| settles_read_support(attempt, support, *position, members, writer),
-                |_, image| {
-                    provider.graph.with_runtime(execution, |runtime| {
-                        support
-                            .changed_fact(execution, runtime, before, image)
-                            .map(|fact| fact.is_none())
-                    })
-                },
+                |earlier, image| compare(earlier, image).map(|fact| fact.is_none()),
                 format!(
                     "{}: a later coupled contribution changed {}: {}",
                     support.subject(),
@@ -175,7 +170,7 @@ fn changed(
     source: worth_relational::facade::identity::EntityId,
     position: usize,
     members: &[crate::domain_computation::primary_graph::provider::CoupledApplicationMember],
-    after_own: &Candidate,
+    observed: &Candidate,
     settles: impl Fn(&crate::domain_computation::primary_graph::provider::CoupledApplicationMember) -> bool,
     compare: impl Fn(&Candidate, &Candidate) -> Result<
         bool,
@@ -184,7 +179,7 @@ fn changed(
     detail: String,
 ) -> Result<(), CoupledSupportPreparationDenial> {
     let mut settled = false;
-    let mut earlier = after_own;
+    let mut earlier = observed;
     for writer in members.iter().filter(|writer| writer.position > position) {
         let attempt = &writer
             .owned

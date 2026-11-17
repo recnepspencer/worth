@@ -46,12 +46,11 @@ impl VerifiedAppliedParent {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &RelationalRuntime,
         before: &SnapshotHandle,
-        complete: &Pin,
+        earlier: &Pin,
+        image: &Pin,
     ) -> Result<Option<&Fact>, AttemptDenial> {
         for fact in self.facts.iter() {
-            if !fact
-                .support_equal_after_own_effect(execution, runtime, before, &self.pin, complete)?
-            {
+            if !fact.support_equal_after_own_effect(execution, runtime, before, earlier, image)? {
                 return Ok(Some(fact));
             }
         }
