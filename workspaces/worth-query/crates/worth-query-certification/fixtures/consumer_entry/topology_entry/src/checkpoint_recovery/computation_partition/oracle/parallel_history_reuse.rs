@@ -13,7 +13,6 @@ mod declaration;
 mod engagement;
 mod execution;
 mod seeded_world;
-mod worker_matrix;
 use execution::{demand, edit, install};
 use seeded_world::{facts, seed, Change};
 
