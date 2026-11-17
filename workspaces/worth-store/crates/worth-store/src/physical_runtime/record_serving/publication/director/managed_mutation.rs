@@ -18,6 +18,7 @@ use crate::physical_runtime::{
     RootReplacedPhysicalMutationMembers, SealedPhysicalDurabilityGroupMembers,
     WalDurablePhysicalMutation,
 };
+mod admission;
 mod obligations;
 mod pre_effect;
 mod wal_admission;
@@ -42,9 +43,7 @@ impl RecordPublicationDirector {
         attempt: &PhysicalMutationAttempt,
     ) -> Result<Arc<CompletedPhysicalMutationFact>, PhysicalMutationTerminalFact> {
         let copy = self.copy_failure_obligation(&prepared);
-        let pending = match self
-            .root_owner
-            .register_pending_publication(attempt.identity())
+        let pending = match self.admit_publication_original(attempt)
         {
             Ok(pending) => pending,
             Err(PhysicalPublicationAdmissionDenial::ScopeConflict(_)) => {

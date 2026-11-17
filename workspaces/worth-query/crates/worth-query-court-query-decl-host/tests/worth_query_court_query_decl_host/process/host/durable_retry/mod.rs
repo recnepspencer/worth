@@ -21,6 +21,7 @@ use worth_query_testkit_host::facade::host::{
     application_home as fixture, application_runtime_surface as identity, checkpoint_capture,
 };
 
+mod admission_interleaving;
 mod affinity;
 mod child_reexecution;
 mod fate_reopening;

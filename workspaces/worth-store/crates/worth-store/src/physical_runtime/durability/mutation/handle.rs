@@ -353,7 +353,7 @@ impl PhysicalMutationAttempt {
         outcome
     }
 
-    fn wait(&self) -> PhysicalMutationOutcome {
+    pub(in crate::physical_runtime) fn wait(&self) -> PhysicalMutationOutcome {
         let mut state = self.state();
         loop {
             if state.terminal_visible {

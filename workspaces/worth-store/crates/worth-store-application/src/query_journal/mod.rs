@@ -3,6 +3,8 @@
 mod admission_contention;
 #[cfg(test)]
 mod admission_visibility;
+#[cfg(test)]
+mod native_contention;
 mod publication;
 use publication::{QueryJournalNativeProgress, QueryJournalPublication};
 use std::sync::{Arc, Mutex, Weak};
