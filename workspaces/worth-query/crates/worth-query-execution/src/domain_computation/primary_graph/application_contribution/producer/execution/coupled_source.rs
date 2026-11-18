@@ -8,6 +8,7 @@ use worth_query_declaration::facade::application_query::{
 };
 use worth_relational::facade::runtime::RelationalPinnedRead;
 mod created;
+mod removed;
 
 pub(in crate::domain_computation::primary_graph::application_contribution) enum CoupledSourceReadStop
 {
@@ -165,7 +166,7 @@ where
         &mut ApplicationQueryNativeAccess::acquire(),
     );
     let scope = match scope {
-        Ok(_) => {
+        Ok(current) => {
             let applied = runtime
                 .runtime
                 .primary_graph()
@@ -186,7 +187,14 @@ where
                 let cause = crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(lapse.denial_kind(), Binding::IDENTITY);
                 return Err(request_authority_denied(Binding::IDENTITY, cause).into());
             }
-            applied.map_err(|cause| scope_rejected(Binding::IDENTITY, cause))?
+            match applied {
+                Ok(applied) => applied,
+                Err(absence) if absence.kind() == crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind::Refused(
+                    crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalKind::UnknownEntity,
+                ) => return removed::read(installed, execution, runtime, request, selected, &principal, &current,
+                    parameters, absence, assembly, demand, purpose),
+                Err(cause) => return Err(scope_rejected(Binding::IDENTITY, cause).into()),
+            }
         }
         Err(cause) if cause.kind() == crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind::Refused(
             crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalKind::UnknownEntity,
