@@ -12,6 +12,7 @@ pub(super) mod frontier;
 #[cfg(test)]
 mod replay;
 use super::component_carriage::parent as owner;
+use super::super::super::family::diamond as joined;
 
 macro_rules! root {
     ($start:ident, $connection:ident, $port:ty, $binding:ty, $identity:literal, |$input:ident| $demand:expr) => {
@@ -113,11 +114,64 @@ impl WorthQueryApplicationPrerequisiteOutputConnection<Schema> for Discover {
     }
 }
 type Children = ApplicationOutputEdge<ChildConnection, ApplicationOutputLeaf>;
-/// The same child reached only through an occurrence arc: the tree declares
-/// no parent-to-child edge, as a CAD seed's occurrence-discovered consumers.
+
+/// The second occurrence hop: `second:X` discovers the join `joined:first:X`,
+/// whose value sums the seconds of model X, so it reads the child's value.
+pub struct Grandchild;
+impl ApplicationConnectionIdentity for Grandchild {
+    const IDENTITY: &'static str = "interleaved.seed-children.grandchild";
+}
+impl ApplicationOccurrenceConnectionBinding<Schema, hierarchy::Child, joined::Join> for Grandchild {}
+type GrandchildConnection = ApplicationConnectionRef<
+    Schema,
+    hierarchy::Child,
+    hierarchy::ChildOutput,
+    joined::Join,
+    joined::RightInput,
+    Grandchild,
+>;
+impl WorthQueryApplicationDependentOutputConnection<Schema> for Grandchild {
+    type RootDemand = second::Demand;
+    type Discovery = query::second_output::Read;
+    type Demand = joined::Demand;
+    const IDENTITY: &'static str = <Self as ApplicationConnectionIdentity>::IDENTITY;
+    fn discovery_from_root(
+        root: &second::Demand,
+    ) -> Result<Self::Discovery, WorthQueryRequiredOutputConnectionDenial> {
+        Ok(query::second_output::Read(format!("second:{}", root.0)))
+    }
+    fn demands_from_discovery(
+        row: &query::Row,
+    ) -> Result<Vec<joined::Demand>, WorthQueryRequiredOutputConnectionDenial> {
+        let seed = row.key.strip_prefix("second:").expect("a real second output key");
+        Ok(vec![joined::Demand(format!("first:{seed}"))])
+    }
+}
+// The join's genuine parent is the child of the same seed model.
+impl WorthQueryApplicationPrerequisiteOutputConnection<Schema> for Grandchild {
+    type Prerequisites = owner::Read;
+    type PrerequisiteRow = owner::ParentBinding;
+    type Selection = owner::Selection;
+    fn prerequisite_rows() -> Self::Selection {
+        owner::owner()
+    }
+    fn prerequisites_from_target(
+        target: &joined::Demand,
+    ) -> Result<owner::Read, WorthQueryRequiredOutputConnectionDenial> {
+        Ok(owner::Read(target.0.clone()))
+    }
+    fn parent_from_prerequisite(
+        row: &owner::Parent,
+    ) -> Result<second::Demand, WorthQueryRequiredOutputConnectionDenial> {
+        Ok(second::Demand(row.key.clone()))
+    }
+}
+/// The child and its join reached only through occurrence arcs, two hops from
+/// the seed: the tree declares no parent-to-child edge, as a CAD seed's
+/// occurrence-discovered consumers.
 pub struct Occurrence;
 impl ApplicationOccurrenceComponent<Schema> for Occurrence {
-    type Connections = (ChildConnection,);
+    type Connections = (ChildConnection, GrandchildConnection);
 }
 pub type OccurrenceWriteTree =
     ApplicationOutputGraph<SeedWriteConnection, ApplicationOutputOccurrences<Occurrence>>;

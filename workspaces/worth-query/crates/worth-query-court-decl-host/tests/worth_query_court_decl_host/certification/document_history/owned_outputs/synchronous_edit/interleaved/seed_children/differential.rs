@@ -78,7 +78,7 @@ fn execute(
                 .unwrap();
             }
             Stage::Frontier(frontier) => {
-                edit.push_stage::<ApplicationNoOutputGraph, _>(frontier::Intent { frontier: *frontier })
+                edit.push_stage::<ApplicationNoOutputGraph, _>(frontier::Intent { frontier: *frontier, grandchild: false })
                     .unwrap();
             }
             Stage::Read(add) => tokens.push(

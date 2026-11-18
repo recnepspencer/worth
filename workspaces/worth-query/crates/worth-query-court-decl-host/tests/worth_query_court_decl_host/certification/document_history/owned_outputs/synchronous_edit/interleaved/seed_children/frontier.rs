@@ -1,11 +1,14 @@
 //! A final authored stage that demands no output: it reads the discovered
-//! child `second:a` and records it in the progress frontier, as a CAD
-//! correction's document stage reads the outputs its source stage changed.
+//! child `second:a`, or its join `joined:first:a` two hops from the seed, and
+//! records it in the progress frontier, as a CAD correction's document stage
+//! reads the outputs its source stage changed.
 use super::*;
 #[derive(Clone, Debug, WorthValue)]
 #[worth_value(crate = "worth_query_decl::facade::application_schema")]
 pub struct Intent {
     pub frontier: u64,
+    /// Read the join two occurrence hops from the seed instead of the child.
+    pub grandchild: bool,
 }
 #[derive(Clone, Debug, Eq, PartialEq, WorthValue)]
 #[worth_value(crate = "worth_query_decl::facade::application_schema")]
@@ -14,7 +17,7 @@ worth_query_structured_value_binding!(pub Input for Intent { identity: "owned-ou
 worth_query_structured_value_binding!(pub DenialBinding for Denial { identity: "owned-outputs.interleaved.seed-frontier-denial" });
 worth_query_structured_value_binding!(pub ResultBinding for u64 { identity: "owned-outputs.interleaved.seed-frontier-result" });
 worth_query_operation!(pub Advance for Schema, input Input; access {
-    read_fields: [MemberKey::at("MemberKey"), EnvelopeFrontier::at("Frontier"), SecondKey::at("SecondKey"), SecondValue::at("SecondValue")];
+    read_fields: [MemberKey::at("MemberKey"), EnvelopeFrontier::at("Frontier"), SecondKey::at("SecondKey"), SecondValue::at("SecondValue"), MemberValue::at("MemberValue")];
     writes: [EnvelopeFrontier::at("Frontier")];
 });
 fn scope(_: &Intent) -> String {
@@ -39,8 +42,13 @@ impl OperationHandler<Schema, Binding> for Handler {
         let target = (reader.resolve_entity(MemberKey::at("MemberKey"), scope(input)))
             .and_then(|target| {
                 reader.field(&target, EnvelopeFrontier::at("Frontier"))?;
-                let child = reader.resolve_entity(SecondKey::at("SecondKey"), "second:a".to_owned())?;
-                let child = reader.field(&child, SecondValue::at("SecondValue"))?.unwrap();
+                let child = if input.grandchild {
+                    let join = reader.resolve_entity(MemberKey::at("MemberKey"), "joined:first:a".to_owned())?;
+                    reader.field(&join, MemberValue::at("MemberValue"))?.unwrap()
+                } else {
+                    let child = reader.resolve_entity(SecondKey::at("SecondKey"), "second:a".to_owned())?;
+                    reader.field(&child, SecondValue::at("SecondValue"))?.unwrap()
+                };
                 Ok(Decision(reader.mutation_target(&target)?, input.frontier * 10_000 + child))
             });
         match target {
