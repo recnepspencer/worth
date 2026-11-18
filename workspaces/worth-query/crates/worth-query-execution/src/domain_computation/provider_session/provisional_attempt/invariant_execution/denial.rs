@@ -1,7 +1,9 @@
 use std::sync::Arc;
 mod native_denial;
+mod coupled_support;
 mod relation_law;
 use native_denial::NativeDenial;
+pub use coupled_support::WorthQueryCoupledSupportHold;
 pub use relation_law::WorthQueryRelationLawDenial;
 use worth_execution::ExecutionAllocationDenial;
 
@@ -147,18 +149,6 @@ pub struct WorthQueryInvariantExecutionFailure {
     hold: Option<WorthQueryCoupledSupportHold>,
 }
 
-/// A coupled support refusal the platform holds for a named public issue.
-/// The edit is valid sequentially; it refuses atomically until the issue lands.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryCoupledSupportHold {
-    /// A later authored stage changed what an output derived earlier in the
-    /// same envelope depends on: its input, the discovery it was prepared
-    /// under, or a verified output an earlier stage read. Committing it needs a
-    /// second derivation of that route, which waits on in-envelope producer
-    /// supersession (public #229).
-    ProducerSupersession,
-}
-
 impl WorthQueryInvariantExecutionFailure {
     pub(crate) fn publication_readmission(
         cause: worth_relational::facade::mvcc::TransactionCommitError,
@@ -207,55 +197,6 @@ impl WorthQueryInvariantExecutionFailure {
             NativeDenial::PublicationCompanion(cause) => Some(*cause),
             _ => None,
         }
-    }
-    pub(crate) fn coupled_read_support(
-        source: worth_relational::facade::identity::EntityId,
-        cause: Option<
-            crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind,
-        >,
-        detail: impl Into<Arc<str>>,
-    ) -> Self {
-        let kind = cause.map_or(
-            WorthQueryInvariantExecutionDenialKind::CoupledReadSupportChanged,
-            |cause| WorthQueryInvariantExecutionDenialKind::CoupledReadSupportUnavailable { cause },
-        );
-        let mut failure = Self::new(kind, detail);
-        failure.affected_records = Some(Arc::from([
-            worth_relational::facade::transactions::RecordRef::Entity(source),
-        ]));
-        failure
-    }
-    pub(crate) fn missing_coupled_settlement(
-        source: worth_relational::facade::identity::EntityId,
-    ) -> Self {
-        let mut denied = Self::new(
-            WorthQueryInvariantExecutionDenialKind::CoupledSettlementMissing,
-            "Native participant has no retained Query settlement session",
-        );
-        denied.affected_records = Some(Arc::from([
-            worth_relational::facade::transactions::RecordRef::Entity(source),
-        ]));
-        denied
-    }
-    pub(crate) fn with_coupled_writer(
-        mut self,
-        writer: worth_relational::facade::identity::EntityId,
-    ) -> Self {
-        let mut records = self.affected_records().to_vec();
-        let writer = worth_relational::facade::transactions::RecordRef::Entity(writer);
-        if !records.contains(&writer) {
-            records.push(writer);
-        }
-        self.affected_records = Some(Arc::from(records));
-        self
-    }
-    pub(crate) fn held(mut self, hold: WorthQueryCoupledSupportHold) -> Self {
-        self.hold = Some(hold);
-        self
-    }
-    /// The public issue this refusal is held for, when it is a hold.
-    pub fn coupled_support_hold(&self) -> Option<WorthQueryCoupledSupportHold> {
-        self.hold
     }
     /// Exact records whose Query settlement could not be admitted.
     pub fn affected_records(&self) -> &[worth_relational::facade::transactions::RecordRef] {
