@@ -34,15 +34,6 @@ pub(super) fn prepare_members(
     // A #229 hold is reported only after everything else validates: any other
     // stale read, cycle or refusal in the group takes precedence over it.
     let mut held = None;
-    let mut admit = |answer: Result<(), CoupledSupportPreparationDenial>| match answer {
-        Err(CoupledSupportPreparationDenial::Changed(failure))
-            if failure.coupled_support_hold().is_some() =>
-        {
-            held.get_or_insert(failure);
-            Ok(())
-        }
-        answer => answer.map_err(Denial::CoupledSupport),
-    };
     if let Some(complete) = &complete {
         if root.coupled_after_own().is_some() {
             let scope = root.affinity().operation_scope().scope();
@@ -51,17 +42,20 @@ pub(super) fn prepare_members(
                 scope.local_slot(),
                 scope.generation(),
             );
-            admit(support::require(
+            support::require(
                 execution, provider, root, before, complete, source, None, 0, members, false,
-            ))?;
+                &mut held,
+            )
+            .map_err(Denial::CoupledSupport)?;
         }
-        admit(support::require_read_support(
-            execution, provider, root, before, complete, members,
-        ))?;
+        support::require_read_support(
+            execution, provider, root, before, complete, members, &mut held,
+        )
+        .map_err(Denial::CoupledSupport)?;
         for member in members.iter() {
             let source = member.source();
             let owned = member.owned.as_ref().expect("atomic group extraction");
-            admit(support::require(
+            support::require(
                 execution,
                 provider,
                 &owned.attempt,
@@ -75,15 +69,19 @@ pub(super) fn prepare_members(
                 member.position,
                 members,
                 member.producer_route().is_some(),
-            ))?;
-            admit(support::require_read_support(
+                &mut held,
+            )
+            .map_err(Denial::CoupledSupport)?;
+            support::require_read_support(
                 execution,
                 provider,
                 &owned.attempt,
                 before,
                 complete,
                 members,
-            ))?;
+                &mut held,
+            )
+            .map_err(Denial::CoupledSupport)?;
         }
     }
     for member in members {

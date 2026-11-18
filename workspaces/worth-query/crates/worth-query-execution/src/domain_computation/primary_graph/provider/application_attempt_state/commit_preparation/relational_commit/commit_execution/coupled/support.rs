@@ -39,6 +39,7 @@ pub(super) fn require(
     position: usize,
     members: &[crate::domain_computation::primary_graph::provider::CoupledApplicationMember],
     producer_reader: bool,
+    hold: &mut Option<Failure>,
 ) -> Result<(), CoupledSupportPreparationDenial> {
     let after_own = attempt
         .coupled_after_own()
@@ -77,11 +78,12 @@ pub(super) fn require(
                     attempt.coupled_authored_subject().is_some() && writer.settles_after(position)
                 },
                 |writer| producer_reader && is_stage(writer),
-                compare,
-                format!(
-                    "a later coupled contribution changed decision support: {}",
-                    fact.locator_identity(),
-                ),
+                |earlier, image| {
+                    compare(earlier, image).map(|same| (!same).then(|| fact.locator_identity()))
+                },
+                fact.locator_identity(),
+                |locator| format!("a later coupled contribution changed decision support: {locator}"),
+                hold,
             )?;
             continue;
         }
@@ -103,6 +105,7 @@ pub(super) fn require_read_support(
         worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
     >,
     members: &[crate::domain_computation::primary_graph::provider::CoupledApplicationMember],
+    hold: &mut Option<Failure>,
 ) -> Result<(), CoupledSupportPreparationDenial> {
     // Each retained read is attributed from its own observed image, so an
     // ordinary root without a coupled post-own pin validates the same way.
@@ -122,13 +125,18 @@ pub(super) fn require_read_support(
                 support.pin(),
                 |writer| settles_read_support(attempt, support, *position, members, writer),
                 |writer| superseded_parent(support, members, writer),
-                |earlier, image| compare(earlier, image).map(|fact| fact.is_none()),
-                format!(
-                    "{}: a later coupled contribution changed {}: {}",
-                    support.subject(),
-                    support.description(),
-                    fact.locator_identity()
-                ),
+                |earlier, image| {
+                    compare(earlier, image).map(|fact| fact.map(|fact| fact.locator_identity()))
+                },
+                fact.locator_identity(),
+                |locator| {
+                    format!(
+                        "{}: a later coupled contribution changed {}: {locator}",
+                        support.subject(),
+                        support.description(),
+                    )
+                },
+                hold,
             )?,
             Err(cause) => require_answer(Err(cause), *source, || support.subject().to_owned())?,
         }
@@ -207,10 +215,13 @@ fn superseded_parent(
 
 /// Only a changed fact walks the later writers. Reuse the post-own pins already
 /// held by the admitted writers; healthy facts pay no intermediate comparisons.
-/// An authored reader accepts changes made by members that sequentially run
-/// after it; any other change refuses, attributed to its writer. `held` names
-/// the writers whose refused change superseded an earlier derivation, which
-/// needs a second derivation of its route in this envelope (#229).
+/// `compare` names the fact that differs between two adjacent images, so each
+/// refusal names the fact its own writer changed. An authored reader accepts
+/// changes made by members that sequentially run after it; any other change
+/// refuses, attributed to its writer. `held` names the writers whose refused
+/// change superseded an earlier derivation (#229). Such a refusal is only
+/// provisional: the scan continues, any plain refusal wins, and the hold is
+/// recorded in `hold` for the caller to report after everything else validates.
 fn changed(
     reader: &WorthQueryPrimaryGraphApplicationAttempt,
     source: worth_relational::facade::identity::EntityId,
@@ -220,12 +231,14 @@ fn changed(
     settles: impl Fn(&crate::domain_computation::primary_graph::provider::CoupledApplicationMember) -> bool,
     held: impl Fn(&crate::domain_computation::primary_graph::provider::CoupledApplicationMember) -> bool,
     compare: impl Fn(&Candidate, &Candidate) -> Result<
-        bool,
+        Option<String>,
         crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
     >,
-    detail: String,
+    final_locator: String,
+    detail: impl Fn(&str) -> String,
+    hold: &mut Option<Failure>,
 ) -> Result<(), CoupledSupportPreparationDenial> {
-    let mut settled = false;
+    let (mut settled, mut provisional) = (false, None);
     let mut earlier = observed;
     for writer in members.iter().filter(|writer| writer.position > position) {
         let attempt = &writer
@@ -239,11 +252,11 @@ fn changed(
         let answer = compare(earlier, pin);
         earlier = pin;
         match answer {
-            Ok(true) => continue,
-            Err(cause) => return require_answer(Err(cause), source, || detail.clone()),
-            Ok(false) if settles(writer) => settled = true,
-            Ok(false) => {
-                let earlier = reader
+            Ok(None) => continue,
+            Err(cause) => return require_answer(Err(cause), source, String::new),
+            Ok(Some(_)) if settles(writer) => settled = true,
+            Ok(Some(locator)) => {
+                let reader = reader
                     .coupled_authored_subject()
                     .map(|(stage, binding)| format!("authored stage {} {binding}", stage.ordinal()))
                     .unwrap_or_else(|| format!("reader {source:?}"));
@@ -254,23 +267,27 @@ fn changed(
                 let failure = Failure::coupled_read_support(
                     source,
                     None,
-                    format!("{earlier}; later writer {later}: {detail}"),
+                    format!("{reader}; later writer {later}: {}", detail(&locator)),
                 )
                 .with_coupled_writer(writer.source());
-                let held = held(writer);
-                return Err(CoupledSupportPreparationDenial::Changed(if held {
-                    failure.held(crate::domain_computation::WorthQueryCoupledSupportHold::ProducerSupersession)
-                } else {
-                    failure
-                }));
+                if !held(writer) {
+                    return Err(CoupledSupportPreparationDenial::Changed(failure));
+                }
+                provisional.get_or_insert(failure.held(
+                    crate::domain_computation::WorthQueryCoupledSupportHold::ProducerSupersession,
+                ));
             }
         }
+    }
+    if let Some(failure) = provisional {
+        hold.get_or_insert(failure);
+        return Ok(());
     }
     if settled {
         return Ok(());
     }
     require_answer(Ok(false), source, || {
-        format!("{detail}; no admitted later writer could be attributed")
+        format!("{}; no admitted later writer could be attributed", detail(&final_locator))
     })
 }
 
