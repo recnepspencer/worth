@@ -5,7 +5,7 @@
 //! driving discovers the child `from-first:first:a`, and the child is derived
 //! from the parent's input (model `a`). Stages may write that input without
 //! reading any child, settle the parent early through a stage that needs it,
-//! read the child, or link a new input member to the parent.
+//! or read the child.
 use super::*;
 use crate::certification::document_history::owned_outputs::synchronous_edit::courts::native_head;
 use proptest::prelude::*;
@@ -25,8 +25,6 @@ enum Stage {
     After(u64),
     /// Reads the discovered child's value.
     Consume,
-    /// Reads `first:a` and links a new member to model `a`: a new parent input.
-    Attach { pending: bool },
 }
 
 fn stage() -> impl Strategy<Value = Stage> {
@@ -34,7 +32,6 @@ fn stage() -> impl Strategy<Value = Stage> {
         3 => (1..6u64).prop_map(Stage::Model),
         2 => (1..4u64).prop_map(Stage::After),
         2 => Just(Stage::Consume),
-        1 => any::<bool>().prop_map(|pending| Stage::Attach { pending }),
     ]
 }
 
@@ -44,7 +41,6 @@ struct World {
     model: u64,
     first: Option<u64>,
     child: Option<u64>,
-    attached: Vec<Option<u64>>,
     results: Vec<u64>,
 }
 
@@ -57,8 +53,8 @@ fn world() -> Host {
     host
 }
 
-/// Runs `stages` (each with its position in the generated edit, which names
-/// its attached member) as one positioned edit. `Ok` holds each stage's
+/// Runs `stages` (each with its position in the generated edit) as one
+/// positioned edit. `Ok` holds each stage's
 /// result; `Err` is a refusal that published nothing and kept the head.
 fn execute(host: &Host, key: &str, stages: &[(usize, Stage)]) -> Result<Vec<u64>, Refusal> {
     let scope = request_scope();
@@ -69,7 +65,7 @@ fn execute(host: &Host, key: &str, stages: &[(usize, Stage)]) -> Result<Vec<u64>
         .ordered_authored()
         .unwrap();
     let mut tokens = Vec::new();
-    for (position, stage) in stages {
+    for (_, stage) in stages {
         tokens.push(match stage {
             Stage::Model(value) => edit.push_stage::<Tree, _>(fixture::model::Intent {
                 key: "a".into(),
@@ -84,11 +80,6 @@ fn execute(host: &Host, key: &str, stages: &[(usize, Stage)]) -> Result<Vec<u64>
             Stage::Consume => edit.push_stage::<ApplicationNoOutputGraph, _>(value_observation::Intent {
                 model: "a".into(),
                 source: value_observation::ValueSource::Child("from-first:first:a".into()),
-            }),
-            Stage::Attach { pending } => edit.push_stage::<ApplicationNoOutputGraph, _>(attach::Intent {
-                parent: "a".into(),
-                child: format!("carriage:p{position}"),
-                pending_child: *pending,
             }),
         }
         .unwrap());
@@ -160,16 +151,14 @@ fn refusal<E: std::fmt::Debug>(outcome: &Result<Outcome, E>) -> Refusal {
 }
 
 /// The held shape (#229), established from the stages alone: the first stage
-/// that actually changes the input of `first:a` (a different model value, or
-/// a new linked member) after an earlier stage derived it (by needing it,
-/// reading its child, or reading it to link a member). `None` when no stage
-/// supersedes a derivation.
+/// that actually changes the input of `first:a` (a different model value)
+/// after an earlier stage derived it (by needing it or reading its child).
+/// `None` when no stage supersedes a derivation.
 fn superseding_stage(stages: &[(usize, Stage)]) -> Option<usize> {
     let (mut model, mut derived) = (2, false);
     for (ordinal, (_, stage)) in stages.iter().enumerate() {
         let changes = match stage {
             Stage::Model(value) => std::mem::replace(&mut model, *value) != *value,
-            Stage::Attach { .. } => true,
             Stage::After(_) | Stage::Consume => false,
         };
         if derived && changes {
@@ -180,7 +169,7 @@ fn superseding_stage(stages: &[(usize, Stage)]) -> Option<usize> {
     None
 }
 
-fn observe(host: &Host, stages: &[(usize, Stage)], results: Vec<u64>) -> World {
+fn observe(host: &Host, results: Vec<u64>) -> World {
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.request(&principal, &scope);
@@ -195,10 +184,6 @@ fn observe(host: &Host, stages: &[(usize, Stage)], results: Vec<u64>) -> World {
         child: (request.query(query::child_output::Read("from-first:first:a".into())).execute())
             .ok()
             .and_then(|rows| rows.rows().first().map(|row| row.value)),
-        attached: (stages.iter())
-            .filter(|(_, stage)| matches!(stage, Stage::Attach { .. }))
-            .map(|(position, _)| first(format!("first:carriage:p{position}")))
-            .collect(),
         results,
     }
 }
@@ -207,7 +192,7 @@ fn observe(host: &Host, stages: &[(usize, Stage)], results: Vec<u64>) -> World {
 fn positioned(stages: &[(usize, Stage)]) -> Result<World, Refusal> {
     let host = world();
     let results = execute(&host, "positioned", stages)?;
-    Ok(observe(&host, stages, results))
+    Ok(observe(&host, results))
 }
 
 /// The stages one commit each, in order. Every generated edit is valid one
@@ -223,7 +208,7 @@ fn sequential(stages: &[(usize, Stage)]) -> World {
             Err(refusal) => panic!("{stages:?}: stage {ordinal} refused one commit at a time: {refusal:?}"),
         }
     }
-    observe(&host, stages, results)
+    observe(&host, results)
 }
 
 proptest! {
