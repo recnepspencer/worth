@@ -23,7 +23,7 @@ fn world() -> Host {
         world::Configuration { envelope_records: true, interleaved_records: true, ..Default::default() });
     assert!(execute(&host, "seed-world", Some(2), None).is_ok(), "the world commits");
     let (_, child, join, _) = observe(&host);
-    assert!(child.is_some() && join.is_some(), "the occurrence arcs place the child and its join");
+    assert!(child.is_some() && join.is_some(), "the occurrence arcs place the child and its join: {child:?} {join:?}");
     host
 }
 
@@ -81,7 +81,7 @@ fn observe(host: &Host) -> (u64, Option<u64>, Option<u64>, u64) {
         (request.query(query::second_output::Read("second:a".into())).execute())
             .ok()
             .and_then(|rows| rows.rows().first().map(|row| row.value)),
-        (request.query(query::member::Read("joined:first:a".into())).execute())
+        (request.query(query::member_public::Read("joined:first:a".into())).execute())
             .ok()
             .and_then(|rows| rows.rows().first().map(|row| row.value)),
         request.query(super::super::reading::Read).execute().unwrap().rows()[0].frontier,
