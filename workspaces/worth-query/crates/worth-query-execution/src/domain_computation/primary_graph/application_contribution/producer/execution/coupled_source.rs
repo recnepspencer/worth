@@ -165,21 +165,29 @@ where
         &mut ApplicationQueryNativeAccess::acquire(),
     );
     let scope = match scope {
-        Ok(_) => runtime
-            .runtime
-            .primary_graph()
-            .ok_or_else(foreign)?
-            .retain_entity_resolution_context()
-            .resolve_applied_identity::<Schema, _>(
-                execution,
-                before_pin,
-                &candidate,
-                field.entity(),
-                field.aspect(),
-                field.field(),
-                &arguments.value,
-            )
-            .map_err(|cause| scope_rejected(Binding::IDENTITY, cause))?,
+        Ok(_) => {
+            let applied = runtime
+                .runtime
+                .primary_graph()
+                .ok_or_else(foreign)?
+                .retain_entity_resolution_context()
+                .resolve_applied_identity::<Schema, _>(
+                    execution,
+                    before_pin,
+                    &candidate,
+                    field.entity(),
+                    field.aspect(),
+                    field.field(),
+                    &arguments.value,
+                );
+            // C admitted this principal. A lapse during the D lookup stays a
+            // request refusal, as it does for a source first created at D.
+            if let Some(lapse) = crate::domain_computation::authorization::admitted_request::request_lapse(request, principal.valid_until()) {
+                let cause = crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(lapse.denial_kind(), Binding::IDENTITY);
+                return Err(request_authority_denied(Binding::IDENTITY, cause).into());
+            }
+            applied.map_err(|cause| scope_rejected(Binding::IDENTITY, cause))?
+        }
         Err(cause) if cause.kind() == crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind::Refused(
             crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalKind::UnknownEntity,
         ) => {
