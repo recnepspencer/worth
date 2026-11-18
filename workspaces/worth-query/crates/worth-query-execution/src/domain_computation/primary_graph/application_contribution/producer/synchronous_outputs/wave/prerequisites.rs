@@ -41,6 +41,8 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
                     .capture_inputs(context, candidate, self.tasks[i].component)?;
             self.tasks[i].inputs = inputs;
             let mut incoming = Self::new();
+            // Its suppliers are owed by the demand that owes this task.
+            context.owner.owe(&self.tasks[i].owed);
             self.tasks[i].tree.prerequisites(
                 context,
                 candidate,

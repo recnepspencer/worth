@@ -58,22 +58,28 @@ impl AppliedQuerySupport {
     pub(in crate::domain_computation::primary_graph) fn query(&self) -> &str {
         &self.query
     }
+    /// The candidate image this support observed.
+    pub(in crate::domain_computation::primary_graph) fn pin(
+        &self,
+    ) -> &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity> {
+        &self.pin
+    }
     pub(in crate::domain_computation::primary_graph) fn changed_fact(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &RelationalRuntime,
         before: &SnapshotHandle,
-        complete: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
+        earlier: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
+        image: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
     ) -> Result<Option<&Fact>, WorthQueryApplicationAttemptDenial> {
         if let Some(managed) = &self.managed
             && let Some(fact) =
-                managed.changed_fact(execution, runtime, before, &self.pin, complete)?
+                managed.changed_fact(execution, runtime, before, earlier, image)?
         {
             return Ok(Some(fact));
         }
         for fact in &self.facts {
-            if !fact
-                .support_equal_after_own_effect(execution, runtime, before, &self.pin, complete)?
+            if !fact.support_equal_after_own_effect(execution, runtime, before, earlier, image)?
             {
                 return Ok(Some(fact));
             }

@@ -1,4 +1,5 @@
-//! An ordered prefix reads actual C, never a future required output.
+//! An ordered prefix reads actual C, never a future required output, and a
+//! later stage may change what it read, as one commit per stage would.
 use super::*;
 
 #[test]
@@ -84,18 +85,9 @@ fn positioned_prefix_keeps_current_reads_future_absence_and_final_support() {
             );
             assert_eq!(host.producer_contacts_on_this_thread_for_test(), contacts);
             assert_eq!(publications, 0);
-        } else if change {
-            let outcome = result.unwrap();
-            let Outcome::Uncommitted(WorthQueryApplicationUncommitted::Denied(cause)) = outcome
-            else {
-                panic!("{outcome:?}")
-            };
-            assert_eq!(
-                cause.invariant_execution_failure().unwrap().kind(),
-                WorthQueryInvariantExecutionDenialKind::CoupledReadSupportChanged
-            );
-            assert_eq!(publications, 0);
         } else {
+            // A later stage that changes what the prefix read settles after
+            // the prefix, exactly as one commit per stage would (#224).
             let outcome = result.unwrap();
             let Outcome::Committed(receipt) = outcome else {
                 panic!("{outcome:?}")
@@ -108,9 +100,10 @@ fn positioned_prefix_keeps_current_reads_future_absence_and_final_support() {
                 [before.0]
             );
         }
-        if change {
+        if !seed {
             assert_eq!(super::super::super::courts::native_head(&host), before);
         }
+        let (model, first) = if seed && change { (3, 30) } else { (1, 10) };
         assert_eq!(
             request
                 .query(query::model::Read("a".into()))
@@ -118,15 +111,15 @@ fn positioned_prefix_keeps_current_reads_future_absence_and_final_support() {
                 .unwrap()
                 .rows()[0]
                 .value,
-            1
+            model
         );
-        let first = request
+        let first_read = request
             .query(query::first_output::Read("first:a".into()))
             .execute();
         if seed {
-            assert_eq!(first.unwrap().rows()[0].value, 10);
+            assert_eq!(first_read.unwrap().rows()[0].value, first);
         } else {
-            assert!(first.is_err());
+            assert!(first_read.is_err());
         }
     }
 }

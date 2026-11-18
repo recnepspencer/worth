@@ -26,6 +26,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
             context.checkpoint(task.subject)?;
             if let Some(parent) = &mut task.parent {
                 parent.pin = pin.clone();
+                context.owner.owe(&task.owed);
                 task.tree
                     .discover_occurrences(context, candidate, parent, &mut next)?;
             }

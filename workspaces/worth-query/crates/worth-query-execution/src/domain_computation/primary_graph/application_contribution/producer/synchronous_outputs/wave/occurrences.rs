@@ -164,6 +164,9 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
                     "shared occurrence has different complete component contexts",
                 ));
             }
+            // The shared route is owed by its earliest actual demand.
+            let (earlier, later) = self.tasks.split_at(i);
+            earlier[prior].owed.coalesce(&later[0].owed);
             self.tasks[i].alias = Some(prior);
             self.tasks[i].done = true;
         }
