@@ -7,6 +7,7 @@ use worth_relational::facade::inspection::observe_maintenance_work;
 type Host = WorthQueryProgramApplicationRuntime<Schema, Program>;
 mod authored_only;
 mod correction;
+mod early_settle;
 mod instance_replay;
 mod positioned;
 mod prefix;

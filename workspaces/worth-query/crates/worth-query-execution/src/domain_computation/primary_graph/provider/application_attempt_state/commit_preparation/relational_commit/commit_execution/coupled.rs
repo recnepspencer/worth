@@ -31,6 +31,9 @@ pub(super) fn prepare_members(
                 .expect("Native retained genuine coupled proposal read custody"),
         )
     };
+    // A #229 hold is reported only after everything else validates: any other
+    // stale read, cycle or refusal in the group takes precedence over it.
+    let mut held = None;
     if let Some(complete) = &complete {
         if root.coupled_after_own().is_some() {
             let scope = root.affinity().operation_scope().scope();
@@ -40,12 +43,15 @@ pub(super) fn prepare_members(
                 scope.generation(),
             );
             support::require(
-                execution, provider, root, before, complete, source, None, 0, members,
+                execution, provider, root, before, complete, source, None, 0, members, false,
+                &mut held,
             )
             .map_err(Denial::CoupledSupport)?;
         }
-        support::require_read_support(execution, provider, root, before, complete, members)
-            .map_err(Denial::CoupledSupport)?;
+        support::require_read_support(
+            execution, provider, root, before, complete, members, &mut held,
+        )
+        .map_err(Denial::CoupledSupport)?;
         for member in members.iter() {
             let source = member.source();
             let owned = member.owned.as_ref().expect("atomic group extraction");
@@ -62,6 +68,8 @@ pub(super) fn prepare_members(
                     .and_then(|prepared| prepared.rebase.as_ref()),
                 member.position,
                 members,
+                member.producer_route().is_some(),
+                &mut held,
             )
             .map_err(Denial::CoupledSupport)?;
             support::require_read_support(
@@ -71,6 +79,7 @@ pub(super) fn prepare_members(
                 before,
                 complete,
                 members,
+                &mut held,
             )
             .map_err(Denial::CoupledSupport)?;
         }
@@ -106,7 +115,9 @@ pub(super) fn prepare_members(
             )).map_err(Denial::SourceFacts)?);
         }
     }
-    Ok(())
+    held.map_or(Ok(()), |failure| {
+        Err(Denial::CoupledSupport(CoupledSupportPreparationDenial::Changed(failure)))
+    })
 }
 
 pub(super) fn prepare_lineage(

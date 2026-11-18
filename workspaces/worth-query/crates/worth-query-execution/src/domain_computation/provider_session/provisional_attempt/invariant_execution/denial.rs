@@ -1,7 +1,9 @@
 use std::sync::Arc;
 mod native_denial;
+mod coupled_support;
 mod relation_law;
 use native_denial::NativeDenial;
+pub use coupled_support::WorthQueryCoupledSupportHold;
 pub use relation_law::WorthQueryRelationLawDenial;
 use worth_execution::ExecutionAllocationDenial;
 
@@ -144,6 +146,7 @@ pub struct WorthQueryInvariantExecutionFailure {
     custom_invariant: Option<WorthQueryCustomInvariantDenial>,
     native: Option<NativeDenial>,
     affected_records: Option<Arc<[worth_relational::facade::transactions::RecordRef]>>,
+    hold: Option<WorthQueryCoupledSupportHold>,
 }
 
 impl WorthQueryInvariantExecutionFailure {
@@ -195,47 +198,6 @@ impl WorthQueryInvariantExecutionFailure {
             _ => None,
         }
     }
-    pub(crate) fn coupled_read_support(
-        source: worth_relational::facade::identity::EntityId,
-        cause: Option<
-            crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind,
-        >,
-        detail: impl Into<Arc<str>>,
-    ) -> Self {
-        let kind = cause.map_or(
-            WorthQueryInvariantExecutionDenialKind::CoupledReadSupportChanged,
-            |cause| WorthQueryInvariantExecutionDenialKind::CoupledReadSupportUnavailable { cause },
-        );
-        let mut failure = Self::new(kind, detail);
-        failure.affected_records = Some(Arc::from([
-            worth_relational::facade::transactions::RecordRef::Entity(source),
-        ]));
-        failure
-    }
-    pub(crate) fn missing_coupled_settlement(
-        source: worth_relational::facade::identity::EntityId,
-    ) -> Self {
-        let mut denied = Self::new(
-            WorthQueryInvariantExecutionDenialKind::CoupledSettlementMissing,
-            "Native participant has no retained Query settlement session",
-        );
-        denied.affected_records = Some(Arc::from([
-            worth_relational::facade::transactions::RecordRef::Entity(source),
-        ]));
-        denied
-    }
-    pub(crate) fn with_coupled_writer(
-        mut self,
-        writer: worth_relational::facade::identity::EntityId,
-    ) -> Self {
-        let mut records = self.affected_records().to_vec();
-        let writer = worth_relational::facade::transactions::RecordRef::Entity(writer);
-        if !records.contains(&writer) {
-            records.push(writer);
-        }
-        self.affected_records = Some(Arc::from(records));
-        self
-    }
     /// Exact records whose Query settlement could not be admitted.
     pub fn affected_records(&self) -> &[worth_relational::facade::transactions::RecordRef] {
         self.affected_records.as_deref().unwrap_or(&[])
@@ -250,6 +212,7 @@ impl WorthQueryInvariantExecutionFailure {
             custom_invariant: None,
             native: None,
             affected_records: None,
+            hold: None,
         }
     }
 
@@ -264,6 +227,7 @@ impl WorthQueryInvariantExecutionFailure {
             custom_invariant: None,
             native: None,
             affected_records: None,
+            hold: None,
         }
     }
 
@@ -278,6 +242,7 @@ impl WorthQueryInvariantExecutionFailure {
             custom_invariant: Some(custom_invariant),
             native: None,
             affected_records: None,
+            hold: None,
         }
     }
 
@@ -362,6 +327,7 @@ impl WorthQueryInvariantExecutionFailure {
             custom_invariant: None,
             native: Some(native),
             affected_records: None,
+            hold: None,
         }
     }
     /// Exact physical owner cause, including its original checked quote.

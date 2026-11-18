@@ -3,13 +3,20 @@ use super::*;
 use crate::domain_computation::primary_graph::application_attempt::coupled_outputs::DeclaredCoupledOutputDemand;
 enum PendingOutputDemand<'a> {
     Prefix(&'a DeclaredCoupledOutputDemand),
-    Stage(DeclaredCoupledOutputDemand),
+    Stage(DeclaredCoupledOutputDemand, usize),
 }
 impl PendingOutputDemand<'_> {
     fn demand(&self) -> &DeclaredCoupledOutputDemand {
         match self {
             Self::Prefix(demand) => demand,
-            Self::Stage(demand) => demand,
+            Self::Stage(demand, _) => demand,
+        }
+    }
+    /// The applied position of the stage whose effect owes this demand.
+    fn owed(&self) -> usize {
+        match self {
+            Self::Prefix(_) => 0,
+            Self::Stage(_, owed) => *owed,
         }
     }
 }
@@ -77,6 +84,8 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             .chain(captured.iter())
             .collect::<Vec<_>>();
         let mut wave = synchronous_outputs::SynchronousOutputWave::new();
+        // The prefix's own roots are owed at the first applied position.
+        self.owe_at(0);
         let mut order = synchronous_outputs::CapturedSynchronousOutputs::seed(
             &roots,
             self,
@@ -114,11 +123,19 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             if let Some(cause) = demands.take_failure() {
                 return Err(CoupledSourceReadStop::capture(cause));
             }
+            // Work this stage's effect owes settles after it, never before.
+            let owed = self.authored.borrow().last().expect("prepared stage").position;
+            self.owe_at(owed);
             if positioned && let Some(required) = &capture.required {
                 // Only this actual append makes its required root available.
                 demands.synchronous.push(required(execution));
             }
-            pending.extend(demands.values.drain(..).map(PendingOutputDemand::Stage));
+            pending.extend(
+                demands
+                    .values
+                    .drain(..)
+                    .map(|demand| PendingOutputDemand::Stage(demand, owed)),
+            );
             let roots = demands.synchronous.iter().collect::<Vec<_>>();
             if let Some(next_order) = synchronous_outputs::CapturedSynchronousOutputs::seed(
                 &roots,
@@ -160,12 +177,9 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
                     .iter()
                     .any(|family| family == pending[position].demand().family)
             }) {
-                self.prepare_one(
-                    execution,
-                    before,
-                    pending.remove(position).demand(),
-                    candidate,
-                )?;
+                let demand = pending.remove(position);
+                self.owe_at(demand.owed());
+                self.prepare_one(execution, before, demand.demand(), candidate)?;
             } else {
                 position += 1;
             }
@@ -281,6 +295,7 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
         let position = self.applied_position() + 1;
         self.writers.borrow_mut().push(CoupledWriter {
             position,
+            owed: self.owing(),
             producer: std::sync::Arc::clone(producer),
             stage: Some(CoupledWriterStage::Inspected(writer)),
             meaning: meaning.clone(),

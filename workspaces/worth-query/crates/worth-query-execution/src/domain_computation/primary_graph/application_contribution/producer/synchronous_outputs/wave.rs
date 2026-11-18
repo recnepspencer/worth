@@ -21,6 +21,8 @@ struct Scheduled<S: ApplicationSchema> {
     _prerequisite_memory: Option<worth_execution::ExecutionMemoryReservation>,
     subject: &'static str,
     rank: usize,
+    /// The demand that owes this task, carried to everything it enqueues.
+    owed: super::super::super::coupled_publication::OwedDemand,
     tree: Box<dyn capture::RequiredTree<S>>,
     parent: Option<AppliedOutputParent>,
     _memory: Option<worth_execution::ExecutionMemoryReservation>,
@@ -104,6 +106,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
             _prerequisite_memory: None,
             subject,
             rank,
+            owed: context.owner.owing(),
             tree,
             parent: None,
             _memory: memory,
@@ -217,6 +220,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
                 }
                 let task = &mut self.tasks[*i];
                 context.checkpoint(task.subject)?;
+                context.owner.owe(&task.owed);
                 match task
                     .tree
                     .prepare(context, candidate, task.inputs.take(), task.component)?
@@ -241,6 +245,8 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
                 let task = &mut self.tasks[i];
                 if let Some(parent) = &mut task.parent {
                     parent.pin = pin.clone();
+                    // A discovered child is owed by the stage that owed its parent.
+                    context.owner.owe(&task.owed);
                     task.tree.discover(context, parent, &mut next)?;
                 }
                 task.continuation_done = true;
