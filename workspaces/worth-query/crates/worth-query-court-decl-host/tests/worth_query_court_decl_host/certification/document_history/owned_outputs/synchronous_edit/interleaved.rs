@@ -28,7 +28,9 @@ pub fn declare(
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
     prerequisite_path::declare(component_carriage::declare(
         prerequisite_partition::declare(occurrence_topology::declare(created::declare(
-            reading::declare(seal::declare(dependent::declare(seed_children::frontier::declare(schema)))),
+            reading::declare(seal::declare(dependent::declare(
+                seed_children::frontier::declare(schema),
+            ))),
         ))),
     ))
 }

@@ -39,17 +39,26 @@ impl OperationHandler<Schema, Binding> for Handler {
         reader: &mut DecisionReader<'_, '_, '_, Schema, Binding>,
     ) -> HandlerResult<Decision, Denial> {
         // The platform refuses a blind write, so the stage observes the field.
-        let target = (reader.resolve_entity(MemberKey::at("MemberKey"), scope(input)))
-            .and_then(|target| {
+        let target =
+            (reader.resolve_entity(MemberKey::at("MemberKey"), scope(input))).and_then(|target| {
                 reader.field(&target, EnvelopeFrontier::at("Frontier"))?;
                 let child = if input.grandchild {
-                    let join = reader.resolve_entity(MemberKey::at("MemberKey"), "joined:first:a".to_owned())?;
-                    reader.field(&join, MemberValue::at("MemberValue"))?.unwrap()
+                    let join = reader
+                        .resolve_entity(MemberKey::at("MemberKey"), "joined:first:a".to_owned())?;
+                    reader
+                        .field(&join, MemberValue::at("MemberValue"))?
+                        .unwrap()
                 } else {
-                    let child = reader.resolve_entity(SecondKey::at("SecondKey"), "second:a".to_owned())?;
-                    reader.field(&child, SecondValue::at("SecondValue"))?.unwrap()
+                    let child =
+                        reader.resolve_entity(SecondKey::at("SecondKey"), "second:a".to_owned())?;
+                    reader
+                        .field(&child, SecondValue::at("SecondValue"))?
+                        .unwrap()
                 };
-                Ok(Decision(reader.mutation_target(&target)?, input.frontier * 10_000 + child))
+                Ok(Decision(
+                    reader.mutation_target(&target)?,
+                    input.frontier * 10_000 + child,
+                ))
             });
         match target {
             Ok(target) => HandlerResult::Completed(target),

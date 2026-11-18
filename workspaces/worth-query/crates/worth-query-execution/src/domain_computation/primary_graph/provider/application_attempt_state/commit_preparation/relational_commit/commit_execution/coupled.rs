@@ -116,7 +116,9 @@ pub(super) fn prepare_members(
         }
     }
     held.map_or(Ok(()), |failure| {
-        Err(Denial::CoupledSupport(CoupledSupportPreparationDenial::Changed(failure)))
+        Err(Denial::CoupledSupport(
+            CoupledSupportPreparationDenial::Changed(failure),
+        ))
     })
 }
 

@@ -72,9 +72,7 @@ pub(super) fn require(
                         execution, runtime, before, &fact, earlier, image,
                     )
                 } else {
-                    fact.support_equal_after_own_effect(
-                        execution, runtime, before, earlier, image,
-                    )
+                    fact.support_equal_after_own_effect(execution, runtime, before, earlier, image)
                 }
             })
         };
@@ -95,7 +93,9 @@ pub(super) fn require(
                     compare(earlier, image).map(|same| (!same).then(|| fact.locator_identity()))
                 },
                 fact.locator_identity(),
-                |locator| format!("a later coupled contribution changed decision support: {locator}"),
+                |locator| {
+                    format!("a later coupled contribution changed decision support: {locator}")
+                },
                 hold,
             )?;
             continue;
@@ -178,12 +178,15 @@ fn settles_read_support(
     let CandidateReadSupport::Parent(parent) = support else {
         return false;
     };
-    let derives = |member: &crate::domain_computation::primary_graph::provider::CoupledApplicationMember| {
-        member.settles_after(position) && derives_parent(member, parent)
-    };
+    let derives =
+        |member: &crate::domain_computation::primary_graph::provider::CoupledApplicationMember| {
+            member.settles_after(position) && derives_parent(member, parent)
+        };
     derives(writer)
         || (is_stage(writer)
-            && members.iter().any(|member| member.position > writer.position && derives(member)))
+            && members
+                .iter()
+                .any(|member| member.position > writer.position && derives(member)))
 }
 
 fn derives_parent(
@@ -241,9 +244,14 @@ fn changed(
     position: usize,
     members: &[crate::domain_computation::primary_graph::provider::CoupledApplicationMember],
     observed: &Candidate,
-    settles: impl Fn(&crate::domain_computation::primary_graph::provider::CoupledApplicationMember) -> bool,
+    settles: impl Fn(
+        &crate::domain_computation::primary_graph::provider::CoupledApplicationMember,
+    ) -> bool,
     held: impl Fn(&crate::domain_computation::primary_graph::provider::CoupledApplicationMember) -> bool,
-    compare: impl Fn(&Candidate, &Candidate) -> Result<
+    compare: impl Fn(
+        &Candidate,
+        &Candidate,
+    ) -> Result<
         Option<String>,
         crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
     >,
@@ -300,7 +308,10 @@ fn changed(
         return Ok(());
     }
     require_answer(Ok(false), source, || {
-        format!("{}; no admitted later writer could be attributed", detail(&final_locator))
+        format!(
+            "{}; no admitted later writer could be attributed",
+            detail(&final_locator)
+        )
     })
 }
 

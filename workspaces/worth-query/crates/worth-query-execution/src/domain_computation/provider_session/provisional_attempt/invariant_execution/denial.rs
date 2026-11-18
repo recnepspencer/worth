@@ -1,9 +1,9 @@
 use std::sync::Arc;
-mod native_denial;
 mod coupled_support;
+mod native_denial;
 mod relation_law;
-use native_denial::NativeDenial;
 pub use coupled_support::WorthQueryCoupledSupportHold;
+use native_denial::NativeDenial;
 pub use relation_law::WorthQueryRelationLawDenial;
 use worth_execution::ExecutionAllocationDenial;
 

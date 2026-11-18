@@ -106,7 +106,12 @@ fn exercise(worker: bool) {
     );
     let model = |key: &str| {
         worth_relational::facade::transactions::RecordRef::Entity(
-            request.query(query::model::Read(key.into())).execute().unwrap().rows()[0].native_id,
+            request
+                .query(query::model::Read(key.into()))
+                .execute()
+                .unwrap()
+                .rows()[0]
+                .native_id,
         )
     };
     // The reader's source, then the exact writer: the child producer of `b`.

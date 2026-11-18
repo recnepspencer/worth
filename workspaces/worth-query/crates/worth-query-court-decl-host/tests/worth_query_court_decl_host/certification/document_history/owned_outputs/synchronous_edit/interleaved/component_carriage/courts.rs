@@ -341,7 +341,10 @@ fn an_absent_supplier_does_not_force_its_prerequisite_at_an_authored_barrier() {
         panic!("{outcome:?}")
     };
     let failure = cause.invariant_execution_failure().unwrap();
-    assert_eq!(failure.kind(), WorthQueryInvariantExecutionDenialKind::CoupledReadSupportChanged);
+    assert_eq!(
+        failure.kind(),
+        WorthQueryInvariantExecutionDenialKind::CoupledReadSupportChanged
+    );
     assert_eq!(failure.coupled_support_hold(), None, "{cause:?}");
     assert!(
         failure.detail().contains("later writer authored stage 2")

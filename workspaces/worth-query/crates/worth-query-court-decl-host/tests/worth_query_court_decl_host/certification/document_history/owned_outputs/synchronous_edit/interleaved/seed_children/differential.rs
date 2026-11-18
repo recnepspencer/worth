@@ -49,7 +49,10 @@ fn world() -> Host {
         host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()), 1, None,
         world::Configuration { envelope_records: true, interleaved_records: true, ..Default::default() });
     execute(&host, "seed-world", &[Stage::Write(2)]).expect("the world commits");
-    assert!(observe(&host, Vec::new()).child.is_some(), "the world discovers its child");
+    assert!(
+        observe(&host, Vec::new()).child.is_some(),
+        "the world discovers its child"
+    );
     host
 }
 
@@ -71,11 +74,7 @@ enum Refusal {
 }
 
 /// `Ok` holds each Read stage's result; `Err` is an atomic refusal.
-fn execute(
-    host: &Host,
-    key: &str,
-    stages: &[Stage],
-) -> Result<Vec<u64>, (Refusal, String)> {
+fn execute(host: &Host, key: &str, stages: &[Stage]) -> Result<Vec<u64>, (Refusal, String)> {
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.request(&principal, &scope);
@@ -95,11 +94,15 @@ fn execute(
                 .unwrap();
             }
             Stage::Frontier(frontier) => {
-                edit.push_stage::<ApplicationNoOutputGraph, _>(frontier::Intent { frontier: *frontier, grandchild: false })
-                    .unwrap();
+                edit.push_stage::<ApplicationNoOutputGraph, _>(frontier::Intent {
+                    frontier: *frontier,
+                    grandchild: false,
+                })
+                .unwrap();
             }
             Stage::Read(add) => tokens.push(
-                edit.push_stage::<SeedReadTree, _>(dependent::Intent { add: *add }).unwrap(),
+                edit.push_stage::<SeedReadTree, _>(dependent::Intent { add: *add })
+                    .unwrap(),
             ),
         }
     }
@@ -122,9 +125,16 @@ fn execute(
         ),
         "{outcome:?}"
     );
-    assert_eq!(writes.published_rows.len() + writes.omitted_publications, 0, "a refusal published");
+    assert_eq!(
+        writes.published_rows.len() + writes.omitted_publications,
+        0,
+        "a refusal published"
+    );
     assert_eq!(native_head(host), before, "a refusal moved the head");
-    Err((refusal(&outcome), format!("{outcome:?}").chars().take(1200).collect()))
+    Err((
+        refusal(&outcome),
+        format!("{outcome:?}").chars().take(1200).collect(),
+    ))
 }
 
 fn refusal<E>(outcome: &Result<Outcome, E>) -> Refusal {
@@ -145,17 +155,29 @@ fn refusal<E>(outcome: &Result<Outcome, E>) -> Refusal {
     };
     match failure.coupled_support_hold() {
         None if failure.detail().contains("discovery support") => {
-            assert_eq!(failure.kind(), Kind2::CoupledReadSupportChanged, "{failure:?}");
+            assert_eq!(
+                failure.kind(),
+                Kind2::CoupledReadSupportChanged,
+                "{failure:?}"
+            );
             let family = (failure.detail().split_once("later writer producer "))
-                .and_then(|(_, rest)| Some(rest.split(' ').nth(1)?.trim_end_matches(':').to_owned()))
+                .and_then(|(_, rest)| {
+                    Some(rest.split(' ').nth(1)?.trim_end_matches(':').to_owned())
+                })
                 .unwrap_or_else(|| panic!("discovery not attributed to a producer: {failure:?}"));
             Refusal::Rediscovered(family)
         }
         Some(Hold::ProducerSupersession) => {
-            assert_eq!(failure.kind(), Kind2::CoupledReadSupportChanged, "{failure:?}");
+            assert_eq!(
+                failure.kind(),
+                Kind2::CoupledReadSupportChanged,
+                "{failure:?}"
+            );
             let writer = (failure.detail().split_once("later writer authored stage "))
                 .and_then(|(_, rest)| rest.split(' ').next()?.parse().ok())
-                .unwrap_or_else(|| panic!("a hold not attributed to an authored stage: {failure:?}"));
+                .unwrap_or_else(|| {
+                    panic!("a hold not attributed to an authored stage: {failure:?}")
+                });
             Refusal::Supersession(writer)
         }
         None => Refusal::Other,
@@ -190,13 +212,22 @@ fn observe(host: &Host, results: Vec<u64>) -> World {
     };
     World {
         model: model("a").expect("model a exists"),
-        frontier: request.query(super::super::reading::Read).execute().unwrap().rows()[0].frontier,
-        parent: (request.query(query::first_output::Read("first:a".into())).execute())
-            .ok()
-            .and_then(|rows| rows.rows().first().map(|row| row.value)),
-        child: (request.query(query::second_output::Read("second:a".into())).execute())
-            .ok()
-            .and_then(|rows| rows.rows().first().map(|row| row.value)),
+        frontier: request
+            .query(super::super::reading::Read)
+            .execute()
+            .unwrap()
+            .rows()[0]
+            .frontier,
+        parent: (request
+            .query(query::first_output::Read("first:a".into()))
+            .execute())
+        .ok()
+        .and_then(|rows| rows.rows().first().map(|row| row.value)),
+        child: (request
+            .query(query::second_output::Read("second:a".into()))
+            .execute())
+        .ok()
+        .and_then(|rows| rows.rows().first().map(|row| row.value)),
         results,
     }
 }
@@ -248,7 +279,9 @@ fn sequential(stages: &[Stage]) -> World {
         let key = format!("sequential:{ordinal}");
         match execute(&host, &key, std::slice::from_ref(stage)) {
             Ok(stage_results) => results.extend(stage_results),
-            Err((_, refusal)) => panic!("{stages:?}: stage {ordinal} refused one commit at a time: {refusal}"),
+            Err((_, refusal)) => {
+                panic!("{stages:?}: stage {ordinal} refused one commit at a time: {refusal}")
+            }
         }
     }
     observe(&host, results)
@@ -271,7 +304,10 @@ proptest! {
 #[test]
 fn a_seed_write_then_a_parent_read_commits_the_current_child() {
     let stages = [Stage::Write(3), Stage::Read(7)];
-    assert_eq!(positioned(&stages).expect("this edit commits"), sequential(&stages));
+    assert_eq!(
+        positioned(&stages).expect("this edit commits"),
+        sequential(&stages)
+    );
 }
 
 /// The CAD seed edit itself: a source stage writes the seed and a final

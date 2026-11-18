@@ -78,8 +78,7 @@ impl AppliedQuerySupport {
             return Ok(Some(fact));
         }
         for fact in &self.facts {
-            if !fact.support_equal_after_own_effect(execution, runtime, before, earlier, image)?
-            {
+            if !fact.support_equal_after_own_effect(execution, runtime, before, earlier, image)? {
                 return Ok(Some(fact));
             }
         }

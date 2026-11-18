@@ -66,23 +66,29 @@ fn execute(host: &Host, key: &str, stages: &[(usize, Stage)]) -> Result<Vec<u64>
         .unwrap();
     let mut tokens = Vec::new();
     for (_, stage) in stages {
-        tokens.push(match stage {
-            Stage::Model(value) => edit.push_stage::<Tree, _>(fixture::model::Intent {
-                key: "a".into(),
-                value: *value,
-                key_derived_target: false,
-            }),
-            Stage::After(value) => edit.push_stage::<AfterTree, _>(fixture::after_producer::Intent {
-                key: "envelope-cap".into(),
-                value: *value,
-                key_derived_target: false,
-            }),
-            Stage::Consume => edit.push_stage::<ApplicationNoOutputGraph, _>(value_observation::Intent {
-                model: "a".into(),
-                source: value_observation::ValueSource::Child("from-first:first:a".into()),
-            }),
-        }
-        .unwrap());
+        tokens.push(
+            match stage {
+                Stage::Model(value) => edit.push_stage::<Tree, _>(fixture::model::Intent {
+                    key: "a".into(),
+                    value: *value,
+                    key_derived_target: false,
+                }),
+                Stage::After(value) => {
+                    edit.push_stage::<AfterTree, _>(fixture::after_producer::Intent {
+                        key: "envelope-cap".into(),
+                        value: *value,
+                        key_derived_target: false,
+                    })
+                }
+                Stage::Consume => {
+                    edit.push_stage::<ApplicationNoOutputGraph, _>(value_observation::Intent {
+                        model: "a".into(),
+                        source: value_observation::ValueSource::Child("from-first:first:a".into()),
+                    })
+                }
+            }
+            .unwrap(),
+        );
     }
     let before = native_head(host);
     let (outcome, writes) = observe_maintenance_work(32, || {
@@ -103,7 +109,11 @@ fn execute(host: &Host, key: &str, stages: &[(usize, Stage)]) -> Result<Vec<u64>
         ),
         "{outcome:?}"
     );
-    assert_eq!(writes.published_rows.len() + writes.omitted_publications, 0, "a refusal published");
+    assert_eq!(
+        writes.published_rows.len() + writes.omitted_publications,
+        0,
+        "a refusal published"
+    );
     assert_eq!(native_head(host), before, "a refusal moved the head");
     Err(refusal(&outcome))
 }
@@ -140,10 +150,16 @@ fn refusal<E: std::fmt::Debug>(outcome: &Result<Outcome, E>) -> Refusal {
     };
     match failure.coupled_support_hold() {
         Some(Hold::ProducerSupersession) => {
-            assert_eq!(failure.kind(), Kind2::CoupledReadSupportChanged, "{failure:?}");
+            assert_eq!(
+                failure.kind(),
+                Kind2::CoupledReadSupportChanged,
+                "{failure:?}"
+            );
             let writer = (failure.detail().split_once("later writer authored stage "))
                 .and_then(|(_, rest)| rest.split(' ').next()?.parse().ok())
-                .unwrap_or_else(|| panic!("a hold not attributed to an authored stage: {failure:?}"));
+                .unwrap_or_else(|| {
+                    panic!("a hold not attributed to an authored stage: {failure:?}")
+                });
             Refusal::Supersession(writer)
         }
         None => Refusal::Other(format!("{cause:?}")),
@@ -190,11 +206,18 @@ fn observe(host: &Host, results: Vec<u64>) -> World {
             .and_then(|rows| rows.rows().first().map(|row| row.value))
     };
     World {
-        model: request.query(query::model::Read("a".into())).execute().unwrap().rows()[0].value,
+        model: request
+            .query(query::model::Read("a".into()))
+            .execute()
+            .unwrap()
+            .rows()[0]
+            .value,
         first: first("first:a".into()),
-        child: (request.query(query::child_output::Read("from-first:first:a".into())).execute())
-            .ok()
-            .and_then(|rows| rows.rows().first().map(|row| row.value)),
+        child: (request
+            .query(query::child_output::Read("from-first:first:a".into()))
+            .execute())
+        .ok()
+        .and_then(|rows| rows.rows().first().map(|row| row.value)),
         results,
     }
 }
@@ -216,7 +239,9 @@ fn sequential(stages: &[(usize, Stage)]) -> World {
         let key = format!("sequential:{ordinal}");
         match execute(&host, &key, std::slice::from_ref(stage)) {
             Ok(stage_results) => results.extend(stage_results),
-            Err(refusal) => panic!("{stages:?}: stage {ordinal} refused one commit at a time: {refusal:?}"),
+            Err(refusal) => {
+                panic!("{stages:?}: stage {ordinal} refused one commit at a time: {refusal:?}")
+            }
         }
     }
     observe(&host, results)
@@ -260,7 +285,11 @@ proptest! {
 /// discovered child, then changing nothing it read, commits.
 #[test]
 fn the_differential_world_commits_a_settled_child_read() {
-    let stages = [(0, Stage::Model(3)), (1, Stage::After(1)), (2, Stage::Consume)];
+    let stages = [
+        (0, Stage::Model(3)),
+        (1, Stage::After(1)),
+        (2, Stage::Consume),
+    ];
     assert_eq!(positioned(&stages), Ok(sequential(&stages)));
 }
 
@@ -290,7 +319,11 @@ fn a_leading_after_read_before_a_model_write_commits() {
 /// else, attributed to the later authored stage.
 #[test]
 fn a_later_stage_changing_a_prepared_producers_input_is_held_on_supersession() {
-    let stages = [(0, Stage::After(1)), (1, Stage::Consume), (2, Stage::Model(3))];
+    let stages = [
+        (0, Stage::After(1)),
+        (1, Stage::Consume),
+        (2, Stage::Model(3)),
+    ];
     assert_eq!(sequential(&stages).first, Some(30));
     assert_eq!(superseding_stage(&stages), Some(2));
     assert_eq!(positioned(&stages), Err(Refusal::Supersession(2)));
