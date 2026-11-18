@@ -43,7 +43,10 @@ fn authored_non_correctable_source_disclosure_survives_portable_schema_admission
         .unwrap();
     let limits = WorthQueryPackageArchiveLimits::DEFAULT;
     let bytes = encode_record_frame(view, limits).unwrap();
-    assert_eq!(&bytes[..2], &18u16.to_be_bytes());
+    assert_eq!(
+        &bytes[..2],
+        &WORTH_QUERY_PACKAGE_ARCHIVE_RECORD_PROTOCOL_VERSION.to_be_bytes()
+    );
     let decoded = WorthQueryPackageArchiveRecordDecoder::new(limits)
         .decode_frame(&bytes)
         .unwrap();

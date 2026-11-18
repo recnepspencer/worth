@@ -12,8 +12,8 @@ pub use worth_query_package_archive::facade::*;
 
 pub const MANIFEST_FRAME_BYTES: usize = 118;
 pub const RECORD_FRAME_HEADER_BYTES: usize = 12;
-pub const VERSION_TWO_MINIMAL_ARCHIVE_HEX: &str =
-    include_str!("archive_stream/archive_v2_record_v19.hex");
+pub const CURRENT_MINIMAL_ARCHIVE_HEX: &str =
+    include_str!("archive_stream/current_minimal_archive.hex");
 
 pub fn frame_ranges(bytes: &[u8]) -> Vec<Range<usize>> {
     let mut ranges = Vec::new();

@@ -87,7 +87,7 @@ fn shared_scope_export_archive_decode_and_fresh_readmission_preserve_complete_me
 }
 
 #[test]
-fn displaced18_refuses_before_poisoned_first_frame_content_while19_reaches_it() {
+fn displaced_record_version_refuses_before_poisoned_first_frame_content_while_current_reaches_it() {
     let (source, _) = package(false);
     let exported = source.export_typed_records().unwrap();
     let limits = WorthQueryPackageArchiveLimits::DEFAULT;
@@ -111,17 +111,13 @@ fn displaced18_refuses_before_poisoned_first_frame_content_while19_reaches_it() 
         current.kind(),
         WorthQueryPackageArchiveDenialKind::Truncated
     );
-    bytes[first..first + 2].copy_from_slice(&18_u16.to_be_bytes());
-    let displaced = decode_package_archive(&bytes, limits).unwrap_err();
-    assert_eq!(
-        displaced.kind(),
-        WorthQueryPackageArchiveDenialKind::UnsupportedRecordVersion
+    let displaced = WORTH_QUERY_PACKAGE_ARCHIVE_RECORD_PROTOCOL_VERSION - 1;
+    bytes[first..first + 2].copy_from_slice(&displaced.to_be_bytes());
+    super::protocol_compatibility::assert_compatibility(
+        decode_package_archive(&bytes, limits).unwrap_err(),
+        WorthQueryPackageArchiveDenialKind::UnsupportedRecordVersion,
+        WorthQueryPackageArchiveProtocolLayer::RecordFrame,
+        displaced,
+        WorthQueryPackageArchiveCompatibilityPosture::PredatesWindow,
     );
-    let compatibility = displaced.compatibility().unwrap();
-    assert_eq!(
-        compatibility.layer(),
-        WorthQueryPackageArchiveProtocolLayer::RecordFrame
-    );
-    assert_eq!(compatibility.observed_version(), 18);
-    super::protocol_compatibility::assert_window(compatibility.supported_window(), 19, 19);
 }

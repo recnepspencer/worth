@@ -20,9 +20,12 @@ use crate::record::frame::{RecordFrameEncoding, WorthQueryPackageArchiveRecordDe
 fn complete_operation_contract_round_trips_every_payload_family_with_exact_work() {
     let record = fixture::complete_record();
     let bytes = encode_untrusted(&record, WorthQueryPackageArchiveLimits::DEFAULT);
-    let frozen_hex = include_str!("tests/application_operation_contract_v19.hex").trim();
+    let frozen_hex = include_str!("tests/current_application_operation_contract.hex").trim();
     assert_eq!(encode_hex(&bytes), frozen_hex);
-    assert_eq!(u16::from_be_bytes(bytes[0..2].try_into().unwrap()), 19);
+    assert_eq!(
+        u16::from_be_bytes(bytes[0..2].try_into().unwrap()),
+        crate::record::WORTH_QUERY_PACKAGE_ARCHIVE_RECORD_PROTOCOL_VERSION
+    );
     assert_eq!(u16::from_be_bytes(bytes[2..4].try_into().unwrap()), 12);
     let mut decoder =
         WorthQueryPackageArchiveRecordDecoder::new(WorthQueryPackageArchiveLimits::DEFAULT);

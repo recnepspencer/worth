@@ -20,7 +20,7 @@ impl worth_query_declaration::facade::application_schema::fragment::Entity for F
 }
 
 #[test]
-fn unprojected_schema_keeps_frozen_v18_basis_and_entity_wire() {
+fn unprojected_schema_keeps_the_current_basis_and_entity_wire() {
     use worth_foundational::facade::{
         prepare_canonical_basis_sequence, CanonicalBasisDomain, CanonicalBasisEntry,
         CanonicalBasisEntryKind, CanonicalBasisLocus, CanonicalBasisValue as Value,
@@ -82,7 +82,7 @@ fn unprojected_schema_keeps_frozen_v18_basis_and_entity_wire() {
     })
     .collect();
     let expected = prepare_canonical_basis_sequence(
-        CanonicalizationRuleVersion::new("worth-query-application-schema-v18").unwrap(),
+        CanonicalizationRuleVersion::new("worth-query-application-schema-v19").unwrap(),
         domain,
         entries,
     )

@@ -1,10 +1,9 @@
-//! Current envelope golden and retained unsupported inner-record vectors.
+//! Current release-envelope known-answer vector.
 pub use super::*;
 
-// D1289 canonical policy v2; the envelope/record framing is unchanged.
-pub const CURRENT_ENVELOPE_HEX: &str = include_str!("release_envelope_v1_record_v19.hex");
+pub const CURRENT_ENVELOPE_HEX: &str = include_str!("current_release_envelope.hex");
 
-pub fn assert_current_envelope_and_unsupported_records() {
+pub fn assert_current_envelope_is_deterministic_frozen_and_decodable() {
     let records = fixture::minimal_package().export_typed_records().unwrap();
     let first = signed_envelope_bytes(&records, fixture_descriptor());
     assert_eq!(signed_envelope_bytes(&records, fixture_descriptor()), first);
@@ -29,7 +28,7 @@ pub fn assert_current_envelope_and_unsupported_records() {
     );
     assert_eq!(
         u16::from_be_bytes(decoded.archive()[118..120].try_into().unwrap()),
-        19
+        WORTH_QUERY_PACKAGE_ARCHIVE_RECORD_PROTOCOL_VERSION
     );
     let archive =
         decode_package_archive(decoded.archive(), WorthQueryPackageArchiveLimits::DEFAULT).unwrap();

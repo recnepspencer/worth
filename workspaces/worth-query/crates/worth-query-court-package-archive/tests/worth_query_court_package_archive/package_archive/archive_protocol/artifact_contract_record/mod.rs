@@ -1,15 +1,18 @@
 pub(crate) use worth_query_testkit_package_archive::facade::package_archive::archive_protocol::artifact_contract_record::*;
 
 #[test]
-fn version_nineteen_artifact_contract_frame_matches_the_frozen_vector() {
+fn current_artifact_contract_frame_matches_the_frozen_vector() {
     let source = artifact_package();
     let exported = source.export_typed_records().unwrap();
     let artifact = artifact_view(&exported);
     let bytes = encode_record_frame(artifact, WorthQueryPackageArchiveLimits::DEFAULT).unwrap();
-    let golden = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-query-testkit-package-archive/src/package_archive/archive_protocol/artifact_contract_record/artifact_contract_v19.hex"))
+    let golden = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-query-testkit-package-archive/src/package_archive/archive_protocol/artifact_contract_record/current_artifact_contract.hex"))
     .trim();
     assert_eq!(encode_hex(&bytes), golden);
-    assert_eq!(u16::from_be_bytes(bytes[0..2].try_into().unwrap()), 19);
+    assert_eq!(
+        u16::from_be_bytes(bytes[0..2].try_into().unwrap()),
+        WORTH_QUERY_PACKAGE_ARCHIVE_RECORD_PROTOCOL_VERSION
+    );
     assert_eq!(u16::from_be_bytes(bytes[2..4].try_into().unwrap()), 7);
     assert_eq!(
         u32::from_be_bytes(bytes[4..8].try_into().unwrap()),
