@@ -22,7 +22,7 @@ use worth_query_declaration::facade::{
 };
 use worth_query_installation::facade::WorthQueryInstalledManagedIndex;
 
-pub(super) enum SourceDenial {
+pub(in crate::domain_computation::primary_graph::application_query) enum SourceDenial {
     Admission(worth_relational::facade::mvcc::CompanionPreflightStop),
     Native(worth_relational::facade::runtime::ManagedIndexSourcePreparationDenial),
     Read(Denial),
