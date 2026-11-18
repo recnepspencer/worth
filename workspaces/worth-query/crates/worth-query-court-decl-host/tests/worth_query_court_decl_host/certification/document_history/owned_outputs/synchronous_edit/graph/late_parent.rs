@@ -134,18 +134,20 @@ fn worker_only_a_later_child_cannot_invalidate_the_verified_parent_before_public
 }
 /// A plain stale read is never masked by a #229 hold (#224 review r2). In one
 /// ordered edit the producer of `first:a` derives from model `a` and member
-/// `m`; its discovered child, a different producer, then changes `m`, and a
-/// later authored stage changes `a`. The stage's change alone would be held on
-/// supersession, but the child's change is a plain stale read of a producer:
-/// the envelope refuses plainly, attributed to the child, with no hold.
+/// `m` before a stage that reads `first:a`; its discovered child, a different
+/// producer, changes `m`, and a later authored stage changes `a`. The later
+/// stage's change alone would be held on supersession, but the child's change
+/// is a plain stale read of a producer: the envelope refuses plainly,
+/// attributed to the child, with no hold.
 #[test]
 fn a_producer_attributed_stale_read_wins_over_a_later_stage_supersession() {
     use worth_query_host::facade::application_entry::WorthQueryEditEnvelopeOutcome as Outcome;
     let _execution = WorthQueryExecutionObservation::install_on_this_thread();
-    let host = world::install_program_with_other_model::<program::Program>(
+    let host = world::install_configured::<program::Program>(
         host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
         2,
         Some(7),
+        world::Configuration { envelope_records: true, ..Default::default() },
     );
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
@@ -159,13 +161,16 @@ fn a_producer_attributed_stale_read_wins_over_a_later_stage_supersession() {
         .ordered_authored()
         .unwrap();
     // The child writes `m` from model `b`: 8 + 1 changes the seeded 5.
-    for (key, value) in [("b", 8), ("a", 3)] {
-        edit.push_stage::<program::Tree, _>(edit::Intent {
-            key: key.into(),
-            value,
-        })
+    edit.push_stage::<program::Tree, _>(edit::Intent { key: "b".into(), value: 8 })
         .unwrap();
-    }
+    edit.push_stage::<ApplicationNoOutputGraph, _>(super::super::envelope_fixture::after_producer::Intent {
+        key: "envelope-cap".into(),
+        value: 1,
+        key_derived_target: false,
+    })
+    .unwrap();
+    edit.push_stage::<program::Tree, _>(edit::Intent { key: "a".into(), value: 3 })
+        .unwrap();
     let outcome = edit
         .execute_performed(ExecutionAllocationPolicy::SystemAllocation)
         .unwrap();
