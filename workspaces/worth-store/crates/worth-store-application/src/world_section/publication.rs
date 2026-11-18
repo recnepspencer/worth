@@ -16,7 +16,12 @@ pub(super) fn publish(
 ) -> WorldPublicationObservation {
     let task = match medium.publications.task(subject) {
         Ok(task) => task,
-        Err(_) => return WorldPublicationObservation::Pending,
+        Err(Denial::PublicationBusy) => return WorldPublicationObservation::Pending,
+        Err(cause) => {
+            return WorldPublicationObservation::Finished(
+                WorldPublicationCompletion::indeterminate(cause),
+            )
+        }
     };
     let Some(_driver) = task.try_driver() else {
         return WorldPublicationObservation::Pending;
@@ -29,7 +34,7 @@ pub(super) fn publish(
     }
     let serving = match medium.serving() {
         Ok(serving) => serving,
-        Err(cause) => return no_effect(cause),
+        Err(cause) => return task.remember_refusal(no_effect(cause)),
     };
     let mut returned = None;
     let mut run = |lease: Option<&ExecutionResourceLease<'_>>| {
@@ -43,12 +48,25 @@ pub(super) fn publish(
                         )
                         .map_err(|cause| Denial::Storage(format!("{cause:?}")))?;
                     if !task.started() {
-                        let (position, publication) =
-                            prepare(medium, &journal, subject, execution)?;
-                        let view = context
-                            .retain_interruption_view(lease)
-                            .map_err(|cause| Denial::Storage(format!("{cause:?}")))?;
-                        match journal.start_publication(publication, view) {
+                        let (position, admission) = match task.take_admission() {
+                            Some(original) => original,
+                            None => {
+                                let (position, publication) =
+                                    prepare(medium, &journal, subject, execution)?;
+                                let view = context
+                                    .retain_interruption_view(lease)
+                                    .map_err(|cause| Denial::Storage(format!("{cause:?}")))?;
+                                (position, journal.prepare_publication(publication, view))
+                            }
+                        };
+                        let start = match admission.advance(&journal) {
+                            OrderedJournalPublicationAdmissionProgress::Pending(original) => {
+                                task.retain_admission(position, original);
+                                return Ok(None);
+                            }
+                            OrderedJournalPublicationAdmissionProgress::Started(start) => start,
+                        };
+                        match start {
                             OrderedJournalPublicationStart::Ready {
                                 operation,
                                 recovery,
@@ -106,9 +124,11 @@ pub(super) fn publish(
         return terminal;
     }
     match (scope, returned) {
-        (_, Some(Ok(Some(observation)))) => observation,
-        (Err(cause), _) if !task.started() => no_effect(Denial::Request(cause)),
-        (_, Some(Err(detail))) if !task.started() => no_effect(detail),
+        (_, Some(Ok(Some(observation)))) => task.remember_refusal(observation),
+        (Err(cause), _) if !task.started() => {
+            task.remember_refusal(no_effect(Denial::Request(cause)))
+        }
+        (_, Some(Err(detail))) if !task.started() => task.remember_refusal(no_effect(detail)),
         (_, Some(Err(_))) => {
             task.stop();
             WorldPublicationObservation::Pending

@@ -11,6 +11,8 @@ use crate::{
     },
 };
 use std::sync::Arc;
+mod source;
+pub(in crate::domain_computation) use source::ManagedIndexReadSource;
 use worth_query_admission::facade::{
     authenticated_principal::{WorthQueryRequestInterruption, WorthQueryRequestScope},
     graph_obligation::WorthQueryGraphWorkIntentKind,
@@ -37,7 +39,7 @@ pub(in crate::domain_computation) struct WorthQueryManagedIndexReadSession<'a, '
     product: &'a WorthQueryProductRuntime,
     request: &'a WorthQueryRequestScope,
     association: WorthQueryInstalledManagedIndexParent,
-    source: Arc<WorthQueryCompletedSourceRead>,
+    source: ManagedIndexReadSource,
     identity: WorthQueryGraphWorkSessionIdentity,
     managed_run: WorthQueryGraphWorkManagedRunIdentity,
     plan: WorthQueryAdmittedGraphWorkPlan,
@@ -58,7 +60,7 @@ pub(in crate::domain_computation) struct WorthQueryManagedIndexSelectionProof<
     parent: &'a WorthQueryManagedGraphWorkSession,
     request: &'a WorthQueryRequestScope,
     association: WorthQueryInstalledManagedIndexParent,
-    source: Arc<WorthQueryCompletedSourceRead>,
+    source: ManagedIndexReadSource,
     // The selection proof carries the completed callback's original terminal.
     _session: WorthQueryGraphWorkSessionIdentity,
     _managed_run: WorthQueryGraphWorkManagedRunIdentity,
@@ -78,7 +80,7 @@ impl<'a, 'request, 'authority> WorthQueryManagedIndexReadSession<'a, 'request, '
         product: &'a WorthQueryProductRuntime,
         request: &'a WorthQueryRequestScope,
         association: WorthQueryInstalledManagedIndexParent,
-        source: Arc<WorthQueryCompletedSourceRead>,
+        source: ManagedIndexReadSource,
         reserved: WorthQueryPreparedProductReadSessionIdentity,
         plan: WorthQueryAdmittedGraphWorkPlan,
     ) -> Result<Self, WorthQueryManagedIndexSessionDenial> {
@@ -238,6 +240,19 @@ impl<'request, 'authority> WorthQueryManagedIndexSelectionProof<'_, 'request, 'a
             None => Ok(()),
         }
     }
+    pub(in crate::domain_computation) fn admits_applied(
+        &self,
+        parent: &WorthQueryManagedGraphWorkSession,
+        request: &WorthQueryRequestScope,
+        association: &WorthQueryInstalledManagedIndexParent,
+        source: &Arc<crate::domain_computation::provider_session::WorthQueryAppliedSourceRead>,
+    ) -> bool {
+        std::ptr::eq(self.parent, parent)
+            && self.parent.identity() == parent.identity()
+            && self.request.same_request(request)
+            && self.association.same_association(association)
+            && self.source.matches_applied(source)
+    }
     pub(in crate::domain_computation) fn admits(
         &self,
         parent: &WorthQueryManagedGraphWorkSession,
@@ -249,6 +264,6 @@ impl<'request, 'authority> WorthQueryManagedIndexSelectionProof<'_, 'request, 'a
             && self.parent.identity() == parent.identity()
             && self.request.same_request(request)
             && self.association.same_association(association)
-            && Arc::ptr_eq(&self.source, source)
+            && self.source.matches_positioned(source)
     }
 }

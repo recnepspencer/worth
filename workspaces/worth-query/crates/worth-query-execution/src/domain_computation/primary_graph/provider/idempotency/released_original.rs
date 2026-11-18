@@ -93,6 +93,13 @@ pub(in crate::domain_computation::primary_graph::provider) fn read<'source>(
         if created.key.kind != layout.entity_kind {
             continue;
         }
+        let Some(key) = created
+            .key
+            .client_key
+            .strip_prefix(super::registration::ORIGINAL_CLIENT_KEY_PREFIX)
+        else {
+            continue;
+        };
         if original.is_some() {
             return Err(Denial::Unavailable);
         }
@@ -111,6 +118,9 @@ pub(in crate::domain_computation::primary_graph::provider) fn read<'source>(
             .reserve_retained_memory(bytes)
             .map_err(|_| Denial::RetentionCapacityExhausted)?;
         let binding = super::snapshot_resolution::original_binding::read(&row, layout)?;
+        if key != super::WorthQueryApplicationIdempotencyBinding::recorded_key_text(binding.key) {
+            return Err(Denial::Unavailable);
+        }
         original = Some(Arc::new(OriginalBinding {
             binding,
             _funding: funding,

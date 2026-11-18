@@ -45,6 +45,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
             context.owner.owe(&self.tasks[i].owed);
             self.tasks[i].tree.prerequisites(
                 context,
+                candidate,
                 &pin,
                 source,
                 &PrerequisiteInputs::from(self.tasks[i].inputs.as_ref()),

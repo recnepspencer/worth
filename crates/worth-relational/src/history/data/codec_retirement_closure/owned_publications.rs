@@ -39,7 +39,9 @@ impl OwnedCodecRetirementClosure {
             if complete.iter().any(
                 |prior: &std::sync::Arc<
                     crate::history::data::canonical_commit_envelope::CanonicalRequiredOutputOrigin,
-                >| prior.commit == origin.commit,
+                >| {
+                    prior.commit == origin.commit && prior.meaning.same_route(&origin.meaning)
+                },
             ) {
                 continue;
             }
@@ -68,7 +70,7 @@ impl OwnedCodecRetirementClosure {
             let member = &origin.members[origin
                 .members
                 .binary_search_by_key(id, |member| member.id)
-                .expect(/* Proof: The only origins.push is preceded by membership::validate_member, which checks this exact id in validate_output_membership_header's sorted immutable members. OwnedCodecRetirementClosure fields are private and neither the id nor the Arc origin is mutated afterwards. */ "readmitted full membership")];
+                .expect(/* Proof: The only origins.push is preceded by membership::validate_member, which selects this exact id from the validated envelope's sorted immutable member roster. OwnedCodecRetirementClosure fields are private and neither the id nor the Arc origin is mutated afterwards. */ "readmitted full membership")];
             (
                 *id,
                 *kind,

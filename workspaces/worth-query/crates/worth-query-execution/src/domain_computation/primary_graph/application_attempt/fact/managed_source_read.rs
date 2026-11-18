@@ -161,6 +161,19 @@ impl ManagedSourceRead {
             _ => false,
         })
     }
+    pub(in crate::domain_computation::primary_graph) fn same_published_source<E>(
+        &self,
+        other: &Self,
+        admit: &mut impl FnMut(u64) -> Result<(), E>,
+    ) -> Result<bool, E> {
+        // Full issued Source equality is stronger than realized influence
+        // equality. The caller owns the candidate-to-publication transition;
+        // this does not turn an uncommitted pin into a Source observation.
+        Ok(self.key.obligation == other.key.obligation
+            && self.key.scope == other.key.scope
+            && self.authorization.same_truth(&other.authorization, admit)?
+            && self.native.same_source(&other.native))
+    }
     pub(in crate::domain_computation::primary_graph) fn same_selected_membership<E>(
         &self,
         other: &Self,

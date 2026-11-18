@@ -108,7 +108,7 @@ fn validate_group(
             context,
         )?
         .ok_or("codec disposition original publication absent")?;
-    let origin = original.validate_output_membership_header()?;
+    let origin = original.materialization_origin_for_route(&event.meaning, context)?;
     charge(
         context,
         origin
@@ -250,12 +250,7 @@ fn validate_group(
             lease,
         )?;
     }
-    Ok(Arc::clone(
-        original
-            .required_output_origin
-            .as_ref()
-            .ok_or("required producer origin is absent")?,
-    ))
+    Ok(Arc::clone(origin))
 }
 
 pub(super) fn validate_birth(
@@ -266,7 +261,7 @@ pub(super) fn validate_birth(
     lease: Option<&ExecutionResourceLease<'_>>,
     schema: &crate::branch::RelationalBranchRootSchemaAuthority,
 ) -> Result<(), Stop> {
-    let origin = birth.output_origin_for_route(meaning, context)?;
+    let origin = birth.materialization_origin_for_route(meaning, context)?;
     let prior = super::route_selection::select_at(
         runtime,
         birth.commit.parents.first().copied(),

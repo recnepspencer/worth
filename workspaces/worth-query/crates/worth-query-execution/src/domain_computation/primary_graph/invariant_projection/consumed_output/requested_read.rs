@@ -11,10 +11,10 @@ impl ConsumedOutputEvidence {
     pub(in crate::domain_computation::primary_graph) fn requested_read(
         &self,
     ) -> Result<RequestedOutputRead, CompanionPreflightStop> {
-        let selected = self.selected_native_root.as_ref();
+        let selected = self.recorded().selected_native_root.as_ref();
 
         Ok(RequestedOutputRead::new(
-            Arc::clone(&self.identity),
+            Arc::clone(&self.recorded().identity),
             selected.clone(),
         ))
     }

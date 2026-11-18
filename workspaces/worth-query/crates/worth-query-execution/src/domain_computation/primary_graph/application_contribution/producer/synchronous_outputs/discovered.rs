@@ -113,7 +113,11 @@ where
                 .map_err(CoupledSourceReadStop::from)?,
         };
         let discovered = context
-            .discover_authored::<Discovery<S, C>>(&authored, self.recipe.as_ref().clone())
+            .discover_authored::<Discovery<S, C>>(
+                candidate,
+                &authored,
+                self.recipe.as_ref().clone(),
+            )
             .map_err(SynchronousOutputFailure)?;
         let demands = Binding::<S, C>::demands_from_discovery(&discovered).map_err(|cause| {
             SynchronousOutputFailure(CoupledSourceReadStop::from(

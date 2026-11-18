@@ -7,7 +7,7 @@ use worth_query_decl::facade::{
 };
 use worth_query_host::facade::primary_graph::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
-    WorthQueryInvariantMutationTarget,
+    WorthQueryInvariantMutationTarget, WorthQueryOperationDurableCapability,
 };
 
 use super::*;
@@ -105,6 +105,10 @@ pub struct PlanarSourceAdjustmentHandler;
 impl<Schema: TopologySchemaBinding> OperationHandler<Schema, PlanarSourceAdjustmentBinding<Schema>>
     for PlanarSourceAdjustmentHandler
 {
+    fn declared_durable_capabilities() -> Option<&'static [WorthQueryOperationDurableCapability]> {
+        Some(&[WorthQueryOperationDurableCapability::RelationalMutation])
+    }
+
     fn decide(
         &self,
         input: &PlanarSourceAdjustment,

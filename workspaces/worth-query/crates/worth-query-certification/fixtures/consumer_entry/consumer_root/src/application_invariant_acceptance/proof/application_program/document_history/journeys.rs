@@ -35,6 +35,8 @@ fn recorded_fixed_steps_preview_the_qualified_old_output_after_later_edits() {
             .completed_source()
             .expect("actual original Fixed settlement");
         let source = completed.settlement().performed_source().unwrap();
+        assert_eq!(planar_source_adjustment_contacts(&contacts), (1, 1));
+        assert_eq!(completed.settlement().output_count(), 0);
         let receipt = source
             .receipt()
             .retained_receipt()
@@ -70,13 +72,42 @@ fn recorded_fixed_steps_preview_the_qualified_old_output_after_later_edits() {
             .clone();
         let output = source.root_fulfillment().output_commit().clone();
         assert!(source.root_fulfillment().matches_source(source.receipt()));
-        assert_ne!(
+        assert_eq!(
             action, output,
-            "a real changed output publishes after this source action"
+            "the performed source and its required output publish atomically"
+        );
+        assert_eq!(source.receipt().source_commit(), &action);
+        assert_eq!(source.root_fulfillment().source_commit(), &action);
+        assert_eq!(
+            completed.settlement().root_observation().selected_commit(),
+            &action
         );
         assert_eq!(
+            completed.settlement().observation().selected_commit(),
+            &action
+        );
+        assert_eq!(
+            with_branch_request(application, completed.branch(), |request| request
+                .at(completed.settlement().observation())
+                .query(PlanarOutputRead {
+                    body_key: "anchor-a".into()
+                })
+                .execute()
+                .unwrap()
+                .rows()[0]
+                .value),
+            length(y + 1)
+        );
+        // The source executed the producer; ordinary retained delivery reuses that output.
+        assert_eq!(
             source.root_fulfillment().posture(),
-            WorthQueryOutputSettlementPosture::Performed
+            WorthQueryOutputSettlementPosture::StableReused
+        );
+        assert_eq!(
+            completed
+                .settlement()
+                .root_producer_contacts_in_this_demand(),
+            0
         );
         let finished = finish(edit, application);
         let WorthQueryFixedHistoryEditOutcome::Recorded { step, delivery } = finished.outcome
@@ -89,6 +120,16 @@ fn recorded_fixed_steps_preview_the_qualified_old_output_after_later_edits() {
             &output
         );
         assert!(delivery.close_evidence().output_unavailable().is_none());
+        assert_eq!(
+            delivery.settlement().root_settlement().posture(),
+            WorthQueryOutputSettlementPosture::StableReused
+        );
+        assert_eq!(
+            delivery
+                .settlement()
+                .root_producer_contacts_in_this_demand(),
+            0
+        );
         if index == 0 {
             first = Some(step.clone());
         }
@@ -129,7 +170,7 @@ fn recorded_fixed_steps_preview_the_qualified_old_output_after_later_edits() {
         assert_eq!(old.source(), step.endpoint());
         assert_eq!(
             old.required_root_posture(),
-            Some(WorthQueryOutputSettlementPosture::Performed)
+            Some(WorthQueryOutputSettlementPosture::StableReused)
         );
         assert_eq!(old.rows()[0].body_key, "anchor-a");
         assert_eq!(old.rows()[0].value, length(3));

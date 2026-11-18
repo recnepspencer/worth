@@ -4,9 +4,11 @@ use super::*;
 use worth_query_host::facade::runtime::ExecutionAllocationPolicy;
 fn prepare(
     host: &WorthQueryProgramApplicationRuntime<Schema, program::Lazy>,
-    request: &family::Request<'_, '_, '_>,
     expected: snapshot::Snapshot,
 ) {
+    let cap_scope = request_scope();
+    let cap_principal = authenticate_operator(host.installed_schema(), &cap_scope);
+    let request = host.request(&cap_principal, &cap_scope);
     let cap = request
         .advanced()
         .mutate(member_edit::Intent {
@@ -21,7 +23,10 @@ fn prepare(
         matches!(cap, WorthQueryApplicationMutationOutcome::Committed { .. }),
         "{cap:?}"
     );
-    adoption::verify(host, request, expected);
+    verify_adoption(host, expected);
+    let source_scope = request_scope();
+    let source_principal = authenticate_operator(host.installed_schema(), &source_scope);
+    let request = host.request(&source_principal, &source_scope);
     let changed = request
         .advanced()
         .mutate(edit::Intent {
@@ -49,23 +54,31 @@ fn prepare(
         3
     );
 }
+
+fn verify_adoption(
+    host: &WorthQueryProgramApplicationRuntime<Schema, program::Lazy>,
+    expected: snapshot::Snapshot,
+) {
+    let scope = request_scope();
+    let principal = authenticate_operator(host.installed_schema(), &scope);
+    let request = host.request(&principal, &scope);
+    adoption::verify(host, &request, expected);
+}
+
 fn run(worker: bool, cold: bool) {
     let mut saved = None;
-    courts::with_legacy_rows(worker, |host, request, expected| {
-        prepare(host, request, expected.clone());
+    courts::with_legacy_rows(worker, |host, _, expected| {
+        prepare(host, expected.clone());
         if cold {
             saved = Some((failure::checkpoint(host), expected));
         } else {
-            adoption::verify(host, request, expected);
+            verify_adoption(host, expected);
         }
     });
     if let Some((checkpoint, expected)) = saved {
         let _observation = WorthQueryExecutionObservation::install_on_this_thread();
         let host = world::restore_program_checkpoint::<program::Lazy>(checkpoint, worker, false);
-        let scope = request_scope();
-        let principal = authenticate_operator(host.installed_schema(), &scope);
-        let request = host.request(&principal, &scope);
-        adoption::verify(&host, &request, expected);
+        verify_adoption(&host, expected);
     }
 }
 #[test]

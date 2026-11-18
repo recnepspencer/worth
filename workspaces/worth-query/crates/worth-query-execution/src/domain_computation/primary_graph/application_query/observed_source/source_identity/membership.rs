@@ -24,7 +24,43 @@ impl<Query> WorthQueryObservedSource<Query> {
     pub(in crate::domain_computation::primary_graph) fn retain_selected_membership(
         &self,
     ) -> Option<WorthQueryObservedSourceSelection> {
-        let footprint = self.source_meaning.footprint();
+        WorthQueryObservedSourceSelection::complete(
+            self.runtime_authority,
+            self.schema_binding.clone(),
+            Arc::clone(&self.source_meaning),
+            self.invocation_managed_source.clone(),
+        )
+    }
+}
+
+impl<Query, Value> super::super::applied::AppliedQuerySource<Query, Value> {
+    /// This captures complete input meaning, not currentness. Publication keeps
+    /// the key in the existing candidate handler custody until the canonical join.
+    pub(in crate::domain_computation::primary_graph) fn retain_selected_membership(
+        &self,
+    ) -> Option<WorthQueryObservedSourceSelection> {
+        // Applied managed membership has separate loan/positioning custody; it
+        // cannot be represented by a committed ManagedSourceRead here.
+        if self.managed.is_some() {
+            return None;
+        }
+        WorthQueryObservedSourceSelection::complete(
+            self.runtime_authority,
+            self.schema_binding.clone(),
+            Arc::clone(&self.meaning),
+            None,
+        )
+    }
+}
+
+impl WorthQueryObservedSourceSelection {
+    fn complete(
+        runtime_authority: u64,
+        schema_binding: ApplicationSchemaBindingIdentity,
+        meaning: Arc<WorthQueryObservedSourceMeaning>,
+        realized: Option<Arc<ManagedSourceRead>>,
+    ) -> Option<Self> {
+        let footprint = meaning.footprint();
         let selection = footprint.root_selection.as_ref()?;
         if !footprint.complete
             || selection.walks.is_some()
@@ -34,23 +70,19 @@ impl<Query> WorthQueryObservedSource<Query> {
         {
             return None;
         }
-        let managed = match (&selection.managed_index, &self.invocation_managed_source) {
+        let managed = match (&selection.managed_index, realized) {
             (None, None) => None,
-            (Some(_), Some(actual)) if actual.has_verified_realized_footprint() => {
-                Some(Arc::clone(actual))
-            }
+            (Some(_), Some(actual)) if actual.has_verified_realized_footprint() => Some(actual),
             _ => return None,
         };
-        Some(WorthQueryObservedSourceSelection {
-            runtime_authority: self.runtime_authority,
-            schema_binding: self.schema_binding.clone(),
-            meaning: Arc::clone(&self.source_meaning),
+        Some(Self {
+            runtime_authority,
+            schema_binding,
+            meaning,
             managed,
         })
     }
-}
 
-impl WorthQueryObservedSourceSelection {
     /// Compare selected membership and contract meaning exactly. Native revisions are deliberately excluded.
     pub(in crate::domain_computation::primary_graph) fn same_selected_membership_as(
         &self,

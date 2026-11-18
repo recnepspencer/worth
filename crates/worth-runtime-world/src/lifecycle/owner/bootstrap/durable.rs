@@ -162,6 +162,10 @@ where
             Ok(subject) => subject,
             Err(cause) => return Outcome::Refused(Refusal::Medium(cause)),
         };
+        #[allow(
+            clippy::arc_with_non_send_sync,
+            reason = "bootstrap custody shares the existing World owner on its execution thread"
+        )]
         let pending = Arc::new(WorldDurableBootstrapCustody {
             binding: binding.clone(),
             subject,

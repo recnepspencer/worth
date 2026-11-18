@@ -36,7 +36,7 @@ impl BridgeConditionalExecutionView<'_> {
         completion: &BridgeOwnedAsyncCompletionAdmission,
     ) -> Result<BridgeOwnedAsyncCommittedCompletion, BridgeAsyncCompletionRejection> {
         self.require_owned_async_request(request)?;
-        if !completion.is_owned_by(&self.async_observation_authority) {
+        if !completion.is_owned_by(self.async_observation_authority) {
             return Err(super::foreign_continuation_denial());
         }
         completion
@@ -58,7 +58,7 @@ impl BridgeConditionalExecutionView<'_> {
                 commit_denial(format!("Signal completion commit refused: {cause:?}"))
             })?;
         Ok(BridgeOwnedAsyncCommittedCompletion {
-            authority: Arc::clone(&self.async_observation_authority),
+            authority: Arc::clone(self.async_observation_authority),
             native,
             port: port.clone(),
         })
@@ -68,7 +68,7 @@ impl BridgeConditionalExecutionView<'_> {
         &self,
         committed: &mut BridgeOwnedAsyncCommittedCompletion,
     ) -> Result<(), BridgeAsyncCompletionRejection> {
-        if !Arc::ptr_eq(&committed.authority, &self.async_observation_authority) {
+        if !Arc::ptr_eq(&committed.authority, self.async_observation_authority) {
             return Err(super::foreign_continuation_denial());
         }
         committed

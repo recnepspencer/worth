@@ -55,6 +55,8 @@ pub(in crate::domain_computation::primary_graph) struct SourceQueryReaderAccess<
     pub(in crate::domain_computation::primary_graph) principal:
         &'a WorthQueryAuthenticatedExternalPrincipal<Schema>,
     pub(in crate::domain_computation::primary_graph) request: &'a WorthQueryRequestScope,
+    pub(in crate::domain_computation::primary_graph) applied_participants: Option<&'a dyn crate::domain_computation::primary_graph::provider::AppliedOutputParticipants>,
+    pub(in crate::domain_computation::primary_graph) applied_source_publication: Option<applied::AppliedSourcePublicationLoan>,
     observation_refused: std::cell::RefCell<Option<crate::domain_computation::primary_graph::application_contribution::producer::observation_reads::WorthQueryProducerObservationReadDenial>>,
     read_authorization: Option<crate::domain_computation::authorization::BorrowedReadOperationAdmission<'a>>,
     predecessor: Option<crate::domain_computation::primary_graph::application_contribution::producer::observation_reads::ProducerPredecessorReadAccess>,
@@ -79,6 +81,12 @@ pub enum SourceQueryObservationStop {
     Ambiguous,
     ForeignClosure,
     SourceFacts(WorthQuerySourceExpectationDenial),
+}
+
+impl From<WorthQuerySourceExpectationDenial> for SourceQueryObservationStop {
+    fn from(cause: WorthQuerySourceExpectationDenial) -> Self {
+        Self::SourceFacts(cause)
+    }
 }
 
 /// Diagnostic location on the original read; it grants no admission or state.

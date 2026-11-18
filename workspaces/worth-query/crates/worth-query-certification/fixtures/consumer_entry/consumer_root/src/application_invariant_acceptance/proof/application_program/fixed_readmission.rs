@@ -101,6 +101,12 @@ fn refuse_changed_action(metadata_changed: bool) {
         } => operation,
         _ => panic!("the genuine source publishes before the action changes"),
     };
+    let source_publication = operation
+        .prepared_source_receipt()
+        .expect("the same owner retains the actual performed source")
+        .committed_product_publication()
+        .composite_commit()
+        .clone();
     let adopt = |revision| {
         let programs = request.programs();
         let requirements = programs.compare(&revision).unwrap();
@@ -132,6 +138,11 @@ fn refuse_changed_action(metadata_changed: bool) {
         .unwrap()
         .rows()[0]
         .y;
+    assert_eq!(
+        before_data,
+        length(2),
+        "the independently expected source is already published"
+    );
     let operation = match operation.advance(&fresh) {
         Advance::Refused {
             operation,
@@ -171,6 +182,11 @@ fn refuse_changed_action(metadata_changed: bool) {
     );
     assert_eq!(planar_source_adjustment_contacts(&input), (1, 1));
     adopt(original_revision);
+    let restored_head = fresh
+        .retain_current_read()
+        .unwrap()
+        .selected_commit()
+        .clone();
     let mut operation = Some(operation);
     let settled = (0..32)
         .find_map(|_| match operation.take().unwrap().advance(&fresh) {
@@ -187,6 +203,25 @@ fn refuse_changed_action(metadata_changed: bool) {
         })
         .expect("same original owner progresses when the lawful action is current again");
     assert_eq!(planar_source_adjustment_contacts(&input), (1, 1));
+    let outputs = settled.settlement();
+    assert_eq!(outputs.work().producer_contact_count(), 0);
+    assert_eq!(outputs.work().derived_publication_count(), 0);
+    let original_source = outputs
+        .performed_source()
+        .expect("the original source custody survives readmission");
+    assert_eq!(
+        original_source.root_fulfillment().source_commit(),
+        &source_publication
+    );
+    assert_eq!(
+        original_source.root_fulfillment().output_commit(),
+        outputs.root_observation().selected_commit()
+    );
+    assert_eq!(
+        fresh.retain_current_read().unwrap().selected_commit(),
+        &restored_head,
+        "restored action delivery reuses the co-commit without new publication"
+    );
     settled
         .close(&fresh)
         .unwrap_or_else(|(_, d)| panic!("close: {d:?}"));

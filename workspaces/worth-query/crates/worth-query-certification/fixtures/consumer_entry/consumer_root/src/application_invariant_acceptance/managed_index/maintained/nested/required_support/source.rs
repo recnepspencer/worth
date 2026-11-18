@@ -1,0 +1,66 @@
+//! Required graph edits use a distinct installed action over ordinary authoring.
+use super::super::authoring as ordinary;
+use super::super::schema::*;
+use worth_query_decl::facade::{application_operation::*, application_schema::*};
+pub struct Binding;
+impl ApplicationMutationAdmissionBinding<Catalog> for Binding {
+    type Admission = ApplicationConventionalAdmission;
+}
+impl ApplicationMutationBinding<Catalog> for Binding {
+    type Input = <ordinary::Binding as ApplicationMutationBinding<Catalog>>::Input;
+    type InputBinding = <ordinary::Binding as ApplicationMutationBinding<Catalog>>::InputBinding;
+    type Result = <ordinary::Binding as ApplicationMutationBinding<Catalog>>::Result;
+    type ResultBinding = <ordinary::Binding as ApplicationMutationBinding<Catalog>>::ResultBinding;
+    type IdempotencyKey =
+        <ordinary::Binding as ApplicationMutationBinding<Catalog>>::IdempotencyKey;
+    type Operation = <ordinary::Binding as ApplicationMutationBinding<Catalog>>::Operation;
+    type Decision = <ordinary::Binding as ApplicationMutationBinding<Catalog>>::Decision;
+    type Denial = <ordinary::Binding as ApplicationMutationBinding<Catalog>>::Denial;
+    type DenialBinding = <ordinary::Binding as ApplicationMutationBinding<Catalog>>::DenialBinding;
+    type Output = <ordinary::Binding as ApplicationMutationBinding<Catalog>>::Output;
+    type ScopeBinding = <ordinary::Binding as ApplicationMutationBinding<Catalog>>::ScopeBinding;
+    type PrincipalBinding =
+        <ordinary::Binding as ApplicationMutationBinding<Catalog>>::PrincipalBinding;
+    type Mapping = <ordinary::Binding as ApplicationMutationBinding<Catalog>>::Mapping;
+    type Principal = <ordinary::Binding as ApplicationMutationBinding<Catalog>>::Principal;
+    type PrincipalIdentity =
+        <ordinary::Binding as ApplicationMutationBinding<Catalog>>::PrincipalIdentity;
+    type PrincipalIdentityBinding =
+        <ordinary::Binding as ApplicationMutationBinding<Catalog>>::PrincipalIdentityBinding;
+    type SourceExpectation =
+        <ordinary::Binding as ApplicationMutationBinding<Catalog>>::SourceExpectation;
+    const IDENTITY: &'static str = "nested-required-support.request-binding.v1";
+    const HANDLER_IDENTITY: &'static str = "nested-required-support.request-handler.v1";
+    const IDEMPOTENCY_IDENTITY: &'static str = "nested-required-support.request-key.v1";
+    const REQUIRES_APPLICATION_PROGRAM: bool = true;
+    fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
+        ApplicationWorkflowExecutionRequirements::not_applicable()
+    }
+    fn scope_field() -> DirectoryIdentity {
+        DirectoryIdentity::at("DirectoryIdentity")
+    }
+    fn principal_binding() -> ApplicationPrincipalBindingRef<
+        Catalog,
+        CatalogPrincipal,
+        ExternalMapping,
+        Principal,
+        u64,
+        U64ApplicationValueBinding,
+    > {
+        CatalogPrincipal::reference()
+    }
+}
+#[derive(Clone, Debug)]
+pub struct Request(pub super::super::edit::Edit);
+impl ApplicationMutationIntent<Catalog> for Request {
+    type Binding = Binding;
+    fn input(&self) -> &super::super::edit::Edit {
+        &self.0
+    }
+    fn scope_binding(&self) -> <Binding as ApplicationMutationBinding<Catalog>>::ScopeBinding {
+        ApplicationMutationFieldScope::new(
+            DirectoryIdentity::at("DirectoryIdentity"),
+            "catalog".to_owned(),
+        )
+    }
+}

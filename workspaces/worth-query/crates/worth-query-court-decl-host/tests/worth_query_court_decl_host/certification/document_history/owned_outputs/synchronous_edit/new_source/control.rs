@@ -25,7 +25,11 @@ fn run(worker: bool) {
         .primary_graph_for_test()
         .unwrap()
         .retain_entity_resolution_context()
-        .advance_before_applied_lookup_for_test(controller, std::time::Duration::from_secs(7200));
+        .advance_before_applied_lookup_for_test(
+            "ModelKey",
+            controller,
+            std::time::Duration::from_secs(7200),
+        );
     let outcome = request
         .advanced()
         .mutate(Intent {

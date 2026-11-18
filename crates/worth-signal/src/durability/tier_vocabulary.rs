@@ -27,7 +27,7 @@ impl<T: Copy + Ord> SignalDurableTierVocabulary<T> {
                 return Err(D::DuplicateTier);
             }
             if !names.insert(*name) {
-                return Err(D::DuplicateName(*name));
+                return Err(D::DuplicateName(name));
             }
         }
         Ok(Self {

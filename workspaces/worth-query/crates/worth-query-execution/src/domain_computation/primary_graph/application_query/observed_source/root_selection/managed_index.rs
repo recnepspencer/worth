@@ -15,6 +15,9 @@ pub(in crate::domain_computation::primary_graph::application_query) struct Manag
     pub(in crate::domain_computation::primary_graph::application_query) maintained: Option<
         Arc<crate::domain_computation::primary_graph::application_attempt::ManagedSourceRead>,
     >,
+    pub(in crate::domain_computation::primary_graph::application_query) applied: Option<
+        Arc<crate::domain_computation::primary_graph::application_query::managed_index::applied_read::AppliedManagedSourceSupport>,
+    >,
     pub(in crate::domain_computation::primary_graph::application_query) identity: [u8; 32],
     pub(in crate::domain_computation::primary_graph::application_query) fact_count: usize,
     pub(in crate::domain_computation::primary_graph::application_query) field_count: usize,
@@ -22,6 +25,16 @@ pub(in crate::domain_computation::primary_graph::application_query) struct Manag
         Arc<crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation>,
 }
 impl ManagedSourceDependencies {
+    pub(in crate::domain_computation::primary_graph::application_query) fn maintained(
+        &self,
+    ) -> Option<
+        &Arc<crate::domain_computation::primary_graph::application_attempt::ManagedSourceRead>,
+    > {
+        self.maintained
+            .as_ref()
+            .or_else(|| self.applied.as_ref().and_then(|source| source.published()))
+    }
+
     pub(in crate::domain_computation::primary_graph::application_query) fn meanings(
         &self,
     ) -> impl Iterator<Item = &Arc<WorthQueryObservedSourceMeaning>> {
@@ -39,7 +52,7 @@ impl ManagedSourceDependencies {
             })
     }
     pub(in crate::domain_computation::primary_graph::application_query) fn len(&self) -> usize {
-        if self.maintained.is_some() {
+        if self.maintained.is_some() || self.applied.is_some() {
             return 2;
         }
         self.rows
@@ -82,9 +95,40 @@ impl DeclaredManagedIndexSelection {
         digest.update(self.access.graph_obligations().identity().bytes());
         digest.update(self.dependencies.identity);
     }
+    /// Only a joined applied Source may bridge its acquisition descriptor to
+    /// a positioned descriptor. Both sides retain authentic Native observations.
+    pub(in crate::domain_computation::primary_graph::application_query) fn same_published_source<
+        E,
+    >(
+        &self,
+        other: &Self,
+        current_source: Option<
+            &crate::domain_computation::primary_graph::application_attempt::ManagedSourceRead,
+        >,
+        admit: &mut impl FnMut(u64) -> Result<(), E>,
+    ) -> Result<bool, E> {
+        if !self.coverage_is_present()
+            || !other.coverage_is_present()
+            || (self.dependencies.applied.is_none() && other.dependencies.applied.is_none())
+            || self.access.graph_obligations().identity()
+                != other.access.graph_obligations().identity()
+        {
+            return Ok(false);
+        }
+        match (
+            self.dependencies.maintained(),
+            current_source.or_else(|| other.dependencies.maintained().map(Arc::as_ref)),
+        ) {
+            (Some(left), Some(right)) => left.same_published_source(right, admit),
+            _ => Ok(false),
+        }
+    }
     pub(in crate::domain_computation::primary_graph::application_query) fn same_truth(
         &self,
         other: &Self,
+        current_source: Option<
+            &crate::domain_computation::primary_graph::application_attempt::ManagedSourceRead,
+        >,
         walks: &mut crate::domain_computation::primary_graph::source_read_equivalence::SourceReadEquivalence,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         control: &dyn Fn() -> Result<
@@ -110,25 +154,35 @@ impl DeclaredManagedIndexSelection {
             return Ok(false);
         }
         match (
-            &self.dependencies.maintained,
-            &other.dependencies.maintained,
+            self.dependencies.maintained(),
+            other.dependencies.maintained(),
         ) {
-            (None, None) => {}
+            (None, None) => {
+                // Until publication, only the very same admitted acquisition
+                // has the same meaning. A hash or a matching roster is not proof.
+                match (&self.dependencies.applied, &other.dependencies.applied) {
+                    (None, None) => {}
+                    (Some(left), Some(right)) if Arc::ptr_eq(left, right) => {}
+                    _ => return Ok(false),
+                }
+            }
             (Some(left), Some(right))
-                if left.same_truth(
-                    right,
-                    admit,
-                    &mut |bytes| execution.reserve_retained_memory(bytes).map_err(Into::into),
-                    &mut |cause| cause.into_native(),
-                    &mut |left, right| {
-                        left.same_content(execution, right)
-                            .map_err(|cause| cause.into_execution_cause())
-                    },
-                )? => {}
+                if self.same_published_source(other, current_source, admit)?
+                    || left.same_truth(
+                        right,
+                        admit,
+                        &mut |bytes| execution.reserve_retained_memory(bytes).map_err(Into::into),
+                        &mut |cause| cause.into_native(),
+                        &mut |left, right| {
+                            left.same_content(execution, right)
+                                .map_err(|cause| cause.into_execution_cause())
+                        },
+                    )? => {}
             _ => return Ok(false),
         }
         if self.access.graph_obligations().identity() != other.access.graph_obligations().identity()
-            || self.dependencies.identity != other.dependencies.identity
+            || (self.dependencies.maintained().is_none()
+                && self.dependencies.identity != other.dependencies.identity)
             || self.dependencies.rows.len() != other.dependencies.rows.len()
         {
             return Ok(false);
@@ -168,7 +222,12 @@ impl PartialEq for DeclaredManagedIndexSelection {
             && self.access.graph_obligations().identity()
                 == other.access.graph_obligations().identity()
             && self.dependencies.authorization == other.dependencies.authorization
-            && self.dependencies.maintained == other.dependencies.maintained
+            && self.dependencies.maintained() == other.dependencies.maintained()
+            && match (&self.dependencies.applied, &other.dependencies.applied) {
+                (None, None) => true,
+                (Some(left), Some(right)) => Arc::ptr_eq(left, right),
+                _ => false,
+            }
             && self.dependencies.identity == other.dependencies.identity
             && self.dependencies.rows.len() == other.dependencies.rows.len()
             && self

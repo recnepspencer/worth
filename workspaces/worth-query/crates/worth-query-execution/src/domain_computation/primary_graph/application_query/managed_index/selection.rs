@@ -34,7 +34,7 @@ use worth_relational::facade::{
 mod maintained;
 
 #[derive(Debug)]
-pub(super) enum SelectionDenial {
+pub(in crate::domain_computation::primary_graph::application_query) enum SelectionDenial {
     Session(WorthQueryManagedIndexSessionDenial),
     Work(WorkDenial),
     Execution(Cause),

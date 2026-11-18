@@ -60,7 +60,12 @@ impl WorthQueryApplicationDependentOutputConnection<CheckpointSchema> for Consum
     fn demands_from_discovery(
         discovery: &PlanarOutputReadResult,
     ) -> Result<Vec<Self::Demand>, WorthQueryRequiredOutputConnectionDenial> {
-        Ok(vec![ChainDemand(discovery.successor_body_key.clone())])
+        // Geometric successors belong to the Source query. Required output
+        // occurrences follow the declared consumed-output graph instead.
+        Ok(producer::root_downstream(&discovery.body_key)
+            .map(ChainDemand)
+            .into_iter()
+            .collect())
     }
 }
 
@@ -85,6 +90,40 @@ pub(super) type ChainRoot = ApplicationOutputGraph<
 >;
 
 pub(super) struct ChainProgram;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn discovery_selects_consumers_instead_of_geometric_successors() {
+        for (root, geometric_successor, expected) in [
+            ("anchor-a", "anchor-source-b", Some("anchor-b")),
+            ("diamond-left", "diamond-left-b", Some("diamond-join")),
+            ("diamond-right", "diamond-right-b", Some("diamond-join")),
+            ("ring-2-a", "ring-2-source-b", Some("ring-2-b")),
+            ("anchor-source-b", "anchor-source-c", None),
+            ("diamond-join", "diamond-join-b", None),
+            ("ring-2-b", "ring-2-c", None),
+            ("ring-2-c", "ring-2-a", None),
+        ] {
+            let observed = PlanarOutputReadResult {
+                body_key: root.into(),
+                successor_body_key: geometric_successor.into(),
+                value: length(2),
+            };
+            let demands = ConsumeOutputConnection::demands_from_discovery(&observed).unwrap();
+            assert_eq!(
+                demands
+                    .iter()
+                    .map(|demand| demand.0.as_str())
+                    .collect::<Vec<_>>(),
+                expected.into_iter().collect::<Vec<_>>(),
+                "required output occurrences for {root}"
+            );
+        }
+    }
+}
 
 impl ApplicationProgramDefinition<CheckpointSchema> for ChainProgram {
     type Contributions = <CheckpointSchema as ApplicationSchemaComposition>::Contributions;

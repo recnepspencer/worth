@@ -89,11 +89,13 @@ impl ApplicationProgramDefinition<Schema> for Program {
         ApplicationProgramIdentity::new("member-retarget.program");
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
         let mut specs = hierarchy::Program::feature_specs();
-        specs[0] = entry::with_envelope_completion_actions(
-            entry::entry_builder::<Completion, Completion, Completion>()
-                .action::<Binding, Delivery>()
-                .finish_action(),
-        )
+        specs[0] = entry::with_envelope_completion_actions(entry::entry_builder_with_retirement::<
+            Completion,
+            Completion,
+            Completion,
+            Completion,
+            Delivery,
+        >())
         .finish();
         specs
     }

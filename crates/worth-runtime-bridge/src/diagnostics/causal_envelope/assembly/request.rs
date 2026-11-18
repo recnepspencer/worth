@@ -42,11 +42,11 @@ impl BridgeCausalInspectionAdmissionSummary {
         causal_observation_anchor_identity: BridgeIdentityEvidence,
     ) -> Result<Self, crate::diagnostics::causal_envelope::BridgeCausalEnvelopeConstructionStop>
     {
-        Ok(Self::new(
+        Self::new(
             BridgeCausalInspectionAdmissionSummaryKind::Admitted,
             query_admission_identity,
             causal_observation_anchor_identity,
-        )?)
+        )
     }
 
     pub fn advisory(
@@ -54,11 +54,11 @@ impl BridgeCausalInspectionAdmissionSummary {
         causal_observation_anchor_identity: BridgeIdentityEvidence,
     ) -> Result<Self, crate::diagnostics::causal_envelope::BridgeCausalEnvelopeConstructionStop>
     {
-        Ok(Self::new(
+        Self::new(
             BridgeCausalInspectionAdmissionSummaryKind::Advisory,
             query_admission_identity,
             causal_observation_anchor_identity,
-        )?)
+        )
     }
 
     fn new(
@@ -373,10 +373,10 @@ fn denial_sentinel_identity(
     label: &'static str,
 ) -> Result<BridgeIdentityEvidence, crate::diagnostics::causal_envelope::BridgeCausalDigestRefusal>
 {
-    Ok(compose_bridge_causal_envelope_evidence_identity(
+    compose_bridge_causal_envelope_evidence_identity(
         BridgeCausalEnvelopeDigestArtifact::Denial,
         &[shape_part(kind.as_str()), shape_part(label)],
-    )?)
+    )
 }
 
 fn overclaimed_query_observation_anchor_identity(
@@ -384,7 +384,7 @@ fn overclaimed_query_observation_anchor_identity(
 ) -> Result<BridgeIdentityEvidence, crate::diagnostics::causal_envelope::BridgeCausalDigestRefusal>
 {
     let count_text = count.to_string();
-    Ok(compose_bridge_causal_envelope_evidence_identity(
+    compose_bridge_causal_envelope_evidence_identity(
         BridgeCausalEnvelopeDigestArtifact::Denial,
         &[
             shape_part(BridgeCausalEnvelopeDenialKind::QueryObservationAnchorOverclaim.as_str()),
@@ -392,5 +392,5 @@ fn overclaimed_query_observation_anchor_identity(
             shape_part("query-observation-anchor-count"),
             shape_part(count_text.as_str()),
         ],
-    )?)
+    )
 }

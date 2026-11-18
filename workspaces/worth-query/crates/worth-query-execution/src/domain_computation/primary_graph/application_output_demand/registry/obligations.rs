@@ -20,19 +20,17 @@ impl DemandRecord {
         if self.framework_required_count == 0
             && self.performed_obligations.is_empty()
             && !(matches!(self.state, DemandState::Failed(_)) && !self.source_commits.is_empty())
+            && let Some(source) = &self.readmission_source
         {
-            if let Some(source) = &self.readmission_source {
-                source.complete_durable();
-            }
+            source.complete_durable();
         }
     }
     pub(super) fn release_obligations(&mut self) {
         if self.framework_required_count == 0
             && !(matches!(self.state, DemandState::Failed(_)) && !self.source_commits.is_empty())
+            && let Some(source) = &self.readmission_source
         {
-            if let Some(source) = &self.readmission_source {
-                source.complete_durable();
-            }
+            source.complete_durable();
         }
         self.performed_obligations = Vec::new();
     }

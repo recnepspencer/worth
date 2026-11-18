@@ -30,19 +30,36 @@ mod serial {
             })
             .execute()
             .unwrap();
-        request
+        let changed = request
             .advanced()
-            .mutate(PlanarSourceAdjustment {
+            .mutate(PlanarEdit(PlanarMutation {
                 scope_key: "anchor-a".into(),
-                replacement_y: length(7),
-            })
+                operation: worth_query_consumer_values::PlanarOperation::Adjust(vec![
+                    worth_query_consumer_values::PlanarAdjustment {
+                        body_key: "anchor-a".into(),
+                        replacement_y: length(7),
+                    },
+                ]),
+            }))
             .expect_source(source.observed_sources()[0].clone())
             .idempotency(&0x9176_78e0_u64)
-            .execute_performed::<application::Program, program::ChainRoot>(
+            .execute_in_program::<application::Program>(
                 &application,
                 worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
             )
             .unwrap();
+        assert!(matches!(
+            changed,
+            worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome::Committed { .. }
+        ));
+        let initial_output = request
+            .query(PlanarOutputRead {
+                body_key: "anchor-a".into(),
+            })
+            .execute()
+            .unwrap();
+        assert_eq!(initial_output.rows()[0].value, length(2));
+        drop(initial_output);
         application.delay_next_output_readiness_delivery_for_test();
         assert!(matches!(
             owner.advance(&request).unwrap(),
@@ -60,6 +77,7 @@ mod serial {
             .unwrap();
         assert_eq!(published.rows().len(), 1);
         let last_published_truth = published.rows()[0].value;
+        assert_eq!(last_published_truth, length(8));
         let checkpoint = application
             .with_host_advancement(|phase| {
                 application

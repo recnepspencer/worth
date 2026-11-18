@@ -34,43 +34,27 @@ fn case(cancel: bool, owner_name: &str, dirty_name: &str) {
         .execute()
         .unwrap();
     let dirty_root = selected.observed_sources()[0].root_entity_for_test();
-    request
-        .advanced()
-        .mutate(PlanarSourceAdjustment {
-            scope_key: dirty_name.into(),
-            replacement_y: length(if dirty_name == "diamond-left" { 5 } else { 54 }),
-        })
-        .expect_source(selected.observed_sources()[0].clone())
-        .idempotency(&0x9176_78ab_u64)
-        .execute_performed::<application::Program, program::ChainRoot>(
-            &application,
-            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    diamond::change_root!(
+        request,
+        application,
+        dirty_name,
+        if dirty_name == "diamond-left" { 5 } else { 54 },
+        0x9176_78ab_u64,
+        application::Program
+    );
     // A fresh demand on this occurrence produces the undelivered publication;
     // closing the prior cached answer's interest cannot deliver that new row.
     drop(owner);
     let mut owner = root!(owner_name);
     // Move the owner's own source as well, so it must publish a successor.
-    let selected = request
-        .query(PlanarRead {
-            body_key: owner_name.into(),
-        })
-        .execute()
-        .unwrap();
-    request
-        .advanced()
-        .mutate(PlanarSourceAdjustment {
-            scope_key: owner_name.into(),
-            replacement_y: length(if owner_name == "diamond-left" { 6 } else { 55 }),
-        })
-        .expect_source(selected.observed_sources()[0].clone())
-        .idempotency(&0x9176_78ac_u64)
-        .execute_performed::<application::Program, program::ChainRoot>(
-            &application,
-            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    diamond::change_root!(
+        request,
+        application,
+        owner_name,
+        if owner_name == "diamond-left" { 6 } else { 55 },
+        0x9176_78ac_u64,
+        application::Program
+    );
     application.delay_next_output_readiness_delivery_for_test();
     assert!(matches!(
         owner.advance(&request).unwrap(),
@@ -161,10 +145,10 @@ mod serial {
     #[test]
     fn abandoning_the_deferred_owner_thaws_the_next_other_caller() {
         let _guard = checkpoint_recovery_test_guard();
-        for cancel in [false, true] {
-            case(cancel, "diamond-left", "diamond-right");
-            case(cancel, "diamond-right", "diamond-left");
-        }
+        // One journey for each release mechanism; reversing the same owner
+        // layout adds no different abandonment or cancellation transition.
+        case(false, "diamond-left", "diamond-right");
+        case(true, "diamond-right", "diamond-left");
     }
 
     #[test]
@@ -201,19 +185,14 @@ mod serial {
             })
             .execute()
             .unwrap();
-        request
-            .advanced()
-            .mutate(PlanarSourceAdjustment {
-                scope_key: "anchor-a".into(),
-                replacement_y: length(7),
-            })
-            .expect_source(source.observed_sources()[0].clone())
-            .idempotency(&0x9176_78e0_u64)
-            .execute_performed::<application::Program, program::ChainRoot>(
-                &application,
-                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-            )
-            .unwrap();
+        diamond::change_root!(
+            request,
+            application,
+            "anchor-a",
+            7,
+            0x9176_78e0_u64,
+            application::Program
+        );
         application.delay_next_output_readiness_delivery_for_test();
         assert!(matches!(
             owner.advance(&request).unwrap(),

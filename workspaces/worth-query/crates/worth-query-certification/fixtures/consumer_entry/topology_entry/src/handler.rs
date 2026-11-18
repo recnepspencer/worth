@@ -7,6 +7,7 @@ use worth_query_decl::facade::application_schema::{
 use worth_query_host::facade::primary_graph::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
     WorthQueryApplicationEntityKey, WorthQueryCurrentOutputSelection,
+    WorthQueryOperationDurableCapability,
 };
 
 /// A planar body keyed with this prefix surveys the length its commit
@@ -80,6 +81,10 @@ where
         + OperationLinks<Binding::Operation>
         + OperationUnlinks<Binding::Operation>,
 {
+    fn declared_durable_capabilities() -> Option<&'static [WorthQueryOperationDurableCapability]> {
+        Some(&[WorthQueryOperationDurableCapability::RelationalMutation])
+    }
+
     fn decide(
         &self,
         input: &Binding::Input,

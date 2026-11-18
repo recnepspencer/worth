@@ -16,6 +16,11 @@ enum Audience<'a, 'loan> {
     Public(Borrowed<'a, WorthQueryManagedGraphWorkSession>),
     Committed(Borrowed<'a, ManagedIndexSourceRead<'loan>>),
     Proposed(Borrowed<'a, ManagedIndexSourceRead<'loan>>),
+    Applied {
+        read:
+            Borrowed<'a, crate::domain_computation::provider_session::WorthQueryAppliedSourceRead>,
+        source: &'a worth_relational::facade::runtime::ManagedIndexAppliedSourceRead<'loan>,
+    },
     Retained {
         frame: Borrowed<'a, super::super::realized_footprint::CapturedManagedInfluence>,
         observation: &'a ManagedIndexSourceObservation,
@@ -89,11 +94,35 @@ impl<'a, 'loan> CoverageFrame<'a, 'loan> {
             },
         }
     }
+    pub(in crate::domain_computation::primary_graph) fn applied(
+        image: SourceImageView<'a>,
+        nodes: &'a Arc<dyn Any + Send + Sync>,
+        material: &'a dyn Any,
+        probe: &'a AspectValue,
+        read: &'a crate::domain_computation::provider_session::WorthQueryAppliedSourceRead,
+        source: &'a worth_relational::facade::runtime::ManagedIndexAppliedSourceRead<'loan>,
+        posture: MatchPosture,
+    ) -> Self {
+        Self {
+            image,
+            nodes,
+            probe,
+            posture,
+            audience: Audience::Applied {
+                read: Borrowed::new(nodes, material, probe, read),
+                source,
+            },
+        }
+    }
     pub(super) fn same_invocation(&self, other: &Self) -> bool {
         self.posture == other.posture
             && self.image.same_image(&other.image)
             && match (self.audience, other.audience) {
                 (Audience::Public(a), Audience::Public(b)) => a.same_invocation(&b),
+                (
+                    Audience::Applied { read: a, source: x },
+                    Audience::Applied { read: b, source: y },
+                ) => a.same_invocation(&b) && std::ptr::eq(x, y),
                 (Audience::Committed(a), Audience::Committed(b))
                 | (Audience::Proposed(a), Audience::Proposed(b)) => a.same_invocation(&b),
                 (

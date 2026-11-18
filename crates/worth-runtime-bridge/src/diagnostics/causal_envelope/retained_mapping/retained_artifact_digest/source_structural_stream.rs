@@ -63,7 +63,7 @@ pub(crate) fn source_failure_digest(
     record: &crate::source::SourceFailureRecord,
 ) -> Result<BridgeIdentityEvidence, crate::diagnostics::causal_envelope::BridgeCausalDigestRefusal>
 {
-    Ok(compose_retained_causal_mapping_evidence_identity(
+    compose_retained_causal_mapping_evidence_identity(
         RetainedCausalMappingDigestArtifact::SourceFailureRecord,
         &[
             retained_mapping_bridge_identity_part(record.failure_identity()),
@@ -71,7 +71,7 @@ pub(crate) fn source_failure_digest(
             retained_mapping_shape_part(source_failure_class_label(record.failure_class())),
             retained_mapping_shape_part(delivery_error_kind_label(record.delivery_error_kind())),
         ],
-    )?)
+    )
 }
 
 fn source_failure_class_label(value: SourceFailureClass) -> &'static str {

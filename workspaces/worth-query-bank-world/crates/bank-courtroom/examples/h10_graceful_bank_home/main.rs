@@ -14,6 +14,7 @@ fn main() {
     worth_execution::run_with_execution_stack(|| {
         let args = protocol::Arguments::read();
         match args.stage {
+            protocol::Stage::OpenCloseProbe => open_close_probe(&args),
             protocol::Stage::Preclose => preclose(&args),
             protocol::Stage::Reopen => reopen(&args),
         }
@@ -25,15 +26,39 @@ fn main() {
     });
 }
 
+fn open_close_probe(args: &protocol::Arguments) {
+    let inputs = installation::Inputs::from_recipe(&args.recipe);
+    for cycle in ["fresh", "reopened"] {
+        let home = inputs.open(&args.directory);
+        eprintln!("BANK_HOLDER_PROBE {cycle} opened; no requests have executed");
+        // The real consuming close checks physical Arc exclusivity. A refusal
+        // reports its exact remaining holders instead of bypassing retirement.
+        installation::close(home);
+        eprintln!("BANK_HOLDER_PROBE {cycle} closed; physical exclusivity established");
+    }
+}
+
 fn preclose(args: &protocol::Arguments) {
     let inputs = installation::Inputs::from_recipe(&args.recipe);
     let home = inputs.open(&args.directory);
-    let handoff = {
+    let handoff = (|| {
         let principal = inputs.authenticate(&home, 1);
+        if args.step_completed(1, "authenticate") {
+            return None;
+        }
         let transport = external::connect(&home, args.rail, args.control);
+        if args.step_completed(2, "install-external-transport") {
+            return None;
+        }
         let (original_workflow, required, instance) =
             workflow::start_wait(&home, &principal, inputs.payment);
+        if args.step_completed(3, "workflow-start-wait") {
+            return None;
+        }
         let assessment = assessment::retain(&home, &principal, inputs.payment, instance, &required);
+        if args.step_completed(4, "retain-assessment") {
+            return None;
+        }
         let (rejection, components) = deferred::retain(
             &home,
             &principal,
@@ -46,8 +71,17 @@ fn preclose(args: &protocol::Arguments) {
             [Published, Published],
             "one World publication changes Relational and Signal"
         );
+        if args.step_completed(5, "deferred-composite") {
+            return None;
+        }
         let pending = external::dispatch_ambiguously(&home, &principal, &transport);
+        if args.step_completed(6, "ambiguous-external-dispatch") {
+            return None;
+        }
         let reversals = correction::reverse_on_both(&home, &principal);
+        if args.step_completed(7, "reverse-both") {
+            return None;
+        }
         let workflow = original_workflow.to_recorded_bytes().unwrap();
         use worth_query_host::facade::application_entry::{
             RequiredWorkflowAssessment, WorthQueryWorkflowInstanceDiscoveryIntent,
@@ -79,7 +113,10 @@ fn preclose(args: &protocol::Arguments) {
             &assessment_bytes[..assessment_bytes.len() - 1]
         )
         .is_err());
-        protocol::Handoff {
+        if args.step_completed(8, "descriptor-codecs") {
+            return None;
+        }
+        Some(protocol::Handoff {
             preclose_pid: std::process::id(),
             workflow,
             required: required_bytes,
@@ -88,12 +125,14 @@ fn preclose(args: &protocol::Arguments) {
             rejection_position: rejection.identity().acquire_position(),
             pending,
             reversals,
-        }
-    };
+        })
+    })();
     // All process-local owners are gone. DATA is written only after actual
     // graceful close and reclaim, and the parent also requires process success.
     installation::close(home);
-    handoff.write(&args.handoff);
+    if let Some(handoff) = handoff {
+        handoff.write(&args.handoff);
+    }
 }
 
 fn reopen(args: &protocol::Arguments) {
@@ -105,9 +144,15 @@ fn reopen(args: &protocol::Arguments) {
     );
     let inputs = installation::Inputs::from_recipe(&args.recipe);
     let home = inputs.open(&args.directory);
-    {
+    (|| {
         let principal = inputs.authenticate(&home, 1);
+        if args.step_completed(1, "reopen-authenticate") {
+            return;
+        }
         let transport = external::connect(&home, args.rail, args.control);
+        if args.step_completed(2, "reopen-install-transport") {
+            return;
+        }
         use worth_query_host::facade::application_entry::{
             RequiredWorkflowAssessment, WorthQueryWorkflowInstanceDiscoveryIntent,
         };
@@ -118,6 +163,9 @@ fn reopen(args: &protocol::Arguments) {
         .expect("the current installed validated revision admits the locator DATA");
         let required = RequiredWorkflowAssessment::from_recorded_bytes(&handoff.required).unwrap();
         let assessment = assessment::Original::from_recorded_bytes(&handoff.assessment).unwrap();
+        if args.step_completed(3, "reopen-descriptor-readmission") {
+            return;
+        }
         let instance = workflow::resume_wait(
             &home,
             &principal,
@@ -125,6 +173,9 @@ fn reopen(args: &protocol::Arguments) {
             &original_workflow,
             &required,
         );
+        if args.step_completed(4, "reopen-workflow-resume") {
+            return;
+        }
         deferred::resume(
             &home,
             &principal,
@@ -134,8 +185,17 @@ fn reopen(args: &protocol::Arguments) {
             ),
             inputs.deferred_payment,
         );
+        if args.step_completed(5, "reopen-deferred-resume") {
+            return;
+        }
         external::observe_and_replay(&home, &principal, &transport, handoff.pending);
+        if args.step_completed(6, "reopen-external-replay") {
+            return;
+        }
         correction::reapply_recovered_child(&home, &principal, handoff.reversals);
+        if args.step_completed(7, "reopen-correction") {
+            return;
+        }
         assessment::recover_and_advance(
             &home,
             &principal,
@@ -145,6 +205,9 @@ fn reopen(args: &protocol::Arguments) {
             &required,
             &assessment,
         );
-    }
+        if args.step_completed(8, "reopen-assessment") {
+            return;
+        }
+    })();
     installation::close(home);
 }

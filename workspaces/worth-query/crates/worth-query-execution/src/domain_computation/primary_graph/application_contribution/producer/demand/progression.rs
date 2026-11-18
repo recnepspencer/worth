@@ -219,12 +219,12 @@ where
                 )
             })?;
         self.readmit_recorded_prerequisites(
-            &execution,
+            execution,
             principal,
             request_scope,
             demand.interest.as_ref(),
         )?;
-        self.advance_as_caller(&execution, demand, |demand, performed| {
+        self.advance_as_caller(execution, demand, |demand, performed| {
             self.advance_output_demand_with_commit_authority(
                 execution,
                 phase,
@@ -262,12 +262,12 @@ where
         FamilySourceQuery<Schema, Family>: 'static,
     {
         self.readmit_recorded_prerequisites(
-            &execution,
+            execution,
             principal,
             request_scope,
             demand.interest.as_ref(),
         )?;
-        self.advance_as_caller(&execution, demand, |demand, performed| {
+        self.advance_as_caller(execution, demand, |demand, performed| {
             self.advance_retained_with_commit_authority(
                 execution,
                 phase,
@@ -300,29 +300,28 @@ where
         let performed = std::cell::RefCell::new(PerformedMembers::start());
         let stop = match advance(demand, &performed) {
             Ok(progress) => {
-                if matches!(progress, WorthQueryOutputDemandAdvance::Settled(_)) {
-                    if let Some(interest) = &demand.interest {
-                        self.retain_accepted_output(
-                            execution,
-                            interest.key(),
-                            demand.observed_source.selected_product_commit(),
-                            demand.observed_source.selected_product_occurrence(),
-                        )?;
-                    }
+                if matches!(progress, WorthQueryOutputDemandAdvance::Settled(_))
+                    && let Some(interest) = &demand.interest
+                {
+                    self.retain_accepted_output(
+                        execution,
+                        interest.key(),
+                        demand.observed_source.selected_product_commit(),
+                        demand.observed_source.selected_product_occurrence(),
+                    )?;
                 }
                 demand.settled |= matches!(progress, WorthQueryOutputDemandAdvance::Settled(_));
                 return Ok(progress);
             }
             Err(stop) => stop,
         };
-        if stop.kind() == WorthQueryOutputDemandDenialKind::ProducerDomainDenied {
-            if let Some(source) = demand
+        if stop.kind() == WorthQueryOutputDemandDenialKind::ProducerDomainDenied
+            && let Some(source) = demand
                 .interest
                 .as_ref()
                 .and_then(|interest| interest.durable_readmission())
-            {
-                source.retain_domain_failure(execution, &stop)?;
-            }
+        {
+            source.retain_domain_failure(execution, &stop)?;
         }
         if stop.has_read_cleanup() {
             let diagnostic = stop.clone();

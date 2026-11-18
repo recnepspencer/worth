@@ -14,6 +14,7 @@ use worth_relational::facade::runtime::{
 pub struct AuthoredEditStageAdmission<S: ApplicationSchema, B: ApplicationMutationBinding<S>> {
     pub(super) operation: AuthoredEditStageOperation<S, B>,
     pub(super) principal: B::PrincipalIdentity,
+    pub(super) pending_source: Option<crate::domain_computation::primary_graph::WorthQueryPendingSourceExpectation<<B::SourceExpectation as worth_query_declaration::facade::application_operation::ApplicationMutationSourceExpectation<S>>::Query>>,
 }
 impl<S: ApplicationSchema, B: ApplicationMutationBinding<S>> AuthoredEditStageAdmission<S, B> {
     pub fn new(
@@ -23,8 +24,45 @@ impl<S: ApplicationSchema, B: ApplicationMutationBinding<S>> AuthoredEditStageAd
         Self {
             operation,
             principal,
+            pending_source: None,
         }
     }
+    pub fn with_source_expectation(
+        mut self,
+        source: Option<crate::domain_computation::primary_graph::WorthQueryPendingSourceExpectation<<B::SourceExpectation as worth_query_declaration::facade::application_operation::ApplicationMutationSourceExpectation<S>>::Query>>,
+    ) -> Self {
+        self.pending_source = source;
+        self
+    }
+    pub(super) fn bind_source(
+        &self,
+        binding: WorthQueryApplicationIdempotencyBinding,
+    ) -> WorthQueryApplicationIdempotencyBinding {
+        self.pending_source.as_ref().map_or(binding, |source| {
+            source.bound_source().bind_idempotency(binding)
+        })
+    }
+    pub(super) fn consume_source(
+        &mut self,
+        context: &AuthoredEditStageContext<'_, '_, '_, S>,
+    ) -> Result<(), WorthQueryOutputDemandDenial> {
+        if let Some(source) = self.pending_source.take() {
+            source
+                .consume_into(context.application, context.phase, &mut self.operation)
+                .map_err(|cause| {
+                    WorthQueryOutputDemandDenial::new(
+                        WorthQueryOutputDemandDenialKind::ForeignSource,
+                        format!("authored stage source expectation: {cause:?}"),
+                    )
+                })?;
+        }
+        Ok(())
+    }
+}
+
+pub(super) struct RetainedAuthoredAdmission<S: ApplicationSchema, B: ApplicationMutationBinding<S>> {
+    pub(super) operation: AuthoredEditStageOperation<S, B>,
+    pub(super) pending_source: Option<crate::domain_computation::primary_graph::WorthQueryPendingSourceExpectation<<B::SourceExpectation as worth_query_declaration::facade::application_operation::ApplicationMutationSourceExpectation<S>>::Query>>,
 }
 
 pub struct CapturedAuthoredEditStage<S> {
@@ -122,6 +160,7 @@ pub(in crate::domain_computation::primary_graph) trait AuthoredEditStageExecutor
         before: &crate::basis::WorthQueryProductBranchLease,
         before_pin: &RelationalPinnedRead,
         candidate: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
+        participants: &dyn crate::domain_computation::primary_graph::provider::AppliedOutputParticipants,
     ) -> Result<InspectedAuthoredApplication<'run>, WorthQueryOutputDemandDenial>;
     fn prepare_commit<'run>(
         &self,
@@ -151,7 +190,7 @@ type Admit<S, B> = dyn Fn(
     + Send
     + Sync;
 pub(super) struct TypedStage<S: ApplicationSchema, B: ApplicationMutationBinding<S>> {
-    pub(super) original_admission: std::sync::Mutex<Option<AuthoredEditStageOperation<S, B>>>,
+    pub(super) original_admission: std::sync::Mutex<Option<RetainedAuthoredAdmission<S, B>>>,
     pub(super) principal_value: worth_foundational::facade::AspectValue,
     pub(super) ordered: std::sync::atomic::AtomicBool,
     pub(super) correction: std::sync::Mutex<
@@ -277,7 +316,10 @@ impl<S: ApplicationSchema> CapturedAuthoredEditStage<S> {
             identity,
             binding: B::IDENTITY,
             executor: Arc::new(TypedStage::<S, B> {
-                original_admission: std::sync::Mutex::new(Some(admitted.operation)),
+                original_admission: std::sync::Mutex::new(Some(RetainedAuthoredAdmission {
+                    operation: admitted.operation,
+                    pending_source: admitted.pending_source,
+                })),
                 principal_value,
                 ordered: std::sync::atomic::AtomicBool::new(false),
                 correction: std::sync::Mutex::new(None),

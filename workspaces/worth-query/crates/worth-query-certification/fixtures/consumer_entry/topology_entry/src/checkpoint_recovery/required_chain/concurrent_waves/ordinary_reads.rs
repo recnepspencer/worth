@@ -92,25 +92,32 @@ fn run(workers: usize, defer: bool) -> History {
         .try_into()
         .unwrap();
     for (rank, key) in roots.iter().enumerate() {
-        let selected = request
-            .query(PlanarRead {
+        let output_before = request
+            .query(PlanarOutputRead {
                 body_key: key.clone(),
             })
             .execute()
             .unwrap();
-        request
-            .advanced()
-            .mutate(PlanarSourceAdjustment {
-                scope_key: key.clone(),
-                replacement_y: length(5 + rank as u64),
+        let prior_value = PositiveLength::get(&output_before.rows()[0].value);
+        diamond::change_root!(
+            request,
+            application,
+            key,
+            5 + rank as u64,
+            0x9176_7720_u64 + rank as u64,
+            ordinary_read_application::Program
+        );
+        let output_after = request
+            .query(PlanarOutputRead {
+                body_key: key.clone(),
             })
-            .expect_source(selected.observed_sources()[0].clone())
-            .idempotency(&(0x9176_7720_u64 + rank as u64))
-            .execute_performed::<ordinary_read_application::Program, program::ChainRoot>(
-                &application,
-                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-            )
+            .execute()
             .unwrap();
+        assert_eq!(
+            PositiveLength::get(&output_after.rows()[0].value),
+            prior_value,
+            "the native Source edit leaves the output for scheduled reinspection"
+        );
     }
     let schedule = Schedule::new(roots.clone(), None, false);
     if defer {

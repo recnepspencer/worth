@@ -31,9 +31,12 @@ impl ConsumedOutputEvidence {
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
     ) -> Result<Option<ConsumedOutputVerification>, ConsumedOutputVerificationStop> {
+        let Some(source_facts) = evidence.source_facts else {
+            return Ok(Some(ConsumedOutputVerification::ChangedUpstream));
+        };
         Self::compare_facts(
             execution,
-            evidence.source_facts,
+            source_facts,
             None,
             evidence.native_output_witness.map(Arc::as_ref),
             direct,
@@ -96,6 +99,7 @@ impl ConsumedOutputEvidence {
             let mut child_content = false;
             for child in consumed {
                 let witness = child
+                    .recorded()
                     .native_output_witness
                     .as_ref()
                     .and_then(|cell| cell.get())
@@ -182,7 +186,7 @@ impl ConsumedOutputEvidence {
             execution,
             EvidenceView {
                 identity,
-                source_facts,
+                source_facts: Some(source_facts),
                 upstream,
                 verification_requirement,
                 native_output_witness: Some(native_output_witness),

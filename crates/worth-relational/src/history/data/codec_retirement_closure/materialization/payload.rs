@@ -16,22 +16,15 @@ pub(super) fn candidate_matches(
     runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
     basis: &crate::branch::AdmittedRelationalBranchBasis,
     state: &WorkingState,
-    original: &Arc<CanonicalCommitEnvelope>,
+    original: &OwnedValidatedOutputOrigins,
+    meaning: &crate::mvcc::RequiredOutputPublicationMeaning,
     records: &[CanonicalRequiredOutputMaterializationRecord],
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&ExecutionResourceLease<'_>>,
 ) -> Result<bool, Stop> {
     let mut origin_frames = OutputOriginHistory::default();
     let validated_history = &mut origin_frames;
-    let original = validated_history
-        .by_commit(
-            original.commit.commit_id,
-            &mut |commit| runtime.commit(commit),
-            &runtime.execution(),
-            context,
-        )?
-        .ok_or("maintenance producer history absent")?;
-    let origin = original.validate_output_membership_header()?;
+    let origin = original.materialization_origin_for_route(meaning, context)?;
     let after = OverlayStateView::new(basis.inner.root.as_ref(), state);
     for member in records {
         if !header::owns(origin, &member.record) {
@@ -53,7 +46,7 @@ pub(super) fn candidate_matches(
                     .ok_or("maintenance entity contract absent")?;
                 let expected = super::super::membership::reconstruct(
                     runtime,
-                    &original,
+                    original,
                     id,
                     plan,
                     validated_history,
@@ -96,7 +89,7 @@ pub(super) fn candidate_matches(
                     .ok_or("maintenance relation contract absent")?;
                 let expected = super::super::relation_payload::reconstruct(
                     runtime,
-                    &original,
+                    original,
                     id,
                     plan,
                     validated_history,
@@ -215,20 +208,14 @@ fn validate_one(
             else {
                 continue;
             };
-            if envelope
-                .required_output_origin
-                .as_deref()
-                .is_some_and(|origin| header::owns(origin, &member.record))
-            {
+            if header::owns_record(&envelope, &member.record, context)? {
                 original = Some(envelope);
                 break;
             }
         }
         let original = original.ok_or("maintenance producer association absent")?;
         let source = original
-            .required_output_origin
-            .as_ref()
-            .ok_or("maintenance producer origin absent")?
+            .materialization_origin_for_record(&member.record, context)?
             .meaning
             .source_scope;
         validate_record(
@@ -256,7 +243,7 @@ fn validate_record(
     lease: Option<&ExecutionResourceLease<'_>>,
     schema: &crate::branch::RelationalBranchRootSchemaAuthority,
 ) -> Result<(), Stop> {
-    let origin = original.validate_output_membership_header()?;
+    let origin = original.materialization_origin_for_record(&member.record, context)?;
     let (plan, expected) = match member.record {
         RecordRef::Entity(id) => {
             let entry = origin

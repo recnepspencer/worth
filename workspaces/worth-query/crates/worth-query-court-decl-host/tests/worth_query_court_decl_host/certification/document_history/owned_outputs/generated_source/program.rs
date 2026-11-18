@@ -66,6 +66,7 @@ macro_rules! program {
                     .action::<member_edit::Binding, SeedDelivery>().finish_action()
                     .action::<authored_member::retire::Binding, Completion>().finish_action()
                     .action::<authored_member::restore::Binding, Completion>().finish_action()
+                    .action::<member_retarget::operation::Binding, Completion>().finish_action()
                     .action::<member_delete::Binding, Completion>().finish_action().finish();
                 specs
 

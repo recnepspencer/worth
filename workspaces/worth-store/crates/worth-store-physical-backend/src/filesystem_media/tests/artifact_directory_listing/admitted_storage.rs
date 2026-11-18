@@ -1,4 +1,5 @@
 use super::*;
+#[cfg(not(any(target_os = "macos", target_os = "linux")))]
 use crate::filesystem_media::ArtifactTreeAllocatedListingFailure;
 
 #[derive(Debug, PartialEq, Eq)]
@@ -221,7 +222,7 @@ fn malformed_listing_roster_denies_before_name_copy_and_empty_listing_needs_no_r
     media.close();
 }
 
-#[cfg(not(windows))]
+#[cfg(not(any(windows, target_os = "macos", target_os = "linux")))]
 #[test]
 fn unqualified_allocated_listing_denies_without_callbacks_but_raw_listing_remains_available() {
     let parent = tempfile::tempdir().unwrap();

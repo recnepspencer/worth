@@ -75,7 +75,7 @@ pub(crate) fn bulk_planning_digest(
 {
     let planning_failures_digest = bulk_planning_failures_digest(record.planning_failures())?;
     let counters_digest = bulk_planning_counters_digest(record.counters())?;
-    Ok(compose_retained_causal_mapping_evidence_identity(
+    compose_retained_causal_mapping_evidence_identity(
         RetainedCausalMappingDigestArtifact::BulkPlanningRecord,
         &[
             retained_mapping_bridge_identity_part(record.workload_identity()),
@@ -87,7 +87,7 @@ pub(crate) fn bulk_planning_digest(
             retained_mapping_counter_part(record.planning_failure_count()),
             retained_mapping_evidence_part(planning_failures_digest),
         ],
-    )?)
+    )
 }
 
 fn preparation_mode_label(value: BridgePreparationMode) -> &'static str {
@@ -110,7 +110,7 @@ pub(crate) fn historical_evaluation_failure_digest(
         .map(retained_mapping_bridge_identity_part)
         .unwrap_or_else(|| retained_mapping_shape_part("none"));
     let counters_digest = historical_evaluation_counters_digest(record.counters())?;
-    Ok(compose_retained_causal_mapping_evidence_identity(
+    compose_retained_causal_mapping_evidence_identity(
         RetainedCausalMappingDigestArtifact::HistoricalEvaluationFailureRecord,
         &[
             retained_mapping_bridge_identity_part(record.failure_identity()),
@@ -123,7 +123,7 @@ pub(crate) fn historical_evaluation_failure_digest(
             retained_mapping_shape_part(record.detail()),
             retained_mapping_evidence_part(counters_digest),
         ],
-    )?)
+    )
 }
 
 fn historical_failure_class_label(value: BridgeHistoricalEvaluationFailureClass) -> &'static str {
@@ -156,7 +156,7 @@ pub(crate) fn stream_checkpoint_digest(
 ) -> Result<BridgeIdentityEvidence, crate::diagnostics::causal_envelope::BridgeCausalDigestRefusal>
 {
     let counters_digest = stream_protocol_counters_digest(record.counters())?;
-    Ok(compose_retained_causal_mapping_evidence_identity(
+    compose_retained_causal_mapping_evidence_identity(
         RetainedCausalMappingDigestArtifact::StreamCheckpointRecord,
         &[
             retained_mapping_bridge_identity_part(record.checkpoint_token_identity()),
@@ -170,7 +170,7 @@ pub(crate) fn stream_checkpoint_digest(
             retained_mapping_shape_part(record.protocol_semantics_version()),
             retained_mapping_evidence_part(counters_digest),
         ],
-    )?)
+    )
 }
 
 fn historical_evaluation_counters_digest(
@@ -196,10 +196,10 @@ fn historical_evaluation_counters_digest(
         counters.commit_envelope_materialization_count(),
         counters.branch_head_materialization_count(),
     ]);
-    Ok(compose_retained_causal_mapping_evidence_identity_for_basis(
+    compose_retained_causal_mapping_evidence_identity_for_basis(
         RetainedCausalMappingDigestArtifact::HistoricalEvaluationCounters,
         &counter_basis,
-    )?)
+    )
 }
 
 fn bulk_planning_counters_digest(
@@ -226,10 +226,10 @@ fn bulk_planning_counters_digest(
         counters.bulk_parallel_preparation_rejected_count(),
         counters.bulk_parallel_serial_reduction_count(),
     ]);
-    Ok(compose_retained_causal_mapping_evidence_identity_for_basis(
+    compose_retained_causal_mapping_evidence_identity_for_basis(
         RetainedCausalMappingDigestArtifact::BulkPlanningCounters,
         &counter_basis,
-    )?)
+    )
 }
 
 fn bulk_planning_failures_digest(
@@ -238,10 +238,10 @@ fn bulk_planning_failures_digest(
 {
     let failure_basis =
         RetainedCausalMappingDigestBasis::from_bulk_planning_failure_records(failures)?;
-    Ok(compose_retained_causal_mapping_evidence_identity_for_basis(
+    compose_retained_causal_mapping_evidence_identity_for_basis(
         RetainedCausalMappingDigestArtifact::BulkPlanningFailures,
         &failure_basis,
-    )?)
+    )
 }
 
 fn stream_protocol_counters_digest(
@@ -267,10 +267,10 @@ fn stream_protocol_counters_digest(
         counters.stream_checkpoint_lag_count(),
         counters.stream_protocol_mismatch_count(),
     ]);
-    Ok(compose_retained_causal_mapping_evidence_identity_for_basis(
+    compose_retained_causal_mapping_evidence_identity_for_basis(
         RetainedCausalMappingDigestArtifact::StreamProtocolCounters,
         &counter_basis,
-    )?)
+    )
 }
 
 fn checkpoint_frontier_kind_label(value: StreamCheckpointFrontierKind) -> &'static str {

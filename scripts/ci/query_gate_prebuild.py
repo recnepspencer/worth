@@ -3,7 +3,7 @@ from pathlib import Path
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'test_cost'))
-from cargo_capture import CargoRunner
+from query_gate_cargo import GateCargoRunner as CargoRunner
 from prebuild import prepare as prepare_workspace
 from proof_prebuild import prepare as prepare_proof
 

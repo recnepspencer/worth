@@ -43,7 +43,7 @@ impl BridgeConditionalExecutionView<'_> {
                 )
             })?;
         Ok(super::super::BridgeOwnedAsyncCompletionAdmission::new(
-            &self.async_observation_authority,
+            self.async_observation_authority,
             crate::source::map_owned_signal_report(
                 request.request().clone(),
                 validated.clone(),
@@ -59,7 +59,7 @@ impl BridgeConditionalExecutionView<'_> {
     ) -> Result<super::super::BridgeOwnedAsyncCompletionAdmission, BridgeAsyncCompletionRejection>
     {
         let (authority, request, port, binding, raw) = observation.into_parts();
-        if !Arc::ptr_eq(&authority, &self.async_observation_authority) {
+        if !Arc::ptr_eq(&authority, self.async_observation_authority) {
             return Err(BridgeAsyncCompletionRejection::new(
                 BridgeAsyncCompletionRejectionKind::ForeignOwnerObservationAuthority,
                 "effects-indeterminate observation belongs to another owned runtime",
@@ -77,7 +77,7 @@ impl BridgeConditionalExecutionView<'_> {
                 )
             })?;
         Ok(super::super::BridgeOwnedAsyncCompletionAdmission::new(
-            &self.async_observation_authority,
+            self.async_observation_authority,
             crate::source::map_owned_signal_report(request, validated, *report.report())
                 .from_owner_effects_indeterminate(
                 crate::source::BridgeAsyncEffectsIndeterminateCompletion::from_owner_observation(),
@@ -90,7 +90,7 @@ impl BridgeConditionalExecutionView<'_> {
         &self,
         completion: &super::super::BridgeOwnedAsyncCompletionAdmission,
     ) -> Result<BridgeMixedCauseOrdering, BridgeAsyncCompletionRejection> {
-        if !completion.is_owned_by(&self.async_observation_authority) {
+        if !completion.is_owned_by(self.async_observation_authority) {
             return Err(foreign_continuation_denial());
         }
         let report = completion.report();
@@ -115,7 +115,7 @@ impl BridgeConditionalExecutionView<'_> {
         &self,
         request: &super::super::BridgeOwnedAsyncRequestAdmission,
     ) -> Result<(), BridgeAsyncCompletionRejection> {
-        if request.is_owned_by(&self.async_observation_authority) {
+        if request.is_owned_by(self.async_observation_authority) {
             Ok(())
         } else {
             Err(foreign_continuation_denial())

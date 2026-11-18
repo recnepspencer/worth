@@ -148,16 +148,18 @@ Err(PublicationDenial::Stopped(stop)) => {
         if !matches!(
             &outcome,
             WorthQueryBranchAdoptionPublicationOutcome::ProductUnpublished(_)
-        ) {
-            if let Some(attempt) = durable {
-                let result = application
-                    .installed_program_support()
-                    .expect("retained support owner")
-                    .lifecycle()
-                    .release_branch_adoption(&execution, attempt);
-                if let Err(cause) = result {
-                    return WorthQueryBranchAdoptionPublicationOutcome::ObligationDischargePending {cause,outcome:Box::new(outcome)};
-                }
+        ) && let Some(attempt) = durable
+        {
+            let result = application
+                .installed_program_support()
+                .expect("retained support owner")
+                .lifecycle()
+                .release_branch_adoption(&execution, attempt);
+            if let Err(cause) = result {
+                return WorthQueryBranchAdoptionPublicationOutcome::ObligationDischargePending {
+                    cause,
+                    outcome: Box::new(outcome),
+                };
             }
         }
         outcome

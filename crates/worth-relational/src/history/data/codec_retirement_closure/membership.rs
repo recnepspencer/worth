@@ -61,9 +61,15 @@ pub(super) fn latest(
                             context,
                         )?
                         .ok_or("maintenance producer history absent")?;
-                    let origin = original.validate_output_membership_header()?;
-                    if origin.outputs.binary_search(&id).is_ok() {
-                        return Ok(original);
+                    for origin in original.output_origins() {
+                        charge(context, origin.outputs.len() + 1)?;
+                        if origin.outputs.binary_search(&id).is_ok() {
+                            original.materialization_origin_for_record(
+                                &RecordRef::Entity(id),
+                                context,
+                            )?;
+                            return Ok(original.clone());
+                        }
                     }
                 }
             }

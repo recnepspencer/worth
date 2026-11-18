@@ -18,15 +18,16 @@ impl QueryJournalPublication {
         let run = |_: Option<&ExecutionResourceLease<'_>>| {
             request
                 .run_native_with_checkpoint(|_| {
-                    let (payload, view) = {
-                        let mut state = self.state();
-                        (state.payload.take(), state.view.take())
-                    };
-                    if let Some(payload) = payload {
-                        match journal.start_publication(
-                            payload,
-                            view.expect("original payload controls retained"),
-                        ) {
+                    let admission = self.state().admission.take();
+                    if let Some(admission) = admission {
+                        let start = match admission.advance(&journal) {
+                            OrderedJournalPublicationAdmissionProgress::Pending(original) => {
+                                self.state().admission = Some(original);
+                                return;
+                            }
+                            OrderedJournalPublicationAdmissionProgress::Started(start) => start,
+                        };
+                        match start {
                             OrderedJournalPublicationStart::Ready {
                                 operation,
                                 recovery,

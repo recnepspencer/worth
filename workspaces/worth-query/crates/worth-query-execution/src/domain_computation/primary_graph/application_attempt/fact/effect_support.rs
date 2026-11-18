@@ -183,6 +183,20 @@ impl Fact {
             Self::ComponentSelection { observation } => {
                 observation.support_equal_between(execution, runtime, before, after_own, complete)
             }
+            Self::SourceReadAuthorization { observation }
+                if observation.applied_candidate().is_some() =>
+            {
+                observation.supports_final_candidate(execution, runtime, before, complete)
+            }
+            Self::SourcePublication { observation }
+                if observation.applied_candidate().is_some() =>
+            {
+                Ok(observation
+                    .remains_equal(runtime, execution, before)
+                    .map_err(source_stop)?
+                    && observation
+                        .applied_support_equal(execution, runtime, before, after_own, complete)?)
+            }
             // Control and external publication observations retain their ordinary
             // owners. A moved unsupported observation refuses, never grants support.
             _ => Ok(

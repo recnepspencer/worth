@@ -144,6 +144,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             &worth_relational::facade::runtime::RelationalPinnedRead<
                 worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
             >,
+            &dyn crate::domain_computation::primary_graph::provider::AppliedOutputParticipants,
         )>,
         coordination: &crate::domain_computation::primary_graph::provider::WorthQueryApplicationBranchCommitCoordination<'_>,
         allocation: worth_execution::ExecutionAllocationPolicy<'_, '_>,
@@ -187,6 +188,15 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
                     HandlerExecutionDenial::new(cause),
                 ))
             }
+        };
+        // Only the actual assembly can lend appended participants. Planning on C
+        // has neither an applied pin nor an appended roster.
+        let (applied, access) = match applied {
+            Some((before_pin, candidate, participants)) => (
+                Some((before_pin, candidate)),
+                access.with_applied_participants(participants),
+            ),
+            None => (None, access),
         };
         let report = match self.prepare_mutation_handler_plan_on_basis::<B>(
             phase,

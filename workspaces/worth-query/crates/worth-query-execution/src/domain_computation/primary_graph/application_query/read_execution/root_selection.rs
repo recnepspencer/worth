@@ -255,10 +255,16 @@ pub(super) fn select_applied_source_root(
     if !contract.root_paths().is_empty()
         || contract.component_selection().is_some()
         || contract.orbit().is_some()
-        || contract.managed_index_selection().is_some()
     {
         return Err(path_union::traversal_denial(permission.name));
     }
+    if contract.managed_index_selection().is_some() {
+        return managed_index::select_applied(runtime, execution, graph, permission, interruption);
+    }
+    if permission.applied_managed_rows.is_some() || permission.managed_rows.is_some() {
+        return Err(path_union::traversal_denial(permission.name));
+    }
+    interruption.checkpoint(permission.name)?;
     let projection = runtime.project_candidate();
     match contract.predicates() {
         [] => Ok(BoundedRootSelection {

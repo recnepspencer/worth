@@ -112,6 +112,9 @@ pub struct WorthQueryProviderSessionFailure {
     counters: WorthQueryProviderSessionProtocolCounters,
     allocation: Option<worth_execution::ExecutionAllocationDenial>,
     native_preparation: Option<std::sync::Arc<native_preparation::NativePreparationFailure>>,
+    managed_source_publication: Option<
+        std::sync::Arc<worth_relational::facade::runtime::ManagedIndexSourcePreparationDenial>,
+    >,
     source_query_authorization: Option<
         Box<crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind>,
     >,
@@ -200,6 +203,7 @@ impl WorthQueryProviderSessionFailure {
             counters,
             allocation: None,
             native_preparation: None,
+            managed_source_publication: None,
             checked_read: None,
             source_query_authorization: None,
             output_verification_capacity: None,
@@ -353,5 +357,6 @@ impl WorthQueryProviderSessionFailure {
 }
 
 mod managed_index;
+mod managed_source;
 
 mod court_doors_for_test;

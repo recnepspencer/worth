@@ -90,7 +90,7 @@ where
     let payments = if assessed_rejection {
         payments.provides::<super::assessed_payments::RejectedPaymentPort>()
     } else {
-        payments
+        payments.conditional_operation::<PublishRejectedPaymentAssessment>()
     };
     let payments = if include_ordinary_payment_approval {
         payments.action::<ApprovePaymentMutationBinding, super::workflow_actions::ApprovedPaymentEffectDelivery>().finish_action()

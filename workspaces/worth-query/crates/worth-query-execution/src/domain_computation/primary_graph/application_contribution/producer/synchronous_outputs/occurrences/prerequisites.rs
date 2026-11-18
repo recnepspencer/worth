@@ -41,6 +41,7 @@ where
 pub(super) trait PrerequisiteExecution<S: ApplicationSchema, C: ApplicationConnectionShape<S>> {
     fn incoming(
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        candidate: &RelationalAuthoredCoupledCandidate<'_>,
         pin: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
         source: worth_relational::facade::identity::EntityId,
         demand: &dyn Any,
@@ -83,6 +84,7 @@ where
 {
     fn incoming(
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        candidate: &RelationalAuthoredCoupledCandidate<'_>,
         pin: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
         source: worth_relational::facade::identity::EntityId,
         demand: &dyn Any,
@@ -102,6 +104,7 @@ where
             ))
         })?;
         let rows = context.discover_as_at::<Prerequisites<S, C>, PrerequisiteRows<S, C>>(
+            candidate,
             pin,
             source,
             intent,

@@ -53,7 +53,9 @@ pub(crate) mod fact_observation;
 pub(in crate::domain_computation::primary_graph) use decision_reuse::{
     CompletedDecisionReuseProof, PreparedDecisionReuseContext,
 };
-pub(in crate::domain_computation::primary_graph) use fact_observation::observe_admitted_fact;
+pub(in crate::domain_computation::primary_graph) use fact_observation::{
+    observe_admitted_applied_fact, observe_admitted_fact,
+};
 pub(crate) mod handler_fact_boundary;
 pub(in crate::domain_computation) use handler_fact_boundary::CompletedHandlerFactBoundary;
 pub(crate) mod aggregate;

@@ -34,6 +34,8 @@ pub(crate) use observation::{
 pub use observation::{ManagedIndexSourceRead, PreparedManagedIndexSourceRead};
 pub(crate) use preparation::SourceViews;
 mod applied;
+mod applied_read;
+pub use applied_read::{ManagedIndexAppliedSourcePublication, ManagedIndexAppliedSourceRead};
 pub(crate) mod authored_history;
 pub(crate) mod routing;
 pub use preparation::{

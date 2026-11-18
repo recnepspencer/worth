@@ -1,5 +1,5 @@
 //! Ordinary program installation; only the new capability opts into this Source.
-use super::{authoring, mutation, prefix, rule, schema::*};
+use super::{authoring, mutation, prefix, required_support, rule, schema::*};
 use crate::application_invariant_acceptance::managed_index::prefix_observation;
 use std::sync::Arc;
 use worth_query_decl::facade::{application_program::*, application_schema::*};
@@ -16,6 +16,11 @@ pub struct Configuration {
 }
 impl WorthQueryApplicationContribution<Catalog> for Contribution {
     type Configuration = Configuration;
+    fn contracts(
+        contracts: &mut WorthQueryApplicationContributionContracts<Catalog>,
+    ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+        required_support::contracts(contracts)
+    }
     fn configure(
         config: Configuration,
         setup: &mut WorthQueryApplicationContributionSetup<'_, Catalog>,
@@ -24,6 +29,7 @@ impl WorthQueryApplicationContribution<Catalog> for Contribution {
             .managed_index_provider::<prefix::PrefixIndex, _>(prefix::Provider(config.provider))
             .with_predicate_routing()
             .install()?;
+        required_support::configure(Arc::clone(&config.records), setup)?;
         setup.handler::<authoring::Binding, _>(authoring::Handler)?;
         setup.handler::<mutation::Binding, _>(mutation::Handler)?;
         setup.invariant(
@@ -41,7 +47,7 @@ impl ApplicationFeature<Catalog> for Feature {
 }
 impl ApplicationProgramDefinition<Catalog> for Program {
     type Contributions = (Contribution,);
-    type Outputs = ApplicationProgramOutputs<ApplicationNoOutputGraph>;
+    type Outputs = ApplicationProgramOutputs<required_support::program::Root>;
     type Rules = ApplicationRuleList<
         ApplicationRuleAt<
             ApplicationSharedRuleRef<Catalog, rule::CompleteNestedSource>,
@@ -52,12 +58,20 @@ impl ApplicationProgramDefinition<Catalog> for Program {
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("nested-catalog.program.v1");
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
-        vec![ApplicationFeatureSpec::root::<Catalog, Feature>()
-            .native_action::<authoring::Binding>()
-            .finish_action()
-            .native_action::<mutation::Binding>()
-            .finish_action()
-            .finish()]
+        vec![
+            ApplicationFeatureSpec::root::<Catalog, Feature>()
+                .provides::<required_support::program::ItemsOutput>()
+                .native_action::<authoring::Binding>()
+                .finish_action()
+                .action::<required_support::directory::Binding, required_support::directory::Delivery>()
+                .finish_action()
+                .action::<required_support::source::Binding, required_support::program::Delivery>()
+                .finish_action()
+                .native_action::<mutation::Binding>()
+                .finish_action()
+                .finish(),
+            required_support::program::feature(),
+        ]
     }
 }
 

@@ -53,19 +53,30 @@ fn case(transitive: bool, changed_own_source: bool) {
             .unwrap();
         roots.push(selected.observed_sources()[0].root_entity_for_test());
         if rank == 0 || changed_own_source {
-            request
+            // Keep outputs stale: this native action leaves delivery to the
+            // later demand, where the frozen-custody assertions are observed.
+            let changed = request
                 .advanced()
-                .mutate(PlanarSourceAdjustment {
+                .mutate(PlanarEdit(PlanarMutation {
                     scope_key: key.into(),
-                    replacement_y: length(7),
-                })
+                    operation: worth_query_consumer_values::PlanarOperation::Adjust(vec![
+                        worth_query_consumer_values::PlanarAdjustment {
+                            body_key: key.into(),
+                            replacement_y: length(7),
+                        },
+                    ]),
+                }))
                 .expect_source(selected.observed_sources()[0].clone())
                 .idempotency(&(0x9176_7880_u64 + rank as u64))
-                .execute_performed::<application::Program, program::ChainRoot>(
+                .execute_in_program::<application::Program>(
                     &application,
                     worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
                 )
                 .unwrap();
+            assert!(matches!(
+                changed,
+                worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome::Committed { .. }
+            ));
         }
     }
     application.delay_next_output_readiness_delivery_for_test();

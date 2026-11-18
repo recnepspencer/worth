@@ -2,7 +2,7 @@
 use super::*;
 use computation::{arm, Failure, Schedule};
 use std::{collections::BTreeMap, num::NonZeroUsize};
-use worth_query_host::facade::application_entry::WorthQueryApplicationPerformedMutationOutcome;
+use worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome;
 use worth_query_host::facade::primary_graph::{
     advancement_observations_on_this_thread_for_test as observations,
     place_managed_computations_on_this_thread_for_test as place,
@@ -139,21 +139,36 @@ pub(super) fn run_costs(
             .unwrap();
         let outcome = request
             .advanced()
-            .mutate(PlanarSourceAdjustment {
+            .mutate(PlanarEdit(PlanarMutation {
                 scope_key: key.to_owned(),
-                replacement_y: length(y),
-            })
+                operation: worth_query_consumer_values::PlanarOperation::Adjust(vec![
+                    worth_query_consumer_values::PlanarAdjustment {
+                        body_key: key.to_owned(),
+                        replacement_y: length(y),
+                    },
+                ]),
+            }))
             .expect_source(rows.observed_sources()[0].clone())
             .idempotency(&idempotency)
-            .execute_performed::<application::Program, program::ChainRoot>(
+            .execute_in_program::<application::Program>(
                 &application,
                 worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
             )
             .unwrap();
         assert!(matches!(
             outcome,
-            WorthQueryApplicationPerformedMutationOutcome::Performed(_)
+            WorthQueryApplicationMutationOutcome::Committed { .. }
         ));
+    }
+    // The native edits leave these known initial outputs for actual advancement.
+    for (key, expected) in [("diamond-left", 2), ("diamond-right", 51)] {
+        let output = request
+            .query(PlanarOutputRead {
+                body_key: key.into(),
+            })
+            .execute()
+            .unwrap();
+        assert_eq!(output.rows()[0].value, length(expected));
     }
     let overlap = matches!(placement, Placement::Leased(width) if width.get() > 1)
         && !matches!(failure, Some((_, Failure::Prepare)));

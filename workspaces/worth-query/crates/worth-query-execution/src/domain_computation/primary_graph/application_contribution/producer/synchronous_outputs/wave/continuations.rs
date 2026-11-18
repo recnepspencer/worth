@@ -33,7 +33,8 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
                 parent.pin = pin.clone();
                 // This row's own static intent is owed by its own demand.
                 context.owner.owe(&task.owed);
-                task.tree.discover_static(context, parent, &mut next)?;
+                task.tree
+                    .discover_static(context, candidate, parent, &mut next)?;
             }
             task.continuation_done = true;
         }

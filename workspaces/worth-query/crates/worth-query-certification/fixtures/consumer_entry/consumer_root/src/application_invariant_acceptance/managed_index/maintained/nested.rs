@@ -8,6 +8,7 @@ mod host;
 mod mutation;
 pub(super) mod prefix;
 mod query;
+mod required_support;
 pub(super) mod rule;
 pub(super) mod schema;
 mod shape;

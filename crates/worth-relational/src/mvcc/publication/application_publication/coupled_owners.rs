@@ -62,7 +62,6 @@ pub(crate) enum CoupledSource {
     },
     MemberEditRestoration {
         source: EntityId,
-        anchor: EntityId,
         plan: Arc<RelationalAuthoredRestoration>,
     },
 }

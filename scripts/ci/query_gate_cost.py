@@ -5,7 +5,7 @@ from pathlib import Path
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'test_cost'))
-from cargo_capture import CargoRunner
+from query_gate_cargo import GateCargoRunner as CargoRunner
 from doc_lane import execute as execute_documentation_lane
 from logs import read_lane
 from run_lane import LaneExecutionFailure, execute as execute_workspace

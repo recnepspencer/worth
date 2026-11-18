@@ -95,6 +95,15 @@ impl ManagedSourceRootImage {
     }
 }
 impl ManagedIndexSourceObservation {
+    pub(crate) fn matches_applied_publication(
+        &self,
+        proposal: &crate::mvcc::RelationalMutationProposalIdentity,
+    ) -> bool {
+        self.selected.runtime_instance_id() == proposal.runtime_instance_id()
+            && self.selected.commit_id() == Some(proposal.commit_id())
+            && self.selected.version_id() == proposal.proposed_version_id()
+    }
+
     pub fn payload(&self) -> &Arc<dyn Any + Send + Sync> {
         &self.payload
     }

@@ -125,33 +125,16 @@ where
         ));
     }
     let prepared_key = prepared_key(&observed_source, *identities.input_identity(), edition)?;
-    let prepared_context = if let Some(contract) = Binding::INPUT_REUSE.filter(|contract| {
-        contract.determinism() == worth_foundational::facade::DeterminismContract::CanonicalBitwise
-    }) {
-        let declared = contract.context();
-
-        let key = declared
-            .contains(super::super::super::WorthQueryDecisionContextDependencies::KEY)
-            .then(|| *identities.key_identity());
-        let principal_witness = declared
-            .contains(super::super::super::WorthQueryDecisionContextDependencies::PRINCIPAL)
-            .then(|| principal.freshness().reuse_witness());
-        let scope_witness = declared
-            .contains(super::super::super::WorthQueryDecisionContextDependencies::SCOPE)
-            .then(|| {
-                admission
-                    .operation_scope_binding()
-                    .decision_reuse_witness(*admission.operation_authority_identity_bytes())
-            });
-        crate::domain_computation::primary_graph::output_lineage::PreparedDecisionReuseContext::new(
-            contract,
-            key,
-            principal_witness,
-            scope_witness,
-        )
-    } else {
-        None
-    };
+    let prepared_context = super::super::input_reuse::prepared_context(
+        Binding::INPUT_REUSE,
+        *identities.key_identity(),
+        || principal.freshness().reuse_witness(),
+        || {
+            admission
+                .operation_scope_binding()
+                .decision_reuse_witness(*admission.operation_authority_identity_bytes())
+        },
+    );
 
     let contact_root = observed_source.model_root;
     let prepared_source = runtime

@@ -83,7 +83,7 @@ where
         context: &AuthoredEditStageContext<'_, '_, '_, S>,
         unseen: &UnseenAuthoredEnvelope<'_>,
     ) -> Result<PrefixCandidate<S, B>, WorthQueryOutputDemandDenial> {
-        let admission = self.execution_admission(context)?;
+        let mut admission = self.execution_admission(context)?;
         let identities = self
             .key
             .stage_with_encoded_input::<S, B>(&self.input, self.ordinal)
@@ -91,7 +91,7 @@ where
         let binding = WorthQueryApplicationIdempotencyBinding::for_mutation_identities(&identities)
             .bind_edit_envelope(&unseen.intent)
             .bind_admission(&admission.operation);
-        let binding = self.bind_corrective_identity(binding);
+        let binding = self.bind_corrective_identity(admission.bind_source(binding));
         let before = admission
             .operation
             .graph_work()
@@ -108,6 +108,7 @@ where
             .phase
             .checked_execution_request_for(context.application.product_runtime())
             .map_err(|cause| self.planning_denial(format!("stage execution: {cause:?}")))?;
+        admission.consume_source(context)?;
         let (outcome, work) = context
             .application
             .execute_authored_stage_handler::<B>(

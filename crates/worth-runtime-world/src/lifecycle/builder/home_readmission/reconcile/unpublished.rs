@@ -39,19 +39,19 @@ where
         }
         let expected = find(observations, &open.expected)?;
         let disposition = image.dispositions.get(&open.association.attempt());
-        if let Some(disposition) = disposition {
-            if let RecoveredCustodyDisposition::Released(_) = disposition.disposition() {
-                root.state
-                    .recovery
-                    .readmit_released_original(
-                        execution,
-                        disposition,
-                        expected,
-                        effects.take(&open.association.attempt()),
-                    )
-                    .map_err(Denial::Medium)?;
-                continue;
-            }
+        if let Some(disposition) = disposition
+            && let RecoveredCustodyDisposition::Released(_) = disposition.disposition()
+        {
+            root.state
+                .recovery
+                .readmit_released_original(
+                    execution,
+                    disposition,
+                    expected,
+                    effects.take(&open.association.attempt()),
+                )
+                .map_err(Denial::Medium)?;
+            continue;
         }
         let before = descriptors
             .get(&open.expected.commit)

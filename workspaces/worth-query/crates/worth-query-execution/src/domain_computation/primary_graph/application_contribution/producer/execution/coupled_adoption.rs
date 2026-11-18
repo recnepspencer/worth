@@ -56,7 +56,13 @@ impl CoupledAdoption {
             return Ok(None);
         }
         let Some(receipt) = candidate
-            .completed_coupled_receipt(source.idempotency_identity(), source.checkpoint_identity())
+            .completed_coupled_receipt(execution, source)
+            .map_err(|cause| {
+                source_readmission::ready_resource_denial(
+                    Binding::IDENTITY,
+                    worth_relational::facade::mvcc::CompanionPreflightStop::Execution(cause),
+                )
+            })?
         else {
             return Ok(None);
         };

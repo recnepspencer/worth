@@ -81,13 +81,13 @@ fn occurrence_groups(
     for connection in connections {
         if let Some(context) = connection.occurrence_component() {
             let group = groups[&(connection.source_instance(), connection.source_feature())];
-            if let Some(previous) = contexts.insert(group, context) {
-                if previous != context {
-                    return Err(denial(
-                        ApplicationProgramValidationDenialKind::IncompleteOccurrenceComponent,
-                        "place overlapping connection groups inside one ApplicationOutputOccurrences",
-                    ));
-                }
+            if let Some(previous) = contexts.insert(group, context)
+                && previous != context
+            {
+                return Err(denial(
+                    ApplicationProgramValidationDenialKind::IncompleteOccurrenceComponent,
+                    "place overlapping connection groups inside one ApplicationOutputOccurrences",
+                ));
             }
         }
     }

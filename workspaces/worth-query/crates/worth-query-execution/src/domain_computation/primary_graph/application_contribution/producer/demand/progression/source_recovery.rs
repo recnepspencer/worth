@@ -27,7 +27,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                 )
             })?;
         let resolved = execution.run_native_with_checkpoint(|context| {
-            self.runtime.output_demands.resolve_replay_source(context, selector, kind.clone())
+            self.runtime.output_demands.resolve_replay_source(context, selector, kind)
         }).map_err(|cause| WorthQueryOutputDemandDenial::new(
             WorthQueryOutputDemandDenialKind::ExecutionRequest(crate::domain_computation::primary_graph::application_contribution::advancement_denial(cause)), "registered-source-replay"
         ))?.0;
@@ -40,12 +40,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                 ) =>
             {
                 let crate::domain_computation::primary_graph::WorthQueryOutputSourceReplay::Recorded(original) = selector else { return Err(cause); };
-                self.readmit_recorded_output_source(
-                    &execution,
-                    original,
-                    kind.clone(),
-                    root_identity,
-                )?;
+                self.readmit_recorded_output_source(&execution, original, kind, root_identity)?;
                 execution.run_native_with_checkpoint(|context| {
                     self.runtime.output_demands.resolve_replay_source(context, selector, kind)
                 }).map_err(|cause| WorthQueryOutputDemandDenial::new(

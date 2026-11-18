@@ -91,3 +91,22 @@ impl PhysicalMutationStartPort {
         owner.start(prepared, step)
     }
 }
+
+impl PhysicalMutationRuntimeOwner {
+    /// Observe the exact active predecessor without taking its cancellation or
+    /// publication custody. An unresolved original cannot authorize a successor.
+    pub(in crate::physical_runtime) fn await_publication_predecessor(
+        &self,
+        identity: crate::physical_runtime::PhysicalMutationIdentity,
+    ) -> bool {
+        let predecessor = self.state().attempts.get(&identity).cloned();
+        let Some(predecessor) = predecessor else {
+            return false;
+        };
+        matches!(
+            predecessor.wait(),
+            crate::physical_runtime::PhysicalMutationOutcome::Completed(_)
+                | crate::physical_runtime::PhysicalMutationOutcome::ProvenNoEffect(_)
+        )
+    }
+}

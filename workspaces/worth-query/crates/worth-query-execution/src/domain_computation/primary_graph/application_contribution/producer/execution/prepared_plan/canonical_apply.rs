@@ -62,7 +62,7 @@ impl<'owner, Key, Value, Stop> CanonicalApplyCursor<'owner, Key, Value, Stop> {
 
     /// The owner classifies each completion: holding a queued failure continues
     /// the cursor. A caller failure or request stop drops the inaccessible suffix.
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn apply(
+    pub(in crate::domain_computation::primary_graph::application_contribution) fn apply(
         self,
 
         mut published: impl FnMut(Key, Result<Value, Stop>) -> Result<(), Stop>,

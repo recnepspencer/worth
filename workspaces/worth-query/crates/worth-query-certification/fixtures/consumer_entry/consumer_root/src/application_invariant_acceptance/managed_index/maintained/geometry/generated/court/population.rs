@@ -38,6 +38,11 @@ pub(super) fn produce(
         .runtime()
         .request(principal, scope)
         .on_branch(world.current_world());
+    let before = request
+        .retain_current_read()
+        .unwrap()
+        .selected_commit()
+        .clone();
     let performed = request
         .advanced()
         .mutate(action::RequestEdge {
@@ -53,6 +58,44 @@ pub(super) fn produce(
     let WorthQueryApplicationPerformedMutationOutcome::Performed(performed) = performed else {
         panic!("geometry source action must freshly publish")
     };
+    let publication = performed
+        .receipt()
+        .committed_product_publication()
+        .composite_commit()
+        .clone();
+    assert_eq!(publication.owner_identity(), before.owner_identity());
+    assert_eq!(
+        publication.ordinal(),
+        before.ordinal() + 1,
+        "source and geometry co-commit"
+    );
+    let authored = request
+        .query(source::ReadDirectory {
+            directory: "A".into(),
+        })
+        .execute()
+        .unwrap();
+    assert_eq!(authored.rows().len(), 1);
+    assert_eq!(
+        (&*authored.rows()[0].directory, &*authored.rows()[0].note),
+        ("A", "generated-geometry")
+    );
+    let produced = request
+        .query(query::ReadSource {
+            directory: "A".into(),
+        })
+        .execute()
+        .unwrap();
+    assert_eq!(
+        values(produced.rows()),
+        expected("A", 10),
+        "real endpoints exist before delivery"
+    );
+    let coordinate = produced.rows()[0].coordinate;
+    assert_eq!(
+        request.retain_current_read().unwrap().selected_commit(),
+        &publication
+    );
     let mut output = performed
         .start_required_outputs(world, &request, WorthQueryOutputDemandControls::default())
         .unwrap_or_else(|failure| panic!("geometry demand starts: {:?}", failure.denial()));
@@ -68,13 +111,63 @@ pub(super) fn produce(
             }
         })
         .expect("one actual geometry producer settles inside its bound");
-    assert_eq!(settlement.root_producer_contacts_in_this_demand(), 1);
-    assert!(settlement.root_receipt().is_some());
+    assert_eq!(settlement.root_producer_contacts_in_this_demand(), 0);
+    assert_eq!(settlement.work().producer_contact_count(), 0);
+    assert_eq!(settlement.work().derived_publication_count(), 0);
+    assert_eq!(
+        request.retain_current_read().unwrap().selected_commit(),
+        &publication
+    );
+    assert_eq!(
+        output
+            .receipt()
+            .committed_product_publication()
+            .composite_commit(),
+        &publication
+    );
+    let original = settlement
+        .performed_source()
+        .expect("the actual source owner remains retained");
+    assert_eq!(
+        original
+            .receipt()
+            .retained_receipt()
+            .unwrap()
+            .committed_product_publication()
+            .composite_commit(),
+        &publication
+    );
+    assert_eq!(original.root_fulfillment().source_commit(), &publication);
+    assert_eq!(original.root_fulfillment().output_commit(), &publication);
+    assert_eq!(settlement.observation().selected_commit(), &publication);
     let roles = settlement
         .root_settlement()
         .outputs_of::<operation::Outputs>()
         .unwrap();
-    assert!(roles.entity::<operation::EdgeOutput>().is_ok());
+    let edge = roles.entity::<operation::EdgeOutput>().unwrap();
+    let id = edge.entity_id();
+    assert_eq!(
+        (
+            id.partition_value(),
+            id.local_slot_value(),
+            id.generation_value()
+        ),
+        coordinate
+    );
     assert!(roles.entity::<operation::StartOutput>().is_ok());
     assert!(roles.entity::<operation::EndOutput>().is_ok());
+    assert_eq!(
+        request
+            .query(query::ReadSource {
+                directory: "A".into()
+            })
+            .execute()
+            .unwrap()
+            .rows(),
+        produced.rows()
+    );
+    assert_eq!(
+        request.retain_current_read().unwrap().selected_commit(),
+        &publication
+    );
 }

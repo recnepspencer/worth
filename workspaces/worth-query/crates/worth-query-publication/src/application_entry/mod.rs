@@ -105,7 +105,6 @@ mod ordinary;
 pub use ordinary::{WorthQueryOperationBuilder, WorthQueryPendingApplicationLane};
 mod operation;
 #[doc(hidden)]
-pub use operation::WorthQuerySourceCompletionHandoffPauseForTest;
 pub use operation::{
     WorthQueryClosedFixedDelivery, WorthQueryClosedFixedTerminal, WorthQueryClosedOperation,
     WorthQueryCompletedSourceOperation, WorthQueryCompletedWorkflowOperation,

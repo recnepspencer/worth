@@ -8,7 +8,13 @@ pub(super) fn decode(
     use RelationalRecordedComponentRefusal as Refusal;
     let work = u64::try_from(bytes.len()).map_err(|_| copying::malformed())?;
     execution
-        .run_native_with_checkpoint(|context| context.checkpoint(work))
+        .run_native_with_checkpoint(|context| {
+            if context.has_accounting() {
+                context.checkpoint(work)
+            } else {
+                context.poll()
+            }
+        })
         .map_err(|cause| Refusal::Request(cause.into()))?
         .0
         .map_err(|cause| {

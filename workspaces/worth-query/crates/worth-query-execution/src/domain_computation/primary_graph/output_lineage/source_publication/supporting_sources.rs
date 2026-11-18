@@ -18,6 +18,9 @@ impl WorthQueryApplicationOutputLineage {
                 continue;
             }
             visited.insert(Arc::clone(evidence.identity()));
+            if evidence.source_facts().is_none() {
+                return Err(stop(Kind::IncompleteDependencyCoverage));
+            }
             // This is the native recorded address, not a caller key. Missing
             // original custody cannot be promoted to a live source partition.
             let identity = evidence.identity();

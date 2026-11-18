@@ -33,7 +33,8 @@ pub use crate::validation::engine::{InvariantExecutionResult, InvariantObservati
 
 pub use crate::mvcc::{ManagedIndexSourceObservation, ManagedIndexSourceRebuild};
 pub use crate::validation::candidate_source::{
-    ManagedIndexBranchImage, ManagedIndexPublishedSourceRoot, ManagedIndexSourceAvailability,
+    ManagedIndexAppliedSourcePublication, ManagedIndexAppliedSourceRead, ManagedIndexBranchImage,
+    ManagedIndexPublishedSourceRoot, ManagedIndexSourceAvailability,
     ManagedIndexSourceCacheRetirement, ManagedIndexSourceContextFactory,
     ManagedIndexSourceContextReceipt, ManagedIndexSourceContextShare, ManagedIndexSourceField,
     ManagedIndexSourceOccurrence, ManagedIndexSourcePreparation,

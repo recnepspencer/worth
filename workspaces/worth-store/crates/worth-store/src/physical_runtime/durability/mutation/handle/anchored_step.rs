@@ -39,6 +39,12 @@ impl ManagedPublicationCustody {
     }
 }
 impl PhysicalMutationAttempt {
+    pub(in crate::physical_runtime) fn retains_publication_original(&self) -> bool {
+        self.anchored_step
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+            .is_some()
+    }
     pub(in crate::physical_runtime) fn register_publication_step(
         self: &Arc<Self>,
         registration: ManagedPublicationRegistration,

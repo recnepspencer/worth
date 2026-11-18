@@ -143,6 +143,10 @@ impl MemberCustodyRegistry {
         }
         drop(frozen);
         Ok(MemberCustodyOwner {
+            #[cfg(debug_assertions)]
+            physical_owner_label: Some(
+                crate::physical_owner_labels::register::<MemberCustodyOwner>(&serving),
+            ),
             serving: Some(serving),
             state: self.state.clone(),
             members: prepared.members,

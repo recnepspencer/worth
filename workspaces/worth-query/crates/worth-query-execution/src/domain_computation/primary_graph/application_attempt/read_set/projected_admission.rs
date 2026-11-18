@@ -80,7 +80,11 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             projected_scope: projection.scope,
             decision_reads: projection.facts,
             dependent_source_facts: Some(projection.source_facts),
-            consumed_outputs: projection.consumed_outputs.into_values().collect(),
+            consumed_outputs: projection
+                .consumed_outputs
+                .into_values()
+                .chain(projection.applied_consumptions)
+                .collect(),
         };
         self.begin_projected_read_parts(execution, admission, parts, allocation_policy)
     }

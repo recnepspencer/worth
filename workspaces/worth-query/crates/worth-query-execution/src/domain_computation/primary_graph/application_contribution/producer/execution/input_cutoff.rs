@@ -1,6 +1,8 @@
 //! Producer input preparation consumed by fresh execution or stable publication.
 
+mod computation_prior;
 mod refusal;
+pub(super) use computation_prior::prepare_computation_prior;
 mod stable_apply;
 use super::*;
 use crate::domain_computation::primary_graph::application_contribution::InstalledProducerEdition;
@@ -106,40 +108,17 @@ where
     let observation = selected.product().observation();
     let handle = &runtime.runtime.primary_provider.graph;
     let source_owner = &handle.source_owner.invalidation_owner;
-    // A producer whose operation runs a retained partitioned computation
-    // takes the live record at the demand's own address, the one its
-    // publication replaces: the run compares its edition, its input digest
-    // and every fact it retained, so reusing a partition needs no
-    // whole-output input reuse. The lookup charges `admission` for the
-    // partition index entries and the record it reads. No other producer
-    // looks up or pays for one.
-    let prior = if edition.retains_computation() {
+    if edition.retains_computation() {
         observation::reach(Gate::ComputationPrior);
-        let mut prior = handle
-            .output_lineage
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .computation_prior_at_address::<Operation<Schema, Binding>>(
-                scope,
-                observation,
-                source.partition_identity(),
-                edition,
-                &execution,
-            )
-            .map_err(cutoff_admission_denial)?;
-        handle
-            .with_runtime(&execution, |relational| {
-                prior.observe_changes(
-                    source_owner,
-                    relational,
-                    selected.application_basis().snapshot_handle(),
-                )
-            })
-            .map_err(cutoff_admission_denial)?;
-        Some(prior)
-    } else {
-        None
-    };
+    }
+    let prior = prepare_computation_prior::<Schema, Binding>(
+        &execution,
+        runtime,
+        selected,
+        scope,
+        source.partition_identity(),
+        edition,
+    )?;
     let (key, context) = match (key, context) {
         (Some(key), Some(context)) => (key, context),
         (key, context) => {

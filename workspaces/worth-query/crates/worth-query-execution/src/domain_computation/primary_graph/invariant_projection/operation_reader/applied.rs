@@ -22,6 +22,8 @@ pub(in crate::domain_computation::primary_graph) struct AppliedOperationProjecti
         super::super::WorthQueryRealizedProjectionScope,
     pub(in crate::domain_computation::primary_graph) facts: DecisionReads,
     pub(in crate::domain_computation::primary_graph) source_facts: RetainedSourceFacts,
+    pub(in crate::domain_computation::primary_graph) applied_consumptions:
+        Vec<crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence>,
     pub(in crate::domain_computation::primary_graph) consumed_outputs: std::collections::BTreeMap<
         Arc<super::super::super::output_lineage::RecordedSettlementIdentity>,
         super::super::ConsumedOutputEvidence,
@@ -116,6 +118,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthorit
                 facts,
                 source_facts: completed.dependent_source_facts,
                 consumed_outputs: completed.consumed_outputs,
+                applied_consumptions: completed.applied_consumptions,
                 product: product.retained_clone(),
                 marker: PhantomData,
             },

@@ -7,7 +7,21 @@ use crate::domain_computation::primary_graph::{
 use worth_relational::facade::runtime::{
     RelationalAppliedCandidateReadIdentity, RelationalPinnedRead,
 };
+pub(in crate::domain_computation::primary_graph) struct AppliedSourcePublicationLoan {
+    pub(in crate::domain_computation::primary_graph) source:
+        crate::domain_computation::primary_graph::application_contribution::QualifiedOutputSource,
+    pub(in crate::domain_computation::primary_graph) selected:
+        worth_relational::facade::runtime::PositionedRelationalSnapshot,
+}
 impl<S: ApplicationSchema> SourceQueryReaderAccess<'_, S> {
+    pub(in crate::domain_computation::primary_graph) fn with_applied_source_publication(
+        mut self,
+        source: crate::domain_computation::primary_graph::application_contribution::QualifiedOutputSource,
+        selected: worth_relational::facade::runtime::PositionedRelationalSnapshot,
+    ) -> Self {
+        self.applied_source_publication = Some(AppliedSourcePublicationLoan { source, selected });
+        self
+    }
     pub(in crate::domain_computation::primary_graph) fn with_applied_plan<B, R, E>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

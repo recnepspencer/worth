@@ -25,12 +25,15 @@ impl WorldPublications {
                 let Ok(state) = task.state.try_lock() else {
                     return Posture::Busy;
                 };
-                if !matches!(
-                    state.endpoint,
-                    Some(Endpoint::Committed(_) | Endpoint::Terminal(_) | Endpoint::NoEffect)
-                ) && (state.source.is_some() || state.recovery.is_some())
+                if let Some(refusal) =
+                    state.replacement_refusal(task.driver.load(Ordering::Acquire))
                 {
-                    return Posture::Unsettled;
+                    return match refusal {
+                        Denial::PublicationBusy if task.driver.load(Ordering::Acquire) => {
+                            Posture::Busy
+                        }
+                        _ => Posture::Unsettled,
+                    };
                 }
             }
         }
@@ -74,8 +77,8 @@ impl WorldPublications {
             if task.subject.same_subject(subject) {
                 return Ok(task.clone());
             }
-            if task.pending() {
-                return Err(Denial::PublicationBusy);
+            if let Some(refusal) = task.replacement_refusal() {
+                return Err(refusal);
             }
         }
         let task = Arc::new(WorldPublicationTask {
@@ -102,11 +105,31 @@ impl Drop for WorldPublicationDriver<'_> {
 }
 #[derive(Default)]
 struct TaskState {
+    admission: Option<(u64, OrderedJournalPublicationAdmission)>,
     recovery: Option<OrderedJournalPublicationRecovery>,
     endpoint: Option<Endpoint>,
     source: Option<OrderedJournalPublicationSource>,
     invalid: bool,
 }
+impl TaskState {
+    fn replacement_refusal(&self, driving: bool) -> Option<Denial> {
+        if self.invalid || matches!(self.endpoint, Some(Endpoint::Unresolved)) {
+            return Some(Denial::PublicationUnresolved);
+        }
+        if driving
+            || !matches!(
+                self.endpoint,
+                Some(Endpoint::Committed(_) | Endpoint::NoEffect)
+            )
+        {
+            return Some(Denial::PublicationBusy);
+        }
+        None
+    }
+}
+#[cfg(test)]
+#[path = "publication_task_tests.rs"]
+mod tests;
 pub(super) enum Endpoint {
     Ready(OrderedJournalPublicationOperation),
     Stopped(OrderedJournalStoppedPublication),
@@ -114,6 +137,23 @@ pub(super) enum Endpoint {
     Terminal(Arc<OrderedJournalPublicationTerminal>),
     NoEffect,
     Unresolved,
+}
+impl Endpoint {
+    fn after_observation(self, result: &Option<WorldPublicationObservation>) -> Self {
+        use worth_foundational::facade::DurablePublicationFate;
+        match result {
+            Some(WorldPublicationObservation::Finished(completion)) => match completion.fate() {
+                DurablePublicationFate::Committed => self,
+                DurablePublicationFate::ProvenNoEffect { .. } => Self::NoEffect,
+                DurablePublicationFate::Indeterminate { .. } => Self::Unresolved,
+            },
+            Some(
+                WorldPublicationObservation::Pending
+                | WorldPublicationObservation::EvidenceRequired,
+            )
+            | None => self,
+        }
+    }
 }
 impl WorldPublicationTask {
     pub(super) fn try_driver(&self) -> Option<WorldPublicationDriver<'_>> {
@@ -125,12 +165,53 @@ impl WorldPublicationTask {
     pub(super) fn invalidate(&self) {
         self.state.lock().unwrap_or_else(|e| e.into_inner()).invalid = true;
     }
+    fn replacement_refusal(&self) -> Option<Denial> {
+        self.state
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .replacement_refusal(self.driver.load(Ordering::Acquire))
+    }
     pub(super) fn pending(&self) -> bool {
-        let s = self.state.lock().unwrap_or_else(|e| e.into_inner());
-        !matches!(
-            s.endpoint,
-            Some(Endpoint::Committed(_) | Endpoint::Terminal(_) | Endpoint::NoEffect)
-        ) && (s.source.is_some() || s.recovery.is_some())
+        self.replacement_refusal().is_some()
+    }
+    pub(super) fn take_admission(&self) -> Option<(u64, OrderedJournalPublicationAdmission)> {
+        self.state
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .admission
+            .take()
+    }
+    pub(super) fn retain_admission(
+        &self,
+        position: u64,
+        original: OrderedJournalPublicationAdmission,
+    ) {
+        self.state
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .admission = Some((position, original));
+    }
+    pub(super) fn remember_refusal(
+        &self,
+        observation: WorldPublicationObservation,
+    ) -> WorldPublicationObservation {
+        use worth_foundational::facade::DurablePublicationFate;
+        let endpoint = match &observation {
+            WorldPublicationObservation::Pending
+            | WorldPublicationObservation::EvidenceRequired => return observation,
+            WorldPublicationObservation::Finished(completion) => match completion.fate() {
+                DurablePublicationFate::Committed => return observation,
+                DurablePublicationFate::ProvenNoEffect { .. } => Endpoint::NoEffect,
+                DurablePublicationFate::Indeterminate { .. } => Endpoint::Unresolved,
+            },
+        };
+        let mut state = self.state.lock().unwrap_or_else(|e| e.into_inner());
+        assert!(
+            state.source.is_none(),
+            "start refusal cannot erase submitted custody"
+        );
+        state.endpoint = Some(endpoint);
+        observation
     }
     pub(super) fn started(&self) -> bool {
         self.state
@@ -209,10 +290,16 @@ impl WorldPublicationTask {
         }
     }
     pub(super) fn stop(&self) {
-        let (recovery, endpoint) = {
+        let (admission, recovery, endpoint) = {
             let mut s = self.state.lock().unwrap_or_else(|e| e.into_inner());
-            (s.recovery.take(), s.endpoint.take())
+            (s.admission.take(), s.recovery.take(), s.endpoint.take())
         };
+        let endpoint = if admission.is_some() && endpoint.is_none() {
+            Some(Endpoint::NoEffect)
+        } else {
+            endpoint
+        };
+        drop(admission);
         let recovery = recovery.map(OrderedJournalPublicationRecovery::stop);
         let endpoint = match endpoint {
             Some(Endpoint::Ready(operation)) => Some(Endpoint::Stopped(operation.stop())),
@@ -277,7 +364,7 @@ impl WorldPublicationTask {
                 Endpoint::Ready(_) | Endpoint::Stopped(_) => None,
             }
         };
-        self.restore(endpoint);
+        self.restore(endpoint.after_observation(&result));
         result
     }
 }

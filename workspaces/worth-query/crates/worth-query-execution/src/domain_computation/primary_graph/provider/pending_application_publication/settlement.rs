@@ -25,6 +25,15 @@ pub(super) fn finish_writer(
     // The output's lineage record and its settlement row hold the consumed
     // outputs; the completed receipt evidence never does.
     let original_completion = attempt.affinity().take_original_completion_publisher();
+    for consumed in attempt.consumed_outputs() {
+        if let Some(link) = consumed.applied() {
+            let selected = runtime
+                .read_truth()
+                .positioned_snapshot(after)
+                .expect("final publication retains its actual committed snapshot");
+            link.settle(&selected);
+        }
+    }
     let consumed_outputs = attempt.retain_consumed_outputs();
     let outstanding = attempt.take_outstanding_dispatch_reservation();
     if publish_causality {

@@ -164,6 +164,7 @@ mod serial {
             .rows()[0]
             .value;
         for value in [2, 1, 3] {
+            publication::take_calls();
             let source = request
                 .query(PlanarRead {
                     body_key: "anchor-b".to_owned(),
@@ -187,14 +188,24 @@ mod serial {
             changed,
             worth_query_host::facade::application_entry::WorthQueryApplicationPerformedMutationOutcome::Performed(_)
         ));
+            assert_eq!(
+                publication::take_calls(),
+                1,
+                "the coupled edit executes the changed producer once"
+            );
             let mut root = request
                 .demand(Demand(OUTPUT))
                 .start_in_program::<installation::Program, installation::Root>(&app)
                 .unwrap();
             assert_eq!(
                 settle!(root, request).0,
-                1,
-                "the ordinary producer executes once for the changed input"
+                0,
+                "delivery reuses the producer already executed by the coupled edit"
+            );
+            assert_eq!(
+                publication::take_calls(),
+                0,
+                "delivery cannot execute a second time"
             );
             let expected = value.div_ceil(2);
             let actual = request
@@ -227,6 +238,7 @@ mod serial {
         }
         // The dependent keeps its last row while its upstream refreshes twice.
         for value in [4, 3] {
+            publication::take_calls();
             let source = request
                 .query(PlanarRead {
                     body_key: "anchor-b".to_owned(),
@@ -246,11 +258,21 @@ mod serial {
                     worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
                 )
                 .unwrap();
+            assert_eq!(
+                publication::take_calls(),
+                1,
+                "the coupled edit executes the changed producer once"
+            );
             let mut root = request
                 .demand(Demand(OUTPUT))
                 .start_in_program::<installation::Program, installation::Root>(&app)
                 .unwrap();
-            assert_eq!(settle!(root, request).0, 1);
+            assert_eq!(settle!(root, request).0, 0);
+            assert_eq!(
+                publication::take_calls(),
+                0,
+                "delivery cannot execute a second time"
+            );
         }
         counted_source::take_calls();
         dependent_publication::take_calls();

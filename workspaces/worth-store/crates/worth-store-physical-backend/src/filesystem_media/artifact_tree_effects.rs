@@ -144,6 +144,12 @@ fn complete_artifact_file_length(
         return Err(denied(&error));
     }
     match file.metadata() {
+        Ok(metadata) if !metadata.is_file() => {
+            attempt.completed(0);
+            Err(ArtifactTreeFailure::structural(
+                ArtifactTreeFailureKind::Damaged,
+            ))
+        }
         Ok(metadata) => {
             attempt.completed(0);
             Ok(metadata.len())

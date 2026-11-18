@@ -43,6 +43,7 @@ pub(super) struct CompletedPublication {
 /// A pin of the original native image and actual source slot. No data-only
 /// comparison can substitute a slot from another image or native source.
 pub struct ObservedSourcePublication {
+    awaiting_first: bool,
     address: Arc<OutputSourceAddress>,
     state: Arc<SourcePublicationState>,
     candidate: Option<Arc<crate::domain_computation::primary_graph::invariant_projection::ObservedOutputCandidate>>,

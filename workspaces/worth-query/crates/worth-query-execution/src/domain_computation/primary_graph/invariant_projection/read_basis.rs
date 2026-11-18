@@ -65,6 +65,14 @@ impl NativeProjectionRead<'_> {
                 .proposed_version_id(),
         }
     }
+    pub(super) fn applied_pin(
+        &self,
+    ) -> Option<&RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>> {
+        match self {
+            Self::Applied { candidate, .. } => Some(candidate),
+            Self::Committed(_) => None,
+        }
+    }
     pub(super) fn committed_runtime(&self) -> Option<&RelationalRuntime> {
         match self {
             Self::Committed(runtime) => Some(runtime),

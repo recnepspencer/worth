@@ -111,19 +111,30 @@ pub(super) fn adjust<const REUSE: bool, const WORK: usize, const RUNS: usize, co
         })
         .execute()
         .expect("the scope's source is readable");
-    request
+    let outcome = request
         .advanced()
-        .mutate(PlanarSourceAdjustment {
+        .mutate(PlanarEdit(PlanarMutation {
             scope_key: SCOPE.to_owned(),
-            replacement_y: length(y),
-        })
+            operation: worth_query_consumer_values::PlanarOperation::Adjust(vec![
+                worth_query_consumer_values::PlanarAdjustment {
+                    body_key: SCOPE.to_owned(),
+                    replacement_y: length(y),
+                },
+            ]),
+        }))
         .expect_source(observed.observed_sources()[0].clone())
         .idempotency(&command)
-        .execute_performed::<OracleProgram<REUSE, WORK, RUNS, MODE>, OracleRoot>(
+        .execute_in_program::<OracleProgram<REUSE, WORK, RUNS, MODE>>(
             application,
             worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .expect("the scope's ordinate moves");
+        );
+    assert!(
+        matches!(
+            &outcome,
+            Ok(WorthQueryApplicationMutationOutcome::Committed { .. })
+        ),
+        "the scope ordinate moves before the tested demand: {outcome:?}"
+    );
 }
 
 pub(super) fn at_demand_scope(mut edit: EntryEdit) -> EntryEdit {

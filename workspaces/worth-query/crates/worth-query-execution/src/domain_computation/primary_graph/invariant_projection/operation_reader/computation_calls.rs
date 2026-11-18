@@ -187,6 +187,11 @@ impl<Schema, Operation>
         comparator: &Comparator,
         key: &WorthQueryApplicationFactKey,
     ) -> Result<ObservedRetained, WorthQueryApplicationAttemptDenial> {
+        if let Some(pin) = self.reader.native.applied_pin() {
+            return crate::domain_computation::primary_graph::application_attempt::observe_admitted_applied_fact(
+                execution, self.reader.layout, key, pin,
+            ).map(|observed| ObservedRetained::new(comparator, observed));
+        }
         observe_admitted_fact(
             execution,
             self.reader.native.committed_runtime().ok_or_else(|| WorthQueryApplicationAttemptDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact, "candidate retained computation"))?,

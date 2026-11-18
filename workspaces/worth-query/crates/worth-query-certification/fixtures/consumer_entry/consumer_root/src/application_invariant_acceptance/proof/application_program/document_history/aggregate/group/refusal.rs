@@ -1,6 +1,11 @@
 //! Real second-producer scope refusal retains the completed first fixed tree.
 use super::*;
 use std::sync::atomic::Ordering;
+use worth_query_host::facade::primary_graph::{
+    WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitDenialStage,
+    WorthQueryApplicationUncommitted, WorthQueryEntityResolutionRefusalKind,
+};
+use worth_query_topology_entry::{FinalAnchorOutput, FinalPlanarOutputs};
 
 #[test]
 fn second_required_producer_scope_refusal_keeps_the_first_complete_tree_owned_until_disposal() {
@@ -10,9 +15,26 @@ fn second_required_producer_scope_refusal_keeps_the_first_complete_tree_owned_un
     let root = with_request(app, |request| document.current_step(request).unwrap());
     let mut group = group(document, app, 0x9182_5850);
     until(app, &mut group, |group| group.completed_members() == 1);
-    let candidate = {
+    let (candidate, first_endpoint, first_child) = {
         let (_, execution) = group.parts();
-        execution.completed_source(0).unwrap().branch()
+        let first = execution.completed_source(0).unwrap();
+        let tree = first.settlement();
+        let source = tree.performed_source().unwrap();
+        let endpoint = tree.observation().selected_commit();
+        assert_eq!(source.receipt().source_commit(), endpoint);
+        assert_eq!(source.root_fulfillment().source_commit(), endpoint);
+        assert_eq!(source.root_fulfillment().output_commit(), endpoint);
+        let (demand, child) = tree.outputs_for::<ConsumerSchema, Child>().next().unwrap();
+        assert_eq!(demand.body_key(), "remote-b");
+        assert_eq!(child.observation().selected_commit(), endpoint);
+        // Postcommit delivery can reuse this actual published child without a fresh receipt.
+        let child = child
+            .outputs_of::<FinalPlanarOutputs>()
+            .unwrap()
+            .entity::<FinalAnchorOutput<ConsumerSchema>>()
+            .unwrap()
+            .entity_id();
+        (first.branch(), endpoint.clone(), child)
     };
     // The installed provider's next real input names a missing scope. Unlike
     // VerifyCurrentOutputs, this refuses before a stale-output read can mask it.
@@ -29,20 +51,32 @@ fn second_required_producer_scope_refusal_keeps_the_first_complete_tree_owned_un
     );
     {
         let (document, execution) = group.parts();
-        let Some(WorthQueryOperationAdvanceDenial::Outputs(
-            WorthQueryRequiredOutputPreparationDenial::Demand(
-                WorthQueryApplicationOutputDemandDenial::Demand(cause),
-            ),
-        )) = execution.terminal_source().unwrap().advance_denial()
+        let terminal = execution.terminal_source().unwrap();
+        assert!(matches!(
+            terminal.advance_denial(),
+            Some(WorthQueryOperationAdvanceDenial::NativeTerminal)
+        ));
+        // Required participants now refuse inside the source's sole transaction.
+        let Some(WorthQueryApplicationMutationOutcome::Commit(
+            WorthQueryApplicationUncommitted::Denied(denial),
+        )) = terminal.native_outcome()
         else {
-            panic!("actual installed producer scope refusal")
+            panic!("second source must retain its actual prepublication refusal")
         };
-        assert!(
-            matches!(
-                cause.kind(),
-                WorthQueryOutputDemandDenialKind::SourceScope(_)
-            ),
-            "{cause:?}"
+        assert_eq!(
+            denial.kind(),
+            WorthQueryApplicationCommitDenialKind::ProviderRejected
+        );
+        assert_eq!(
+            denial.stage(),
+            WorthQueryApplicationCommitDenialStage::InvariantExecution
+        );
+        let cause = denial.coupled_producer_denial().unwrap();
+        assert_eq!(
+            cause.kind(),
+            WorthQueryOutputDemandDenialKind::SourceScope(
+                WorthQueryEntityResolutionRefusalKind::UnknownEntity
+            )
         );
         assert_eq!(
             cause.recovery_posture(),
@@ -63,7 +97,45 @@ fn second_required_producer_scope_refusal_keeps_the_first_complete_tree_owned_un
         ));
     }
     with_branch_request(app, candidate, |request| {
-        for (body, y) in [("anchor-a", 3), ("final:remote-b", 43)] {
+        let (_, execution) = group.parts();
+        let first = execution.completed_source(0).unwrap();
+        let (demand, child) = first
+            .settlement()
+            .outputs_for::<ConsumerSchema, Child>()
+            .next()
+            .unwrap();
+        assert_eq!(demand.body_key(), "remote-b");
+        assert_eq!(
+            child
+                .outputs_of::<FinalPlanarOutputs>()
+                .unwrap()
+                .entity::<FinalAnchorOutput<ConsumerSchema>>()
+                .unwrap()
+                .entity_id(),
+            first_child,
+            "the refused member retains the first tree's genuine output correspondence"
+        );
+        assert_eq!(
+            request.retain_current_read().unwrap().selected_commit(),
+            &first_endpoint
+        );
+        assert_eq!(
+            first.deliver_current(request).unwrap().selected_commit(),
+            &first_endpoint
+        );
+        // The authored coordinate stays 2; its separate y+1 output is Length=3.
+        assert_eq!(
+            request
+                .query(PlanarOutputRead {
+                    body_key: "anchor-a".into()
+                })
+                .execute()
+                .unwrap()
+                .rows()[0]
+                .value,
+            length(3)
+        );
+        for (body, y) in [("anchor-a", 2), ("final:remote-b", 43)] {
             assert_eq!(
                 request
                     .query(PlanarRead {

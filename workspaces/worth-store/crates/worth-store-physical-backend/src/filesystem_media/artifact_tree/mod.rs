@@ -22,7 +22,7 @@ mod listing_storage;
 mod media;
 mod media_open;
 mod metadata_read;
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "linux"))]
 pub(super) mod native_component;
 mod new_artifact_write;
 mod path;

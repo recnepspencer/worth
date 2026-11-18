@@ -54,10 +54,10 @@ where
             if !original.matches_point(&point) {
                 return Err(D::SourcePointMismatch(artifact.reference()));
             }
-            if artifact.association().is_some() {
-                if let ControlFlow::Break(value) = inspect(&artifact, &point) {
-                    return Ok(ControlFlow::Break(value));
-                }
+            if artifact.association().is_some()
+                && let ControlFlow::Break(value) = inspect(&artifact, &point)
+            {
+                return Ok(ControlFlow::Break(value));
             }
         }
         Ok(ControlFlow::Continue(()))

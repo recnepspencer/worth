@@ -19,8 +19,6 @@ use worth_query_host::facade::{
 mod delivery;
 mod disposal;
 mod ingress;
-#[cfg(test)]
-mod publication_tests;
 mod registration;
 mod staging;
 pub use disposal::{DisposalClass, DisposalEvent, DisposalView};

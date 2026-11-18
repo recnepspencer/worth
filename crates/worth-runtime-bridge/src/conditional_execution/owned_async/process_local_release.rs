@@ -43,7 +43,7 @@ impl BridgeConditionalExecutionView<'_> {
         &self,
         owner: &mut Custodian,
     ) -> Result<(), Denial> {
-        owner.require_owner(&self.async_observation_authority)?;
+        owner.require_owner(self.async_observation_authority)?;
         owner
             .port
             .abort_process_local_owned_async_retry(&mut owner.native)
@@ -56,10 +56,10 @@ impl BridgeConditionalExecutionView<'_> {
         completion: Option<BridgeOwnedAsyncCommittedCompletion>,
     ) -> Result<BridgeOwnedAsyncReleasedResource, BridgeOwnedAsyncResourceReleaseRefusal> {
         let affinity = owner
-            .require_owner(&self.async_observation_authority)
+            .require_owner(self.async_observation_authority)
             .and_then(|()| {
                 if completion.as_ref().is_some_and(|value| {
-                    !Arc::ptr_eq(&value.authority, &self.async_observation_authority)
+                    !Arc::ptr_eq(&value.authority, self.async_observation_authority)
                 }) {
                     Err(Denial::ForeignOwner)
                 } else {
@@ -108,8 +108,8 @@ impl BridgeConditionalExecutionView<'_> {
         owner: &Custodian,
         completion: &super::super::BridgeOwnedAsyncCompletionAdmission,
     ) -> Result<(), Denial> {
-        owner.require_owner(&self.async_observation_authority)?;
-        if !completion.is_owned_by(&self.async_observation_authority) {
+        owner.require_owner(self.async_observation_authority)?;
+        if !completion.is_owned_by(self.async_observation_authority) {
             return Err(Denial::ForeignOwner);
         }
         // The opaque Native admission retains the originating service itself.

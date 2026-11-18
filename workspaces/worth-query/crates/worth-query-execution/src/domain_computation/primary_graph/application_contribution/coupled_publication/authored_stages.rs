@@ -56,6 +56,7 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             self.before,
             before_pin,
             &pin,
+            self,
         )?;
         let crate::domain_computation::primary_graph::application_attempt::InspectedAuthoredApplication { writer, batch, content, roles, demands } = prepared;
         // Retain custody before append: a cold-symbol retry must abort this

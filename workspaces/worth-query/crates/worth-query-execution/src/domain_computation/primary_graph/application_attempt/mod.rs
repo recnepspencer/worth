@@ -64,9 +64,9 @@ pub(in crate::domain_computation) use read_set::CompletedHandlerFactBoundary;
 
 pub(in crate::domain_computation::primary_graph) use read_set::FactRoutes;
 pub(in crate::domain_computation::primary_graph) use read_set::{
-    observe_admitted_fact, CheckedCallShape, CompletedDecisionReuseProof,
-    ComputationFactAttribution, ComputationFactIndex, ComputationRead, NativeCallCarriage,
-    PreparedDecisionReuseContext, SealedComputationFacts,
+    observe_admitted_applied_fact, observe_admitted_fact, CheckedCallShape,
+    CompletedDecisionReuseProof, ComputationFactAttribution, ComputationFactIndex, ComputationRead,
+    NativeCallCarriage, PreparedDecisionReuseContext, SealedComputationFacts,
 };
 pub(in crate::domain_computation) use read_set::{CompletedFactProjection, CompletedOriginalRead};
 pub use signed_creation::{

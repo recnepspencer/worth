@@ -30,7 +30,7 @@ impl BridgeConditionalExecutionView<'_> {
             (None, Some(Denial::ProvenanceUnavailable))
         };
         let mut owner = Custodian {
-            authority: Arc::clone(&self.async_observation_authority),
+            authority: Arc::clone(self.async_observation_authority),
             port: bound.port,
             native,
             business,
@@ -50,7 +50,7 @@ impl BridgeConditionalExecutionView<'_> {
         &self,
         owner: &mut Custodian,
     ) -> Result<(), Denial> {
-        owner.require_owner(&self.async_observation_authority)?;
+        owner.require_owner(self.async_observation_authority)?;
         if owner.native.requires_managed_queue() {
             return Err(Denial::QueueUnavailable);
         }

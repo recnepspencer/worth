@@ -25,6 +25,16 @@ pub(in super::super) fn produce(
     receipt: &RelationalInitialSchemaInstallationReceipt,
     version: u8,
 ) -> ([EntityId; 3], [RelationId; 2]) {
+    let (entities, relations, _) = produce_with_publication(execution, runtime, receipt, version);
+    (entities, relations)
+}
+
+pub(in super::super) fn produce_with_publication(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+    receipt: &RelationalInitialSchemaInstallationReceipt,
+    version: u8,
+) -> ([EntityId; 3], [RelationId; 2], ProducerPublication) {
     let graph = publish(
         execution,
         runtime,
@@ -33,7 +43,7 @@ pub(in super::super) fn produce(
         None,
         "native.closed.producer",
     );
-    (graph.entities, graph.relations)
+    (graph.entities, graph.relations, graph.publisher)
 }
 
 pub(in super::super) fn produce_with_boundary(

@@ -116,6 +116,7 @@ fn ordinary_for(app: &App, branch: WorthQueryProductBranch, model: &str, y: u64,
 
 #[test]
 fn completed_output_graph_records_its_common_basis_and_retains_old_dependent_values() {
+    let _observation = worth_query_host::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let world = install_full();
     let app = &world.application;
     let mut document = attach(app, "anchor-a");
@@ -137,6 +138,7 @@ fn completed_output_graph_records_its_common_basis_and_retains_old_dependent_val
             replacement_y: length(y),
         };
         reset_planar_source_adjustment_contacts(&contacts);
+        let before_contacts = app.producer_contacts_on_this_thread_for_test();
         let edit = completed(
             begin_full(document, app, y, 0x9182_e100 + index as u64),
             app,
@@ -152,10 +154,16 @@ fn completed_output_graph_records_its_common_basis_and_retains_old_dependent_val
         let a = source.root_fulfillment().source_commit().clone();
         let b = source.root_fulfillment().output_commit().clone();
         let c = settlement.observation().selected_commit().clone();
-        assert_ne!(a, b);
-        assert_ne!(
+        assert_eq!(a, b, "the source and root share the actual co-commit");
+        assert_eq!(
             b, c,
-            "the final dependent publication follows the actual root"
+            "the final dependent belongs to the same sole publication"
+        );
+        assert_eq!(source.receipt().source_commit(), &c);
+        assert_eq!(
+            app.producer_contacts_on_this_thread_for_test() - before_contacts,
+            2,
+            "the source edit executes its root and dependent once each"
         );
         assert_eq!(
             with_branch_request(app, original.branch(), |request| request
@@ -175,10 +183,10 @@ fn completed_output_graph_records_its_common_basis_and_retains_old_dependent_val
             panic!("complete original tree must record")
         };
         assert_eq!(step.endpoint().selected_commit(), &c);
-        assert_ne!(
+        assert_eq!(
             step.endpoint().selected_commit(),
             &b,
-            "root-only fulfillment cannot select the aggregate endpoint"
+            "history selects the qualified whole-tree co-commit"
         );
         document = finished.document;
         assert_eq!(
@@ -202,6 +210,11 @@ fn completed_output_graph_records_its_common_basis_and_retains_old_dependent_val
             unchanged
         );
         assert_eq!(planar_source_adjustment_contacts(&contacts), (1, 1));
+        assert_eq!(
+            app.producer_contacts_on_this_thread_for_test() - before_contacts,
+            2,
+            "selection and document reads do not rerun either producer"
+        );
         if index == 0 {
             first = Some((step, delivery));
         } else {
@@ -209,6 +222,13 @@ fn completed_output_graph_records_its_common_basis_and_retains_old_dependent_val
         }
     }
     let (step, delivery) = first.unwrap();
+    // Recording retains the reused root after the measured synchronous co-commit.
+    let recorded_posture = delivery.settlement().root_settlement().posture();
+    assert_eq!(
+        recorded_posture,
+        WorthQueryOutputSettlementPosture::StableReused
+    );
+    let before_producers = app.producer_contacts_on_this_thread_for_test();
     let before = [2, 3, 5].map(|y| {
         planar_source_adjustment_contacts(&PlanarSourceAdjustment {
             scope_key: "anchor-a".into(),
@@ -227,10 +247,7 @@ fn completed_output_graph_records_its_common_basis_and_retains_old_dependent_val
             }]
         );
         assert_eq!(old.source(), step.endpoint());
-        assert_eq!(
-            old.required_root_posture(),
-            Some(WorthQueryOutputSettlementPosture::Performed)
-        );
+        assert_eq!(old.required_root_posture(), Some(recorded_posture));
         old.close();
     });
     with_branch_request(app, delivery.branch(), |request| {
@@ -272,6 +289,11 @@ fn completed_output_graph_records_its_common_basis_and_retains_old_dependent_val
         "historical reads run no source command"
     );
     preview.close();
+    assert_eq!(
+        app.producer_contacts_on_this_thread_for_test(),
+        before_producers,
+        "historical preview and retained dependent reads execute no producer"
+    );
     drop(delivery);
     close(untouched, app);
     close(document, app);

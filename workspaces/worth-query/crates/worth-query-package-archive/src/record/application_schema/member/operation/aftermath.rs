@@ -144,7 +144,7 @@ fn decode_mechanism(
                 ),
             ))
         }
-        tag @ (4 | 5 | 6 | 7) => {
+        tag @ (4..=7) => {
             let capture = if tag <= 5 {
                 PreImageOutputFieldCapture::ChangedPreserved
             } else {

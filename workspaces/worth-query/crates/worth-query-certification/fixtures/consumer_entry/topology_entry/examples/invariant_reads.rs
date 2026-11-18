@@ -95,10 +95,40 @@ fn observe(extra_rings: usize) -> Case {
                 worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
             )
             .unwrap();
-        assert!(matches!(
-            changed,
-            WorthQueryApplicationPerformedMutationOutcome::Performed(_)
-        ));
+        let WorthQueryApplicationPerformedMutationOutcome::Performed(changed) = changed else {
+            panic!("the lawful source edit and its required outputs co-commit");
+        };
+        let mut delivery = changed
+            .start_required_outputs(
+                &application,
+                &request,
+                WorthQueryOutputDemandControls::default(),
+            )
+            .unwrap_or_else(|failure| panic!("{:?}", failure.denial()));
+        let settled = (0..64)
+            .find_map(|_| {
+                match delivery
+                    .required_output_mut()
+                    .advance(&application, &request)
+                    .unwrap()
+                {
+                    WorthQueryApplicationProgramOutputProgress::Pending
+                    | WorthQueryApplicationProgramOutputProgress::Progressed => None,
+                    WorthQueryApplicationProgramOutputProgress::Settled(settled) => Some(settled),
+                }
+            })
+            .expect("the finite co-committed tree delivers");
+        let expected_touched = affected_bodies(&settled);
+        for (key, expected) in [("final:anchor-a", 4), ("final:anchor-b", 3)] {
+            let output = request
+                .query(PlanarOutputRead {
+                    body_key: key.into(),
+                })
+                .execute()
+                .unwrap();
+            assert_eq!(output.rows().len(), 1);
+            assert_eq!(output.rows()[0].value, setup::length(expected));
+        }
         let after = request
             .query(PlanarRead {
                 body_key: "anchor-a".into(),
@@ -109,7 +139,7 @@ fn observe(extra_rings: usize) -> Case {
         assert_eq!(after.rows()[0].y, setup::length(2));
         let query = after.receipt().inspect().read_work().reads();
         let recorded = std::mem::take(&mut *events.lock().unwrap());
-        let (preparation, evaluation) = compare_complete_reads(&recorded, query);
+        let (preparation, evaluation) = compare_complete_reads(&recorded, &expected_touched, query);
         assert!(
             evaluation.field_reads() > preparation.field_reads(),
             "the real evaluation read its coordinates"
@@ -140,8 +170,11 @@ fn observe(extra_rings: usize) -> Case {
             "the refused coordinates never publish"
         );
         let rejected = std::mem::take(&mut *events.lock().unwrap());
-        let (refused_preparation, refused_evaluation) =
-            compare_complete_reads(&rejected, retained.receipt().inspect().read_work().reads());
+        let (refused_preparation, refused_evaluation) = compare_complete_reads(
+            &rejected,
+            &expected_touched,
+            retained.receipt().inspect().read_work().reads(),
+        );
         assert_eq!(preparation, refused_preparation);
         assert!(
             refused_evaluation.field_reads() > refused_preparation.field_reads(),
@@ -168,22 +201,89 @@ fn observe(extra_rings: usize) -> Case {
     case
 }
 
+// The installed graph preserves its source and creates two three-body final
+// rings. Attribute actual observations through issued roles, not numeric IDs.
+fn affected_bodies(
+    settled: &WorthQueryApplicationProgramOutputSettlement<PlanarQuery>,
+) -> Vec<worth_relational::facade::identity::EntityId> {
+    let mut bodies = vec![settled
+        .root_settlement()
+        .outputs_of::<PlanarOutputs>()
+        .unwrap()
+        .entity::<PlanarAnchorOutput<ExampleSchema>>()
+        .unwrap()
+        .entity_id()];
+    let main: Vec<_> = settled
+        .outputs_for::<ExampleSchema, PlanarOutputToFinalConnection>()
+        .collect();
+    let alternate: Vec<_> = settled
+        .outputs_for::<ExampleSchema, PlanarOutputToAlternateFinalConnection>()
+        .collect();
+    assert_eq!(
+        main.iter()
+            .map(|(demand, _)| demand.body_key())
+            .collect::<Vec<_>>(),
+        ["anchor-a"]
+    );
+    assert_eq!(
+        alternate
+            .iter()
+            .map(|(demand, _)| demand.body_key())
+            .collect::<Vec<_>>(),
+        ["anchor-b"]
+    );
+    assert_eq!(settled.output_count(), main.len() + alternate.len());
+    for (_, output) in main.into_iter().chain(alternate) {
+        let roles = output.outputs_of::<FinalPlanarOutputs>().unwrap();
+        bodies.push(
+            roles
+                .entity::<FinalAnchorOutput<ExampleSchema>>()
+                .unwrap()
+                .entity_id(),
+        );
+        bodies.push(
+            roles
+                .entity::<FinalClosingOutput<ExampleSchema>>()
+                .unwrap()
+                .unwrap()
+                .entity_id(),
+        );
+        let members = roles
+            .family_entries::<FinalCreatedOutputs<ExampleSchema>>()
+            .unwrap();
+        assert_eq!(
+            members.len(),
+            1,
+            "one other vertex in each declared final triangle"
+        );
+        bodies.push(members[0].entity_id());
+    }
+    bodies.sort();
+    bodies
+}
+
 // compiled-example: begin
 fn compare_complete_reads(
     events: &[PlanarInvariantReadEvent],
+    expected_touched: &[worth_relational::facade::identity::EntityId],
     query: WorthQueryInvariantProjectionWork,
 ) -> (
     WorthQueryInvariantProjectionWork,
     WorthQueryInvariantProjectionWork,
 ) {
-    let touched: Vec<_> = events
+    let mut touched: Vec<_> = events
         .iter()
         .filter_map(|event| match event {
             PlanarInvariantReadEvent::Touched { entity } => Some(*entity),
             _ => None,
         })
         .collect();
-    assert_eq!(touched.len(), 1, "this command edits one identified body");
+    // Sorting retains multiplicity: duplicate or omitted events still fail.
+    touched.sort();
+    assert_eq!(
+        touched, expected_touched,
+        "the whole candidate's issued source/output bodies"
+    );
     let complete: Vec<_> = events
         .iter()
         .filter_map(|event| match event {
@@ -197,20 +297,41 @@ fn compare_complete_reads(
             _ => None,
         })
         .collect();
-    assert_eq!(complete.len(), 1, "one Native orbit read per affected ring");
-    let (before, after, visited, physical_relations) = complete[0];
+    let expected_rings = 1 + (expected_touched.len() - 1) / 3;
     assert_eq!(
-        (visited, physical_relations),
-        (3, 3),
-        "the actual complete three-body component"
+        complete.len(),
+        expected_rings,
+        "one Native orbit read per affected ring"
     );
-    let complete_adjacencies = after.adjacency_lists_read() - before.adjacency_lists_read();
-    let complete_edges = after.adjacency_edges_inspected() - before.adjacency_edges_inspected();
-    assert!(complete_adjacencies >= visited);
-    assert!(
-        complete_edges >= physical_relations,
-        "actual acquisitions include every physical successor"
+    let identities: Vec<_> = events
+        .iter()
+        .filter_map(|event| match event {
+            PlanarInvariantReadEvent::CompleteOrbit { identity, .. } => Some(*identity),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(
+        identities
+            .iter()
+            .collect::<std::collections::BTreeSet<_>>()
+            .len(),
+        expected_rings,
+        "every complete orbit is distinct; repeated reads are not hidden"
     );
+    for (before, after, visited, physical_relations) in complete {
+        assert_eq!(
+            (visited, physical_relations),
+            (3, 3),
+            "the actual complete three-body component"
+        );
+        let complete_adjacencies = after.adjacency_lists_read() - before.adjacency_lists_read();
+        let complete_edges = after.adjacency_edges_inspected() - before.adjacency_edges_inspected();
+        assert!(complete_adjacencies >= visited);
+        assert!(
+            complete_edges >= physical_relations,
+            "actual acquisitions include every physical successor"
+        );
+    }
     assert!(
         query.adjacency_lists_read() > 0,
         "the actual query acquires its relation projection"

@@ -25,7 +25,7 @@ where
         let publication = self
             .publication
             .upgrade()
-            .ok_or_else(|| D::Source(S::SourceNotInstalled))?;
+            .ok_or(D::Source(S::SourceNotInstalled))?;
         let (original, definition) = publication
             .read_source_point(point, execution)
             .map_err(D::Original)?;

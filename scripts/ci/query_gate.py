@@ -31,7 +31,7 @@ from query_gate_diagnostics import failed_tests, report_failed_command
 from query_gate_environment import environment, require_build_identity, verification_identity
 from query_gate_prebuild import GatePrebuild, PrerequisiteFailure, refused_scale_suites
 from query_gate_cost import CostGate, DOC_SUITES, SUITE_ALIASES, governed
-from cargo_capture import CargoRunner
+from query_gate_cargo import GateCargoRunner as CargoRunner
 from lane_environment import validate as validate_environment
 
 from query_gate_courts import (
@@ -85,6 +85,17 @@ def consumer_doctest_commands():
     ]
 
 
+def bank_format_commands():
+    # Bank exceeds Windows' rustfmt argument limit when formatted as one workspace.
+    base = (ROOT / BANK).parent
+    members = tomllib.loads((base / "Cargo.toml").read_text(encoding="utf-8"))["workspace"]["members"]
+    manifests = {directory / "Cargo.toml" for member in members for directory in base.glob(member)}
+    names = sorted(tomllib.loads(path.read_text(encoding="utf-8"))["package"]["name"]
+                   for path in manifests)
+    return [("fmt-" + name, ["cargo", "fmt", "--manifest-path", BANK, "-p", name, "--", "--check"])
+            for name in names]
+
+
 # suite -> [(label, command)], one command at a time
 COMMAND_SUITES = {
     "tooling": [
@@ -98,8 +109,7 @@ COMMAND_SUITES = {
         ("fmt-query", ["cargo", "fmt", "--manifest-path", QUERY, "--all", "--", "--check"]),
         ("fmt-fixture",
          ["cargo", "fmt", "--manifest-path", FIXTURE, "--all", "--", "--check"]),
-        ("fmt-bank", ["cargo", "fmt", "--manifest-path", BANK, "--all", "--", "--check"]),
-    ],
+    ] + bank_format_commands(),
     "lint-lower": [("clippy-lower", clippy(*packages(*LOWER)))],
     "lint-query": [
         ("clippy-query",

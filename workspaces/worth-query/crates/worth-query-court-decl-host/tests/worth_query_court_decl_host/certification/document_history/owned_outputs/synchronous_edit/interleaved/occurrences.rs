@@ -89,8 +89,6 @@ impl ApplicationProgramDefinition<Schema> for Program {
         >(base::entry_builder::<Completion, Completion, Completion>())
         .action::<created::Binding, Completion>()
         .finish_action()
-        .action::<member_retarget::operation::Binding, Completion>()
-        .finish_action()
         .finish();
         specs
     }

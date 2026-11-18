@@ -9,6 +9,7 @@
 //! - an internal transport boundary rather than framework-shaped public API
 
 #![forbid(unsafe_code)]
+#![recursion_limit = "256"]
 #![doc = include_str!("../docs/query-source-custody.md")]
 
 mod canonical_digest;

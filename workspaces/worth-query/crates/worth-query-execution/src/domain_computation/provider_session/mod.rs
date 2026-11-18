@@ -5,7 +5,7 @@ pub(crate) mod execution_attempt_identity;
 pub(crate) mod graph_obligation;
 pub use graph_obligation::WorthQueryManagedGraphWorkSessionStartDenial;
 pub(in crate::domain_computation) use graph_obligation::{
-    WorthQueryInspectionReadCompletion, WorthQueryManagedIndexReadSession,
+    ManagedIndexReadSource, WorthQueryInspectionReadCompletion, WorthQueryManagedIndexReadSession,
     WorthQueryManagedIndexSelectionProof, WorthQueryManagedIndexSessionDenial,
     WorthQueryPreparedQueryPin, WorthQueryPreparedReadCompletion, WorthQueryPreparedSessionRead,
     WorthQueryResourceReadCompletion, WorthQuerySessionInspectionReadProof,
@@ -29,7 +29,7 @@ pub(in crate::domain_computation) use direct_attempt::{
 pub(in crate::domain_computation) use execution_attempt_identity::WorthQueryClosedExecutionAttemptIdentity;
 pub use execution_attempt_identity::WorthQueryExecutionAttemptIdentity;
 pub(in crate::domain_computation) use graph_obligation::{
-    WorthQueryCompletedSourceRead, WorthQueryGraphReadOwnerPort,
+    WorthQueryAppliedSourceRead, WorthQueryCompletedSourceRead, WorthQueryGraphReadOwnerPort,
     WorthQueryGraphWorkAccessContextAffinity, WorthQueryManagedGraphWorkSession,
     WorthQueryMutationRunBinding, WorthQueryObservedGraphReadWork,
     WorthQueryPreparedProductReadSessionIdentity, WorthQueryProviderSessionBoundMutationRun,

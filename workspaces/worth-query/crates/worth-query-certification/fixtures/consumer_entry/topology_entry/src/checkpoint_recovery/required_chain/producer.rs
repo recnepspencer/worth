@@ -29,6 +29,17 @@ impl<Schema: TopologySchemaBinding> WorthQueryProducerOutputFamily<Schema> for C
 
 #[derive(Clone)]
 pub(super) struct ChainDemand(pub String);
+/// The ChainProgram edge from a planar root to its immediate chain consumer.
+/// Later chain nodes consume ChainFamily, not the root's PlanarOutputFamily;
+/// their actual dependency reads remain owned by ChainHandler.
+pub(super) fn root_downstream(body_key: &str) -> Option<String> {
+    match body_key {
+        "anchor-a" => Some("anchor-b".into()),
+        "diamond-left" | "diamond-right" => Some("diamond-join".into()),
+        ring => super::ring_world::root_downstream(ring),
+    }
+}
+
 impl<Schema: TopologySchemaBinding> WorthQueryApplicationOutputDemand<Schema> for ChainDemand {
     type OutputFamily = ChainFamily;
     fn source_intent(&self) -> PlanarOutputRead {

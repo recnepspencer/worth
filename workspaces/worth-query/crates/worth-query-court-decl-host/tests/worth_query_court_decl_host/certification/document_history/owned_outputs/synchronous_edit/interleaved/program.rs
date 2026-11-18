@@ -182,10 +182,9 @@ pub(super) fn feature_specs<
         Completion,
         fixture::Delivery<ModelTree>,
         Retire,
+        Completion,
     >())
     .action::<created::Binding, fixture::Delivery<ModelTree>>()
-    .finish_action()
-    .action::<super::super::super::member_retarget::operation::Binding, Completion>()
     .finish_action()
     .finish();
     specs

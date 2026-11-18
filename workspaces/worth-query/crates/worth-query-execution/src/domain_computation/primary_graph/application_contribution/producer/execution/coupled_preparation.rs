@@ -17,6 +17,7 @@ pub(super) fn prepare<Schema, Binding>(
     before: &crate::basis::WorthQueryProductBranchLease,
     before_pin: &RelationalPinnedRead,
     candidate: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
+    participants: &dyn crate::domain_computation::primary_graph::provider::AppliedOutputParticipants,
     erased: ErasedAppliedProducerSource,
     predecessor: Option<&worth_relational::facade::mvcc::RelationalRequiredOutputPublication>,
     edition: super::super::InstalledProducerEdition,
@@ -101,6 +102,33 @@ where
                 )
             })?;
     }
+    let qualified = runtime.qualify_applied_output_source::<Binding::OutputFamily, _>(
+        &source,
+        before,
+        erased.lifecycle,
+    )?;
+    let graph = runtime.runtime.primary_graph().ok_or_else(foreign)?;
+    let selected_publication = graph.with_runtime(&execution, |native| {
+        native
+            .read_truth()
+            .positioned_snapshot(shared.selected().application_basis().snapshot_handle())
+            .map_err(|_| foreign())
+    })?;
+    runtime
+        .runtime
+        .primary_provider
+        .graph
+        .source_owner
+        .mint_mark_cell_at_head(&execution, selected_publication.branch_id())
+        .map_err(|stop| match stop {
+            crate::domain_computation::primary_graph::output_lineage::HeadCellRegistrationStop::Admission(cause) => {
+                crate::domain_computation::primary_graph::output_reuse::retained_fact_denial(
+                    crate::domain_computation::primary_graph::output_reuse::preflight_stop(cause),
+                    "coupled source publication mark-cell registration",
+                )
+            }
+            stop => failed(Binding::IDENTITY, stop),
+        })?;
     let input = installed.provider.operation_input(&source.value);
     let key = installed
         .provider
@@ -135,7 +163,48 @@ where
             candidate,
         )
         .map_err(|cause| failed(Binding::IDENTITY, cause))?;
+    // The prior is a genuine record at C. The candidate only supplies the new
+    // input; it cannot become a committed prior or reset the retained run.
+    let computation_prior = input_cutoff::prepare_computation_prior::<Schema, Binding>(
+        &execution,
+        runtime,
+        shared.selected(),
+        admission.operation_scope_binding(),
+        source.partition(),
+        edition,
+    )?;
+    let prepared_key = source.retain_selected_membership().map(|selection| {
+        crate::domain_computation::primary_graph::output_lineage::PreparedInputReuseKey::new(
+            selection,
+            *identities.input_identity(),
+            edition,
+        )
+    });
+    let prepared_context = input_reuse::prepared_context(
+        Binding::INPUT_REUSE,
+        *identities.key_identity(),
+        || prepared.principal.principal().freshness().reuse_witness(),
+        || {
+            admission
+                .operation_scope_binding()
+                .decision_reuse_witness(*admission.operation_authority_identity_bytes())
+        },
+    );
     admission.graph_work_mut().arm_coupled_handler();
+    let handler = admission
+        .graph_work_mut()
+        .coupled_handler_mut()
+        .expect("armed handler");
+    if let Some(prior) = computation_prior {
+        handler.retain_computation_prior(prior);
+    }
+    if let Some(key) = prepared_key {
+        handler.retain_prepared_input_reuse_key(key);
+    }
+    if let Some(context) = prepared_context {
+        handler.retain_prepared_decision_reuse(context);
+    }
+
     let predecessor_reads =
         super::super::observation_reads::ProducerPredecessorReadAccess::prepare_coupled::<
             Schema,
@@ -166,7 +235,9 @@ where
             shared.selected().product().read_lease_ref(), &producer_request, &producer_principal,
         ), coordination,
     ).map_err(super::denial::request_admission_rejected)?
-        .with_producer_reads::<Binding>(read_admission, predecessor_reads);
+        .with_producer_reads::<Binding>(read_admission, predecessor_reads)
+        .with_applied_participants(participants)
+        .with_applied_source_publication(qualified, selected_publication);
     let prepared_inputs = match captured {
         Some((inputs, component)) => Some(inputs.into_mutation_inputs(
             installed,

@@ -1,22 +1,10 @@
 //! The commits the courtroom drives, each through a declared operation.
 
 use super::*;
-use worth_query_host::facade::application_entry::WorthQueryApplicationPerformedMutationOutcome as Performed;
 
 impl Court<'_, '_, '_, '_> {
-    /// Writes the Y of `body` through the declared source operation. The
-    /// write is dropped: its required outputs never start.
+    /// Change source facts while leaving output publication to the tested demand.
     pub(super) fn write_y(&self, body: &str, y: u64, at: &str) {
-        self.perform_y(body, y, false, at);
-    }
-
-    /// Writes the Y of `body` and starts the write's required outputs, which
-    /// nobody advances.
-    pub(super) fn write_y_and_abandon_its_outputs(&self, body: &str, y: u64, at: &str) {
-        self.perform_y(body, y, true, at);
-    }
-
-    fn perform_y(&self, body: &str, y: u64, start: bool, at: &str) {
         let source = self
             .request
             .query(PlanarRead {
@@ -27,46 +15,28 @@ impl Court<'_, '_, '_, '_> {
         let outcome = self
             .request
             .advanced()
-            .mutate(PlanarSourceAdjustment {
+            .mutate(PlanarEdit(PlanarMutation {
                 scope_key: body.to_owned(),
-                replacement_y: length(y),
-            })
+                operation: PlanarOperation::Adjust(vec![
+                    worth_query_consumer_values::PlanarAdjustment {
+                        body_key: body.to_owned(),
+                        replacement_y: length(y),
+                    },
+                ]),
+            }))
             .expect_source(source.observed_sources()[0].clone())
             .idempotency(&self.next_idempotency())
-            .execute_performed::<program::ChainProgram, program::ChainRoot>(
+            .execute_in_program::<program::ChainProgram>(
                 self.application,
                 worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
             );
-        let answer = match outcome {
-            Ok(Performed::Performed(performed)) => {
-                if start {
-                    let started = performed
-                        .start_required_outputs(
-                            self.application,
-                            self.request,
-                            WorthQueryOutputDemandControls::host_policy(),
-                        )
-                        .map_err(|failure| format!("{:?}", failure.denial()));
-                    assert!(
-                        started.is_ok(),
-                        "{at}: the required outputs of {body} start: {:?}",
-                        started.err()
-                    );
-                }
-                return;
-            }
-            Ok(Performed::RequiredOutputDenied(failure)) => format!("{:?}", failure.denial()),
-            Ok(Performed::NotPerformed(refused)) => format!("{refused:?}"),
-            Ok(Performed::CleanupRequired { cleanup, .. }) => {
-                format!("managed cleanup required: {:?}", cleanup.failure().kind())
-            }
-            Ok(Performed::ProductUnpublished(partial)) => {
-                format!("unpublished: {:?}", partial.initial_cause())
-            }
-            Ok(Performed::Blocked(blocked)) => format!("blocked: {:?}", blocked.outcome()),
-            Err(denial) => format!("{denial:?}"),
-        };
-        panic!("{at}: the Y of {body} is written: {answer}");
+        assert!(
+            matches!(
+                &outcome,
+                Ok(WorthQueryApplicationMutationOutcome::Committed { .. })
+            ),
+            "{at}: the Y of {body} is written: {outcome:?}"
+        );
     }
 
     /// Overwrites the published Length of `body` as a writer that is not its

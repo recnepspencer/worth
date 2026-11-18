@@ -83,6 +83,7 @@ where
         before: &crate::basis::WorthQueryProductBranchLease,
         before_pin: &RelationalPinnedRead,
         candidate: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
+        participants: &dyn crate::domain_computation::primary_graph::provider::AppliedOutputParticipants,
     ) -> Result<InspectedAuthoredApplication<'run>, WorthQueryOutputDemandDenial> {
         // An abandoned cold candidate's successful value is provisional. Keep
         // a real refusal sticky, but never let an old success hide a later stop.
@@ -114,7 +115,7 @@ where
                 Ok(_) => denial,
             }
         };
-        let admission = self.execution_admission(context)?;
+        let mut admission = self.execution_admission(context)?;
         if admission.operation.scope_entity_id() != self.source {
             return Err(refuse(
                 "the admitted stage source changed before candidate execution".into(),
@@ -124,6 +125,11 @@ where
             .key
             .stage_with_encoded_input::<S, B>(&self.input, self.ordinal)
             .map_err(|cause| refuse(format!("stage identity: {cause:?}")))?;
+        let source_binding = admission.bind_source(
+            WorthQueryApplicationIdempotencyBinding::for_authored_stage_identities(&identities)
+                .expect("canonical stage identities"),
+        );
+        admission.consume_source(context)?;
         let planned = self
             .planning
             .lock()
@@ -142,7 +148,7 @@ where
                     &self.principal,
                     admission.operation,
                     before,
-                    Some((before_pin, candidate)),
+                    Some((before_pin, candidate, participants)),
                     coordination,
                     execution.allocation_policy(),
                 )
@@ -215,9 +221,7 @@ where
                     crate::domain_computation::primary_graph::MutationHandlerExecutionDenial::Attempt(cause),
                 ))
             })?;
-        let binding =
-            WorthQueryApplicationIdempotencyBinding::for_authored_stage_identities(&identities)
-                .expect("canonical stage identities");
+        let binding = source_binding;
         let prepared = application_attempt::prepare_coupled_application::<S, B>(
             execution,
             context.phase,

@@ -52,13 +52,14 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
         {
             for parent in &task.prerequisites {
                 let parent = &self.tasks[self.canonical(*parent)];
-                if parent.done && parent.parent.is_none() {
-                    if let Some(key) = &parent.key {
-                        return SynchronousOutputFailure(CoupledSourceReadStop::from(Denial::new(
-                            Kind::RequiredOutputParentUnavailable { source: key.scope },
-                            task.subject,
-                        )));
-                    }
+                if parent.done
+                    && parent.parent.is_none()
+                    && let Some(key) = &parent.key
+                {
+                    return SynchronousOutputFailure(CoupledSourceReadStop::from(Denial::new(
+                        Kind::RequiredOutputParentUnavailable { source: key.scope },
+                        task.subject,
+                    )));
                 }
             }
         }
@@ -68,13 +69,12 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
             .enumerate()
             .find(|(i, t)| needed[*i] && !t.done)
             .map(|(_, t)| t)
+            && let Some(key) = &task.key
         {
-            if let Some(key) = &task.key {
-                return SynchronousOutputFailure(CoupledSourceReadStop::from(Denial::new(
-                    Kind::CyclicRequiredOutputOccurrences { source: key.scope },
-                    task.subject,
-                )));
-            }
+            return SynchronousOutputFailure(CoupledSourceReadStop::from(Denial::new(
+                Kind::CyclicRequiredOutputOccurrences { source: key.scope },
+                task.subject,
+            )));
         }
         super::super::occurrences::refusal("required outputs", "unavailable occurrence identity")
     }

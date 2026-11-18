@@ -43,8 +43,10 @@ pub fn is_supported(compiler: &str, inputs: &[(&str, String)], lock: &str) -> bo
         "rustc 1.94.0 (4a4ef493e 2026-03-02)" | "rustc 1.99.1 (58cf8f9c3 2026-10-13)"
     ) && ((value("TARGET") == "x86_64-pc-windows-msvc"
         && value("CARGO_CFG_TARGET_OS") == "windows")
-        || (value("TARGET") == "aarch64-apple-darwin"
-            && value("CARGO_CFG_TARGET_OS") == "macos"
+        || (((value("TARGET") == "aarch64-apple-darwin"
+            && value("CARGO_CFG_TARGET_OS") == "macos")
+            || (value("TARGET") == "x86_64-unknown-linux-gnu"
+                && value("CARGO_CFG_TARGET_OS") == "linux"))
             && compiler == "rustc 1.99.1 (58cf8f9c3 2026-10-13)"
             && pinned_registry_package(lock, "rustix", "1.1.5")
             && pinned_registry_package(lock, "libc", "0.2.190")))
@@ -145,7 +147,7 @@ mod tests {
     }
 
     #[test]
-    fn mac_native_profile_requires_the_exact_compiler_target_and_provider_composition() {
+    fn posix_native_profile_requires_the_exact_compiler_target_and_provider_composition() {
         let mut inputs = vec![
             ("CARGO_CFG_TARGET_OS", "macos".into()),
             ("CARGO_CFG_TARGET_POINTER_WIDTH", "64".into()),
@@ -166,6 +168,11 @@ mod tests {
         inputs[2].1 = "x86_64-apple-darwin".into();
         assert!(!is_supported(compiler, &inputs, &metadata));
         inputs[2].1 = "aarch64-apple-darwin".into();
+        inputs[0].1 = "linux".into();
+        assert!(!is_supported(compiler, &inputs, &metadata));
+        inputs[2].1 = "x86_64-unknown-linux-gnu".into();
+        assert!(is_supported(compiler, &inputs, &metadata));
+        assert!(!is_supported(compiler, &inputs, &lock()));
         inputs.push(("CARGO_ENCODED_RUSTFLAGS", "--cfg=racy_asserts".into()));
         assert!(!is_supported(compiler, &inputs, &metadata));
     }

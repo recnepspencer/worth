@@ -34,13 +34,18 @@ fn none_producers_reopen_same_build_and_regenerate_changed_build_with_original_e
             .unwrap();
         request
             .advanced()
-            .mutate(PlanarSourceAdjustment {
+            .mutate(crate::PlanarEdit(crate::PlanarMutation {
                 scope_key: "anchor-a".into(),
-                replacement_y: support::length(9),
-            })
+                operation: worth_query_consumer_values::PlanarOperation::Adjust(vec![
+                    worth_query_consumer_values::PlanarAdjustment {
+                        body_key: "anchor-a".into(),
+                        replacement_y: support::length(9),
+                    },
+                ]),
+            }))
             .expect_source(source.observed_sources()[0].clone())
             .idempotency(&0x2712_0101_u64)
-            .execute_performed::<NoReuseProgram, program::Root>(
+            .execute_in_program::<NoReuseProgram>(
                 &original,
                 ExecutionAllocationPolicy::SystemAllocation,
             )

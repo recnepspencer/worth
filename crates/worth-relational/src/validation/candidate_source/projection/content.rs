@@ -23,11 +23,12 @@ impl ManagedIndexSourceProjection<'_> {
                     &field.locator,
                     value.value(),
                 )?,
-                SourceProjectionBacking::Selected {
-                    loan, execution, ..
-                } => {
-                    let root = loan
-                        .projection
+                SourceProjectionBacking::Selected { .. }
+                | SourceProjectionBacking::Applied { .. } => {
+                    let (projection, execution) = self
+                        .physical_projection()
+                        .ok_or(Definition::ForeignObservation)?;
+                    let root = projection
                         .selected_root()
                         .ok_or(Definition::RecordUnavailable)?;
                     NativeContentSourceView::new(

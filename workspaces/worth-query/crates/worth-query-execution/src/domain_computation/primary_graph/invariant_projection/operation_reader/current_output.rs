@@ -79,7 +79,10 @@ impl WorthQueryCurrentOutputDenial {
         &self.subject
     }
 
-    fn new(kind: WorthQueryCurrentOutputDenialKind, subject: impl Into<String>) -> Self {
+    pub(in crate::domain_computation::primary_graph) fn new(
+        kind: WorthQueryCurrentOutputDenialKind,
+        subject: impl Into<String>,
+    ) -> Self {
         Self {
             managed_index: None,
             kind,

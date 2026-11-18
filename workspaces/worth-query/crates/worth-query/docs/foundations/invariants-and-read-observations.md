@@ -170,8 +170,12 @@ cargo run -p worth-query-topology-entry --example invariant_reads
 The example's program declares an ordinary topology-edit action alongside the
 reference application's source and output features. It installs genuine
 topology declarations and a blocking planar rule,
-clears seed-time observations, then edits the body named `anchor-a`. Preparation
-uses one complete reverse closure of the touched bodies. Native's blocking
+clears seed-time observations, then edits the body named `anchor-a` through its
+synchronous required-output action. The final candidate also contains the main
+and alternate final-output rings. The example derives their exact body identities
+from the issued root and dependent output roles and checks independently expected
+output values. Preparation covers the source ring and both output rings once;
+repeated touched events or complete orbits still fail the checks. Native's blocking
 commit-boundary degree laws have already admitted a ring; the consumer derives
 its original affected three-point geometry windows from the actual returned
 physical successor records. Only roots within two incoming edges are evaluated.
@@ -190,19 +194,25 @@ before custom preparation with a lawful physical unlink/link twin.
 ```rust
 fn compare_complete_reads(
     events: &[PlanarInvariantReadEvent],
+    expected_touched: &[worth_relational::facade::identity::EntityId],
     query: WorthQueryInvariantProjectionWork,
 ) -> (
     WorthQueryInvariantProjectionWork,
     WorthQueryInvariantProjectionWork,
 ) {
-    let touched: Vec<_> = events
+    let mut touched: Vec<_> = events
         .iter()
         .filter_map(|event| match event {
             PlanarInvariantReadEvent::Touched { entity } => Some(*entity),
             _ => None,
         })
         .collect();
-    assert_eq!(touched.len(), 1, "this command edits one identified body");
+    // Sorting retains multiplicity: duplicate or omitted events still fail.
+    touched.sort();
+    assert_eq!(
+        touched, expected_touched,
+        "the whole candidate's issued source/output bodies"
+    );
     let complete: Vec<_> = events
         .iter()
         .filter_map(|event| match event {
@@ -216,20 +226,41 @@ fn compare_complete_reads(
             _ => None,
         })
         .collect();
-    assert_eq!(complete.len(), 1, "one Native orbit read per affected ring");
-    let (before, after, visited, physical_relations) = complete[0];
+    let expected_rings = 1 + (expected_touched.len() - 1) / 3;
     assert_eq!(
-        (visited, physical_relations),
-        (3, 3),
-        "the actual complete three-body component"
+        complete.len(),
+        expected_rings,
+        "one Native orbit read per affected ring"
     );
-    let complete_adjacencies = after.adjacency_lists_read() - before.adjacency_lists_read();
-    let complete_edges = after.adjacency_edges_inspected() - before.adjacency_edges_inspected();
-    assert!(complete_adjacencies >= visited);
-    assert!(
-        complete_edges >= physical_relations,
-        "actual acquisitions include every physical successor"
+    let identities: Vec<_> = events
+        .iter()
+        .filter_map(|event| match event {
+            PlanarInvariantReadEvent::CompleteOrbit { identity, .. } => Some(*identity),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(
+        identities
+            .iter()
+            .collect::<std::collections::BTreeSet<_>>()
+            .len(),
+        expected_rings,
+        "every complete orbit is distinct; repeated reads are not hidden"
     );
+    for (before, after, visited, physical_relations) in complete {
+        assert_eq!(
+            (visited, physical_relations),
+            (3, 3),
+            "the actual complete three-body component"
+        );
+        let complete_adjacencies = after.adjacency_lists_read() - before.adjacency_lists_read();
+        let complete_edges = after.adjacency_edges_inspected() - before.adjacency_edges_inspected();
+        assert!(complete_adjacencies >= visited);
+        assert!(
+            complete_edges >= physical_relations,
+            "actual acquisitions include every physical successor"
+        );
+    }
     assert!(
         query.adjacency_lists_read() > 0,
         "the actual query acquires its relation projection"

@@ -176,6 +176,9 @@ where
         >,
         limits: crate::domain_computation::execution_runtime::WorthQueryOutputDemandLimits,
         prepared: &crate::domain_computation::primary_graph::WorthQueryPreparedRequiredOutputSource,
+        retained_program_basis: std::sync::Arc<
+            crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation,
+        >,
     ) -> Result<WorthQueryAdmittedOutputDemand<Schema, Family>, WorthQueryOutputDemandDenial>
     where
         Family: WorthQueryProducerOutputFamily<Schema>,
@@ -191,6 +194,14 @@ where
             prepared,
             &observed_source,
         )?;
+        if retained_program_basis.selected_commit() != &prepared.source_commit
+            || retained_program_basis.branch_incarnation() != prepared.product_occurrence
+        {
+            return Err(denial(
+                WorthQueryOutputDemandDenialKind::ForeignSource,
+                "performed source basis differs from its original preparation",
+            ));
+        }
         let profile_kind = Family::profile_kind(&source);
         self.admit_output_demand_with_source::<Family>(execution,
             observed_source,
@@ -201,7 +212,7 @@ where
             crate::domain_computation::primary_graph::application_output_demand::DemandAdmissionKind::Required,
             None,
             None,
-            None,
+            Some(retained_program_basis),
         )
     }
 

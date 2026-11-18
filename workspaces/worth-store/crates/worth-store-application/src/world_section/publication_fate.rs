@@ -58,13 +58,17 @@ pub(super) fn terminal(
 pub(super) fn start_failure(
     failure: &OrderedJournalOperationFailure,
 ) -> WorldPublicationObservation {
-    let detail = Denial::Storage(format!("{failure:?}"));
     use OrderedJournalOperationFailure as O;
     use OrderedJournalPublicationFailure as F;
+    // Another journal owns the physical writer. Nothing was submitted by
+    // this task; preserve its original subject for the next advancement.
+    if matches!(failure, O::Busy) {
+        return WorldPublicationObservation::Pending;
+    }
+    let detail = Denial::Storage(format!("{failure:?}"));
     let no_effect = matches!(
         failure,
         O::OriginalRequestStopped(_)
-            | O::Busy
             | O::Stopped
             | O::Publication(
                 F::EmptyPayload
@@ -82,5 +86,25 @@ pub(super) fn start_failure(
         WorldPublicationObservation::Finished(WorldPublicationCompletion::proven_no_effect(detail))
     } else {
         WorldPublicationObservation::Finished(WorldPublicationCompletion::indeterminate(detail))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn physical_writer_contention_does_not_terminate_the_original_publication() {
+        assert!(matches!(
+            start_failure(&OrderedJournalOperationFailure::Busy),
+            WorldPublicationObservation::Pending,
+        ));
+        assert!(
+            matches!(
+                start_failure(&OrderedJournalOperationFailure::Stopped),
+                WorldPublicationObservation::Finished(_),
+            ),
+            "an actually stopped original still reaches its terminal classifier"
+        );
     }
 }

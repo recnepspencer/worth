@@ -24,6 +24,9 @@ impl ConsumedOutputEvidence {
                 continue;
             }
             visited.insert(Arc::clone(evidence.identity));
+            if evidence.source_facts.is_none() {
+                return Ok(ConsumedOutputVerification::ChangedUpstream);
+            }
             if !at_observation::reads_at_or_after(selected, evidence.selected_native_root) {
                 return Ok(ConsumedOutputVerification::Unaligned);
             }

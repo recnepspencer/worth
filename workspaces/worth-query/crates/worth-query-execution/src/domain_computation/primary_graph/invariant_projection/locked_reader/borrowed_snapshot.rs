@@ -13,6 +13,8 @@ pub(in crate::domain_computation::primary_graph::invariant_projection) struct Co
         WorthQueryInvariantProjectionWork,
     pub(in crate::domain_computation::primary_graph::invariant_projection) realized_scope:
         WorthQueryRealizedProjectionScope,
+    pub(in crate::domain_computation::primary_graph::invariant_projection) applied_consumptions:
+        Vec<crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence>,
     pub(in crate::domain_computation::primary_graph::invariant_projection) consumed_outputs:
         BTreeMap<
             Arc<super::super::super::output_lineage::RecordedSettlementIdentity>,
@@ -204,6 +206,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthorit
             work,
             realized_scope,
             consumed_outputs,
+            applied_consumptions,
             source_facts,
             exceeded,
             overflowed,
@@ -250,6 +253,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthorit
             work,
             realized_scope,
             consumed_outputs,
+            applied_consumptions,
             dependent_source_facts,
         })
     }

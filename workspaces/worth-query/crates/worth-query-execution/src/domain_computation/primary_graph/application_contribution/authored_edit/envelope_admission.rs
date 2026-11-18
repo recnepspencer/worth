@@ -19,6 +19,7 @@ where
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         let admitted = retained.as_ref().ok_or_else(Denial::foreign_admission)?;
         admitted
+            .operation
             .graph_work()
             .mutation_product()
             .map(|product| product.retained_clone())
@@ -36,10 +37,11 @@ where
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         let admitted = retained.as_ref().ok_or_else(Denial::foreign_admission)?;
-        if admitted.scope_entity_id() != self.source {
+        if admitted.operation.scope_entity_id() != self.source {
             return Err(Denial::foreign_admission());
         }
         if admitted
+            .operation
             .graph_work()
             .mutation_product()
             .is_none_or(|product| product.observation() != &self.before)
@@ -52,7 +54,10 @@ where
             .map_err(|_| Denial::foreign_admission())?;
         let binding = WorthQueryApplicationIdempotencyBinding::for_mutation_identities(&identities)
             .bind_edit_envelope(&intent)
-            .bind_admission(admitted);
+            .bind_admission(&admitted.operation);
+        let binding = admitted.pending_source.as_ref().map_or(binding, |source| {
+            source.bound_source().bind_idempotency(binding)
+        });
         let binding = self.bind_corrective_identity(binding);
         let execution = context
             .phase
@@ -60,7 +65,7 @@ where
             .map_err(|_| Denial::foreign_admission())?;
         let proof = context
             .application
-            .authorize_idempotency_inspection(&execution, admitted, coordination)
+            .authorize_idempotency_inspection(&execution, &admitted.operation, coordination)
             .map_err(Denial::from_authorization)?;
         proof
             .govern((), |()| next(binding))

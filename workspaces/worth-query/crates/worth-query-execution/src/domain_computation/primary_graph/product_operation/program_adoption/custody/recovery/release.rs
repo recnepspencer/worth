@@ -134,24 +134,26 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         if matches!(
             &result,
             Ok(_) | Err(WorthQueryBranchAdoptionRecoveryReleaseFailure::OwnerCleanup(_))
-        ) {
-            if let Some(attempt) = attempt {
-                if let Err(cause) = self
-                    .installed_program_support()
-                    .expect("adoption support")
-                    .lifecycle()
-                    .release_branch_adoption(execution, attempt)
-                {
-                    let cleanup = match result {
-                        Ok(receipt) => Ok(receipt),
-                        Err(WorthQueryBranchAdoptionRecoveryReleaseFailure::OwnerCleanup(
-                            failure,
-                        )) => Err(failure),
-                        _ => unreachable!("only released World custody is discharged"),
-                    };
-                    return Err(WorthQueryBranchAdoptionRecoveryReleaseFailure::ObligationDischargePending { cause,cleanup });
+        ) && let Some(attempt) = attempt
+            && let Err(cause) = self
+                .installed_program_support()
+                .expect("adoption support")
+                .lifecycle()
+                .release_branch_adoption(execution, attempt)
+        {
+            let cleanup = match result {
+                Ok(receipt) => Ok(receipt),
+                Err(WorthQueryBranchAdoptionRecoveryReleaseFailure::OwnerCleanup(failure)) => {
+                    Err(failure)
                 }
-            }
+                _ => unreachable!("only released World custody is discharged"),
+            };
+            return Err(
+                WorthQueryBranchAdoptionRecoveryReleaseFailure::ObligationDischargePending {
+                    cause,
+                    cleanup,
+                },
+            );
         }
         result
     }

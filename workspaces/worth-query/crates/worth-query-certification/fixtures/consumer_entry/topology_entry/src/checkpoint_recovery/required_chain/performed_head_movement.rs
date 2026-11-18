@@ -65,26 +65,15 @@ mod serial {
         assert_eq!(initial_b.producer_contacts_in_this_demand(), 1);
         assert_eq!(initial_c.producer_contacts_in_this_demand(), 1);
 
-        let selected = request
-            .query(PlanarRead {
-                body_key: "anchor-a".to_owned(),
-            })
-            .execute()
-            .unwrap();
-        request
-            .advanced()
-            .mutate(PlanarSourceAdjustment {
-                scope_key: "anchor-a".to_owned(),
-                replacement_y: length(5),
-            })
-            .expect_source(selected.observed_sources()[0].clone())
-            .idempotency(&0x9176_3002_u64)
-            .execute_performed::<program::ChainProgram, program::ChainRoot>(
-                &application,
-                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-            )
-            .unwrap();
-        drop(selected);
+        // The tested advance must perform the upstream publication itself.
+        diamond::change_root!(
+            request,
+            &application,
+            "anchor-a",
+            5,
+            0x9176_3002_u64,
+            program::ChainProgram
+        );
         let c_root = initial_c
             .outputs_of::<PlanarOutputs>()
             .unwrap()

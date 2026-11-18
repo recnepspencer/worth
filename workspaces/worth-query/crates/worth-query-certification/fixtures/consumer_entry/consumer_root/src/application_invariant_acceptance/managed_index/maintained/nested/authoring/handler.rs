@@ -1,12 +1,23 @@
 //! Decide through real current observations; construct only through the writer.
 use super::*;
-type Reader<'a, 'b, 'c> = DecisionReader<'a, 'b, 'c, Catalog, Binding>;
+type Reader<'a, 'b, 'c, B> = DecisionReader<'a, 'b, 'c, Catalog, B>;
 pub struct Handler;
-impl OperationHandler<Catalog, Binding> for Handler {
+impl<B> OperationHandler<Catalog, B> for Handler
+where
+    B: ApplicationMutationBinding<
+        Catalog,
+        Input = Edit,
+        Operation = EditGraph,
+        Decision = Decision,
+        Result = Changed,
+        Denial = Denial,
+        Output = NoApplicationMutationOutputs,
+    >,
+{
     fn decide(
         &self,
         input: &Edit,
-        reader: &mut Reader<'_, '_, '_>,
+        reader: &mut Reader<'_, '_, '_, B>,
     ) -> HandlerResult<Decision, Denial> {
         let result = (|| {
             Ok(match input {
@@ -55,7 +66,7 @@ impl OperationHandler<Catalog, Binding> for Handler {
         &self,
         input: &Edit,
         decision: Decision,
-        writer: &mut CandidateWriter<'_, Catalog, Binding>,
+        writer: &mut CandidateWriter<'_, Catalog, B>,
     ) -> HandlerResult<Changed, Denial> {
         match apply(input, decision, writer) {
             Ok(()) => HandlerResult::Completed(Changed),
@@ -63,8 +74,8 @@ impl OperationHandler<Catalog, Binding> for Handler {
         }
     }
 }
-fn directory(
-    reader: &mut Reader<'_, '_, '_>,
+fn directory<B: ApplicationMutationBinding<Catalog, Operation = EditGraph>>(
+    reader: &mut Reader<'_, '_, '_, B>,
     key: &str,
 ) -> Result<Target<Directory>, HandlerExecutionDenial> {
     let entity =
@@ -75,8 +86,8 @@ fn directory(
         .map_err(HandlerExecutionDenial::new)?;
     reader.mutation_target(&entity)
 }
-fn item(
-    reader: &mut Reader<'_, '_, '_>,
+fn item<B: ApplicationMutationBinding<Catalog, Operation = EditGraph>>(
+    reader: &mut Reader<'_, '_, '_, B>,
     key: &str,
 ) -> Result<Target<Item>, HandlerExecutionDenial> {
     let entity = reader.resolve_entity(ItemIdentity::at("ItemIdentity"), key.to_owned())?;
@@ -90,10 +101,10 @@ fn item(
     reader.field(&entity, BadgeDetail::at("BadgeDetail"))?;
     reader.mutation_target(&entity)
 }
-fn apply(
+fn apply<B: ApplicationMutationBinding<Catalog, Operation = EditGraph>>(
     input: &Edit,
     decision: Decision,
-    writer: &mut CandidateWriter<'_, Catalog, Binding>,
+    writer: &mut CandidateWriter<'_, Catalog, B>,
 ) -> Result<(), HandlerExecutionDenial> {
     match (input, decision) {
         (Edit::Directory { identity }, Decision::Directory(context)) => {

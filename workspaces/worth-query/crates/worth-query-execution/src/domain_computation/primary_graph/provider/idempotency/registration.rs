@@ -10,6 +10,10 @@ use worth_relational::facade::transactions::{
     AspectFieldPatch, CreateIntent, EntitySpec, MutationIntent,
 };
 
+// Native scopes appended participants' local keys; this issued root key remains
+// the creation correspondence for the original application operation.
+pub(super) const ORIGINAL_CLIENT_KEY_PREFIX: &str = "worth-query-idempotency:";
+
 pub fn idempotency_create_intent(
     layout: &WorthQueryProviderIdempotencyLayout,
     binding: WorthQueryApplicationIdempotencyBinding,
@@ -54,7 +58,7 @@ pub fn idempotency_create_intent(
         partition_id: mutation_partition,
         kind_id: layout.entity_kind,
         client_key: worth_relational::facade::symbols::ClientKey::raw(format!(
-            "worth-query-idempotency:{key}"
+            "{ORIGINAL_CLIENT_KEY_PREFIX}{key}"
         )),
         fields: AspectFieldPatch::from(fields),
     }))

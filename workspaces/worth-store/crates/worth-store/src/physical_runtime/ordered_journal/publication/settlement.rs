@@ -8,7 +8,9 @@ use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::sync::Arc;
 impl JournalPublicationShared {
     pub(in crate::physical_runtime) fn mark_terminal_visible(&self) {
-        self.state().visibility = JournalTerminalVisibility::Published;
+        let mut state = self.state();
+        state.visibility = JournalTerminalVisibility::Published;
+        state.live = false;
     }
     pub(super) fn visible_terminal(&self) -> Option<Arc<OrderedJournalPublicationTerminal>> {
         let s = self.state();
@@ -127,7 +129,6 @@ impl JournalPublicationShared {
         }
         let mut s = self.state();
         s.terminal = Some(terminal);
-        s.live = false;
         s.settling = false;
     }
     pub(super) fn observe_existing(&self) {
@@ -209,7 +210,11 @@ impl JournalPublicationShared {
                     &fact,
                     Some(AnchoredRecordStepSettlementFailure::WorkerUnavailable),
                 );
-                self.state().visibility = JournalTerminalVisibility::WorkerLost;
+                {
+                    let mut state = self.state();
+                    state.visibility = JournalTerminalVisibility::WorkerLost;
+                    state.live = false;
+                }
                 return self.poll_terminal();
             }
             self.retire_unavailable();
@@ -239,6 +244,13 @@ impl JournalPublicationShared {
         let attempt = self.state().attempt.upgrade();
         if let Some(a) = attempt {
             crate::physical_runtime::PhysicalMutationHandle::new(&a).wait();
+        }
+    }
+    /// Observes this original's attempt until its terminal is visible or `deadline`.
+    pub(super) fn wait_until(&self, deadline: std::time::Instant) {
+        let attempt = self.state().attempt.upgrade();
+        if let Some(attempt) = attempt {
+            attempt.terminal_visible_by(deadline);
         }
     }
 }

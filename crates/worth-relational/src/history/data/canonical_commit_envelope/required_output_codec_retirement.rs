@@ -62,10 +62,7 @@ impl CanonicalCommitEnvelopeBody {
                         == self.commit.parents.first().copied()
                     && !self.required_output_codec_retirements[..index]
                         .iter()
-                        .any(|prior| {
-                            prior.publication == event.publication
-                                || prior.meaning.same_route(&event.meaning)
-                        })
+                        .any(|prior| prior.meaning.same_route(&event.meaning))
             })
     }
 }

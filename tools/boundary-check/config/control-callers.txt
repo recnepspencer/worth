@@ -132,6 +132,9 @@ crates/worth-foundational/ workspaces/worth-query/crates/worth-query-court-execu
 crates/worth-foundational/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/optional_output_role/source_disclosure/compiler_qualification.rs
 crates/worth-relational/ crates/worth-court-relational-branch-reference-compile-time/tests/worth_court_relational_branch_reference_compile_time/relational/relational_certification/mvcc_cancellation_publication_boundaries/mod.rs
 crates/worth-relational/ crates/worth-court-relational-branch-reference-compile-time/tests/worth_court_relational_branch_reference_compile_time/relational/relational_certification/schema_transition_cancellation/mod.rs
+crates/worth-relational/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/parallel_history/matrix/runtime.rs
+crates/worth-relational/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/parallel_history/matrix/applied_current_output.rs
+crates/worth-relational/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/parallel_history/matrix/runtime/source_affinity.rs
 crates/worth-relational/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/content/identity_conflict.rs
 crates/worth-relational/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/cost/relational/source_initial_inputs.rs
 crates/worth-relational/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/process/commit_phase_backing.rs
@@ -346,6 +349,8 @@ workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crat
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/document_history/navigation_outputs/retention.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/fixed_branch_affinity.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/fixed_delivery.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/fixed_delivery/retry_history.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/document_history/aggregate.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/fixed_managed_cleanup.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/fixed_missing_carrier/guard_lifecycle.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/fixed_native_postures.rs
@@ -377,6 +382,8 @@ workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crat
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/advancement_discovered.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/advancement_lifetime.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/clean_reuse.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/checkpoint_reopens_ready_output_without_producer_contact_and_rec.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/examples/required_feature.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/computation_partition/oracle.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/computation_partition/oracle/absence.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/computation_partition/oracle/advancement_custody.rs
@@ -425,6 +432,7 @@ workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crat
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/output_availability/races/nested.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/parallel_history/matrix/operation.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/parallel_history/matrix/runtime.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/parallel_history/matrix/applied_current_output.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/parallel_history/matrix/runtime/interruption.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/parallel_history/observation.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/required_chain.rs
@@ -2014,6 +2022,8 @@ workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crat
 
 # H9 observes original entity and incident selection through existing read-only controls.
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/host/application_home/correction_material/original_operation.rs
+
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-execution/tests/worth_query_court_execution/domain_computation/primary_graph/output_lineage/tests/family_publications/applied_overlay.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-contribution/tests/worth_query_court_execution_primary_graph_application_contribution/domain_computation/primary_graph/application_contribution/partitioned_computation/incremental/tests/structural_walk/chains/attempt.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-contribution/tests/worth_query_court_execution_primary_graph_application_contribution/domain_computation/primary_graph/application_contribution/partitioned_computation/incremental/tests/structural_walk/chains/mod.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-contribution/tests/worth_query_court_execution_primary_graph_application_contribution/domain_computation/primary_graph/application_contribution/partitioned_computation/incremental/tests/structural_walk/orbits/attempt.rs

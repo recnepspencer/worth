@@ -152,21 +152,38 @@ impl CanonicalCommitEnvelopeBody {
 }
 
 impl<'a> ValidatedOutputOrigins<'a> {
-    pub(crate) fn validate_output_membership_header(
+    pub(crate) fn materialization_origin_for_record(
         &self,
-    ) -> Result<&'a CanonicalRequiredOutputOrigin, Stop> {
-        let origin = self
-            .envelope()
-            .required_output_origin
-            .as_deref()
-            .ok_or("present output has no installed producer publication")?;
-        if matches!(
-            origin.publication,
-            CanonicalOutputPublication::ProducerRetirement { .. }
-                | CanonicalOutputPublication::HistoricalSelection { .. }
-        ) {
-            return Err("producer retirement cannot be a standalone publication".into());
-        }
+        record: &crate::transactions::data::RecordRef,
+        context: &mut worth_execution::MapKernelContext<'_, '_>,
+    ) -> Result<&'a std::sync::Arc<CanonicalRequiredOutputOrigin>, Stop> {
+        use crate::transactions::data::RecordRef;
+        let origin = match record {
+            RecordRef::Entity(id) => self.output_origin_for_entity(*id, context)?,
+            RecordRef::Relation(id) => self.output_origin_for_relation(*id, context)?,
+        };
+        require_materialization_posture(origin)?;
         Ok(origin)
     }
+
+    pub(crate) fn materialization_origin_for_route(
+        &self,
+        meaning: &crate::mvcc::RequiredOutputPublicationMeaning,
+        context: &mut worth_execution::MapKernelContext<'_, '_>,
+    ) -> Result<&'a std::sync::Arc<CanonicalRequiredOutputOrigin>, Stop> {
+        let origin = self.output_origin_for_route(meaning, context)?;
+        require_materialization_posture(origin)?;
+        Ok(origin)
+    }
+}
+
+fn require_materialization_posture(origin: &CanonicalRequiredOutputOrigin) -> Result<(), Stop> {
+    if matches!(
+        origin.publication,
+        CanonicalOutputPublication::ProducerRetirement { .. }
+            | CanonicalOutputPublication::HistoricalSelection { .. }
+    ) {
+        return Err("producer retirement cannot be a standalone publication".into());
+    }
+    Ok(())
 }

@@ -30,13 +30,18 @@ mod serial {
             .unwrap();
         request
             .advanced()
-            .mutate(PlanarSourceAdjustment {
+            .mutate(crate::PlanarEdit(crate::PlanarMutation {
                 scope_key: "measure-b".into(),
-                replacement_y: length(11),
-            })
+                operation: worth_query_consumer_values::PlanarOperation::Adjust(vec![
+                    worth_query_consumer_values::PlanarAdjustment {
+                        body_key: "measure-b".into(),
+                        replacement_y: length(11),
+                    },
+                ]),
+            }))
             .expect_source(source.observed_sources()[0].clone())
             .idempotency(&0x91742703u64)
-            .execute_performed::<Program, GeometryRoot>(
+            .execute_in_program::<Program>(
                 &app,
                 worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
             )

@@ -54,6 +54,8 @@ pub(crate) struct StoreColdSource {
         Option<Box<dyn Fn(PatchStreamPosition, RelationalStoreColdReadCounters) + Send + Sync>>,
     // Local selected readers/pins retire before a possible final pool-owner Drop.
     serving: Option<Arc<ServingPhysicalRuntime>>,
+    #[cfg(debug_assertions)]
+    physical_owner_label: Option<Arc<()>>,
     _allocation_memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 
@@ -116,6 +118,8 @@ impl StoreColdSource {
             #[cfg(test)]
             canonical_journal_attempts: AtomicU64::new(0),
             commit_read_observer: observer,
+            #[cfg(debug_assertions)]
+            physical_owner_label: Some(crate::physical_owner_labels::register::<Self>(&serving)),
             serving: Some(serving),
             _allocation_memory: memory,
         })

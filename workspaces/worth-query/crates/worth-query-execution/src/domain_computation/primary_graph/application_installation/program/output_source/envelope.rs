@@ -87,6 +87,10 @@ where
 
     /// Ordinary authored entries have no required source to prepare. They may
     /// still share this envelope with genuine required roots from other entries.
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "TypeId checks exact output-source membership; envelope order is declared"
+    )]
     pub fn compare_and_commit_selected_authored_envelope<B>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,

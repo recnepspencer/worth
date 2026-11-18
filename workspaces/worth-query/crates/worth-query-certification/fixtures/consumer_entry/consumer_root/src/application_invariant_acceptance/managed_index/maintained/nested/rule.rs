@@ -38,6 +38,7 @@ pub(super) fn definition() -> ApplicationInvariantDefinition<Catalog, CompleteNe
 #[derive(Default)]
 pub(in super::super) struct Calls {
     pub(super) records: Mutex<Vec<Record>>,
+    pub(super) acquired: Mutex<Vec<query::ItemRow>>,
 }
 #[derive(Debug)]
 pub(super) struct Record {

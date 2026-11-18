@@ -244,3 +244,5 @@ pub mod inherited_settlement;
 pub mod publication_controls;
 #[path = "selection_budget/mod.rs"]
 pub mod selection_budget;
+
+mod applied_overlay;

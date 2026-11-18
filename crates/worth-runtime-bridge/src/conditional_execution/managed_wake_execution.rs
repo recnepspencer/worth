@@ -35,7 +35,7 @@ impl BridgeConditionalExecutionView<'_> {
             .triggering_correspondence
             .map(|trigger| {
                 super::retention::BridgeRetainedTrigger::prepare(
-                    &self.retention,
+                    self.retention,
                     trigger.change_set(),
                 )
             })

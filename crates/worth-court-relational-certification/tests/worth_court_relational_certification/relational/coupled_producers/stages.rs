@@ -1,5 +1,5 @@
 //! Later authored stages apply once each, in Native's admitted order, over
-//! the one candidate, before any producer part, and publish in one commit.
+//! the one candidate, including around producer parts, and publish in one commit.
 use super::*;
 use worth_relational::facade::publication::AuthoredRetirementRefusal as Cause;
 mod owned_route;
@@ -128,11 +128,15 @@ fn an_authored_stage_reads_the_candidate_and_commits_with_the_prefix_once() {
     let execution = &ExecutionRequest::serial(&host);
     let (expected_world, expected_ids) = oracle(execution);
     let expected = cold::facts(&expected_world.runtime, execution, &expected_ids);
-    for mixed in [false, true] {
+    for (shape, mixed) in [
+        (Shape::Ordered { mixed: false }, false),
+        (Shape::Ordered { mixed: true }, true),
+        (Shape::AfterProducer, true),
+    ] {
         let world = World::new(execution, true, true);
         let parts = Stages {
             world: &world,
-            shape: Shape::Ordered { mixed },
+            shape,
         };
         let proposal = world
             .prepare_stages(execution, &[world.carrier], &parts)
@@ -227,7 +231,6 @@ fn stages_outside_the_admitted_roster_refuse_without_effect() {
     for (shape, cause) in [
         (Shape::Foreign, Cause::UnadmittedAuthoredStage),
         (Shape::Missing, Cause::MissingAuthoredStage),
-        (Shape::AfterProducer, Cause::UnadmittedAuthoredStage),
     ] {
         let before = world.basis();
         let parts = Stages {

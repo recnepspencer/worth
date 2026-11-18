@@ -52,6 +52,25 @@ impl RelationalAppliedCandidateReadIdentity {
             phase: self.phase,
         }
     }
+    /// An assembly read includes its earlier revisions. The prepared image is
+    /// issued only after the same proposal's complete assembly is admitted, so
+    /// it includes that proposal's assembly prefixes too. Its candidate id is
+    /// never interpreted as an assembly revision ordinal.
+    pub fn includes_assembly_prefix(&self, prefix: &Self) -> bool {
+        if !self.proposal.same_proposal_sequence(&prefix.proposal) {
+            return false;
+        }
+        match (self.phase, prefix.phase) {
+            (
+                CandidateReadPhase::AssemblyRevision(at),
+                CandidateReadPhase::AssemblyRevision(prior),
+            ) => prior <= at,
+            (CandidateReadPhase::PreparedCandidate(_), CandidateReadPhase::AssemblyRevision(_)) => {
+                true
+            }
+            _ => false,
+        }
+    }
     pub const fn proposal(&self) -> &RelationalMutationProposalIdentity {
         &self.proposal
     }

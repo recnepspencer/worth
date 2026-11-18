@@ -247,7 +247,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
                     parent.pin = pin.clone();
                     // A discovered child is owed by the stage that owed its parent.
                     context.owner.owe(&task.owed);
-                    task.tree.discover(context, parent, &mut next)?;
+                    task.tree.discover(context, candidate, parent, &mut next)?;
                 }
                 task.continuation_done = true;
             }

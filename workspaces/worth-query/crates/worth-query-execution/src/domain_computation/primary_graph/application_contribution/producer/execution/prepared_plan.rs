@@ -51,7 +51,7 @@ impl<Value, Stop, Custody> OwnerCompletion<'_, Value, Stop, Custody> {
 }
 
 impl<'owner, Value: 'owner, Stop: 'owner> OwnerPlan<'owner, Value, Stop> {
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn immediate(
+    pub(in crate::domain_computation::primary_graph::application_contribution) fn immediate(
         outcome: Result<Value, Stop>,
     ) -> Self {
         Self::new(Vec::new(), move |slots| {
@@ -117,7 +117,7 @@ impl<'owner, Value: 'owner, Stop: 'owner> OwnerPlan<'owner, Value, Stop> {
         plan
     }
 
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn map_result<
+    pub(in crate::domain_computation::primary_graph::application_contribution) fn map_result<
         Next: 'owner,
         NextStop: 'owner,
     >(

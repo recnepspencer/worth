@@ -287,7 +287,7 @@ fn required_catalog_delta_survives_all_projections_and_rejects_missing_or_older_
         .durability_authority()
         .native_checkpoint(execution, execution.allocation_policy())
         .unwrap();
-    assert!(checkpoint.bytes().starts_with(b"WORTH-REL-CHK22\n"));
+    assert!(checkpoint.bytes().starts_with(b"WORTH-REL-CHK23\n"));
     // The actual embedded checkpoint projection preserves the declaration too.
     let mut restored = memory_runtime();
     restored
@@ -305,7 +305,7 @@ fn required_catalog_delta_survives_all_projections_and_rejects_missing_or_older_
     }
     for version in [13, 14, 15, 16, 17] {
         let mut old = checkpoint.bytes().to_vec();
-        old[..b"WORTH-REL-CHK22\n".len()]
+        old[..b"WORTH-REL-CHK23\n".len()]
             .copy_from_slice(format!("WORTH-REL-CHK{version}\n").as_bytes());
         let refused = restored.durability_recovery().restore_native_checkpoint(
             execution,

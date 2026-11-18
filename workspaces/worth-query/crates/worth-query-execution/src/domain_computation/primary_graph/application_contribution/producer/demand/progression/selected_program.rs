@@ -176,12 +176,12 @@ where
             ));
         }
         self.readmit_recorded_prerequisites(
-            &execution,
+            execution,
             principal,
             request_scope,
             demand.interest.as_ref(),
         )?;
-        self.advance_as_caller(&execution, demand, |demand, performed| {
+        self.advance_as_caller(execution, demand, |demand, performed| {
             self.advance_output_demand_with_prepared_source(
                 execution,
                 phase,

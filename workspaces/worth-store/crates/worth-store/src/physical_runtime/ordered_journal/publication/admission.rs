@@ -3,6 +3,37 @@ use super::{operation::*, outcome::*, recovery::*, *};
 use std::sync::{Arc, Mutex, Weak};
 use worth_proof::LinearResource;
 use worth_store_physical_format::{RecordAnchor, MAXIMUM_RECORD_ANCHORS};
+
+/// One original input waiting for the Home journal writer, including its original
+/// cancellation lineage and input charge. Contention does not dispose it.
+pub struct OrderedJournalPublicationAdmission {
+    runtime: crate::physical_runtime::RuntimeIdentity,
+    journal: OrderedJournalName,
+    publication: Option<OrderedJournalPublication>,
+    interruption: Option<Arc<worth_execution::ExecutionInterruptionView>>,
+}
+pub enum OrderedJournalPublicationAdmissionProgress {
+    Pending(OrderedJournalPublicationAdmission),
+    Started(OrderedJournalPublicationStart),
+}
+impl OrderedJournalPublicationAdmission {
+    pub fn advance(
+        mut self,
+        journal: &OrderedJournal<'_>,
+    ) -> OrderedJournalPublicationAdmissionProgress {
+        use OrderedJournalPublicationAdmissionProgress::{Pending, Started};
+        if self.runtime != journal.runtime.runtime_identity() || self.journal != journal.name {
+            return Started(OrderedJournalPublicationStart::Refused(
+                OrderedJournalOperationFailure::ForeignReceiver,
+            ));
+        }
+        match journal.admit_owned(&mut self.publication, &mut self.interruption) {
+            Ok(start) => Started(start),
+            Err(OrderedJournalOperationFailure::Busy) => Pending(self),
+            Err(cause) => Started(OrderedJournalPublicationStart::Refused(cause)),
+        }
+    }
+}
 struct AdmissionReservation {
     owner: Arc<Mutex<OrderedJournalState>>,
 }
@@ -15,6 +46,20 @@ impl Drop for AdmissionReservation {
     }
 }
 impl OrderedJournal<'_> {
+    /// Retain the original before contended admission. Advancing this carrier
+    /// never reconstructs its payload, deadline, charge, or interruption view.
+    pub fn prepare_publication(
+        &self,
+        publication: OrderedJournalPublication,
+        interruption: worth_execution::ExecutionInterruptionView,
+    ) -> OrderedJournalPublicationAdmission {
+        OrderedJournalPublicationAdmission {
+            runtime: self.runtime.runtime_identity(),
+            journal: self.name,
+            publication: Some(publication),
+            interruption: Some(Arc::new(interruption)),
+        }
+    }
     /// Reads the protected head and encodes one successor. I/O, hashing,
     /// allocation and short locks are cooperative, not hard real-time.
     pub fn start_publication(
@@ -27,17 +72,59 @@ impl OrderedJournal<'_> {
     pub(super) fn start_owned(
         &self,
         publication: OrderedJournalPublication,
-        interruption: Option<Arc<worth_execution::ExecutionInterruptionView>>,
+        mut interruption: Option<Arc<worth_execution::ExecutionInterruptionView>>,
     ) -> OrderedJournalPublicationStart {
-        match self.admit_owned(publication, interruption) {
+        match self.admit_owned(&mut Some(publication), &mut interruption) {
             Ok(start) => start,
             Err(cause) => OrderedJournalPublicationStart::Refused(cause),
         }
     }
+    /// A synchronous original that serializes with the Home journal writer: it
+    /// waits behind the active original for at most its own deadline. Admission
+    /// takes nothing from it before it succeeds, so a writer still busy at that
+    /// deadline refuses exactly as `start_owned` does.
+    pub(super) fn start_owned_after_writer(
+        &self,
+        publication: OrderedJournalPublication,
+    ) -> OrderedJournalPublicationStart {
+        let patience =
+            std::time::Duration::from_millis(publication.deadline.signal_deadline().get());
+        let deadline = std::time::Instant::now() + patience;
+        let (mut publication, mut interruption) = (Some(publication), None);
+        loop {
+            match self.admit_owned(&mut publication, &mut interruption) {
+                Ok(start) => return start,
+                Err(OrderedJournalOperationFailure::Busy)
+                    if std::time::Instant::now() < deadline =>
+                {
+                    self.await_active_writer(deadline);
+                }
+                Err(cause) => return OrderedJournalPublicationStart::Refused(cause),
+            }
+        }
+    }
+    /// The active original's physical attempt publishes its own visibility; a
+    /// writer that has not bound one yet is inside its short admission.
+    fn await_active_writer(&self, deadline: std::time::Instant) {
+        let active = self
+            .runtime
+            .ordered_journal_owner()
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+            .active
+            .as_ref()
+            .and_then(Weak::upgrade);
+        if let Some(active) = active
+            && active.state().live
+        {
+            active.wait_until(deadline);
+        }
+        std::thread::yield_now();
+    }
     fn admit_owned(
         &self,
-        mut publication: OrderedJournalPublication,
-        interruption: Option<Arc<worth_execution::ExecutionInterruptionView>>,
+        publication: &mut Option<OrderedJournalPublication>,
+        interruption: &mut Option<Arc<worth_execution::ExecutionInterruptionView>>,
     ) -> Result<OrderedJournalPublicationStart, OrderedJournalOperationFailure> {
         if let Some(stop) = interruption.as_ref().and_then(|v| v.check_live().err()) {
             return Err(OrderedJournalOperationFailure::OriginalRequestStopped(stop));
@@ -64,6 +151,8 @@ impl OrderedJournal<'_> {
         let _reservation = AdmissionReservation {
             owner: owner.clone(),
         };
+        let mut publication = publication.take().expect("one original admission input");
+        let interruption = interruption.take();
         if publication.payload.is_empty() {
             return Err(Failure::EmptyPayload.into());
         }

@@ -54,6 +54,40 @@ impl PartialEq for ObservedSourcePublication {
 impl Eq for ObservedSourcePublication {}
 
 impl ObservedSourcePublication {
+    pub(in crate::domain_computation::primary_graph) fn admits_applied_absence(
+        &self,
+        principal: worth_relational::facade::identity::EntityId,
+        scope: worth_relational::facade::identity::EntityId,
+        candidate: &worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
+    ) -> bool {
+        self.awaiting_first
+            && self.state.heads.is_empty()
+            && self.read_closure.is_unpublished_applied()
+            && self
+                .read_closure
+                .admits_applied_read(principal, scope, candidate)
+    }
+    pub(in crate::domain_computation::primary_graph) fn applied_candidate(
+        &self,
+    ) -> Option<&worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity> {
+        self.read_closure.applied_candidate()
+    }
+    pub(in crate::domain_computation::primary_graph) fn applied_support_equal(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        runtime: &RelationalRuntime,
+        before: &SnapshotHandle,
+        after_own: &worth_relational::facade::runtime::RelationalPinnedRead<
+            worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
+        >,
+        complete: &worth_relational::facade::runtime::RelationalPinnedRead<
+            worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
+        >,
+    ) -> Result<bool, crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial>
+    {
+        self.read_closure
+            .applied_support_equal(execution, runtime, before, after_own, complete)
+    }
     pub(in crate::domain_computation::primary_graph) fn address(&self) -> Arc<OutputSourceAddress> {
         Arc::clone(&self.address)
     }
@@ -135,6 +169,13 @@ impl ObservedSourcePublication {
             .map_err(|_| Stop::Unavailable)?;
         if positioned.runtime_instance_id() != self.selected.runtime_instance_id()
             || positioned.branch_id() != self.selected.branch_id()
+        {
+            return Err(Stop::Unavailable);
+        }
+        if self.read_closure.is_unpublished_applied()
+            && (positioned.root_id() != self.selected.root_id()
+                || positioned.commit_id() != self.selected.commit_id()
+                || positioned.position() != self.selected.position())
         {
             return Err(Stop::Unavailable);
         }

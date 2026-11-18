@@ -22,7 +22,7 @@ impl ConsumedOutputEvidence {
             execution,
             std::iter::once(EvidenceView {
                 identity,
-                source_facts,
+                source_facts: Some(source_facts),
                 upstream,
                 verification_requirement,
                 native_output_witness: Some(native_output_witness),
@@ -51,7 +51,7 @@ impl ConsumedOutputEvidence {
             execution,
             std::iter::once(EvidenceView {
                 identity,
-                source_facts,
+                source_facts: Some(source_facts),
                 upstream,
                 verification_requirement,
                 native_output_witness: None,

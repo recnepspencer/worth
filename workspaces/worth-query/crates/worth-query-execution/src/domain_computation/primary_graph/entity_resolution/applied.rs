@@ -53,7 +53,7 @@ impl WorthQueryInstalledEntityResolutionContext {
             let predecessor = before
                 .prepare_entity_field_lookup(index, layout.entity_kind, &layout.locator, execution)
                 .map_err(|stop| map_index_denial(stop.kind(), field))?;
-            super::applied_lookup_control::trigger(self);
+            super::applied_lookup_control::trigger(self, field);
             let selected = applied
                 .lookup_applied_entity_field(
                     execution,

@@ -119,7 +119,7 @@ where
     .map_err(|cause| Denial::SourceRead(SourceQueryObservationStop::Read(cause)))
 }
 
-fn admit_parent<S, B>(
+pub(super) fn admit_parent<S, B>(
     execution: &ExecutionRequest<'_, '_>,
     access: &SourceQueryReaderAccess<'_, S>,
     plan: &BoundPlan<'_, S, B>,

@@ -114,11 +114,11 @@ impl super::execution_view::BridgeConditionalExecutionView<'_> {
             ));
         }
         let observation_baselines =
-            super::observation_retention::BridgeObservationBaselines::new(&self.retention)?;
+            super::observation_retention::BridgeObservationBaselines::new(self.retention)?;
         let source_snapshot =
             bridge_snapshot_identity
                 .map(|identity| {
-                    crate::delivery::open_planned_snapshot(&self.bridge, identity, execution)
+                    crate::delivery::open_planned_snapshot(self.bridge, identity, execution)
                 })
                 .transpose()
                 .map_err(|error| {

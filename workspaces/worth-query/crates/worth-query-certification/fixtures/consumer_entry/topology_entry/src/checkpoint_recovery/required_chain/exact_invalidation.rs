@@ -281,8 +281,6 @@ mod judges;
 mod readings;
 use readings::Reading;
 mod caller_boundary;
-mod locality;
-mod observation_room;
 mod older_observation;
 mod other_entries;
 mod randomized;

@@ -3,6 +3,30 @@ use super::*;
 
 impl WorthQueryApplicationOutputLineage {
     #[doc(hidden)]
+    pub fn resolve_current_family_overlaid_for_test(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        runtime_authority: u64,
+        schema: &ApplicationSchemaBindingIdentity,
+        scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+        family: &str,
+        occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
+        generation: u64,
+        replaced: &[(Option<TypeId>, [u8; 32])],
+    ) -> Result<WorthQueryCurrentOutputFamilyResolution, CompanionPreflightStop> {
+        self.resolve_current_family_overlaid(
+            execution,
+            runtime_authority,
+            schema,
+            scope,
+            family,
+            occurrence,
+            generation,
+            replaced,
+        )
+    }
+
+    #[doc(hidden)]
     pub fn resolve_current_family_for_test(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

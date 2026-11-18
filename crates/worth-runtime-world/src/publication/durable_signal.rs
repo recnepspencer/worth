@@ -38,10 +38,10 @@ impl std::fmt::Debug for WorldDurableSignalAdvance {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut debug = f.debug_struct("WorldDurableSignalAdvance");
         debug.field("original", &self.original);
-        if let Ok(state) = self.state.try_lock() {
-            if let Some(State::Pending { denial, .. }) = state.as_ref() {
-                debug.field("last_denial", denial);
-            }
+        if let Ok(state) = self.state.try_lock()
+            && let Some(State::Pending { denial, .. }) = state.as_ref()
+        {
+            debug.field("last_denial", denial);
         }
         debug.finish_non_exhaustive()
     }

@@ -34,7 +34,11 @@ pub(super) fn refuse(world: &host::Host, request: &Request<'_, '_, '_>) {
         };
     }
     assert!(refused);
-    assert_eq!(world.runtime().producer_contacts_on_this_thread_for_test() - contacts, 1, "changed Source actually reached its fresh producer, never reused the old output or aliased an idempotent retry");
+    assert_eq!(
+        world.runtime().producer_contacts_on_this_thread_for_test() - contacts,
+        0,
+        "an Initial-only producer cannot execute fresh over its existing live output"
+    );
     assert_eq!(
         request.retain_current_read().unwrap().selected_commit(),
         &head
@@ -54,12 +58,9 @@ fn classify(denial: &WorthQueryProgramOutputAdvanceDenial) {
     };
     assert_eq!(
         cause.kind(),
-        WorthQueryOutputDemandDenialKind::ProducerUnavailable
+        WorthQueryOutputDemandDenialKind::MissingApplicableProducer
     );
-    assert_eq!(
-        cause.commit_denial_kind(),
-        Some(WorthQueryApplicationCommitDenialKind::ProviderRejected)
-    );
+    assert_eq!(cause.commit_denial_kind(), None);
     assert!(
         cause.commit_execution_denial().is_none(),
         "this is the actual successor contract refusal, not resource or cancellation"

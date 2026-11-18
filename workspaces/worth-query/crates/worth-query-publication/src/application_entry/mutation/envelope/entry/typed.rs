@@ -64,6 +64,7 @@ where
         let scope = context.scope.clone();
         let branch = context.branch;
         let intent = self.intent.clone();
+        let expected_source = self.expected_source.clone();
         let input = self.input.clone();
         let envelope_key = key.clone();
         let extension = self.commit_extension.clone();
@@ -85,6 +86,7 @@ where
                 intent.clone(),
             )
             .idempotency(envelope_key.key());
+            request.request.source = expected_source.clone();
             let prepared = (|| {
                 request
                     .require_workflow_transition()
@@ -118,10 +120,10 @@ where
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner)
                 .get_or_insert(prepared.extension);
-            Ok(AuthoredEditStageAdmission::new(
-                prepared.admission,
-                prepared.principal_identity,
-            ))
+            Ok(
+                AuthoredEditStageAdmission::new(prepared.admission, prepared.principal_identity)
+                    .with_source_expectation(prepared.pending_source),
+            )
         };
         let access = worth_query_execution::publication_boundary::program_publication_access();
         let original = self

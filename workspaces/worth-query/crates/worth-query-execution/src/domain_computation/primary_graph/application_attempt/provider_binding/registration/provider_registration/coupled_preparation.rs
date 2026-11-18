@@ -57,13 +57,16 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
         pin: worth_relational::facade::runtime::RelationalPinnedRead<
             worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
         >,
+        outputs: crate::domain_computation::primary_graph::provider::AppliedParticipantOutputs,
     ) {
         let preparation = self
             .coupled_preparation
             .as_mut()
             .expect("actual writer preparation");
         match preparation {
-            CoupledAttemptPreparation::Producer(preparation) => preparation.retain_after_own(pin),
+            CoupledAttemptPreparation::Producer(preparation) => {
+                preparation.retain_after_own(pin, outputs)
+            }
             CoupledAttemptPreparation::AuthoredStage { .. } => {
                 unreachable!("producer dispatch owns its producer preparation")
             }

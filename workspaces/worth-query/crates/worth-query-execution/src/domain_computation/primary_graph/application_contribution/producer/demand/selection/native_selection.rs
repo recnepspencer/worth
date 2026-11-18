@@ -80,6 +80,10 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         let lifecycle_observation = lifecycle_observation.as_ref().unwrap_or(observation);
         let output_bindings = self.installed_producers.family_output_bindings::<Family>();
         let scope = crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(source.source_root());
+        // Lineage is registered by the admitted mutation scope, which the
+        // Source expectation binds to the query scope. A projected row can
+        // have a different root; that root still identifies the demand below.
+        let lineage_scope = crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(source.model_root);
         let mut lineage = self
             .runtime
             .primary_provider
@@ -92,7 +96,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
             source.partition_identity(),
             &source.checkpoint_identity().bytes(),
             lifecycle_observation,
-            scope,
+            lineage_scope,
             &output_bindings,
             &mut lineage,
         )
@@ -101,7 +105,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
             .retained_output_candidates_metered(
                 self.runtime.authority_identity().as_u64(),
                 &self.installed_schema.binding_identity(),
-                scope,
+                lineage_scope,
                 lifecycle_observation.lifecycle_incarnation(),
                 lifecycle_observation.reference_generation().get(),
                 &output_bindings,
@@ -157,7 +161,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                 .retained_output_candidates_metered(
                     self.runtime.authority_identity().as_u64(),
                     &self.installed_schema.binding_identity(),
-                    scope,
+                    lineage_scope,
                     lifecycle_observation.lifecycle_incarnation(),
                     lifecycle_observation.reference_generation().get(),
                     &output_bindings,
@@ -251,6 +255,29 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                 if !live {
                     continue;
                 }
+                // A row that retains no fact has no Source evidence for the
+                // cutoff to compare; it keeps its ordinary Preserve selection.
+                if !facts_current && candidate.observed_source_facts.is_some() {
+                    let (mut exact, entry) = self
+                        .installed_producers
+                        .select_exact::<Family>(candidate.binding)?;
+                    if exact.reuses_live_output_only
+                        && !Family::SUPPORTED.iter().any(|applicability| {
+                            applicability.profile_kind() == profile_kind
+                                && applicability.lifecycle()
+                                    == WorthQueryProducerLifecyclePosture::Preserve
+                        })
+                        && entry.declaration.input_reuse.is_some_and(|contract| {
+                            contract.determinism()
+                                == worth_foundational::facade::DeterminismContract::CanonicalBitwise
+                        })
+                    {
+                        // This selects only the guarded input cutoff. It cannot
+                        // execute a fresh producer over the existing live output.
+                        exact.exact_retained_output = false;
+                        return Ok((exact, entry));
+                    }
+                }
                 if facts_current {
                     let (mut selected, entry) = self
                         .installed_producers
@@ -273,10 +300,13 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                     };
                     if may_rejoin_ready
                         && candidate
-                            .completed_coupled_receipt(
-                                source.idempotency_identity(),
-                                source.checkpoint_identity(),
-                            )
+                            .completed_coupled_receipt_for_source(execution, source)
+                            .map_err(|cause| {
+                                selected_basis::selection_lookup_denial(
+                                    worth_relational::facade::mvcc::CompanionPreflightStop::Execution(cause),
+                                    Family::IDENTITY,
+                                )
+                            })?
                             .is_some()
                     {
                         // The completed owner will recheck the actual input,

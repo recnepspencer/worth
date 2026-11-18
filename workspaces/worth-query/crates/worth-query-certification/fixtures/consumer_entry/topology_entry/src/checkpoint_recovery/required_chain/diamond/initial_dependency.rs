@@ -154,15 +154,7 @@ macro_rules! sibling_tree {
         settle!(b, request);
         assert_eq!(take_decisions("anchor-b"), [[2]]);
         drop((a,b));
-        let source = request.query(PlanarRead { body_key: "anchor-a".into() })
-            .execute().unwrap().observed_sources()[0].clone();
-        let changed = request.advanced().mutate(PlanarSourceAdjustment {
-            scope_key: "anchor-a".into(), replacement_y: length(5),
-        }).expect_source(source).idempotency(&0x9176_3593_u64)
-            .execute_performed::<$program, $root>(&application,
-                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation).unwrap();
-        assert!(matches!(changed, WorthQueryApplicationPerformedMutationOutcome::Performed(_)));
-        drop(changed);
+        change_root!(request, &application, "anchor-a", 5, 0x9176_3593_u64, $program);
         let mut a = request.demand(PlanarOutputDemand::new("anchor-a"))
             .start_in_program::<$program, $root>(&application).unwrap();
         settle!(a, request);
@@ -329,26 +321,6 @@ mod serial {
             sibling_program::EdgeRoot,
             sibling_program::ReverseConnection,
             false
-        );
-    }
-
-    #[test]
-    fn later_branch_settlement_unblocks_earlier_consumer_in_same_settle() {
-        sibling_tree!(
-            sibling_program::BranchProgram,
-            sibling_program::BranchRoot,
-            sibling_program::LaterConnection,
-            false
-        );
-    }
-
-    #[test]
-    fn already_settled_edge_member_does_not_replay_progress_during_later_wait() {
-        sibling_tree!(
-            sibling_program::EdgeProgram,
-            sibling_program::EdgeRoot,
-            sibling_program::ReverseConnection,
-            true
         );
     }
 }

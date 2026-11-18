@@ -21,6 +21,9 @@ where
         phase: &AdvancementPhase<'_>,
         application: &WorthQueryProgramApplicationRuntime<Schema, Program>,
         prepared: &worth_query_execution::facade::primary_graph::WorthQueryPreparedRequiredOutputSource,
+        retained_program_basis: std::sync::Arc<
+            worth_query_execution::facade::primary_graph::WorthQueryApplicationReadObservation,
+        >,
         source_result: WorthQueryApplicationOutputDemandSource<
             SourceQuery<Schema, Demand>,
             SourceValue<Schema, Demand>,
@@ -44,6 +47,7 @@ where
                 source_result,
                 limits,
                 prepared,
+                retained_program_basis,
             )
             .map_err(WorthQueryApplicationOutputDemandDenial::Demand)?;
         Ok(super::super::WorthQueryApplicationProgramDemandHandle::new(

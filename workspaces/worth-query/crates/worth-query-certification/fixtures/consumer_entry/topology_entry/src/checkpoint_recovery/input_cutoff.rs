@@ -59,6 +59,12 @@ fn exercise(
             worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("the independently selected successor edit publishes");
+    assert_eq!(
+        polling.candidates(),
+        2,
+        "the initial root and the coupled successor edit each execute one candidate"
+    );
+    let candidates_before_demand = polling.candidates();
     let edited = request
         .query(PlanarRead {
             body_key: changed_successor.to_owned(),
@@ -92,7 +98,11 @@ fn exercise(
         "edited source",
     );
     let after = crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
-    assert_eq!(polling.candidates(), if expect_reuse { 1 } else { 2 });
+    assert_eq!(
+        polling.candidates() - candidates_before_demand,
+        usize::from(!expect_reuse),
+        "only an ineligible root executes during delivery after the successor edit"
+    );
     assert!(polling.polls().iter().all(Result::is_ok));
     if expect_reuse {
         assert_eq!(
@@ -128,6 +138,7 @@ fn exercise(
             original_entity
         );
         drop((before, after));
+        let candidates_before_edit = polling.candidates();
         let successor = request
             .query(PlanarRead {
                 body_key: changed_successor.to_owned(),
@@ -148,6 +159,12 @@ fn exercise(
             )
             .expect("the successor edit invalidates the first stable alias");
         drop(successor);
+        assert_eq!(
+            polling.candidates() - candidates_before_edit,
+            1,
+            "the repeated successor edit executes its coupled producer"
+        );
+        let candidates_before_repeated_demand = polling.candidates();
         let second_basis =
             crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
         let repeated = direct_demand_with_controls(
@@ -156,6 +173,11 @@ fn exercise(
             root,
             demand_controls,
             "repeated alias",
+        );
+        assert_eq!(
+            polling.candidates(),
+            candidates_before_repeated_demand,
+            "the repeated eligible alias never executes a candidate"
         );
         let repeated_basis =
             crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();

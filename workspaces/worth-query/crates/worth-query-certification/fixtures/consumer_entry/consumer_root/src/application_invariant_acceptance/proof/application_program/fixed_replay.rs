@@ -54,6 +54,12 @@ fn fixed_registered_reply_loss_resumes_without_handler_rerun() {
             .unwrap_or_else(|(_, cause)| panic!("construction: {cause:?}"))
     };
     drop(constructing);
+    assert_eq!(planar_source_adjustment_contacts(&input), (0, 0));
+    let before_source = request
+        .retain_current_read()
+        .unwrap()
+        .selected_commit()
+        .clone();
     let first = match first.advance(&request) {
         Advance::Progress {
             operation,
@@ -64,20 +70,33 @@ fn fixed_registered_reply_loss_resumes_without_handler_rerun() {
     assert_eq!(planar_source_adjustment_contacts(&input), (1, 1));
     let original_source_receipt = first.prepared_source_receipt().unwrap().clone();
     let original_source_binding = original_source_receipt.idempotency_binding();
-    let original_commit = world
-        .application
-        .with_host_advancement(|phase| {
-            world
-                .application
-                .runtime()
-                .on_branch(world.application.current_world())
-                .select(&phase)
-                .unwrap()
-                .product()
-                .selected_commit()
-                .clone()
-        })
-        .unwrap();
+    let original_commit = request
+        .retain_current_read()
+        .unwrap()
+        .selected_commit()
+        .clone();
+    assert_eq!(
+        original_commit.owner_identity(),
+        before_source.owner_identity()
+    );
+    assert_eq!(original_commit.ordinal(), before_source.ordinal() + 1);
+    assert_eq!(
+        original_source_receipt
+            .committed_product_publication()
+            .composite_commit(),
+        &original_commit
+    );
+    assert_eq!(
+        request
+            .query(worth_query_topology_entry::PlanarOutputRead {
+                body_key: input.scope_key.clone(),
+            })
+            .execute()
+            .unwrap()
+            .rows()[0]
+            .value,
+        length(3)
+    );
     drop(first);
     assert_eq!(
         world
@@ -109,20 +128,12 @@ fn fixed_registered_reply_loss_resumes_without_handler_rerun() {
         }
         _ => panic!("registered replay recovers the actual native demand"),
     };
-    let before_refusal = world
-        .application
-        .with_host_advancement(|phase| {
-            world
-                .application
-                .runtime()
-                .on_branch(world.application.current_world())
-                .select(&phase)
-                .unwrap()
-                .product()
-                .selected_commit()
-                .clone()
-        })
-        .unwrap();
+    let before_refusal = request
+        .retain_current_read()
+        .unwrap()
+        .selected_commit()
+        .clone();
+    assert_eq!(before_refusal, original_commit);
     let mut held = Vec::new();
     for _ in 0..64 {
         match request.retain_current_read() {
@@ -140,20 +151,11 @@ fn fixed_registered_reply_loss_resumes_without_handler_rerun() {
     };
     assert_eq!(planar_source_adjustment_contacts(&input), (1, 1));
     drop(held);
-    let after_refusal = world
-        .application
-        .with_host_advancement(|phase| {
-            world
-                .application
-                .runtime()
-                .on_branch(world.application.current_world())
-                .select(&phase)
-                .unwrap()
-                .product()
-                .selected_commit()
-                .clone()
-        })
-        .unwrap();
+    let after_refusal = request
+        .retain_current_read()
+        .unwrap()
+        .selected_commit()
+        .clone();
     assert_eq!(before_refusal, after_refusal);
     let mut operation = Some(replay);
     let settled = (0..32)
@@ -183,20 +185,15 @@ fn fixed_registered_reply_loss_resumes_without_handler_rerun() {
         })
         .expect("authored output graph settles");
     assert!(settled.handler_result().is_none());
-    let carried_source = settled
-        .settlement()
-        .performed_source()
-        .unwrap()
+    let performed = settled.settlement().performed_source().unwrap();
+    let carried_source = performed
         .receipt()
         .retained_receipt()
         .expect("same-runtime replay retains the original performed source receipt");
-    let fulfillment = settled
-        .settlement()
-        .performed_source()
-        .unwrap()
-        .root_fulfillment();
+    let fulfillment = performed.root_fulfillment();
     assert!(fulfillment.matches_source(&original_source_receipt));
-    assert!(!fulfillment.matches_source(settled.settlement().root_receipt().unwrap()));
+    assert_eq!(fulfillment.source_commit(), &original_commit);
+    assert_eq!(fulfillment.output_commit(), &original_commit);
     assert_eq!(
         fulfillment.output_commit(),
         settled.settlement().root_observation().selected_commit()
@@ -207,14 +204,19 @@ fn fixed_registered_reply_loss_resumes_without_handler_rerun() {
         original_source_binding
     );
     assert!(
-        !carried_source.is_same_authoritative_commit(settled.settlement().root_receipt().unwrap()),
-        "source A must not become producer B"
+        settled.settlement().root_receipt().is_none(),
+        "retained co-publication does not invent a separate producer receipt"
     );
     let carried_source = carried_source.clone();
     assert_eq!(settled.settlement().output_count(), 4);
     assert_eq!(
         settled.settlement().root_producer_contacts_in_this_demand(),
-        1
+        0,
+        "registered recovery reuses the synchronous output without another execution"
+    );
+    assert_eq!(
+        request.retain_current_read().unwrap().selected_commit(),
+        &original_commit
     );
     assert_eq!(
         settled.read_current(&request).unwrap().rows()[0].value,
@@ -271,12 +273,6 @@ fn fixed_registered_reply_loss_resumes_without_handler_rerun() {
     assert!(matches!(terminal.native_outcome(), Some(worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome::RecoveredCommitted(_))));
     // D9: the original result is recorded meaning; it cannot recreate a live receipt.
     let Some(worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome::RecoveredCommitted(historical_receipt)) = terminal.native_outcome() else { unreachable!("recorded original asserted above") };
-    assert_eq!(
-        original_source_receipt
-            .committed_product_publication()
-            .composite_commit(),
-        &original_commit
-    );
     assert!(original_source_receipt.matches_recorded_original(historical_receipt));
     assert!(terminal.native_outcome().unwrap().receipt().is_none());
     assert!(terminal.native_outcome().unwrap().result().is_none());

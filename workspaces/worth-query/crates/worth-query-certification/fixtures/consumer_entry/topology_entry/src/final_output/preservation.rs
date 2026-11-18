@@ -2,7 +2,7 @@ use super::*;
 
 use worth_query_host::facade::primary_graph::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
-    WorthQueryInvariantMutationTarget,
+    WorthQueryInvariantMutationTarget, WorthQueryOperationDurableCapability,
 };
 
 #[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
@@ -131,6 +131,10 @@ pub struct FinalPlanarPreserveHandler;
 impl<Schema: TopologySchemaBinding> OperationHandler<Schema, FinalPlanarPreserveBinding<Schema>>
     for FinalPlanarPreserveHandler
 {
+    fn declared_durable_capabilities() -> Option<&'static [WorthQueryOperationDurableCapability]> {
+        Some(&[WorthQueryOperationDurableCapability::RelationalMutation])
+    }
+
     fn decide(
         &self,
         input: &FinalPlanarPreserve,

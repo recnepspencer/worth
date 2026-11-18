@@ -22,7 +22,12 @@ impl NativeSchemaInventory {
                 .collect(),
             public_sources: layout
                 .required_managed_sources()
-                .filter(|source| source.definition.maintenance().native_cold().is_some())
+                // A real declared managed Parent also needs the installed
+                // public Source audience when borrowing an applied prefix.
+                // WhenRequired still does not create a Source requirement.
+                .filter(|source| {
+                    source.public_parent || source.definition.maintenance().native_cold().is_some()
+                })
                 .map(|source| source.program.clone())
                 .collect(),
         }

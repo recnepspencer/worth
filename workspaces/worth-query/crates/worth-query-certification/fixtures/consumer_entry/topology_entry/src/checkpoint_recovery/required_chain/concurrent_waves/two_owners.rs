@@ -50,19 +50,30 @@ mod serial {
                 })
                 .execute()
                 .unwrap();
-            request
+            // Keep outputs stale: this native action leaves delivery to the
+            // later demand, where the frozen-custody assertions are observed.
+            let changed = request
                 .advanced()
-                .mutate(PlanarSourceAdjustment {
+                .mutate(PlanarEdit(PlanarMutation {
                     scope_key: name.into(),
-                    replacement_y: length(y),
-                })
+                    operation: worth_query_consumer_values::PlanarOperation::Adjust(vec![
+                        worth_query_consumer_values::PlanarAdjustment {
+                            body_key: name.into(),
+                            replacement_y: length(y),
+                        },
+                    ]),
+                }))
                 .expect_source(selected.observed_sources()[0].clone())
                 .idempotency(&(0x9176_78d0_u64 + rank))
-                .execute_performed::<application::Program, program::ChainRoot>(
+                .execute_in_program::<application::Program>(
                     &application,
                     worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
                 )
                 .unwrap();
+            assert!(matches!(
+                changed,
+                worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome::Committed { .. }
+            ));
         }
         let schedule = computation::Schedule::new(
             ["diamond-left".into(), "diamond-right".into()],

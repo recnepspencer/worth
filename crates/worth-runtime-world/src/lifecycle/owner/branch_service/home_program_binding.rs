@@ -43,7 +43,7 @@ where
         // No product head moves in this callback. Its only effect is the Home
         // descriptor binding; it must not reenter this reference cell. Native's
         // original epoch/source guards are acquired before entering this owner.
-        cell.while_current(expected, prepared, |prepared| handoff(prepared))
+        cell.while_current(expected, prepared, handoff)
             .map_err(|_| Denial::SourceChanged)
     }
 }

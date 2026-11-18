@@ -6,6 +6,7 @@ use std::sync::Arc;
 use worth_query_host::facade::{
     application_entry::*, primary_graph::*, runtime::ExecutionAllocationPolicy,
 };
+mod applied_support;
 mod fixture;
 mod model;
 use fixture::{find, link, publish, setup};

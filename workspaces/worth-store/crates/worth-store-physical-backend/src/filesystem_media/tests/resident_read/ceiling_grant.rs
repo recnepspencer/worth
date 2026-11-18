@@ -77,7 +77,7 @@ fn whole_stops(
         }
     }
     // A path storage this platform never qualifies addresses nothing.
-    if cfg!(not(windows)) {
+    if cfg!(not(any(windows, target_os = "macos", target_os = "linux"))) {
         assert_eq!(stops.pop(), Some(Some(Stop::InvalidAddress)));
     }
     stops
@@ -88,7 +88,14 @@ fn root(length: u64, granted: Granted, reader: u64) -> Vec<Option<Stop>> {
 }
 
 fn each(stop: Option<Stop>) -> Vec<Option<Stop>> {
-    vec![stop; if cfg!(windows) { 3 } else { 2 }]
+    vec![
+        stop;
+        if cfg!(any(windows, target_os = "macos", target_os = "linux")) {
+            3
+        } else {
+            2
+        }
+    ]
 }
 
 #[test]

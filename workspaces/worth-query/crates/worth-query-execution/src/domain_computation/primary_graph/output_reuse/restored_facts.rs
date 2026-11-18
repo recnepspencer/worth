@@ -9,10 +9,11 @@ use worth_relational::facade::runtime::{
     VisibilityProjectionView,
 };
 
-/// Every fact holds by the ordinary comparison, or it is a field or aspect
-/// revision of a member the committed selection restored whose original
+/// Every fact holds by the ordinary comparison, or it is a field, aspect or
+/// complete adjacency revision the committed selection restored whose original
 /// revision the evidence proves at the selected step, unchanged since the
-/// restoring commit. Any other moved fact ends reuse. O(facts).
+/// restoring commit. Any other moved fact ends reuse. Adjacency correspondence
+/// additionally visits the selected and restored lists under the request.
 pub(in crate::domain_computation::primary_graph) fn restored_facts_hold<
     F: FactSequence + ?Sized,
 >(

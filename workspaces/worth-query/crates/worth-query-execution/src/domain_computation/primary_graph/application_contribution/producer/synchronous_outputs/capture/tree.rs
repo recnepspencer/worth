@@ -22,6 +22,7 @@ pub(in super::super) trait RequiredTree<S: ApplicationSchema>:
     fn prerequisites(
         &self,
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        candidate: &RelationalAuthoredCoupledCandidate<'_>,
         pin: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
         source: worth_relational::facade::identity::EntityId,
         inputs: &PrerequisiteInputs<'_>,
@@ -44,18 +45,21 @@ pub(in super::super) trait RequiredTree<S: ApplicationSchema>:
     fn discover(
         &self,
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        candidate: &RelationalAuthoredCoupledCandidate<'_>,
         parent: &AppliedOutputParent,
         next: &mut SynchronousOutputWave<S>,
     ) -> Result<(), SynchronousOutputFailure>;
     fn discover_static(
         &self,
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        candidate: &RelationalAuthoredCoupledCandidate<'_>,
         parent: &AppliedOutputParent,
         next: &mut SynchronousOutputWave<S>,
     ) -> Result<(), SynchronousOutputFailure>;
     fn discover_occurrences(
         &self,
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        candidate: &RelationalAuthoredCoupledCandidate<'_>,
         parent: &AppliedOutputParent,
         next: &mut SynchronousOutputWave<S>,
     ) -> Result<(), SynchronousOutputFailure>;
@@ -109,6 +113,10 @@ where
             },
         )
     }
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "TypeId selects the declared output family by equality; occurrence order is explicit"
+    )]
     fn occurrence(
         &self,
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
@@ -175,13 +183,14 @@ where
     fn prerequisites(
         &self,
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        candidate: &RelationalAuthoredCoupledCandidate<'_>,
         pin: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
         source: worth_relational::facade::identity::EntityId,
         inputs: &PrerequisiteInputs<'_>,
         next: &mut SynchronousOutputWave<S>,
     ) -> Result<(), SynchronousOutputFailure> {
         self.continuation
-            .prerequisites(context, pin, source, &self.demand, inputs, next)
+            .prerequisites(context, candidate, pin, source, &self.demand, inputs, next)
     }
     fn capture_inputs(
         &self,
@@ -225,28 +234,31 @@ where
     fn discover(
         &self,
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        candidate: &RelationalAuthoredCoupledCandidate<'_>,
         parent: &AppliedOutputParent,
         next: &mut SynchronousOutputWave<S>,
     ) -> Result<(), SynchronousOutputFailure> {
         self.continuation
-            .assemble(context, parent, &self.demand, next)
+            .assemble(context, candidate, parent, &self.demand, next)
     }
     fn discover_static(
         &self,
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        candidate: &RelationalAuthoredCoupledCandidate<'_>,
         parent: &AppliedOutputParent,
         next: &mut SynchronousOutputWave<S>,
     ) -> Result<(), SynchronousOutputFailure> {
         self.continuation
-            .assemble_static(context, parent, &self.demand, next)
+            .assemble_static(context, candidate, parent, &self.demand, next)
     }
     fn discover_occurrences(
         &self,
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        candidate: &RelationalAuthoredCoupledCandidate<'_>,
         parent: &AppliedOutputParent,
         next: &mut SynchronousOutputWave<S>,
     ) -> Result<(), SynchronousOutputFailure> {
         self.continuation
-            .assemble_occurrences(context, parent, &self.demand, next)
+            .assemble_occurrences(context, candidate, parent, &self.demand, next)
     }
 }

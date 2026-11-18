@@ -1,9 +1,10 @@
 //! Stage order and tokens are request-owned; only execute performs work.
 use super::*;
 pub struct NoEditStages;
-pub struct WithEditStage<Previous, Root, Intent> {
+pub struct WithEditStage<Previous, Root, Intent, Source = ()> {
     pub(super) previous: Previous,
     pub(super) intent: Intent,
+    pub(super) source: Source,
     pub(super) marker: PhantomData<fn() -> Root>,
 }
 pub struct WorthQueryEditEnvelope<'a, S, Stages> {
@@ -45,6 +46,7 @@ impl<'a, S: ApplicationSchema, Stages> WorthQueryEditEnvelope<'a, S, Stages> {
             stages: WithEditStage {
                 previous: self.stages,
                 intent,
+                source: (),
                 marker: PhantomData,
             },
         }
@@ -53,6 +55,28 @@ impl<'a, S: ApplicationSchema, Stages> WorthQueryEditEnvelope<'a, S, Stages> {
         WorthQueryKeyedEditEnvelope {
             envelope: self,
             key,
+        }
+    }
+
+    /// Retain an issued row or result-set expectation for this stage's admission.
+    pub fn stage_with_source<Root, Intent, Source>(
+        self,
+        intent: Intent,
+        source: Source,
+    ) -> WorthQueryEditEnvelope<'a, S, WithEditStage<Stages, Root, Intent, Source>>
+    where
+        Intent: ApplicationMutationIntent<S> + Clone + Send + Sync + 'static,
+        Source: super::source::EditStageSource<S, Intent>,
+    {
+        WorthQueryEditEnvelope {
+            context: self.context,
+            brand: self.brand,
+            stages: WithEditStage {
+                previous: self.stages,
+                intent,
+                source,
+                marker: PhantomData,
+            },
         }
     }
 }

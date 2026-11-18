@@ -40,9 +40,11 @@ fn source_structure_warm_work_keeps_local_growth_on_real_small_chains() {
 
 #[test]
 fn geometry_chain_growth_uses_real_source_and_original_sdk_invoice() {
-    let small = journey(1_000, 0, SharedChain::All);
-    let large = journey(2_000, 0, SharedChain::All);
-    eprintln!("geometry costs1000={small:?} costs2000={large:?}");
+    // The smallest populations that still separate height from size: a sweep
+    // of the 512 unrelated edges costs several times every allowance below.
+    let small = journey(64, 0, SharedChain::All);
+    let large = journey(128, 0, SharedChain::All);
+    eprintln!("geometry costs64={small:?} costs128={large:?}");
     assert!(
         large.0 <= small.0 * 5 / 4,
         "refusal must follow height, not Source size"
@@ -51,19 +53,20 @@ fn geometry_chain_growth_uses_real_source_and_original_sdk_invoice() {
         large.1 <= small.1 * 5 / 4,
         "commit must follow height, not Source size"
     );
-    let remote = journey(2_000, 50_000, SharedChain::All);
-    eprintln!("geometry costs2000+50000={remote:?}");
+    let remote = journey(128, 512, SharedChain::All);
+    eprintln!("geometry costs128+512={remote:?}");
     for (base, doubled, beside) in [(small.0, large.0, remote.0), (small.1, large.1, remote.1)] {
         assert!(
             beside <= doubled * 3 / 2,
             "unrelated geometry cannot dominate the whole invoice"
         );
-        // Both sampled scopes grow together; 2000â†’52000 adds fewer than six binary height steps. Allow
-        // eight times one step and a 20k granule for fixed-width paths whose
-        // ordered-node split/grant charge need not be monotone at two samples.
+        // Both sampled scopes grow together; 128 to 640 adds fewer than three
+        // binary height steps. Allow four times one step and a 20k granule for
+        // fixed-width paths whose ordered-node split/grant charge need not be
+        // monotone at two samples.
         let one_step = doubled.saturating_sub(base).max(20_000);
         assert!(
-            beside.saturating_sub(doubled) <= one_step * 8,
+            beside.saturating_sub(doubled) <= one_step * 4,
             "the difference of original invoices exposes a full-population sweep"
         );
     }

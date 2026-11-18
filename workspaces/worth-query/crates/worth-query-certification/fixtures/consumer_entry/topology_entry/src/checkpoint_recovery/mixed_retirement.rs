@@ -1,8 +1,6 @@
 //! Genuine performed mixed Preserve/Create/Retire readiness and recovery.
 use super::*;
-use worth_query_host::facade::application_entry::{
-    WorthQueryApplicationOutputDemandProgress, WorthQueryApplicationPerformedMutationOutcome,
-};
+use worth_query_host::facade::application_entry::WorthQueryApplicationOutputDemandProgress;
 use worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy as CapturePolicy;
 use worth_query_host::facade::{application_contribution, primary_graph};
 
@@ -49,38 +47,41 @@ mod serial {
             })
             .execute()
             .unwrap();
-        let performed = request
+        let committed = request
             .advanced()
-            .mutate(PlanarSourceAdjustment {
+            .mutate(PlanarEdit(PlanarMutation {
                 scope_key: "anchor-a".into(),
-                replacement_y: length(2),
-            })
+                operation: worth_query_consumer_values::PlanarOperation::Adjust(vec![
+                    worth_query_consumer_values::PlanarAdjustment {
+                        body_key: "anchor-a".into(),
+                        replacement_y: length(2),
+                    },
+                ]),
+            }))
             .expect_source(source.observed_sources()[0].clone())
             .idempotency(&0x9176_7302_u64)
-            .execute_performed::<MixedProgram, MixedRoot>(
+            .execute_in_program::<MixedProgram>(
                 &application,
                 worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
             )
             .unwrap();
-        let WorthQueryApplicationPerformedMutationOutcome::Performed(performed) = performed else {
-            panic!("real source command must perform")
-        };
-        let mut outputs = performed
-            .start_required_outputs(&application, &request, Default::default())
-            .unwrap_or_else(|failure| {
-                panic!("actual source output custody: {:?}", failure.denial())
-            });
+        assert!(matches!(
+            committed,
+            worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome::Committed { .. }
+        ));
+        let mut outputs = request
+            .advanced()
+            .start_program_outputs::<MixedProgram, MixedRoot>(
+                &application,
+                ReplacementDemand("anchor-a".into()),
+                Default::default(),
+            )
+            .unwrap();
         let settled = (0..64)
-            .find_map(|_| {
-                match outputs
-                    .required_output_mut()
-                    .advance(&application, &request)
-                    .unwrap()
-                {
-                    WorthQueryApplicationProgramOutputProgress::Pending
-                    | WorthQueryApplicationProgramOutputProgress::Progressed => None,
-                    WorthQueryApplicationProgramOutputProgress::Settled(value) => Some(value),
-                }
+            .find_map(|_| match outputs.advance(&application, &request).unwrap() {
+                WorthQueryApplicationProgramOutputProgress::Pending
+                | WorthQueryApplicationProgramOutputProgress::Progressed => None,
+                WorthQueryApplicationProgramOutputProgress::Settled(value) => Some(value),
             })
             .expect("actual mixed replacement must settle as current");
         let root = settled

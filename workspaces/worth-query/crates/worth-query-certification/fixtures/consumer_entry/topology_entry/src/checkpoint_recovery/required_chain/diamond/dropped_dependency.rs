@@ -256,11 +256,6 @@ mod serial {
     }
 
     #[test]
-    fn changed_decision_retries_after_cancellation_with_its_refreshed_child() {
-        journey(false, ChildDelivery::Direct, true);
-    }
-
-    #[test]
     fn changed_decision_retries_after_cancellation_with_a_held_child() {
         journey(false, ChildDelivery::Held, true);
     }

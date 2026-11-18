@@ -39,7 +39,7 @@ impl BridgeCausalEnvelopeCounters {
 
     pub(crate) fn empty(
     ) -> Result<Self, crate::diagnostics::causal_envelope::BridgeCausalDigestRefusal> {
-        Ok(Self::new(0, 0, 0, 0, 0, 0, 0)?)
+        Self::new(0, 0, 0, 0, 0, 0, 0)
     }
 
     pub(crate) fn new(

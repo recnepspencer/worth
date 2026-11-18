@@ -58,6 +58,7 @@ trait ConnectionExecution<S: ApplicationSchema>: ApplicationConnectionShape<S> {
     fn families(visit: &mut dyn FnMut(std::any::TypeId));
     fn outgoing(
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        candidate: &RelationalAuthoredCoupledCandidate<'_>,
         parent: &AppliedOutputParent,
         demand: &dyn Any,
         next: &mut SynchronousOutputWave<S>,
@@ -65,6 +66,7 @@ trait ConnectionExecution<S: ApplicationSchema>: ApplicationConnectionShape<S> {
     ) -> Result<(), SynchronousOutputFailure>;
     fn incoming(
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        candidate: &RelationalAuthoredCoupledCandidate<'_>,
         pin: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
         source: worth_relational::facade::identity::EntityId,
         demand: &dyn Any,
@@ -118,6 +120,7 @@ where
     }
     fn outgoing(
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        candidate: &RelationalAuthoredCoupledCandidate<'_>,
         parent: &AppliedOutputParent,
         demand: &dyn Any,
         next: &mut SynchronousOutputWave<S>,
@@ -134,7 +137,7 @@ where
                 ),
             ))
         })?;
-        let rows = context.discover_outgoing::<Discovery<S, C>>(parent, intent)?;
+        let rows = context.discover_outgoing::<Discovery<S, C>>(candidate, parent, intent)?;
         let children = Binding::<S, C>::demands_from_discovery(&rows).map_err(|cause| {
             SynchronousOutputFailure(CoupledSourceReadStop::from(
                 super::super::WorthQueryOutputDemandDenial::discovery_connection_denied(
@@ -157,6 +160,7 @@ where
     }
     fn incoming(
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        candidate: &RelationalAuthoredCoupledCandidate<'_>,
         pin: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
         source: worth_relational::facade::identity::EntityId,
         demand: &dyn Any,
@@ -164,6 +168,6 @@ where
         next: &mut SynchronousOutputWave<S>,
         whole: &'static ComponentExecution<S>,
     ) -> Result<(), SynchronousOutputFailure> {
-        C::Prerequisites::incoming(context, pin, source, demand, inputs, next, whole)
+        C::Prerequisites::incoming(context, candidate, pin, source, demand, inputs, next, whole)
     }
 }

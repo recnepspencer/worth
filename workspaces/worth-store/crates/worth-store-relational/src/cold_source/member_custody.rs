@@ -34,6 +34,8 @@ pub(super) struct MemberCustodyRegistry {
 }
 pub(super) struct MemberCustodyOwner {
     serving: Option<Arc<ServingPhysicalRuntime>>,
+    #[cfg(debug_assertions)]
+    physical_owner_label: Option<Arc<()>>,
     state: Arc<RwLock<CustodyState>>,
     members: Vec<Member>,
     next: usize,

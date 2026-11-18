@@ -22,6 +22,7 @@ where
 {
     fn incoming(
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        _candidate: &RelationalAuthoredCoupledCandidate<'_>,
         _pin: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
         source: worth_relational::facade::identity::EntityId,
         demand: &dyn Any,

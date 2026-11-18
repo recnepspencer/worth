@@ -117,7 +117,8 @@ fn start_proves_no_effect(cause: &OrderedJournalOperationFailure) -> bool {
     use OrderedJournalOperationFailure as O;
     use OrderedJournalPublicationFailure as F;
     match cause {
-        O::OriginalRequestStopped(_) | O::Busy | O::Stopped => true,
+        O::OriginalRequestStopped(_) | O::Stopped => true,
+        O::Busy => false,
         // The physical failure enum is non-exhaustive. Only its known,
         // explicitly pre-effect refusals establish this closed fact.
         O::Publication(failure) => matches!(

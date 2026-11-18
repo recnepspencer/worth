@@ -90,7 +90,13 @@ impl ApplicationProgramDefinition<Catalog> for Program {
         generated::program::Root,
         (
             geometry::generated::program::Root,
-            generated::indexed::program::Root,
+            (
+                generated::indexed::program::Root,
+                (
+                    generated::indexed::authorized::program::Root,
+                    generated::indexed::nested_source::program::Root,
+                ),
+            ),
         ),
     )>;
     type Rules = ApplicationRuleList<
@@ -118,6 +124,8 @@ impl ApplicationProgramDefinition<Catalog> for Program {
         vec![
             ApplicationFeatureSpec::root::<Catalog, Feature>()
                 .provides::<generated::indexed::program::ItemsOutput>()
+                .provides::<generated::indexed::authorized::program::ItemsOutput>()
+                .provides::<generated::indexed::nested_source::program::ItemsOutput>()
                 .action::<generated::indexed::request::Binding, generated::indexed::program::Delivery>()
                 .finish_action()
                 .provides::<generated::program::DirectoryOutput>()
@@ -131,6 +139,8 @@ impl ApplicationProgramDefinition<Catalog> for Program {
                 .action::<correction::mover::Binding, correction::MoverDelivery>()
                 .finish_action()
                 .action::<correction::motion::Binding, correction::MotionDelivery>()
+                .finish_action()
+                .action::<generated::indexed::nested_source::motion::Binding, generated::indexed::nested_source::motion::Delivery>()
                 .finish_action()
                 .native_action::<mutation::Binding>()
                 .finish_action()
@@ -153,6 +163,8 @@ impl ApplicationProgramDefinition<Catalog> for Program {
                 .finish_action()
                 .finish(),
             generated::program::feature(),
+            generated::indexed::authorized::program::feature(),
+            generated::indexed::nested_source::program::feature(),
             generated::indexed::program::feature(),
             geometry::generated::program::feature(),
         ]

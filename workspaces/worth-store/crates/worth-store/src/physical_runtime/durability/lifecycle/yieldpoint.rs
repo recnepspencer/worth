@@ -11,6 +11,8 @@ pub struct PhysicalMutationPauseGate {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum PhysicalMutationCheckpoint {
     BeforeEffectCutover,
+    /// A root-changing original is waiting behind another active publication.
+    PublicationAdmissionContended,
     /// Pending publication is registered and growth headroom is charged,
     /// immediately before the first WAL append.
     BeforeWalAppend,
@@ -30,6 +32,8 @@ pub enum PhysicalMutationCheckpoint {
     DuringRootPublication,
     AfterRootReplacement,
     BeforeTerminalFinalization,
+    /// Journal settlement is retained, before releasing its visible terminal.
+    BeforeJournalTerminalVisibility,
     RuntimeClosingMarked,
 }
 

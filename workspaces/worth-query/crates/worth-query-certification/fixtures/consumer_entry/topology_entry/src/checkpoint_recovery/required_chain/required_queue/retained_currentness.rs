@@ -49,8 +49,17 @@ mod serial {
         let original_decisions = binding::decisions_snapshot();
         assert_eq!(original_values[0][0].value, length(2));
 
-        // This authentic performed source edit does not advance an output demand.
-        change_root_input!(request, application, 5, 0x9176_7f20_u64);
+        // The installed native action deliberately leaves outputs stale. The
+        // synchronous fixed action would co-commit its required output closure,
+        // eliminating the stale original lineage this read-only court examines.
+        crate::checkpoint_recovery::required_chain::diamond::change_root!(
+            request,
+            application,
+            "anchor-a",
+            5,
+            0x9176_7f20_u64,
+            program::ChainProgram
+        );
         let fresh = request.retain_current_read().unwrap();
         let selected = request.at(&fresh);
         let source = selected

@@ -2,7 +2,9 @@
 use super::{application::*, control::Control};
 use crate::principal::*;
 use worth_query_decl::facade::application_program::*;
-use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
+use worth_query_host::facade::application_installation::{
+    ApplicationBuildIdentity, WorthQueryApplicationLimits,
+};
 use worth_query_host::facade::{
     admission::authenticated_principal as authentication,
     application_installation,
@@ -14,6 +16,16 @@ use worth_query_host::facade::{
 pub(super) type Application =
     application_installation::WorthQueryProgramApplicationRuntime<Schema, Program>;
 pub(super) fn install(control: std::sync::Arc<Control>) -> Application {
+    let limits = crate::checkpoint_recovery::support::limits(
+        32,
+        crate::checkpoint_recovery::support::invalidation(),
+    );
+    install_with_limits(control, limits)
+}
+pub(super) fn install_with_limits(
+    control: std::sync::Arc<Control>,
+    limits: WorthQueryApplicationLimits,
+) -> Application {
     let world = &control.world;
     let program = ApplicationProgramAuthoring::<Schema, Program>::begin()
         .validated_program()
@@ -21,10 +33,6 @@ pub(super) fn install(control: std::sync::Arc<Control>) -> Application {
     let declaration =
         <Schema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration()
             .unwrap();
-    let limits = crate::checkpoint_recovery::support::limits(
-        32,
-        crate::checkpoint_recovery::support::invalidation(),
-    );
     application_installation::in_memory_program(
         program,
         declaration,
@@ -53,6 +61,22 @@ pub(super) fn install(control: std::sync::Arc<Control>) -> Application {
                     .field(Value::at("Value"), 0)
                     .field(Applied::at("Applied"), 0),
                 )?;
+            }
+            for (child, parents) in world
+                .members
+                .iter()
+                .map(|member| (member.key, &member.upstream))
+                .chain(std::iter::once((100, &world.requested)))
+            {
+                for parent in parents {
+                    let parent = world.members[*parent].key;
+                    graph.bind_relation(WorthQueryApplicationRelationSeed::new(
+                        Prerequisite::reference::<Schema>(),
+                        format!("member-{child}-requires-{parent}"),
+                        WorthQueryApplicationEntityKey::new(format!("member-{child}")).unwrap(),
+                        WorthQueryApplicationEntityKey::new(format!("member-{parent}")).unwrap(),
+                    ))?;
+                }
             }
             Ok(())
         },

@@ -88,7 +88,8 @@ where
         .map_err(|stop| failed(B::IDENTITY, stop))?;
     let limits = runtime.resolve_application_query_limits(installed.source_query.limits());
     let controls = crate::domain_computation::primary_graph::WorthQueryApplicationQueryControls::selected_read_one_shot(product, basis, limits.maximum_results(), request)
-        .map_err(|stop| source_readmission::ready_resource_denial(B::IDENTITY, stop))?;
+        .map_err(|stop| source_readmission::ready_resource_denial(B::IDENTITY, stop))?
+        .with_selection_origin(current.selection_origin());
     let access =
         crate::domain_computation::primary_graph::WorthQueryApplicationQueryAccessContext::new(
             principal.principal(),
@@ -163,9 +164,20 @@ where
             parameters.parameters().identity().bytes(),
         )?,
     }
+    let reader = crate::domain_computation::primary_graph::application_query::SourceQueryReaderAccess::ordinary(
+        runtime, &shared, external, request,
+    );
     let source = runtime
-        .project_applied_source_plan(execution, plan, candidate)
-        .map_err(|cause| failed(B::IDENTITY, cause))?;
+        .project_applied_source_plan::<SourceBinding<S, B>, SourceValue<S, B>>(
+            execution,
+            &reader,
+            plan,
+            before,
+            candidate,
+            assembly,
+            &mut ApplicationQueryNativeAccess::acquire(),
+        )
+        .map_err(|cause| super::super::denial::selected_source_read_denied(B::IDENTITY, cause))?;
     let profile =
         <B::OutputFamily as super::super::super::WorthQueryProducerOutputFamily<S>>::profile_kind(
             &source.value,

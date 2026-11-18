@@ -103,19 +103,38 @@ fn run(workers: usize, failure: Failure, caught: bool) -> History {
             })
             .execute()
             .unwrap();
-        request
+        let changed = request
             .advanced()
-            .mutate(PlanarSourceAdjustment {
+            .mutate(PlanarEdit(PlanarMutation {
                 scope_key: key.into(),
-                replacement_y: length(y),
-            })
+                operation: worth_query_consumer_values::PlanarOperation::Adjust(vec![
+                    worth_query_consumer_values::PlanarAdjustment {
+                        body_key: key.into(),
+                        replacement_y: length(y),
+                    },
+                ]),
+            }))
             .expect_source(selected.observed_sources()[0].clone())
             .idempotency(&id)
-            .execute_performed::<application::Program, program::ChainRoot>(
+            .execute_in_program::<application::Program>(
                 &application,
                 worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
             )
             .unwrap();
+        assert!(matches!(
+            changed,
+            worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome::Committed { .. }
+        ));
+    }
+    // The native edits leave these known initial outputs for actual advancement.
+    for (key, expected) in [("diamond-left", 2), ("diamond-right", 51)] {
+        let output = request
+            .query(PlanarOutputRead {
+                body_key: key.into(),
+            })
+            .execute()
+            .unwrap();
+        assert_eq!(output.rows()[0].value, length(expected));
     }
     let mut schedule = Schedule::new(
         roots.clone(),

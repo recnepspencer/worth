@@ -3688,12 +3688,10 @@ supports serialization for ordinary mutation identity, with no deserialization
 or construction from a stored result row. Fresh results retain their actual
 returned values; recovered completions remain explicitly recovered.
 
-If a request stops after a source write completes, keep the refused owning
-operation. Advance that same owner with a fresh request: native authorization
-and key resolution run again, and its retained Fresh result remains Fresh. The
-[compiled late-stop example](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/proposal_acceptance/courts/attempts/handoff.rs)
-preserves the original returned value and input while the committed basis stays
-unchanged on retry. Close the completed owner after consuming its evidence.
+Fresh completion carries the original returned value. If the reply is lost,
+use a fresh request to resume the retained operation and recover the original
+commit, as shown in the [retained source completion court](../workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/application_graph/source_only/retained/mod.rs).
+Close the completed owner after consuming its evidence.
 
 The [ordinary result handler](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/proposal_acceptance/attempts/recording/handler.rs)
 readmits actual claim membership and full-generation identity, observes caller correspondence
@@ -4589,6 +4587,17 @@ builder. Inputs are encoded and admitted at execution in the existing funded
 request; collecting the list does not run handlers. Call `execute_performed`
 once. The static `stage` builder remains available and unchanged in meaning.
 
+For a binding with a declared source expectation, append its genuine issued row
+or result-set witness with `push_stage_with_source::<RequiredRoot, _, _>(intent,
+source)` (or static `stage_with_source`). Each stage retains its own source
+custody through the existing mutation admission owner. Source affinity is checked
+before whole-envelope retry resolution; fresh execution consumes the checked
+expectation into that stage's admission and final support. A witness issued for
+one source does not authorize a sibling source. Intent-only `push_stage` and
+`stage` remain available for bindings that declare `NoApplicationMutationSource`.
+Selecting a root still follows the installed required-output graph; carrying a
+source witness does not add undeclared producer prerequisites.
+
 The default mode retains declared dependency ordering and the bounded pure
 candidate-planning contract below. An application that promises an authored
 sequence explicitly selects `ordered_authored()` **before appending**. This
@@ -5388,14 +5397,16 @@ this program in the consumer fixture's `concurrent_waves/application.rs`.
 
 Before this excerpt, the fixture seeds the three rings, authenticates the
 principal, opens demands for both roots and the dependent, and settles their
-initial outputs. The root demands stay open. The excerpt changes both source
-rings, advances the dependent once, and reads both published results. The
+initial outputs. The root demands stay open. The excerpt uses the installed
+native `PlanarEdit` actions to change both source rings while leaving their
+outputs for demand-driven advancement. It verifies the initial output values
+remain, advances the dependent once, and reads both published results. The
 fixture verifies that both root computations finish before either root's
 owner completion runs, and that each runs once: the roots share one wave.
 The same calls work with serial backing or a host policy admitting parallel
 workers; the host chooses placement, not the application.
 
-`Program`, `PlanarRead`, `PlanarSourceAdjustment`, `PlanarOutputRead`, and
+`Program`, `PlanarRead`, `PlanarEdit`, `PlanarMutation`, `PlanarOutputRead`, and
 `length` are this application's declarations and value constructor. The
 imported Query API comes from `worth-query-decl` and `worth-query-host`.
 `application`, `principal`, `scope`, and the dependent's demand `join` come from
@@ -5405,11 +5416,15 @@ the setup above.
 
 Use the [ordinary owning entry](#53-execute-through-the-program) for fixed actions.
 The following fixture deliberately coordinates native output custody through
-`advanced()`; it is not an ordinary lifecycle recipe.
+`advanced()`; it is not an ordinary lifecycle recipe. Its native edits leave
+the output work to the later joined demand. The fixed `PlanarSourceAdjustment`
+action instead settles its required output tree as part of each edit, so it
+does not provide this pending interval.
 
 <!-- compiled: checkpoint_recovery/required_chain/concurrent_waves/application.rs -->
 ```rust
-        use worth_query_host::facade::application_entry::WorthQueryApplicationPerformedMutationOutcome;
+        use worth_query_consumer_values::{PlanarAdjustment, PlanarOperation};
+        use worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome;
 
         let request = application.request(&principal, &scope);
         for (key, y, idempotency) in [
@@ -5424,21 +5439,34 @@ The following fixture deliberately coordinates native output custody through
                 .unwrap();
             let changed = request
                 .advanced()
-                .mutate(PlanarSourceAdjustment {
+                .mutate(PlanarEdit(PlanarMutation {
                     scope_key: key.to_owned(),
-                    replacement_y: length(y),
-                })
+                    operation: PlanarOperation::Adjust(vec![PlanarAdjustment {
+                        body_key: key.to_owned(),
+                        replacement_y: length(y),
+                    }]),
+                }))
                 .expect_source(selected.observed_sources()[0].clone())
                 .idempotency(&idempotency)
-                .execute_performed::<Program, program::ChainRoot>(
+                .execute_in_program::<Program>(
                     &application,
                     worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
                 )
                 .unwrap();
             assert!(matches!(
                 changed,
-                WorthQueryApplicationPerformedMutationOutcome::Performed(_)
+                WorthQueryApplicationMutationOutcome::Committed { .. }
             ));
+        }
+        // Native edits leave the initial outputs for the joined advancement.
+        for (key, expected) in [("diamond-left", 2), ("diamond-right", 51)] {
+            let output = request
+                .query(PlanarOutputRead {
+                    body_key: key.to_owned(),
+                })
+                .execute()
+                .unwrap();
+            assert_eq!(output.rows()[0].value, length(expected));
         }
         assert!(matches!(
             join.advance(&request).unwrap(),
@@ -8008,8 +8036,12 @@ Declare `ApplicationManagedIndexBinding::MAINTENANCE` as
 ApplicationManagedIndexColdSource::AdmitRebuild }` to require Native maintenance
 for public reads even when no invariant consumes the index. Use the same
 contribution `setup.managed_index::<Index, _>(provider)` entrance. The default
-`WhenRequired` adds no public requirement; existing invariant requirements still
-apply. When public and invariant audiences share an index, `Refuse` wins over
+`WhenRequired` adds no public maintenance requirement; existing invariant
+requirements still apply. When such an already-required Source has a declared
+managed Parent, installation also registers that Parent's real public Source
+audience. This permits an independently admitted applied read to borrow the
+exact compiled Source on its candidate prefix; it changes neither cold policy
+nor principal READ admission. When public and invariant audiences share an index, `Refuse` wins over
 `AdmitRebuild`. Unsupported Source shapes return a typed installation refusal.
 Initialization and updates retain the original request's controls and budget.
 
@@ -8212,6 +8244,19 @@ typed refusal under `Refuse`; preparation never recursively builds predecessors.
 Changed prepared successors use same-scope updates; unprepared successors cannot
 be read as current. Every read retains independent branch, generation, image
 and READ admission.
+
+Synchronous required-output Source queries may select a managed Parent from the
+actual coupled assembly prefix. Native lends that exact applied image through
+the installed Source program; Query independently admits the SourceBinding for
+the original principal, request and resolved scope, including a scope created
+by the candidate or not previously opened. The same physical acquisition carries
+complete membership (including empty adjacency and nonmatches), row/content,
+nested dependency and authorization support into final-candidate comparison.
+Each participant's own effect is accounted for before comparing later siblings.
+The sole final publication attaches actual positioned Source correspondence for
+subsequent recorded validation. The applied loan is neither a completed positioned
+Source read nor Current or a settlement. This supports managed index selection;
+other unsupported applied traversal shapes remain refused.
 
 Inside a mutation handler, read a managed Parent through
 `DecisionReader::index_query`. Declare the Parent's projected fields in the

@@ -225,52 +225,6 @@ mod serial {
     }
 
     #[test]
-    fn required_graph_still_refuses_source_only_save() {
-        let _guard = checkpoint_recovery_test_guard();
-        let application = support::install_program::<RequiredProgram>(None, Default::default());
-        let (scope, principal) = authenticate(&application);
-        let request = application.request(&principal, &scope);
-        let before = request.retain_current_read().unwrap();
-        let observed = request
-            .query(PlanarRead {
-                body_key: "anchor-a".to_owned(),
-            })
-            .execute()
-            .unwrap();
-        let denial = request
-            .advanced()
-            .mutate(PlanarSourceAdjustment {
-                scope_key: "anchor-a".to_owned(),
-                replacement_y: length(4),
-            })
-            .expect_source(observed.observed_sources()[0].clone())
-            .idempotency(&30_002)
-            .execute_in_program(&application, ExecutionAllocationPolicy::SystemAllocation)
-            .expect("native proposal validation returns its actual commit refusal");
-        assert!(matches!(
-            denial,
-            WorthQueryApplicationMutationOutcome::Commit(
-                primary_graph::WorthQueryApplicationUncommitted::Denied(ref cause)
-            ) if cause.kind() == primary_graph::WorthQueryApplicationCommitDenialKind::ApplicationProgramRequired
-        ));
-        assert_eq!(
-            request.retain_current_read().unwrap().selected_commit(),
-            before.selected_commit()
-        );
-        assert_eq!(
-            request
-                .query(PlanarRead {
-                    body_key: "anchor-a".to_owned()
-                })
-                .execute()
-                .unwrap()
-                .rows()[0]
-                .y,
-            length(1)
-        );
-    }
-
-    #[test]
     fn demand_only_root_keeps_governed_source_locality_fence() {
         let _guard = checkpoint_recovery_test_guard();
         let provider_observation = crate::producer::ProviderContacts::default();

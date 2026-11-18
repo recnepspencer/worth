@@ -73,16 +73,15 @@ pub(super) fn classify_native(
     usage: Use<'_>,
 ) -> Result<Admission, Denial> {
     let declaration = binding.declaration();
-    if let Use::OriginalExecution(contracts) = usage {
-        if contracts.body().is_some()
+    if let Use::OriginalExecution(contracts) = usage
+        && (contracts.body().is_some()
             || contracts.aftermath() != Some(aftermath)
             || !matches!(
                 contracts.external_effect(),
                 InstalledExternalEffectContract::None
-            )
-        {
-            return Err(Denial::UnsupportedCorrectionCompensation);
-        }
+            ))
+    {
+        return Err(Denial::UnsupportedCorrectionCompensation);
     }
     if aftermath.authority() != InstalledCorrectionAuthority::RuntimeAlone
         || aftermath.published_posture() != PublishedAftermathPosture::Compensatable

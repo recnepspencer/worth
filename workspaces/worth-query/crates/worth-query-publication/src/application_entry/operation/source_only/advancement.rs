@@ -54,11 +54,6 @@ where
                         .map_err(WorthQuerySourceOnlyDenial::Original)?;
                 }
             }
-            if matches!(&result, Ok(Step::Completed))
-                && let Some(control) = &self.completion_handoff
-            {
-                control.pause();
-            }
             result
         });
         let outcome = match outcome {

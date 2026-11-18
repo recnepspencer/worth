@@ -30,8 +30,10 @@ worth-store-physical-format.workspace = true
 worth-store-security.workspace = true
 worth-store-wal.workspace = true
 
-[target.'cfg(target_os = "macos")'.dependencies]
+[target.'cfg(any(target_os = "macos", target_os = "linux"))'.dependencies]
 rustix = { version = "=1.1.5", features = ["fs"] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
 libc = "=0.2.190"
 
 [target.'cfg(windows)'.dependencies]

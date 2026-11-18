@@ -1,5 +1,6 @@
 //! Capacity and identity are issued by the existing admission/session owners.
 use super::ProviderExecutionDenial as Denial;
+pub(in crate::domain_computation::primary_graph::application_query::managed_index) mod applied;
 use crate::domain_computation::{
     primary_graph::{
         application_query::one_shot::outcome::material::MaterialCompletion,
@@ -34,6 +35,26 @@ pub(in crate::domain_computation::primary_graph::application_query::managed_inde
     request: &'a WorthQueryRequestScope,
     association: &WorthQueryInstalledManagedIndexParent,
     source: Arc<WorthQueryCompletedSourceRead>,
+    allocation: &Arc<SourceFactsAllocation>,
+) -> Result<WorthQueryManagedIndexReadSession<'a, 'request, 'authority>, Denial> {
+    start_with_source(
+        execution,
+        application,
+        parent,
+        request,
+        association,
+        crate::domain_computation::provider_session::ManagedIndexReadSource::Positioned(source),
+        allocation,
+    )
+}
+
+fn start_with_source<'a, 'request, 'authority, S: ApplicationSchema>(
+    execution: &ExecutionRequest<'request, 'authority>,
+    application: &'a WorthQueryPrimaryGraphApplicationRuntime<S>,
+    parent: &'a WorthQueryManagedGraphWorkSession,
+    request: &'a WorthQueryRequestScope,
+    association: &WorthQueryInstalledManagedIndexParent,
+    source: crate::domain_computation::provider_session::ManagedIndexReadSource,
     allocation: &Arc<SourceFactsAllocation>,
 ) -> Result<WorthQueryManagedIndexReadSession<'a, 'request, 'authority>, Denial> {
     let storage = MaterialCompletion::new(execution, allocation);

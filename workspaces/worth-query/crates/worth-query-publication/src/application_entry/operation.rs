@@ -19,7 +19,6 @@ pub use cleanup::{WorthQueryOperationCleanup, WorthQueryOperationCleanupReceipt}
 pub use mode_construction::WorthQueryOperationModeFactory;
 pub use source_admission::{WorthQuerySourceDeliveryMode, WorthQuerySourceOperationAdmission};
 #[doc(hidden)]
-pub use source_only::WorthQuerySourceCompletionHandoffPauseForTest;
 pub use source_only::{
     WorthQueryCompletedSourceOperation, WorthQuerySourceCompletion, WorthQuerySourceOnlyAdvance,
     WorthQuerySourceOnlyDenial, WorthQuerySourceOnlyOperation, WorthQuerySourceOnlyPosture,

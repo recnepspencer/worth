@@ -169,11 +169,10 @@ impl ApplicationProgramDefinition<Schema> for Program {
             fixture::Delivery<Tree>,
             fixture::Delivery<Tree>,
             fixture::Delivery<Tree>,
+            Completion,
         >())
         .action::<super::super::super::synchronous_edit::interleaved::created::Binding, Completion>(
         )
-        .finish_action()
-        .action::<member_retarget::operation::Binding, Completion>()
         .finish_action()
         .finish();
         specs

@@ -13,6 +13,32 @@ pub(in crate::domain_computation::primary_graph::application_query) fn equal(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     control: &dyn Fn() -> Result<(), Cause>,
 ) -> Result<bool, Cause> {
+    compare(left, right, None, walks, execution, control)
+}
+
+/// Semantic interning may retain an older equivalent association. Only the
+/// actual admitted invocation can identify the joined publication on the right.
+pub(super) fn equal_published_source(
+    left: &WorthQueryObservedSourceFootprint,
+    right: &WorthQueryObservedSourceFootprint,
+    current_source: &crate::domain_computation::primary_graph::application_attempt::ManagedSourceRead,
+    walks: &mut SourceReadEquivalence,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    control: &dyn Fn() -> Result<(), Cause>,
+) -> Result<bool, Cause> {
+    compare(left, right, Some(current_source), walks, execution, control)
+}
+
+fn compare(
+    left: &WorthQueryObservedSourceFootprint,
+    right: &WorthQueryObservedSourceFootprint,
+    current_source: Option<
+        &crate::domain_computation::primary_graph::application_attempt::ManagedSourceRead,
+    >,
+    walks: &mut SourceReadEquivalence,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    control: &dyn Fn() -> Result<(), Cause>,
+) -> Result<bool, Cause> {
     let result = execution.run_native_with_checkpoint(|context| {
         StructuralWalkObservation::checkpoint(context)?;
         control()?;
@@ -30,7 +56,24 @@ pub(in crate::domain_computation::primary_graph::application_query) fn equal(
                 if Arc::ptr_eq(left, right) {
                     return Ok(true);
                 }
-                if left.identity() != right.identity()
+                // The applied acquisition descriptor cannot become a positioned
+                // descriptor before publication. A genuine joined whole Source
+                // can establish their correspondence; all physical and other
+                // selection facts below still compare independently.
+                let published_source = match (&left.managed_index, &right.managed_index) {
+                    (Some(a), Some(b)) => {
+                        a.same_published_source(b, current_source, &mut |units| {
+                            if context.has_accounting() {
+                                context.checkpoint(units)
+                            } else {
+                                context.poll()
+                            }
+                            .map_err(Cause::from)
+                        })?
+                    }
+                    _ => false,
+                };
+                if (left.identity() != right.identity() && !published_source)
                     || left.entities != right.entities
                     || left.aspects != right.aspects
                     || left.adjacencies != right.adjacencies
@@ -66,14 +109,21 @@ pub(in crate::domain_computation::primary_graph::application_query) fn equal(
                 match (&left.managed_index, &right.managed_index) {
                     (None, None) => {}
                     (Some(a), Some(b)) => {
-                        if !a.same_truth(b, walks, execution, control, &mut |units| {
-                            if context.has_accounting() {
-                                context.checkpoint(units)
-                            } else {
-                                context.poll()
-                            }
-                            .map_err(Into::into)
-                        })? {
+                        if !a.same_truth(
+                            b,
+                            current_source,
+                            walks,
+                            execution,
+                            control,
+                            &mut |units| {
+                                if context.has_accounting() {
+                                    context.checkpoint(units)
+                                } else {
+                                    context.poll()
+                                }
+                                .map_err(Into::into)
+                            },
+                        )? {
                             return Ok(false);
                         }
                     }

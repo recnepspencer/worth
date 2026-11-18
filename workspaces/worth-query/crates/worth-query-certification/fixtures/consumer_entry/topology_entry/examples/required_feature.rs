@@ -28,6 +28,7 @@ fn main() {
 }
 
 fn run() {
+    let _observation = primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let mut application = setup::install::<false>(setup::configuration(), || {}).unwrap();
     {
         let (scope, principal) = setup::authenticate(&application);
@@ -48,7 +49,10 @@ fn run() {
             })
             .execute()
             .unwrap();
-        request
+        let before = application.producer_contacts_on_this_thread_for_test();
+        let (edited, writes) =
+            worth_relational::facade::inspection::observe_maintenance_work(1, || {
+                request
             .advanced()
             .mutate(PlanarSourceAdjustment {
                 scope_key: "anchor-a".into(),
@@ -60,10 +64,44 @@ fn run() {
                 &application,
                 worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
             )
-            .unwrap();
+            .unwrap()
+            });
+        let WorthQueryApplicationPerformedMutationOutcome::Performed(edited) = edited else {
+            panic!("the synchronous source edit performs");
+        };
+        assert_eq!(
+            application.producer_contacts_on_this_thread_for_test() - before,
+            3,
+            "the root and both declared dependents execute inside the source edit"
+        );
+        assert_eq!(
+            writes.published_rows.len() + writes.omitted_publications,
+            1,
+            "source and required outputs share one actual Native publication"
+        );
+        assert_value(&request, 11); // already y+2 before any delivery demand
+        let commit = request
+            .retain_current_read()
+            .unwrap()
+            .selected_commit()
+            .clone();
+        assert_eq!(
+            edited
+                .receipt()
+                .committed_product_publication()
+                .composite_commit(),
+            &commit
+        );
         drop(source);
-        let preserved = settle(&request, &application);
-        assert_eq!(preserved.producer_contacts_in_this_demand(), 1);
+        let (preserved, delivery_writes) =
+            worth_relational::facade::inspection::observe_maintenance_work(1, || {
+                settle(&request, &application)
+            });
+        assert_eq!(preserved.producer_contacts_in_this_demand(), 0);
+        assert_eq!(
+            delivery_writes.published_rows.len() + delivery_writes.omitted_publications,
+            0
+        );
         assert_eq!(
             preserved
                 .outputs_of::<FinalPlanarPreserveOutputs>()
@@ -74,6 +112,33 @@ fn run() {
             entity
         );
         assert_value(&request, 11); // independently expected from the authored edit
+        let (reused, reuse_writes) =
+            worth_relational::facade::inspection::observe_maintenance_work(1, || {
+                settle(&request, &application)
+            });
+        assert_eq!(reused.producer_contacts_in_this_demand(), 0);
+        assert_eq!(
+            reuse_writes.published_rows.len() + reuse_writes.omitted_publications,
+            0
+        );
+        assert_eq!(
+            reused
+                .outputs_of::<FinalPlanarPreserveOutputs>()
+                .unwrap()
+                .entity::<FinalPreservedAnchorOutput<ExampleSchema>>()
+                .unwrap()
+                .entity_id(),
+            entity
+        );
+        assert_eq!(
+            application.producer_contacts_on_this_thread_for_test() - before,
+            3
+        );
+        assert_eq!(
+            request.retain_current_read().unwrap().selected_commit(),
+            &commit
+        );
+        assert_value(&request, 11);
     }
     assert!(application.close_live_delivery().owner_terminal());
     application.close_conditional_runtime().unwrap();

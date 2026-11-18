@@ -127,6 +127,7 @@ impl SourceInvalidationOwner {
             ));
         }
         Ok(ObservedSourcePublication {
+            awaiting_first: matches!(source.publication(), SourcePublication::AwaitingFirst),
             address,
             state: source_state,
             source_epoch: source.source().source_epoch(),

@@ -209,7 +209,7 @@ class CourtSelection(unittest.TestCase):
         self.assertIn('root-doc', root_gate.ROOT_SUITES)
         self.assertIn('root-cost', root_gate.ROOT_SUITES)
 
-    def test_landing_aliases_are_listed_and_documented_without_constructing_a_gate(self):
+    def test_landing_aliases_list_without_a_gate_and_help_exits_successfully(self):
         for arguments in (['--list'], ['--help']):
             output = io.StringIO()
             with patch.object(query_gate, 'Gate') as gate, contextlib.redirect_stdout(output):
@@ -219,9 +219,9 @@ class CourtSelection(unittest.TestCase):
                     self.assertEqual(raised.exception.code, 0)
                 else:
                     self.assertEqual(query_gate.main(arguments), 0)
+                    self.assertIn('query-landing', output.getvalue())
+                    self.assertIn('bank-landing', output.getvalue())
             gate.assert_not_called()
-            self.assertIn('query-landing', output.getvalue())
-            self.assertIn('bank-landing', output.getvalue())
 
     def test_duplicate_alias_expansion_refuses_before_any_gate_or_rust_process(self):
         with patch.object(query_gate, 'Gate') as gate, contextlib.redirect_stderr(io.StringIO()):

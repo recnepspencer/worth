@@ -41,6 +41,19 @@ impl ManagedIndexSourceRows<'_> {
             DerivedRelationReadShape::Adjacency { reverse: false },
         )
     }
+    /// Complete physical membership support, including negative adjacency reads.
+    /// The prepared read must belong to this exact compiled Source loan.
+    pub fn membership_support<'a>(
+        &'a self,
+        read: &'a super::super::projection::PreparedManagedIndexRelationRead,
+    ) -> Result<&'a crate::derived_relation::DerivedRelationData, ReadDenial> {
+        self.projection.read(
+            read,
+            &self.projection.program.0.path,
+            self.scope,
+            DerivedRelationReadShape::Adjacency { reverse: false },
+        )
+    }
     pub fn occurrences(
         &self,
         read: &super::super::projection::PreparedManagedIndexRelationRead,

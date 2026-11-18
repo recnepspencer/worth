@@ -41,24 +41,23 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
                 let effects = recovery
                     .inspect_recovered_effects(row.handle())
                     .map_err(Denial::Recovery)?;
-                if let Some(support) = application.installed_program_support() {
-                    if support
+                if let Some(support) = application.installed_program_support()
+                    && support
                         .lifecycle()
                         .is_adoption_original(&effects)
                         .map_err(|_| Denial::UnclassifiedWorldCustody)?
-                    {
-                        if effects.native_receipt().is_none() {
-                            let actual = effects.attempt_identity();
-                            let attempt=worth_foundational::facade::DurableCompositePublicationAttemptIdentity::from_recorded(actual.owner_identity().durable().expect("Home original"),actual.ordinal());
-                            self.release_empty_original(execution, effects)?;
-                            support
-                                .lifecycle()
-                                .release_branch_adoption(execution, attempt)
-                                .map_err(|_| Denial::UnclassifiedWorldCustody)?;
-                        }
-                        // Native-bearing adoption remains in the real catalogue.
-                        continue;
+                {
+                    if effects.native_receipt().is_none() {
+                        let actual = effects.attempt_identity();
+                        let attempt=worth_foundational::facade::DurableCompositePublicationAttemptIdentity::from_recorded(actual.owner_identity().durable().expect("Home original"),actual.ordinal());
+                        self.release_empty_original(execution, effects)?;
+                        support
+                            .lifecycle()
+                            .release_branch_adoption(execution, attempt)
+                            .map_err(|_| Denial::UnclassifiedWorldCustody)?;
                     }
+                    // Native-bearing adoption remains in the real catalogue.
+                    continue;
                 }
                 if effects.native_receipt().is_none() {
                     self.release_empty_original(execution, effects)?;
@@ -96,14 +95,13 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
                 )
                 .map_err(Denial::ReleasedSource)?;
             for original in page.rows() {
-                if let Some(support) = application.installed_program_support() {
-                    if support
+                if let Some(support) = application.installed_program_support()
+                    && support
                         .lifecycle()
                         .is_released_adoption_original(original)
                         .map_err(|_| Denial::UnclassifiedWorldCustody)?
-                    {
-                        continue;
-                    }
+                {
+                    continue;
                 }
                 if original.native_receipt().is_none() {
                     continue;

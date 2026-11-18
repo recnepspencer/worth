@@ -118,6 +118,12 @@ pub(in crate::domain_computation) struct WorthQuerySessionGraphReadProof {
 }
 
 impl WorthQuerySessionGraphReadProof {
+    pub(in crate::domain_computation) fn session_identity(
+        &self,
+    ) -> WorthQueryGraphWorkSessionIdentity {
+        self.session
+    }
+
     pub(super) fn new(
         session: WorthQueryGraphWorkSessionIdentity,
         plan: WorthQueryGraphWorkPlanIdentity,

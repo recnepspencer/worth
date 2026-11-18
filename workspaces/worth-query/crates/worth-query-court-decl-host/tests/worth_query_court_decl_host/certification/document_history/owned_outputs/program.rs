@@ -260,8 +260,6 @@ pub(super) fn entry_spec_with_member_delivery<
     MemberDelivery: ApplicationActionDelivery<Schema, member_edit::Binding>,
 >() -> ApplicationFeatureSpec {
     with_envelope_completion_actions(entry_builder::<Delivery, MemberDelivery, Completion>())
-        .action::<member_retarget::operation::Binding, Completion>()
-        .finish_action()
         .finish()
 }
 pub(super) fn entry_builder<
@@ -269,13 +267,15 @@ pub(super) fn entry_builder<
     MemberDelivery: ApplicationActionDelivery<Schema, member_edit::Binding>,
     RestoreDelivery: ApplicationActionDelivery<Schema, authored_member::restore::Binding>,
 >() -> ApplicationFeatureSpecBuilder<Schema, ApplicationRootComposition, Entry> {
-    entry_builder_with_retirement::<Delivery, MemberDelivery, RestoreDelivery, Completion>()
+    entry_builder_with_retirement::<Delivery, MemberDelivery, RestoreDelivery, Completion, Completion>(
+    )
 }
 pub(super) fn entry_builder_with_retirement<
     Delivery: ApplicationActionDelivery<Schema, edit::Binding>,
     MemberDelivery: ApplicationActionDelivery<Schema, member_edit::Binding>,
     RestoreDelivery: ApplicationActionDelivery<Schema, authored_member::restore::Binding>,
     RetireDelivery: ApplicationActionDelivery<Schema, authored_member::retire::Binding>,
+    RetargetDelivery: ApplicationActionDelivery<Schema, member_retarget::operation::Binding>,
 >() -> ApplicationFeatureSpecBuilder<Schema, ApplicationRootComposition, Entry> {
     ApplicationFeatureSpec::root::<Schema, Entry>()
         .provides::<EntryOutput>()
@@ -294,6 +294,8 @@ pub(super) fn entry_builder_with_retirement<
         .action::<authored_member::retire::Binding, RetireDelivery>()
         .finish_action()
         .action::<authored_member::restore::Binding, RestoreDelivery>()
+        .finish_action()
+        .action::<member_retarget::operation::Binding, RetargetDelivery>()
         .finish_action()
         .action::<member_delete::Binding, Completion>()
         .finish_action()

@@ -8,6 +8,7 @@ use worth_query_decl::facade::application_program::{
 };
 use worth_query_host::facade::application_entry::{
     WorthQueryOperationAdvance as Advance, WorthQueryOperationConstructionDenial,
+    WorthQueryOperationProgress as Progress,
 };
 use worth_query_host::facade::domain::WorthQueryActionResolutionDenial;
 use worth_query_topology_entry::{
@@ -160,6 +161,16 @@ fn fixed_action_instances_deliver_only_their_canonical_contract() {
         .unwrap_or_else(|(_, denial)| {
             panic!("returned original description selects actual secondary contract: {denial:?}")
         });
+    assert_eq!(planar_source_adjustment_contacts(&secondary_input), (0, 0));
+    let secondary = match secondary.advance(&request) {
+        Advance::Progress {
+            operation,
+            progress: Progress::SourcePerformed,
+        } => operation,
+        _ => panic!("the authentic secondary occurrence performs its source synchronously"),
+    };
+    assert_eq!(planar_source_adjustment_contacts(&secondary_input), (1, 1));
+    let secondary_source_receipt = secondary.prepared_source_receipt().unwrap().clone();
     let secondary = settle!(secondary, &request);
     assert_eq!(secondary.declared_action(), &secondary_declaration);
     assert_eq!(
@@ -179,9 +190,17 @@ fn fixed_action_instances_deliver_only_their_canonical_contract() {
         secondary
             .settlement()
             .root_producer_contacts_in_this_demand(),
-        1,
-        "the actual root producer still ran"
+        0,
+        "delivery reuses the synchronous publication without starting another root producer"
     );
+    assert!(secondary
+        .settlement()
+        .performed_source()
+        .unwrap()
+        .receipt()
+        .retained_receipt()
+        .unwrap()
+        .is_same_authoritative_commit(&secondary_source_receipt));
     let source_delivery = secondary.read_current(&request).unwrap();
     assert_eq!(source_delivery.rows()[0].body_key, "anchor-b");
     assert_eq!(source_delivery.rows()[0].y, length(5));

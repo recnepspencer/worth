@@ -44,7 +44,14 @@ where
             candidate,
             source.idempotency_identity(),
             source.checkpoint_identity(),
-        );
+        ) || candidate
+            .matches_published_source(execution, source)
+            .map_err(|cause| {
+                selected_basis::selection_lookup_denial(
+                    worth_relational::facade::mvcc::CompanionPreflightStop::Execution(cause),
+                    Family::IDENTITY,
+                )
+            })?;
         // The source facts and the performed output witness are
         // one fact set: either half moving ends exact reuse, and a
         // live output selects Preserve. Checkpoints state the output half among their

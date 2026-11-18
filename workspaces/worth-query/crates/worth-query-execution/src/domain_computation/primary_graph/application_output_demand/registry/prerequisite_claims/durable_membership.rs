@@ -44,13 +44,13 @@ impl PreparedPrerequisiteClaims {
                 prerequisites.sort_unstable();
                 prerequisites.dedup();
                 if expanded {
-                    let mut captured = snapshot(&state, &row, &prerequisites)?;
-                    if key.as_ref() == self.context.key() {
-                        if let Some(claims) = &self.checkpoint_predecessors {
-                            captured
-                                .checkpoints
-                                .extend(claims.identities().iter().cloned());
-                        }
+                    let mut captured = snapshot(&state, row, &prerequisites)?;
+                    if key.as_ref() == self.context.key()
+                        && let Some(claims) = &self.checkpoint_predecessors
+                    {
+                        captured
+                            .checkpoints
+                            .extend(claims.identities().iter().cloned());
                     }
                     snapshots.push(captured);
                 } else if visited.insert(key.clone()) {
@@ -152,7 +152,7 @@ impl WorthQueryOutputDemandInterest {
         if !prior.is_empty() {
             return Err(coverage_denial());
         }
-        validate_predecessors(&state, &keys)?;
+        validate_predecessors(&state, &keys, std::iter::empty())?;
         let members = keys
             .iter()
             .map(|key| state.prepare_required_member(key))

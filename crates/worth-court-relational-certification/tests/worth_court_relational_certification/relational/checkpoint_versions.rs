@@ -19,7 +19,7 @@ fn current_checkpoint_preserves_meaning_and_retired_or_unknown_versions_refuse()
     // Protocol versions are interoperability data, not a measured cost golden.
     let body = current
         .bytes()
-        .strip_prefix(b"WORTH-REL-CHK22\n")
+        .strip_prefix(b"WORTH-REL-CHK23\n")
         .expect("only the current combined checkpoint grammar is emitted");
     let now = RelationalNativeCheckpoint::inspect_bytes(&execution, current.bytes()).unwrap();
     let mut restored = World::empty_runtime(0);
@@ -60,7 +60,8 @@ fn current_checkpoint_preserves_meaning_and_retired_or_unknown_versions_refuse()
         b"WORTH-REL-CHK20\n".as_slice(),
         b"WORTH-REL-CHK20.1\n".as_slice(),
         b"WORTH-REL-CHK21\n".as_slice(),
-        b"WORTH-REL-CHK23\n".as_slice(),
+        b"WORTH-REL-CHK22\n".as_slice(),
+        b"WORTH-REL-CHK24\n".as_slice(),
     ] {
         let mut bytes = prefix.to_vec();
         bytes.extend_from_slice(body);

@@ -101,5 +101,7 @@ impl WorthQueryGraphReadCompletion {
     }
 }
 
+mod applied_source;
+pub(in crate::domain_computation) use applied_source::WorthQueryAppliedSourceRead;
 mod source;
 pub(in crate::domain_computation) use source::WorthQueryCompletedSourceRead;

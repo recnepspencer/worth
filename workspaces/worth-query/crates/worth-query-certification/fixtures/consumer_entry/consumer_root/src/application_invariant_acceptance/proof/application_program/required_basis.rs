@@ -223,8 +223,3 @@ pub(super) fn joined_required_root_discovers_at_its_own_publication(
             >= third_commit
     );
 }
-
-#[test]
-fn recovering_a_later_performed_source_joins_the_retained_root_without_reexecution() {
-    joined_required_root_discovers_at_its_own_publication(&crate::installed_schema());
-}

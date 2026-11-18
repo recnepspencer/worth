@@ -6,6 +6,7 @@ use worth_query_decl::facade::application_program::{
     ApplicationOutputEdgeShape, ApplicationOutputGraphShape,
 };
 use worth_query_host::facade::primary_graph::WorthQueryOutputDemandDenialKind;
+use worth_query_topology_entry::{FinalAnchorOutput, FinalPlanarOutputs};
 
 mod disposal;
 mod eligibility;
@@ -101,9 +102,18 @@ fn two_fixed_members_keep_their_original_trees_and_record_the_last_complete_endp
         sibling.read(request).unwrap().rows().to_vec()
     });
     let root = with_request(app, |request| document.current_step(request).unwrap());
+    let contacts = [2, 3].map(|y| PlanarSourceAdjustment {
+        scope_key: "anchor-a".into(),
+        replacement_y: length(y),
+    });
+    for source in &contacts {
+        reset_planar_source_adjustment_contacts(source);
+    }
     let mut group = group(document, app, 0x9182_5800);
     until(app, &mut group, |group| group.completed_members() == 1);
-    let (first_endpoint, first_child) = {
+    assert_eq!(planar_source_adjustment_contacts(&contacts[0]), (1, 1));
+    assert_eq!(planar_source_adjustment_contacts(&contacts[1]), (0, 0));
+    let (first_endpoint, first_source_commit, first_child) = {
         let (document, execution) = group.parts();
         assert_eq!(
             with_request(app, |request| document.read(request).unwrap().rows()[0]
@@ -122,28 +132,36 @@ fn two_fixed_members_keep_their_original_trees_and_record_the_last_complete_endp
         let tree = first.settlement();
         assert_eq!(tree.output_count(), 1);
         let source = tree.performed_source().unwrap();
-        assert_ne!(
+        assert!(source.root_fulfillment().matches_source(source.receipt()));
+        assert_eq!(
+            source.receipt().source_commit(),
+            tree.observation().selected_commit()
+        );
+        assert_eq!(
             source.root_fulfillment().source_commit(),
             source.root_fulfillment().output_commit()
         );
-        assert_ne!(
+        assert_eq!(
             source.root_fulfillment().output_commit(),
             tree.observation().selected_commit()
         );
-        let child = tree
-            .outputs_for::<ConsumerSchema, Child>()
-            .next()
-            .unwrap()
-            .1
-            .application_commit_receipt()
-            .unwrap();
+        let (demand, child) = tree.outputs_for::<ConsumerSchema, Child>().next().unwrap();
+        assert_eq!(demand.body_key(), "remote-b");
         assert_eq!(
-            child.committed_product_publication().composite_commit(),
+            child.observation().selected_commit(),
             tree.observation().selected_commit()
         );
+        // Typed retained correspondence identifies the child without inventing a new receipt.
+        let child = child
+            .outputs_of::<FinalPlanarOutputs>()
+            .unwrap()
+            .entity::<FinalAnchorOutput<ConsumerSchema>>()
+            .unwrap()
+            .entity_id();
         (
             tree.observation().selected_commit().clone(),
-            child.commit_reference().commit_id,
+            source.receipt().commit_reference().commit_id,
+            child,
         )
     };
     until(app, &mut group, |group| {
@@ -160,9 +178,78 @@ fn two_fixed_members_keep_their_original_trees_and_record_the_last_complete_endp
                 .receipt()
                 .commit_reference()
                 .parents,
-            [first_child]
+            [first_source_commit]
         );
         assert_ne!(tree.observation().selected_commit(), &first_endpoint);
+        assert_ne!(
+            tree.performed_source()
+                .unwrap()
+                .receipt()
+                .commit_reference()
+                .commit_id,
+            first_source_commit
+        );
+        // Distinct members keep their original complete co-publications, including the first child.
+        for (index, y, body, expected) in [(0, 2, "remote-b", 43), (1, 3, "sibling-b", 23)] {
+            let member = execution.completed_source(index).unwrap();
+            let tree = member.settlement();
+            let source = tree.performed_source().unwrap();
+            let endpoint = tree.observation().selected_commit();
+            assert!(source.root_fulfillment().matches_source(source.receipt()));
+            assert_eq!(source.receipt().source_commit(), endpoint);
+            assert_eq!(source.root_fulfillment().source_commit(), endpoint);
+            assert_eq!(source.root_fulfillment().output_commit(), endpoint);
+            assert_eq!(tree.root_observation().selected_commit(), endpoint);
+            assert_eq!(
+                tree.root_settlement().posture(),
+                WorthQueryOutputSettlementPosture::StableReused
+            );
+            assert_eq!(tree.root_producer_contacts_in_this_demand(), 0);
+            assert_eq!(tree.output_count(), 1);
+            let (demand, child) = tree.outputs_for::<ConsumerSchema, Child>().next().unwrap();
+            assert_eq!(demand.body_key(), body);
+            assert_eq!(child.observation().selected_commit(), endpoint);
+            assert_eq!(child.producer_contacts_in_this_demand(), 0);
+            let identity = child
+                .outputs_of::<FinalPlanarOutputs>()
+                .unwrap()
+                .entity::<FinalAnchorOutput<ConsumerSchema>>()
+                .unwrap()
+                .entity_id();
+            if index == 0 {
+                assert_eq!(identity, first_child);
+            }
+            with_branch_request(app, member.branch(), |request| {
+                for (key, value) in [
+                    ("anchor-a".to_owned(), y),
+                    (format!("final:{body}"), expected),
+                ] {
+                    assert_eq!(
+                        request
+                            .at(tree.observation())
+                            .query(PlanarRead { body_key: key })
+                            .execute()
+                            .unwrap()
+                            .rows()[0]
+                            .y,
+                        length(value)
+                    );
+                }
+                assert_eq!(
+                    request
+                        .at(tree.observation())
+                        .query(PlanarOutputRead {
+                            body_key: "anchor-a".into()
+                        })
+                        .execute()
+                        .unwrap()
+                        .rows()[0]
+                        .value,
+                    length(y + 1)
+                );
+            });
+            assert_eq!(planar_source_adjustment_contacts(&contacts[index]), (1, 1));
+        }
         tree.observation().selected_commit().clone()
     };
     let step = with_request(app, |request| {
@@ -246,7 +333,7 @@ fn two_fixed_members_keep_their_original_trees_and_record_the_last_complete_endp
         let read = preview.read(&finished.document, request).unwrap();
         assert_eq!(
             read.required_root_posture(),
-            Some(WorthQueryOutputSettlementPosture::Performed)
+            Some(WorthQueryOutputSettlementPosture::StableReused)
         );
         assert_eq!(read.rows()[0].value, length(4));
         read.close();
@@ -254,6 +341,9 @@ fn two_fixed_members_keep_their_original_trees_and_record_the_last_complete_endp
         assert_eq!(sibling.read(request).unwrap().rows(), unchanged);
     });
     drop(finished.completions);
+    for source in &contacts {
+        assert_eq!(planar_source_adjustment_contacts(source), (1, 1));
+    }
     close(finished.document, app);
     close(sibling, app);
 }

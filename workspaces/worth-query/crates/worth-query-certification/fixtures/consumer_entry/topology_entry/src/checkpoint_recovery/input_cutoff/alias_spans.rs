@@ -21,13 +21,18 @@ fn require_fresh_after_root_edit<'application>(
         .unwrap();
     request
         .advanced()
-        .mutate(PlanarSourceAdjustment {
+        .mutate(PlanarEdit(PlanarMutation {
             scope_key: "anchor-a".into(),
-            replacement_y: length(7),
-        })
+            operation: worth_query_consumer_values::PlanarOperation::Adjust(vec![
+                worth_query_consumer_values::PlanarAdjustment {
+                    body_key: "anchor-a".into(),
+                    replacement_y: length(7),
+                },
+            ]),
+        }))
         .expect_source(source.observed_sources()[0].clone())
         .idempotency(&command)
-        .execute_performed::<CheckpointProgram, CheckpointRoot>(
+        .execute_in_program::<CheckpointProgram>(
             application,
             worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )

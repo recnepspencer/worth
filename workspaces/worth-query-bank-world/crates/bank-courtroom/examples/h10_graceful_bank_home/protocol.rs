@@ -6,12 +6,14 @@ use std::{
 };
 
 pub(super) enum Stage {
+    OpenCloseProbe,
     Preclose,
     Reopen,
 }
 impl Stage {
     pub fn name(&self) -> &str {
         match self {
+            Self::OpenCloseProbe => "probe-open-close",
             Self::Preclose => "preclose",
             Self::Reopen => "reopen",
         }
@@ -24,8 +26,13 @@ pub(super) struct Arguments {
     pub rail: SocketAddr,
     pub control: SocketAddr,
     pub handoff: PathBuf,
+    pub step_cutoff: Option<u8>,
 }
 impl Arguments {
+    pub fn step_completed(&self, step: u8, name: &str) -> bool {
+        eprintln!("BANK_WORKLOAD_STEP {step} {name}");
+        self.step_cutoff == Some(step)
+    }
     pub fn read() -> Self {
         let mut values = std::env::args_os().skip(1);
         let stage = match values
@@ -33,9 +40,10 @@ impl Arguments {
             .and_then(|value| value.into_string().ok())
             .as_deref()
         {
+            Some("probe-open-close") => Stage::OpenCloseProbe,
             Some("preclose") => Stage::Preclose,
             Some("reopen") => Stage::Reopen,
-            _ => panic!("expected preclose or reopen stage"),
+            _ => panic!("expected probe-open-close, preclose or reopen stage"),
         };
         let directory = values.next().expect("Home directory").into();
         let recipe = values
@@ -58,6 +66,19 @@ impl Arguments {
             .parse()
             .unwrap();
         let handoff = values.next().expect("descriptive handoff file").into();
+        let step_cutoff = values.next().map(|value| {
+            let step = value
+                .into_string()
+                .unwrap()
+                .parse::<u8>()
+                .expect("numeric step cutoff");
+            assert!((1..=8).contains(&step), "step cutoff is 1 through 8");
+            assert!(
+                matches!(&stage, Stage::Preclose | Stage::Reopen),
+                "cutoff is a workload probe"
+            );
+            step
+        });
         assert!(values.next().is_none(), "unexpected stage argument");
         Self {
             stage,
@@ -66,6 +87,7 @@ impl Arguments {
             rail,
             control,
             handoff,
+            step_cutoff,
         }
     }
 }

@@ -75,12 +75,12 @@ fn denial(
     BridgeCausalEnvelopeDenial,
     crate::diagnostics::causal_envelope::BridgeCausalDigestRefusal,
 > {
-    Ok(BridgeCausalEnvelopeDenial::new(
+    BridgeCausalEnvelopeDenial::new(
         kind,
         BridgeCausalEvidenceFamily::BridgeConditionalObservation,
         BridgeCausalEvidenceOwner::RuntimeBridge,
         BridgeCausalEvidenceOwner::RuntimeBridge,
         summary.summary_evidence_identity().clone(),
         BridgeCausalEnvelopeCounters::empty()?,
-    )?)
+    )
 }

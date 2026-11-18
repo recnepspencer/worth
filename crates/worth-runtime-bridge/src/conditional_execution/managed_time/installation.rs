@@ -16,7 +16,7 @@ impl BridgeConditionalExecutionView<'_> {
         self.require_managed_clock_lowering(parts.lowering)?;
         let declaration = super::BridgeManagedClockDeclaration::admit(
             self.bridge.signal_runtime_key,
-            &self.retention,
+            self.retention,
             parts,
         )?;
         let identity = Arc::clone(declaration.identity());

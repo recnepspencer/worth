@@ -14,6 +14,16 @@ pub enum RelationalCoupledProducerPosture {
     },
 }
 impl RelationalCoupledProducerPosture {
+    pub(super) fn roles(&self) -> &[RequiredOutputRoleTarget] {
+        match self {
+            Self::Publication(
+                RequiredOutputPublication::Birth { roles, .. }
+                | RequiredOutputPublication::Preserve { roles, .. },
+            )
+            | Self::Ordinary { roles, .. } => roles,
+            _ => unreachable!("Native admitted a producer participant"),
+        }
+    }
     pub fn producing_meaning(&self) -> Option<&RequiredOutputPublicationMeaning> {
         match self {
             Self::Publication(publication) => publication.producing_meaning(),

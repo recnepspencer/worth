@@ -56,7 +56,7 @@ fn fixed_and_no_source_close_before_fresh_complete_current_read() {
         replacement_y: length(2),
     };
     reset_planar_source_adjustment_contacts(&input);
-    // Native producer receipt supplies independent original root correspondence.
+    // A reused root retains typed output correspondence without a producer receipt.
     let fixed = {
         let scope = authentication::request_scope();
         let adapter = authentication::admit(world.application.installed_schema());
@@ -73,8 +73,7 @@ fn fixed_and_no_source_close_before_fresh_complete_current_read() {
     };
     let original = fixed
         .settlement()
-        .root_receipt()
-        .unwrap()
+        .root_settlement()
         .outputs_of::<PlanarOutputs>()
         .unwrap()
         .entity::<PlanarAnchorOutput<ConsumerSchema>>()
@@ -110,7 +109,24 @@ fn fixed_and_no_source_close_before_fresh_complete_current_read() {
             closed_fixed.read_current(&request).unwrap().rows()[0].value,
             length(3)
         );
-        change_suffix(&world, &request);
+        // anchor-b is in anchor-a's declared two-hop Source cut, even though
+        // PlanarReadResult omits successor_y. Progress a disjoint ring here so
+        // this close court actually reaches a Stable/no-receipt original root.
+        edit_source(&world, &request, "remote-a", 42, 0x9176_6275);
+        assert_eq!(
+            request
+                .query(PlanarRead {
+                    body_key: "remote-a".into()
+                })
+                .execute()
+                .unwrap()
+                .rows()[0]
+                .y,
+            length(42)
+        );
+        let before_tree = world
+            .application
+            .producer_contacts_on_this_thread_for_test();
         let read_source = request.retain_current_read().unwrap();
         let settled = settle_tree(&world, &request);
         assert!(
@@ -133,6 +149,13 @@ fn fixed_and_no_source_close_before_fresh_complete_current_read() {
         assert_eq!(
             settled.settlement().root_producer_contacts_in_this_demand(),
             0
+        );
+        assert_eq!(
+            world
+                .application
+                .producer_contacts_on_this_thread_for_test(),
+            before_tree,
+            "the complete unchanged tree enters no producer, including upstream work"
         );
         let closed_tree = transitions::close_tree_after_cancelled_refusal(settled, &world);
         let common = request.retain_current_read().unwrap();

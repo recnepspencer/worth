@@ -19,19 +19,8 @@ fn cold_retirement_requires_every_sibling_group_before_route_eligibility() {
     let request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let (runtime, receipt) = installed(1);
-    let world = world_with_installation(execution, runtime, receipt.clone());
-    let (owner, publisher) = receipt.issue_application_publication_owner();
-    let sibling = super::super::fixture::create(
-        execution,
-        &world.runtime,
-        3,
-        "independent sibling",
-        "nondefault sibling output",
-        Some((
-            &publisher,
-            owner.admit_required_output("native.sibling.producer", [23; 32]),
-        )),
-    );
+    let (world, publisher) = world_with_publication(execution, runtime, receipt);
+    let sibling = super::coupled_sibling::publish(execution, &world, &publisher);
     let (mut target, mut recovered, _) = recover(execution, &world);
     let candidate = candidate(
         execution,
@@ -61,6 +50,39 @@ fn cold_retirement_requires_every_sibling_group_before_route_eligibility() {
     )
     .unwrap()
     .checkpoint;
+    // Route identity, rather than publication alone, is the unique claim key.
+    // A second commit must not make a duplicate route admissible.
+    for different_commit in [false, true] {
+        let mut duplicate = decoded.clone();
+        let foreign = duplicate
+            .envelopes
+            .iter()
+            .find(|entry| {
+                entry.required_output_origin.is_none()
+                    && entry.required_output_codec_retirements.is_empty()
+            })
+            .unwrap()
+            .commit
+            .commit_id;
+        let entry = duplicate
+            .envelopes
+            .iter_mut()
+            .find(|entry| !entry.required_output_codec_retirements.is_empty())
+            .unwrap();
+        let mut repeated = (*entry.required_output_codec_retirements[0]).clone();
+        if different_commit {
+            assert_ne!(repeated.publication, foreign);
+            repeated.publication = foreign;
+        }
+        entry
+            .envelope_mut_for_test(execution)
+            .required_output_codec_retirements
+            .push(std::sync::Arc::new(repeated));
+        assert!(
+            !entry.codec_retirement_headers_valid(),
+            "the same route is refused even when its claimed commit differs"
+        );
+    }
     let mut hidden_write = decoded
         .envelopes
         .iter()
@@ -82,6 +104,16 @@ fn cold_retirement_requires_every_sibling_group_before_route_eligibility() {
             .find(|entry| !entry.required_output_codec_retirements.is_empty())
             .unwrap();
         assert_eq!(entry.required_output_codec_retirements.len(), 2);
+        let routes = &entry.required_output_codec_retirements;
+        assert_eq!(routes[0].publication, routes[1].publication);
+        assert_eq!(
+            routes
+                .iter()
+                .map(|event| event.meaning.family.as_str())
+                .collect::<std::collections::BTreeSet<_>>(),
+            std::collections::BTreeSet::from(["native.closed.producer", "native.sibling.producer"]),
+            "both independently issued routes in one publication need full retirement coverage"
+        );
         if matches!(defect, Some(ClaimDefect::SiblingKind)) {
             let sibling = entry
                 .envelope_mut_for_test(execution)
@@ -269,12 +301,23 @@ pub(super) fn cold_retired_route(
                 &crate::mvcc::native_meaning_fixture("native.closed.producer"),
             )
             .unwrap_err();
-        let expected = if incomplete {
-            "actual protected program contract"
+        if incomplete {
+            assert!(
+                format!("{denied:?}").contains("actual protected program contract"),
+                "{denied:?}"
+            );
         } else {
-            "no installed producer publication"
-        };
-        assert!(format!("{denied:?}").contains(expected), "{denied:?}");
+            let crate::transactions::data::TransactionCommitError::Publication { error, .. } =
+                &denied
+            else {
+                panic!("foreign publication must fail canonical route validation: {denied:?}");
+            };
+            assert_eq!(
+                error.stage,
+                crate::publication::bundle::PublicationStage::BundleAssembly
+            );
+            assert_eq!(error.detail, "exact route has no canonical publication");
+        }
         assert_eq!(capture(execution, &rejected), before);
     }
 }

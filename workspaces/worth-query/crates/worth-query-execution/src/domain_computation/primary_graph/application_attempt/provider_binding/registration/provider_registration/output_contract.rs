@@ -4,8 +4,16 @@ use crate::equality_type_id::EqualityTypeId as TypeId;
 
 use super::WorthQueryPrimaryGraphApplicationAttempt;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationOutputPosture;
+use crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandKey;
 
 impl WorthQueryPrimaryGraphApplicationAttempt {
+    pub(in crate::domain_computation::primary_graph) fn required_output_key(
+        &self,
+    ) -> Option<std::sync::Arc<WorthQueryOutputDemandKey>> {
+        self.required_output_demand
+            .as_ref()
+            .map(|context| std::sync::Arc::clone(context.key_arc()))
+    }
     pub(in crate::domain_computation::primary_graph) fn output_family(
         &self,
     ) -> Option<&'static str> {

@@ -17,7 +17,10 @@ impl FullVerificationImage<'_> {
         {
             return Err(FullVerificationStop::Foreign);
         }
-        for fact in source.source_facts() {
+        let Some(facts) = source.source_facts() else {
+            return Ok(false);
+        };
+        for fact in facts {
             if !fact_is_current(execution, fact, self.runtime, self.snapshot)? {
                 return Ok(false);
             }

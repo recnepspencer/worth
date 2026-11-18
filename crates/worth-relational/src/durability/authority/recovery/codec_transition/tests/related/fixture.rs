@@ -117,7 +117,17 @@ pub(super) fn world_with_boundary(
     runtime: RelationalRuntime,
     receipt: RelationalInitialSchemaInstallationReceipt,
 ) -> (RelatedWorld, Option<(RelationId, ProducerPublication)>) {
-    build_world(execution, runtime, receipt, true)
+    let (world, boundary, publisher) = build_world(execution, runtime, receipt, true);
+    (world, boundary.map(|edge| (edge, publisher)))
+}
+
+pub(super) fn world_with_publication(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: RelationalRuntime,
+    receipt: RelationalInitialSchemaInstallationReceipt,
+) -> (RelatedWorld, ProducerPublication) {
+    let (world, _, publisher) = build_world(execution, runtime, receipt, false);
+    (world, publisher)
 }
 
 fn build_world(
@@ -125,10 +135,10 @@ fn build_world(
     runtime: RelationalRuntime,
     receipt: RelationalInitialSchemaInstallationReceipt,
     boundary: bool,
-) -> (RelatedWorld, Option<(RelationId, ProducerPublication)>) {
+) -> (RelatedWorld, Option<RelationId>, ProducerPublication) {
     let authored = create(execution, &runtime, 1, "authored", SOURCE_VALUE, None);
     let activation = create(execution, &runtime, 2, "activation", "program.v1", None);
-    let (outputs, relations, owned) = if boundary {
+    let (outputs, relations, edge, publisher) = if boundary {
         let (outputs, relations, edge, custody) = produce_with_boundary(
             execution,
             &runtime,
@@ -137,10 +147,11 @@ fn build_world(
             authored,
             "native.closed.producer",
         );
-        (outputs, relations, Some((edge, custody)))
+        (outputs, relations, Some(edge), custody)
     } else {
-        let (outputs, relations) = produce(execution, &runtime, &receipt, 1);
-        (outputs, relations, None)
+        let (outputs, relations, custody) =
+            production::produce_with_publication(execution, &runtime, &receipt, 1);
+        (outputs, relations, None, custody)
     };
     let index = runtime
         .index_authority()
@@ -169,7 +180,8 @@ fn build_world(
             outputs,
             relations,
         },
-        owned,
+        edge,
+        publisher,
     )
 }
 

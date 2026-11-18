@@ -1,6 +1,6 @@
-#[cfg(not(target_os = "macos"))]
+#[cfg(not(any(target_os = "macos", target_os = "linux")))]
 use cap_fs_ext::OpenOptionsFollowExt;
-#[cfg(not(target_os = "macos"))]
+#[cfg(not(any(target_os = "macos", target_os = "linux")))]
 use cap_primitives::fs::FollowSymlinks;
 use cap_std::fs::Dir;
 
@@ -59,7 +59,7 @@ impl ArtifactTreeMedia<'_> {
                 &error,
             ));
         }
-        #[cfg(not(target_os = "macos"))]
+        #[cfg(not(any(target_os = "macos", target_os = "linux")))]
         let result = {
             let mut options = cap_std::fs::OpenOptions::new();
             options
@@ -68,7 +68,7 @@ impl ArtifactTreeMedia<'_> {
                 .follow(FollowSymlinks::No);
             directory.open_with(file_name, &options)
         };
-        #[cfg(target_os = "macos")]
+        #[cfg(any(target_os = "macos", target_os = "linux"))]
         let result = super::native_component::file(directory, file_name, access);
         drop(backing);
         match result {

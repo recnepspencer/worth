@@ -287,6 +287,8 @@ impl PhysicalMutationRuntimeOwner {
         }
         drop(state);
         attempt.finish_anchored_step(&terminal, settlement_failure);
+        self.yieldpoint
+            .pause(super::PhysicalMutationCheckpoint::BeforeJournalTerminalVisibility);
         attempt.publish_terminal();
     }
 
