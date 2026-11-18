@@ -150,26 +150,32 @@ fn refusal<E: std::fmt::Debug>(outcome: &Result<Outcome, E>) -> Refusal {
     }
 }
 
-/// The held shape (#229), established from the stages alone: the first stage
-/// that actually changes the input of `first:a` (a different model value)
-/// after an earlier stage demanded its producer in this envelope. `After`
-/// always needs `first:a`; `Consume` demands it only once an earlier stage
-/// changed the model, since otherwise it reads the committed child directly.
-/// `None` when no stage supersedes an in-envelope derivation.
+/// The held shape (#229), established from the stages alone. A root is only
+/// derived inside the envelope at a pre-write barrier: a later stage that
+/// reads an output (`After` or `Consume`) while a demand is already pending
+/// from an earlier stage. `After` queues its own root only after its stage
+/// and a model change makes `first:a` pending; neither derives anything by
+/// itself. The held stage is the first model write that changes the model
+/// after such a barrier. `None` when no stage supersedes an in-envelope
+/// derivation, so the edit must commit what one commit per stage commits.
 fn superseding_stage(stages: &[(usize, Stage)]) -> Option<usize> {
-    let (mut model, mut derived) = (2, false);
+    let (mut model, mut pending, mut derived) = (2, false, false);
     for (ordinal, (_, stage)) in stages.iter().enumerate() {
-        let demands = match stage {
+        match stage {
             Stage::Model(value) => {
-                if derived && std::mem::replace(&mut model, *value) != *value {
-                    return Some(ordinal);
+                if std::mem::replace(&mut model, *value) != *value {
+                    if derived {
+                        return Some(ordinal);
+                    }
+                    pending = true;
                 }
-                false
             }
-            Stage::After(_) => true,
-            Stage::Consume => model != 2,
-        };
-        derived |= demands;
+            Stage::After(_) => {
+                derived |= pending;
+                pending = true;
+            }
+            Stage::Consume => derived |= pending,
+        }
     }
     None
 }
@@ -264,6 +270,16 @@ fn the_differential_world_commits_a_settled_child_read() {
 #[test]
 fn a_committed_child_read_before_a_model_write_commits() {
     let stages = [(0, Stage::Consume), (1, Stage::Model(4))];
+    assert_eq!(superseding_stage(&stages), None);
+    assert_eq!(positioned(&stages), Ok(sequential(&stages)));
+}
+
+/// A leading `After` reads the committed `first:a` and queues its root only
+/// after its stage; the model write reads no output, so nothing derives before
+/// it and the edit must commit what one commit per stage commits.
+#[test]
+fn a_leading_after_read_before_a_model_write_commits() {
+    let stages = [(0, Stage::After(3)), (1, Stage::Model(4))];
     assert_eq!(superseding_stage(&stages), None);
     assert_eq!(positioned(&stages), Ok(sequential(&stages)));
 }
