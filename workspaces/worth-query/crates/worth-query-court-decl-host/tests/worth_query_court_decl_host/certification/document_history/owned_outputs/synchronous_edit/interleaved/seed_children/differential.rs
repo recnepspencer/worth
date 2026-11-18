@@ -62,6 +62,10 @@ enum Refusal {
     /// The authored stage (its ordinal) that changed the input of a producer
     /// prepared earlier in the envelope; held on #229.
     Supersession(usize),
+    /// A Read stage's discovery was changed by the producer (its family) that
+    /// a later Write made derive the parent again. Discovery never settles
+    /// without proof that its selection was replaced, so this refuses plainly.
+    Rediscovered(String),
     /// Any other refusal.
     Other,
 }
@@ -140,6 +144,13 @@ fn refusal<E>(outcome: &Result<Outcome, E>) -> Refusal {
         return Refusal::Other;
     };
     match failure.coupled_support_hold() {
+        None if failure.detail().contains("discovery support") => {
+            assert_eq!(failure.kind(), Kind2::CoupledReadSupportChanged, "{failure:?}");
+            let family = (failure.detail().split_once("later writer producer "))
+                .and_then(|(_, rest)| Some(rest.split(' ').nth(1)?.trim_end_matches(':').to_owned()))
+                .unwrap_or_else(|| panic!("discovery not attributed to a producer: {failure:?}"));
+            Refusal::Rediscovered(family)
+        }
         Some(Hold::ProducerSupersession) => {
             assert_eq!(failure.kind(), Kind2::CoupledReadSupportChanged, "{failure:?}");
             let writer = (failure.detail().split_once("later writer authored stage "))
@@ -203,8 +214,9 @@ fn positioned(stages: &[Stage]) -> Result<World, Refusal> {
 
 /// Liveness and safety (#224): a positioned edit commits the world one commit
 /// per stage commits. The admitted refusals are the envelope's own (two stages
-/// that write one target) and the #229 hold, only on its own evidence and
-/// attributed to exactly that stage.
+/// that write one target), and, only on their own evidence (a Read, then a
+/// Write that changes the seed), the #229 hold attributed to exactly that
+/// Write or the strict discovery refusal attributed to the parent's producer.
 fn equals_sequential(stages: &[Stage]) -> Result<(), String> {
     let expected = sequential(stages);
     match positioned(stages) {
@@ -215,6 +227,11 @@ fn equals_sequential(stages: &[Stage]) -> Result<(), String> {
             Ok(())
         }
         Err(Refusal::Supersession(writer)) if Some(writer) == superseding_stage(stages) => Ok(()),
+        Err(Refusal::Rediscovered(family))
+            if family == "first" && superseding_stage(stages).is_some() =>
+        {
+            Ok(())
+        }
         Ok(world) if world == expected => Ok(()),
         outcome => Err(format!(
             "{stages:?}: positioned {outcome:?} differs from one commit per stage {expected:?}"
