@@ -10,7 +10,8 @@
 //! Producer readers stay strict. The #229 hold marks only a refusal where the
 //! adjacent writer images show a later authored stage changed a fact read by
 //! a producer derived before that stage: the producer's own decision read, or
-//! the support of a verified output whose route that producer derived.
+//! the support of a verified output (prepared in the envelope or committed)
+//! that no derivation after the stage replaces.
 use super::*;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationDecisionFact as Fact;
 use crate::domain_computation::WorthQueryInvariantExecutionFailure as Failure;
@@ -182,10 +183,12 @@ fn is_stage(
     )
 }
 
-/// A verified output's support changed by an authored stage is the #229 shape
-/// only when the producer of that same route was derived in this envelope
-/// before the stage: it read the fact the stage changed. Discovery support
-/// cannot name a superseded derivation, so it never carries the hold.
+/// A verified output is a derivation that read its support: one prepared in
+/// this envelope or the committed one the reader adopted. An authored stage
+/// changing that support supersedes it (#229) unless the same route is derived
+/// again after the stage, which settles instead; one commit per stage would
+/// derive it again in the stage's own commit. Discovery support cannot name a
+/// superseded derivation, so it never carries the hold.
 fn superseded_parent(
     support: &crate::domain_computation::primary_graph::provider::CandidateReadSupport,
     members: &[crate::domain_computation::primary_graph::provider::CoupledApplicationMember],
@@ -197,9 +200,9 @@ fn superseded_parent(
         return false;
     };
     is_stage(writer)
-        && members
+        && !members
             .iter()
-            .any(|member| member.position < writer.position && derives_parent(member, parent))
+            .any(|member| member.position > writer.position && derives_parent(member, parent))
 }
 
 /// Only a changed fact walks the later writers. Reuse the post-own pins already
