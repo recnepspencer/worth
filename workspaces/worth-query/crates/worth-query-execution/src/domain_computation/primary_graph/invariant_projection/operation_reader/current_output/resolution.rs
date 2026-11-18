@@ -22,6 +22,7 @@ mod decision_plan_denial;
 mod source_liveness;
 
 mod verification_denial;
+mod work_budget;
 use cardinality::classify_current_entities;
 use cardinality::CurrentOutputCardinality;
 use decision_plan_denial::decision_plan_denial;
@@ -369,41 +370,5 @@ where
             .iter()
             .map(super::CertifiedOutputCorrespondence::pair)
             .collect())
-    }
-
-    fn require_current_output_budget(
-        &mut self,
-        required: usize,
-        subject: &str,
-    ) -> Result<(), WorthQueryCurrentOutputDenial> {
-        self.reader
-            .work_budget
-            .can_afford(required)
-            .then_some(())
-            .ok_or_else(|| {
-                WorthQueryCurrentOutputDenial::new(
-                    WorthQueryCurrentOutputDenialKind::WorkBudgetExceeded,
-                    subject,
-                )
-            })
-    }
-    fn charge_current_output_work(
-        &mut self,
-        actual: usize,
-        subject: &str,
-    ) -> Result<(), WorthQueryCurrentOutputDenial> {
-        self.reader
-            .work_budget
-            .consume(actual)
-            .then_some(())
-            .ok_or_else(|| self.current_output_work_exhausted(subject))
-    }
-
-    fn current_output_work_exhausted(&mut self, subject: &str) -> WorthQueryCurrentOutputDenial {
-        self.reader.work_budget.mark_exceeded();
-        WorthQueryCurrentOutputDenial::new(
-            WorthQueryCurrentOutputDenialKind::WorkBudgetExceeded,
-            subject,
-        )
     }
 }
