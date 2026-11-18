@@ -161,10 +161,11 @@ fn positioned(stages: &[Stage]) -> Result<World, Option<(usize, usize)>> {
     }
 }
 
-/// Liveness and safety (#224): a positioned edit commits exactly when one
-/// commit per stage commits, the same world. The one admitted refusal is the
-/// envelope's own: two stages that write one target.
+/// Liveness and safety (#224): a positioned edit commits the world one commit
+/// per stage commits. The one admitted refusal is the envelope's own: two
+/// stages that write one target.
 fn equals_sequential(stages: &[Stage]) -> Result<(), String> {
+    let expected = sequential(stages);
     match positioned(stages) {
         Err(Some((earlier, later)))
             if std::mem::discriminant(&stages[earlier])
@@ -172,24 +173,26 @@ fn equals_sequential(stages: &[Stage]) -> Result<(), String> {
         {
             Ok(())
         }
-        outcome => {
-            let sequential = sequential(stages);
-            let positioned = outcome.as_ref().ok();
-            (positioned == sequential.as_ref()).then_some(()).ok_or_else(|| {
-                format!("{stages:?}: positioned {outcome:?} differs from one commit per stage {sequential:?}")
-            })
-        }
+        Ok(world) if world == expected => Ok(()),
+        outcome => Err(format!(
+            "{stages:?}: positioned {outcome:?} differs from one commit per stage {expected:?}"
+        )),
     }
 }
 
-fn sequential(stages: &[Stage]) -> Option<World> {
+/// Every generated edit is valid one stage at a time, so a refusal here is a
+/// failure of the oracle itself, reported with the stage that refused.
+fn sequential(stages: &[Stage]) -> World {
     let host = world();
     let mut results = Vec::new();
     for (ordinal, stage) in stages.iter().enumerate() {
         let key = format!("sequential:{ordinal}");
-        results.extend(execute(&host, &key, std::slice::from_ref(stage)).ok()?);
+        match execute(&host, &key, std::slice::from_ref(stage)) {
+            Ok(stage_results) => results.extend(stage_results),
+            Err((_, refusal)) => panic!("{stages:?}: stage {ordinal} refused one commit at a time: {refusal}"),
+        }
     }
-    Some(observe(&host, results))
+    observe(&host, results)
 }
 
 proptest! {
@@ -209,8 +212,7 @@ proptest! {
 #[test]
 fn a_seed_write_then_a_parent_read_commits_the_current_child() {
     let stages = [Stage::Write(3), Stage::Read(7)];
-    let committed = positioned(&stages).expect("this edit commits");
-    assert_eq!(Some(committed), sequential(&stages));
+    assert_eq!(positioned(&stages).expect("this edit commits"), sequential(&stages));
 }
 
 /// The CAD seed edit itself: a source stage writes the seed and a final
