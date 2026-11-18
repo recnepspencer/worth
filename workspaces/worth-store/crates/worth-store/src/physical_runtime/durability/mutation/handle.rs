@@ -1,4 +1,5 @@
 mod anchored_step;
+mod bounded_wait;
 pub(in crate::physical_runtime) use anchored_step::ManagedPublicationRegistration;
 use std::cell::Cell;
 use std::sync::{Arc, Condvar, Mutex, MutexGuard, Weak};

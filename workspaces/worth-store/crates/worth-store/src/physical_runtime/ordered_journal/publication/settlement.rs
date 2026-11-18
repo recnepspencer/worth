@@ -246,4 +246,11 @@ impl JournalPublicationShared {
             crate::physical_runtime::PhysicalMutationHandle::new(&a).wait();
         }
     }
+    /// Observes this original's attempt until its terminal is visible or `deadline`.
+    pub(super) fn wait_until(&self, deadline: std::time::Instant) {
+        let attempt = self.state().attempt.upgrade();
+        if let Some(attempt) = attempt {
+            attempt.terminal_visible_by(deadline);
+        }
+    }
 }

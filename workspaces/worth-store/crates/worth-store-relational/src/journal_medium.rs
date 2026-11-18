@@ -112,7 +112,7 @@ impl StoreJournalMedium {
         };
         let publication =
             OrderedJournalPublication::new(entry, bytes.to_vec(), self.placement, deadline);
-        match journal.publish(publication) {
+        match journal.publish_after_writer(publication) {
             Ok(
                 OrderedJournalPublished::Committed(_)
                 | OrderedJournalPublished::AlreadyCommitted(_),

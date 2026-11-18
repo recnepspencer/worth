@@ -30,7 +30,21 @@ impl OrderedJournal<'_> {
         &self,
         publication: OrderedJournalPublication,
     ) -> Result<OrderedJournalPublished, Failure> {
-        let mut operation = match self.start_owned(publication, None) {
+        self.drive(self.start_owned(publication, None))
+    }
+    /// `publish` for an original that must serialize with the Home journal
+    /// writer: a busy writer is waited out for at most the original's deadline.
+    pub fn publish_after_writer(
+        &self,
+        publication: OrderedJournalPublication,
+    ) -> Result<OrderedJournalPublished, Failure> {
+        self.drive(self.start_owned_after_writer(publication))
+    }
+    fn drive(
+        &self,
+        start: OrderedJournalPublicationStart,
+    ) -> Result<OrderedJournalPublished, Failure> {
+        let mut operation = match start {
             OrderedJournalPublicationStart::Ready {
                 operation,
                 recovery: _recovery,

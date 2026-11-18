@@ -79,6 +79,48 @@ impl OrderedJournal<'_> {
             Err(cause) => OrderedJournalPublicationStart::Refused(cause),
         }
     }
+    /// A synchronous original that serializes with the Home journal writer: it
+    /// waits behind the active original for at most its own deadline. Admission
+    /// takes nothing from it before it succeeds, so a writer still busy at that
+    /// deadline refuses exactly as `start_owned` does.
+    pub(super) fn start_owned_after_writer(
+        &self,
+        publication: OrderedJournalPublication,
+    ) -> OrderedJournalPublicationStart {
+        let patience =
+            std::time::Duration::from_millis(publication.deadline.signal_deadline().get());
+        let deadline = std::time::Instant::now() + patience;
+        let (mut publication, mut interruption) = (Some(publication), None);
+        loop {
+            match self.admit_owned(&mut publication, &mut interruption) {
+                Ok(start) => return start,
+                Err(OrderedJournalOperationFailure::Busy)
+                    if std::time::Instant::now() < deadline =>
+                {
+                    self.await_active_writer(deadline);
+                }
+                Err(cause) => return OrderedJournalPublicationStart::Refused(cause),
+            }
+        }
+    }
+    /// The active original's physical attempt publishes its own visibility; a
+    /// writer that has not bound one yet is inside its short admission.
+    fn await_active_writer(&self, deadline: std::time::Instant) {
+        let active = self
+            .runtime
+            .ordered_journal_owner()
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+            .active
+            .as_ref()
+            .and_then(Weak::upgrade);
+        if let Some(active) = active
+            && active.state().live
+        {
+            active.wait_until(deadline);
+        }
+        std::thread::yield_now();
+    }
     fn admit_owned(
         &self,
         publication: &mut Option<OrderedJournalPublication>,
