@@ -73,8 +73,7 @@ impl AppliedQuerySupport {
         image: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
     ) -> Result<Option<&Fact>, WorthQueryApplicationAttemptDenial> {
         if let Some(managed) = &self.managed
-            && let Some(fact) =
-                managed.changed_fact(execution, runtime, before, earlier, image)?
+            && let Some(fact) = managed.changed_fact(execution, runtime, before, earlier, image)?
         {
             return Ok(Some(fact));
         }
