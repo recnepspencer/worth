@@ -2,7 +2,6 @@
 use worth_query_execution::facade::domain_computation::WorthQueryRecoveryHandleDenialKind;
 use crate::domain_computation::primary_graph::tests::authorization::capability_commit_revalidation::*;
 use worth_query_execution::facade::domain_computation::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
-use worth_query_execution::facade::domain_computation::WorthQueryRecoveryHandleDenialKind;
 
 #[test]
 fn idempotency_inspection_denies_before_receipt_after_grant_revocation() {
