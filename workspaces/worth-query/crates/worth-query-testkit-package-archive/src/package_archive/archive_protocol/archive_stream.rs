@@ -1,7 +1,5 @@
 #[path = "archive_stream/fixture.rs"]
 pub mod fixture;
-#[path = "archive_stream/predecessor.rs"]
-pub mod predecessor;
 
 pub use std::ops::Range;
 
@@ -14,30 +12,6 @@ pub use worth_query_package_archive::facade::*;
 
 pub const MANIFEST_FRAME_BYTES: usize = 118;
 pub const RECORD_FRAME_HEADER_BYTES: usize = 12;
-pub const RETAINED_VERSION_TWO_MINIMAL_ARCHIVE_HEX: &str =
-    include_str!("archive_stream/archive_v2.hex");
-
-pub const RETAINED_RECORD_SEVEN_MINIMAL_ARCHIVE_HEX: &str =
-    include_str!("archive_stream/archive_v2_record_v7.hex");
-pub const RETAINED_RECORD_EIGHT_MINIMAL_ARCHIVE_HEX: &str =
-    include_str!("archive_stream/archive_v2_record_v8.hex");
-pub const RETAINED_RECORD_NINE_MINIMAL_ARCHIVE_HEX: &str =
-    include_str!("archive_stream/archive_v2_record_v9.hex");
-pub const RETAINED_RECORD_TEN_MINIMAL_ARCHIVE_HEX: &str =
-    include_str!("archive_stream/archive_v2_record_v10.hex");
-pub const RETAINED_RECORD_TWELVE_MINIMAL_ARCHIVE_HEX: &str =
-    include_str!("archive_stream/archive_v2_record_v12.hex");
-pub const RETAINED_RECORD_THIRTEEN_MINIMAL_ARCHIVE_HEX: &str =
-    include_str!("archive_stream/archive_v2_record_v13.hex");
-pub const RETAINED_RECORD_FOURTEEN_MINIMAL_ARCHIVE_HEX: &str =
-    include_str!("archive_stream/archive_v2_record_v14.hex");
-pub const RETAINED_RECORD_SIXTEEN_MINIMAL_ARCHIVE_HEX: &str =
-    include_str!("archive_stream/archive_v2_record_v16.hex");
-pub const RETAINED_RECORD_SEVENTEEN_MINIMAL_ARCHIVE_HEX: &str =
-    include_str!("archive_stream/archive_v2_record_v17.hex");
-// D1289: the framing stays v18; canonical identities use sha256-canonical-v2.
-pub const LEGACY_CANONICAL_POLICY_MINIMAL_ARCHIVE_HEX: &str =
-    include_str!("archive_stream/archive_v2_record_v18.hex");
 pub const VERSION_TWO_MINIMAL_ARCHIVE_HEX: &str =
     include_str!("archive_stream/archive_v2_record_v19.hex");
 

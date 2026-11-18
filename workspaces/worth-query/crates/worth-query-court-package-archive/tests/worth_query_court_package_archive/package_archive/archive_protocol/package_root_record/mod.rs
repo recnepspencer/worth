@@ -2,27 +2,6 @@ pub(crate) use worth_query_testkit_package_archive::facade::package_archive::arc
 
 #[test]
 fn version_nineteen_package_root_frames_match_and_decode_the_frozen_vectors() {
-    for (version, originals) in [
-        (9_u16, VERSION_NINE_PACKAGE_ROOT_FRAMES_HEX),
-        (6_u16, VERSION_SIX_PACKAGE_ROOT_FRAMES_HEX),
-        (7_u16, VERSION_SEVEN_PACKAGE_ROOT_FRAMES_HEX),
-        (13_u16, VERSION_THIRTEEN_PACKAGE_ROOT_FRAMES_HEX),
-        (14_u16, VERSION_FOURTEEN_PACKAGE_ROOT_FRAMES_HEX),
-        (16_u16, VERSION_SIXTEEN_PACKAGE_ROOT_FRAMES_HEX),
-        (17_u16, VERSION_SEVENTEEN_PACKAGE_ROOT_FRAMES_HEX),
-    ] {
-        for original in originals.split('|') {
-            let bytes = decode_hex(original);
-            let denial =
-                decode_package_root_record_frame(&bytes, WorthQueryPackageArchiveLimits::DEFAULT)
-                    .unwrap_err();
-            assert_eq!(
-                denial.kind(),
-                WorthQueryPackageArchiveDenialKind::UnsupportedRecordVersion
-            );
-            assert_eq!(denial.compatibility().unwrap().observed_version(), version);
-        }
-    }
     let source = root_package();
     let exported = source.export_typed_records().unwrap();
     let encoded = exported

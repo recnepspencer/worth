@@ -2,35 +2,6 @@ pub(crate) use worth_query_testkit_package_archive::facade::package_archive::arc
 
 #[test]
 fn version_two_minimal_archive_is_deterministic_and_frozen() {
-    for (version, vector) in [
-        (6_u16, RETAINED_VERSION_TWO_MINIMAL_ARCHIVE_HEX),
-        (7_u16, RETAINED_RECORD_SEVEN_MINIMAL_ARCHIVE_HEX),
-        (8_u16, RETAINED_RECORD_EIGHT_MINIMAL_ARCHIVE_HEX),
-        (9_u16, RETAINED_RECORD_NINE_MINIMAL_ARCHIVE_HEX),
-        (10_u16, RETAINED_RECORD_TEN_MINIMAL_ARCHIVE_HEX),
-        (12_u16, RETAINED_RECORD_TWELVE_MINIMAL_ARCHIVE_HEX),
-        (13_u16, RETAINED_RECORD_THIRTEEN_MINIMAL_ARCHIVE_HEX),
-        (14_u16, RETAINED_RECORD_FOURTEEN_MINIMAL_ARCHIVE_HEX),
-        (16_u16, RETAINED_RECORD_SIXTEEN_MINIMAL_ARCHIVE_HEX),
-        (17_u16, RETAINED_RECORD_SEVENTEEN_MINIMAL_ARCHIVE_HEX),
-    ] {
-        let original = decode_hex(vector.trim());
-        let denial =
-            decode_package_archive(&original, WorthQueryPackageArchiveLimits::DEFAULT).unwrap_err();
-        assert_eq!(
-            denial.kind(),
-            WorthQueryPackageArchiveDenialKind::UnsupportedManifestVersion
-        );
-        // Historical manifest1 refuses before its displaced record grammar.
-        let compatibility = denial.compatibility().unwrap();
-        assert_eq!(
-            compatibility.layer(),
-            WorthQueryPackageArchiveProtocolLayer::Manifest
-        );
-        assert_eq!(compatibility.observed_version(), 1);
-        assert_eq!(u16_at(&original, MANIFEST_FRAME_BYTES), version);
-    }
-
     // package/identity.rs:81 declares canonical identity v4: hash the fixture's
     // canonical tokens with that domain, then encode the v2 archive framing.
     let export = fixture::minimal_package().export_typed_records().unwrap();

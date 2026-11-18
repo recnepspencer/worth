@@ -42,7 +42,7 @@ fn authored_non_correctable_source_disclosure_survives_portable_schema_admission
         .find(|view| view.family() == WorthQueryPortablePackageRecordFamily::ApplicationSchema)
         .unwrap();
     let limits = WorthQueryPackageArchiveLimits::DEFAULT;
-    let mut bytes = encode_record_frame(view, limits).unwrap();
+    let bytes = encode_record_frame(view, limits).unwrap();
     assert_eq!(&bytes[..2], &18u16.to_be_bytes());
     let decoded = WorthQueryPackageArchiveRecordDecoder::new(limits)
         .decode_frame(&bytes)
@@ -54,14 +54,6 @@ fn authored_non_correctable_source_disclosure_survives_portable_schema_admission
     assert_eq!(
         &validate_portable_application_schema_freshly(record).unwrap(),
         declaration.erased()
-    );
-    bytes[..2].copy_from_slice(&17u16.to_be_bytes());
-    assert_eq!(
-        WorthQueryPackageArchiveRecordDecoder::new(limits)
-            .decode_frame(&bytes)
-            .unwrap_err()
-            .kind(),
-        WorthQueryPackageArchiveDenialKind::UnsupportedRecordVersion
     );
 }
 

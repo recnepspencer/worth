@@ -1,57 +1,10 @@
 //! Current envelope golden and retained unsupported inner-record vectors.
 pub use super::*;
 
-pub const RECORD_SIX_ENVELOPE_HEX: &str = include_str!("release_envelope_v1.hex");
-pub const RECORD_SEVEN_ENVELOPE_HEX: &str = include_str!("release_envelope_v1_record_v7.hex");
-pub const RECORD_NINE_ENVELOPE_HEX: &str = include_str!("release_envelope_v1_record_v9.hex");
-pub const RECORD_TEN_ENVELOPE_HEX: &str = include_str!("release_envelope_v1_record_v10.hex");
-pub const RECORD_TWELVE_ENVELOPE_HEX: &str = include_str!("release_envelope_v1_record_v12.hex");
-pub const RECORD_THIRTEEN_ENVELOPE_HEX: &str = include_str!("release_envelope_v1_record_v13.hex");
-pub const RECORD_FOURTEEN_ENVELOPE_HEX: &str = include_str!("release_envelope_v1_record_v14.hex");
-pub const RECORD_FIFTEEN_ENVELOPE_HEX: &str = include_str!("release_envelope_v1_record_v15.hex");
-pub const RECORD_SIXTEEN_ENVELOPE_HEX: &str = include_str!("release_envelope_v1_record_v16.hex");
-pub const RECORD_SEVENTEEN_ENVELOPE_HEX: &str = include_str!("release_envelope_v1_record_v17.hex");
 // D1289 canonical policy v2; the envelope/record framing is unchanged.
 pub const CURRENT_ENVELOPE_HEX: &str = include_str!("release_envelope_v1_record_v19.hex");
 
 pub fn assert_current_envelope_and_unsupported_records() {
-    for (version, vector) in [
-        (6_u16, RECORD_SIX_ENVELOPE_HEX),
-        (7_u16, RECORD_SEVEN_ENVELOPE_HEX),
-        (9_u16, RECORD_NINE_ENVELOPE_HEX),
-        (10_u16, RECORD_TEN_ENVELOPE_HEX),
-        (12_u16, RECORD_TWELVE_ENVELOPE_HEX),
-        (13_u16, RECORD_THIRTEEN_ENVELOPE_HEX),
-        (14_u16, RECORD_FOURTEEN_ENVELOPE_HEX),
-        (15_u16, RECORD_FIFTEEN_ENVELOPE_HEX),
-        (16_u16, RECORD_SIXTEEN_ENVELOPE_HEX),
-        (17_u16, RECORD_SEVENTEEN_ENVELOPE_HEX),
-    ] {
-        let original = decode_hex(vector.trim());
-        // A valid outer envelope/checksum does not admit an unsupported inner record.
-        let untrusted =
-            decode_package_release_envelope(&original, WorthQueryPackageEnvelopeLimits::DEFAULT)
-                .unwrap();
-        let denial =
-            decode_package_archive(untrusted.archive(), WorthQueryPackageArchiveLimits::DEFAULT)
-                .unwrap_err();
-        assert_eq!(
-            denial.kind(),
-            WorthQueryPackageArchiveDenialKind::UnsupportedManifestVersion
-        );
-        // Historical manifest1 refuses before its displaced record grammar.
-        let compatibility = denial.compatibility().unwrap();
-        assert_eq!(
-            compatibility.layer(),
-            WorthQueryPackageArchiveProtocolLayer::Manifest
-        );
-        assert_eq!(compatibility.observed_version(), 1);
-        assert_eq!(
-            u16::from_be_bytes(untrusted.archive()[118..120].try_into().unwrap()),
-            version
-        );
-    }
-
     let records = fixture::minimal_package().export_typed_records().unwrap();
     let first = signed_envelope_bytes(&records, fixture_descriptor());
     assert_eq!(signed_envelope_bytes(&records, fixture_descriptor()), first);

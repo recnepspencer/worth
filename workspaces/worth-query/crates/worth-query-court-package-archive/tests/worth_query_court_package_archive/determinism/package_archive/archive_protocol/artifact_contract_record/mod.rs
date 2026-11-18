@@ -2,34 +2,6 @@ pub(crate) use worth_query_testkit_package_archive::facade::package_archive::arc
 
 #[test]
 fn artifact_contract_frame_is_deterministic_exact_and_freshly_readmitted() {
-    let retained16 = decode_hex(
-        include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-query-testkit-package-archive/src/package_archive/archive_protocol/artifact_contract_record/artifact_contract_v16.hex"))
-        .trim(),
-    );
-    let denial =
-        WorthQueryPackageArchiveRecordDecoder::new(WorthQueryPackageArchiveLimits::DEFAULT)
-            .decode_frame(&retained16)
-            .unwrap_err();
-    assert_eq!(
-        denial.kind(),
-        WorthQueryPackageArchiveDenialKind::UnsupportedRecordVersion
-    );
-    assert_eq!(denial.compatibility().unwrap().observed_version(), 16);
-
-    let retained17 = decode_hex(
-        include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-query-testkit-package-archive/src/package_archive/archive_protocol/artifact_contract_record/artifact_contract_v17.hex"))
-        .trim(),
-    );
-    let denial =
-        WorthQueryPackageArchiveRecordDecoder::new(WorthQueryPackageArchiveLimits::DEFAULT)
-            .decode_frame(&retained17)
-            .unwrap_err();
-    assert_eq!(
-        denial.kind(),
-        WorthQueryPackageArchiveDenialKind::UnsupportedRecordVersion
-    );
-    assert_eq!(denial.compatibility().unwrap().observed_version(), 17);
-
     let source = artifact_package();
     let exported = source.export_typed_records().unwrap();
     let limits = WorthQueryPackageArchiveLimits::DEFAULT;

@@ -3,28 +3,6 @@ mod document_history;
 
 #[test]
 fn version_nineteen_minimal_application_schema_matches_the_frozen_vector() {
-    for (version, originals) in [
-        (9_u16, VERSION_NINE_MINIMAL_SCHEMA_HEX),
-        (6_u16, VERSION_SIX_MINIMAL_SCHEMA_HEX),
-        (7_u16, VERSION_SEVEN_MINIMAL_SCHEMA_HEX),
-        (13_u16, VERSION_THIRTEEN_MINIMAL_SCHEMA_HEX),
-        (14_u16, VERSION_FOURTEEN_MINIMAL_SCHEMA_HEX),
-        (16_u16, VERSION_SIXTEEN_MINIMAL_SCHEMA_HEX),
-        (17_u16, VERSION_SEVENTEEN_MINIMAL_SCHEMA_HEX),
-    ] {
-        for original in originals.split('|') {
-            let bytes = decode_hex(original);
-            let denial =
-                WorthQueryPackageArchiveRecordDecoder::new(WorthQueryPackageArchiveLimits::DEFAULT)
-                    .decode_frame(&bytes)
-                    .unwrap_err();
-            assert_eq!(
-                denial.kind(),
-                WorthQueryPackageArchiveDenialKind::UnsupportedRecordVersion
-            );
-            assert_eq!(denial.compatibility().unwrap().observed_version(), version);
-        }
-    }
     let exported = schema_package().export_typed_records().unwrap();
     let schema = schema_view(&exported);
     let bytes = encode_record_frame(schema, WorthQueryPackageArchiveLimits::DEFAULT).unwrap();

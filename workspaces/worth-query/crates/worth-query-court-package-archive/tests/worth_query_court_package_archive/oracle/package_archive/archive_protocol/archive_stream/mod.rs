@@ -37,5 +37,3 @@ fn all_record_families_cross_one_archive_and_reenter_fresh_query_validation() {
         .unwrap();
     assert_eq!(reconstructed.identity(), source.identity());
 }
-
-pub(crate) mod predecessor;

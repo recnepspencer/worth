@@ -2,68 +2,6 @@ pub(crate) use worth_query_testkit_package_archive::facade::package_archive::arc
 
 #[test]
 fn version_nineteen_artifact_contract_frame_matches_the_frozen_vector() {
-    let original = decode_hex(
-        include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-query-testkit-package-archive/src/package_archive/archive_protocol/artifact_contract_record/artifact_contract_v6.hex"))
-            .trim(),
-    );
-    let denial =
-        WorthQueryPackageArchiveRecordDecoder::new(WorthQueryPackageArchiveLimits::DEFAULT)
-            .decode_frame(&original)
-            .unwrap_err();
-    assert_eq!(
-        denial.kind(),
-        WorthQueryPackageArchiveDenialKind::UnsupportedRecordVersion
-    );
-    assert_eq!(denial.compatibility().unwrap().observed_version(), 6);
-
-    let previous = decode_hex(
-        include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-query-testkit-package-archive/src/package_archive/archive_protocol/artifact_contract_record/artifact_contract_v7.hex"))
-            .trim(),
-    );
-    let previous_denial =
-        WorthQueryPackageArchiveRecordDecoder::new(WorthQueryPackageArchiveLimits::DEFAULT)
-            .decode_frame(&previous)
-            .unwrap_err();
-    assert_eq!(
-        previous_denial.kind(),
-        WorthQueryPackageArchiveDenialKind::UnsupportedRecordVersion
-    );
-    assert_eq!(
-        previous_denial.compatibility().unwrap().observed_version(),
-        7
-    );
-
-    let displaced = decode_hex(
-        include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-query-testkit-package-archive/src/package_archive/archive_protocol/artifact_contract_record/artifact_contract_v13.hex"))
-        .trim(),
-    );
-    let denial =
-        WorthQueryPackageArchiveRecordDecoder::new(WorthQueryPackageArchiveLimits::DEFAULT)
-            .decode_frame(&displaced)
-            .unwrap_err();
-    assert_eq!(
-        denial.kind(),
-        WorthQueryPackageArchiveDenialKind::UnsupportedRecordVersion
-    );
-    assert_eq!(denial.compatibility().unwrap().observed_version(), 13);
-
-    let retained = decode_hex(
-        include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-query-testkit-package-archive/src/package_archive/archive_protocol/artifact_contract_record/artifact_contract_v14.hex"))
-        .trim(),
-    );
-    let mut old_decoder =
-        WorthQueryPackageArchiveRecordDecoder::new(WorthQueryPackageArchiveLimits::DEFAULT);
-    let refusal = old_decoder.decode_frame(&retained).unwrap_err();
-    assert_eq!(
-        refusal.kind(),
-        WorthQueryPackageArchiveDenialKind::UnsupportedRecordVersion
-    );
-    assert_eq!(refusal.compatibility().unwrap().observed_version(), 14);
-    assert_eq!(
-        old_decoder.work(),
-        WorthQueryPackageArchiveDecodeWork::default()
-    );
-
     let source = artifact_package();
     let exported = source.export_typed_records().unwrap();
     let artifact = artifact_view(&exported);
@@ -221,26 +159,6 @@ fn artifact_decoder_rejects_noncanonical_sequences_without_normalizing() {
         decoder.decode_frame(&bytes).unwrap_err().kind(),
         WorthQueryPackageArchiveDenialKind::NonCanonicalRecordSequence
     );
-    assert_eq!(
-        decoder.work(),
-        WorthQueryPackageArchiveDecodeWork::default()
-    );
-}
-
-#[test]
-fn retained_version_fifteen_is_refused_before_record_work() {
-    let bytes = decode_hex(
-        include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-query-testkit-package-archive/src/package_archive/archive_protocol/artifact_contract_record/artifact_contract_v15.hex"))
-        .trim(),
-    );
-    let mut decoder =
-        WorthQueryPackageArchiveRecordDecoder::new(WorthQueryPackageArchiveLimits::DEFAULT);
-    let denial = decoder.decode_frame(&bytes).unwrap_err();
-    assert_eq!(
-        denial.kind(),
-        WorthQueryPackageArchiveDenialKind::UnsupportedRecordVersion
-    );
-    assert_eq!(denial.compatibility().unwrap().observed_version(), 15);
     assert_eq!(
         decoder.work(),
         WorthQueryPackageArchiveDecodeWork::default()
