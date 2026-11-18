@@ -104,18 +104,13 @@ fn exercise(worker: bool) {
             && failure.detail().contains("MemberValue"),
         "{failure:?}"
     );
-    let source = request
-        .query(query::model::Read("a".into()))
-        .execute()
-        .unwrap()
-        .rows()[0]
-        .native_id;
-    assert_eq!(
-        failure.affected_records(),
-        [worth_relational::facade::transactions::RecordRef::Entity(
-            source
-        )]
-    );
+    let model = |key: &str| {
+        worth_relational::facade::transactions::RecordRef::Entity(
+            request.query(query::model::Read(key.into())).execute().unwrap().rows()[0].native_id,
+        )
+    };
+    // The reader's source, then the exact writer: the child producer of `b`.
+    assert_eq!(failure.affected_records(), [model("a"), model("b")]);
     assert_eq!(
         host.producer_contacts_on_this_thread_for_test(),
         contacts + 1,
