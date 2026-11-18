@@ -7,8 +7,10 @@
 //! the stage means the stage read a value that was not yet settled; that refuses.
 //! The stage's discovery support never settles; a verified output it read
 //! settles only when such a producer re-derived that same route.
-//! Producer readers stay strict. Only a producer read whose fact the adjacent
-//! writer images show a later authored stage changed carries the #229 hold.
+//! Producer readers stay strict. The #229 hold marks only a refusal where the
+//! adjacent writer images show a later authored stage changed a fact read by
+//! a producer derived before that stage: the producer's own decision read, or
+//! the support of a verified output whose route that producer derived.
 use super::*;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationDecisionFact as Fact;
 use crate::domain_computation::WorthQueryInvariantExecutionFailure as Failure;
@@ -73,7 +75,7 @@ pub(super) fn require(
                 |writer| {
                     attempt.coupled_authored_subject().is_some() && writer.settles_after(position)
                 },
-                producer_reader,
+                |writer| producer_reader && is_stage(writer),
                 compare,
                 format!(
                     "a later coupled contribution changed decision support: {}",
@@ -117,10 +119,8 @@ pub(super) fn require_read_support(
                 *position,
                 members,
                 support.pin(),
-                |writer| settles_read_support(attempt, support, *position, writer),
-                // Discovery and parent reads cannot prove which derivation the
-                // change superseded, so they refuse without the hold.
-                false,
+                |writer| settles_read_support(attempt, support, *position, members, writer),
+                |writer| superseded_parent(support, members, writer),
                 |earlier, image| compare(earlier, image).map(|fact| fact.is_none()),
                 format!(
                     "{}: a later coupled contribution changed {}: {}",
@@ -138,42 +138,75 @@ pub(super) fn require_read_support(
 /// Discovery support selected which outputs the candidate holds. No writer's
 /// change to it is accepted, not even a producer owed later: nothing proves
 /// the selection it governed was derived again. A verified output an authored
-/// stage read settles only at a transition made by the producer of that same
-/// route, owed at or after the stage, so no stale output can commit. A parent
-/// without a known publication route stays strict.
+/// stage read settles only where the producer of that same route, owed at or
+/// after the stage, derives it at or after the change: its own transition, or
+/// a later authored stage's change to its support that it then re-derives. So
+/// no stale output can commit.
 fn settles_read_support(
     reader: &WorthQueryPrimaryGraphApplicationAttempt,
     support: &crate::domain_computation::primary_graph::provider::CandidateReadSupport,
     position: usize,
+    members: &[crate::domain_computation::primary_graph::provider::CoupledApplicationMember],
     writer: &crate::domain_computation::primary_graph::provider::CoupledApplicationMember,
 ) -> bool {
-    use crate::domain_computation::primary_graph::provider::{
-        CandidateReadSupport, CoupledApplicationMemberKind,
-    };
+    use crate::domain_computation::primary_graph::provider::CandidateReadSupport;
     if reader.coupled_authored_subject().is_none() || !writer.settles_after(position) {
         return false;
     }
-    match support {
-        CandidateReadSupport::Query(_) | CandidateReadSupport::Outgoing(_) => false,
-        CandidateReadSupport::Parent(parent) => {
-            let (Some(route), CoupledApplicationMemberKind::Producer { meaning, .. }) =
-                (parent.publication().map(|publication| publication.meaning()), &writer.kind)
-            else {
-                return false;
-            };
-            meaning.family == route.family
-                && meaning.source_scope == route.source_scope
-                && meaning.source_partition == route.source_partition
-        }
-    }
+    let CandidateReadSupport::Parent(parent) = support else {
+        return false;
+    };
+    let derives = |member: &crate::domain_computation::primary_graph::provider::CoupledApplicationMember| {
+        member.settles_after(position) && derives_parent(member, parent)
+    };
+    derives(writer)
+        || (is_stage(writer)
+            && members.iter().any(|member| member.position > writer.position && derives(member)))
+}
+
+fn derives_parent(
+    member: &crate::domain_computation::primary_graph::provider::CoupledApplicationMember,
+    parent: &crate::domain_computation::primary_graph::application_contribution::producer::VerifiedAppliedParent,
+) -> bool {
+    member
+        .producer_route()
+        .is_some_and(|(_, meaning)| parent.has_route(meaning))
+}
+
+fn is_stage(
+    writer: &crate::domain_computation::primary_graph::provider::CoupledApplicationMember,
+) -> bool {
+    matches!(
+        writer.kind,
+        crate::domain_computation::primary_graph::provider::CoupledApplicationMemberKind::AuthoredStage { .. }
+    )
+}
+
+/// A verified output's support changed by an authored stage is the #229 shape
+/// only when the producer of that same route was derived in this envelope
+/// before the stage: it read the fact the stage changed. Discovery support
+/// cannot name a superseded derivation, so it never carries the hold.
+fn superseded_parent(
+    support: &crate::domain_computation::primary_graph::provider::CandidateReadSupport,
+    members: &[crate::domain_computation::primary_graph::provider::CoupledApplicationMember],
+    writer: &crate::domain_computation::primary_graph::provider::CoupledApplicationMember,
+) -> bool {
+    let crate::domain_computation::primary_graph::provider::CandidateReadSupport::Parent(parent) =
+        support
+    else {
+        return false;
+    };
+    is_stage(writer)
+        && members
+            .iter()
+            .any(|member| member.position < writer.position && derives_parent(member, parent))
 }
 
 /// Only a changed fact walks the later writers. Reuse the post-own pins already
 /// held by the admitted writers; healthy facts pay no intermediate comparisons.
 /// An authored reader accepts changes made by members that sequentially run
-/// after it; any other change refuses, attributed to its writer. `held` marks
-/// a producer reader: when the adjacent images show an authored stage made
-/// the change, the producer was derived before a fact it read changed, which
+/// after it; any other change refuses, attributed to its writer. `held` names
+/// the writers whose refused change superseded an earlier derivation, which
 /// needs a second derivation of its route in this envelope (#229).
 fn changed(
     reader: &WorthQueryPrimaryGraphApplicationAttempt,
@@ -182,7 +215,7 @@ fn changed(
     members: &[crate::domain_computation::primary_graph::provider::CoupledApplicationMember],
     observed: &Candidate,
     settles: impl Fn(&crate::domain_computation::primary_graph::provider::CoupledApplicationMember) -> bool,
-    held: bool,
+    held: impl Fn(&crate::domain_computation::primary_graph::provider::CoupledApplicationMember) -> bool,
     compare: impl Fn(&Candidate, &Candidate) -> Result<
         bool,
         crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
@@ -221,7 +254,7 @@ fn changed(
                     format!("{earlier}; later writer {later}: {detail}"),
                 )
                 .with_coupled_writer(writer.source());
-                let held = held && matches!(writer.kind, crate::domain_computation::primary_graph::provider::CoupledApplicationMemberKind::AuthoredStage { .. });
+                let held = held(writer);
                 return Err(CoupledSupportPreparationDenial::Changed(if held {
                     failure.held(crate::domain_computation::WorthQueryCoupledSupportHold::ProducerSupersession)
                 } else {

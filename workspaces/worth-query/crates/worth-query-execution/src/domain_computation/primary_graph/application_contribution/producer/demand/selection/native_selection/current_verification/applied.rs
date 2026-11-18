@@ -22,6 +22,7 @@ type Pin = RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>;
 pub(in crate::domain_computation::primary_graph) struct VerifiedAppliedParent {
     publication: Option<worth_relational::facade::mvcc::RelationalRequiredOutputPublication>,
     source: EntityId,
+    partition: [u8; 32],
     family: &'static str,
     pin: Pin,
     facts: FactPayload,
@@ -37,6 +38,16 @@ impl VerifiedAppliedParent {
     }
     pub(in crate::domain_computation::primary_graph) fn family(&self) -> &'static str {
         self.family
+    }
+    /// Whether `route` is this output's route: the family, scope root and
+    /// source partition this parent was verified against, published or not.
+    pub(in crate::domain_computation::primary_graph) fn has_route(
+        &self,
+        route: &worth_relational::facade::mvcc::RequiredOutputPublicationMeaning,
+    ) -> bool {
+        route.family == self.family
+            && route.source_scope == self.source
+            && route.source_partition.bytes() == &self.partition
     }
     pub(in crate::domain_computation::primary_graph) fn pin(&self) -> &Pin {
         &self.pin
@@ -181,6 +192,7 @@ impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S>
                 return Ok(Some(VerifiedAppliedParent {
                     publication: prior.cloned(),
                     source: source.root(),
+                    partition: source.partition(),
                     family: F::IDENTITY,
                     pin: pin.clone(),
                     facts,
