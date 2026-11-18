@@ -224,7 +224,6 @@ mod serial {
         );
     }
 
-
     #[test]
     fn demand_only_root_keeps_governed_source_locality_fence() {
         let _guard = checkpoint_recovery_test_guard();

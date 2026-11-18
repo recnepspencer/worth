@@ -12,8 +12,5 @@ mod readiness;
 mod source;
 mod topology;
 
-
-
-
 #[cfg(test)]
 mod applied_current_output;
