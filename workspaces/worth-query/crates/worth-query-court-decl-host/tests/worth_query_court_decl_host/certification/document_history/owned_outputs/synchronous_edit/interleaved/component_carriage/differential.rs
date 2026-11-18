@@ -152,19 +152,24 @@ fn refusal<E: std::fmt::Debug>(outcome: &Result<Outcome, E>) -> Refusal {
 
 /// The held shape (#229), established from the stages alone: the first stage
 /// that actually changes the input of `first:a` (a different model value)
-/// after an earlier stage derived it (by needing it or reading its child).
-/// `None` when no stage supersedes a derivation.
+/// after an earlier stage demanded its producer in this envelope. `After`
+/// always needs `first:a`; `Consume` demands it only once an earlier stage
+/// changed the model, since otherwise it reads the committed child directly.
+/// `None` when no stage supersedes an in-envelope derivation.
 fn superseding_stage(stages: &[(usize, Stage)]) -> Option<usize> {
     let (mut model, mut derived) = (2, false);
     for (ordinal, (_, stage)) in stages.iter().enumerate() {
-        let changes = match stage {
-            Stage::Model(value) => std::mem::replace(&mut model, *value) != *value,
-            Stage::After(_) | Stage::Consume => false,
+        let demands = match stage {
+            Stage::Model(value) => {
+                if derived && std::mem::replace(&mut model, *value) != *value {
+                    return Some(ordinal);
+                }
+                false
+            }
+            Stage::After(_) => true,
+            Stage::Consume => model != 2,
         };
-        if derived && changes {
-            return Some(ordinal);
-        }
-        derived |= !matches!(stage, Stage::Model(_));
+        derived |= demands;
     }
     None
 }
@@ -250,6 +255,16 @@ proptest! {
 #[test]
 fn the_differential_world_commits_a_settled_child_read() {
     let stages = [(0, Stage::Model(3)), (1, Stage::After(1)), (2, Stage::Consume)];
+    assert_eq!(positioned(&stages), Ok(sequential(&stages)));
+}
+
+/// A leading child read demands no producer: it reads the child committed
+/// under model 2, so the later model write supersedes nothing and the edit
+/// must commit what one commit per stage commits.
+#[test]
+fn a_committed_child_read_before_a_model_write_commits() {
+    let stages = [(0, Stage::Consume), (1, Stage::Model(4))];
+    assert_eq!(superseding_stage(&stages), None);
     assert_eq!(positioned(&stages), Ok(sequential(&stages)));
 }
 
