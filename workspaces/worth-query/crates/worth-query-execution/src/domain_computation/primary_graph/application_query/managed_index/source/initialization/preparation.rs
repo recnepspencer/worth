@@ -35,11 +35,13 @@ where
             return Err(Denial::RootUnavailable);
         }
         let root = self.cold(execution, &scope, &scope.proposed())?;
+        // A seeded scope is built new: every member entered.
+        let changes = super::super::service::entered_all::<S, I>(&scope, &root)?;
         execution.consult().map_err(|cause| {
             Denial::Source(
                 worth_relational::facade::runtime::DerivedRelationReadDenial::Request(cause.into()),
             )
         })?;
-        Ok(scope.seal(None, Some(root)))
+        Ok(scope.seal(None, Some(root), changes))
     }
 }

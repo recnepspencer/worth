@@ -6,17 +6,18 @@ use std::sync::Arc;
 /// Committed-side rows are those that left or changed; proposed-side rows
 /// are those that entered or changed. Each list is in entity order. Empty
 /// when the proposal left the scope's Source logically unchanged.
+/// Each side takes ownership of its admitted vector without copying it.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct ManagedIndexSourceChanges {
-    committed: Arc<[EntityId]>,
-    proposed: Arc<[EntityId]>,
+    committed: Arc<Vec<EntityId>>,
+    proposed: Arc<Vec<EntityId>>,
 }
 
 impl ManagedIndexSourceChanges {
-    pub fn new(committed: Arc<[EntityId]>, proposed: Arc<[EntityId]>) -> Self {
+    pub fn new(committed: Vec<EntityId>, proposed: Vec<EntityId>) -> Self {
         Self {
-            committed,
-            proposed,
+            committed: Arc::new(committed),
+            proposed: Arc::new(proposed),
         }
     }
     /// The rows on one side: committed when `before`.

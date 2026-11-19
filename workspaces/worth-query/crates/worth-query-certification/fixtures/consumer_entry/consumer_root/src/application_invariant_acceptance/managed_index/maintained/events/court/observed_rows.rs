@@ -128,3 +128,49 @@ fn an_ordered_birth_lends_an_existing_row_its_new_link_introduces() {
         .collect();
     assert_eq!(proposed, BTreeSet::from([adopted]));
 }
+
+/// C2 inherits A's row x, sharing A's entry, which names A's scope. A
+/// redundant introduction of x at C2 makes maintenance rematerialize x under
+/// C2 with the same facts: it is not lent. Renaming x then is, in C2.
+#[test]
+fn an_inherited_row_rematerialized_with_the_same_facts_is_not_lent() {
+    let (world, _, records, mut key) = setup();
+    edit_history(&world, &mut key, append("C2", "A"));
+    let x = source(&world, "C2")
+        .iter()
+        .find(|row| row.identity == "x")
+        .expect("C2 inherits x")
+        .coordinate;
+    let lent = |records: &rule::Calls| {
+        records
+            .observed
+            .lock()
+            .unwrap()
+            .iter()
+            .filter(|(index, ..)| *index == "ordered")
+            .flat_map(|(_, _, [committed, proposed])| committed.iter().chain(proposed).copied())
+            .collect::<BTreeSet<_>>()
+    };
+    records.observed.lock().unwrap().clear();
+    edit_history(
+        &world,
+        &mut key,
+        history::Edit::Introduction {
+            event: "C2".into(),
+            item: "x".into(),
+            introduced: true,
+            edition: 1,
+        },
+    );
+    assert!(
+        !lent(&records).contains(&x),
+        "a rematerialized inherited row with equal facts is unchanged"
+    );
+    records.observed.lock().unwrap().clear();
+    let rename = crate::application_invariant_acceptance::managed_index::maintained::nested::edit::Edit::Name {
+        item: "x".into(),
+        value: "match-renamed".into(),
+    };
+    publish(&world, &mut key, rename);
+    assert!(lent(&records).contains(&x), "a field change is lent");
+}

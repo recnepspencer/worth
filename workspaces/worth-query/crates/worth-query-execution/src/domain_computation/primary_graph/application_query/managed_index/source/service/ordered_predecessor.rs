@@ -58,7 +58,7 @@ where
         execution
             .consult()
             .map_err(|cause| source_storage(cause.into()))?;
-        Ok(scope.seal(None, Some(proposed)).with_changes(changes))
+        Ok(scope.seal(None, Some(proposed), changes))
     }
     /// A successor built without its predecessor: every member entered.
     fn cold_entered(

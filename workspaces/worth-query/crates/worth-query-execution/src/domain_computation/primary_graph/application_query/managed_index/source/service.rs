@@ -159,7 +159,8 @@ where
             self.invalidate_predicates(execution, &scope)?;
         }
         if proposed_exists && let Some(payload) = self.corresponding_root(execution, &scope)? {
-            return Ok(scope.seal(None, Some(payload)));
+            // Native proved this root logically equal: nothing changed.
+            return Ok(scope.seal(None, Some(payload), Default::default()));
         }
         // Unavailable is an explicit Native physical posture, not an empty
         // membership result. All other before-view failures retain their cause.
@@ -194,7 +195,8 @@ where
             None
         };
         if !proposed_exists {
-            return Ok(scope.seal(before, None));
+            // A retired scope is never invoked; no row is lent for it.
+            return Ok(scope.seal(before, None, Default::default()));
         }
         // The owner's exact delta: an updated root's changed entries, or a
         // newly built scope's every member.
@@ -212,7 +214,7 @@ where
                 worth_relational::facade::runtime::DerivedRelationReadDenial::Request(cause.into()),
             )
         })?;
-        Ok(scope.seal(before, Some(proposed)).with_changes(changes))
+        Ok(scope.seal(before, Some(proposed), changes))
     }
 }
 
@@ -302,12 +304,7 @@ pub(super) fn entered_all<S: ApplicationSchema, I: ApplicationManagedIndexBindin
     })?;
     rows.extend(root.rows.keys());
     rows.sort_unstable();
-    Ok(
-        worth_relational::facade::runtime::ManagedIndexSourceChanges::new(
-            std::sync::Arc::from([]),
-            std::sync::Arc::from(rows),
-        ),
-    )
+    Ok(worth_relational::facade::runtime::ManagedIndexSourceChanges::new(Vec::new(), rows))
 }
 
 pub(in crate::domain_computation::primary_graph::application_query::managed_index) fn retain_root<

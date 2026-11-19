@@ -3,7 +3,6 @@
 use super::super::projection::Entry;
 use super::MaterialDenial;
 use crate::domain_computation::primary_graph::application_query::ProjectionContentComparisonFault as Fault;
-use std::sync::Arc;
 use worth_execution::ExecutionRequest;
 use worth_relational::facade::{
     content::RelationalContentDenial,
@@ -70,7 +69,8 @@ impl SourceDelta {
         }
         self.committed.sort_unstable();
         self.proposed.sort_unstable();
-        ManagedIndexSourceChanges::new(Arc::from(self.committed), Arc::from(self.proposed))
+        // The admitted vectors move into shared ownership; nothing is copied.
+        ManagedIndexSourceChanges::new(self.committed, self.proposed)
     }
 }
 
@@ -81,7 +81,7 @@ fn same(
     new: &Entry,
 ) -> Result<bool, MaterialDenial> {
     let budget = scope.read_budget();
-    old.same_content(
+    old.same_facts(
         new,
         &mut |work| {
             budget

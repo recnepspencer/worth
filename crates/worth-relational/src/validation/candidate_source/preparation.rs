@@ -200,12 +200,14 @@ impl<'a> ManagedIndexSourceScope<'a> {
         }
     }
 
-    /// Sealing is candidate-local and does not install a root. The Native
+    /// Sealing is candidate-local and does not install a root. `changes` is
+    /// the owner's exact delta for this scope; every seal states it. The Native
     /// owner verifies the complete set before any dependent invariant runs.
     pub fn seal(
         self,
         committed: Option<RootPayload>,
         proposed: Option<RootPayload>,
+        changes: super::ManagedIndexSourceChanges,
     ) -> PreparedManagedIndexSourceRoot {
         PreparedManagedIndexSourceRoot {
             program: self.program.clone(),
@@ -214,7 +216,7 @@ impl<'a> ManagedIndexSourceScope<'a> {
             proposed,
             availability: self.availability,
             source_changed: !self.changed.is_empty(),
-            changes: super::ManagedIndexSourceChanges::default(),
+            changes,
         }
     }
 }
@@ -227,14 +229,6 @@ pub struct PreparedManagedIndexSourceRoot {
     pub(crate) availability: ManagedIndexSourceAvailability,
     pub(crate) source_changed: bool,
     pub(crate) changes: super::ManagedIndexSourceChanges,
-}
-
-impl PreparedManagedIndexSourceRoot {
-    /// Attach the provider owner's exact delta for this scope and proposal.
-    pub fn with_changes(mut self, changes: super::ManagedIndexSourceChanges) -> Self {
-        self.changes = changes;
-        self
-    }
 }
 
 pub(crate) struct PreparedSourceProgram {

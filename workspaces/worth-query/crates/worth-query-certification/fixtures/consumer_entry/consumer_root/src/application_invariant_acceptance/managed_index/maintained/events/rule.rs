@@ -109,23 +109,28 @@ impl WorthQueryApplicationInvariantRule<Catalog> for Rule {
     ) -> Option<Result<Self::Scope, WorthQueryApplicationInvariantError>> {
         Some(if budget.checkpoint(1) {
             self.prepare_scope(planner).and_then(|prepared| {
-                if !self
-                    .calls
-                    .skip_loan
-                    .load(std::sync::atomic::Ordering::SeqCst)
-                {
+                use std::sync::atomic::Ordering::SeqCst;
+                // Every declared Source is retained whatever is lent, so a cost
+                // court varies only the number of loans.
+                let same = self
+                    .same_scope
+                    .as_ref()
+                    .map(|binding| planner.retain_managed_index(binding))
+                    .transpose()?;
+                let overlap = self
+                    .overlap
+                    .as_ref()
+                    .map(|binding| planner.retain_managed_index(binding))
+                    .transpose()?;
+                if !self.calls.skip_loan.load(SeqCst) {
                     self.observe(planner, "ordered", &prepared, budget)?;
-                    let only = self
-                        .calls
-                        .only_ordered
-                        .load(std::sync::atomic::Ordering::SeqCst);
-                    if let Some(same_scope) = self.same_scope.as_ref().filter(|_| !only) {
-                        let same = planner.retain_managed_index(same_scope)?;
-                        self.observe(planner, "same-scope", &same, budget)?;
-                    }
-                    if let Some(overlap) = self.overlap.as_ref().filter(|_| !only) {
-                        let overlap = planner.retain_managed_index(overlap)?;
-                        self.observe(planner, "overlap", &overlap, budget)?;
+                    if !self.calls.only_ordered.load(SeqCst) {
+                        if let Some(same) = &same {
+                            self.observe(planner, "same-scope", same, budget)?;
+                        }
+                        if let Some(overlap) = &overlap {
+                            self.observe(planner, "overlap", overlap, budget)?;
+                        }
                     }
                 }
                 Ok(prepared)

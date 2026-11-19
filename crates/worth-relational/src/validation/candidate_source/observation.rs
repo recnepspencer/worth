@@ -23,6 +23,9 @@ pub struct PreparedManagedIndexSourceRead {
     availability: ManagedIndexSourceAvailability,
     committed_available: bool,
     audience: crate::validation::data::CustomInvariantSemanticIdentity,
+    /// The receiving rule's declared Source set, as the retain that checked
+    /// this program's membership saw it; later reads compare it by identity.
+    sources: Arc<[ManagedIndexSourceProgram]>,
     changes: super::ManagedIndexSourceChanges,
 }
 
@@ -40,10 +43,12 @@ impl PreparedManagedIndexSourceRead {
     pub(crate) fn matches_invocation(
         &self,
         scope: EntityId,
-        sources: &[ManagedIndexSourceProgram],
+        sources: &Arc<[ManagedIndexSourceProgram]>,
         audience: &crate::validation::data::CustomInvariantSemanticIdentity,
     ) -> bool {
-        self.scope == scope && self.audience == *audience && sources.contains(&self.program)
+        // Membership was checked once at retain; the same declared set, by
+        // identity, carries that proof without a search.
+        self.scope == scope && self.audience == *audience && Arc::ptr_eq(&self.sources, sources)
     }
 }
 
@@ -124,6 +129,7 @@ pub(crate) fn prepare(
     program: &ManagedIndexSourceProgram,
     scope: EntityId,
     audience: &crate::validation::data::CustomInvariantSemanticIdentity,
+    sources: &Arc<[ManagedIndexSourceProgram]>,
     committed: &StructuralRelationView<'_>,
     proposed: &StructuralRelationView<'_>,
 ) -> Result<PreparedManagedIndexSourceRead, Denial> {
@@ -154,6 +160,7 @@ pub(crate) fn prepare(
         committed_available: owner.home_target.is_none()
             && owner.physical_basis().materialization_is_complete(),
         audience: audience.clone(),
+        sources: Arc::clone(sources),
         changes: root.changes.clone(),
     })
 }

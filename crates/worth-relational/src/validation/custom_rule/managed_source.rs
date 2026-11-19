@@ -31,6 +31,7 @@ impl CustomInvariantScopePlanner<'_> {
             program,
             invocation.scope,
             &invocation.audience,
+            &invocation.sources,
             &self.committed_relations(),
             &self.relations(),
         )
