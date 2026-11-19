@@ -206,12 +206,12 @@ where
             return Ok(scope.seal(before, None, Default::default()));
         }
         // The owner's exact delta: an updated root's changed entries, or a
-        // newly built scope's every member.
+        // newly built scope's delta (`built_changes`).
         let (proposed, changes) = if let Some(before) = &before {
             self.update(execution, &scope, before)?
         } else if self.cold == Cold::AdmitRebuild {
             let built = self.cold(execution, &scope, &scope.proposed())?;
-            let changes = entered_all::<S, I>(&scope, &built)?;
+            let changes = self.built_changes(execution, &scope, &built)?;
             (built, changes)
         } else {
             return Err(Denial::RootUnavailable);

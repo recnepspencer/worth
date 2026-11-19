@@ -37,9 +37,11 @@ impl<Schema> Planner<'_, '_, Schema> {
     }
     /// The proposed side of the same exact delta: rows whose materialized
     /// entry the proposal added or changed, typed for the proposed view. A
-    /// scope born from its ordered predecessor lends its own step; a newly
-    /// built scope lends every member. A replacement under a retired row's key
-    /// is another entity.
+    /// scope born after an ordered predecessor, warm, cold or seeded, lends
+    /// its delta relative to the predecessor's membership in the proposed
+    /// view, never an inherited unchanged row; a newly built scope with no
+    /// ordered predecessor lends every member. A replacement under a retired
+    /// row's key is another entity.
     pub fn proposed_observed_source_rows<I, E, Cause>(
         &self,
         prepared: &Prepared<Schema, I>,

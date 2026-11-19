@@ -83,23 +83,32 @@ where
         Denial,
     > {
         let built = self.cold(execution, scope, &scope.proposed())?;
-        let changes = match scope.ordered_predecessor_rows()? {
-            Some(parent) => {
-                let root = built
-                    .downcast_ref::<ManagedSourceRoot<S, I>>()
-                    .ok_or(Denial::ForeignSource)?;
-                born_relative(
-                    execution,
-                    scope,
-                    &root.rows,
-                    &parent,
-                    self.provider.installed.source_read().query().read_graph(),
-                    self.maximum_source_rows(),
-                )?
-            }
-            None => super::entered_all::<S, I>(scope, &built)?,
-        };
+        let changes = self.built_changes(execution, scope, &built)?;
         Ok((built, changes))
+    }
+    /// The delta of a scope built new, cold or seeded: relative to its
+    /// ordered predecessor's logical membership when it has one, else every
+    /// member entered.
+    pub(in crate::domain_computation::primary_graph::application_query::managed_index::source) fn built_changes(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        scope: &ManagedIndexSourceScope<'_>,
+        built: &Payload,
+    ) -> Result<worth_relational::facade::runtime::ManagedIndexSourceChanges, Denial> {
+        let Some(parent) = scope.ordered_predecessor_rows()? else {
+            return super::entered_all::<S, I>(scope, built);
+        };
+        let root = built
+            .downcast_ref::<ManagedSourceRoot<S, I>>()
+            .ok_or(Denial::ForeignSource)?;
+        born_relative(
+            execution,
+            scope,
+            &root.rows,
+            &parent,
+            self.provider.installed.source_read().query().read_graph(),
+            self.maximum_source_rows(),
+        )
     }
 }
 
