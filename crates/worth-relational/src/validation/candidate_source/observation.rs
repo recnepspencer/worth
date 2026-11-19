@@ -23,6 +23,7 @@ pub struct PreparedManagedIndexSourceRead {
     availability: ManagedIndexSourceAvailability,
     committed_available: bool,
     audience: crate::validation::data::CustomInvariantSemanticIdentity,
+    changed: Arc<[EntityId]>,
 }
 
 /// The payload and Source views are borrowed together under the current audience.
@@ -35,6 +36,17 @@ pub struct ManagedIndexSourceRead<'a> {
 impl PreparedManagedIndexSourceRead {
     pub const fn scope(&self) -> EntityId {
         self.scope
+    }
+    /// The entities Native's scope closure observed changing this invocation's
+    /// scope, in entity order: each Source root row entering, leaving or
+    /// changing it, including projected field changes routed to their root,
+    /// and, for a scope born in this proposal, every entity born with it.
+    /// Descriptive identity only: a caller admits each row through a view and
+    /// selects its kind there; a row the proposal retired is unavailable in
+    /// the proposed view. A scope joined only through a sibling requirement
+    /// observed no row of this Source.
+    pub fn changed_rows(&self) -> &[EntityId] {
+        &self.changed
     }
     pub(crate) fn matches_invocation(
         &self,
@@ -127,9 +139,22 @@ pub(crate) fn prepare(
         .iter()
         .find(|root| root.scope == scope)
         .ok_or(Denial::ForeignSource)?;
+    let changed: Arc<[EntityId]> = source
+        .closure
+        .scopes
+        .get(&scope)
+        .map(|rows| rows.iter().copied().collect())
+        .unwrap_or_default();
+    let retained = changed
+        .len()
+        .checked_mul(size_of::<EntityId>())
+        .and_then(|rows| rows.checked_add(size_of::<PreparedManagedIndexSourceRead>()))
+        .ok_or(DerivedRelationReadDenial::from(
+            Definition::WorkBudgetExceeded,
+        ))?;
     proposed
         .read_budget()
-        .claim_retained(size_of::<PreparedManagedIndexSourceRead>() as u64)
+        .claim_retained(retained as u64)
         .map_err(DerivedRelationReadDenial::Structural)?;
     Ok(PreparedManagedIndexSourceRead {
         program: program.clone(),
@@ -142,6 +167,7 @@ pub(crate) fn prepare(
         committed_available: owner.home_target.is_none()
             && owner.physical_basis().materialization_is_complete(),
         audience: audience.clone(),
+        changed,
     })
 }
 

@@ -230,10 +230,7 @@ pub struct PreparedManagedIndexSourceRoot {
 pub(crate) struct PreparedSourceProgram {
     pub(crate) program: ManagedIndexSourceProgram,
     pub(crate) affected_scopes: std::collections::BTreeSet<EntityId>,
-    #[allow(
-        dead_code,
-        reason = "Original diagnostic, proof and funding custody remains owned through retirement"
-    )]
+    /// Native's scope closure: each affected scope's changed Source rows.
     pub(crate) closure: PreparedManagedIndexScopeClosure,
     pub(crate) roots: Vec<PreparedManagedIndexSourceRoot>,
     pub(crate) _work: crate::validation::CustomInvariantWorkMeter,

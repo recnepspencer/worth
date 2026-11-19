@@ -45,9 +45,19 @@ pub(super) struct Record {
     pub scope: (u32, u64, u32),
     pub before: Option<Vec<query::ItemRow>>,
     pub after: Vec<query::ItemRow>,
+    /// The Item rows Native observed changing this scope, as the committed
+    /// and the proposed views admit them.
+    pub observed: [Vec<(u32, u64, u32)>; 2],
 }
+/// The retained index and the Item rows Native observed changing its scope,
+/// as the committed and the proposed views admit them.
+pub(super) type Observed = (
+    WorthQueryPreparedInvariantManagedIndex<Catalog, prefix::PrefixIndex>,
+    [Vec<(u32, u64, u32)>; 2],
+);
 pub(super) struct Rule {
     index: WorthQueryApplicationInvariantManagedIndexBinding<Catalog, prefix::PrefixIndex>,
+    items: WorthQueryApplicationInvariantEntityBinding<Catalog, Item>,
     calls: Arc<Calls>,
 }
 pub(super) fn resolve(
@@ -58,11 +68,12 @@ pub(super) fn resolve(
         index: resolver
             .typed_managed_index(prefix::PrefixIndex::reference())
             .ok_or("nested Source was not installed")?,
+        items: resolver.typed_entity(Item::reference()).ok_or("Item")?,
         calls,
     })
 }
 impl WorthQueryApplicationInvariantRule<Catalog> for Rule {
-    type Scope = WorthQueryPreparedInvariantManagedIndex<Catalog, prefix::PrefixIndex>;
+    type Scope = Observed;
     type Refusal = ();
     type RefusalBinding = WorthQueryEmptyInvariantRefusal;
     fn supports_checked_preparation(&self) -> bool {
@@ -72,9 +83,28 @@ impl WorthQueryApplicationInvariantRule<Catalog> for Rule {
         &self,
         planner: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, Catalog>,
     ) -> Result<Self::Scope, WorthQueryApplicationInvariantError> {
-        planner
+        let prepared = planner
             .retain_managed_index(&self.index)
-            .map_err(WorthQueryApplicationInvariantError::from)
+            .map_err(WorthQueryApplicationInvariantError::from)?;
+        // Lent rows are read where preparation admits them.
+        let rows = |view: WorthQueryApplicationInvariantReadView<'_, Catalog>| {
+            view.observed_source_rows_of(&prepared, &self.items)
+                .map(|rows| {
+                    rows.iter()
+                        .map(|row| {
+                            let id = row.entity_id();
+                            (
+                                id.partition_value(),
+                                id.local_slot_value(),
+                                id.generation_value(),
+                            )
+                        })
+                        .collect::<Vec<_>>()
+                })
+        };
+        let committed = rows(planner.committed()).map_err(execution)?;
+        let proposed = rows(planner.proposed()).map_err(execution)?;
+        Ok((prepared, [committed, proposed]))
     }
     fn prepare_scope_checked(
         &self,
@@ -110,14 +140,14 @@ impl Rule {
     fn judge(
         &self,
         context: &WorthQueryApplicationInvariantContext<'_, '_, Catalog>,
-        scope: &WorthQueryPreparedInvariantManagedIndex<Catalog, prefix::PrefixIndex>,
+        scope: &Observed,
         budget: &dyn CustomInvariantLeaseBudget,
     ) -> Result<WorthQueryApplicationInvariantVerdict<()>, WorthQueryApplicationInvariantError>
     {
         if !budget.checkpoint(1) {
             return Err(WorthQueryApplicationInvariantError::Stopped);
         }
-        let pair = context.managed_index(scope).map_err(execution)?;
+        let pair = context.managed_index(&scope.0).map_err(execution)?;
         let probe = query::Probe {
             prefix: String::new(),
         };
@@ -156,7 +186,11 @@ impl Rule {
         if !budget.claim_result(bytes as u64) {
             return Err(WorthQueryApplicationInvariantError::Stopped);
         }
-        let id = scope.scope_identity();
+        let held = layout::<(u32, u64, u32)>(scope.1[0].len() + scope.1[1].len())?;
+        if !budget.claim_result(held as u64) {
+            return Err(WorthQueryApplicationInvariantError::Stopped);
+        }
+        let id = scope.0.scope_identity();
         self.calls.records.lock().unwrap().push(Record {
             scope: (
                 id.partition_value(),
@@ -165,6 +199,7 @@ impl Rule {
             ),
             before,
             after,
+            observed: scope.1.clone(),
         });
         Ok(if invalid {
             WorthQueryApplicationInvariantVerdict::Violation(())
