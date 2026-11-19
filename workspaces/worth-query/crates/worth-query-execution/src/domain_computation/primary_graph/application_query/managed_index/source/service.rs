@@ -172,7 +172,14 @@ where
             }
             Err(cause) => return Err(cause),
         };
-        if retained.is_none() && proposed_exists && scope.program().has_ordered_predecessor() {
+        // Only a scope logically absent before is born from its predecessor.
+        // An evicted existing scope rebuilds its committed baseline below and
+        // diffs exactly: cache residency never changes the delta.
+        if retained.is_none()
+            && !before_exists
+            && proposed_exists
+            && scope.program().has_ordered_predecessor()
+        {
             return self.prepare_ordered(execution, scope, predecessor);
         }
         let before = if before_exists {
@@ -282,7 +289,8 @@ where
     }
 }
 
-/// Every member of a newly built root entered its scope.
+/// Every member of a newly built root entered its scope. The typed shell
+/// only finds the rows; one concrete walk builds the delta.
 pub(super) fn entered_all<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>>(
     scope: &ManagedIndexSourceScope<'_>,
     built: &Payload,
@@ -290,21 +298,34 @@ pub(super) fn entered_all<S: ApplicationSchema, I: ApplicationManagedIndexBindin
     let root = built
         .downcast_ref::<ManagedSourceRoot<S, I>>()
         .ok_or(Denial::ForeignSource)?;
-    scope
-        .read_budget()
+    entered_rows(scope, &root.rows)
+}
+/// The built root's rows, already in entity order, charged to the Source's
+/// own budget: one checkpoint per row and the vector's storage claimed first.
+fn entered_rows(
+    scope: &ManagedIndexSourceScope<'_>,
+    rows: &PersistentSourceRows,
+) -> Result<worth_relational::facade::runtime::ManagedIndexSourceChanges, Denial> {
+    use worth_relational::facade::runtime::DerivedRelationReadDenial;
+    let budget = scope.read_budget();
+    budget
         .claim_retained(
-            (root.rows.len() * size_of::<worth_relational::facade::identity::EntityId>()) as u64,
+            (rows.len() * size_of::<worth_relational::facade::identity::EntityId>()) as u64,
         )
-        .map_err(worth_relational::facade::runtime::DerivedRelationReadDenial::Structural)?;
-    let mut rows = Vec::new();
-    rows.try_reserve_exact(root.rows.len()).map_err(|_| {
+        .map_err(DerivedRelationReadDenial::Structural)?;
+    let mut entered = Vec::new();
+    entered.try_reserve_exact(rows.len()).map_err(|_| {
         source_storage(
             worth_relational::facade::transactions::RelationalExecutionDenialCause::AllocationFailed,
         )
     })?;
-    rows.extend(root.rows.keys());
-    rows.sort_unstable();
-    Ok(worth_relational::facade::runtime::ManagedIndexSourceChanges::new(Vec::new(), rows))
+    for row in rows.keys() {
+        budget
+            .checkpoint(1)
+            .map_err(DerivedRelationReadDenial::Structural)?;
+        entered.push(row);
+    }
+    Ok(worth_relational::facade::runtime::ManagedIndexSourceChanges::new(Vec::new(), entered))
 }
 
 pub(in crate::domain_computation::primary_graph::application_query::managed_index) fn retain_root<

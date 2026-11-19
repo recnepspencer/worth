@@ -26,7 +26,9 @@ pub struct PreparedManagedIndexSourceRead {
     /// The receiving rule's declared Source set, as the retain that checked
     /// this program's membership saw it; later reads compare it by identity.
     sources: Arc<[ManagedIndexSourceProgram]>,
-    changes: super::ManagedIndexSourceChanges,
+    /// The selected program's and root's positions in the draft's prepared
+    /// Sources: a checked coordinate, never a share of the delta itself.
+    coordinate: [usize; 2],
 }
 
 /// The payload and Source views are borrowed together under the current audience.
@@ -89,15 +91,27 @@ impl ManagedIndexSourceRead<'_> {
         self.rows(false)
     }
 
-    /// The provider owner's exact delta for this scope and proposal, as the
-    /// selected root carried it, on one side (committed when `before`): rows
-    /// whose materialized entry left or changed, or entered or changed, in
-    /// the invariant's logical observation. Borrowed, O(1).
-    pub fn changed_members(&self, before: bool) -> Result<&[EntityId], Denial> {
+    /// The provider owner's exact delta for this scope and proposal, on one
+    /// side (committed when `before`): rows whose materialized entry left or
+    /// changed, or entered or changed, in the invariant's logical
+    /// observation. Borrowed from this observation's own draft at the
+    /// prepared coordinate, O(1). Crate-private: only the planner's
+    /// preparation-time loan reaches it, never evaluation.
+    pub(crate) fn changed_members(&self, before: bool) -> Result<&[EntityId], Denial> {
         if before && !self.prepared.committed_available {
             return Err(Denial::RootUnavailable);
         }
-        Ok(self.prepared.changes.side(before))
+        let [program, root] = self.prepared.coordinate;
+        let root = self
+            .interpretation
+            .prepared
+            .get()
+            .and_then(|staged| staged.programs.get(program))
+            .filter(|source| source.program == self.prepared.program)
+            .and_then(|source| source.roots.get(root))
+            .filter(|root| root.scope == self.prepared.scope)
+            .ok_or(Denial::ForeignSource)?;
+        Ok(root.changes.side(before))
     }
 
     fn rows(&self, before: bool) -> ManagedIndexSourceRows<'_> {
@@ -135,16 +149,18 @@ pub(crate) fn prepare(
 ) -> Result<PreparedManagedIndexSourceRead, Denial> {
     let (owner, before, after) = association(program, committed, proposed)?;
     let prepared = owner.prepared.get().ok_or(Denial::IncompletePreparation)?;
-    let source = prepared
+    let program_at = prepared
         .programs
         .iter()
-        .find(|source| source.program == *program)
+        .position(|source| source.program == *program)
         .ok_or(Denial::ForeignSource)?;
-    let root = source
+    let source = &prepared.programs[program_at];
+    let root_at = source
         .roots
         .iter()
-        .find(|root| root.scope == scope)
+        .position(|root| root.scope == scope)
         .ok_or(Denial::ForeignSource)?;
+    let root = &source.roots[root_at];
     proposed
         .read_budget()
         .claim_retained(size_of::<PreparedManagedIndexSourceRead>() as u64)
@@ -161,7 +177,7 @@ pub(crate) fn prepare(
             && owner.physical_basis().materialization_is_complete(),
         audience: audience.clone(),
         sources: Arc::clone(sources),
-        changes: root.changes.clone(),
+        coordinate: [program_at, root_at],
     })
 }
 

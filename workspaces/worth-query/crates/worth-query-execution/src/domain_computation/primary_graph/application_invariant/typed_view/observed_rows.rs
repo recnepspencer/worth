@@ -126,30 +126,30 @@ fn observed_row_ids(
             "Source row kind",
         )));
     }
-    let source = lower
-        .read_managed_index_source(request.native)
-        .map_err(Denied::Native)?;
-    let members = source
-        .changed_members(request.before)
-        .map_err(Denied::Native)?;
     let relations = lower.relations();
-    let bytes = members
-        .len()
-        .checked_mul(request.element_bytes + size_of::<EntityId>())
-        .ok_or_else(|| {
-            Denied::Access(Access::new(AccessKind::WorkBudgetExceeded, "observed rows"))
-        })?;
-    relations
-        .read_budget()
-        .claim_retained(bytes as u64)
-        .map_err(|cause| Denied::Access(Access::from_native_read(cause, "observed rows")))?;
-    let mut rows = Vec::with_capacity(members.len());
-    for &row in members {
-        reads.endpoint();
-        admission
-            .entity(row, relations.read_budget())
-            .map_err(Denied::Access)?;
-        rows.push(row);
-    }
-    Ok(rows)
+    lower
+        .lend_managed_index_source_changes(request.native, request.before, |members| {
+            let bytes = members
+                .len()
+                .checked_mul(request.element_bytes + size_of::<EntityId>())
+                .ok_or_else(|| {
+                    Denied::Access(Access::new(AccessKind::WorkBudgetExceeded, "observed rows"))
+                })?;
+            relations
+                .read_budget()
+                .claim_retained(bytes as u64)
+                .map_err(|cause| {
+                    Denied::Access(Access::from_native_read(cause, "observed rows"))
+                })?;
+            let mut rows = Vec::with_capacity(members.len());
+            for &row in members {
+                reads.endpoint();
+                admission
+                    .entity(row, relations.read_budget())
+                    .map_err(Denied::Access)?;
+                rows.push(row);
+            }
+            Ok(rows)
+        })
+        .map_err(Denied::Native)?
 }

@@ -65,6 +65,22 @@ impl<'runtime> CustomInvariantScopePlanner<'runtime> {
     }
 }
 
+impl CustomInvariantScopePlanner<'_> {
+    /// Lend the Source's exact delta for this invocation's scope, on one side
+    /// (committed when `before`), to `lend`, after the same invocation and
+    /// observation checks as every managed read. Preparation only: the
+    /// evaluation context has no such loan.
+    pub fn lend_managed_index_source_changes<R>(
+        &self,
+        prepared: &PreparedManagedIndexSourceRead,
+        before: bool,
+        lend: impl FnOnce(&[crate::identity::data::EntityId]) -> R,
+    ) -> Result<R, ManagedIndexSourcePreparationDenial> {
+        let read = self.read_managed_index_source(prepared)?;
+        Ok(lend(read.changed_members(before)?))
+    }
+}
+
 impl<'runtime> CustomInvariantExecutionContext<'runtime> {
     /// The prepared object carries no read grant. Reborrow checks this actual
     /// observation, receiving audience and original request before returning data.

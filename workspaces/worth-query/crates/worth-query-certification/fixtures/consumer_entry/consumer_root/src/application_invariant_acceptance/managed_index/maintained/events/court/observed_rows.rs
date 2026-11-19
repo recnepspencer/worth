@@ -174,3 +174,74 @@ fn an_inherited_row_rematerialized_with_the_same_facts_is_not_lent() {
     publish(&world, &mut key, rename);
     assert!(lent(&records).contains(&x), "a field change is lent");
 }
+
+/// Evict the retained Source index of `event`, so its next preparation finds
+/// no retained root although the scope exists.
+fn evict(world: &host::EventHost, event: &str) {
+    let scope = authentication::request_scope();
+    let principal = authentication::block_on(
+        authentication::admit(world.installed_schema()).authenticate(
+            authentication::LocalCredential::issued_for_model_owner(),
+            &scope,
+        ),
+    )
+    .unwrap();
+    let request = world
+        .runtime()
+        .request(&principal, &scope)
+        .on_branch(world.current_world());
+    let index = request
+        .query(find(event, ""))
+        .open_index::<prefix::PrefixIndex>()
+        .unwrap();
+    request.query(find(event, "")).evict_index(&index).unwrap();
+}
+
+/// Residency is never observable: with E's index evicted, a rename of the row
+/// E inherits lends exactly that row on both sides at E, and so does a rename
+/// of E's own row; E is not rebuilt as if it were born.
+#[test]
+fn an_evicted_existing_scope_lends_its_exact_delta() {
+    let (world, _, records, mut key) = setup();
+    let mut born = append("E", "A");
+    if let history::Edit::Append { introduced, .. } = &mut born {
+        *introduced = Some(("e".into(), "match-e".into()));
+    }
+    edit_history(&world, &mut key, born);
+    let rows = source(&world, "E");
+    let at = |identity: &str| {
+        rows.iter()
+            .find(|row| row.identity == identity)
+            .unwrap_or_else(|| panic!("E holds {identity}"))
+            .coordinate
+    };
+    let (x, e) = (at("x"), at("e"));
+    let e_scope = |records: &rule::Calls, row| {
+        records
+            .observed
+            .lock()
+            .unwrap()
+            .iter()
+            .filter(|(index, _, [_, proposed])| *index == "ordered" && proposed.contains(&row))
+            .map(|(_, scope, sides)| (*scope, sides.clone()))
+            .collect::<Vec<_>>()
+    };
+    let rename = |item: &str, value: &str| {
+        crate::application_invariant_acceptance::managed_index::maintained::nested::edit::Edit::Name {
+            item: item.into(),
+            value: value.into(),
+        }
+    };
+    for (row, item, value) in [(x, "x", "match-renamed-x"), (e, "e", "match-renamed-e")] {
+        evict(&world, "E");
+        records.observed.lock().unwrap().clear();
+        publish(&world, &mut key, rename(item, value));
+        // E is the one scope holding e; for x, A and E both lend it.
+        let lent = e_scope(&records, row);
+        assert!(!lent.is_empty(), "{item} is lent");
+        for (_, [committed, proposed]) in &lent {
+            assert_eq!(committed, &vec![row], "{item}: exactly the row, committed");
+            assert_eq!(proposed, &vec![row], "{item}: exactly the row, proposed");
+        }
+    }
+}
