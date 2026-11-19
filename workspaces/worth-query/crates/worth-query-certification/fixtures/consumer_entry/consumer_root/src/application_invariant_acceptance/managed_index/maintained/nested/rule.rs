@@ -48,6 +48,9 @@ pub(in super::super) struct Calls {
     /// Per invocation: its scope identity, the scope entity minted for it,
     /// and the refusal of a mint under the Item binding.
     pub(super) scopes: Mutex<Vec<ScopeRecord>>,
+    /// Per invocation: the preparation's endpoint reads before and after its
+    /// row loans and scope mints, and whether every read count is unchanged.
+    pub(super) loan_reads: Mutex<Vec<(usize, usize, bool)>>,
     pub(super) acquired: Mutex<Vec<query::ItemRow>>,
 }
 #[derive(Debug)]
@@ -125,8 +128,15 @@ impl WorthQueryApplicationInvariantRule<Catalog> for Rule {
         }
         Some(self.prepare_scope(planner).and_then(|(prepared, ..)| {
             self.probe_stale(planner)?;
+            let before = planner.reads();
             let observed = self.observe(planner, &prepared, budget)?;
             let scope = self.mint(planner, &prepared)?;
+            let after = planner.reads();
+            self.calls.loan_reads.lock().unwrap().push((
+                before.endpoint_records_read(),
+                after.endpoint_records_read(),
+                before == after,
+            ));
             Ok((prepared, observed, Some(scope)))
         }))
     }

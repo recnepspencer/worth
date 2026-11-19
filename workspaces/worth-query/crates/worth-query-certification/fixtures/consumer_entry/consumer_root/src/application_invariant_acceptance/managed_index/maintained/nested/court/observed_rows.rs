@@ -199,6 +199,7 @@ fn the_observed_scope_is_the_invocations_directory_and_is_readable_in_evaluation
     link(&world, &mut model, &mut key, "x", "a", 1);
     records.records.lock().unwrap().clear();
     records.scopes.lock().unwrap().clear();
+    records.loan_reads.lock().unwrap().clear();
     let rename = Edit::Name {
         item: "a".into(),
         value: "renamed-branch".into(),
@@ -222,6 +223,14 @@ fn the_observed_scope_is_the_invocations_directory_and_is_readable_in_evaluation
         .collect();
     minted.sort();
     assert_eq!(minted, ["A", "B"]);
+    // Lending rows and minting the scope read no entity record, so no read
+    // observation moves: Native already holds their kinds.
+    let reads = records.loan_reads.lock().unwrap();
+    assert_eq!(reads.len(), 2, "both invocations recorded their reads");
+    for &(before, after, unchanged) in reads.iter() {
+        assert_eq!(after, before, "a loan or mint counted an endpoint read");
+        assert!(unchanged, "a loan or mint moved a read observation");
+    }
     let mut read: Vec<_> = records
         .records
         .lock()
