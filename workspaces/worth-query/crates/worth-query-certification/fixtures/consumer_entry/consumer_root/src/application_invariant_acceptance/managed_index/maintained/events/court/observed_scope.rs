@@ -29,6 +29,12 @@ fn an_ordered_successor_mints_its_own_scope_and_reads_it_in_evaluation() {
         .iter()
         .filter_map(|(_, _, name)| name.as_deref())
         .collect();
-    assert!(born.contains(&"E"), "E is invoked and reads itself: {born:?}");
-    assert!(!born.contains(&"A"), "the unchanged predecessor is not invoked: {born:?}");
+    assert!(
+        born.contains(&"E"),
+        "E is invoked and reads itself: {born:?}"
+    );
+    assert!(
+        !born.contains(&"A"),
+        "the unchanged predecessor is not invoked: {born:?}"
+    );
 }
