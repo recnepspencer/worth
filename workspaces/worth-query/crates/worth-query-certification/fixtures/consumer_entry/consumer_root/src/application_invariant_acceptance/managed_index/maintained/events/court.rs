@@ -209,4 +209,5 @@ mod birth;
 mod controls;
 mod currentness;
 mod observed_rows;
+mod observed_scope;
 mod seeded;

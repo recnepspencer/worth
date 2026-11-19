@@ -60,6 +60,9 @@ pub(in super::super) struct Calls {
     pub(super) skip_loan: std::sync::atomic::AtomicBool,
     /// Set by a cost court to lend from the ordered Source alone.
     pub(super) only_ordered: std::sync::atomic::AtomicBool,
+    /// Each evaluation's invocation scope, the scope entity its preparation
+    /// minted, and that entity's DirectoryIdentity read through evaluation.
+    pub(super) scopes: Mutex<Vec<(Coordinate, Coordinate, Option<String>)>>,
 }
 pub(super) type Coordinate = (u32, u64, u32);
 pub(super) struct Rule {
@@ -71,8 +74,16 @@ pub(super) struct Rule {
         WorthQueryApplicationInvariantManagedIndexBinding<Catalog, super::variants::OverlapIndex>,
     >,
     items: WorthQueryApplicationInvariantEntityBinding<Catalog, Item>,
+    directories: WorthQueryApplicationInvariantEntityBinding<Catalog, Directory>,
+    directory_identity: WorthQueryApplicationInvariantFieldBinding<Catalog, Directory, String>,
     calls: Arc<Calls>,
 }
+/// The retained ordered Source and, when preparation was checked, the
+/// invocation's scope minted as a typed Directory.
+pub(super) type Prepared = (
+    WorthQueryPreparedInvariantManagedIndex<Catalog, prefix::PrefixIndex>,
+    Option<WorthQueryApplicationInvariantEntity<Catalog, Directory>>,
+);
 pub(super) fn resolve(
     resolver: &WorthQueryApplicationInvariantSchemaResolver<'_, Catalog>,
     calls: Arc<Calls>,
@@ -84,11 +95,17 @@ pub(super) fn resolve(
         same_scope: resolver.typed_managed_index(super::variants::SameScopeIndex::reference()),
         overlap: resolver.typed_managed_index(super::variants::OverlapIndex::reference()),
         items: resolver.typed_entity(Item::reference()).ok_or("Item")?,
+        directories: resolver
+            .typed_entity(Directory::reference())
+            .ok_or("Directory")?,
+        directory_identity: resolver
+            .typed_field(DirectoryIdentity::at("DirectoryIdentity"))
+            .ok_or("DirectoryIdentity")?,
         calls,
     })
 }
 impl WorthQueryApplicationInvariantRule<Catalog> for Rule {
-    type Scope = WorthQueryPreparedInvariantManagedIndex<Catalog, prefix::PrefixIndex>;
+    type Scope = Prepared;
     type Refusal = ();
     type RefusalBinding = WorthQueryEmptyInvariantRefusal;
     fn supports_checked_preparation(&self) -> bool {
@@ -98,9 +115,10 @@ impl WorthQueryApplicationInvariantRule<Catalog> for Rule {
         &self,
         planner: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, Catalog>,
     ) -> Result<Self::Scope, WorthQueryApplicationInvariantError> {
-        planner
+        let prepared = planner
             .retain_managed_index(&self.index)
-            .map_err(WorthQueryApplicationInvariantError::from)
+            .map_err(WorthQueryApplicationInvariantError::from)?;
+        Ok((prepared, None))
     }
     fn prepare_scope_checked(
         &self,
@@ -108,7 +126,7 @@ impl WorthQueryApplicationInvariantRule<Catalog> for Rule {
         budget: &dyn CustomInvariantLeaseBudget,
     ) -> Option<Result<Self::Scope, WorthQueryApplicationInvariantError>> {
         Some(if budget.checkpoint(1) {
-            self.prepare_scope(planner).and_then(|prepared| {
+            self.prepare_scope(planner).and_then(|(prepared, _)| {
                 use std::sync::atomic::Ordering::SeqCst;
                 // Every declared Source is retained whatever is lent, so a cost
                 // court varies only the number of loans.
@@ -133,7 +151,8 @@ impl WorthQueryApplicationInvariantRule<Catalog> for Rule {
                         }
                     }
                 }
-                Ok(prepared)
+                let scope = planner.observed_scope(&prepared, &self.directories)?;
+                Ok((prepared, Some(scope)))
             })
         } else {
             Err(WorthQueryApplicationInvariantError::Stopped)
@@ -186,12 +205,24 @@ impl Rule {
     fn judge(
         &self,
         context: &WorthQueryApplicationInvariantContext<'_, '_, Catalog>,
-        scope: &WorthQueryPreparedInvariantManagedIndex<Catalog, prefix::PrefixIndex>,
+        (scope, minted): &Prepared,
         budget: &dyn CustomInvariantLeaseBudget,
     ) -> Result<WorthQueryApplicationInvariantVerdict<()>, WorthQueryApplicationInvariantError>
     {
         if !budget.checkpoint(1) {
             return Err(WorthQueryApplicationInvariantError::Stopped);
+        }
+        // The minted scope is admitted: evaluation reads its own field.
+        if let Some(minted) = minted {
+            let name = context
+                .proposed()
+                .field(&self.directory_identity, minted)
+                .map_err(execution)?;
+            self.calls.scopes.lock().unwrap().push((
+                coordinate(scope.scope_identity()),
+                coordinate(minted.entity_id()),
+                name,
+            ));
         }
         let pair = context.managed_index(scope).map_err(execution)?;
         let probe = query::Probe {
