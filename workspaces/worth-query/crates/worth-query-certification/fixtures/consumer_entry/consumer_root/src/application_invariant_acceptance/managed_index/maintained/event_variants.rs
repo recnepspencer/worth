@@ -59,8 +59,10 @@ fn source_graph_laws() -> ApplicationRelationGraphLaws {
 }
 
 /// An append beside an unchanged prefix row. The predecessor scope lends no
-/// row in any index. The born scope is built new beside its sibling Sources,
-/// so each of its live Sources lends every member, its ordinary rows; the
+/// row in any index. The born scope is built new beside its sibling Sources
+/// (#251), yet its ordered Source lends only its step relative to the
+/// predecessor's membership, never the inherited x; the same-scope Source,
+/// which has no predecessor, lends every member, its ordinary rows; the
 /// Source whose one relation both introduces and retires lends nothing, and
 /// its ordinary Source is empty, for retirement wins.
 /// Which Sources an invocation lends from.
@@ -166,7 +168,7 @@ fn an_append_lends_no_unchanged_prefix_row_and_the_overlap_source_lends_nothing(
     let born_scope = observed
         .iter()
         .find(|(index, _, [_, proposed])| *index == "ordered" && !proposed.is_empty())
-        .expect("the born scope lends its members")
+        .expect("the born scope lends its step")
         .1;
     let mut seen = BTreeSet::new();
     for (index, at, [committed, proposed]) in observed.iter() {
@@ -177,10 +179,10 @@ fn an_append_lends_no_unchanged_prefix_row_and_the_overlap_source_lends_nothing(
             continue;
         }
         seen.insert(*index);
-        let expected = if *index == "overlap" {
-            BTreeSet::new()
-        } else {
-            born.clone()
+        let expected = match *index {
+            "overlap" => BTreeSet::new(),
+            "ordered" => born.difference(&catalog).copied().collect(),
+            _ => born.clone(),
         };
         assert_eq!(proposed, expected, "{index}");
     }

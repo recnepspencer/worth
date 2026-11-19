@@ -72,6 +72,34 @@ impl SourceDelta {
     }
 }
 
+impl super::PersistentSourceRows {
+    /// A born scope's delta relative to its predecessor's membership
+    /// `baseline`: each row absent from it or with different facts. Inherited
+    /// unchanged rows are not lent, and a born scope has no committed side.
+    /// One checkpoint and one comparison per built row.
+    pub(in crate::domain_computation::primary_graph::application_query::managed_index) fn born_changes(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        scope: &ManagedIndexSourceScope<'_>,
+        baseline: &Self,
+    ) -> Result<ManagedIndexSourceChanges, MaterialDenial> {
+        let mut delta = SourceDelta::new(true);
+        for row in self.keys() {
+            scope
+                .read_budget()
+                .checkpoint(1)
+                .map_err(DerivedRelationReadDenial::Structural)?;
+            delta.observe(
+                execution,
+                scope,
+                baseline.entry(row).map(|entry| &**entry),
+                self.entry(row).map(|entry| &**entry),
+            )?;
+        }
+        Ok(delta.finish())
+    }
+}
+
 /// One classified row, its growth claimed before the vector grows: capacity
 /// doubles, so the claims stay within twice the retained rows.
 fn push(

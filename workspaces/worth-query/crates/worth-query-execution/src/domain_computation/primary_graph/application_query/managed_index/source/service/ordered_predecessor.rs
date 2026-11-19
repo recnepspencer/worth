@@ -43,7 +43,7 @@ where
                     Err(Denial::PredecessorUnavailable { .. })
                         if self.cold == Cold::AdmitRebuild =>
                     {
-                        self.cold_entered(execution, &scope)?
+                        self.cold_born(execution, &scope)?
                     }
                     Err(cause) => return Err(cause),
                 }
@@ -51,17 +51,27 @@ where
             (Some(predecessor), None) if self.cold == Cold::Refuse => {
                 return Err(Denial::PredecessorUnavailable { predecessor })
             }
-            // The chain root builds its own membership. A missing parent costs
-            // one successor build, never a recursive preparation of the parent.
-            _ => self.cold_entered(execution, &scope)?,
+            // A parent without retained material costs one successor build
+            // and one acquisition of the parent's rows, never a recursive
+            // preparation of the parent; the delta stays relative to it.
+            (Some(_), None) => self.cold_born(execution, &scope)?,
+            // The chain root builds its own membership: every member entered.
+            (None, _) => {
+                let built = self.cold(execution, &scope, &scope.proposed())?;
+                let changes = super::entered_all::<S, I>(&scope, &built)?;
+                (built, changes)
+            }
         };
         execution
             .consult()
             .map_err(|cause| source_storage(cause.into()))?;
         Ok(scope.seal(None, Some(proposed), changes))
     }
-    /// A successor built without its predecessor: every member entered.
-    fn cold_entered(
+    /// A successor built without its predecessor's retained material. Its
+    /// delta is still relative to the predecessor's logical membership, read
+    /// from Native's proposed view, so it equals the warm step's whatever is
+    /// resident.
+    fn cold_born(
         &self,
         execution: &ExecutionRequest<'_, '_>,
         scope: &ManagedIndexSourceScope<'_>,
@@ -73,7 +83,40 @@ where
         Denial,
     > {
         let built = self.cold(execution, scope, &scope.proposed())?;
-        let changes = super::entered_all::<S, I>(scope, &built)?;
+        let changes = match scope.ordered_predecessor_rows()? {
+            Some(parent) => {
+                let root = built
+                    .downcast_ref::<ManagedSourceRoot<S, I>>()
+                    .ok_or(Denial::ForeignSource)?;
+                born_relative(
+                    execution,
+                    scope,
+                    &root.rows,
+                    &parent,
+                    self.provider.installed.source_read().query().read_graph(),
+                    self.maximum_source_rows(),
+                )?
+            }
+            None => super::entered_all::<S, I>(scope, &built)?,
+        };
         Ok((built, changes))
     }
+}
+
+/// The concrete diff, compiled once: the predecessor's rows materialized from
+/// the logical view, then each built row compared by facts.
+fn born_relative(
+    execution: &ExecutionRequest<'_, '_>,
+    scope: &ManagedIndexSourceScope<'_>,
+    built: &PersistentSourceRows,
+    parent: &worth_relational::facade::runtime::ManagedIndexSourceRows<'_>,
+    graph: &worth_query_installation::facade::WorthQueryInstalledGraphReadContract,
+    maximum: usize,
+) -> Result<worth_relational::facade::runtime::ManagedIndexSourceChanges, Denial> {
+    let owner = WorthQueryGraphWorkSessionIdentity::for_native_source(scope)?;
+    let baseline = PersistentSourceRows::acquire(execution, parent, owner, graph, maximum)
+        .map_err(super::super::occurrences::MaterialDenial::into_native)?;
+    built
+        .born_changes(execution, scope, &baseline)
+        .map_err(super::super::occurrences::MaterialDenial::into_native)
 }

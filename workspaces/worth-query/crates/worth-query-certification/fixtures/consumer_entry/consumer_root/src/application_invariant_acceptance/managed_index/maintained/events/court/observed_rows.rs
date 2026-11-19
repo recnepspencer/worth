@@ -272,3 +272,46 @@ fn an_evicted_existing_scope_lends_its_exact_delta() {
         );
     }
 }
+
+/// A born scope's loan is relative to its predecessor's logical membership,
+/// whatever is resident: the same append lends exactly its introduced row,
+/// never the inherited x, with A's index cached and with it evicted.
+#[test]
+fn an_ordered_birth_lends_the_same_delta_whether_or_not_its_predecessor_is_resident() {
+    let birth = |evict_parent: bool| {
+        let (world, _, records, mut key) = setup();
+        if evict_parent {
+            evict(&world, "A");
+        }
+        let mut born = append("E", "A");
+        if let history::Edit::Append { introduced, .. } = &mut born {
+            *introduced = Some(("e".into(), "match-e".into()));
+        }
+        records.observed.lock().unwrap().clear();
+        edit_history(&world, &mut key, born);
+        let rows = source(&world, "E");
+        assert!(rows.iter().any(|row| row.identity == "x"), "E inherits x");
+        let identity = |coordinate| {
+            rows.iter()
+                .find(|row| row.coordinate == coordinate)
+                .unwrap_or_else(|| panic!("{coordinate:?} is a row of E"))
+                .identity
+                .clone()
+        };
+        let observed = records.observed.lock().unwrap();
+        observed
+            .iter()
+            .filter(|(index, _, [committed, proposed])| {
+                *index == "ordered" && !(committed.is_empty() && proposed.is_empty())
+            })
+            .map(|(_, _, sides)| {
+                sides
+                    .clone()
+                    .map(|side| side.into_iter().map(identity).collect())
+            })
+            .collect::<Vec<[Vec<String>; 2]>>()
+    };
+    let resident = birth(false);
+    assert_eq!(resident, [[vec![], vec!["e".to_owned()]]]);
+    assert_eq!(birth(true), resident, "evicting A changes nothing E lends");
+}

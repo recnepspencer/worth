@@ -90,10 +90,17 @@ impl<'a> ManagedIndexSourceScope<'a> {
         self.scope_exists_in(&self.views.before)
     }
     fn scope_exists_in(&self, view: &StructuralRelationView<'_>) -> Result<bool, Denial> {
+        self.entity_scope_exists_in(view, self.scope)
+    }
+    fn entity_scope_exists_in(
+        &self,
+        view: &StructuralRelationView<'_>,
+        scope: EntityId,
+    ) -> Result<bool, Denial> {
         view.read_budget()
             .checkpoint(1)
             .map_err(ReadDenial::Structural)?;
-        match view.entity_kind(self.scope) {
+        match view.entity_kind(scope) {
             Ok(kind) if kind == self.program.scope_kind() => Ok(true),
             Err(crate::validation::data::StructuralReadError::RecordUnavailable) => Ok(false),
             Ok(_) => Err(Denial::ForeignSource),

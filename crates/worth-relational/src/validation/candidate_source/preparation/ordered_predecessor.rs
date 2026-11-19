@@ -22,6 +22,20 @@ impl ManagedIndexSourceScope<'_> {
         }
     }
 
+    /// The predecessor's logical membership in the proposed view: the
+    /// baseline a born scope's delta is relative to when no retained
+    /// predecessor material carries it, so residency never changes that
+    /// delta. `None` for a chain root or a predecessor absent from the view.
+    pub fn ordered_predecessor_rows(&self) -> Result<Option<ManagedIndexSourceRows<'_>>, Denial> {
+        let Some(parent) = self.ordered_predecessor()? else {
+            return Ok(None);
+        };
+        if !self.entity_scope_exists_in(&self.views.after, parent)? {
+            return Ok(None);
+        }
+        Ok(Some(self.rows_at(false, parent)))
+    }
+
     /// An exact retained predecessor proves its prefix. Only this event's
     /// physical leaves are acquired; a descriptive parent coordinate is insufficient.
     pub fn prepare_ordered_step(
