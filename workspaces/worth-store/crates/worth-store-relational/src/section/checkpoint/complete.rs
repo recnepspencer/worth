@@ -1,7 +1,5 @@
 //! Genuine Complete capture, issued only by the original Section's weak binding.
-use super::{
-    RelationalSectionCheckpointDenial as Denial, RelationalStoreSection, SectionPublication,
-};
+use super::{RelationalSectionCheckpointDenial as Denial, SectionPublication};
 use std::sync::Weak;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 use worth_relational::facade::durability::{
@@ -32,31 +30,10 @@ impl std::fmt::Debug for RelationalSectionCompleteCheckpointPreparation {
     }
 }
 
-impl RelationalStoreSection {
-    pub fn prepare_complete_checkpoint(
-        &self,
-        execution: &ExecutionRequest<'_, '_>,
-    ) -> Result<PreparedCompleteRelationalSection, Denial> {
-        self.complete_checkpoint_preparation().prepare(execution)
-    }
-}
-
 impl RelationalSectionCompleteCheckpointPreparation {
     /// Descriptive counts from the SAME weak source used by this operation.
     pub fn cold_storage_reads(&self) -> Option<crate::RelationalStoreColdReadCounters> {
         self.source.upgrade().map(|source| source.counters())
-    }
-    pub fn prepare(
-        &self,
-        execution: &ExecutionRequest<'_, '_>,
-    ) -> Result<PreparedCompleteRelationalSection, Denial> {
-        let (complete, source, selection) = self.capture_native(execution)?;
-        let mut publication = SectionPublication::prepare_complete(&source, &complete, execution)?;
-        publication.custody.selection = Some(selection);
-        Ok(PreparedCompleteRelationalSection {
-            complete,
-            publication,
-        })
     }
     pub(super) fn capture_native(
         &self,

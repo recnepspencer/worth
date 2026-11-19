@@ -28,6 +28,11 @@ impl ProgramOutputTraversalWork {
 /// Work spent settling program outputs: discovery queries and rows, gathered demands,
 /// producer and delivery contacts, invariant facts, units and executions, and derived
 /// publications.
+///
+/// Producer contacts, invariant work and derived publications are read from each
+/// settled output's receipt and readiness evidence. A reused committed output
+/// delivers its original receipt, so for it these counts describe how that output
+/// was first produced; they are not new contacts or writes by this settlement.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct WorthQueryApplicationProgramWork {
     discovery_queries: usize,

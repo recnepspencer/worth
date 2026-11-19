@@ -204,8 +204,24 @@ fn refuse_changed_action(metadata_changed: bool) {
         .expect("same original owner progresses when the lawful action is current again");
     assert_eq!(planar_source_adjustment_contacts(&input), (1, 1));
     let outputs = settled.settlement();
-    assert_eq!(outputs.work().producer_contact_count(), 0);
-    assert_eq!(outputs.work().derived_publication_count(), 0);
+    // Readmission delivers the original co-commit. Its five member receipts
+    // account for their own production; this demand contacts no producer.
+    assert_eq!(outputs.root_producer_contacts_in_this_demand(), 0);
+    assert_eq!(
+        (
+            outputs.work().producer_contact_count(),
+            outputs.work().derived_publication_count()
+        ),
+        (5, 5)
+    );
+    assert_eq!(
+        outputs
+            .root_receipt()
+            .expect("the readmitted root keeps its original producer receipt")
+            .committed_product_publication()
+            .composite_commit(),
+        &source_publication
+    );
     let original_source = outputs
         .performed_source()
         .expect("the original source custody survives readmission");

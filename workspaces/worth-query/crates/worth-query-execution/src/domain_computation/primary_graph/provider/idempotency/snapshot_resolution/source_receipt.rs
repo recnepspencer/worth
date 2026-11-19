@@ -45,20 +45,20 @@ pub(super) fn read_original(
             let row = publication
                 .created_entity(execution, created.assigned)
                 .map_err(super::source_denial::native)?
-                .ok_or_else(|| { eprintln!("MGDEBUG unavailable source_receipt.rs#1"); Denial::Unavailable })?;
+                .ok_or(Denial::Unavailable)?;
             bytes = bytes
                 .checked_add(
                     row.owned_allocation_capacity_bytes()
                         .checked_mul(2)
-                        .ok_or_else(|| { eprintln!("MGDEBUG unavailable source_receipt.rs#2"); Denial::Unavailable })?,
+                        .ok_or(Denial::Unavailable)?,
                 )
-                .ok_or_else(|| { eprintln!("MGDEBUG unavailable source_receipt.rs#3"); Denial::Unavailable })?;
+                .ok_or(Denial::Unavailable)?;
         }
     }
     bytes = bytes
         .checked_add(publication.branch_name_bytes() as u64)
         .and_then(|bytes| bytes.checked_add(2 * std::mem::size_of::<usize>() as u64))
-        .ok_or_else(|| { eprintln!("MGDEBUG unavailable source_receipt.rs#4"); Denial::Unavailable })?;
+        .ok_or(Denial::Unavailable)?;
     let funding = execution
         .reserve_retained_memory(bytes)
         .map_err(|cause| super::idempotency_read_stop(cause.into()))?;
@@ -80,7 +80,7 @@ pub(super) fn read_original(
     let row = publication
         .created_entity(execution, entity)
         .map_err(super::source_denial::native)?
-        .ok_or_else(|| { eprintln!("MGDEBUG unavailable source_receipt.rs#5"); Denial::Unavailable })?;
+        .ok_or(Denial::Unavailable)?;
     let binding = super::original_binding::read(&row, context.layout)?;
     let outbox = context
         .provider
@@ -94,7 +94,7 @@ pub(super) fn read_original(
         .as_ref()
         .is_some_and(|(_, row)| row.outcome_identity != binding.outcome.get())
     {
-        { eprintln!("MGDEBUG unavailable source_receipt.rs#7"); return Err(Denial::Unavailable); }
+        return Err(Denial::Unavailable);
     }
     match binding.settlement {
         worth_foundational::facade::DurableQueryOutputSettlement::Absent => {}
@@ -102,7 +102,7 @@ pub(super) fn read_original(
             slot,
         } => {
             if slot != 0 {
-                { eprintln!("MGDEBUG unavailable source_receipt.rs#8"); return Err(Denial::Unavailable); }
+                return Err(Denial::Unavailable);
             }
         }
     }
@@ -131,7 +131,7 @@ pub(super) fn read_original(
             let source =
                 read_publication(execution, context.runtime, product, coordinate.relational())?;
             if source.world_commit() != coordinate.world_commit() {
-                { eprintln!("MGDEBUG unavailable source_receipt.rs#9"); return Err(Denial::Unavailable); }
+                return Err(Denial::Unavailable);
             }
         }
     }
@@ -206,13 +206,13 @@ fn read_publication(
     {
         if subject.receipt() == commit {
             if exact.is_some() {
-                { eprintln!("MGDEBUG unavailable source_receipt.rs#10"); return Err(Denial::Unavailable); }
+                return Err(Denial::Unavailable);
             }
             exact = Some(subject);
         }
     }
     let effect = authority
-        .readmit_associated_effect(execution, &exact.ok_or_else(|| { eprintln!("MGDEBUG unavailable source_receipt.rs#6"); Denial::Unavailable })?)
+        .readmit_associated_effect(execution, &exact.ok_or(Denial::Unavailable)?)
         .map_err(super::source_denial::native)?;
     product
         .observation_port()

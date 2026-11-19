@@ -101,7 +101,7 @@ fn recorded_fixed_steps_preview_the_qualified_old_output_after_later_edits() {
         // The source executed the producer; ordinary retained delivery reuses that output.
         assert_eq!(
             source.root_fulfillment().posture(),
-            WorthQueryOutputSettlementPosture::StableReused
+            WorthQueryOutputSettlementPosture::Performed
         );
         assert_eq!(
             completed
@@ -122,7 +122,7 @@ fn recorded_fixed_steps_preview_the_qualified_old_output_after_later_edits() {
         assert!(delivery.close_evidence().output_unavailable().is_none());
         assert_eq!(
             delivery.settlement().root_settlement().posture(),
-            WorthQueryOutputSettlementPosture::StableReused
+            WorthQueryOutputSettlementPosture::Performed
         );
         assert_eq!(
             delivery
@@ -170,7 +170,7 @@ fn recorded_fixed_steps_preview_the_qualified_old_output_after_later_edits() {
         assert_eq!(old.source(), step.endpoint());
         assert_eq!(
             old.required_root_posture(),
-            Some(WorthQueryOutputSettlementPosture::StableReused)
+            Some(WorthQueryOutputSettlementPosture::Performed)
         );
         assert_eq!(old.rows()[0].body_key, "anchor-a");
         assert_eq!(old.rows()[0].value, length(3));

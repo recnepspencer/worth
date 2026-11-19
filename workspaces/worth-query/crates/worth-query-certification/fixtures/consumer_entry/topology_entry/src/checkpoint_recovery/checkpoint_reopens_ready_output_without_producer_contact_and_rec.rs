@@ -138,8 +138,25 @@ mod serial {
             worth_relational::facade::inspection::observe_maintenance_work(1, || {
                 settle(&request, &restored)
             });
-        assert_eq!(recomputed.work().producer_contact_count(), 0);
-        assert_eq!(recomputed.work().derived_publication_count(), 0);
+        // The edit co-committed the root and both dependents. Delivery hands
+        // back those three original receipts and their own account of that
+        // production; it contacts no producer and writes nothing.
+        assert_eq!(recomputed.root_producer_contacts_in_this_demand(), 0);
+        assert_eq!(
+            (
+                recomputed.work().producer_contact_count(),
+                recomputed.work().derived_publication_count()
+            ),
+            (3, 3)
+        );
+        assert_eq!(
+            recomputed
+                .root_receipt()
+                .expect("the co-committed root keeps its original producer receipt")
+                .committed_product_publication()
+                .composite_commit(),
+            current.selected_commit()
+        );
         assert_eq!(
             delivery_writes.published_rows.len() + delivery_writes.omitted_publications,
             0
@@ -152,8 +169,15 @@ mod serial {
             worth_relational::facade::inspection::observe_maintenance_work(1, || {
                 settle(&request, &restored)
             });
-        assert_eq!(reused.work().producer_contact_count(), 0);
-        assert_eq!(reused.work().derived_publication_count(), 0);
+        assert_eq!(reused.root_producer_contacts_in_this_demand(), 0);
+        assert_eq!(
+            (
+                reused.work().producer_contact_count(),
+                reused.work().derived_publication_count()
+            ),
+            (3, 3),
+            "a later current demand rejoins the same original receipts"
+        );
         assert_eq!(
             reuse_writes.published_rows.len() + reuse_writes.omitted_publications,
             0

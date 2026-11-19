@@ -231,7 +231,6 @@ where
             }
         }
         Ok(WorthQueryProviderIdempotencyResolution::Unpublished) => {
-            eprintln!("MGDEBUG authorized consumer Unpublished");
             candidate.discard();
             progression_denied(DenialStage::Idempotency)
         }
@@ -254,8 +253,7 @@ where
                 "pending publication execution refused",
             ))
         }
-        Err(cause @ (IdempotencyDenial::Unavailable | IdempotencyDenial::NativeKeyLookup { .. })) => {
-            eprintln!("MGDEBUG authorized consumer {cause:?}");
+        Err(IdempotencyDenial::Unavailable | IdempotencyDenial::NativeKeyLookup { .. }) => {
             candidate.discard();
             progression_denied(DenialStage::Idempotency)
         }

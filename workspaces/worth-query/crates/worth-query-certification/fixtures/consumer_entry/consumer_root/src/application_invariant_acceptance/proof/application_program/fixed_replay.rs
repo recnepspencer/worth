@@ -203,9 +203,15 @@ fn fixed_registered_reply_loss_resumes_without_handler_rerun() {
         carried_source.idempotency_binding(),
         original_source_binding
     );
-    assert!(
-        settled.settlement().root_receipt().is_none(),
-        "retained co-publication does not invent a separate producer receipt"
+    assert_eq!(
+        settled
+            .settlement()
+            .root_receipt()
+            .expect("the retained co-publication keeps its original producer receipt")
+            .committed_product_publication()
+            .composite_commit(),
+        &original_commit,
+        "registered recovery delivers the original receipt, not a new one"
     );
     let carried_source = carried_source.clone();
     assert_eq!(settled.settlement().output_count(), 4);

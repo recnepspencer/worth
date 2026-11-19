@@ -10,7 +10,7 @@ pub(in crate::domain_computation::primary_graph::provider) fn read(
     layout: &WorthQueryProviderIdempotencyLayout,
 ) -> Result<RecordedOriginalBinding, Denial> {
     if row.kind_id() != layout.entity_kind {
-        { eprintln!("MGDEBUG unavailable original_binding.rs#3"); return Err(Denial::Unavailable); }
+        return Err(Denial::Unavailable);
     }
     let value = |locator: &AspectFieldLocator| {
         row.field(
@@ -22,7 +22,7 @@ pub(in crate::domain_computation::primary_graph::provider) fn read(
         value(locator)
             .and_then(AspectValue::raw_text)
             .map(str::to_owned)
-            .ok_or_else(|| { eprintln!("MGDEBUG unavailable original_binding.rs#1"); Denial::Unavailable })
+            .ok_or(Denial::Unavailable)
     };
     let number = |locator: &AspectFieldLocator| match value(locator) {
         Some(AspectValue::UInt64(value)) => Ok(*value),
@@ -31,7 +31,7 @@ pub(in crate::domain_computation::primary_graph::provider) fn read(
     if number(&layout.association_locator)?
         != super::super::recorded_origin::ENCLOSING_NATIVE_ASSOCIATION
     {
-        { eprintln!("MGDEBUG unavailable original_binding.rs#4"); return Err(Denial::Unavailable); }
+        return Err(Denial::Unavailable);
     }
     Ok(RecordedOriginalBinding {
         key: decode_key(&text(&layout.key_locator)?)?,
@@ -40,9 +40,9 @@ pub(in crate::domain_computation::primary_graph::provider) fn read(
         outcome: WorthQueryApplicationCommitOutcomeIdentity::restore(number(
             &layout.outcome_identity_locator,
         )?)
-        .ok_or_else(|| { eprintln!("MGDEBUG unavailable original_binding.rs#2"); Denial::Unavailable })?,
+        .ok_or(Denial::Unavailable)?,
         emitted: usize::try_from(number(&layout.emitted_effect_count_locator)?)
-            .map_err(|_| { eprintln!("MGDEBUG unavailable original_binding.rs#6"); Denial::Unavailable })?,
+            .map_err(|_| Denial::Unavailable)?,
         settlement: worth_foundational::facade::DurableQueryOutputSettlement::from_recorded_code(
             number(&layout.output_settlement_locator)?,
         ),
@@ -50,7 +50,7 @@ pub(in crate::domain_computation::primary_graph::provider) fn read(
 }
 fn decode_key(text: &str) -> Result<[u8; 32], Denial> {
     if text.len() != 64 {
-        { eprintln!("MGDEBUG unavailable original_binding.rs#5"); return Err(Denial::Unavailable); }
+        return Err(Denial::Unavailable);
     }
     let mut key = [0; 32];
     for (target, pair) in key.iter_mut().zip(text.as_bytes().as_chunks::<2>().0) {

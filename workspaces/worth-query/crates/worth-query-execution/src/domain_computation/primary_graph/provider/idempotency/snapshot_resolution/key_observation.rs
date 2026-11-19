@@ -14,7 +14,7 @@ pub(in crate::domain_computation::primary_graph::provider) fn observe(
             runtime,
             product.observation().basis().relational_basis(),
         )
-        .map_err(|_| { eprintln!("MGDEBUG unavailable key_observation.rs#3"); WorthQueryProviderIdempotencyResolutionDenial::Unavailable })?;
+        .map_err(|_| WorthQueryProviderIdempotencyResolutionDenial::Unavailable)?;
         let result = read(execution, provider, runtime, &snapshot, product, key);
         crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
         result
@@ -47,14 +47,14 @@ fn read(
     let commit = runtime
         .history()
         .immutable_commit_receipt_for_version(record.created_at_version)
-        .ok_or_else(|| { eprintln!("MGDEBUG unavailable key_observation.rs#1"); WorthQueryProviderIdempotencyResolutionDenial::Unavailable })?;
+        .ok_or(WorthQueryProviderIdempotencyResolutionDenial::Unavailable)?;
     let receipt = source_receipt::read_original(execution, &context, product, entity, &commit)?;
     let expected = WorthQueryProductIdempotencyAffinity::from_observation(product.observation());
     if receipt.recorded_affinity() != super::super::recorded_origin::affinity_text(&expected) {
         return Err(WorthQueryProviderIdempotencyResolutionDenial::ForeignAffinity);
     }
     if receipt.idempotency_key_identity() != &key {
-        { eprintln!("MGDEBUG unavailable key_observation.rs#2"); return Err(WorthQueryProviderIdempotencyResolutionDenial::Unavailable); }
+        return Err(WorthQueryProviderIdempotencyResolutionDenial::Unavailable);
     }
     Ok(Some(receipt))
 }

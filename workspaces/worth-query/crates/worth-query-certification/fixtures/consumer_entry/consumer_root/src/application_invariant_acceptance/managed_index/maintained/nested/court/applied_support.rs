@@ -230,6 +230,7 @@ fn journey() {
         (&*produced.rows()[0].identity, &*produced.rows()[0].name),
         ("generated-x", "produced:match-root:1")
     );
+    let handler_contacts = world.runtime().producer_contacts_on_this_thread_for_test();
     let mut output = performed
         .start_required_outputs(&world, &current, WorthQueryOutputDemandControls::default())
         .unwrap_or_else(|failure| panic!("real nested output delivery: {:?}", failure.denial()));
@@ -245,8 +246,28 @@ fn journey() {
             }
         })
         .expect("the authentic retained output settles");
-    assert_eq!(settlement.work().producer_contact_count(), 0);
-    assert_eq!(settlement.work().derived_publication_count(), 0);
+    // Delivery hands back the performing writer's original receipt and enters
+    // no handler; the settlement's work is that co-commit's own explanation.
+    assert_eq!(
+        world.runtime().producer_contacts_on_this_thread_for_test(),
+        handler_contacts,
+        "delivery enters no producer handler"
+    );
+    assert_eq!(
+        settlement
+            .root_receipt()
+            .expect("the reused committed output keeps its original receipt")
+            .committed_product_publication()
+            .composite_commit(),
+        &publication
+    );
+    assert_eq!(
+        (
+            settlement.work().producer_contact_count(),
+            settlement.work().derived_publication_count()
+        ),
+        (1, 1)
+    );
     let correspondence = settlement
         .root_settlement()
         .outputs_of::<operation::Outputs>()

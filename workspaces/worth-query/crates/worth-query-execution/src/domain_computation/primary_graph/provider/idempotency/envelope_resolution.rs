@@ -18,14 +18,14 @@ impl WorthQueryPrimaryGraphProvider {
         if let Some(resolution) = self.resolve_recovered_envelope_idempotency(
             &WorthQueryProductIdempotencyAffinity::from_observation(product.observation()),
             candidates,
-        ).inspect_err(|e| eprintln!("MGDEBUG idem recovered-envelope {e:?}"))? {
+        )? {
             return Ok(resolution);
         }
 
         let layout = self.graph.layout.provider_idempotency().clone();
         let product_affinity =
             WorthQueryProductIdempotencyAffinity::from_observation(product.observation());
-        match self.resolve_unpublished_envelope_idempotency(&product_affinity, candidates).inspect_err(|e| eprintln!("MGDEBUG idem unpublished-1 {e:?}"))? {
+        match self.resolve_unpublished_envelope_idempotency(&product_affinity, candidates)? {
             Some(WorthQueryProviderIdempotencyResolution::PreparationBusy) => {
                 return Err(WorthQueryProviderIdempotencyResolutionDenial::PreparationBusy)
             }
@@ -61,7 +61,6 @@ impl WorthQueryPrimaryGraphProvider {
                             return Ok(WorthQueryProviderIdempotencyResolution::Drift);
                         }
                     } else if recorded.correction_identity().is_some() {
-                        eprintln!("MGDEBUG idem pending-correction Unpublished");
                         return Ok(WorthQueryProviderIdempotencyResolution::Unpublished);
                     }
                 }
@@ -74,26 +73,25 @@ impl WorthQueryPrimaryGraphProvider {
                     runtime,
                     product.observation().lifecycle_incarnation(),
                     &mut retired,
-                ).map_err(pending_publication_denial).inspect_err(|e| eprintln!("MGDEBUG idem resume-pending {e:?}"))?;
+                ).map_err(pending_publication_denial)?;
             }
             // Concurrent requests can have admitted the same earlier head.
             // Under the branch lane, locate the key in the SAME live occurrence's
             // current owner selection, then read its immutable original source.
             let selected = product.observation_port().observe_product_branch_occurrence(
                 product.observation().lifecycle_incarnation(),
-            ).map_err(|_| WorthQueryProviderIdempotencyResolutionDenial::ForeignAffinity).inspect_err(|e| eprintln!("MGDEBUG idem observe-occurrence {e:?}"))?;
+            ).map_err(|_| WorthQueryProviderIdempotencyResolutionDenial::ForeignAffinity)?;
             let observation = &selected;
             let basis = observation.basis().relational_basis();
             if let Some(resolution) = self.resolve_unpublished_envelope_idempotency(
                 &product_affinity,
                 candidates,
-            ).inspect_err(|e| eprintln!("MGDEBUG idem unpublished-2 {e:?}"))? {
-                eprintln!("MGDEBUG idem unpublished-2 resolution {resolution:?}");
+            )? {
                 return Ok(resolution);
             }
             self.graph
                 .carry_primary_index_basis_for_basis(execution, runtime, basis)
-                .map_err(|d| { eprintln!("MGDEBUG idem carry-index {d:?}"); idempotency_index_currency_denial(d) })?;
+                .map_err(idempotency_index_currency_denial)?;
             // A carried known-empty selection is not yet a concrete lookup
             // generation. Admit only this key index through Native's ordinary
             // field preparation; it never reconstructs a missing population.
@@ -102,21 +100,19 @@ impl WorthQueryPrimaryGraphProvider {
                 basis,
                 crate::domain_computation::primary_graph::index_maintenance_budget::ordinary_index_maintenance_budget(),
                 execution,
-            ).map_err(|denial| { eprintln!("MGDEBUG idem ensure-key-index {:?}", denial.kind); denial }).map_err(|denial| match denial.kind {
+            ).map_err(|denial| match denial.kind {
                 worth_relational::facade::indexes::DerivedIndexMaintenanceDenialKind::Execution(cause) => snapshot_resolution::idempotency_read_stop(cause),
                 _ => WorthQueryProviderIdempotencyResolutionDenial::Unavailable,
             })?;
             let snapshot = crate::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot(runtime, basis)
-                .map_err(|denial| { eprintln!("MGDEBUG idem open-snapshot"); idempotency_snapshot_denial(denial.into()) })?;
+                .map_err(|denial| idempotency_snapshot_denial(denial.into()))?;
             let resolution = resolve_at_snapshot(execution, self, runtime, &snapshot, &layout, product, candidates);
             crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
-            let resolution = resolution.inspect_err(|e| eprintln!("MGDEBUG idem at-snapshot {e:?}
-{}", std::backtrace::Backtrace::force_capture()))?;
-            if matches!(resolution, WorthQueryProviderIdempotencyResolution::Unpublished) { eprintln!("MGDEBUG idem at-snapshot Unpublished"); }
+            let resolution = resolution?;
             if purpose == AuthoredEnvelopeResolutionPurpose::Execute
                 && let WorthQueryProviderIdempotencyResolution::Readmitted(receipt) = &resolution {
                 runtime.repair_pending_publication_settlement(receipt.commit_reference().commit_id)
-                    .map_err(|_| { eprintln!("MGDEBUG idem repair-settlement"); WorthQueryProviderIdempotencyResolutionDenial::Unavailable })?;
+                    .map_err(|_| WorthQueryProviderIdempotencyResolutionDenial::Unavailable)?;
             }
             Ok(resolution)
         })

@@ -42,21 +42,6 @@ impl SectionPublication {
             },
         )
     }
-    pub(super) fn prepare_complete(
-        source: &std::sync::Arc<crate::cold_source::StoreColdSource>,
-        complete: &worth_relational::facade::durability::CompleteRelationalNativeCheckpoint,
-        execution: &ExecutionRequest<'_, '_>,
-    ) -> Result<Self, RelationalSectionCheckpointDenial> {
-        Self::prepare_encoded(
-            source,
-            complete.checkpoint(),
-            execution,
-            Some(complete.initial_predecessor()),
-            super::super::complete_codec::HEADER,
-            complete.source_artifact().as_bytes(),
-            || super::super::complete_codec::encode(complete),
-        )
-    }
     fn prepare_encoded(
         source: &std::sync::Arc<crate::cold_source::StoreColdSource>,
         checkpoint: &RelationalNativeCheckpoint,

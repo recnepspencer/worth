@@ -4,6 +4,23 @@ use crate::{RelationalSectionCheckpointDenial as Denial, RelationalSectionCloseD
 use worth_relational::facade::durability::RelationalCheckpointAcknowledgementDenial as Ack;
 use worth_relational::facade::runtime::RelationalRuntimeCloseDenial;
 
+/// The one production preparation: the Home admission image is sealed from the
+/// actual capture, then bound with the caller's World companion. This layer
+/// owns no World, so the coordinates and companion are opaque fixture values.
+fn prepare_home_section(
+    preparation: &crate::RelationalSectionCompleteCheckpointPreparation,
+    execution: &ExecutionRequest<'_, '_>,
+) -> Result<crate::PreparedCompleteRelationalSection, Denial> {
+    preparation
+        .prepare_home(
+            worth_foundational::facade::HomeIdentity::from_observed_bytes([7; 16]).unwrap(),
+            [1, 0, 0],
+            [9; 32],
+            execution,
+        )?
+        .bind_home_admission_section(b"world-companion", execution)
+}
+
 fn section(
     execution: &ExecutionRequest<'_, '_>,
 ) -> (
@@ -70,7 +87,8 @@ fn genuine_complete_section_retains_capture_and_resumes_same_selection_ack() {
     );
     let execution = &ExecutionRequest::serial(&serial);
     let (_directory, section, selected) = section(execution);
-    let prepared = section.prepare_complete_checkpoint(execution).unwrap();
+    let prepared =
+        prepare_home_section(&section.complete_checkpoint_preparation(), execution).unwrap();
     assert_eq!(prepared.covered().0, 1);
     prepared.validate_publication().unwrap();
     let unknown = execution
@@ -142,12 +160,12 @@ fn weak_complete_preparation_preserves_close_stop_resume_and_owner_loss() {
         SerialRequest::from_memory(SerialMemoryBudget::new(None), stopped.token(), None);
     stopped.cancel();
     assert!(matches!(
-        preparation.prepare(&ExecutionRequest::serial(&stopped_serial)),
+        prepare_home_section(&preparation, &ExecutionRequest::serial(&stopped_serial)),
         Err(Denial::Execution(
             worth_execution::WorkCeilingDenial::Stopped(_)
         ))
     ));
-    let prepared = preparation.prepare(execution).unwrap();
+    let prepared = prepare_home_section(&preparation, execution).unwrap();
     let retirement = crate::PreparedRelationalSectionClose::prepare(execution).unwrap();
     let (section, retirement, cause) = match section.prepare_close(retirement, execution) {
         Err(refused) => refused,
@@ -164,19 +182,22 @@ fn weak_complete_preparation_preserves_close_stop_resume_and_owner_loss() {
             panic!("idle weak preparation cannot retain close custody: {cause:?}")
         });
     assert!(
-        matches!(preparation.prepare(execution), Err(Denial::Capture(_))),
+        matches!(
+            prepare_home_section(&preparation, execution),
+            Err(Denial::Capture(_))
+        ),
         "stopped Native owner cannot prepare through a weak port"
     );
     let (section, _retirement) = closing
         .resume()
         .unwrap_or_else(|_| panic!("reversible preparation retains the same serving owner"));
-    let prepared = idle.prepare(execution).unwrap();
+    let prepared = prepare_home_section(&idle, execution).unwrap();
     assert_eq!(prepared.covered().0, 1);
     drop(prepared);
     drop(selected);
     drop(section);
     assert!(matches!(
-        preparation.prepare(execution),
+        prepare_home_section(&preparation, execution),
         Err(Denial::OwnerUnavailable)
     ));
 }
@@ -210,7 +231,7 @@ fn owned_visibility_cache_retires_before_external_capture_recheck_and_source_sea
     native.snapshots().release_snapshot(&snapshot).unwrap();
     drop(snapshot);
     let preparation = section.complete_checkpoint_preparation();
-    let capture = preparation.prepare(execution).unwrap();
+    let capture = prepare_home_section(&preparation, execution).unwrap();
     let serving = section.serving.clone();
     let retirement = crate::PreparedRelationalSectionClose::prepare(execution).unwrap();
     let mut closing = section
@@ -238,7 +259,7 @@ fn owned_visibility_cache_retires_before_external_capture_recheck_and_source_sea
         Ok(_) => panic!("retiring the actual cache forbids service restoration"),
     };
     assert!(matches!(
-        preparation.prepare(execution),
+        prepare_home_section(&preparation, execution),
         Err(Denial::Capture(_))
     ));
     assert_eq!(capture.covered().0, 1);

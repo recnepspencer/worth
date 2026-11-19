@@ -15,20 +15,19 @@ impl RelationalCommitEnvelopeResidency {
         }
         let (entry, _) = self
             .source_placement()
-            .ok_or_else(|| { eprintln!("MGDEBUG envelope no-source-placement {:?}
-{}", self.captured_position(), std::backtrace::Backtrace::force_capture()); RelationalStorageUnavailable {
+            .ok_or_else(|| RelationalStorageUnavailable {
                 subject: RelationalStorageSubject::Envelope(
                     self.captured_position()
                         .unwrap_or(crate::publication::patch::data::PatchStreamPosition(0)),
                 ),
                 cause: Cause::SourceUnavailable,
-            } })?;
+            })?;
         // Only Journal needs a new prefix read. Selected uses its retained cut.
         let journal = self.journal_placement().map(|(_, source)| source);
         let protection = journal
             .as_ref()
             .map(|source| {
-                crate::durability::medium::RelationalDurableReadProtection::capture(
+                crate::durability::medium::RelationalDurableReadProtection::capture_when_available(
                     source, execution,
                 )
                 .map_err(|cause| {
@@ -67,7 +66,7 @@ impl RelationalCommitEnvelopeResidency {
             .map_err(|cause| RelationalRecoveryStop::Request(cause.into()))?;
         let bytes = source
             .read_commit(entry.position, read_limit)
-            .map_err(|cause| { eprintln!("MGDEBUG envelope journal read_commit {:?} {cause:?}", entry.position); failure(cause) })?;
+            .map_err(failure)?;
         let artifact = RelationalCanonicalCommitArtifact::copy_frame_original(&bytes, execution)
             .map_err(|cause| match cause {
                 crate::durability::canonical_commit_artifact::ControlledFrameCopyDenial::Request(cause) => RelationalRecoveryStop::Request(cause),

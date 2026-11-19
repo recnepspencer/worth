@@ -163,7 +163,7 @@ mod serial {
         );
         assert_eq!(
             changed.posture(),
-            WorthQueryOutputSettlementPosture::StableReused
+            WorthQueryOutputSettlementPosture::Performed
         );
         // The dirty read re-enters Query; its producer already ran in the edit.
         assert_eq!(
