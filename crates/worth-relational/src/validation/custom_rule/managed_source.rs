@@ -101,6 +101,15 @@ impl CustomInvariantScopePlanner<'_> {
         let read = self.read_managed_index_source(prepared)?;
         Ok(lend(read.changed_members(before)?))
     }
+    /// The receiving invocation's own scope, after the same invocation and
+    /// observation checks as every managed read. Preparation only.
+    pub fn observed_managed_index_scope(
+        &self,
+        prepared: &PreparedManagedIndexSourceRead,
+    ) -> Result<crate::identity::data::EntityId, ManagedIndexSourcePreparationDenial> {
+        self.read_managed_index_source(prepared)?;
+        Ok(prepared.scope())
+    }
 }
 
 impl<'runtime> CustomInvariantExecutionContext<'runtime> {

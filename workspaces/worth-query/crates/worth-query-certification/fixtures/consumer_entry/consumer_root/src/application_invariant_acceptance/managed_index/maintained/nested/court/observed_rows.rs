@@ -169,6 +169,15 @@ fn a_prepared_handle_from_another_scope_or_proposal_is_refused() {
         reads.iter().map(refusal).collect::<Vec<_>>(),
         ["invocation", "invocation", "observation"]
     );
+    // The kept handle cannot mint its scope either, by the same checks.
+    let scopes = records.stale_scopes.lock().unwrap().clone();
+    let scope_refusal = |read: &Result<(u32, u64, u32), String>| {
+        refusal(&read.as_ref().map(|_| 0).map_err(Clone::clone))
+    };
+    assert_eq!(
+        scopes.iter().map(scope_refusal).collect::<Vec<_>>(),
+        ["invocation", "invocation", "observation"]
+    );
     // The receiving invocations' own handles read their rows.
     assert_eq!(
         observed(&records, &model),
@@ -177,6 +186,60 @@ fn a_prepared_handle_from_another_scope_or_proposal_is_refused() {
             ("B".to_owned(), [vec![x], vec![x]]),
             ("D".to_owned(), [vec![w], vec![w]]),
             ("D".to_owned(), [vec![w], vec![w]]),
+        ]
+    );
+}
+
+/// Each invocation mints its own scope as a typed Directory: the entity is
+/// the scope Native invoked, evaluation reads its own field through it, and
+/// a mint under the Item binding, not the Source's scope kind, is refused.
+#[test]
+fn the_observed_scope_is_the_invocations_directory_and_is_readable_in_evaluation() {
+    let (world, _, records, mut model, mut key) = setup();
+    link(&world, &mut model, &mut key, "x", "a", 1);
+    records.records.lock().unwrap().clear();
+    records.scopes.lock().unwrap().clear();
+    let rename = Edit::Name {
+        item: "a".into(),
+        value: "renamed-branch".into(),
+    };
+    publish(&world, &mut model, &mut key, rename);
+    let scopes = records.scopes.lock().unwrap();
+    let mut minted: Vec<_> = scopes
+        .iter()
+        .map(|record| {
+            assert_eq!(
+                record.minted, record.scope,
+                "the minted entity is the scope"
+            );
+            let refused = record
+                .wrong_kind
+                .as_ref()
+                .expect_err("an Item scope is refused");
+            assert!(refused.contains("WrongEntityKind"), "{refused}");
+            model.directory(record.scope).to_owned()
+        })
+        .collect();
+    minted.sort();
+    assert_eq!(minted, ["A", "B"]);
+    let mut read: Vec<_> = records
+        .records
+        .lock()
+        .unwrap()
+        .iter()
+        .map(|record| {
+            (
+                model.directory(record.scope).to_owned(),
+                record.scope_name.clone(),
+            )
+        })
+        .collect();
+    read.sort();
+    assert_eq!(
+        read,
+        [
+            ("A".to_owned(), Some("A".to_owned())),
+            ("B".to_owned(), Some("B".to_owned())),
         ]
     );
 }

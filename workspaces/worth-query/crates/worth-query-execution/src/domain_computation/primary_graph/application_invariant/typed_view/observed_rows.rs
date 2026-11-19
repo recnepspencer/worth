@@ -1,5 +1,6 @@
 //! Preparation reads the Source rows Native observed changing the receiving
-//! invocation's scope, through Native's own admitted managed read.
+//! invocation's scope, and that scope itself, through Native's own admitted
+//! managed read.
 use super::super::prepared_scope::ApplicationInvariantAdmissionAccess as Admission;
 use super::super::read_observation::InvariantReadObservation as Reads;
 use super::{
@@ -48,6 +49,41 @@ impl<Schema> Planner<'_, '_, Schema> {
         entity: &EntityBinding<Schema, E>,
     ) -> Result<Vec<Entity<Schema, E>>, Error<Cause>> {
         self.typed_rows(prepared, entity, ViewPosture::Proposed)
+    }
+    /// The receiving invocation's own scope as a typed entity of the Source's
+    /// scope kind, admitted to the prepared scope for evaluation and typed for
+    /// the proposed view, where an invoked scope always exists. Preparation
+    /// only, through this invocation's own admitted Source read: a handle kept
+    /// from another scope or proposal is refused.
+    pub fn observed_scope<I, E, Cause>(
+        &self,
+        prepared: &Prepared<Schema, I>,
+        entity: &EntityBinding<Schema, E>,
+    ) -> Result<Entity<Schema, E>, Error<Cause>> {
+        let (binding, program, native) = prepared.source();
+        let request = Request {
+            planner: &self.binding_identity,
+            index: binding,
+            entity: &entity.binding_identity,
+            kind: entity.entity_kind,
+            program,
+            native,
+            before: false,
+            element_bytes: 0,
+        };
+        let entity_id = observed_scope_id(self.lower, &self.admission, &self.reads, request)
+            .map_err(|cause| match cause {
+                Denied::Native(cause) => Error::from(cause),
+                Denied::Access(cause) => Error::from(cause),
+            })?;
+        Ok(Entity {
+            entity_id,
+            kind: entity.entity_kind,
+            binding_identity: self.binding_identity.clone(),
+            proposal_affinity: self.lower.proposal_affinity(),
+            posture: ViewPosture::Proposed,
+            _marker: PhantomData,
+        })
     }
     /// Type-dependent extraction around the concrete core, then handles
     /// minted for the admitted rows only.
@@ -115,19 +151,7 @@ fn observed_row_ids(
     reads: &Reads,
     request: Request<'_>,
 ) -> Result<Vec<EntityId>, Denied> {
-    let foreign = |subject| Denied::Access(Access::new(AccessKind::ForeignBinding, subject));
-    if request.index != request.planner {
-        return Err(foreign("managed index binding"));
-    }
-    if request.entity != request.planner {
-        return Err(foreign("Source row binding"));
-    }
-    if request.kind != request.program.row_kind() {
-        return Err(Denied::Access(Access::new(
-            AccessKind::WrongEntityKind,
-            "Source row kind",
-        )));
-    }
+    check(&request, request.program.row_kind(), "Source row")?;
     let relations = lower.relations();
     lower
         .lend_managed_index_source_changes(request.native, request.before, |members| {
@@ -154,4 +178,42 @@ fn observed_row_ids(
             Ok(rows)
         })
         .map_err(Denied::Native)?
+}
+
+/// The exact bindings and the declared kind, before any Native read.
+fn check(request: &Request<'_>, kind: KindId, subject: &'static str) -> Result<(), Denied> {
+    let foreign = |subject| Denied::Access(Access::new(AccessKind::ForeignBinding, subject));
+    if request.index != request.planner {
+        return Err(foreign("managed index binding"));
+    }
+    if request.entity != request.planner {
+        return Err(foreign(subject));
+    }
+    if request.kind != kind {
+        return Err(Denied::Access(Access::new(
+            AccessKind::WrongEntityKind,
+            subject,
+        )));
+    }
+    Ok(())
+}
+
+/// The scope's concrete core: exact bindings and the Source's scope kind,
+/// Native's admitted read of this invocation and observation, then the scope
+/// admitted to the prepared scope. Cost: one admission.
+fn observed_scope_id(
+    lower: &CustomInvariantScopePlanner<'_>,
+    admission: &Admission,
+    reads: &Reads,
+    request: Request<'_>,
+) -> Result<EntityId, Denied> {
+    check(&request, request.program.scope_kind(), "Source scope")?;
+    let scope = lower
+        .observed_managed_index_scope(request.native)
+        .map_err(Denied::Native)?;
+    reads.endpoint();
+    admission
+        .entity(scope, lower.relations().read_budget())
+        .map_err(Denied::Access)?;
+    Ok(scope)
 }

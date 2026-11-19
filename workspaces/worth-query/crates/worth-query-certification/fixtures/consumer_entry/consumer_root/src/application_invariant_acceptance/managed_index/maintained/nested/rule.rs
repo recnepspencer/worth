@@ -43,7 +43,18 @@ pub(in super::super) struct Calls {
     pub(super) stale:
         Mutex<Option<WorthQueryPreparedInvariantManagedIndex<Catalog, prefix::PrefixIndex>>>,
     pub(super) stale_reads: Mutex<Vec<Result<usize, String>>>,
+    /// The kept handle's scope mint, in the same probes.
+    pub(super) stale_scopes: Mutex<Vec<Result<(u32, u64, u32), String>>>,
+    /// Per invocation: its scope identity, the scope entity minted for it,
+    /// and the refusal of a mint under the Item binding.
+    pub(super) scopes: Mutex<Vec<ScopeRecord>>,
     pub(super) acquired: Mutex<Vec<query::ItemRow>>,
+}
+#[derive(Debug)]
+pub(super) struct ScopeRecord {
+    pub scope: (u32, u64, u32),
+    pub minted: (u32, u64, u32),
+    pub wrong_kind: Result<(), String>,
 }
 #[derive(Debug)]
 pub(super) struct Record {
@@ -53,16 +64,21 @@ pub(super) struct Record {
     /// The Item rows Native observed changing this scope, as the committed
     /// and the proposed views admit them.
     pub observed: [Vec<(u32, u64, u32)>; 2],
+    /// The minted scope's DirectoryIdentity, read in evaluation.
+    pub scope_name: Option<String>,
 }
 /// The retained index and the Item rows Native observed changing its scope,
 /// as the committed and the proposed views admit them.
 pub(super) type Observed = (
     WorthQueryPreparedInvariantManagedIndex<Catalog, prefix::PrefixIndex>,
     [Vec<(u32, u64, u32)>; 2],
+    Option<WorthQueryApplicationInvariantEntity<Catalog, Directory>>,
 );
 pub(super) struct Rule {
     index: WorthQueryApplicationInvariantManagedIndexBinding<Catalog, prefix::PrefixIndex>,
     items: WorthQueryApplicationInvariantEntityBinding<Catalog, Item>,
+    directories: WorthQueryApplicationInvariantEntityBinding<Catalog, Directory>,
+    directory_identity: WorthQueryApplicationInvariantFieldBinding<Catalog, Directory, String>,
     calls: Arc<Calls>,
 }
 pub(super) fn resolve(
@@ -74,6 +90,12 @@ pub(super) fn resolve(
             .typed_managed_index(prefix::PrefixIndex::reference())
             .ok_or("nested Source was not installed")?,
         items: resolver.typed_entity(Item::reference()).ok_or("Item")?,
+        directories: resolver
+            .typed_entity(Directory::reference())
+            .ok_or("Directory")?,
+        directory_identity: resolver
+            .typed_field(DirectoryIdentity::at("DirectoryIdentity"))
+            .ok_or("DirectoryIdentity")?,
         calls,
     })
 }
@@ -91,7 +113,7 @@ impl WorthQueryApplicationInvariantRule<Catalog> for Rule {
         let prepared = planner
             .retain_managed_index(&self.index)
             .map_err(WorthQueryApplicationInvariantError::from)?;
-        Ok((prepared, [Vec::new(), Vec::new()]))
+        Ok((prepared, [Vec::new(), Vec::new()], None))
     }
     fn prepare_scope_checked(
         &self,
@@ -101,10 +123,11 @@ impl WorthQueryApplicationInvariantRule<Catalog> for Rule {
         if !budget.checkpoint(1) {
             return Some(Err(WorthQueryApplicationInvariantError::Stopped));
         }
-        Some(self.prepare_scope(planner).and_then(|(prepared, _)| {
+        Some(self.prepare_scope(planner).and_then(|(prepared, ..)| {
             self.probe_stale(planner)?;
             let observed = self.observe(planner, &prepared, budget)?;
-            Ok((prepared, observed))
+            let scope = self.mint(planner, &prepared)?;
+            Ok((prepared, observed, Some(scope)))
         }))
     }
     fn evaluate(
@@ -154,6 +177,26 @@ impl Rule {
         };
         Ok([coordinates(&committed), coordinates(&proposed)])
     }
+    /// The invocation's own scope, typed; an Item-kind mint is recorded as
+    /// it is refused.
+    fn mint(
+        &self,
+        planner: &WorthQueryApplicationInvariantScopePlanner<'_, '_, Catalog>,
+        prepared: &WorthQueryPreparedInvariantManagedIndex<Catalog, prefix::PrefixIndex>,
+    ) -> Result<
+        WorthQueryApplicationInvariantEntity<Catalog, Directory>,
+        WorthQueryApplicationInvariantError,
+    > {
+        let scope = planner.observed_scope(prepared, &self.directories)?;
+        let wrong: Result<_, WorthQueryApplicationInvariantError> =
+            planner.observed_scope(prepared, &self.items);
+        self.calls.scopes.lock().unwrap().push(ScopeRecord {
+            scope: coordinate(prepared.scope_identity()),
+            minted: coordinate(scope.entity_id()),
+            wrong_kind: wrong.map(|_| ()).map_err(|cause| format!("{cause:?}")),
+        });
+        Ok(scope)
+    }
     /// When armed, try the handle kept from an earlier invocation, record
     /// whether Native refused it, and keep this invocation's handle instead.
     fn probe_stale(
@@ -174,6 +217,13 @@ impl Rule {
             self.calls.stale_reads.lock().unwrap().push(
                 outcome
                     .map(|rows| rows.len())
+                    .map_err(|cause| format!("{cause:?}")),
+            );
+            let scope: Result<_, WorthQueryApplicationInvariantError> =
+                planner.observed_scope(&kept, &self.directories);
+            self.calls.stale_scopes.lock().unwrap().push(
+                scope
+                    .map(|scope| coordinate(scope.entity_id()))
                     .map_err(|cause| format!("{cause:?}")),
             );
         }
@@ -236,16 +286,20 @@ impl Rule {
         if !budget.claim_result(held as u64) {
             return Err(WorthQueryApplicationInvariantError::Stopped);
         }
-        let id = scope.0.scope_identity();
+        // The minted scope is admitted: evaluation reads its own field.
+        let scope_name = match &scope.2 {
+            Some(directory) => context
+                .proposed()
+                .field(&self.directory_identity, directory)
+                .map_err(execution)?,
+            None => None,
+        };
         self.calls.records.lock().unwrap().push(Record {
-            scope: (
-                id.partition_value(),
-                id.local_slot_value(),
-                id.generation_value(),
-            ),
+            scope: coordinate(scope.0.scope_identity()),
             before,
             after,
             observed: scope.1.clone(),
+            scope_name,
         });
         Ok(if invalid {
             WorthQueryApplicationInvariantVerdict::Violation(())
@@ -290,4 +344,11 @@ fn layout<T>(count: usize) -> Result<usize, WorthQueryApplicationInvariantError>
     count
         .checked_mul(size_of::<T>())
         .ok_or(WorthQueryApplicationInvariantError::Allocation)
+}
+fn coordinate(id: EntityId) -> (u32, u64, u32) {
+    (
+        id.partition_value(),
+        id.local_slot_value(),
+        id.generation_value(),
+    )
 }
