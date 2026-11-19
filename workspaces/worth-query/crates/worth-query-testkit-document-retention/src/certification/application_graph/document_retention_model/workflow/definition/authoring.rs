@@ -8,12 +8,7 @@ pub fn publish_definition<
         Schema = DocumentRetentionSchema,
     >,
 >(
-    application: &DocumentWorkflowRuntime<
-        impl worth_query_host::facade::declaration::application_program::ApplicationProgramDefinition<
-            super::super::super::schema::DocumentRetentionSchema,
-        >,
-        Spec,
-    >,
+    application: &impl DocumentWorkflowApplication<Spec = Spec>,
     definition: ValidatedWorkflowDefinition<Spec>,
     expected_predecessor: WorkflowDefinitionExpectedPredecessor,
     idempotency: u64,
@@ -30,6 +25,7 @@ pub fn publish_definition<
         WorkflowDefinitionExpectedPredecessor::Absent => runtime.current_world(),
     };
     let installed = application
+        .program_runtime()
         .with_host_advancement(|phase| {
             application
                 .vocabulary()
@@ -51,11 +47,7 @@ pub fn publish_definition<
 }
 
 pub fn retire_definition(
-    application: &DocumentWorkflowRuntime<
-        impl worth_query_host::facade::declaration::application_program::ApplicationProgramDefinition<
-            super::super::super::schema::DocumentRetentionSchema,
-        >,
-    >,
+    application: &impl DocumentWorkflowApplication<Spec = ReviewedDocumentWorkflow>,
     definition: PublishedWorkflowDefinitionRef,
     idempotency: u64,
 ) -> Result<
@@ -71,7 +63,7 @@ pub fn retire_definition(
         .mutate(authoring_intent())
         .without_source()
         .idempotency(&idempotency)
-        .prepare_workflow_definition_retirement(application, definition)
+        .prepare_workflow_definition_retirement(application.vocabulary(), definition)
         .map(|request| request.execute())
 }
 

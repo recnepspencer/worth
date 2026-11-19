@@ -70,7 +70,9 @@ pub mod trusted_time;
 pub mod workflow_runtime;
 pub use checkpoint_restore::{restore, restore_on_first_program};
 pub use trusted_time::{publish_on_first_program_with_trusted_time, CertificationTrustedTime};
-pub use workflow_runtime::DocumentWorkflowRuntime;
+pub use workflow_runtime::{
+    DocumentWorkflowApplication, DocumentWorkflowHome, DocumentWorkflowRuntime,
+};
 
 /// The retention every host seeds. It satisfies both installed rules, so the
 /// same bootstrap is lawful whichever program the host starts on.

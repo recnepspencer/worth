@@ -5,7 +5,7 @@ pub use worth_query_host::facade::application_entry::{
 
 pub use super::super::{
     assessment_output::{LookalikeRetentionAssessmentDemand, RetentionAssessmentDemand},
-    host::DocumentWorkflowRuntime,
+    host::{DocumentWorkflowApplication, DocumentWorkflowRuntime},
     operator_identity::{authenticate_operator, request_scope},
     retention_entry::DOCUMENT_IDENTITY,
     schema::DocumentRetentionQuery,
@@ -13,14 +13,7 @@ pub use super::super::{
 pub use super::{WorkflowAdvanceInput, WorkflowAdvanceIntent};
 
 pub fn accept_assessment(
-    application: &DocumentWorkflowRuntime<
-        impl worth_query_host::facade::declaration::application_program::ApplicationProgramDefinition<
-            super::super::schema::DocumentRetentionSchema,
-        >,
-        impl worth_query_host::facade::declaration::application_program::ApplicationWorkflowSpec<
-            Schema = super::super::schema::DocumentRetentionSchema,
-        >,
-    >,
+    application: &impl DocumentWorkflowApplication,
     instance: worth_query_host::facade::application_entry::PublishedWorkflowInstanceRef,
     settlement: &WorthQueryWorkflowAssessmentDemandSettlement<DocumentRetentionQuery>,
     idempotency: u64,
@@ -41,17 +34,13 @@ pub fn accept_assessment(
         })
         .without_source()
         .idempotency(&idempotency)
-        .prepare_workflow_advance(application, instance)
+        .prepare_workflow_advance(application.vocabulary(), instance)
         .expect("assessment acceptance must receive fresh workflow admission")
         .accept_assessment(settlement)
 }
 
 pub fn accept_early_assessment(
-    application: &DocumentWorkflowRuntime<
-        impl worth_query_host::facade::declaration::application_program::ApplicationProgramDefinition<
-            super::super::schema::DocumentRetentionSchema,
-        >,
-    >,
+    application: &impl DocumentWorkflowApplication<Spec = super::ReviewedDocumentWorkflow>,
     instance: worth_query_host::facade::application_entry::PublishedWorkflowInstanceRef,
     node_path: &str,
     settlement: &WorthQueryWorkflowAssessmentDemandSettlement<DocumentRetentionQuery>,
@@ -73,17 +62,13 @@ pub fn accept_early_assessment(
         })
         .without_source()
         .idempotency(&idempotency)
-        .prepare_workflow_collect_assessment(application, instance, node_path)
+        .prepare_workflow_collect_assessment(application.vocabulary(), instance, node_path)
         .expect("early assessment acceptance must receive fresh workflow admission")
         .accept_assessment(settlement)
 }
 
 pub fn settle_early_assessment_for(
-    application: &DocumentWorkflowRuntime<
-        impl worth_query_host::facade::declaration::application_program::ApplicationProgramDefinition<
-            super::super::schema::DocumentRetentionSchema,
-        >,
-    >,
+    application: &impl DocumentWorkflowApplication<Spec = super::ReviewedDocumentWorkflow>,
     instance: worth_query_host::facade::application_entry::PublishedWorkflowInstanceRef,
     node_path: &str,
     idempotency: u64,
@@ -103,7 +88,7 @@ pub fn settle_early_assessment_for(
         })
         .without_source()
         .idempotency(&idempotency)
-        .prepare_workflow_collect_assessment(application, instance, node_path)
+        .prepare_workflow_collect_assessment(application.vocabulary(), instance, node_path)
         .expect("declared early assessment must be ready")
         .into_assessment_demand(RetentionAssessmentDemand::new(subject_identity))
         .expect("the typed demand must match the installed assessment contract")
@@ -131,11 +116,7 @@ pub fn settle_early_assessment_for(
 }
 
 pub fn prepare_early_assessment_denial(
-    application: &DocumentWorkflowRuntime<
-        impl worth_query_host::facade::declaration::application_program::ApplicationProgramDefinition<
-            super::super::schema::DocumentRetentionSchema,
-        >,
-    >,
+    application: &impl DocumentWorkflowApplication<Spec = super::ReviewedDocumentWorkflow>,
     instance: worth_query_host::facade::application_entry::PublishedWorkflowInstanceRef,
     node_path: &str,
     idempotency: u64,
@@ -153,7 +134,7 @@ pub fn prepare_early_assessment_denial(
         })
         .without_source()
         .idempotency(&idempotency)
-        .prepare_workflow_collect_assessment(application, instance, node_path)
+        .prepare_workflow_collect_assessment(application.vocabulary(), instance, node_path)
     {
         Ok(_) => panic!("unready or non-assessment node must not collect evidence"),
         Err(denial) => denial,
@@ -161,14 +142,7 @@ pub fn prepare_early_assessment_denial(
 }
 
 pub fn settle_assessment(
-    application: &DocumentWorkflowRuntime<
-        impl worth_query_host::facade::declaration::application_program::ApplicationProgramDefinition<
-            super::super::schema::DocumentRetentionSchema,
-        >,
-        impl worth_query_host::facade::declaration::application_program::ApplicationWorkflowSpec<
-            Schema = super::super::schema::DocumentRetentionSchema,
-        >,
-    >,
+    application: &impl DocumentWorkflowApplication,
     instance: worth_query_host::facade::application_entry::PublishedWorkflowInstanceRef,
     idempotency: u64,
 ) -> WorthQueryWorkflowAssessmentDemandSettlement<DocumentRetentionQuery> {
@@ -176,14 +150,7 @@ pub fn settle_assessment(
 }
 
 pub fn settle_assessment_for(
-    application: &DocumentWorkflowRuntime<
-        impl worth_query_host::facade::declaration::application_program::ApplicationProgramDefinition<
-            super::super::schema::DocumentRetentionSchema,
-        >,
-        impl worth_query_host::facade::declaration::application_program::ApplicationWorkflowSpec<
-            Schema = super::super::schema::DocumentRetentionSchema,
-        >,
-    >,
+    application: &impl DocumentWorkflowApplication,
     instance: worth_query_host::facade::application_entry::PublishedWorkflowInstanceRef,
     idempotency: u64,
     subject_identity: &str,
@@ -202,7 +169,7 @@ pub fn settle_assessment_for(
         })
         .without_source()
         .idempotency(&idempotency)
-        .prepare_workflow_advance(application, instance)
+        .prepare_workflow_advance(application.vocabulary(), instance)
         .expect("assessment-head workflow admission must succeed")
         .into_assessment_demand(RetentionAssessmentDemand::new(subject_identity))
         .expect("the typed demand must match the installed assessment contract")
@@ -235,11 +202,7 @@ pub fn settle_assessment_for(
 }
 
 pub fn spoofed_assessment_denial(
-    application: &DocumentWorkflowRuntime<
-        impl worth_query_host::facade::declaration::application_program::ApplicationProgramDefinition<
-            super::super::schema::DocumentRetentionSchema,
-        >,
-    >,
+    application: &impl DocumentWorkflowApplication<Spec = super::ReviewedDocumentWorkflow>,
     instance: worth_query_host::facade::application_entry::PublishedWorkflowInstanceRef,
     idempotency: u64,
 ) -> worth_query_host::facade::application_entry::WorthQueryApplicationOutputDemandDenial {
@@ -256,7 +219,7 @@ pub fn spoofed_assessment_denial(
         })
         .without_source()
         .idempotency(&idempotency)
-        .prepare_workflow_advance(application, instance)
+        .prepare_workflow_advance(application.vocabulary(), instance)
         .expect("spoof probe must receive fresh workflow admission")
         .into_assessment_demand(LookalikeRetentionAssessmentDemand::new(DOCUMENT_IDENTITY))
         .expect("the lookalike repeats the public string contract");

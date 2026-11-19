@@ -3,10 +3,11 @@ use super::document_retention_model::{host, programs, schema::DocumentRetentionS
 use worth_query_host::facade::{
     application_contribution::with_bootstrap_advancement_from_request,
     application_installation::{ApplicationBuildIdentity, WorthQueryApplicationProgramRoster},
-    WorthQueryApplicationHome, WorthQueryApplicationHomeLocation, WorthQueryApplicationHomeRequest,
+    WorthQueryApplicationHomeLocation, WorthQueryApplicationHomeRequest,
 };
 
-pub type Home = WorthQueryApplicationHome<DocumentRetentionSchema, programs::RetentionProgramP0>;
+/// The Directory Home with the reviewed-document vocabulary bound to it.
+pub type Home = host::DocumentWorkflowHome;
 
 pub fn location(journey: &str) -> std::path::PathBuf {
     std::env::temp_dir().join(format!(
@@ -19,7 +20,7 @@ pub fn location(journey: &str) -> std::path::PathBuf {
     ))
 }
 
-pub fn open(directory: &std::path::Path) -> (Home, host::DocumentWorkflowRuntime) {
+pub fn open(directory: &std::path::Path) -> Home {
     let program = programs::validated_first_program();
     let roster = host::with_lifecycle_programs(
         WorthQueryApplicationProgramRoster::new().support(programs::validated_second_program()),
@@ -36,14 +37,32 @@ pub fn open(directory: &std::path::Path) -> (Home, host::DocumentWorkflowRuntime
             host::host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
             host::seed_host).open_in_advancement(&phase))
         .expect("bootstrap admission").unwrap_or_else(|cause| panic!("authored Home: {cause:?}"));
-    let application = workflow::retain_workflow(home.runtime().clone());
-    (home, application)
+    // A Directory Home keeps its runtime, so the vocabulary is bound through
+    // the Home itself, before any runtime handle is cloned or work retained.
+    let installed = workflow::install_workflow_spec(
+        home.runtime().installed_schema(),
+        home.runtime().installed_program(),
+        workflow::workflow_resources(),
+    );
+    let (authentication, authentication_clock) =
+        workflow::install_certification_authentication_with_clock(
+            home.runtime().installed_schema(),
+        );
+    let workflow = home
+        .retain_workflow_spec(installed, authentication.signing_owner())
+        .unwrap_or_else(|refused| panic!("authored workflow binding: {:?}", refused.denial()));
+    host::DocumentWorkflowHome {
+        workflow,
+        authentication,
+        authentication_clock,
+    }
 }
 
 pub fn close(home: Home) {
     let lease = funding();
-    home.close(&worth_execution::ExecutionRequest::leased(&lease))
-        .unwrap_or_else(|cause| panic!("authored Home close: {cause:?}"))
+    home.workflow
+        .close(&worth_execution::ExecutionRequest::leased(&lease))
+        .unwrap_or_else(|refused| panic!("authored Home close: {:?}", refused.reason()))
         .reclaim();
 }
 
