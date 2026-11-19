@@ -122,6 +122,7 @@ enum ViewPosture {
     Committed,
 }
 mod managed_index;
+mod observed_rows;
 pub use managed_index::{
     WorthQueryApplicationInvariantManagedIndexBinding, WorthQueryInvariantManagedIndexPair,
     WorthQueryInvariantManagedIndexRead, WorthQueryPreparedInvariantManagedIndex,

@@ -83,8 +83,47 @@ impl Entry {
         ) -> Result<bool, E>,
     ) -> Result<bool, E> {
         admit(65)?;
-        if self.occurrence != other.occurrence
-            || self.dependencies.len() != other.dependencies.len()
+        if self.occurrence != other.occurrence {
+            return Ok(false);
+        }
+        self.same_row(other, admit, reserve, fault, frames)
+    }
+    /// The same row and facts under any receiving scope, which is what a
+    /// Source rule observes of it: an entry inherited from a predecessor names
+    /// that predecessor's scope, yet is unchanged when its row and facts are.
+    pub(in crate::domain_computation::primary_graph::application_query::managed_index) fn same_facts<
+        E,
+    >(
+        &self,
+        other: &Self,
+        admit: &mut impl FnMut(u64) -> Result<(), E>,
+        reserve: &mut (impl FnMut(u64) -> Result<Option<worth_execution::ExecutionMemoryReservation>, E>
+                  + ?Sized),
+        fault: &mut impl FnMut(crate::domain_computation::primary_graph::application_query::ProjectionContentComparisonFault) -> E,
+        frames: &mut dyn FnMut(
+            &worth_relational::facade::content::RelationalContentFrame,
+            &worth_relational::facade::content::RelationalContentFrame,
+        ) -> Result<bool, E>,
+    ) -> Result<bool, E> {
+        admit(65)?;
+        if self.occurrence.entity() != other.occurrence.entity() {
+            return Ok(false);
+        }
+        self.same_row(other, admit, reserve, fault, frames)
+    }
+    fn same_row<E>(
+        &self,
+        other: &Self,
+        admit: &mut impl FnMut(u64) -> Result<(), E>,
+        reserve: &mut (impl FnMut(u64) -> Result<Option<worth_execution::ExecutionMemoryReservation>, E>
+                  + ?Sized),
+        fault: &mut impl FnMut(crate::domain_computation::primary_graph::application_query::ProjectionContentComparisonFault) -> E,
+        frames: &mut dyn FnMut(
+            &worth_relational::facade::content::RelationalContentFrame,
+            &worth_relational::facade::content::RelationalContentFrame,
+        ) -> Result<bool, E>,
+    ) -> Result<bool, E> {
+        if self.dependencies.len() != other.dependencies.len()
             || matches!((self.content.get(), other.content.get()), (Some(a), Some(b)) if a != b)
         {
             return Ok(false);

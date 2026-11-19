@@ -5,6 +5,9 @@ mod bounds;
 mod correction;
 #[cfg(test)]
 mod court;
+#[cfg(test)]
+#[cfg(test)]
+mod event_variants;
 mod events;
 mod generated;
 mod geometry;
@@ -12,7 +15,6 @@ mod handler;
 mod host;
 mod mutation;
 mod nested;
-#[cfg(test)]
 mod ordered_refusing;
 mod prefix;
 mod protected;

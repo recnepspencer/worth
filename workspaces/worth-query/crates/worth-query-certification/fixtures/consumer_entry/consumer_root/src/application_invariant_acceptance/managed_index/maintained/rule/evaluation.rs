@@ -7,8 +7,12 @@ use crate::application_invariant_acceptance::managed_index::prefix_observation;
 use std::sync::{Arc, Mutex};
 use worth_query_decl::facade::application_query::ApplicationManagedIndexBinding;
 use worth_query_host::facade::application_invariants::*;
+type Coordinate = (u32, u64, u32);
 pub(crate) struct Calls {
     pub records: Mutex<Vec<StagedSourceObservation<query::ItemRow>>>,
+    /// Each invocation's scope and the rows Native lent as changed, on the
+    /// committed and the proposed side.
+    pub lent: Mutex<Vec<(Coordinate, [Vec<Coordinate>; 2])>>,
     pub after_first_observation: Mutex<Option<Box<dyn FnOnce() + Send>>>,
     provider: Arc<prefix_observation::Calls>,
 }
@@ -16,6 +20,7 @@ impl Calls {
     pub(crate) fn new(provider: Arc<prefix_observation::Calls>) -> Self {
         Self {
             records: Mutex::new(Vec::new()),
+            lent: Mutex::new(Vec::new()),
             after_first_observation: Mutex::new(None),
             provider,
         }
@@ -23,6 +28,7 @@ impl Calls {
 }
 pub(crate) struct Rule {
     index: WorthQueryApplicationInvariantManagedIndexBinding<Catalog, prefix::PrefixIndex>,
+    items: WorthQueryApplicationInvariantEntityBinding<Catalog, Item>,
     calls: Arc<Calls>,
 }
 pub(crate) fn resolve(
@@ -33,10 +39,53 @@ pub(crate) fn resolve(
         index: resolver
             .typed_managed_index(prefix::PrefixIndex::reference())
             .ok_or("missing installed prefix Source requirement")?,
+        items: resolver.typed_entity(Item::reference()).ok_or("Item")?,
         calls,
     })
 }
 impl Rule {
+    /// Record the rows Native lent this invocation, their storage claimed first.
+    fn lend(
+        &self,
+        planner: &WorthQueryApplicationInvariantScopePlanner<'_, '_, Catalog>,
+        prepared: &WorthQueryPreparedInvariantManagedIndex<Catalog, prefix::PrefixIndex>,
+        budget: &dyn CustomInvariantLeaseBudget,
+    ) -> Result<(), WorthQueryApplicationInvariantError> {
+        let committed = planner.committed_observed_source_rows(prepared, &self.items);
+        let committed = match committed {
+            Ok(rows) => rows,
+            // A new scope has no committed root; its committed side is empty.
+            Err(WorthQueryApplicationInvariantError::ManagedIndex(_)) => Vec::new(),
+            Err(cause) => return Err(cause),
+        };
+        let proposed = planner.proposed_observed_source_rows(prepared, &self.items)?;
+        let held = (committed.len() + proposed.len()) * size_of::<Coordinate>();
+        if !budget.claim_result(held as u64) {
+            return Err(WorthQueryApplicationInvariantError::Stopped);
+        }
+        let coordinates = |rows: &[WorthQueryApplicationInvariantEntity<Catalog, Item>]| {
+            rows.iter()
+                .map(|row| {
+                    let id = row.entity_id();
+                    (
+                        id.partition_value(),
+                        id.local_slot_value(),
+                        id.generation_value(),
+                    )
+                })
+                .collect()
+        };
+        let id = prepared.scope_identity();
+        self.calls.lent.lock().unwrap().push((
+            (
+                id.partition_value(),
+                id.local_slot_value(),
+                id.generation_value(),
+            ),
+            [coordinates(&committed), coordinates(&proposed)],
+        ));
+        Ok(())
+    }
     fn judge(
         &self,
         context: &WorthQueryApplicationInvariantContext<'_, '_, Catalog>,
@@ -138,7 +187,10 @@ impl WorthQueryApplicationInvariantRule<Catalog> for Rule {
         budget: &dyn CustomInvariantLeaseBudget,
     ) -> Option<Result<Self::Scope, WorthQueryApplicationInvariantError>> {
         Some(if budget.checkpoint(1) {
-            self.prepare_scope(planner)
+            self.prepare_scope(planner).and_then(|prepared| {
+                self.lend(planner, &prepared, budget)?;
+                Ok(prepared)
+            })
         } else {
             Err(WorthQueryApplicationInvariantError::Stopped)
         })

@@ -38,6 +38,11 @@ pub(super) fn definition() -> ApplicationInvariantDefinition<Catalog, CompleteNe
 #[derive(Default)]
 pub(in super::super) struct Calls {
     pub(super) records: Mutex<Vec<Record>>,
+    /// Armed by the stale-handle court only.
+    pub(super) probe_stale: std::sync::atomic::AtomicBool,
+    pub(super) stale:
+        Mutex<Option<WorthQueryPreparedInvariantManagedIndex<Catalog, prefix::PrefixIndex>>>,
+    pub(super) stale_reads: Mutex<Vec<Result<usize, String>>>,
     pub(super) acquired: Mutex<Vec<query::ItemRow>>,
 }
 #[derive(Debug)]
@@ -45,9 +50,19 @@ pub(super) struct Record {
     pub scope: (u32, u64, u32),
     pub before: Option<Vec<query::ItemRow>>,
     pub after: Vec<query::ItemRow>,
+    /// The Item rows Native observed changing this scope, as the committed
+    /// and the proposed views admit them.
+    pub observed: [Vec<(u32, u64, u32)>; 2],
 }
+/// The retained index and the Item rows Native observed changing its scope,
+/// as the committed and the proposed views admit them.
+pub(super) type Observed = (
+    WorthQueryPreparedInvariantManagedIndex<Catalog, prefix::PrefixIndex>,
+    [Vec<(u32, u64, u32)>; 2],
+);
 pub(super) struct Rule {
     index: WorthQueryApplicationInvariantManagedIndexBinding<Catalog, prefix::PrefixIndex>,
+    items: WorthQueryApplicationInvariantEntityBinding<Catalog, Item>,
     calls: Arc<Calls>,
 }
 pub(super) fn resolve(
@@ -58,11 +73,12 @@ pub(super) fn resolve(
         index: resolver
             .typed_managed_index(prefix::PrefixIndex::reference())
             .ok_or("nested Source was not installed")?,
+        items: resolver.typed_entity(Item::reference()).ok_or("Item")?,
         calls,
     })
 }
 impl WorthQueryApplicationInvariantRule<Catalog> for Rule {
-    type Scope = WorthQueryPreparedInvariantManagedIndex<Catalog, prefix::PrefixIndex>;
+    type Scope = Observed;
     type Refusal = ();
     type RefusalBinding = WorthQueryEmptyInvariantRefusal;
     fn supports_checked_preparation(&self) -> bool {
@@ -72,20 +88,24 @@ impl WorthQueryApplicationInvariantRule<Catalog> for Rule {
         &self,
         planner: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, Catalog>,
     ) -> Result<Self::Scope, WorthQueryApplicationInvariantError> {
-        planner
+        let prepared = planner
             .retain_managed_index(&self.index)
-            .map_err(WorthQueryApplicationInvariantError::from)
+            .map_err(WorthQueryApplicationInvariantError::from)?;
+        Ok((prepared, [Vec::new(), Vec::new()]))
     }
     fn prepare_scope_checked(
         &self,
         planner: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, Catalog>,
         budget: &dyn CustomInvariantLeaseBudget,
     ) -> Option<Result<Self::Scope, WorthQueryApplicationInvariantError>> {
-        Some(if budget.checkpoint(1) {
-            self.prepare_scope(planner)
-        } else {
-            Err(WorthQueryApplicationInvariantError::Stopped)
-        })
+        if !budget.checkpoint(1) {
+            return Some(Err(WorthQueryApplicationInvariantError::Stopped));
+        }
+        Some(self.prepare_scope(planner).and_then(|(prepared, _)| {
+            self.probe_stale(planner)?;
+            let observed = self.observe(planner, &prepared, budget)?;
+            Ok((prepared, observed))
+        }))
     }
     fn evaluate(
         &self,
@@ -107,17 +127,73 @@ impl WorthQueryApplicationInvariantRule<Catalog> for Rule {
     }
 }
 impl Rule {
+    /// The rows Native lent this invocation, their storage claimed first.
+    fn observe(
+        &self,
+        planner: &WorthQueryApplicationInvariantScopePlanner<'_, '_, Catalog>,
+        prepared: &WorthQueryPreparedInvariantManagedIndex<Catalog, prefix::PrefixIndex>,
+        budget: &dyn CustomInvariantLeaseBudget,
+    ) -> Result<[Vec<(u32, u64, u32)>; 2], WorthQueryApplicationInvariantError> {
+        let committed = planner.committed_observed_source_rows(prepared, &self.items)?;
+        let proposed = planner.proposed_observed_source_rows(prepared, &self.items)?;
+        let held = layout::<(u32, u64, u32)>(committed.len() + proposed.len())?;
+        if !budget.claim_result(held as u64) {
+            return Err(WorthQueryApplicationInvariantError::Stopped);
+        }
+        let coordinates = |rows: &[WorthQueryApplicationInvariantEntity<Catalog, Item>]| {
+            rows.iter()
+                .map(|row| {
+                    let id = row.entity_id();
+                    (
+                        id.partition_value(),
+                        id.local_slot_value(),
+                        id.generation_value(),
+                    )
+                })
+                .collect()
+        };
+        Ok([coordinates(&committed), coordinates(&proposed)])
+    }
+    /// When armed, try the handle kept from an earlier invocation, record
+    /// whether Native refused it, and keep this invocation's handle instead.
+    fn probe_stale(
+        &self,
+        planner: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, Catalog>,
+    ) -> Result<(), WorthQueryApplicationInvariantError> {
+        if !self
+            .calls
+            .probe_stale
+            .load(std::sync::atomic::Ordering::SeqCst)
+        {
+            return Ok(());
+        }
+        let kept = self.calls.stale.lock().unwrap().take();
+        if let Some(kept) = kept {
+            let outcome: Result<_, WorthQueryApplicationInvariantError> =
+                planner.proposed_observed_source_rows(&kept, &self.items);
+            self.calls.stale_reads.lock().unwrap().push(
+                outcome
+                    .map(|rows| rows.len())
+                    .map_err(|cause| format!("{cause:?}")),
+            );
+        }
+        let fresh = planner
+            .retain_managed_index(&self.index)
+            .map_err(WorthQueryApplicationInvariantError::from)?;
+        *self.calls.stale.lock().unwrap() = Some(fresh);
+        Ok(())
+    }
     fn judge(
         &self,
         context: &WorthQueryApplicationInvariantContext<'_, '_, Catalog>,
-        scope: &WorthQueryPreparedInvariantManagedIndex<Catalog, prefix::PrefixIndex>,
+        scope: &Observed,
         budget: &dyn CustomInvariantLeaseBudget,
     ) -> Result<WorthQueryApplicationInvariantVerdict<()>, WorthQueryApplicationInvariantError>
     {
         if !budget.checkpoint(1) {
             return Err(WorthQueryApplicationInvariantError::Stopped);
         }
-        let pair = context.managed_index(scope).map_err(execution)?;
+        let pair = context.managed_index(&scope.0).map_err(execution)?;
         let probe = query::Probe {
             prefix: String::new(),
         };
@@ -156,7 +232,11 @@ impl Rule {
         if !budget.claim_result(bytes as u64) {
             return Err(WorthQueryApplicationInvariantError::Stopped);
         }
-        let id = scope.scope_identity();
+        let held = layout::<(u32, u64, u32)>(scope.1[0].len() + scope.1[1].len())?;
+        if !budget.claim_result(held as u64) {
+            return Err(WorthQueryApplicationInvariantError::Stopped);
+        }
+        let id = scope.0.scope_identity();
         self.calls.records.lock().unwrap().push(Record {
             scope: (
                 id.partition_value(),
@@ -165,6 +245,7 @@ impl Rule {
             ),
             before,
             after,
+            observed: scope.1.clone(),
         });
         Ok(if invalid {
             WorthQueryApplicationInvariantVerdict::Violation(())

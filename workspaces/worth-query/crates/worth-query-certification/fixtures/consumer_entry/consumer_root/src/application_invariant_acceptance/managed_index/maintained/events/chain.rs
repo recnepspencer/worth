@@ -15,6 +15,7 @@ use worth_query_host::facade::{
     application_entry::*, primary_graph::*, runtime::ExecutionAllocationPolicy,
 };
 
+pub(in super::super) mod fan_out;
 fn append(
     event: &str,
     previous: &str,
@@ -27,6 +28,8 @@ fn append(
         previous: previous.into(),
         introduced,
         retired,
+        stray: None,
+        adopt: None,
     }
 }
 fn principal(

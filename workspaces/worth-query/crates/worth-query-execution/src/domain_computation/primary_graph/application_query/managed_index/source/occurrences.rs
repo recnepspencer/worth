@@ -11,6 +11,7 @@ use crate::domain_computation::primary_graph::{
 use crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity;
 use std::{collections::BTreeSet, sync::Arc};
 use worth_execution::{ExecutionOrderedMap, ExecutionRequest};
+mod delta;
 mod postings;
 use postings::{ordered_denial, OccurrencePostings};
 use worth_query_installation::facade::{
@@ -218,7 +219,13 @@ impl PersistentSourceRows {
         )],
         graph: &WorthQueryInstalledGraphReadContract,
         inherited: bool,
-    ) -> Result<Self, MaterialDenial> {
+    ) -> Result<
+        (
+            Self,
+            worth_relational::facade::runtime::ManagedIndexSourceChanges,
+        ),
+        MaterialDenial,
+    > {
         if self.program != *scope.program() || self.scope != scope.scope() {
             return Err(ManagedIndexSourcePreparationDenial::ForeignSource.into());
         }
@@ -253,10 +260,14 @@ impl PersistentSourceRows {
                 }
             }
         }
+        let mut delta = delta::SourceDelta::new(inherited);
         for (before, proposed) in changed {
             execution.consult().map_err(|cause| {
                 MaterialDenial::Storage(RelationalExecutionDenialCause::from(cause))
             })?;
+            let retained = before
+                .as_ref()
+                .and_then(|before| self.entries.get(&before.entity()).cloned());
             if let Some(before) = before {
                 // This also convicts a stale/missing retained full-generation
                 // occurrence; a later generation never aliases an earlier slot.
@@ -282,6 +293,7 @@ impl PersistentSourceRows {
                     graph,
                     ProjectionMembership::Inverse(proposed),
                 )?;
+                delta.observe(execution, scope, retained.as_deref(), Some(&entry))?;
                 dependencies.insert_entry(entity, &entry.dependencies, execution)?;
                 entries
                     .insert_cloned_native_for_request(
@@ -291,18 +303,20 @@ impl PersistentSourceRows {
                     )
                     .map_err(|cause| ordered_denial(execution, cause))?;
             } else if let Some(before) = before {
+                delta.observe(execution, scope, retained.as_deref(), None)?;
                 entries
                     .remove_for_request(&before.entity(), *execution)
                     .map_err(|cause| ordered_denial(execution, cause))?;
             }
         }
-        Ok(Self {
+        let rows = Self {
             owner: self.owner,
             program: self.program.clone(),
             scope: self.scope,
             entries,
             dependencies,
-        })
+        };
+        Ok((rows, delta.finish()))
     }
 
     pub(in crate::domain_computation::primary_graph::application_query::managed_index) fn len(

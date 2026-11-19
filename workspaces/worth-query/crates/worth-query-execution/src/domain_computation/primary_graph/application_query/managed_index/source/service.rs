@@ -159,7 +159,8 @@ where
             self.invalidate_predicates(execution, &scope)?;
         }
         if proposed_exists && let Some(payload) = self.corresponding_root(execution, &scope)? {
-            return Ok(scope.seal(None, Some(payload)));
+            // Native proved this root logically equal: nothing changed.
+            return Ok(scope.seal(None, Some(payload), Default::default()));
         }
         // Unavailable is an explicit Native physical posture, not an empty
         // membership result. All other before-view failures retain their cause.
@@ -171,7 +172,14 @@ where
             }
             Err(cause) => return Err(cause),
         };
-        if retained.is_none() && proposed_exists && scope.program().has_ordered_predecessor() {
+        // Only a scope logically absent before is born from its predecessor.
+        // An evicted existing scope rebuilds its committed baseline below and
+        // diffs exactly: cache residency never changes the delta.
+        if retained.is_none()
+            && !before_exists
+            && proposed_exists
+            && scope.program().has_ordered_predecessor()
+        {
             return self.prepare_ordered(execution, scope, predecessor);
         }
         let before = if before_exists {
@@ -194,12 +202,17 @@ where
             None
         };
         if !proposed_exists {
-            return Ok(scope.seal(before, None));
+            // A retired scope is never invoked; no row is lent for it.
+            return Ok(scope.seal(before, None, Default::default()));
         }
-        let proposed = if let Some(before) = &before {
-            Some(self.update(execution, &scope, before)?)
+        // The owner's exact delta: an updated root's changed entries, or a
+        // newly built scope's delta (`built_changes`).
+        let (proposed, changes) = if let Some(before) = &before {
+            self.update(execution, &scope, before)?
         } else if self.cold == Cold::AdmitRebuild {
-            Some(self.cold(execution, &scope, &scope.proposed())?)
+            let built = self.cold(execution, &scope, &scope.proposed())?;
+            let changes = self.built_changes(execution, &scope, &built)?;
+            (built, changes)
         } else {
             return Err(Denial::RootUnavailable);
         };
@@ -208,7 +221,7 @@ where
                 worth_relational::facade::runtime::DerivedRelationReadDenial::Request(cause.into()),
             )
         })?;
-        Ok(scope.seal(before, proposed))
+        Ok(scope.seal(before, Some(proposed), changes))
     }
 }
 
@@ -274,6 +287,45 @@ where
                 .map_or(usize::MAX, std::num::NonZeroUsize::get),
         )
     }
+}
+
+/// Every member of a newly built root entered its scope. The typed shell
+/// only finds the rows; one concrete walk builds the delta.
+pub(super) fn entered_all<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>>(
+    scope: &ManagedIndexSourceScope<'_>,
+    built: &Payload,
+) -> Result<worth_relational::facade::runtime::ManagedIndexSourceChanges, Denial> {
+    let root = built
+        .downcast_ref::<ManagedSourceRoot<S, I>>()
+        .ok_or(Denial::ForeignSource)?;
+    entered_rows(scope, &root.rows)
+}
+/// The built root's rows, already in entity order, charged to the Source's
+/// own budget: one checkpoint per row and the vector's storage claimed first.
+fn entered_rows(
+    scope: &ManagedIndexSourceScope<'_>,
+    rows: &PersistentSourceRows,
+) -> Result<worth_relational::facade::runtime::ManagedIndexSourceChanges, Denial> {
+    use worth_relational::facade::runtime::DerivedRelationReadDenial;
+    let budget = scope.read_budget();
+    budget
+        .claim_retained(
+            (rows.len() * size_of::<worth_relational::facade::identity::EntityId>()) as u64,
+        )
+        .map_err(DerivedRelationReadDenial::Structural)?;
+    let mut entered = Vec::new();
+    entered.try_reserve_exact(rows.len()).map_err(|_| {
+        source_storage(
+            worth_relational::facade::transactions::RelationalExecutionDenialCause::AllocationFailed,
+        )
+    })?;
+    for row in rows.keys() {
+        budget
+            .checkpoint(1)
+            .map_err(DerivedRelationReadDenial::Structural)?;
+        entered.push(row);
+    }
+    Ok(worth_relational::facade::runtime::ManagedIndexSourceChanges::new(Vec::new(), entered))
 }
 
 pub(in crate::domain_computation::primary_graph::application_query::managed_index) fn retain_root<

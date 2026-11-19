@@ -163,7 +163,8 @@ impl RelationalPublicationCompanion for SourceOwner {
                 None
             };
             self.0.staged.lock().unwrap().insert(scope.scope());
-            roots.push(scope.seal(committed, proposed));
+            // This court's owner computes no delta and declares it empty.
+            roots.push(scope.seal(committed, proposed, Default::default()));
         }
         Ok(roots)
     }

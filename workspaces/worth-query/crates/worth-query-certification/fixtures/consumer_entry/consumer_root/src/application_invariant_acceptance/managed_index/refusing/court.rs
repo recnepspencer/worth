@@ -195,6 +195,7 @@ fn journey() {
         .unwrap()
         .iter()
         .all(|record| record.source.before.is_none()));
+    let lent: Vec<_> = rules.lent.lock().unwrap().clone();
     let scope = authentication::request_scope();
     let principal = authentication::block_on(
         authentication::admit(world.installed_schema()).authenticate(
@@ -207,6 +208,30 @@ fn journey() {
         .runtime()
         .request(&principal, &scope)
         .on_branch(world.current_world());
+    // Each seeded scope is built new: Native lends every member it holds,
+    // its ordinary Source rows, and nothing committed.
+    let mut members: Vec<std::collections::BTreeSet<_>> = ["catalog", "A", "B"]
+        .into_iter()
+        .map(|directory| {
+            let rows = request
+                .query(query::ReadSource {
+                    directory: directory.into(),
+                })
+                .execute()
+                .unwrap();
+            rows.rows().iter().map(|row| row.coordinate).collect()
+        })
+        .collect();
+    let mut seeded: Vec<std::collections::BTreeSet<_>> = lent
+        .iter()
+        .map(|(_, [committed, proposed])| {
+            assert!(committed.is_empty(), "a seeded scope has no committed side");
+            proposed.iter().copied().collect()
+        })
+        .collect();
+    members.sort();
+    seeded.sort();
+    assert_eq!(seeded, members);
     let index = request
         .query(find("B"))
         .open_index::<prefix::PrefixIndex>()

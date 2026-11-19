@@ -65,6 +65,7 @@ pub(super) fn declare(
         Catalog,
         prefix::PrefixIndex,
     >::new())
+    .pipe_variants()
     .invariant(rule::definition())
 }
 
@@ -171,6 +172,18 @@ impl CatalogPrincipal {
     }
 }
 
+trait Variants {
+    fn pipe_variants(self) -> Self;
+}
+impl Variants for ApplicationSchemaDeclarationBuilder<Catalog> {
+    fn pipe_variants(self) -> Self {
+        if super::VARIANT_SOURCES {
+            super::variants::declare(self)
+        } else {
+            self
+        }
+    }
+}
 pub struct LiveItems;
 impl LiveItems {
     pub fn reference() -> ApplicationDerivedRelationRef<Catalog, Self, Directory, Item> {

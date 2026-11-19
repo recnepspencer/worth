@@ -31,9 +31,75 @@ impl CustomInvariantScopePlanner<'_> {
             program,
             invocation.scope,
             &invocation.audience,
+            &invocation.sources,
             &self.committed_relations(),
             &self.relations(),
         )
+    }
+}
+
+impl<'runtime> CustomInvariantScopePlanner<'runtime> {
+    /// Evaluation's admitted read, at preparation: the prepared object must
+    /// belong to this exact invocation, audience and observation. Private:
+    /// a rule's preparation reaches only the exact delta, never the payload or
+    /// unchanged rows.
+    ///
+    /// ```compile_fail
+    /// use worth_relational::facade::runtime::{
+    ///     CustomInvariantScopePlanner, PreparedManagedIndexSourceRead,
+    /// };
+    /// fn full(planner: &CustomInvariantScopePlanner<'_>, prepared: &PreparedManagedIndexSourceRead) {
+    ///     let _ = planner.read_managed_index_source(prepared);
+    /// }
+    /// ```
+    ///
+    /// The same shape compiles through the delta loan:
+    ///
+    /// ```
+    /// use worth_relational::facade::runtime::{
+    ///     CustomInvariantScopePlanner, PreparedManagedIndexSourceRead,
+    /// };
+    /// fn delta(planner: &CustomInvariantScopePlanner<'_>, prepared: &PreparedManagedIndexSourceRead) {
+    ///     let _ = planner.lend_managed_index_source_changes(prepared, false, |rows| rows.len());
+    /// }
+    /// ```
+    fn read_managed_index_source<'a>(
+        &'a self,
+        prepared: &'a PreparedManagedIndexSourceRead,
+    ) -> Result<ManagedIndexSourceRead<'a>, ManagedIndexSourcePreparationDenial> {
+        let invocation = self
+            .managed_scope
+            .as_ref()
+            .ok_or(ManagedIndexSourcePreparationDenial::ForeignSource)?;
+        if !prepared.matches_invocation(invocation.scope, &invocation.sources, &invocation.audience)
+        {
+            return Err(ManagedIndexSourcePreparationDenial::ForeignSource);
+        }
+        crate::validation::candidate_source::read_observed_root(
+            prepared,
+            crate::validation::candidate_source::SourceViews {
+                before: self.committed_relations(),
+                after: self.relations(),
+                before_fields: self.committed_aspect_states(),
+                after_fields: self.aspect_states(),
+            },
+        )
+    }
+}
+
+impl CustomInvariantScopePlanner<'_> {
+    /// Lend the Source's exact delta for this invocation's scope, on one side
+    /// (committed when `before`), to `lend`, after the same invocation and
+    /// observation checks as every managed read. Preparation only: the
+    /// evaluation context has no such loan.
+    pub fn lend_managed_index_source_changes<R>(
+        &self,
+        prepared: &PreparedManagedIndexSourceRead,
+        before: bool,
+        lend: impl FnOnce(&[crate::identity::data::EntityId]) -> R,
+    ) -> Result<R, ManagedIndexSourcePreparationDenial> {
+        let read = self.read_managed_index_source(prepared)?;
+        Ok(lend(read.changed_members(before)?))
     }
 }
 

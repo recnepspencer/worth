@@ -4,9 +4,18 @@ use super::*;
 pub(super) fn decide(
     reader: &mut DecisionReader<'_, '_, '_, Catalog, Binding>,
     previous: &str,
-    retired: Option<&str>,
+    [retired, adopt]: [Option<&str>; 2],
     rename: Option<&str>,
 ) -> Result<Decision, HandlerExecutionDenial> {
+    let mut live = |key: &str| {
+        let entity = reader.resolve_entity(ItemIdentity::at("ItemIdentity"), key.to_owned())?;
+        reader
+            .reader()
+            .require_decision_entity(&entity, Item::reference())
+            .map_err(HandlerExecutionDenial::new)?;
+        reader.mutation_target(&entity)
+    };
+    let adopt = adopt.map(&mut live).transpose()?;
     let item = retired
         .map(|key| {
             let entity = reader.resolve_entity(ItemIdentity::at("ItemIdentity"), key.to_owned())?;
@@ -34,6 +43,7 @@ pub(super) fn decide(
         old: Vec::new(),
         item,
         rename,
+        adopt,
     })
 }
 
@@ -47,6 +57,7 @@ pub(super) fn apply(
         introduced,
         retired,
         rename,
+        stray,
         ..
     } = input
     else {
@@ -86,23 +97,7 @@ pub(super) fn apply(
         )
         .map_err(HandlerExecutionDenial::new)?;
     if let Some((identity, name)) = introduced {
-        let item = writer
-            .create_entity_in_context(
-                &context,
-                Item::reference(),
-                WorthQueryApplicationEntityKey::new(identity)
-                    .map_err(HandlerExecutionDenial::new)?,
-            )
-            .map_err(HandlerExecutionDenial::new)?;
-        writer
-            .initialize_field(&item, ItemIdentity::at("ItemIdentity"), identity.clone())
-            .map_err(HandlerExecutionDenial::new)?;
-        writer
-            .initialize_field(&item, ItemName::at("ItemName"), name.clone().into())
-            .map_err(HandlerExecutionDenial::new)?;
-        writer
-            .initialize_field(&item, ItemEnabled::at("ItemEnabled"), true)
-            .map_err(HandlerExecutionDenial::new)?;
+        let item = born_item(writer, &context, identity, name)?;
         writer
             .link(
                 Contains::reference(),
@@ -111,6 +106,9 @@ pub(super) fn apply(
                 &item,
             )
             .map_err(HandlerExecutionDenial::new)?;
+    }
+    if let Some((identity, name)) = stray {
+        born_item(writer, &context, identity, name)?;
     }
     if let Some((_, value)) = rename {
         let target = writer
@@ -123,6 +121,19 @@ pub(super) fn apply(
             .map_err(HandlerExecutionDenial::new)?;
         writer
             .write_field(&target, ItemName::at("ItemName"), value.clone().into())
+            .map_err(HandlerExecutionDenial::new)?;
+    }
+    if let Some(adopted) = &decision.adopt {
+        let item = writer
+            .projected_entity(adopted)
+            .map_err(HandlerExecutionDenial::new)?;
+        writer
+            .link(
+                Contains::reference(),
+                format!("{event}-adopted"),
+                &created,
+                &item,
+            )
             .map_err(HandlerExecutionDenial::new)?;
     }
     if let Some(key) = retired {
@@ -139,4 +150,30 @@ pub(super) fn apply(
             .map_err(HandlerExecutionDenial::new)?;
     }
     Ok(())
+}
+
+/// An enabled Item born in `context` with its identity and name.
+fn born_item(
+    writer: &mut CandidateWriter<'_, Catalog, Binding>,
+    context: &WorthQueryApplicationEffectEntity<Catalog, Directory>,
+    identity: &str,
+    name: &str,
+) -> Result<WorthQueryApplicationEffectEntity<Catalog, Item>, HandlerExecutionDenial> {
+    let item = writer
+        .create_entity_in_context(
+            context,
+            Item::reference(),
+            WorthQueryApplicationEntityKey::new(identity).map_err(HandlerExecutionDenial::new)?,
+        )
+        .map_err(HandlerExecutionDenial::new)?;
+    writer
+        .initialize_field(&item, ItemIdentity::at("ItemIdentity"), identity.to_owned())
+        .map_err(HandlerExecutionDenial::new)?;
+    writer
+        .initialize_field(&item, ItemName::at("ItemName"), name.to_owned().into())
+        .map_err(HandlerExecutionDenial::new)?;
+    writer
+        .initialize_field(&item, ItemEnabled::at("ItemEnabled"), true)
+        .map_err(HandlerExecutionDenial::new)?;
+    Ok(item)
 }

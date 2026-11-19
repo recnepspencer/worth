@@ -44,6 +44,20 @@ impl<S, I> WorthQueryPreparedInvariantManagedIndex<S, I> {
     pub const fn scope_identity(&self) -> worth_relational::facade::identity::EntityId {
         self.native.scope()
     }
+    /// The erased parts observed-row reads admit through Native.
+    pub(super) fn source(
+        &self,
+    ) -> (
+        &ApplicationSchemaBindingIdentity,
+        &ManagedIndexSourceProgram,
+        &PreparedManagedIndexSourceRead,
+    ) {
+        (
+            &self.binding.binding_identity,
+            &self.binding.program,
+            &self.native,
+        )
+    }
 }
 
 impl<S: ApplicationSchema> WorthQueryApplicationInvariantScopePlanner<'_, '_, S> {

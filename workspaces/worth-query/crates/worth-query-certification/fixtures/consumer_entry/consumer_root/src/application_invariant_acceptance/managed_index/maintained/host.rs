@@ -317,3 +317,56 @@ pub(super) fn install_ordered_refusing(
             Ok(())
         }).unwrap()
 }
+
+/// The event world seeded by explicit initialization with an ordered chain
+/// in one batch: A introduces x; E follows A and introduces e.
+#[cfg(test)]
+pub(super) fn install_events_seeded(records: Arc<super::events::rule::Calls>) -> EventHost {
+    use super::super::super::authentication;
+    use super::events::{composition, prefix::PrefixIndex, schema::*};
+    let declaration = Catalog::declaration().unwrap();
+    in_memory_program(ApplicationProgramAuthoring::<Catalog,composition::Program>::begin().with_schema(&declaration).validated_program().unwrap(), declaration,
+        (composition::Configuration { provider: Arc::new(prefix_observation::Calls::default()), records },),
+        ApplicationBuildIdentity::parse("19191919-1919-4919-8919-191919191930").unwrap(),
+        super::super::super::resources::application_limits(),
+        |phase,graph,installed| {
+            graph.initialize_managed_index::<PrefixIndex>(phase)?;
+            graph.bind_principal(&installed.principal_binding(CatalogPrincipal::reference()).unwrap(),WorthQueryApplicationPrincipalKey::new("seeded-event-reader").unwrap(),1u64,
+                authentication::external_identity(),worth_query_host::facade::declaration::authentication::WorthQueryPrincipalMappingStatus::Enabled)?;
+            for name in ["A", "E"] {
+                graph.bind_entity(WorthQueryApplicationEntitySeed::new(Directory::reference(),WorthQueryApplicationEntityKey::new(name).unwrap()).field(DirectoryIdentity::at("DirectoryIdentity"),name.to_owned()))?;
+            }
+            for item in ["x", "e"] {
+                graph.bind_entity(WorthQueryApplicationEntitySeed::new(Item::reference(),WorthQueryApplicationEntityKey::new(item).unwrap())
+                    .field(ItemIdentity::at("ItemIdentity"),item.to_owned())
+                    .field(ItemName::at("ItemName"),format!("match-{item}").into())
+                    .field(ItemEnabled::at("ItemEnabled"),true))?;
+            }
+            graph.bind_relation(WorthQueryApplicationRelationSeed::new(Contains::reference(),"A-x".to_owned(),WorthQueryApplicationEntityKey::new("A").unwrap(),WorthQueryApplicationEntityKey::new("x").unwrap()))?;
+            graph.bind_relation(WorthQueryApplicationRelationSeed::new(Contains::reference(),"E-e".to_owned(),WorthQueryApplicationEntityKey::new("E").unwrap(),WorthQueryApplicationEntityKey::new("e").unwrap()))?;
+            graph.bind_relation(WorthQueryApplicationRelationSeed::new(Previous::reference(),"E-previous".to_owned(),WorthQueryApplicationEntityKey::new("E").unwrap(),WorthQueryApplicationEntityKey::new("A").unwrap()))?;
+            Ok(())
+        }).unwrap()
+}
+
+#[cfg(test)]
+pub(super) fn install_event_variants(
+    records: Arc<super::event_variants::rule::Calls>,
+) -> WorthQueryProgramApplicationRuntime<
+    super::event_variants::schema::Catalog,
+    super::event_variants::composition::Program,
+> {
+    use super::super::super::authentication;
+    use super::event_variants::{composition, schema::*};
+    let declaration = Catalog::declaration().unwrap();
+    in_memory_program(ApplicationProgramAuthoring::<Catalog,composition::Program>::begin().with_schema(&declaration).validated_program().unwrap(), declaration,
+        (composition::Configuration { provider: Arc::new(prefix_observation::Calls::default()), records },),
+        ApplicationBuildIdentity::parse("19191919-1919-4919-8919-191919191929").unwrap(),
+        super::super::super::resources::application_limits(),
+        |_,graph,installed| {
+            graph.bind_principal(&installed.principal_binding(CatalogPrincipal::reference()).unwrap(),WorthQueryApplicationPrincipalKey::new("variant-event-reader").unwrap(),1u64,
+                authentication::external_identity(),worth_query_host::facade::declaration::authentication::WorthQueryPrincipalMappingStatus::Enabled)?;
+            graph.bind_entity(WorthQueryApplicationEntitySeed::new(Directory::reference(),WorthQueryApplicationEntityKey::new("catalog").unwrap()).field(DirectoryIdentity::at("DirectoryIdentity"),"catalog".to_owned()))?;
+            Ok(())
+        }).unwrap()
+}

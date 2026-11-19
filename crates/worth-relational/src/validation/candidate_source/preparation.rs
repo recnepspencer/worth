@@ -90,10 +90,17 @@ impl<'a> ManagedIndexSourceScope<'a> {
         self.scope_exists_in(&self.views.before)
     }
     fn scope_exists_in(&self, view: &StructuralRelationView<'_>) -> Result<bool, Denial> {
+        self.entity_scope_exists_in(view, self.scope)
+    }
+    fn entity_scope_exists_in(
+        &self,
+        view: &StructuralRelationView<'_>,
+        scope: EntityId,
+    ) -> Result<bool, Denial> {
         view.read_budget()
             .checkpoint(1)
             .map_err(ReadDenial::Structural)?;
-        match view.entity_kind(self.scope) {
+        match view.entity_kind(scope) {
             Ok(kind) if kind == self.program.scope_kind() => Ok(true),
             Err(crate::validation::data::StructuralReadError::RecordUnavailable) => Ok(false),
             Ok(_) => Err(Denial::ForeignSource),
@@ -200,12 +207,14 @@ impl<'a> ManagedIndexSourceScope<'a> {
         }
     }
 
-    /// Sealing is candidate-local and does not install a root. The Native
+    /// Sealing is candidate-local and does not install a root. `changes` is
+    /// the owner's exact delta for this scope; every seal states it. The Native
     /// owner verifies the complete set before any dependent invariant runs.
     pub fn seal(
         self,
         committed: Option<RootPayload>,
         proposed: Option<RootPayload>,
+        changes: super::ManagedIndexSourceChanges,
     ) -> PreparedManagedIndexSourceRoot {
         PreparedManagedIndexSourceRoot {
             program: self.program.clone(),
@@ -214,6 +223,7 @@ impl<'a> ManagedIndexSourceScope<'a> {
             proposed,
             availability: self.availability,
             source_changed: !self.changed.is_empty(),
+            changes,
         }
     }
 }
@@ -225,6 +235,7 @@ pub struct PreparedManagedIndexSourceRoot {
     pub(crate) proposed: Option<RootPayload>,
     pub(crate) availability: ManagedIndexSourceAvailability,
     pub(crate) source_changed: bool,
+    pub(crate) changes: super::ManagedIndexSourceChanges,
 }
 
 pub(crate) struct PreparedSourceProgram {
@@ -260,6 +271,11 @@ impl ManagedIndexSourcePreparation<'_> {
     /// incarnation/READ admission, which the Query resource must bind itself.
     pub fn selected_basis(&self) -> &crate::branch::AdmittedRelationalBranchBasis {
         self.basis
+    }
+    /// The Source's own payer, shared by every scope it prepares: staging
+    /// storage for the prepared roots is claimed here before it is reserved.
+    pub fn read_budget(&self) -> crate::validation::custom_rule::CustomInvariantReadBudget<'_> {
+        self.views.after.read_budget()
     }
     pub fn scopes(&self) -> impl ExactSizeIterator<Item = ManagedIndexSourceScope<'_>> {
         self.closure

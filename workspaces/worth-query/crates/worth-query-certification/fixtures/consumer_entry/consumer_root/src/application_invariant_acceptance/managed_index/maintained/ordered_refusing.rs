@@ -24,6 +24,10 @@ mod query;
 pub(super) mod rule;
 #[path = "events/schema.rs"]
 pub(super) mod schema;
+#[path = "events/variants.rs"]
+pub(super) mod variants;
+/// A refusing cold policy cannot build a same-scope Source; none is installed.
+const VARIANT_SOURCES: bool = false;
 #[path = "nested/shape.rs"]
 mod shape;
 use super::super::super::authentication;
@@ -95,6 +99,8 @@ pub(super) fn missing_parent() {
             previous: "catalog".into(),
             introduced: None,
             retired: None,
+            stray: None,
+            adopt: None,
         })
         .without_source()
         .idempotency(&3000u64)
@@ -167,6 +173,8 @@ pub(super) fn stronger_law() {
                 previous: previous.into(),
                 introduced: Some((event.to_lowercase(), format!("match-{event}"))),
                 retired: None,
+                stray: None,
+                adopt: None,
             })
             .without_source()
             .idempotency(&key)

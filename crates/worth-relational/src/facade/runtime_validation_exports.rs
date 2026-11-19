@@ -35,7 +35,7 @@ pub use crate::mvcc::{ManagedIndexSourceObservation, ManagedIndexSourceRebuild};
 pub use crate::validation::candidate_source::{
     ManagedIndexAppliedSourcePublication, ManagedIndexAppliedSourceRead, ManagedIndexBranchImage,
     ManagedIndexPublishedSourceRoot, ManagedIndexSourceAvailability,
-    ManagedIndexSourceCacheRetirement, ManagedIndexSourceContextFactory,
+    ManagedIndexSourceCacheRetirement, ManagedIndexSourceChanges, ManagedIndexSourceContextFactory,
     ManagedIndexSourceContextReceipt, ManagedIndexSourceContextShare, ManagedIndexSourceField,
     ManagedIndexSourceOccurrence, ManagedIndexSourcePreparation,
     ManagedIndexSourcePreparationDenial, ManagedIndexSourcePreparationMetadata,
