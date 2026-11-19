@@ -1,5 +1,5 @@
 //! Ordinary program installation; only the new capability opts into this Source.
-use super::{authoring, history, mutation, plain, prefix, rule, schema::*};
+use super::{authoring, history, mutation, plain, prefix, rule, schema::*, variants};
 use crate::application_invariant_acceptance::managed_index::prefix_observation;
 use std::sync::Arc;
 use worth_query_decl::facade::{application_program::*, application_schema::*};
@@ -24,6 +24,17 @@ impl WorthQueryApplicationContribution<Catalog> for Contribution {
             .managed_index_provider::<prefix::PrefixIndex, _>(prefix::Provider(config.provider))
             .with_predicate_routing()
             .install()?;
+        // The extra Sources observe their own provider calls, apart from the
+        // ordered index whose builds the existing courts count.
+        if super::VARIANT_SOURCES {
+            let own = || prefix::Provider(Arc::new(prefix_observation::Calls::default()));
+            setup
+                .managed_index_provider::<variants::SameScopeIndex, _>(own())
+                .install()?;
+            setup
+                .managed_index_provider::<variants::OverlapIndex, _>(own())
+                .install()?;
+        }
         setup.handler::<authoring::Binding, _>(authoring::Handler)?;
         setup.handler::<mutation::Binding, _>(mutation::Handler)?;
         setup.handler::<history::Binding, _>(history::Handler)?;

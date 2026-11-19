@@ -214,6 +214,7 @@ impl<'a> ManagedIndexSourceScope<'a> {
             proposed,
             availability: self.availability,
             source_changed: !self.changed.is_empty(),
+            changes: super::ManagedIndexSourceChanges::default(),
         }
     }
 }
@@ -225,12 +226,24 @@ pub struct PreparedManagedIndexSourceRoot {
     pub(crate) proposed: Option<RootPayload>,
     pub(crate) availability: ManagedIndexSourceAvailability,
     pub(crate) source_changed: bool,
+    pub(crate) changes: super::ManagedIndexSourceChanges,
+}
+
+impl PreparedManagedIndexSourceRoot {
+    /// Attach the provider owner's exact delta for this scope and proposal.
+    pub fn with_changes(mut self, changes: super::ManagedIndexSourceChanges) -> Self {
+        self.changes = changes;
+        self
+    }
 }
 
 pub(crate) struct PreparedSourceProgram {
     pub(crate) program: ManagedIndexSourceProgram,
     pub(crate) affected_scopes: std::collections::BTreeSet<EntityId>,
-    /// Native's scope closure: each affected scope's changed Source rows.
+    #[allow(
+        dead_code,
+        reason = "Original diagnostic, proof and funding custody remains owned through retirement"
+    )]
     pub(crate) closure: PreparedManagedIndexScopeClosure,
     pub(crate) roots: Vec<PreparedManagedIndexSourceRoot>,
     pub(crate) _work: crate::validation::CustomInvariantWorkMeter,

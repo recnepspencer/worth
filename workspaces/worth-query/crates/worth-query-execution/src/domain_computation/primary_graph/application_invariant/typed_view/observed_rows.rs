@@ -23,10 +23,11 @@ use worth_relational::facade::{
 };
 
 impl<Schema> Planner<'_, '_, Schema> {
-    /// The rows of `entity`'s kind that Native's scope discovery found
-    /// changing this invocation's scope and that are committed members of it,
-    /// typed for the committed view: rows the proposal retired or changed.
-    /// Preparation only, through this invocation's own admitted Source read.
+    /// The committed side of the Source's exact delta for this invocation's
+    /// scope: rows whose materialized entry the proposal removed or changed,
+    /// as the provider owner's maintenance found them in the logical
+    /// observation, typed for the committed view. Preparation only, through
+    /// this invocation's own admitted Source read.
     pub fn committed_observed_source_rows<I, E, Cause>(
         &self,
         prepared: &Prepared<Schema, I>,
@@ -34,10 +35,11 @@ impl<Schema> Planner<'_, '_, Schema> {
     ) -> Result<Vec<Entity<Schema, E>>, Error<Cause>> {
         self.typed_rows(prepared, entity, ViewPosture::Committed)
     }
-    /// The rows of `entity`'s kind that Native's scope discovery found
-    /// changing this invocation's scope and that are proposed members of it,
-    /// typed for the proposed view: rows the proposal introduced or changed.
-    /// A replacement under a retired row's key is another entity.
+    /// The proposed side of the same exact delta: rows whose materialized
+    /// entry the proposal added or changed, typed for the proposed view. A
+    /// scope born from its ordered predecessor lends its own step; a newly
+    /// built scope lends every member. A replacement under a retired row's key
+    /// is another entity.
     pub fn proposed_observed_source_rows<I, E, Cause>(
         &self,
         prepared: &Prepared<Schema, I>,
@@ -102,7 +104,7 @@ enum Denied {
 }
 
 /// The one concrete core, compiled once: exact bindings, Native's admitted
-/// read of this invocation and observation, the member rows Native recorded,
+/// read of this invocation and observation, the owner's recorded delta,
 /// result storage claimed before it grows, and each row admitted to the
 /// prepared scope. Cost: one admission per lent row.
 fn observed_row_ids(

@@ -24,6 +24,10 @@ mod query;
 pub(super) mod rule;
 #[path = "events/schema.rs"]
 pub(super) mod schema;
+#[path = "events/variants.rs"]
+pub(super) mod variants;
+/// A refusing cold policy cannot build a same-scope Source; none is installed.
+const VARIANT_SOURCES: bool = false;
 #[path = "nested/shape.rs"]
 mod shape;
 use super::super::super::authentication;

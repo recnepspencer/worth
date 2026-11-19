@@ -221,6 +221,7 @@ fn journey() {
                 .unwrap()
         })
         .unwrap();
+    rules.lent.lock().unwrap().clear();
     let suspended = selected
         .suspend_current_generated_output::<producer::Producer>(&scope, source)
         .unwrap_or_else(|failure| panic!("real generated Catalog suspension failed: {failure:?}"));
@@ -251,6 +252,18 @@ fn journey() {
             );
         }
     }
+    {
+        // The logical observation is unchanged: Native lends no changed row
+        // on either side, though the physical Source is suspended.
+        let lent = rules.lent.lock().unwrap();
+        for scope in [a_scope, b_scope] {
+            let (_, sides) = lent
+                .iter()
+                .find(|(at, _)| *at == scope)
+                .expect("each invoked scope takes the loan");
+            assert_eq!(sides, &[Vec::new(), Vec::new()], "suspension lends nothing");
+        }
+    }
     let queries = provider.probe_validations.load(Ordering::SeqCst);
     assert_suspended(request.query(find("A")).execute());
     let suspended_position = request
@@ -265,6 +278,7 @@ fn journey() {
     );
     assert_eq!(values(original.rows()), expected("A", "taken-generated"));
     rules.records.lock().unwrap().clear();
+    rules.lent.lock().unwrap().clear();
     let completed = reconstruction::complete(&world, suspended, "taken");
     let failure = match world.restore_generated_output(completed, &scope) {
         Err(failure) => failure,
@@ -284,6 +298,17 @@ fn journey() {
             .expect("unopened B sees the actual invalid reconstructed name");
         assert_eq!(values(&b.source.after), expected("B", "taken"));
         assert!(b.source.before.is_none(), "the committed physical Source is genuinely suspended, never empty success or logical fallback");
+        // Restoration changes B's real rows: with its committed physical
+        // Source suspended, they are lent on the proposed side only.
+        let lent = rules.lent.lock().unwrap();
+        let (_, [committed, proposed]) = lent
+            .iter()
+            .find(|(at, _)| *at == b_scope)
+            .expect("B takes the loan");
+        assert!(
+            committed.is_empty() && !proposed.is_empty(),
+            "{committed:?} {proposed:?}"
+        );
     }
     assert_suspended(request.query(find("A")).execute());
     assert_eq!(

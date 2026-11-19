@@ -14,7 +14,7 @@ where
         predecessor: Option<&Payload>,
     ) -> Result<PreparedManagedIndexSourceRoot, Denial> {
         let parent = scope.ordered_predecessor()?;
-        let proposed = match (parent, predecessor) {
+        let (proposed, changes) = match (parent, predecessor) {
             (Some(parent), Some(payload)) => {
                 let root = payload
                     .downcast_ref::<ManagedSourceRoot<S, I>>()
@@ -43,7 +43,7 @@ where
                     Err(Denial::PredecessorUnavailable { .. })
                         if self.cold == Cold::AdmitRebuild =>
                     {
-                        self.cold(execution, &scope, &scope.proposed())?
+                        self.cold_entered(execution, &scope)?
                     }
                     Err(cause) => return Err(cause),
                 }
@@ -53,11 +53,27 @@ where
             }
             // The chain root builds its own membership. A missing parent costs
             // one successor build, never a recursive preparation of the parent.
-            _ => self.cold(execution, &scope, &scope.proposed())?,
+            _ => self.cold_entered(execution, &scope)?,
         };
         execution
             .consult()
             .map_err(|cause| source_storage(cause.into()))?;
-        Ok(scope.seal(None, Some(proposed)))
+        Ok(scope.seal(None, Some(proposed)).with_changes(changes))
+    }
+    /// A successor built without its predecessor: every member entered.
+    fn cold_entered(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        scope: &ManagedIndexSourceScope<'_>,
+    ) -> Result<
+        (
+            Payload,
+            worth_relational::facade::runtime::ManagedIndexSourceChanges,
+        ),
+        Denial,
+    > {
+        let built = self.cold(execution, scope, &scope.proposed())?;
+        let changes = super::entered_all::<S, I>(scope, &built)?;
+        Ok((built, changes))
     }
 }

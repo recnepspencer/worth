@@ -27,6 +27,8 @@ pub use image::ManagedIndexSourceCacheRetirement;
 pub(crate) use image::PublicCacheEntry;
 pub use image::{ManagedIndexBranchImage, ManagedIndexPublishedSourceRoot};
 mod scope_closure;
+mod source_changes;
+pub use source_changes::ManagedIndexSourceChanges;
 mod staged;
 pub(crate) use observation::{
     prepare as prepare_observed_root, read as read_observed_root, scopes as observed_scopes,

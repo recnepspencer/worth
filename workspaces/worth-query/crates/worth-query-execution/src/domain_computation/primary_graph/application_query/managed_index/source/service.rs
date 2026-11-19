@@ -196,10 +196,14 @@ where
         if !proposed_exists {
             return Ok(scope.seal(before, None));
         }
-        let proposed = if let Some(before) = &before {
-            Some(self.update(execution, &scope, before)?)
+        // The owner's exact delta: an updated root's changed entries, or a
+        // newly built scope's every member.
+        let (proposed, changes) = if let Some(before) = &before {
+            self.update(execution, &scope, before)?
         } else if self.cold == Cold::AdmitRebuild {
-            Some(self.cold(execution, &scope, &scope.proposed())?)
+            let built = self.cold(execution, &scope, &scope.proposed())?;
+            let changes = entered_all::<S, I>(&scope, &built)?;
+            (built, changes)
         } else {
             return Err(Denial::RootUnavailable);
         };
@@ -208,7 +212,7 @@ where
                 worth_relational::facade::runtime::DerivedRelationReadDenial::Request(cause.into()),
             )
         })?;
-        Ok(scope.seal(before, proposed))
+        Ok(scope.seal(before, Some(proposed)).with_changes(changes))
     }
 }
 
@@ -274,6 +278,36 @@ where
                 .map_or(usize::MAX, std::num::NonZeroUsize::get),
         )
     }
+}
+
+/// Every member of a newly built root entered its scope.
+pub(super) fn entered_all<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>>(
+    scope: &ManagedIndexSourceScope<'_>,
+    built: &Payload,
+) -> Result<worth_relational::facade::runtime::ManagedIndexSourceChanges, Denial> {
+    let root = built
+        .downcast_ref::<ManagedSourceRoot<S, I>>()
+        .ok_or(Denial::ForeignSource)?;
+    scope
+        .read_budget()
+        .claim_retained(
+            (root.rows.len() * size_of::<worth_relational::facade::identity::EntityId>()) as u64,
+        )
+        .map_err(worth_relational::facade::runtime::DerivedRelationReadDenial::Structural)?;
+    let mut rows = Vec::new();
+    rows.try_reserve_exact(root.rows.len()).map_err(|_| {
+        source_storage(
+            worth_relational::facade::transactions::RelationalExecutionDenialCause::AllocationFailed,
+        )
+    })?;
+    rows.extend(root.rows.keys());
+    rows.sort_unstable();
+    Ok(
+        worth_relational::facade::runtime::ManagedIndexSourceChanges::new(
+            std::sync::Arc::from([]),
+            std::sync::Arc::from(rows),
+        ),
+    )
 }
 
 pub(in crate::domain_computation::primary_graph::application_query::managed_index) fn retain_root<

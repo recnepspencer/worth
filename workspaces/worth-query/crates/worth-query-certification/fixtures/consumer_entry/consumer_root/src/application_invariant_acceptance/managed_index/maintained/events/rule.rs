@@ -13,6 +13,16 @@ impl ApplicationInvariantMarkerIdentity<Catalog> for CompleteNestedSource {
     const MINOR: u16 = 0;
 }
 pub(super) fn definition() -> ApplicationInvariantDefinition<Catalog, CompleteNestedSource> {
+    let definition = base_definition();
+    if super::VARIANT_SOURCES {
+        definition
+            .managed_index_source(super::variants::SameScopeIndex::reference())
+            .managed_index_source(super::variants::OverlapIndex::reference())
+    } else {
+        definition
+    }
+}
+fn base_definition() -> ApplicationInvariantDefinition<Catalog, CompleteNestedSource> {
     let closure = [
         ApplicationInvariantScopeTarget::Entity("Directory".into()),
         ApplicationInvariantScopeTarget::Entity("Item".into()),
@@ -45,13 +55,21 @@ pub(in super::super) struct Calls {
     pub(super) records: Mutex<Vec<SourceObservation<query::ItemRow>>>,
     /// Each invocation's scope and the Item rows Native observed changing
     /// it, as the committed and the proposed views admit them.
-    pub(super) observed: Mutex<Vec<(Coordinate, [Vec<Coordinate>; 2])>>,
+    pub(super) observed: Mutex<Vec<(&'static str, Coordinate, [Vec<Coordinate>; 2])>>,
     /// Set by a cost court to measure the same commit without the loan.
     pub(super) skip_loan: std::sync::atomic::AtomicBool,
+    /// Set by a cost court to lend from the ordered Source alone.
+    pub(super) only_ordered: std::sync::atomic::AtomicBool,
 }
 pub(super) type Coordinate = (u32, u64, u32);
 pub(super) struct Rule {
     index: WorthQueryApplicationInvariantManagedIndexBinding<Catalog, prefix::PrefixIndex>,
+    same_scope: Option<
+        WorthQueryApplicationInvariantManagedIndexBinding<Catalog, super::variants::SameScopeIndex>,
+    >,
+    overlap: Option<
+        WorthQueryApplicationInvariantManagedIndexBinding<Catalog, super::variants::OverlapIndex>,
+    >,
     items: WorthQueryApplicationInvariantEntityBinding<Catalog, Item>,
     calls: Arc<Calls>,
 }
@@ -63,6 +81,8 @@ pub(super) fn resolve(
         index: resolver
             .typed_managed_index(prefix::PrefixIndex::reference())
             .ok_or("nested Source was not installed")?,
+        same_scope: resolver.typed_managed_index(super::variants::SameScopeIndex::reference()),
+        overlap: resolver.typed_managed_index(super::variants::OverlapIndex::reference()),
         items: resolver.typed_entity(Item::reference()).ok_or("Item")?,
         calls,
     })
@@ -94,7 +114,19 @@ impl WorthQueryApplicationInvariantRule<Catalog> for Rule {
                     .skip_loan
                     .load(std::sync::atomic::Ordering::SeqCst)
                 {
-                    self.observe(planner, &prepared, budget)?;
+                    self.observe(planner, "ordered", &prepared, budget)?;
+                    let only = self
+                        .calls
+                        .only_ordered
+                        .load(std::sync::atomic::Ordering::SeqCst);
+                    if let Some(same_scope) = self.same_scope.as_ref().filter(|_| !only) {
+                        let same = planner.retain_managed_index(same_scope)?;
+                        self.observe(planner, "same-scope", &same, budget)?;
+                    }
+                    if let Some(overlap) = self.overlap.as_ref().filter(|_| !only) {
+                        let overlap = planner.retain_managed_index(overlap)?;
+                        self.observe(planner, "overlap", &overlap, budget)?;
+                    }
                 }
                 Ok(prepared)
             })
@@ -123,10 +155,11 @@ impl WorthQueryApplicationInvariantRule<Catalog> for Rule {
 }
 impl Rule {
     /// Record the rows Native lent this invocation, claiming their storage.
-    fn observe(
+    fn observe<I>(
         &self,
         planner: &WorthQueryApplicationInvariantScopePlanner<'_, '_, Catalog>,
-        prepared: &WorthQueryPreparedInvariantManagedIndex<Catalog, prefix::PrefixIndex>,
+        index: &'static str,
+        prepared: &WorthQueryPreparedInvariantManagedIndex<Catalog, I>,
         budget: &dyn CustomInvariantLeaseBudget,
     ) -> Result<(), WorthQueryApplicationInvariantError> {
         let committed = planner.committed_observed_source_rows(prepared, &self.items)?;
@@ -139,6 +172,7 @@ impl Rule {
             rows.iter().map(|row| coordinate(row.entity_id())).collect()
         };
         self.calls.observed.lock().unwrap().push((
+            index,
             coordinate(prepared.scope_identity()),
             [coordinates(&committed), coordinates(&proposed)],
         ));

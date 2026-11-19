@@ -27,7 +27,9 @@ pub(in super::super::super) fn rename_inherited(count: usize, lend: bool) -> u64
     let observed = records.observed.lock().unwrap();
     let lent = observed
         .iter()
-        .filter(|(_, [committed, proposed])| committed.len() == 1 && proposed.len() == 1)
+        .filter(|(index, _, [committed, proposed])| {
+            *index == "ordered" && committed.len() == 1 && proposed.len() == 1
+        })
         .count();
     assert!(lent > count, "A and every inheriting scope lend x: {lent}");
     work

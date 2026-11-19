@@ -1,5 +1,4 @@
 //! Reborrow staged roots through the actual rule observation, never proposal numbers.
-use std::collections::BTreeSet;
 use std::sync::Arc;
 
 use crate::derived_relation::{DerivedRelationDenial as Definition, DerivedRelationReadDenial};
@@ -24,6 +23,7 @@ pub struct PreparedManagedIndexSourceRead {
     availability: ManagedIndexSourceAvailability,
     committed_available: bool,
     audience: crate::validation::data::CustomInvariantSemanticIdentity,
+    changes: super::ManagedIndexSourceChanges,
 }
 
 /// The payload and Source views are borrowed together under the current audience.
@@ -84,28 +84,15 @@ impl ManagedIndexSourceRead<'_> {
         self.rows(false)
     }
 
-    /// The rows Native's scope discovery found changing this scope that are
-    /// members of it on the requested side (committed when `before`), in
-    /// entity order: recorded once by the evaluation that routed them,
-    /// including rows an ordered step introduces, and lent from that record.
-    /// A row the proposal retired is a committed member only; an entity born
-    /// beside the scope that is no row of it is neither. Cost: O(1) to borrow.
-    pub fn changed_members(&self, before: bool) -> Result<&BTreeSet<EntityId>, Denial> {
-        static NONE: BTreeSet<EntityId> = BTreeSet::new();
+    /// The provider owner's exact delta for this scope and proposal, as the
+    /// selected root carried it, on one side (committed when `before`): rows
+    /// whose materialized entry left or changed, or entered or changed, in
+    /// the invariant's logical observation. Borrowed, O(1).
+    pub fn changed_members(&self, before: bool) -> Result<&[EntityId], Denial> {
         if before && !self.prepared.committed_available {
             return Err(Denial::RootUnavailable);
         }
-        let staged = self
-            .interpretation
-            .prepared
-            .get()
-            .ok_or(Denial::IncompletePreparation)?;
-        Ok(staged
-            .programs
-            .iter()
-            .find(|source| source.program == self.prepared.program)
-            .and_then(|source| source.closure.members.get(&self.prepared.scope))
-            .map_or(&NONE, |sides| &sides[usize::from(!before)]))
+        Ok(self.prepared.changes.side(before))
     }
 
     fn rows(&self, before: bool) -> ManagedIndexSourceRows<'_> {
@@ -167,6 +154,7 @@ pub(crate) fn prepare(
         committed_available: owner.home_target.is_none()
             && owner.physical_basis().materialization_is_complete(),
         audience: audience.clone(),
+        changes: root.changes.clone(),
     })
 }
 

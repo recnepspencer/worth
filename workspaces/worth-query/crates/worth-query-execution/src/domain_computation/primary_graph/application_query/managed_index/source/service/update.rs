@@ -1,5 +1,6 @@
 //! Apply one admitted same-scope or predecessor step through the existing node edit.
 use super::*;
+use worth_relational::facade::runtime::ManagedIndexSourceChanges;
 impl<S, I, P> TypedSourceService<S, I, P>
 where
     S: ApplicationSchema,
@@ -11,7 +12,7 @@ where
         execution: &ExecutionRequest<'_, '_>,
         scope: &ManagedIndexSourceScope<'_>,
         retained: &Payload,
-    ) -> Result<Payload, Denial> {
+    ) -> Result<(Payload, ManagedIndexSourceChanges), Denial> {
         let changed = scope.prepare_changed_occurrences()?;
         self.update_changed(execution, scope, retained, &changed, false)
     }
@@ -25,12 +26,12 @@ where
             Option<worth_relational::facade::runtime::PreparedManagedIndexSourceOccurrence>,
         )],
         inherited: bool,
-    ) -> Result<Payload, Denial> {
+    ) -> Result<(Payload, ManagedIndexSourceChanges), Denial> {
         let before = retained
             .downcast_ref::<ManagedSourceRoot<S, I>>()
             .ok_or(Denial::ForeignSource)?;
         if changed.is_empty() && !inherited {
-            return Ok(Arc::clone(retained));
+            return Ok((Arc::clone(retained), ManagedIndexSourceChanges::default()));
         }
         let graph = self.provider.installed.source_read().query().read_graph();
         let baseline = if inherited {
@@ -39,7 +40,7 @@ where
             None
         };
         let baseline = baseline.as_ref().unwrap_or(&before.rows);
-        let rows = baseline
+        let (rows, delta) = baseline
             .update(execution, scope, changed, graph, inherited)
             .map_err(super::super::occurrences::MaterialDenial::into_native)?;
         if rows.len() > self.maximum_source_rows() {
@@ -93,12 +94,13 @@ where
                 &changes,
             )?;
         }
-        retain_root(
+        let root = retain_root(
             execution,
             self.provider.clone(),
             self.provider.bindings.clone(),
             rows,
             nodes,
-        )
+        )?;
+        Ok((root, delta))
     }
 }

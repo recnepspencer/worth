@@ -83,14 +83,15 @@ fn an_ordered_birth_lends_its_introduced_row_and_never_a_disconnected_same_kind_
     let observed = records.observed.lock().unwrap();
     let proposed: BTreeSet<_> = observed
         .iter()
-        .flat_map(|(_, [_, proposed])| proposed.iter().copied())
+        .filter(|(index, ..)| *index == "ordered")
+        .flat_map(|(_, _, [_, proposed])| proposed.iter().copied())
         .collect();
     assert_eq!(proposed, BTreeSet::from([introduced]));
     assert!(proposed.is_subset(&members));
     assert!(
         observed
             .iter()
-            .all(|(_, [committed, _])| committed.is_empty()),
+            .all(|(_, _, [committed, _])| committed.is_empty()),
         "the born scope has no committed member: {observed:?}"
     );
 }
@@ -122,7 +123,8 @@ fn an_ordered_birth_lends_an_existing_row_its_new_link_introduces() {
     let observed = records.observed.lock().unwrap();
     let proposed: BTreeSet<_> = observed
         .iter()
-        .flat_map(|(_, [_, proposed])| proposed.iter().copied())
+        .filter(|(index, ..)| *index == "ordered")
+        .flat_map(|(_, _, [_, proposed])| proposed.iter().copied())
         .collect();
     assert_eq!(proposed, BTreeSet::from([adopted]));
 }

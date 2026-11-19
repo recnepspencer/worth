@@ -15,7 +15,6 @@ pub(in crate::validation::candidate_source) fn discover_home_target(
     });
     let mut closure = PreparedManagedIndexScopeClosure {
         scopes: BTreeMap::new(),
-        members: BTreeMap::new(),
         support: Vec::new(),
     };
     for record in records {
@@ -54,10 +53,6 @@ pub(in crate::validation::candidate_source) fn discover_home_target(
             source.retain(size_of::<EntityId>())?;
             rows.insert(row);
         }
-        source.retain(size_of::<EntityId>() * rows.len())?;
-        closure
-            .members
-            .insert(*entity, [BTreeSet::new(), rows.clone()]);
         closure.scopes.insert(*entity, rows);
         crate::derived_relation::support::push(&mut source, &mut closure.support, data)?;
     }

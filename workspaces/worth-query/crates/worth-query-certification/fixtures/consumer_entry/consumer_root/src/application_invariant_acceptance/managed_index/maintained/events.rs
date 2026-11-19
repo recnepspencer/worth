@@ -14,6 +14,10 @@ mod query;
 pub(super) mod rule;
 pub(super) mod schema;
 mod shape;
+pub(super) mod variants;
+/// Sibling Sources would change this world's ordered inheritance; the
+/// variant Sources live in their own world (`event_variants`).
+const VARIANT_SOURCES: bool = false;
 const SOURCE_MAX_RESULTS: usize = 8192;
 const PREFIX_MEMBERSHIP:worth_query_decl::facade::application_query::ApplicationManagedIndexMembership=worth_query_decl::facade::application_query::ApplicationManagedIndexMembership::CheckedSummarySourceTree;
 const PREFIX_REFINEMENT: Option<
