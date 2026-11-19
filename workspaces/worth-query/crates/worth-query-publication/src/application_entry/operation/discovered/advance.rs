@@ -28,14 +28,13 @@ where
         self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ) -> DiscoveredAdvance<S, I, P, R, A> {
-        if let Some(original) = &self.description.original {
-            if let Err(cause) = request.application.admit_original_operation_owner(
+        if let Some(original) = &self.description.original
+            && let Err(cause) = request.application.admit_original_operation_owner(
                 &original.owner,
                 &worth_query_execution::publication_boundary::program_publication_access(),
             ) {
                 return Advance::Refused { operation: self, denial: Denial::Original(cause) };
             }
-        }
         if !std::ptr::eq(self.runtime.runtime(), request.application)
             || self.description.branch != request.branch
         {

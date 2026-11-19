@@ -1,3 +1,7 @@
+#![allow(
+    clippy::result_large_err,
+    reason = "A refused close hands back the genuine listener, mutation or Home owner without allocating on failure"
+)]
 //! Process failures retain the genuine listener, mutation or Home close owner.
 use std::sync::Arc;
 

@@ -8,10 +8,6 @@ pub struct CallbackCapture {
     task: JoinHandle<()>,
 }
 impl CallbackCapture {
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "async-runtime async-task=1: Court captures actual external callback bytes on its existing transport event loop; it creates no computation pool."
-    )]
     pub fn bind(runtime: &tokio::runtime::Runtime) -> Self {
         runtime.block_on(async {
             let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();

@@ -13,8 +13,8 @@ use worth_query_host::facade::{
         WorthQueryCurrentOutputDenialKind,
     },
 };
-use worth_query_topology_entry::{PlanarEdit, PlanarMutation};
 use worth_query_topology_entry::PlanarOutputDemand;
+use worth_query_topology_entry::{PlanarEdit, PlanarMutation};
 
 use super::{length, output_correspondence::observed_source, read_y, ProgramApplication, Request};
 

@@ -1,3 +1,7 @@
+#![allow(
+    clippy::result_large_err,
+    reason = "A refused Home attachment hands back the original runtime and its owners without allocating on failure"
+)]
 //! Attach Bank command and workflow owners to the actual fresh or readmitted Home.
 use super::*;
 use worth_query_host::facade::{WorthQueryApplicationHome, WorthQueryApplicationHomeOpenRefused};

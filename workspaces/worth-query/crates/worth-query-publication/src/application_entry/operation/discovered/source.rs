@@ -43,14 +43,13 @@ where
                     };
                 }
             };
-        if let Some(original) = &mut self.description.original {
-            if let Err(cause) = original.mark(
+        if let Some(original) = &mut self.description.original
+            && let Err(cause) = original.mark(
                 phase, request.application,
                 worth_query_execution::publication_boundary::original_operation::QueryOriginalOperationPosition::Resolving,
             ) {
                 return Advance::Refused { operation: self, denial: Denial::Original(cause) };
             }
-        }
         let outcome = self
             .description
             .request_view(request, &self.installed_action)
@@ -60,16 +59,14 @@ where
                 execution.allocation_policy(),
             )
             .map(|outcome| outcome.into_same_binding_intent::<I>());
-        if outcome.is_err() {
-            if let Some(original) = &mut self.description.original {
-                if let Err(cause) = original.mark(
+        if outcome.is_err()
+            && let Some(original) = &mut self.description.original
+                && let Err(cause) = original.mark(
                     phase, request.application,
                     worth_query_execution::publication_boundary::original_operation::QueryOriginalOperationPosition::Initial,
                 ) {
                     return Advance::Refused { operation: self, denial: Denial::Original(cause) };
                 }
-            }
-        }
         let mut outcome = match outcome {
             Ok(outcome) => outcome,
             Err(denial @ WorthQueryPerformedMutationExecutionDenial::Action(_)) => {

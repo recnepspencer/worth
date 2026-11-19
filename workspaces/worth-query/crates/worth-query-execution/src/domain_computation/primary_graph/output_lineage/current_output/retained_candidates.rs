@@ -46,7 +46,7 @@ impl WorthQueryRetainedOutputCandidate {
     pub(in crate::domain_computation::primary_graph) fn performed_lifecycle(
         &self,
     ) -> Option<crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerLifecyclePosture>
-    {
+{
         if let Some(key) = &self.original_ready_key {
             return Some(key.applicability().lifecycle());
         }

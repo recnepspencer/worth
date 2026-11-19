@@ -76,7 +76,10 @@ impl RelationalRuntime {
         }
         let mut answer = Vec::new();
         for kind in storage.metadata_kinds() {
-            let realized = rows.iter().find(|(k, _)| *k == kind).map(|(_, record)| record);
+            let realized = rows
+                .iter()
+                .find(|(k, _)| *k == kind)
+                .map(|(_, record)| record);
             // An input link exists only where a producer consumed a parent
             // output. Without one, creation is still probed over the real
             // endpoints of another private link.

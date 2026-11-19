@@ -47,7 +47,7 @@ pub(in crate::domain_computation::primary_graph) struct AppliedSourcePublication
 impl AppliedSourcePublication {
     pub(in crate::domain_computation::primary_graph) fn lifecycle(
         &self,
-    ) -> crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerLifecyclePosture {
+    ) -> crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerLifecyclePosture{
         self.lifecycle
     }
     /// Publication can make two previously distinct interned meanings equal.

@@ -14,7 +14,7 @@ fn completed_bank_rail_custody_reopens_without_another_contact_or_handler() {
     let execution = checkpoint_capture::ExecutionRequest::leased(&lease);
     let first = world.open(execution, true);
     let input = notice(8701);
-    let receipt = first.emit(input.clone(), 8701);
+    let receipt = first.emit(input, 8701);
     assert_eq!(
         receipt.external_dispatch().unwrap().posture().kind(),
         WorthQueryExternalDispatchPostureKind::Completed
@@ -51,7 +51,7 @@ fn completed_bank_rail_custody_reopens_without_another_contact_or_handler() {
     drop(receipt);
     first.close(&execution);
     let second = world.open(execution, false);
-    let handle = second.recover(input.clone(), 8701);
+    let handle = second.recover(input, 8701);
     assert_eq!(handle.binding().commit_reference(), &original);
     drop(old);
     second
@@ -79,7 +79,7 @@ fn lost_bank_response_safe_retries_the_same_original_after_graceful_reopen() {
         .transport
         .under(FaultScript::CommitThenLoseResponse, Duration::from_secs(5));
     let input = notice(8711);
-    let receipt = first.emit(input.clone(), 8711);
+    let receipt = first.emit(input, 8711);
     assert_eq!(
         receipt.external_dispatch().unwrap().posture().kind(),
         WorthQueryExternalDispatchPostureKind::Unresolved
@@ -94,7 +94,7 @@ fn lost_bank_response_safe_retries_the_same_original_after_graceful_reopen() {
     drop(receipt);
     first.close(&execution);
     let second = world.open(execution, false);
-    let handle = second.recover(input.clone(), 8711);
+    let handle = second.recover(input, 8711);
     assert_eq!(handle.binding().commit_reference(), &original);
     second
         .transport
@@ -134,7 +134,7 @@ fn duplicate_bank_acknowledgement_keeps_its_durable_pending_identity_after_reope
         Duration::from_secs(5),
     );
     let input = notice(8721);
-    let receipt = first.emit(input.clone(), 8721);
+    let receipt = first.emit(input, 8721);
     assert_eq!(
         receipt.external_dispatch().unwrap().posture().kind(),
         WorthQueryExternalDispatchPostureKind::Unresolved

@@ -18,7 +18,7 @@ pub(in crate::http::server::query_denial) fn source(
             unavailable()
         }
         Source::Publication(cause) => {
-            crate::http::server::relational_execution_denial::companion(cause.clone())
+            crate::http::server::relational_execution_denial::companion(*cause)
         }
         Source::MissingParticipant
         | Source::IncompletePreparation

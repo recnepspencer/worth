@@ -1,3 +1,7 @@
+#![allow(
+    clippy::result_large_err,
+    reason = "The court drives the real Home open, whose refusal hands back its original owner"
+)]
 //! Real full-Bank installation owners cross only the quiescent graceful boundary.
 use super::{close_directory, fixture};
 use worth_query_host::facade::{

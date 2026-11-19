@@ -13,7 +13,7 @@ fn authentic_bank_callback_after_reopen_completes_the_original_and_deduplicates_
         .transport
         .under(FaultScript::CommitThenLoseResponse, Duration::from_secs(5));
     let input = notice(8741);
-    let receipt = first.emit(input.clone(), 8741);
+    let receipt = first.emit(input, 8741);
     assert_eq!(
         receipt.external_dispatch().unwrap().posture().kind(),
         WorthQueryExternalDispatchPostureKind::Unresolved
@@ -23,10 +23,10 @@ fn authentic_bank_callback_after_reopen_completes_the_original_and_deduplicates_
     drop(receipt);
     first.close(&execution);
     let second = world.open(execution, false);
-    let recovered = second.recover(input.clone(), 8741);
+    let recovered = second.recover(input, 8741);
     let identity = recovered.opaque_wire_identity();
     let denied = second
-        .admitted(input.clone(), 8741, |phase, admission, _, _| {
+        .admitted(input, 8741, |phase, admission, _, _| {
             second
                 .home
                 .runtime()

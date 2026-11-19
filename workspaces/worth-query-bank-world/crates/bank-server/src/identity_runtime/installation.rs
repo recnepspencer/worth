@@ -1,3 +1,7 @@
+#![allow(
+    clippy::result_large_err,
+    reason = "A refused installation step hands back the original owners and typed denial without allocating on failure"
+)]
 use bank_domain::{
     queries::{PaymentAmountQueryBinding, PaymentDetailQueryBinding},
     schema::{

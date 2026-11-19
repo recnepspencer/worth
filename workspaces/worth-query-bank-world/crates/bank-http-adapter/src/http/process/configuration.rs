@@ -1,3 +1,7 @@
+#![allow(
+    clippy::result_large_err,
+    reason = "A refused process configuration hands back the original Home owner without allocating on failure"
+)]
 use std::time::{Duration, Instant};
 use std::{net::SocketAddr, sync::Arc};
 
@@ -82,15 +86,14 @@ impl BankHttpProcessConfiguration {
             &scope,
         )
         .await?;
-        if let Some(address) = external_rail {
-            if let Err(denial) = identity
+        if let Some(address) = external_rail
+            && let Err(denial) = identity
                 .runtime()
                 .install_external_effect_transport(Arc::new(
                     BankProcessRailTransport::connected_to(address),
                 ))
-            {
-                return Err(BankHttpProcessConfigurationError::ExternalRail { identity, denial });
-            }
+        {
+            return Err(BankHttpProcessConfigurationError::ExternalRail { identity, denial });
         }
         Ok(identity)
     }

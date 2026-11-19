@@ -128,7 +128,7 @@ impl<Schema: ApplicationSchema + 'static, Intent: ApplicationMutationIntent<Sche
                 return Err((self, WorthQueryOperationConstructionDenial::Action(denial)));
             }
         };
-        if let Err(cause) = self.admit_original_action(&installed_action) {
+        if let Err(cause) = self.admit_original_action(installed_action) {
             return Err((self, cause));
         }
         if !installed_action.required_output_source()

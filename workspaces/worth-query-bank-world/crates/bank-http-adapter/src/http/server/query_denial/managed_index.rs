@@ -14,7 +14,7 @@ pub(super) fn managed_index(
             crate::http::server::estate_denial::attempt_kind(kind.into())
         }
         Cause::NativeSource(cause) => native_source::source(cause),
-        Cause::NativeAdmission(cause) => crate::http::server::relational_execution_denial::companion(cause.clone()),
+        Cause::NativeAdmission(cause) => crate::http::server::relational_execution_denial::companion(*cause),
         Cause::LiveAdmission(cause) => query_denial(BankApplicationQueryDenial::from_live_open(cause.clone())),
         Cause::Request(stop) => crate::http::server::advancement_denial::request(stop),
         Cause::Interrupted(Stop::Cancelled) => cancelled(),

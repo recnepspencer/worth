@@ -1,3 +1,7 @@
+#![allow(
+    clippy::result_large_err,
+    reason = "The journey drives the real Home open, whose refusal hands back its original owner"
+)]
 //! Same installed Bank Home: native fork, independent reversal occurrences and exact cold reapply.
 use super::installation::Home;
 use bank_domain::schema::{AccountStatus, FreezeEstateAccount, RestoreRecordedEstateFreeze};
@@ -80,8 +84,8 @@ pub(super) fn reapply_recovered_child(
     let (root, child) = fresh_branches(home);
     let bank = BankHomeRuntime::attach(home.runtime()).unwrap();
     let scope = request_scope();
-    let root_request = bank.request(&principal, &scope).on_branch(root);
-    let child_request = bank.request(&principal, &scope).on_branch(child);
+    let root_request = bank.request(principal, &scope).on_branch(root);
+    let child_request = bank.request(principal, &scope).on_branch(child);
     let root_source = root_request
         .corrections()
         .select_coordinates(&original, limits())
@@ -200,8 +204,8 @@ pub(super) fn reapply_recovered_child(
         before.0,
         "child publication cannot move root"
     );
-    assert_eq!(status(home, &principal, child), AccountStatus::Frozen);
-    assert_eq!(status(home, &principal, root), AccountStatus::Open);
+    assert_eq!(status(home, principal, child), AccountStatus::Frozen);
+    assert_eq!(status(home, principal, root), AccountStatus::Open);
 
     // Successful fresh preparation checks the root's active-reversal consumption
     // at its own exact basis. Do not publish it: final root truth remains Open.
@@ -217,7 +221,7 @@ pub(super) fn reapply_recovered_child(
         else { panic!("child consumption must leave the root reversal available"); };
     drop(unperformed_root);
     assert_eq!(
-        (publication(root), status(home, &principal, root)),
+        (publication(root), status(home, principal, root)),
         (before.0, AccountStatus::Open)
     );
 }

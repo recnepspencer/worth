@@ -6,8 +6,12 @@ pub struct Start;
 impl ApplicationConnectionIdentity for Start {
     const IDENTITY: &'static str = "owned-outputs.new-member.start";
 }
-impl ApplicationOccurrenceConnectionBinding<Schema, super::super::super::super::program::Entry, Parent>
-    for Start
+impl
+    ApplicationOccurrenceConnectionBinding<
+        Schema,
+        super::super::super::super::program::Entry,
+        Parent,
+    > for Start
 {
 }
 pub type RootConnection = ApplicationConnectionRef<

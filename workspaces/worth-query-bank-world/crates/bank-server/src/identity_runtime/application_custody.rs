@@ -1,3 +1,7 @@
+#![allow(
+    clippy::result_large_err,
+    reason = "A refused binding hands back the original application, workflow spec and signing owner without allocating on failure"
+)]
 //! Bank commands borrow either the current in-memory installation or its owned Home.
 use super::*;
 use worth_query_host::facade::{

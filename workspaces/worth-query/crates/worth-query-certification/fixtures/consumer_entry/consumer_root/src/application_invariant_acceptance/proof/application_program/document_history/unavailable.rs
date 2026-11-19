@@ -51,12 +51,12 @@ fn unavailable_fixed_output_closes_its_original_native_owner_before_candidate_di
     });
     let mut candidate = None;
     for _ in 0..64 {
-        if let Some(operation) = edit.source_operation() {
-            if operation.branch() != source_branch {
-                assert!(operation.prepared_source_receipt().is_none());
-                candidate = Some(operation.branch());
-                break;
-            }
+        if let Some(operation) = edit.source_operation()
+            && operation.branch() != source_branch
+        {
+            assert!(operation.prepared_source_receipt().is_none());
+            candidate = Some(operation.branch());
+            break;
         }
         edit = match with_request(application, |request| edit.advance(request)) {
             WorthQueryHistoryEditAdvance::Progress(next)

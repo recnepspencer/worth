@@ -26,7 +26,7 @@ where
     let orbit = reader
         .orbit(OwnedNext::reference(), &node)
         .map_err(HandlerExecutionDenial::new)?;
-    assert!(orbit.len() > 0);
+    assert!(!orbit.is_empty());
     let walk = reader
         .walk(
             OwnedNext::reference(),

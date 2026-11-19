@@ -15,8 +15,8 @@ fn identical_callers_retain_their_admitted_original() {
         set_transport(home.runtime(), &live)
     };
     let (first, second) = std::thread::scope(|threads| {
-        let first = threads.spawn(&run);
-        let second = threads.spawn(&run);
+        let first = threads.spawn(run);
+        let second = threads.spawn(run);
         (first.join().unwrap(), second.join().unwrap())
     });
     describe(&first);

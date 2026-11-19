@@ -39,8 +39,8 @@ fn fresh_full(width: u64) -> u64 {
         calls.gathers.load(Ordering::Relaxed),
         if width == 2 { 2 } else { 1 }
     );
-    let outcome = *calls.outcomes.lock().unwrap().last().unwrap();
-    outcome
+
+    *calls.outcomes.lock().unwrap().last().unwrap()
 }
 fn worker_only_successor(include_native_carry: bool) {
     let _observe = WorthQueryExecutionObservation::install_on_this_thread();

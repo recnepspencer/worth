@@ -63,7 +63,7 @@ fn current_commit_basis_reclaims_an_abandoned_performed_observation() {
         .retain_performed_source_for_test(
             WorthQueryRetainedOutputDemandSource::new_for_test(receipt, change, observation, None),
             &preparation,
-            kind.clone(),
+            kind,
             None,
         )
         .unwrap();
@@ -84,7 +84,7 @@ fn current_commit_basis_reclaims_an_abandoned_performed_observation() {
         }
     }
     registry
-        .validate_recovery_root_kind_for_test(&retained_receipt, kind.clone())
+        .validate_recovery_root_kind_for_test(&retained_receipt, kind)
         .unwrap();
     world.application.with_application_advancement(&request, |_phase| {
         let current = select_current_product(&world.application, &retained)

@@ -79,13 +79,9 @@ fn lost_terminal_index_denies_until_bounded_owner_reconstruction() {
         let complete = world
             .application
             .with_host_advancement(|phase| {
-                world.application.repair_completed_inbound_index(
-                    &phase,
-                    &verifier,
-                    one,
-                    records,
-                    ancestry,
-                )
+                world
+                    .application
+                    .repair_completed_inbound_index(&phase, &verifier, one, records, ancestry)
             })
             .expect("installed host call opens")
             .expect("each explicit World page is bounded and authoritative");

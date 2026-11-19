@@ -135,7 +135,6 @@ fn exercise(worker: bool, cold: bool) {
         if cold && ordinal == 0 {
             drop(outputs);
             let checkpoint = super::super::failure::checkpoint(&host);
-            drop(request);
             drop(principal);
             drop(host);
             host = world::restore_program_checkpoint::<program::Program>(checkpoint, worker, false);
