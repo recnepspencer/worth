@@ -1,3 +1,7 @@
+#![allow(
+    clippy::result_large_err,
+    reason = "The fixture drives the real installation and Home owners, whose refusals hand back the original owner"
+)]
 //! Live outputs whose Initial producer does not promise decision reuse.
 
 use super::*;

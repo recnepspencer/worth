@@ -15,13 +15,6 @@ use worth_query_host::facade::{
 };
 pub(super) type Application =
     application_installation::WorthQueryProgramApplicationRuntime<Schema, Program>;
-pub(super) fn install(control: std::sync::Arc<Control>) -> Application {
-    let limits = crate::checkpoint_recovery::support::limits(
-        32,
-        crate::checkpoint_recovery::support::invalidation(),
-    );
-    install_with_limits(control, limits)
-}
 pub(super) fn install_with_limits(
     control: std::sync::Arc<Control>,
     limits: WorthQueryApplicationLimits,

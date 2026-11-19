@@ -91,6 +91,34 @@ pub(super) type ChainRoot = ApplicationOutputGraph<
 
 pub(super) struct ChainProgram;
 
+impl ApplicationProgramDefinition<CheckpointSchema> for ChainProgram {
+    type Contributions = <CheckpointSchema as ApplicationSchemaComposition>::Contributions;
+    type Outputs = ApplicationProgramOutputs<ChainRoot>;
+    type Rules = CheckpointRules;
+    const IDENTITY: ApplicationProgramIdentity =
+        ApplicationProgramIdentity::new("worth.query.certification.consumed-chain-program.v1");
+
+    fn feature_specs() -> Vec<ApplicationFeatureSpec> {
+        let mut features = demand_policy::feature_specs_with_output::<demand_policy::FinalArtifact>(
+            ApplicationFeatureSpec::root::<CheckpointSchema, PlanarOutputFeature>()
+                .provides::<PlanarDerivedBodyOutput>()
+                .native_action::<PlanarEditBinding<CheckpointSchema>>()
+                .finish_action()
+                .native_action::<VertexReplacementBinding<CheckpointSchema>>()
+                .finish_action()
+                .conditional_operation::<MutatePlanar>()
+                .finish(),
+        );
+        features.push(
+            ApplicationFeatureSpec::root::<CheckpointSchema, ChainFeature>()
+                .provides::<ChainOutput>()
+                .conditional_operation::<PublishChain>()
+                .finish(),
+        );
+        features
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -122,33 +150,5 @@ mod tests {
                 "required output occurrences for {root}"
             );
         }
-    }
-}
-
-impl ApplicationProgramDefinition<CheckpointSchema> for ChainProgram {
-    type Contributions = <CheckpointSchema as ApplicationSchemaComposition>::Contributions;
-    type Outputs = ApplicationProgramOutputs<ChainRoot>;
-    type Rules = CheckpointRules;
-    const IDENTITY: ApplicationProgramIdentity =
-        ApplicationProgramIdentity::new("worth.query.certification.consumed-chain-program.v1");
-
-    fn feature_specs() -> Vec<ApplicationFeatureSpec> {
-        let mut features = demand_policy::feature_specs_with_output::<demand_policy::FinalArtifact>(
-            ApplicationFeatureSpec::root::<CheckpointSchema, PlanarOutputFeature>()
-                .provides::<PlanarDerivedBodyOutput>()
-                .native_action::<PlanarEditBinding<CheckpointSchema>>()
-                .finish_action()
-                .native_action::<VertexReplacementBinding<CheckpointSchema>>()
-                .finish_action()
-                .conditional_operation::<MutatePlanar>()
-                .finish(),
-        );
-        features.push(
-            ApplicationFeatureSpec::root::<CheckpointSchema, ChainFeature>()
-                .provides::<ChainOutput>()
-                .conditional_operation::<PublishChain>()
-                .finish(),
-        );
-        features
     }
 }

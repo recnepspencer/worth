@@ -41,7 +41,7 @@ where
     >,
 {
     let calls = take_calls();
-    let preparations = full_partitioned_computation_preparations_on_this_thread_for_test();
+    full_partitioned_computation_preparations_on_this_thread_for_test();
     type ComputeObservation = (
         Vec<(
             WorthQueryPartitionedComputationRunForTest,
@@ -88,7 +88,6 @@ where
         room().push(OracleRun {
             published: Vec::new(),
             outcome,
-            full_preparations: preparations,
             runs: runs.into_iter().map(|(run, _)| run).collect(),
             tree_runs: trees,
             calls: OwnerCalls {

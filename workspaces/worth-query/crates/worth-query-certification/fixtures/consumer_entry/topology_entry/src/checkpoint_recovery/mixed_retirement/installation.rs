@@ -1,3 +1,7 @@
+#![allow(
+    clippy::result_large_err,
+    reason = "The fixture drives the real installation and Home owners, whose refusals hand back the original owner"
+)]
 //! An isolated schema admits the replacement conditional without changing other programs.
 use super::*;
 use std::sync::{

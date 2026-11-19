@@ -117,15 +117,6 @@ impl Ring {
         }
     }
 
-    /// A ring a commit created: every Length starts at one.
-    fn created(index: usize) -> Self {
-        Self {
-            b_length: 1,
-            c_length: 1,
-            ..Self::seeded(index)
-        }
-    }
-
     fn key(&self, role: &str) -> String {
         ring_world::key(self.index, role)
     }

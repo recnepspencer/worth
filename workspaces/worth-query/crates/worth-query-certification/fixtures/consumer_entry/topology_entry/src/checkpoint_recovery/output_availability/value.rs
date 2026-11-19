@@ -84,10 +84,7 @@ fn encode(value: &Snapshot) -> InternedString {
     InternedString::Raw(toml::to_string(value).expect("finite typed snapshot encodes"))
 }
 fn decode(value: InternedString) -> Option<Snapshot> {
-    let Some(value) = (value).raw_text() else {
-        return None;
-    };
-    toml::from_str(&value).ok()
+    toml::from_str(value.raw_text()?).ok()
 }
 worth_query_value_binding! { pub SnapshotBinding for Snapshot {
     identity: "worth.query.certification.availability-snapshot.v1", scalar: String,

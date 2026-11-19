@@ -1,3 +1,7 @@
+#![allow(
+    clippy::result_large_err,
+    reason = "The fixture drives the real installation and Home owners, whose refusals hand back the original owner"
+)]
 //! Candidate prerequisites select appended output with unrelated live attempts retained.
 use super::super::expected_history::{Member, Partition, World};
 use super::{application::*, control, edit, facts, installation, producer, source};
