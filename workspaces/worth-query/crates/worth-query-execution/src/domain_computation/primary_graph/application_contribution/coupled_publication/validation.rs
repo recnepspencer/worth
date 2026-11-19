@@ -44,6 +44,7 @@ impl<S: ApplicationSchema>
             );
             member.position = writer.position;
             member.owed = Some(writer.owed.position());
+            member.consumes = writer.consumes.clone();
             member
         }));
         members.sort_by_key(|member| member.position);

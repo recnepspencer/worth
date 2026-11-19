@@ -14,8 +14,8 @@
 //! that no derivation after the stage replaces.
 //! Two more refusals of an authored stage's read support name their open issue
 //! (#244): discovery support changed by a later authored stage (#238), and a
-//! verified parent's support changed by the stage's own producer (#239). Every
-//! other refusal carries no hold.
+//! verified parent's support changed by a producer whose derivation consumed
+//! that parent's output (#239). Every other refusal carries no hold.
 use super::*;
 use crate::domain_computation::WorthQueryCoupledSupportHold as Hold;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationDecisionFact as Fact;
@@ -142,7 +142,7 @@ pub(super) fn require_read_support(
                 members,
                 support.pin(),
                 |writer| settles_read_support(attempt, support, *position, members, writer),
-                |writer| read_support_hold(attempt, support, *position, members, writer),
+                |writer| read_support_hold(attempt, support, members, writer),
                 |earlier, image| {
                     compare(earlier, image).map(|fact| fact.map(|fact| fact.locator_identity()))
                 },
@@ -237,7 +237,6 @@ fn superseded_parent(
 fn read_support_hold(
     reader: &WorthQueryPrimaryGraphApplicationAttempt,
     support: &crate::domain_computation::primary_graph::provider::CandidateReadSupport,
-    position: usize,
     members: &[crate::domain_computation::primary_graph::provider::CoupledApplicationMember],
     writer: &crate::domain_computation::primary_graph::provider::CoupledApplicationMember,
 ) -> Option<Hold> {
@@ -251,8 +250,11 @@ fn read_support_hold(
         Support::Query(_) | Support::Outgoing(_) if is_stage(writer) => {
             Some(Hold::DiscoverySupportChanged)
         }
-        // The producer this stage's own effect owed (#239).
-        Support::Parent(_) if !is_stage(writer) && writer.owed == Some(position) => {
+        // The parent's own consumer changed what the parent read (#239): the
+        // exact read the assembly retained, not a position the writer is owed.
+        Support::Parent(parent)
+            if parent.read().is_some_and(|read| writer.consumes.contains(&read)) =>
+        {
             Some(Hold::ReaderProducerSupersession)
         }
         _ => None,

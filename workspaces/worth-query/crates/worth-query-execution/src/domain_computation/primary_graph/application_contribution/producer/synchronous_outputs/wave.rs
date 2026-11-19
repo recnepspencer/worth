@@ -23,6 +23,9 @@ struct Scheduled<S: ApplicationSchema> {
     rank: usize,
     /// The demand that owes this task, carried to everything it enqueues.
     owed: super::super::super::coupled_publication::OwedDemand,
+    /// The verified parent this route was discovered from, and those of the
+    /// later demands coalesced into it.
+    consumes: Vec<crate::domain_computation::primary_graph::provider::ParentRead>,
     tree: Box<dyn capture::RequiredTree<S>>,
     parent: Option<AppliedOutputParent>,
     _memory: Option<worth_execution::ExecutionMemoryReservation>,
@@ -107,11 +110,33 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
             subject,
             rank,
             owed: context.owner.owing(),
+            consumes: Vec::new(),
             tree,
             parent: None,
             _memory: memory,
         });
         Ok(())
+    }
+    /// The verified parents this task's derivation consumes: the ones it was
+    /// discovered from and its prerequisite suppliers' outputs.
+    fn consumed_reads(
+        &self,
+        i: usize,
+    ) -> Vec<crate::domain_computation::primary_graph::provider::ParentRead> {
+        let task = &self.tasks[i];
+        let suppliers = task.prerequisites.iter().filter_map(|supplier| {
+            self.tasks[self.canonical(*supplier)]
+                .parent
+                .as_ref()
+                .and_then(|parent| parent.read)
+        });
+        task.consumes.iter().copied().chain(suppliers).collect()
+    }
+    /// The children discovered into this wave from `first` on consume `parent`.
+    fn discovered_from(&mut self, first: usize, parent: &AppliedOutputParent) {
+        for child in &mut self.tasks[first..] {
+            child.consumes.extend(parent.read);
+        }
     }
     fn reserve_slot(
         &mut self,
@@ -218,13 +243,15 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
                 if self.refresh_input_captures(context, candidate, allowed)? {
                     break;
                 }
+                context.owner.consume(self.consumed_reads(*i));
                 let task = &mut self.tasks[*i];
                 context.checkpoint(task.subject)?;
                 context.owner.owe(&task.owed);
-                match task
+                let prepared = task
                     .tree
-                    .prepare(context, candidate, task.inputs.take(), task.component)?
-                {
+                    .prepare(context, candidate, task.inputs.take(), task.component);
+                context.owner.consume(Vec::new());
+                match prepared? {
                     PlannedOutput::Prepared(parent) => {
                         task.parent = parent;
                         task.done = true;
@@ -247,7 +274,9 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
                     parent.pin = pin.clone();
                     // A discovered child is owed by the stage that owed its parent.
                     context.owner.owe(&task.owed);
+                    let first = next.tasks.len();
                     task.tree.discover(context, candidate, parent, &mut next)?;
+                    next.discovered_from(first, parent);
                 }
                 task.continuation_done = true;
             }

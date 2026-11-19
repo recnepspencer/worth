@@ -297,6 +297,7 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
         self.writers.borrow_mut().push(CoupledWriter {
             position,
             owed: self.owing(),
+            consumes: self.consuming(),
             producer: std::sync::Arc::clone(producer),
             stage: Some(CoupledWriterStage::Inspected(writer)),
             meaning: meaning.clone(),

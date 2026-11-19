@@ -4,7 +4,10 @@ use super::{WorthQueryInvariantExecutionDenialKind, WorthQueryInvariantExecution
 use std::sync::Arc;
 
 /// A coupled support refusal the platform holds for a named public issue.
-/// The edit is valid sequentially; it refuses atomically until the issue lands.
+/// The edit refuses whole with `CoupledReadSupportChanged`, attributed to the
+/// reader and the actual later writer, and nothing commits. The hold names
+/// the issue whose capability the refused shape waits on; it claims nothing
+/// about what any other order of the same work would commit.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryCoupledSupportHold {
     /// A later authored stage changed a fact that an output derived earlier in
@@ -13,13 +16,11 @@ pub enum WorthQueryCoupledSupportHold {
     /// producer supersession (public #229).
     ProducerSupersession,
     /// A later authored stage changed the adjacency an authored stage's
-    /// discovery read. One commit per stage would discover again at the later
-    /// stage's own commit; settling it waits on discovery settlement (public
-    /// #238).
+    /// discovery read. Settling it waits on discovery settlement (public #238).
     DiscoverySupportChanged,
-    /// The reading authored stage's own producer changed the support of a
-    /// verified parent the stage read. Settling or superseding that parent
-    /// inside one stage waits on public #239.
+    /// A producer whose derivation consumed a verified parent's output, which
+    /// an authored stage read, changed that parent's support. Settling or
+    /// superseding the parent inside the envelope waits on public #239.
     ReaderProducerSupersession,
 }
 

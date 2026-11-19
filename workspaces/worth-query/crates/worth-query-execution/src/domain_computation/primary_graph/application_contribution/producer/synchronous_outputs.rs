@@ -54,6 +54,8 @@ pub struct AppliedOutputParent {
     input: Option<worth_relational::facade::mvcc::RelationalRequiredOutputInput>,
     source: worth_relational::facade::identity::EntityId,
     pin: RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
+    /// The verified parent read this output is, when it was not derived here.
+    read: Option<crate::domain_computation::primary_graph::provider::ParentRead>,
 }
 impl AppliedOutputParent {
     pub(super) fn source(&self) -> worth_relational::facade::identity::EntityId {
@@ -64,7 +66,19 @@ impl AppliedOutputParent {
         source: worth_relational::facade::identity::EntityId,
         input: Option<worth_relational::facade::mvcc::RelationalRequiredOutputInput>,
     ) -> Self {
-        Self { pin, source, input }
+        Self {
+            pin,
+            source,
+            input,
+            read: None,
+        }
+    }
+    pub(in crate::domain_computation::primary_graph::application_contribution) fn verified(
+        mut self,
+        read: crate::domain_computation::primary_graph::provider::ParentRead,
+    ) -> Self {
+        self.read = Some(read);
+        self
     }
 }
 pub struct SynchronousOutputFailure(

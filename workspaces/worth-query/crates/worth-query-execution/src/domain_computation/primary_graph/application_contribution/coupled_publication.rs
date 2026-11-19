@@ -51,6 +51,10 @@ pub(in crate::domain_computation::primary_graph) struct CoupledApplicationAssemb
     broke: std::cell::Cell<bool>,
     /// The demand that owes the work now being prepared.
     owing: RefCell<OwedDemand>,
+    /// Verified parents retained so far; the next one's read identity.
+    parent_reads: std::cell::Cell<usize>,
+    /// The verified parents the route now being prepared consumes.
+    consuming: RefCell<Vec<crate::domain_computation::primary_graph::provider::ParentRead>>,
 }
 /// The applied position of the earliest stage whose effect demands some work.
 /// Work demanded through it (prerequisites, discovered children, continuations
@@ -89,6 +93,8 @@ struct AuthoredWriter<'run, S> {
 struct CoupledWriter<'run, S> {
     position: usize,
     owed: OwedDemand,
+    /// The verified parents whose outputs this route's derivation consumes.
+    consumes: Vec<crate::domain_computation::primary_graph::provider::ParentRead>,
     producer: std::sync::Arc<registry::InstalledProducerProvider<S>>,
     stage: Option<CoupledWriterStage<'run>>,
     meaning: worth_relational::facade::mvcc::RequiredOutputPublicationMeaning,
@@ -135,6 +141,8 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             abort_failures: RefCell::new(Vec::new()),
             broke: std::cell::Cell::new(false),
             owing: RefCell::new(OwedDemand::at(0)),
+            parent_reads: std::cell::Cell::new(0),
+            consuming: RefCell::new(Vec::new()),
         }
     }
     pub(in crate::domain_computation::primary_graph::application_contribution) fn owing(
@@ -148,6 +156,18 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
         demand: &OwedDemand,
     ) {
         *self.owing.borrow_mut() = demand.clone();
+    }
+    /// The route prepared next consumes these verified parents.
+    pub(in crate::domain_computation::primary_graph::application_contribution) fn consume(
+        &self,
+        reads: Vec<crate::domain_computation::primary_graph::provider::ParentRead>,
+    ) {
+        *self.consuming.borrow_mut() = reads;
+    }
+    pub(in crate::domain_computation::primary_graph::application_contribution) fn consuming(
+        &self,
+    ) -> Vec<crate::domain_computation::primary_graph::provider::ParentRead> {
+        self.consuming.borrow().clone()
     }
     /// The work prepared next is owed by a new demand at this position.
     pub(in crate::domain_computation::primary_graph::application_contribution) fn owe_at(
@@ -187,9 +207,14 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
     pub(in crate::domain_computation::primary_graph::application_contribution) fn retain_verified_parent(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        parent: super::producer::VerifiedAppliedParent,
+        mut parent: super::producer::VerifiedAppliedParent,
         candidate: &RelationalAuthoredCoupledCandidate<'_>,
     ) -> Result<synchronous_outputs::AppliedOutputParent, CoupledSourceReadStop> {
+        let read = crate::domain_computation::primary_graph::provider::ParentRead(
+            self.parent_reads.get(),
+        );
+        self.parent_reads.set(read.0 + 1);
+        parent.retained_as(read);
         let input = parent
             .publication()
             .map(|publication| candidate.current_output_input(execution, publication))
@@ -198,7 +223,8 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             parent.pin().clone(),
             parent.source(),
             input,
-        );
+        )
+        .verified(read);
         self.application
             .runtime
             .primary_provider

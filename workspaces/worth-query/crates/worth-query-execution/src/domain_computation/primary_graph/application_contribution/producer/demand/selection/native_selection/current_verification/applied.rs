@@ -26,8 +26,21 @@ pub(in crate::domain_computation::primary_graph) struct VerifiedAppliedParent {
     family: &'static str,
     pin: Pin,
     facts: FactPayload,
+    read: Option<crate::domain_computation::primary_graph::provider::ParentRead>,
 }
 impl VerifiedAppliedParent {
+    /// The retention a coupled assembly read this parent as, once retained.
+    pub(in crate::domain_computation::primary_graph) fn read(
+        &self,
+    ) -> Option<crate::domain_computation::primary_graph::provider::ParentRead> {
+        self.read
+    }
+    pub(in crate::domain_computation::primary_graph) fn retained_as(
+        &mut self,
+        read: crate::domain_computation::primary_graph::provider::ParentRead,
+    ) {
+        self.read = Some(read);
+    }
     pub(in crate::domain_computation::primary_graph) fn publication(
         &self,
     ) -> Option<&worth_relational::facade::mvcc::RelationalRequiredOutputPublication> {
@@ -196,6 +209,7 @@ impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S>
                     family: F::IDENTITY,
                     pin: pin.clone(),
                     facts,
+                    read: None,
                 }));
             }
         }

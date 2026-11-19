@@ -1,6 +1,7 @@
 //! A later contribution cannot invalidate a verified parent and still publish the edit.
 use super::*;
 mod program;
+mod staged;
 /// Commits `b = 4` and settles its outputs: `first:a` is then a verified
 /// parent derived from model `a` and member `m`, and `second:b` its child.
 fn settle_initial(
@@ -138,9 +139,10 @@ fn worker_only_a_later_child_cannot_invalidate_the_verified_parent_before_public
     exercise(true)
 }
 /// The same change as one authored stage of an ordered edit (#244): the
-/// stage's own child producer changes `m`, which the verified parent `first:a`
-/// read. Sequentially it commits and `first:a` is invalidated; atomically it
-/// refuses, held for own-producer settlement (#239), attributed to the child.
+/// stage's own child producer, which consumed the verified parent `first:a`,
+/// changes `m`, which `first:a` read. The edit refuses whole with
+/// CoupledReadSupportChanged held for own-producer settlement (#239),
+/// attributed to the child, and nothing commits.
 #[test]
 fn an_authored_stage_whose_own_producer_changes_its_verified_parent_is_held() {
     use worth_query_host::facade::application_entry::WorthQueryEditEnvelopeOutcome as Outcome;

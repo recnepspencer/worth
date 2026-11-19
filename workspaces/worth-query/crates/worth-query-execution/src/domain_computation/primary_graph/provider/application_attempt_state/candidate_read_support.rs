@@ -13,6 +13,14 @@ pub(in crate::domain_computation::primary_graph) enum CandidateReadSupport {
     Outgoing(AppliedQuerySupport),
     Parent(VerifiedAppliedParent),
 }
+/// One verified parent a coupled assembly retained as read support. Each
+/// route whose derivation consumes that parent's output carries it, so a
+/// refused change to the parent's support can tell whether its writer is the
+/// parent's own consumer.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(in crate::domain_computation::primary_graph) struct ParentRead(
+    pub(in crate::domain_computation::primary_graph) usize,
+);
 impl CandidateReadSupport {
     pub(in crate::domain_computation::primary_graph) fn subject(&self) -> &str {
         match self {
