@@ -113,6 +113,22 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
         });
         Ok(())
     }
+    /// The parent outputs this task's derivation consumes: its admitted strict
+    /// prerequisite suppliers' actual outputs. Discovery that selected the
+    /// task is not consumption evidence; it is retained as discovery support.
+    fn consumed_reads(
+        &self,
+        i: usize,
+    ) -> Vec<crate::domain_computation::primary_graph::provider::ParentRead> {
+        let task = &self.tasks[i];
+        let suppliers = task.prerequisites.iter().filter_map(|supplier| {
+            self.tasks[self.canonical(*supplier)]
+                .parent
+                .as_ref()
+                .and_then(|parent| parent.read)
+        });
+        suppliers.collect()
+    }
     fn reserve_slot(
         &mut self,
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
@@ -218,13 +234,15 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
                 if self.refresh_input_captures(context, candidate, allowed)? {
                     break;
                 }
+                context.owner.consume(self.consumed_reads(*i));
                 let task = &mut self.tasks[*i];
                 context.checkpoint(task.subject)?;
                 context.owner.owe(&task.owed);
-                match task
-                    .tree
-                    .prepare(context, candidate, task.inputs.take(), task.component)?
-                {
+                let prepared =
+                    task.tree
+                        .prepare(context, candidate, task.inputs.take(), task.component);
+                context.owner.consume(Vec::new());
+                match prepared? {
                     PlannedOutput::Prepared(parent) => {
                         task.parent = parent;
                         task.done = true;

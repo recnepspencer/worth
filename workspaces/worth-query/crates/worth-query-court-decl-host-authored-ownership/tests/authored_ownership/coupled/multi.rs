@@ -282,26 +282,29 @@ fn two_bodies<const MODE: u8>() {
                 .unwrap()
                 .entity_id(),
         )];
-        // The later writer changes the earlier writer's observation; both
-        // sources are attributed. MODE27's later source is the first create's
-        // own co-anchor, every other mode's is the second create.
-        let later = match &other {
-            Some(other) => other
+        // Each refusal names the actual later writer beside the reader. MODE 7:
+        // writer11 changes writer10's peer111 observation. MODE 28: body 11's
+        // producer links a visibility edge into body 10's component. MODE 27:
+        // co-anchor 11's producer changes a field in body 10's component guard.
+        let writer = match MODE {
+            27 => first
+                .outputs_of::<CreatedOutputs>()
+                .unwrap()
+                .entity::<super::super::co_roles::CoCreated<S<MODE>, 0>>()
+                .unwrap()
+                .expect("co-created source")
+                .entity_id(),
+            _ => other
+                .as_ref()
+                .expect("the actual later writer source")
                 .outputs_of::<CreatedOutputs>()
                 .unwrap()
                 .entity::<Created<S<MODE>>>()
                 .unwrap()
                 .entity_id(),
-            None => first
-                .outputs_of::<CreatedOutputs>()
-                .unwrap()
-                .entity::<super::super::co_roles::CoCreated<S<MODE>, 0>>()
-                .unwrap()
-                .expect("MODE27's co-anchored later writer source")
-                .entity_id(),
         };
         expected_sources.push(worth_relational::facade::transactions::RecordRef::Entity(
-            later,
+            writer,
         ));
         assert_eq!(failure.affected_records(), expected_sources.as_slice());
         for id in [20, 101, 102, 111, 112] {

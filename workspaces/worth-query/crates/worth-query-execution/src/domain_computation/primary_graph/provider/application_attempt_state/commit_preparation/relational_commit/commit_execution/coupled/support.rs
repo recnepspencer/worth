@@ -12,8 +12,16 @@
 //! a producer derived before that stage: the producer's own decision read, or
 //! the support of a verified output (prepared in the envelope or committed)
 //! that no derivation after the stage replaces.
+//! Two more refusals of an authored stage's read support name their open issue
+//! (#244): discovery support changed by a later authored stage (#238), and a
+//! verified parent's support changed by a producer whose derivation consumed
+//! that parent's output (#239). Every other refusal carries no hold.
 use super::*;
+use crate::domain_computation::primary_graph::provider::{
+    CandidateReadSupport, CoupledApplicationMember, CoupledApplicationMemberKind, ParentRead,
+};
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationDecisionFact as Fact;
+use crate::domain_computation::WorthQueryCoupledSupportHold as Hold;
 use crate::domain_computation::WorthQueryInvariantExecutionFailure as Failure;
 type Candidate = worth_relational::facade::runtime::RelationalPinnedRead<
     worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
@@ -29,16 +37,15 @@ pub(super) fn require(
     provider: &WorthQueryPrimaryGraphProvider,
     attempt: &WorthQueryPrimaryGraphApplicationAttempt,
     before: &SnapshotHandle,
-    complete: &worth_relational::facade::runtime::RelationalPinnedRead<
-        worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
-    >,
+    complete: &Candidate,
     source: worth_relational::facade::identity::EntityId,
     rebase: Option<
         &super::super::super::evidence_seal::postcommit_currentness::PreparedSourceFactRebase,
     >,
     position: usize,
-    members: &[crate::domain_computation::primary_graph::provider::CoupledApplicationMember],
+    members: &[CoupledApplicationMember],
     producer_reader: bool,
+    produces: Option<ParentRead>,
     hold: &mut Option<Failure>,
 ) -> Result<(), CoupledSupportPreparationDenial> {
     for consumed in attempt.consumed_outputs() {
@@ -88,7 +95,16 @@ pub(super) fn require(
                 |writer| {
                     attempt.coupled_authored_subject().is_some() && writer.settles_after(position)
                 },
-                |writer| producer_reader && is_stage(writer),
+                |writer| {
+                    if producer_reader && is_stage(writer) {
+                        Some(Hold::ProducerSupersession)
+                    } else if produces.is_some_and(|output| writer.consumes.contains(&output)) {
+                        // The reader's own consumer changed its decision read (#246).
+                        Some(Hold::ConsumerSupersession)
+                    } else {
+                        None
+                    }
+                },
                 |earlier, image| {
                     compare(earlier, image).map(|same| (!same).then(|| fact.locator_identity()))
                 },
@@ -114,10 +130,8 @@ pub(super) fn require_read_support(
     provider: &WorthQueryPrimaryGraphProvider,
     attempt: &WorthQueryPrimaryGraphApplicationAttempt,
     before: &SnapshotHandle,
-    complete: &worth_relational::facade::runtime::RelationalPinnedRead<
-        worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
-    >,
-    members: &[crate::domain_computation::primary_graph::provider::CoupledApplicationMember],
+    complete: &Candidate,
+    members: &[CoupledApplicationMember],
     hold: &mut Option<Failure>,
 ) -> Result<(), CoupledSupportPreparationDenial> {
     // Each retained read is attributed from its own observed image, so an
@@ -137,7 +151,7 @@ pub(super) fn require_read_support(
                 members,
                 support.pin(),
                 |writer| settles_read_support(attempt, support, *position, members, writer),
-                |writer| superseded_parent(support, members, writer),
+                |writer| read_support_hold(attempt, support, members, writer),
                 |earlier, image| {
                     compare(earlier, image).map(|fact| fact.map(|fact| fact.locator_identity()))
                 },
@@ -166,22 +180,20 @@ pub(super) fn require_read_support(
 /// no stale output can commit.
 fn settles_read_support(
     reader: &WorthQueryPrimaryGraphApplicationAttempt,
-    support: &crate::domain_computation::primary_graph::provider::CandidateReadSupport,
+    support: &CandidateReadSupport,
     position: usize,
-    members: &[crate::domain_computation::primary_graph::provider::CoupledApplicationMember],
-    writer: &crate::domain_computation::primary_graph::provider::CoupledApplicationMember,
+    members: &[CoupledApplicationMember],
+    writer: &CoupledApplicationMember,
 ) -> bool {
-    use crate::domain_computation::primary_graph::provider::CandidateReadSupport;
     if reader.coupled_authored_subject().is_none() || !writer.settles_after(position) {
         return false;
     }
     let CandidateReadSupport::Parent(parent) = support else {
         return false;
     };
-    let derives =
-        |member: &crate::domain_computation::primary_graph::provider::CoupledApplicationMember| {
-            member.settles_after(position) && derives_parent(member, parent)
-        };
+    let derives = |member: &CoupledApplicationMember| {
+        member.settles_after(position) && derives_parent(member, parent)
+    };
     derives(writer)
         || (is_stage(writer)
             && members
@@ -190,7 +202,7 @@ fn settles_read_support(
 }
 
 fn derives_parent(
-    member: &crate::domain_computation::primary_graph::provider::CoupledApplicationMember,
+    member: &CoupledApplicationMember,
     parent: &crate::domain_computation::primary_graph::application_contribution::producer::VerifiedAppliedParent,
 ) -> bool {
     member
@@ -198,12 +210,10 @@ fn derives_parent(
         .is_some_and(|(_, meaning)| parent.has_route(meaning))
 }
 
-fn is_stage(
-    writer: &crate::domain_computation::primary_graph::provider::CoupledApplicationMember,
-) -> bool {
+fn is_stage(writer: &CoupledApplicationMember) -> bool {
     matches!(
         writer.kind,
-        crate::domain_computation::primary_graph::provider::CoupledApplicationMemberKind::AuthoredStage { .. }
+        CoupledApplicationMemberKind::AuthoredStage { .. }
     )
 }
 
@@ -214,13 +224,11 @@ fn is_stage(
 /// derive it again in the stage's own commit. Discovery support cannot name a
 /// superseded derivation, so it never carries the hold.
 fn superseded_parent(
-    support: &crate::domain_computation::primary_graph::provider::CandidateReadSupport,
-    members: &[crate::domain_computation::primary_graph::provider::CoupledApplicationMember],
-    writer: &crate::domain_computation::primary_graph::provider::CoupledApplicationMember,
+    support: &CandidateReadSupport,
+    members: &[CoupledApplicationMember],
+    writer: &CoupledApplicationMember,
 ) -> bool {
-    let crate::domain_computation::primary_graph::provider::CandidateReadSupport::Parent(parent) =
-        support
-    else {
+    let CandidateReadSupport::Parent(parent) = support else {
         return false;
     };
     is_stage(writer)
@@ -229,25 +237,54 @@ fn superseded_parent(
             .any(|member| member.position > writer.position && derives_parent(member, parent))
 }
 
+/// The open issue a refused change to an authored stage's read support is
+/// held for, where the member kinds already name it (#244). `None` for every
+/// other change, so no defect is reported as a hold.
+fn read_support_hold(
+    reader: &WorthQueryPrimaryGraphApplicationAttempt,
+    support: &CandidateReadSupport,
+    members: &[CoupledApplicationMember],
+    writer: &CoupledApplicationMember,
+) -> Option<Hold> {
+    if superseded_parent(support, members, writer) {
+        return Some(Hold::ProducerSupersession);
+    }
+    reader.coupled_authored_subject()?;
+    match support {
+        // A later authored stage's own commit would discover again (#238).
+        CandidateReadSupport::Query(_) | CandidateReadSupport::Outgoing(_) if is_stage(writer) => {
+            Some(Hold::DiscoverySupportChanged)
+        }
+        // The parent's own consumer changed what the parent read (#239): the
+        // exact read the assembly retained, not a position the writer is owed.
+        CandidateReadSupport::Parent(parent)
+            if parent
+                .read()
+                .is_some_and(|read| writer.consumes.contains(&read)) =>
+        {
+            Some(Hold::ReaderProducerSupersession)
+        }
+        _ => None,
+    }
+}
+
 /// Only a changed fact walks the later writers. Reuse the post-own pins already
 /// held by the admitted writers; healthy facts pay no intermediate comparisons.
 /// `compare` names the fact that differs between two adjacent images, so each
 /// refusal names the fact its own writer changed. An authored reader accepts
 /// changes made by members that sequentially run after it; any other change
 /// refuses, attributed to its writer. `held` names the writers whose refused
-/// change superseded an earlier derivation (#229). Such a refusal is only
+/// change is held for an open issue (#229, #238, #239). Such a refusal is only
 /// provisional: the scan continues, any plain refusal wins, and the hold is
 /// recorded in `hold` for the caller to report after everything else validates.
 fn changed(
     reader: &WorthQueryPrimaryGraphApplicationAttempt,
     source: worth_relational::facade::identity::EntityId,
     position: usize,
-    members: &[crate::domain_computation::primary_graph::provider::CoupledApplicationMember],
+    members: &[CoupledApplicationMember],
     observed: &Candidate,
-    settles: impl Fn(
-        &crate::domain_computation::primary_graph::provider::CoupledApplicationMember,
-    ) -> bool,
-    held: impl Fn(&crate::domain_computation::primary_graph::provider::CoupledApplicationMember) -> bool,
+    settles: impl Fn(&CoupledApplicationMember) -> bool,
+    held: impl Fn(&CoupledApplicationMember) -> Option<Hold>,
     compare: impl Fn(
         &Candidate,
         &Candidate,
@@ -282,8 +319,12 @@ fn changed(
                     .map(|(stage, binding)| format!("authored stage {} {binding}", stage.ordinal()))
                     .unwrap_or_else(|| format!("reader {source:?}"));
                 let later = match &writer.kind {
-                    crate::domain_computation::primary_graph::provider::CoupledApplicationMemberKind::AuthoredStage { identity, binding, .. } => format!("authored stage {} {binding}", identity.ordinal()),
-                    crate::domain_computation::primary_graph::provider::CoupledApplicationMemberKind::Producer { producer, meaning } => format!("producer {producer} {}", meaning.family),
+                    CoupledApplicationMemberKind::AuthoredStage {
+                        identity, binding, ..
+                    } => format!("authored stage {} {binding}", identity.ordinal()),
+                    CoupledApplicationMemberKind::Producer { producer, meaning } => {
+                        format!("producer {producer} {}", meaning.family)
+                    }
                 };
                 let failure = Failure::coupled_read_support(
                     source,
@@ -291,12 +332,10 @@ fn changed(
                     format!("{reader}; later writer {later}: {}", detail(&locator)),
                 )
                 .with_coupled_writer(writer.source());
-                if !held(writer) {
+                let Some(held) = held(writer) else {
                     return Err(CoupledSupportPreparationDenial::Changed(failure));
-                }
-                provisional.get_or_insert(failure.held(
-                    crate::domain_computation::WorthQueryCoupledSupportHold::ProducerSupersession,
-                ));
+                };
+                provisional.get_or_insert(failure.held(held));
             }
         }
     }

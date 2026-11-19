@@ -236,10 +236,14 @@ fn run(consumed: bool) {
             WorthQueryInvariantExecutionDenialKind::CoupledReadSupportChanged
         );
         // The late link changes the incoming adjacency that selected the
-        // pending child's parents. Discovery support stays strict: a plain
-        // refusal attributed to the link stage, with no #229 hold.
+        // pending child's parents. Discovery support stays strict: a refusal
+        // attributed to the link stage, held for discovery settlement (#238).
         let failure = cause.invariant_execution_failure().unwrap();
-        assert_eq!(failure.coupled_support_hold(), None, "{cause:?}");
+        assert_eq!(
+            failure.coupled_support_hold(),
+            Some(worth_query_host::facade::primary_graph::WorthQueryCoupledSupportHold::DiscoverySupportChanged),
+            "{cause:?}"
+        );
         assert!(
             failure.detail().contains("later writer authored stage 3")
                 && failure.detail().contains("discovery support"),
@@ -345,7 +349,12 @@ fn an_absent_supplier_does_not_force_its_prerequisite_at_an_authored_barrier() {
         failure.kind(),
         WorthQueryInvariantExecutionDenialKind::CoupledReadSupportChanged
     );
-    assert_eq!(failure.coupled_support_hold(), None, "{cause:?}");
+    // A later authored stage changed what the earlier stage discovered (#238).
+    assert_eq!(
+        failure.coupled_support_hold(),
+        Some(worth_query_host::facade::primary_graph::WorthQueryCoupledSupportHold::DiscoverySupportChanged),
+        "{cause:?}"
+    );
     assert!(
         failure.detail().contains("later writer authored stage 2")
             && failure.detail().contains("discovery support"),

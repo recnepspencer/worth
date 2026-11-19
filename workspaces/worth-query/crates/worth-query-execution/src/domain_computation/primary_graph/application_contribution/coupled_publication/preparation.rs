@@ -248,11 +248,14 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
                     )
                     .into());
                 }
-                return Ok(Some(synchronous_outputs::AppliedOutputParent::new(
-                    candidate.pin_source(execution)?,
-                    writer.meaning.source_scope,
-                    candidate.applied_output_input(execution, &writer.meaning)?,
-                )));
+                return Ok(Some(
+                    synchronous_outputs::AppliedOutputParent::new(
+                        candidate.pin_source(execution)?,
+                        writer.meaning.source_scope,
+                        candidate.applied_output_input(execution, &writer.meaning)?,
+                    )
+                    .identified(writer.produces),
+                ));
             }
             execution::CoupledSourceRead::Verified(parent) => {
                 return self
@@ -302,6 +305,8 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
         self.writers.borrow_mut().push(CoupledWriter {
             position,
             owed: self.owing(),
+            consumes: self.consuming(),
+            produces: self.next_read(),
             producer: std::sync::Arc::clone(producer),
             stage: Some(CoupledWriterStage::Inspected(writer)),
             meaning: meaning.clone(),
@@ -344,12 +349,11 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
                     entities,
                 },
             );
-        let meaning = &writers.last().expect("actual appended writer").meaning;
-        let input = candidate.applied_output_input(execution, meaning)?;
-        Ok(Some(synchronous_outputs::AppliedOutputParent::new(
-            after_own,
-            source_scope,
-            input,
-        )))
+        let writer = writers.last().expect("actual appended writer");
+        let input = candidate.applied_output_input(execution, &writer.meaning)?;
+        Ok(Some(
+            synchronous_outputs::AppliedOutputParent::new(after_own, source_scope, input)
+                .identified(writer.produces),
+        ))
     }
 }

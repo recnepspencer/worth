@@ -43,7 +43,7 @@ pub(super) fn prepare_members(
                 scope.generation(),
             );
             support::require(
-                execution, provider, root, before, complete, source, None, 0, members, false,
+                execution, provider, root, before, complete, source, None, 0, members, false, None,
                 &mut held,
             )
             .map_err(Denial::CoupledSupport)?;
@@ -69,6 +69,7 @@ pub(super) fn prepare_members(
                 member.position,
                 members,
                 member.producer_route().is_some(),
+                member.produces,
                 &mut held,
             )
             .map_err(Denial::CoupledSupport)?;
