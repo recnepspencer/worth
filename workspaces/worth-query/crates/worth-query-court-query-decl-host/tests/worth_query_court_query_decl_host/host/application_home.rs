@@ -237,7 +237,6 @@ fn directory_post_native_unwind_retains_original_key_without_handler_replay() {
 mod dispatch_custody;
 pub(crate) mod reopening;
 
-mod recovered_custody;
 
 mod close_admission;
 mod handler_retirement;

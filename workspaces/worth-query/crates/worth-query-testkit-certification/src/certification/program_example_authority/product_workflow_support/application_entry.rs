@@ -15,7 +15,7 @@ use worth_query_host::facade::{
     },
     primary_graph::{
         CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
-        WorthQueryInvariantMutationTarget,
+        WorthQueryInvariantMutationTarget, WorthQueryOperationDurableCapability,
     },
     worth_query_structured_value_binding,
 };
@@ -190,6 +190,10 @@ impl
 pub struct AmendTemporalHandler;
 
 impl OperationHandler<TemporalHostSchema, AmendTemporalBinding> for AmendTemporalHandler {
+    // A Directory Home admits only suppliers that declare what they persist.
+    fn declared_durable_capabilities() -> Option<&'static [WorthQueryOperationDurableCapability]> {
+        Some(&[WorthQueryOperationDurableCapability::RelationalMutation])
+    }
     fn decide(
         &self,
         input: &AmendTemporalInput,

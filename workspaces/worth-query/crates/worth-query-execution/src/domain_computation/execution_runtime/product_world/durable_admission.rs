@@ -14,15 +14,21 @@ pub(in crate::domain_computation) enum DirectoryCorrectionShapeUse<'a> {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation) enum DirectoryCorrectionShapeAdmission {
     ExistingShape,
-    ExternalOriginalRecoveryOnly,
+    /// `inbound` records whether the installed external effect declares a
+    /// canonical inbound completion; an original may settle by dispatch alone.
+    ExternalOriginalRecoveryOnly {
+        inbound: bool,
+    },
     NativeRecordedCorrection,
 }
 
 impl DirectoryCorrectionShapeAdmission {
-    pub(in crate::domain_computation) fn requires_external_original_custody(self) -> bool {
+    /// `Some(inbound)` when the operation admission owner must still require
+    /// external original custody from the supplier.
+    pub(in crate::domain_computation) fn external_original_inbound(self) -> Option<bool> {
         match self {
-            Self::ExistingShape | Self::NativeRecordedCorrection => false,
-            Self::ExternalOriginalRecoveryOnly => true,
+            Self::ExistingShape | Self::NativeRecordedCorrection => None,
+            Self::ExternalOriginalRecoveryOnly { inbound } => Some(inbound),
         }
     }
 }

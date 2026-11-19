@@ -102,7 +102,7 @@ impl WorthQueryApplicationConditionalBinding<TemporalHostSchema> for TemporalCon
             .expect("the conditional operation is declared")
             .bind_node(TemporalReadyNode::reference())
             .expect("the conditional node is declared")
-            .bind_host_predicate_provider(Predicate)
+            .bind_authored_host_predicate_provider(Predicate)
             .expect("the temporal predicate is installed")
             .bind_named_clock::<ExampleClock, _>(configuration.clock_source)
             .expect("the temporal clock is installed")

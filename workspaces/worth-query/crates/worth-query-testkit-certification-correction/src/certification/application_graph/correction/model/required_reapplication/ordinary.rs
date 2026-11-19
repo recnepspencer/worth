@@ -60,21 +60,12 @@ pub(super) fn run(worker: bool) {
         else {
             panic!("ordinary member must settle")
         };
-        eprintln!(
-            "ordinary delivery: worker={worker} contacts={} receipt={} calculation={}",
-            settled.root_producer_contacts_in_this_demand(),
-            settled.root_receipt().is_some(),
-            read_calculation(&application)
-        );
         assert_eq!(
             settled.root_producer_contacts_in_this_demand(),
             0,
             "co-committed ordinary output is already current"
         );
-        assert!(
-            settled.root_receipt().is_some(),
-            "the actual ordinary producer retains its receipt"
-        );
+        super::super::co_published_root::source_published_root(&settled, &original);
     });
     assert_eq!(
         delivery.published_rows.len() + delivery.omitted_publications,

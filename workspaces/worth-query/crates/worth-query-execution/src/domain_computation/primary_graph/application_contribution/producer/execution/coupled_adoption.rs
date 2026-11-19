@@ -12,7 +12,11 @@ pub(super) struct CoupledAdoption {
     posture: CompletionPosture,
 }
 enum CompletionPosture {
-    Current(crate::domain_computation::primary_graph::output_lineage::PublishedStableLineage),
+    Current {
+        stable: crate::domain_computation::primary_graph::output_lineage::PublishedStableLineage,
+        original:
+            crate::domain_computation::primary_graph::WorthQueryRecoveredApplicationCommitReceipt,
+    },
     OwnEffectContinuation,
 }
 impl CoupledAdoption {
@@ -160,7 +164,7 @@ impl CoupledAdoption {
         Ok(Some(Self {
             candidate,
             receipt,
-            posture: CompletionPosture::Current(stable),
+            posture: CompletionPosture::Current { stable, original },
         }))
     }
     pub(super) fn publish<Schema: ApplicationSchema>(
@@ -186,7 +190,7 @@ impl CoupledAdoption {
             );
         }
         match &self.posture {
-            CompletionPosture::Current(_) => {
+            CompletionPosture::Current { .. } => {
                 current.require_current_output_receipts(phase, [&self.receipt])?
             }
             CompletionPosture::OwnEffectContinuation => {
@@ -230,10 +234,57 @@ impl CoupledAdoption {
             .publish(std::sync::Arc::clone(self.candidate.settlement_identity()))
             .retire(None, owner);
         Ok(match self.posture {
-            CompletionPosture::Current(stable) => ProducerExecutionOutcome::Stable(stable),
+            CompletionPosture::Current { stable, original } => {
+                match original_delivery(&execution, &self.candidate, &self.receipt, original)? {
+                    Some(publication) => ProducerExecutionOutcome::OriginalDelivery(publication),
+                    None => ProducerExecutionOutcome::Stable(stable),
+                }
+            }
             CompletionPosture::OwnEffectContinuation => {
                 ProducerExecutionOutcome::OwnEffectContinuation(self.receipt)
             }
         })
     }
+}
+
+/// The performing commit's output has not yet met its readiness conditional.
+/// Its first readmission delivers the original performed evidence joined to
+/// the canonical recovered original; the live receipt itself stays private.
+fn original_delivery(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    candidate: &RetainedInputCutoffCandidate,
+    receipt: &WorthQueryApplicationCommitReceipt,
+    original: crate::domain_computation::primary_graph::WorthQueryRecoveredApplicationCommitReceipt,
+) -> Result<
+    Option<crate::domain_computation::primary_graph::WorthQueryRecoveredProducerPublication>,
+    WorthQueryOutputDemandDenial,
+> {
+    use crate::domain_computation::primary_graph::application_output_demand::RecoveredProducerOutputFacts;
+    let bytes = std::alloc::Layout::new::<[std::sync::atomic::AtomicUsize; 2]>()
+        .extend(std::alloc::Layout::new::<RecoveredProducerOutputFacts>())
+        .expect("fixed recovered producer evidence layout")
+        .0
+        .pad_to_align()
+        .size();
+    let memory = execution.reserve_retained_memory(bytes as u64).map_err(|cause| {
+        crate::domain_computation::primary_graph::output_reuse::retained_fact_denial(
+            crate::domain_computation::primary_graph::output_reuse::RetainedFactStop::Execution(
+                cause.into(),
+            ),
+            "original coupled delivery",
+        )
+    })?;
+    let Some(facts) = RecoveredProducerOutputFacts::from_performing_receipt(receipt, memory)
+    else {
+        return Ok(None);
+    };
+    if !facts.matches_original(&original) || !candidate.claim_original_coupled_delivery() {
+        return Ok(None);
+    }
+    Ok(Some(
+        crate::domain_computation::primary_graph::WorthQueryRecoveredProducerPublication {
+            original,
+            facts,
+        },
+    ))
 }

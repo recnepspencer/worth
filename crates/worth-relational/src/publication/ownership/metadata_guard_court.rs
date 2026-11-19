@@ -76,10 +76,28 @@ impl RelationalRuntime {
         }
         let mut answer = Vec::new();
         for kind in storage.metadata_kinds() {
-            let (_, record) = rows.iter().find(|(k, _)| *k == kind).ok_or_else(|| {
-                crate::mvcc::origin_denial("court producer must realize every private kind")
-            })?;
-            for verb in 0..3 {
+            let realized = rows.iter().find(|(k, _)| *k == kind).map(|(_, record)| record);
+            // An input link exists only where a producer consumed a parent
+            // output. Without one, creation is still probed over the real
+            // endpoints of another private link.
+            let (record, verbs) = match realized {
+                Some(record) => (record, 0..3),
+                None if kind == storage.input_link => (
+                    rows.iter()
+                        .map(|(_, record)| record)
+                        .find(|record| matches!(record, RecordRef::Relation(_)))
+                        .ok_or_else(|| {
+                            crate::mvcc::origin_denial("court producer must realize a private link")
+                        })?,
+                    0..1,
+                ),
+                None => {
+                    return Err(crate::mvcc::origin_denial(
+                        "court producer must realize every private kind",
+                    ))
+                }
+            };
+            for verb in verbs {
                 let intent = match record {
                     RecordRef::Entity(id) => match verb {
                         0 => MutationIntent::Create(CreateIntent::Entity(EntitySpec {

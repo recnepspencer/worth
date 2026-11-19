@@ -1,6 +1,26 @@
 //! Exact owner/occurrence join; data equality grants no delivery authority.
 use super::*;
 impl RecoveredProducerOutputFacts {
+    /// The performing session's own immutable evidence, read from its live
+    /// receipt. The copy carries none of that receipt's authority; a commit
+    /// without an outcome identity has no evidence to share.
+    pub(in crate::domain_computation::primary_graph) fn from_performing_receipt(
+        receipt: &WorthQueryApplicationCommitReceipt,
+        memory: Option<worth_execution::ExecutionMemoryReservation>,
+    ) -> Option<Arc<Self>> {
+        Some(Arc::new(Self {
+            publication: receipt.committed_product_publication().clone(),
+            outcome: receipt.outcome_identity()?,
+            changes: receipt.committed_changes().clone(),
+            correspondence: receipt.retain_output_correspondence(),
+            authority: Arc::new(receipt.authority_binding().clone()),
+            inputs: receipt.performed_input_facts().cloned(),
+            fields: receipt.performed_output_fields().cloned(),
+            unrebased_own_effect: receipt.unrebased_own_effect(),
+            settlement: receipt.exact_output_settlement().cloned(),
+            _memory: memory,
+        }))
+    }
     pub(in crate::domain_computation::primary_graph) fn matches_original(
         &self,
         original: &WorthQueryRecoveredApplicationCommitReceipt,

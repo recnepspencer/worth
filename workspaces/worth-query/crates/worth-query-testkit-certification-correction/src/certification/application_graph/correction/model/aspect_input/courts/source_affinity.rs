@@ -211,7 +211,7 @@ fn perform_sibling(
             - before,
         1
     );
-    assert!(settled.root_receipt().is_some());
+    super::super::super::co_published_root::source_published_root(&settled, &receipt);
     assert_eq!(receipt.product_branch(), branch);
     receipt
 }

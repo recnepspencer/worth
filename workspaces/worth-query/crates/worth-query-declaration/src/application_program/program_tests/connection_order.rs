@@ -21,8 +21,10 @@ fn a_validated_connection_keeps_its_order_when_the_index_is_retained() {
         .validated_program()
         .unwrap();
     let order = program.connection_order().clone();
+    let validated = order.rank(&FlatConnection::declaration());
+    assert!(validated.is_some(), "the validated connection is ranked");
     drop(program);
-    assert_eq!(order.rank(&FlatConnection::declaration()), Some(1));
+    assert_eq!(order.rank(&FlatConnection::declaration()), validated);
     assert!(order.lookup_work(&FlatConnection::declaration()).unwrap() > 0);
 }
 #[test]

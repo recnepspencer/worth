@@ -82,10 +82,6 @@ impl BridgeConditionalExecutionView<'_> {
         ))
     }
 
-    pub(in crate::conditional_execution) fn revoke_managed_clock_liveness(&self) {
-        revoke_clock_lanes(self.managed_clock_lanes);
-    }
-
     pub fn managed_clock_count(&self) -> usize {
         self.managed_clock_lanes
             .lock()

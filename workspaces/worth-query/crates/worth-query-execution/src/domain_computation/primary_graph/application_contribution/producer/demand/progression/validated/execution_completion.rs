@@ -82,6 +82,33 @@ pub(super) fn finish(
             // publication or issuing Stable/Current authority.
             (receipt, ready_backing)
         }
+        Ok((execution::ProducerExecutionOutcome::OriginalDelivery(publication), ready_backing)) => {
+            // The commit already exists. Its recovered evidence enters the
+            // ordinary delivery and readiness owner without a live receipt.
+            let retained = crate::domain_computation::primary_graph::application_output_demand::OriginalProducingPublication::for_successor(
+                execution, original_publication, publication.view(),
+            );
+            let (original_publication, continuation_denial) = match retained {
+                Ok(original) => (original, None),
+                Err(denial) => (None, Some(denial)),
+            };
+            own_effect_observation::record(Stage::Published);
+            let own =
+                OwnPublication(publication.view().committed_product_publication().clone());
+            let checkpoint = WorthQueryOutputCheckpoint::RecoveredPublished {
+                publication,
+                delivery: crate::domain_computation::primary_graph::application_output_demand::WorthQueryPendingOutputDelivery::NoChange,
+                ready_backing: ready_backing
+                    .bind_original_producing_publication(original_publication),
+            };
+            if let Some(denial) = continuation_denial {
+                return Err(CompletionRefusal::unpublished(denial, checkpoint));
+            }
+            if let Err((denial, checkpoint)) = selected_execution_finish.publish(checkpoint) {
+                return Err(CompletionRefusal::unpublished(denial, checkpoint));
+            }
+            return Ok(CheckpointProgress::Published(own));
+        }
         Ok((execution::ProducerExecutionOutcome::Stable(stable), ready_backing)) => {
             let completion = ready_backing.complete(
                     crate::domain_computation::primary_graph::application_output_demand::WorthQueryCompletedOutputDemand {

@@ -270,6 +270,12 @@ impl WorthQueryApplicationCommitReceipt {
         &self.authority_binding
     }
 
+    pub(in crate::domain_computation::primary_graph) const fn unrebased_own_effect(
+        &self,
+    ) -> Option<crate::domain_computation::primary_graph::provider::OwnEffectOnReads> {
+        self.unrebased_own_effect
+    }
+
     pub const fn installed_operation(&self) -> &[u8; 32] {
         self.authority_binding.installed_operation()
     }

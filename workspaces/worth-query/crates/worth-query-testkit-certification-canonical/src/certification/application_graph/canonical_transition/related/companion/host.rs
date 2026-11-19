@@ -102,7 +102,7 @@ pub fn edit_source<P: ApplicationProgramDefinition<CanonicalSchema>>(
     host: &Host<P>,
     value: NestedValue,
     idempotency: u64,
-) -> WorthQueryApplicationCommitReceipt
+) -> crate::facade::certification::canonical_transition::regeneration::Regeneration<impl Sized + use<P>>
 where
     P::Outputs: ApplicationProgramOutputsShape<CanonicalSchema>,
 {
@@ -127,6 +127,7 @@ where
     let WorthQueryApplicationPerformedMutationOutcome::Performed(performed) = outcome else {
         panic!("the source edit must retain its required-output custody");
     };
+    let source = performed.receipt().clone();
     let controls = WorthQueryOutputDemandControls::host_policy();
     let mut started = performed
         .start_required_outputs(host, &request, controls)
@@ -148,10 +149,7 @@ where
         1,
         "the source edit and its delivery execute one real producer in total"
     );
-    settled
-        .root_receipt()
-        .expect("the real regeneration has a producer receipt")
-        .clone()
+    crate::facade::certification::canonical_transition::regeneration::Regeneration::from_settled(source, settled)
 }
 
 pub fn capture<P: ApplicationProgramDefinition<CanonicalSchema>>(

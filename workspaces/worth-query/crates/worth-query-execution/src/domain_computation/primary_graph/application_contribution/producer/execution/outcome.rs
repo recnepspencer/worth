@@ -21,6 +21,10 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     /// own-effect delivery successor. It grants neither Current nor Stable,
     /// and this handoff records no new publication.
     OwnEffectContinuation(WorthQueryApplicationCommitReceipt),
+    /// The performing coupled writer's commit still owes its one readiness
+    /// delivery. It travels as recovered publication evidence: no live
+    /// receipt, no Current or Stable authority and no publication marking.
+    OriginalDelivery(graph::WorthQueryRecoveredProducerPublication),
 }
 
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) type PreparedProducerExecutionPlan<

@@ -36,6 +36,8 @@ pub mod program;
 pub mod query;
 #[path = "canonical_transition/readiness.rs"]
 pub mod readiness;
+#[path = "canonical_transition/regeneration.rs"]
+pub mod regeneration;
 #[path = "canonical_transition/related.rs"]
 pub mod related;
 #[path = "canonical_transition/schema.rs"]

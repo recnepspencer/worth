@@ -55,15 +55,17 @@ pub(super) fn classify(
             .emissions()
             .iter()
             .any(|emission| emission.effect() == effect)
-        || !inbound.as_ref().is_some_and(|inbound| {
-            inbound.effect() == effect && !inbound.source_identity().is_empty()
+        || inbound.as_ref().is_some_and(|inbound| {
+            inbound.effect() != effect || inbound.source_identity().is_empty()
         })
     {
         return Err(Denial::UnsupportedCorrectionCompensation);
     }
     // The installed contract owns payload/protocol/bounds; the emission ceiling
     // only says MAY emit. Existing typed candidate/outbox gates require the real payload.
-    Ok(Admission::ExternalOriginalRecoveryOnly)
+    Ok(Admission::ExternalOriginalRecoveryOnly {
+        inbound: inbound.is_some(),
+    })
 }
 
 /// Native scalar-output compensation is distinct from external original recovery.

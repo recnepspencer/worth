@@ -17,6 +17,8 @@ struct CoupledCompletionCells {
     // The lineage owner retains this completion inside the same record cell.
     // This backlink is consulted only during its canonical publication join.
     lineage: OnceLock<std::sync::Weak<OnceLock<RecordedOutput>>>,
+    // The performing commit owes its output one readiness delivery.
+    original_delivery_claimed: std::sync::atomic::AtomicBool,
 }
 impl CoupledOutputCompletion {
     pub(in crate::domain_computation::primary_graph) fn same_writer(&self, other: &Self) -> bool {
@@ -71,6 +73,7 @@ impl CoupledOutputCompletion {
             .push(CoupledCompletionCells {
                 receipt: OnceLock::new(),
                 lineage: OnceLock::new(),
+                original_delivery_claimed: std::sync::atomic::AtomicBool::new(false),
             })
             .map_err(map)?;
         Ok(Self {
@@ -139,6 +142,20 @@ impl CoupledOutputCompletion {
     }
 }
 impl input_cutoff::RetainedInputCutoffCandidate {
+    /// Claims the performing commit's one owed readiness delivery. Every
+    /// later readmission of the same completion is plain Stable reuse.
+    pub(in crate::domain_computation::primary_graph) fn claim_original_coupled_delivery(
+        &self,
+    ) -> bool {
+        self.recorded()
+            .coupled_completion
+            .as_ref()
+            .is_some_and(|completion| {
+                !completion.receipt[0]
+                    .original_delivery_claimed
+                    .swap(true, std::sync::atomic::Ordering::AcqRel)
+            })
+    }
     pub(in crate::domain_computation::primary_graph) fn completed_coupled_receipt<Query>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

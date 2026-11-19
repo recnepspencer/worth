@@ -35,8 +35,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let workflow = Binding::REQUIRES_WORKFLOW_AUTHORITY
             || Binding::WORKFLOW_CONTROL
             || Binding::workflow_execution_requirements().is_applicable();
-        if shape.requires_external_original_custody() {
-            self.admit_external_original_requirements(declared, workflow)?;
+        if let Some(inbound) = shape.external_original_inbound() {
+            self.admit_external_original_requirements(declared, workflow, inbound)?;
         }
         Ok(())
     }
@@ -45,15 +45,19 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         &self,
         declared: &[Capability],
         workflow: bool,
+        inbound: bool,
     ) -> Result<(), Denial> {
+        // Inbound completion custody is owed only where the contract declares it.
+        let required = [
+            Some(Capability::ExternalEmission),
+            Some(Capability::ExternalDispatch),
+            inbound.then_some(Capability::InboundCompletion),
+        ];
         if workflow
-            || ![
-                Capability::ExternalEmission,
-                Capability::ExternalDispatch,
-                Capability::InboundCompletion,
-            ]
-            .iter()
-            .all(|capability| declared.contains(capability))
+            || !required
+                .iter()
+                .flatten()
+                .all(|capability| declared.contains(capability))
         {
             return Err(Denial::DurableStateAdmission(
                 DurableDenial::UnsupportedCorrectionCompensation,

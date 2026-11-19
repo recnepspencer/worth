@@ -44,8 +44,10 @@ impl BridgeOwnedSignalRuntime {
     ) -> Result<Arc<Mutex<managed_time::BridgeManagedClockLane>>, BridgeManagedTemporalDenial> {
         self.execution_view().admit_managed_clock_lane(binding)
     }
+    /// Drop reaches this after a programme handoff has taken the Bridge, so it
+    /// revokes this owner's own lanes without opening a Bridge-backed view.
     pub(in crate::conditional_execution) fn revoke_managed_clock_liveness(&self) {
-        self.execution_view().revoke_managed_clock_liveness()
+        crate::conditional_execution::managed_time::revoke_clock_lanes(&self.managed_clock_lanes)
     }
     pub fn managed_clock_count(&self) -> usize {
         self.execution_view().managed_clock_count()

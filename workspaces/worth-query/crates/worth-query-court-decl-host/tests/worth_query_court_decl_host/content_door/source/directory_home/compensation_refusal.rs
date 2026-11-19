@@ -40,10 +40,15 @@ fn directory_compensation_refuses_before_original_publication_and_survives_reope
         else {
             panic!("compensation material has no graceful continuation");
         };
-        assert!(matches!(
-            denied.kind(),
-            Kind::DurableStateAdmission(Durable::UnsupportedCorrectionCompensation)
-        ));
+        // The correction binding's content output is the named unsupported shape.
+        assert!(
+            matches!(
+                denied.kind(),
+                Kind::DurableStateAdmission(Durable::UnsupportedCorrectionOutputMaterial)
+            ),
+            "{:?}",
+            denied.kind()
+        );
         assert_eq!(home.runtime().runtime().current_world(), before);
         assert_eq!(calls.updates.load(Ordering::SeqCst), updates_before);
     }

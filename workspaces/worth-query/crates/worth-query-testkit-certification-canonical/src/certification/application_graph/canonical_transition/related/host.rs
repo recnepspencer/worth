@@ -185,7 +185,7 @@ pub fn edit_source(
     host: &Host,
     value: NestedValue,
     idempotency: u64,
-) -> WorthQueryApplicationCommitReceipt {
+) -> crate::facade::certification::canonical_transition::regeneration::Regeneration<impl Sized> {
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.runtime().request(&principal, &scope);
@@ -219,6 +219,7 @@ pub fn edit_source(
             "the source edit must retain its required-output custody; preparation is incomplete"
         ),
     };
+    let source = performed.receipt().clone();
     let controls = WorthQueryOutputDemandControls::host_policy();
     let mut started = performed
         .start_required_outputs(host, &request, controls)
@@ -240,10 +241,7 @@ pub fn edit_source(
         1,
         "the source edit and its delivery execute one real producer in total"
     );
-    settled
-        .root_receipt()
-        .expect("the real regeneration has a producer receipt")
-        .clone()
+    crate::facade::certification::canonical_transition::regeneration::Regeneration::from_settled(source, settled)
 }
 
 pub fn limits() -> WorthQueryApplicationLimits {
