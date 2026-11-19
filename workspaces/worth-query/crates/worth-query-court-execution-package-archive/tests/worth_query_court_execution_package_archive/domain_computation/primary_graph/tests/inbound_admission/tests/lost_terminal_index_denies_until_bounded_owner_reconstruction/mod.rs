@@ -17,7 +17,25 @@ fn lost_terminal_index_denies_until_bounded_owner_reconstruction() {
             .posture(),
         Posture::Performed
     );
+    // Reconstruction pages over completed terminals, so a one-slot page is
+    // only incomplete when a second completion exists.
+    let other = { world.commit_dispatch(32, "notice-index-rebuild-other") };
+    let other_record = other.dispatch_outbox().unwrap();
+    let other_correlation = *other_record.correlation();
+    let other_envelope = signed_envelope(other_record, [0x97; 32], other_record.payload(), false);
+    assert_eq!(
+        world
+            .application
+            .receive_inbound_occurrence(&world.verifier, &other_envelope, &request)
+            .unwrap()
+            .posture(),
+        Posture::Performed
+    );
     let provider = (*world.application.runtime_for_test()).primary_provider_for_test();
+    let other_sealed = provider
+        .lookup_completed_inbound_for_test(&other_correlation)
+        .unwrap()
+        .expect("the second World Performed seals its own terminal");
     let sealed = provider
         .lookup_completed_inbound_for_test(&correlation)
         .unwrap()
@@ -72,7 +90,13 @@ fn lost_terminal_index_denies_until_bounded_owner_reconstruction() {
     }
     assert!(
         pages > 1,
-        "one slot cannot silently scan the whole World history"
+        "one slot cannot silently reconstruct every completed terminal"
+    );
+    assert_eq!(
+        provider
+            .lookup_completed_inbound_for_test(&other_correlation)
+            .unwrap(),
+        Some(other_sealed)
     );
     assert_eq!(
         provider

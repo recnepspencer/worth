@@ -111,8 +111,8 @@ fn exercise(worker: bool, value: u64) {
             outputs.advance(&host, &request).unwrap()
         {
             assert!(
-                done.root_receipt().is_none(),
-                "Stable reuse carries no live receipt"
+                done.root_receipt().is_some(),
+                "the completed coupled producer keeps its original receipt"
             );
             settled = true;
             break;

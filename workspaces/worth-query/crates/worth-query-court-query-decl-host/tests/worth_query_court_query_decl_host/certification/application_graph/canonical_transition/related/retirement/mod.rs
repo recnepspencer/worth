@@ -71,7 +71,7 @@ fn retired_outputs_reissue_from_current_source_without_resurrecting_old_full_gen
     let original_receipt = original.application_commit_receipt().unwrap().clone();
     let old_ids = host::output_ids(&original);
     let b_receipt = host::edit_source(&application, b.clone(), 180611);
-    assert!(!b_receipt.source().is_same_authoritative_commit(&original_receipt));
+    assert!(!b_receipt.is_same_authoritative_commit(&original_receipt));
     let scope = request_scope();
     let principal = authenticate_operator(application.installed_schema(), &scope);
     let request = application.runtime().request(&principal, &scope);
@@ -85,7 +85,10 @@ fn retired_outputs_reissue_from_current_source_without_resurrecting_old_full_gen
         panic!("the required B output must already be published");
     };
     assert_eq!(at_b.producer_contacts_in_this_demand(), 0);
-    b_receipt.assert_reused_by(&at_b);
+    assert!(at_b
+        .application_commit_receipt()
+        .unwrap()
+        .is_same_authoritative_commit(&b_receipt));
     let preserved = at_b.outputs_of::<output::PreservedOutputs>().unwrap();
     assert_eq!(
         [
@@ -207,8 +210,12 @@ fn retired_outputs_reissue_from_current_source_without_resurrecting_old_full_gen
     // required-output custody. Native liveness must select fresh Initial output,
     // even though this is the same producer and parameters as the original A.
     let reissued_receipt = host::edit_source(&application, a.clone(), 180613);
-    for earlier in [&original_receipt, b_receipt.source(), &retired] {
-        assert!(!reissued_receipt.source().is_same_authoritative_commit(earlier));
+    assert_eq!(
+        reissued_receipt.installed_operation(),
+        original_receipt.installed_operation()
+    );
+    for earlier in [&original_receipt, &b_receipt, &retired] {
+        assert!(!reissued_receipt.is_same_authoritative_commit(earlier));
     }
     let created = reissued_receipt
         .outputs_of::<output::DerivedOutputs>()
@@ -247,7 +254,10 @@ fn retired_outputs_reissue_from_current_source_without_resurrecting_old_full_gen
         panic!("the required publication must expose its actual new output");
     };
     assert_eq!(reissued.producer_contacts_in_this_demand(), 0);
-    reissued_receipt.assert_reused_by(&reissued);
+    assert!(reissued
+        .application_commit_receipt()
+        .unwrap()
+        .is_same_authoritative_commit(&reissued_receipt));
     assert_eq!(host::output_ids(&reissued), new_ids);
     let current = request.retain_current_read().unwrap();
     request
@@ -271,7 +281,10 @@ fn retired_outputs_reissue_from_current_source_without_resurrecting_old_full_gen
         panic!("unchanged reissued output must remain current");
     };
     assert_eq!(unchanged.producer_contacts_in_this_demand(), 0);
-    reissued_receipt.assert_reused_by(&unchanged);
+    assert!(unchanged
+        .application_commit_receipt()
+        .unwrap()
+        .is_same_authoritative_commit(&reissued_receipt));
     assert_eq!(host::output_ids(&unchanged), new_ids);
     let retry_read = request.retain_current_read().unwrap();
     request
@@ -289,7 +302,11 @@ fn retired_outputs_reissue_from_current_source_without_resurrecting_old_full_gen
     let mut c = a.clone();
     c.title = "after reissue".into();
     let c_receipt = host::edit_source(&application, c.clone(), 180615);
-    assert!(!c_receipt.source().is_same_authoritative_commit(reissued_receipt.source()));
+    assert!(!c_receipt.is_same_authoritative_commit(&reissued_receipt));
+    assert_eq!(
+        c_receipt.installed_operation(),
+        b_receipt.installed_operation()
+    );
     let roles = c_receipt.outputs_of::<output::PreservedOutputs>().unwrap();
     assert_eq!(
         [
@@ -319,7 +336,10 @@ fn retired_outputs_reissue_from_current_source_without_resurrecting_old_full_gen
         panic!("the subsequent Preserve must already be current");
     };
     assert_eq!(at_c.producer_contacts_in_this_demand(), 0);
-    c_receipt.assert_reused_by(&at_c);
+    assert!(at_c
+        .application_commit_receipt()
+        .unwrap()
+        .is_same_authoritative_commit(&c_receipt));
     let current = request.retain_current_read().unwrap();
     request
         .at(&current)

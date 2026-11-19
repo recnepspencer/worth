@@ -279,7 +279,7 @@ pub fn settle<B>(
             | worth_query_host::facade::primary_graph::WorthQueryAftermathCausalRole::RecordedReapply,
         ) => 1,
     };
-    let source = performed.receipt().clone();
+    let source_commit = performed.receipt().commit_reference().clone();
     eprintln!(
         "required delivery entry={entry:?} expected_contacts={expected_contacts} calculation={}",
         read_calculation(application)
@@ -311,12 +311,13 @@ pub fn settle<B>(
             settled.root_producer_contacts_in_this_demand(),
             expected_contacts
         );
-        match entry {
-            None => drop(super::co_published_root::source_published_root(&settled, &source)),
-            Some(_) => assert!(
-                settled.root_receipt().is_some(),
-                "a recorded correction's delivery performs its own producer commit"
-            ),
+        assert!(settled.root_receipt().is_some());
+        if entry.is_none() {
+            assert_eq!(
+                settled.root_receipt().unwrap().commit_reference(),
+                &source_commit,
+                "the real producer receipt belongs to this one source commit"
+            );
         }
     });
     if entry.is_none() {

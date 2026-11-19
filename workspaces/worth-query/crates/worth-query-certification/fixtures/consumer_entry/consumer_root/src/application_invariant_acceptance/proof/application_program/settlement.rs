@@ -326,17 +326,18 @@ pub(super) fn performed_source_settles_required_output(
     drop(recovered);
     drop(performed);
     let retired_settlement = recovery::settle_recovered(&request, "anchor-a", controls);
-    // The source commit published the whole tree. This later demand rejoins
-    // that commit's one original delivery; no live producer receipt exists.
-    assert!(retired_settlement.application_commit_receipt().is_none());
     assert_eq!(
-        retired_settlement.posture(),
-        worth_query_host::facade::primary_graph::WorthQueryOutputSettlementPosture::RecoveredPerformed
+        retired_settlement
+            .application_commit_receipt()
+            .expect("the retired output retains its original commit")
+            .committed_product_publication()
+            .composite_commit(),
+        &exact_output
     );
     assert_eq!(
         retired_settlement.observation().selected_commit(),
         &exact_output,
-        "the recovered demand selects the commit that published the output"
+        "the source commit published the whole tree, so recovery selects that same commit"
     );
     assert_eq!(
         request

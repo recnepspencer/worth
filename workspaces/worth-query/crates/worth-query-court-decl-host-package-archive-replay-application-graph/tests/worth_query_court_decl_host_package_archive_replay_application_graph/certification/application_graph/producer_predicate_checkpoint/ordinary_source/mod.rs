@@ -121,10 +121,9 @@ fn performed_mutation_attempt_report_preserves_source_custody() {
         recovered.finish_unavailable(&host, &request),
         Err(worth_query_host::facade::application_entry::WorthQueryRequiredOutputPreparationDenial::Closed)
     ));
-    // The source commit published this root; its reuse keeps the typed roles.
-    assert!(settled.root_receipt().is_none());
     assert!(settled
-        .root_settlement()
+        .root_receipt()
+        .unwrap()
         .outputs_of::<RetentionAssessmentOutputs>()
         .unwrap()
         .entity::<AssessmentOutput>()

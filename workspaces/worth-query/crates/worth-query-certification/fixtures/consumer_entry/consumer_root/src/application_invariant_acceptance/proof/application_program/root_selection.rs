@@ -95,10 +95,13 @@ pub(in crate::application_invariant_acceptance::proof) fn foreign_program_is_den
     let Err(denial) = outcome else {
         panic!("foreign program meaning must be denied before source publication")
     };
-    assert!(matches!(
-        denial,
-        worth_query_host::facade::application_entry::WorthQueryPerformedMutationExecutionDenial::ForeignProgram
-    ));
+    assert!(
+        matches!(
+            denial,
+            worth_query_host::facade::application_entry::WorthQueryPerformedMutationExecutionDenial::ForeignProgram
+        ),
+        "{denial:?}"
+    );
     let after = request
         .query(PlanarRead {
             body_key: "anchor-a".to_owned(),

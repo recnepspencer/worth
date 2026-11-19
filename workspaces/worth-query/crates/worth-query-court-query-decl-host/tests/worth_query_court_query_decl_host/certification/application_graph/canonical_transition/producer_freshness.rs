@@ -66,7 +66,11 @@ fn aba(b_title: &str, b_caption: &str) {
             tags: vec!["left".into(), "right".into()],
         }
     );
-    assert!(!b_receipt.source().is_same_authoritative_commit(&initial_receipt));
+    assert!(!b_receipt.is_same_authoritative_commit(&initial_receipt));
+    assert_ne!(
+        b_receipt.installed_operation(),
+        initial_receipt.installed_operation()
+    );
     assert_eq!(
         b_receipt
             .outputs_of::<output::PreservedOutputs>()
@@ -86,7 +90,10 @@ fn aba(b_title: &str, b_caption: &str) {
         panic!("the already settled B output must be reusable");
     };
     assert_eq!(at_b.producer_contacts_in_this_demand(), 0);
-    b_receipt.assert_reused_by(&at_b);
+    assert!(at_b
+        .application_commit_receipt()
+        .unwrap()
+        .is_same_authoritative_commit(&b_receipt));
     let b_read = request.retain_current_read().unwrap();
     request
         .at(&b_read)
@@ -110,8 +117,12 @@ fn aba(b_title: &str, b_caption: &str) {
             tags: vec!["left".into(), "right".into()],
         }
     );
-    assert!(!a_receipt.source().is_same_authoritative_commit(&initial_receipt));
-    assert!(!a_receipt.source().is_same_authoritative_commit(b_receipt.source()));
+    assert!(!a_receipt.is_same_authoritative_commit(&initial_receipt));
+    assert!(!a_receipt.is_same_authoritative_commit(&b_receipt));
+    assert_eq!(
+        a_receipt.installed_operation(),
+        b_receipt.installed_operation()
+    );
     assert_eq!(
         a_receipt
             .outputs_of::<output::PreservedOutputs>()
@@ -131,7 +142,10 @@ fn aba(b_title: &str, b_caption: &str) {
         panic!("the returned A output must be current");
     };
     assert_eq!(current_a.producer_contacts_in_this_demand(), 0);
-    a_receipt.assert_reused_by(&current_a);
+    assert!(current_a
+        .application_commit_receipt()
+        .unwrap()
+        .is_same_authoritative_commit(&a_receipt));
     let a_read = request.retain_current_read().unwrap();
     request
         .at(&a_read)
@@ -148,8 +162,12 @@ fn aba(b_title: &str, b_caption: &str) {
     // Repeat A/B/A with Preserve for ALL three publications. The earlier A
     // above is now the first A of this journey, not the initial Create(A).
     let second_b_receipt = host::edit_source(&application, b.clone(), 483);
-    for earlier in [&initial_receipt, b_receipt.source(), a_receipt.source()] {
-        assert!(!second_b_receipt.source().is_same_authoritative_commit(earlier));
+    assert_eq!(
+        second_b_receipt.installed_operation(),
+        a_receipt.installed_operation()
+    );
+    for earlier in [&initial_receipt, &b_receipt, &a_receipt] {
+        assert!(!second_b_receipt.is_same_authoritative_commit(earlier));
     }
     assert_eq!(host::read(&application), b);
     assert_eq!(
@@ -179,7 +197,10 @@ fn aba(b_title: &str, b_caption: &str) {
         panic!("the second B must retain its actual Preserve publication");
     };
     assert_eq!(second_b.producer_contacts_in_this_demand(), 0);
-    second_b_receipt.assert_reused_by(&second_b);
+    assert!(second_b
+        .application_commit_receipt()
+        .unwrap()
+        .is_same_authoritative_commit(&second_b_receipt));
     let second_b_read = request.retain_current_read().unwrap();
     request
         .at(&second_b_read)
@@ -194,8 +215,16 @@ fn aba(b_title: &str, b_caption: &str) {
     drop(second_b_demand);
 
     let final_receipt = host::edit_source(&application, a.clone(), 484);
-    for earlier in [&initial_receipt, b_receipt.source(), a_receipt.source(), second_b_receipt.source()] {
-        assert!(!final_receipt.source().is_same_authoritative_commit(earlier));
+    assert_eq!(
+        final_receipt.installed_operation(),
+        a_receipt.installed_operation()
+    );
+    assert_eq!(
+        final_receipt.installed_operation(),
+        second_b_receipt.installed_operation()
+    );
+    for earlier in [&initial_receipt, &b_receipt, &a_receipt, &second_b_receipt] {
+        assert!(!final_receipt.is_same_authoritative_commit(earlier));
     }
     assert_eq!(host::source_id(&application), source_id);
     assert_eq!(host::read(&application), a);
@@ -226,7 +255,10 @@ fn aba(b_title: &str, b_caption: &str) {
         panic!("the final A must retain a fresh Preserve publication");
     };
     assert_eq!(final_a.producer_contacts_in_this_demand(), 0);
-    final_receipt.assert_reused_by(&final_a);
+    assert!(final_a
+        .application_commit_receipt()
+        .unwrap()
+        .is_same_authoritative_commit(&final_receipt));
     let final_read = request.retain_current_read().unwrap();
     request
         .at(&final_read)
@@ -250,7 +282,10 @@ fn aba(b_title: &str, b_caption: &str) {
         panic!("an unchanged retry must settle");
     };
     assert_eq!(unchanged.producer_contacts_in_this_demand(), 0);
-    final_receipt.assert_reused_by(&unchanged);
+    assert!(unchanged
+        .application_commit_receipt()
+        .unwrap()
+        .is_same_authoritative_commit(&final_receipt));
     assert_eq!(
         unchanged
             .outputs_of::<output::PreservedOutputs>()

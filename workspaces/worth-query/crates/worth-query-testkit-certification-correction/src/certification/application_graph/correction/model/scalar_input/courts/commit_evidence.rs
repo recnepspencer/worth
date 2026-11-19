@@ -85,13 +85,10 @@ pub(super) fn paired_delivery(
         "master's real successor publication is retained"
     );
     if let Some(facts) = own_effect {
+        let producer = producer.expect("a performed producer retains its real receipt");
         if facts == 0 {
-            assert!(
-                producer.is_none(),
-                "reuse of a co-published root issues no separate producer receipt"
-            );
+            assert_eq!(producer.commit_reference(), source.commit_reference());
         } else {
-            let producer = producer.expect("an own-effect successor delivery keeps its receipt");
             assert_ne!(producer.commit_reference(), source.commit_reference());
             assert_eq!(
                 producer.commit_reference().parents.as_slice(),

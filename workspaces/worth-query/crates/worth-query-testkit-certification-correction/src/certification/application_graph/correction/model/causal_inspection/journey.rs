@@ -337,11 +337,11 @@ where
         u64::try_from(expected_contacts).unwrap(),
         "actual producer executions across source edit and delivery"
     );
-    let producer = settled.root_receipt().cloned().or_else(|| {
-        (expected_contacts != 0)
-            .then(|| super::super::co_published_root::source_published_root(&settled, &receipt))
-    });
-    (receipt, producer, settled.root_observation().retain())
+    (
+        receipt,
+        settled.root_receipt().cloned(),
+        settled.root_observation().retain(),
+    )
 }
 
 pub(in super::super) fn access<P: ApplicationProgramDefinition<NumericSchema>>(

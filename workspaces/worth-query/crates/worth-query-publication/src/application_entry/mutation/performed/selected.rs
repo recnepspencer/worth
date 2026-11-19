@@ -204,9 +204,10 @@ where
         <<DemandSource<Schema, Root> as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value:
             WorthQueryApplicationProjection<Schema, <DemandSource<Schema, Root> as ApplicationQueryBinding<Schema>>::Query> + Clone,
     {
+        // A foreign program refuses by name before its runtime is asked for anything.
+        let (selected, owner) = self.select_performed_owner::<Program, Root>(phase, application)?;
         let execution = phase.checked_execution_request_for(application.runtime().product_runtime())
             .map_err(|cause| WorthQueryPerformedMutationExecutionDenial::Mutation(WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause)))?;
-        let (selected, owner) = self.select_performed_owner::<Program, Root>(phase, application)?;
         let demand = <Intent::Binding as WorthQueryApplicationRequiredOutputSource<
             Schema,
             RootConnection<Schema, Root>,

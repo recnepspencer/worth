@@ -167,8 +167,8 @@ fn exercise(worker: bool) {
                             let expected = canonical_keys.iter().find(|(producer, _, _, _)|
                                 *producer == $family::initial::Producer::IDENTITY
                             ).expect("the real canonical owner observed this producer");
-                            assert!(settled.settlement().root_receipt().is_none(),
-                                "master's Stable reuse grants no original live receipt");
+                            assert!(settled.settlement().root_receipt().is_some(),
+                                "the reused committed output keeps its original receipt");
                             let committed = expected.3.expect("observed the actual performing Live writer");
                             assert_eq!(&committed, &expected.2,
                                 "the committed producer key equals its input-derived canonical owner output");

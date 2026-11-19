@@ -320,9 +320,9 @@ pub(super) fn perform(
             u64::try_from(contacts).expect("fixture contact bound")
         );
     }
-    let producer = settled.root_receipt().cloned().or_else(|| {
-        (own_effect == Some(0))
-            .then(|| super::super::co_published_root::source_published_root(&settled, &receipt))
-    });
-    (receipt, producer, settled.root_observation().retain())
+    (
+        receipt,
+        settled.root_receipt().cloned(),
+        settled.root_observation().retain(),
+    )
 }
