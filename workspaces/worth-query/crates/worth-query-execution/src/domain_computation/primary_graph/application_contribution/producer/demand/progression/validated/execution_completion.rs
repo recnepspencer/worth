@@ -73,13 +73,10 @@ pub(super) fn finish(
             );
             (receipt.into_receipt(), ready_backing)
         }
-        Ok((
-            execution::ProducerExecutionOutcome::OwnEffectContinuation(receipt),
-            ready_backing,
-        )) => {
+        Ok((execution::ProducerExecutionOutcome::LiveCompletion(receipt), ready_backing)) => {
             // The original coupled publication already happened. Preserve its
             // existing Published delivery protocol without marking another
-            // publication or issuing Stable/Current authority.
+            // publication.
             (receipt, ready_backing)
         }
         Ok((execution::ProducerExecutionOutcome::Stable(stable), ready_backing)) => {

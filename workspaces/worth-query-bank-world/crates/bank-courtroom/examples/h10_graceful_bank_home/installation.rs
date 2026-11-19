@@ -1,3 +1,7 @@
+#![allow(
+    clippy::result_large_err,
+    reason = "The journey drives the real Home open, whose refusal hands back its original owner"
+)]
 //! One real assessed Bank installation; snapshots are inputs, never request authority.
 use bank_domain::{model::*, proposals::*, schema::*};
 use bank_server::{

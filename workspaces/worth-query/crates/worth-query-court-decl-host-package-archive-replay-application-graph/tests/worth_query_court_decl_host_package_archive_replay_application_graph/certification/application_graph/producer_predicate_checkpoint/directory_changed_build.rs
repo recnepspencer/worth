@@ -76,7 +76,6 @@ fn directory_changed_build_reuses_original_output_until_new_implementation_is_de
     );
     drop(original);
     drop(demand);
-    drop(request);
     drop(principal);
     drop(scope);
     drop(home); // Quiescent teardown, as in the cited track-H court.
@@ -118,7 +117,6 @@ fn directory_changed_build_reuses_original_output_until_new_implementation_is_de
     );
     drop(reused);
     drop(demand);
-    drop(request);
     drop(principal);
     drop(scope);
     drop(home); // Quiescent teardown, as in the cited track-H court.
@@ -167,7 +165,6 @@ fn directory_changed_build_reuses_original_output_until_new_implementation_is_de
     drop(read);
     drop(refreshed);
     drop(demand);
-    drop(request);
     drop(principal);
     drop(scope);
     drop(home); // Quiescent teardown, as in the cited track-H court.

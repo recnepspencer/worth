@@ -56,6 +56,8 @@ fn reopened_home_refuses_the_authentic_prior_provider_session_before_any_provide
     assert_eq!(initialized.load(Ordering::SeqCst), 1);
     let (_, live) = scope();
     let app = home.runtime().runtime();
+    // The cost census compares resident storage; this read loads the reopened region.
+    assert_eq!(balance(home.runtime(), &live), 7);
     let before = app
         .with_application_advancement(&live, |phase| {
             app.capture_certification_cost_scope(&phase, app.current_world())

@@ -149,7 +149,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
             Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenialKind::Authorization(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase)), query.name())),
         };
         let execution = &request;
-
+        self.recover_retained_read_indexes(execution, &retained, query, access)?;
         let (application, controls) =
             self.retained_query_controls(execution, retained, query.name(), controls)?;
         application.admit_application_query(execution, query, access, parameters, controls)

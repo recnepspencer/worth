@@ -1,7 +1,8 @@
 //! Frozen schema metadata bytes are independent of the production serializer.
 use super::*;
+// Family, canonical index, payload length and payload; `current_frame` supplies the version.
 const CONTENT_SCHEMA_HEX: &str = concat!(
-    "00120008000000010000010c0000000d617263686976652e74657374730000000d4d696e696d616c536368656d61",
+    "0008000000010000010c0000000d617263686976652e74657374730000000d4d696e696d616c536368656d61",
     "00000001000000000000000400345b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b",
     "0000001165786163742d73616d706c652d677269640000000100000000010000000001000000044974656d000200",
     "0000044974656d0000000753616d706c6573000000000919c104000000000000000100020035000000044974656d",
@@ -113,8 +114,9 @@ fn content_schema_unknown_format_or_non_ascii_name_cannot_be_readmitted() {
 }
 
 fn current_frame() -> Vec<u8> {
-    let mut bytes = decode_hex(CONTENT_SCHEMA_HEX);
-    assert_eq!(&bytes[..2], &18_u16.to_be_bytes());
-    bytes[..2].copy_from_slice(&19_u16.to_be_bytes());
+    let mut bytes = WORTH_QUERY_PACKAGE_ARCHIVE_RECORD_PROTOCOL_VERSION
+        .to_be_bytes()
+        .to_vec();
+    bytes.extend(decode_hex(CONTENT_SCHEMA_HEX));
     bytes
 }

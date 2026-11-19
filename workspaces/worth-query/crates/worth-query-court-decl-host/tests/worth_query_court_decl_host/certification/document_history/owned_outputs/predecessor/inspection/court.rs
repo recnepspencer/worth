@@ -132,8 +132,9 @@ fn connected_inspection_borrows_authentic_old_keys_without_current_dependency_au
     );
     report.close();
     // Query metadata and both diagnostics cannot lend the independent source metadata policy.
-    // Master refuses the mismatched issued access at fresh admission, before
-    // binding it into inspection governance or looking up any protected cause.
+    // A navigation grant carries no inspection disclosure, so the governed
+    // inspection refuses it as a capability mismatch before any protected cause
+    // is looked up.
     let denied = request
         .inspect::<output::Binding>(&after)
         .why_observed()
@@ -150,7 +151,9 @@ fn connected_inspection_borrows_authentic_old_keys_without_current_dependency_au
     assert!(
         matches!(
             denied.owner_refusal(),
-            Some(WorthQueryApplicationInspectionOwnerRefusal::ForeignIssuedAccess)
+            Some(WorthQueryApplicationInspectionOwnerRefusal::Governance(
+                WorthQueryApplicationQueryGovernanceDenialKind::CapabilityMismatch
+            ))
         ),
         "actual inspection owner refusal: {:?}; resource: {:?}",
         denied.owner_refusal(),

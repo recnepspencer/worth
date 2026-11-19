@@ -115,7 +115,7 @@ connection!(
     upstream::Demand,
     "owned-outputs.diamond.extra-children",
     |d: &from_first::Demand| query::joined::Read(d.0.clone()),
-    |row: &query::Row| if row.value % 1000 != 0 {
+    |row: &query::Row| if !row.value.is_multiple_of(1000) {
         vec![
             upstream::Demand(row.key.strip_prefix("first:").unwrap().into()),
             upstream::Demand("b".into()),

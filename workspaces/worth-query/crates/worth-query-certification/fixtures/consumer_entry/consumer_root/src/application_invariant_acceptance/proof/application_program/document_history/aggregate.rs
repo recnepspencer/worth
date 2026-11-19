@@ -226,7 +226,7 @@ fn completed_output_graph_records_its_common_basis_and_retains_old_dependent_val
     let recorded_posture = delivery.settlement().root_settlement().posture();
     assert_eq!(
         recorded_posture,
-        WorthQueryOutputSettlementPosture::StableReused
+        WorthQueryOutputSettlementPosture::Performed
     );
     let before_producers = app.producer_contacts_on_this_thread_for_test();
     let before = [2, 3, 5].map(|y| {

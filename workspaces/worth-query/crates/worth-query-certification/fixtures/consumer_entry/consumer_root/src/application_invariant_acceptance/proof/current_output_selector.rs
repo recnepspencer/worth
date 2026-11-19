@@ -1,7 +1,7 @@
 use std::error::Error;
 
 use worth_query_consumer_values::{
-    PlanarCurrentOutputExpectation, PlanarMutationDenial, PlanarOperation,
+    PlanarAdjustment, PlanarCurrentOutputExpectation, PlanarMutationDenial, PlanarOperation,
 };
 use worth_query_host::facade::{
     application_entry::{
@@ -13,8 +13,8 @@ use worth_query_host::facade::{
         WorthQueryCurrentOutputDenialKind,
     },
 };
+use worth_query_topology_entry::PlanarOutputDemand;
 use worth_query_topology_entry::{PlanarEdit, PlanarMutation};
-use worth_query_topology_entry::{PlanarOutputDemand, PlanarSourceAdjustment};
 
 use super::{length, output_correspondence::observed_source, read_y, ProgramApplication, Request};
 
@@ -125,6 +125,9 @@ fn publish_initial(request: &Request<'_>, application: &ProgramApplication, scop
     });
 }
 
+/// An ordinary edit changes the source fact and owns no output, so the
+/// output it leaves behind is the old one. A performed source adjustment
+/// would republish that output in its own commit.
 fn adjust_source(
     request: &Request<'_>,
     application: &ProgramApplication,
@@ -135,21 +138,27 @@ fn adjust_source(
     let source = observed_source(request, scope_key);
     let outcome = request
         .advanced()
-        .mutate(PlanarSourceAdjustment {
+        .mutate(PlanarEdit(PlanarMutation {
             scope_key: scope_key.to_owned(),
-            replacement_y: length(y),
-        })
+            operation: PlanarOperation::Adjust(vec![PlanarAdjustment {
+                body_key: scope_key.to_owned(),
+                replacement_y: length(y),
+            }]),
+        }))
         .expect_source(source)
         .idempotency(&command)
-        .execute_performed::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(
+        .execute_in_program(
             application,
             worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
-        .expect("the independent source adjustment reaches its real mutation owner");
-    assert!(matches!(
-        outcome,
-        worth_query_host::facade::application_entry::WorthQueryApplicationPerformedMutationOutcome::Performed(_)
-    ));
+        .expect("the ordinary source edit reaches its real mutation owner");
+    assert!(
+        matches!(
+            outcome,
+            WorthQueryApplicationMutationOutcome::Committed { .. }
+        ),
+        "the ordinary source edit publishes: {outcome:?}"
+    );
 }
 
 fn execute_verification(

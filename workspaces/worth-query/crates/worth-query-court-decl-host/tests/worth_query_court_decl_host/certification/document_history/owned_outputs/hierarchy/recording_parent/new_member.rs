@@ -1,10 +1,10 @@
 //! A real authored restoration creates the child source only on recording D.
-use super::super::member_children::program::public as program;
 use super::*;
+mod program;
 type Host = WorthQueryProgramApplicationRuntime<Schema, program::Program>;
 fn settle(host: &Host, request: &family::Request<'_, '_, '_>) {
     let mut tree = request
-        .demand(first::Demand("a".into()))
+        .demand(upstream::Demand("a".into()))
         .retain_program_outputs::<program::Program, program::Tree>(host)
         .unwrap_or_else(|cause| panic!("{:?}", cause.denial()));
     for count in 0..128 {
@@ -41,7 +41,7 @@ fn exercise(worker: bool) {
         .rows()[0]
         .clone();
     let original_parent = request
-        .query(query::first_output::Read("first:a".into()))
+        .query(query::member_public::Read("upstream:a".into()))
         .execute()
         .unwrap()
         .rows()[0]
@@ -69,7 +69,7 @@ fn exercise(worker: bool) {
                     &phase,
                     &request,
                     &host,
-                    first::Demand("a".into()),
+                    upstream::Demand("a".into()),
                     WorthQueryOutputDemandControls::default(),
                 )
                 .unwrap_or_else(|(_, cause)| panic!("{cause:?}"))
@@ -93,7 +93,11 @@ fn exercise(worker: bool) {
         contacts + 1,
         "only the new child's producer runs"
     );
-    assert_eq!(reads.reads(), 0, "healthy model root remains unopened");
+    assert_eq!(
+        reads.upstream_source_reads(),
+        0,
+        "healthy model root remains unopened"
+    );
     assert!(
         reads.public_member_reads() > 0,
         "child's real source is read at D"
@@ -122,7 +126,7 @@ fn exercise(worker: bool) {
         vec![member]
     );
     assert_eq!(
-        at_d.query(query::first_output::Read("first:a".into()))
+        at_d.query(query::member_public::Read("upstream:a".into()))
             .execute()
             .unwrap()
             .rows(),

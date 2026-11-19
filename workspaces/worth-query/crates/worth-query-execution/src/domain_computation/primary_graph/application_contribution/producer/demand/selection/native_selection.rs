@@ -288,6 +288,17 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                         || candidate.historical_selection.is_some()
                     {
                         selected.retain_verified_output(&candidate);
+                        // A producer may declare several lifecycles. Lifecycle
+                        // selection names the one this retained output was
+                        // actually produced under, not the first declared.
+                        if matches!(purpose, SelectionPurpose::Lifecycle)
+                            && let Some(lifecycle) = candidate.performed_lifecycle()
+                            && let performed =
+                                WorthQueryProducerApplicability::new(profile_kind, lifecycle)
+                            && entry.declaration.applicability.contains(&performed)
+                        {
+                            selected.applicability = performed;
+                        }
                         return Ok((selected, entry));
                     }
                     // A cached delivery belongs to the currently applicable

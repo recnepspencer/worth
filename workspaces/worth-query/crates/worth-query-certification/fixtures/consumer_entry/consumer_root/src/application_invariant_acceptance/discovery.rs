@@ -25,13 +25,15 @@ pub(super) fn verify(application: &WorthQueryPrimaryGraphApplicationRuntime<Cons
         definition.denial_identity().as_str(),
         "worth.query.certification.planar-mutation-denial.v2"
     );
+    // A record's aspect is described by its declared selection's own key.
+    let scope_field = worth_query_topology_entry::BodyKey::at("BodyKey");
     assert_eq!(
         (
             &*definition.scope().entity,
             &*definition.scope().aspect,
             &*definition.scope().field
         ),
-        ("Body", "PlanarPosition", "BodyKey")
+        ("Body", scope_field.aspect(), "BodyKey")
     );
     assert_eq!(
         mutation.availability(),

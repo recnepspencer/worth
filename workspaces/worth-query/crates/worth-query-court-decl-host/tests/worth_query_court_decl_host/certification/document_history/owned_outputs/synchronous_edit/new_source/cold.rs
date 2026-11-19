@@ -52,7 +52,6 @@ fn run(worker: bool) {
             .clone(),
     );
     let checkpoint = super::super::failure::checkpoint(&host);
-    drop(request);
     drop(host);
     let cold = world::restore_same_build(checkpoint, worker);
     let head = courts::native_head(&cold);

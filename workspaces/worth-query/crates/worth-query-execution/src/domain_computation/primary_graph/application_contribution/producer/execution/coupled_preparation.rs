@@ -334,7 +334,7 @@ where
         coordination,
         program,
         idempotency,
-        Some((*source).into_publication_source()),
+        Some((*source).into_publication_source(erased.lifecycle)),
     )
     .map_err(|outcome| preparation_denial(Binding::IDENTITY, outcome))
 }

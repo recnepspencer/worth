@@ -287,23 +287,3 @@ pub(super) fn assert_conflict(result: Result<Posture, Denial>, expected: Conflic
     };
     assert_eq!(actual.kind(), expected);
 }
-
-// D5 and Shared durable owner contracts, Live abandonment and recovered
-// disposition: live durable custody requires ending this Home and reopening.
-// Close refuses it; only actual cold reconciliation grants continuation.
-pub(super) fn end_live_home_for_required_reopen(
-    home: Arc<Home>,
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-) {
-    let refused = Arc::into_inner(home)
-        .expect("no live Home alias")
-        .close(execution)
-        .err()
-        .expect("live original custody requires Home reopen");
-    assert!(refused.directory_denial().is_some());
-    assert!(refused.query_denial().is_none());
-    let serving = refused
-        .resume()
-        .expect("refused close retains the same serving Home");
-    drop(serving);
-}

@@ -1,8 +1,9 @@
 //! Fixed contractual bytes exercise the public decoder without its serializer.
 use super::*;
 
+// Family, canonical index, payload length and payload; `current_frame` supplies the version.
 const DOCUMENT_HISTORY_HEX: &str = concat!(
-    "0012000800000000000001b40000000f617263686976652e686973746f72790000000e446f63756d656e74536368656d",
+    "000800000000000001b40000000f617263686976652e686973746f72790000000e446f63756d656e74536368656d",
     "610000000100000000000000010033000100020000000f446f63756d656e74486973746f727900000021776f7274682e",
     "617263686976652e646f63756d656e742d686973746f72792e763100000018776f7274682e617263686976652e62696e",
     "64696e672e763100000016776f7274682e617263686976652e696e7075742e76310000000c52656164446f63756d656e",
@@ -168,8 +169,9 @@ fn history_frame_depth_and_entry_limits_preserve_the_original_decoder_on_refusal
 }
 
 fn current_frame() -> Vec<u8> {
-    let mut bytes = decode_hex(DOCUMENT_HISTORY_HEX);
-    assert_eq!(&bytes[..2], &18_u16.to_be_bytes());
-    bytes[..2].copy_from_slice(&19_u16.to_be_bytes());
+    let mut bytes = WORTH_QUERY_PACKAGE_ARCHIVE_RECORD_PROTOCOL_VERSION
+        .to_be_bytes()
+        .to_vec();
+    bytes.extend(decode_hex(DOCUMENT_HISTORY_HEX));
     bytes
 }

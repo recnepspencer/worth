@@ -106,9 +106,10 @@ where
         RootConnection<Schema, Root>:
             WorthQueryApplicationDiscoveredOutputConnection<Schema, Source = Intent::Binding>,
     {
+        // A foreign program refuses by name before its runtime is asked for anything.
+        let (selected, owner) = self.select_performed_owner::<Program, Root>(phase, application)?;
         let execution = phase.checked_execution_request_for(application.runtime().product_runtime())
             .map_err(|cause| WorthQueryPerformedMutationExecutionDenial::Mutation(WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause)))?;
-        let (selected, owner) = self.select_performed_owner::<Program, Root>(phase, application)?;
         let discovery =
             RootConnection::<Schema, Root>::discovery_from_source(self.request.intent.input())
                 .map_err(WorthQueryPerformedMutationExecutionDenial::Connection)?;

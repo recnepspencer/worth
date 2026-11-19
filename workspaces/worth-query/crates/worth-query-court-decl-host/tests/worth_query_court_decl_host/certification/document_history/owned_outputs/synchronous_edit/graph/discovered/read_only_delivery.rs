@@ -74,14 +74,17 @@ fn exercise(worker: bool, cold: bool) {
                 WorthQueryDiscoveredProgramOutputProgress::Progressed => {}
                 WorthQueryDiscoveredProgramOutputProgress::Settled(result) => {
                     assert_eq!(result.root_outputs().count(), 2);
-                    assert!(result
-                        .root_outputs()
-                        .all(|(_, root)| root.application_commit_receipt().is_none()));
+                    assert!(
+                        result
+                            .root_outputs()
+                            .all(|(_, root)| root.application_commit_receipt().is_some()),
+                        "each recovered root keeps its original receipt"
+                    );
                     settled = true;
                     break;
                 }
                 WorthQueryDiscoveredProgramOutputProgress::Pending => {
-                    panic!("Stable reuse must not wait for effectful delivery")
+                    panic!("reuse of a committed output must not wait for effectful delivery")
                 }
             }
         }

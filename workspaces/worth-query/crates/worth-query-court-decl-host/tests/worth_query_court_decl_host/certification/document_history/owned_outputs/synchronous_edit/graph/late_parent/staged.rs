@@ -228,7 +228,12 @@ fn require_refusal(
     );
     let model = |key: &str| {
         worth_relational::facade::transactions::RecordRef::Entity(
-            request.query(query::model::Read(key.into())).execute().unwrap().rows()[0].native_id,
+            request
+                .query(query::model::Read(key.into()))
+                .execute()
+                .unwrap()
+                .rows()[0]
+                .native_id,
         )
     };
     // The reader's source, then the exact writer's source.
@@ -266,7 +271,8 @@ fn a_consuming_child_after_an_intervening_append_is_still_held() {
         .runtime_stages(&host)
         .ordered_authored()
         .unwrap();
-    edit.push_stage::<IndependentTree, _>(stage("a", 2)).unwrap();
+    edit.push_stage::<IndependentTree, _>(stage("a", 2))
+        .unwrap();
     edit.push_stage::<super::prerequisite::Tree, _>(stage("b", 8))
         .unwrap();
     require_refusal(

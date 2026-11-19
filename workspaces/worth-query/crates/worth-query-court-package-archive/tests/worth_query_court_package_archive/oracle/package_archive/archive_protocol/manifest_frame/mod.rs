@@ -1,4 +1,5 @@
 pub(crate) use worth_query_testkit_package_archive::facade::package_archive::archive_protocol::manifest_frame::*;
+use worth_query_testkit_package_archive::facade::package_archive::archive_protocol::protocol_compatibility::assert_compatibility;
 
 #[test]
 fn current_manifest_frame_matches_the_frozen_golden_vector() {
@@ -57,13 +58,16 @@ fn malformed_or_downgraded_frames_fail_closed() {
             .kind(),
         WorthQueryPackageArchiveDenialKind::UnsupportedArchiveVersion
     );
+    let displaced = WORTH_QUERY_PORTABLE_PACKAGE_MANIFEST_VERSION.get() - 1;
     let mut manifest_downgrade = bytes.clone();
-    manifest_downgrade[15] = 2;
-    assert_eq!(
+    manifest_downgrade[14..16].copy_from_slice(&displaced.to_be_bytes());
+    assert_compatibility(
         decode_manifest_frame(&manifest_downgrade, WorthQueryPackageArchiveLimits::DEFAULT)
-            .unwrap_err()
-            .kind(),
-        WorthQueryPackageArchiveDenialKind::UnsupportedManifestVersion
+            .unwrap_err(),
+        WorthQueryPackageArchiveDenialKind::UnsupportedManifestVersion,
+        WorthQueryPackageArchiveProtocolLayer::Manifest,
+        displaced,
+        WorthQueryPackageArchiveCompatibilityPosture::PredatesWindow,
     );
     let mut wrong_length = bytes.clone();
     wrong_length[13] -= 1;

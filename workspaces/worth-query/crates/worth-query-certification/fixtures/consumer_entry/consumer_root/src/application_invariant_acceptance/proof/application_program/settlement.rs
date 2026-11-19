@@ -334,7 +334,11 @@ pub(super) fn performed_source_settles_required_output(
             .composite_commit(),
         &exact_output
     );
-    assert!(retired_settlement.observation().selected_commit().ordinal() > exact_output.ordinal());
+    assert_eq!(
+        retired_settlement.observation().selected_commit(),
+        &exact_output,
+        "the source commit published the whole tree, so recovery selects that same commit"
+    );
     assert_eq!(
         request
             .at(retired_settlement.observation())

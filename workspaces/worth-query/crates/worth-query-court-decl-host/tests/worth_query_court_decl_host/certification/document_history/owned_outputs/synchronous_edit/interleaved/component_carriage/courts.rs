@@ -345,7 +345,10 @@ fn an_absent_supplier_does_not_force_its_prerequisite_at_an_authored_barrier() {
         panic!("{outcome:?}")
     };
     let failure = cause.invariant_execution_failure().unwrap();
-    assert_eq!(failure.kind(), WorthQueryInvariantExecutionDenialKind::CoupledReadSupportChanged);
+    assert_eq!(
+        failure.kind(),
+        WorthQueryInvariantExecutionDenialKind::CoupledReadSupportChanged
+    );
     // A later authored stage changed what the earlier stage discovered (#238).
     assert_eq!(
         failure.coupled_support_hold(),

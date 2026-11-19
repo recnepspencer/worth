@@ -238,9 +238,9 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
                 let task = &mut self.tasks[*i];
                 context.checkpoint(task.subject)?;
                 context.owner.owe(&task.owed);
-                let prepared = task
-                    .tree
-                    .prepare(context, candidate, task.inputs.take(), task.component);
+                let prepared =
+                    task.tree
+                        .prepare(context, candidate, task.inputs.take(), task.component);
                 context.owner.consume(Vec::new());
                 match prepared? {
                     PlannedOutput::Prepared(parent) => {

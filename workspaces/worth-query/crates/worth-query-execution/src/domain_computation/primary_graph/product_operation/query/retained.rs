@@ -13,6 +13,41 @@ use crate::domain_computation::primary_graph::{
 };
 
 impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'runtime, Schema> {
+    /// A recorded coordinate can select a basis whose disposable indexes a
+    /// checkpoint reopen reclaimed. The explicit retained door reconstructs
+    /// the installed indexes its read selects; a current read never does.
+    pub(super) fn recover_retained_read_indexes<
+        Query,
+        Parameters,
+        QueryResult,
+        Principal,
+        PrincipalIdentity,
+        Scope,
+    >(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        retained: &WorthQuerySelectedProductOperation<'runtime, Schema>,
+        query: &WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
+        access: &WorthQueryApplicationQueryAccessContext<
+            '_,
+            Schema,
+            Principal,
+            PrincipalIdentity,
+            Scope,
+        >,
+    ) -> Result<(), WorthQueryApplicationQueryAdmissionDenial> {
+        let Some(graph) = self.application().runtime.primary_graph() else {
+            return Ok(());
+        };
+        crate::domain_computation::primary_graph::application_query::basis::recover_recorded_query_indexes(
+            execution,
+            graph,
+            query,
+            access.scope().identity_index_id(),
+            retained.product().relational_basis(),
+        )
+    }
+
     pub(in crate::domain_computation::primary_graph) fn retained_query_controls(
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -112,7 +147,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
             Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenialKind::Authorization(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase)), query.name())),
         };
         let execution = &request;
-
+        self.recover_retained_read_indexes(execution, &retained, query, access)?;
         let (application, controls) =
             self.retained_query_controls(execution, retained, query.name(), controls)?;
         application.admit_governed_application_query(

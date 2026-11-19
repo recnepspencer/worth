@@ -1,3 +1,7 @@
+#![allow(
+    clippy::result_large_err,
+    reason = "A refused identity binding hands back the original Bank owners without allocating on failure"
+)]
 use bank_server::{
     BankAuthenticatedPrincipal, BankAuthenticationBoundary, BankIdentityRuntime, BankPrincipalSeed,
     BankWorldSeed,

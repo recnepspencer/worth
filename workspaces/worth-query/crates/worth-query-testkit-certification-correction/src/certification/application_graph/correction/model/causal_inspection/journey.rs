@@ -269,14 +269,14 @@ pub(super) fn perform(
                     ExecutionAllocationPolicy::SystemAllocation,
                 )
                 .unwrap();
-            let source = match source {
+
+            match source {
                 WorthQueryApplicationPerformedMutationOutcome::Performed(source) => source,
                 WorthQueryApplicationPerformedMutationOutcome::NotPerformed(outcome) => {
                     panic!("ordinary source must perform; actual native outcome: {outcome:?}")
                 }
                 _ => panic!("ordinary source must perform; required-output custody was not ready"),
-            };
-            source
+            }
         },
         1,
     );

@@ -163,10 +163,7 @@ fn discovered_ordinary_stopped_source_and_output_handoffs_keep_original_owner() 
     assert_eq!(tree.superseded_roots().count(), 0);
     for (_, root) in tree.root_outputs() {
         assert_eq!(root.observation().selected_commit(), &committed);
-        assert_eq!(
-            root.posture(),
-            WorthQueryOutputSettlementPosture::StableReused
-        );
+        assert_eq!(root.posture(), WorthQueryOutputSettlementPosture::Performed);
         assert_eq!(root.producer_contacts_in_this_demand(), 0);
     }
     let (_, child) = tree

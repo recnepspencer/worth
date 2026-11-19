@@ -279,7 +279,7 @@ fn legacy(worker: bool) {
         for expected_contacts in [1, 0] {
             let contacts = host.producer_contacts_on_this_thread_for_test();
             let (_, ready) = observe_maintenance_work(8, || {
-                settle(&host, &request);
+                settle(host, request);
                 assert_eq!(
                     request
                         .query(snapshot::Read("a".into()))

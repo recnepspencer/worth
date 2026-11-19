@@ -4,7 +4,6 @@ mod unavailable;
 use super::*;
 mod closed;
 pub use closed::WorthQueryClosedFixedTerminal;
-use unavailable::TerminalOutputCompletion;
 use worth_query_execution::facade::primary_graph::{
     WorthQueryApplicationCommitOutcome, WorthQueryManagedApplicationRecoveryPerformed,
 };
@@ -62,7 +61,7 @@ where
     Delivery<Schema, Intent, Action>:
         ApplicationFixedActionDelivery<Schema, Binding<Schema, Intent>, Root = Root>,
 {
-    output_completion: Option<TerminalOutputCompletion<Schema, Program, Root>>,
+    output_completion: Option<crate::application_entry::mutation::program_output_continuation::ProgramOutputUnavailableCompletion<Schema, Program, Root>>,
     pub(super) advance_denial: Option<WorthQueryOperationAdvanceDenial>,
     pub(super) operation: WorthQueryFixedOperation<Schema, Intent, Program, Root, Action>,
 }
@@ -245,7 +244,7 @@ where
                         .retain_release_receipt(closed.into_cleanup());
                     return Err(cause);
                 }
-                Ok(closed.with_output_unavailable(self.take_output_unavailable()))
+                Ok(closed)
             }
             Ok(Err(denial)) => Err(denial),
             Err(denial) => Err(WorthQueryOperationCloseDenial::Execution(denial)),

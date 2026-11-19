@@ -202,7 +202,7 @@ fn two_fixed_members_keep_their_original_trees_and_record_the_last_complete_endp
             assert_eq!(tree.root_observation().selected_commit(), endpoint);
             assert_eq!(
                 tree.root_settlement().posture(),
-                WorthQueryOutputSettlementPosture::StableReused
+                WorthQueryOutputSettlementPosture::Performed
             );
             assert_eq!(tree.root_producer_contacts_in_this_demand(), 0);
             assert_eq!(tree.output_count(), 1);
@@ -333,7 +333,7 @@ fn two_fixed_members_keep_their_original_trees_and_record_the_last_complete_endp
         let read = preview.read(&finished.document, request).unwrap();
         assert_eq!(
             read.required_root_posture(),
-            Some(WorthQueryOutputSettlementPosture::StableReused)
+            Some(WorthQueryOutputSettlementPosture::Performed)
         );
         assert_eq!(read.rows()[0].value, length(4));
         read.close();

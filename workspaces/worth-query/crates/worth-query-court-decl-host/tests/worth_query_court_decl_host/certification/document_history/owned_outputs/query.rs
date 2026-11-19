@@ -100,6 +100,20 @@ scalar_read!(
     "Model",
     public
 );
+// The upstream family reads its model through its own query, so its source
+// reads stay distinct from the document's reads of `model`.
+scalar_read!(
+    upstream_source,
+    Model,
+    ModelKey,
+    ModelValue,
+    "Model",
+    "owned-outputs.upstream-source-read.v1",
+    "owned-outputs.upstream-source-binding.v1",
+    "owned-outputs.upstream-source-input.v1",
+    "UpstreamSource",
+    public
+);
 pub mod identity;
 pub mod joined;
 pub mod members;
@@ -195,7 +209,7 @@ pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
     let schema = input_member::declare(schema);
-    let schema = model::declare(schema);
+    let schema = upstream_source::declare(model::declare(schema));
     let schema = identity::declare(members::declare(schema));
     let schema = joined::declare(producer_model::declare(schema));
     let schema = member::declare(schema);

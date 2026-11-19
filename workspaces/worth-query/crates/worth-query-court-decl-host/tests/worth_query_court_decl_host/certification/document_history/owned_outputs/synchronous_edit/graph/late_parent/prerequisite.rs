@@ -109,7 +109,9 @@ pub(super) fn refuse_whole(
     assert_eq!(failure.kind(), worth_query_host::facade::primary_graph::WorthQueryInvariantExecutionDenialKind::CoupledReadSupportChanged);
     assert_eq!(failure.coupled_support_hold(), Some(hold), "{failure:?}");
     assert!(
-        stage.is_none_or(|stage| failure.detail().contains(&format!("authored stage {stage}")))
+        stage.is_none_or(|stage| failure
+            .detail()
+            .contains(&format!("authored stage {stage}")))
             && failure
                 .detail()
                 .contains("later writer producer owned-outputs.decision-write")
@@ -118,7 +120,12 @@ pub(super) fn refuse_whole(
     );
     let model = |key: &str| {
         worth_relational::facade::transactions::RecordRef::Entity(
-            request.query(query::model::Read(key.into())).execute().unwrap().rows()[0].native_id,
+            request
+                .query(query::model::Read(key.into()))
+                .execute()
+                .unwrap()
+                .rows()[0]
+                .native_id,
         )
     };
     // The reader's source, then the exact writer's source.

@@ -21,14 +21,16 @@ mod seed_children;
 pub(in super::super) use seed_children::frontier::Binding as SeedFrontierBinding;
 pub(in super::super) mod retirement_parent;
 pub(in super::super) mod seal;
-pub(in super::super) use program::{ModelTree, RetirementProgram};
+pub(in super::super) use program::ModelTree;
 use program::{ProducedTree, Program};
 pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
     prerequisite_path::declare(component_carriage::declare(
         prerequisite_partition::declare(occurrence_topology::declare(created::declare(
-            reading::declare(seal::declare(dependent::declare(seed_children::frontier::declare(schema)))),
+            reading::declare(seal::declare(dependent::declare(
+                seed_children::frontier::declare(schema),
+            ))),
         ))),
     ))
 }

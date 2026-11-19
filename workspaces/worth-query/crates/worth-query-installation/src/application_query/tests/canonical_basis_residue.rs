@@ -275,7 +275,7 @@ fn assert_warm_path_has_no_hashing(path: &Path) {
         ),
         (
             "application_query/observed_source/source_identity/runtime_commitment.rs",
-            "worth-query:runtime-source-commitment:v1",
+            "worth-query:runtime-source-commitment:v2",
         ),
     ] {
         if path.ends_with(Path::new(owner)) {

@@ -75,7 +75,6 @@ struct OracleRun {
     published: Vec<WorthQueryPublishedComputationStateForTest>,
     outcome: Result<(u64, u64), WorthQueryPartitionedComputationDenial<u32>>,
     runs: Vec<WorthQueryPartitionedComputationRunForTest>,
-    full_preparations: Vec<worth_query_host::facade::application_contribution::WorthQueryPartitionedComputationFullCause>,
     calls: OwnerCalls,
     /// The partitions the owner gathered, from its own record.
     gathered: Vec<worth_foundational::facade::PartitionIdentity>,

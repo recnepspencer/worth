@@ -2,7 +2,7 @@
 use super::{branch_projection::BranchProjection, BridgeAuthoredBranchDenial as D};
 use std::{
     collections::BTreeMap,
-    sync::{Arc, Mutex, TryLockError},
+    sync::{Arc, Mutex},
 };
 use worth_foundational::facade::{DurableSignalBranchIdentity, SignalBranchAdvanceIdentity};
 
@@ -74,10 +74,10 @@ impl BranchRegistry {
         &self,
         branch: DurableSignalBranchIdentity,
     ) -> Result<Arc<BranchProjection>, D> {
-        let slots = self.slots.try_lock().map_err(|cause| match cause {
-            TryLockError::WouldBlock => D::RegistryContactHeld { branch },
-            TryLockError::Poisoned(_) => D::Poisoned { branch },
-        })?;
+        // This read holds the map only for the lookup and calls nothing while it
+        // does, so first demands for different branches wait here instead of
+        // refusing each other.
+        let slots = self.slots.lock().map_err(|_| D::Poisoned { branch })?;
         match slots.get(&branch) {
             Some(BranchSlot::Serving { projection, .. }) => Ok(Arc::clone(projection)),
             Some(BranchSlot::Reserved { .. }) => Err(D::ForkReserved { branch }),

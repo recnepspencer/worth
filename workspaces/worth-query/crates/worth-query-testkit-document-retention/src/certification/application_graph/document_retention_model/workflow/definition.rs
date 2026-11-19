@@ -22,7 +22,7 @@ pub use worth_query_host::facade::{
 };
 
 pub use super::super::{
-    host::DocumentWorkflowRuntime,
+    host::{DocumentWorkflowApplication, DocumentWorkflowRuntime},
     operator_identity::{authenticate_operator, block_on, request_scope},
     retention_days::DocumentRetentionDaysQuery,
     retention_entry::{ReviewedSetRetentionBinding, DOCUMENT_IDENTITY},

@@ -1,7 +1,6 @@
-//! The seeded rings and the vertices of a commit that creates one more.
+//! The seeded rings.
 
 use super::{super::*, key};
-use worth_query_consumer_values::PlanarVertex;
 use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationEntityKey, WorthQueryApplicationEntitySeed,
     WorthQueryApplicationRelationSeed, WorthQueryPrimaryGraphBootstrap,
@@ -18,18 +17,6 @@ const BODIES: [(&str, u64, u64); 5] = [
     ("b", 10, 15),
     ("c", 1, 10),
 ];
-
-/// The vertices of ring `ring`, for a commit that creates it.
-pub(in super::super) fn vertices(ring: usize) -> Vec<PlanarVertex> {
-    BODIES
-        .into_iter()
-        .map(|(role, x, y)| PlanarVertex {
-            body_key: key(ring, role),
-            x: length(x + RING_SPACING * ring as u64),
-            y: length(y),
-        })
-        .collect()
-}
 
 /// Seeds `RINGS` independent rings.
 pub(in super::super) fn seed<const RINGS: usize>(

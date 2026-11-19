@@ -303,7 +303,9 @@ fn two_bodies<const MODE: u8>() {
                 .unwrap()
                 .entity_id(),
         };
-        expected_sources.push(worth_relational::facade::transactions::RecordRef::Entity(writer));
+        expected_sources.push(worth_relational::facade::transactions::RecordRef::Entity(
+            writer,
+        ));
         assert_eq!(failure.affected_records(), expected_sources.as_slice());
         for id in [20, 101, 102, 111, 112] {
             assert!(

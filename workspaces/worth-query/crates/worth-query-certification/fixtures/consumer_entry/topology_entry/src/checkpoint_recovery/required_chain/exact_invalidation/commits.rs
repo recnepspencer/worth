@@ -116,37 +116,4 @@ impl Court<'_, '_, '_, '_> {
         ring.successor = replacement;
         ring.successor_y = y;
     }
-
-    /// Creates ring `index` beside the rings already there, in one commit
-    /// anchored on the first ring's root.
-    pub(super) fn create_ring(&self, index: usize, at: &str) {
-        let anchor = ring_world::key(0, "a");
-        let source = self
-            .request
-            .query(PlanarRead {
-                body_key: anchor.clone(),
-            })
-            .execute()
-            .expect("the branch admits a courtroom read");
-        let outcome = self
-            .request
-            .advanced()
-            .mutate(PlanarEdit(PlanarMutation {
-                scope_key: anchor,
-                operation: PlanarOperation::CreateCycle(ring_world::vertices(index)),
-            }))
-            .expect_source(source.observed_sources()[0].clone())
-            .idempotency(&self.next_idempotency())
-            .execute_in_program::<program::ChainProgram>(
-                self.application,
-                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-            );
-        assert!(
-            matches!(
-                &outcome,
-                Ok(WorthQueryApplicationMutationOutcome::Committed { .. })
-            ),
-            "{at}: ring {index} is created: {outcome:?}"
-        );
-    }
 }

@@ -125,6 +125,7 @@ pub fn assert_operation_inventory(members: &[ApplicationSchemaMember]) {
             "OpenEstateCaseOperation",
             "ProgramDeploymentRevocationOperation",
             "PublishApprovedPaymentAssessment",
+            "PublishRejectedPaymentAssessment",
             "RecognizeEstateExecutorOperation",
             "RejectPaymentOperation",
             "ReleaseEstateOperation",

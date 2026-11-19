@@ -26,5 +26,15 @@ pub(super) fn admits(path: &Path, source: &str) -> bool {
         assert!(source.contains("frame.chunks(4096)"));
         return true;
     }
+    if path.ends_with(Path::new(
+        "application_query/managed_index/source/projection_support/commitment.rs",
+    )) {
+        // The applied-source acquisition commitment charges every fact and
+        // every text byte it absorbs before hashing it.
+        assert!(source.contains("worth-query:applied-source-acquisition:v1"));
+        assert!(source.contains("SourceFactsAllocation::work(execution, 96)?"));
+        assert!(source.contains("length.checked_add(8).ok_or(Cause::WorkCounterOverflow)?"));
+        return true;
+    }
     false
 }

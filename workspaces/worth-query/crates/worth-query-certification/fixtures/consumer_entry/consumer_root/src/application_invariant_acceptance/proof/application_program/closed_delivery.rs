@@ -1,4 +1,4 @@
-//! Native cleanup precedes fresh original full-tree delivery, including no-receipt roots.
+//! Native cleanup precedes fresh original full-tree delivery, including reused roots.
 use super::*;
 use crate::application_program::ConsumerFixedAction;
 use crate::{ConsumerProgram, ConsumerProgramRoot};
@@ -18,6 +18,7 @@ use worth_query_topology_entry::{
 mod construction;
 mod exact_observation;
 mod original_endpoint;
+mod original_root;
 mod phase_cleanup;
 mod qualification;
 mod selected_meaning;
@@ -56,7 +57,7 @@ fn fixed_and_no_source_close_before_fresh_complete_current_read() {
         replacement_y: length(2),
     };
     reset_planar_source_adjustment_contacts(&input);
-    // A reused root retains typed output correspondence without a producer receipt.
+    // A reused root retains typed output correspondence and its original producer receipt.
     let fixed = {
         let scope = authentication::request_scope();
         let adapter = authentication::admit(world.application.installed_schema());
@@ -79,6 +80,7 @@ fn fixed_and_no_source_close_before_fresh_complete_current_read() {
         .entity::<PlanarAnchorOutput<ConsumerSchema>>()
         .unwrap()
         .entity_id();
+    let original_commit = original_root::commit(fixed.settlement().root_receipt());
     let (closed_fixed, closed_tree) = {
         let scope = authentication::request_scope();
         let adapter = authentication::admit(world.application.installed_schema());
@@ -110,8 +112,8 @@ fn fixed_and_no_source_close_before_fresh_complete_current_read() {
             length(3)
         );
         // anchor-b is in anchor-a's declared two-hop Source cut, even though
-        // PlanarReadResult omits successor_y. Progress a disjoint ring here so
-        // this close court actually reaches a Stable/no-receipt original root.
+        // PlanarReadResult omits successor_y. Progress a disjoint ring: the tree
+        // settles later, and its root is still the original co-commit and receipt.
         edit_source(&world, &request, "remote-a", 42, 0x9176_6275);
         assert_eq!(
             request
@@ -138,13 +140,11 @@ fn fixed_and_no_source_close_before_fresh_complete_current_read() {
             4,
             "both dependent branches and summaries belong to the tree"
         );
-        assert!(
-            settled.settlement().root_receipt().is_none(),
-            "genuine Stable root has no producer receipt"
-        );
+        let delivered = original_root::commit(settled.settlement().root_receipt());
+        assert_eq!(delivered, original_commit);
         assert_eq!(
             settled.settlement().root_settlement().posture(),
-            WorthQueryOutputSettlementPosture::StableReused
+            WorthQueryOutputSettlementPosture::Performed
         );
         assert_eq!(
             settled.settlement().root_producer_contacts_in_this_demand(),

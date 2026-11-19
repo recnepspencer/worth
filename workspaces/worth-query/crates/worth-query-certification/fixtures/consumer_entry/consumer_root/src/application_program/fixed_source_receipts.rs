@@ -2,7 +2,7 @@
 use super::*;
 use worth_query_consumer_values::{PlanarAdjustment, PlanarOperation, PositiveLength};
 use worth_query_decl::facade::application_program::*;
-use worth_query_host::facade::{application_entry::*, primary_graph::*};
+use worth_query_host::facade::application_entry::*;
 use worth_query_topology_entry::{PlanarEdit, PlanarMutation, PlanarOutputDemand};
 
 pub(crate) struct SourceConnection;

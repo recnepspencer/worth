@@ -126,6 +126,7 @@ fn journey() {
         request.retain_current_read().unwrap().selected_commit(),
         &publication
     );
+    let handler_contacts = world.runtime().producer_contacts_on_this_thread_for_test();
     let mut output = performed
         .start_required_outputs(&world, &request, WorthQueryOutputDemandControls::default())
         .unwrap_or_else(|failure| {
@@ -146,9 +147,31 @@ fn journey() {
             }
         })
         .expect("the one real Catalog producer settles within the declared bound");
+    // The delivered output is the performing writer's own co-commit. Delivery
+    // hands back that original receipt and enters no handler; the work counts
+    // are the receipt's own account of the one execution inside the edit.
     assert_eq!(settlement.root_producer_contacts_in_this_demand(), 0);
-    assert_eq!(settlement.work().producer_contact_count(), 0);
-    assert_eq!(settlement.work().derived_publication_count(), 0);
+    assert_eq!(
+        world.runtime().producer_contacts_on_this_thread_for_test(),
+        handler_contacts,
+        "delivery enters no producer handler"
+    );
+    assert_eq!(
+        settlement
+            .root_receipt()
+            .expect("the reused committed output keeps its original receipt")
+            .committed_product_publication()
+            .composite_commit(),
+        &publication
+    );
+    assert_eq!(
+        (
+            settlement.work().producer_contact_count(),
+            settlement.work().derived_publication_count()
+        ),
+        (1, 1),
+        "the settlement's work is the original co-commit's own explanation"
+    );
     assert_eq!(
         request.retain_current_read().unwrap().selected_commit(),
         &publication

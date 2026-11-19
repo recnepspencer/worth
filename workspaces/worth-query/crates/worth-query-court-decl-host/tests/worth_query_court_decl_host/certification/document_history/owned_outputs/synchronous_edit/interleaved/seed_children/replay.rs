@@ -6,10 +6,10 @@
 //! made available. The edit commits what two separate commits commit, or
 //! refuses atomically with a typed cause.
 use super::*;
+use crate::certification::document_history::owned_outputs::synchronous_edit::courts::native_head;
 use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationUncommitted, WorthQueryInvariantExecutionDenialKind,
 };
-use crate::certification::document_history::owned_outputs::synchronous_edit::courts::native_head;
 use worth_query_host::facade::{
     application_entry::WorthQueryEditEnvelopeOutcome as Outcome, runtime::ExecutionAllocationPolicy,
 };
@@ -21,9 +21,15 @@ fn world() -> Host {
     let host: Host = world::install_configured(
         host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()), 1, None,
         world::Configuration { envelope_records: true, interleaved_records: true, ..Default::default() });
-    assert!(execute(&host, "seed-world", Some(2), None).is_ok(), "the world commits");
+    assert!(
+        execute(&host, "seed-world", Some(2), None).is_ok(),
+        "the world commits"
+    );
     let (_, child, join, _) = observe(&host);
-    assert!(child.is_some() && join.is_some(), "the occurrence arcs place the child and its join: {child:?} {join:?}");
+    assert!(
+        child.is_some() && join.is_some(),
+        "the occurrence arcs place the child and its join: {child:?} {join:?}"
+    );
     host
 }
 
@@ -50,8 +56,11 @@ fn execute(
         .unwrap();
     }
     if let Some(frontier) = frontier {
-        edit.push_stage::<ApplicationNoOutputGraph, _>(frontier::Intent { frontier, grandchild: true })
-            .unwrap();
+        edit.push_stage::<ApplicationNoOutputGraph, _>(frontier::Intent {
+            frontier,
+            grandchild: true,
+        })
+        .unwrap();
     }
     let before = native_head(host);
     let (outcome, writes) = observe_maintenance_work(32, || {
@@ -60,12 +69,16 @@ fn execute(
     if let Ok(Outcome::Committed(_)) = &outcome {
         return Ok(());
     }
-    assert_eq!(writes.published_rows.len() + writes.omitted_publications, 0, "a refusal published");
+    assert_eq!(
+        writes.published_rows.len() + writes.omitted_publications,
+        0,
+        "a refusal published"
+    );
     assert_eq!(native_head(host), before, "a refusal moved the head");
     let kind = match &outcome {
-        Ok(Outcome::Uncommitted(WorthQueryApplicationUncommitted::Denied(cause))) => {
-            cause.invariant_execution_failure().map(|failure| failure.kind())
-        }
+        Ok(Outcome::Uncommitted(WorthQueryApplicationUncommitted::Denied(cause))) => cause
+            .invariant_execution_failure()
+            .map(|failure| failure.kind()),
         _ => None,
     };
     Err((kind, format!("{outcome:?}").chars().take(1200).collect()))
@@ -77,14 +90,28 @@ fn observe(host: &Host) -> (u64, Option<u64>, Option<u64>, u64) {
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.request(&principal, &scope);
     (
-        request.query(query::model::Read("a".into())).execute().unwrap().rows()[0].value,
-        (request.query(query::second_output::Read("second:a".into())).execute())
-            .ok()
-            .and_then(|rows| rows.rows().first().map(|row| row.value)),
-        (request.query(query::member_public::Read("joined:first:a".into())).execute())
-            .ok()
-            .and_then(|rows| rows.rows().first().map(|row| row.value)),
-        request.query(super::super::reading::Read).execute().unwrap().rows()[0].frontier,
+        request
+            .query(query::model::Read("a".into()))
+            .execute()
+            .unwrap()
+            .rows()[0]
+            .value,
+        (request
+            .query(query::second_output::Read("second:a".into()))
+            .execute())
+        .ok()
+        .and_then(|rows| rows.rows().first().map(|row| row.value)),
+        (request
+            .query(query::member_public::Read("joined:first:a".into()))
+            .execute())
+        .ok()
+        .and_then(|rows| rows.rows().first().map(|row| row.value)),
+        request
+            .query(super::super::reading::Read)
+            .execute()
+            .unwrap()
+            .rows()[0]
+            .frontier,
     )
 }
 

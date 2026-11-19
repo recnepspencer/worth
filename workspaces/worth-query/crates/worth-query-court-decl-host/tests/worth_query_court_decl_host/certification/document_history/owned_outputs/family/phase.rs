@@ -95,7 +95,8 @@ macro_rules! producer_member_effect {
         let member = $writer.projected_entity($decision.member_target.as_ref().expect("actual completed member decision"))?;
         $writer.write_field(&member, MemberValue::at("MemberValue"), $input.0.value + 1)?;
     }};
-    ($operation:ident, $writer:ident, $decision:ident, $input:ident) => { () };
+    // A producer with no member effect decided no member target.
+    ($operation:ident, $writer:ident, $decision:ident, $input:ident) => { assert!($decision.member_target.is_none()) };
 }
 // Shared fixture hooks default to no predecessor observation.
 macro_rules! original_contract {

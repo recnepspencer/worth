@@ -27,7 +27,7 @@ impl RelationalCommitEnvelopeResidency {
         let protection = journal
             .as_ref()
             .map(|source| {
-                crate::durability::medium::RelationalDurableReadProtection::capture(
+                crate::durability::medium::RelationalDurableReadProtection::capture_when_available(
                     source, execution,
                 )
                 .map_err(|cause| {

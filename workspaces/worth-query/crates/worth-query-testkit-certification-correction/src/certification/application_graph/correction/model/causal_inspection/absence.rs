@@ -175,7 +175,8 @@ pub(super) fn perform(
                     worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
                 )
                 .unwrap();
-            let source = match source {
+
+            match source {
                 WorthQueryApplicationPerformedMutationOutcome::Performed(source) => source,
                 WorthQueryApplicationPerformedMutationOutcome::NotPerformed(outcome) => {
                     panic!(
@@ -185,8 +186,7 @@ pub(super) fn perform(
                 _ => panic!(
                     "ordinary operand source must perform; required-output custody was not ready"
                 ),
-            };
-            source
+            }
         },
         expected_contacts,
     )

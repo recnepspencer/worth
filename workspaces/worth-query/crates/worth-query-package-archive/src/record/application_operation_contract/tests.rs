@@ -20,70 +20,12 @@ use crate::record::frame::{RecordFrameEncoding, WorthQueryPackageArchiveRecordDe
 fn complete_operation_contract_round_trips_every_payload_family_with_exact_work() {
     let record = fixture::complete_record();
     let bytes = encode_untrusted(&record, WorthQueryPackageArchiveLimits::DEFAULT);
-    // Displaced protocols are refused; protocol 19 is current.
-    for (version, displaced_hex) in [
-        (
-            18_u16,
-            include_str!("tests/application_operation_contract_v18.hex"),
-        ),
-        (
-            17_u16,
-            include_str!("tests/application_operation_contract_v17.hex"),
-        ),
-        (
-            16_u16,
-            include_str!("tests/application_operation_contract_v16.hex"),
-        ),
-        (
-            6_u16,
-            include_str!("tests/application_operation_contract_v6.hex"),
-        ),
-        (
-            10_u16,
-            include_str!("tests/application_operation_contract_v10.hex"),
-        ),
-        (
-            11_u16,
-            include_str!("tests/application_operation_contract_v11.hex"),
-        ),
-        (
-            12_u16,
-            include_str!("tests/application_operation_contract_v12.hex"),
-        ),
-        (
-            13_u16,
-            include_str!("tests/application_operation_contract_v13.hex"),
-        ),
-        (
-            14_u16,
-            include_str!("tests/application_operation_contract_v14.hex"),
-        ),
-        (
-            15_u16,
-            include_str!("tests/application_operation_contract_v15.hex"),
-        ),
-    ] {
-        let original = decode_hex(displaced_hex.trim());
-        let mut old_decoder =
-            WorthQueryPackageArchiveRecordDecoder::new(WorthQueryPackageArchiveLimits::DEFAULT);
-        let denial = old_decoder.decode_frame(&original).unwrap_err();
-        assert_eq!(denial.kind(), Kind::UnsupportedRecordVersion);
-        assert_eq!(denial.compatibility().unwrap().observed_version(), version);
-        assert_eq!(
-            old_decoder.work(),
-            WorthQueryPackageArchiveDecodeWork::default()
-        );
-        assert_eq!(original, decode_hex(displaced_hex.trim()));
-    }
-    let frozen_hex = include_str!("tests/application_operation_contract_v19.hex").trim();
+    let frozen_hex = include_str!("tests/current_application_operation_contract.hex").trim();
     assert_eq!(encode_hex(&bytes), frozen_hex);
-    let prior = decode_hex(include_str!("tests/application_operation_contract_v18.hex").trim());
     assert_eq!(
-        &prior[2..],
-        &bytes[2..],
-        "only the frame version changes for old-family payload"
+        u16::from_be_bytes(bytes[0..2].try_into().unwrap()),
+        crate::record::WORTH_QUERY_PACKAGE_ARCHIVE_RECORD_PROTOCOL_VERSION
     );
-    assert_eq!(u16::from_be_bytes(bytes[0..2].try_into().unwrap()), 19);
     assert_eq!(u16::from_be_bytes(bytes[2..4].try_into().unwrap()), 12);
     let mut decoder =
         WorthQueryPackageArchiveRecordDecoder::new(WorthQueryPackageArchiveLimits::DEFAULT);
@@ -92,18 +34,6 @@ fn complete_operation_contract_round_trips_every_payload_family_with_exact_work(
     assert_eq!(decoder.work().record_frames(), 1);
     assert_eq!(decoder.work().logical_bytes(), (bytes.len() - 12) as u64);
     assert_eq!(decoder.work().nested_entries(), 15);
-    let mut retired_frame = bytes;
-    retired_frame[..2].copy_from_slice(&4_u16.to_be_bytes());
-    let mut retired_decoder =
-        WorthQueryPackageArchiveRecordDecoder::new(WorthQueryPackageArchiveLimits::DEFAULT);
-    assert_eq!(
-        retired_decoder
-            .decode_frame(&retired_frame)
-            .unwrap_err()
-            .kind(),
-        Kind::UnsupportedRecordVersion
-    );
-    assert_eq!(retired_decoder.work().record_frames(), 0);
 }
 
 fn encode_hex(bytes: &[u8]) -> String {

@@ -29,7 +29,7 @@ mod installation;
 mod review;
 
 use document_retention_model::{
-    host::DocumentWorkflowRuntime,
+    host::{DocumentWorkflowApplication, DocumentWorkflowHome},
     operator_identity::{authenticate_operator, request_scope},
     readback::read_retention,
     retention_entry::{ReviewedSetRetentionBinding, ReviewedSetRetentionIntent, DOCUMENT_IDENTITY},
@@ -147,7 +147,7 @@ fn reviewed_document(
 fn run() {
     information::run();
     let directory = installation::location("review");
-    let (home, application) = installation::open(&directory);
+    let application = installation::open(&directory);
     let review = review();
     let first = reviewed_document(&review, "applied");
     let identity = first.identity().clone();
@@ -224,26 +224,29 @@ fn run() {
         500,
     );
     assert_discovery_disabled(&application, &identity);
-    drop(application);
-    installation::close(home);
-    let (home, application) = installation::open(&directory);
+    installation::close(application);
+    let application = installation::open(&directory);
     assert_discovery_disabled(&application, &identity);
-    let current = expect_superseded_start(start_instance(&application, first, 501));
+    // The reopened Home is a new incarnation of the same world, so the
+    // definitions published before the close are named as it holds them now.
+    let reopened = application.runtime().current_world();
+    let current =
+        expect_superseded_start(start_instance(&application, first.held_on(reopened), 501));
     assert_eq!(
-        current, second,
+        current,
+        second.held_on(reopened),
         "the native refusal names the replacement publication"
     );
     assert_eq!(
         read_retention(application.runtime(), application.runtime().current_world()),
         9
     );
-    drop(application);
-    installation::close(home);
+    installation::close(application);
     println!("authored, reused, rejected, revised, approved, completed; this ReviewedDocumentWorkflow Spec deliberately disables metadata disclosure");
 }
 
 fn publish(
-    application: &DocumentWorkflowRuntime,
+    application: &DocumentWorkflowHome,
     definition: ValidatedWorkflowDefinition<ReviewedDocumentWorkflow>,
     predecessor: WorkflowDefinitionExpectedPredecessor,
     key: u64,
@@ -259,7 +262,7 @@ fn publish(
 }
 
 fn assert_discovery_disabled(
-    application: &DocumentWorkflowRuntime,
+    application: &DocumentWorkflowHome,
     identity: &ApplicationWorkflowDefinitionIdentity,
 ) {
     let result = document_retention_model::workflow::discover_definition_metadata(
@@ -282,7 +285,7 @@ struct Reviewed {
 /// review until it awaits approval, collecting evidence wherever a review
 /// demands it. Uses keys from `key` upward.
 fn review_proposal(
-    application: &DocumentWorkflowRuntime,
+    application: &DocumentWorkflowHome,
     instance: &PublishedWorkflowInstanceRef,
     days: u64,
     key: u64,
@@ -322,7 +325,7 @@ fn review_proposal(
 /// Applies the approved retention through the requirement the instance
 /// awaits; the change's commit also settles the `apply` step.
 fn apply_approved_retention(
-    application: &DocumentWorkflowRuntime,
+    application: &DocumentWorkflowHome,
     instance: &PublishedWorkflowInstanceRef,
     days: u64,
     key: u64,
@@ -366,7 +369,7 @@ fn apply_approved_retention(
 
 /// Advances one step and names the node it completed.
 fn advance(
-    application: &DocumentWorkflowRuntime,
+    application: &DocumentWorkflowHome,
     instance: &PublishedWorkflowInstanceRef,
     key: u64,
 ) -> String {

@@ -31,20 +31,20 @@ where
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
         maximum_history_work: Option<std::num::NonZeroUsize>,
     ) -> Advance<S, I, P, A, M> {
-        if let Some(original) = &self.admission.description.original {
-            if let Err(cause) = request.application.admit_original_operation_owner(
+        if let Some(original) = &self.admission.description.original
+            && let Err(cause) = request.application.admit_original_operation_owner(
                 &original.owner,
                 &worth_query_execution::publication_boundary::program_publication_access(),
-            ) {
-                return self.into_advance(Err(WorthQuerySourceOnlyDenial::Original(cause)));
-            }
+            )
+        {
+            return self.into_advance(Err(WorthQuerySourceOnlyDenial::Original(cause)));
         }
         let phase_keepalive = self.admission.runtime.clone();
         let runtime = phase_keepalive.runtime();
         let outcome = runtime.with_application_advancement(request.scope, |phase| {
             let result = self.step(&phase, request, maximum_history_work);
-            if matches!(self.state, SourceState::<S, I>::RetryableNoEffect(_)) {
-                if let Some(original) = &mut self.admission.description.original {
+            if matches!(self.state, SourceState::<S, I>::RetryableNoEffect(_))
+                && let Some(original) = &mut self.admission.description.original {
                     original
                         .mark(
                             &phase,
@@ -53,7 +53,6 @@ where
                         )
                         .map_err(WorthQuerySourceOnlyDenial::Original)?;
                 }
-            }
             result
         });
         let outcome = match outcome {

@@ -12,7 +12,7 @@ pub(super) struct CoupledAdoption {
     posture: CompletionPosture,
 }
 enum CompletionPosture {
-    Current(crate::domain_computation::primary_graph::output_lineage::PublishedStableLineage),
+    Current,
     OwnEffectContinuation,
 }
 impl CoupledAdoption {
@@ -160,7 +160,7 @@ impl CoupledAdoption {
         Ok(Some(Self {
             candidate,
             receipt,
-            posture: CompletionPosture::Current(stable),
+            posture: CompletionPosture::Current,
         }))
     }
     pub(super) fn publish<Schema: ApplicationSchema>(
@@ -186,7 +186,7 @@ impl CoupledAdoption {
             );
         }
         match &self.posture {
-            CompletionPosture::Current(_) => {
+            CompletionPosture::Current => {
                 current.require_current_output_receipts(phase, [&self.receipt])?
             }
             CompletionPosture::OwnEffectContinuation => {
@@ -229,11 +229,9 @@ impl CoupledAdoption {
         claims
             .publish(std::sync::Arc::clone(self.candidate.settlement_identity()))
             .retire(None, owner);
-        Ok(match self.posture {
-            CompletionPosture::Current(stable) => ProducerExecutionOutcome::Stable(stable),
-            CompletionPosture::OwnEffectContinuation => {
-                ProducerExecutionOutcome::OwnEffectContinuation(self.receipt)
-            }
-        })
+        // Either posture delivers the performing writer's own Live receipt
+        // through the ordinary Published protocol: a reused committed output
+        // keeps its original receipt, readiness and producer explanation.
+        Ok(ProducerExecutionOutcome::LiveCompletion(self.receipt))
     }
 }

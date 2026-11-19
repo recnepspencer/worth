@@ -64,19 +64,6 @@ impl ApplicationProgramDefinition<CheckpointSchema> for DemandProgram {
     }
 }
 
-pub(super) struct RequiredProgram;
-impl ApplicationProgramDefinition<CheckpointSchema> for RequiredProgram {
-    type Contributions =
-        <DemandProgram as ApplicationProgramDefinition<CheckpointSchema>>::Contributions;
-    type Outputs = ApplicationProgramOutputs<CheckpointRoot>;
-    type Rules = CheckpointRules;
-    const IDENTITY: ApplicationProgramIdentity =
-        ApplicationProgramIdentity::new("checkpoint-required-source.v1");
-    fn feature_specs() -> Vec<ApplicationFeatureSpec> {
-        DemandProgram::feature_specs()
-    }
-}
-
 pub(super) struct UngovernedProgram;
 impl ApplicationProgramDefinition<CheckpointSchema> for UngovernedProgram {
     type Contributions =

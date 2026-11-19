@@ -6,9 +6,8 @@ impl<S: ApplicationSchema> CoupledApplicationAssembly<'_, '_, '_, S> {
     pub(in crate::domain_computation::primary_graph::application_contribution) fn next_read(
         &self,
     ) -> crate::domain_computation::primary_graph::provider::ParentRead {
-        let read = crate::domain_computation::primary_graph::provider::ParentRead(
-            self.parent_reads.get(),
-        );
+        let read =
+            crate::domain_computation::primary_graph::provider::ParentRead(self.parent_reads.get());
         self.parent_reads.set(read.0 + 1);
         read
     }

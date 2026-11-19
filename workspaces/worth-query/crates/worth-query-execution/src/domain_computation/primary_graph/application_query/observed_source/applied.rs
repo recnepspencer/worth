@@ -40,9 +40,16 @@ pub(in crate::domain_computation::primary_graph) struct AppliedSourcePublication
     >,
     meaning: std::sync::Arc<source_identity::WorthQueryObservedSourceMeaning>,
     closure: std::sync::Arc<super::super::SourceQueryReadClosure>,
+    /// The lifecycle the performing producer was qualified under.
+    lifecycle: crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerLifecyclePosture,
 }
 
 impl AppliedSourcePublication {
+    pub(in crate::domain_computation::primary_graph) fn lifecycle(
+        &self,
+    ) -> crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerLifecyclePosture{
+        self.lifecycle
+    }
     /// Publication can make two previously distinct interned meanings equal.
     /// Compare the carried acquisition rather than depending on which older
     /// committed meaning the interner encounters first.
@@ -109,11 +116,13 @@ impl<Query, Value> AppliedQuerySource<Query, Value> {
     }
     pub(in crate::domain_computation::primary_graph) fn into_publication_source(
         self,
+        lifecycle: crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerLifecyclePosture,
     ) -> AppliedSourcePublication {
         AppliedSourcePublication {
             managed: self.managed,
             meaning: self.meaning,
             closure: self.closure,
+            lifecycle,
         }
     }
 

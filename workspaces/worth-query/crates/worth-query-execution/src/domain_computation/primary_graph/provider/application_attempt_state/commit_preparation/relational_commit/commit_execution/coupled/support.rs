@@ -17,8 +17,11 @@
 //! verified parent's support changed by a producer whose derivation consumed
 //! that parent's output (#239). Every other refusal carries no hold.
 use super::*;
-use crate::domain_computation::WorthQueryCoupledSupportHold as Hold;
+use crate::domain_computation::primary_graph::provider::{
+    CandidateReadSupport, CoupledApplicationMember, CoupledApplicationMemberKind, ParentRead,
+};
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationDecisionFact as Fact;
+use crate::domain_computation::WorthQueryCoupledSupportHold as Hold;
 use crate::domain_computation::WorthQueryInvariantExecutionFailure as Failure;
 type Candidate = worth_relational::facade::runtime::RelationalPinnedRead<
     worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
@@ -34,17 +37,15 @@ pub(super) fn require(
     provider: &WorthQueryPrimaryGraphProvider,
     attempt: &WorthQueryPrimaryGraphApplicationAttempt,
     before: &SnapshotHandle,
-    complete: &worth_relational::facade::runtime::RelationalPinnedRead<
-        worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
-    >,
+    complete: &Candidate,
     source: worth_relational::facade::identity::EntityId,
     rebase: Option<
         &super::super::super::evidence_seal::postcommit_currentness::PreparedSourceFactRebase,
     >,
     position: usize,
-    members: &[crate::domain_computation::primary_graph::provider::CoupledApplicationMember],
+    members: &[CoupledApplicationMember],
     producer_reader: bool,
-    produces: Option<crate::domain_computation::primary_graph::provider::ParentRead>,
+    produces: Option<ParentRead>,
     hold: &mut Option<Failure>,
 ) -> Result<(), CoupledSupportPreparationDenial> {
     for consumed in attempt.consumed_outputs() {
@@ -78,9 +79,7 @@ pub(super) fn require(
                         execution, runtime, before, &fact, earlier, image,
                     )
                 } else {
-                    fact.support_equal_after_own_effect(
-                        execution, runtime, before, earlier, image,
-                    )
+                    fact.support_equal_after_own_effect(execution, runtime, before, earlier, image)
                 }
             })
         };
@@ -110,7 +109,9 @@ pub(super) fn require(
                     compare(earlier, image).map(|same| (!same).then(|| fact.locator_identity()))
                 },
                 fact.locator_identity(),
-                |locator| format!("a later coupled contribution changed decision support: {locator}"),
+                |locator| {
+                    format!("a later coupled contribution changed decision support: {locator}")
+                },
                 hold,
             )?;
             continue;
@@ -129,10 +130,8 @@ pub(super) fn require_read_support(
     provider: &WorthQueryPrimaryGraphProvider,
     attempt: &WorthQueryPrimaryGraphApplicationAttempt,
     before: &SnapshotHandle,
-    complete: &worth_relational::facade::runtime::RelationalPinnedRead<
-        worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
-    >,
-    members: &[crate::domain_computation::primary_graph::provider::CoupledApplicationMember],
+    complete: &Candidate,
+    members: &[CoupledApplicationMember],
     hold: &mut Option<Failure>,
 ) -> Result<(), CoupledSupportPreparationDenial> {
     // Each retained read is attributed from its own observed image, so an
@@ -181,28 +180,29 @@ pub(super) fn require_read_support(
 /// no stale output can commit.
 fn settles_read_support(
     reader: &WorthQueryPrimaryGraphApplicationAttempt,
-    support: &crate::domain_computation::primary_graph::provider::CandidateReadSupport,
+    support: &CandidateReadSupport,
     position: usize,
-    members: &[crate::domain_computation::primary_graph::provider::CoupledApplicationMember],
-    writer: &crate::domain_computation::primary_graph::provider::CoupledApplicationMember,
+    members: &[CoupledApplicationMember],
+    writer: &CoupledApplicationMember,
 ) -> bool {
-    use crate::domain_computation::primary_graph::provider::CandidateReadSupport;
     if reader.coupled_authored_subject().is_none() || !writer.settles_after(position) {
         return false;
     }
     let CandidateReadSupport::Parent(parent) = support else {
         return false;
     };
-    let derives = |member: &crate::domain_computation::primary_graph::provider::CoupledApplicationMember| {
+    let derives = |member: &CoupledApplicationMember| {
         member.settles_after(position) && derives_parent(member, parent)
     };
     derives(writer)
         || (is_stage(writer)
-            && members.iter().any(|member| member.position > writer.position && derives(member)))
+            && members
+                .iter()
+                .any(|member| member.position > writer.position && derives(member)))
 }
 
 fn derives_parent(
-    member: &crate::domain_computation::primary_graph::provider::CoupledApplicationMember,
+    member: &CoupledApplicationMember,
     parent: &crate::domain_computation::primary_graph::application_contribution::producer::VerifiedAppliedParent,
 ) -> bool {
     member
@@ -210,12 +210,10 @@ fn derives_parent(
         .is_some_and(|(_, meaning)| parent.has_route(meaning))
 }
 
-fn is_stage(
-    writer: &crate::domain_computation::primary_graph::provider::CoupledApplicationMember,
-) -> bool {
+fn is_stage(writer: &CoupledApplicationMember) -> bool {
     matches!(
         writer.kind,
-        crate::domain_computation::primary_graph::provider::CoupledApplicationMemberKind::AuthoredStage { .. }
+        CoupledApplicationMemberKind::AuthoredStage { .. }
     )
 }
 
@@ -226,13 +224,11 @@ fn is_stage(
 /// derive it again in the stage's own commit. Discovery support cannot name a
 /// superseded derivation, so it never carries the hold.
 fn superseded_parent(
-    support: &crate::domain_computation::primary_graph::provider::CandidateReadSupport,
-    members: &[crate::domain_computation::primary_graph::provider::CoupledApplicationMember],
-    writer: &crate::domain_computation::primary_graph::provider::CoupledApplicationMember,
+    support: &CandidateReadSupport,
+    members: &[CoupledApplicationMember],
+    writer: &CoupledApplicationMember,
 ) -> bool {
-    let crate::domain_computation::primary_graph::provider::CandidateReadSupport::Parent(parent) =
-        support
-    else {
+    let CandidateReadSupport::Parent(parent) = support else {
         return false;
     };
     is_stage(writer)
@@ -246,24 +242,25 @@ fn superseded_parent(
 /// other change, so no defect is reported as a hold.
 fn read_support_hold(
     reader: &WorthQueryPrimaryGraphApplicationAttempt,
-    support: &crate::domain_computation::primary_graph::provider::CandidateReadSupport,
-    members: &[crate::domain_computation::primary_graph::provider::CoupledApplicationMember],
-    writer: &crate::domain_computation::primary_graph::provider::CoupledApplicationMember,
+    support: &CandidateReadSupport,
+    members: &[CoupledApplicationMember],
+    writer: &CoupledApplicationMember,
 ) -> Option<Hold> {
-    use crate::domain_computation::primary_graph::provider::CandidateReadSupport as Support;
     if superseded_parent(support, members, writer) {
         return Some(Hold::ProducerSupersession);
     }
     reader.coupled_authored_subject()?;
     match support {
         // A later authored stage's own commit would discover again (#238).
-        Support::Query(_) | Support::Outgoing(_) if is_stage(writer) => {
+        CandidateReadSupport::Query(_) | CandidateReadSupport::Outgoing(_) if is_stage(writer) => {
             Some(Hold::DiscoverySupportChanged)
         }
         // The parent's own consumer changed what the parent read (#239): the
         // exact read the assembly retained, not a position the writer is owed.
-        Support::Parent(parent)
-            if parent.read().is_some_and(|read| writer.consumes.contains(&read)) =>
+        CandidateReadSupport::Parent(parent)
+            if parent
+                .read()
+                .is_some_and(|read| writer.consumes.contains(&read)) =>
         {
             Some(Hold::ReaderProducerSupersession)
         }
@@ -284,11 +281,14 @@ fn changed(
     reader: &WorthQueryPrimaryGraphApplicationAttempt,
     source: worth_relational::facade::identity::EntityId,
     position: usize,
-    members: &[crate::domain_computation::primary_graph::provider::CoupledApplicationMember],
+    members: &[CoupledApplicationMember],
     observed: &Candidate,
-    settles: impl Fn(&crate::domain_computation::primary_graph::provider::CoupledApplicationMember) -> bool,
-    held: impl Fn(&crate::domain_computation::primary_graph::provider::CoupledApplicationMember) -> Option<Hold>,
-    compare: impl Fn(&Candidate, &Candidate) -> Result<
+    settles: impl Fn(&CoupledApplicationMember) -> bool,
+    held: impl Fn(&CoupledApplicationMember) -> Option<Hold>,
+    compare: impl Fn(
+        &Candidate,
+        &Candidate,
+    ) -> Result<
         Option<String>,
         crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
     >,
@@ -319,8 +319,12 @@ fn changed(
                     .map(|(stage, binding)| format!("authored stage {} {binding}", stage.ordinal()))
                     .unwrap_or_else(|| format!("reader {source:?}"));
                 let later = match &writer.kind {
-                    crate::domain_computation::primary_graph::provider::CoupledApplicationMemberKind::AuthoredStage { identity, binding, .. } => format!("authored stage {} {binding}", identity.ordinal()),
-                    crate::domain_computation::primary_graph::provider::CoupledApplicationMemberKind::Producer { producer, meaning } => format!("producer {producer} {}", meaning.family),
+                    CoupledApplicationMemberKind::AuthoredStage {
+                        identity, binding, ..
+                    } => format!("authored stage {} {binding}", identity.ordinal()),
+                    CoupledApplicationMemberKind::Producer { producer, meaning } => {
+                        format!("producer {producer} {}", meaning.family)
+                    }
                 };
                 let failure = Failure::coupled_read_support(
                     source,
@@ -343,7 +347,10 @@ fn changed(
         return Ok(());
     }
     require_answer(Ok(false), source, || {
-        format!("{}; no admitted later writer could be attributed", detail(&final_locator))
+        format!(
+            "{}; no admitted later writer could be attributed",
+            detail(&final_locator)
+        )
     })
 }
 

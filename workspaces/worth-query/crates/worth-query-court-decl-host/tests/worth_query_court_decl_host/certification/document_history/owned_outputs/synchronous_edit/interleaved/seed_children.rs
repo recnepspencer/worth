@@ -11,8 +11,8 @@ mod differential;
 pub(super) mod frontier;
 #[cfg(test)]
 mod replay;
-use super::component_carriage::parent as owner;
 use super::super::super::family::diamond as joined;
+use super::component_carriage::parent as owner;
 
 macro_rules! root {
     ($start:ident, $connection:ident, $port:ty, $binding:ty, $identity:literal, |$input:ident| $demand:expr) => {
@@ -53,11 +53,23 @@ macro_rules! root {
 }
 // Writes the seed: model `a`, the parent's input. Its own driving discovers
 // the child too, as an ordinary seed edit does.
-root!(SeedWrite, SeedWriteConnection, hierarchy::ContinuationInput, fixture::model::Binding,
-    "interleaved.seed-children.write", |input| first::Demand(input.key.clone()));
+root!(
+    SeedWrite,
+    SeedWriteConnection,
+    hierarchy::ContinuationInput,
+    fixture::model::Binding,
+    "interleaved.seed-children.write",
+    |input| first::Demand(input.key.clone())
+);
 // Reads the parent's output, so the parent and its children settle before it.
-root!(SeedRead, SeedReadConnection, hierarchy::PredecessorInput, dependent::Binding,
-    "interleaved.seed-children.read", |_input| first::Demand("a".into()));
+root!(
+    SeedRead,
+    SeedReadConnection,
+    hierarchy::PredecessorInput,
+    dependent::Binding,
+    "interleaved.seed-children.read",
+    |_input| first::Demand("a".into())
+);
 
 pub struct Discover;
 impl ApplicationConnectionIdentity for Discover {
@@ -90,7 +102,10 @@ impl WorthQueryApplicationDependentOutputConnection<Schema> for Discover {
     ) -> Result<Vec<second::Demand>, WorthQueryRequiredOutputConnectionDenial> {
         // The parent's own seed: the child reads model X, not first:X.
         Ok(vec![second::Demand(
-            row.key.strip_prefix("first:").expect("a real first output key").into(),
+            row.key
+                .strip_prefix("first:")
+                .expect("a real first output key")
+                .into(),
         )])
     }
 }
@@ -143,7 +158,10 @@ impl WorthQueryApplicationDependentOutputConnection<Schema> for Grandchild {
     fn demands_from_discovery(
         row: &query::Row,
     ) -> Result<Vec<joined::Demand>, WorthQueryRequiredOutputConnectionDenial> {
-        let seed = row.key.strip_prefix("second:").expect("a real second output key");
+        let seed = row
+            .key
+            .strip_prefix("second:")
+            .expect("a real second output key");
         Ok(vec![joined::Demand(format!("first:{seed}"))])
     }
 }

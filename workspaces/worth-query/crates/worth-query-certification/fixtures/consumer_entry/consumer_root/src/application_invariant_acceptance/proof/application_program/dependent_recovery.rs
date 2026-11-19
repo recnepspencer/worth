@@ -76,14 +76,16 @@ pub(super) fn caller_disposal_after_root_recovers_dependent(
             .value,
         length(3)
     );
-    assert!(
+    assert_eq!(
         request
             .query(PlanarOutputRead {
                 body_key: "final:anchor-c".to_owned(),
             })
             .execute()
-            .is_err(),
-        "the dependent has not yet published at the interruption point"
+            .expect("the source commit published the fixed tree's dependent with its root")
+            .rows()[0]
+            .value,
+        length(4)
     );
     drop(started);
 

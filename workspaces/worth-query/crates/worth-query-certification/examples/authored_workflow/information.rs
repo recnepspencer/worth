@@ -1,5 +1,6 @@
 //! Information gathering retains its native occurrence without requesting a signature.
 
+use super::document_retention_model::host::DocumentWorkflowApplication;
 use super::document_retention_model::{
     operator_identity::{authenticate_operator, request_scope},
     readback::read_retention,
@@ -22,7 +23,7 @@ use worth_query_host::facade::application_entry::{
 
 pub(super) fn run() {
     let directory = super::installation::location("information");
-    let (home, application) = super::installation::open(&directory);
+    let application = super::installation::open(&directory);
     let mut definition = ApplicationWorkflowDefinitionBuilder::<ReviewedDocumentWorkflow>::new(
         "record-information",
         definition_limits(),
@@ -100,14 +101,12 @@ pub(super) fn run() {
         WorkflowProgressOutcome::Completed(performed) => assert_eq!(performed.node_path(), "done"),
         other => panic!("information operation did not settle: {other:?}"),
     }
-    drop(application);
-    super::installation::close(home);
-    let (home, application) = super::installation::open(&directory);
+    super::installation::close(application);
+    let application = super::installation::open(&directory);
     assert_eq!(
         read_retention(application.runtime(), application.runtime().current_world()),
         8
     );
-    drop(application);
-    super::installation::close(home);
+    super::installation::close(application);
     println!("Information recorded without a signed approval; native operation settled.");
 }

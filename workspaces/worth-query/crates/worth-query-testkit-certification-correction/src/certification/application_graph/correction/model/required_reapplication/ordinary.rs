@@ -117,7 +117,6 @@ pub(super) fn run(worker: bool) {
         })
         .unwrap()
         .expect("disk bytes retain their actual captured Native and World origin");
-    drop(request);
     drop(principal);
     drop(scope);
     drop(original);

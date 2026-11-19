@@ -89,12 +89,13 @@ pub fn authenticate_operator<S: ApplicationSchema>(
         .expect("the operator must authenticate")
 }
 
-/// A bounded request scope. Every court step completes well inside it, so a
-/// hung step fails by deadline instead of waiting forever.
+/// A bounded request scope: a hung step fails by deadline instead of waiting
+/// forever. The bound is far beyond any court's runtime, so machine load
+/// cannot expire an ordinary request; expiry courts build their own scope.
 pub fn request_scope() -> WorthQueryRequestScope {
     let cancellation = WorthQueryCancellationSource::new();
     WorthQueryRequestScope::new(
-        Some(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(30)),
+        Some(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(600)),
         cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system())
 }
 

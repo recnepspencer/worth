@@ -1,3 +1,7 @@
+#![allow(
+    clippy::result_large_err,
+    reason = "A refused Home attachment hands back the original runtime and its owners without allocating on failure"
+)]
 //! Bank's command attachment borrows the full generic Home's real program owner.
 use super::*;
 use crate::BankApplication;

@@ -1,3 +1,7 @@
+#![allow(
+    clippy::result_large_err,
+    reason = "The court drives the real Home open, whose refusal hands back its original owner"
+)]
 //! Actual Directory Homes share only external rail custody and immutable fixture inputs.
 use worth_query_host::facade::application_entry::{WorthQueryApplicationMutationOutcome,WorthQueryApplicationRequestExt};
 use worth_query_host::facade::application_contribution::WorthQueryAdvancementPhase;

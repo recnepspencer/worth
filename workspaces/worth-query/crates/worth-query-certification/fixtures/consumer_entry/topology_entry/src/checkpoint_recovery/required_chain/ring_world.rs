@@ -8,7 +8,7 @@
 use super::*;
 
 mod seeded;
-pub(super) use seeded::{seed, vertices, RING_SPACING};
+pub(super) use seeded::{seed, RING_SPACING};
 
 /// The body key of `role` in `ring`.
 pub(super) fn key(ring: usize, role: &str) -> String {

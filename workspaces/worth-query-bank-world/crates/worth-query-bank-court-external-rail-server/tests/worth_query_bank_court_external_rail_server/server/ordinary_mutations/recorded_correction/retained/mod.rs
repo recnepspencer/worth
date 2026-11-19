@@ -1,3 +1,7 @@
+#![allow(
+    clippy::result_large_err,
+    reason = "The court drives the real Home open, whose refusal hands back its original owner"
+)]
 pub(crate) use worth_query_bank_testkit_server::facade::ordinary_mutations::recorded_correction::retained::*;
 
 mod producer_retirement;

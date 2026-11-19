@@ -42,7 +42,7 @@ where
             Ok(action) => action,
             Err(denial) => return Err((description, Denial::Action(denial))),
         };
-        if let Err(cause) = description.admit_original_action(&installed_action) {
+        if let Err(cause) = description.admit_original_action(installed_action) {
             return Err((description, cause));
         }
         if !installed_action.required_output_source()

@@ -1,12 +1,10 @@
-//! Named edit shapes and their literal call laws, derived before execution.
+//! Named edit shapes, derived before execution.
 use super::*;
 pub(in super::super::super) struct LawCase {
     pub name: &'static str,
     pub before: Model,
     pub after: Model,
     pub changes: Vec<Change>,
-    pub calls: [usize; 4],
-    pub own_write: Option<OwnWrite>,
 }
 impl Model {
     pub(in super::super::super) fn law_cases() -> Vec<LawCase> {
@@ -19,24 +17,22 @@ impl Model {
         base.weights = [0.0; 2];
         let mut cases = Vec::new();
         let own = {
-            let mut push = |name, after, changes, calls| {
+            let mut push = |name, after, changes| {
                 cases.push(LawCase {
                     name,
                     before: base.clone(),
                     after,
                     changes,
-                    calls,
-                    own_write: None,
                 })
             };
             let mut now = base.clone();
             assert!(now.regions().contains(&1) && now.entries[8].is_none());
             let change = now.created(8, 1, 3.0, 1);
-            push("Create into existing key", now, vec![change], [1, 1, 1, 1]);
+            push("Create into existing key", now, vec![change]);
             let mut now = base.clone();
             assert!(now.entries[1].unwrap().region == now.entries[3].unwrap().region);
             let change = now.deleted(1);
-            push("Delete, key survives", now, vec![change], [1, 0, 1, 1]);
+            push("Delete, key survives", now, vec![change]);
             let mut now = base.clone();
             now.entries[1].as_mut().unwrap().value = 3.0;
             let value = Change::Entry(EntryEdit::new(
@@ -45,35 +41,19 @@ impl Model {
                 EntryFact::Value,
                 3.0_f64.to_bits(),
             ));
-            push(
-                "Value change",
-                now.clone(),
-                vec![value.clone()],
-                [0, 0, 1, 1],
-            );
+            push("Value change", now.clone(), vec![value.clone()]);
             let own = LawCase {
                 name: "Own-write after value edit",
                 before: base.clone(),
                 after: now,
                 changes: vec![value],
-                calls: [0, 0, 1, 1],
-                own_write: Some(OwnWrite {
-                    number: 3,
-                    bits: 4.0_f64.to_bits(),
-                    read: OwnWriteRead::Observed,
-                }),
             };
             assert!(own.after.entries[1].unwrap().region == own.after.entries[3].unwrap().region);
             let mut now = base.clone();
             assert_ne!(now.entries[1].unwrap().region, 0);
             assert!(now.entries[3].unwrap().region == 1 && now.entries[2].unwrap().region == 0);
             let change = now.moved(1, 0);
-            push(
-                "Key move, both keys survive",
-                now,
-                vec![change],
-                [0, 1, 2, 2],
-            );
+            push("Key move, both keys survive", now, vec![change]);
             let mut now = base.clone();
             assert_ne!(
                 now.entries[1].unwrap().region,
@@ -84,7 +64,6 @@ impl Model {
                 "Swap across keys",
                 now,
                 vec![Change::Entry(EntryEdit::swap(1, 2))],
-                [1, 2, 2, 2],
             );
             let mut now = base.clone();
             let members = now
@@ -92,20 +71,14 @@ impl Model {
                 .into_iter()
                 .filter(|n| now.entries[*n].unwrap().region == 0)
                 .collect::<Vec<_>>();
-            let n = members.len();
             let changes = members.into_iter().map(|n| now.moved(n, 1)).collect();
             assert_eq!(now.regions(), BTreeSet::from([1]));
-            push(
-                "Empty key by moving its members",
-                now,
-                changes,
-                [0, n, 1, 1],
-            );
+            push("Empty key by moving its members", now, changes);
             let mut now = base.clone();
             assert!(!now.regions().contains(&2));
             let change = now.moved(1, 2);
             assert!(now.regions().contains(&1));
-            push("New key, source survives", now, vec![change], [0, 1, 2, 2]);
+            push("New key, source survives", now, vec![change]);
             let mut now = base.clone();
             now.entries[1].as_mut().unwrap().value = 3.0;
             now.entries[3].as_mut().unwrap().value = 1.0;
@@ -127,14 +100,8 @@ impl Model {
                         1.0_f64.to_bits(),
                     )),
                 ],
-                [0, 0, 1, 1],
             );
-            push(
-                "Unchanged fork or switch basis",
-                base.clone(),
-                vec![],
-                [0, 0, 0, 0],
-            );
+            push("Unchanged fork or switch basis", base.clone(), vec![]);
             own
         };
         cases.push(own);

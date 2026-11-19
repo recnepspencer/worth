@@ -12,7 +12,7 @@ use worth_query_host::facade::{
 };
 mod conditional_binding;
 mod program;
-use program::{DemandProgram, DemandRoot, RequiredProgram, UngovernedProgram};
+use program::{DemandProgram, DemandRoot, UngovernedProgram};
 
 #[cfg(test)]
 mod serial {

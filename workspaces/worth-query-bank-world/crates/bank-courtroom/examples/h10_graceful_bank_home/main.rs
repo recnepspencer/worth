@@ -205,9 +205,7 @@ fn reopen(args: &protocol::Arguments) {
             &required,
             &assessment,
         );
-        if args.step_completed(8, "reopen-assessment") {
-            return;
-        }
+        if args.step_completed(8, "reopen-assessment") {}
     })();
     installation::close(home);
 }

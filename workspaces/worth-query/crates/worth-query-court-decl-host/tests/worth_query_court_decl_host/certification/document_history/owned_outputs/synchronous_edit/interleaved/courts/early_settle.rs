@@ -32,12 +32,16 @@ fn observe(host: &Host, dependent: Vec<u64>) -> World {
             .unwrap()
             .rows()[0]
             .value,
-        first: (request.query(query::first_output::Read("first:a".into())).execute())
-            .ok()
-            .and_then(|r| r.rows().first().map(|row| row.value)),
-        second: (request.query(query::second_output::Read("second:a".into())).execute())
-            .ok()
-            .and_then(|r| r.rows().first().map(|row| row.value)),
+        first: (request
+            .query(query::first_output::Read("first:a".into()))
+            .execute())
+        .ok()
+        .and_then(|r| r.rows().first().map(|row| row.value)),
+        second: (request
+            .query(query::second_output::Read("second:a".into()))
+            .execute())
+        .ok()
+        .and_then(|r| r.rows().first().map(|row| row.value)),
         dependent,
     }
 }

@@ -35,5 +35,5 @@ fn component_graph_scope_round_trips_without_changing_old_contract_bytes() {
         decoder.decode_frame(&bytes).unwrap().record(),
         &fixture::wrapped(record)
     );
-    // The existing complete-contract court independently keeps its frozen v18 bytes.
+    // The existing complete-contract court independently keeps its frozen current bytes.
 }

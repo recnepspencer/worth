@@ -1,6 +1,7 @@
 //! Generic ordered exact samples exercise Native's actual frame and request owners.
 mod admission;
 mod backing_refusal;
+mod busy_cut;
 mod carried_export;
 mod checkpoint_capture_controls;
 mod checkpoint_controls;

@@ -38,6 +38,22 @@ pub struct WorthQueryRetainedOutputCandidate {
         Option<Arc<super::super::HistoricalSelectionCoordinate>>,
 }
 
+impl WorthQueryRetainedOutputCandidate {
+    /// The lifecycle this output was actually produced under. A standalone
+    /// publication states it in its ready key. A publication coupled to its
+    /// source commit has no key and states the lifecycle its writer was
+    /// qualified under.
+    pub(in crate::domain_computation::primary_graph) fn performed_lifecycle(
+        &self,
+    ) -> Option<crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerLifecyclePosture>
+{
+        if let Some(key) = &self.original_ready_key {
+            return Some(key.applicability().lifecycle());
+        }
+        Some(self.coupled_completion.as_ref()?.source().lifecycle())
+    }
+}
+
 impl WorthQueryApplicationOutputLineage {
     /// Each binding's latest retained output, with every lookup reserved on
     /// the request's meter before it reads. A lookup that runs out keeps its

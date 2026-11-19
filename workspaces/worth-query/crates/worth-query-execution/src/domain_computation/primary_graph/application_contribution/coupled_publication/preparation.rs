@@ -124,7 +124,12 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
                 return Err(CoupledSourceReadStop::capture(cause));
             }
             // Work this stage's effect owes settles after it, never before.
-            let owed = self.authored.borrow().last().expect("prepared stage").position;
+            let owed = self
+                .authored
+                .borrow()
+                .last()
+                .expect("prepared stage")
+                .position;
             self.owe_at(owed);
             if positioned && let Some(required) = &capture.required {
                 // Only this actual append makes its required root available.

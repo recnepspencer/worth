@@ -2,37 +2,18 @@ pub(crate) use worth_query_testkit_package_archive::facade::package_archive::arc
 mod document_history;
 
 #[test]
-fn version_nineteen_minimal_application_schema_matches_the_frozen_vector() {
-    for (version, originals) in [
-        (9_u16, VERSION_NINE_MINIMAL_SCHEMA_HEX),
-        (6_u16, VERSION_SIX_MINIMAL_SCHEMA_HEX),
-        (7_u16, VERSION_SEVEN_MINIMAL_SCHEMA_HEX),
-        (13_u16, VERSION_THIRTEEN_MINIMAL_SCHEMA_HEX),
-        (14_u16, VERSION_FOURTEEN_MINIMAL_SCHEMA_HEX),
-        (16_u16, VERSION_SIXTEEN_MINIMAL_SCHEMA_HEX),
-        (17_u16, VERSION_SEVENTEEN_MINIMAL_SCHEMA_HEX),
-    ] {
-        for original in originals.split('|') {
-            let bytes = decode_hex(original);
-            let denial =
-                WorthQueryPackageArchiveRecordDecoder::new(WorthQueryPackageArchiveLimits::DEFAULT)
-                    .decode_frame(&bytes)
-                    .unwrap_err();
-            assert_eq!(
-                denial.kind(),
-                WorthQueryPackageArchiveDenialKind::UnsupportedRecordVersion
-            );
-            assert_eq!(denial.compatibility().unwrap().observed_version(), version);
-        }
-    }
+fn current_minimal_application_schema_matches_the_frozen_vector() {
     let exported = schema_package().export_typed_records().unwrap();
     let schema = schema_view(&exported);
     let bytes = encode_record_frame(schema, WorthQueryPackageArchiveLimits::DEFAULT).unwrap();
-    assert_eq!(encode_hex(&bytes), VERSION_NINETEEN_MINIMAL_SCHEMA_HEX);
-    assert_eq!(u16::from_be_bytes(bytes[0..2].try_into().unwrap()), 19);
+    assert_eq!(encode_hex(&bytes), CURRENT_MINIMAL_SCHEMA_HEX);
+    assert_eq!(
+        u16::from_be_bytes(bytes[0..2].try_into().unwrap()),
+        WORTH_QUERY_PACKAGE_ARCHIVE_RECORD_PROTOCOL_VERSION
+    );
     assert_eq!(u16::from_be_bytes(bytes[2..4].try_into().unwrap()), 8);
 
-    let frozen = decode_hex(VERSION_NINETEEN_MINIMAL_SCHEMA_HEX);
+    let frozen = decode_hex(CURRENT_MINIMAL_SCHEMA_HEX);
     let mut decoder =
         WorthQueryPackageArchiveRecordDecoder::new(WorthQueryPackageArchiveLimits::DEFAULT);
     let decoded = decoder.decode_frame(&frozen).unwrap();

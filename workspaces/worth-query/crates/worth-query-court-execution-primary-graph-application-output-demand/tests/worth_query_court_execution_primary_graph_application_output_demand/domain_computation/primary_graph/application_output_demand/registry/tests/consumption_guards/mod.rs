@@ -86,7 +86,7 @@ pub fn repeat_source(initial: &SourceCustody) -> SourceCustody {
             completed,
         ) = (
             (*initial.occurrence_for_test()),
-            (*initial.root_kind_for_test()).clone(),
+            (*initial.root_kind_for_test()),
             (*initial.source_for_test()).clone(),
             None,
             (*initial.bound_sources_for_test()).clone(),

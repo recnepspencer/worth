@@ -120,7 +120,12 @@ fn exercise(worker: bool) {
     assert_eq!(failure.coupled_support_hold(), None, "{failure:?}");
     let model = |key: &str| {
         worth_relational::facade::transactions::RecordRef::Entity(
-            request.query(query::model::Read(key.into())).execute().unwrap().rows()[0].native_id,
+            request
+                .query(query::model::Read(key.into()))
+                .execute()
+                .unwrap()
+                .rows()[0]
+                .native_id,
         )
     };
     // The reader's source, then the exact writer: the child producer of `b`.
@@ -187,14 +192,21 @@ fn an_authored_stage_whose_discovered_child_changes_its_verified_parent_is_not_h
     assert_eq!(failure.coupled_support_hold(), None, "{failure:?}");
     assert!(
         failure.detail().contains("authored stage 0")
-            && failure.detail().contains("later writer producer owned-outputs.decision-write")
+            && failure
+                .detail()
+                .contains("later writer producer owned-outputs.decision-write")
             && failure.detail().contains("verified output support")
             && failure.detail().contains("MemberValue"),
         "{failure:?}"
     );
     let model = |key: &str| {
         worth_relational::facade::transactions::RecordRef::Entity(
-            request.query(query::model::Read(key.into())).execute().unwrap().rows()[0].native_id,
+            request
+                .query(query::model::Read(key.into()))
+                .execute()
+                .unwrap()
+                .rows()[0]
+                .native_id,
         )
     };
     assert_eq!(failure.affected_records(), [model("a"), model("b")]);

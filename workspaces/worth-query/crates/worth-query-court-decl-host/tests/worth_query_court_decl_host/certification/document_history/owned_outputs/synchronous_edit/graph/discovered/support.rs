@@ -123,7 +123,9 @@ fn an_ordered_prefix_producer_cannot_invalidate_its_own_root_selection() {
         WorthQueryInvariantExecutionDenialKind::CoupledReadSupportChanged
     );
     assert!(
-        refusal.detail().contains("owned-outputs.member-public-binding.v1")
+        refusal
+            .detail()
+            .contains("owned-outputs.member-public-binding.v1")
             && refusal.detail().contains("later writer producer"),
         "{refusal:?}"
     );

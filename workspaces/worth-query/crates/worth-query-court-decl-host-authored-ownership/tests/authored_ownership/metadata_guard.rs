@@ -41,8 +41,8 @@ fn ordinary_create_update_and_delete_of_each_current_metadata_kind_refuse_before
         .unwrap();
     assert_eq!(
         refusals.len(),
-        27,
-        "three ordinary verbs for all nine reserved kinds"
+        28,
+        "three ordinary verbs for the nine realized kinds, and creation of the input link this body never consumes"
     );
     for (kind, verb, result) in refusals {
         let error = result.expect_err("ordinary metadata writes never prepare");

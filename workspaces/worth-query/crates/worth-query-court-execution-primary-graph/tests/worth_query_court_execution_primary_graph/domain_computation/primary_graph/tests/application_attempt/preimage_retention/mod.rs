@@ -183,7 +183,7 @@ pub fn commit_same_record(
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
+            authenticated_principal(&(phase).test_host_request_for_test(), world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
@@ -191,7 +191,7 @@ pub fn commit_same_record(
         .with_host_advancement(|phase| {
             resolved_account(
                 &(phase).test_host_request_for_test(),
-                &world,
+                world,
                 "open",
                 &request,
             )
