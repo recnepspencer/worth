@@ -208,3 +208,4 @@ fn event_history_rewire_refreshes_watch_and_refuses_the_original_parent_expectat
 mod birth;
 mod controls;
 mod currentness;
+mod observed_rows;

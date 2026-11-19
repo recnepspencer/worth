@@ -15,6 +15,8 @@ pub enum Edit {
         introduced: Option<(String, String)>,
         rename: Option<(String, String)>,
         retired: Option<String>,
+        /// An Item born in the same candidate and never linked to any event.
+        stray: Option<(String, String)>,
     },
     Previous {
         event: String,

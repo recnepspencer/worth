@@ -43,9 +43,14 @@ pub(super) fn definition() -> ApplicationInvariantDefinition<Catalog, CompleteNe
 #[derive(Default)]
 pub(in super::super) struct Calls {
     pub(super) records: Mutex<Vec<SourceObservation<query::ItemRow>>>,
+    /// Each invocation's scope and the Item rows Native observed changing
+    /// it, as the committed and the proposed views admit them.
+    pub(super) observed: Mutex<Vec<(Coordinate, [Vec<Coordinate>; 2])>>,
 }
+pub(super) type Coordinate = (u32, u64, u32);
 pub(super) struct Rule {
     index: WorthQueryApplicationInvariantManagedIndexBinding<Catalog, prefix::PrefixIndex>,
+    items: WorthQueryApplicationInvariantEntityBinding<Catalog, Item>,
     calls: Arc<Calls>,
 }
 pub(super) fn resolve(
@@ -56,6 +61,7 @@ pub(super) fn resolve(
         index: resolver
             .typed_managed_index(prefix::PrefixIndex::reference())
             .ok_or("nested Source was not installed")?,
+        items: resolver.typed_entity(Item::reference()).ok_or("Item")?,
         calls,
     })
 }
@@ -80,7 +86,10 @@ impl WorthQueryApplicationInvariantRule<Catalog> for Rule {
         budget: &dyn CustomInvariantLeaseBudget,
     ) -> Option<Result<Self::Scope, WorthQueryApplicationInvariantError>> {
         Some(if budget.checkpoint(1) {
-            self.prepare_scope(planner)
+            self.prepare_scope(planner).and_then(|prepared| {
+                self.observe(planner, &prepared, budget)?;
+                Ok(prepared)
+            })
         } else {
             Err(WorthQueryApplicationInvariantError::Stopped)
         })
@@ -105,6 +114,28 @@ impl WorthQueryApplicationInvariantRule<Catalog> for Rule {
     }
 }
 impl Rule {
+    /// Record the rows Native lent this invocation, claiming their storage.
+    fn observe(
+        &self,
+        planner: &WorthQueryApplicationInvariantScopePlanner<'_, '_, Catalog>,
+        prepared: &WorthQueryPreparedInvariantManagedIndex<Catalog, prefix::PrefixIndex>,
+        budget: &dyn CustomInvariantLeaseBudget,
+    ) -> Result<(), WorthQueryApplicationInvariantError> {
+        let committed = planner.committed_observed_source_rows(prepared, &self.items)?;
+        let proposed = planner.proposed_observed_source_rows(prepared, &self.items)?;
+        let held = (committed.len() + proposed.len()) * size_of::<Coordinate>();
+        if !budget.claim_result(held as u64) {
+            return Err(WorthQueryApplicationInvariantError::Stopped);
+        }
+        let coordinates = |rows: &[WorthQueryApplicationInvariantEntity<Catalog, Item>]| {
+            rows.iter().map(|row| coordinate(row.entity_id())).collect()
+        };
+        self.calls.observed.lock().unwrap().push((
+            coordinate(prepared.scope_identity()),
+            [coordinates(&committed), coordinates(&proposed)],
+        ));
+        Ok(())
+    }
     fn judge(
         &self,
         context: &WorthQueryApplicationInvariantContext<'_, '_, Catalog>,
@@ -207,4 +238,12 @@ fn layout<T>(count: usize) -> Result<usize, WorthQueryApplicationInvariantError>
     count
         .checked_mul(size_of::<T>())
         .ok_or(WorthQueryApplicationInvariantError::Allocation)
+}
+
+fn coordinate(id: EntityId) -> Coordinate {
+    (
+        id.partition_value(),
+        id.local_slot_value(),
+        id.generation_value(),
+    )
 }

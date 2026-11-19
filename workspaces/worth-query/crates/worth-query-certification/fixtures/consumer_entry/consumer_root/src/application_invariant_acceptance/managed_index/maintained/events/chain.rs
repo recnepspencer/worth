@@ -27,6 +27,7 @@ fn append(
         previous: previous.into(),
         introduced,
         retired,
+        stray: None,
     }
 }
 fn principal(

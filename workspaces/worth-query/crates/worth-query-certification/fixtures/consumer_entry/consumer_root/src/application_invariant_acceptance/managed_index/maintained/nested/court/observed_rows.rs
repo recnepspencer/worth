@@ -124,3 +124,48 @@ fn a_retired_root_and_its_same_identity_replacement_are_distinct_entities() {
         [("D".to_owned(), [vec![], vec![new]])]
     );
 }
+
+/// A prepared handle kept from one invocation is refused in any other:
+/// another scope of the same proposal, or the same scope of a later one.
+/// Each invocation's own handle reads its rows.
+#[test]
+fn a_prepared_handle_from_another_scope_or_proposal_is_refused() {
+    let (world, _, records, mut model, mut key) = setup();
+    link(&world, &mut model, &mut key, "x", "a", 1);
+    let x = row(&source(&world, "A"), "x");
+    let w = row(&source(&world, "D"), "w");
+    records
+        .probe_stale
+        .store(true, std::sync::atomic::Ordering::SeqCst);
+    records.records.lock().unwrap().clear();
+    // Scopes A and B: B's invocation tries A's handle.
+    let rename = Edit::Name {
+        item: "a".into(),
+        value: "renamed-branch".into(),
+    };
+    publish(&world, &mut model, &mut key, rename);
+    // Scope D of the next proposal tries B's handle.
+    let rename = Edit::Name {
+        item: "w".into(),
+        value: "renamed-unrelated".into(),
+    };
+    publish(&world, &mut model, &mut key, rename);
+    let reads = records.stale_reads.lock().unwrap().clone();
+    assert_eq!(reads.len(), 2, "{reads:?}");
+    for read in &reads {
+        let cause = read.as_ref().expect_err("a kept handle is refused");
+        assert!(
+            cause.contains("ForeignSource") || cause.contains("ForeignObservation"),
+            "{cause}"
+        );
+    }
+    // The receiving invocations' own handles read their rows.
+    assert_eq!(
+        observed(&records, &model),
+        [
+            ("A".to_owned(), [vec![x], vec![x]]),
+            ("B".to_owned(), [vec![x], vec![x]]),
+            ("D".to_owned(), [vec![w], vec![w]]),
+        ]
+    );
+}

@@ -37,6 +37,33 @@ impl CustomInvariantScopePlanner<'_> {
     }
 }
 
+impl<'runtime> CustomInvariantScopePlanner<'runtime> {
+    /// Evaluation's admitted read, at preparation: the prepared object must
+    /// belong to this exact invocation, audience and observation.
+    pub fn read_managed_index_source<'a>(
+        &'a self,
+        prepared: &'a PreparedManagedIndexSourceRead,
+    ) -> Result<ManagedIndexSourceRead<'a>, ManagedIndexSourcePreparationDenial> {
+        let invocation = self
+            .managed_scope
+            .as_ref()
+            .ok_or(ManagedIndexSourcePreparationDenial::ForeignSource)?;
+        if !prepared.matches_invocation(invocation.scope, &invocation.sources, &invocation.audience)
+        {
+            return Err(ManagedIndexSourcePreparationDenial::ForeignSource);
+        }
+        crate::validation::candidate_source::read_observed_root(
+            prepared,
+            crate::validation::candidate_source::SourceViews {
+                before: self.committed_relations(),
+                after: self.relations(),
+                before_fields: self.committed_aspect_states(),
+                after_fields: self.aspect_states(),
+            },
+        )
+    }
+}
+
 impl<'runtime> CustomInvariantExecutionContext<'runtime> {
     /// The prepared object carries no read grant. Reborrow checks this actual
     /// observation, receiving audience and original request before returning data.

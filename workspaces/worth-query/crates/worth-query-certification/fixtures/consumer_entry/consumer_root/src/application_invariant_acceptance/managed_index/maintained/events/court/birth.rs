@@ -15,6 +15,7 @@ fn ordered_birth_cannot_use_a_predecessor_changed_in_the_same_candidate() {
             introduced: None,
             retired: None,
             rename: Some(("x".into(), "new-prefix".into())),
+            stray: None,
         },
     );
     assert_eq!(calls.builds.load(Ordering::SeqCst), builds + 1);
@@ -55,6 +56,7 @@ fn ordered_birth_applies_only_its_step_and_preserves_the_predecessor() {
             previous: "A".into(),
             introduced: Some(("e".into(), "match-e".into())),
             retired: Some("x".into()),
+            stray: None,
         },
     );
     assert_eq!(
@@ -119,6 +121,7 @@ fn refused_birth_releases_its_edit_and_preserves_the_retained_predecessor() {
             previous: "A".into(),
             introduced: Some(("e".into(), "forbidden".into())),
             retired: Some("x".into()),
+            stray: None,
         })
         .without_source()
         .idempotency(&key)
@@ -146,6 +149,7 @@ fn refused_birth_releases_its_edit_and_preserves_the_retained_predecessor() {
             previous: "A".into(),
             introduced: Some(("e".into(), "match-e".into())),
             retired: Some("x".into()),
+            stray: None,
         },
     );
     assert_eq!(
@@ -167,6 +171,7 @@ fn inherited_row_changes_update_both_scopes_without_rebuilding_after_birth() {
             introduced: None,
             retired: None,
             rename: None,
+            stray: None,
         },
     );
     assert_eq!(

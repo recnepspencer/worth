@@ -23,7 +23,6 @@ pub struct PreparedManagedIndexSourceRead {
     availability: ManagedIndexSourceAvailability,
     committed_available: bool,
     audience: crate::validation::data::CustomInvariantSemanticIdentity,
-    changed: Arc<[EntityId]>,
 }
 
 /// The payload and Source views are borrowed together under the current audience.
@@ -36,17 +35,6 @@ pub struct ManagedIndexSourceRead<'a> {
 impl PreparedManagedIndexSourceRead {
     pub const fn scope(&self) -> EntityId {
         self.scope
-    }
-    /// The entities Native's scope closure observed changing this invocation's
-    /// scope, in entity order: each Source root row entering, leaving or
-    /// changing it, including projected field changes routed to their root,
-    /// and, for a scope born in this proposal, every entity born with it.
-    /// Descriptive identity only: a caller admits each row through a view and
-    /// selects its kind there; a row the proposal retired is unavailable in
-    /// the proposed view. A scope joined only through a sibling requirement
-    /// observed no row of this Source.
-    pub fn changed_rows(&self) -> &[EntityId] {
-        &self.changed
     }
     pub(crate) fn matches_invocation(
         &self,
@@ -95,6 +83,58 @@ impl ManagedIndexSourceRead<'_> {
         self.rows(false)
     }
 
+    /// The Source rows Native's scope closure observed changing this scope
+    /// that are members of it in the requested view (committed when
+    /// `before`), each confirmed by an actual inverse membership read, in
+    /// entity order. A row the proposal retired is a committed member only;
+    /// an entity born beside the scope that is no row of it is neither.
+    /// Borrows the closure Native owns. Cost: one membership read per
+    /// observed row; result storage is claimed before it grows.
+    pub fn changed_occurrences_in(
+        &self,
+        before: bool,
+    ) -> Result<Vec<super::ManagedIndexSourceOccurrence>, Denial> {
+        let rows = if before {
+            self.committed()?
+        } else {
+            self.proposed()
+        };
+        let staged = self
+            .interpretation
+            .prepared
+            .get()
+            .ok_or(Denial::IncompletePreparation)?;
+        let Some(changed) = staged
+            .programs
+            .iter()
+            .find(|source| source.program == self.prepared.program)
+            .and_then(|source| source.closure.scopes.get(&self.prepared.scope))
+        else {
+            return Ok(Vec::new());
+        };
+        let bytes = changed
+            .len()
+            .checked_mul(size_of::<super::ManagedIndexSourceOccurrence>())
+            .ok_or(DerivedRelationReadDenial::from(
+                Definition::WorkBudgetExceeded,
+            ))?;
+        self.read_budget()
+            .claim_retained(bytes as u64)
+            .map_err(DerivedRelationReadDenial::Structural)?;
+        let mut members = Vec::new();
+        members.try_reserve_exact(changed.len()).map_err(|_| {
+            DerivedRelationReadDenial::Request(
+                crate::execution::RelationalExecutionDenialCause::AllocationFailed,
+            )
+        })?;
+        for row in changed {
+            if let Some(occurrence) = rows.occurrence(*row)? {
+                members.push(occurrence);
+            }
+        }
+        Ok(members)
+    }
+
     fn rows(&self, before: bool) -> ManagedIndexSourceRows<'_> {
         ManagedIndexSourceRows {
             scope: self.prepared.scope,
@@ -139,22 +179,9 @@ pub(crate) fn prepare(
         .iter()
         .find(|root| root.scope == scope)
         .ok_or(Denial::ForeignSource)?;
-    let changed: Arc<[EntityId]> = source
-        .closure
-        .scopes
-        .get(&scope)
-        .map(|rows| rows.iter().copied().collect())
-        .unwrap_or_default();
-    let retained = changed
-        .len()
-        .checked_mul(size_of::<EntityId>())
-        .and_then(|rows| rows.checked_add(size_of::<PreparedManagedIndexSourceRead>()))
-        .ok_or(DerivedRelationReadDenial::from(
-            Definition::WorkBudgetExceeded,
-        ))?;
     proposed
         .read_budget()
-        .claim_retained(retained as u64)
+        .claim_retained(size_of::<PreparedManagedIndexSourceRead>() as u64)
         .map_err(DerivedRelationReadDenial::Structural)?;
     Ok(PreparedManagedIndexSourceRead {
         program: program.clone(),
@@ -167,7 +194,6 @@ pub(crate) fn prepare(
         committed_available: owner.home_target.is_none()
             && owner.physical_basis().materialization_is_complete(),
         audience: audience.clone(),
-        changed,
     })
 }
 

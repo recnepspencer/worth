@@ -44,45 +44,19 @@ impl<S, I> WorthQueryPreparedInvariantManagedIndex<S, I> {
     pub const fn scope_identity(&self) -> worth_relational::facade::identity::EntityId {
         self.native.scope()
     }
-}
-
-impl<Schema> super::WorthQueryApplicationInvariantReadView<'_, Schema> {
-    /// The Source rows of `entity`'s kind that Native observed changing the
-    /// prepared index's scope, as this view admits them: Native's own scope
-    /// closure, by entity identity, never a rule's walk of touched rows. A
-    /// row retired by the proposal is absent from the proposed view and
-    /// present in the committed one; projected field changes reach their root.
-    /// Cost: O(observed rows) kind reads.
-    pub fn observed_source_rows_of<I, Entity>(
+    /// The erased parts observed-row reads admit through Native.
+    pub(super) fn source(
         &self,
-        prepared: &WorthQueryPreparedInvariantManagedIndex<Schema, I>,
-        entity: &super::super::WorthQueryApplicationInvariantEntityBinding<Schema, Entity>,
-    ) -> Result<
-        Vec<super::WorthQueryApplicationInvariantEntity<Schema, Entity>>,
-        super::super::WorthQueryInvariantAccessDenial,
-    > {
-        use worth_relational::facade::runtime::StructuralReadError;
-        self.check_binding(&prepared.binding.binding_identity)?;
-        self.check_binding(&entity.binding_identity)?;
-        self.relations
-            .require_entity_kind(entity.entity_kind)
-            .map_err(|error| super::map_structural_error(error, "observed Source row kind"))?;
-        let mut rows = Vec::new();
-        for row in prepared.native.changed_rows().iter().copied() {
-            let kind = match self.relations.readable_entity_kind(row) {
-                Ok(kind) => kind,
-                Err(StructuralReadError::RecordUnavailable) => continue,
-                Err(error) => {
-                    return Err(super::map_structural_error(error, "observed Source row"))
-                }
-            };
-            self.reads.endpoint();
-            if kind == Some(entity.entity_kind) {
-                self.admission.entity(row, self.relations.read_budget())?;
-                rows.push(self.entity(row, entity.entity_kind));
-            }
-        }
-        Ok(rows)
+    ) -> (
+        &ApplicationSchemaBindingIdentity,
+        &ManagedIndexSourceProgram,
+        &PreparedManagedIndexSourceRead,
+    ) {
+        (
+            &self.binding.binding_identity,
+            &self.binding.program,
+            &self.native,
+        )
     }
 }
 
