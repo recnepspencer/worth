@@ -293,9 +293,6 @@ pub fn outputs(host: &Host, branch: WorthQueryProductBranch) -> (query::Row, que
     (first, second)
 }
 
-pub fn restore_changed_build(checkpoint: WorthQueryApplicationCheckpoint, worker: bool) -> Host {
-    restore_program_checkpoint::<program::Program>(checkpoint, worker, true)
-}
 pub fn restore_same_build(checkpoint: WorthQueryApplicationCheckpoint, worker: bool) -> Host {
     restore_program_checkpoint::<program::Program>(checkpoint, worker, false)
 }

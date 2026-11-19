@@ -5,6 +5,7 @@ use worth_relational::facade::durability::{
 };
 
 pub(in crate::domain_computation::primary_graph::provider) fn native(cause: Native) -> Denial {
+    eprintln!("MGDEBUG source-denial native {cause:?}");
     match cause {
         Native::Recovery(RelationalRecoveryStop::Content(cause)) => content(cause),
         Native::Recovery(RelationalRecoveryStop::Request(cause)) => idempotency_read_stop(cause),
@@ -52,6 +53,7 @@ pub(in crate::domain_computation::primary_graph::provider) fn world(
         worth_runtime_world::facade::WorldReadmittedPublicationDenial,
     >,
 ) -> Denial {
+    eprintln!("MGDEBUG source-denial world {cause:?}");
     use worth_runtime_world::facade::{
         RuntimeWorldServiceDenial, WorldReadmittedPublicationDenial,
     };

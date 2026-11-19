@@ -41,22 +41,23 @@ pub(in crate::domain_computation::primary_graph) fn resolve_at_snapshot(
         layout,
     };
     let key = AspectValue::String(InternedString::from(binding.key_text()));
-    let Some(entity) = locate_idempotency_entity(execution, &context, &key)? else {
+    let Some(entity) = locate_idempotency_entity(execution, &context, &key).inspect_err(|e| eprintln!("MGDEBUG snap locate {e:?}"))? else {
         return Ok(WorthQueryProviderIdempotencyResolution::Absent);
     };
     // The current index and row locate the original artifact. They supply no
     // receipt fields; those are reread from the sealed creation patch.
-    let record = read_idempotency_record(execution, &context, entity, &key)?;
+    let record = read_idempotency_record(execution, &context, entity, &key).inspect_err(|e| eprintln!("MGDEBUG snap read-record {e:?}"))?;
     let commit = runtime
         .history()
         .immutable_commit_receipt_for_version(record.created_at_version)
-        .ok_or(WorthQueryProviderIdempotencyResolutionDenial::Unavailable)?;
-    let receipt = source_receipt::read_original(execution, &context, product, entity, &commit)?;
+        .ok_or_else(|| { eprintln!("MGDEBUG snap no-commit-receipt version={:?}", record.created_at_version); WorthQueryProviderIdempotencyResolutionDenial::Unavailable })?;
+    let receipt = source_receipt::read_original(execution, &context, product, entity, &commit).inspect_err(|e| eprintln!("MGDEBUG snap read-original {e:?}"))?;
     let expected = WorthQueryProductIdempotencyAffinity::from_observation(product.observation());
     if receipt.recorded_affinity() != super::recorded_origin::affinity_text(&expected) {
         return Err(WorthQueryProviderIdempotencyResolutionDenial::ForeignAffinity);
     }
     if receipt.idempotency_key_identity() != binding.key_identity() {
+        eprintln!("MGDEBUG snap key-identity-mismatch");
         return Err(WorthQueryProviderIdempotencyResolutionDenial::Unavailable);
     }
     Ok(if candidates.match_performed(&receipt)? {

@@ -22,9 +22,7 @@ fn settle(host: &Host, request: &family::Request<'_, '_, '_>) {
         };
     }
 }
-/// Records the restoration and returns how often the model source was read
-/// while it was recorded. The document reads its own model either way.
-fn restoration(worker: bool, forest: bool) -> u64 {
+fn exercise(worker: bool) {
     let _execution = WorthQueryExecutionObservation::install_on_this_thread();
     let limits = if worker {
         world::worker_limits()
@@ -64,8 +62,8 @@ fn restoration(worker: bool, forest: bool) -> u64 {
         .query(query::member_public::Read("m".into()))
         .execute()
         .is_err());
-    let document = if forest {
-        host.with_host_advancement(|phase| {
+    let document = host
+        .with_host_advancement(|phase| {
             document
                 .with_output_trees::<program::Program, program::Tree>(
                     &phase,
@@ -76,10 +74,7 @@ fn restoration(worker: bool, forest: bool) -> u64 {
                 )
                 .unwrap_or_else(|(_, cause)| panic!("{cause:?}"))
         })
-        .unwrap()
-    } else {
-        document
-    };
+        .unwrap();
     let contacts = host.producer_contacts_on_this_thread_for_test();
     let reads = source_projection::Observation::begin();
     let document = record!(
@@ -95,16 +90,18 @@ fn restoration(worker: bool, forest: bool) -> u64 {
     );
     assert_eq!(
         host.producer_contacts_on_this_thread_for_test(),
-        contacts + u64::from(forest),
+        contacts + 1,
         "only the new child's producer runs"
     );
-    let model_reads = reads.model_reads();
     assert_eq!(
+        reads.upstream_source_reads(),
+        0,
+        "healthy model root remains unopened"
+    );
+    assert!(
         reads.public_member_reads() > 0,
-        forest,
         "child's real source is read at D"
     );
-    drop(reads);
     let selected = document.selection(&request).unwrap();
     let at_d = host
         .request(&principal, &scope)
@@ -135,16 +132,14 @@ fn restoration(worker: bool, forest: bool) -> u64 {
             .rows(),
         &[original_parent]
     );
-    if forest {
-        assert_eq!(
-            at_d.query(query::child_output::Read("downstream:m".into()))
-                .execute()
-                .unwrap()
-                .rows()[0]
-                .value,
-            600
-        );
-    }
+    assert_eq!(
+        at_d.query(query::child_output::Read("downstream:m".into()))
+            .execute()
+            .unwrap()
+            .rows()[0]
+            .value,
+        600
+    );
     assert!(
         at_c.query(query::member_public::Read("m".into()))
             .execute()
@@ -153,16 +148,6 @@ fn restoration(worker: bool, forest: bool) -> u64 {
     );
     host.with_host_advancement(|phase| document.close(&phase).unwrap())
         .unwrap();
-    model_reads
-}
-/// The parent's source is the model the document itself reads, so a healthy
-/// parent is one whose forest adds no model read to the document's own.
-fn exercise(worker: bool) {
-    assert_eq!(
-        restoration(worker, true),
-        restoration(worker, false),
-        "healthy model root remains unopened"
-    );
 }
 #[test]
 fn recording_verifies_a_healthy_parent_and_produces_a_child_whose_source_exists_only_at_d() {

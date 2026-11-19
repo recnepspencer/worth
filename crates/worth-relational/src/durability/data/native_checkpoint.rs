@@ -186,7 +186,7 @@ impl RelationalNativeCheckpoint {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         context: &mut worth_execution::MapKernelContext<'_, '_>,
     ) -> Result<(), crate::durability::medium::RelationalCheckpointAcknowledgementDenial> {
-        self.publication.as_ref().ok_or(crate::durability::medium::RelationalCheckpointAcknowledgementDenial::CaptureNotBound)?
+        self.publication.as_ref().ok_or_else(|| { eprintln!("MGDEBUG CaptureNotBound native_checkpoint.rs#1"); crate::durability::medium::RelationalCheckpointAcknowledgementDenial::CaptureNotBound })?
             .advance(execution,context)
     }
 
@@ -220,7 +220,7 @@ impl RelationalNativeCheckpoint {
     ) -> Result<(), crate::durability::medium::RelationalCheckpointAcknowledgementDenial> {
         use crate::durability::medium::RelationalCheckpointAcknowledgementDenial as Denial;
         if self.publication.is_none() {
-            return Err(Denial::CaptureNotBound);
+            { eprintln!("MGDEBUG CaptureNotBound native_checkpoint.rs#2"); return Err(Denial::CaptureNotBound); }
         }
         if !self
             .manifest_publication

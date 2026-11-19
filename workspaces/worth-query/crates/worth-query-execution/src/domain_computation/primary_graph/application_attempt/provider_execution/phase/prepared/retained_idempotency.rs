@@ -136,6 +136,7 @@ where
             },
         ),
         Ok(Ok(WorthQueryProviderIdempotencyResolution::Unpublished)) => {
+            eprintln!("MGDEBUG retained consumer Unpublished");
             Some(denied(DenialStage::Idempotency))
         }
         Ok(Err(IdempotencyDenial::ActiveSnapshotCapacityExhausted {
@@ -153,7 +154,8 @@ where
                 "pending publication execution refused",
             )),
         ),
-        Ok(Err(IdempotencyDenial::Unavailable | IdempotencyDenial::NativeKeyLookup { .. })) => {
+        Ok(Err(cause @ (IdempotencyDenial::Unavailable | IdempotencyDenial::NativeKeyLookup { .. }))) => {
+            eprintln!("MGDEBUG retained consumer {cause:?}");
             Some(denied(DenialStage::Idempotency))
         }
         Ok(Err(IdempotencyDenial::ForeignAffinity)) => {

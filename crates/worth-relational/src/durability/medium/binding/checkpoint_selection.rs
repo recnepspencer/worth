@@ -129,7 +129,7 @@ impl CheckpointPublication {
         {
             // No Home driver lock is held here. The medium's weak lookup reads
             // the exact pending receipt, never this acknowledgement mutex.
-            let binding = self.binding.upgrade().ok_or(Denial::CaptureNotBound)?;
+            let binding = self.binding.upgrade().ok_or_else(|| { eprintln!("MGDEBUG CaptureNotBound checkpoint_selection.rs#1"); Denial::CaptureNotBound })?;
             let selection = binding.observe_checkpoint_selection(&self.subject)?;
             let proof = DurablyCommitted::from_owner(ActualCheckpointSelection {
                 capture: capture
@@ -184,7 +184,7 @@ impl RelationalDurableMediumBinding {
         subject: &OpaqueCapturedCheckpointSubject,
     ) -> Result<CheckpointSelectionIdentity, Denial> {
         let state = self.state();
-        let medium = state.medium.as_ref().ok_or(Denial::CaptureNotBound)?;
+        let medium = state.medium.as_ref().ok_or_else(|| { eprintln!("MGDEBUG CaptureNotBound checkpoint_selection.rs#2"); Denial::CaptureNotBound })?;
         match medium.checkpoint_selection(subject) {
             CheckpointSelectionObservation::Selected(selection) => Ok(selection),
             CheckpointSelectionObservation::NotSelected
@@ -207,7 +207,7 @@ impl AcknowledgingCheckpoint {
                     .get_or_insert_with(|| publication.begin_selected_directory_admission());
                 let base = publication
                     .capture_base()
-                    .map(|slot| slot.snapshot().ok_or(Denial::CaptureNotBound))
+                    .map(|slot| slot.snapshot().ok_or_else(|| { eprintln!("MGDEBUG CaptureNotBound checkpoint_selection.rs#3"); Denial::CaptureNotBound }))
                     .transpose()?;
                 let mut directory = admission.advance(execution)?;
                 if let Some(base) = base {
@@ -215,7 +215,7 @@ impl AcknowledgingCheckpoint {
                         || directory.manifest.coverage.up_to_branch_transition
                             != base.source().covered_transitions()
                     {
-                        return Err(Denial::CaptureNotBound);
+                        { eprintln!("MGDEBUG CaptureNotBound checkpoint_selection.rs#6"); return Err(Denial::CaptureNotBound); }
                     }
                     directory.admission_image = Some(base.image().clone());
                 }
@@ -225,7 +225,7 @@ impl AcknowledgingCheckpoint {
         if self.capture.manifest_publication().is_some()
             && let Some(publication) = self.capture.canonical_publication()
         {
-            let directory = self.directory.as_ref().ok_or(Denial::CaptureNotBound)?;
+            let directory = self.directory.as_ref().ok_or_else(|| { eprintln!("MGDEBUG CaptureNotBound checkpoint_selection.rs#4"); Denial::CaptureNotBound })?;
             publication.advance(
                 &mut self.next_canonical,
                 &mut self.retired,
@@ -261,7 +261,7 @@ impl AcknowledgingCheckpoint {
                 let prior = publication.acknowledge_directory(
                     self.directory
                         .as_ref()
-                        .ok_or(Denial::CaptureNotBound)?
+                        .ok_or_else(|| { eprintln!("MGDEBUG CaptureNotBound checkpoint_selection.rs#5"); Denial::CaptureNotBound })?
                         .clone(),
                 )?;
                 self.retired.displaced_selection(prior);

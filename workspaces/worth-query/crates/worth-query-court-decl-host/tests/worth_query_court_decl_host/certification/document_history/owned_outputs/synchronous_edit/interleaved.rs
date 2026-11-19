@@ -21,7 +21,7 @@ mod seed_children;
 pub(in super::super) use seed_children::frontier::Binding as SeedFrontierBinding;
 pub(in super::super) mod retirement_parent;
 pub(in super::super) mod seal;
-pub(in super::super) use program::{ModelTree, RetirementProgram};
+pub(in super::super) use program::ModelTree;
 use program::{ProducedTree, Program};
 pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,

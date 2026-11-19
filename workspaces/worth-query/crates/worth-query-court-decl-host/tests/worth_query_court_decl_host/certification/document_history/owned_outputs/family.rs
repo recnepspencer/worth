@@ -261,7 +261,7 @@ family!(
     Model,
     ModelKey,
     ModelValue,
-    model,
+    upstream_source,
     "upstream",
     "owned-outputs.upstream.initial",
     "owned-outputs.upstream.preserve",

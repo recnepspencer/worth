@@ -4,7 +4,6 @@ worth_query_application_query!(pub Query for Schema, identity "owned-outputs.occ
     parameters query::ParametersBinding, result TopologyBinding, scope Model => "Model", name "OccurrenceTopology");
 #[derive(Clone, Debug)]
 pub struct Topology {
-    pub parents: Vec<Parent>,
     pub children: Vec<String>,
 }
 worth_query_structured_value_binding!(pub TopologyBinding for Topology { identity:"owned-outputs.occurrence-topology-result.v1" });
@@ -100,12 +99,12 @@ impl WorthQueryApplicationProjection<Schema, Query> for Topology {
     fn project(
         row: &WorthQueryApplicationProjectionRow<'_, Schema, Query>,
     ) -> Result<Self, WorthQueryApplicationProjectionDenial> {
+        // Prerequisite rows are consumed through `parents()`. The discovery
+        // still walks them, so it reads its complete declared shape.
+        for parent in row.many(parents())?.iter() {
+            Parent::project(&parent)?;
+        }
         Ok(Self {
-            parents: row
-                .many(parents())?
-                .iter()
-                .map(|r| Parent::project(&r))
-                .collect::<Result<_, _>>()?,
             children: row
                 .many(children())?
                 .iter()

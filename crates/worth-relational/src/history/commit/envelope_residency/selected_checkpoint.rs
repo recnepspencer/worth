@@ -27,7 +27,7 @@ impl RetiredCanonicalPlacement {
             Some(EnvelopeBacking::Journal {
                 source: original, ..
             }) => original
-                .retire(source.ok_or(Ack::CaptureNotBound)?)
+                .retire(source.ok_or_else(|| { eprintln!("MGDEBUG CaptureNotBound selected_checkpoint.rs#1"); Ack::CaptureNotBound })?)
                 .map_err(Ack::Retirement),
             Some(EnvelopeBacking::Memory { .. } | EnvelopeBacking::SelectedCheckpoint { .. })
             | None => Ok(()),

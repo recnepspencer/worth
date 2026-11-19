@@ -69,14 +69,15 @@ impl RelationalCommitEnvelopeResidency {
                     original: Some(bytes),
                     ..
                 } => bytes.clone(),
-                EnvelopeBacking::Memory { .. } => return Err(failure(Cause::SourceUnavailable)),
+                EnvelopeBacking::Memory { .. } => { eprintln!("MGDEBUG envelope export memory-without-original {position:?}"); return Err(failure(Cause::SourceUnavailable)) }
                 EnvelopeBacking::SelectedCheckpoint { .. } => {
                     unreachable!("selected source handled before byte dispatch")
                 }
                 EnvelopeBacking::Journal { entry, source, .. } => {
                     let (actual, protection) =
-                        original.ok_or_else(|| failure(Cause::SourceUnavailable))?;
+                        original.ok_or_else(|| { eprintln!("MGDEBUG envelope export journal-no-caller-source {position:?}"); failure(Cause::SourceUnavailable) })?;
                     if !std::sync::Arc::ptr_eq(actual, source) {
+                        eprintln!("MGDEBUG envelope export journal-foreign-source {position:?}");
                         return Err(failure(Cause::SourceUnavailable));
                     }
                     protection
