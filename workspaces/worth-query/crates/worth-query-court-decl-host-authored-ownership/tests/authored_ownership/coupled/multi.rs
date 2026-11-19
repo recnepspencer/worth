@@ -282,19 +282,28 @@ fn two_bodies<const MODE: u8>() {
                 .unwrap()
                 .entity_id(),
         )];
-        if MODE == 7 {
-            // Writer11 changes writer10's peer111 observation; both sources are attributed.
-            expected_sources.push(worth_relational::facade::transactions::RecordRef::Entity(
-                other
-                    .as_ref()
-                    .expect("MODE7's actual later writer source")
-                    .outputs_of::<CreatedOutputs>()
-                    .unwrap()
-                    .entity::<Created<S<MODE>>>()
-                    .unwrap()
-                    .entity_id(),
-            ));
-        }
+        // Each refusal names the actual later writer beside the reader. MODE 7:
+        // writer11 changes writer10's peer111 observation. MODE 28: body 11's
+        // producer links a visibility edge into body 10's component. MODE 27:
+        // co-anchor 11's producer changes a field in body 10's component guard.
+        let writer = match MODE {
+            27 => first
+                .outputs_of::<CreatedOutputs>()
+                .unwrap()
+                .entity::<super::super::co_roles::CoCreated<S<MODE>, 0>>()
+                .unwrap()
+                .expect("co-created source")
+                .entity_id(),
+            _ => other
+                .as_ref()
+                .expect("the actual later writer source")
+                .outputs_of::<CreatedOutputs>()
+                .unwrap()
+                .entity::<Created<S<MODE>>>()
+                .unwrap()
+                .entity_id(),
+        };
+        expected_sources.push(worth_relational::facade::transactions::RecordRef::Entity(writer));
         assert_eq!(failure.affected_records(), expected_sources.as_slice());
         for id in [20, 101, 102, 111, 112] {
             assert!(
