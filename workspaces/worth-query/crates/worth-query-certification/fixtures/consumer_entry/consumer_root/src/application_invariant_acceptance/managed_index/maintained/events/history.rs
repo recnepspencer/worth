@@ -17,6 +17,8 @@ pub enum Edit {
         retired: Option<String>,
         /// An Item born in the same candidate and never linked to any event.
         stray: Option<(String, String)>,
+        /// An existing live Item the new event introduces by a new link.
+        adopt: Option<String>,
     },
     Previous {
         event: String,
@@ -53,6 +55,7 @@ pub struct Decision {
     old: Vec<Target<Directory>>,
     item: Option<Target<Item>>,
     rename: Option<Target<Item>>,
+    adopt: Option<Target<Item>>,
 }
 worth_query_structured_value_binding!(pub InputBinding for Edit { identity:"event-catalog.history.input.v1" });
 worth_query_structured_value_binding!(pub ResultBinding for Changed { identity:"event-catalog.history.result.v1" });

@@ -23,6 +23,10 @@ pub(super) use home_target::discover_home_target;
 /// on public sessions, retained provider roots, or positive query matches.
 pub(crate) struct PreparedManagedIndexScopeClosure {
     pub(crate) scopes: BTreeMap<EntityId, BTreeSet<EntityId>>,
+    /// Each scope's changed rows that discovery found to be members of it on
+    /// the committed (`[0]`) and proposed (`[1]`) side, recorded once by the
+    /// evaluation that routed them.
+    pub(crate) members: BTreeMap<EntityId, [BTreeSet<EntityId>; 2]>,
     pub(crate) support: Vec<DerivedRelationData>,
 }
 
@@ -57,6 +61,7 @@ pub(crate) fn discover(
     )?;
     let mut closure = PreparedManagedIndexScopeClosure {
         scopes: BTreeMap::new(),
+        members: BTreeMap::new(),
         support: affected.support,
     };
     for root in affected.roots {
@@ -109,7 +114,7 @@ pub(crate) fn discover(
         let NativeMemberKey::Entity(row) = row else {
             return Err(Definition::InvalidMemberDomain.into());
         };
-        for source in [&mut old, &mut new] {
+        for (side, source) in [&mut old, &mut new].into_iter().enumerate() {
             match source.entity_kind(row) {
                 Err(Denial::Definition(Definition::RecordUnavailable)) => continue,
                 Err(cause) => return Err(cause),
@@ -127,8 +132,9 @@ pub(crate) fn discover(
                 let NativeMemberKey::Entity(scope) = root else {
                     return Err(Definition::InvalidMemberDomain.into());
                 };
-                source.retain(size_of::<(EntityId, EntityId)>())?;
+                source.retain(size_of::<(EntityId, EntityId)>() * 2)?;
                 closure.scopes.entry(*scope).or_default().insert(row);
+                closure.members.entry(*scope).or_default()[side].insert(row);
             }
             crate::derived_relation::support::push(source, &mut closure.support, data)?;
         }

@@ -4,9 +4,18 @@ use super::*;
 pub(super) fn decide(
     reader: &mut DecisionReader<'_, '_, '_, Catalog, Binding>,
     previous: &str,
-    retired: Option<&str>,
+    [retired, adopt]: [Option<&str>; 2],
     rename: Option<&str>,
 ) -> Result<Decision, HandlerExecutionDenial> {
+    let mut live = |key: &str| {
+        let entity = reader.resolve_entity(ItemIdentity::at("ItemIdentity"), key.to_owned())?;
+        reader
+            .reader()
+            .require_decision_entity(&entity, Item::reference())
+            .map_err(HandlerExecutionDenial::new)?;
+        reader.mutation_target(&entity)
+    };
+    let adopt = adopt.map(&mut live).transpose()?;
     let item = retired
         .map(|key| {
             let entity = reader.resolve_entity(ItemIdentity::at("ItemIdentity"), key.to_owned())?;
@@ -34,6 +43,7 @@ pub(super) fn decide(
         old: Vec::new(),
         item,
         rename,
+        adopt,
     })
 }
 
@@ -111,6 +121,19 @@ pub(super) fn apply(
             .map_err(HandlerExecutionDenial::new)?;
         writer
             .write_field(&target, ItemName::at("ItemName"), value.clone().into())
+            .map_err(HandlerExecutionDenial::new)?;
+    }
+    if let Some(adopted) = &decision.adopt {
+        let item = writer
+            .projected_entity(adopted)
+            .map_err(HandlerExecutionDenial::new)?;
+        writer
+            .link(
+                Contains::reference(),
+                format!("{event}-adopted"),
+                &created,
+                &item,
+            )
             .map_err(HandlerExecutionDenial::new)?;
     }
     if let Some(key) = retired {

@@ -48,6 +48,7 @@ pub(super) fn discover(
         .physical_sources()
         .map(|&(kind, _, _)| kind)
         .collect();
+    let (mut introduced, mut retired) = (BTreeSet::new(), BTreeSet::new());
     for delta in adjacency
         .iter()
         .filter(|delta| kinds.contains(&delta.kind_id))
@@ -56,6 +57,14 @@ pub(super) fn discover(
         let AdjacencyDeltaKind::Created { source, target } = delta.kind else {
             return Ok(None);
         };
+        // The step's own links: an introduced row may be new or already live.
+        if source == scope && delta.kind_id == recipe.introduced {
+            new.retain(size_of::<EntityId>())?;
+            introduced.insert(target);
+        } else if source == scope && delta.kind_id == recipe.retired {
+            new.retain(size_of::<EntityId>())?;
+            retired.insert(target);
+        }
         if delta.kind_id == recipe.predecessor
             && (!created.contains(&source) || created.contains(&target))
         {
@@ -101,9 +110,13 @@ pub(super) fn discover(
         .into_iter()
         .filter(|entity| *entity != scope)
         .collect();
-    new.retain(size_of::<(EntityId, BTreeSet<EntityId>)>())?;
+    new.retain(size_of::<(EntityId, BTreeSet<EntityId>)>() * 2)?;
+    // A born scope has no committed member; its changed proposed members are
+    // the rows its own step introduces and does not retire.
+    let members = introduced.difference(&retired).copied().collect();
     Ok(Some(PreparedManagedIndexScopeClosure {
         scopes: BTreeMap::from([(scope, changed)]),
+        members: BTreeMap::from([(scope, [BTreeSet::new(), members])]),
         support: Vec::new(),
     }))
 }

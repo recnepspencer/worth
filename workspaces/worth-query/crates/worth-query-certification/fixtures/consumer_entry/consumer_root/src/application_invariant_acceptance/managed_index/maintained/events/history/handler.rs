@@ -45,13 +45,14 @@ fn decide(
         previous,
         retired,
         rename,
+        adopt,
         ..
     } = input
     {
         return super::append::decide(
             reader,
             previous,
-            retired.as_deref(),
+            [retired.as_deref(), adopt.as_deref()],
             rename.as_ref().map(|(item, _)| item.as_str()),
         );
     }
@@ -68,6 +69,7 @@ fn decide(
         old: Vec::new(),
         item: None,
         rename: None,
+        adopt: None,
     };
     match input {
         Edit::Append { .. } => unreachable!(),

@@ -4,6 +4,23 @@ use super::super::super::{events::chain, ordered_refusing};
 mod cost {
     use super::*;
     #[test]
+    fn an_inherited_row_change_lends_every_scope_with_work_linear_in_the_chain() {
+        let work = |count| {
+            let with = chain::fan_out::rename_inherited(count, true);
+            let without = chain::fan_out::rename_inherited(count, false);
+            eprintln!("inherited rename at {count}: {without} without the loan, {with} with it");
+            with.saturating_sub(without)
+        };
+        let (small, large) = (work(16), work(64));
+        // The loan's own share: four times the chain is near four times the
+        // invocations; a per-scope rediscovery of the shared row would be
+        // near sixteen.
+        assert!(
+            large <= small.max(1) * 8,
+            "the loan's SDK work: {small} -> {large}"
+        );
+    }
+    #[test]
     fn ordered_chain_birth_work_follows_delta_and_height_instead_of_history() {
         let small = chain::growth(16);
         let large = chain::growth(256);

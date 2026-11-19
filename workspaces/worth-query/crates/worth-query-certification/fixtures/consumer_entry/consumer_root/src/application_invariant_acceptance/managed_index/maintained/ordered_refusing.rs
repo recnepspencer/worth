@@ -96,6 +96,7 @@ pub(super) fn missing_parent() {
             introduced: None,
             retired: None,
             stray: None,
+            adopt: None,
         })
         .without_source()
         .idempotency(&3000u64)
@@ -169,6 +170,7 @@ pub(super) fn stronger_law() {
                 introduced: Some((event.to_lowercase(), format!("match-{event}"))),
                 retired: None,
                 stray: None,
+                adopt: None,
             })
             .without_source()
             .idempotency(&key)

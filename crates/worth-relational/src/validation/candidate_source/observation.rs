@@ -1,4 +1,5 @@
 //! Reborrow staged roots through the actual rule observation, never proposal numbers.
+use std::collections::BTreeSet;
 use std::sync::Arc;
 
 use crate::derived_relation::{DerivedRelationDenial as Definition, DerivedRelationReadDenial};
@@ -83,56 +84,28 @@ impl ManagedIndexSourceRead<'_> {
         self.rows(false)
     }
 
-    /// The Source rows Native's scope closure observed changing this scope
-    /// that are members of it in the requested view (committed when
-    /// `before`), each confirmed by an actual inverse membership read, in
-    /// entity order. A row the proposal retired is a committed member only;
-    /// an entity born beside the scope that is no row of it is neither.
-    /// Borrows the closure Native owns. Cost: one membership read per
-    /// observed row; result storage is claimed before it grows.
-    pub fn changed_occurrences_in(
-        &self,
-        before: bool,
-    ) -> Result<Vec<super::ManagedIndexSourceOccurrence>, Denial> {
-        let rows = if before {
-            self.committed()?
-        } else {
-            self.proposed()
-        };
+    /// The rows Native's scope discovery found changing this scope that are
+    /// members of it on the requested side (committed when `before`), in
+    /// entity order: recorded once by the evaluation that routed them,
+    /// including rows an ordered step introduces, and lent from that record.
+    /// A row the proposal retired is a committed member only; an entity born
+    /// beside the scope that is no row of it is neither. Cost: O(1) to borrow.
+    pub fn changed_members(&self, before: bool) -> Result<&BTreeSet<EntityId>, Denial> {
+        static NONE: BTreeSet<EntityId> = BTreeSet::new();
+        if before && !self.prepared.committed_available {
+            return Err(Denial::RootUnavailable);
+        }
         let staged = self
             .interpretation
             .prepared
             .get()
             .ok_or(Denial::IncompletePreparation)?;
-        let Some(changed) = staged
+        Ok(staged
             .programs
             .iter()
             .find(|source| source.program == self.prepared.program)
-            .and_then(|source| source.closure.scopes.get(&self.prepared.scope))
-        else {
-            return Ok(Vec::new());
-        };
-        let bytes = changed
-            .len()
-            .checked_mul(size_of::<super::ManagedIndexSourceOccurrence>())
-            .ok_or(DerivedRelationReadDenial::from(
-                Definition::WorkBudgetExceeded,
-            ))?;
-        self.read_budget()
-            .claim_retained(bytes as u64)
-            .map_err(DerivedRelationReadDenial::Structural)?;
-        let mut members = Vec::new();
-        members.try_reserve_exact(changed.len()).map_err(|_| {
-            DerivedRelationReadDenial::Request(
-                crate::execution::RelationalExecutionDenialCause::AllocationFailed,
-            )
-        })?;
-        for row in changed {
-            if let Some(occurrence) = rows.occurrence(*row)? {
-                members.push(occurrence);
-            }
-        }
-        Ok(members)
+            .and_then(|source| source.closure.members.get(&self.prepared.scope))
+            .map_or(&NONE, |sides| &sides[usize::from(!before)]))
     }
 
     fn rows(&self, before: bool) -> ManagedIndexSourceRows<'_> {

@@ -46,6 +46,8 @@ pub(in super::super) struct Calls {
     /// Each invocation's scope and the Item rows Native observed changing
     /// it, as the committed and the proposed views admit them.
     pub(super) observed: Mutex<Vec<(Coordinate, [Vec<Coordinate>; 2])>>,
+    /// Set by a cost court to measure the same commit without the loan.
+    pub(super) skip_loan: std::sync::atomic::AtomicBool,
 }
 pub(super) type Coordinate = (u32, u64, u32);
 pub(super) struct Rule {
@@ -87,7 +89,13 @@ impl WorthQueryApplicationInvariantRule<Catalog> for Rule {
     ) -> Option<Result<Self::Scope, WorthQueryApplicationInvariantError>> {
         Some(if budget.checkpoint(1) {
             self.prepare_scope(planner).and_then(|prepared| {
-                self.observe(planner, &prepared, budget)?;
+                if !self
+                    .calls
+                    .skip_loan
+                    .load(std::sync::atomic::Ordering::SeqCst)
+                {
+                    self.observe(planner, &prepared, budget)?;
+                }
                 Ok(prepared)
             })
         } else {

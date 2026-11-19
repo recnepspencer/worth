@@ -126,8 +126,9 @@ fn a_retired_root_and_its_same_identity_replacement_are_distinct_entities() {
 }
 
 /// A prepared handle kept from one invocation is refused in any other:
-/// another scope of the same proposal, or the same scope of a later one.
-/// Each invocation's own handle reads its rows.
+/// another scope of the same proposal and another scope of a later one fail
+/// the invocation check; the same scope in a later proposal fails the
+/// observation check. Each invocation's own handle reads its rows.
 #[test]
 fn a_prepared_handle_from_another_scope_or_proposal_is_refused() {
     let (world, _, records, mut model, mut key) = setup();
@@ -138,33 +139,43 @@ fn a_prepared_handle_from_another_scope_or_proposal_is_refused() {
         .probe_stale
         .store(true, std::sync::atomic::Ordering::SeqCst);
     records.records.lock().unwrap().clear();
+    let rename = |item: &str, value: &str| Edit::Name {
+        item: item.into(),
+        value: value.into(),
+    };
     // Scopes A and B: B's invocation tries A's handle.
-    let rename = Edit::Name {
-        item: "a".into(),
-        value: "renamed-branch".into(),
-    };
-    publish(&world, &mut model, &mut key, rename);
+    publish(&world, &mut model, &mut key, rename("a", "renamed-branch"));
     // Scope D of the next proposal tries B's handle.
-    let rename = Edit::Name {
-        item: "w".into(),
-        value: "renamed-unrelated".into(),
-    };
-    publish(&world, &mut model, &mut key, rename);
+    publish(
+        &world,
+        &mut model,
+        &mut key,
+        rename("w", "renamed-unrelated"),
+    );
+    // Scope D again, one proposal later, tries its own earlier handle.
+    publish(&world, &mut model, &mut key, rename("w", "renamed-again"));
     let reads = records.stale_reads.lock().unwrap().clone();
-    assert_eq!(reads.len(), 2, "{reads:?}");
-    for read in &reads {
+    let refusal = |read: &Result<usize, String>| {
         let cause = read.as_ref().expect_err("a kept handle is refused");
-        assert!(
-            cause.contains("ForeignSource") || cause.contains("ForeignObservation"),
-            "{cause}"
-        );
-    }
+        if cause.contains("ForeignObservation") {
+            "observation"
+        } else if cause.contains("ForeignSource") {
+            "invocation"
+        } else {
+            panic!("an unexpected refusal: {cause}")
+        }
+    };
+    assert_eq!(
+        reads.iter().map(refusal).collect::<Vec<_>>(),
+        ["invocation", "invocation", "observation"]
+    );
     // The receiving invocations' own handles read their rows.
     assert_eq!(
         observed(&records, &model),
         [
             ("A".to_owned(), [vec![x], vec![x]]),
             ("B".to_owned(), [vec![x], vec![x]]),
+            ("D".to_owned(), [vec![w], vec![w]]),
             ("D".to_owned(), [vec![w], vec![w]]),
         ]
     );
