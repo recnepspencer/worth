@@ -27,10 +27,8 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
             if let Some(parent) = &mut task.parent {
                 parent.pin = pin.clone();
                 context.owner.owe(&task.owed);
-                let first = next.tasks.len();
                 task.tree
                     .discover_occurrences(context, candidate, parent, &mut next)?;
-                next.discovered_from(first, parent);
             }
         }
         for task in next.tasks {

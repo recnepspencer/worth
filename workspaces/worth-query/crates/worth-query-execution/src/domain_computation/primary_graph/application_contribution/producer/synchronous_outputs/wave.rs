@@ -23,9 +23,6 @@ struct Scheduled<S: ApplicationSchema> {
     rank: usize,
     /// The demand that owes this task, carried to everything it enqueues.
     owed: super::super::super::coupled_publication::OwedDemand,
-    /// The verified parent this route was discovered from, and those of the
-    /// later demands coalesced into it.
-    consumes: Vec<crate::domain_computation::primary_graph::provider::ParentRead>,
     tree: Box<dyn capture::RequiredTree<S>>,
     parent: Option<AppliedOutputParent>,
     _memory: Option<worth_execution::ExecutionMemoryReservation>,
@@ -110,15 +107,15 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
             subject,
             rank,
             owed: context.owner.owing(),
-            consumes: Vec::new(),
             tree,
             parent: None,
             _memory: memory,
         });
         Ok(())
     }
-    /// The verified parents this task's derivation consumes: the ones it was
-    /// discovered from and its prerequisite suppliers' outputs.
+    /// The parent outputs this task's derivation consumes: its admitted strict
+    /// prerequisite suppliers' actual outputs. Discovery that selected the
+    /// task is not consumption evidence; it is retained as discovery support.
     fn consumed_reads(
         &self,
         i: usize,
@@ -130,13 +127,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
                 .as_ref()
                 .and_then(|parent| parent.read)
         });
-        task.consumes.iter().copied().chain(suppliers).collect()
-    }
-    /// The children discovered into this wave from `first` on consume `parent`.
-    fn discovered_from(&mut self, first: usize, parent: &AppliedOutputParent) {
-        for child in &mut self.tasks[first..] {
-            child.consumes.extend(parent.read);
-        }
+        suppliers.collect()
     }
     fn reserve_slot(
         &mut self,
@@ -274,9 +265,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
                     parent.pin = pin.clone();
                     // A discovered child is owed by the stage that owed its parent.
                     context.owner.owe(&task.owed);
-                    let first = next.tasks.len();
                     task.tree.discover(context, candidate, parent, &mut next)?;
-                    next.discovered_from(first, parent);
                 }
                 task.continuation_done = true;
             }

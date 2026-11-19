@@ -11,6 +11,7 @@ mod disposal;
 mod input_preparation;
 mod preparation;
 mod source_selection;
+mod verified_parents;
 pub(in crate::domain_computation::primary_graph::application_contribution) use input_preparation::{PreparedCoupledInputs, PlannedOutput};
 pub(in crate::domain_computation::primary_graph::application_contribution) use source_selection::SelectedCoupledSource;
 mod validation;
@@ -51,9 +52,9 @@ pub(in crate::domain_computation::primary_graph) struct CoupledApplicationAssemb
     broke: std::cell::Cell<bool>,
     /// The demand that owes the work now being prepared.
     owing: RefCell<OwedDemand>,
-    /// Verified parents retained so far; the next one's read identity.
+    /// Parent outputs identified so far; the next one's read identity.
     parent_reads: std::cell::Cell<usize>,
-    /// The verified parents the route now being prepared consumes.
+    /// The parent outputs the route now being prepared consumes.
     consuming: RefCell<Vec<crate::domain_computation::primary_graph::provider::ParentRead>>,
 }
 /// The applied position of the earliest stage whose effect demands some work.
@@ -93,8 +94,10 @@ struct AuthoredWriter<'run, S> {
 struct CoupledWriter<'run, S> {
     position: usize,
     owed: OwedDemand,
-    /// The verified parents whose outputs this route's derivation consumes.
+    /// The parent outputs this route's derivation consumes.
     consumes: Vec<crate::domain_computation::primary_graph::provider::ParentRead>,
+    /// This route's own derived output, as its consumers carry it.
+    produces: crate::domain_computation::primary_graph::provider::ParentRead,
     producer: std::sync::Arc<registry::InstalledProducerProvider<S>>,
     stage: Option<CoupledWriterStage<'run>>,
     meaning: worth_relational::facade::mvcc::RequiredOutputPublicationMeaning,
@@ -157,18 +160,6 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
     ) {
         *self.owing.borrow_mut() = demand.clone();
     }
-    /// The route prepared next consumes these verified parents.
-    pub(in crate::domain_computation::primary_graph::application_contribution) fn consume(
-        &self,
-        reads: Vec<crate::domain_computation::primary_graph::provider::ParentRead>,
-    ) {
-        *self.consuming.borrow_mut() = reads;
-    }
-    pub(in crate::domain_computation::primary_graph::application_contribution) fn consuming(
-        &self,
-    ) -> Vec<crate::domain_computation::primary_graph::provider::ParentRead> {
-        self.consuming.borrow().clone()
-    }
     /// The work prepared next is owed by a new demand at this position.
     pub(in crate::domain_computation::primary_graph::application_contribution) fn owe_at(
         &self,
@@ -203,42 +194,6 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             .primary_provider
             .refresh_outgoing_read_support(execution, &self.root_session)
             .map_err(execution::denial::candidate_support_denied)
-    }
-    pub(in crate::domain_computation::primary_graph::application_contribution) fn retain_verified_parent(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        mut parent: super::producer::VerifiedAppliedParent,
-        candidate: &RelationalAuthoredCoupledCandidate<'_>,
-    ) -> Result<synchronous_outputs::AppliedOutputParent, CoupledSourceReadStop> {
-        let read = crate::domain_computation::primary_graph::provider::ParentRead(
-            self.parent_reads.get(),
-        );
-        self.parent_reads.set(read.0 + 1);
-        parent.retained_as(read);
-        let input = parent
-            .publication()
-            .map(|publication| candidate.current_output_input(execution, publication))
-            .transpose()?;
-        let applied = synchronous_outputs::AppliedOutputParent::new(
-            parent.pin().clone(),
-            parent.source(),
-            input,
-        )
-        .verified(read);
-        self.application
-            .runtime
-            .primary_provider
-            .retain_candidate_read_support(
-                execution,
-                &self.root_session,
-                parent.source(),
-                self.applied_position(),
-                crate::domain_computation::primary_graph::provider::CandidateReadSupport::Parent(
-                    parent,
-                ),
-            )
-            .map_err(execution::denial::candidate_support_denied)?;
-        Ok(applied)
     }
     pub(in crate::domain_computation::primary_graph) fn take_denial(
         &self,

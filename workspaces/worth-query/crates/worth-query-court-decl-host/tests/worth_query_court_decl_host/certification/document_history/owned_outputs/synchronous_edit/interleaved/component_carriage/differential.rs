@@ -147,7 +147,12 @@ fn refusal<E: std::fmt::Debug>(outcome: &Result<Outcome, E>) -> Refusal {
             Refusal::Supersession(writer)
         }
         // Holds for other open issues (#238, #239) are not this property's.
-        Some(Hold::DiscoverySupportChanged | Hold::ReaderProducerSupersession) | None => {
+        Some(
+            Hold::DiscoverySupportChanged
+            | Hold::ReaderProducerSupersession
+            | Hold::ConsumerSupersession,
+        )
+        | None => {
             Refusal::Other(format!("{cause:?}"))
         }
     }

@@ -22,6 +22,10 @@ pub enum WorthQueryCoupledSupportHold {
     /// an authored stage read, changed that parent's support. Settling or
     /// superseding the parent inside the envelope waits on public #239.
     ReaderProducerSupersession,
+    /// A producer whose derivation consumed another producer's output in the
+    /// same envelope changed a decision fact that producer read. Settling it
+    /// waits on public #246.
+    ConsumerSupersession,
 }
 
 impl WorthQueryInvariantExecutionFailure {

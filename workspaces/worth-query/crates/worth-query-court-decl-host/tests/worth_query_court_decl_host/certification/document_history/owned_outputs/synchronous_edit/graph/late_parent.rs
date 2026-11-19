@@ -1,7 +1,10 @@
 //! A later contribution cannot invalidate a verified parent and still publish the edit.
 use super::*;
+mod derived;
 mod program;
+#[macro_use]
 mod staged;
+mod prerequisite;
 /// Commits `b = 4` and settles its outputs: `first:a` is then a verified
 /// parent derived from model `a` and member `m`, and `second:b` its child.
 fn settle_initial(
@@ -139,12 +142,14 @@ fn worker_only_a_later_child_cannot_invalidate_the_verified_parent_before_public
     exercise(true)
 }
 /// The same change as one authored stage of an ordered edit (#244): the
-/// stage's own child producer, which consumed the verified parent `first:a`,
-/// changes `m`, which `first:a` read. The edit refuses whole with
-/// CoupledReadSupportChanged held for own-producer settlement (#239),
-/// attributed to the child, and nothing commits.
+/// stage's child `decision-write(b)` changes `m`, which the verified parent
+/// `first:a` read. That child is selected by a discovery that reads `first:a`,
+/// but it has no prerequisite supplier and derives from model `b` alone.
+/// Selection is not consumption, so the edit refuses whole with a plain
+/// CoupledReadSupportChanged, attributed to the child, and nothing commits.
+/// The consuming variant is `prerequisite`.
 #[test]
-fn an_authored_stage_whose_own_producer_changes_its_verified_parent_is_held() {
+fn an_authored_stage_whose_discovered_child_changes_its_verified_parent_is_not_held() {
     use worth_query_host::facade::application_entry::WorthQueryEditEnvelopeOutcome as Outcome;
     let _execution = WorthQueryExecutionObservation::install_on_this_thread();
     let host = world::install_program_with_other_model::<program::Program>(
@@ -179,11 +184,7 @@ fn an_authored_stage_whose_own_producer_changes_its_verified_parent_is_held() {
         .invariant_execution_failure()
         .expect("the final support owner refuses");
     assert_eq!(failure.kind(), worth_query_host::facade::primary_graph::WorthQueryInvariantExecutionDenialKind::CoupledReadSupportChanged);
-    assert_eq!(
-        failure.coupled_support_hold(),
-        Some(worth_query_host::facade::primary_graph::WorthQueryCoupledSupportHold::ReaderProducerSupersession),
-        "{failure:?}"
-    );
+    assert_eq!(failure.coupled_support_hold(), None, "{failure:?}");
     assert!(
         failure.detail().contains("authored stage 0")
             && failure.detail().contains("later writer producer owned-outputs.decision-write")

@@ -54,7 +54,8 @@ pub struct AppliedOutputParent {
     input: Option<worth_relational::facade::mvcc::RelationalRequiredOutputInput>,
     source: worth_relational::facade::identity::EntityId,
     pin: RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
-    /// The verified parent read this output is, when it was not derived here.
+    /// The assembly's identity for this output: a retained verified parent or
+    /// a route's derived output.
     read: Option<crate::domain_computation::primary_graph::provider::ParentRead>,
 }
 impl AppliedOutputParent {
@@ -73,7 +74,7 @@ impl AppliedOutputParent {
             read: None,
         }
     }
-    pub(in crate::domain_computation::primary_graph::application_contribution) fn verified(
+    pub(in crate::domain_computation::primary_graph::application_contribution) fn identified(
         mut self,
         read: crate::domain_computation::primary_graph::provider::ParentRead,
     ) -> Self {

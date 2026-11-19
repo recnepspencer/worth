@@ -118,6 +118,8 @@ pub(in crate::domain_computation::primary_graph) struct CoupledApplicationMember
     pub(in crate::domain_computation::primary_graph) owed: Option<usize>,
     /// For a producer: the verified parents its derivation consumed.
     pub(in crate::domain_computation::primary_graph) consumes: Vec<super::ParentRead>,
+    /// For a producer: its own derived output, as its consumers carry it.
+    pub(in crate::domain_computation::primary_graph) produces: Option<super::ParentRead>,
     pub(in crate::domain_computation::primary_graph::provider) terminal:
         crate::domain_computation::provider_session::WorthQueryProviderSessionTerminalBinding,
     pub(in crate::domain_computation::primary_graph::provider) pending: Option<
@@ -196,6 +198,7 @@ impl CoupledApplicationMember {
             position: 0,
             owed: None,
             consumes: Vec::new(),
+            produces: None,
             terminal,
             owned: None,
             pending: None,
@@ -216,6 +219,7 @@ impl CoupledApplicationMember {
             position: 0,
             owed: None,
             consumes: Vec::new(),
+            produces: None,
             terminal,
             owned: None,
             pending: None,

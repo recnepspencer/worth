@@ -47,16 +47,17 @@ impl WorthQueryApplicationRequiredOutputSource<Schema, Independent> for edit::Bi
     }
 }
 pub type IndependentTree = ApplicationOutputGraph<IndependentConnection, ApplicationOutputLeaf>;
-/// The late-parent tree beside the independent root, both entered at rank 1.
+/// The prerequisite late-parent tree beside the independent root, both
+/// entered at rank 1.
 pub struct InterveningProgram;
 impl ApplicationProgramDefinition<Schema> for InterveningProgram {
     type Contributions = (Contribution,);
-    type Outputs = ApplicationProgramOutputs<(program::Tree, IndependentTree)>;
+    type Outputs = ApplicationProgramOutputs<(super::prerequisite::Tree, IndependentTree)>;
     type Rules = ApplicationRuleLeaf;
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("owned-outputs.late-parent.intervening");
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
-        program::Program::feature_specs()
+        super::prerequisite::Program::feature_specs()
     }
 }
 
@@ -160,6 +161,40 @@ macro_rules! settle {
     }};
 }
 
+/// Commits `b = 4` through `$tree` as one ordered authored stage, whose
+/// commit settles the tree's outputs: `first:a = 7` is then a verified parent
+/// derived from model `a` and member `m`. An occurrence tree has no
+/// mutation-path output continuation, so it settles through the envelope.
+macro_rules! settle_staged {
+    ($host:expr, $request:expr, $tree:ty) => {{
+        use worth_query_host::facade::application_entry::WorthQueryEditEnvelopeOutcome as Outcome;
+        let mut edit = $request
+            .edit_envelope()
+            .idempotency("late-parent-staged-settle".to_owned())
+            .runtime_stages($host)
+            .ordered_authored()
+            .unwrap();
+        edit.push_stage::<$tree, _>(edit::Intent {
+            key: "b".into(),
+            value: 4,
+        })
+        .unwrap();
+        let outcome = edit
+            .execute_performed(ExecutionAllocationPolicy::SystemAllocation)
+            .unwrap();
+        assert!(matches!(outcome, Outcome::Committed(_)), "{outcome:?}");
+        assert_eq!(
+            $request
+                .query(query::first_output::Read("first:a".into()))
+                .execute()
+                .unwrap()
+                .rows()[0]
+                .value,
+            7
+        );
+    }};
+}
+
 fn stage(key: &str, value: u64) -> edit::Intent {
     edit::Intent {
         key: key.into(),
@@ -203,11 +238,11 @@ fn require_refusal(
 /// Stage 0 (edit `a = 2`, root `second(a)`) appends at 1 and stage 1 (edit
 /// `b = 8`, root `decision-input(a)`) at 2. In the final drive `second(a)` runs first
 /// and appends at 3, so `first:a` is adopted verified and observed at 3. Its
-/// own child `decision-write(b)`, discovered from `first:a` and owed by
-/// stage 1 at 2, appends at 4 and changes `m`, which `first:a` read. The
-/// child's owed position (2) is not the parent's observed position (3), so a
-/// predicate keyed on owed positions would give no hold. The child consumed
-/// `first:a`, so the edit refuses whole with CoupledReadSupportChanged held
+/// own child `decision-write(b)`, whose strict prerequisite supplier is
+/// `first:a` and which is owed by stage 1 at 2, appends at 4 and changes `m`,
+/// which `first:a` read. The child's owed position (2) is not the parent's
+/// observed position (3), so a predicate keyed on owed positions would give no
+/// hold. The child consumed `first:a`, so the edit refuses whole with CoupledReadSupportChanged held
 /// for own-producer settlement (#239), attributed to the child, and nothing
 /// commits.
 #[test]
@@ -221,7 +256,7 @@ fn a_consuming_child_after_an_intervening_append_is_still_held() {
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.request(&principal, &scope);
-    settle!(&host, &request, InterveningProgram, program::Tree);
+    settle_staged!(&host, &request, super::prerequisite::Tree);
     let before = super::super::super::failure::checkpoint(&host);
     let head = courts::native_head(&host);
     let contacts = host.producer_contacts_on_this_thread_for_test();
@@ -232,7 +267,8 @@ fn a_consuming_child_after_an_intervening_append_is_still_held() {
         .ordered_authored()
         .unwrap();
     edit.push_stage::<IndependentTree, _>(stage("a", 2)).unwrap();
-    edit.push_stage::<program::Tree, _>(stage("b", 8)).unwrap();
+    edit.push_stage::<super::prerequisite::Tree, _>(stage("b", 8))
+        .unwrap();
     require_refusal(
         edit.execute_performed(ExecutionAllocationPolicy::SystemAllocation)
             .unwrap(),

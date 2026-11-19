@@ -44,6 +44,7 @@ pub(super) fn require(
     position: usize,
     members: &[crate::domain_computation::primary_graph::provider::CoupledApplicationMember],
     producer_reader: bool,
+    produces: Option<crate::domain_computation::primary_graph::provider::ParentRead>,
     hold: &mut Option<Failure>,
 ) -> Result<(), CoupledSupportPreparationDenial> {
     for consumed in attempt.consumed_outputs() {
@@ -95,7 +96,16 @@ pub(super) fn require(
                 |writer| {
                     attempt.coupled_authored_subject().is_some() && writer.settles_after(position)
                 },
-                |writer| (producer_reader && is_stage(writer)).then_some(Hold::ProducerSupersession),
+                |writer| {
+                    if producer_reader && is_stage(writer) {
+                        Some(Hold::ProducerSupersession)
+                    } else if produces.is_some_and(|output| writer.consumes.contains(&output)) {
+                        // The reader's own consumer changed its decision read (#246).
+                        Some(Hold::ConsumerSupersession)
+                    } else {
+                        None
+                    }
+                },
                 |earlier, image| {
                     compare(earlier, image).map(|same| (!same).then(|| fact.locator_identity()))
                 },

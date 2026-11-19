@@ -165,9 +165,8 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
                 ));
             }
             // The shared route is owed by its earliest actual demand.
-            let (earlier, later) = self.tasks.split_at_mut(i);
+            let (earlier, later) = self.tasks.split_at(i);
             earlier[prior].owed.coalesce(&later[0].owed);
-            earlier[prior].consumes.extend_from_slice(&later[0].consumes);
             self.tasks[i].alias = Some(prior);
             self.tasks[i].done = true;
         }
