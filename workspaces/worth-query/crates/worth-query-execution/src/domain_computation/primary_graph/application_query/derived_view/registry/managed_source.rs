@@ -103,6 +103,25 @@ impl ManagedDerivedViewRegistry {
             .map(|session| session.applies_to(source))
             .transpose()?
             .unwrap_or(false);
+        // Each staged root, its exact-delta descriptors included, is claimed
+        // on the Source's payer before the array is reserved.
+        let staging = source
+            .scopes()
+            .len()
+            .checked_mul(size_of::<PreparedManagedIndexSourceRoot>())
+            .ok_or(Denial::Source(
+                worth_relational::facade::runtime::DerivedRelationReadDenial::Request(
+                    worth_relational::facade::transactions::RelationalExecutionDenialCause::AllocationFailed,
+                ),
+            ))?;
+        source
+            .read_budget()
+            .claim_retained(staging as u64)
+            .map_err(|cause| {
+                Denial::Source(
+                    worth_relational::facade::runtime::DerivedRelationReadDenial::Structural(cause),
+                )
+            })?;
         let mut roots = Vec::new();
         roots.try_reserve_exact(source.scopes().len()).map_err(|_| {
             Denial::Source(worth_relational::facade::runtime::DerivedRelationReadDenial::Request(

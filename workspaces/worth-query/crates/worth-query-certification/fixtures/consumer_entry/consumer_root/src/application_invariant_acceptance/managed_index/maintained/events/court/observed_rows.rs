@@ -198,8 +198,9 @@ fn evict(world: &host::EventHost, event: &str) {
 }
 
 /// Residency is never observable: with E's index evicted, a rename of the row
-/// E inherits lends exactly that row on both sides at E, and so does a rename
-/// of E's own row; E is not rebuilt as if it were born.
+/// E inherits lends exactly that row on both sides at E, beside the other
+/// inheriting scopes' own loans, and a rename of E's own row lends exactly
+/// that row at E alone; E is not rebuilt as if it were born.
 #[test]
 fn an_evicted_existing_scope_lends_its_exact_delta() {
     let (world, _, records, mut key) = setup();
@@ -207,6 +208,7 @@ fn an_evicted_existing_scope_lends_its_exact_delta() {
     if let history::Edit::Append { introduced, .. } = &mut born {
         *introduced = Some(("e".into(), "match-e".into()));
     }
+    records.observed.lock().unwrap().clear();
     edit_history(&world, &mut key, born);
     let rows = source(&world, "E");
     let at = |identity: &str| {
@@ -216,15 +218,17 @@ fn an_evicted_existing_scope_lends_its_exact_delta() {
             .coordinate
     };
     let (x, e) = (at("x"), at("e"));
-    let e_scope = |records: &rule::Calls, row| {
-        records
-            .observed
-            .lock()
-            .unwrap()
+    // E's scope identity, fixed before either rename: the one scope whose
+    // birth introduced e.
+    let e_scope = {
+        let observed = records.observed.lock().unwrap();
+        let born: Vec<_> = observed
             .iter()
-            .filter(|(index, _, [_, proposed])| *index == "ordered" && proposed.contains(&row))
-            .map(|(_, scope, sides)| (*scope, sides.clone()))
-            .collect::<Vec<_>>()
+            .filter(|(index, _, [_, proposed])| *index == "ordered" && proposed.contains(&e))
+            .map(|(_, scope, _)| *scope)
+            .collect();
+        assert_eq!(born.len(), 1, "one scope is born holding e: {observed:?}");
+        born[0]
     };
     let rename = |item: &str, value: &str| {
         crate::application_invariant_acceptance::managed_index::maintained::nested::edit::Edit::Name {
@@ -232,16 +236,39 @@ fn an_evicted_existing_scope_lends_its_exact_delta() {
             value: value.into(),
         }
     };
-    for (row, item, value) in [(x, "x", "match-renamed-x"), (e, "e", "match-renamed-e")] {
+    for (row, item, value, inherited) in [
+        (x, "x", "match-renamed-x", true),
+        (e, "e", "match-renamed-e", false),
+    ] {
         evict(&world, "E");
         records.observed.lock().unwrap().clear();
         publish(&world, &mut key, rename(item, value));
-        // E is the one scope holding e; for x, A and E both lend it.
-        let lent = e_scope(&records, row);
-        assert!(!lent.is_empty(), "{item} is lent");
-        for (_, [committed, proposed]) in &lent {
-            assert_eq!(committed, &vec![row], "{item}: exactly the row, committed");
-            assert_eq!(proposed, &vec![row], "{item}: exactly the row, proposed");
-        }
+        let observed = records.observed.lock().unwrap();
+        let ordered = || observed.iter().filter(|(index, ..)| *index == "ordered");
+        // E's own invocation, by itself: present, and exactly the row.
+        let at_e: Vec<_> = ordered()
+            .filter(|(_, scope, _)| *scope == e_scope)
+            .map(|(_, _, sides)| sides.clone())
+            .collect();
+        assert_eq!(at_e, [[vec![row], vec![row]]], "{item} at E: {observed:?}");
+        // Elsewhere only the scopes inheriting x lend anything, each exactly
+        // x; e belongs to E alone.
+        let elsewhere: Vec<_> = ordered()
+            .filter(|(_, scope, [committed, proposed])| {
+                *scope != e_scope && !(committed.is_empty() && proposed.is_empty())
+            })
+            .map(|(_, _, sides)| sides.clone())
+            .collect();
+        assert_eq!(
+            elsewhere.is_empty(),
+            !inherited,
+            "{item} elsewhere: {observed:?}"
+        );
+        assert!(
+            elsewhere
+                .iter()
+                .all(|sides| *sides == [vec![row], vec![row]]),
+            "{item} elsewhere: {observed:?}"
+        );
     }
 }

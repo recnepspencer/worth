@@ -15,30 +15,21 @@ use worth_relational::facade::{
 };
 
 /// Committed-side rows left or changed; proposed-side rows entered or changed.
-#[derive(Default)]
+/// Storage grows only as rows are classified, each growth claimed on the
+/// Source's budget first, so an empty delta keeps no capacity. A scope born
+/// from its ordered predecessor has no committed side and never stores one.
 pub(super) struct SourceDelta {
+    born: bool,
     committed: Vec<EntityId>,
     proposed: Vec<EntityId>,
 }
 impl SourceDelta {
-    /// Room for every scheduled pair, reserved before any row is classified.
-    pub(super) fn with_capacity(
-        scope: &ManagedIndexSourceScope<'_>,
-        pairs: usize,
-    ) -> Result<Self, MaterialDenial> {
-        let bytes = pairs
-            .checked_mul(2 * size_of::<EntityId>())
-            .ok_or(RelationalExecutionDenialCause::AllocationFailed)?;
-        scope
-            .read_budget()
-            .claim_retained(bytes as u64)
-            .map_err(DerivedRelationReadDenial::Structural)?;
-        let mut delta = Self::default();
-        for side in [&mut delta.committed, &mut delta.proposed] {
-            side.try_reserve_exact(pairs)
-                .map_err(|_| RelationalExecutionDenialCause::AllocationFailed)?;
+    pub(super) fn new(born: bool) -> Self {
+        Self {
+            born,
+            committed: Vec::new(),
+            proposed: Vec::new(),
         }
-        Ok(delta)
     }
     /// Classify one scheduled pair by the owner's own content equality.
     pub(super) fn observe(
@@ -51,27 +42,57 @@ impl SourceDelta {
         match (old, new) {
             (Some(old), Some(new)) => {
                 if !same(execution, scope, old, new)? {
-                    self.committed.push(old.occurrence.entity());
-                    self.proposed.push(new.occurrence.entity());
+                    self.left(scope, old)?;
+                    push(scope, &mut self.proposed, new.occurrence.entity())?;
                 }
             }
-            (Some(old), None) => self.committed.push(old.occurrence.entity()),
-            (None, Some(new)) => self.proposed.push(new.occurrence.entity()),
+            (Some(old), None) => self.left(scope, old)?,
+            (None, Some(new)) => push(scope, &mut self.proposed, new.occurrence.entity())?,
             (None, None) => {}
         }
         Ok(())
     }
-    /// The delta in entity order. A scope born from its predecessor has no
-    /// committed side: its delta is relative to the inherited step.
-    pub(super) fn finish(mut self, born: bool) -> ManagedIndexSourceChanges {
-        if born {
-            self.committed.clear();
+    fn left(
+        &mut self,
+        scope: &ManagedIndexSourceScope<'_>,
+        old: &Entry,
+    ) -> Result<(), MaterialDenial> {
+        if self.born {
+            return Ok(());
         }
+        push(scope, &mut self.committed, old.occurrence.entity())
+    }
+    /// The delta in entity order; a born scope's is relative to the inherited
+    /// step.
+    pub(super) fn finish(mut self) -> ManagedIndexSourceChanges {
         self.committed.sort_unstable();
         self.proposed.sort_unstable();
         // The admitted vectors move into shared ownership; nothing is copied.
         ManagedIndexSourceChanges::new(self.committed, self.proposed)
     }
+}
+
+/// One classified row, its growth claimed before the vector grows: capacity
+/// doubles, so the claims stay within twice the retained rows.
+fn push(
+    scope: &ManagedIndexSourceScope<'_>,
+    side: &mut Vec<EntityId>,
+    row: EntityId,
+) -> Result<(), MaterialDenial> {
+    if side.len() == side.capacity() {
+        let more = side.capacity().max(4);
+        let bytes = more
+            .checked_mul(size_of::<EntityId>())
+            .ok_or(RelationalExecutionDenialCause::AllocationFailed)?;
+        scope
+            .read_budget()
+            .claim_retained(bytes as u64)
+            .map_err(DerivedRelationReadDenial::Structural)?;
+        side.try_reserve_exact(more)
+            .map_err(|_| RelationalExecutionDenialCause::AllocationFailed)?;
+    }
+    side.push(row);
+    Ok(())
 }
 
 fn same(

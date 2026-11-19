@@ -260,7 +260,7 @@ impl PersistentSourceRows {
                 }
             }
         }
-        let mut delta = delta::SourceDelta::with_capacity(scope, changed.len())?;
+        let mut delta = delta::SourceDelta::new(inherited);
         for (before, proposed) in changed {
             execution.consult().map_err(|cause| {
                 MaterialDenial::Storage(RelationalExecutionDenialCause::from(cause))
@@ -316,7 +316,7 @@ impl PersistentSourceRows {
             entries,
             dependencies,
         };
-        Ok((rows, delta.finish(inherited)))
+        Ok((rows, delta.finish()))
     }
 
     pub(in crate::domain_computation::primary_graph::application_query::managed_index) fn len(

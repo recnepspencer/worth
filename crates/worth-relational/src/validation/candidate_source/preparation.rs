@@ -265,6 +265,11 @@ impl ManagedIndexSourcePreparation<'_> {
     pub fn selected_basis(&self) -> &crate::branch::AdmittedRelationalBranchBasis {
         self.basis
     }
+    /// The Source's own payer, shared by every scope it prepares: staging
+    /// storage for the prepared roots is claimed here before it is reserved.
+    pub fn read_budget(&self) -> crate::validation::custom_rule::CustomInvariantReadBudget<'_> {
+        self.views.after.read_budget()
+    }
     pub fn scopes(&self) -> impl ExactSizeIterator<Item = ManagedIndexSourceScope<'_>> {
         self.closure
             .scopes
