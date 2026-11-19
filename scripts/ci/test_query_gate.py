@@ -12,7 +12,7 @@ from unittest.mock import patch
 import query_gate
 import query_gate_courts
 import root_gate
-from query_gate_cost import SuiteQueries
+from query_gate_cost import SuiteQueries, native_expression
 
 
 class FailureReporting(unittest.TestCase):
@@ -282,6 +282,13 @@ class CourtSelection(unittest.TestCase):
                          ["query-rest"])
         self.assertEqual(selected({"package": "worth-query-court-installation", "lib": False},
                                   "cost::existing"), ["query-cost", "query-scale", "bank-cost", "root-cost"])
+
+    def test_record_access_owner_cost_expression_runs_only_its_partition(self):
+        owner = {"package": "worth-query-declaration", "lib": True, "binary": "worth-query-declaration"}
+        cost = f"test(/^{query_gate_courts.RECORD_ACCESS_COST}/)"
+        for suite in ("query-cost", "query-scale"):
+            self.assertIn(f"& {cost})", native_expression(suite, owner))
+        self.assertIn(f"& not {cost})", native_expression("query-rest", owner))
 
     def test_full_workspace_landing_sets_include_cost_and_exclude_scheduled_scale(self):
         for workspace in ('root', 'query', 'bank'):

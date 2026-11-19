@@ -10,7 +10,8 @@ from doc_lane import execute as execute_documentation_lane
 from logs import read_lane
 from run_lane import LaneExecutionFailure, execute as execute_workspace
 
-from query_gate_courts import CATEGORIES, CATEGORY_SUITES, TEST_SUITES, landing_suites, selected
+from query_gate_courts import (CATEGORIES, CATEGORY_SUITES, RECORD_ACCESS_COST, TEST_SUITES, landing_suites,
+                               lib_of, selected)
 
 
 DOC_SUITES = {workspace + '-doc': workspace for workspace in ('root', 'query', 'bank')}
@@ -82,6 +83,10 @@ def exact_binary(binary):
 
 def native_expression(suite, binary):
     result = exact_binary(binary['binary'])
+    if lib_of("worth-query-declaration")(binary):
+        # Mirror `selected`: record-access cost cases belong only to the cost suites.
+        cost = f'test(/^{RECORD_ACCESS_COST}/)'
+        return f'({result} & {cost})' if suite in ("query-cost", "query-scale") else f'({result} & not {cost})'
     if '-court-' not in binary['package']:
         return result
     if suite in CATEGORY_SUITES:

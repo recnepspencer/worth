@@ -62,14 +62,20 @@ impl RelationalDurableReadProtection {
     /// A provider captures its cut without waiting for its own locks, so a
     /// concurrent reader or publication reports `Busy`. A read that needs the
     /// original bytes retries the capture while its request stays live; the
-    /// request's own cancellation or deadline ends the wait as that stop.
+    /// request's own cancellation or deadline ends the wait as that stop. The
+    /// wait sleeps with a short backoff: spinning would take the CPU from the
+    /// very holder it is waiting on.
     pub fn capture_when_available(
         source: &Arc<dyn RelationalDurableColdSource>,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<Self, Refusal> {
+        let mut pause = std::time::Duration::from_micros(50);
         loop {
             match Self::capture(source, request) {
-                Err(Refusal::Busy) => std::thread::yield_now(),
+                Err(Refusal::Busy) => {
+                    std::thread::sleep(pause);
+                    pause = (pause * 2).min(std::time::Duration::from_millis(5));
+                }
                 settled => return settled,
             }
         }
