@@ -2,17 +2,6 @@
 use super::*;
 use crate::application_entry::mutation::program_output_continuation::ProgramOutputUnavailableCompletion;
 
-pub(super) enum TerminalOutputCompletion<Schema, Program, Root>
-where
-    Schema: ApplicationSchema,
-    Program: ApplicationProgramDefinition<Schema>,
-    Root: ApplicationOutputGraphShape<Schema> + ApplicationRequiredOutputRoot,
-    Connection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
-{
-    Pending(ProgramOutputUnavailableCompletion<Schema, Program, Root>),
-    Unavailable(WorthQueryApplicationProgramOutputUnavailable),
-}
-
 impl<Schema, Intent, Program, Root, Action>
     WorthQueryTerminalFixedOperation<Schema, Intent, Program, Root, Action>
 where
@@ -31,7 +20,7 @@ where
         mut self,
         completion: Option<ProgramOutputUnavailableCompletion<Schema, Program, Root>>,
     ) -> Self {
-        self.output_completion = completion.map(TerminalOutputCompletion::Pending);
+        self.output_completion = completion;
         self
     }
 
@@ -43,10 +32,7 @@ where
         Option<&WorthQueryApplicationProgramOutputUnavailable>,
         WorthQueryOperationCloseDenial,
     > {
-        match &self.output_completion {
-            Some(TerminalOutputCompletion::Unavailable(evidence)) => Ok(Some(evidence)),
-            _ => Err(deferred_ingress_unsupported()),
-        }
+        Err(deferred_ingress_unsupported())
     }
 
     pub(super) fn complete_unavailable_in_phase(
@@ -54,25 +40,12 @@ where
         _phase: &WorthQueryAdvancementPhase<'_>,
         _request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
     ) -> Result<bool, WorthQueryOperationCloseDenial> {
-        if matches!(
-            self.output_completion,
-            Some(TerminalOutputCompletion::Pending(_))
-        ) {
+        // A reserved completion stays pending until its ingress exists. No
+        // native unavailable completion is produced here.
+        if self.output_completion.is_some() {
             return Err(deferred_ingress_unsupported());
         }
-        Ok(matches!(
-            self.output_completion,
-            Some(TerminalOutputCompletion::Unavailable(_))
-        ))
-    }
-
-    pub(super) fn take_output_unavailable(
-        &mut self,
-    ) -> Option<WorthQueryApplicationProgramOutputUnavailable> {
-        match self.output_completion.take() {
-            Some(TerminalOutputCompletion::Unavailable(evidence)) => Some(evidence),
-            _ => None,
-        }
+        Ok(false)
     }
 }
 

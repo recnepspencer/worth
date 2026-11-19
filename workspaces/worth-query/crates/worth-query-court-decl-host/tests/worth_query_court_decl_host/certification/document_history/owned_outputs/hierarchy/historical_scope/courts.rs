@@ -45,7 +45,7 @@ fn exercise(worker: bool) {
         .rows()[0]
         .clone();
     let child = request
-        .query(query::second_output::Read("second:a".into()))
+        .query(query::member_public::Read("upstream:a".into()))
         .execute()
         .unwrap()
         .rows()[0]
@@ -142,7 +142,7 @@ fn exercise(worker: bool) {
         &[original]
     );
     assert_eq!(
-        at_d.query(query::second_output::Read("second:a".into()))
+        at_d.query(query::member_public::Read("upstream:a".into()))
             .execute()
             .unwrap()
             .rows(),

@@ -37,6 +37,14 @@ pub(crate) fn validate_codec_output_correspondence(
                 if roles.is_empty() {
                     return Err("output correspondence correspondence is empty".into());
                 }
+                // Cold readmission follows a reopen. Member and complete-publication
+                // validation read native rows in every region, so each is demanded
+                // through this request before the first resident read.
+                basis
+                    .inner
+                    .root
+                    .demand_all_full(execution, &runtime.runtime.services.symbols)
+                    .map_err(|failure| Stop::Request(failure.into()))?;
                 let branch = runtime.runtime.read_truth()
                     .project_observation(&basis.observation())
                     .map_err(|_| {

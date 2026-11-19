@@ -1,4 +1,6 @@
-//! Downstream parent custody discovers a second-family child through real output data.
+//! Downstream parent custody discovers an upstream-family child through real output data.
+//! The child's source reads only its own model, so retiring the parent's member
+//! leaves the child's inputs unchanged.
 use super::super::program::{Child, ChildInput, Input, Output, Parent};
 use super::*;
 pub struct Start;
@@ -38,7 +40,7 @@ pub type ChildConnection =
 impl WorthQueryApplicationDependentOutputConnection<Schema> for Discover {
     type RootDemand = downstream::Demand;
     type Discovery = query::child_output::Read;
-    type Demand = second::Demand;
+    type Demand = upstream::Demand;
     const IDENTITY: &'static str = <Self as ApplicationConnectionIdentity>::IDENTITY;
     fn discovery_from_root(
         root: &downstream::Demand,
@@ -49,7 +51,7 @@ impl WorthQueryApplicationDependentOutputConnection<Schema> for Discover {
         row: &query::Row,
     ) -> Result<Vec<Self::Demand>, WorthQueryRequiredOutputConnectionDenial> {
         assert_eq!(row.key, "downstream:m");
-        Ok(vec![second::Demand("a".into())])
+        Ok(vec![upstream::Demand("a".into())])
     }
 }
 pub type Tree = ApplicationDemandOutputGraph<

@@ -4,7 +4,21 @@ use crate::domain_computation::primary_graph::tests::inbound_admission::tests::*
 #[test]
 fn lost_terminal_index_denies_until_bounded_owner_reconstruction() {
     let world = installed_world();
-    let dispatch = { world.commit_dispatch(31, "notice-index-rebuild") };
+    // Reconstruction pages over completed terminals. The wide operation
+    // admits two, so a one-slot page cannot finish in a single call.
+    let wide_operation = world
+        .application
+        .installed_schema()
+        .installed_operation(crate::domain_computation::primary_graph::tests::inbound_admission::schema::WideNotifyOperation::reference())
+        .unwrap();
+    let verifier = world
+        .application
+        .install_inbound_occurrence_verifier(
+            &wide_operation,
+            std::sync::Arc::new(crate::domain_computation::primary_graph::tests::inbound_admission::verifier::TestVerifier),
+        )
+        .unwrap();
+    let dispatch = { world.commit_wide_dispatch(31, "notice-index-rebuild") };
     let record = dispatch.dispatch_outbox().unwrap();
     let correlation = *record.correlation();
     let envelope = signed_envelope(record, [0x96; 32], record.payload(), false);
@@ -12,21 +26,19 @@ fn lost_terminal_index_denies_until_bounded_owner_reconstruction() {
     assert_eq!(
         world
             .application
-            .receive_inbound_occurrence(&world.verifier, &envelope, &request)
+            .receive_inbound_occurrence(&verifier, &envelope, &request)
             .unwrap()
             .posture(),
         Posture::Performed
     );
-    // Reconstruction pages over completed terminals, so a one-slot page is
-    // only incomplete when a second completion exists.
-    let other = { world.commit_dispatch(32, "notice-index-rebuild-other") };
+    let other = { world.commit_wide_dispatch(32, "notice-index-rebuild-other") };
     let other_record = other.dispatch_outbox().unwrap();
     let other_correlation = *other_record.correlation();
     let other_envelope = signed_envelope(other_record, [0x97; 32], other_record.payload(), false);
     assert_eq!(
         world
             .application
-            .receive_inbound_occurrence(&world.verifier, &other_envelope, &request)
+            .receive_inbound_occurrence(&verifier, &other_envelope, &request)
             .unwrap()
             .posture(),
         Posture::Performed
@@ -54,7 +66,7 @@ fn lost_terminal_index_denies_until_bounded_owner_reconstruction() {
     let ancestry = std::num::NonZeroUsize::new(32).unwrap();
     assert!(matches!(
         world.application.with_host_advancement(|phase| world.application.repair_completed_inbound_index(
-            &phase, &world.verifier, std::num::NonZeroUsize::new(32).unwrap(), records, one,
+            &phase, &verifier, std::num::NonZeroUsize::new(32).unwrap(), records, one,
         )).expect("installed host call opens"),
         Err(worth_query_execution::facade::domain_computation::WorthQueryInboundIndexRepairDenial::ReconstructionWorkExhausted)
     ));
@@ -69,7 +81,7 @@ fn lost_terminal_index_denies_until_bounded_owner_reconstruction() {
             .with_host_advancement(|phase| {
                 world.application.repair_completed_inbound_index(
                     &phase,
-                    &world.verifier,
+                    &verifier,
                     one,
                     records,
                     ancestry,

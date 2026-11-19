@@ -64,13 +64,6 @@ impl WorthQueryClosedOperation {
             output_unavailable: None,
         }
     }
-    pub(super) fn with_output_unavailable(
-        mut self,
-        evidence: Option<WorthQueryApplicationProgramOutputUnavailable>,
-    ) -> Self {
-        self.output_unavailable = evidence;
-        self
-    }
     /// Actual native negative completion. It certifies saved source with no output,
     /// never a positive required-output settlement or current output publication.
     pub fn output_unavailable(&self) -> Option<&WorthQueryApplicationProgramOutputUnavailable> {
