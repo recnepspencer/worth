@@ -12,6 +12,15 @@ pub enum WorthQueryCoupledSupportHold {
     /// it needs a second derivation of that route, which waits on in-envelope
     /// producer supersession (public #229).
     ProducerSupersession,
+    /// A later authored stage changed the adjacency an authored stage's
+    /// discovery read. One commit per stage would discover again at the later
+    /// stage's own commit; settling it waits on discovery settlement (public
+    /// #238).
+    DiscoverySupportChanged,
+    /// The reading authored stage's own producer changed the support of a
+    /// verified parent the stage read. Settling or superseding that parent
+    /// inside one stage waits on public #239.
+    ReaderProducerSupersession,
 }
 
 impl WorthQueryInvariantExecutionFailure {
