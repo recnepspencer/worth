@@ -5,7 +5,7 @@ use worth_store_physical_backend::{
 use worth_store_physical_format::RecordArtifactFile;
 
 use super::{
-    PerformedRecoveryPhysicalEffect, PhysicalRecoveryCoordination,
+    PerformedRecoveryPhysicalEffect, PhysicalRecoveryCoordination, RecoveryCandidateGeneration,
     RecoveryRecordNamespaceSynchronizationAction, RecoveryRootProtocolReplacementAction,
 };
 
@@ -21,7 +21,7 @@ pub use candidate::{
 
 pub struct PhysicalRecoveryPublicationCommand {
     plan: [u8; 32],
-    staging_generation: u64,
+    generation: RecoveryCandidateGeneration,
     candidates: Box<[PhysicalRecoveryPublicationCandidate]>,
     protocol: RecoveryRootProtocolPublicationPlan,
 }
@@ -147,19 +147,19 @@ pub enum PhysicalRecoveryPublicationCommandStage {
 impl PhysicalRecoveryPublicationCommand {
     pub fn new(
         plan: [u8; 32],
-        staging_generation: u64,
+        generation: RecoveryCandidateGeneration,
         candidates: Box<[PhysicalRecoveryPublicationCandidate]>,
         protocol: RecoveryRootProtocolPublicationPlan,
     ) -> Option<Self> {
-        if staging_generation == 0
+        if generation.generation() == 0
             || candidates.is_empty()
-            || !candidate::is_complete_and_canonical(&candidates, staging_generation, protocol)
+            || !candidate::is_complete_and_canonical(&candidates, generation.generation(), protocol)
         {
             None
         } else {
             Some(Self {
                 plan,
-                staging_generation,
+                generation,
                 candidates,
                 protocol,
             })

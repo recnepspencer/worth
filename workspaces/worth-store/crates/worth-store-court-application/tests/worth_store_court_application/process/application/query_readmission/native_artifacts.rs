@@ -33,7 +33,7 @@ mod signal_preparation;
 mod successor_compilation;
 use native_preparation::{transition_unshared, unshared};
 mod observation_policy;
-mod operations;
+pub(in crate::process::application) mod operations;
 use observation_policy::ObservationMaintenanceMustRemainUnentered;
 mod original_image;
 mod original_membership;

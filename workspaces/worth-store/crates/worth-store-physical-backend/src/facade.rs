@@ -221,12 +221,12 @@ pub use crate::recovery_media::{
     RecoveryDiscoveryCounters, RecoveryDiscoveryFailure, RecoveryFilesystemQualificationError,
     RecoveryMediaHandleObservation, RecoveryReopenReadOutcome,
     RecoveryRootProtocolPublicationDenial, RecoveryRootProtocolPublicationPlan,
-    RecoverySelectedWalReadOutcome, RecoveryStagingIndeterminatePhysical,
-    RecoveryStagingSynchronizationOutcome, RecoveryStagingWriteDisposition,
-    RecoveryStagingWriteOutcome, RecoveryStorePresence, RecoveryWalListingAllocationMode,
-    RecoveryWalObservationIdentity, RecoveryWalReadSelection, RecoveryWalReadStorage,
-    RecoveryWalSelectionMismatch, StreamArtifact, Uncharged, UnchargedRead, UnchargedReadAuthority,
-    WalInventoryOutcome,
+    RecoverySelectedWalReadOutcome, RecoveryStagingExistingArtifact,
+    RecoveryStagingIndeterminatePhysical, RecoveryStagingSynchronizationOutcome,
+    RecoveryStagingWriteDisposition, RecoveryStagingWriteOutcome, RecoveryStorePresence,
+    RecoveryWalListingAllocationMode, RecoveryWalObservationIdentity, RecoveryWalReadSelection,
+    RecoveryWalReadStorage, RecoveryWalSelectionMismatch, StreamArtifact, Uncharged, UnchargedRead,
+    UnchargedReadAuthority, WalInventoryOutcome,
 };
 pub use crate::recovery_staging::{
     ClosedNonCurrentStagingMedia, ClosedStagingArtifactVerificationDenial,

@@ -70,7 +70,7 @@ pub use staging::{
     CompletedRecoveryStagingWrite, CompletedScheduledRecoveryStagingSynchronization,
     CompletedScheduledRecoveryStagingWrite, DeniedScheduledRecoveryStagingWrite,
     IndeterminateRecoveryStagingWrite, IndeterminateScheduledRecoveryStagingSynchronization,
-    IndeterminateScheduledRecoveryStagingWrite, RecoveryStagingIndeterminatePhysical,
-    RecoveryStagingSynchronizationOutcome, RecoveryStagingWriteDisposition,
-    RecoveryStagingWriteOutcome,
+    IndeterminateScheduledRecoveryStagingWrite, RecoveryStagingExistingArtifact,
+    RecoveryStagingIndeterminatePhysical, RecoveryStagingSynchronizationOutcome,
+    RecoveryStagingWriteDisposition, RecoveryStagingWriteOutcome,
 };

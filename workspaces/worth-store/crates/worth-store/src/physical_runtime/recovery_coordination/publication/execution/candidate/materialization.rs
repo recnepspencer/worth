@@ -66,6 +66,7 @@ pub(super) fn execute(
         candidate.artifact(),
         0,
         candidate.bytes(),
+        command.generation.existing_artifact(candidate.artifact()),
         plan.backend_completion_binding()
             .backend_execution_binding(),
     ) {
