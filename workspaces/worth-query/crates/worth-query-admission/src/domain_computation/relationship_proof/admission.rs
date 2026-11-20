@@ -92,6 +92,14 @@ pub(crate) fn admit_relationship_proofs_for_query_identity(
     descriptor_set: &RelationshipProofDescriptorSet,
 ) -> Result<(RelationshipProofAdmission, RelationshipProofCounters), RelationshipProofError> {
     let mut counters = RelationshipProofCounters::default();
+    if canonical_query_digest.as_str() != admitted.bundle().canonical_query_digest() {
+        counters.deny();
+        return Err(RelationshipProofError::new(
+            RelationshipProofFailureClass::QueryShapeMismatch,
+            "relationship proofs must use the policy/tenant context admitted for this query",
+            counters,
+        ));
+    }
     let budget = descriptor_set.budget();
     if descriptor_set.descriptors().len() > budget.max_descriptors() {
         counters.deny();
