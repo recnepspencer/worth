@@ -44,6 +44,7 @@ macro_rules! edit_stage {
 
 mod proptest_diff;
 mod r3_shapes;
+mod sibling_reopen;
 mod work_bounds;
 
 const GOLDEN: &str = "tests/worth_query_court_decl_host/certification/document_history/owned_outputs/family/captured_input/wave_order.golden";

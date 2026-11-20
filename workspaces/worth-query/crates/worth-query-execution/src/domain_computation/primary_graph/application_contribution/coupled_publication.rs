@@ -9,11 +9,14 @@ mod applied_outputs;
 mod authored_stages;
 mod disposal;
 mod input_preparation;
+mod ledger;
 mod preparation;
+mod qualification;
 mod source_selection;
 mod verified_parents;
 pub(in crate::domain_computation::primary_graph::application_contribution) use input_preparation::{PreparedCoupledInputs, PlannedOutput};
 pub(in crate::domain_computation::primary_graph::application_contribution) use source_selection::SelectedCoupledSource;
+pub(in crate::domain_computation::primary_graph::application_contribution) use qualification::AppendedMember;
 mod validation;
 use crate::domain_computation::primary_graph::{
     application_attempt::coupled_outputs::DeclaredCoupledOutputDemands, WorthQueryAdvancementPhase,
@@ -56,6 +59,12 @@ pub(in crate::domain_computation::primary_graph) struct CoupledApplicationAssemb
     parent_reads: std::cell::Cell<usize>,
     /// The parent outputs the route now being prepared consumes.
     consuming: RefCell<Vec<crate::domain_computation::primary_graph::provider::ParentRead>>,
+    /// Retained derivations and which later appends made them suspect (R2).
+    ledger: RefCell<ledger::DerivationLedger>,
+    /// The route now being read derives again: no prepared or verified reuse.
+    superseding: std::cell::Cell<bool>,
+    /// The wave task whose discovery is now retaining support (its owner).
+    discovering: std::cell::Cell<Option<usize>>,
 }
 /// The applied position of the earliest stage whose effect demands some work.
 /// Work demanded through it (prerequisites, discovered children, continuations
@@ -146,6 +155,9 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             owing: RefCell::new(OwedDemand::at(0)),
             parent_reads: std::cell::Cell::new(0),
             consuming: RefCell::new(Vec::new()),
+            ledger: RefCell::new(ledger::DerivationLedger::default()),
+            superseding: std::cell::Cell::new(false),
+            discovering: std::cell::Cell::new(None),
         }
     }
     pub(in crate::domain_computation::primary_graph::application_contribution) fn owing(
@@ -181,6 +193,7 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
                 &self.root_session,
                 source,
                 self.applied_position(),
+                self.discovering.get(),
                 support,
             )
             .map_err(execution::denial::candidate_support_denied)
@@ -338,6 +351,8 @@ impl<S: ApplicationSchema> RelationalAuthoredCoupledProducerAssembly
         *self.rounds.borrow_mut() = synchronous_outputs::rounds::limits::ProducerRoundBudget::new(
             self.demands.round_limits,
         );
+        *self.ledger.borrow_mut() = ledger::DerivationLedger::default();
+        self.superseding.set(false);
         let prepared = self
             .application
             .runtime

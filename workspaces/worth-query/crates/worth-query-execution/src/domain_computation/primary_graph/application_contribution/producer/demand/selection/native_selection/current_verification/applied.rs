@@ -65,6 +65,12 @@ impl VerifiedAppliedParent {
     pub(in crate::domain_computation::primary_graph) fn pin(&self) -> &Pin {
         &self.pin
     }
+    /// The verification's retained proofs.
+    pub(in crate::domain_computation::primary_graph) fn facts(
+        &self,
+    ) -> impl Iterator<Item = &Fact> {
+        self.facts.iter()
+    }
     pub(in crate::domain_computation::primary_graph) fn changed_fact(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

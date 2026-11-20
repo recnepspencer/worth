@@ -16,6 +16,7 @@ pub(crate) mod movement;
 mod retirement_equality;
 pub(crate) mod source_currentness;
 mod source_read_authorization;
+pub(in crate::domain_computation::primary_graph) mod touch_key;
 
 mod source_merge;
 mod source_publication_read;

@@ -296,10 +296,11 @@ fn a_consuming_child_after_an_intervening_append_is_still_held() {
 /// `decision-write(b)`, owed by stage 1 at 2, appends at 3 and changes `m`,
 /// which `first:a` read. Its owed position equals the parent's observed
 /// position, so a predicate keyed on owed positions would hold. It never
-/// consumed `first:a`, so the edit refuses whole with a plain
-/// CoupledReadSupportChanged, attributed to that writer, and nothing commits.
+/// consumed `first:a`, so qualified use reopens the stale verified parent and
+/// the edit commits it derived from m = 9, which one commit per stage reads on
+/// demand (Q1 known answer, D3).
 #[test]
-fn a_non_consuming_producer_with_the_same_owed_position_is_not_held() {
+fn a_non_consuming_producer_with_the_same_owed_position_derives_the_stale_parent_again() {
     let _execution = WorthQueryExecutionObservation::install_on_this_thread();
     let host = world::install_program_with_other_model::<NonConsumingProgram>(
         host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
@@ -310,7 +311,6 @@ fn a_non_consuming_producer_with_the_same_owed_position_is_not_held() {
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.request(&principal, &scope);
     settle!(&host, &request, NonConsumingProgram, ParentTree);
-    let before = super::super::super::failure::checkpoint(&host);
     let head = courts::native_head(&host);
     let contacts = host.producer_contacts_on_this_thread_for_test();
     let mut edit = request
@@ -321,17 +321,32 @@ fn a_non_consuming_producer_with_the_same_owed_position_is_not_held() {
         .unwrap();
     edit.push_stage::<ParentTree, _>(stage("a", 2)).unwrap();
     edit.push_stage::<WriteTree, _>(stage("b", 8)).unwrap();
-    require_refusal(
-        edit.execute_performed(ExecutionAllocationPolicy::SystemAllocation)
-            .unwrap(),
-        &request,
-        None,
+    let outcome = edit
+        .execute_performed(ExecutionAllocationPolicy::SystemAllocation)
+        .unwrap();
+    assert!(
+        matches!(
+            outcome,
+            worth_query_host::facade::application_entry::WorthQueryEditEnvelopeOutcome::Committed(
+                _
+            )
+        ),
+        "{outcome:?}"
+    );
+    assert_eq!(
+        request
+            .query(query::first_output::Read("first:a".into()))
+            .execute()
+            .unwrap()
+            .rows()[0]
+            .value,
+        2 + 9,
+        "first:a derived again from m = b + 1 = 9"
     );
     assert_eq!(
         host.producer_contacts_on_this_thread_for_test(),
-        contacts + 1,
-        "only decision-write(b) derives; the verified parent stays unopened"
+        contacts + 2,
+        "decision-write(b) derives, and the stale parent derives again"
     );
-    assert_eq!(courts::native_head(&host), head);
-    super::super::super::failure::assert_model_unchanged(&host, &before);
+    assert_ne!(courts::native_head(&host), head);
 }

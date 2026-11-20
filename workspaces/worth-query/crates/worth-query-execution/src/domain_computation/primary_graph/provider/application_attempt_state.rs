@@ -12,7 +12,7 @@ use std::{
 mod candidate_read_support;
 mod candidate_support_store;
 pub(in crate::domain_computation::primary_graph) use candidate_read_support::{
-    CandidateReadSupport, ParentRead,
+    CandidateReadSupport, ParentRead, RetainedCandidateRead, RetainedReadRequalification,
 };
 mod applied_output;
 pub(in crate::domain_computation::primary_graph) use applied_output::AppliedOutputParticipants;

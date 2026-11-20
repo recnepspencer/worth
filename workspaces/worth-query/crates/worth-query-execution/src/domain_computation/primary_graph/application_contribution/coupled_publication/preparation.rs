@@ -327,6 +327,17 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             )?,
             _ => candidate.append_publication(execution, publication, &content, vec![batch])?,
         }
+        let index = self.writers.borrow().len() - 1;
+        let owed = self.writers.borrow()[index].owed.position();
+        self.mark_append(
+            execution,
+            candidate,
+            super::AppendedMember::Part {
+                index,
+                position,
+                owed,
+            },
+        )?;
         let entities = candidate
             .appended_output_entities(execution, &producer.declaration.identity, &meaning)?
             .expect("Native appended this participant");

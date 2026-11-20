@@ -47,21 +47,27 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
                 self.finish_close(context, i, None, &[])?;
                 continue;
             };
+            context.owner.supersede(self.tasks[i].reopened);
             let inputs =
                 self.tasks[i]
                     .tree
-                    .capture_inputs(context, candidate, self.tasks[i].component)?;
+                    .capture_inputs(context, candidate, self.tasks[i].component);
+            context.owner.supersede(false);
+            let inputs = inputs?;
             let mut incoming = Self::new();
             // Its suppliers are owed by the demand that owes this task.
             context.owner.owe(&self.tasks[i].owed);
-            self.tasks[i].tree.prerequisites(
+            context.owner.discover_for(Some(i));
+            let closed = self.tasks[i].tree.prerequisites(
                 context,
                 candidate,
                 &pin,
                 source,
                 &PrerequisiteInputs::from(inputs.as_ref()),
                 &mut incoming,
-            )?;
+            );
+            context.owner.discover_for(None);
+            closed?;
             if let Some(PreparedCoupledInputs::Captured(captured)) = &inputs {
                 let drained = incoming
                     .tasks
@@ -223,6 +229,16 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
         let epoch = self.tasks[i].close_epoch;
         let mut waiting = 0usize;
         for &parent in unique_parents {
+            if parent != i {
+                let parent_task = &mut self.tasks[parent];
+                push_funded(
+                    &mut parent_task.readers,
+                    &mut parent_task._readers_memory,
+                    (i, epoch),
+                    context.execution,
+                    subject,
+                )?;
+            }
             match self.tasks[parent].state {
                 TaskState::Done { parent: Some(_) } => {}
                 TaskState::Done { parent: None } => {

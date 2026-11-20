@@ -29,8 +29,12 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
             {
                 parent.pin = pin.clone();
                 context.owner.owe(&owed);
-                task.tree
-                    .discover_occurrences(context, candidate, parent, &mut next)?;
+                context.owner.discover_for(Some(i));
+                let discovered = task
+                    .tree
+                    .discover_occurrences(context, candidate, parent, &mut next);
+                context.owner.discover_for(None);
+                discovered?;
             }
         }
         for task in next.tasks {

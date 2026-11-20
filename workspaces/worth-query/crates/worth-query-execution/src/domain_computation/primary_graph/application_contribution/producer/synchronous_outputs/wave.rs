@@ -2,12 +2,14 @@
 use super::*;
 use worth_execution::{ExecutionMemoryReservation, ExecutionOrderedMap};
 use worth_relational::facade::identity::EntityId;
+mod completion;
 mod continuations;
 mod inputs;
 mod observation;
 mod occurrences;
 mod outgoing;
 mod prerequisites;
+mod reopen;
 mod state;
 use state::{capacity_denied, map_insert, map_remove, push_funded, Scheduled, TaskState};
 
@@ -34,6 +36,8 @@ pub struct SynchronousOutputWave<S: ApplicationSchema> {
     captured_active: ExecutionOrderedMap<usize, ()>,
     ready_alias_continuations: ExecutionOrderedMap<usize, ()>,
     done_components: ExecutionOrderedMap<usize, ()>,
+    /// The task that retained or derived each parent output read (PR C R2).
+    by_read: ExecutionOrderedMap<usize, usize>,
     needed_undone_count: usize,
     needed_dirty: bool,
     last_allowed: Option<Option<Vec<String>>>,
@@ -51,6 +55,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
             captured_active: ExecutionOrderedMap::default(),
             ready_alias_continuations: ExecutionOrderedMap::default(),
             done_components: ExecutionOrderedMap::default(),
+            by_read: ExecutionOrderedMap::default(),
             needed_undone_count: 0,
             needed_dirty: true,
             last_allowed: None,
@@ -96,6 +101,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
         let continuation_done = !tree.has_static_continuation();
         self.tasks.push(Scheduled {
             root: true,
+            reopened: false,
             needed: false,
             key: None,
             next_bucket: None,
@@ -111,6 +117,10 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
             _prerequisite_memory: None,
             dependents: Vec::new(),
             _dependents_memory: None,
+            readers: Vec::new(),
+            _readers_memory: None,
+            alias_rows: Vec::new(),
+            _alias_rows_memory: None,
             subject,
             rank,
             owed: context.owner.owing(),
@@ -181,6 +191,8 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
     ) -> Result<(), SynchronousOutputFailure> {
         let mut batch_id = 0usize;
         loop {
+            // R2: no task runs on a retained parent a prior append made stale.
+            self.reopen_stale(context, candidate)?;
             self.close_frontier(context, candidate, allowed)?;
             if self.discover_alias_continuations(context, candidate)? {
                 continue;
@@ -259,15 +271,21 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
                 observation::record(|| format!("break input-captures before={i}"));
                 break;
             }
+            if self.reopen_stale(context, candidate)? {
+                observation::record(|| format!("break reopen before={i}"));
+                break;
+            }
             context.owner.consume(self.consumed_reads(i));
             let inputs = self.tasks[i].take_inputs();
             let subject = self.tasks[i].subject;
             let component = self.tasks[i].component;
             checkpoint(context.execution, subject, 1)?;
             context.owner.owe(&self.tasks[i].owed);
+            context.owner.supersede(self.tasks[i].reopened);
             let prepared = self.tasks[i]
                 .tree
                 .prepare(context, candidate, inputs, component);
+            context.owner.supersede(false);
             context.owner.consume(Vec::new());
             observation::record_prepare(i, &self.tasks[i], &prepared);
             match prepared? {
@@ -284,75 +302,6 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
             self.retain_parent_inputs(context, candidate, i)?;
         }
         Ok(completed)
-    }
-
-    fn complete_task(
-        &mut self,
-        context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
-        i: usize,
-        parent: Option<AppliedOutputParent>,
-    ) -> Result<(), SynchronousOutputFailure> {
-        let subject = self.tasks[i].subject;
-        let rank = self.tasks[i].rank;
-        let component = self.tasks[i].component;
-        let has_parent = parent.is_some();
-        map_remove(
-            &mut self.ready_queue,
-            &(rank, i),
-            context.execution,
-            subject,
-        )?;
-        if self.captured_active.contains_key(&i) {
-            map_remove(&mut self.captured_active, &i, context.execution, subject)?;
-        }
-        if self.tasks[i].needed {
-            self.needed_undone_count -= 1;
-        }
-        self.tasks[i].state = TaskState::Done { parent };
-        if component.is_some() {
-            map_insert(
-                &mut self.done_components,
-                &i,
-                &(),
-                context.execution,
-                subject,
-            )?;
-        }
-        let mut alias = self.tasks[i].waiting_aliases_head.take();
-        while let Some(a) = alias {
-            alias = self.tasks[a].next_waiting_alias.take();
-            map_insert(
-                &mut self.ready_alias_continuations,
-                &a,
-                &(),
-                context.execution,
-                self.tasks[a].subject,
-            )?;
-        }
-        let dependents = std::mem::take(&mut self.tasks[i].dependents);
-        self.tasks[i]._dependents_memory = None;
-        if has_parent {
-            for (child, epoch) in dependents {
-                checkpoint(context.execution, self.tasks[child].subject, 1)?;
-                if self.tasks[child].close_epoch != epoch {
-                    continue;
-                }
-                if let TaskState::Closed { waiting, .. } = &mut self.tasks[child].state {
-                    *waiting -= 1;
-                    if *waiting == 0 && self.tasks[child].needed {
-                        let key = (self.tasks[child].rank, child);
-                        map_insert(
-                            &mut self.ready_queue,
-                            &key,
-                            &(),
-                            context.execution,
-                            self.tasks[child].subject,
-                        )?;
-                    }
-                }
-            }
-        }
-        Ok(())
     }
 
     fn discover_completed(
@@ -376,7 +325,10 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
                 parent.pin = pin.clone();
                 // A discovered child is owed by the stage that owed its parent.
                 context.owner.owe(&owed);
-                task.tree.discover(context, candidate, parent, &mut next)?;
+                context.owner.discover_for(Some(i));
+                let discovered = task.tree.discover(context, candidate, parent, &mut next);
+                context.owner.discover_for(None);
+                discovered?;
             }
             task.continuation_done = true;
         }

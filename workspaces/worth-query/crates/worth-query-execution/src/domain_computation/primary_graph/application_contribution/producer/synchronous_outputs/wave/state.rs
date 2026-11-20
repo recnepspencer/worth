@@ -21,6 +21,9 @@ pub(super) enum TaskState {
 
 pub(super) struct Scheduled<S: ApplicationSchema> {
     pub(super) root: bool,
+    /// Reopened after its retained parent went stale (PR C R2): it seeds
+    /// `needed` like a root and reads its source with no reuse until done.
+    pub(super) reopened: bool,
     pub(super) needed: bool,
     pub(super) key: Option<super::super::occurrences::OccurrenceKey>,
     pub(super) next_bucket: Option<usize>,
@@ -36,6 +39,13 @@ pub(super) struct Scheduled<S: ApplicationSchema> {
     pub(super) _prerequisite_memory: Option<ExecutionMemoryReservation>,
     pub(super) dependents: Vec<(usize, u32)>,
     pub(super) _dependents_memory: Option<ExecutionMemoryReservation>,
+    /// Every close that read this task, kept after it completes: a reopen
+    /// re-closes those that have not run yet (PR C R2).
+    pub(super) readers: Vec<(usize, u32)>,
+    pub(super) _readers_memory: Option<ExecutionMemoryReservation>,
+    /// Later rows coalesced onto this canonical task.
+    pub(super) alias_rows: Vec<usize>,
+    pub(super) _alias_rows_memory: Option<ExecutionMemoryReservation>,
     pub(super) subject: &'static str,
     pub(super) rank: usize,
     /// The demand that owes this task, carried to everything it enqueues.

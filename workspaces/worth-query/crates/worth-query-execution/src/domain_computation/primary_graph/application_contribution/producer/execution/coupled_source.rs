@@ -72,6 +72,9 @@ pub(in crate::domain_computation::primary_graph::application_contribution) enum 
 {
     Route,
     OutputPreparation,
+    /// Output preparation of a reopened derivation (PR C R2): never reuses a
+    /// prepared route or a verified output, so normal admission derives it.
+    Supersede,
 }
 
 pub(in crate::domain_computation::primary_graph::application_contribution) enum CoupledSourceRead {

@@ -16,7 +16,7 @@ pub(in crate::domain_computation) use application_attempt_state::RegisteredPrima
 pub(in crate::domain_computation::primary_graph) use application_attempt_state::{
     AppliedOutputParticipants, AppliedParticipantOutputs, CandidateReadSupport,
     CoupledApplicationMember, CoupledApplicationMemberKind, CoupledAttemptPreparation,
-    CoupledProducerPreparation, ParentRead,
+    CoupledProducerPreparation, ParentRead, RetainedCandidateRead, RetainedReadRequalification,
 };
 pub use application_attempt_state::{
     FactlessCurrentness, OwnEffectOnReads, RebaseVerificationReason,

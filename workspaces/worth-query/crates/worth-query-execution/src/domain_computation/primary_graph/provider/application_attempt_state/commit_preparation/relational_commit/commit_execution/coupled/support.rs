@@ -7,22 +7,21 @@
 //! the stage means the stage read a value that was not yet settled; that refuses.
 //! The stage's discovery support never settles; a verified output it read
 //! settles only when such a producer re-derived that same route.
-//! Producer readers stay strict. The #229 hold marks only a refusal where the
-//! adjacent writer images show a later authored stage changed a fact read by
-//! a producer derived before that stage: the producer's own decision read, or
-//! the support of a verified output (prepared in the envelope or committed)
-//! that no derivation after the stage replaces.
-//! Two more refusals of an authored stage's read support name their open issue
-//! (#244): discovery support changed by a later authored stage (#238), and a
-//! verified parent's support changed by a producer whose derivation consumed
-//! that parent's output (#239). Every other refusal carries no hold.
+//! Producer readers stay strict. A retained read qualified use reopened is
+//! checked only over its window (`window`). The remaining holds name open
+//! issues (#244): #229, a later authored stage changed a producer's decision
+//! read or a verified output no later derivation replaces; #238, discovery
+//! support changed by a later stage; #239, a verified parent changed by its
+//! own consumer. Every other refusal carries no hold.
 use super::*;
+mod window;
 use crate::domain_computation::primary_graph::provider::{
     CandidateReadSupport, CoupledApplicationMember, CoupledApplicationMemberKind, ParentRead,
 };
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationDecisionFact as Fact;
 use crate::domain_computation::WorthQueryCoupledSupportHold as Hold;
 use crate::domain_computation::WorthQueryInvariantExecutionFailure as Failure;
+use window::superseded_window;
 type Candidate = worth_relational::facade::runtime::RelationalPinnedRead<
     worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
 >;
@@ -136,12 +135,17 @@ pub(super) fn require_read_support(
 ) -> Result<(), CoupledSupportPreparationDenial> {
     // Each retained read is attributed from its own observed image, so an
     // ordinary root without a coupled post-own pin validates the same way.
-    for (source, position, support) in attempt.candidate_read_support() {
+    for retained in attempt.candidate_read_support() {
+        let (source, position, support) = (&retained.source, &retained.position, &retained.support);
         let compare = |earlier: &Candidate, image: &Candidate| {
             provider.graph.with_runtime(execution, |runtime| {
                 support.changed_fact(execution, runtime, before, earlier, image)
             })
         };
+        if let Some(invalidator) = retained.window_end {
+            superseded_window(*source, *position, support, invalidator, members, compare)?;
+            continue;
+        }
         match compare(support.pin(), complete) {
             Ok(None) => {}
             Ok(Some(fact)) => changed(
