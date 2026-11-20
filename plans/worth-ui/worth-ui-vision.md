@@ -1,5 +1,7 @@
 # Worth UI Vision
 
+> **Parked (2026-11-20).** Worth UI is parked by user ruling and does not build: `worth-ui-query-binding` and `worth-ui-certification` still depend on the retired `worth-query` engine. Migration to `worth-query-host` is tracked in [#262](https://github.com/recnepspencer/worth/issues/262).
+
 ## Thesis
 
 Worth needs a first-class desktop application platform, not a collection of
@@ -1416,7 +1418,7 @@ work.
 
 ## Companion Documents
 
-- [WORTH Query orientation for AI agents](../../workspaces/worth-query/crates/worth-query/docs/AI_README.md)
+- [WORTH Query orientation for AI agents](../../workspaces/worth-query/docs/AI_README.md)
 - [plans/worth-query/worth_query_vision.md](../worth-query/worth_query_vision.md)
 - [plans/worth-runtime-bridge/worth_runtime_bridge_vision.md](../worth-runtime-bridge/worth_runtime_bridge_vision.md)
 - [plans/worth-relational/worth_relational_vision.md](../worth-relational/worth_relational_vision.md)

@@ -1,5 +1,7 @@
 # Native Host Platform
 
+> **Parked (2026-11-20). Doesn't build.** Worth UI is parked by user ruling: `worth-ui-query-binding` and `worth-ui-certification` still depend on the retired `worth-query` engine, so the `workspaces/worth-ui` workspace does not compile. Commands, compiled examples and compile-pass fragments on this page do not build or run until the migration to `worth-query-host` tracked in [#262](https://github.com/recnepspencer/worth/issues/262) lands.
+
 ## What This Feature Is
 
 The native host platform is the framework-owned application and host boundary.

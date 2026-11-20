@@ -27,16 +27,16 @@ Milestone 5 delivered:
 
 - live promotion, live execution, replay, patch envelopes, replay bundles, and
   live policy counters in
-  [crates/worth-query/src/live](../../workspaces/worth-query/crates/worth-query/src/live)
+  [crates/worth-query/src/live](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/live)
 - live performance contracts, width budgets, coalescing admission, and refresh
   status vocabulary in
-  [crates/worth-query/src/live_performance](../../workspaces/worth-query/crates/worth-query/src/live_performance)
+  [crates/worth-query/src/live_performance](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/live_performance)
 - planning-to-live lowering through `ExecutionPlanBundle` in
-  [crates/worth-query/src/planning](../../workspaces/worth-query/crates/worth-query/src/planning)
+  [crates/worth-query/src/planning](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/planning)
 - milestone-native live certification artifacts and matrix coverage under
-  [crates/worth-query/src/harness/live_certification](../../workspaces/worth-query/crates/worth-query/src/harness/live_certification)
+  [crates/worth-query/src/harness/live_certification](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/harness/live_certification)
 - live fixtures and hostile preflights under
-  [crates/worth-query/src/harness/fixtures](../../workspaces/worth-query/crates/worth-query/src/harness/fixtures)
+  [crates/worth-query/src/harness/fixtures](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/harness/fixtures)
 - compile-fail proof-boundary tests for live artifacts and forbidden raw-CDC
   live payload leakage under
   `crates/worth-query/tests/ui`
@@ -55,8 +55,8 @@ exists directly.
 
 Covered by:
 
-- [live_certification/mod.rs](../../workspaces/worth-query/crates/worth-query/src/harness/live_certification/mod.rs)
-- [live_certification/tests.rs](../../workspaces/worth-query/crates/worth-query/src/harness/live_certification/tests.rs)
+- [live_certification/mod.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/harness/live_certification/mod.rs)
+- [live_certification/tests.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/harness/live_certification/tests.rs)
 - `live_certification/model.rs`
 
 What is proven:
@@ -93,7 +93,7 @@ Covered by:
 - `live::promote_preflight_bundle_to_live`
 - `planning::ExecutionPlanBundle::live_promotion`
 - live promotion tests in
-  [crates/worth-query/src/live/mod.rs](../../workspaces/worth-query/crates/worth-query/src/live/mod.rs)
+  [crates/worth-query/src/live/mod.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/live/mod.rs)
 
 What is proven:
 

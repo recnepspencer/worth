@@ -2,9 +2,9 @@ derive_skills = true
 
 # Exact consumer inventory. Doctest roots also drive query_gate.py doc.
 documents = [
-  "workspaces/worth-query/crates/worth-query/docs/modeling/relation-laws.md",
-  "workspaces/worth-query/crates/worth-query/docs/foundations/invariants-and-read-observations.md",
-  "workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md",
+  "workspaces/worth-query/docs/modeling/relation-laws.md",
+  "workspaces/worth-query/docs/foundations/invariants-and-read-observations.md",
+  "workspaces/worth-query/docs/foundations/branches-and-previews.md",
   "docs/build-an-application.md",
   "docs/how-it-works.md",
   "docs/api.md",
@@ -12,24 +12,23 @@ documents = [
   "workspaces/worth-query/README.md",
   "workspaces/worth-query/crates/worth-query-host/README.md",
   "workspaces/worth-query/crates/worth-query-decl/README.md",
-  "workspaces/worth-query/crates/worth-query/docs/authoring/feature-capsule-authoring.md",
-  "workspaces/worth-query/crates/worth-query/docs/authoring/existing-reference-inputs.md",
-  "workspaces/worth-query/crates/worth-query/docs/authoring/independent-creation-sites.md",
-  "workspaces/worth-query/crates/worth-query/docs/foundations/source-only-retained-delivery.md",
-  "workspaces/worth-query/crates/worth-query/docs/AI_README.md",
-  "workspaces/worth-query/crates/worth-query/docs/foundations/programs-and-adoption.md",
-  "workspaces/worth-query/crates/worth-query/docs/execution/application-aftermath-and-recovery.md",
-  "workspaces/worth-query/crates/worth-query/docs/domain-capabilities/workflow/README.md",
-  "workspaces/worth-query/crates/worth-query/docs/domain-capabilities/execution-resource-admission-and-managed-runs.md",
-  "workspaces/worth-query/crates/worth-query/docs/foundations/ordinary-application-front-door.md",
-  "workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md",
-  "workspaces/worth-query/crates/worth-query/docs/foundations/workflow-operation-inputs.md",
-  "workspaces/worth-query/crates/worth-query/docs/foundations/workflow-succession-output-affinity.md",
+  "workspaces/worth-query/docs/authoring/feature-capsule-authoring.md",
+  "workspaces/worth-query/docs/authoring/existing-reference-inputs.md",
+  "workspaces/worth-query/docs/authoring/independent-creation-sites.md",
+  "workspaces/worth-query/docs/foundations/source-only-retained-delivery.md",
+  "workspaces/worth-query/docs/AI_README.md",
+  "workspaces/worth-query/docs/foundations/programs-and-adoption.md",
+  "workspaces/worth-query/docs/execution/application-aftermath-and-recovery.md",
+  "workspaces/worth-query/docs/domain-capabilities/execution-resource-admission-and-managed-runs.md",
+  "workspaces/worth-query/docs/foundations/ordinary-application-front-door.md",
+  "workspaces/worth-query/docs/foundations/workflows.md",
+  "workspaces/worth-query/docs/foundations/workflow-operation-inputs.md",
+  "workspaces/worth-query/docs/foundations/workflow-succession-output-affinity.md",
 ]
 
 [[doctests]]
 manifest = "workspaces/worth-query/Cargo.toml"
-packages = ["worth-query-host", "worth-query-decl", "worth-query-declaration", "worth-query", "worth-query-publication", "worth-query-execution", "worth-query-installation"]
+packages = ["worth-query-host", "worth-query-decl", "worth-query-declaration", "worth-query-publication", "worth-query-execution", "worth-query-installation"]
 
 [[doctests]]
 manifest = "workspaces/worth-query-bank-world/Cargo.toml"
@@ -134,19 +133,19 @@ source = "src/application_program/composed_action.rs"
 id = "workflow-node-kinds"
 manifest = "workspaces/worth-query/crates/worth-query-decl/Cargo.toml"
 item = "facade::application_program::ApplicationWorkflowNodeKind"
-document = "workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md"
+document = "workspaces/worth-query/docs/foundations/workflows.md"
 
 [[facts]]
 id = "workflow-progress"
 manifest = "workspaces/worth-query/crates/worth-query-host/Cargo.toml"
 item = "facade::application_entry::WorkflowProgressOutcome"
-document = "workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md"
+document = "workspaces/worth-query/docs/foundations/workflows.md"
 
 [[facts]]
 id = "workflow-validation-denials"
 manifest = "workspaces/worth-query/crates/worth-query-decl/Cargo.toml"
 item = "facade::application_program::ApplicationWorkflowValidationDenialKind"
-document = "workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md"
+document = "workspaces/worth-query/docs/foundations/workflows.md"
 
 [[facts]]
 id = "mutation-outcomes"
@@ -156,7 +155,7 @@ document = "docs/api.md"
 
 [navigation]
 index = "docs/capability-index.md"
-guides = ["docs/build-an-application.md", "docs/how-it-works.md", "workspaces/worth-query/crates/worth-query-host/README.md", "workspaces/worth-query/crates/worth-query/docs/foundations/ordinary-application-front-door.md"]
+guides = ["docs/build-an-application.md", "docs/how-it-works.md", "workspaces/worth-query/crates/worth-query-host/README.md", "workspaces/worth-query/docs/foundations/ordinary-application-front-door.md"]
 crate_roots = ["workspaces/worth-query/crates/worth-query-decl/src/lib.rs", "workspaces/worth-query/crates/worth-query-host/src/lib.rs"]
 
 [[compiled_sources]]

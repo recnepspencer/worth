@@ -248,11 +248,11 @@ durable artifacts and continuations belong to Store Milestone 11.
 
 Product discovery starts at:
 
-- [`crates/worth-query/docs/AI_README.md`](../../workspaces/worth-query/crates/worth-query/docs/AI_README.md)
-- [Declarative Query Experience](../../workspaces/worth-query/crates/worth-query/docs/capabilities/declarative-query-experience.md)
-- [Collections, Ordering, Aggregates, And Cursors](../../workspaces/worth-query/crates/worth-query/docs/authoring/collections-cursors-ordering-and-aggregations.md)
-- [Native Aspect Values](../../workspaces/worth-query/crates/worth-query/docs/capabilities/native-aspect-values.md)
-- [Projection Consumption](../../workspaces/worth-query/crates/worth-query/docs/capabilities/projection-consumption.md)
+- [`crates/worth-query/docs/AI_README.md`](../../workspaces/worth-query/docs/AI_README.md)
+- [Declarative Query Experience](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/docs/capabilities/declarative-query-experience.md)
+- [Collections, Ordering, Aggregates, And Cursors](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/docs/authoring/collections-cursors-ordering-and-aggregations.md)
+- [Native Aspect Values](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/docs/capabilities/native-aspect-values.md)
+- [Projection Consumption](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/docs/capabilities/projection-consumption.md)
 
 These documents teach the current product surface. Historical phase assembly
 belongs in milestone and certification records, not ordinary discovery.

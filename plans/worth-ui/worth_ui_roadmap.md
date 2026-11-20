@@ -1,5 +1,7 @@
 # Worth UI Future Roadmap
 
+> **Parked (2026-11-20).** Worth UI is parked by user ruling and does not build: `worth-ui-query-binding` and `worth-ui-certification` still depend on the retired `worth-query` engine. Migration to `worth-query-host` is tracked in [#262](https://github.com/recnepspencer/worth/issues/262).
+
 ## Purpose
 
 This document defines the future work for Worth UI.
@@ -3459,7 +3461,7 @@ Worth UI is roadmap-complete only when:
 ## Companion Documents
 
 - [worth-ui-vision.md](./worth-ui-vision.md)
-- [Worth Query AI README](../../workspaces/worth-query/crates/worth-query/docs/AI_README.md)
+- [Worth Query AI README](../../workspaces/worth-query/docs/AI_README.md)
 - [plans/worth-query/worth_query_vision.md](../worth-query/worth_query_vision.md)
 - [plans/worth-runtime-bridge/worth_runtime_bridge_vision.md](../worth-runtime-bridge/worth_runtime_bridge_vision.md)
 - [plans/worth-relational/worth_relational_vision.md](../worth-relational/worth_relational_vision.md)

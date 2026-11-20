@@ -1,5 +1,7 @@
 # Runtime Subsystems
 
+> **Parked (2026-11-20). Doesn't build.** Worth UI is parked by user ruling: `worth-ui-query-binding` and `worth-ui-certification` still depend on the retired `worth-query` engine, so the `workspaces/worth-ui` workspace does not compile. Commands, compiled examples and compile-pass fragments on this page do not build or run until the migration to `worth-query-host` tracked in [#262](https://github.com/recnepspencer/worth/issues/262) lands.
+
 This map is for contributors placing runtime work. Application developers
 should start with [Application lifecycle](./application-lifecycle.md).
 
@@ -382,4 +384,4 @@ second data path.
 - [Hot rebind](./hot-rebind.md)
 - [Application inspection](./inspection.md)
 - [Visual inspection](./visual-inspection.md)
-- [Worth Query AI README](../../worth-query/crates/worth-query/docs/AI_README.md)
+- [Worth Query AI README](../../worth-query/docs/AI_README.md)

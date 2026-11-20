@@ -124,7 +124,7 @@ distinguishes new native changes from `RetainExact` reuse; this owner does not
 invent a native event for every product occurrence. See the
 [exact history courts](../worth-court-runtime-world/tests/worth_court_runtime_world/runtime_world/court/exact_history/mod.rs).
 The declared application history query and fresh disclosure are available through
-[Query Host](../../workspaces/worth-query/crates/worth-query/docs/capabilities/record-and-aspect-history.md).
+[Query Host](../../workspaces/worth-query/docs/capabilities/record-and-aspect-history.md).
 
 ## Owned async source binding
 
@@ -146,7 +146,7 @@ the native reference equality, empty/committed twins and active-request release.
 The returned managed admission preserves genuine Bridge custody, including
 post-admission refusal. The application resource entry uses its own installed
 provider and fresh action/disclosure contract through
-[Query Host](../../workspaces/worth-query/crates/worth-query/docs/capabilities/application-resources.md).
+[Query Host](../../workspaces/worth-query/docs/capabilities/application-resources.md).
 
 `admit_unqueued_owned_async_request` is the custody-preserving internal engine
 route. It applies the same exact World source validation and returns the genuine

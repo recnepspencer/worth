@@ -25,13 +25,13 @@ Milestone 6 delivered:
 
 - query-context basis declaration, basis binding, admission, execution,
   metadata shaping, result bundling, and support truth in
-  [crates/worth-query/src/query_context](../../workspaces/worth-query/crates/worth-query/src/query_context)
+  [crates/worth-query/src/query_context](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/query_context)
 - unified-facade composition for basis and diff result bundles through
-  [crates/worth-query/src/application/capability/witnesses.rs](../../workspaces/worth-query/crates/worth-query/src/application/capability/witnesses.rs)
+  [crates/worth-query/src/application/capability/witnesses.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/application/capability/witnesses.rs)
   and
-  [crates/worth-query/src/application/support/report.rs](../../workspaces/worth-query/crates/worth-query/src/application/support/report.rs)
+  [crates/worth-query/src/application/support/report.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/application/support/report.rs)
 - milestone-native certification in
-  [crates/worth-query/src/harness/historical_diff_certification](../../workspaces/worth-query/crates/worth-query/src/harness/historical_diff_certification)
+  [crates/worth-query/src/harness/historical_diff_certification](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/harness/historical_diff_certification)
 - compile-fail proof boundaries for admitted basis contexts, admitted diff
   contexts, result bundles, metadata artifacts, execution artifacts, and
   query-context support truth in
@@ -50,11 +50,11 @@ because the required basis/diff proof surface now exists directly.
 
 Covered by:
 
-- [mod.rs](../../workspaces/worth-query/crates/worth-query/src/harness/historical_diff_certification/mod.rs)
+- [mod.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/harness/historical_diff_certification/mod.rs)
 - `lane.rs`
 - `matrix.rs`
-- [row_catalog.rs](../../workspaces/worth-query/crates/worth-query/src/harness/historical_diff_certification/row_catalog.rs)
-- [tests.rs](../../workspaces/worth-query/crates/worth-query/src/harness/historical_diff_certification/tests.rs)
+- [row_catalog.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/harness/historical_diff_certification/row_catalog.rs)
+- [tests.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/harness/historical_diff_certification/tests.rs)
 
 What is proven:
 
@@ -100,9 +100,9 @@ Covered by:
 
 - `basis.rs`
 - `execution.rs`
-- [comparison.rs](../../workspaces/worth-query/crates/worth-query/src/query_context/comparison.rs)
+- [comparison.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/query_context/comparison.rs)
 - `metadata.rs`
-- [support.rs](../../workspaces/worth-query/crates/worth-query/src/query_context/support.rs)
+- [support.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/query_context/support.rs)
 
 What is proven:
 
@@ -123,8 +123,8 @@ What is proven:
 
 Covered by:
 
-- [witnesses.rs](../../workspaces/worth-query/crates/worth-query/src/application/capability/witnesses.rs)
-- [report.rs](../../workspaces/worth-query/crates/worth-query/src/application/support/report.rs)
+- [witnesses.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/application/capability/witnesses.rs)
+- [report.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/application/support/report.rs)
 - `matrix.rs`
 - `tests.rs`
 

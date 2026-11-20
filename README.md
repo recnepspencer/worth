@@ -149,7 +149,6 @@ database, identity provider, or policy truth store: it composes those owners.
 | `worth-query-execution` | Owns execution over admitted plans, the primary graph, product branches, and program runtimes. | Internal | Active |
 | `worth-query-publication` | Owns the request API, disclosure, and publication. | Internal | Active |
 | `worth-query-package-archive` | The deterministic archive format for publishing portable Query packages. | Internal (package publishing) | Active |
-| `worth-query` | The internal Query engine, used by the UI binding and the server. | Internal | Active |
 
 Workspace guide: [workspaces/worth-query/README.md](workspaces/worth-query/README.md).
 
@@ -191,6 +190,8 @@ Guides: [workspace README](workspaces/worth-store/README.md) and
 Engineering sequence: [Database Foundation Roadmap](plans/database-foundation/roadmap.md).
 
 ### UI (`workspaces/worth-ui/`)
+
+> **Parked (2026-11-20).** Worth UI does not build: its Query binding still depends on the retired `worth-query` engine. Migration is tracked in [#262](https://github.com/recnepspencer/worth/issues/262).
 
 The product-facing UI platform. It owns authored UI meaning, compilation,
 active application state, planning, mounting, interaction and intent
@@ -234,13 +235,13 @@ worth-proof
             └─ worth-runtime-bridge      (depends on Relational and Signal)
                  └─ worth-runtime-world
                       └─ Query authority crates
-                           └─ worth-query-host, worth-query (engine)
+                           └─ worth-query-host
                                 └─ worth-ui, reference apps
 ```
 
 `worth-query-decl` depends only on `worth-query-declaration`.
-`worth-query-host` sits on the five Query authority crates and does not depend
-on the internal engine. Neither consumer facade depends directly on
+`worth-query-host` sits on the five Query authority crates. Neither consumer
+facade depends directly on
 `worth-proof`. Applications receive authority from its owners; they never
 construct it.
 

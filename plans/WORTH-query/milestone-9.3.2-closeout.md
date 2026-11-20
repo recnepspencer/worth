@@ -85,20 +85,20 @@ authority, or store-backed durable recovery.
 Milestone 9.3.2 delivered:
 
 - basis lifecycle implementation in
-  [crates/worth-query/src/basis_lifecycle](../../workspaces/worth-query/crates/worth-query/src/basis_lifecycle)
+  [crates/worth-query/src/basis_lifecycle](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/basis_lifecycle)
 - certification outputs and audits in
-  [crates/worth-query/src/basis_lifecycle/certification](../../workspaces/worth-query/crates/worth-query/src/basis_lifecycle/certification)
+  [crates/worth-query/src/basis_lifecycle/certification](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/basis_lifecycle/certification)
 - lower-runtime reuse matrix and adapter shape contract in
-  [crates/worth-query/src/basis_lifecycle/reuse.rs](../../workspaces/worth-query/crates/worth-query/src/basis_lifecycle/reuse.rs)
+  [crates/worth-query/src/basis_lifecycle/reuse.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/basis_lifecycle/reuse.rs)
 - migration audit and zero-debt lifecycle adapters in
-  [crates/worth-query/src/basis_lifecycle/migration.rs](../../workspaces/worth-query/crates/worth-query/src/basis_lifecycle/migration.rs) and
+  [crates/worth-query/src/basis_lifecycle/migration.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/basis_lifecycle/migration.rs) and
   `crates/worth-query/src/basis_lifecycle/adapters.rs`
 - DX transcripts and common-path basis API in
   [crates/worth-query/src/basis_lifecycle/dx.rs](../../workspaces/worth-query/crates/worth-query-admission/src/domain_computation/basis_lifecycle/dx.rs)
 - support metadata and discovery in
   [crates/worth-query/src/basis_lifecycle/support.rs](../../workspaces/worth-query/crates/worth-query-admission/src/domain_computation/basis_lifecycle/support.rs)
 - facade exports in
-  [crates/worth-query/src/facade/exports_foundation.rs](../../workspaces/worth-query/crates/worth-query/src/facade/exports_foundation.rs)
+  [crates/worth-query/src/facade/exports_foundation.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/facade/exports_foundation.rs)
 - compile-fail proof boundaries in
   `crates/worth-query/tests/ui/basis_lifecycle`
 
@@ -122,9 +122,9 @@ authority-preserving lower-runtime reuse.
 Covered by:
 
 - [crates/worth-query/src/basis_lifecycle/tests.rs](../../workspaces/worth-query/crates/worth-query-admission/src/domain_computation/basis_lifecycle/tests.rs)
-- [crates/worth-query/src/basis_lifecycle/certification/tests.rs](../../workspaces/worth-query/crates/worth-query/src/basis_lifecycle/certification/tests.rs)
+- [crates/worth-query/src/basis_lifecycle/certification/tests.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/basis_lifecycle/certification/tests.rs)
 - [crates/worth-query/src/basis_lifecycle/support/tests.rs](../../workspaces/worth-query/crates/worth-query-admission/src/domain_computation/basis_lifecycle/support/tests.rs)
-- [crates/worth-query/src/basis_lifecycle/reuse/tests.rs](../../workspaces/worth-query/crates/worth-query/src/basis_lifecycle/reuse/tests.rs)
+- [crates/worth-query/src/basis_lifecycle/reuse/tests.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/basis_lifecycle/reuse/tests.rs)
 - `crates/worth-query/src/basis_lifecycle/adapters/tests.rs`
 - `crates/worth-query/tests/ui/basis_lifecycle`
 

@@ -461,9 +461,8 @@ permanent contract.
 - Applications import audience facades (for Query: `worth-query-decl` for
   declarations and `worth-query-host` for hosting and requests).
 - Certification code imports `worth-query-replay` for cost evidence. Engine
-  workflow replay lives in the engine's cert-only
-  `worth_query::facade::certification` namespace. Ordinary application code
-  uses neither.
+  workflow replay was retired with the `worth-query` engine. Ordinary
+  application code never imports `worth-query-replay`.
 - Facade names are snapshotted and checked in CI, so a facade change is always
   deliberate.
 

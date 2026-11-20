@@ -30,18 +30,18 @@ Milestone 5.3 delivered:
 
 - planner-owned frontier posture, packet identity, bundle basis proof, route
   posture, parity bundles, and counter snapshots in
-  [crates/worth-query/src/frontier_planning](../../workspaces/worth-query/crates/worth-query/src/frontier_planning)
+  [crates/worth-query/src/frontier_planning](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/frontier_planning)
 - lower-runtime frontier-evidence translation in
-  [crates/worth-query/src/frontier_signal_adapter.rs](../../workspaces/worth-query/crates/worth-query/src/frontier_signal_adapter.rs)
+  [crates/worth-query/src/frontier_signal_adapter.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/frontier_signal_adapter.rs)
 - route-typed planning wrappers and facade exposure in
-  [crates/worth-query/src/planning/mod.rs](../../workspaces/worth-query/crates/worth-query/src/planning/mod.rs)
+  [crates/worth-query/src/planning/mod.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/planning/mod.rs)
   and
-  [crates/worth-query/src/facade.rs](../../workspaces/worth-query/crates/worth-query/src/facade.rs)
+  [crates/worth-query/src/facade.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/facade.rs)
 - route-typed execution entrypoints in
-  [crates/worth-query/src/execution/mod.rs](../../workspaces/worth-query/crates/worth-query/src/execution/mod.rs)
+  [crates/worth-query/src/execution/mod.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/execution/mod.rs)
 - milestone-native frontier certification artifacts, rejection rows, and
   closeout mapping under
-  [crates/worth-query/src/harness/frontier_certification](../../workspaces/worth-query/crates/worth-query/src/harness/frontier_certification)
+  [crates/worth-query/src/harness/frontier_certification](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/harness/frontier_certification)
 - frontier lowering, bundle, signal-backed evidence, drift, and parity harness
   coverage under
   `crates/worth-query/src/harness/frontier_planning.rs`
@@ -63,9 +63,9 @@ acceptance surfaces now exist directly.
 
 Covered by:
 
-- [frontier_certification/mod.rs](../../workspaces/worth-query/crates/worth-query/src/harness/frontier_certification/mod.rs)
-- [frontier_certification/model.rs](../../workspaces/worth-query/crates/worth-query/src/harness/frontier_certification/model.rs)
-- [frontier_certification/tests.rs](../../workspaces/worth-query/crates/worth-query/src/harness/frontier_certification/tests.rs)
+- [frontier_certification/mod.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/harness/frontier_certification/mod.rs)
+- [frontier_certification/model.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/harness/frontier_certification/model.rs)
+- [frontier_certification/tests.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/harness/frontier_certification/tests.rs)
 
 What is proven:
 

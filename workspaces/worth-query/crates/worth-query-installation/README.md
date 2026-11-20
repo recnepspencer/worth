@@ -170,10 +170,6 @@ fixed budget.
 
 ## Related Docs
 
-- [Runtime-Installed Domains And Operations](../worth-query/docs/domain-capabilities/runtime-installed-domains.md)
-- [Conditional Installed Operations](../worth-query/docs/domain-capabilities/conditional-installed-operations.md)
-- [Installed Operation Re-Execution And Replay](../worth-query/docs/domain-capabilities/installed-operation-reexecution-and-replay.md)
-- [Typed Stops And Remediation Guidance](../worth-query/docs/domain-capabilities/typed-stops-and-remediation-guidance.md)
-- [Installed Operation Lineage And Promotion](../worth-query/docs/domain-capabilities/installed-operation-lineage-and-promotion.md)
-- [Application Aftermath, External Effects, And Recovery](../worth-query/docs/execution/application-aftermath-and-recovery.md)
-- [Worth Query Orientation](../worth-query/docs/AI_README.md)
+- [Conditional Installed Operations](../../docs/domain-capabilities/conditional-installed-operations.md)
+- [Application Aftermath, External Effects, And Recovery](../../docs/execution/application-aftermath-and-recovery.md)
+- [Worth Query Orientation](../../docs/AI_README.md)

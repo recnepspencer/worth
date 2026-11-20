@@ -26,18 +26,18 @@ bundles.
 Milestone 4 delivered:
 
 - planner-owned collection artifacts and collection digest authority in
-  [crates/worth-query/src/collection](../../workspaces/worth-query/crates/worth-query/src/collection)
+  [crates/worth-query/src/collection](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/collection)
 - collection-aware plan lowering in
-  [crates/worth-query/src/planning](../../workspaces/worth-query/crates/worth-query/src/planning)
+  [crates/worth-query/src/planning](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/planning)
 - runtime-backed collection execution envelopes and collection-specific
   counters in
-  [crates/worth-query/src/execution](../../workspaces/worth-query/crates/worth-query/src/execution)
+  [crates/worth-query/src/execution](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/execution)
 - collection-specific harness and acceptance artifacts under
   `crates/worth-query/src/harness/collection_certification`
   and
   `crates/worth-query/src/harness/collection_matrix`
 - shared fixture coverage for collection preflights under
-  [crates/worth-query/src/harness/fixtures](../../workspaces/worth-query/crates/worth-query/src/harness/fixtures)
+  [crates/worth-query/src/harness/fixtures](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/harness/fixtures)
 - compile-fail proof-boundary tests for collection artifacts under
   `crates/worth-query/tests/ui`
 

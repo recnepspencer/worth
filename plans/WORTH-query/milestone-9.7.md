@@ -144,9 +144,9 @@ lane contracts. Zero behavior change.
 - test-support and downstream adapter implementations
 
 **Relevant Query source surfaces**
-- [runtime/backend/contracts.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/backend/contracts.rs)
-- [runtime/backend/parts.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/backend/parts.rs)
-- [runtime/builder.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/builder.rs)
+- [runtime/backend/contracts.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/runtime/backend/contracts.rs)
+- [runtime/backend/parts.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/runtime/backend/parts.rs)
+- [runtime/builder.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/runtime/builder.rs)
 
 **Relevant APIs and product surfaces**
 - `WORTHQueryRuntimeSourceAdapter` and sibling adapter contracts, decomposed
@@ -193,8 +193,8 @@ arch law 9.
 - construction lifecycle propagation
 
 **Relevant Query source surfaces**
-- [runtime/builder.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/builder.rs)
-- [runtime/backend/parts.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/backend/parts.rs)
+- [runtime/builder.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/runtime/builder.rs)
+- [runtime/backend/parts.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/runtime/backend/parts.rs)
 
 **Relevant APIs and product surfaces**
 - `WORTHQueryRuntime::builder()` lane-typed part intake
@@ -238,8 +238,8 @@ counting and without unbounded retention.
 - basis capability lifecycle
 
 **Relevant Query source surfaces**
-- [runtime/state_snapshot.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/state_snapshot.rs)
-- [runtime/workspace.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/workspace.rs)
+- [runtime/state_snapshot.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/runtime/state_snapshot.rs)
+- [runtime/workspace.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/runtime/workspace.rs)
 
 **Relevant APIs and product surfaces**
 - generation-indexed snapshot pin and retirement surfaces consumed by the
@@ -290,9 +290,9 @@ pinning substrate.
 - snapshot generation pinning (consumed from Phase 3)
 
 **Relevant Query source surfaces**
-- [runtime/workspace.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/workspace.rs)
-- [runtime/workspace_queries.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/workspace_queries.rs)
-- [runtime/state_snapshot.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/state_snapshot.rs)
+- [runtime/workspace.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/runtime/workspace.rs)
+- [runtime/workspace_queries.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/runtime/workspace_queries.rs)
+- [runtime/state_snapshot.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/runtime/state_snapshot.rs)
 
 **Relevant APIs and product surfaces**
 - the sealed shared read context constructor on the workspace (the only legal
@@ -376,8 +376,8 @@ artifacts.
 - journal identity
 
 **Relevant Query source surfaces**
-- [runtime/workspace.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/workspace.rs)
-- [runtime/workspace_declaration.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/workspace_declaration.rs)
+- [runtime/workspace.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/runtime/workspace.rs)
+- [runtime/workspace_declaration.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/runtime/workspace_declaration.rs)
 
 **Relevant APIs and product surfaces**
 - the typed submission surface accepting canonical declarations and admitted
@@ -440,8 +440,8 @@ replay as consumer-side refolds because no runtime-owned replay lane exists.
 - journal segment identity
 
 **Relevant Query source surfaces**
-- [runtime/workspace.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/workspace.rs)
-- [runtime/workspace_declaration.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/workspace_declaration.rs)
+- [runtime/workspace.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/runtime/workspace.rs)
+- [runtime/workspace_declaration.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/runtime/workspace_declaration.rs)
 
 **Relevant APIs and product surfaces**
 - typed replay requests binding a basis capability to a journal segment
@@ -488,8 +488,8 @@ order.
 - published artifact registry
 
 **Relevant Query source surfaces**
-- [runtime/workspace_queries.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/workspace_queries.rs)
-- [projection_consumption/receipt.rs](../../workspaces/worth-query/crates/worth-query/src/projection_consumption/receipt.rs)
+- [runtime/workspace_queries.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/runtime/workspace_queries.rs)
+- [projection_consumption/receipt.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/projection_consumption/receipt.rs)
 
 **Relevant APIs and product surfaces**
 - maintenance-owner publication receipts binding artifact digest to basis and
@@ -536,7 +536,7 @@ evaluation.
 
 **Relevant Query source surfaces**
 - `projection_consumption/source.rs`
-- [projection_consumption/receipt.rs](../../workspaces/worth-query/crates/worth-query/src/projection_consumption/receipt.rs)
+- [projection_consumption/receipt.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/projection_consumption/receipt.rs)
 
 **Relevant APIs and product surfaces**
 - published derived-artifact consumption through the shared read context
@@ -604,10 +604,10 @@ is compile-enforced.
 - support/admission reporting for the new families
 
 **Relevant Query source surfaces**
-- [runtime/workspace.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/workspace.rs)
-- [runtime/builder.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/builder.rs)
-- [runtime/support/profile.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/support/profile.rs)
-- [runtime/support_matrix.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/support_matrix.rs)
+- [runtime/workspace.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/runtime/workspace.rs)
+- [runtime/builder.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/runtime/builder.rs)
+- [runtime/support/profile.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/runtime/support/profile.rs)
+- [runtime/support_matrix.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/runtime/support_matrix.rs)
 
 **Relevant APIs and product surfaces**
 - `WORTHQueryWorkspace` — unchanged signatures for existing families, plus
@@ -657,7 +657,7 @@ exists; it does **not** close the milestone.
 
 **Relevant Query source surfaces**
 - [tests/support/public_bridge_runtime/mod.rs](../../workspaces/worth-query/crates/worth-query-worlds-query/src/query/support/public_bridge_runtime/mod.rs)
-- [runtime/tests/support/bridge/runtime_support.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/tests/support/bridge/runtime_support.rs)
+- [runtime/tests/support/bridge/runtime_support.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/runtime/tests/support/bridge/runtime_support.rs)
 
 **Warnings**
 - Do not treat a serial schedule as concurrent certification. Real N-thread
@@ -704,9 +704,9 @@ slice proof before Phase 12 begins.
 - pinning inventory (registry and mint slice)
 
 **Relevant Query source surfaces**
-- [runtime/shared_read.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/shared_read.rs)
-- [runtime/state.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/state.rs)
-- [runtime/workspace_shared_read.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/workspace_shared_read.rs)
+- [runtime/shared_read.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/runtime/shared_read.rs)
+- [runtime/state.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/runtime/state.rs)
+- [runtime/workspace_shared_read.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/runtime/workspace_shared_read.rs)
 - `application/support/shared_read_pinning_inventory.rs` (new)
 
 **Relevant APIs and product surfaces**
@@ -770,9 +770,9 @@ retire path and must close on pin-substrate proof before Phase 13 begins.
 - pinning inventory (pin and retire slice)
 
 **Relevant Query source surfaces**
-- [runtime/shared_read_pins/registry.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/shared_read_pins/registry.rs)
-- [runtime/state_snapshot.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/state_snapshot.rs)
-- [runtime/workspace.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/workspace.rs)
+- [runtime/shared_read_pins/registry.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/runtime/shared_read_pins/registry.rs)
+- [runtime/state_snapshot.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/runtime/state_snapshot.rs)
+- [runtime/workspace.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/runtime/workspace.rs)
 - `application/support/shared_read_pinning_inventory.rs`
 
 **Relevant APIs and product surfaces**
@@ -838,12 +838,12 @@ pinning is honestly `Closed` when Phase 13 passes.
 - hostile pinning certification
 
 **Relevant Query source surfaces**
-- [runtime/shared_read.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/shared_read.rs)
-- [runtime/workspace_shared_read.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/workspace_shared_read.rs)
-- [runtime/workspace_queries.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/workspace_queries.rs)
-- [runtime/shared_read_pins/](../../workspaces/worth-query/crates/worth-query/src/runtime/shared_read_pins/)
+- [runtime/shared_read.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/runtime/shared_read.rs)
+- [runtime/workspace_shared_read.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/runtime/workspace_shared_read.rs)
+- [runtime/workspace_queries.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/runtime/workspace_queries.rs)
+- [runtime/shared_read_pins/](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/runtime/shared_read_pins)
 - `application/support/shared_read_pinning_inventory.rs`
-- [runtime/tests/shared_read_pinning/](../../workspaces/worth-query/crates/worth-query/src/runtime/tests/shared_read_pinning/) (new hostile matrix home)
+- [runtime/tests/shared_read_pinning/](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/runtime/tests/shared_read_pinning) (new hostile matrix home)
 
 **Relevant APIs and product surfaces**
 - `WORTHQuerySharedReadContext: Send + Sync` with compile-time proof tests
@@ -915,8 +915,8 @@ close on journal-identity proof before Phase 15 begins.
 - journal inventory (submission and receipt slice)
 
 **Relevant Query source surfaces**
-- [runtime/workspace_submission.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/workspace_submission.rs)
-- [runtime/backend/receipts.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/backend/receipts.rs)
+- [runtime/workspace_submission.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/runtime/workspace_submission.rs)
+- [runtime/backend/receipts.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/runtime/backend/receipts.rs)
 - `application/support/journal_identity_inventory.rs` (new)
 
 **Relevant APIs and product surfaces**
@@ -970,8 +970,8 @@ phase**. No later phase re-audits journal identity.
 - journal inventory (completeness and closure posture)
 
 **Relevant Query source surfaces**
-- [runtime/public_api.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/public_api.rs)
-- [runtime/workspace_submission.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/workspace_submission.rs)
+- [runtime/public_api.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/runtime/public_api.rs)
+- [runtime/workspace_submission.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/runtime/workspace_submission.rs)
 - `application/support/journal_identity_inventory.rs`
 
 **Relevant APIs and product surfaces**
@@ -1027,8 +1027,8 @@ proof close inside this phase**; there is no separate certification-audit phase.
 - runtime measurement counters
 
 **Relevant Query source surfaces**
-- [runtime/tests/support/bridge/hostile_certification_schedule.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/tests/support/bridge/hostile_certification_schedule.rs)
-- [runtime/tests/support/bridge/hostile_certification.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/tests/support/bridge/hostile_certification.rs)
+- [runtime/tests/support/bridge/hostile_certification_schedule.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/runtime/tests/support/bridge/hostile_certification_schedule.rs)
+- [runtime/tests/support/bridge/hostile_certification.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/runtime/tests/support/bridge/hostile_certification.rs)
 
 **Warnings**
 - Do not certify axes in isolation.

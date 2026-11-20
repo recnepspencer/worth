@@ -9,7 +9,6 @@ FIXTURE = (
     "consumer_entry/Cargo.toml"
 )
 BANK = "workspaces/worth-query-bank-world/Cargo.toml"
-UI = "workspaces/worth-ui/Cargo.toml"
 BOUNDARY = "tools/boundary-check/Cargo.toml"
 
 def packages(*names):
@@ -18,8 +17,6 @@ def packages(*names):
 
 LOWER = ("worth-relational", "worth-execution", "worth-signal",
          "worth-runtime-bridge", "worth-runtime-world")
-QUERY_PUBLIC = ("worth-query-execution", "worth-query-publication", "worth-query",
-                "worth-query-host")
 FIXTURE_PACKAGES = ("worth-query-topology-entry", "worth-query-parameter-entry",
                     "worth-query-consumer-root")
 
@@ -32,7 +29,6 @@ GROUPS = {
     "root": ROOT_TESTS,
     "fixture": ["--manifest-path", FIXTURE, *packages(*FIXTURE_PACKAGES),
                 "--lib", "--bins", "--tests"],
-    "ui": ["--manifest-path", UI, "-p", "worth-ui-query-binding", "--lib"],
 }
 
 CATEGORIES = ("process", "oracle", "cost", "determinism", "compile_fail")
@@ -91,7 +87,6 @@ TEST_SUITES = {
     ),
     # Topology cases get individual processes; other fixture owners use normal chunks.
     "fixture": ("fixture", everything, 150, 16),
-    "ui": ("ui", everything, 100, 2),
     "bank": ("bank", everything, 150, 1),
 }
 # Category suites reuse the same build and select top-level path prefixes.

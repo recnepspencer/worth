@@ -282,7 +282,7 @@ Start with `request.inspect::<ReadBinding>(&original)` for a completed query or
 operation. Choose reference inspection, comparison, a producer connection, or
 materialized original values through `facade::causal_inspection`.
 
-[Inspect original evidence](../worth-query/docs/capabilities/cross-runtime-causal-inspection.md)
+[Inspect original evidence](../../docs/capabilities/cross-runtime-causal-inspection.md)
 shows how to keep the right receipts, query a producer settlement and admit the
 current metadata/diagnostic access each request needs. Use it for audit and
 debugging views that must describe the original work after later state changes.
@@ -450,7 +450,7 @@ For independent native custody tests, select `request.advanced().mutate(intent)`
 before `execute_performed_discovered`, unpublished recovery or promotion.
 Registered native recovery also starts at `request.advanced()`. These controls
 preserve actual partial/source owners and return them on refusal; they are not
-ordinary business retry helpers. See [owning discovered actions](../worth-query/docs/foundations/ordinary-application-front-door.md#owning-discovered-actions).
+ordinary business retry helpers. See [owning discovered actions](../../docs/foundations/ordinary-application-front-door.md#owning-discovered-actions).
 
 ### Advanced fixed publication and recovery
 
@@ -714,7 +714,7 @@ with contribution inventory, ownership, and handler-completeness denials in
 [contribution denials](../worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/contribution_denials.rs).
 The synchronous application foundation, branch-local program evolution, and
 authored workflow definitions (see the authored workflow example above and the
-[workflows guide](../worth-query/docs/foundations/workflows.md)) are
+[workflows guide](../../docs/foundations/workflows.md)) are
 available through this facade. An installed inbound source can complete the
 exact external-effect owner; `await_inbound` reads that result on fresh
 workflow advance. No callback or resume message advances an instance itself.
@@ -866,7 +866,7 @@ worker equivalence or replace warm reconciliation and entry refresh.
 ## Typed Handler And Invariant Access
 
 For literal guards and assignments on required scope fields, prefer an
-[executable scope-field body](../worth-query/docs/authoring/scope-field-operation-bodies.md).
+[executable scope-field body](../../docs/authoring/scope-field-operation-bodies.md).
 Attach its completed typed body to the operation definition, bind that schema
 into program authoring, and call `setup.operation_body::<Binding>()`. Query owns
 the installed values and native execution; ordinary handler registration cannot
@@ -1037,19 +1037,15 @@ admission, and currentness checks.
 ## Related Docs
 
 - [Build an Application](../../../../docs/build-an-application.md): the centerpiece guide
-- [Programs And Adoption](../worth-query/docs/foundations/programs-and-adoption.md)
-- [Workflows](../worth-query/docs/foundations/workflows.md)
-- [Ordinary Application Front Door](../worth-query/docs/foundations/ordinary-application-front-door.md)
+- [Programs And Adoption](../../docs/foundations/programs-and-adoption.md)
+- [Workflows](../../docs/foundations/workflows.md)
+- [Ordinary Application Front Door](../../docs/foundations/ordinary-application-front-door.md)
 - [Capability Index](../../../../docs/capability-index.md): find the facade call for a task
-- [Query Engine Architecture Map](../worth-query/docs/AI_README.md): engine-internal, for Query maintainers
-- [Application Authorization And Emergency Elevation](../worth-query/docs/capabilities/application-authorization-and-emergency-elevation.md)
-- [Runtime-Installed Domains And Operations](../worth-query/docs/domain-capabilities/runtime-installed-domains.md)
-- [Canonical Graph Obligation Progression](../worth-query/docs/domain-capabilities/canonical-graph-obligation-progression.md)
-- [Conditional Installed Operations](../worth-query/docs/domain-capabilities/conditional-installed-operations.md)
-- [Installed Operation Re-Execution And Replay](../worth-query/docs/domain-capabilities/installed-operation-reexecution-and-replay.md)
-- [Typed Stops And Remediation Guidance](../worth-query/docs/domain-capabilities/typed-stops-and-remediation-guidance.md)
-- [Installed Operation Lineage And Promotion](../worth-query/docs/domain-capabilities/installed-operation-lineage-and-promotion.md)
-- [Application Aftermath, External Effects, And Recovery](../worth-query/docs/execution/application-aftermath-and-recovery.md)
+- [Query Engine Architecture Map](../../docs/AI_README.md): engine-internal, for Query maintainers
+- [Application Authorization And Emergency Elevation](../../docs/capabilities/application-authorization-and-emergency-elevation.md)
+- [Canonical Graph Obligation Progression](../../docs/domain-capabilities/canonical-graph-obligation-progression.md)
+- [Conditional Installed Operations](../../docs/domain-capabilities/conditional-installed-operations.md)
+- [Application Aftermath, External Effects, And Recovery](../../docs/execution/application-aftermath-and-recovery.md)
 
 Input capture uses the initiating request's native resources before moving any
 original fields. Its refusal returns `(original_builder, owned_key,
@@ -1067,7 +1063,7 @@ once; keep capture-refusal custody. Supply fresh requests to `advance` and
 `close`, retain same-owner refusals, and use completed `close_with_evidence` to
 transfer native Fresh/Recovered receipt evidence after cleanup. Commands are
 not domain mutations and have no public execute/recover or clone escape.
-See [owning capability commands](../worth-query/docs/foundations/workflows.md#owning-capability-commands)
+See [owning capability commands](../../docs/foundations/workflows.md#owning-capability-commands)
 for native replay and authority distinctions.
 
 ## Mixed workflow consumer

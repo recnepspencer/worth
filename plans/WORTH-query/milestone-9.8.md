@@ -169,7 +169,7 @@ over the `9.6` primitive.
 
 **Relevant Query source surfaces**
 - the Milestone `9.6` evidence-identity primitive surface
-- [runtime/support_matrix.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/support_matrix.rs) as the
+- [runtime/support_matrix.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/runtime/support_matrix.rs) as the
   house example of the report shape the kit must be able to express
 
 **Relevant downstream evidence (reference consumer)**
@@ -256,7 +256,7 @@ set as structure allows.
 - runtime seam visibility
 
 **Relevant Query source surfaces**
-- [runtime/workspace.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/workspace.rs) (covered seams:
+- [runtime/workspace.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/runtime/workspace.rs) (covered seams:
   `write`, `batch`, existing-truth binding and probe surfaces named by the
   Milestone `9.5` Phase 4 seam-retirement list)
 
@@ -398,9 +398,9 @@ and CI can store, diff, and reason about outside a running workspace.
 - support matrix projection (new boundary home inside the consumer kit)
 
 **Relevant Query source surfaces**
-- [runtime/support_matrix.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/support_matrix.rs)
-- [runtime/support/profile.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/support/profile.rs)
-- [application/support/report.rs](../../workspaces/worth-query/crates/worth-query/src/application/support/report.rs)
+- [runtime/support_matrix.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/runtime/support_matrix.rs)
+- [runtime/support/profile.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/runtime/support/profile.rs)
+- [application/support/report.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/application/support/report.rs)
 
 **Warnings**
 - Do not create a second support truth; the snapshot is a derived projection
@@ -520,10 +520,10 @@ runtime-bridge adapter traits or fabricating receipts by hand.
   phase generalizes for consumers)
 
 **Relevant Query source surfaces**
-- [memory_workspace/mod.rs](../../workspaces/worth-query/crates/worth-query/src/memory_workspace/mod.rs)
+- [memory_workspace/mod.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/memory_workspace/mod.rs)
   (private today; the implementation seed for the shipped backend)
-- [runtime/builder.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/builder.rs)
-- [runtime/backend/parts.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/backend/parts.rs)
+- [runtime/builder.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/runtime/builder.rs)
+- [runtime/backend/parts.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/runtime/backend/parts.rs)
 
 **Relevant downstream evidence (external consumers)**
 - `workflow-editor` (`workflow_query_WORTH/src/workspace_reads/tests_support.rs`

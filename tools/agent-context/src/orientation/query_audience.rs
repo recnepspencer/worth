@@ -123,10 +123,10 @@ pub(crate) fn query_machine_fences_for_band(
     band: &str,
     contract: &QueryAudienceContractSpec,
 ) -> Vec<String> {
-    let mut fences = vec![format!(
-        "Must not depend on Query engine `{}` directly; consume only through configured audience facades.",
-        contract.engine_package
-    )];
+    let mut fences = vec![
+        "Must not depend on Query authority packages directly; consume only through configured audience facades."
+            .to_owned(),
+    ];
 
     let legal: Vec<&QueryAudienceFacadeSpec> = contract
         .audiences

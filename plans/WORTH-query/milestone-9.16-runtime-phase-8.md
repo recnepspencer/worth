@@ -3,7 +3,7 @@
 > **Status:** Completed. Its undo and redo sections are provisional; [Milestone 9.18](./milestone-9.18.md) owns their final semantics.
 
 **Owner:** Runtime Hardening Track, Phase 8
-**Developer guide:** [`Application Aftermath, External Effects, And Recovery`](../../workspaces/worth-query/crates/worth-query/docs/execution/application-aftermath-and-recovery.md)
+**Developer guide:** [`Application Aftermath, External Effects, And Recovery`](../../workspaces/worth-query/docs/execution/application-aftermath-and-recovery.md)
 **Canonical milestone:** [`milestone-9.16.md`](./milestone-9.16.md)
 **Predecessor:** Runtime Phase 7, closed through Gate 7.7 Gate D
 ([`milestone-9.16-runtime-phase-7-closure-ledger.md`](./milestone-9.16-runtime-phase-7-closure-ledger.md))

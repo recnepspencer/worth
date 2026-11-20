@@ -76,13 +76,13 @@ Milestone 9.3.1 delivered:
 
 - causal observation receipts, anchors, requests, admission, evidence
   references, reference resolution, and proof flow in
-  [crates/worth-query/src/runtime/inspection/causal](../../workspaces/worth-query/crates/worth-query/src/runtime/inspection/causal)
+  [crates/worth-query/src/runtime/inspection/causal](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/runtime/inspection/causal)
 - Query-owned materialized admitted, advisory, and denied causal artifacts in
   [crates/worth-query/src/runtime/inspection/causal/materialization](../../workspaces/worth-query/crates/worth-query/src/runtime/inspection/causal/materialization)
 - Phase 6 certification scope, bundle, representative matrix, proof-shape
   certification, boundary audit, row digest inventory, failure evidence, and
   performance certification in
-  [crates/worth-query/src/runtime/inspection/causal/certification](../../workspaces/worth-query/crates/worth-query/src/runtime/inspection/causal/certification)
+  [crates/worth-query/src/runtime/inspection/causal/certification](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/runtime/inspection/causal/certification)
 - bridge-owned causal envelope authority, evidence references, bindings,
   counters, denials, identity, receipts, retained mapping, and facade assembly
   in
@@ -90,7 +90,7 @@ Milestone 9.3.1 delivered:
 - runtime-bridge facade exposure for bridge causal envelope assembly in
   [crates/worth-runtime-bridge/src/diagnostics/facade/query.rs](../../crates/worth-runtime-bridge/src/diagnostics/facade/query/mod.rs)
 - Query causal inspection tests in
-  [crates/worth-query/src/runtime/tests/causal_inspection](../../workspaces/worth-query/crates/worth-query/src/runtime/tests/causal_inspection)
+  [crates/worth-query/src/runtime/tests/causal_inspection](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/runtime/tests/causal_inspection)
 - runtime-bridge causal envelope tests in
   [crates/worth-runtime-bridge/src/facade/tests/causal_envelope](../../crates/worth-runtime-bridge/src/facade/tests/causal_envelope)
 - compile-fail proof boundaries in
@@ -116,8 +116,8 @@ machine-checkable certification artifacts.
 
 Covered by:
 
-- [crates/worth-query/src/runtime/tests/causal_inspection](../../workspaces/worth-query/crates/worth-query/src/runtime/tests/causal_inspection)
-- [crates/worth-query/src/runtime/tests/causal_inspection/certification](../../workspaces/worth-query/crates/worth-query/src/runtime/tests/causal_inspection/certification)
+- [crates/worth-query/src/runtime/tests/causal_inspection](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/runtime/tests/causal_inspection)
+- [crates/worth-query/src/runtime/tests/causal_inspection/certification](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/runtime/tests/causal_inspection/certification)
 - [crates/worth-runtime-bridge/src/facade/tests/causal_envelope](../../crates/worth-runtime-bridge/src/facade/tests/causal_envelope)
 - `crates/worth-query/tests/ui`
 - [crates/worth-runtime-bridge/tests/ui/causal_envelope](../../crates/worth-runtime-bridge/tests/ui/causal_envelope)

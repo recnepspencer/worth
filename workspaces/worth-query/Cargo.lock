@@ -1431,28 +1431,6 @@ name = "worth-proof"
 version = "0.1.0"
 
 [[package]]
-name = "worth-query"
-version = "0.1.0"
-dependencies = [
- "arc-swap",
- "serde",
- "serde_json",
- "sha2",
- "worth-execution",
- "worth-foundational",
- "worth-proof",
- "worth-query-admission",
- "worth-query-declaration",
- "worth-query-execution",
- "worth-query-installation",
- "worth-query-publication",
- "worth-relational",
- "worth-runtime-bridge",
- "worth-schema-graph",
- "worth-signal",
-]
-
-[[package]]
 name = "worth-query-admission"
 version = "0.1.0"
 dependencies = [
@@ -1887,44 +1865,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "worth-query-court-query"
-version = "0.1.0"
-dependencies = [
- "worth-execution",
- "worth-query",
- "worth-query-testkit-installed-operation-fixture",
- "worth-query-testkit-query",
-]
-
-[[package]]
-name = "worth-query-court-query-installed-operating-world"
-version = "0.1.0"
-dependencies = [
- "worth-execution",
- "worth-foundational",
- "worth-proof",
- "worth-query",
- "worth-query-execution",
- "worth-query-installation",
- "worth-query-testkit-installed-operation-fixture",
- "worth-query-testkit-query",
- "worth-runtime-bridge",
- "worth-signal",
-]
-
-[[package]]
-name = "worth-query-court-query-installed-operations"
-version = "0.1.0"
-dependencies = [
- "worth-execution",
- "worth-foundational",
- "worth-query",
- "worth-query-testkit-installed-operation-fixture",
- "worth-query-testkit-query",
- "worth-runtime-bridge",
-]
-
-[[package]]
 name = "worth-query-court-source"
 version = "0.1.0"
 
@@ -2229,21 +2169,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "worth-query-testkit-installed-operation-fixture"
-version = "0.1.0"
-dependencies = [
- "worth-execution",
- "worth-foundational",
- "worth-proof",
- "worth-query",
- "worth-query-declaration",
- "worth-query-execution",
- "worth-relational",
- "worth-runtime-bridge",
- "worth-signal",
-]
-
-[[package]]
 name = "worth-query-testkit-instantiation"
 version = "0.1.0"
 dependencies = [
@@ -2273,23 +2198,6 @@ dependencies = [
  "worth-query-execution",
  "worth-query-installation",
  "worth-query-publication",
-]
-
-[[package]]
-name = "worth-query-testkit-query"
-version = "0.1.0"
-dependencies = [
- "sha2",
- "worth-execution",
- "worth-foundational",
- "worth-proof",
- "worth-query",
- "worth-query-declaration",
- "worth-query-execution",
- "worth-query-testkit-installed-operation-fixture",
- "worth-relational",
- "worth-runtime-bridge",
- "worth-signal",
 ]
 
 [[package]]
@@ -2340,10 +2248,6 @@ dependencies = [
  "worth-runtime-bridge",
  "worth-signal",
 ]
-
-[[package]]
-name = "worth-schema-graph"
-version = "0.1.0"
 
 [[package]]
 name = "worth-signal"

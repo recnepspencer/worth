@@ -30,17 +30,17 @@ Milestone 5.6 delivered:
 - subsystem-owned unified configuration in
   `config.rs`
 - typed capability witnesses, admission artifacts, and facade entrypoints in
-  [facade.rs](../../workspaces/worth-query/crates/worth-query/src/application/capability/facade.rs),
-  [resolution.rs](../../workspaces/worth-query/crates/worth-query/src/application/capability/resolution.rs),
-  [errors.rs](../../workspaces/worth-query/crates/worth-query/src/application/capability/errors.rs),
+  [facade.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/application/capability/facade.rs),
+  [resolution.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/application/capability/resolution.rs),
+  [errors.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/application/capability/errors.rs),
   and
-  [witnesses.rs](../../workspaces/worth-query/crates/worth-query/src/application/capability/witnesses.rs)
+  [witnesses.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/application/capability/witnesses.rs)
 - support registry, support matrix, and support report authority surfaces in
-  [registry.rs](../../workspaces/worth-query/crates/worth-query/src/application/support/registry.rs)
+  [registry.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/application/support/registry.rs)
   and
-  [report.rs](../../workspaces/worth-query/crates/worth-query/src/application/support/report.rs)
+  [report.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/application/support/report.rs)
 - milestone-native certification in
-  [crates/worth-query/src/harness/unified_facade_certification](../../workspaces/worth-query/crates/worth-query/src/harness/unified_facade_certification)
+  [crates/worth-query/src/harness/unified_facade_certification](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/harness/unified_facade_certification)
 - compile-fail proof boundaries in
   `crates/worth-query/tests/ui`
 
@@ -58,11 +58,11 @@ because the required facade/configuration proof chain now exists directly.
 
 Covered by:
 
-- [mod.rs](../../workspaces/worth-query/crates/worth-query/src/harness/unified_facade_certification/mod.rs)
-- [lane.rs](../../workspaces/worth-query/crates/worth-query/src/harness/unified_facade_certification/lane.rs)
+- [mod.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/harness/unified_facade_certification/mod.rs)
+- [lane.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/harness/unified_facade_certification/lane.rs)
 - `matrix.rs`
-- [row_catalog.rs](../../workspaces/worth-query/crates/worth-query/src/harness/unified_facade_certification/row_catalog.rs)
-- [tests.rs](../../workspaces/worth-query/crates/worth-query/src/harness/unified_facade_certification/tests.rs)
+- [row_catalog.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/harness/unified_facade_certification/row_catalog.rs)
+- [tests.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/harness/unified_facade_certification/tests.rs)
 
 What is proven:
 
@@ -94,8 +94,8 @@ What is proven:
 
 Covered by:
 
-- [facade.rs](../../workspaces/worth-query/crates/worth-query/src/application/capability/facade.rs)
-- [resolution.rs](../../workspaces/worth-query/crates/worth-query/src/application/capability/resolution.rs)
+- [facade.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/application/capability/facade.rs)
+- [resolution.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/application/capability/resolution.rs)
 - `tests.rs`
 
 What is proven:
@@ -112,8 +112,8 @@ What is proven:
 
 Covered by:
 
-- [registry.rs](../../workspaces/worth-query/crates/worth-query/src/application/support/registry.rs)
-- [report.rs](../../workspaces/worth-query/crates/worth-query/src/application/support/report.rs)
+- [registry.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/application/support/registry.rs)
+- [report.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/application/support/report.rs)
 - `tests.rs`
 
 What is proven:

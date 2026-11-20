@@ -92,7 +92,7 @@ them. Consumer-facing declaration and host production facades do not re-export
 them. A new caller requires an explicit boundary ruling.
 
 - Pure meaning stays Query-agnostic: `worth-schema-*` crates must never import
-  `worth-query`. Query is consumed only through audience facades
+  a Query crate. Query is consumed only through audience facades
   (`worth-query-decl`, `worth-query-host`) from `entry`-band crates, and
   `worth-query-replay` only from `cert`-band crates.
 - Replay and reconstruction are cert-only. Ordinary lanes must not import

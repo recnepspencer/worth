@@ -8,7 +8,7 @@
 > **Cross-runtime parents:**
 > [Query Milestone 9.14](../WORTH-query/milestone-9.14.md),
 > [Runtime Bridge aspect-native refactor](../WORTH-runtime-bridge/aspect_native_refactor.md),
-> and [Query AI README](../../workspaces/worth-query/crates/worth-query/docs/AI_README.md)
+> and [Query AI README](../../workspaces/worth-query/docs/AI_README.md)
 >
 > **Successor:** [Query Milestone 9.17.6.3](../WORTH-query/milestone-9.17.6.3.md), which replaces the
 > canceled Signal Milestones 14-17
