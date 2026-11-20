@@ -31,7 +31,8 @@ after process death. Pending or refused release stays a durable obligation.
 Disappearance of memory is not a release, and a fresh empty receiver is not
 evidence of one. The one cold proof is the Home incarnation fence (D7): a row
 read by the cold fold before service was retained by an earlier incarnation
-that D7 has fenced out, so the process-local resources that row names
+that ended (its process died, or its Home was dropped without close) and that
+D7 has fenced out, so the process-local resources that row names
 (provider memory and executions, checkpoints, queue capacity, Native admission,
 Bridge finalization) no longer exist. The cold release records that
 process-ended cause with the row's original, recovery cause and recorded
