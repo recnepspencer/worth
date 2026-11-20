@@ -26,7 +26,7 @@ Relational section of the application Home. See the
 Milestone 3 adds the application Home (`worth-store-application`). Applications
 never open it directly: Query Host's `WorthQueryApplicationHomeRequest` opens,
 initializes, closes and discards it. Each runtime owner (Relational, World,
-Signal and Query) readmits its own durable state from it. How to use
+Signal, Bridge and Query) readmits its own durable state from it. How to use
 it: [application Home guide](../../docs/application-home.md). Status:
 [Milestone 3](../../plans/database-foundation/milestone-3.md).
 

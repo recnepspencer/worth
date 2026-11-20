@@ -5,7 +5,7 @@ Relational truth and derived Signal computation.
 
 Use it when one runtime must translate committed semantic changes, snapshots,
 branches, history, or writeback across that boundary without giving either
-side the other side”™s authority.
+side the other side’s authority.
 
 For Query-installed conditional operations, application and domain code starts
 at `worth_query_decl::facade` and `worth_query_host::facade`. Query runtime construction supplies the
@@ -136,9 +136,9 @@ temporal wakes, on-demand triggers, dependency comparison, output comparison,
 and artifact reuse. Missing or extra providers deny installation.
 
 At execution, the Bridge obtains semantic observations from the exact snapshot,
-invokes Signal”™s installed conditional contract, and returns
+invokes Signal’s installed conditional contract, and returns
 `BridgeConditionalDecisionEvidence`. The Bridge does not reinterpret or
-restamp Signal”™s decision.
+restamp Signal’s decision.
 
 ### Read-Only Native Observation Custody
 

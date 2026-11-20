@@ -1775,11 +1775,10 @@ completion retains the original preparation and Home without retrying accepted
 seeds. Retired development completion formats return a typed Query recovery
 refusal before service, without migration.
 
-#### Checkpoint admission — pending (owner P-A, D12)
-
-#### Recovery after a selected checkpoint — pending (owner P-A, D12)
-
-#### Development workflow with program transitions — pending (owner P-C, D16)
+Checkpoint calls and thresholds are in
+[Use an Application Home](application-home.md#checkpoints); program and schema
+changes use the
+[Directory development workflow](build-an-application.md#development-workflow-for-directory-homes).
 
 Store Application's `readmit_world` consumes the concrete Native-readmitted
 Home and an `ApplicationWorldDefinition`. The private attachment injects the

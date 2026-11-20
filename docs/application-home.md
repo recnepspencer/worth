@@ -6,8 +6,8 @@ for you. An application never opens Store or lower owners itself: it uses
 `worth-query-host` only.
 
 This page is the short path through the lifecycle. Each section links to the
-longer contract. Names below are on `worth_query_host::facade` (written `host::`)
-unless another module is shown.
+longer contract. `host::` means `worth_query_host::facade`; a name written with a
+module (such as `host::primary_graph::..`) lives in that module.
 
 | Location | Durable? | Use it for |
 |---|---|---|
@@ -73,11 +73,14 @@ let runtime = home.runtime(); // borrow for requests; keep `home` as the owner
   `main` thread with the default stack is enough.
 
 The returned `host::WorthQueryApplicationHome` owns the Home and its Store
-mutation lease. `runtime()` returns the `WorthQueryProgramApplicationRuntime`
-you serve requests from; `is_directory()` reports the location kind. For
+mutation lease. `runtime()` returns the
+`host::application_installation::WorthQueryProgramApplicationRuntime` you serve
+requests from; `is_directory()` reports the location kind. For
 workflows, consume the Home with
-`home.retain_workflow_spec(installed_spec, signing_owner)`, which returns a
-`host::WorthQueryWorkflowApplicationHome` with the same lifecycle.
+`home.retain_workflow_spec(installed_spec, signing_owner)`. It returns a
+`host::WorthQueryWorkflowApplicationHome` with the same lifecycle, or a
+`host::WorthQueryWorkflowHomeBindingRefused` that gives back the Home, the
+vocabulary and the signing owner.
 
 ## Initialize once, reopen many times
 
@@ -126,7 +129,7 @@ Match `host::application_entry::WorthQueryApplicationMutationOutcome`:
 |---|---|
 | `Committed { receipt, result }` | New commit, with the handler's result. |
 | `AlreadyCommitted(receipt)` | Same key and intent, receipt still live in this process. No new effect. |
-| `RecoveredCommitted(receipt)` | Same key and intent, committed earlier (for example before a reopen). The `WorthQueryRecoveredApplicationCommitReceipt` is recorded data; there is no handler result. Read current state with a fresh query. |
+| `RecoveredCommitted(receipt)` | Same key and intent, committed earlier (for example before a reopen). The `host::primary_graph::WorthQueryRecoveredApplicationCommitReceipt` is recorded data; there is no handler result. Read current state with a fresh query. |
 | `IdempotencyIntentDrift` | The key was used for a different intent. Use a new key for new intent. |
 | `DomainDenied(denial)` | The handler refused. |
 | `Cancelled`, `DeadlineExceeded` | The request stopped. |
@@ -187,17 +190,21 @@ If the recorded program or schema differs from the request, opening refuses and
 
 - **Graceful close, or a kill while no operation was running:** reopen normally.
 - **A kill during an operation:** if the journal ends with an owner effect that
-  has no recorded occurrence or disposition, opening refuses before service.
-  `refused.unclean_recovery_unsupported()` returns
-  `Some(UncleanRecoveryUnsupported { owner, effect })`, naming the
-  `DurableOwnerFamily` and the effect digest. Close the refusal as above. There is
-  no supported way to open such a Home yet. A development Home can be
+  has no recorded occurrence or disposition, opening refuses before service with
+  a typed `UncleanRecoveryUnsupported { owner, effect }` (the
+  `DurableOwnerFamily` and the effect digest). Close the refusal as above. There
+  is no supported way to open such a Home yet; a development Home can be
   discarded.
-- **A kill while dispatching to an external system:** the same refusal, with
-  owner `Dispatch`.
+- **Which accessor reports it:** `refused.unclean_recovery_unsupported()`
+  returns `Some(..)` for a Relational (Native) effect and for an external
+  dispatch attempt that has no recorded observation (owner `Dispatch`). A Signal
+  effect without its occurrence, or an unresolved branch creation, also refuses
+  before service, but arrives inside the World readmission cause: the accessor
+  returns `None` and `refused.detail()` shows
+  `World(UncleanRecoveryUnsupported ..)`.
 
 Crash recovery for these cases is being built in Milestone 3's cleanup track
-(C1; see [Milestone 3 status](../plans/database-foundation/milestone-3.md#landings)).
+(C1; see [Milestone 3 status](../plans/database-foundation/milestone-3.md#cleanup-track-status)).
 Until it lands on master, the refusal above is the behaviour.
 
 ## Discard

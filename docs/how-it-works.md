@@ -406,8 +406,8 @@ a `RelationalChangeReceipt`. A receipt cannot be built any other way, so
 holding one proves the checks passed. The API names no consumer: Relational
 does not know who reads it.
 
-**Durability.** Relational serves from memory. Under an application Home its
-commits are durable in Store before they are live, and it readmits from Store
+**Durability.** Relational serves from memory. Under a Directory application
+Home its commits are durable in Store before they are live, and it readmits from Store
 on reopen ([section 15](#15-durability-and-the-other-surfaces)).
 
 ### 6.2 Signal: derived computation
@@ -1991,8 +1991,8 @@ rolls them back.
 
 ## 15. Durability and the other surfaces
 
-Relational, Signal, Runtime World, and Query run in the process; an application
-Home makes their state durable. This section covers the surfaces beside the
+Relational, Signal, Runtime World, and Query run in the process; a Directory
+application Home makes their state durable. This section covers the surfaces beside the
 stack: where durability comes from, how applications reach the network and the
 screen, and how the platform proves itself. The
 [Platform README](../README.md) has the full crate map.

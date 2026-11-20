@@ -264,7 +264,7 @@ replayed. A refusal owns its actual preparation and Home phase. Inspect
 `refused.phase()` for the typed outcome and retain the owner after an intent has
 been recorded.
 
-#### Interrupted transitions — cleanup track (owner P-C)
+#### Interrupted transitions
 
 Resume, plan-drift qualification, interrupted binding and process-kill courts
 remain cleanup work; the graceful workflow above does not qualify them.
