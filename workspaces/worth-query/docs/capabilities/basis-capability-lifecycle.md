@@ -27,4 +27,3 @@ relationship-proof admission entry points, as Host re-exports them.
 - `worth_query_host::facade::admission::relationship::RelationshipProofDescriptorSet` ([source](../../crates/worth-query-admission/src/domain_computation/relationship_proof/descriptors.rs#L229))
 - `worth_query_host::facade::admission::relationship::RelationshipProofFailureClass` ([source](../../crates/worth-query-admission/src/domain_computation/relationship_proof/errors.rs#L4))
 - `worth_query_host::facade::admission::relationship::runtime_backed_relationship_proof_support_profile` ([source](../../crates/worth-query-admission/src/domain_computation/relationship_proof/support.rs#L74))
-- Open issue: [#265](https://github.com/recnepspencer/worth/issues/265)
