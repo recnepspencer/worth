@@ -191,3 +191,45 @@ fn duplicate_proof_cannot_cover_two_distinct_traversals() {
     );
     assert_eq!(error.counters().truth_touch_count(), 0);
 }
+
+fn manager_query(projected_field: &str) -> CanonicalQueryBundle {
+    let query = RawAuthoredQuery::detail_builder(RootEntityKey::new("user").unwrap())
+        .project(AspectFieldSelector::new("identity", projected_field).unwrap())
+        .traverse(TraversalSelector::bounded("manager", 1).unwrap())
+        .build()
+        .unwrap();
+    let result_shape = RawAuthoredResultShape::detail_builder()
+        .field(AuthoredResultShapeField::new("identity", projected_field, projected_field).unwrap())
+        .build()
+        .unwrap();
+    GuidedAuthoringPath::canonicalize_detail(query, result_shape).unwrap()
+}
+
+#[test]
+fn context_admitted_for_another_query_with_identical_traversal_denies() {
+    let query_a = manager_query("id");
+    let query_b = manager_query("name");
+    assert_ne!(query_a.query().digest(), query_b.query().digest());
+    assert_eq!(query_a.query().traversal(), query_b.query().traversal());
+    let admitted_for_a = admitted(&query_a);
+    let descriptors = RelationshipProofDescriptorSet::new(
+        vec![RelationshipProofDescriptor::direct_edge(
+            "manager",
+            admitted_for_a.bundle().policy_digest(),
+        )],
+        RelationshipProofBudget::bounded(1, 1),
+    );
+
+    let error = admit_relationship_proofs(query_b.query(), &admitted_for_a, &descriptors)
+        .expect_err("a context admitted for query A must not admit proofs for query B");
+    assert_eq!(
+        error.failure_class(),
+        RelationshipProofFailureClass::QueryShapeMismatch
+    );
+    assert_eq!(error.counters().relationship_proof_admission_count(), 0);
+    assert_eq!(error.counters().truth_touch_count(), 0);
+
+    let (admission, _) = admit_relationship_proofs(query_a.query(), &admitted_for_a, &descriptors)
+        .expect("the same context still admits proofs for query A");
+    assert_eq!(admission.descriptor_count(), 1);
+}
