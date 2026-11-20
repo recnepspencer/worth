@@ -108,7 +108,7 @@ pub(crate) fn payload_denial(
     }
 }
 
-pub(super) fn published_patch(patch: MutationAspectPatch) -> Option<MutationAspectPatch> {
+pub(crate) fn published_patch(patch: MutationAspectPatch) -> Option<MutationAspectPatch> {
     (!patch.as_patch().is_empty()).then_some(patch)
 }
 

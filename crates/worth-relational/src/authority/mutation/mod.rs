@@ -1,6 +1,6 @@
 mod aspect_versions;
 mod canonical_deltas;
-pub(crate) use canonical_deltas::{compose_disjoint_publication, fold_successor_fragment};
+pub(crate) use canonical_deltas::compose_disjoint_publication;
 pub(crate) mod current_records;
 mod deletion_publication;
 mod delta_symbols;
@@ -19,6 +19,8 @@ mod record_changes;
 pub(crate) mod retained_entity_selection;
 mod round_denial;
 mod stale_targets;
+mod succession_record;
+pub(crate) use succession_record::succession_record;
 mod workspace;
 
 pub(crate) use canonical_deltas::{

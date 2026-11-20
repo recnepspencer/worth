@@ -11,9 +11,13 @@ use crate::transactions::data::{
     CreateIntent, CreatedEntityRef, EntityMutationIntent, EntitySpec, MutationIntent, RecordRef,
     WorkerIntentBatch,
 };
+use coverage::{covered, entity_write, roles, units, Unit};
 use std::collections::{BTreeMap, BTreeSet};
 use std::ops::Range;
-use worth_foundational::facade::AspectFieldLocator;
+
+mod coverage;
+
+type Read = RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>;
 
 /// One route's chain in the candidate. Positions are physical: transaction
 /// batches and patch fragments are only ever appended before completion.
@@ -22,8 +26,9 @@ pub(crate) struct Chain {
     pub(crate) batches: Range<usize>,
     /// Earlier rounds' batches, withdrawn once at completion.
     pub(crate) superseded: Vec<Range<usize>>,
-    /// The chain's patch fragments, one per record it changed.
-    pub(crate) fragments: Vec<usize>,
+    /// The chain's patch fragments, one per record it changed, each with the
+    /// candidate read from before the chain first wrote that record.
+    pub(crate) fragments: Vec<(usize, Read)>,
     /// The scoped coordinates the head chose; every round reuses them.
     pub(crate) local_keys: super::local_keys::LocalKeys,
     /// The records the head allocated; every round re-creates exactly these.
@@ -77,7 +82,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         {
             return Err(continuation::postponed(Reason::StructuralEffect, source).into());
         }
-        self.prove_succession(execution, index, content, &batches)?;
+        self.prove_succession(execution, index, content, &publication, &batches)?;
         let first_batch = self.transaction.batches().len();
         let first_fragment = self.mutation.outcome.effect.publication.patch_fragments.len();
         let applied = self.apply_suffix(
@@ -90,9 +95,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             content,
             batches,
         )?;
-        let ordinary_ids = publication
-            .resolve_ordinary_roles(execution, &self.mutation.outcome.created_entities)?;
-        self.fold_fragments(execution, index, first_fragment)?;
+        self.fold_records(execution, index, first_fragment, &applied.plan, &applied.read)?;
         let records_end = self.mutation.outcome.effect.publication.changed_records.len();
         let batches_end = self.transaction.batches().len();
         let part = &mut self.parts[index];
@@ -114,7 +117,6 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         part.chain.superseded.push(prior);
         part.chain.records_end = records_end;
         part.inputs = None;
-        part.ordinary_ids = ordinary_ids;
         part.input = applied.read;
         part.publication = publication;
         part.commands = applied.plan;
@@ -125,12 +127,13 @@ impl RelationalAuthoredCoupledCandidate<'_> {
     }
 
     /// Native judgment of the rescoped round against what its chain wrote.
-    /// O(chain commands + round intents + records applied since the chain).
+    /// O(chain commands + round intents + roles + records applied since the chain).
     fn prove_succession(
         &self,
         execution: &ExecutionRequest<'_, '_>,
         index: usize,
         content: &crate::content::RelationalContentAttachments,
+        publication: &RelationalCoupledProducerPosture,
         batches: &[WorkerIntentBatch],
     ) -> Result<(), TransactionCommitError> {
         let part = &self.parts[index];
@@ -147,6 +150,11 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         execution
             .run_native_with_checkpoint(|context| {
                 let mut charge = |units: u64| checkpoint(context, units).map_err(custody::execution_stop);
+                // Identity: the round publishes the same roles over the same records.
+                let head = roles(bindings, part.publication.roles(), &mut charge)?;
+                if head.is_none() || head != roles(bindings, publication.roles(), &mut charge)? {
+                    return Err(continuation::postponed(Reason::UncoveredWrite, source));
+                }
                 // Exclusive outputs: no later writer changed a record this chain changed.
                 let own = part.records.iter().collect::<BTreeSet<_>>();
                 for record in &changed[part.chain.records_end..] {
@@ -159,11 +167,13 @@ impl RelationalAuthoredCoupledCandidate<'_> {
                     }
                 }
                 let created = part.chain.created.iter().copied().collect::<BTreeSet<_>>();
-                let mut written = BTreeSet::<(EntityId, &AspectFieldLocator)>::new();
+                let mut written = BTreeSet::<Unit>::new();
                 let mut recreated = BTreeSet::new();
+                // One write per record: a chain record folds as one round's one write.
+                let mut targets = BTreeSet::new();
                 for intent in batches.iter().flat_map(|batch| &batch.intents) {
                     charge(intent.owned_allocation_capacity_bytes().saturating_add(1))?;
-                    match intent {
+                    let id = match intent {
                         MutationIntent::Create(CreateIntent::Entity(spec)) => {
                             let Some(id) =
                                 allocation(bindings, spec, &mut charge)?.filter(|id| created.contains(id))
@@ -171,20 +181,20 @@ impl RelationalAuthoredCoupledCandidate<'_> {
                                 return Err(continuation::postponed(Reason::StructuralEffect, source));
                             };
                             recreated.insert(id);
-                            written.extend(spec.fields.locators().map(|locator| (id, locator)));
-                        }
-                        MutationIntent::Entity(EntityMutationIntent::UpdateFields(update)) => {
-                            written.extend(
-                                update.fields.locators().map(|locator| (update.entity_id, locator)),
-                            );
+                            id
                         }
                         MutationIntent::Entity(EntityMutationIntent::Delete(delete))
                             if created.contains(&delete.entity_id) =>
                         {
                             return Err(continuation::postponed(Reason::FreshDelete, delete.entity_id));
                         }
-                        _ => return Err(continuation::postponed(Reason::StructuralEffect, source)),
+                        _ => entity_write(intent)
+                            .ok_or_else(|| continuation::postponed(Reason::StructuralEffect, source))?,
+                    };
+                    if !targets.insert(id) {
+                        return Err(continuation::postponed(Reason::StructuralEffect, id));
                     }
+                    units(id, intent, &mut written);
                 }
                 // Covering: the round re-creates every record the head allocated
                 // and re-writes every field the latest round wrote.
@@ -196,20 +206,20 @@ impl RelationalAuthoredCoupledCandidate<'_> {
                 }
                 for intent in &part.commands.plan().merged_intents {
                     charge(intent.owned_allocation_capacity_bytes().saturating_add(1))?;
-                    let (id, fields) = match intent {
+                    let id = match intent {
                         MutationIntent::Create(CreateIntent::Entity(spec)) => {
-                            let id = allocation(bindings, spec, &mut charge)?.ok_or_else(|| {
+                            allocation(bindings, spec, &mut charge)?.ok_or_else(|| {
                                 crate::mvcc::origin_denial("chain create has no actual allocation")
-                            })?;
-                            (id, &spec.fields)
+                            })?
                         }
-                        MutationIntent::Entity(EntityMutationIntent::UpdateFields(update)) => {
-                            (update.entity_id, &update.fields)
-                        }
-                        _ => return Err(continuation::postponed(Reason::UncoveredWrite, source)),
+                        _ => entity_write(intent)
+                            .ok_or_else(|| continuation::postponed(Reason::UncoveredWrite, source))?,
                     };
-                    for locator in fields.locators() {
-                        if !written.contains(&(id, locator)) {
+                    let mut wrote = BTreeSet::new();
+                    units(id, intent, &mut wrote);
+                    for (id, key, path) in wrote {
+                        charge(path.as_ref().map_or(1, |path| path.fields().len() as u64 + 1))?;
+                        if !covered(&written, id, &key, path.as_ref()) {
                             return Err(continuation::postponed(Reason::UncoveredWrite, id));
                         }
                     }
@@ -220,37 +230,85 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             .0
     }
 
-    /// Combine the round's fragments into its chain's: one fragment per record,
-    /// keeping the chain's first structural change. New records stay at the tail.
-    fn fold_fragments(
+    /// Each chain record the round re-derived publishes what one round of its
+    /// write would over the read from before the chain first wrote it, so the
+    /// chain publishes one delta and one fragment per record. A record new to
+    /// the chain keeps the round's fragment and joins the chain.
+    fn fold_records(
         &mut self,
         execution: &ExecutionRequest<'_, '_>,
         index: usize,
         first: usize,
+        round: &crate::mvcc::OwnedNormalizedPlan,
+        read: &Read,
     ) -> Result<(), TransactionCommitError> {
-        let fragments = &mut self.mutation.outcome.effect.publication.patch_fragments;
+        let bindings = &self.mutation.outcome.created_entities;
+        let publication = &mut self.mutation.outcome.effect.publication;
         let chain = &mut self.parts[index].chain;
+        if publication.canonical_deltas.len() != publication.patch_fragments.len() {
+            return Err(crate::mvcc::origin_denial(
+                "publication deltas and fragments diverged",
+            ));
+        }
+        let (folds, tail, deltas) = execution
+            .run_native_with_checkpoint(|context| {
+                let mut charge =
+                    |units: u64| checkpoint(context, units).map_err(custody::execution_stop);
+                let tail = publication.patch_fragments.split_off(first);
+                let deltas = publication.canonical_deltas.split_off(first);
+                let mut slots = BTreeMap::new();
+                for (slot, (position, _)) in chain.fragments.iter().enumerate() {
+                    charge(1)?;
+                    slots.insert(publication.patch_fragments[*position].target.clone(), slot);
+                }
+                let mut folds = Vec::new();
+                for intent in &round.plan().merged_intents {
+                    charge(1)?;
+                    let entity = match intent {
+                        MutationIntent::Create(CreateIntent::Entity(spec)) => {
+                            allocation(bindings, spec, &mut charge)?.ok_or_else(|| {
+                                crate::mvcc::origin_denial("a re-create has no chain allocation")
+                            })?
+                        }
+                        _ => entity_write(intent).ok_or_else(|| {
+                            crate::mvcc::origin_denial("a proved round wrote no entity")
+                        })?,
+                    };
+                    if let Some(&slot) = slots.get(&RecordRef::Entity(entity)) {
+                        folds.push((slot, entity, intent));
+                    }
+                }
+                Ok::<_, TransactionCommitError>((folds, tail, deltas))
+            })
+            .map_err(custody::execution_stop)?
+            .0?;
+        let plans = self.prepared.schema_authority.aspect_plans();
+        let mut folded = BTreeSet::new();
+        for (slot, entity, intent) in folds {
+            let (position, base) = &chain.fragments[slot];
+            let (delta, fragment) = crate::authority::mutation::succession_record(
+                execution,
+                plans,
+                base.resident_basis().root().as_ref(),
+                entity,
+                intent,
+            )?;
+            publication.patch_fragments[*position] = fragment;
+            publication.canonical_deltas[*position] = delta;
+            folded.insert(RecordRef::Entity(entity));
+        }
         execution
             .run_native_with_checkpoint(|context| {
-                let tail = fragments.split_off(first);
-                let mut positions = BTreeMap::new();
-                for &position in &chain.fragments {
+                for (fragment, delta) in tail.into_iter().zip(deltas) {
                     checkpoint(context, 1).map_err(custody::execution_stop)?;
-                    positions.insert(fragments[position].target.clone(), position);
-                }
-                for fragment in tail {
-                    checkpoint(context, 1).map_err(custody::execution_stop)?;
-                    match positions.get(&fragment.target) {
-                        Some(&position) => crate::authority::mutation::fold_successor_fragment(
-                            context,
-                            &mut fragments[position],
-                            fragment,
-                        )?,
-                        None => {
-                            chain.fragments.push(fragments.len());
-                            fragments.push(fragment);
-                        }
+                    if folded.contains(&fragment.target) {
+                        continue;
                     }
+                    chain
+                        .fragments
+                        .push((publication.patch_fragments.len(), read.clone()));
+                    publication.patch_fragments.push(fragment);
+                    publication.canonical_deltas.push(delta);
                 }
                 Ok::<_, TransactionCommitError>(())
             })

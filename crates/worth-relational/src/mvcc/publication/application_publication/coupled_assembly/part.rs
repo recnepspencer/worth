@@ -101,7 +101,9 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         let publication_effect = &self.mutation.outcome.effect.publication;
         let chain = super::succession::Chain {
             batches: first_batch..self.transaction.batches().len(),
-            fragments: (first_fragment..publication_effect.patch_fragments.len()).collect(),
+            fragments: (first_fragment..publication_effect.patch_fragments.len())
+                .map(|position| (position, applied.read.clone()))
+                .collect(),
             superseded: Vec::new(),
             local_keys: applied.local_keys,
             created: applied.created,

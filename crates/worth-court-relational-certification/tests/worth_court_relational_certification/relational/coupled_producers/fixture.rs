@@ -9,6 +9,8 @@ pub struct World {
     pub installed: RelationalInstalledApplicationPublicationAuthority,
     pub source: EntityId,
     pub carrier: EntityId,
+    /// Declares the Struct aspect `summary`; births then write its `title`.
+    pub summary: bool,
 }
 impl World {
     pub fn new(execution: &ExecutionRequest<'_, '_>, storage: bool, owns_source: bool) -> Self {
@@ -16,6 +18,12 @@ impl World {
     }
     pub fn new_with_status(execution: &ExecutionRequest<'_, '_>) -> Self {
         Self::with_status_field(execution, true, true, true, None)
+    }
+    /// An owned-source world whose kind also declares the Struct aspect `summary`.
+    pub fn new_with_summary(execution: &ExecutionRequest<'_, '_>) -> Self {
+        let mut world = Self::with_aspects(execution, true, true, false, true, None);
+        world.summary = true;
+        world
     }
     pub fn with_invariant(
         execution: &ExecutionRequest<'_, '_>,
@@ -30,6 +38,16 @@ impl World {
         with_status: bool,
         rule: Option<CustomInvariantRegistration>,
     ) -> Self {
+        Self::with_aspects(execution, storage, owns_source, with_status, false, rule)
+    }
+    fn with_aspects(
+        execution: &ExecutionRequest<'_, '_>,
+        storage: bool,
+        owns_source: bool,
+        with_status: bool,
+        with_summary: bool,
+        rule: Option<CustomInvariantRegistration>,
+    ) -> Self {
         let mut fixture = AspectSchemaFixture::with_default_declared_aspects(
             worth_relational::facade::config::CascadeDeletePolicy::RetainDanglingForAudit,
         );
@@ -38,6 +56,16 @@ impl World {
                 worth_testkit_relational::aspect_storage::definition::entity_field_aspect(
                     aspect_key("status"),
                     field_key("status"),
+                );
+            fixture
+                .entity_aspects
+                .push(DeclaredAspectContractBinding { binding, contract });
+        }
+        if with_summary {
+            let (binding, contract) =
+                worth_testkit_relational::aspect_storage::definition::entity_summary_struct_aspect(
+                    aspect_key("summary"),
+                    field_key("summary"),
                 );
             fixture
                 .entity_aspects
@@ -93,6 +121,7 @@ impl World {
             installed,
             source,
             carrier,
+            summary: false,
         }
     }
     pub fn birth(
@@ -102,8 +131,12 @@ impl World {
         key: &str,
     ) -> RelationalRequiredOutputPublication {
         let mut tx = begin_main_transaction(&self.runtime);
-        tx.push_batch(create(key), execution.allocation_policy())
-            .unwrap();
+        let batch = if self.summary {
+            WorkerIntentBatch::new(key).push(summary_create_intent(key, "title-0"))
+        } else {
+            create(key)
+        };
+        tx.push_batch(batch, execution.allocation_policy()).unwrap();
         let proposal = tx
             .validate(execution, &self.runtime)
             .unwrap()
@@ -243,6 +276,18 @@ pub fn create_intent(key: &str) -> MutationIntent {
         kind_id: KindId(1),
         client_key: ClientKey::raw(key),
         fields: string_aspect_field_patch([(aspect_key("name"), field_key("name"), key)]),
+    }))
+}
+/// A create writing `name` and the Struct field `summary.title`.
+pub fn summary_create_intent(key: &str, title: &str) -> MutationIntent {
+    MutationIntent::Create(CreateIntent::Entity(EntitySpec {
+        partition_id: PartitionId::main(),
+        kind_id: KindId(1),
+        client_key: ClientKey::raw(key),
+        fields: string_aspect_field_patch([
+            (aspect_key("name"), field_key("name"), key),
+            (aspect_key("summary"), field_key("title"), title),
+        ]),
     }))
 }
 pub fn create(key: &str) -> WorkerIntentBatch {
