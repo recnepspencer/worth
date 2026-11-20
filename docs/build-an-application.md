@@ -26,7 +26,7 @@ crash behavior, discard) start with [Use an Application Home](application-home.m
 |---|---|---|
 | Choose durable facts, names and links | [Native representations](native-representations.md), then [source subgraphs](source-subgraphs.md) | Independently mutable fields, entities, typed relations and an explicit read closure; canonical atoms need a recorded reason |
 | Explain a query result or an authored operation | [Inspect original evidence](#inspect-original-source-and-query-evidence) | Saved source/query receipts and current inspection permissions |
-| Correct a recorded source operation | [Recorded source correction](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md), including [consecutive original sources](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md#reverse-consecutive-original-sources) and the [compiled consecutive-undo journeys](../workspaces/worth-query/crates/worth-query-court-decl-host-integration/tests/worth_query_court_decl_host_integration/certification/application_graph/correction/consecutive_undo.rs) | A source receipt, current principal, target branch and client key; declare the inverse and disclosure query in the contribution. Canonical authored writes require exact later source/reversal pairs on the selected ancestry. Original and target support must agree under compatible installed meaning and full-generation identity, including complete aspect content, presence and live adjacency. Relation-dependent fields remain separate dependencies. Retain endpoint custody; handle typed unavailable evidence and stale-target refusals through the returned owners. |
+| Correct a recorded source operation | [Recorded source correction](../workspaces/worth-query/docs/execution/recorded-source-correction.md), including [consecutive original sources](../workspaces/worth-query/docs/execution/recorded-source-correction.md#reverse-consecutive-original-sources) and the [compiled consecutive-undo journeys](../workspaces/worth-query/crates/worth-query-court-decl-host-integration/tests/worth_query_court_decl_host_integration/certification/application_graph/correction/consecutive_undo.rs) | A source receipt, current principal, target branch and client key; declare the inverse and disclosure query in the contribution. Canonical authored writes require exact later source/reversal pairs on the selected ancestry. Original and target support must agree under compatible installed meaning and full-generation identity, including complete aspect content, presence and live adjacency. Relation-dependent fields remain separate dependencies. Retain endpoint custody; handle typed unavailable evidence and stale-target refusals through the returned owners. |
 | Add an ordinary feature | [Complete feature definitions](#complete-feature-definitions) | Typed members, actual handlers and domain configuration |
 | Declare operation access | [Operation access](#21-declare-operation-access-once) | Reads, effects and preconditions in one declaration |
 | Compute from tracked inputs | [Managed computation](#36-declare-and-install-a-partitioned-managed-computation) | Tracked gathering, pure numerical data and original-owner completion |
@@ -317,7 +317,7 @@ Edit the access clause when adding a field or relation. The generated Rust
 capabilities and schema registration follow that declaration; native admission
 checks the handler's actual reads and effects against it.
 
-For a [declarative operation body](../workspaces/worth-query/crates/worth-query/docs/authoring/scope-field-operation-bodies.md),
+For a [declarative operation body](../workspaces/worth-query/docs/authoring/scope-field-operation-bodies.md),
 the body derives its installed footprint from the authored statements. See the
 [schema and access examples](../workspaces/worth-query/crates/worth-query-declaration/src/application_schema/declared_operation/tests.rs)
 for projections and schema validation. The
@@ -985,7 +985,7 @@ through that same builder. Clauses are `locality_and_change(Scope, Shape);`,
 `correspondence(Correspondence);`, `evaluated_requirement(Rule);` and
 `external_input(Provider);`. Empty blocks are valid. Clause order preserves
 canonical meaning; unsupported or repeated clauses fail rather than disappear.
-See [Feature Capsule Authoring](../workspaces/worth-query/crates/worth-query/docs/authoring/feature-capsule-authoring.md).
+See [Feature Capsule Authoring](../workspaces/worth-query/docs/authoring/feature-capsule-authoring.md).
 
 Use `native_action` only for a present specialized native responsibility, such
 as staging, authority/phase certification or explicit branch/host control.
@@ -2302,7 +2302,7 @@ adoption leaves the slot unchanged and returns the candidate with its typed
 denial; a later refused close of the previous branch does not undo adoption.
 Source movement also refuses creation, and a refused candidate close retains
 the candidate with its original denial. See
-[fork from an admitted selection](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#fork-from-an-admitted-selection).
+[fork from an admitted selection](../workspaces/worth-query/docs/foundations/branches-and-previews.md#fork-from-an-admitted-selection).
 
 For a move-only application head, consume the initial candidate with
 `into_owned_head()`. Store the returned owner, target requests with
@@ -2310,7 +2310,7 @@ For a move-only application head, consume the initial candidate with
 &phase)`. Success returns an owned previous head for explicit close. A close
 refusal returns either the live head (`Retained`) or its actual retired cleanup
 obligation (`Retired`). See
-[own an application branch head](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#own-an-application-branch-head).
+[own an application branch head](../workspaces/worth-query/docs/foundations/branches-and-previews.md#own-an-application-branch-head).
 
 To bind that head to one model, declare `ApplicationHistoryBinding` with the
 model's ordinary READ intent and register an `ApplicationHistoryDefinition` in
@@ -2328,7 +2328,7 @@ authorization, declared operation membership and exact model/head correspondence
 It borrows both owners and grants no execution permission. An externally changed
 head or recreated model refuses. Close with
 `document.close(&phase)` and retain any live-document or retired-cleanup failure.
-See [attach a model and read its owned head](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#attach-a-model-and-read-its-owned-head).
+See [attach a model and read its owned head](../workspaces/worth-query/docs/foundations/branches-and-previews.md#attach-a-model-and-read-its-owned-head).
 
 To include operations scoped to owned entities, declare `.owns(relation)` on the
 history and enroll `.owned_operation::<Binding>(label)`. Native proves instance
@@ -2392,7 +2392,7 @@ an edge through an excluded node. Existing previews and registered checkout
 retain their original observations, while new requests refuse excluded IDs.
 Release holders independently and explicitly close the session, retaining
 refused cleanup. See the
-[window, bookmark and disposal example](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#configure-a-navigation-window-and-bookmarks)
+[window, bookmark and disposal example](../workspaces/worth-query/docs/foundations/branches-and-previews.md#configure-a-navigation-window-and-bookmarks)
 and its linked compiled public journeys. This bounds availability, without
 promising storage reclamation or a byte limit.
 
@@ -2577,7 +2577,7 @@ inspect `advance_denial()`, `source_outcome()`, `source_result()` and `close_evi
 because a source can perform before its required output becomes unavailable.
 Unavailable completion keeps descriptive source-receipt evidence without
 retaining the discarded candidate's physical history.
-See [record an edit and retain its original outcome](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#record-an-edit-and-retain-its-original-outcome).
+See [record an edit and retain its original outcome](../workspaces/worth-query/docs/foundations/branches-and-previews.md#record-an-edit-and-retain-its-original-outcome).
 
 This example uses the retention application's [installed history declaration](../workspaces/worth-query/crates/worth-query-testkit-document-retention/src/certification/application_graph/document_retention_model/document_history.rs),
 [ordinary program installer](../workspaces/worth-query/crates/worth-query-testkit-document-retention/src/certification/application_graph/document_retention_model/host.rs)
@@ -2706,7 +2706,7 @@ Checkout creates a
 writable context and selects the existing node without adding an authored edit;
 the next edit becomes its child, preserving the original future. Current grants
 and other records outside the model remain current. Read the
-[checkout contract and supported component meaning](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#select-a-historical-step-for-editing)
+[checkout contract and supported component meaning](../workspaces/worth-query/docs/foundations/branches-and-previews.md#select-a-historical-step-for-editing)
 before enabling navigation. A retained preview or page supplies no NAV authority.
 
 Set `ApplicationHistoryBinding::NAVIGATION_RESOURCES.maximum_unfinished_attempts`
@@ -2742,7 +2742,7 @@ its `NoChild`, `Single(child)` or `ChoiceRequired` hint. Offer an explicit child
 choice when several futures exist; preparation revalidates even a remembered
 single-child preference. The application keeps the actual pending/refused owner
 and preserves the document's output mode. Navigation selects an existing state;
-[semantic correction](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md)
+[semantic correction](../workspaces/worth-query/docs/execution/recorded-source-correction.md)
 publishes a new inverse, compensation or reapplication under its own contract.
 
 For a gesture containing several ordinary actions, use an
@@ -2818,7 +2818,7 @@ families refuses the group before candidate creation or source effects.
 An unrelated producer family does not prevent grouping. Installed
 `GROUP_RESOURCES` bounds members/results (64 each by default, one unfinished
 group). See
-[group completion, retries and disposal](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#group-ordinary-edits-into-one-step)
+[group completion, retries and disposal](../workspaces/worth-query/docs/foundations/branches-and-previews.md#group-ordinary-edits-into-one-step)
 for cancellation, competing navigation and partial effects.
 
 For a fixed member, supply a fresh request on `delivery.branch()` and validate
@@ -2842,7 +2842,7 @@ document with its cause. The successful document carries
 preserve that mode through application wrappers, edits and close results.
 Navigation then owns the original root, discovered children and pending recovery
 until all required outputs settle before adoption. See
-[configure required outputs](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#configure-required-outputs)
+[configure required outputs](../workspaces/worth-query/docs/foundations/branches-and-previews.md#configure-required-outputs)
 for retry and explicit close.
 
 To store the selected basis as application data, serialize
@@ -2854,7 +2854,7 @@ installed World and Native owners to admit that exact basis; stale, retired,
 foreign and unsupported descriptions refuse. The description retains no live
 selection and supplies no READ or mutation permission. Pass the returned
 selection to `fork_expected`, then use the same candidate/adoption lifecycle.
-See [store an expected basis](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#store-an-expected-basis-and-select-it-again).
+See [store an expected basis](../workspaces/worth-query/docs/foundations/branches-and-previews.md#store-an-expected-basis-and-select-it-again).
 
 Its own methods:
 
@@ -2874,7 +2874,7 @@ discovery.
 
 Managed asynchronous resource requests are available through Decl/Host following
 [Managed async resource contract](../plans/WORTH-query/milestone-9.18.1.md#phase-8-managed-async-resources-through-decl-and-host).
-[Application resources](../workspaces/worth-query/crates/worth-query/docs/capabilities/application-resources.md)
+[Application resources](../workspaces/worth-query/docs/capabilities/application-resources.md)
 documents the concrete `request.resources()` start/advance/inspection/close path,
 installed provider, finite ingress, exact selector reclaim and recovery handoff.
 Resource declarations and installed typed-profile lookup separate Start/Inspect/Advance/Close authority
@@ -3421,7 +3421,7 @@ materializes the native command program, while Query alone commits effects.
 Advance the returned owner with a fresh request rather than reissuing intent.
 A refusal returns the same command. A completed owner exposes native receipt
 evidence and still requires `close_with_evidence(&fresh_request)`; close refusal
-returns that same completed owner. See [owning capability commands](../workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md#owning-capability-commands).
+returns that same completed owner. See [owning capability commands](../workspaces/worth-query/docs/foundations/workflows.md#owning-capability-commands).
 
 For a business reversal, declare a domain action with its own authorization,
 source preconditions and effects, then execute it through its ordinary owner.
@@ -4265,7 +4265,7 @@ and keyed-resolution spines. Source completion uses advance with a fresh request
 retained commit additionally requires the explicit NonZeroUsize history-work
 bound on each advance. Replay/recovery select the exact original World observation.
 A bounded history refusal retains operation and evidence for a fresh funded retry.
-See the [retained delivery guide](../workspaces/worth-query/crates/worth-query/docs/foundations/source-only-retained-delivery.md).
+See the [retained delivery guide](../workspaces/worth-query/docs/foundations/source-only-retained-delivery.md).
 Ordinary SourceOnly callers retain this owner rather than coordinating manual
 execution and recovery.
 
@@ -5625,7 +5625,7 @@ completion (deferred fixed ingress is postponed in [#120](https://github.com/rec
 #### Observe a member without progressing its producer
 
 A checked computation that must publish complete Count alongside Pending volume
-uses the same-reader [source-aligned availability](../workspaces/worth-query/crates/worth-query/docs/capabilities/source-aligned-output-availability.md)
+uses the same-reader [source-aligned availability](../workspaces/worth-query/docs/capabilities/source-aligned-output-availability.md)
 route. Its candidate `reader.output_availability(&native_member, typed_demand)`
 retains the actual source Query permission/session and native completion fact
 through the original publication attempt. Native consumer qualification remains
@@ -5869,7 +5869,7 @@ Known finite Scan/Map result declarations retain their existing checks.
 ### Typed refusal from installed invariants
 
 For proposed/committed access, prepared scope, retained snapshot readers and the
-shared diagnostic counts, see [Invariants and read observations](../workspaces/worth-query/crates/worth-query/docs/foundations/invariants-and-read-observations.md).
+shared diagnostic counts, see [Invariants and read observations](../workspaces/worth-query/docs/foundations/invariants-and-read-observations.md).
 
 An installed `WorthQueryApplicationInvariantRule` declares `type Refusal` and
 `type RefusalBinding`. The binding is the application's existing readable scalar
@@ -6014,7 +6014,7 @@ Refusal preserves the borrowed aggregate and its historical observation. This
 native guard does not run a projection. Ordinary discovered actions use
 `retain_operation::<Program, Action>`, then fresh-request `advance`; their settled
 owner composes this complete guard and the installed declared query or batch at
-one authentic observation and phase. See [owning discovered actions](../workspaces/worth-query/crates/worth-query/docs/foundations/ordinary-application-front-door.md#owning-discovered-actions).
+one authentic observation and phase. See [owning discovered actions](../workspaces/worth-query/docs/foundations/ordinary-application-front-door.md#owning-discovered-actions).
 
 
 Every workflow action is a governed mutation. There is no background
@@ -6027,8 +6027,8 @@ that live receipt alongside the freshly admitted bound request), an `AwaitInboun
 node observes that owner result on the next advance. Recorded retry data cannot
 supply live recovery authority. Callback bytes never resume
 an instance. See
-[Workflows: Caller-pumped progression](../workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md#caller-pumped-progression)
-and [Waiting for an inbound completion](../workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md#waiting-for-an-inbound-completion).
+[Workflows: Caller-pumped progression](../workspaces/worth-query/docs/foundations/workflows.md#caller-pumped-progression)
+and [Waiting for an inbound completion](../workspaces/worth-query/docs/foundations/workflows.md#waiting-for-an-inbound-completion).
 
 ### 6.1 The spec marker
 
@@ -6196,7 +6196,7 @@ checks the frozen original input and key;
 construction failures return original custody without consuming birth authority.
 Advance the retained operation under fresh authorization for atomic
 creation/enrollment and recovery after interruption. See
-[workflow-enrolled creations](../workspaces/worth-query/crates/worth-query/docs/authoring/workflow-enrolled-creations.md).
+[workflow-enrolled creations](../workspaces/worth-query/docs/authoring/workflow-enrolled-creations.md).
 
 ### 6.3 Author a definition
 
@@ -6307,7 +6307,7 @@ Ok(builder.finish()?.validate()?)
 carry `with_total_deadline` (without one, validation refuses with
 `MissingInboundDeadline`).
 
-**Node authoring.** The [source-derived node inventory](../workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md#source-derived-vocabulary) owns the complete `ApplicationWorkflowNodeKind` list. The following table explains builder usage:
+**Node authoring.** The [source-derived node inventory](../workspaces/worth-query/docs/foundations/workflows.md#source-derived-vocabulary) owns the complete `ApplicationWorkflowNodeKind` list. The following table explains builder usage:
 
 | Builder method | Node | Notes |
 |---|---|---|
@@ -6500,7 +6500,7 @@ The sequence, from proposal to settlement:
 type. Publish the proposal through fresh `prepare_workflow_proposal` admission;
 the need grants no authority and waiting records no transition.
 
-Full reference: [Workflows: Operations](../workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md#operations).
+Full reference: [Workflows: Operations](../workspaces/worth-query/docs/foundations/workflows.md#operations).
 The runnable unsigned, occurrence-only journey is
 [`examples/authored_workflow/information.rs`](../workspaces/worth-query/crates/worth-query-certification/examples/authored_workflow/information.rs):
 propose, advance to `AwaitingOperation`, execute through
@@ -6833,7 +6833,7 @@ basis; another advance must still report the original proposal wait. After real
 archival ingress and terminal settlement, it closes and reopens again for the
 independently admitted history and exact archive-cardinality checks. Do not
 serialize live locators or reuse an old runtime's retained basis. See
-[discovery and observation](../workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md).
+[discovery and observation](../workspaces/worth-query/docs/foundations/workflows.md).
 
 #### Publish a proposal when the owner asks for one
 
@@ -7010,7 +7010,7 @@ owner until a fresh advance observes native settlement. This example requires
 that wait and closes only after genuine ingress and acceptance.
 After settlement the caller advances through `AwaitInbound` to the terminal and
 checks that exactly one file contains the original identity and retention.
-[Operations and ownership](../workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md#operations)
+[Operations and ownership](../workspaces/worth-query/docs/foundations/workflows.md#operations)
 explains the other stop postures; callers do not resubmit effects or decode
 private receipts to drive their own retry engine.
 
@@ -7170,7 +7170,7 @@ from workflow-bound domain effects. Begin with
 `request.retain_capability_revocation_in_program(..)`. Each captures the original
 input, owned key, preconditions and native preparation closure against the
 installed program and principal binding. Capture refusal returns those original
-values. The [workflow guide's command example](../workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md#owning-capability-commands)
+values. The [workflow guide's command example](../workspaces/worth-query/docs/foundations/workflows.md#owning-capability-commands)
 shows the typed arguments; do not substitute a domain mutation handler.
 
 | Returned owner state | Caller responsibility |
@@ -7453,7 +7453,7 @@ but did not publish is recovered with
   `query.obligations`. Keep the revision rostered across graceful close/reopen:
   retired support stays unavailable through `supported_program::<P>()`, and
   another retirement returns `AlreadyRetired`. An unused revision can retire
-  while the main program remains available. See [Directory support retirement](../workspaces/worth-query/crates/worth-query/docs/foundations/programs-and-adoption.md#directory-support-retirement)
+  while the main program remains available. See [Directory support retirement](../workspaces/worth-query/docs/foundations/programs-and-adoption.md#directory-support-retirement)
   for durable failures and the close sequence.
 
 ---
@@ -7514,11 +7514,11 @@ Use the declarations and host functions exported by `worth-query-decl` and
 
 | Topic | Guide |
 |---|---|
-| Programs, rosters, adoption, branch sets, retirement, full denial lists | [Programs and Adoption](../workspaces/worth-query/crates/worth-query/docs/foundations/programs-and-adoption.md) |
-| Every workflow call, budget, denial, and a worked example | [Workflows](../workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md) |
-| Feature capsules, ports, connections, and the authoring rule | [Feature Capsule Authoring](../workspaces/worth-query/crates/worth-query/docs/authoring/feature-capsule-authoring.md) |
-| Application action preparation, execution, recovery and cleanup | [Ordinary Application Front Door](../workspaces/worth-query/crates/worth-query/docs/foundations/ordinary-application-front-door.md) |
-| Disclosed record generations, bounded canonical history, fresh payload and metadata permission | [Record And Aspect History](../workspaces/worth-query/crates/worth-query/docs/capabilities/record-and-aspect-history.md) |
+| Programs, rosters, adoption, branch sets, retirement, full denial lists | [Programs and Adoption](../workspaces/worth-query/docs/foundations/programs-and-adoption.md) |
+| Every workflow call, budget, denial, and a worked example | [Workflows](../workspaces/worth-query/docs/foundations/workflows.md) |
+| Feature capsules, ports, connections, and the authoring rule | [Feature Capsule Authoring](../workspaces/worth-query/docs/authoring/feature-capsule-authoring.md) |
+| Application action preparation, execution, recovery and cleanup | [Ordinary Application Front Door](../workspaces/worth-query/docs/foundations/ordinary-application-front-door.md) |
+| Disclosed record generations, bounded canonical history, fresh payload and metadata permission | [Record And Aspect History](../workspaces/worth-query/docs/capabilities/record-and-aspect-history.md) |
 | Contribution composition, installation and output demand | [`worth-query-host` README](../workspaces/worth-query/crates/worth-query-host/README.md) |
 | Declaration surface | [`worth-query-decl` README](../workspaces/worth-query/crates/worth-query-decl/README.md) |
 | The complete pure-facade reference application | [Bank public consumer contract](../workspaces/worth-query-bank-world/docs/public-consumer-contract.md) |
@@ -7947,7 +7947,7 @@ matching candidate. Missing/expired material stays conservative. Every remaining
 candidate needs genuine performed cancellation before strict original and complete
 target comparison. The same ordinary correction path qualifies prefix and
 indirect box/contact inputs; governed historical relevance stays conservative. See the
-[correction guide](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md#qualified-managed-source-support).
+[correction guide](../workspaces/worth-query/docs/execution/recorded-source-correction.md#qualified-managed-source-support).
 Independent ordinary field and adjacency revision facts still apply. Thus equal
 restored managed content does not guarantee that every populated observation
 remains eligible. Actual root-predicate reads keep their revision facts even
@@ -8181,8 +8181,8 @@ or previous proposal cannot replace that custody. The full recipe's declared
 read and affected kinds govern preparation, and evaluation freshly checks its
 reader audience. Structural inverse-prefix support includes empty adjacency.
 Application code uses the ordinary `worth-query-host` audience. The
-[internal engine handoff](../workspaces/worth-query/crates/worth-query/docs/modeling/schema-validation.md#candidate-structural-source-changes)
-describes the corresponding Native boundary.
+[schema validation notes](../workspaces/worth-query/docs/modeling/schema-validation.md#candidate-structural-source-changes)
+describe the corresponding Native boundary.
 
 <!-- compiled: candidate_source_changes.rs -->
 ```rust
@@ -8554,7 +8554,7 @@ when their obligations are complete.
 
 Declared query roots can traverse complete endorelation reachability with
 `ApplicationQueryRootPath::forward_closure` and `reverse_closure`, composed with
-ordinary hops and guards. See [declared query closure](../workspaces/worth-query/crates/worth-query/docs/foundations/declared-query-closure.md)
+ordinary hops and guards. See [declared query closure](../workspaces/worth-query/docs/foundations/declared-query-closure.md)
 for reflexive selection, source currentness and per-step receipt observations.
 
 
@@ -8627,7 +8627,7 @@ original.close();
 `Read`, `ReadBinding`, `AppError` and the capability arguments belong to your
 application. Inspection consumes freshly admitted metadata/diagnostic access;
 a payload query's refs-and-input `execute_governed` call is a different interface.
-See [admit inspection access](../workspaces/worth-query/crates/worth-query/docs/capabilities/cross-runtime-causal-inspection.md#admit-current-inspection-access)
+See [admit inspection access](../workspaces/worth-query/docs/capabilities/cross-runtime-causal-inspection.md#admit-current-inspection-access)
 for the Host calls that create those access values.
 
 | Question | Request |
@@ -8657,7 +8657,7 @@ not a retention lease: optional history can be evicted before a later rich read.
 Request cancellation or revoked access refuses the new inspection; neither expires
 an immutable original. Close reports and the final original holder when done.
 
-Follow [Explain original query results and source operations](../workspaces/worth-query/crates/worth-query/docs/capabilities/cross-runtime-causal-inspection.md)
+Follow [Explain original query results and source operations](../workspaces/worth-query/docs/capabilities/cross-runtime-causal-inspection.md)
 for contract setup, capability admission, supported shapes, materialized values,
 loss outcomes and retry handling.
 

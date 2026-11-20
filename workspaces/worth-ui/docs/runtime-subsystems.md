@@ -382,4 +382,4 @@ second data path.
 - [Hot rebind](./hot-rebind.md)
 - [Application inspection](./inspection.md)
 - [Visual inspection](./visual-inspection.md)
-- [Worth Query AI README](../../worth-query/crates/worth-query/docs/AI_README.md)
+- [Worth Query AI README](../../worth-query/docs/AI_README.md)

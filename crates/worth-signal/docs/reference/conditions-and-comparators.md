@@ -151,4 +151,4 @@ aliases for admission and do not grant output-commit authority.
 
 - [Aspects And Dependencies](../core-concepts/aspects-and-dependencies.md)
 - [Defining Computation](../guides/defining-computation.md)
-- [Query Conditional Installed Operations](../../../../workspaces/worth-query/crates/worth-query/docs/domain-capabilities/conditional-installed-operations.md)
+- [Query Conditional Installed Operations](../../../../workspaces/worth-query/docs/domain-capabilities/conditional-installed-operations.md)

@@ -204,4 +204,4 @@ before broader Query-facing capabilities are added.
 - [Worth UI architecture](./architecture.md)
 - [Runtime subsystems](./runtime-subsystems.md)
 - [Application inspection](./inspection.md)
-- [Worth Query AI README](../../worth-query/crates/worth-query/docs/AI_README.md)
+- [Worth Query AI README](../../worth-query/docs/AI_README.md)

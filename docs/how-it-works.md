@@ -119,7 +119,7 @@ These are the real `[dependencies]` edges between workspace crates.
 | `worth-relational` | proof, foundational |
 | `worth-runtime-bridge` | proof, foundational, relational, signal |
 | `worth-runtime-world` | proof, foundational, relational, runtime-bridge, signal |
-| Query engine crates | foundational at minimum; `worth-query-execution`, `worth-query-publication`, and the internal `worth-query` engine also depend on the runtimes |
+| Query authority crates | foundational at minimum; `worth-query-execution` and `worth-query-publication` also depend on the runtimes |
 | `worth-query-decl` | `worth-query-declaration` only |
 | `worth-query-host` | Query admission, declaration, execution, installation, and publication |
 
@@ -201,9 +201,6 @@ Proof is not decorative. The runtimes are built out of it:
 
 - Relational, Signal, the Bridge, and Runtime World each declare their own
   sealed authority markers. No other crate can open their governed doors.
-- Inside the internal `worth-query` engine, installed operations move through
-  about twenty phase markers, from bound to published. Each phase is an
-  `Artifact` that only the engine's private authority can mint.
 - Query installation admits packages as an `Admitted` `Recipe`.
 - Query's recovery handle is a `LinearResource`. Its live table stays in
   Query, and the law that it ends exactly once comes from Proof.
@@ -277,8 +274,6 @@ everywhere:
 - Relational's branch-reference observation *is* a
   `FoundationalBranchReferenceObservation<RelationalBranchTarget>`. Signal
   builds its observations from the same types.
-- The internal `worth-query` engine binds each operation-phase proof to an
-  admitted Foundational authority identity.
 
 ---
 
@@ -1104,7 +1099,7 @@ live index generation. Handle the typed stop; do not turn it into empty input.
 
 - **Opening.** A request-scoped entry takes its cancellation and deadline
   from the caller's request. A host-owned entry (an inbound occurrence, a
-  clock observation, a staged run) opens with neither. Both take
+  clock observation) opens with neither. Both take
   their ceilings from the installed execution policy. The request is opened
   before the advancement's first read. A policy that grants no work or no
   memory refuses the advancement there, before any read.
@@ -1381,58 +1376,6 @@ partition. The [warehouse quantity and sensor peak examples](build-an-applicatio
 show the same owner interface in two domains; their input contains the values,
 so changing that input requires a full run rather than fact-granular reuse.
 
-**Workflow frontier.** A *staged run* executes one installed domain operation
-as named stages. A *frontier* is a canonical set of ready stages advanced by one
-call. The engine opens one execution request for the whole frontier and
-takes every stage through three phases that its types keep apart.
-
-| Phase | Runs | Sees |
-|---|---|---|
-| Prepare | Owner, in canonical stage order | The stage's input facts, fixed before the frontier starts. No executor, no execution context, and no workspace. It returns an owned task. |
-| Compute | Any worker | Its task and a work meter: checkpoints and work accounting, no lease for starting nested work. It is a plain function pointer, never a closure over owner state. |
-| Apply | Owner, in canonical stage order | The owner and the computed result. Every effect happens here. |
-
-- **Canonical order** is ascending stage identity. The multi-stage frontier
-  entry sorts identities and refuses fewer than two members or duplicates.
-  Ordinary single-stage advancement uses the same metered map.
-- **What runs in parallel.** Across stages, only the compute steps run
-  concurrently. They go through one owned-map dispatch under the frontier's
-  request, in serial placement too. A stage's apply runs alone on the owner,
-  and the graph work it starts runs under the same request.
-- **Least failure.** Preparation stops at the first stage in canonical order
-  that fails to prepare. Later stages are neither prepared nor computed;
-  earlier stages compute exactly once. Application then runs the canonical
-  prefix through the least failure across all three phases. A failing
-  application keeps the partial owner effects it made. Computation is
-  charged for the canonical prefix through its least failure, and a later
-  apply failure does not refund it.
-- **Purity.** Prepare and compute must be pure functions of the values they
-  are given: no clock, no static or global state, no environment, no
-  interior-mutable state shared with the owner or another stage, and no
-  effects. The types remove the executor, the context, and the workspace.
-  They cannot remove ambient state, so an impure function makes results
-  depend on execution order and worker count.
-- **Determinism and interruption.** With sufficient memory, worker count
-  changes neither results nor charged work when no cancellation or deadline
-  arrives during compute. The frontier's entry opens a host-owned request,
-  which carries no caller cancellation and no deadline. Under a request that
-  carries one, an interruption during compute can change how far the
-  frontier gets. Application is then a canonical prefix that ends at or
-  before the interrupted stage, with the receipts and effects a serial run
-  produces for that prefix, and the cause stays cancellation or deadline.
-- **Stop causes.** Cancellation, deadline, work exhaustion, a nested stop, a
-  panic, result capacity, and admission each surface as their own cause.
-
-*Executable example.*
-[`reversed_completion_still_applies_canonical_effects_and_receipts`](../workspaces/worth-query/crates/worth-query/src/domain_installation/operation_execution/workflow_execution/progression/frontier/tests/dispatch.rs)
-forces `middle` to finish before `left`; receipts still occur as `start`,
-`left`, `middle`, `right`. This tests owner application order independently of
-worker completion order.
-
-The staged-run surface belongs to the engine beneath the consumer facades,
-which do not export it. It is not the workflow kernel of
-[§13](#13-workflows), which takes one step per request.
-
 **Parallelism at each layer.** Every row runs under the advancement's one
 execution request. "Ordered" names what stays canonical whatever the worker
 count.
@@ -1443,10 +1386,8 @@ count.
 | Relational | With a lease: the packets of a query plan, index builds (one packet per index definition), and the invariant packets of commit validation. | Each merges in one ordered pass on the calling thread, and index generations publish there afterward. Without a lease, packets run in order on the calling thread. |
 | Signal | Within one epoch of a stage: read preparation for the tasks that need computing, and application of tasks, each declaring its write keys. An epoch is a resource-admitted prefix of the stage's remaining tasks, none of which reads another's node. | The request is one ordered pass over stages. A stage is an ordered sequence of epochs; each publishes through the owner before the next starts. The owner reduces after the join: commits in task order, snapshots in stage order. Read preparation runs serially when the epoch's tasks that need computing are fewer than its configured minimum; application does when the epoch's tasks are fewer than its own. |
 | Query: partitioned computation | Partition kernels (`compute_partition`). | Naming, keying, gathering, and completing run on the calling thread. Results settle in partition identity order. |
-| Query: workflow frontier | The compute steps of a frontier's stages. | Prepare and apply run on the owner in canonical stage order. |
 | Query: derived collections | Rebuilding dispatches one partition per unique root. Pinned immutable read custody lets workers read without holding the mutable runtime owner. | The map settles in canonical order. Projection and link checks complete on the owner in entity identity order; retention changes only on success. |
 | Query: advancement | Managed compute tasks of independent ready producers in one wave. | Prepare, complete and publish run on the owner in canonical order; waves progress inside the caller's `advance`. |
-
 
 [`a_real_diamond_agrees_across_widths_and_failure_phases`](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/required_chain/concurrent_waves/history.rs)
 executes this through public output demand. The companion
@@ -1718,9 +1659,9 @@ The two most important rules:
 The calls, with real code:
 [Build an Application §7](build-an-application.md#7-adopt-a-new-program-on-a-branch).
 Full guide:
-[Programs and Adoption](../workspaces/worth-query/crates/worth-query/docs/foundations/programs-and-adoption.md).
+[Programs and Adoption](../workspaces/worth-query/docs/foundations/programs-and-adoption.md).
 See also
-[Branches and Previews](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md).
+[Branches and Previews](../workspaces/worth-query/docs/foundations/branches-and-previews.md).
 
 ### 12.1 Product branches
 
@@ -1790,10 +1731,10 @@ let outcome      = prepared.publish(runtime, &principal, &scope); // native publ
 The calls, with real code:
 [Build an Application §6](build-an-application.md#6-author-publish-and-run-workflows).
 Full guide:
-[Workflows](../workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md).
+[Workflows](../workspaces/worth-query/docs/foundations/workflows.md).
 
 A workflow is a branch-local, versioned graph of steps. Its node kinds are defined by the
-[source-derived workflow vocabulary](../workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md). There is no
+[source-derived workflow vocabulary](../workspaces/worth-query/docs/foundations/workflows.md). There is no
 read-only node kind; a read that feeds a decision is an assessment or a
 condition. A workflow is authored against an installed vocabulary. A purchase
 request, for example, goes from draft, through budget and vendor checks, to a
@@ -1919,7 +1860,7 @@ workflow advance selects the successor; source completion alone is not that
 workflow advance.
 
 Full rules:
-[Workflows, Operations](../workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md#operations).
+[Workflows, Operations](../workspaces/worth-query/docs/foundations/workflows.md#operations).
 Real calls:
 [Build an Application §6](build-an-application.md#6-author-publish-and-run-workflows).
 
@@ -1957,7 +1898,7 @@ close. Observe source publication separately from derived-output completion.
 If retained material has expired or current admission refuses the operation,
 handle the typed outcome and let the user choose a currently supported action.
 
-See [Recorded source correction](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md)
+See [Recorded source correction](../workspaces/worth-query/docs/execution/recorded-source-correction.md)
 for binding declarations, complete caller examples, alternatives, retry and recovery.
 
 ### 14.3 Unresolved durability
@@ -2163,5 +2104,5 @@ to see the two facades used end to end.
 - [Build an Application](build-an-application.md): the application story, end to end, in real code
 - [API Map](api.md): which crate to import, and where the reference documentation is
 - [Platform README](../README.md): the crate map
-- [Query engine architecture map](../workspaces/worth-query/crates/worth-query/docs/AI_README.md): internal; where each request stage lives inside the Query crates, for maintainers
+- [Query engine architecture map](../workspaces/worth-query/docs/AI_README.md): internal; where each request stage lives inside the Query crates, for maintainers
 - [Coding Guidelines](coding-guidelines/): the laws that bind platform code

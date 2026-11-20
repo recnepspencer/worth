@@ -495,6 +495,6 @@ If you are just getting started, stay in:
 Or start in `easy` and move out only when you need more room.
 
 For Query-installed operations, start instead at the
-[`Conditional Installed Operations`](../../workspaces/worth-query/crates/worth-query/docs/domain-capabilities/conditional-installed-operations.md)
+[`Conditional Installed Operations`](../../workspaces/worth-query/docs/domain-capabilities/conditional-installed-operations.md)
 guide. The `easy` facade is for standalone Signal applications, not a shortcut
 around Query installation.

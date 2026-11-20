@@ -121,8 +121,8 @@ never a route back into a sealed runtime proof.
 See the [Store integrity guide](../../plans/worth-store/physical-integrity-and-offline-verification.md)
 and the module's compiling descriptive-projection example.
 
-- [Query Aspects And Authority Lanes](../../workspaces/worth-query/crates/worth-query/docs/modeling/aspects-and-authority-lanes.md)
-- [Conditional Installed Operations](../../workspaces/worth-query/crates/worth-query/docs/domain-capabilities/conditional-installed-operations.md)
+- [Query Aspects And Authority Lanes](../../workspaces/worth-query/docs/modeling/aspects-and-authority-lanes.md)
+- [Conditional Installed Operations](../../workspaces/worth-query/docs/domain-capabilities/conditional-installed-operations.md)
 - [worth-proof](../worth-proof/README.md)
 
 ## Inline atomic values and content references

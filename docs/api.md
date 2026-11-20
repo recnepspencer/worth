@@ -32,8 +32,7 @@ Everything else falls into one of four groups:
 Every other crate is an **internal owner**. It holds authority that the
 facades expose on its behalf. See [§7](#7-internal-crates-do-not-import).
 
-> **For AI agents.** If you are about to add `worth-query`,
-> `worth-query-execution`, `worth-query-admission`, `worth-query-installation`,
+> **For AI agents.** If you are about to add `worth-query-execution`, `worth-query-admission`, `worth-query-installation`,
 > `worth-query-publication`, `worth-query-declaration`, `worth-proof`,
 > `worth-runtime-bridge`, or `worth-runtime-world` to an application's
 > `Cargo.toml`, stop. The capability you need is already on
@@ -112,8 +111,8 @@ lower-runtime internals.
 | Module on `worth_query_host::facade` | What it gives you |
 |---|---|
 | `application_installation` | Build identity, program roster and limits for installing a validated program. Applications install and reopen through `WorthQueryApplicationHomeRequest` on the facade root. The older `in_memory_program` and `in_memory_rostered_program` still install a process-local runtime with no Home; see [Use an Application Home](application-home.md) and [Build an Application §4](build-an-application.md#4-install-or-reopen) |
-| `application_entry` | The request API: `application.request(&principal, &scope)` via `WorthQueryApplicationRequestExt`, then `.query(..)`, mutations, `.on_branch(..)`, `.corrections()` for [recorded correction and reapplication](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md), `.programs()` for adoption ([§7](build-an-application.md#7-adopt-a-new-program-on-a-branch)), and the `prepare_workflow_*` lifecycle calls ([§6](build-an-application.md#6-author-publish-and-run-workflows)) |
-| `causal_inspection` | Original query/source reports, comparisons and materialized evidence. Start from `request.inspect::<Binding>(&original)` or `request.inspect_source::<Disclosure>(&receipt)`; see [inspection](../workspaces/worth-query/crates/worth-query/docs/capabilities/cross-runtime-causal-inspection.md) for acquisition and current permissions. |
+| `application_entry` | The request API: `application.request(&principal, &scope)` via `WorthQueryApplicationRequestExt`, then `.query(..)`, mutations, `.on_branch(..)`, `.corrections()` for [recorded correction and reapplication](../workspaces/worth-query/docs/execution/recorded-source-correction.md), `.programs()` for adoption ([§7](build-an-application.md#7-adopt-a-new-program-on-a-branch)), and the `prepare_workflow_*` lifecycle calls ([§6](build-an-application.md#6-author-publish-and-run-workflows)) |
+| `causal_inspection` | Original query/source reports, comparisons and materialized evidence. Start from `request.inspect::<Binding>(&original)` or `request.inspect_source::<Disclosure>(&receipt)`; see [inspection](../workspaces/worth-query/docs/capabilities/cross-runtime-causal-inspection.md) for acquisition and current permissions. |
 | `application_contribution` | Contribution-composed applications: `ApplicationSchemaContribution`, `WorthQueryApplicationContribution`, handler and invariant setup |
 | `application_discovery` | Discover what an installed application offers |
 | `application_invariants` | Invariant factories and their execution points |
@@ -212,21 +211,15 @@ test of the guarantees.
 | Topic | Guide |
 |---|---|
 | **The whole application story, with real code** | [**Build an Application**](build-an-application.md) |
-| Programs, rosters, branch adoption, migration, retirement | [programs-and-adoption.md](../workspaces/worth-query/crates/worth-query/docs/foundations/programs-and-adoption.md) |
-| Workflows: every call, budget, and denial | [workflows.md](../workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md) |
-| Feature capsules, ports, and connections | [feature-capsule-authoring.md](../workspaces/worth-query/crates/worth-query/docs/authoring/feature-capsule-authoring.md) |
-| The ordinary application path | [ordinary-application-front-door.md](../workspaces/worth-query/crates/worth-query/docs/foundations/ordinary-application-front-door.md) |
-| Branches and previews | [branches-and-previews.md](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md) |
-| What Query will never do | [hard-prohibitions.md](../workspaces/worth-query/crates/worth-query/docs/foundations/hard-prohibitions.md) |
-| Domain capabilities catalog | [domain-capabilities/README.md](../workspaces/worth-query/crates/worth-query/docs/domain-capabilities/README.md) |
+| Programs, rosters, branch adoption, migration, retirement | [programs-and-adoption.md](../workspaces/worth-query/docs/foundations/programs-and-adoption.md) |
+| Workflows: every call, budget, and denial | [workflows.md](../workspaces/worth-query/docs/foundations/workflows.md) |
+| Feature capsules, ports, and connections | [feature-capsule-authoring.md](../workspaces/worth-query/docs/authoring/feature-capsule-authoring.md) |
+| The ordinary application path | [ordinary-application-front-door.md](../workspaces/worth-query/docs/foundations/ordinary-application-front-door.md) |
+| Branches and previews | [branches-and-previews.md](../workspaces/worth-query/docs/foundations/branches-and-previews.md) |
 | Query workspace map and focused commands | [workspaces/worth-query/README.md](../workspaces/worth-query/README.md) |
 
-These guides sit inside the `worth-query` crate for historical reasons, but
-the first four are consumer guides: they use only the two facades.
-Some pages under `workspaces/worth-query/crates/worth-query/docs/` are written
-against the internal engine (`worth_query::facade`). When a guide shows a
-`worth_query::` path, the application path is the matching module on
-`worth_query_host::facade` or `worth_query_decl::facade`.
+These guides live under `workspaces/worth-query/docs/` and use only the two
+facades.
 
 ---
 
@@ -307,7 +300,6 @@ hold.
 | `worth-proof` | Legality as types: witnesses, phases, checked transitions | Nothing. You receive its artifacts from owners. |
 | `worth-runtime-bridge` | Truth-to-computation correspondence | Query supplies it |
 | `worth-runtime-world` | Product branches, coordinated publication | `worth_query_host::facade::product` |
-| `worth-query` | The internal Query engine | `worth-query-decl` and `worth-query-host` |
 | `worth-query-declaration` | Canonical declarations and binding grammar | `worth-query-decl` |
 | `worth-query-installation` | Portable packages and installed contracts | `worth_query_host::facade::domain` |
 | `worth-query-admission` | Basis, policy, resource, access-planning decisions | `worth_query_host::facade::admission` |
@@ -345,8 +337,7 @@ rule set) and fails on:
   - `schema` crates may depend on nothing, and `entry` crates only on `schema`,
     `resolver`, and `derived` crates.
 - **Dependency denials.** An owner may not import what the constitution
-  forbids. For example, only `worth-ui-query-binding` may depend on the
-  `worth-query` engine in UI production code.
+  forbids. For example, Runtime Bridge may not depend on any Query crate.
 - **Identifier denials.** Some constructors may be named only inside their
   owning module, so no other module can mint that authority.
 - **Tier direction.** Platform crates (`worth-*`) never depend on product
@@ -373,8 +364,7 @@ The facades are the documented surface. Build rustdoc for the crates you use.
 Add `--open` to open the result in a browser.
 
 Application API. Name the packages explicitly, because the Query workspace's
-default members are only `worth-query`, `worth-query-decl`, and
-`worth-query-host`:
+default members also include every court crate:
 
 ```bash
 cargo doc --manifest-path workspaces/worth-query/Cargo.toml --no-deps -p worth-query-decl -p worth-query-host
@@ -424,8 +414,8 @@ Use `--document-private-items` only when you are maintaining the platform.
 |---|---|---|
 | Build an application with governed reads and writes | `worth-query-decl` + `worth-query-host` | [Build an Application](build-an-application.md), then the `ordinary_product_workflow` example |
 | Declare features and a program, and install it | the same two | [Build an Application §3–§4](build-an-application.md#3-declare-features-and-the-program) |
-| Add a multi-step process with human decisions | the same two | [Build an Application §6](build-an-application.md#6-author-publish-and-run-workflows), [Workflows guide](../workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md), [authored_workflow](../workspaces/worth-query/crates/worth-query-certification/examples/authored_workflow/main.rs) |
-| Evolve your application's program on a branch, then adopt it | the same two | [Build an Application §7](build-an-application.md#7-adopt-a-new-program-on-a-branch), [Programs and Adoption](../workspaces/worth-query/crates/worth-query/docs/foundations/programs-and-adoption.md), [How WORTH Works §12](how-it-works.md#12-branches-programs-and-adoption) |
+| Add a multi-step process with human decisions | the same two | [Build an Application §6](build-an-application.md#6-author-publish-and-run-workflows), [Workflows guide](../workspaces/worth-query/docs/foundations/workflows.md), [authored_workflow](../workspaces/worth-query/crates/worth-query-certification/examples/authored_workflow/main.rs) |
+| Evolve your application's program on a branch, then adopt it | the same two | [Build an Application §7](build-an-application.md#7-adopt-a-new-program-on-a-branch), [Programs and Adoption](../workspaces/worth-query/docs/foundations/programs-and-adoption.md), [How WORTH Works §12](how-it-works.md#12-branches-programs-and-adoption) |
 | Write pure, reusable schema meaning | `worth-schema-core` / `worth-schema-graph` | [§5](#5-schema-contracts) |
 | Measure the work an operation performs in a cost court | `worth-query-replay` (cert crates only) | [§4](#4-certification-api) |
 | Put a UI on an application | `worth-ui` | [UI AI discovery](../workspaces/worth-ui/AI_README.md) |
@@ -472,7 +462,7 @@ original intent and custody through progress/refusal, native Fresh/Recovered
 completion and terminal posture. Completed `close_with_evidence` transfers the
 original receipt after native cleanup; close refusal returns the same owner.
 These commands reuse the native publication owner, without a mutation binding
-or fabricated handler result. See [owning command usage](../workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md#owning-capability-commands).
+or fabricated handler result. See [owning command usage](../workspaces/worth-query/docs/foundations/workflows.md#owning-capability-commands).
 
 ### Observable workflow requests
 

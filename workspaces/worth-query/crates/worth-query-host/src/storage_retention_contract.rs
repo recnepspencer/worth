@@ -1,1 +1,1 @@
-#![doc = include_str!("../../worth-query/docs/execution/storage-retention.md")]
+#![doc = include_str!("../../../docs/execution/storage-retention.md")]

@@ -274,4 +274,4 @@ See [Runtime services](./runtime-services.md),
 [Application lifecycle](./application-lifecycle.md),
 [Hot rebind](./hot-rebind.md), and
 [Application inspection](./inspection.md). Query integration follows the
-[Worth Query AI README](../../worth-query/crates/worth-query/docs/AI_README.md).
+[Worth Query AI README](../../worth-query/docs/AI_README.md).
