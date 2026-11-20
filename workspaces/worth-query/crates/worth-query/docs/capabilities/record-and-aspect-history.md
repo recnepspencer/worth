@@ -121,7 +121,7 @@ and [authored sequence, independent revocation and retired gap journeys](../../.
 Their helpers show complete public and governed admission, bounded continuation,
 independent committed payload/receipt oracles, cancellation and final pin release.
 
-The [Native growth court](../../../../../../crates/worth-runtime-world/tests/runtime_world_certification/court/record_history/growth.rs)
+The [Native growth court](../../../../../../crates/worth-court-runtime-world/tests/worth_court_runtime_world/cost/runtime_world/court/record_history/growth/mod.rs)
 compares ten and 10,000 unrelated retained record changes with identical finite
 page limits, backing and actual per-page request-work maxima. It traverses every
 empty incomplete prefix before the one independently selected matching record.

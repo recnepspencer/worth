@@ -132,7 +132,7 @@ assert!(contract.admits_diagnostic_mask(&diagnostic).is_ok());
 ```
 
 What is authoritative here is the admitted mask against the contract, not a
-callerâ€™s local idea of which fields ought to be fair game.
+caller’s local idea of which fields ought to be fair game.
 
 ## How It Relates To Other Features
 

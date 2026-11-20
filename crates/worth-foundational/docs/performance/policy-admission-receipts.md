@@ -12,7 +12,7 @@ made that result true.
 - to keep runtime policy separate from executed cost truth
 - to record width, locality, density, or freshness-sensitive admission budgets
 - to show exactly what work was admitted, widened, or denied before execution
-- to make â€œverifiedâ€, â€œwidenedâ€, â€œrejectedâ€, and â€œdeferredâ€ mechanically
+- to make “verified”, “widened”, “rejected”, and “deferred” mechanically
   distinct outcomes
 
 ## Stable Entry Points
@@ -165,7 +165,7 @@ Common denial signals:
 
 - treating a policy receipt as executed evidence
 - lowering compile-time contracts directly into policy receipts
-- widening budget under a â€œverifiedâ€ receipt
+- widening budget under a “verified” receipt
 - hiding denied or widened work behind the same narrow claim surface
 
 ## Current Limits

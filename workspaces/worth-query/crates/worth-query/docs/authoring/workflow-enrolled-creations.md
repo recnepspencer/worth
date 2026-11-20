@@ -188,7 +188,7 @@ encoding. The workflow, binding and role change schema and program identity.
 Observe the returned mutation outcome and use normal authorized application
 queries for the subject. `instance_in` requires a receipt for this exact birth
 and exactly one recorded native instance. Projection failure does not undo a
-commit: retain its outcome and receipt. Do not flatten `PreviouslyCommitted`,
+commit: retain its outcome and receipt. Do not flatten `RecoveredCommitted`,
 unpublished, unresolved or deferred native outcomes into ordinary denial or
 permission to execute again.
 

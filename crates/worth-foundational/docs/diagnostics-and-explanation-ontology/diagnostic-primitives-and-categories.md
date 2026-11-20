@@ -139,7 +139,7 @@ logic.
 - Do not use raw strings as public stand-ins for codes or scopes.
 - Do not treat denial class and breach class as interchangeable.
 - Do not infer availability from the current runtime environment.
-- Do not create a generic â€œdiagnostic artifactâ€ wrapper and push artifact-kind
+- Do not create a generic “diagnostic artifact” wrapper and push artifact-kind
   meaning into comments.
 
 ## Current Limits

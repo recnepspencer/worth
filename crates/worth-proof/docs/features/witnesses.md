@@ -155,7 +155,7 @@ component.
 
 - Do not use a witness as though it were itself a proof fact.
 - Do not hide authority requirements in ambient globals or side channels when the transition should expose them.
-- Do not invent public witness minting shortcuts that bypass the crateâ€™s sealing rules.
+- Do not invent public witness minting shortcuts that bypass the crate’s sealing rules.
 - Do not accept a generic marker parameter at a governed owner facade.
 - Do not move a domain's concrete seal into `worth-proof` merely because the
   witness carrier is defined there.

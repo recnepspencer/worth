@@ -120,8 +120,8 @@ When canonical comparison surprises you, check:
 - whether the mismatch is row-family-specific instead of just value-specific
 - whether named gaps differ
 - whether evidence posture differs
-- whether the bundles differ semantically even if the rendered rows â€œlook
-  similarâ€
+- whether the bundles differ semantically even if the rendered rows “look
+  similar”
 
 Also check whether the bundle you are comparing is partial. Partial bundles can
 still compare meaningfully, but their gaps are part of the comparison story.

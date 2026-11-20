@@ -1069,7 +1069,7 @@ application chooses to retry. Keep the same client key for the same command.
 | --- | --- |
 | `Committed { receipt, result }` | Consume the published receipt and inverse result. |
 | `AlreadyCommitted(receipt)` | Consume the original correction receipt from an equivalent retry. |
-| `PreviouslyCommitted(history)` | Observe current state through a fresh query; historical evidence identifies the earlier commit. |
+| `RecoveredCommitted(receipt)` | Observe current state through a fresh query; the recorded receipt identifies the earlier commit. |
 | `IdempotencyIntentDrift` | Report that the key names a different correction intent. |
 | `DomainDenied(value)` | Interpret the inverse handler's domain refusal. |
 | `Cancelled` or `DeadlineExceeded` | Handle the request stop. |

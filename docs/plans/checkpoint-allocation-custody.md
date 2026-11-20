@@ -66,11 +66,11 @@ mode and custody metadata do not change byte-value equality or recovery authorit
 
 The [native capture owner](../../crates/worth-relational/src/durability/authority/checkpointing.rs)
 checks the supplied policy before capturing one immutable checkpoint image.
-The [encoder](../../crates/worth-relational/src/durability/log/native_file_codec/checkpoint_encoding.rs)
+The [encoder](../../crates/worth-relational/src/durability/log/native_checkpoint_codec/checkpoint_encoding.rs)
 counts the actual MessagePack serialization of that borrowed image using checked
 length arithmetic, then emits the same grammar into one fixed
 `ExecutionByteBuffer`. Counting and emission poll the live selected policy.
-The [writer adapter](../../crates/worth-relational/src/durability/log/native_file_codec/checkpoint_encoding/writer.rs)
+The [writer adapter](../../crates/worth-relational/src/durability/log/native_checkpoint_codec/checkpoint_encoding/writer.rs)
 retains the original allocation denial before returning an I/O stop to the
 serializer. Sealing transfers the immutable backing directly into
 `RelationalNativeCheckpoint`; no final native Vec boxing or payload copy remains.

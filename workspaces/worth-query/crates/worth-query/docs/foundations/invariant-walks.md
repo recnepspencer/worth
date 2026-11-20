@@ -60,7 +60,7 @@ let depends = reader.reaches(Next::reference(), &root, &target)?;
 let shared = reader.closure(Next::reference(), RelationDirection::Reverse, &roots)?;
 ```
 
-The [compiled snapshot callback](../../../worth-query-execution/src/domain_computation/primary_graph/invariant_projection/walk/tests.rs)
+The [compiled snapshot callback](../../../worth-query-court-execution-primary-graph-application-attempt/tests/worth_query_court_execution_primary_graph_application_attempt/domain_computation/primary_graph/invariant_projection/walk/tests/mod.rs)
 uses a real installed schema and graph. Snapshot methods take relation references;
 installed invariant views take their resolver-issued relation bindings.
 
@@ -88,7 +88,7 @@ The raw `WorthQueryApplicationOperationInvariantProjectionReader` also accepts
 snapshot reader. The relation must implement `OperationReads<Operation>`, as
 for `relations_from` and `relations_to`. An admitted projection uses its selected
 snapshot, original request and installed projection work budget. The
-[compiled operation court](../../../worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/invariant_walks/operation_projection.rs)
+[compiled operation court](../../../worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/tests/application_attempt/invariant_walks/operation_projection/mod.rs)
 opens real authenticated operation admissions and exercises these calls.
 
 These are inspection reads. They do not record decision dependencies or protect
@@ -112,8 +112,8 @@ let last = history.entities().last().expect("the root is included");
 let reachable = reader.reaches(Next::reference(), &root, &last)?;
 ```
 
-The [installed handler](../../../worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/invariant_walks/decision_walks/handler.rs)
-and [retained-candidate tests](../../../worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/invariant_walks/decision_walks/currentness.rs)
+The [installed handler](../../../worth-query-testkit-execution-primary-graph-application-attempt/src/domain_computation/primary_graph/tests/application_attempt/invariant_walks/decision_walks/handler/mod.rs)
+and [retained-candidate tests](../../../worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/tests/application_attempt/invariant_walks/decision_walks/currentness/mod.rs)
 exercise actual admission, sealing and publication. Sealing retains the exact
 performed Native observation. Repeating the same logical walk preserves one
 dependency with all its handler/computation attributions. Dropping the returned
@@ -167,8 +167,8 @@ for step in &reachable {
 }
 ```
 
-The [rule callback](../../../worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/invariant_walks/rule/evaluation.rs)
-and [schema](../../../worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/invariant_walks/schema.rs)
+The [rule callback](../../../worth-query-testkit-execution-primary-graph-application-attempt/src/domain_computation/primary_graph/tests/application_attempt/invariant_walks/rule/evaluation/mod.rs)
+and [schema](../../../worth-query-testkit-execution-primary-graph-application-attempt/src/domain_computation/primary_graph/tests/application_attempt/invariant_walks/schema/mod.rs)
 show the surrounding bindings and preparation. The membership relation and
 walked path serve different purposes: finding a root does not by itself prepare
 all of its descendants.
@@ -198,7 +198,7 @@ does not retain Query's source metadata. Paths that execute no complete step
 keep their ordinary funding posture. Complete material component selections
 explicitly use the same original-request storage owner for their source metadata
 and material containers; retained selection answers keep that custody alive. The
-[source lifetime court](../../../worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/invariant_walks/declared_queries/resources.rs)
+[source lifetime court](../../../worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/tests/application_attempt/invariant_walks/declared_queries/resources/mod.rs)
 checks both payments through their real last owners.
 
 A returned walk owns its native result and retains its allocation payer.

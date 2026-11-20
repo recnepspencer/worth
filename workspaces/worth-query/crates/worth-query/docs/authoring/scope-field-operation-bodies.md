@@ -467,9 +467,9 @@ expectation returns `DomainDenied(SourceMismatch { entity, aspect, field })` bef
 effects. Replay still returns the native original-commit outcome rather than
 running a now-failing source guard again. Deferred or unresolved publication keeps
 its native recovery outcome; a body introduces no retry or receipt-copy shortcut.
-After checkpoint restoration, `PreviouslyCommitted` can identify the original
-commit without recreating its old live receipt; read current state through a
-fresh governed query.
+After a Home reopen, `RecoveredCommitted` returns the original recorded receipt
+without recreating its old live receipt; read current state through a fresh
+governed query.
 An invalid input member returns `DomainDenied(InputMismatch { member })` before
 effects. Work or memory refusal remains an execution denial.
 
