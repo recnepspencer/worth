@@ -420,25 +420,21 @@ Plain query and source-only requests cannot provide connected history.
 
 ## Diagnostic evidence identity
 
-Every inspection subject carries a diagnostic evidence identity. Its one
-protocol lives in the Execution owner,
-`worth_query_execution::facade::evidence_identity`. An identity has a scope, a
-canonicalization scheme, sequence boundaries and an opaque comparison key.
+Path: `worth_query_execution::facade::evidence_identity`
+([source](../../crates/worth-query-execution/src/domain_computation/evidence_identity/artifact.rs)). `WorthQueryEvidenceIdentity`
+exposes:
 
-- Compare identities with the scheme-qualified comparison. `eq_same_scheme`
-  returns `Ok(bool)` for two identities of the same scheme and
-  `Err(WorthQueryEvidenceIdentityComparisonError)` for different schemes; it
-  never compares bytes across schemes. `same_scheme_as` checks the scheme
-  alone.
-- `reporting_projection()` and `terminal_projection_for_reporting()` are for
-  display and logs only.
-- `bridge_evidence_identity()` carries the identity across to Runtime Bridge
-  with its scope and canonical digest, and causal inspection projects a Query
-  observation that way (`query_observation_bridge_evidence_identity()`).
+- `eq_same_scheme(&self, other: &Self) -> Result<bool, WorthQueryEvidenceIdentityComparisonError>`
+  and `same_scheme_as(&self, other: &Self) -> Result<(), WorthQueryEvidenceIdentityComparisonError>`:
+  identities of different schemes return the error rather than a comparison.
+- `scope()`, `scheme()`, `as_str()`, `reporting_projection() -> &str` and
+  `terminal_projection_for_reporting() -> &str`.
+- `bridge_evidence_identity()` and `bridge_external_identity_evidence()`, which
+  return Runtime Bridge `BridgeIdentityEvidence`.
 
-Encoding or projecting an identity, including its Bridge representation, grants
-no inspection, execution, publication or correction permission. Applications
-keep using Decl/Host and the actual operation or observation owners.
+`CausalInspectionAdmissionSubject::query_observation_bridge_evidence_identity()`
+([source](../../crates/worth-query-execution/src/domain_computation/primary_graph/causal_inspection/admission_decision/subject.rs))
+returns the Bridge form of the subject's Query observation identity.
 
 ## Refusal, Cancellation And Retry
 

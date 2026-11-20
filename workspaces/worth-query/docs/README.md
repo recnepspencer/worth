@@ -33,7 +33,7 @@ Executable journeys:
 - [Workflow Succession Output Affinity](./foundations/workflow-succession-output-affinity.md): match an output captured by a completed workflow to the subject its successor operation selects.
 - [Workflow-Enrolled Creations](./authoring/workflow-enrolled-creations.md): publish a new subject and fresh native instance in one authorized mutation.
 - [Ordinary Application Front Door](./foundations/ordinary-application-front-door.md): declare, install, admit, execute, commit, and recover one application request.
-- [Basis Capability Lifecycle](./capabilities/basis-capability-lifecycle.md): choose the truth world an operation may use and receive one sealed, operation-scoped capability.
+- [Basis Capability Lifecycle](./capabilities/basis-capability-lifecycle.md): reference for Admission's basis lifecycle, policy and tenant admission, and relationship-proof admission.
 - [Inspect original evidence](./capabilities/cross-runtime-causal-inspection.md): audit or debug an earlier result with `request.inspect` and `request.inspect_source`.
 - [Branches and Previews](./foundations/branches-and-previews.md): application product branches and branch-local programs.
 

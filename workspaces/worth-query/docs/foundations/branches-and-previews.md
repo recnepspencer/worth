@@ -933,13 +933,8 @@ For the request lanes that run against a selected branch, see
 
 ## Current Limits
 
-- Relational branch-local MVCC, exact-basis readmission, detached transactions,
-  and typed branch-merge settlement repair are implemented owner capabilities.
-- Signal owner services provide exact component bases and per-branch progress.
-  [Runtime World](../../../../crates/worth-runtime-world/README.md) owns
-  memory-resident composite history and coordinated Relational-plus-Signal
-  publication. Query's product-branch facade carries that authority through
-  reads, mutations, aftermath, delivery, and inspection.
+Product-branch history and coordinated Relational-plus-Signal publication are
+owned by [Runtime World](../../../../crates/worth-runtime-world/README.md).
 
 ## Related Docs
 

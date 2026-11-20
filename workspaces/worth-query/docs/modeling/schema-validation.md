@@ -6,67 +6,25 @@ changes and reads. For laws enforced when an application changes its graph, see
 
 ## Canonical query validation
 
-Canonical query validation is the legality gate for canonical query bundles. It
-confirms that a query's projections, predicates, ordering, traversal and
-result-shape bindings are legal for the schema it targets, then freezes a stable
-validated identity for the bundle. The Declaration owner implements it;
-applications reach it through `worth_query_decl::facade`:
+Path: `worth_query_decl::facade::validation`, which re-exports Declaration's
+`validation` module ([source](../../crates/worth-query-declaration/src/validation/mod.rs)).
 
-```rust
-use worth_query_decl::facade::{canonicalization::CanonicalQueryBundle, typed::QuerySchemaView, validation};
-
-fn check(bundle: CanonicalQueryBundle, schema: QuerySchemaView) {
-    match validation::validate_canonical_bundle(bundle, schema) {
-        Ok(validated) => {
-            // `validated.report().events()` ends with `IdentityFrozen`.
-            let _ = (validated.query(), validated.result_shape(), validated.counters());
-        }
-        Err(error) => {
-            // A rejection carries no bundle and no report.
-            let _ = (error.failure_class(), error.failure_digest());
-        }
-    }
-}
-```
-
-`validate_canonical_bundle(bundle, schema)` takes the `CanonicalQueryBundle`
-and the `QuerySchemaView` by value and returns
-`Result<ValidatedQueryBundle, QueryValidationError>`.
-
-What validation proves:
-
-- selected aspects exist and are queryable;
-- ordering fields exist and are orderable;
-- predicate families are legal for the targeted field and context;
-- traversal requests respect relation and depth legality;
-- result-shape bindings do not silently widen or contradict the canonical
-  query;
-- the declared schema basis is compatible with the bundle.
-
-**On success** the `ValidatedQueryBundle` exposes `query()`, `result_shape()`,
-`counters()` and `report()`. The `QueryValidationReport` lists the stages that
-passed in order through `events()`: `ProjectionValidated`, `OrderingValidated`,
-`PredicateValidated`, `TraversalValidated`, `ResultShapeBindingValidated`,
-`CompatibilityEstablished` and finally
-`IdentityFrozen { query_digest, result_shape_digest }`.
-
-**On rejection** the caller gets only the `QueryValidationError`. Its variant
-names the failing rule, for example `ProjectionWideningDenied` or
-`IllegalWorkflowPredicateCapabilityOrContextShape`; `failure_class()` groups it
-as a `ValidationFailureClass`, and `failure_digest()` gives a stable digest of
-the failure. There is no bundle, report or event list for a rejected query.
-
-Validation runs before planning; a plan never guesses whether a bundle was
-legal.
-
-Anti-patterns:
-
-- Treating validation as optional because a query already canonicalized.
-- Tolerating unknown or non-queryable fields to fix later.
-- Smuggling result-shape widening through validation and expecting planning to
-  catch it.
-- Treating structured content as queryable everywhere instead of only where
-  the schema basis admits it.
+- `validate_canonical_bundle(bundle: CanonicalQueryBundle, schema_view: QuerySchemaView) -> Result<ValidatedQueryBundle, QueryValidationError>`
+  ([pipeline.rs](../../crates/worth-query-declaration/src/validation/pipeline.rs)).
+  `CanonicalQueryBundle` is in `worth_query_decl::facade::canonicalization` and
+  `QuerySchemaView` in `worth_query_decl::facade::typed`.
+- On `Ok`, `ValidatedQueryBundle` exposes `query()`, `result_shape()`,
+  `report() -> &QueryValidationReport` and `counters()`
+  ([bundle.rs](../../crates/worth-query-declaration/src/validation/artifacts/bundle.rs)).
+  `QueryValidationReport::events() -> &[ValidationEvent]` and
+  `rejection_matrix()` ([report.rs](../../crates/worth-query-declaration/src/validation/report.rs)).
+- `ValidationEvent` variants: `PredicateValidated`, `ProjectionValidated`,
+  `OrderingValidated`, `TraversalValidated`, `ResultShapeBindingValidated`,
+  `CompatibilityEstablished`, `IdentityFrozen { query_digest, result_shape_digest }`.
+- On `Err`, the caller has only the `QueryValidationError`
+  ([errors.rs](../../crates/worth-query-declaration/src/validation/errors.rs)):
+  its variant, `failure_class() -> ValidationFailureClass` and
+  `failure_digest() -> String`. A rejection returns no bundle and no report.
 
 ## Candidate Structural Source Changes
 

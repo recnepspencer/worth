@@ -347,11 +347,12 @@ part of preparing and executing the installed query or operation.
 
 ## Graph obligation kinds
 
-Installed application queries and operations carry sealed graph-obligation
-rows. `WorthQueryInstalledGraphObligationKind` (Installation,
-`graph_obligation/kind.rs`) fixes the kind vocabulary:
+`WorthQueryInstalledGraphObligationKind`, exported as
+`worth_query_host::facade::domain::WorthQueryInstalledGraphObligationKind`
+([source](../../crates/worth-query-installation/src/graph_obligation/kind.rs)),
+with its `as_str()` labels:
 
-| Kind | Label |
+| Variant | Label |
 |---|---|
 | `GraphRead` | `graph-read` |
 | `AuthorizationObservation` | `authorization-observation` |
@@ -359,14 +360,9 @@ rows. `WorthQueryInstalledGraphObligationKind` (Installation,
 | `EffectApplication` | `effect-application` |
 | `InvariantExecution` | `invariant-execution` |
 
-Each row also carries exact owner requirements, selection basis, resource and
-effect posture, and a required terminal. Support is admitted through the
-installed selection, graph-read review, execution-resource profile and
-capacity reservation. A support row or selected kind is never execution
-evidence. Application code does not register these rows. Downstream code may
-inspect the installed set through
-`worth_query_host::facade::inspect_installed_graph_obligations`, which grants
-no selection, planning or execution transition.
+The installed set is inspected through
+`worth_query_host::facade::inspect_installed_graph_obligations`
+([source](../../crates/worth-query-installation/src/graph_obligation/adoption.rs)).
 
 ## How It Relates To Other Features
 

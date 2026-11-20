@@ -1220,11 +1220,8 @@ mixed-cause classification, backpressure, and terminal release. Permission,
 purpose, relationship, tenant, or elevation drift can narrow or terminate
 delivery before protected data is projected.
 
-Granular invalidation evidence arrives as a runtime-affine batch on a clock
-observation receipt. Direct truth and performed Signal deliveries stay separate,
-and transport may only copy or merge batches within one installation and
-source read basis. See
-[Granular Invalidation Batches](./runtime-surfaces/granular-invalidation-batches.md).
+A conditional clock observation receipt carries a granular invalidation batch;
+see [Granular Invalidation Batches](./runtime-surfaces/granular-invalidation-batches.md).
 
 ### Publication and downstream consumption
 
