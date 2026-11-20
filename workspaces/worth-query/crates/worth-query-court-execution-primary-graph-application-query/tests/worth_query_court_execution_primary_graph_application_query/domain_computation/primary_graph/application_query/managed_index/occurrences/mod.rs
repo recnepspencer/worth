@@ -3,6 +3,7 @@ mod companion;
 mod harness;
 mod schema;
 
+use companion::ProbeMode;
 use harness::Harness;
 use schema::{ChildLabelSlot, FieldedSelfSlot};
 use std::collections::BTreeSet;
@@ -56,11 +57,11 @@ fn zero_field_self_referential_endpoint_allows_relation_rewrite_and_tracks_lifec
     {
         let state = h.state.lock().unwrap();
         assert_eq!(state.last_changed_entities, BTreeSet::from([a]));
-        assert!(state.last_changed_record_entities.is_empty());
+        assert_eq!(state.last_changed_occurrence_records, Some(Vec::new()));
         assert_eq!(state.last_delta, (vec![a], vec![a]));
     }
 
-    // Lifecycle deletion of A records A in changed_record_entities and pulls
+    // Lifecycle deletion of A records A in changed_occurrence_record_entities and pulls
     // both A (leaving) and B (losing its ZeroSelf target).
     h.commit(
         WorkerIntentBatch::new("delete-a")
@@ -70,7 +71,7 @@ fn zero_field_self_referential_endpoint_allows_relation_rewrite_and_tracks_lifec
             .push(h.delete_entity_intent(a)),
     );
     let state = h.state.lock().unwrap();
-    assert!(state.last_changed_record_entities.contains(&a));
+    assert_eq!(state.last_changed_occurrence_records, Some(vec![a]));
     assert_eq!(state.last_changed_entities, BTreeSet::from([a, b]));
     assert!(!state.rows[&s].contains_for_test(a));
     assert!(state.rows[&s].contains_for_test(b));
@@ -97,7 +98,7 @@ fn fielded_self_referential_endpoint_separates_relation_rewrite_from_record_writ
     // Case 2a + Negative witness #2: relation-only rewrite on A (`FieldedTag`).
     // Dropping A from `changed` MUST refuse IncompletePreparation; full `changed`
     // succeeds with only A in the delta and B untouched.
-    h.state.lock().unwrap().probe_drop = Some(a);
+    h.state.lock().unwrap().probe = Some(ProbeMode::DropFromOccurrences(a));
     h.commit(
         WorkerIntentBatch::new("rewrite-tag-on-a")
             .push(h.unlink_intent(at1))
@@ -106,7 +107,7 @@ fn fielded_self_referential_endpoint_separates_relation_rewrite_from_record_writ
     {
         let state = h.state.lock().unwrap();
         assert_eq!(state.last_changed_entities, BTreeSet::from([a]));
-        assert!(state.last_changed_record_entities.is_empty());
+        assert_eq!(state.last_changed_occurrence_records, Some(Vec::new()));
         assert!(
             matches!(
                 state.last_probe,
@@ -121,21 +122,29 @@ fn fielded_self_referential_endpoint_separates_relation_rewrite_from_record_writ
     }
     assert_eq!(projected_self_labels(&h, s, b), vec!["v1".to_string()]);
 
-    // Case 2b + Negative witness #1: scalar write on A.label.
-    // A is in changed_record_entities, so dropping dependent row B from `changed`
-    // MUST refuse IncompletePreparation; full `changed` updates both A and B.
-    h.state.lock().unwrap().probe_drop = Some(b);
+    // Case 2b + Unmasked negative witness #1 (`changed_records.len() <= deps.len()`):
+    // scalar write on A.label. Dropping B from BOTH routed rows AND changed_keys
+    // bypasses Loop 1 so ONLY the inverse-postings check can catch omitted B.
+    h.state.lock().unwrap().probe = Some(ProbeMode::DropRoutedRowAndKey(b));
     h.commit(WorkerIntentBatch::new("update-a-label").push(h.update_label_intent(a, "v2")));
     {
         let state = h.state.lock().unwrap();
-        assert_eq!(state.last_changed_record_entities, BTreeSet::from([a]));
+        let records = state
+            .last_changed_occurrence_records
+            .as_ref()
+            .expect("ordinary commit carries occurrence record delta");
+        assert_eq!(records, &vec![a]);
+        assert!(
+            records.len() <= state.last_dependency_entity_count,
+            "small batch must exercise the changed_records <= dependencies branch"
+        );
         assert_eq!(state.last_changed_entities, BTreeSet::from([a, b]));
         assert!(
             matches!(
                 state.last_probe,
                 Some(Err(ManagedIndexSourcePreparationDenial::IncompletePreparation))
             ),
-            "dropping a dependent row on an entity-record write must still refuse IncompletePreparation: {:?}",
+            "dropping a dependent row on an entity-record write must refuse via inverse postings: {:?}",
             state.last_probe
         );
         let mut expected = vec![a, b];
@@ -144,30 +153,72 @@ fn fielded_self_referential_endpoint_separates_relation_rewrite_from_record_writ
     }
     assert_eq!(projected_self_labels(&h, s, b), vec!["v2".to_string()]);
 
-    // Exercise the `changed_record_entities().len() > dependencies.len()` path:
-    // update A together with several unrelated nodes in one batch so the
-    // dependency-key scan branch still refuses when B is dropped from `changed`.
+    // Missing occurrence-record delta (target-only rebuild) must fail closed with
+    // RootUnavailable rather than silently trusting an empty record delta.
+    h.state.lock().unwrap().probe = Some(ProbeMode::MissingRecordDelta);
+    h.commit(WorkerIntentBatch::new("update-a-label-v3").push(h.update_label_intent(a, "v3")));
+    {
+        let state = h.state.lock().unwrap();
+        assert!(
+            matches!(
+                state.last_probe,
+                Some(Err(ManagedIndexSourcePreparationDenial::RootUnavailable))
+            ),
+            "unavailable record delta must fail closed with RootUnavailable: {:?}",
+            state.last_probe
+        );
+    }
+    assert_eq!(projected_self_labels(&h, s, b), vec!["v3".to_string()]);
+}
+
+#[test]
+fn fielded_batched_record_write_scans_dependencies_and_catches_omitted_dependent() {
+    let h = Harness::fielded();
+    let s = h.create_scope("S");
+    let a = h.create_node("A", Some("v1"));
+    let b = h.create_node("B", Some("b1"));
+    let _sa = h.link(h.contains_kind, s, a, "S-A");
+    let _sb = h.link(h.contains_kind, s, b, "S-B");
+    let _ba = h.link(h.self_link_kind, b, a, "B-A");
+    assert_eq!(projected_self_labels(&h, s, b), vec!["v1".to_string()]);
+
+    // Unmasked batched negative witness (`changed_records.len() > deps.len()`):
+    // update A together with several unrelated nodes so the dependency-key
+    // binary-search scan branch runs and refuses when B is dropped from both
+    // routed rows and changed_keys.
     let extras: Vec<_> = (0..5)
         .map(|i| h.create_node(&format!("extra-{i}"), Some("e0")))
         .collect();
     let mut batch =
-        WorkerIntentBatch::new("batch-record-write").push(h.update_label_intent(a, "v3"));
+        WorkerIntentBatch::new("batch-record-write").push(h.update_label_intent(a, "v2"));
     for extra in &extras {
         batch = batch.push(h.update_label_intent(*extra, "e1"));
     }
-    h.state.lock().unwrap().probe_drop = Some(b);
+    h.state.lock().unwrap().probe = Some(ProbeMode::DropRoutedRowAndKey(b));
     h.commit(batch);
     {
         let state = h.state.lock().unwrap();
-        assert_eq!(state.last_changed_record_entities.len(), 6);
-        assert!(matches!(
-            state.last_probe,
-            Some(Err(
-                ManagedIndexSourcePreparationDenial::IncompletePreparation
-            ))
-        ));
+        let records = state
+            .last_changed_occurrence_records
+            .as_ref()
+            .expect("ordinary batch commit carries occurrence record delta");
+        assert_eq!(records.len(), 6);
+        assert!(
+            records.len() > state.last_dependency_entity_count,
+            "large batch must exercise the changed_records > dependencies branch"
+        );
+        assert!(
+            matches!(
+                state.last_probe,
+                Some(Err(
+                    ManagedIndexSourcePreparationDenial::IncompletePreparation
+                ))
+            ),
+            "batched record write dropping dependent B must refuse via inverse postings: {:?}",
+            state.last_probe
+        );
     }
-    assert_eq!(projected_self_labels(&h, s, b), vec!["v3".to_string()]);
+    assert_eq!(projected_self_labels(&h, s, b), vec!["v2".to_string()]);
 }
 
 #[test]
@@ -196,7 +247,7 @@ fn two_hop_self_referential_relink_updates_only_direct_owner() {
     {
         let state = h.state.lock().unwrap();
         assert_eq!(state.last_changed_entities, BTreeSet::from([b]));
-        assert!(state.last_changed_record_entities.is_empty());
+        assert_eq!(state.last_changed_occurrence_records, Some(Vec::new()));
         assert_eq!(state.last_delta, (vec![b], vec![b]));
     }
     assert_eq!(projected_self_labels(&h, s, b), vec!["a2".to_string()]);

@@ -27,13 +27,20 @@ use worth_relational::facade::{
     },
 };
 
+pub(super) enum ProbeMode {
+    DropFromOccurrences(EntityId),
+    DropRoutedRowAndKey(EntityId),
+    MissingRecordDelta,
+}
+
 #[derive(Default)]
 pub(super) struct ObservedState {
     pub rows: BTreeMap<EntityId, Arc<PersistentSourceRows>>,
     pub last_changed_entities: BTreeSet<EntityId>,
-    pub last_changed_record_entities: BTreeSet<EntityId>,
+    pub last_changed_occurrence_records: Option<Vec<EntityId>>,
+    pub last_dependency_entity_count: usize,
     pub last_delta: (Vec<EntityId>, Vec<EntityId>),
-    pub probe_drop: Option<EntityId>,
+    pub probe: Option<ProbeMode>,
     pub last_probe: Option<Result<(), ManagedIndexSourcePreparationDenial>>,
     source_cells: BTreeMap<BranchId, CompanionBranchCellSlot<ManagedIndexBranchImage>>,
 }
@@ -83,21 +90,63 @@ impl Companion {
     ) -> Result<PreparedManagedIndexSourceRoot, ManagedIndexSourcePreparationDenial> {
         let mut state = self.state.lock().unwrap();
         state.last_changed_entities = scope.changed_entities().collect();
-        state.last_changed_record_entities = scope.changed_record_entities().collect();
+        state.last_changed_occurrence_records = scope
+            .changed_occurrence_record_entities()
+            .map(|ids| ids.to_vec());
         if let Some(prev) = state.rows.get(&scope.scope()).cloned() {
-            if let Some(drop_id) = state.probe_drop.take() {
-                let filtered: Vec<_> = scope
-                    .prepare_changed_occurrences()?
-                    .into_iter()
-                    .filter(|(before, after)| {
-                        before.as_ref().map(|r| r.entity()) != Some(drop_id)
-                            && after.as_ref().map(|r| r.entity()) != Some(drop_id)
-                    })
-                    .collect();
-                state.last_probe = Some(
-                    prev.update_for_test(execution, &scope, &filtered, &self.graph, false)
-                        .map(|_| ()),
-                );
+            state.last_dependency_entity_count = prev.dependency_entity_count_for_test();
+            if let Some(probe) = state.probe.take() {
+                state.last_probe = Some(match probe {
+                    ProbeMode::DropFromOccurrences(drop_id) => {
+                        let filtered: Vec<_> = scope
+                            .prepare_changed_occurrences()?
+                            .into_iter()
+                            .filter(|(before, after)| {
+                                before.as_ref().map(|r| r.entity()) != Some(drop_id)
+                                    && after.as_ref().map(|r| r.entity()) != Some(drop_id)
+                            })
+                            .collect();
+                        prev.update_for_test(execution, &scope, &filtered, &self.graph, false)
+                            .map(|_| ())
+                    }
+                    ProbeMode::DropRoutedRowAndKey(drop_id) => {
+                        let changed_keys: BTreeSet<EntityId> = scope
+                            .prepare_changed_occurrences()?
+                            .into_iter()
+                            .flat_map(|(before, after)| {
+                                before
+                                    .map(|r| r.entity())
+                                    .into_iter()
+                                    .chain(after.map(|r| r.entity()))
+                            })
+                            .filter(|entity| *entity != drop_id)
+                            .collect();
+                        prev.check_complete_with_override_for_test(
+                            &scope,
+                            Some(drop_id),
+                            None,
+                            &changed_keys,
+                        )
+                    }
+                    ProbeMode::MissingRecordDelta => {
+                        let changed_keys: BTreeSet<EntityId> = scope
+                            .prepare_changed_occurrences()?
+                            .into_iter()
+                            .flat_map(|(before, after)| {
+                                before
+                                    .map(|r| r.entity())
+                                    .into_iter()
+                                    .chain(after.map(|r| r.entity()))
+                            })
+                            .collect();
+                        prev.check_complete_with_override_for_test(
+                            &scope,
+                            None,
+                            Some(None),
+                            &changed_keys,
+                        )
+                    }
+                });
             }
             let changed = scope.prepare_changed_occurrences()?;
             let (next, delta) =

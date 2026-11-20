@@ -15,6 +15,7 @@ pub(crate) struct Court {
     pub(crate) source_cells:
         Mutex<BTreeMap<BranchId, CompanionBranchCellSlot<ManagedIndexBranchImage>>>,
     pub staged: Mutex<BTreeSet<EntityId>>,
+    pub occurrence_records: Mutex<BTreeMap<EntityId, Option<Vec<EntityId>>>>,
     pub(super) event_cohorts: Mutex<Option<BTreeMap<EntityId, BTreeSet<EntityId>>>>,
     pub observed: Mutex<BTreeSet<EntityId>>,
     pub expected: Mutex<BTreeMap<EntityId, (Vec<EntityId>, Vec<EntityId>)>>,
@@ -163,6 +164,12 @@ impl RelationalPublicationCompanion for SourceOwner {
                 None
             };
             self.0.staged.lock().unwrap().insert(scope.scope());
+            self.0.occurrence_records.lock().unwrap().insert(
+                scope.scope(),
+                scope
+                    .changed_occurrence_record_entities()
+                    .map(|ids| ids.to_vec()),
+            );
             // This court's owner computes no delta and declares it empty.
             roots.push(scope.seal(committed, proposed, Default::default()));
         }

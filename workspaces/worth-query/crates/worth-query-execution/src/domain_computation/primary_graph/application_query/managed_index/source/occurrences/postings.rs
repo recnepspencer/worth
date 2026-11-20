@@ -15,14 +15,37 @@ impl OccurrencePostings {
             .flat_map(|entries| entries.keys())
     }
 
+    pub(super) fn entity_count(&self) -> usize {
+        self.entities.len()
+    }
+
     pub(super) fn check_complete(
         &self,
         scope: &ManagedIndexSourceScope<'_>,
         entries: &ExecutionOrderedMap<EntityId, Arc<Entry>>,
         changed_keys: &BTreeSet<EntityId>,
     ) -> Result<(), MaterialDenial> {
-        let budget = scope.read_budget();
-        for row in scope.changed_entities() {
+        self.check_complete_inputs(
+            scope.changed_entities(),
+            scope.changed_occurrence_record_entities(),
+            entries,
+            changed_keys,
+            &scope.read_budget(),
+        )
+    }
+
+    pub(super) fn check_complete_inputs(
+        &self,
+        changed_rows: impl IntoIterator<Item = EntityId>,
+        changed_records: Option<&[EntityId]>,
+        entries: &ExecutionOrderedMap<EntityId, Arc<Entry>>,
+        changed_keys: &BTreeSet<EntityId>,
+        budget: &worth_relational::facade::runtime::CustomInvariantReadBudget<'_>,
+    ) -> Result<(), MaterialDenial> {
+        let Some(changed_records) = changed_records else {
+            return Err(ManagedIndexSourcePreparationDenial::RootUnavailable.into());
+        };
+        for row in changed_rows {
             budget
                 .checkpoint(1)
                 .map_err(DerivedRelationReadDenial::Structural)?;
@@ -30,21 +53,20 @@ impl OccurrencePostings {
                 return Err(ManagedIndexSourcePreparationDenial::IncompletePreparation.into());
             }
         }
-        let changed_records = scope.changed_record_entities();
         if changed_records.len() <= self.entities.len() {
-            for entity in changed_records {
+            for &entity in changed_records {
                 budget
                     .checkpoint(1)
                     .map_err(DerivedRelationReadDenial::Structural)?;
-                self.check_entity_dependents(entity, changed_keys, &budget)?;
+                self.check_entity_dependents(entity, changed_keys, budget)?;
             }
         } else {
             for &entity in self.entities.keys() {
                 budget
                     .checkpoint(1)
                     .map_err(DerivedRelationReadDenial::Structural)?;
-                if scope.is_changed_record_entity(entity) {
-                    self.check_entity_dependents(entity, changed_keys, &budget)?;
+                if changed_records.binary_search(&entity).is_ok() {
+                    self.check_entity_dependents(entity, changed_keys, budget)?;
                 }
             }
         }

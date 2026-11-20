@@ -237,7 +237,7 @@ impl PersistentSourceRows {
         // index closes scalar/lifecycle entry reads. Neither substitutes for the
         // other. A routed retained entry missing from Native's real delta refuses.
         // O(|changed| log |changed| + |changed_entities| log |entries|
-        //   + min(|changed_record_entities|, |dependencies|) log max + matched edges).
+        //   + min(|changed_occurrence_record_entities|, |dependencies|) log max + matched edges).
         let mut changed_keys = BTreeSet::new();
         for entity in changed.iter().flat_map(|(a, b)| {
             a.iter()

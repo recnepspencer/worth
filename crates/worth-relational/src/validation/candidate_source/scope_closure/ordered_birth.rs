@@ -97,20 +97,21 @@ pub(super) fn discover(
             }
         }
     }
-    let changed: BTreeSet<_> = created
+    new.retain(size_of::<(EntityId, BTreeSet<EntityId>)>())?;
+    let mut changed_occurrence_records = Vec::new();
+    for &entity in &created {
+        new.checkpoint(1)?;
+        if is_occurrence_dependency_kind(program, new.entity_kind(entity)?) {
+            push_changed_occurrence_record(&mut new, &mut changed_occurrence_records, entity)?;
+        }
+    }
+    let changed = created
         .into_iter()
         .filter(|entity| *entity != scope)
         .collect();
-    let changed_records_bytes = changed
-        .len()
-        .checked_mul(size_of::<EntityId>() * 5)
-        .and_then(|bytes| bytes.checked_add(size_of::<(EntityId, BTreeSet<EntityId>)>()))
-        .ok_or(Definition::WorkBudgetExceeded)?;
-    new.retain(changed_records_bytes)?;
-    let changed_records = changed.clone();
     Ok(Some(PreparedManagedIndexScopeClosure {
         scopes: BTreeMap::from([(scope, changed)]),
-        changed_records,
+        changed_occurrence_records: Some(changed_occurrence_records),
         support: Vec::new(),
     }))
 }

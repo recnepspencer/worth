@@ -40,6 +40,35 @@ impl PersistentSourceRows {
     }
 
     #[doc(hidden)]
+    pub fn dependency_entity_count_for_test(&self) -> usize {
+        self.dependencies.entity_count()
+    }
+
+    #[doc(hidden)]
+    pub fn check_complete_with_override_for_test(
+        &self,
+        scope: &ManagedIndexSourceScope<'_>,
+        omitted_routed_row: Option<EntityId>,
+        override_records: Option<Option<&[EntityId]>>,
+        changed_keys: &BTreeSet<EntityId>,
+    ) -> Result<(), ManagedIndexSourcePreparationDenial> {
+        let changed_rows = scope
+            .changed_entities()
+            .filter(|row| Some(*row) != omitted_routed_row);
+        let changed_records =
+            override_records.unwrap_or_else(|| scope.changed_occurrence_record_entities());
+        self.dependencies
+            .check_complete_inputs(
+                changed_rows,
+                changed_records,
+                &self.entries,
+                changed_keys,
+                &scope.read_budget(),
+            )
+            .map_err(MaterialDenial::into_native)
+    }
+
+    #[doc(hidden)]
     pub fn child_string_fields_for_test(
         &self,
         row: EntityId,

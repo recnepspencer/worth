@@ -278,3 +278,109 @@ fn nested_projection_original_field_cancellation_refuses_without_moving_publishe
         assert_eq!(basis(runtime), before);
     });
 }
+
+#[test]
+fn ordinary_discovery_changed_occurrence_records_tracks_dependency_kinds_only() {
+    let (registry, program) = registry::profile(registry::Profile::SchemaFieldsOnly);
+    let court = Arc::new(owner::Court::default());
+    let rule = CustomInvariantRegistration::new(owner::Reader {
+        maximum_work: None,
+        program: program.clone(),
+        court: court.clone(),
+    })
+    .unwrap()
+    .with_managed_index_sources(vec![program])
+    .unwrap();
+    let runtime = RelationalRuntimeApi::builder()
+        .schema_registry(registry)
+        .custom_invariant(rule)
+        .build()
+        .unwrap();
+    let _reg = runtime
+        .publication_companion_port()
+        .begin_required_registration()
+        .unwrap()
+        .activate(Arc::new(owner::SourceOwner(court.clone())))
+        .unwrap();
+    let host = SerialRequest::from_memory(
+        SerialMemoryBudget::new(None),
+        CancellationSource::new().token(),
+        None,
+    );
+    let execution = ExecutionRequest::serial(&host);
+    let entity = |kind, key, val| {
+        MutationIntent::Create(CreateIntent::Entity(EntitySpec {
+            partition_id: PartitionId::main(),
+            kind_id: KindId(kind),
+            client_key: ClientKey::raw(key),
+            fields: fixture::field(val),
+        }))
+    };
+    let born = commit(
+        &runtime,
+        &execution,
+        WorkerIntentBatch::new("seed-dir-and-item")
+            .push(entity(1, "dir", "d0"))
+            .push(entity(4, "item", "i0"))
+            .push(MutationIntent::Create(CreateIntent::Relation(
+                RelationSpec {
+                    partition_id: PartitionId::main(),
+                    kind_id: KindId(2),
+                    client_key: ClientKey::raw("dir-item"),
+                    source: EntityReference::Created(created(1, "dir")),
+                    target: EntityReference::Created(created(4, "item")),
+                    fields: Default::default(),
+                },
+            ))),
+    );
+    let dir = born.created_entity(&created(1, "dir")).unwrap();
+    let item = born.created_entity(&created(4, "item")).unwrap();
+    let edit = |entity_id, val| {
+        MutationIntent::Entity(EntityMutationIntent::UpdateFields(
+            UpdateEntityFieldsIntent {
+                entity_id,
+                fields: fixture::field(val),
+            },
+        ))
+    };
+
+    // SchemaFieldsOnly has no projection routes: scope kind (1) is excluded.
+    court.occurrence_records.lock().unwrap().clear();
+    commit(
+        &runtime,
+        &execution,
+        WorkerIntentBatch::new("edit-dir").push(edit(dir, "d1")),
+    );
+    assert_eq!(
+        court.occurrence_records.lock().unwrap().get(&dir),
+        Some(&Some(Vec::new()))
+    );
+
+    // Row kind (4) IS in the occurrence-dependency domain.
+    court.occurrence_records.lock().unwrap().clear();
+    commit(
+        &runtime,
+        &execution,
+        WorkerIntentBatch::new("edit-item").push(edit(item, "i1")),
+    );
+    assert_eq!(
+        court.occurrence_records.lock().unwrap().get(&dir),
+        Some(&Some(vec![item]))
+    );
+
+    // NestedFields projects KindId(1) via `owner`, so scope kind (1) IS included.
+    run(|runtime, _program, court, host, _cancel| {
+        let execution = ExecutionRequest::serial(host);
+        let n = seed(runtime, execution);
+        court.occurrence_records.lock().unwrap().clear();
+        commit(
+            runtime,
+            &execution,
+            WorkerIntentBatch::new("edit-endpoint-scope").push(edit(n.a, "A2")),
+        );
+        assert_eq!(
+            court.occurrence_records.lock().unwrap().get(&n.a),
+            Some(&Some(vec![n.a]))
+        );
+    });
+}

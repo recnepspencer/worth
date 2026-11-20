@@ -110,14 +110,14 @@ impl<'a> ManagedIndexSourceScope<'a> {
     pub fn changed_entities(&self) -> impl Iterator<Item = EntityId> + '_ {
         self.changed.iter().copied()
     }
-    /// Entities whose own record (fields or lifecycle) changed in this commit,
-    /// distinct from rows routed only by an incident relation delta.
-    pub fn changed_record_entities(&self) -> impl ExactSizeIterator<Item = EntityId> + '_ {
-        self.closure.changed_records.iter().copied()
-    }
-    /// Whether `entity`'s own record (fields or lifecycle) changed in this commit.
-    pub fn is_changed_record_entity(&self, entity: EntityId) -> bool {
-        self.closure.changed_records.contains(&entity)
+    /// Row-kind and projection-endpoint entities whose own entity record
+    /// (fields or lifecycle) changed on either side of this commit, distinct
+    /// from rows routed only by an incident relation delta.
+    ///
+    /// Returns `None` on a target-only rebuild (such as home-target recovery)
+    /// where no committed before-image record delta was discovered.
+    pub fn changed_occurrence_record_entities(&self) -> Option<&[EntityId]> {
+        self.closure.changed_occurrence_records.as_deref()
     }
 
     pub fn changed_occurrences(
