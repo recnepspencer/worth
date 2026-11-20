@@ -418,24 +418,6 @@ does not imply omission; the installed record-retention policy decides that.
 A previously materialized readonly history snapshot remains usable after eviction.
 Plain query and source-only requests cannot provide connected history.
 
-## Diagnostic evidence identity
-
-Path: `worth_query_execution::facade::evidence_identity`
-([source](../../crates/worth-query-execution/src/domain_computation/evidence_identity/artifact.rs)). `WorthQueryEvidenceIdentity`
-exposes:
-
-- `eq_same_scheme(&self, other: &Self) -> Result<bool, WorthQueryEvidenceIdentityComparisonError>`
-  and `same_scheme_as(&self, other: &Self) -> Result<(), WorthQueryEvidenceIdentityComparisonError>`:
-  identities of different schemes return the error rather than a comparison.
-- `scope()`, `scheme()`, `as_str()`, `reporting_projection() -> &str` and
-  `terminal_projection_for_reporting() -> &str`.
-- `bridge_evidence_identity()` and `bridge_external_identity_evidence()`, which
-  return Runtime Bridge `BridgeIdentityEvidence`.
-
-`CausalInspectionAdmissionSubject::query_observation_bridge_evidence_identity()`
-([source](../../crates/worth-query-execution/src/domain_computation/primary_graph/causal_inspection/admission_decision/subject.rs))
-returns the Bridge form of the subject's Query observation identity.
-
 ## Refusal, Cancellation And Retry
 
 Handle `kind()` first. Depending on the failed operation, inspect

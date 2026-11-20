@@ -347,22 +347,8 @@ part of preparing and executing the installed query or operation.
 
 ## Graph obligation kinds
 
-`WorthQueryInstalledGraphObligationKind`, exported as
-`worth_query_host::facade::domain::WorthQueryInstalledGraphObligationKind`
-([source](../../crates/worth-query-installation/src/graph_obligation/kind.rs)),
-with its `as_str()` labels:
-
-| Variant | Label |
-|---|---|
-| `GraphRead` | `graph-read` |
-| `AuthorizationObservation` | `authorization-observation` |
-| `MutationTouch` | `mutation-touch` |
-| `EffectApplication` | `effect-application` |
-| `InvariantExecution` | `invariant-execution` |
-
-The installed set is inspected through
-`worth_query_host::facade::inspect_installed_graph_obligations`
-([source](../../crates/worth-query-installation/src/graph_obligation/adoption.rs)).
+- `worth_query_host::facade::domain::WorthQueryInstalledGraphObligationKind` ([source](../../crates/worth-query-installation/src/graph_obligation/kind.rs#L2))
+- `worth_query_host::facade::inspect_installed_graph_obligations` ([source](../../crates/worth-query-installation/src/graph_obligation/adoption.rs#L123))
 
 ## How It Relates To Other Features
 

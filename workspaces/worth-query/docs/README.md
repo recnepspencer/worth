@@ -33,7 +33,7 @@ Executable journeys:
 - [Workflow Succession Output Affinity](./foundations/workflow-succession-output-affinity.md): match an output captured by a completed workflow to the subject its successor operation selects.
 - [Workflow-Enrolled Creations](./authoring/workflow-enrolled-creations.md): publish a new subject and fresh native instance in one authorized mutation.
 - [Ordinary Application Front Door](./foundations/ordinary-application-front-door.md): declare, install, admit, execute, commit, and recover one application request.
-- [Basis Capability Lifecycle](./capabilities/basis-capability-lifecycle.md): reference for Admission's basis lifecycle, policy and tenant admission, and relationship-proof admission.
+- [Basis Capability Lifecycle](./capabilities/basis-capability-lifecycle.md): pointers to Admission's basis lifecycle, policy and tenant admission, and relationship-proof admission.
 - [Inspect original evidence](./capabilities/cross-runtime-causal-inspection.md): audit or debug an earlier result with `request.inspect` and `request.inspect_source`.
 - [Branches and Previews](./foundations/branches-and-previews.md): application product branches and branch-local programs.
 
@@ -46,7 +46,7 @@ Executable journeys:
 - [Record And Aspect History](./capabilities/record-and-aspect-history.md): capture disclosed record generations and page canonical changes at a pinned product with fresh independent metadata permission.
 - [Graph Read Access Planning](./authoring/graph-read-access-planning.md): how Query proves an installed read has the access structures and bounded cost it needs.
 - [Graph Touch Obligation Authority](./authoring/graph-touch-obligation-authority.md): the graph work an installed query or operation must perform.
-- [Schema Validation](./modeling/schema-validation.md): canonical query legality and validated identity, plus Native boundary notes for schema changes.
+- [Schema Validation](./modeling/schema-validation.md): pointers to canonical query validation and Native boundary entry points.
 - [Relation Laws](./modeling/relation-laws.md): stored graph laws, persistent orbit/component identities, scoped reads, disclosure and compiled topology examples; remaining projected CAD shell requirements.
 - [Invariants and Read Observations](./foundations/invariants-and-read-observations.md): prepare and evaluate actual proposed-state reads with complete frozen dependencies.
 - [Complete Relation Walks](./foundations/invariant-walks.md): typed complete traversal, minimum distances, access and interruption semantics.
@@ -74,7 +74,7 @@ Executable journeys:
 
 - [Canonical Graph Obligation Progression](./domain-capabilities/canonical-graph-obligation-progression.md): how Query admits and executes the graph work an installed operation carries.
 - [Conditional Installed Operations](./domain-capabilities/conditional-installed-operations.md): eligibility, trigger, comparison, and maintenance meaning on installed operations.
-- [Granular Invalidation Batches](./runtime-surfaces/granular-invalidation-batches.md): receive, inspect and move the lower-runtime deliveries a clock observation carries.
+- [Granular Invalidation Batches](./runtime-surfaces/granular-invalidation-batches.md): pointers to the batch a clock observation carries.
 - [Application Resources](./capabilities/application-resources.md): declare a process-local request/response resource and use it through Host.
 - [Source-Aligned Output Availability](./capabilities/source-aligned-output-availability.md): observe an installed producer's current output, or its source-aligned Pending, without starting it.
 - [Execution Resource Admission And Managed Runs](./domain-capabilities/execution-resource-admission-and-managed-runs.md): govern large, interruptible, or stateful domain work.

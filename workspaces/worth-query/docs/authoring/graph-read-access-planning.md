@@ -148,30 +148,10 @@ is equal while attempt plans, sessions, and bases remain distinct.
 
 ## Admission vocabulary
 
-Exported from `worth_query_host::facade::admission::graph_read_access`
-([source](../../crates/worth-query-admission/src/graph_read_access/)). The
-values are each enum's `as_str()` labels:
-
-- `WorthQueryGraphReadAccessAdmissionPosture`
-  ([access_posture.rs](../../crates/worth-query-admission/src/graph_read_access/access_posture.rs)):
-  `inline_indexed`, `bounded_ephemeral_index`, `persistent_index_required`,
-  `async_materialization_required`, `store_backed_capability_required`,
-  `access_capability_registration_required`, `denied`.
-- `WorthQueryGraphReadPlanReviewDenialKind`
-  ([plan_review_denial.rs](../../crates/worth-query-admission/src/graph_read_access/plan_review_denial.rs)):
-  `required_async_materialization`, `required_access_capability_registration`,
-  `required_persistent_index`, `unsupported_graph_index_support`.
-- `WorthQueryGraphReadAccessRequirementKind`
-  ([requirement_dimensions.rs](../../crates/worth-query-admission/src/graph_read_access/requirement_dimensions.rs)):
-  `directional_adjacency`, `reverse_adjacency`, `aggregate_selection`,
-  `derived_source`, `predicate_support`, `ordering_support`,
-  `traversal_workset`, `visited_set`, `dedup_set`, `proof_support`,
-  `result_buffer`, `materialization_lifecycle`, `live_maintenance_support`,
-  `domain_operation_capability_registration`.
-- `WorthQueryGraphReadRequiredCapabilityOwner`
-  ([required_capability.rs](../../crates/worth-query-admission/src/graph_read_access/required_capability.rs)):
-  `query_runtime`, `lower_runtime`, `persistent_store`, `domain_registration`,
-  `async_materializer`.
+- `worth_query_host::facade::admission::graph_read_access::WorthQueryGraphReadAccessAdmissionPosture` ([source](../../crates/worth-query-admission/src/graph_read_access/access_posture.rs#L2))
+- `worth_query_host::facade::admission::graph_read_access::WorthQueryGraphReadPlanReviewDenialKind` ([source](../../crates/worth-query-admission/src/graph_read_access/plan_review_denial.rs#L2))
+- `worth_query_host::facade::admission::graph_read_access::WorthQueryGraphReadAccessRequirementKind` ([source](../../crates/worth-query-admission/src/graph_read_access/requirement_dimensions.rs#L2))
+- `worth_query_host::facade::admission::graph_read_access::WorthQueryGraphReadRequiredCapabilityOwner` ([source](../../crates/worth-query-admission/src/graph_read_access/required_capability.rs#L2))
 
 ## How It Relates To Other Features
 
