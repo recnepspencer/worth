@@ -21,7 +21,6 @@ fn automatic_checkpoint_exhaustion_keeps_business_results_and_explicit_capture_u
         .with_maintenance_allowance(
             NonZeroU64::MIN,
             NonZeroU64::new(256 << 20).unwrap(),
-            Duration::from_secs(60),
         ),
     );
     let bootstrap = checkpoint_capture::lease(256 << 20);

@@ -80,7 +80,6 @@ fn close_checkpoint_exhaustion_reports_failure_and_preserves_journal_reopen() {
     let limits = Limits::default().with_maintenance_allowance(
         std::num::NonZeroU64::MIN,
         std::num::NonZeroU64::new(256 << 20).unwrap(),
-        Duration::from_secs(60),
     );
     let home = open(path.clone(), limits);
     let (_, live) = scope();

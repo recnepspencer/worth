@@ -251,7 +251,10 @@ maintenance when any Native or World journal reaches the threshold: 4096 entries
 or 64 MiB of payload by default. Change the thresholds and the maintenance
 allowance with
 `request.with_checkpoint_limits(host::WorthQueryApplicationHomeCheckpointLimits::new(entries, payload_bytes))`
-and its `with_maintenance_allowance(work, memory_bytes, timeout)`.
+and its `with_maintenance_allowance(work, memory_bytes)`. Counted work and
+memory bound maintenance and the close checkpoint; no wall-clock deadline
+applies, so a slow machine never turns a graceful close into a failed
+checkpoint.
 
 `home.checkpoint(&request)` takes one explicitly, `home.inspect_checkpoint(&request)`
 reports what is due, and `home.recover_checkpoint(&request)` finishes an accepted

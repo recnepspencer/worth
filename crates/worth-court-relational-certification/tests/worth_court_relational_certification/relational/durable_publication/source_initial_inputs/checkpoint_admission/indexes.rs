@@ -3,7 +3,7 @@ use super::*;
 use worth_foundational::facade::{AspectKey, AspectValue, FieldKey};
 use worth_relational::facade::{identity::KindId, indexes::*};
 #[test]
-fn checkpoint_image_roots_restore_index_lookup_and_refuse_foreign_before_roots() {
+fn checkpoint_image_roots_build_cold_and_incremental_indexes_without_canonical_body_reads() {
     for incremental in [false, true] {
         let host = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
         let request = ExecutionRequest::serial(&host);
@@ -43,22 +43,24 @@ fn checkpoint_image_roots_restore_index_lookup_and_refuse_foreign_before_roots()
             assert_eq!(built.generations.len(), 1);
         }
         drop(basis);
-        let (receipt, expected, key) = if incremental {
+        let (receipt, expected, key, slots) = if incremental {
             let next = create_entity_outcome(&request, &runtime, "after");
             let entity = next.semantic_result().created_entities()[0].assigned;
             let receipt = next.commit.clone();
             release_test_commit_snapshot(&runtime, &next);
-            (receipt, entity, "after")
+            (receipt, entity, "after", 0)
         } else {
             (
                 first.commit.clone(),
                 first.semantic_result().created_entities()[0].assigned,
                 "before",
+                first.changed_records.len() + 1,
             )
         };
         release_test_commit_snapshot(&runtime, &first);
         let image = capture_external(&runtime, &medium, &request);
         medium.file_checkpoint(image.checkpoint().clone());
+        let reads = medium.canonical_member_reads();
         let input = home_image_input(&medium, &image, &request).unwrap();
         runtime.release_component_basis(lease).unwrap();
         drop((image, runtime));
@@ -135,6 +137,10 @@ fn checkpoint_image_roots_restore_index_lookup_and_refuse_foreign_before_roots()
             )
             .unwrap();
         assert_eq!(reconstructed.generations.len(), 1);
+        if !incremental {
+            // One real entity slot and its partition.
+            assert_eq!(reconstructed.work.cold_record_slots, slots);
+        }
         let snapshot = recovered
             .snapshots()
             .snapshot_for_observation(&basis.observation())
@@ -214,6 +220,9 @@ fn checkpoint_image_roots_restore_index_lookup_and_refuse_foreign_before_roots()
                 )
                 .unwrap();
             assert_eq!(refreshed.generations.len(), 1);
+            // Incremental maintenance has no population-reconstruction allowance.
+            assert_eq!(refreshed.work.cold_record_slots, slots);
+            assert!(refreshed.work.patch_records > 0);
             assert_eq!(
                 refreshed.generations[0].generation_id,
                 published.generation_id
@@ -254,5 +263,10 @@ fn checkpoint_image_roots_restore_index_lookup_and_refuse_foreign_before_roots()
         if let Some(prior) = prior {
             recovered.snapshots().release_snapshot(&prior).unwrap();
         }
+        assert_eq!(
+            medium.canonical_member_reads(),
+            reads,
+            "cold and incremental image index work must not open canonical bodies"
+        );
     }
 }

@@ -146,7 +146,6 @@ fn host_checkpoint_memory_failure_is_reported_while_original_retired_owners_rema
     let limits = limits.with_maintenance_allowance(
         limits.maintenance_work(),
         control_bytes,
-        limits.maintenance_timeout(),
     );
     let request = fixture::request(
         path.path().to_path_buf(),
