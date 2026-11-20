@@ -151,7 +151,7 @@ start before the state phase.
 
 - This layer admits authoritative state. It does not describe later patch,
   canonicalization, profile, or diagnostics behavior.
-- Admission preserves the milestoneâ€™s explicit authority boundary; it is not a
+- Admission preserves the milestone’s explicit authority boundary; it is not a
   generic map update helper.
 
 This is not the public path for minting an "empty but authoritative" state

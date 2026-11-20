@@ -5,7 +5,7 @@ Relational truth and derived Signal computation.
 
 Use it when one runtime must translate committed semantic changes, snapshots,
 branches, history, or writeback across that boundary without giving either
-side the other sideÃ¢â‚¬â„¢s authority.
+side the other side”™s authority.
 
 For Query-installed conditional operations, application and domain code starts
 at `worth_query_decl::facade` and `worth_query_host::facade`. Query runtime construction supplies the
@@ -136,9 +136,9 @@ temporal wakes, on-demand triggers, dependency comparison, output comparison,
 and artifact reuse. Missing or extra providers deny installation.
 
 At execution, the Bridge obtains semantic observations from the exact snapshot,
-invokes SignalÃ¢â‚¬â„¢s installed conditional contract, and returns
+invokes Signal”™s installed conditional contract, and returns
 `BridgeConditionalDecisionEvidence`. The Bridge does not reinterpret or
-restamp SignalÃ¢â‚¬â„¢s decision.
+restamp Signal”™s decision.
 
 ### Read-Only Native Observation Custody
 
@@ -153,7 +153,7 @@ The operational seed remains the only retained conditional reentry entrance.
 immutable backing. It preserves the actual computed verdict, suppression reason
 and comparison; `signal_output_versions()` supplies the observed before/after
 versions. Passive decisions have no computed report. The
-[installed comparator court](src/builder/tests/correspondence/conditional_compatibility/equivalence_observation.rs)
+[installed comparator court](../worth-court-runtime-bridge/tests/worth_court_runtime_bridge/runtime_bridge/conditional_evaluations/mod.rs)
 contrasts genuine equivalent and changed evaluations and checks original custody
 through operational evidence release. An evaluation of scheduling or readiness
 still describes that installed contract; it cannot establish equivalence of an
@@ -172,7 +172,7 @@ after version. The compute provider must produce each supplied version exactly.
 `BridgeOutputComparisonDenial` identifies admission, baseline or candidate failure
 and retains the original typed cause. Partial failure releases the private session
 and returns no comparison. This is fixed scratch evaluation, not an atomic Native
-publication or a rollback guarantee. The [exact-pair courts](src/builder/tests/correspondence/conditional_compatibility/equivalence_observation/exact_pair.rs)
+publication or a rollback guarantee. The [exact-pair courts](../worth-court-runtime-bridge/tests/worth_court_runtime_bridge/runtime_bridge/conditional_evaluations/exact_pair.rs)
 cover nonzero initialization, exact equivalence/change, occurrence isolation and
 release, wrong baseline, candidate failure/retry, foreign owner and cancellation.
 The pair supplies no Native-field or application source association by itself.

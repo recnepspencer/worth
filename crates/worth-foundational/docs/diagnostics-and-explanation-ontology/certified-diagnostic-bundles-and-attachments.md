@@ -53,8 +53,8 @@ What changes is the strength of the claim:
 - the coverage class is explicit
 - the stronger lane reuses `worth-proof` instead of local booleans
 
-That means you can say â€œthis diagnostic bundle is attached to this exact source
-under this exact hostile coverage postureâ€ without inventing another proof
+That means you can say “this diagnostic bundle is attached to this exact source
+under this exact hostile coverage posture” without inventing another proof
 system.
 
 ## How It Executes

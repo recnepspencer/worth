@@ -27,6 +27,7 @@ major runtimes have their own workspaces, documentation, tests, and lifecycle.
 | Look up an exact term | [Glossary](docs/glossary.md) |
 | **Build an application: declare features and a program, install the application graph, author workflows, adopt a new program** | [**Build an Application**](docs/build-an-application.md) |
 | **Check whether a capability exists, and the one way to use it** | [**Capability Index**](docs/capability-index.md) |
+| **Keep application data on disk: open, close, retry and recover a Home** | [**Use an Application Home**](docs/application-home.md) |
 | Explain an original query result, changed output, or source operation | [Inspect original evidence](docs/build-an-application.md#inspect-original-source-and-query-evidence) |
 | Find which crate to import for any job | [API Map](docs/api.md) |
 | Contribute to the platform itself | [Coding Guidelines](docs/coding-guidelines/) and [AGENTS.md](AGENTS.md) |
@@ -42,7 +43,8 @@ For a new feature, start with the [complete feature definition](docs/build-an-ap
 one typed declaration supplies schema members, actions, required producer roles,
 configuration and output roots. Use [managed computation](docs/build-an-application.md#36-declare-and-install-a-partitioned-managed-computation)
 for numerical work and the [owning action lifecycle](docs/build-an-application.md#53-execute-through-the-program)
-for delivery and recovery. Every application build also supplies its immutable
+for delivery and recovery. Store data through an [application Home](docs/application-home.md):
+open, write with idempotency keys, close and reopen. Every application build also supplies its immutable
 [build identity](docs/build-an-application.md#application-build-identity).
 Before you conclude that the platform lacks something, look it up in the
 [Capability Index](docs/capability-index.md) and follow its procedure. Never
@@ -170,11 +172,14 @@ survive process failure, reopens persisted roots in a fresh process, and
 reports corruption or indeterminate outcomes without inventing semantic truth.
 Store does not decide whether a Query operation is legal, does not redefine
 Relational truth, and does not treat a checksum as proof of authenticity.
-Today no crate outside the Store workspace depends on it.
+Applications reach it only through `worth-query-host`, which opens the
+application Home owned by `worth-store-application`; see
+[Use an Application Home](docs/application-home.md).
 
 | Group | Crates | Status |
 |---|---|---|
 | Public facade and physical runtime lifecycle | `worth-store` | Active |
+| Application Home, opened through Query Host | `-application`, `-relational` | Active |
 | Shared vocabulary and boundary claims | `worth-store-contracts`, `-aspect-native`, `-authority`, `-readiness` | Active |
 | Physical format and media | `-physical-format`, `-physical-backend`, `-buffer-pool`, `-io-scheduler`, `-blob-chunks`, `-lsm-authority`, `-layout-indexes` | Active |
 | Durability and recovery | `-wal`, `-modes`, `-recovery-physics`, `-recovery-runtime` | Active |

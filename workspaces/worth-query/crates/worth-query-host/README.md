@@ -20,7 +20,10 @@ internals.
 or reopen a Home (`WorthQueryApplicationHomeRequest::open_in_advancement`), run
 program-owned actions (`retain_operation`, then fresh-request `advance`), install a workflow vocabulary
 and publish, start, and advance workflows, and adopt a new program on a
-branch. This README covers the host's deeper contracts.
+branch. For the Home lifecycle in one page (open, write, retry, close, crash
+behavior, discard, checkpoints), read
+[Use an Application Home](../../../../docs/application-home.md). This README
+covers the host's deeper contracts.
 
 ## Open, initialize and reopen a Home
 
@@ -197,9 +200,14 @@ refuses `MutationOwnerContended`. Interrupted discard leaves `discard.pending`,
 and opening refuses `DiscardPending` until another explicit discard completes.
 The next successful open after discard initializes a new Home identity.
 
-### Checkpoint admission — pending (owner P-A, D12)
+### Checkpoints
 
-### Recovery after a selected checkpoint — pending (owner P-A, D12)
+A Directory Home runs checkpoint maintenance after advancements when a journal
+reaches its `with_checkpoint_limits` threshold. `home.checkpoint(&request)`,
+`inspect_checkpoint(&request)` and `recover_checkpoint(&request)` act on the
+Directory's actual checkpoint owner; MemoryOnly returns
+`WorthQueryApplicationHomeCheckpointDenial::MemoryLifecycleRequired`. See
+[Checkpoints](../../../../docs/application-home.md#checkpoints).
 
 ### Development workflow with program transitions
 
@@ -261,7 +269,11 @@ been recorded.
 Resume, plan-drift qualification, interrupted binding and process-kill courts
 remain cleanup work; the graceful workflow above does not qualify them.
 
-### Durable branch creation — pending (owner P-C, after D12)
+### Durable branch creation
+
+On a Directory Home, creating a branch that must fork Signal state refuses with
+`RuntimeWorldBranchAdmissionDenial::DurableBranchPublicationRequired`. Durable
+branch publication and retirement belong to Milestone 3's cleanup track (C2).
 
 ## Explain a query result or source operation
 
@@ -291,8 +303,8 @@ The root lists its contributions once; the macro carries that same list into
 The [public consumer fixture](../worth-query-certification/fixtures/consumer_entry/consumer_root/src/main.rs)
 checks separately compiled contributions and static program validation. The
 [ordinary product workflow](../worth-query-certification/examples/ordinary_product_workflow.rs)
-installs a validated program with `application_installation::in_memory_program`,
-advances a declared source-only owning action, reads the
+installs a validated program in a Directory Home with
+`WorthQueryApplicationHomeRequest`, advances a declared source-only owning action, reads the
 successor, and closes conditional resources. Its source is the executable host
 entry example.
 
@@ -732,7 +744,7 @@ let outcome = prepared.publish();
 ```
 
 Migrations, workflow dispositions, and every outcome are shown with real code
-in [Build an Application Â§7](../../../../docs/build-an-application.md#7-adopt-a-new-program-on-a-branch).
+in [Build an Application §7](../../../../docs/build-an-application.md#7-adopt-a-new-program-on-a-branch).
 
 Inspection and semantic comparison are descriptive. Preparation consumes exact
 branch, source-program, target-support, target-rule, migration, resource, and

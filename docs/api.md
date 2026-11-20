@@ -111,7 +111,7 @@ lower-runtime internals.
 
 | Module on `worth_query_host::facade` | What it gives you |
 |---|---|
-| `application_installation` | Install a validated program: `in_memory_program`, or `in_memory_rostered_program` with successor revisions. See [Build an Application §4](build-an-application.md#4-install-or-reopen) |
+| `application_installation` | Build identity, program roster and limits for installing a validated program. Applications install and reopen through `WorthQueryApplicationHomeRequest` on the facade root; see [Use an Application Home](application-home.md) and [Build an Application §4](build-an-application.md#4-install-or-reopen) |
 | `application_entry` | The request API: `application.request(&principal, &scope)` via `WorthQueryApplicationRequestExt`, then `.query(..)`, mutations, `.on_branch(..)`, `.corrections()` for [recorded correction and reapplication](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md), `.programs()` for adoption ([§7](build-an-application.md#7-adopt-a-new-program-on-a-branch)), and the `prepare_workflow_*` lifecycle calls ([§6](build-an-application.md#6-author-publish-and-run-workflows)) |
 | `causal_inspection` | Original query/source reports, comparisons and materialized evidence. Start from `request.inspect::<Binding>(&original)` or `request.inspect_source::<Disclosure>(&receipt)`; see [inspection](../workspaces/worth-query/crates/worth-query/docs/capabilities/cross-runtime-causal-inspection.md) for acquisition and current permissions. |
 | `application_contribution` | Contribution-composed applications: `ApplicationSchemaContribution`, `WorthQueryApplicationContribution`, handler and invariant setup |
@@ -284,21 +284,17 @@ Three caveats:
   yourself.** Query is what composes truth, derived work, admission, and
   publication into one governed request. Standalone use gives you one owner's
   guarantees, not the platform's.
-- **Store is not yet wired to Query.** No crate outside the Store workspace
-  depends on it today. Query's store-backed durable execution and restore are
-  planned, not done.
-- **Restart today uses the app-owned checkpoint lane.** An installed runtime
-  captures an opaque `WorthQueryApplicationCheckpoint` with
-  `capture_application_checkpoint_with_sections` (or
-  `capture_application_checkpoint`). Your application stores and transports its
-  `bytes()`; on restart it rebuilds the value with
-  `WorthQueryApplicationCheckpoint::from_untrusted_bytes` and reinstalls through
-  `in_memory_rostered_program_from_checkpoint` (or another `*_from_checkpoint`
-  constructor on `application_installation`), which readmits committed truth and
-  accepted-output identities, not live handles or retained observations. See
-  [Build an Application §4.4](build-an-application.md#44-checkpoint-program-transitions).
-  Do not build host persistence of platform truth: no mirrored tables, saved
-  authority, or replayed history as a substitute.
+- **Applications reach Store through the Query Host, not directly.** A Query
+  application keeps its data in an application Home opened with
+  `worth_query_host::facade::WorthQueryApplicationHomeRequest`; the Host owns
+  `worth-store-application` for you. See
+  [Use an Application Home](application-home.md). Use `worth-store` directly only
+  for physical Store work.
+- **Restart means reopening the same Directory Home.** Close the Home gracefully,
+  then open the same `Directory(path)` in a fresh process. Do not build host
+  persistence of platform truth: no mirrored tables, saved authority, replayed
+  history or application-owned checkpoint bytes as a substitute. Crash recovery
+  is not yet certified.
 
 ---
 

@@ -62,9 +62,9 @@ receipt then retains that binding's original scope and parameters. The disclosur
 query defines inspection permissions; inspection does not rerun it to reconstruct
 the operation.
 
-The [query binding declaration](../../../worth-query-certification/examples/application_correction_support/causal_inspection/query.rs),
-[source-disclosure declaration](../../../worth-query-certification/examples/application_correction_support/causal_inspection.rs)
-and [metadata contract](../../../worth-query-certification/examples/application_correction_support/causal_inspection/independent.rs)
+The [query binding declaration](../../../worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/causal_inspection/query.rs),
+[source-disclosure declaration](../../../worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/causal_inspection.rs)
+and [metadata contract](../../../worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/causal_inspection/independent.rs)
 show the binding and facet declarations together.
 
 ## Keep the evidence you will inspect
@@ -150,7 +150,7 @@ capability contract. `AppError` maps the typed setup/admission denials into your
 application's error handling. Repeat admission for each metadata and diagnostic
 argument. Use the source subject for source access and the query subject for
 query access; do not clone or borrow one side's permission for the other.
-The [subject-specific access helper](../../../worth-query-certification/examples/application_correction_support/causal_inspection/distinct_subjects.rs)
+The [subject-specific access helper](../../../worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/causal_inspection/distinct_subjects.rs)
 shows this selection in application code.
 
 ## Fresh Application Inspection

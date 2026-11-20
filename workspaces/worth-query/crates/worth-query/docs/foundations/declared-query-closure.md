@@ -50,4 +50,4 @@ RecordFrame protocol 15 carries the exact traversal discriminator and refuses
 older record grammar.
 
 The executable examples and source/currentness/resource courts are in
-[the installed walk fixture](../../../worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/invariant_walks/declared_queries.rs).
+[the installed walk fixture](../../../worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/tests/application_attempt/invariant_walks/declared_queries/mod.rs).

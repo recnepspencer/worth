@@ -133,7 +133,7 @@ let value = vocabulary
 ```
 
 What is authoritative here is the struct shape and its field declarations, not
-the producerâ€™s local map layout.
+the producer’s local map layout.
 
 ## How It Relates To Other Features
 

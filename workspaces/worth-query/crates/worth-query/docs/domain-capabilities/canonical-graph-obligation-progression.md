@@ -140,7 +140,7 @@ ordinary Query views.
 
 The [facade journey](../../../worth-query-court-decl-host-package-archive-replay-application-graph/tests/worth_query_court_decl_host_package_archive_replay_application_graph/certification/application_graph/relation_laws/derived/court/mod.rs)
 uses an authenticated action, real proposed-state rule, negative-adjacency edit,
-physical rewire and discard/rebuild. The [Native audience court](../../../worth-query-execution/src/domain_computation/primary_graph/application_invariant/typed_view/derived_relation/native_audience.rs)
+physical rewire and discard/rebuild. The [Native audience court](../../../worth-query-court-execution-convergence-epoch-fixture/tests/worth_query_court_execution_convergence_epoch_fixture/domain_computation/primary_graph/application_invariant/typed_view/derived_relation/native_audience/mod.rs)
 checks that a broad proof cannot lend its physical source access to a narrower
 reader on the same observation. The [logical composition journey](../../../worth-query-court-decl-host-package-archive-replay-application-graph/tests/worth_query_court_decl_host_package_archive_replay_application_graph/certification/application_graph/relation_laws/logical/court/mod.rs)
 uses the same source owners for laws, walks, orbits and components. The

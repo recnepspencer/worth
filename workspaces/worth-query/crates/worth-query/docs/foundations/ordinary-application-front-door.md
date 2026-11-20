@@ -725,13 +725,13 @@ Process-local owning handles are not serialized restart authority; Store retains
 its distinct durable restart responsibility.
 
 When the original intent does match but its live receipt is no longer retained,
-native replay answers `PreviouslyCommitted(observation)`, naming the original
-`commit_id()` and committing nothing. It carries no live receipt or handler result.
+the retry answers `RecoveredCommitted(receipt)` with the original recorded
+`WorthQueryRecoveredApplicationCommitReceipt` and commits nothing. It carries no
+live receipt or handler result.
 A fresh current read is not proof that an ambiguous external effect never occurred.
 Reconcile the authoritative outcome through the existing native, domain or Store
 recovery owner as appropriate before choosing a new business operation; a new key
-is not recovery for an uncertain old effect. Lower surfaces that require a live
-receipt retain `CommittedReceiptNotRetained { commit }`.
+is not recovery for an uncertain old effect.
 A record from an earlier intent encoding that cannot be checked against the
 request answers `RecordedIntentUnverifiable`, never drift.
 
@@ -814,9 +814,9 @@ owner already performed.
 Every commit either landed or did not. The request lanes already report that
 split: `WorthQueryApplicationMutationOutcome::Committed { receipt, result }` and
 `AlreadyCommitted(receipt)` carry the canonical product receipt.
-`PreviouslyCommitted(observation)` proves an earlier commit with the same
-durable intent when its live receipt is unavailable; it grants no performed
-mutation, publication, or workflow settlement authority. Every
+`RecoveredCommitted(receipt)` returns the recorded receipt of an earlier commit
+with the same durable intent when its live receipt is unavailable; it grants no
+performed mutation, publication, or workflow settlement authority. Every
 commit terminal that did not land arrives as
 `WorthQueryApplicationMutationOutcome::Commit(WorthQueryApplicationUncommitted)`.
 

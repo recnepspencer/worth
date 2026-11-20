@@ -18,14 +18,17 @@ at `generation + 1` under the same durable root decision and fates as the
 journal, and read back verified against its anchor. Its oracle is
 `anchored_records*` beside the journal's.
 
-Milestone 2: `worth-store-relational` is the Relational home.
-`RelationalStoreHome::open` creates a Store only at an unused location and
-otherwise recovers it, checks the home descriptor, hands the selected
-checkpoint and the journal after it to Relational for readmission, and
-attaches the journal as the runtime's only durable medium. Every commit is
-durable before it is live. `checkpoint()` selects a new Relational checkpoint
-and completes a Store physical checkpoint. See the
+Milestone 2 made Store the durable medium for Relational. Its standalone
+`RelationalStoreHome` door is deleted; `worth-store-relational` now supplies the
+Relational section of the application Home. See the
 [Milestone 2 specification](../../plans/database-foundation/milestone-2.md).
+
+Milestone 3 adds the application Home (`worth-store-application`). Applications
+never open it directly: Query Host's `WorthQueryApplicationHomeRequest` opens,
+initializes, closes and discards it. Each runtime owner (Relational, World,
+Signal and Query) readmits its own durable state from it. How to use
+it: [application Home guide](../../docs/application-home.md). Status:
+[Milestone 3](../../plans/database-foundation/milestone-3.md).
 
 Milestone 3 Phase 2 uses root schema 12: its 3,760-byte payload carries up to
 32 inline anchors. Selected anchor tables survive ordinary, maintenance and
