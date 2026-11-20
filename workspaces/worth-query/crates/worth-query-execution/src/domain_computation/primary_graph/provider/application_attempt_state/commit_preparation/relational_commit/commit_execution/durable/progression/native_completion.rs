@@ -43,6 +43,7 @@ pub(super) fn advance(
     match lineage {
         Ok(lineage) => guard.preparation_mut().prepared_lineage_slot = lineage,
         Err(Stop::Deferred(deferred)) => {
+            use crate::domain_computation::provider_session::CommitDeferredPrimaryExt;
             guard.preparation_mut().query_denial = Some(Cause::Prerequisite(
                 deferred
                     .into_prerequisite_denial()

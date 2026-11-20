@@ -44,6 +44,7 @@ where
                     context, work,
                 )
             })
+            .map_err(WorthQueryAdvancementDenial::from)
             .and_then(|result| {
                 result.map_err(|cause| {
                     advancement_denial(worth_execution::WorkCeilingDenial::Stopped(cause))

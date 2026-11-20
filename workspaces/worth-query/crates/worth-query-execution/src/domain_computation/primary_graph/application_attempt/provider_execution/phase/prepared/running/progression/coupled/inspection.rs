@@ -69,13 +69,14 @@ where
         candidate,
     )?;
     let source = source.expect("a genuine producer retains its source publication");
+    use crate::domain_computation::provider_session::ManagedGraphWorkSessionPrimaryExt;
     let typed = &mut custody.typed;
     let handler = typed
         .downcast_mut::<CoupledWriterAdmission<S, B::Operation>>()
         .expect("installed writer keeps its nominal admission")
         .admission
         .graph_work_mut()
-        .take_coupled_handler()
+        .take_coupled_handler_typed()
         .expect("coupled handler was armed and completed before registration");
     let commands = application
         .runtime

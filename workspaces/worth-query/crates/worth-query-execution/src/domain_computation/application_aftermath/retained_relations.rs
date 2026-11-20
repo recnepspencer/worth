@@ -51,37 +51,6 @@ impl RetainedRelations {
         &self.rows
     }
 }
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryRelationPreImageDenial {
-    MissingObservation,
-    MissingMutation,
-    ExceedsByteBound,
-    UnsupportedVisibility,
-    IncompleteInverse,
-    ForeignEndpoint,
-    ExtraInverse,
-    RepeatedInverse,
-    RestoredFieldMismatch,
-}
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct WorthQueryRelationPreImageFailure {
-    kind: WorthQueryRelationPreImageDenial,
-    affected_records: Vec<RecordRef>,
-}
-impl WorthQueryRelationPreImageFailure {
-    pub fn kind(&self) -> WorthQueryRelationPreImageDenial {
-        self.kind
-    }
-    pub fn affected_records(&self) -> &[RecordRef] {
-        &self.affected_records
-    }
-    pub(in crate::domain_computation) fn new(
-        kind: WorthQueryRelationPreImageDenial,
-        affected_records: Vec<RecordRef>,
-    ) -> Self {
-        Self {
-            kind,
-            affected_records,
-        }
-    }
-}
+pub use worth_query_execution_contracts::facade::{
+    WorthQueryRelationPreImageDenial, WorthQueryRelationPreImageFailure,
+};

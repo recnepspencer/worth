@@ -1,94 +1,163 @@
-pub(crate) mod activation;
-mod admission;
-mod durable_admission;
-mod incarnation;
-pub use durable_admission::WorthQueryDurableStateAdmissionDenial;
-mod application_publication;
-mod bootstrap;
-pub(crate) mod branch_close;
-mod clock;
-mod conditional_recovery;
-mod creation;
-mod history;
-mod home_attachment;
+use std::ops::{Deref, DerefMut};
+use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
+use worth_query_execution_runtime::facade::execution_runtime::product_world as rt_pw;
+
 mod maintenance;
-pub use maintenance::WorthQueryHomeMaintenance;
-mod installation_denial;
-mod owned_async;
-pub(crate) mod owner_cleanup;
-pub(crate) mod publication_binding;
-pub(crate) mod published_effect;
-mod receipt;
-pub(crate) mod relational_publication;
-pub(crate) mod request_control;
-pub(crate) mod resources;
-mod retirement;
-mod runtime;
-mod shared_root;
-mod signal_lifecycle;
-mod source_head;
-mod source_installation;
-mod source_owner;
-mod world_ports;
+pub use maintenance::{HomeMaintenanceAdapter, WorthQueryHomeMaintenance};
 
-pub(crate) use branch_close::WorthQueryProductBranchCloseScope;
-pub use branch_close::{WorthQueryProductBranchCloseDenial, WorthQueryProductBranchCloseReceipt};
-pub use clock::WorthQueryProductWorldClock;
-pub use creation::{
-    WorthQueryProductBranchCreationDenial, WorthQueryProductBranchCreationNoEffect,
-    WorthQueryProductBranchCreationOutcome, WorthQueryProductBranchCreationRelease,
-};
-pub use installation_denial::WorthQueryProductRuntimeInstallationDenial;
-pub(crate) use owner_cleanup::{
-    OwnerCleanupRetirements, WorthQueryProductRetentionFollower, WorthQueryRetiredProductOccurrence,
-};
-pub use owner_cleanup::{
-    WorthQueryProductBranchOwnerCleanup, WorthQueryProductBranchOwnerCleanupDenial,
-    WorthQueryProductBranchOwnerCleanupFailure, WorthQueryProductBranchOwnerCleanupReceipt,
-    WorthQueryProductBranchOwnerCleanupWork,
-};
-pub(crate) use publication_binding::WorthQueryProductPublicationBinding;
-pub(crate) use receipt::{
-    WorthQueryCommitHistoryHold, WorthQueryProductPublicationReceipt,
-    WorthQueryReservedProductPublicationReceipt,
-};
-
-pub use relational_publication::{
+pub use rt_pw::{
+    activation, branch_close, installed_source_reads_on_this_thread_for_test, owner_cleanup,
+    prepare_conditional_publication, publication_binding, publication_denial,
+    publish_conditional_definition, published_effect, read_consult, read_lock_probe,
+    record_installed_source_read_for_test, relational_publication, request_control, resources,
+    test_product_world_resources, test_product_world_resources_with_history_limit_for_test,
+    OwnerCleanupRetirements, ReadLockProbeForTest, RetiringRelationalSource,
+    WorthQueryCommitHistoryHold, WorthQueryDurableStateAdmissionDenial,
     WorthQueryPerformedRelationalProductChange,
     WorthQueryPerformedRelationalProductChangeDeliveryDenial,
     WorthQueryPerformedRelationalProductChangeDeliveryDenialKind,
     WorthQueryPerformedRelationalProductChangeDeliveryOutcome,
-};
-pub(crate) use request_control::{
-    prepare_conditional_publication, publish_conditional_definition,
-    WorthQueryPreparedProductPublication, WorthQueryProductPublicationRequestControl,
-};
-
-pub(crate) use resources::test_product_world_resources_with_history_limit_for_test;
-pub use resources::WorthQueryProductWorldResources;
-pub use runtime::WorthQueryProductRuntime;
-#[doc(hidden)]
-pub use shared_root::WorthQueryProductSharedRoot;
-pub use source_installation::WorthQueryProductRelationalInstallation;
-pub(in crate::domain_computation) use source_owner::RetiringRelationalSource;
-pub use source_owner::{
+    WorthQueryPreparedProductPublication, WorthQueryProductBranchCloseDenial,
+    WorthQueryProductBranchCloseReceipt, WorthQueryProductBranchCloseScope,
+    WorthQueryProductBranchCreationDenial, WorthQueryProductBranchCreationNoEffect,
+    WorthQueryProductBranchCreationOutcome, WorthQueryProductBranchCreationRelease,
+    WorthQueryProductBranchOwnerCleanup, WorthQueryProductBranchOwnerCleanupDenial,
+    WorthQueryProductBranchOwnerCleanupFailure, WorthQueryProductBranchOwnerCleanupReceipt,
+    WorthQueryProductBranchOwnerCleanupWork, WorthQueryProductPublicationBinding,
+    WorthQueryProductPublicationReceipt, WorthQueryProductPublicationRequestControl,
+    WorthQueryProductRelationalInstallation, WorthQueryProductRetentionFollower,
+    WorthQueryProductRuntimeInstallationDenial, WorthQueryProductSharedRoot,
+    WorthQueryProductWorldClock, WorthQueryProductWorldResources,
     WorthQueryRelationalSourceInstallationDenial, WorthQueryRelationalSourceOwner,
+    WorthQueryReservedProductPublicationReceipt, WorthQueryRetiredProductOccurrence,
 };
 
-mod read_observation;
-pub use read_observation::installed_source_reads_on_this_thread_for_test;
+#[repr(transparent)]
+#[derive(Clone)]
+pub struct WorthQueryProductRuntime(pub(crate) rt_pw::WorthQueryProductRuntime);
 
-pub(crate) use read_observation::record_read_for_test as record_installed_source_read_for_test;
+impl Deref for WorthQueryProductRuntime {
+    type Target = rt_pw::WorthQueryProductRuntime;
 
-pub(crate) mod publication_denial;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
 
-mod adoption_preparation;
+impl DerefMut for WorthQueryProductRuntime {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
 
-pub(crate) mod read_consult;
-pub(crate) mod read_lock_probe;
-pub(in crate::domain_computation) use read_lock_probe::ReadLockProbeForTest;
+impl WorthQueryProductRuntime {
+    pub fn with_advancement<R>(
+        &self,
+        body: impl for<'scope> FnOnce(
+            crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'scope>,
+        ) -> R,
+    ) -> Result<R, crate::domain_computation::primary_graph::WorthQueryAdvancementDenial> {
+        self.0
+            .with_advancement(|phase| {
+                body(crate::domain_computation::primary_graph::WorthQueryAdvancementPhase(phase))
+            })
+            .map_err(Into::into)
+    }
 
-pub(in crate::domain_computation) use resources::test_product_world_resources;
+    pub fn with_request_advancement<R>(
+        &self,
+        request: &WorthQueryRequestScope,
+        body: impl for<'scope> FnOnce(
+            crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'scope>,
+        ) -> R,
+    ) -> Result<R, crate::domain_computation::primary_graph::WorthQueryAdvancementDenial> {
+        self.0
+            .with_request_advancement(request, |phase| {
+                body(crate::domain_computation::primary_graph::WorthQueryAdvancementPhase(phase))
+            })
+            .map_err(Into::into)
+    }
+
+    pub(crate) fn install(
+        relational: WorthQueryProductRelationalInstallation,
+        bridge: &mut worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly,
+        resources: WorthQueryProductWorldResources,
+        recovered_relational_authority: Option<
+            worth_relational::facade::durability::RecoveredRelationalRuntimeAuthority,
+        >,
+    ) -> Result<Self, WorthQueryProductRuntimeInstallationDenial> {
+        rt_pw::WorthQueryProductRuntime::install(
+            relational,
+            bridge,
+            resources,
+            recovered_relational_authority,
+        )
+        .map(Self)
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn attach_home_world_ports(
+        relational: WorthQueryProductRelationalInstallation,
+        bridge: &worth_runtime_bridge::facade::BridgeReadmittedAuthoredAssembly,
+        resources: WorthQueryProductWorldResources,
+        publication: worth_runtime_world::facade::RuntimeWorldPublicationPort<(), (), (), (), ()>,
+        branch: worth_runtime_world::facade::RuntimeWorldBranchPort,
+        observation: worth_runtime_world::facade::RuntimeWorldObservationPort,
+        inspection: worth_runtime_world::facade::RuntimeWorldInspectionPort,
+        recovery: worth_runtime_world::facade::RuntimeWorldRecoveryPort,
+        root: worth_runtime_world::facade::ProductBranchObservation,
+        maintenance: std::sync::Arc<dyn WorthQueryHomeMaintenance>,
+        branch_program_source_owner: std::sync::Arc<worth_proof::InstalledBranchProgramSourceOwner>,
+        branches: &worth_runtime_world::facade::ObservedProductBranches,
+    ) -> Result<Self, WorthQueryProductRuntimeInstallationDenial> {
+        rt_pw::WorthQueryProductRuntime::attach_home_world_ports(
+            relational,
+            bridge,
+            resources,
+            publication,
+            branch,
+            observation,
+            inspection,
+            recovery,
+            root,
+            HomeMaintenanceAdapter::wrap(maintenance),
+            branch_program_source_owner,
+            branches,
+        )
+        .map(Self)
+    }
+}
+
+pub(crate) trait ProductPublicationBindingPrimaryExt {
+    fn prepare_settled_relational_adoption(
+        &self,
+        unpublished: &crate::domain_computation::WorthQueryProductUnpublishedApplication,
+        request: &WorthQueryRequestScope,
+    ) -> Result<
+        WorthQueryPreparedProductPublication,
+        publication_denial::WorthQueryProductPublicationDenial<
+            worth_runtime_world::facade::RuntimeWorldSettledRelationalAdoptionDenial,
+        >,
+    >;
+}
+
+impl ProductPublicationBindingPrimaryExt for WorthQueryProductPublicationBinding {
+    fn prepare_settled_relational_adoption(
+        &self,
+        unpublished: &crate::domain_computation::WorthQueryProductUnpublishedApplication,
+        request: &WorthQueryRequestScope,
+    ) -> Result<
+        WorthQueryPreparedProductPublication,
+        publication_denial::WorthQueryProductPublicationDenial<
+            worth_runtime_world::facade::RuntimeWorldSettledRelationalAdoptionDenial,
+        >,
+    > {
+        self.prepare_settled_relational_adoption_with(request, |cancellation, deadline| {
+            unpublished.prepare_settled_relational_adoption(cancellation, deadline)
+        })
+    }
+}
+
 #[cfg(test)]
 #[path = "mod_inline_type_budget.rs"]
 pub(crate) mod inline_type_budget;

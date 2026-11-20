@@ -73,7 +73,9 @@ impl WorthQueryCommittedProductPublication {
         request: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<(), crate::domain_computation::primary_graph::WorthQueryHomeRetirementDenial> {
         match &mut self.custody {
-            PublicationCustody::Performed(receipt) => receipt.preflight_home_retirement(request),
+            PublicationCustody::Performed(receipt) => {
+                receipt.preflight_home_retirement(request).map_err(Into::into)
+            }
             PublicationCustody::Described(_) | PublicationCustody::CoCommitted { .. } => Ok(()),
         }
     }
@@ -86,7 +88,9 @@ impl WorthQueryCommittedProductPublication {
         crate::domain_computation::primary_graph::WorthQueryHomeRetirementDenial,
     > {
         match &mut self.custody {
-            PublicationCustody::Performed(receipt) => receipt.advance_home_retirement(request, native),
+            PublicationCustody::Performed(receipt) => receipt
+                .advance_home_retirement(request, native)
+                .map_err(Into::into),
             PublicationCustody::Described(_) | PublicationCustody::CoCommitted { .. } => Ok(crate::domain_computation::primary_graph::WorthQueryOperationHomeRetirementProgress::Complete),
         }
     }

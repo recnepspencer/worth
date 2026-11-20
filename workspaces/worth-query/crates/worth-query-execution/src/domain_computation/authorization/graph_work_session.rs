@@ -75,7 +75,7 @@ where
         operation.authority_identity(),
         principal,
         access,
-        lease,
+        Box::new(lease),
         runtime.graph_work_provider_identity(),
     )
     .map_err(|cause| graph_work_denial_with_cause(operation.operation(), cause))
@@ -124,7 +124,7 @@ where
         operation.authority_identity(),
         principal,
         access,
-        lease,
+        Box::new(lease),
         runtime.graph_work_provider_identity(),
     )
     .map_err(|cause| graph_work_denial_with_cause(operation.operation(), cause))

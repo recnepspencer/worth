@@ -121,7 +121,10 @@ pub(super) fn publish(
             reservation.retain_managed(unpublished.recovery_handle(), retained);
             return Err(
                 crate::domain_computation::WorthQueryProviderSessionCommitStop::ProductUnpublished(
-                    unpublished,
+                    worth_query_execution_runtime::facade::ports::OpaqueProductPublicationOutcome::new(
+                        unpublished,
+                        true,
+                    ),
                 ),
             );
         }

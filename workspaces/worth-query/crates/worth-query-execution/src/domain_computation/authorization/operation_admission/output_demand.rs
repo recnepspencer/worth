@@ -3,6 +3,7 @@ use crate::domain_computation::primary_graph::{
     application_attempt::CompletedHandlerFactBoundary, ComputationPrior,
     RequiredOutputDemandContext, SealedComputationRetention,
 };
+use crate::domain_computation::provider_session::ManagedGraphWorkSessionPrimaryExt;
 
 impl WorthQueryAdmittedOperation {
     pub(in crate::domain_computation) fn completed_input_prefix(&self) -> Option<usize> {
@@ -11,7 +12,7 @@ impl WorthQueryAdmittedOperation {
         } else {
             self.data
                 .graph_work
-                .coupled_handler()
+                .coupled_handler_typed()
                 .and_then(|handler| handler.completed_input_prefix())
         }
     }
@@ -26,7 +27,7 @@ impl WorthQueryAdmittedOperation {
         } else {
             self.data
                 .graph_work
-                .coupled_handler_mut()
+                .coupled_handler_typed_mut()
                 .is_some_and(|handler| handler.insert_input_facts(expected, count))
         }
     }
@@ -37,7 +38,7 @@ impl WorthQueryAdmittedOperation {
     ) {
         if let Some(context) = &mut self.data.required_output_demand {
             context.record_decision_context_use(use_mask);
-        } else if let Some(handler) = self.data.graph_work.coupled_handler_mut() {
+        } else if let Some(handler) = self.data.graph_work.coupled_handler_typed_mut() {
             handler.record_decision_context_use(use_mask);
         }
     }
@@ -70,7 +71,7 @@ impl WorthQueryAdmittedOperation {
     ) {
         if let Some(context) = &mut self.data.required_output_demand {
             context.record_completed_handler_facts(boundary, computation);
-        } else if let Some(handler) = self.data.graph_work.coupled_handler_mut() {
+        } else if let Some(handler) = self.data.graph_work.coupled_handler_typed_mut() {
             handler.record_completed_handler_facts(boundary, computation);
         } else {
             crate::domain_computation::primary_graph::observe_discarded(&computation);
@@ -94,7 +95,7 @@ impl WorthQueryAdmittedOperation {
             .or_else(|| {
                 self.data
                     .graph_work
-                    .coupled_handler()
+                    .coupled_handler_typed()
                     .and_then(|handler| handler.computation_prior())
             });
         prior.or_else(ComputationPrior::handed_in_test)

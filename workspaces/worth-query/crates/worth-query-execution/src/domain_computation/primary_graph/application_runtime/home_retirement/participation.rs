@@ -46,7 +46,15 @@ impl PrimaryGraphParticipationCustody {
         let anchor = original
             .retain_provider_anchor::<WorthQueryGraphProviderAnchor>()
             .ok_or(Denial::Unsupported(Owner::GraphProvider))?;
-        anchor.preflight_home_retirement(expected)
+        let expected = crate::domain_computation::runtime_ports::PrimaryGraphProviderArc(
+            Arc::clone(expected),
+        );
+        anchor
+            .preflight_home_retirement::<
+                crate::domain_computation::primary_graph::WorthQueryPrimaryLogicalGraph,
+                crate::domain_computation::runtime_ports::PrimaryGraphProviderArc,
+            >(&expected)
+            .map_err(Into::into)
     }
     pub(super) fn advance(
         &mut self,
@@ -80,16 +88,22 @@ impl PrimaryGraphParticipationCustody {
             }
             return Ok(Progress::Advanced);
         }
+        let expected = crate::domain_computation::runtime_ports::PrimaryGraphProviderArc(
+            Arc::clone(expected),
+        );
         match self
             .anchor
             .take()
             .expect("same original provider anchor")
-            .retire_home_aliases(expected, request)
+            .retire_home_aliases::<
+                crate::domain_computation::primary_graph::WorthQueryPrimaryLogicalGraph,
+                crate::domain_computation::runtime_ports::PrimaryGraphProviderArc,
+            >(&expected, request)
         {
             Ok(retired) => self.retired_anchor = Some(retired),
             Err((anchor, cause)) => {
                 self.anchor = Some(anchor);
-                return Err(cause);
+                return Err(cause.into());
             }
         }
         Ok(Progress::Complete)

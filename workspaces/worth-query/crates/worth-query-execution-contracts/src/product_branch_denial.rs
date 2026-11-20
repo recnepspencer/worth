@@ -1,0 +1,101 @@
+/// A selected-basis read either stopped its request or was refused before effect.
+/// The refusal kind is available only by explicitly handling the request stop.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum WorthQueryProductBranchAdmissionDenial {
+    Stopped(
+        Result<
+            crate::provider_session_denial_kind::WorthQueryProviderSessionDenialKind,
+            crate::provider_session_denial_kind::WorthQueryProviderSessionControlStopKind,
+        >,
+    ),
+    Refused(WorthQueryProductBranchAdmissionRefusalKind),
+}
+
+/// Why a selected product basis could not be admitted for a read.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum WorthQueryProductBranchAdmissionRefusalKind {
+    DurableBranchPublicationRequired,
+    ExpectedDescriptionVersionUnsupported {
+        supported: u16,
+        actual: u16,
+    },
+    ExpectedDescriptionNameInvalid,
+    ForeignPhase,
+    /// The runtime's branch-observation state is unusable after an internal failure.
+    ObservationStatePoisoned,
+    /// The owner of the product branch is not available right now.
+    OwnerUnavailable,
+    /// The branch token or observation belongs to a different runtime.
+    ForeignOwner,
+    StaleIncarnation,
+    /// The product branch has been retired.
+    RetiredBranch,
+    /// The branch changed lifecycle incarnation between selection and admission.
+    IncarnationChanged,
+    /// The owner rejected the observation request itself.
+    ObservationRejected,
+    /// The branch's source head moved while it was being observed.
+    ObservationStaleSourceHead,
+    /// The owner has no capacity for another branch observation.
+    ObservationCapacityExhausted,
+    /// The owner has no capacity for another custody entry.
+    CustodyCapacityExhausted,
+    /// The owner ran out of observation identities.
+    ObservationIdentityExhausted,
+    /// The program activation for the branch could not be read.
+    ProductActivationUnavailable,
+    /// The Relational basis for the branch could not be retained.
+    RelationalBasisUnavailable,
+    /// A Relational snapshot for the branch could not be admitted.
+    RelationalSnapshotUnavailable,
+    /// The installed limit on concurrently active snapshots was reached.
+    ActiveSnapshotCapacityExhausted {
+        maximum_active_snapshots: usize,
+    },
+    /// No capacity remains to retain another basis.
+    RetentionCapacityExhausted,
+    /// The runtime ran out of basis-retention identities.
+    RetentionIdentityExhausted,
+    /// The runtime ran out of snapshot identities.
+    SnapshotIdentityExhausted,
+    /// The branch basis could not be retained for the Runtime Bridge.
+    BridgeSourceUnavailable,
+}
+
+impl WorthQueryProductBranchAdmissionDenial {
+    pub const fn is_transient(self) -> bool {
+        match self {
+            Self::Stopped(_) => false,
+            Self::Refused(kind) => kind.is_transient(),
+        }
+    }
+}
+impl WorthQueryProductBranchAdmissionRefusalKind {
+    pub const fn is_transient(self) -> bool {
+        matches!(
+            self,
+            Self::OwnerUnavailable
+                | Self::ObservationCapacityExhausted
+                | Self::CustodyCapacityExhausted
+                | Self::ObservationStaleSourceHead
+                | Self::ProductActivationUnavailable
+                | Self::RelationalBasisUnavailable
+                | Self::RelationalSnapshotUnavailable
+                | Self::ActiveSnapshotCapacityExhausted { .. }
+                | Self::RetentionCapacityExhausted
+                | Self::BridgeSourceUnavailable
+        )
+    }
+}
+impl std::fmt::Display for WorthQueryProductBranchAdmissionDenial {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(formatter, "product branch admission denied: {self:?}")
+    }
+}
+impl std::error::Error for WorthQueryProductBranchAdmissionDenial {}
+impl From<crate::product_activation_denial::WorthQueryProductActivationDenial>
+    for WorthQueryProductBranchAdmissionDenial {
+    fn from(_denial: crate::product_activation_denial::WorthQueryProductActivationDenial) -> Self {
+        Self::Refused(WorthQueryProductBranchAdmissionRefusalKind::ProductActivationUnavailable)
+    }
+}

@@ -7,7 +7,9 @@ use crate::domain_computation::primary_graph::{
     application_attempt::retained_decision_facts::StorageControl,
     WorthQueryPrimaryGraphApplicationDecisionFact,
 };
-use crate::domain_computation::provider_session::WorthQuerySessionReadAuthority;
+use crate::domain_computation::provider_session::{
+    PrimaryReadSetCaptureExt, WorthQuerySessionReadAuthority,
+};
 use crate::domain_computation::{
     WorthQueryCompleteDecisionReadSetReceipt, WorthQueryDecisionFactComparisonAdmission,
     WorthQueryDecisionFactComparisonEvidence, WorthQueryDecisionFactEvidenceView,

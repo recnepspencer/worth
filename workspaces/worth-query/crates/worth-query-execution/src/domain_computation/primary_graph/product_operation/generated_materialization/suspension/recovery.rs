@@ -1,4 +1,6 @@
-use crate::domain_computation::execution_runtime::product_world::OwnerCleanupRetirements;
+use crate::domain_computation::execution_runtime::product_world::{
+    OwnerCleanupRetirements, ProductPublicationBindingPrimaryExt,
+};
 mod advancement;
 use crate::basis::WorthQueryProductBranchAdmissionDenial as Admission;
 use crate::domain_computation::execution_runtime::product_world::publication_denial::{

@@ -89,6 +89,7 @@ pub(super) fn register_provider_attempt<'run, Schema, Operation, Input, Scope>(
         output_currentness_facts,
         consumed_outputs,
     } = prepared;
+    use crate::domain_computation::provider_session::SessionBoundReadsPrimaryExt;
     let affinity = match staged.bind_application_attempt(attempt_basis) {
         Ok(affinity) => affinity,
         Err(()) => {

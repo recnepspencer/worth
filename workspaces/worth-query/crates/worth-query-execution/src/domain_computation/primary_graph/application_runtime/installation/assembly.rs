@@ -114,7 +114,7 @@ where
         schema_binding.schema_identity().render_hex(),
     );
     let granular_invalidation = crate::domain_computation::primary_graph::WorthQueryGranularInvalidationInstallation::new(schema_binding.clone(), graph.primary_provider.graph.clone(), crate::domain_computation::execution_runtime::product_world::WorthQueryProductSharedRoot::new(
-            product_runtime.clone(),
+            product_runtime.0.clone(),
             graph.bridge.conditional_operations(),
         ));
     let program_required_bindings = installed_schema
@@ -137,11 +137,17 @@ where
     // clock argument (R8.31).
     let authorization_clock = std::sync::Arc::new(authorization_clock);
     let dispatch_journal = std::sync::Arc::new(crate::domain_computation::application_aftermath::dispatch_journal::WorthQueryDispatchJournal::process_local());
+    let dispatch_journal_port: std::sync::Arc<
+        dyn worth_query_execution_runtime::facade::ports::RecoveryDispatchJournalPort,
+    > = std::sync::Arc::clone(&dispatch_journal)
+        as std::sync::Arc<
+            dyn worth_query_execution_runtime::facade::ports::RecoveryDispatchJournalPort,
+        >;
     let recovery_handles = std::sync::Arc::new(
         crate::domain_computation::managed_run::WorthQueryRecoveryHandleRegistry::for_runtime(
             runtime_authority,
             std::sync::Arc::clone(&authorization_clock),
-            std::sync::Arc::downgrade(&dispatch_journal),
+            std::sync::Arc::downgrade(&dispatch_journal_port),
         ),
     );
     let installed_operations = installed_schema.installed_view().retain_operation_catalog();

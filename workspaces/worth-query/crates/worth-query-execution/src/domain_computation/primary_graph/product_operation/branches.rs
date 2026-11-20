@@ -122,15 +122,17 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryApplicationProductBranches<'
 
     pub fn fork(self, source: WorthQueryProductBranch) -> WorthQueryProductBranchFork<'runtime> {
         self.branches.fork(source).with_application_lifecycle(
-            std::sync::Arc::clone(
-                &self
-                    .application
-                    .runtime
-                    .primary_provider
-                    .graph
-                    .output_lineage,
-            ),
-            &self.application.runtime.primary_provider,
+            std::sync::Arc::new(crate::domain_computation::runtime_ports::OutputLineageForkAdapter(
+                std::sync::Arc::clone(
+                    &self
+                        .application
+                        .runtime
+                        .primary_provider
+                        .graph
+                        .output_lineage,
+                ),
+            )),
+            self.application.runtime.primary_provider.as_ref(),
             self.application,
         )
     }

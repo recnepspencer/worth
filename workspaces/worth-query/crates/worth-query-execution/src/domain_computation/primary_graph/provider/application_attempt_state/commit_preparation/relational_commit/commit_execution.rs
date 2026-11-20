@@ -117,9 +117,11 @@ pub(super) fn commit(
         Ok(Some(_)) => match history {
             None => durable::commit(execution, provider, query, allocation_policy).map(ApplicationCommitExecution::Committed),
             Some(_) => Err(crate::domain_computation::WorthQueryProviderSessionCommitStop::ProductPreparationRefused(
-                crate::domain_computation::WorthQueryProductPreparationRefused::new(
-                    crate::domain_computation::WorthQueryProductPreparationRefusal::CurrentReadDependency(
-                        worth_runtime_world::facade::CurrentProductReadDependencyDenial::DurabilityUnsupported), query))),
+                worth_query_execution_runtime::facade::ports::OpaqueProductPublicationOutcome::new(
+                    crate::domain_computation::WorthQueryProductPreparationRefused::new(
+                        crate::domain_computation::WorthQueryProductPreparationRefusal::CurrentReadDependency(
+                            worth_runtime_world::facade::CurrentProductReadDependencyDenial::DurabilityUnsupported), query),
+                    false))),
         },
         Err(cause) => Err(durable::refused_before_open(query, cause)),
     }

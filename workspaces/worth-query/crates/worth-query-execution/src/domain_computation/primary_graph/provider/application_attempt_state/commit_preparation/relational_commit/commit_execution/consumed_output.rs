@@ -89,6 +89,7 @@ pub(super) fn verification_stop(
 pub(super) fn memory_stop(
     stop: ConsumedOutputPreparationDenial,
 ) -> WorthQueryProviderSessionCommitStop {
+    use crate::domain_computation::provider_session::CommitDeferredPrimaryExt;
     match stop {
             ConsumedOutputPreparationDenial::Prerequisite(denial) => WorthQueryProviderSessionCommitStop::Deferred(
                 crate::domain_computation::WorthQueryProviderSessionCommitDeferred::required_prerequisite(

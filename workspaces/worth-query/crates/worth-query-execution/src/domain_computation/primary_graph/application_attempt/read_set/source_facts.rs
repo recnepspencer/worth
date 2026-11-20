@@ -73,7 +73,11 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
         admission
             .validate_current_authority()
             .map_err(WorthQueryApplicationAttemptDenial::request_authority_lost)?;
-        let lease = admission.graph_work().mutation_lease().ok_or_else(|| {
+        use crate::domain_computation::provider_session::ManagedGraphWorkSessionPrimaryExt;
+        let lease = admission
+            .graph_work()
+            .mutation_lease_typed()
+            .ok_or_else(|| {
             denial(
                 WorthQueryApplicationAttemptDenialKind::CurrentAuthorityDenied,
                 admission.operation(),

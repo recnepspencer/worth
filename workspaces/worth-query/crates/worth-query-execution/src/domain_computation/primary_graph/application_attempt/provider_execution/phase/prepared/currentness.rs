@@ -58,7 +58,7 @@ pub(super) fn readmit_current_basis<Schema, Operation, Input, Scope>(
     }
     admission
         .graph_work_mut()
-        .readmit_mutation_lease(retained.product(), current_admission)
+        .readmit_mutation_lease(retained.product(), Box::new(current_admission))
         .map_err(|_| denied(DenialStage::DecisionReadSet))?;
     let current_decision = acquire_current_lease(execution, &retained, current)?;
     // No handler rerun or fact replacement: comparison uses the sealed values.

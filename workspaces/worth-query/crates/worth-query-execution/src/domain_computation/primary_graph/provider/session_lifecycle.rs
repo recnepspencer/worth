@@ -8,7 +8,7 @@ use crate::domain_computation::{
     WorthQueryProviderSessionView,
 };
 
-impl WorthQueryProviderSessionLifecycle for Arc<WorthQueryPrimaryGraphProvider> {
+impl WorthQueryProviderSessionLifecycle for crate::domain_computation::runtime_ports::PrimaryGraphProviderArc {
     fn readmit_provider_plan(
         &self,
         _plan: &WorthQueryProviderExecutionPlanView<'_>,

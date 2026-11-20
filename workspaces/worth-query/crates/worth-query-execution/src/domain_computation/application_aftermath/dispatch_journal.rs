@@ -148,35 +148,4 @@ impl QueryDispatchFrame {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub enum QueryDispatchJournalDenial {
-    UnsupportedVersion(u32),
-    MalformedFrame,
-    Checksum,
-    ForeignHome,
-    PrefixMismatch,
-    IdentityExhausted,
-    AttemptIdentityMismatch,
-    /// The same effect already has an attempt awaiting its observation.
-    AttemptAwaitingObservation,
-    /// A completed external effect is never contacted again.
-    EffectAlreadyCompleted,
-    UnknownAttempt,
-    AttemptAlreadyObserved,
-    /// The recorded history ends inside an external contact with `effect`.
-    /// Graceful reopen never guesses that fate; crash recovery owns it.
-    UnobservedAttempt {
-        attempt: DispatchAttemptIdentity,
-        effect: CanonicalDigestId,
-    },
-    /// This runtime has no durable Home journal; its custody is process-local.
-    JournalUnavailable,
-    OwnerUnavailable,
-    StaleIncarnation,
-    PublicationPending,
-    PublicationNoEffect,
-    PublicationGenerationMismatch,
-    PublicationUnresolved,
-    Storage(String),
-    Execution(worth_execution::WorkCeilingDenial),
-}
+pub use worth_query_execution_contracts::facade::QueryDispatchJournalDenial;

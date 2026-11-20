@@ -12,6 +12,8 @@ use worth_relational::facade::runtime::RelationalRuntime;
 /// local source share. No live accessor escapes the owning post-seal Query.
 pub(in crate::domain_computation::primary_graph) struct PrimaryGraphSourceCustody {
     serving: Option<WorthQueryRelationalSourceOwner>,
+    pub(in crate::domain_computation::primary_graph) invalidation_owner:
+        std::sync::Arc<super::super::SourceInvalidationOwner>,
     retiring: Mutex<Option<PreparedSourceRetirement>>,
 }
 struct PreparedSourceRetirement {
@@ -23,8 +25,13 @@ struct SourceRetirementBacking {
 }
 impl PrimaryGraphSourceCustody {
     pub(super) fn new(serving: WorthQueryRelationalSourceOwner) -> Self {
+        let invalidation_owner = std::sync::Arc::clone(&serving.invalidation_owner)
+            .into_any_arc()
+            .downcast::<super::super::SourceInvalidationOwner>()
+            .expect("primary graph source carries SourceInvalidationOwner");
         Self {
             serving: Some(serving),
+            invalidation_owner,
             retiring: Mutex::new(None),
         }
     }
@@ -81,6 +88,7 @@ impl PrimaryGraphSourceCustody {
             .as_mut()
             .expect("same original source retirement")
             .advance(request, native)
+            .map_err(Into::into)
     }
 }
 impl Clone for PrimaryGraphSourceCustody {

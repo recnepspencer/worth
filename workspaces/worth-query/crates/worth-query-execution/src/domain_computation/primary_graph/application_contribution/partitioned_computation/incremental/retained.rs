@@ -23,75 +23,9 @@ use crate::domain_computation::primary_graph::application_attempt::{
 use crate::domain_computation::primary_graph::application_contribution::InstalledProducerEdition;
 use crate::domain_computation::primary_graph::invariant_projection::ComputationCallCharge;
 
-/// How one run of a partitioned computation ran.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub enum WorthQueryPartitionedComputationRunForTest {
-    /// Only the partitions whose facts changed were gathered and computed;
-    /// every other live partition was carried.
-    Incremental {
-        /// The partitions gathered and computed again, in ascending identity
-        /// order.
-        recomputed: Vec<worth_foundational::facade::PartitionIdentity>,
-        /// Whether the membership call ran again because a fact it read
-        /// moved. It does not claim that membership changed.
-        membership_recomputed: bool,
-    },
-    /// Every partition was gathered and computed.
-    Full(WorthQueryPartitionedComputationFullCause),
-}
-
-impl WorthQueryPartitionedComputationRunForTest {
-    /// Why every partition ran, or `None` for an incremental run.
-    pub const fn full_cause(&self) -> Option<WorthQueryPartitionedComputationFullCause> {
-        match self {
-            Self::Full(cause) => Some(*cause),
-            Self::Incremental { .. } => None,
-        }
-    }
-}
-
-/// Why a run recomputed every partition.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryPartitionedComputationFullCause {
-    /// No output record has been published at this address.
-    FirstRun,
-    /// Checkpoint restoration retained no computation state.
-    Restored,
-    /// Republication retained facts but no computation state.
-    Republished,
-    /// The decision ran no partitioned computation.
-    NotProduced,
-    /// The run's charge or retained byte sum could not be measured.
-    Unmeasured,
-    /// A successor took this record's computation reservation.
-    Moved,
-    /// The lineage ledger refused the computation reservation.
-    Evicted,
-    /// The input value's canonical encoding differs.
-    InputChanged,
-    /// The installed owner differs, even when its types match.
-    OtherInstallation,
-    /// The installed producer edition differs.
-    OtherEdition,
-    /// The observation bound exceeds the request's work policy.
-    ObservationOverBudget,
-    /// A prior was already consumed by an earlier invocation in this handler.
-    NoPriorHanded,
-    /// This reader belongs to an operation outside a producer invocation.
-    NoProducerPrior,
-    /// Policy suppressed the completed computation's retention.
-    RetentionPolicy,
-    /// The handler ran several computations and has no single attribution.
-    SeveralComputations,
-    /// A collision restart computed without a reusable retention basis.
-    CollisionSuppressed,
-    /// The computation stopped before leaving completed state.
-    Stopped,
-    /// Execution policy chose not to retain this computation.
-    Unretained,
-    /// Incremental routing met a compact partition identity collision.
-    IdentityCollision,
-}
+pub use worth_query_execution_contracts::facade::partitioned_tree_observation::{
+    WorthQueryPartitionedComputationFullCause, WorthQueryPartitionedComputationRunForTest,
+};
 
 /// One installation of a partitioned computation's owner, compared by
 /// identity. A reinstall with the same types and the same declaration may

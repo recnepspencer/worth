@@ -6,17 +6,7 @@ use worth_relational::facade::mvcc::CompanionBranchCell;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 use worth_relational::facade::mvcc::PublicationCompanionRegistrationStop;
 use worth_relational::facade::runtime::RelationalRuntime;
-#[derive(Debug)]
-pub(in crate::domain_computation) enum HeadCellRegistrationStop {
-    Admission(CompanionPreflightStop),
-    Native(PublicationCompanionRegistrationStop),
-    LookupChanged,
-}
-impl From<CompanionPreflightStop> for HeadCellRegistrationStop {
-    fn from(stop: CompanionPreflightStop) -> Self {
-        Self::Admission(stop)
-    }
-}
+pub(in crate::domain_computation) use worth_query_execution_contracts::facade::HeadCellRegistrationStop;
 impl SourceInvalidationOwner {
     pub(in crate::domain_computation) fn mint_cell_at_head(
         &self,

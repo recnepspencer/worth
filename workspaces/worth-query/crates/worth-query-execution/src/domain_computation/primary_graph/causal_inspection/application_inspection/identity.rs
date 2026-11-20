@@ -63,6 +63,10 @@ pub(super) fn identities<Stop>(
     let (actual, current) = session
         .inspection_binding()
         .ok_or(InspectionIdentityStop::ForeignSession)?;
+    let actual = actual
+        .as_any()
+        .downcast_ref::<super::WorthQueryApplicationInspectionTarget>()
+        .ok_or(InspectionIdentityStop::ForeignSession)?;
     if !actual.admits_member(target) {
         return Err(InspectionIdentityStop::ForeignSession);
     }

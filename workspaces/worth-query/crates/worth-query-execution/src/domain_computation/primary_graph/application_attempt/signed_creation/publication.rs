@@ -30,7 +30,10 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn publish
         .decision_stage(|context| {
             publish_prepared(state, effects, &request, lease, idempotency, context)
         })
-        .map_err(|cause| cause.into_commit_outcome())?
+        .map_err(|cause| {
+            crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(cause)
+                .into_commit_outcome()
+        })?
         .map_err(PublicationRefusal::into_outcome)
 }
 

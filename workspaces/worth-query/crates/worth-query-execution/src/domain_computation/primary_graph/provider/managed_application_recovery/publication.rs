@@ -1,3 +1,4 @@
+use crate::domain_computation::execution_runtime::product_world::ProductPublicationBindingPrimaryExt;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_runtime_world::facade::{

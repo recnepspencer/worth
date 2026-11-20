@@ -62,7 +62,11 @@ impl From<crate::domain_computation::provider_session::WorthQueryProviderSession
                 Self::PublishedSnapshotCapacityExhausted { maximum_handles }
             }
             Provider::SourceCurrentnessRaced(stop) => Self::SourceCurrentnessRaced(stop),
-            Provider::RequiredPrerequisitePending(kind) => Self::RequiredPrerequisitePending(kind),
+            Provider::RequiredPrerequisitePending(kind) => Self::RequiredPrerequisitePending(
+                *kind
+                    .downcast::<crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind>()
+                    .expect("provider session prerequisite kind is WorthQueryOutputDemandDenialKind"),
+            ),
         }
     }
 }
@@ -71,6 +75,7 @@ impl WorthQueryApplicationCommitDeferred {
     pub(in crate::domain_computation::primary_graph) fn from_provider_session(
         deferred: crate::domain_computation::provider_session::WorthQueryProviderSessionCommitDeferred,
     ) -> Self {
+        use crate::domain_computation::provider_session::CommitDeferredPrimaryExt;
         Self {
             kind: deferred.kind().into(),
             stage: deferred.stage(),

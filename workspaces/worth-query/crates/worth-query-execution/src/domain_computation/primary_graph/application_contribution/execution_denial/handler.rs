@@ -21,33 +21,35 @@ where
     Stopped: Into<HandlerFailure<Domain>>,
 {
     fn from(cause: WorthQueryManagedComputationDenial<Stopped>) -> Self {
-        match cause.into_owner_result() {
+        match into_owner_result(cause) {
             Ok(cause) => cause.into(),
             Err(native) => native.map_domain(|never| match never {}),
         }
     }
 }
 
-impl<Stopped> WorthQueryManagedComputationDenial<Stopped> {
-    /// Separates a deliberate owner outcome from native request failure when
-    /// an adapter gives that owner outcome a domain-specific success meaning.
-    pub fn into_owner_result(self) -> Result<Stopped, HandlerFailure<std::convert::Infallible>> {
-        match self {
-            Self::Owner(cause) => Ok(cause),
-            Self::Interrupted(cause) => Err(cause.into()),
-            Self::Panicked => Err(HandlerFailure::Execution(HandlerExecutionDenial::new(
+/// Separates a deliberate owner outcome from native request failure when
+/// an adapter gives that owner outcome a domain-specific success meaning.
+pub fn into_owner_result<Stopped>(
+    cause: WorthQueryManagedComputationDenial<Stopped>,
+) -> Result<Stopped, HandlerFailure<std::convert::Infallible>> {
+    match cause {
+        WorthQueryManagedComputationDenial::Owner(cause) => Ok(cause),
+        WorthQueryManagedComputationDenial::Interrupted(cause) => Err(cause.into()),
+        WorthQueryManagedComputationDenial::Panicked => {
+            Err(HandlerFailure::Execution(HandlerExecutionDenial::new(
                 WorthQueryManagedComputationDenial::<std::convert::Infallible>::Panicked,
-            ))),
-            Self::Resource(cause) => {
-                Err(HandlerFailure::Execution(HandlerExecutionDenial::new(
-                    WorthQueryManagedComputationDenial::<std::convert::Infallible>::Resource(cause),
-                )))
-            }
-            Self::NestedPatternStopped => {
-                Err(HandlerFailure::Execution(HandlerExecutionDenial::new(
-                    WorthQueryManagedComputationDenial::<std::convert::Infallible>::NestedPatternStopped,
-                )))
-            }
+            )))
+        }
+        WorthQueryManagedComputationDenial::Resource(cause) => {
+            Err(HandlerFailure::Execution(HandlerExecutionDenial::new(
+                WorthQueryManagedComputationDenial::<std::convert::Infallible>::Resource(cause),
+            )))
+        }
+        WorthQueryManagedComputationDenial::NestedPatternStopped => {
+            Err(HandlerFailure::Execution(HandlerExecutionDenial::new(
+                WorthQueryManagedComputationDenial::<std::convert::Infallible>::NestedPatternStopped,
+            )))
         }
     }
 }

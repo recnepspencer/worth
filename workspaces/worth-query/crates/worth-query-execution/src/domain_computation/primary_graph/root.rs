@@ -71,7 +71,14 @@ impl WorthQueryPrimaryGraph {
         source_owner: WorthQueryRelationalSourceOwner,
     ) -> Self {
         let relational_runtime_instance_id = source_owner.runtime_instance_id;
-        let managed_derived_views = Arc::clone(&source_owner.invalidation_owner.managed_views);
+        let managed_derived_views = Arc::clone(
+            &source_owner
+                .invalidation_owner
+                .as_any()
+                .downcast_ref::<super::SourceInvalidationOwner>()
+                .expect("primary graph source carries SourceInvalidationOwner")
+                .managed_views,
+        );
         Self {
             application_publication: None,
             runtime_authority,

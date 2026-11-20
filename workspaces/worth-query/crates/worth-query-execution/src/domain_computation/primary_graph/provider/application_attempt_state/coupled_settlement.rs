@@ -23,7 +23,11 @@ impl super::super::WorthQueryPrimaryGraphProvider {
         }
         if let Some(unpublished) = unpublished {
             return Err(match unpublished.inspect() {
-                Ok(actual) => Stop::ProductUnpublished(actual),
+                Ok(actual) => Stop::ProductUnpublished(
+                    worth_query_execution_runtime::facade::ports::OpaqueProductPublicationOutcome::new(
+                        actual, true,
+                    ),
+                ),
                 Err(cause) => Stop::Denied(crate::domain_computation::WorthQueryProviderSessionFailure::new(crate::domain_computation::WorthQueryProviderSessionDenialKind::ProviderRejected, crate::domain_computation::WorthQueryProviderSessionProtocolStage::Commit, format!("group World recovery could not be inspected: {cause:?}"), Default::default())),
             });
         }

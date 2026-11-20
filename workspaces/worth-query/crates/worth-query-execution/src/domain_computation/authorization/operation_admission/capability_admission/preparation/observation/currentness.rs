@@ -159,6 +159,7 @@ where
     Schema: ApplicationSchema,
     Input: ApplicationCapabilityRequest<Schema, Capability>,
 {
+    use crate::domain_computation::provider_session::ManagedGraphWorkSessionPrimaryExt;
     let snapshot = prepared.graph_work().mutation_snapshot().unwrap().clone();
     let handle = prepared.graph_work().mutation_handle().unwrap().clone();
     let resolution = prepared

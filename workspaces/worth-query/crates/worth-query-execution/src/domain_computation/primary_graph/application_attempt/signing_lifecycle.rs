@@ -73,7 +73,10 @@ pub(super) fn expand<Schema: ApplicationSchema, Operation, Input, Scope>(
             }
             Ok::<_, Outcome>(batch)
         })
-        .map_err(|cause| cause.into_commit_outcome())??;
+        .map_err(|cause| {
+            crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(cause)
+                .into_commit_outcome()
+        })??;
     let extra = super::read_set::admit_completed_facts(
         batch.facts.len(),
         batch.facts,

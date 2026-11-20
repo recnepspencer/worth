@@ -18,7 +18,12 @@ impl QueryObligationHistory {
         execution: &crate::domain_computation::WorthQueryExecutionRuntime,
     ) -> Result<(), QueryObligationDenial> {
         provider.bind_original_meaning_support(self)?;
-        execution.managed_run_custody.bind(Arc::clone(self))
+        execution.managed_run_custody.bind(
+            Arc::clone(self)
+                as Arc<
+                    dyn worth_query_execution_runtime::facade::ports::ManagedRunObligationPort,
+                >,
+        )
     }
 
     pub(in crate::domain_computation::primary_graph) fn readmit_journal(

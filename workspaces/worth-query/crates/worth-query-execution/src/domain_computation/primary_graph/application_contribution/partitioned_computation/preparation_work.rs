@@ -118,7 +118,7 @@ pub(super) fn encode_identity<T, Stopped>(
             encode(&mut meter)
         })
     }
-    .map_err(preparation_denial)?;
+    .map_err(|cause| preparation_denial(cause.into()))?;
     encoded.map_err(|denial| match denial {
         ApplicationComputationPartitionIdentityDenial::Key(denial) => value_denial(denial),
         ApplicationComputationPartitionIdentityDenial::Admission(denial) => {
@@ -157,7 +157,7 @@ pub(super) fn charge_preparation<Stopped>(
     let units = units.ok_or(Denial::Resource(Resource::WorkCounterOverflow))?;
     execution
         .decision_stage(|context| context.checkpoint(units).map_err(checkpoint_denial))
-        .map_err(preparation_denial)?
+        .map_err(|cause| preparation_denial(cause.into()))?
         .map_err(checkpoint_failure)?;
     work.spend(Some(units)).map_err(Denial::Resource)
 }

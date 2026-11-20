@@ -2,5 +2,4 @@
 
 pub(crate) fn collect(census: &mut crate::inline_type_sizes::Census) {
     super::product_world::inline_type_budget::collect(census);
-    super::runtime_root::inline_type_budget::collect(census);
 }

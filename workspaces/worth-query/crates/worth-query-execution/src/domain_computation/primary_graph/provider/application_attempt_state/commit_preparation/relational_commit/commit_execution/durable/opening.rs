@@ -10,19 +10,23 @@ pub(super) fn prepare(
     let product = query.attempt.affinity().product_publication().clone();
     let Some(control) = product.request_control(query.attempt.affinity().publication_request())
     else {
-        return Err(Stop::ProductPreparationRefused(Refused::new(
-            Refusal::RequestClockMismatch,
-            query,
-        )));
+        return Err(Stop::ProductPreparationRefused(
+            worth_query_execution_runtime::facade::ports::OpaqueProductPublicationOutcome::new(
+                Refused::new(Refusal::RequestClockMismatch, query),
+                false,
+            ),
+        ));
     };
     let reservation =
         match provider.reserve_query_before_world(&product, query.attempt.idempotency()) {
             Ok(reservation) => reservation,
             Err(()) => {
-                return Err(Stop::ProductPreparationRefused(Refused::new(
-                    Refusal::QueryPreparationReservationRefused,
-                    query,
-                )))
+                return Err(Stop::ProductPreparationRefused(
+                    worth_query_execution_runtime::facade::ports::OpaqueProductPublicationOutcome::new(
+                        Refused::new(Refusal::QueryPreparationReservationRefused, query),
+                        false,
+                    ),
+                ))
             }
         };
     let mut before = before_world::BeforeWorldPreparation::new(query, reservation);
@@ -30,13 +34,18 @@ pub(super) fn prepare(
     let (live, demand, client) = match before.reserve_successor_observations(&execution, provider) {
         Ok(flags) => flags,
         Err(cause) => {
-            return Err(Stop::ProductPreparationRefused(Refused::new(
-                match cause {
-                    crate::domain_computation::primary_graph::live_delivery::WorthQueryLiveAdmissionDenial::Execution(cause) => Refusal::QuerySuccessorObservationRequest(cause),
-                    crate::domain_computation::primary_graph::live_delivery::WorthQueryLiveAdmissionDenial::Unavailable(detail) => Refusal::QuerySuccessorObservation(detail),
-                },
-                before.refuse(),
-            )))
+            return Err(Stop::ProductPreparationRefused(
+                worth_query_execution_runtime::facade::ports::OpaqueProductPublicationOutcome::new(
+                    Refused::new(
+                        match cause {
+                            crate::domain_computation::primary_graph::live_delivery::WorthQueryLiveAdmissionDenial::Execution(cause) => Refusal::QuerySuccessorObservationRequest(cause),
+                            crate::domain_computation::primary_graph::live_delivery::WorthQueryLiveAdmissionDenial::Unavailable(detail) => Refusal::QuerySuccessorObservation(detail),
+                        },
+                        before.refuse(),
+                    ),
+                    false,
+                ),
+            ))
         }
     };
     let open = match prepare_query_open(&execution, &product, &control, with_signal) {

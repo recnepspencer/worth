@@ -7,5 +7,4 @@ pub(crate) fn collect(census: &mut crate::inline_type_sizes::Census) {
     super::managed_run::inline_type_budget::collect(census);
     super::primary_graph::inline_type_budget::collect(census);
     super::product_publication::inline_type_budget::collect(census);
-    super::execution_observation::inline_type_budget::collect(census);
 }

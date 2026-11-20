@@ -96,9 +96,10 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
                 preconditions,
                 request,
             )?;
+        use crate::domain_computation::provider_session::ManagedGraphWorkSessionPrimaryExt;
         let retained = admission
             .graph_work_mut()
-            .mutation_lease_mut()
+            .mutation_lease_typed_mut()
             .is_some_and(|lease| lease.retain_selection_origin_from(self));
         if !retained {
             return Err(WorthQueryOperationAuthorizationDenial::new(

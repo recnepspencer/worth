@@ -1,0 +1,294 @@
+//! Request custody exists only while the runtime executes one advancement.
+
+use super::super::execution_denial;
+use super::{Form, QueryRequestExecution, Resource};
+use crate::domain_computation::primary_graph::{
+    WorthQueryManagedComputationCheckpointDenial, WorthQueryManagedComputationInterruption,
+};
+use worth_execution::{ExecutionRequest, ExecutionWorkCeiling, WorkCeilingDenial};
+use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
+use worth_query_installation::facade::ApplicationSchema;
+
+/// Why an advancement could not return its ordinary result.
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub enum WorthQueryAdvancementDenial {
+    Resource(Resource),
+    Interrupted(WorthQueryManagedComputationInterruption),
+    /// A public call tried to open an advancement from an active host call or
+    /// a member compute.
+    NestedOpening,
+    NestedStopped,
+    Panicked,
+}
+
+impl std::fmt::Display for WorthQueryAdvancementDenial {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(formatter, "advancement request refused: {self:?}")
+    }
+}
+
+impl std::error::Error for WorthQueryAdvancementDenial {}
+
+impl WorthQueryAdvancementDenial {
+    pub const fn is_transient(self) -> bool {
+        match self {
+            Self::Resource(Resource::NativeAllocationRefused { kind, .. }) => matches!(
+                kind,
+                worth_execution::ExecutionPhysicalAllocationDenialKind::Allocator
+            ),
+            Self::Resource(Resource::MemoryLimit { level, .. }) => match level {
+                crate::domain_computation::primary_graph::WorthQueryMemoryLimitLevel::Process => {
+                    true
+                }
+                crate::domain_computation::primary_graph::WorthQueryMemoryLimitLevel::Policy
+                | crate::domain_computation::primary_graph::WorthQueryMemoryLimitLevel::Declared => {
+                    false
+                }
+            },
+            Self::Resource(
+                Resource::WorkExhausted
+                | Resource::WorkCounterOverflow
+                | Resource::AccountingUnavailable
+                | Resource::RetainedBytesExhausted
+                | Resource::ScratchCapacityExceeded
+                | Resource::ResultCapacityExceeded
+                | Resource::CapacityOverflow
+                | Resource::ChargedBytesOverflow
+                | Resource::WorkerLimit
+                | Resource::PolicyMemoryLimit
+                | Resource::WorkLimit
+                | Resource::NestedLeaseMisuse
+                | Resource::NestedAdvancementOpening
+                | Resource::ForeignAdmissionClock
+                | Resource::ForeignAdvancementPhase
+                | Resource::NoActiveExecutionScope
+                | Resource::EquivalenceContractUnavailable,
+            )
+            | Self::Interrupted(
+                WorthQueryManagedComputationInterruption::Cancelled
+                | WorthQueryManagedComputationInterruption::DeadlineExceeded,
+            )
+            | Self::NestedOpening
+            | Self::NestedStopped
+            | Self::Panicked => false,
+        }
+    }
+}
+
+mod phase_custody;
+pub mod runner;
+pub use phase_custody::{WorthQueryAdvancementPhase, WorthQueryForeignAdvancementPhase};
+mod bootstrap_opening;
+pub use bootstrap_opening::with_bootstrap_advancement_from_request;
+mod bootstrap_custody;
+pub use bootstrap_custody::WorthQueryBootstrapAdvancementPhase;
+mod directory_completion;
+pub mod opening_custody;
+mod product_opening;
+use opening_custody::OpeningCustody;
+
+impl QueryRequestExecution<'_> {
+    pub fn execution_request(&self) -> Result<ExecutionRequest<'_, '_>, Resource> {
+        match &self.form {
+            Form::Leased { lease, .. } | Form::Serial { lease, .. } => lease
+                .as_ref()
+                .map(ExecutionRequest::leased)
+                .map_err(|denial| execution_denial::lease_denial(*denial)),
+        }
+    }
+
+    pub fn run_advancement<R>(
+        &self,
+        owner: Option<worth_runtime_world::facade::RuntimeWorldOwnerIdentity>,
+        source_instance: Option<u64>,
+        body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
+    ) -> Result<R, WorthQueryAdvancementDenial> {
+        self.run_advancement_with_maintenance(owner, source_instance, None, false, body)
+    }
+
+    pub fn run_advancement_with_maintenance<R>(
+        &self,
+        owner: Option<worth_runtime_world::facade::RuntimeWorldOwnerIdentity>,
+        source_instance: Option<u64>,
+        maintenance: Option<&dyn crate::ports::HomeMaintenanceAfterAdvancement>,
+        retain_returned_outcome: bool,
+        body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
+    ) -> Result<R, WorthQueryAdvancementDenial> {
+        let pending = std::cell::RefCell::new(Some(body));
+        let result = std::cell::RefCell::new(None);
+        runner::run_advancement(
+            self,
+            owner,
+            source_instance,
+            maintenance,
+            retain_returned_outcome,
+            &mut |phase| {
+                let body = pending
+                    .borrow_mut()
+                    .take()
+                    .expect("an advancement invokes its body once");
+                let value = body(phase);
+                *result.borrow_mut() = Some(value);
+            },
+            &mut || {
+                // End both borrows before arbitrary callback/result destruction.
+                let pending = pending.borrow_mut().take();
+                let value = result.borrow_mut().take();
+                drop(pending);
+                drop(value);
+            },
+        )?;
+        Ok(result
+            .into_inner()
+            .expect("a completed advancement has its body result"))
+    }
+}
+
+pub fn advancement_denial(
+    denial: WorkCeilingDenial,
+) -> WorthQueryAdvancementDenial {
+    use WorthQueryAdvancementDenial as Denial;
+    match denial {
+        WorkCeilingDenial::Admission(cause) => {
+            Denial::Resource(execution_denial::lease_denial(cause))
+        }
+        WorkCeilingDenial::Stopped(stop) => match execution_denial::checkpoint_denial(stop) {
+            WorthQueryManagedComputationCheckpointDenial::Resource(cause) => {
+                Denial::Resource(cause)
+            }
+            WorthQueryManagedComputationCheckpointDenial::Interrupted(cause) => {
+                Denial::Interrupted(cause)
+            }
+            WorthQueryManagedComputationCheckpointDenial::NestedPatternStopped => {
+                Denial::NestedStopped
+            }
+        },
+        WorkCeilingDenial::Panicked => Denial::Panicked,
+    }
+}
+
+
+/// Installation runs serially under the host's memory and aggregate work bounds.
+/// Custody is per thread; another thread's public call owns its own request.
+/// Installation's serial placement reports zero memory as `PolicyMemoryLimit`;
+/// an installed leased opener instead reports a policy `MemoryLimit`.
+pub fn with_bootstrap_advancement<R>(
+    policy: worth_foundational::ExecutionRequestPolicy,
+    body: impl for<'scope> FnOnce(WorthQueryBootstrapAdvancementPhase<'scope>) -> R,
+) -> Result<R, WorthQueryAdvancementDenial> {
+    worth_execution::run_with_execution_stack(move || {
+        with_bootstrap_advancement_on_execution_stack(policy, body)
+    })
+}
+
+#[inline(never)]
+fn with_bootstrap_advancement_on_execution_stack<R>(
+    policy: worth_foundational::ExecutionRequestPolicy,
+    body: impl for<'scope> FnOnce(WorthQueryBootstrapAdvancementPhase<'scope>) -> R,
+) -> Result<R, WorthQueryAdvancementDenial> {
+    with_owned_bootstrap_advancement(policy, |phase| {
+        body(WorthQueryBootstrapAdvancementPhase::new(
+            phase
+                .active
+                .execution
+                .execution_request()
+                .expect("owned bootstrap was admitted"),
+        ))
+    })
+}
+
+fn with_owned_bootstrap_advancement<R>(
+    policy: worth_foundational::ExecutionRequestPolicy,
+    body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
+) -> Result<R, WorthQueryAdvancementDenial> {
+    let _custody = OpeningCustody::enter()?;
+    let cancellation = worth_execution::CancellationToken::new();
+    let execution = QueryRequestExecution {
+        cancellation: cancellation.clone(),
+        deadline: None,
+        declared_work: policy.work_ceiling(),
+        certified_seed: super::test_placement::certifying(),
+        form: super::serial_placement::form(policy, cancellation, None),
+    };
+    execution.run_advancement(None, None, body)
+}
+
+impl WorthQueryAdvancementDenial {
+    pub fn provider_denial_cause(
+        self,
+    ) -> Result<
+        crate::domain_computation::WorthQueryProviderSessionDenialKind,
+        crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+    > {
+        use crate::domain_computation::{
+            WorthQueryProviderSessionControlStopKind as Control,
+            WorthQueryProviderSessionDenialKind as Kind,
+        };
+        match self {
+            Self::Resource(denial) => Ok(Kind::ExecutionResource {
+                denial,
+                partition_identity: None,
+                policy_ancestor: None,
+            }),
+            Self::Interrupted(WorthQueryManagedComputationInterruption::Cancelled) => {
+                Err(Control::Cancelled)
+            }
+            Self::Interrupted(WorthQueryManagedComputationInterruption::DeadlineExceeded) => {
+                Err(Control::TimedOut)
+            }
+            Self::NestedOpening => Ok(Kind::ExecutionResource {
+                denial: Resource::NestedAdvancementOpening,
+                partition_identity: None,
+                policy_ancestor: None,
+            }),
+            Self::NestedStopped => Ok(Kind::ExecutionNestedPatternStopped {
+                partition_identity: None,
+            }),
+            Self::Panicked => Ok(Kind::ExecutionWorkerPanicked {
+                partition_identity: None,
+            }),
+        }
+    }
+}
+
+pub mod observation;
+
+pub use observation::{
+    advancement_observations_on_this_thread_for_test, advancement_requests_on_this_thread_for_test,
+    WorthQueryAdvancementEventForTest,
+    WorthQueryAdvancementEventKindForTest, WorthQueryAdvancementIdentityForTest,
+    WorthQueryAdvancementObservationForTest,
+};
+
+pub fn with_test_advancement<R>(
+    body: impl for<'scope> FnOnce(test_host_policy::TestHostRequest<'scope>) -> R,
+) -> R {
+    let policy =
+        crate::domain_computation::execution_runtime::product_world::test_product_world_resources(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system())
+            .execution_policy();
+    with_owned_bootstrap_advancement(policy, |phase| {
+        body(test_host_policy::TestHostRequest::new(phase.active))
+    })
+    .expect("the declared fixture policy admits its host call")
+}
+
+/// Positive fixture authoring has its own finite allowance, outside measured host calls.
+pub fn with_test_bootstrap_advancement<R>(
+    work: u64,
+    body: impl for<'scope> FnOnce(test_host_policy::TestHostRequest<'scope>) -> R,
+) -> R {
+    let policy = worth_foundational::ExecutionRequestPolicy::new(
+        worth_foundational::ExecutionPosture::Serial,
+        worth_foundational::DeterminismContract::CanonicalBitwise,
+        worth_foundational::ExecutionBudget::new(std::num::NonZeroUsize::MIN, None, Some(work)),
+    );
+    with_owned_bootstrap_advancement(policy, |phase| {
+        body(test_host_policy::TestHostRequest::new(phase.active))
+    })
+    .expect("the declared fixture bootstrap allowance admits authoring")
+}
+
+pub mod test_host_policy;
+pub use test_host_policy::TestHostRequest;
+
+mod court_doors_for_test;

@@ -56,10 +56,13 @@ pub(super) fn finish(
         let handle = effects.recovery_handle();
         reservation.retain_managed(handle, into_managed(retained));
         return Err(Stop::ProductUnpublished(
-            crate::domain_computation::WorthQueryProductUnpublishedApplication::new(
-                effects,
-                product.recovery(),
-                provider.unpublished_idempotency_disposition(),
+            worth_query_execution_runtime::facade::ports::OpaqueProductPublicationOutcome::new(
+                crate::domain_computation::WorthQueryProductUnpublishedApplication::new(
+                    effects,
+                    product.recovery(),
+                    provider.unpublished_idempotency_disposition(),
+                ),
+                true,
             ),
         ));
     }
@@ -94,7 +97,12 @@ fn pending(
             .recovery(),
         provider.unpublished_idempotency_disposition(),
     );
-    Stop::ProductPreparationPending(pending.retaining_preparation(guard))
+    Stop::ProductPreparationPending(
+        worth_query_execution_runtime::facade::ports::OpaqueProductPublicationOutcome::new(
+            pending.retaining_preparation(guard),
+            true,
+        ),
+    )
 }
 
 fn into_managed(retained: RetainedQueryDurablePreparation) -> ManagedUnpublishedAttempt {

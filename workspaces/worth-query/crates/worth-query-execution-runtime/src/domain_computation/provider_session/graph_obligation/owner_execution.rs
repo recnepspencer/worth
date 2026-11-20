@@ -1,0 +1,162 @@
+use worth_query_admission::facade::graph_obligation::WorthQueryGraphWorkPlanIdentity;
+use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
+use worth_relational::facade::runtime::RelationalRuntime;
+
+use crate::domain_computation::execution_runtime::product_world::WorthQueryRelationalSourceOwner;
+use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout;
+use std::sync::Arc;
+
+use super::WorthQueryGraphWorkSessionIdentity;
+
+/// The only application-query path to the primary graph's Relational runtime.
+pub struct WorthQueryGraphReadOwnerPort {
+    binding: ApplicationSchemaBindingIdentity,
+    source: WorthQueryRelationalSourceOwner,
+    layout: Arc<WorthQueryPrimaryGraphLayout>,
+}
+
+impl WorthQueryGraphReadOwnerPort {
+    pub fn new(
+        binding: ApplicationSchemaBindingIdentity,
+        source: WorthQueryRelationalSourceOwner,
+        layout: Arc<WorthQueryPrimaryGraphLayout>,
+    ) -> Self {
+        Self {
+            binding,
+            source,
+            layout,
+        }
+    }
+
+    pub(super) fn pin_prepared(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        binding: &ApplicationSchemaBindingIdentity,
+        snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+        select_indexes: impl FnOnce(
+            &WorthQueryPrimaryGraphLayout,
+        ) -> Vec<worth_relational::facade::indexes::DerivedIndexId>,
+    ) -> Result<
+        (
+            worth_relational::facade::runtime::RelationalPinnedRead,
+            Arc<WorthQueryPrimaryGraphLayout>,
+        ),
+        super::WorthQueryManagedGraphReadDenial,
+    > {
+        use super::WorthQueryManagedGraphReadDenial as Denial;
+        if &self.binding != binding {
+            return Err(Denial::ForeignGraph);
+        }
+        let selected_indexes = select_indexes(&self.layout);
+        let read = self
+            .source
+            .with_runtime(execution, |runtime| {
+                let replacement = pin_control::snapshot();
+                let snapshot = replacement.as_ref().unwrap_or(snapshot);
+                let result = runtime.read_truth().pin_read_capability(
+                    snapshot,
+                    &selected_indexes,
+                    execution,
+                );
+                pin_panic::panic_if_armed();
+                result
+            })
+            .map_err(|denial| {
+                use worth_relational::facade::runtime::RelationalPinnedReadAdmissionDenial as Pin;
+                match denial {
+                    Pin::Request(stop) => Denial::RequestStop(stop),
+                    Pin::SnapshotUnavailable => Denial::SnapshotUnavailable,
+                    Pin::IndexNotInstalled(index) => Denial::IndexNotInstalled(index),
+                }
+            })?;
+        Ok((read, Arc::clone(&self.layout)))
+    }
+
+    pub(super) fn execute<T>(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        binding: &ApplicationSchemaBindingIdentity,
+        read: impl FnOnce(&RelationalRuntime, &WorthQueryPrimaryGraphLayout) -> T,
+    ) -> Result<T, WorthQueryGraphReadOwnerPortDenial> {
+        if &self.binding != binding {
+            return Err(WorthQueryGraphReadOwnerPortDenial::ForeignGraph);
+        }
+        Ok(self
+            .source
+            .with_runtime(execution, |runtime| read(runtime, &self.layout)))
+    }
+
+    /// A decision projection already owns this runtime borrow. The port still
+    /// checks its original installation and actual native runtime; it neither
+    /// reacquires the mutex nor accepts a caller-described runtime identity.
+    pub(super) fn execute_borrowed<T>(
+        &self,
+        binding: &ApplicationSchemaBindingIdentity,
+        runtime: &RelationalRuntime,
+        read: impl FnOnce(&RelationalRuntime, &WorthQueryPrimaryGraphLayout) -> T,
+    ) -> Result<T, WorthQueryGraphReadOwnerPortDenial> {
+        if &self.binding != binding
+            || runtime.main_branch_identity().runtime_instance_id()
+                != self.source.runtime_instance_id
+        {
+            return Err(WorthQueryGraphReadOwnerPortDenial::ForeignGraph);
+        }
+        Ok(read(runtime, &self.layout))
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(super) enum WorthQueryGraphReadOwnerPortDenial {
+    ForeignGraph,
+}
+
+/// Move-only proof that this exact session performed a read at its retained basis.
+pub struct WorthQuerySessionGraphReadProof {
+    pub(super) session: WorthQueryGraphWorkSessionIdentity,
+    pub(super) plan: WorthQueryGraphWorkPlanIdentity,
+    pub(super) basis: crate::domain_computation::primary_graph::WorthQueryApplicationBasisIdentity,
+}
+
+impl WorthQuerySessionGraphReadProof {
+    pub fn session_identity(
+        &self,
+    ) -> WorthQueryGraphWorkSessionIdentity {
+        self.session
+    }
+
+    pub(super) fn new(
+        session: WorthQueryGraphWorkSessionIdentity,
+        plan: WorthQueryGraphWorkPlanIdentity,
+        basis: crate::domain_computation::primary_graph::WorthQueryApplicationBasisIdentity,
+    ) -> Self {
+        Self {
+            session,
+            plan,
+            basis,
+        }
+    }
+}
+
+pub mod pin_panic {
+    use std::cell::Cell;
+    thread_local! { static ARMED: Cell<bool> = const { Cell::new(false) }; }
+    pub struct PanicDuringPinGuardForTest(bool);
+    impl PanicDuringPinGuardForTest {
+        pub fn install_on_this_thread() -> Self {
+            assert!(crate::domain_computation::execution_observation::is_installed());
+            Self(ARMED.replace(true))
+        }
+    }
+    impl Drop for PanicDuringPinGuardForTest {
+        fn drop(&mut self) {
+            ARMED.set(self.0);
+        }
+    }
+    pub(super) fn panic_if_armed() {
+        assert!(!ARMED.replace(false), "injected panic inside owner pin");
+    }
+
+    mod court_doors_for_test;
+}
+
+pub mod pin_control;

@@ -16,7 +16,12 @@ pub(super) fn refused_before_open(
     query: QueryPreparingApplicationCommit,
     cause: WorldOpenAttemptRefusal,
 ) -> Stop {
-    Stop::ProductPreparationRefused(Refused::new(Refusal::World(cause), query))
+    Stop::ProductPreparationRefused(
+        worth_query_execution_runtime::facade::ports::OpaqueProductPublicationOutcome::new(
+            Refused::new(Refusal::World(cause), query),
+            false,
+        ),
+    )
 }
 pub(super) fn commit(
     execution: worth_execution::ExecutionRequest<'_, '_>,

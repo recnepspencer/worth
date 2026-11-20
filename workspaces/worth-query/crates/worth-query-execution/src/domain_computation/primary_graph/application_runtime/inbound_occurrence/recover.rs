@@ -1,4 +1,5 @@
 //! Owner-only continuation of accepted completion and exact World recovery.
+use crate::domain_computation::execution_runtime::product_world::ProductPublicationBindingPrimaryExt;
 use crate::domain_computation::execution_runtime::product_world::publication_denial::{
     WorthQueryProductPublicationDenial as PublicationDenial,
     WorthQueryProductPublicationOutcome as PublicationOutcome,

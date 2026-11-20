@@ -81,9 +81,10 @@ impl<Query, Value> AppliedQuerySource<Query, Value> {
         admission.bind_source_partition(bound.partition_identity);
         admission.bind_source_expectation_kind(bound.kind);
         admission.bind_source_facts(facts, None);
+        use crate::domain_computation::provider_session::ManagedGraphWorkSessionPrimaryExt;
         admission
             .graph_work_mut()
-            .mutation_lease_mut()
+            .mutation_lease_typed_mut()
             .expect("checked genuine before lease")
             .bind_applied_source_projection(pin.clone());
         Ok(bound)

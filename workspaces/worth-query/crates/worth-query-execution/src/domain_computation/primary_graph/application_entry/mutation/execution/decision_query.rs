@@ -231,7 +231,8 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         >,
         MutationHandlerExecutionDenial,
     > {
-        work.mutation_lease()
+        use crate::domain_computation::provider_session::ManagedGraphWorkSessionPrimaryExt;
+        work.mutation_lease_typed()
             .ok_or(DecisionQueryPreparationStop::MissingProduct)
             .and_then(|lease| {
                 self.on_mutation_product(execution, lease)

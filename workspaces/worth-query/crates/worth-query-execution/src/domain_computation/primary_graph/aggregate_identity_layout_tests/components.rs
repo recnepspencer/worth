@@ -1,5 +1,8 @@
 //! Real typed schema installation shares one Native aggregate owner with Orbit.
 use super::*;
+use worth_relational::facade::schema::{
+    AggregateIdentityContractDeclaration, AggregateIdentitySource,
+};
 
 struct ComponentSchema<const REVERSED: bool, const SINGLE: bool>;
 struct CouplingA;

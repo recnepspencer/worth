@@ -96,9 +96,13 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
             if let Some(memory) = memory {
                 memory.resize(bytes).map_err(MapKernelFailure::Domain)?;
             }
+            let target_port: Arc<
+                dyn worth_query_execution_runtime::facade::ports::InspectionTargetPort,
+            > = Arc::clone(&self.target)
+                as Arc<dyn worth_query_execution_runtime::facade::ports::InspectionTargetPort>;
             Ok(self.session.execute_inspection_read(
                 execution,
-                &self.target,
+                &target_port,
                 &self.basis,
                 |relational, _| {
                     let snapshot = security.snapshot_handle();

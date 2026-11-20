@@ -11,10 +11,12 @@ members = [
     "crates/worth-query-installation",
     "crates/worth-query-package-archive",
     "crates/worth-query-admission",
+    "crates/worth-query-execution-contracts",
     "crates/worth-query-execution-diagnostics",
     "crates/worth-query-execution-foundation",
     "crates/worth-query-execution-layout",
     "crates/worth-query-execution-obligations",
+    "crates/worth-query-execution-runtime",
     "crates/worth-query-execution",
     "crates/worth-query-publication",
 ]
@@ -39,10 +41,12 @@ worth-query-declaration = { path = "crates/worth-query-declaration" }
 worth-query-installation = { path = "crates/worth-query-installation" }
 worth-query-package-archive = { path = "crates/worth-query-package-archive" }
 worth-query-admission = { path = "crates/worth-query-admission" }
+worth-query-execution-contracts = { path = "crates/worth-query-execution-contracts" }
 worth-query-execution-diagnostics = { path = "crates/worth-query-execution-diagnostics" }
 worth-query-execution-foundation = { path = "crates/worth-query-execution-foundation" }
 worth-query-execution-layout = { path = "crates/worth-query-execution-layout" }
 worth-query-execution-obligations = { path = "crates/worth-query-execution-obligations" }
+worth-query-execution-runtime = { path = "crates/worth-query-execution-runtime" }
 worth-query-execution = { path = "crates/worth-query-execution" }
 worth-query-publication = { path = "crates/worth-query-publication" }
 

@@ -16,7 +16,7 @@ pub(super) fn mint_operation_identity_admitted(
     use AdmittedOperationIdentityStop as Stop;
 
     let identity = WorthQueryOperationAdmissionIdentity::mint().ok_or(Stop::Exhausted)?;
-    let digits = usize::try_from(identity.0.ilog10())
+    let digits = usize::try_from(identity.raw().ilog10())
         .ok()
         .and_then(|n| n.checked_add(1))
         .ok_or(Stop::AccountingOverflow)?;
@@ -31,7 +31,8 @@ pub(super) fn mint_operation_identity_admitted(
     // the complete label write, the Arc copy and its initialized header.
 
     let mut text = String::with_capacity(length);
-    write!(&mut text, "{RESOURCE_LABEL}{}", identity.0).map_err(|_| Stop::AccountingOverflow)?;
+    write!(&mut text, "{RESOURCE_LABEL}{}", identity.raw())
+        .map_err(|_| Stop::AccountingOverflow)?;
     debug_assert_eq!(text.len(), length);
     Ok((identity, Arc::from(text.as_str())))
 }

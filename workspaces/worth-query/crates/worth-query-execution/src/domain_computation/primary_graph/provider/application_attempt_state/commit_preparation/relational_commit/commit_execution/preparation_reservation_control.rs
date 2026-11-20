@@ -26,7 +26,7 @@ pub(super) fn refuse_duplicate_before_world_for_test(
     let outcome = durable::commit(execution, provider, query, allocation);
     assert!(
         matches!(&outcome, Err(crate::domain_computation::WorthQueryProviderSessionCommitStop::ProductPreparationRefused(refused))
-        if matches!(refused.reason(), crate::domain_computation::WorthQueryProductPreparationRefusal::QueryPreparationReservationRefused))
+        if refused.downcast_ref::<crate::domain_computation::WorthQueryProductPreparationRefused>().is_some_and(|refused| matches!(refused.reason(), crate::domain_computation::WorthQueryProductPreparationRefusal::QueryPreparationReservationRefused)))
     );
     assert!(matches!(
         provider.resolve_unpublished_application_idempotency(&affinity, binding),

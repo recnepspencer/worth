@@ -13,6 +13,7 @@ pub(in crate::domain_computation::primary_graph::provider) use application_attem
 pub(in crate::domain_computation::primary_graph::provider) use application_attempt_state::ManagedUnpublishedAttempt;
 pub(in crate::domain_computation::primary_graph) use application_attempt_state::RebaseVerificationFailure;
 pub(in crate::domain_computation) use application_attempt_state::RegisteredPrimaryRead;
+pub(in crate::domain_computation::primary_graph) use application_attempt_state::commit_preparation::relational_commit::commit_execution::executed_adoption::PreparedExecutedOutputAdoption;
 pub(in crate::domain_computation::primary_graph) use application_attempt_state::{
     AppliedOutputParticipants, AppliedParticipantOutputs, CandidateReadSupport,
     CoupledApplicationMember, CoupledApplicationMemberKind, CoupledAttemptPreparation,

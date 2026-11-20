@@ -13,27 +13,7 @@ pub enum WorthQueryApplicationSnapshotLeaseDenial {
     SnapshotIdentityExhausted,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryApplicationSnapshotRelease {
-    NativeSnapshotReleased,
-    SharedBasisRelease(WorthQueryApplicationBasisReleaseOutcome),
-}
-
-impl WorthQueryApplicationSnapshotRelease {
-    pub(in crate::domain_computation) const fn snapshot_released(self) -> bool {
-        match self {
-            Self::NativeSnapshotReleased => true,
-            Self::SharedBasisRelease(outcome) => outcome.snapshot_released(),
-        }
-    }
-
-    pub(in crate::domain_computation) const fn custody_released(self) -> bool {
-        match self {
-            Self::NativeSnapshotReleased => true,
-            Self::SharedBasisRelease(outcome) => outcome.custody_released(),
-        }
-    }
-}
+pub use worth_query_execution_runtime::facade::basis_identities::WorthQueryApplicationSnapshotRelease;
 
 enum SnapshotCustody {
     Owned {

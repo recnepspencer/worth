@@ -57,8 +57,14 @@ where
             .expect("a mutation session owns its admitted snapshot")
             .clone();
         let handle = graph_work
-            .mutation_handle()
+            .mutation_lease()
+            .and_then(|lease| {
+                lease
+                    .as_any()
+                    .downcast_ref::<crate::domain_computation::primary_graph::WorthQueryApplicationSnapshotLease>()
+            })
             .expect("a mutation session owns its graph handle")
+            .handle()
             .clone();
         handle.with_runtime(execution, |relational| {
             self.observe_current_operation_borrowed(

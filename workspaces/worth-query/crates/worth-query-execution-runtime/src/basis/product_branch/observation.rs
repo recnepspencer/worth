@@ -1,0 +1,197 @@
+/// Query's private admission of one exact product branch occurrence.
+///
+/// The retained World observation owns the component and history obligations;
+/// Query can project component bases but cannot mint or reconstruct them.
+pub struct WorthQueryProductBranchLease {
+    publication: crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding,
+    read: WorthQueryProductObservationLease,
+    bridge_source: std::sync::Arc<
+        worth_runtime_bridge::facade::RelationalBridgeObservationLease,
+    >,
+}
+
+/// Exact World occurrence retained for read-only Query execution. It carries
+/// no Bridge mutation source and therefore cannot enter a publication lane.
+pub struct WorthQueryProductObservationLease {
+    observation: worth_runtime_world::facade::ProductBranchObservation,
+    current_security_guard: Option<worth_runtime_world::facade::ProductBranchObservation>,
+}
+
+impl WorthQueryProductObservationLease {
+    pub fn new(observation: worth_runtime_world::facade::ProductBranchObservation) -> Self {
+        Self {
+            observation,
+            current_security_guard: None,
+        }
+    }
+
+    pub fn suspended_security(
+        observation: worth_runtime_world::facade::ProductBranchObservation,
+        current_security_guard: worth_runtime_world::facade::ProductBranchObservation,
+    ) -> Self {
+        Self {
+            observation,
+            current_security_guard: Some(current_security_guard),
+        }
+    }
+
+    pub fn retained_clone(&self) -> Self {
+        Self {
+            observation: self.observation.clone(),
+            current_security_guard: self.current_security_guard.clone(),
+        }
+    }
+
+    pub const fn observation(&self) -> &worth_runtime_world::facade::ProductBranchObservation {
+        &self.observation
+    }
+
+    pub const fn current_security_guard(
+        &self,
+    ) -> Option<&worth_runtime_world::facade::ProductBranchObservation> {
+        self.current_security_guard.as_ref()
+    }
+
+    pub fn relational_basis(
+        &self,
+    ) -> &worth_relational::facade::branch::AdmittedRelationalBranchBasis {
+        self.observation.basis().relational_basis()
+    }
+
+    pub fn branch_identity(&self) -> &worth_runtime_world::facade::ProductBranchIdentity {
+        self.observation.branch_identity()
+    }
+
+    pub fn selected_commit(&self) -> &worth_runtime_world::facade::CompositeCommitIdentity {
+        self.observation.selected_commit()
+    }
+
+    pub fn relational_basis_descriptor(
+        &self,
+    ) -> &worth_relational::facade::branch::RelationalBranchBasisDescriptor {
+        self.relational_basis().descriptor()
+    }
+}
+
+impl WorthQueryProductBranchLease {
+    pub fn retain_selected_program_source_revision(
+        &mut self,
+        revision: [u8; 32],
+    ) -> Result<(), super::WorthQueryProductBranchAdmissionDenial> {
+        self.publication
+            .retain_selected_program_source_revision(revision)
+            .map_err(|_| {
+                super::WorthQueryProductBranchAdmissionDenial::Refused(
+                    super::WorthQueryProductBranchAdmissionRefusalKind::ObservationRejected,
+                )
+            })
+    }
+
+    pub fn read_lease(&self) -> WorthQueryProductObservationLease {
+        self.read.retained_clone()
+    }
+
+    pub fn into_read_lease(self) -> WorthQueryProductObservationLease {
+        self.read
+    }
+
+    pub const fn read_lease_ref(&self) -> &WorthQueryProductObservationLease {
+        &self.read
+    }
+    pub fn retained_clone(&self) -> Self {
+        Self {
+            publication: self.publication.clone(),
+            read: self.read.retained_clone(),
+            bridge_source: std::sync::Arc::clone(&self.bridge_source),
+        }
+    }
+
+    /// Only a retained clone shares this exact admitted mutation source owner.
+    pub fn shares_retained_mutation_source(&self, other: &Self) -> bool {
+        std::sync::Arc::ptr_eq(&self.bridge_source, &other.bridge_source)
+    }
+
+    #[doc(hidden)]
+    pub fn has_same_selected_occurrence(&self, other: &Self) -> bool {
+        self.observation() == other.observation()
+    }
+
+    pub fn new(
+        publication: crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding,
+        bridge_source: worth_runtime_bridge::facade::RelationalBridgeObservationLease,
+    ) -> Self {
+        let read = WorthQueryProductObservationLease::new(publication.observation().clone());
+        Self {
+            publication,
+            read,
+            bridge_source: std::sync::Arc::new(bridge_source),
+        }
+    }
+
+    pub fn observation(&self) -> &worth_runtime_world::facade::ProductBranchObservation {
+        self.read.observation()
+    }
+
+    pub fn relational_basis(
+        &self,
+    ) -> &worth_relational::facade::branch::AdmittedRelationalBranchBasis {
+        self.observation().basis().relational_basis()
+    }
+
+    pub fn branch_identity(&self) -> &worth_runtime_world::facade::ProductBranchIdentity {
+        self.observation().branch_identity()
+    }
+
+    pub fn product_branch(&self) -> super::WorthQueryProductBranch {
+        super::WorthQueryProductBranch::from_occurrence(self.observation().lifecycle_incarnation())
+    }
+
+    pub fn selected_commit(&self) -> &worth_runtime_world::facade::CompositeCommitIdentity {
+        self.observation().selected_commit()
+    }
+
+    pub fn relational_basis_descriptor(
+        &self,
+    ) -> &worth_relational::facade::branch::RelationalBranchBasisDescriptor {
+        self.relational_basis().descriptor()
+    }
+
+    /// Read-only Signal generation of this selection; grants no admission.
+    pub fn signal_generation_for_test(&self) -> u64 {
+        self.signal_basis().observation().generation().get()
+    }
+
+    /// Read-only World reference generation of this selection; grants no admission.
+    pub fn world_reference_generation_for_test(&self) -> u64 {
+        self.observation().reference_generation().get()
+    }
+
+    #[doc(hidden)]
+    pub fn bridge_snapshot_identity(&self) -> &worth_runtime_bridge::facade::TruthSnapshotIdentity {
+        self.bridge_source.snapshot_identity()
+    }
+
+    pub fn bridge_source(
+        &self,
+    ) -> std::sync::Arc<worth_runtime_bridge::facade::RelationalBridgeObservationLease> {
+        std::sync::Arc::clone(&self.bridge_source)
+    }
+
+    pub fn bridge_source_observation(
+        &self,
+    ) -> &worth_runtime_bridge::facade::RelationalBridgeObservationLease {
+        &self.bridge_source
+    }
+
+    pub fn signal_basis(&self) -> &worth_signal::facade::branch::AdmittedSignalBranchBasis {
+        self.observation().basis().signal_basis()
+    }
+
+    pub fn publication_binding(
+        &self,
+    ) -> crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding{
+        self.publication.clone()
+    }
+}
+
+mod court_doors_for_test;

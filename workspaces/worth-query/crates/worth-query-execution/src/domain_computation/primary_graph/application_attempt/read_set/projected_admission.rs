@@ -63,6 +63,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             return Err(mismatch());
         }
         let request = admission.publication_request().clone();
+        use crate::domain_computation::provider_session::ManagedGraphWorkSessionPrimaryExt;
         let lease = admission
             .graph_work_mut()
             .share_mutation_lease(

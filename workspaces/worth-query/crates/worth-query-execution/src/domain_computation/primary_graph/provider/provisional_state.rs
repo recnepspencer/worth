@@ -9,7 +9,7 @@ use crate::domain_computation::{
     WorthQueryProvisionalOverlayEvidenceView,
 };
 
-impl WorthQueryProvisionalGraphProvider for Arc<WorthQueryPrimaryGraphProvider> {
+impl WorthQueryProvisionalGraphProvider for crate::domain_computation::runtime_ports::PrimaryGraphProviderArc {
     fn stage_provisional_overlay(
         &self,
         session: WorthQueryProviderSessionView<'_>,

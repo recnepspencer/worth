@@ -92,6 +92,10 @@ impl WorthQueryApplicationGovernanceBinding {
         scope: EntityId,
     ) -> Option<Self> {
         let (actual, basis) = graph_work.inspection_binding()?;
+        let actual = actual
+            .as_any()
+            .downcast_ref::<crate::domain_computation::primary_graph::causal_inspection::WorthQueryApplicationInspectionTarget>()
+            .expect("inspection target is WorthQueryApplicationInspectionTarget");
         if !actual.admits_member_subject(target, scope)
             || graph_work.principal() != principal
             || graph_work.entity_access_context() != Some(actual.original_subject())
@@ -123,6 +127,10 @@ impl WorthQueryApplicationGovernanceBinding {
         let Some((actual, basis)) = graph_work.inspection_binding() else {
             return false;
         };
+        let actual = actual
+            .as_any()
+            .downcast_ref::<crate::domain_computation::primary_graph::causal_inspection::WorthQueryApplicationInspectionTarget>()
+            .expect("inspection target is WorthQueryApplicationInspectionTarget");
         matches!(&self.subject, DisclosureSubject::Inspection(retained) if Arc::ptr_eq(retained, target))
             && actual.admits_member_subject(target, scope)
             && graph_work.entity_access_context() == Some(actual.original_subject())

@@ -178,7 +178,7 @@ impl<Value: 'static, Denial: 'static> WorthQueryDecisionPlan<Value, Denial> {
         assert_eq!(settled.len(), 1, "one ordinary decision is one member");
         match settled.pop().unwrap() {
             Ok(computed) => computed.finish(|slots| completion.finish(slots, execution)),
-            Err(cause) => execution_failure(cause),
+            Err(cause) => execution_failure(cause.into()),
         }
     }
 
@@ -210,7 +210,7 @@ impl<Value, Denial> DecisionCompletion<Value, Denial> {
             Ok(Ok(result)) => result,
             Ok(Err(cause)) => execution_failure(
                 crate::domain_computation::primary_graph::application_contribution::execution_denial::advancement_checkpoint_stop(cause)),
-            Err(cause) => execution_failure(cause),
+            Err(cause) => execution_failure(cause.into()),
         }
     }
 }

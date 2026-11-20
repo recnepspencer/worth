@@ -45,6 +45,7 @@ fn decoder_is_not_called_when_its_declared_work_or_memory_is_refused() {
                     true
                 })
             })
+            .map_err(WorthQueryAdvancementDenial::from)
             .and_then(|result| result)
             .unwrap_err();
         assert!(

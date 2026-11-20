@@ -8,13 +8,10 @@ use super::lifecycle_count::{acquire, record_one_saturating};
 pub(crate) mod lease;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphIntegrationHandle;
 pub(crate) use lease::WorthQueryApplicationBasisLease;
-use worth_relational::facade::{
-    branch::{
-        AdmittedRelationalBranchBasis, RelationalBranchBasisDescriptor,
-        RelationalBranchRetentionTerminalOutcome,
-    },
-    history::BranchId,
-    snapshots::SnapshotId,
+use worth_relational::facade::branch::AdmittedRelationalBranchBasis;
+pub use worth_query_execution_runtime::facade::basis_identities::{
+    WorthQueryApplicationBasisIdentity, WorthQueryApplicationBasisReleaseOutcome,
+    WorthQueryApplicationBasisReleaseReceipt, WorthQueryApplicationBasisSelectionIdentity,
 };
 
 #[derive(Default)]
@@ -36,152 +33,6 @@ pub struct WorthQueryApplicationBasisRegistry {
 #[derive(Clone)]
 pub struct WorthQueryApplicationBasisObserver {
     state: Arc<WorthQueryApplicationBasisRegistryState>,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct WorthQueryApplicationBasisIdentity {
-    runtime_instance_id: u64,
-    branch_id: BranchId,
-    snapshot_id: SnapshotId,
-    descriptor: RelationalBranchBasisDescriptor,
-    selection: WorthQueryApplicationBasisSelectionIdentity,
-}
-
-/// Descriptive origin of this exact snapshot; it grants no read authority.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub enum WorthQueryApplicationBasisSelectionIdentity {
-    Relational,
-    Product(crate::basis::WorthQueryProductBranchReadIdentity),
-}
-
-impl WorthQueryApplicationBasisIdentity {
-    /// Physical Relational clone backing; world selection custody remains shared.
-    pub(in crate::domain_computation) fn retained_clone_heap_bytes(&self) -> Option<u64> {
-        Self::clone_heap_bytes(&self.branch_id, &self.descriptor)
-    }
-
-    /// Price the actual selected descriptor before constructing its Query identity.
-    pub(in crate::domain_computation) fn retained_basis_clone_heap_bytes(
-        basis: &AdmittedRelationalBranchBasis,
-    ) -> Option<u64> {
-        Self::clone_heap_bytes(basis.identity().branch_id(), basis.descriptor())
-    }
-
-    fn clone_heap_bytes(
-        branch_id: &BranchId,
-        descriptor: &RelationalBranchBasisDescriptor,
-    ) -> Option<u64> {
-        let strings = branch_id
-            .0
-            .len()
-            .checked_add(descriptor.branch_id().0.len())?
-            .checked_add(descriptor.reference().branch_id().as_str().len())?;
-        let parents = match descriptor.reference().target() {
-            worth_foundational::FoundationalBranchTarget::Empty => 0,
-            worth_foundational::FoundationalBranchTarget::Basis(target) => {
-                std::alloc::Layout::array::<u64>(target.parent_commit_ids().len())
-                    .ok()?
-                    .size()
-            }
-        };
-        u64::try_from(strings.checked_add(parents)?).ok()
-    }
-
-    pub const fn runtime_instance_id(&self) -> u64 {
-        self.runtime_instance_id
-    }
-
-    pub fn branch_id(&self) -> &BranchId {
-        &self.branch_id
-    }
-
-    pub const fn snapshot_id(&self) -> SnapshotId {
-        self.snapshot_id
-    }
-
-    pub fn descriptor(&self) -> &RelationalBranchBasisDescriptor {
-        &self.descriptor
-    }
-
-    pub fn selection(&self) -> &WorthQueryApplicationBasisSelectionIdentity {
-        &self.selection
-    }
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct WorthQueryApplicationBasisReleaseReceipt {
-    identity: WorthQueryApplicationBasisIdentity,
-    outcome: WorthQueryApplicationBasisReleaseOutcome,
-}
-
-/// Distinguishes physical Native resource release from ending one local share
-/// while another admitted Query owner retains the same resources.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryApplicationBasisReleaseOutcome {
-    NativeResourcesReleased {
-        snapshot_released: bool,
-        relational_retention: RelationalBranchRetentionTerminalOutcome,
-    },
-    /// This local Query share ended; another admitted share still owns the
-    /// authentic snapshot, Native retention and program interpretation.
-    SharedCustodyRetained,
-}
-
-impl WorthQueryApplicationBasisReleaseReceipt {
-    pub fn identity(&self) -> &WorthQueryApplicationBasisIdentity {
-        &self.identity
-    }
-
-    pub const fn released(&self) -> bool {
-        self.outcome.released()
-    }
-
-    pub const fn custody_released(&self) -> bool {
-        self.outcome.custody_released()
-    }
-
-    pub const fn outcome(&self) -> WorthQueryApplicationBasisReleaseOutcome {
-        self.outcome
-    }
-}
-
-impl WorthQueryApplicationBasisReleaseOutcome {
-    /// Whether this release physically closed both native resources.
-    pub const fn released(self) -> bool {
-        matches!(
-            self,
-            Self::NativeResourcesReleased {
-                snapshot_released: true,
-                relational_retention: RelationalBranchRetentionTerminalOutcome::Released,
-            }
-        )
-    }
-
-    /// Whether this lease surrendered its complete local custody. A surviving
-    /// shared owner is explicitly distinct from physical native release.
-    pub const fn custody_released(self) -> bool {
-        self.released() || matches!(self, Self::SharedCustodyRetained)
-    }
-
-    pub const fn snapshot_released(self) -> bool {
-        matches!(
-            self,
-            Self::NativeResourcesReleased {
-                snapshot_released: true,
-                ..
-            }
-        )
-    }
-
-    pub const fn relational_retention(self) -> Option<RelationalBranchRetentionTerminalOutcome> {
-        match self {
-            Self::NativeResourcesReleased {
-                relational_retention,
-                ..
-            } => Some(relational_retention),
-            Self::SharedCustodyRetained => None,
-        }
-    }
 }
 
 /// Point-in-time counts of query bases: how many are open now, the most ever
@@ -233,13 +84,13 @@ impl WorthQueryApplicationBasisRegistry {
         record_one_saturating(&self.state.acquisitions);
         self.state.peak_active.fetch_max(active, Ordering::AcqRel);
         Ok(WorthQueryApplicationBasisLease::registered(
-            WorthQueryApplicationBasisIdentity {
-                runtime_instance_id: basis.identity().runtime_instance_id(),
-                branch_id: basis.identity().branch_id().clone(),
-                snapshot_id: snapshot.snapshot_id(),
-                descriptor: basis.descriptor().clone(),
-                selection: WorthQueryApplicationBasisSelectionIdentity::Relational,
-            },
+            WorthQueryApplicationBasisIdentity::new(
+                basis.identity().runtime_instance_id(),
+                basis.identity().branch_id().clone(),
+                snapshot.snapshot_id(),
+                basis.descriptor().clone(),
+                WorthQueryApplicationBasisSelectionIdentity::Relational,
+            ),
             basis,
             retention,
             snapshot,

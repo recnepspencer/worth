@@ -271,7 +271,12 @@ impl ConsumedOutputEvidence {
             }
             Err(HeadCellRegistrationStop::LookupChanged) => return Ok(()),
         }
-        let established = self.establish_restored(&source_owner.invalidation_owner);
+        let invalidation_owner = source_owner
+            .invalidation_owner
+            .as_any()
+            .downcast_ref::<crate::domain_computation::primary_graph::SourceInvalidationOwner>()
+            .expect("primary graph source carries SourceInvalidationOwner");
+        let established = self.establish_restored(invalidation_owner);
         match established {
             Err(SettlementRegistrationStop::Admission(stop)) => Err(map_admission_stop(stop)),
             Ok(_)

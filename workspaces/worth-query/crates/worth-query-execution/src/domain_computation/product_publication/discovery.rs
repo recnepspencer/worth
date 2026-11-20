@@ -257,7 +257,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         }
         let cleanup_identity = reservation.install_unpublished(cleanup);
         Ok(crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanup::new(
-            self.runtime.product_runtime.clone(),
+            self.runtime.product_runtime.0.clone(),
             cleanup_identity,
         ))
     }

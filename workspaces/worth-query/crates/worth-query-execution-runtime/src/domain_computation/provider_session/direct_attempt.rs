@@ -1,0 +1,132 @@
+use worth_query_admission::facade::resource_admission::WorthQueryAdmittedExecutionResourcePlan;
+use worth_query_admission::integration::{
+    WorthQueryCapacityReservedExecutionResourcePlan, WorthQueryExecutionCapacityReleaseReceipt,
+};
+
+use super::{
+    WorthQueryExecutionAttemptIdentity, WorthQueryExecutionProviderSession,
+    WorthQueryExecutionResourceAttemptEvidence,
+};
+
+mod readmission;
+
+pub use readmission::{
+    WorthQueryDirectProviderWorkRebinding, WorthQueryDirectResourceReadmissionPending,
+};
+pub struct WorthQueryDirectExecutionResourceAttempt {
+    reserved: WorthQueryCapacityReservedExecutionResourcePlan,
+    attempt_identity: WorthQueryExecutionAttemptIdentity,
+    provider_session: WorthQueryExecutionProviderSession,
+    evidence: WorthQueryExecutionResourceAttemptEvidence,
+    custody: Option<
+        std::sync::Arc<crate::domain_computation::managed_run::durable_custody::ManagedRunCustody>,
+    >,
+}
+
+impl WorthQueryDirectExecutionResourceAttempt {
+    pub fn start(
+        mut reserved: WorthQueryCapacityReservedExecutionResourcePlan,
+        binding_authority: &crate::domain_computation::operation_binding::WorthQueryExecutionBoundOperationAuthority,
+    ) -> Self {
+        let attempt_identity = WorthQueryExecutionAttemptIdentity::mint();
+        let provider_session =
+            WorthQueryExecutionProviderSession::mint(&attempt_identity, binding_authority);
+        reserved.resources_mut().record_provider_session_mint();
+        let evidence = WorthQueryExecutionResourceAttemptEvidence::capture(
+            reserved.resources(),
+            &provider_session,
+        );
+        Self {
+            reserved,
+            attempt_identity,
+            provider_session,
+            evidence,
+            custody: None,
+        }
+    }
+
+    pub fn with_managed_custody(
+        mut self,
+        custody: Option<
+            std::sync::Arc<
+                crate::domain_computation::managed_run::durable_custody::ManagedRunCustody,
+            >,
+        >,
+    ) -> Self {
+        if custody.is_some() {
+            self.custody = custody;
+        }
+        self
+    }
+    // Once the affinity takes over, releasing this admission alone cannot
+    // certify the run's checkpoint, provider or Bridge cleanup.
+    pub fn enter_managed_run(&mut self) {
+        self.custody = None;
+    }
+    pub fn resources(&self) -> &WorthQueryAdmittedExecutionResourcePlan {
+        self.reserved.resources()
+    }
+
+    pub fn managed_provider_session(
+        &self,
+    ) -> &WorthQueryExecutionProviderSession {
+        &self.provider_session
+    }
+
+    pub fn provider_session_for_test(&self) -> &WorthQueryExecutionProviderSession {
+        &self.provider_session
+    }
+
+    pub fn evidence(&self) -> &WorthQueryExecutionResourceAttemptEvidence {
+        &self.evidence
+    }
+
+    pub fn attempt_identity(&self) -> &WorthQueryExecutionAttemptIdentity {
+        &self.attempt_identity
+    }
+
+    pub fn retained_capacity_reservation_count(&self) -> usize {
+        self.reserved.reservation_count()
+    }
+
+    pub fn binding_authority(
+        &self,
+    ) -> &crate::domain_computation::operation_binding::WorthQueryExecutionBoundOperationAuthority
+    {
+        self.provider_session.binding_authority()
+    }
+
+    pub fn release(self) -> WorthQueryDirectExecutionAttemptReleaseReceipt {
+        let attempt = self.attempt_identity.as_str().to_owned();
+        let provider_session_identity = self.provider_session.identity().to_owned();
+        drop(self.provider_session);
+        let receipt = WorthQueryDirectExecutionAttemptReleaseReceipt {
+            provider_session_identity,
+            capacity: self.reserved.release(),
+        };
+        if receipt.capacity().released_reservation_count() != 0
+            && let Some(custody) = self.custody
+        {
+            custody.record_admission_release(&attempt);
+        }
+        receipt
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct WorthQueryDirectExecutionAttemptReleaseReceipt {
+    provider_session_identity: String,
+    capacity: WorthQueryExecutionCapacityReleaseReceipt,
+}
+
+impl WorthQueryDirectExecutionAttemptReleaseReceipt {
+    pub fn provider_session_identity(&self) -> &str {
+        &self.provider_session_identity
+    }
+
+    pub fn capacity(&self) -> &WorthQueryExecutionCapacityReleaseReceipt {
+        &self.capacity
+    }
+}
+
+mod court_doors_for_test;

@@ -165,9 +165,10 @@ pub(in crate::domain_computation::primary_graph) fn prepare_inputs(
             _reservation: reservation,
         })),
         Ok(Ok(Err(denial))) => HandlerResult::DomainDenied(denial),
-        Ok(Err(cause)) | Err(cause) => {
-            HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause))
-        }
+        Ok(Err(cause)) => HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause)),
+        Err(cause) => HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(
+            crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(cause),
+        )),
     }
 }
 

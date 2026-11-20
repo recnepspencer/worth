@@ -278,6 +278,7 @@ pub(super) fn prepare_lineage_slot(
 fn lineage_pending(
     denial: crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial,
 ) -> crate::domain_computation::WorthQueryProviderSessionCommitStop {
+    use crate::domain_computation::provider_session::CommitDeferredPrimaryExt;
     crate::domain_computation::WorthQueryProviderSessionCommitStop::Deferred(
         crate::domain_computation::WorthQueryProviderSessionCommitDeferred::required_prerequisite(
             denial,

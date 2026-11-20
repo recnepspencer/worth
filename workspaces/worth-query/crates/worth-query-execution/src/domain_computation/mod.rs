@@ -4,17 +4,16 @@ pub(crate) use worth_query_execution_foundation::facade::domain_computation::{
     evidence_material,
 };
 pub(crate) mod execution_observation;
-pub(crate) mod runtime_time;
-
-pub(crate) mod artifact_owner;
-pub(crate) mod authorization;
-pub(crate) mod convergence_epoch;
-pub(crate) mod domain_evidence_binding;
+pub(crate) use worth_query_execution_contracts::facade::runtime_time;
 pub(crate) use worth_query_execution_diagnostics::facade::evidence_identity;
-mod execution_resource_attempt;
+pub(crate) use worth_query_execution_runtime::facade::{
+    artifact_owner, convergence_epoch, domain_evidence_binding, execution_resource_attempt,
+    invalidation_equivalence_control, operation_binding,
+};
+
+pub(crate) mod authorization;
 pub(crate) mod execution_runtime;
 pub(crate) mod managed_run;
-pub(crate) mod operation_binding;
 pub(crate) mod primary_graph;
 mod product_publication;
 pub use product_publication::{
@@ -22,6 +21,7 @@ pub use product_publication::{
     WorthQueryProductPreparationRefused, WorthQueryProductPreparationStage,
 };
 pub(crate) mod provider_session;
+pub(crate) mod runtime_ports;
 
 pub use artifact_owner::{
     WorthQueryArtifactDenial, WorthQueryArtifactDenialKind, WorthQueryArtifactProductionAuthority,
@@ -42,8 +42,6 @@ pub use product_publication::{
     WorthQueryProductUnpublishedRecoveryReleaseFailure, WorthQueryRecoveredProductReleaseDenial,
 };
 pub use provider_session::*;
-
-pub(crate) mod invalidation_equivalence_control;
 
 #[cfg(test)]
 #[path = "mod_inline_type_budget.rs"]

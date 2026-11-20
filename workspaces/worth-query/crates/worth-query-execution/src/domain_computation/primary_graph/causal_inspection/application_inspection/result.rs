@@ -159,12 +159,18 @@ impl CompletedInspection {
         report: &FundedInspectionReport,
     ) -> Result<(), InspectionAdmissionDenial> {
         require_request(execution, &self.request)?;
+        let report_target_port: std::sync::Arc<
+            dyn worth_query_execution_runtime::facade::ports::InspectionTargetPort,
+        > = std::sync::Arc::clone(report.target())
+            as std::sync::Arc<
+                dyn worth_query_execution_runtime::facade::ports::InspectionTargetPort,
+            >;
         self.completion
             .matches_report(
                 report.session(),
                 report.managed_run(),
                 report.plan(),
-                report.target(),
+                &report_target_port,
                 report.basis(),
                 report.capacity_identity(),
             )

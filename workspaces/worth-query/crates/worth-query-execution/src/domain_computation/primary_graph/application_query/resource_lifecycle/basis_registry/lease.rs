@@ -114,9 +114,9 @@ impl WorthQueryApplicationBasisLease {
         &mut self,
         relational: &AdmittedRelationalBranchBasis,
     ) -> bool {
-        if self.identity.runtime_instance_id != relational.identity().runtime_instance_id()
-            || &self.identity.branch_id != relational.identity().branch_id()
-            || &self.identity.descriptor != relational.descriptor()
+        if self.identity.runtime_instance_id() != relational.identity().runtime_instance_id()
+            || self.identity.branch_id() != relational.identity().branch_id()
+            || self.identity.descriptor() != relational.descriptor()
             || self.version_id() != relational.observation().version_id()
         {
             return false;
@@ -149,9 +149,9 @@ impl WorthQueryApplicationBasisLease {
             product.basis().relational_basis().descriptor(),
             "product custody retains the exact query snapshot basis"
         );
-        self.identity.selection = WorthQueryApplicationBasisSelectionIdentity::Product(
+        self.identity.set_selection(WorthQueryApplicationBasisSelectionIdentity::Product(
             crate::basis::WorthQueryProductBranchReadIdentity::from_observation(product),
-        );
+        ));
     }
 
     pub(in crate::domain_computation::primary_graph) fn bind_program_interpretation(
@@ -222,7 +222,7 @@ impl WorthQueryApplicationBasisLease {
                 unreachable!("custody promotion cannot escape its owner")
             }
         };
-        WorthQueryApplicationBasisReleaseReceipt { identity, outcome }
+        WorthQueryApplicationBasisReleaseReceipt::new(identity, outcome)
     }
 
     fn basis(&self) -> &AdmittedRelationalBranchBasis {

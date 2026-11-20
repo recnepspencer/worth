@@ -46,8 +46,8 @@ impl WorthQueryPrimaryGraphProvider {
         let anchor = Arc::new(
             crate::domain_computation::provider_session::graph_provider::bounded_step::provider_anchor::WorthQueryGraphProviderAnchor::install_invariant_capable::<
                 WorthQueryPrimaryLogicalGraph,
-                Arc<Self>,
-            >(Arc::clone(&provider)),
+                crate::domain_computation::runtime_ports::PrimaryGraphProviderArc,
+            >(crate::domain_computation::runtime_ports::PrimaryGraphProviderArc(Arc::clone(&provider))),
         );
         (anchor, provider)
     }

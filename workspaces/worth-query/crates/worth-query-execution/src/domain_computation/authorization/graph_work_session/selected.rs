@@ -74,7 +74,7 @@ where
         operation.authority_identity(),
         principal,
         access,
-        lease,
+        Box::new(lease),
         control,
         runtime.graph_work_provider_identity(),
     )

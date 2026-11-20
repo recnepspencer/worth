@@ -190,10 +190,11 @@ where
                 .decision_reuse_witness(*admission.operation_authority_identity_bytes())
         },
     );
+    use crate::domain_computation::provider_session::ManagedGraphWorkSessionPrimaryExt;
     admission.graph_work_mut().arm_coupled_handler();
     let handler = admission
         .graph_work_mut()
-        .coupled_handler_mut()
+        .coupled_handler_typed_mut()
         .expect("armed handler");
     if let Some(prior) = computation_prior {
         handler.retain_computation_prior(prior);
@@ -212,7 +213,7 @@ where
         >(
             admission
                 .graph_work_mut()
-                .coupled_handler_mut()
+                .coupled_handler_typed_mut()
                 .expect("armed handler"),
             source.checkpoint_identity(),
             edition,

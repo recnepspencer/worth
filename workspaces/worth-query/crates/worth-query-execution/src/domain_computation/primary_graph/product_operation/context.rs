@@ -147,7 +147,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         )?;
         if let Ok(selected) = &selected_program {
             product
-                .retain_selected_program_source(selected)
+                .retain_selected_program_source_revision(*selected.revision().as_bytes())
                 .map_err(|_| {
                     WorthQueryProductBranchAdmissionDenial::Refused(
                         AdmissionRefusal::ObservationRejected,
@@ -188,7 +188,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         );
         if let Ok(selected) = &selected_program {
             product
-                .retain_selected_program_source(selected)
+                .retain_selected_program_source_revision(*selected.revision().as_bytes())
                 .map_err(|_| {
                     WorthQueryProductBranchAdmissionDenial::Refused(
                         AdmissionRefusal::ObservationRejected,

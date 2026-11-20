@@ -144,7 +144,10 @@ pub(super) fn start<'a, 'storage, Schema: ApplicationSchema, Scope>(
             basis_ref.clone(),
             WorthQueryManagedGraphWorkSession::start_inspection(
                 reserved,
-                Arc::clone(&target),
+                Arc::clone(&target)
+                    as Arc<
+                        dyn worth_query_execution_runtime::facade::ports::InspectionTargetPort,
+                    >,
                 plan,
                 runtime.runtime.authority_identity(),
                 principal,

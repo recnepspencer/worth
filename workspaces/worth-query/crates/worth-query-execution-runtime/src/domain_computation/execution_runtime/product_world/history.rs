@@ -1,0 +1,149 @@
+use crate::basis::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
+use std::num::NonZeroUsize;
+
+use worth_runtime_world::facade::ProductBranchHistoryTraversal;
+
+use super::{admission::map_world_denial, WorthQueryProductRuntime};
+use crate::basis::{
+    WorthQueryProductBranch, WorthQueryProductBranchAdmissionDenial, WorthQueryProductBranchLease,
+    WorthQueryProductObservationLease,
+};
+
+fn exact_history_denial(
+    cause: worth_runtime_world::facade::RuntimeWorldServiceDenial<
+        worth_runtime_world::facade::ProductExactHistoryDenial,
+    >,
+) -> worth_runtime_world::facade::ProductExactHistoryDenial {
+    use worth_runtime_world::facade::{
+        ProductExactHistoryDenial, RuntimeWorldBranchAdmissionDenial, RuntimeWorldServiceDenial,
+    };
+    match cause {
+        RuntimeWorldServiceDenial::Denied(cause) => cause,
+        RuntimeWorldServiceDenial::OwnerUnavailable(_) => {
+            ProductExactHistoryDenial::Branch(RuntimeWorldBranchAdmissionDenial::OwnerUnavailable)
+        }
+    }
+}
+
+impl WorthQueryProductRuntime {
+    pub fn open_exact_product_history(
+        &self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+        target: &WorthQueryProductObservationLease,
+    ) -> Result<
+        worth_runtime_world::facade::ProductExactHistoryCursor,
+        worth_runtime_world::facade::ProductExactHistoryDenial,
+    > {
+        self.owner
+            .observation_port()
+            .open_exact_product_history(execution, target.observation())
+            .map_err(exact_history_denial)
+    }
+
+    pub fn prepare_exact_product_history_page<'request, 'authority>(
+        &self,
+        execution: worth_execution::ExecutionRequest<'request, 'authority>,
+        cursor: &worth_runtime_world::facade::ProductExactHistoryCursor,
+    ) -> Result<
+        worth_runtime_world::facade::PreparedProductExactHistoryPage<'request, 'authority>,
+        worth_runtime_world::facade::ProductExactHistoryDenial,
+    > {
+        self.owner
+            .observation_port()
+            .prepare_exact_product_history_page(execution, cursor)
+            .map_err(exact_history_denial)
+    }
+
+    pub fn security_observation_for(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        current: &WorthQueryProductBranchLease,
+    ) -> Result<WorthQueryProductObservationLease, WorthQueryProductBranchAdmissionDenial> {
+        if current.relational_basis().materialization_is_complete() {
+            return Ok(current.read_lease());
+        }
+        let history =
+            self.trace_product_history(execution, current.product_branch(), NonZeroUsize::new(2))?;
+        if history.visited_count() != 2
+            || history
+                .commits()
+                .next()
+                .is_none_or(|commit| commit.identity() != current.selected_commit())
+        {
+            return Err(WorthQueryProductBranchAdmissionDenial::Refused(
+                AdmissionRefusal::ObservationRejected,
+            ));
+        }
+        let predecessor = self.admit_product_history_entry(&history, 1)?;
+        if !predecessor.relational_basis().materialization_is_complete() {
+            return Err(WorthQueryProductBranchAdmissionDenial::Refused(
+                AdmissionRefusal::ObservationRejected,
+            ));
+        }
+        Ok(WorthQueryProductObservationLease::suspended_security(
+            predecessor.observation().clone(),
+            current.observation().clone(),
+        ))
+    }
+
+    pub fn trace_product_history(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        branch: WorthQueryProductBranch,
+        maximum: Option<NonZeroUsize>,
+    ) -> Result<ProductBranchHistoryTraversal, WorthQueryProductBranchAdmissionDenial> {
+        if branch.occurrence().owner_identity() != self.owner.owner_identity() {
+            return Err(WorthQueryProductBranchAdmissionDenial::Refused(
+                AdmissionRefusal::ForeignOwner,
+            ));
+        }
+        let history = self
+            .owner
+            .observation_port()
+            .trace_product_branch_ancestry(execution, branch.occurrence(), maximum)
+            .map_err(map_world_denial)?;
+        let gate = self.activations.gate(history.branch_identity())?;
+        gate.with_admission(|| Ok(history))
+    }
+
+    pub fn continue_product_history(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        previous: &ProductBranchHistoryTraversal,
+        maximum: Option<NonZeroUsize>,
+    ) -> Result<ProductBranchHistoryTraversal, WorthQueryProductBranchAdmissionDenial> {
+        if previous.lifecycle_incarnation().owner_identity() != self.owner.owner_identity() {
+            return Err(WorthQueryProductBranchAdmissionDenial::Refused(
+                AdmissionRefusal::ForeignOwner,
+            ));
+        }
+        let gate = self.activations.gate(previous.branch_identity())?;
+        gate.with_admission(|| {
+            self.owner
+                .observation_port()
+                .continue_product_branch_ancestry(execution, previous, maximum)
+                .map_err(map_world_denial)
+        })
+    }
+
+    pub fn admit_product_history_entry(
+        &self,
+        history: &ProductBranchHistoryTraversal,
+        index: usize,
+    ) -> Result<WorthQueryProductBranchLease, WorthQueryProductBranchAdmissionDenial> {
+        if history.lifecycle_incarnation().owner_identity() != self.owner.owner_identity() {
+            return Err(WorthQueryProductBranchAdmissionDenial::Refused(
+                AdmissionRefusal::ForeignOwner,
+            ));
+        }
+        let gate = self.activations.gate(history.branch_identity())?;
+        gate.with_admission(|| {
+            let observation = self
+                .owner
+                .observation_port()
+                .observe_product_branch_history_entry(history, index)
+                .map_err(map_world_denial)?;
+            self.lease_from_observation(observation)
+        })
+    }
+}

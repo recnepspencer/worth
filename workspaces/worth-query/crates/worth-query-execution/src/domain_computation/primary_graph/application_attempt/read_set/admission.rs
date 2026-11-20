@@ -34,9 +34,10 @@ where
             )
         })?;
         let read_scope = WorthQueryApplicationReadScope::root_only(admission.scope_entity_id());
+        use crate::domain_computation::provider_session::ManagedGraphWorkSessionPrimaryExt;
         let lease = admission
             .graph_work_mut()
-            .take_mutation_lease()
+            .take_mutation_lease_typed()
             .ok_or_else(|| {
                 denial(
                     WorthQueryApplicationAttemptDenialKind::CurrentAuthorityDenied,

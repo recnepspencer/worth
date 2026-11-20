@@ -142,7 +142,7 @@ where
                     native: None,
                 })
             })
-            .map_err(super::execution_denial::managed_advancement_denial)?
+            .map_err(|cause| super::execution_denial::managed_advancement_denial(cause.into()))?
     }
 
     fn compute_for_member(

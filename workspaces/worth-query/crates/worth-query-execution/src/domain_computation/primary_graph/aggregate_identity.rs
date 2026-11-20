@@ -1,5 +1,1 @@
-//! Application aggregate names; every read still requires fresh view admission.
-mod identity;
-pub use identity::WorthQueryAggregateIdentity;
-mod lineage;
-pub use lineage::{WorthQueryAggregateLineage, WorthQueryAggregateLineageEvent};
+pub use worth_query_execution_contracts::facade::aggregate_identity::*;

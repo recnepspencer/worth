@@ -27,7 +27,7 @@ impl WorthQueryGraphProviderExecution for WorthQueryPrimaryGraphUnusedExecution 
 }
 
 impl WorthQueryGraphParticipationProvider<WorthQueryPrimaryLogicalGraph>
-    for Arc<WorthQueryPrimaryGraphProvider>
+    for crate::domain_computation::runtime_ports::PrimaryGraphProviderArc
 {
     type Execution = WorthQueryPrimaryGraphUnusedExecution;
 

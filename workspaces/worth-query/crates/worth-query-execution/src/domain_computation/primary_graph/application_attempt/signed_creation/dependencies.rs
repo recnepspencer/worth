@@ -77,7 +77,7 @@ pub(super) fn capture<Schema, Operation, Input, Scope>(
                     Ok(revisions)
                 })
         })
-        .map_err(Denial::Execution)??;
+        .map_err(|cause| Denial::Execution(cause.into()))??;
     candidate
         .read_set
         .append_completed_facts(revisions, request.allocation_policy())

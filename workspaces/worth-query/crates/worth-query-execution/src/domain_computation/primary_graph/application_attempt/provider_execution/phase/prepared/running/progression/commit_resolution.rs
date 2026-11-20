@@ -140,6 +140,10 @@ pub(super) fn finish_authorized_compare(
 ) -> WorthQueryProviderProgressionOutcome {
     match compared {
         WorthQueryProviderCompareAndCommitOutcome::OutputAdoptionPrepared(adoption) => {
+            use crate::domain_computation::provider_session::CommitDeferredPrimaryExt;
+            let adoption = *adoption
+                .downcast::<crate::domain_computation::primary_graph::provider::PreparedExecutedOutputAdoption>()
+                .expect("prepared output adoption payload is PreparedExecutedOutputAdoption");
             if !context.provider_session.same_session(adoption.session()) {
                 return WorthQueryProviderProgressionOutcome::Indeterminate(
                     recovery_evidence::unknown_commit_recovery_evidence(
@@ -190,10 +194,26 @@ pub(super) fn finish_authorized_compare(
             ))
         }
         WorthQueryProviderCompareAndCommitOutcome::ProductUnpublished(unpublished) => {
-            WorthQueryProviderProgressionOutcome::ProductUnpublished(unpublished)
+            WorthQueryProviderProgressionOutcome::ProductUnpublished(
+                *unpublished
+                    .downcast::<crate::domain_computation::WorthQueryProductUnpublishedApplication>()
+                    .expect("product unpublished outcome carries WorthQueryProductUnpublishedApplication"),
+            )
         }
-        WorthQueryProviderCompareAndCommitOutcome::ProductPreparationPending(owner) => WorthQueryProviderProgressionOutcome::ProductPreparationPending(owner),
-        WorthQueryProviderCompareAndCommitOutcome::ProductPreparationRefused(owner) => WorthQueryProviderProgressionOutcome::ProductPreparationRefused(owner),
+        WorthQueryProviderCompareAndCommitOutcome::ProductPreparationPending(owner) => {
+            WorthQueryProviderProgressionOutcome::ProductPreparationPending(
+                *owner
+                    .downcast::<crate::domain_computation::WorthQueryProductPreparationPending>()
+                    .expect("product preparation pending carries WorthQueryProductPreparationPending"),
+            )
+        }
+        WorthQueryProviderCompareAndCommitOutcome::ProductPreparationRefused(owner) => {
+            WorthQueryProviderProgressionOutcome::ProductPreparationRefused(
+                *owner
+                    .downcast::<crate::domain_computation::WorthQueryProductPreparationRefused>()
+                    .expect("product preparation refused carries WorthQueryProductPreparationRefused"),
+            )
+        }
         WorthQueryProviderCompareAndCommitOutcome::NoEffect(no_effect) => {
             world_no_effect::classify(no_effect)
         }

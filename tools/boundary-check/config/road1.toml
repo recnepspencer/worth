@@ -646,10 +646,12 @@ internal_packages = [
   "worth-query-declaration",
   "worth-query-installation",
   "worth-query-admission",
+  "worth-query-execution-contracts",
   "worth-query-execution-diagnostics",
   "worth-query-execution-foundation",
   "worth-query-execution-layout",
   "worth-query-execution-obligations",
+  "worth-query-execution-runtime",
   "worth-query-execution",
   "worth-query-publication",
 ]

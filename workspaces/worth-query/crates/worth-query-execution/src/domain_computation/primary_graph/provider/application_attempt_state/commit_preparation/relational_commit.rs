@@ -71,7 +71,9 @@ pub(super) fn commit_owner_validated(
         }
         commit_execution::ApplicationCommitExecution::AdoptionPrepared(adoption) => Ok(
             crate::domain_computation::WorthQueryProviderCommitCompletion::OutputAdoptionPrepared(
-                adoption,
+                worth_query_execution_runtime::facade::ports::PreparedOutputAdoptionPayload::new(
+                    *adoption,
+                ),
             ),
         ),
     }

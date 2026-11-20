@@ -1,0 +1,165 @@
+use std::sync::Arc;
+
+use worth_execution::ExecutionAuthority;
+use worth_foundational::ExecutionRequestPolicy;
+use worth_runtime_world::facade::RuntimeWorldBudgets;
+
+use super::WorthQueryProductWorldClock;
+
+/// Exhaustive live resources for one Query-owned Product World.
+///
+/// This value is supplied by the caller and consumed at World construction.
+/// Owner services continue to come from the authoritative Relational and
+/// sealed Bridge installations.
+#[derive(Clone)]
+pub struct WorthQueryProductWorldResources {
+    budgets: RuntimeWorldBudgets,
+    clock: WorthQueryProductWorldClock,
+    invalidation: super::super::WorthQueryInvalidationResources,
+    execution: WorthQueryProductExecution,
+}
+
+/// How the World's requests run, handed to its builder unchanged: within
+/// the required policy on the calling thread, or leased from the host's
+/// authority when installed beside it. The policy is required at construction.
+#[derive(Clone)]
+pub struct WorthQueryProductExecution {
+    pub authority: Option<Arc<ExecutionAuthority>>,
+    pub policy: ExecutionRequestPolicy,
+}
+
+impl WorthQueryProductWorldResources {
+    /// The declared host policy used by the complete installation advancement.
+    pub fn execution_policy(&self) -> ExecutionRequestPolicy {
+        self.execution.policy
+    }
+
+    pub fn install(
+        budgets: worth_runtime_world::facade::RuntimeWorldBudgetInstallation,
+        clock: WorthQueryProductWorldClock,
+        invalidation: super::super::WorthQueryInvalidationResources,
+        policy: ExecutionRequestPolicy,
+    ) -> Result<Self, worth_runtime_world::facade::RuntimeWorldBudgetDenial> {
+        RuntimeWorldBudgets::install(budgets)
+            .map(|budgets| Self::new(budgets, clock, invalidation, policy))
+    }
+
+    pub fn new(
+        budgets: RuntimeWorldBudgets,
+        clock: WorthQueryProductWorldClock,
+        invalidation: super::super::WorthQueryInvalidationResources,
+        policy: ExecutionRequestPolicy,
+    ) -> Self {
+        Self {
+            budgets,
+            clock,
+            invalidation,
+            execution: WorthQueryProductExecution {
+                authority: None,
+                policy,
+            },
+        }
+    }
+
+    /// Supplies the host's process authority. Cloned resources share it, and
+    /// every request leases the installed policy's budget.
+    pub fn with_execution_authority(mut self, authority: Arc<ExecutionAuthority>) -> Self {
+        self.execution.authority = Some(authority);
+        self
+    }
+
+    /// Installs the policy every request runs under.
+    pub fn with_execution_policy(mut self, policy: ExecutionRequestPolicy) -> Self {
+        self.execution.policy = policy;
+        self
+    }
+
+    pub fn invalidation_resources(&self) -> super::super::WorthQueryInvalidationResources {
+        self.invalidation.clone()
+    }
+
+    pub fn admits_clock(
+        &self,
+        clock: &worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock,
+    ) -> bool {
+        self.clock.admission_clock.same_clock(clock)
+    }
+
+    pub fn into_parts(
+        self,
+    ) -> (
+        RuntimeWorldBudgets,
+        WorthQueryProductWorldClock,
+        super::super::WorthQueryInvalidationResources,
+        WorthQueryProductExecution,
+    ) {
+        (self.budgets, self.clock, self.invalidation, self.execution)
+    }
+
+    pub const fn budgets(&self) -> &RuntimeWorldBudgets {
+        &self.budgets
+    }
+}
+
+pub fn test_product_world_resources(
+    clock: worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock,
+) -> WorthQueryProductWorldResources {
+    test_product_world_resources_with_history_limit_for_test(1_024, clock)
+}
+
+pub fn test_product_world_resources_with_history_limit_for_test(
+    retained_composite_commits: u64,
+    clock: worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock,
+) -> WorthQueryProductWorldResources {
+    use worth_runtime_world::facade::RuntimeWorldBranchBudgetInstallation;
+    use worth_runtime_world::facade::RuntimeWorldBudgetInstallation;
+    use worth_runtime_world::facade::RuntimeWorldCustodyBudgetInstallation;
+    use worth_runtime_world::facade::RuntimeWorldHistoryBudgetInstallation;
+    use worth_runtime_world::facade::RuntimeWorldObservationBudgetInstallation;
+    use worth_runtime_world::facade::RuntimeWorldPublicationBudgetInstallation;
+    use worth_runtime_world::facade::RuntimeWorldRecoveryBudgetInstallation;
+    use worth_runtime_world::facade::RuntimeWorldRetentionBudgetInstallation;
+
+    WorthQueryProductWorldResources::new(
+        RuntimeWorldBudgets::install(RuntimeWorldBudgetInstallation {
+            branches: RuntimeWorldBranchBudgetInstallation {
+                live_product_branches: 128,
+            },
+            history: RuntimeWorldHistoryBudgetInstallation {
+                retained_composite_commits,
+                history_metadata_bytes: 16 * 1024 * 1024,
+            },
+            observations: RuntimeWorldObservationBudgetInstallation {
+                active_observations: 512,
+            },
+            publication: RuntimeWorldPublicationBudgetInstallation {
+                active_publication_attempts: 128,
+            },
+            recovery: RuntimeWorldRecoveryBudgetInstallation {
+                retained_product_unpublished_records: 128,
+                retained_partial_metadata_bytes: 16 * 1024 * 1024,
+            },
+            retention: RuntimeWorldRetentionBudgetInstallation {
+                unique_exact_component_pins: 1_024,
+                in_flight_pin_acquisition_reservations: 256,
+            },
+            custody: RuntimeWorldCustodyBudgetInstallation {
+                owner_created_component_custody_records: 256,
+            },
+        })
+        .expect("the test Product World budget is valid"),
+        WorthQueryProductWorldClock::start(clock),
+        super::super::WorthQueryInvalidationResources::new(),
+        ExecutionRequestPolicy::new(
+            worth_foundational::ExecutionPosture::Serial,
+            worth_foundational::DeterminismContract::CanonicalBitwise,
+            worth_foundational::ExecutionBudget::new(
+                std::num::NonZeroUsize::MIN,
+                None,
+                Some(8_000_000),
+            ),
+        ),
+    )
+}
+
+mod court_doors_for_test;

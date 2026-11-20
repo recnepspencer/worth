@@ -6,27 +6,9 @@ use worth_foundational::facade::{
     RecoveryClaimDisposition,
 };
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation) struct QueryRecoveryClaim {
-    pub original: DurableCompositeCommitIdentity,
-    pub attempt: DurableCompositePublicationAttemptIdentity,
-    pub expires_at_unix_ms: u64,
-    pub material_pin: CorrectionMaterialPinIdentity,
-}
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation) enum QueryRecoveryRecord {
-    Claim(QueryRecoveryClaim),
-    Disposition {
-        claim: DurableRecoveryClaimIdentity,
-        terminal: RecoveryClaimDisposition,
-    },
-}
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation) struct QueryRecordedRecoveryClaim {
-    pub identity: DurableRecoveryClaimIdentity,
-    pub claim: QueryRecoveryClaim,
-    pub terminal: Option<RecoveryClaimDisposition>,
-}
+pub(in crate::domain_computation) use worth_query_execution_contracts::facade::{
+    QueryRecordedRecoveryClaim, QueryRecoveryClaim, QueryRecoveryRecord,
+};
 #[derive(Clone, Debug, Default)]
 pub(super) struct QueryRecoveryLedger {
     claims: BTreeMap<DurableCompositeCommitIdentity, QueryRecordedRecoveryClaim>,

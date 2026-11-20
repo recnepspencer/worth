@@ -133,7 +133,7 @@ pub(in crate::domain_computation::primary_graph) fn seal<
         .decision_stage(|context| {
             super::subject_binding::capture::<Schema, Binding>(&candidate, &request, context)
         })
-        .map_err(Denial::Execution)??;
+        .map_err(|cause| Denial::Execution(cause.into()))??;
     let (coverage, coverage_work) = execution
         .decision_stage(|context| {
             context.checkpoint(1).map_err(stopped)?;
@@ -162,13 +162,13 @@ pub(in crate::domain_computation::primary_graph) fn seal<
                 ),
             }
         })
-        .map_err(Denial::Execution)??;
+        .map_err(|cause| Denial::Execution(cause.into()))??;
     let (effect_identity, candidate_work) = execution
         .decision_stage(|context| {
             context.checkpoint(1).map_err(stopped)?;
             identity::candidate(&candidate.effects, &request, context)
         })
-        .map_err(Denial::Execution)??;
+        .map_err(|cause| Denial::Execution(cause.into()))??;
     let operation_meaning = *candidate
         .read_set
         .admission
@@ -186,7 +186,7 @@ pub(in crate::domain_computation::primary_graph) fn seal<
                     context,
                 )
             })
-            .map_err(Denial::Execution)??;
+            .map_err(|cause| Denial::Execution(cause.into()))??;
         candidate
             .read_set
             .admission
@@ -228,7 +228,7 @@ pub(in crate::domain_computation::primary_graph) fn seal<
                 context,
             )
         })
-        .map_err(Denial::Execution)??;
+        .map_err(|cause| Denial::Execution(cause.into()))??;
     let intent = WorthQueryAuthenticationEventIntent::new(
         state.slot.spec.purpose(),
         CanonicalDigestId::new(signing),
