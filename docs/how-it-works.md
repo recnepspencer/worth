@@ -2073,7 +2073,8 @@ browser: derived work is still derived, and still reconstructible. Guide:
 infrastructure. The runtimes use it to test themselves at their real
 boundaries: run a scenario, capture what happened, replay it, and compare the
 two exactly. It is not a product API. Query's certification audience
-(`worth-query-replay`, `worth-query-certification`) is the application-level
+(`worth-query-replay` for cost evidence, `worth-query-certification` for
+provider comparison and hostile scenarios) is the application-level
 counterpart. See [API Map §4](api.md#4-certification-api).
 
 ### 15.6 The Bank reference world

@@ -3,10 +3,12 @@
 //! Workspace engine surface (`WorthQueryWorkspace`), and the crate owns typed
 //! query authoring and proof-carrying canonical query artifacts.
 //!
-//! `worth-ui-query-binding`, `worth-query-replay`, and Query certification use
-//! this surface. It is not an application API: application declarations use
-//! `worth-query-decl`, application hosts use `worth-query-host`, and
-//! certification code uses `worth-query-replay`.
+//! `worth-ui-query-binding`, `worth-ui-certification` and the engine's own
+//! legacy courts use this surface. It is not an application API: application
+//! declarations use `worth-query-decl` and application hosts use
+//! `worth-query-host`. Engine workflow replay is in the cert-only
+//! `facade::certification` namespace; `worth-query-replay` carries only
+//! certification-cost evidence.
 
 #![forbid(unsafe_code)]
 
