@@ -46,6 +46,9 @@ impl<S: ApplicationSchema> CoupledApplicationAssembly<'_, '_, '_, S> {
         {
             return Ok(None);
         }
+        // Only an output already prepared in this envelope, or one retiring or
+        // restored, skips capture. A stored output that would still verify is
+        // captured here and verified at preparation, after its parents (#254).
         let selected = self.select_one(execution, before, demand, candidate)?;
         let execution::CoupledSourceRead::Source(source) = selected.read else {
             return Ok(Some(PreparedCoupledInputs::Ready(selected)));

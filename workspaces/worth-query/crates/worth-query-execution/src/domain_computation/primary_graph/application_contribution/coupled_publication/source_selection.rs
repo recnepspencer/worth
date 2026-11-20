@@ -22,7 +22,13 @@ impl<S: ApplicationSchema> CoupledApplicationAssembly<'_, '_, '_, S> {
         candidate: &RelationalAuthoredCoupledCandidate<'_>,
     ) -> Result<SelectedCoupledSource, CoupledSourceReadStop> {
         Ok(SelectedCoupledSource {
-            read: self.read_source_one(execution, before_pin, demand, candidate)?,
+            read: self.read_source_for(
+                execution,
+                before_pin,
+                demand,
+                candidate,
+                execution::CoupledSourceReadPurpose::InputCapture,
+            )?,
             pin: candidate.pin_source(execution)?,
         })
     }
@@ -33,6 +39,23 @@ impl<S: ApplicationSchema> CoupledApplicationAssembly<'_, '_, '_, S> {
         before_pin: &RelationalPinnedRead,
         demand: &DeclaredCoupledOutputDemand,
         candidate: &RelationalAuthoredCoupledCandidate<'_>,
+    ) -> Result<execution::CoupledSourceRead, CoupledSourceReadStop> {
+        self.read_source_for(
+            execution,
+            before_pin,
+            demand,
+            candidate,
+            execution::CoupledSourceReadPurpose::OutputPreparation,
+        )
+    }
+
+    fn read_source_for(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        before_pin: &RelationalPinnedRead,
+        demand: &DeclaredCoupledOutputDemand,
+        candidate: &RelationalAuthoredCoupledCandidate<'_>,
+        purpose: execution::CoupledSourceReadPurpose,
     ) -> Result<execution::CoupledSourceRead, CoupledSourceReadStop> {
         let principal = self.principal.ok_or_else(|| {
             WorthQueryOutputDemandDenial::new(
@@ -53,7 +76,7 @@ impl<S: ApplicationSchema> CoupledApplicationAssembly<'_, '_, '_, S> {
             before_pin,
             demand,
             candidate,
-            execution::CoupledSourceReadPurpose::OutputPreparation,
+            purpose,
         )
     }
 }
