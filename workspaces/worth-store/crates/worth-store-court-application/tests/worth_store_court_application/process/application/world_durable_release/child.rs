@@ -88,7 +88,8 @@ fn original_world_attempt_child() {
         ));
         // The next root replacement is the durable World occurrence: die
         // before the live head moves.
-        let gate = if std::env::var_os(OCCURRENCE).is_some() {
+        // The parked writer stays held at this gate until the kill.
+        let _held = if std::env::var_os(OCCURRENCE).is_some() {
             let occurrence = fixture.home.physical_serving_for_test()
                 .certification_pause_physical_mutation_at(
                     worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint::AfterRootReplacement
