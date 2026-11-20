@@ -7,6 +7,10 @@ use crate::{
 };
 use std::fmt::Write;
 
+/// The scoped coordinates one part chose, by original text. A successor round
+/// of the same route reuses exactly these, so its keys name the chain's records.
+pub(super) type LocalKeys = std::collections::BTreeMap<String, String>;
+
 pub(super) fn scope(
     execution: &ExecutionRequest<'_, '_>,
     part: usize,
@@ -14,7 +18,8 @@ pub(super) fn scope(
     symbols: &StringInterner,
     batches: &mut [WorkerIntentBatch],
     roles: &mut [RequiredOutputRoleTarget],
-) -> Result<(), TransactionCommitError> {
+) -> Result<LocalKeys, TransactionCommitError> {
+    let mut chosen = LocalKeys::new();
     execution
         .run_native_with_checkpoint(|context| {
             let mut rewrite = |key: &mut ClientKey| {
@@ -47,6 +52,7 @@ pub(super) fn scope(
                 };
                 // The ordinary transaction staging owner admits the rewritten batch
                 // backing before it can enter the Native proposal.
+                chosen.insert(text.to_owned(), name.clone());
                 *key = ClientKey::raw(name);
                 Ok::<_, TransactionCommitError>(())
             };
@@ -60,7 +66,50 @@ pub(super) fn scope(
                     rewrite(&mut created.client_key)?;
                 }
             }
-            Ok(())
+            Ok::<_, TransactionCommitError>(())
+        })
+        .map_err(custody::execution_stop)?
+        .0?;
+    Ok(chosen)
+}
+
+/// Rewrite a successor round's keys to the coordinates its chain head chose.
+/// `Err(())` when the successor names a key the head never did: a new record
+/// or reference that a fold cannot lower in place.
+pub(super) fn rescope(
+    execution: &ExecutionRequest<'_, '_>,
+    head: &LocalKeys,
+    symbols: &StringInterner,
+    batches: &mut [WorkerIntentBatch],
+    roles: &mut [RequiredOutputRoleTarget],
+) -> Result<Result<(), ()>, TransactionCommitError> {
+    execution
+        .run_native_with_checkpoint(|context| {
+            let mut unknown = false;
+            let mut rewrite = |key: &mut ClientKey| {
+                let text = key.resolve_with_interner(symbols).ok_or_else(|| {
+                    crate::mvcc::origin_denial(
+                        "coupled local key has no actual Native symbol meaning",
+                    )
+                })?;
+                checkpoint(context, text.len() as u64 + 1).map_err(custody::execution_stop)?;
+                match head.get(text) {
+                    Some(name) => *key = ClientKey::raw(name.clone()),
+                    None => unknown = true,
+                }
+                Ok::<_, TransactionCommitError>(())
+            };
+            for batch in batches {
+                for intent in &mut batch.intents {
+                    intent.visit_client_keys_mut(&mut rewrite)?;
+                }
+            }
+            for role in roles {
+                if let EntityReference::Created(created) = &mut role.target {
+                    rewrite(&mut created.client_key)?;
+                }
+            }
+            Ok(if unknown { Err(()) } else { Ok(()) })
         })
         .map_err(custody::execution_stop)?
         .0

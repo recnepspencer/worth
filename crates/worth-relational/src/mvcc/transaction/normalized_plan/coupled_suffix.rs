@@ -1,7 +1,54 @@
 //! Resolve one writer's normalized suffix against the actual applied prefix bindings.
 use super::*;
-use crate::transactions::data::{CommitCreatedEntityBindings, EntityReference};
+use crate::transactions::data::{
+    CommitCreatedEntityBindings, CreateIntent, CreatedEntityRef, EntityMutationIntent,
+    EntityReference, UpdateEntityFieldsIntent,
+};
 impl OwnedNormalizedPlan {
+    /// A successor round re-creates its chain's records under the same keys.
+    /// Its applied plan writes them in place on the chain's allocations, so no
+    /// second allocation exists. The transaction keeps the Create itself.
+    pub(crate) fn lower_coupled_recreates(
+        mut self,
+        bindings: &CommitCreatedEntityBindings,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<Self, TransactionCommitError> {
+        request
+            .run_native_with_checkpoint(|context| {
+                use crate::execution::request_stage::checkpoint;
+                for intent in &mut self.plan.merged_intents {
+                    checkpoint(context, 1).map_err(stop)?;
+                    let MutationIntent::Create(CreateIntent::Entity(spec)) = intent else {
+                        continue;
+                    };
+                    let created = CreatedEntityRef {
+                        partition_id: spec.partition_id,
+                        kind_id: spec.kind_id,
+                        client_key: spec.client_key.clone(),
+                    };
+                    checkpoint(
+                        context,
+                        bindings
+                            .resolve_work_bound(&created)
+                            .ok_or_else(copy_overflow)?,
+                    )
+                    .map_err(stop)?;
+                    if let Some(entity_id) = bindings.resolve(&created) {
+                        *intent = MutationIntent::Entity(EntityMutationIntent::UpdateFields(
+                            UpdateEntityFieldsIntent {
+                                entity_id,
+                                fields: std::mem::take(&mut spec.fields),
+                            },
+                        ));
+                    }
+                }
+                Ok::<_, TransactionCommitError>(())
+            })
+            .map_err(request_denial)?
+            .0?;
+        Ok(self)
+    }
+
     pub(crate) fn into_coupled_suffix(
         mut self,
         prefix: usize,

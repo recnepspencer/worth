@@ -1,7 +1,10 @@
 //! Corruption changes a real prepared writer; the ordinary Native fence refuses it.
 use super::*;
 use worth_query_host::facade::runtime::ExecutionAllocationPolicy;
-use worth_relational::facade::{publication::AuthoredRetirementRefusal, transactions::RecordRef};
+use worth_relational::facade::{
+    publication::{AuthoredRetirementRefusal, CoupledProvenancePostponement},
+    transactions::RecordRef,
+};
 
 fn refuses_foreign_writer(host: &world::Host) {
     let scope = request_scope();
@@ -165,7 +168,10 @@ fn continued_effect_refuses(worker: bool, changed_patch: bool) {
         .expect("Native continued-round refusal");
     assert_eq!(
         error.authored_retirement_refusal(),
-        Some(AuthoredRetirementRefusal::CoupledContinuationProvenancePostponed { issue: 119 })
+        Some(AuthoredRetirementRefusal::CoupledContinuationProvenancePostponed {
+            issue: 119,
+            reason: CoupledProvenancePostponement::ContinuedRoundEffect,
+        })
     );
     assert_eq!(
         error.context.affected_records,

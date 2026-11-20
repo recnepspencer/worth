@@ -85,6 +85,79 @@ pub(crate) fn compose(
     effect.patch_fragments = slots.into_iter().flatten().collect();
     Ok(())
 }
+/// One route's later round over a record its own chain already patched. Within
+/// one chain the later round's whole sets and clears win (its re-derivation
+/// replaces the earlier one); the chain's first structural change and relation
+/// birth stay. Across writers only the disjoint `compose` above applies.
+pub(crate) fn fold_succession(
+    context: &mut MapKernelContext<'_, '_>,
+    head: &mut Fragment,
+    successor: Fragment,
+) -> Result<(), TransactionCommitError> {
+    checkpoint(context, 1).map_err(stop)?;
+    let RecordRef::Entity(target) = head.target else {
+        return Err(TransactionCommitError::conflict(CommitConflict::new(
+            ConflictClass::ConflictingIntent {
+                target: match head.target {
+                    RecordRef::Relation(relation) => ExistingRecordTarget::Relation(relation),
+                    RecordRef::Entity(entity) => ExistingRecordTarget::Entity(entity),
+                },
+            },
+        )));
+    };
+    if successor.target != head.target
+        || successor.structural_change != RecordStructuralChange::Updated
+        || successor.relation_birth.is_some()
+    {
+        return Err(conflict(target));
+    }
+    checkpoint(
+        context,
+        (head
+            .patch
+            .semantic_byte_width()
+            .saturating_add(successor.patch.semantic_byte_width()) as u64)
+            .checked_add(1)
+            .ok_or_else(overflow)?,
+    )
+    .map_err(stop)?;
+    let earlier = std::mem::replace(&mut head.patch, AuthoritativeRecordAspectPatch::empty());
+    let patch = match AuthoritativeRecordAspectPatch::combine(earlier, successor.patch) {
+        TransitionOutcome::Success(patch) => patch,
+        TransitionOutcome::Denied(_) => return Err(conflict(target)),
+    };
+    let mut changes = successor.semantic_changes;
+    let later = changes
+        .iter()
+        .map(PublishedAuthoritativeAspectChange::canonical_key)
+        .collect::<std::collections::BTreeSet<_>>();
+    changes.extend(
+        std::mem::take(&mut head.semantic_changes)
+            .into_iter()
+            .filter(|change| !later.contains(&change.canonical_key())),
+    );
+    let PatchDetail::DenseBitset(mut detail) = head.detail.clone();
+    let PatchDetail::DenseBitset(right) = successor.detail;
+    detail.resize(detail.len().max(right.len()), 0);
+    for (left, right) in detail.iter_mut().zip(right) {
+        *left |= right;
+    }
+    let folded = Joined {
+        target,
+        patch,
+        changes,
+        detail: PatchDetail::DenseBitset(detail),
+        opaque: head.contains_opaque_aspect | successor.contains_opaque_aspect,
+    }
+    .publish(context)?;
+    // The chain keeps its first structural change: one Created or Updated record.
+    head.patch = folded.patch;
+    head.published_patch = folded.published_patch;
+    head.semantic_changes = folded.semantic_changes;
+    head.contains_opaque_aspect = folded.contains_opaque_aspect;
+    head.detail = folded.detail;
+    Ok(())
+}
 fn selected(fragment: &Fragment, targets: &[EntityId]) -> bool {
     matches!(fragment.target, RecordRef::Entity(entity) if targets.binary_search(&entity).is_ok())
 }
