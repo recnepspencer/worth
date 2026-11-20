@@ -1,4 +1,5 @@
-//! C1 retains the Native-only prefix; H refuses close and unclean reopen.
+//! A cancelled adoption's Native-only prefix refuses close, then continues
+//! after an unclean reopen.
 use worth_query_host::facade::{
     application_contribution::with_bootstrap_advancement_from_request,
     application_entry::{
@@ -14,19 +15,21 @@ use worth_query_testkit_document_retention::facade::document_retention_model::{
     host::{host_limits, seed_host},
     model_lifecycle::validated_model_lifecycle_program,
     operator_identity::authenticate_operator,
+    presented_request::set_retention,
     programs::{validated_first_program, validated_second_program, RetentionProgramP1},
     readback::read_retention,
     schema::DocumentRetentionSchema,
+    settled_verdict::{settle, RetentionVerdict},
 };
 
 #[test]
-fn native_only_cancelled_adoption_refuses_close_and_d18_reopen() {
+fn native_only_cancelled_adoption_refuses_close_and_continues_after_unclean_reopen() {
     use worth_query_host::facade::{
         admission::authenticated_principal::{
             WorthQueryAdmissionClock, WorthQueryCancellationSource, WorthQueryRequestScope,
         },
-        ApplicationHomeCloseDenial, DurableOwnerFamily, RuntimeWorldCloseDenial,
-        RuntimeWorldServiceDenial,
+        application_entry::WorthQueryBranchAdoptionRecoveryOutcome,
+        ApplicationHomeCloseDenial, RuntimeWorldCloseDenial, RuntimeWorldServiceDenial,
     };
     let directory = worth_query_testkit_host::facade::host::application_home::location();
     let lease = worth_query_testkit_host::facade::host::checkpoint_capture::lease(256 << 20);
@@ -54,7 +57,7 @@ fn native_only_cancelled_adoption_refuses_close_and_d18_reopen() {
         .unwrap()
     };
     let home = open(true).unwrap();
-    {
+    let target = {
         let host = home.runtime();
         let cancellation = WorthQueryCancellationSource::new();
         let scope = WorthQueryRequestScope::new(
@@ -115,7 +118,8 @@ fn native_only_cancelled_adoption_refuses_close_and_d18_reopen() {
         drop(inspected);
         drop(original);
         drop(retained);
-    }
+        target
+    };
     let refused = (*home)
         .close(&execution)
         .err()
@@ -141,11 +145,61 @@ fn native_only_cancelled_adoption_refuses_close_and_d18_reopen() {
         .rows()
         .is_empty());
     drop(home);
-    let refused = open(false)
-        .err()
-        .expect("D18 rejects associated Native effect without World occurrence");
-    let unclean = refused
-        .unclean_recovery_unsupported()
-        .unwrap_or_else(|| panic!("typed D18 posture: {refused:?}"));
-    assert_eq!(unclean.owner, DurableOwnerFamily::Relational);
+    let home = open(false).unwrap_or_else(|refused| panic!("unclean reopen recovers: {refused:?}"));
+    let host = home.runtime();
+    assert_eq!(read_retention(host.runtime(), host.current_world()), 7);
+    let page = host
+        .runtime()
+        .product_publication_recovery_page(None, std::num::NonZeroUsize::MIN)
+        .unwrap();
+    assert_eq!(page.rows().len(), 1);
+    let recovery = host
+        .runtime()
+        .readmit_branch_adoption(page.rows()[0].handle())
+        .unwrap_or_else(|cause| panic!("the same adoption original readmits: {cause:?}"));
+    assert_eq!(recovery.target(), &target);
+    drop(page);
+    let cancellation = WorthQueryCancellationSource::new();
+    let scope = WorthQueryRequestScope::new(
+        Some(std::time::Instant::now() + std::time::Duration::from_secs(30)),
+        cancellation.token(),
+        WorthQueryAdmissionClock::system(),
+    );
+    let principal = authenticate_operator(host.runtime().installed_schema(), &scope);
+    let outcome = host
+        .runtime()
+        .request(&principal, &scope)
+        .on_branch(host.current_world())
+        .programs()
+        .recover(recovery)
+        .unwrap_or_else(|_| panic!("the original adoption continues"));
+    let WorthQueryBranchAdoptionRecoveryOutcome::Performed { adoption, cleanup } = outcome else {
+        panic!("one recovered adoption publishes");
+    };
+    assert_eq!(adoption.target(), &target);
+    cleanup.unwrap_or_else(|cause| panic!("recovered custody releases: {cause:?}"));
+    assert!(host
+        .runtime()
+        .product_publication_recovery_page(None, std::num::NonZeroUsize::MIN)
+        .unwrap()
+        .rows()
+        .is_empty());
+    assert_eq!(
+        settle(set_retention(host, host.current_world(), 15, 1)),
+        RetentionVerdict::Performed(15),
+        "ordinary calls use the adopted rule"
+    );
+    (*home)
+        .close(&execution)
+        .unwrap_or_else(|cause| panic!("close after continuation: {cause:?}"))
+        .reclaim();
+    let home = open(false).unwrap();
+    let host = home.runtime();
+    assert!(host
+        .runtime()
+        .product_publication_recovery_page(None, std::num::NonZeroUsize::MIN)
+        .unwrap()
+        .rows()
+        .is_empty());
+    assert_eq!(read_retention(host.runtime(), host.current_world()), 15);
 }

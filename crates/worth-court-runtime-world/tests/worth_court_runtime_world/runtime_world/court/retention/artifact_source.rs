@@ -216,19 +216,6 @@ impl Fixture {
             native_medium: medium,
         })
     }
-    pub(super) fn associated_signal_digest(&self, request: &ExecutionRequest<'_, '_>) -> [u8; 32] {
-        match self
-            .signal
-            .source_port()
-            .inspect_associated_advances(request, |effect, _| {
-                std::ops::ControlFlow::Break(effect.digest())
-            })
-            .unwrap()
-        {
-            std::ops::ControlFlow::Break(digest) => digest,
-            std::ops::ControlFlow::Continue(()) => panic!("actual Signal effect required"),
-        }
-    }
     pub(super) fn finish(self, request: &ExecutionRequest<'_, '_>) {
         let report = self
             .world

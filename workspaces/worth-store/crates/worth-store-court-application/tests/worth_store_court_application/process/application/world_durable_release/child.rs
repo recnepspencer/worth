@@ -82,11 +82,27 @@ fn original_world_attempt_child() {
                 }
             }
         });
+        let deadline = std::time::Instant::now() + crate::killed_child::PARK_DEADLINE;
         assert!(crate::process_kill::await_mutation_seam(
-            &gate,
-            &worker,
-            std::time::Instant::now() + crate::killed_child::PARK_DEADLINE
+            &gate, &worker, deadline
         ));
+        // The next root replacement is the durable World occurrence: die
+        // before the live head moves.
+        let gate = if std::env::var_os(OCCURRENCE).is_some() {
+            let occurrence = fixture.home.physical_serving_for_test()
+                .certification_pause_physical_mutation_at(
+                    worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint::AfterRootReplacement
+                );
+            gate.release();
+            assert!(crate::process_kill::await_mutation_seam(
+                &occurrence,
+                &worker,
+                deadline
+            ));
+            occurrence
+        } else {
+            gate
+        };
         let inspection = fixture.home.world().inspection_port();
         assert_eq!(
             inspection.history_snapshot().unwrap().installed_commits(),
@@ -103,7 +119,7 @@ fn original_world_attempt_child() {
         assert_eq!(expected.reference_generation().get(), prefix as u64);
         crate::killed_child::announce(
             &markers.join("ready"),
-            b"Native durable; World occurrence absent",
+            b"Native durable; World occurrence not live",
         );
         crate::killed_child::park();
     });

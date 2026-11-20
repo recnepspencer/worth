@@ -21,10 +21,15 @@ pub(in super::super) struct Recorder {
     refused: std::sync::atomic::AtomicBool,
     held: std::sync::atomic::AtomicBool,
     persist: bool,
-    refuse_occurrence: std::sync::atomic::AtomicBool,
     crashed: std::sync::atomic::AtomicBool,
+    undecided: Mutex<Option<bool>>,
 }
 impl Recorder {
+    /// The next World write reports an indeterminate fate. `landed` decides
+    /// whether it actually became durable; the writer cannot tell.
+    pub(in super::super) fn undecide_next(&self, landed: bool) {
+        *self.undecided.lock().unwrap() = Some(landed);
+    }
     /// Process death at the World medium: no later World write becomes
     /// durable. Native keeps whatever its own medium already made durable.
     pub(in super::super) fn crash(&self) {
@@ -57,13 +62,9 @@ impl Recorder {
             refused: std::sync::atomic::AtomicBool::new(false),
             held: std::sync::atomic::AtomicBool::new(false),
             persist,
-            refuse_occurrence: std::sync::atomic::AtomicBool::new(false),
             crashed: std::sync::atomic::AtomicBool::new(false),
+            undecided: Mutex::new(None),
         })
-    }
-    pub(in super::super) fn refuse_next_occurrence(&self) {
-        self.refuse_occurrence
-            .store(true, std::sync::atomic::Ordering::SeqCst);
     }
     pub(super) fn successor(&self) -> Arc<Self> {
         let program_source = worth_proof::InstalledBranchProgramSourceOwner::fresh();
@@ -81,8 +82,8 @@ impl Recorder {
             refused: std::sync::atomic::AtomicBool::new(false),
             held: std::sync::atomic::AtomicBool::new(false),
             persist: self.persist,
-            refuse_occurrence: std::sync::atomic::AtomicBool::new(false),
             crashed: std::sync::atomic::AtomicBool::new(false),
+            undecided: Mutex::new(None),
         })
     }
     /// This model installs one unchanged declared program; it has no adoption table.
@@ -187,15 +188,17 @@ impl RuntimeWorldDurableMedium for Recorder {
         if self.held.load(std::sync::atomic::Ordering::SeqCst) {
             return WorldPublicationObservation::Pending;
         }
+        let undecided = self.undecided.lock().unwrap().take();
+        if undecided == Some(false) {
+            return WorldPublicationObservation::Finished(
+                WorldPublicationCompletion::indeterminate(WorldDurableMediumDenial::Unavailable),
+            );
+        }
         if self
             .refused
             .swap(false, std::sync::atomic::Ordering::SeqCst)
             || !self.persist
             || self.crashed.load(std::sync::atomic::Ordering::SeqCst)
-            || (subject.journal() == WorldDurableJournal::Occurrences
-                && self
-                    .refuse_occurrence
-                    .swap(false, std::sync::atomic::Ordering::SeqCst))
         {
             return WorldPublicationObservation::Finished(
                 WorldPublicationCompletion::proven_no_effect(WorldDurableMediumDenial::Unavailable),
@@ -211,6 +214,11 @@ impl RuntimeWorldDurableMedium for Recorder {
             digest,
             bytes: subject.as_bytes().to_vec(),
         });
+        if undecided == Some(true) {
+            return WorldPublicationObservation::Finished(
+                WorldPublicationCompletion::indeterminate(WorldDurableMediumDenial::Unavailable),
+            );
+        }
         WorldPublicationObservation::Finished(WorldPublicationCompletion::committed(
             journal,
             std::num::NonZeroU64::new(position).unwrap(),

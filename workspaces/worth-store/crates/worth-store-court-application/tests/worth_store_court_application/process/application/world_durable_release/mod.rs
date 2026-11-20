@@ -5,11 +5,13 @@ use worth_store_application::ApplicationHomeCloseOutcome;
 mod child;
 mod graceful_source;
 mod native_transitions;
+mod occurrence_cut;
 mod published_predecessor;
 mod unclean;
 const LOCATION: &str = "WORTH_WORLD_RELEASE_HOME";
 const MARKERS: &str = "WORTH_WORLD_RELEASE_MARKERS";
 const PREFIX: &str = "WORTH_WORLD_RELEASE_PUBLISHED_PREFIX";
+const OCCURRENCE: &str = "WORTH_WORLD_RELEASE_OCCURRENCE_CUT";
 const CHILD: &str =
     "process::application::world_durable_release::child::original_world_attempt_child";
 

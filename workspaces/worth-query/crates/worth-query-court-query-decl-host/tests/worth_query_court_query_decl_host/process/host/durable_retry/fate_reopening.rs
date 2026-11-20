@@ -5,6 +5,7 @@ use worth_query_host::facade::{
     primary_graph::{WorthQueryApplicationUncommitted, WorthQueryProductUnpublishedRecovery},
     WorthQueryApplicationHome,
 };
+use worth_runtime_world::facade::WorldRecoveredContinuationOutcome;
 
 type Home = WorthQueryApplicationHome<fixture::schema::HomeIdentitySchema, fixture::HomeProgram>;
 type Runtime =
@@ -165,4 +166,38 @@ fn retained_reader() {
         "recovered unresolved custody cannot replay the handler"
     );
     assert_eq!(balance(home.runtime(), &live), 7);
+    drop(effect);
+    let duplicate = retained(home.runtime(), &live);
+    assert_eq!(duplicate.record_handle(), original.record_handle());
+    drop(duplicate);
+    let lease = checkpoint_capture::lease(128 << 20);
+    let execution = worth_execution::ExecutionRequest::leased(&lease);
+    let outcome = original.continue_original_in_request(&execution).unwrap();
+    assert!(
+        matches!(outcome, WorldRecoveredContinuationOutcome::Published { .. }),
+        "the recovered original continues once: {outcome:?}"
+    );
+    drop((outcome, original));
+    let recorded = match set(home.runtime(), &live, RETAINED, 8).unwrap() {
+        Outcome::RecoveredCommitted(receipt) => receipt,
+        other => panic!("the continued original answers its key: {other:?}"),
+    };
+    assert_eq!(contacts.load(Ordering::SeqCst), 0);
+    assert_eq!(balance(home.runtime(), &live), 8);
+    pending_support::end_with_pending_managed_run(
+        home.close(&execution)
+            .err()
+            .expect("C3: the killed writer's managed run is still pending"),
+    );
+    let home = open(false, contacts.clone());
+    let (_, live) = scope();
+    match set(home.runtime(), &live, RETAINED, 8).unwrap() {
+        Outcome::RecoveredCommitted(again) => assert_eq!(
+            receipt_fields::projection(&again),
+            receipt_fields::projection(&recorded)
+        ),
+        other => panic!("reopen keeps the one continued original: {other:?}"),
+    }
+    assert_eq!(contacts.load(Ordering::SeqCst), 0);
+    assert_eq!(balance(home.runtime(), &live), 8);
 }

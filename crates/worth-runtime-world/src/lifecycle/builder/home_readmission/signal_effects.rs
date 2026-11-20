@@ -101,9 +101,8 @@ where
                         return ControlFlow::Break(D::OccurrenceEvidenceMismatch);
                     }
                 }
-                None if !recovered.dispositions.contains_key(&association.attempt()) => {
-                    return ControlFlow::Break(unclean())
-                }
+                // No occurrence: the original is readmitted with its actual
+                // Signal effect, with or without a recorded disposition.
                 None => {
                     let actual=match signal.readmit_source_point(point, request) {
                         Ok(actual) => std::sync::Arc::new(actual),

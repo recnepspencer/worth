@@ -7,9 +7,9 @@ pub(super) mod journey;
 use journey::*;
 mod authored_retirement;
 mod durable_cancellation;
+mod recovered_owners;
 mod transport;
 mod unclean_native;
-mod unclean_signal;
 
 #[test]
 fn every_occurrence_owner_set_round_trips_without_fabricating_a_component() {
