@@ -10,6 +10,9 @@ mod courts;
 pub mod program;
 #[cfg(test)]
 mod recapture;
+#[cfg(test)]
+mod retention;
+pub mod supplier;
 
 type Scope = ApplicationMutationFieldScope<ModelKey>;
 fn source_key() -> ModelKey {

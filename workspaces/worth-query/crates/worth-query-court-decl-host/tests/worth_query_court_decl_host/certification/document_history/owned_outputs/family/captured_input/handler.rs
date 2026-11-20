@@ -11,6 +11,10 @@ pub struct ParentData {
 pub struct Data {
     pub parents: Vec<ParentData>,
 }
+/// A member of this authored weight makes the reader read `first:carriage:d`
+/// without declaring it: the missing declaration that must still refuse plainly
+/// when a later route writes it (#254).
+pub const UNDECLARED: u64 = 9;
 
 impl worth_execution::ChargedBytes for first::Demand {
     fn additional_charged_bytes(&self) -> u64 {
@@ -58,6 +62,15 @@ macro_rules! producer_capture_handler {
                         let weight = reader
                             .field(member.to(), MemberValue::at("MemberValue"))?
                             .expect("required authored weight");
+                        if weight == handler::UNDECLARED {
+                            // Read, never declared, and unlinked: no discovery
+                            // reaches this reader from that parent either.
+                            parents.push(handler::ParentData {
+                                key: "carriage:d".into(),
+                                weight,
+                            });
+                            continue;
+                        }
                         let links = reader.relations_from(UpstreamOf::reference(), member.to())?;
                         // Before the control is ready choose the largest
                         // authored priority; afterwards choose the smallest.
@@ -114,10 +127,15 @@ macro_rules! producer_capture_handler {
                 let result = (|| {
                     let mut total = 0;
                     for parent in captured.into_data().parents {
-                        let row = reader.resolve_entity(
-                            FirstKey::at("FirstKey"),
-                            format!("first:{}", parent.key),
-                        )?;
+                        let key = format!("first:{}", parent.key);
+                        let row = if parent.weight == handler::UNDECLARED {
+                            match reader.resolve_optional_entity(FirstKey::at("FirstKey"), key)? {
+                                Some(row) => row,
+                                None => continue,
+                            }
+                        } else {
+                            reader.resolve_entity(FirstKey::at("FirstKey"), key)?
+                        };
                         let value = reader
                             .field(&row, FirstValue::at("FirstValue"))?
                             .expect("required ready parent value");

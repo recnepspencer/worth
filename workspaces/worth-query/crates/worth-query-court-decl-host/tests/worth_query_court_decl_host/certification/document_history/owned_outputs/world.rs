@@ -16,6 +16,7 @@ pub struct Configuration {
     pub interleaved_records: bool,
     pub captured_inputs: bool,
     pub captured_parent_switch: Option<bool>,
+    pub captured_undeclared_anchor: bool,
     pub wrong_inverse_member: bool,
 }
 impl WorthQueryApplicationContribution<Schema> for Contribution {
@@ -223,7 +224,11 @@ where
                 synchronous_edit::interleaved::seed(graph)?;
             }
             if configuration.captured_inputs {
-                family::captured_input::program::seed(graph, configuration.captured_parent_switch)?;
+                family::captured_input::program::seed(
+                    graph,
+                    configuration.captured_parent_switch,
+                    configuration.captured_undeclared_anchor,
+                )?;
             }
             if configuration.reconciliation_peer_caps {
                 synchronous_edit::reconciliation::peer_caps::seed(graph)?;
