@@ -1,5 +1,7 @@
 # WORTH Server Future Roadmap
 
+> **Retirement note (2026-11-20).** `worth-server` and its client generation, testkit and courts were retired in [#260](https://github.com/recnepspencer/worth/pull/260) ([last version](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/crates/worth-server)). This roadmap is historical.
+
 ## Purpose
 
 This document defines the future work for `worth-server`.

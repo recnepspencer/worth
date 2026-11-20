@@ -191,6 +191,8 @@ Engineering sequence: [Database Foundation Roadmap](plans/database-foundation/ro
 
 ### UI (`workspaces/worth-ui/`)
 
+> **Parked (2026-11-20).** Worth UI does not build: its Query binding still depends on the retired `worth-query` engine. Migration is tracked in [#262](https://github.com/recnepspencer/worth/issues/262).
+
 The product-facing UI platform. It owns authored UI meaning, compilation,
 active application state, planning, mounting, interaction and intent
 admission, runtime services, host exchange, native lifecycle, Query-backed

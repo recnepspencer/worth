@@ -1983,6 +1983,8 @@ outcome back. Transport never decides legality. The Bank reference world's
 
 ### 15.3 UI: authored presentation
 
+> **Parked (2026-11-20).** Worth UI does not build: its Query binding still depends on the retired `worth-query` engine. Migration is tracked in [#262](https://github.com/recnepspencer/worth/issues/262).
+
 **WORTH UI** (`workspaces/worth-ui`) owns authored UI meaning, compilation,
 the active application, planning, mounting, interaction, native and headless
 hosts, and read-only inspection. It keeps three distinctions that most UI

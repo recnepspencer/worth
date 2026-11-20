@@ -225,7 +225,7 @@ The external public progression is exercised in the
   close semantics.
 - Historical and preview execution preserve the typed branch and basis instead
   of defaulting to current truth.
-- Generic workspace reads remain separate non-application functionality.
+- Generic workspace reads were retired with the `worth-query` engine.
 
 ## Inspection And Debugging
 
@@ -266,8 +266,8 @@ request. Do not replace a denial with caller-owned traversal.
   declared separately with exact, optional-one, or many relation selectors.
 - Multiple branch heads and concurrent branch writers remain outside the
   current application-query contract.
-- Generic workspace read-family APIs are preserved but are not the application
-  front door described here.
+- Generic workspace read-family APIs were retired with the `worth-query`
+  engine.
 
 ## Related Docs
 

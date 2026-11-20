@@ -161,8 +161,7 @@ is equal while attempt plans, sessions, and bases remain distinct.
   the installed `GraphRead` requirement and required terminal.
 - [Canonical Graph Obligation Progression](../domain-capabilities/canonical-graph-obligation-progression.md)
   owns selection, plan, session, owner execution, and publication.
-- Generic workspace reads preserve their existing access-accountability
-  machinery, but they are not a second application-query plan.
+- Generic workspace reads were retired with the `worth-query` engine.
 
 ## Inspection And Debugging
 

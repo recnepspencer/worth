@@ -27,7 +27,7 @@ Everything else falls into one of four groups:
 | **Application API** | `worth-query-decl`, `worth-query-host` | You are building an application on WORTH. This is the default. |
 | **Certification API** | `worth-query-replay`, `worth-query-certification` | You are writing certification tests or evidence, such as cost observations or hostile scenarios. Never from ordinary code. |
 | **Schema contracts** | `worth-schema-core`, `worth-schema-graph` | You are writing pure, reusable meaning that must not know about Query. |
-| **Standalone runtimes** | `worth-signal`, `worth-signal-wasm` (npm package `worth-signals-wasm`), `worth-relational`, `worth-ui`, `worth-store` | You want one runtime on its own, or you are building a UI host. |
+| **Standalone runtimes** | `worth-signal`, `worth-signal-wasm` (npm package `worth-signals-wasm`), `worth-relational`, `worth-store`; `worth-ui` is parked ([#262](https://github.com/recnepspencer/worth/issues/262)) | You want one runtime on its own. |
 
 Every other crate is an **internal owner**. It holds authority that the
 facades expose on its behalf. See [§7](#7-internal-crates-do-not-import).
@@ -48,8 +48,8 @@ facades expose on its behalf. See [§7](#7-internal-crates-do-not-import).
 | Level | Meaning | Crates |
 |---|---|---|
 | **Stable** | The exported names are snapshotted in `tools/boundary-check/snapshots/facades.toml`. Adding, removing, or renaming an export fails boundary-check until the snapshot is updated deliberately. | `worth-query-decl`, `worth-query-host` (including `facade::application_entry` and `facade::primary_graph`), `worth-query-replay`, `worth-query-certification`, `worth-schema-core`, `worth-schema-graph` |
-| **Active** | Maintained and used, with a documented entry point, but not snapshotted. Expect change. | `worth-signal`, `worth-signal-wasm`, `worth-relational`, `worth-ui`, `worth-ui-native-platform`, `worth-store` |
-| **Dormant** | Present, but nothing active depends on it. | Nine Store crates for semantic durable programs |
+| **Active** | Maintained and used, with a documented entry point, but not snapshotted. Expect change. | `worth-signal`, `worth-signal-wasm`, `worth-relational`, `worth-store` |
+| **Dormant** | Present, but nothing active depends on it. | Nine Store crates for semantic durable programs; `worth-ui` and `worth-ui-native-platform` are parked and do not build ([#262](https://github.com/recnepspencer/worth/issues/262)) |
 
 Separately from status, every crate in [§7](#7-internal-crates-do-not-import) is **internal**: whatever its status, applications reach it only through the facades above.
 
@@ -265,7 +265,7 @@ when you are building a host around it.
 | `worth-signal` | `worth_signal::easy` (short path), `worth_signal::facade` (tiers: `core`, `runtime`, `branch`, `history`, `diagnostics`, `schema`, `adapters`, `integration`, `advanced`, `specialist`) | Deterministic incremental computation on its own | [README](../crates/worth-signal/README.md), [Getting started](../crates/worth-signal/docs/GETTING_STARTED.md), [API overview](../crates/worth-signal/docs/API_OVERVIEW.md) |
 | `worth-signal-wasm` (npm package `worth-signals-wasm`) | The npm package `worth-signals-wasm` | Signal in the browser: worker-first state, resources, forms, routing, React integration | [README](../crates/worth-signal-wasm/README.md), [demo](../apps/WORTH-signal-demo/README.md) |
 | `worth-relational` | `worth_relational::facade` | Authoritative graph-shaped truth on its own: branch-local MVCC, compare-and-publish, history, replay. A runtime that reacts to committed changes reads them through `facade::change_source`, as the Bridge does. | [README](../crates/worth-relational/README.md), [Quickstart](../crates/worth-relational/QUICKSTART.md) |
-| `worth-ui` | `worth_ui::facade` (product path: `facade::app`, `facade::query_binding`) | Authored UI over a Query application | [AI discovery](../workspaces/worth-ui/AI_README.md), [architecture](../workspaces/worth-ui/docs/architecture.md) |
+| `worth-ui` | `worth_ui::facade` (product path: `facade::app`, `facade::query_binding`) | Authored UI over a Query application. Parked: does not build until [#262](https://github.com/recnepspencer/worth/issues/262) | [AI discovery](../workspaces/worth-ui/AI_README.md), [architecture](../workspaces/worth-ui/docs/architecture.md) |
 | `worth-ui-native-platform` | Crate root | The only native-display entry point | [UI README](../workspaces/worth-ui/README.md) |
 | `worth-store` | Crate-root modules: `physical_runtime`, `integrity_observation`, `aspect_native`, `contracts`, `physical_format`, `terminal_projection` | The durable physical store and its runtime lifecycle | [Workspace](../workspaces/worth-store/README.md), [facade](../workspaces/worth-store/crates/worth-store/README.md) |
 
@@ -418,7 +418,7 @@ Use `--document-private-items` only when you are maintaining the platform.
 | Evolve your application's program on a branch, then adopt it | the same two | [Build an Application §7](build-an-application.md#7-adopt-a-new-program-on-a-branch), [Programs and Adoption](../workspaces/worth-query/docs/foundations/programs-and-adoption.md), [How WORTH Works §12](how-it-works.md#12-branches-programs-and-adoption) |
 | Write pure, reusable schema meaning | `worth-schema-core` / `worth-schema-graph` | [§5](#5-schema-contracts) |
 | Measure the work an operation performs in a cost court | `worth-query-replay` (cert crates only) | [§4](#4-certification-api) |
-| Put a UI on an application | `worth-ui` | [UI AI discovery](../workspaces/worth-ui/AI_README.md) |
+| Put a UI on an application | `worth-ui` (parked, [#262](https://github.com/recnepspencer/worth/issues/262)) | [UI AI discovery](../workspaces/worth-ui/AI_README.md) |
 | Use incremental computation alone, native or in a browser | `worth-signal` / npm `worth-signals-wasm` | [Signal README](../crates/worth-signal/README.md) |
 
 ---

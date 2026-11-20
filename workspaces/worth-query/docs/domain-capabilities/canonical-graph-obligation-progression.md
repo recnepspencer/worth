@@ -359,8 +359,8 @@ part of preparing and executing the installed query or operation.
   explains session affinity and complete authorization facts.
 - [Provisional State And Invariant Execution](./provisional-state-and-invariant-execution.md)
   explains real installed invariant execution before commit.
-- The generic workspace-read engine remains available for its existing
-  non-application responsibilities. It is not a second application-query plan.
+- The generic workspace-read engine was retired with the `worth-query` engine
+  ([last version](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query)).
 
 ## Inspection And Debugging
 
@@ -407,23 +407,23 @@ rendered strings or reconstruct an identity from a version number.
 - It does not implement multiple branch heads, branch creation, merge, rebase,
   or concurrent branch writers.
 - Read-only adoption is inspection, not a consumer extension system.
-- Generic monolith read and graph-composition features remain preserved until a
-  later named migration proves their parity and authorizes their retirement.
+- The generic monolith read and graph-composition features were retired with
+  the `worth-query` engine ([last version](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query)).
 
 ## Compatibility And Migration Map
 
 | Inherited surface | Preserved guarantee | Current owner and integration | Retirement posture |
 |---|---|---|---|
-| 9.9 graph-obligation meaning | Kinds, owner routes, selection basis, resource/effect posture, terminal requirements, denials, and bounded lookup | Installation owns the sealed set; admission selects and plans; execution obtains actual owner terminals | The monolith obligation tree, fake executor, dispatch envelopes, and authority-capable Consumer Kit registration/execution are retired; generic graph composition remains |
+| 9.9 graph-obligation meaning | Kinds, owner routes, selection basis, resource/effect posture, terminal requirements, denials, and bounded lookup | Installation owns the sealed set; admission selects and plans; execution obtains actual owner terminals | The monolith obligation tree, fake executor, dispatch envelopes, and authority-capable Consumer Kit registration/execution are retired; generic graph composition was retired with the `worth-query` engine |
 | 9.9 manual invariant callbacks | Lawful success and violation behavior for installed invariant families | The application-operation session invokes the installed provider; Relational seals the validated candidate after all real invariant phases | Callback and no-op composition authority is retired; contributed capability denial inspection remains non-executable |
-| 9.10 graph-read access planning | Requirement derivation, inventory matching, cost, budget, typed denial, and inspection | Admission owns the specialized application-query review; execution consumes it through the session-owned read port | Public raw planning-input/review construction and the application-query monolith admitted-plan export are retired; generic workspace reads remain |
-| 9.11 downstream adoption | Honest public-facade adoption and exact consumer residue | Host exposes read-only installed-obligation inspection; certification and consumer suites prove source residue | Local graph-obligation registration, execution proof workspaces, and support-pin authority are retired; the unrelated generic Consumer Kit remains |
+| 9.10 graph-read access planning | Requirement derivation, inventory matching, cost, budget, typed denial, and inspection | Admission owns the specialized application-query review; execution consumes it through the session-owned read port | Public raw planning-input/review construction and the application-query monolith admitted-plan export are retired; generic workspace reads were retired with the `worth-query` engine |
+| 9.11 downstream adoption | Honest public-facade adoption and exact consumer residue | Host exposes read-only installed-obligation inspection; certification and consumer suites prove source residue | Local graph-obligation registration, execution proof workspaces, and support-pin authority are retired; the generic Consumer Kit was retired with the `worth-query` engine |
 | 9.15 provider sessions | Provider lifecycle, complete decision read-sets, provisional state, installed invariant execution, and cleanup | Execution binds the existing managed run as the exact worker inside the application graph-work session | Integrated unchanged; it is a lower worker, not a competing application session or receipt authority |
 | 9.16 Phase 6 application queries | Identity, parameters, basis, ordering, projection, continuation, history, preview, live, result shaping, and publication behavior | Every lane consumes the destination graph-read plan and session; semantic result shaping remains with application query | Parallel direct Relational execution and parallel application-query plan authority are retired |
 | 9.16 Phases 7.1-7.2 access | Installed capability meaning, purpose, request binding, trusted time, exact grant/path, policy evidence, and revalidation | The complete evidence set is observed and revalidated inside the same branch-bound session | Pre-session observation and any reconstructed authorization scope are retired |
 | Query and operation publication | Existing result/commit identity, omission, work, cleanup, response-loss, and retry behavior | Publication derives read-only receipts from execution terminals and distinguishes fresh execution from recovered prior commit | Public constructors and any selected-versus-executed synthetic outcome path are retired |
 | 9.16 Phase 8 application aftermath | Explicit correction and external-effect meaning, co-committed outbox/idempotency facts, exact dispatch posture, receipt-bound recovery, and weaker publication | Declaration and installation own static meaning; execution owns commit, dispatch, and live recovery; publication owns closed descriptions | Generic recovery slots, guessed completion, and provisional undo/redo as an accepted product are forbidden |
-| Facades and downstream consumers | Ordinary source behavior and full Query, Bank, and Worth UI features | Declaration and host facades lower one way into destination packages; Bank and Worth UI consume those facades | Only aliases that reopen retired authority are removed; unrelated adapters and monolith behavior remain |
+| Facades and downstream consumers | Ordinary source behavior and full Query and Bank features | Declaration and host facades lower one way into destination packages; Bank consumes those facades | Aliases that reopen retired authority are removed; the `worth-query` engine was retired, and Worth UI, which still depended on it, is parked ([#262](https://github.com/recnepspencer/worth/issues/262)) |
 
 ## Successor Contract
 

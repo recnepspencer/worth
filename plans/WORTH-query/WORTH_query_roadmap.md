@@ -1,5 +1,7 @@
 # WORTH Query Future Roadmap
 
+> **Retirement note (2026-11-20).** The `worth-query` engine crate (`WorthQueryWorkspace`, `worth_query::facade`), its Workspace read and graph-composition surfaces, its Consumer Kit and its legacy courts were retired in [#260](https://github.com/recnepspencer/worth/pull/260) and [#261](https://github.com/recnepspencer/worth/pull/261) ([last version](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query)). Statements below that the engine or those surfaces remain available are historical. Query is consumed through `worth-query-decl` and `worth-query-host`.
+
 ## Purpose
 
 This document defines the future work for `worth-query`.

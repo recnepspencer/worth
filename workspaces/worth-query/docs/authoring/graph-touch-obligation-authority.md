@@ -206,8 +206,8 @@ formatted receipt.
 ## Current Limits
 
 - Read-only adoption is inspection, not an extension or execution API.
-- Generic workspace read and graph-composition engines remain supported for
-  their existing responsibilities.
+- The generic workspace read and graph-composition engines were retired with
+  the `worth-query` engine.
 - Durability, restart recovery, multiple branch heads, and concurrent branch
   writers are outside this feature.
 
