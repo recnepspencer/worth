@@ -120,3 +120,4 @@ impl RelationalAuthoredCoupledCandidate<'_> {
 
 mod corruption;
 mod round;
+pub(super) use round::postponed;

@@ -152,6 +152,7 @@ pub(crate) fn prepare_coupled_candidate(
         fresh_records,
         authored_writes,
         read: std::cell::RefCell::new(None),
+        successor_rounds: 0,
     };
     crate::execution::phase_observation::symbol_preparation_event(
         crate::execution::phase_observation::SymbolPreparationEvent::AssemblerCallback,
@@ -199,6 +200,7 @@ pub(crate) fn prepare_coupled_candidate(
         }
         Ok(())
     }).map_err(custody::execution_stop)?.0?;
+    super::succession::withdraw_superseded(execution, transaction, &parts)?;
     if !parts.is_empty() || !stages.is_empty() {
         super::disjoint_field_patches::compose(
             execution,
