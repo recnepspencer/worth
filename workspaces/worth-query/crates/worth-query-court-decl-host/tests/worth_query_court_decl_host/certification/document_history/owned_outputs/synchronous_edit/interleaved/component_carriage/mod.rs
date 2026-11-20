@@ -14,6 +14,8 @@ use connections::*;
 #[cfg(test)]
 mod courts;
 mod differential;
+#[cfg(test)]
+mod live_outputs;
 
 #[derive(Clone)]
 pub struct Demand {
