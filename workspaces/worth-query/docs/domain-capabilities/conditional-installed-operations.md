@@ -438,5 +438,6 @@ stage receipt.
 
 ## Related Docs
 
+- [Granular Invalidation Batches](../runtime-surfaces/granular-invalidation-batches.md)
 - [Ordinary Application Front Door](../foundations/ordinary-application-front-door.md)
 - [Aspects And Authority Lanes](../modeling/aspects-and-authority-lanes.md)

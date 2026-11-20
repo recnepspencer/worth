@@ -123,11 +123,11 @@ cannot exist without passing through the canonical encoder.
 - canonical field encoding
 
 **Relevant Query source surfaces**
-- [runtime/support_matrix.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/support_matrix.rs)
-- [runtime/state_snapshot.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/state_snapshot.rs)
-- [runtime/workspace_contracts.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/workspace_contracts.rs)
-- [runtime/intent/preview.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/intent/preview.rs)
-- [runtime/intent/denial.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/intent/denial.rs)
+- [runtime/support_matrix.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/runtime/support_matrix.rs)
+- [runtime/state_snapshot.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/runtime/state_snapshot.rs)
+- [runtime/workspace_contracts.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/runtime/workspace_contracts.rs)
+- [runtime/intent/preview.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/runtime/intent/preview.rs)
+- [runtime/intent/denial.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/runtime/intent/denial.rs)
 
 **Relevant APIs and product surfaces**
 - the new canonical evidence-identity constructor surface (sealed; the only
@@ -235,11 +235,11 @@ teaching the folklore scheme by example.
 - certification digest emission
 
 **Relevant Query source surfaces**
-- [runtime/support_matrix.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/support_matrix.rs)
-- [runtime/support/profile.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/support/profile.rs)
-- [runtime/state_snapshot.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/state_snapshot.rs)
-- [runtime/public_api_transcript.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/public_api_transcript.rs)
-- [application/support/report.rs](../../workspaces/worth-query/crates/worth-query/src/application/support/report.rs)
+- [runtime/support_matrix.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/runtime/support_matrix.rs)
+- [runtime/support/profile.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/runtime/support/profile.rs)
+- [runtime/state_snapshot.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/runtime/state_snapshot.rs)
+- [runtime/public_api_transcript.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/runtime/public_api_transcript.rs)
+- [application/support/report.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/application/support/report.rs)
 
 **Warnings**
 - Do not preserve old digest values by re-implementing the old string scheme
@@ -280,8 +280,8 @@ rich denial payloads.
 - stop-class taxonomy and accessor
 
 **Relevant Query source surfaces**
-- [runtime/error.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/error.rs)
-- [runtime/support/profile.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/support/profile.rs)
+- [runtime/error.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/runtime/error.rs)
+- [runtime/support/profile.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/runtime/support/profile.rs)
 
 **Relevant APIs and product surfaces**
 - `WORTHQueryRuntimeError` and its covered denial payloads
@@ -324,8 +324,8 @@ covered stop class is handleable end to end with zero string operations.
 - consumer-shaped matching certification
 
 **Relevant Query source surfaces**
-- [runtime/error.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/error.rs)
-- [runtime/workspace.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/workspace.rs)
+- [runtime/error.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/runtime/error.rs)
+- [runtime/workspace.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/runtime/workspace.rs)
 
 **Relevant APIs and product surfaces**
 - `workspace.admit_public_api_family(...)` denial surface
@@ -395,7 +395,7 @@ typed identity value rather than a display string.
 - canonical evidence identity (from Phase 1)
 
 **Relevant Query source surfaces**
-- [runtime/workspace.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/workspace.rs)
+- [runtime/workspace.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/runtime/workspace.rs)
   (the label intake the artifact will replace in Phase 6)
 
 **Relevant APIs and product surfaces**
@@ -437,7 +437,7 @@ canonical label identity recorded in basis admission evidence.
 - basis admission evidence
 
 **Relevant Query source surfaces**
-- [runtime/workspace.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/workspace.rs)
+- [runtime/workspace.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/runtime/workspace.rs)
 
 **Relevant APIs and product surfaces**
 - `workspace.preview_with_options(...)` and `workspace.branch_with_options(...)`
@@ -512,7 +512,7 @@ boundaries hold on curated runtime surfaces under combined drift pressure.
 - milestone certification
 
 **Relevant Query source surfaces**
-- [application/support/report.rs](../../workspaces/worth-query/crates/worth-query/src/application/support/report.rs)
+- [application/support/report.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/application/support/report.rs)
 - `application/tests.rs`
 - `public_doc_coverage/tests/support.rs`
 
@@ -602,7 +602,7 @@ worth-topo, worth-spatial, worth-kernel, hadwiger-research, worth-ui
 Eliminate same-class digest and authority folklore across the entire
 `projection_consumption/` subtree.
 
-**Relevant Query source surfaces:** [projection_consumption/](../../workspaces/worth-query/crates/worth-query/src/projection_consumption/)
+**Relevant Query source surfaces:** [projection_consumption/](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/projection_consumption)
 
 **Warnings**
 - Do not migrate only `receipt.rs` / `source.rs` while certification oracle
@@ -622,9 +622,9 @@ Eliminate same-class digest and authority folklore across the entire
 
 Eliminate same-class digest and authority folklore across `workflow/` and
 cross-boundary parity in
-[domain_capabilities/canonical_runtime/workflow/](../../workspaces/worth-query/crates/worth-query/src/domain_capabilities/canonical_runtime/workflow/).
+[domain_capabilities/canonical_runtime/workflow/](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/domain_capabilities/canonical_runtime/workflow).
 
-**Relevant Query source surfaces:** [workflow/](../../workspaces/worth-query/crates/worth-query/src/workflow/)
+**Relevant Query source surfaces:** [workflow/](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/workflow)
 
 **Warnings**
 - Do not fix only `lowering/writeback.rs` while foundation or inspection paths
@@ -643,7 +643,7 @@ Eliminate same-class digest and authority folklore across the entire
 `domain_capabilities/` subtree. Largest remaining slice — ships as ordered
 sub-slices in the attack plan (DC-1 through DC-6), not one pass.
 
-**Relevant Query source surfaces:** [domain_capabilities/](../../workspaces/worth-query/crates/worth-query/src/domain_capabilities/)
+**Relevant Query source surfaces:** [domain_capabilities/](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/domain_capabilities)
 
 **Warnings**
 - Do not close after `canonical_runtime/` alone while `certification/reports/`

@@ -2778,13 +2778,13 @@ reopening the whole proof chain.
 - Declaration Progression
 - Declaration Foundational Evidence
 - Declaration Route Plans
-- [Declaration Boundary Receipts](../../workspaces/worth-query/crates/worth-query/docs/domain-capabilities/declaration-boundary-receipts.md)
-- [Declaration Boundary Envelopes](../../workspaces/worth-query/crates/worth-query/docs/domain-capabilities/declaration-boundary-envelopes.md)
-- [Declaration Relational Truth Routing](../../workspaces/worth-query/crates/worth-query/docs/domain-capabilities/declaration-relational-truth-routing.md)
-- [Declaration Bridge Continuation Routing](../../workspaces/worth-query/crates/worth-query/docs/domain-capabilities/declaration-bridge-continuation-routing.md)
-- [Declaration Signal Compatibility](../../workspaces/worth-query/crates/worth-query/docs/domain-capabilities/declaration-signal-compatibility.md)
-- [Declaration Entry Orchestration](../../workspaces/worth-query/crates/worth-query/docs/domain-capabilities/declaration-entry-orchestration.md)
-- [Aspects And Authority Lanes](../../workspaces/worth-query/crates/worth-query/docs/modeling/aspects-and-authority-lanes.md)
+- [Declaration Boundary Receipts](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/docs/domain-capabilities/declaration-boundary-receipts.md)
+- [Declaration Boundary Envelopes](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/docs/domain-capabilities/declaration-boundary-envelopes.md)
+- [Declaration Relational Truth Routing](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/docs/domain-capabilities/declaration-relational-truth-routing.md)
+- [Declaration Bridge Continuation Routing](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/docs/domain-capabilities/declaration-bridge-continuation-routing.md)
+- [Declaration Signal Compatibility](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/docs/domain-capabilities/declaration-signal-compatibility.md)
+- [Declaration Entry Orchestration](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/docs/domain-capabilities/declaration-entry-orchestration.md)
+- [Aspects And Authority Lanes](../../workspaces/worth-query/docs/modeling/aspects-and-authority-lanes.md)
 - [worth_query_vision.md](./worth_query_vision.md)
 - [relational_architecture.md](../worth-relational/relational_architecture.md)
 
@@ -2828,7 +2828,7 @@ phases with a coarse "family admitted" fact when the real truth is usually
   supported"
 - later legality/progression docs consume support as a family-first but not
   slice-complete gate
-- adjacent review: [Declaration Family Taxonomy](../../workspaces/worth-query/crates/worth-query/docs/domain-capabilities/declaration-family-taxonomy.md),
+- adjacent review: [Declaration Family Taxonomy](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/docs/domain-capabilities/declaration-family-taxonomy.md),
   Declaration Legality
 
 #### Phase 6: Declaration Legality
@@ -2965,7 +2965,7 @@ fitness, not merely route family or retained identity.
 - later receipts and envelopes consume route slices rather than broad route
   shape
 - adjacent review: Declaration Foundational Evidence,
-  [Declaration Boundary Receipts](../../workspaces/worth-query/crates/worth-query/docs/domain-capabilities/declaration-boundary-receipts.md)
+  [Declaration Boundary Receipts](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/docs/domain-capabilities/declaration-boundary-receipts.md)
 
 #### Phase 10: Declaration Boundary Receipts
 
@@ -2991,7 +2991,7 @@ broad "crossed" story even when only some semantic slices truly crossed.
 
 - later binding can distinguish covered slices from adjacent or masked slices
 - adjacent review: Declaration Route Plans,
-  [Declaration Boundary Envelopes](../../workspaces/worth-query/crates/worth-query/docs/domain-capabilities/declaration-boundary-envelopes.md)
+  [Declaration Boundary Envelopes](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/docs/domain-capabilities/declaration-boundary-envelopes.md)
 
 #### Phase 11: Declaration Boundary Envelopes
 
@@ -3018,8 +3018,8 @@ reopening lower artifacts to rediscover which semantic slices crossed.
 
 - later continuation can bind from envelope meaning without reopening route or
   receipt truth
-- adjacent review: [Declaration Boundary Receipts](../../workspaces/worth-query/crates/worth-query/docs/domain-capabilities/declaration-boundary-receipts.md),
-  [Declaration Entry Orchestration](../../workspaces/worth-query/crates/worth-query/docs/domain-capabilities/declaration-entry-orchestration.md)
+- adjacent review: [Declaration Boundary Receipts](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/docs/domain-capabilities/declaration-boundary-receipts.md),
+  [Declaration Entry Orchestration](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/docs/domain-capabilities/declaration-entry-orchestration.md)
 
 #### Phase 12: Declaration Relational Truth Routing
 
@@ -3049,8 +3049,8 @@ broader local notion of relational truth.
 **Acceptance criteria**
 
 - routing success/denial aligns with relational aspect contracts
-- adjacent review: [Declaration Boundary Envelopes](../../workspaces/worth-query/crates/worth-query/docs/domain-capabilities/declaration-boundary-envelopes.md),
-  [Declaration Signal Compatibility](../../workspaces/worth-query/crates/worth-query/docs/domain-capabilities/declaration-signal-compatibility.md),
+- adjacent review: [Declaration Boundary Envelopes](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/docs/domain-capabilities/declaration-boundary-envelopes.md),
+  [Declaration Signal Compatibility](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/docs/domain-capabilities/declaration-signal-compatibility.md),
   [relational_architecture.md](../worth-relational/relational_architecture.md)
 
 #### Phase 13: Declaration Bridge Continuation Routing
@@ -3079,8 +3079,8 @@ coverage themselves.
 **Acceptance criteria**
 
 - mapping ambiguity or partial coverage is typed and observable
-- adjacent review: [Declaration Relational Truth Routing](../../workspaces/worth-query/crates/worth-query/docs/domain-capabilities/declaration-relational-truth-routing.md),
-  [Declaration Signal Compatibility](../../workspaces/worth-query/crates/worth-query/docs/domain-capabilities/declaration-signal-compatibility.md)
+- adjacent review: [Declaration Relational Truth Routing](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/docs/domain-capabilities/declaration-relational-truth-routing.md),
+  [Declaration Signal Compatibility](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/docs/domain-capabilities/declaration-signal-compatibility.md)
 
 #### Phase 14: Declaration Signal Compatibility
 
@@ -3107,8 +3107,8 @@ and aspect-vague underuses the real semantics the signal layer already exposes.
 **Acceptance criteria**
 
 - compatibility denial can occur at semantic-slice level
-- adjacent review: [Declaration Bridge Continuation Routing](../../workspaces/worth-query/crates/worth-query/docs/domain-capabilities/declaration-bridge-continuation-routing.md),
-  [Aspects And Authority Lanes](../../workspaces/worth-query/crates/worth-query/docs/modeling/aspects-and-authority-lanes.md)
+- adjacent review: [Declaration Bridge Continuation Routing](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/docs/domain-capabilities/declaration-bridge-continuation-routing.md),
+  [Aspects And Authority Lanes](../../workspaces/worth-query/docs/modeling/aspects-and-authority-lanes.md)
 
 #### Phase 23: Materialization / Aftermath
 
@@ -3136,7 +3136,7 @@ too much in terms of profile shape and too little in terms of semantic slices.
 
 - tiers are comparable in aspect-contract terms without changing semantic truth
 - adjacent review: Declaration Foundational Evidence,
-  [Declaration Entry Orchestration](../../workspaces/worth-query/crates/worth-query/docs/domain-capabilities/declaration-entry-orchestration.md)
+  [Declaration Entry Orchestration](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/docs/domain-capabilities/declaration-entry-orchestration.md)
 
 #### Phase 24: Declaration Entry Orchestration
 
@@ -3169,8 +3169,8 @@ the same ambiguity bugs this addendum is meant to prevent.
 - orchestration resolves or denies by best aspect fit
 - transcripts explain why a candidate won or why ambiguity denied
 - adjacent review: Declaration Route Plans,
-  [Declaration Boundary Receipts](../../workspaces/worth-query/crates/worth-query/docs/domain-capabilities/declaration-boundary-receipts.md),
-  [Declaration Boundary Envelopes](../../workspaces/worth-query/crates/worth-query/docs/domain-capabilities/declaration-boundary-envelopes.md),
+  [Declaration Boundary Receipts](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/docs/domain-capabilities/declaration-boundary-receipts.md),
+  [Declaration Boundary Envelopes](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/docs/domain-capabilities/declaration-boundary-envelopes.md),
   [milestone-9.3.8-closeout.md](./milestone-9.3.8-closeout.md),
   [worth_query_vision.md](./worth_query_vision.md)
 

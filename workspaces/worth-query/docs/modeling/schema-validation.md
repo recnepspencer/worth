@@ -1,8 +1,61 @@
 # Schema Validation
 
-Native boundary notes for application schema changes and reads. For laws
-enforced when an application changes its graph, see
+Canonical query validation, and Native boundary notes for application schema
+changes and reads. For laws enforced when an application changes its graph, see
 [Relation laws](relation-laws.md).
+
+## Canonical query validation
+
+Canonical query validation is the legality gate for canonical query bundles. It
+confirms that a query's projections, predicates, ordering, traversal and
+result-shape bindings are legal for the schema basis it targets, then freezes a
+stable validated identity for the bundle. The Declaration owner implements it;
+applications reach it through `worth_query_decl::facade::validation`:
+
+- `validate_canonical_bundle(bundle, schema_view)` and
+  `validate_canonical_bundle_with_failure_artifact(...)`
+- `ValidatedQueryBundle`, `QueryValidationReport`, `QueryValidationCounters`
+- `ValidationEvent`, `ValidationRejectionMatrix`
+- `QueryValidationError` and its `ValidationFailureClass`
+
+What validation proves:
+
+- selected aspects exist and are queryable;
+- ordering fields exist and are orderable;
+- predicate families are legal for the targeted field and context;
+- traversal requests respect relation and depth legality;
+- result-shape bindings do not silently widen or contradict the canonical
+  query;
+- the declared schema basis is compatible with the bundle.
+
+How it runs:
+
+1. Authoring and composition produce a `CanonicalQueryBundle`.
+2. `validate_canonical_bundle` walks projection, ordering, predicate, traversal
+   and result-shape legality against the `QuerySchemaView`.
+3. Each successful stage emits a `ValidationEvent`: `ProjectionValidated`,
+   `OrderingValidated`, `PredicateValidated`, `TraversalValidated`,
+   `ResultShapeBindingValidated`, `CompatibilityEstablished`.
+4. If every stage succeeds, validation freezes the identity and emits
+   `IdentityFrozen { query_digest, result_shape_digest }`.
+5. If any stage fails, validation returns a typed `QueryValidationError`, such
+   as `ProjectionWideningDenied` or
+   `IllegalWorkflowPredicateCapabilityOrContextShape`, grouped by
+   `ValidationFailureClass`.
+
+Validation runs before planning; a plan never guesses whether a bundle was
+legal. To debug a rejection, read the bundle's `report()`: the ordered events
+show which stage succeeded before the failure, and the rejection matrix shows
+which failure family accumulated.
+
+Anti-patterns:
+
+- Treating validation as optional because a query already canonicalized.
+- Tolerating unknown or non-queryable fields to fix later.
+- Smuggling result-shape widening through validation and expecting planning to
+  catch it.
+- Treating structured content as queryable everywhere instead of only where
+  the schema basis admits it.
 
 ## Candidate Structural Source Changes
 

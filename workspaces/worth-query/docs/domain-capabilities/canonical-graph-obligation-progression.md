@@ -345,6 +345,29 @@ For application execution, use the ordinary typed host API. Do not reproduce
 the admission sequence shown above in application code; Query performs it as
 part of preparing and executing the installed query or operation.
 
+## Graph obligation kinds
+
+Installed application queries and operations carry sealed graph-obligation
+rows. `WorthQueryInstalledGraphObligationKind` (Installation,
+`graph_obligation/kind.rs`) fixes the kind vocabulary:
+
+| Kind | Label |
+|---|---|
+| `GraphRead` | `graph-read` |
+| `AuthorizationObservation` | `authorization-observation` |
+| `MutationTouch` | `mutation-touch` |
+| `EffectApplication` | `effect-application` |
+| `InvariantExecution` | `invariant-execution` |
+
+Each row also carries exact owner requirements, selection basis, resource and
+effect posture, and a required terminal. Support is admitted through the
+installed selection, graph-read review, execution-resource profile and
+capacity reservation. A support row or selected kind is never execution
+evidence. Application code does not register these rows. Downstream code may
+inspect the installed set through
+`worth_query_host::facade::inspect_installed_graph_obligations`, which grants
+no selection, planning or execution transition.
+
 ## How It Relates To Other Features
 
 - [Graph Read Access Planning](../authoring/graph-read-access-planning.md)

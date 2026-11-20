@@ -6,7 +6,7 @@
 > [Phase 9](./milestone-9.16-runtime-phase-9-closure-ledger.md), and
 > [Phase 10](./milestone-9.16-runtime-phase-10-closure-ledger.md) closure ledgers.
 >
-> **Developer guide:** [Application Aftermath, External Effects, And Recovery](../../workspaces/worth-query/crates/worth-query/docs/execution/application-aftermath-and-recovery.md)
+> **Developer guide:** [Application Aftermath, External Effects, And Recovery](../../workspaces/worth-query/docs/execution/application-aftermath-and-recovery.md)
 
 ## Goal
 
@@ -3575,7 +3575,7 @@ This is a generic Query API, authority, lifecycle, and reconstruction gap under
 the milestone's phase-amendment rule. The portable contract is already visible
 through `worth-query-host`, but the only implemented provider installation path
 is the legacy
-[`WorthQueryRuntimeBuilder::conditional_node(...)`](../../workspaces/worth-query/crates/worth-query/src/runtime/builder/conditional_execution.rs),
+[`WorthQueryRuntimeBuilder::conditional_node(...)`](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/runtime/builder/conditional_execution.rs),
 which accepts a raw Signal graph and `BridgeConditionalProviderSet`. At the same
 time, Query's
 `installed-operation` consumer-residue registry

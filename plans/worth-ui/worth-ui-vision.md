@@ -1416,7 +1416,7 @@ work.
 
 ## Companion Documents
 
-- [WORTH Query orientation for AI agents](../../workspaces/worth-query/crates/worth-query/docs/AI_README.md)
+- [WORTH Query orientation for AI agents](../../workspaces/worth-query/docs/AI_README.md)
 - [plans/worth-query/worth_query_vision.md](../worth-query/worth_query_vision.md)
 - [plans/worth-runtime-bridge/worth_runtime_bridge_vision.md](../worth-runtime-bridge/worth_runtime_bridge_vision.md)
 - [plans/worth-relational/worth_relational_vision.md](../worth-relational/worth_relational_vision.md)

@@ -418,6 +418,26 @@ does not imply omission; the installed record-retention policy decides that.
 A previously materialized readonly history snapshot remains usable after eviction.
 Plain query and source-only requests cannot provide connected history.
 
+## Diagnostic evidence identity
+
+Every inspection subject carries a diagnostic evidence identity. Its one
+protocol lives in the Execution owner,
+`worth_query_execution::facade::evidence_identity`. An identity has a scope, a
+canonicalization scheme, sequence boundaries and an opaque comparison key.
+
+- Compare identities with the scheme-qualified comparison
+  (`eq_same_scheme`). Two identities from different schemes are not equal even
+  when their bytes match.
+- `reporting_projection()` and `terminal_projection_for_reporting()` are for
+  display and logs only.
+- `bridge_evidence_identity()` carries the identity across to Runtime Bridge
+  with its scope and canonical digest, and causal inspection projects a Query
+  observation that way (`query_observation_bridge_evidence_identity()`).
+
+Encoding or projecting an identity, including its Bridge representation, grants
+no inspection, execution, publication or correction permission. Applications
+keep using Decl/Host and the actual operation or observation owners.
+
 ## Refusal, Cancellation And Retry
 
 Handle `kind()` first. Depending on the failed operation, inspect

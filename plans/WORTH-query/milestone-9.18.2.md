@@ -375,7 +375,7 @@ Apply [Architecture](../../docs/coding-guidelines/arch_laws.md) 5-6, 10, 12,
 [Testing](../../docs/coding-guidelines/testing_laws.md) 2-5 and 13.
 
 Compile the normal button-command example in the application guide and correct
-[recorded-source-correction.md](../../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md)
+[recorded-source-correction.md](../../workspaces/worth-query/docs/execution/recorded-source-correction.md)
 to explain the two meanings. Close with passing focused cases, affected gates
 and scoped review of actual command routing and history preservation.
 
@@ -532,7 +532,7 @@ bounded cleanup and lane costs; and
 [Testing](../../docs/coding-guidelines/testing_laws.md) 3, 6, 10-12 and 17.
 
 Compile window/bookmark/disposal examples in the application guide. Update
-[storage-retention.md](../../workspaces/worth-query/crates/worth-query/docs/execution/storage-retention.md)
+[storage-retention.md](../../workspaces/worth-query/docs/execution/storage-retention.md)
 and the capability index to distinguish navigation availability from storage
 reclamation and report pending/protected custody accurately. Close after these
 tests, affected gates and scoped ownership review pass. Physical reclamation is

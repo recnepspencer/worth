@@ -43,7 +43,6 @@ worth-proof = { path = "../../crates/worth-proof" }
 worth-relational = { path = "../../crates/worth-relational" }
 worth-runtime-bridge = { path = "../../crates/worth-runtime-bridge" }
 worth-signal = { path = "../../crates/worth-signal" }
-worth-schema-graph = { path = "../worth-contracts/crates/worth-schema-graph" }
 
 serde = { version = "1", features = ["derive", "rc"] }
 sha2 = "=0.10.9"
@@ -82,7 +81,6 @@ worth-signal.opt-level = 0
 worth-runtime-bridge.opt-level = 0
 worth-runtime-world.opt-level = 0
 worth-harness.opt-level = 0
-worth-schema-graph.opt-level = 0
 worth-testkit-compiler.opt-level = 0
 # Certification targets monomorphize the whole Query runtime once per
 # certification schema (native_operation_bodies alone has 33 const-generic
@@ -111,7 +109,6 @@ worth-signal.opt-level = 0
 worth-runtime-bridge.opt-level = 0
 worth-runtime-world.opt-level = 0
 worth-harness.opt-level = 0
-worth-schema-graph.opt-level = 0
 worth-testkit-compiler.opt-level = 0
 # Certification symbols exceed the PDB limit; see [profile.dev.package].
 worth-query-certification.debug = false

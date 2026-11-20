@@ -15,24 +15,24 @@ continuation semantics remain explicit later-milestone debt.
 Milestone 8 delivered:
 
 - canonical scope expansion, template instantiation, and composition lineage in
-  [crates/worth-query/src/composition](../../workspaces/worth-query/crates/worth-query/src/composition)
+  [crates/worth-query/src/composition](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/composition)
 - ephemeral saved-query freeze, reuse legality, and semantic drift reporting in
-  [crates/worth-query/src/saved_query](../../workspaces/worth-query/crates/worth-query/src/saved_query)
+  [crates/worth-query/src/saved_query](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/saved_query)
 - admitted view-shape planning and identity-consumption contracts in
-  [crates/worth-query/src/view_shape](../../workspaces/worth-query/crates/worth-query/src/view_shape)
+  [crates/worth-query/src/view_shape](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/view_shape)
 - live view-shape lowering, grouped execution, and inspector patch semantics in
-  [crates/worth-query/src/view_shape_live](../../workspaces/worth-query/crates/worth-query/src/view_shape_live)
+  [crates/worth-query/src/view_shape_live](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/view_shape_live)
 - cross-crate grouped truth authority in
   [crates/worth-relational/src/grouped_truth](../../crates/worth-relational/src/grouped_truth)
   and
   [crates/worth-runtime-bridge/src/source](../../crates/worth-runtime-bridge/src/source)
 - Milestone 8 certification in
-  [crates/worth-query/src/harness/milestone_eight_certification](../../workspaces/worth-query/crates/worth-query/src/harness/milestone_eight_certification)
+  [crates/worth-query/src/harness/milestone_eight_certification](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/harness/milestone_eight_certification)
 - supporting Milestone 7 identity-evolution certification and inspector bridge
   seams in
-  [crates/worth-query/src/harness/identity_evolution_certification](../../workspaces/worth-query/crates/worth-query/src/harness/identity_evolution_certification)
+  [crates/worth-query/src/harness/identity_evolution_certification](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/harness/identity_evolution_certification)
   and
-  [crates/worth-query/src/identity_evolution](../../workspaces/worth-query/crates/worth-query/src/identity_evolution)
+  [crates/worth-query/src/identity_evolution](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/identity_evolution)
 - compile-fail proof boundaries in
   `crates/worth-query/tests/ui`
   and
@@ -62,8 +62,8 @@ grouped-live, and identity-aware inspector proof surfaces now exist directly.
 
 Covered by:
 
-- [crates/worth-query/src/harness/milestone_eight_certification/mod.rs](../../workspaces/worth-query/crates/worth-query/src/harness/milestone_eight_certification/mod.rs)
-- [crates/worth-query/src/harness/milestone_eight_certification/tests.rs](../../workspaces/worth-query/crates/worth-query/src/harness/milestone_eight_certification/tests.rs)
+- [crates/worth-query/src/harness/milestone_eight_certification/mod.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/harness/milestone_eight_certification/mod.rs)
+- [crates/worth-query/src/harness/milestone_eight_certification/tests.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/harness/milestone_eight_certification/tests.rs)
 
 What is proven:
 
@@ -97,8 +97,8 @@ What is proven:
 
 Covered by:
 
-- [crates/worth-query/src/composition](../../workspaces/worth-query/crates/worth-query/src/composition)
-- [crates/worth-query/src/saved_query](../../workspaces/worth-query/crates/worth-query/src/saved_query)
+- [crates/worth-query/src/composition](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/composition)
+- [crates/worth-query/src/saved_query](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/saved_query)
 - `crates/worth-query/src/saved_query/tests.rs`
 
 What is proven:
@@ -116,10 +116,10 @@ What is proven:
 
 Covered by:
 
-- [crates/worth-query/src/view_shape](../../workspaces/worth-query/crates/worth-query/src/view_shape)
-- [crates/worth-query/src/view_shape_live](../../workspaces/worth-query/crates/worth-query/src/view_shape_live)
+- [crates/worth-query/src/view_shape](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/view_shape)
+- [crates/worth-query/src/view_shape_live](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/view_shape_live)
 - `crates/worth-query/src/view_shape/tests.rs`
-- [crates/worth-query/src/view_shape_live/tests.rs](../../workspaces/worth-query/crates/worth-query/src/view_shape_live/tests.rs)
+- [crates/worth-query/src/view_shape_live/tests.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/view_shape_live/tests.rs)
 
 What is proven:
 
@@ -142,10 +142,10 @@ What is proven:
 
 Covered by:
 
-- [crates/worth-query/src/identity_evolution/inspector.rs](../../workspaces/worth-query/crates/worth-query/src/identity_evolution/inspector.rs)
+- [crates/worth-query/src/identity_evolution/inspector.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/identity_evolution/inspector.rs)
 - `crates/worth-query/src/harness/identity_evolution_certification/matrix.rs`
-- [crates/worth-query/src/harness/identity_evolution_certification/tests.rs](../../workspaces/worth-query/crates/worth-query/src/harness/identity_evolution_certification/tests.rs)
-- [crates/worth-query/src/harness/milestone_eight_certification/mod.rs](../../workspaces/worth-query/crates/worth-query/src/harness/milestone_eight_certification/mod.rs)
+- [crates/worth-query/src/harness/identity_evolution_certification/tests.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/harness/identity_evolution_certification/tests.rs)
+- [crates/worth-query/src/harness/milestone_eight_certification/mod.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/harness/milestone_eight_certification/mod.rs)
 
 What is proven:
 

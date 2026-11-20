@@ -28,11 +28,11 @@ type system and the certification surface.
 Milestone 2 delivered:
 
 - a query-owned schema-view boundary under
-  [crates/worth-query/src/schema_view](../../workspaces/worth-query/crates/worth-query/src/schema_view)
+  [crates/worth-query/src/schema_view](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/schema_view)
 - proof-bearing validated artifacts under
   [crates/worth-query/src/validation/artifacts](../../workspaces/worth-query/crates/worth-query-declaration/src/validation/artifacts)
 - a decomposed validation pipeline under
-  [crates/worth-query/src/validation](../../workspaces/worth-query/crates/worth-query/src/validation)
+  [crates/worth-query/src/validation](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/validation)
   covering:
   - [projection.rs](../../workspaces/worth-query/crates/worth-query-declaration/src/validation/projection.rs)
   - [predicates.rs](../../workspaces/worth-query/crates/worth-query-declaration/src/validation/predicates.rs)
@@ -42,12 +42,12 @@ Milestone 2 delivered:
   - [result_shape.rs](../../workspaces/worth-query/crates/worth-query-declaration/src/validation/result_shape.rs)
   - [pipeline.rs](../../workspaces/worth-query/crates/worth-query-declaration/src/validation/pipeline.rs)
 - canonical predicate and ordering authority threaded through
-  [crates/worth-query/src/canonicalization](../../workspaces/worth-query/crates/worth-query/src/canonicalization)
+  [crates/worth-query/src/canonicalization](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/canonicalization)
 - schema-derived typed query APIs under
-  [crates/worth-query/src/typed](../../workspaces/worth-query/crates/worth-query/src/typed)
+  [crates/worth-query/src/typed](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/typed)
 - a schema DSL that derives typed tokens and runtime schema views from one
   declaration in
-  [crates/worth-query/src/schema_macro.rs](../../workspaces/worth-query/crates/worth-query/src/schema_macro.rs)
+  [crates/worth-query/src/schema_macro.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/schema_macro.rs)
 - Milestone 2 validation certification artifacts under
   `crates/worth-query/src/harness/validation_certification`
   and
@@ -126,7 +126,7 @@ Covered by:
   - `workflow-context-illegality`
   - `forbidden-widening-case`
 - direct hostile validation tests under
-  [crates/worth-query/src/harness/validation_cases](../../workspaces/worth-query/crates/worth-query/src/harness/validation_cases)
+  [crates/worth-query/src/harness/validation_cases](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/harness/validation_cases)
 
 What is proven:
 
@@ -142,9 +142,9 @@ What is proven:
 Covered by:
 
 - `ValidationFailureArtifact` and `ValidationRejectionMatrix` emission in
-  [crates/worth-query/src/validation](../../workspaces/worth-query/crates/worth-query/src/validation)
+  [crates/worth-query/src/validation](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/validation)
 - exact counter and report assertions in
-  [crates/worth-query/src/harness/validation_cases](../../workspaces/worth-query/crates/worth-query/src/harness/validation_cases)
+  [crates/worth-query/src/harness/validation_cases](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/harness/validation_cases)
 - aggregate certification accounting in
   `crates/worth-query/src/harness/validation_matrix/completeness.rs`
 
@@ -162,7 +162,7 @@ What is proven:
 Covered by:
 
 - public sealed validated artifact construction through
-  [crates/worth-query/src/validation](../../workspaces/worth-query/crates/worth-query/src/validation)
+  [crates/worth-query/src/validation](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/validation)
 - compile-fail tests:
   - `private_validated_query_artifact_fields.rs`
   - `private_validated_query_bundle_fields.rs`

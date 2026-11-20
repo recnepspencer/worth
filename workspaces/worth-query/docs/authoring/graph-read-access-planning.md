@@ -146,6 +146,36 @@ The Bank current, continuation, historical, preview, and live journeys execute
 the same installed planning meaning. Lane-parity tests prove the graph meaning
 is equal while attempt plans, sessions, and bases remain distinct.
 
+## Admission vocabulary
+
+Graph read access rows describe the access structures a declared graph read
+needs, separately from the obligation rows that describe graph meaning. The
+Admission owner (`graph_read_access/`) fixes the vocabularies:
+
+- **Admission posture** (`WorthQueryGraphReadAccessAdmissionPosture`):
+  `inline_indexed`, `bounded_ephemeral_index`, `persistent_index_required`,
+  `async_materialization_required`, `store_backed_capability_required`,
+  `access_capability_registration_required`, `denied`.
+- **Review denial** (`WorthQueryGraphReadPlanReviewDenialKind`):
+  `required_async_materialization`, `required_access_capability_registration`,
+  `required_persistent_index`, `unsupported_graph_index_support`.
+- **Requirement** (`WorthQueryGraphReadAccessRequirementKind`):
+  `directional_adjacency`, `reverse_adjacency`, `aggregate_selection`,
+  `derived_source`, `predicate_support`, `ordering_support`,
+  `traversal_workset`, `visited_set`, `dedup_set`, `proof_support`,
+  `result_buffer`, `materialization_lifecycle`, `live_maintenance_support`,
+  `domain_operation_capability_registration`.
+- **Required capability owner** (`WorthQueryGraphReadRequiredCapabilityOwner`):
+  `query_runtime`, `lower_runtime`, `persistent_store`, `domain_registration`,
+  `async_materializer`.
+
+Broad boolean graph reads and high-fanout traversals are not ordinary inline
+reads unless their admitted plan proves that posture. A denial keeps its typed
+reason and required posture; it never becomes advice to loop over relations
+locally or expand into memory. A read that claims access-planning support
+exposes the consumed plan, admission and requirement-set digests and its
+execution counters through the read receipt.
+
 ## How It Relates To Other Features
 
 - [Read Composition](read-composition.md) owns typed query and result-shape

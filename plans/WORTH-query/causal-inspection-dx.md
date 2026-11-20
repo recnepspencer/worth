@@ -30,7 +30,7 @@ A paired `.why_changed(&before)` independently admits both originals and their
 diagnostics. Source-only inspection uses
 `fresh.inspect_source::<SourceDisclosure>(&receipt).why_performed()`.
 
-The [capability guide](../../workspaces/worth-query/crates/worth-query/docs/capabilities/cross-runtime-causal-inspection.md)
+The [capability guide](../../workspaces/worth-query/docs/capabilities/cross-runtime-causal-inspection.md)
 owns exact signatures, declarations, supported shapes and refusal handling. The
 [application guide](../../docs/build-an-application.md#inspect-original-source-and-query-evidence)
 connects acquisition, admission, rich views and close.
