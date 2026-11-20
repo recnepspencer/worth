@@ -30,7 +30,9 @@ pub(super) fn pullback(
             };
             for source in [&mut *old, &mut *new] {
                 match source.entity_kind(entity) {
-                    Ok(kind) if kind == route.endpoint_kind() => {}
+                    Ok(kind) if kind == route.endpoint_kind() => {
+                        record_changed_entity(source, closure, entity)?;
+                    }
                     Ok(_) | Err(Denial::Definition(Definition::RecordUnavailable)) => continue,
                     Err(cause) => return Err(cause),
                 }

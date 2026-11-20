@@ -11,6 +11,7 @@ use crate::domain_computation::primary_graph::{
 use crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity;
 use std::{collections::BTreeSet, sync::Arc};
 use worth_execution::{ExecutionOrderedMap, ExecutionRequest};
+mod court_doors_for_test;
 mod delta;
 mod postings;
 use postings::{ordered_denial, OccurrencePostings};
@@ -60,8 +61,7 @@ impl From<RelationalExecutionDenialCause> for MaterialDenial {
     }
 }
 
-pub(in crate::domain_computation::primary_graph::application_query::managed_index) struct PersistentSourceRows
-{
+pub struct PersistentSourceRows {
     owner: WorthQueryGraphWorkSessionIdentity,
     program: ManagedIndexSourceProgram,
     scope: EntityId,
@@ -236,6 +236,8 @@ impl PersistentSourceRows {
         // Native closes structural pullback; Query's existing field/dependency
         // index closes scalar/lifecycle entry reads. Neither substitutes for the
         // other. A routed retained entry missing from Native's real delta refuses.
+        // O(|changed| log |changed| + |changed_entities| log |entries|
+        //   + min(|changed_record_entities|, |dependencies|) log max + matched edges).
         let mut changed_keys = BTreeSet::new();
         for entity in changed.iter().flat_map(|(a, b)| {
             a.iter()
@@ -249,16 +251,9 @@ impl PersistentSourceRows {
             allocation.claim_tree::<EntityId>(execution, changed_keys.len())?;
             changed_keys.insert(entity);
         }
-        for entity in scope.changed_entities().filter(|_| !inherited) {
-            for key in self.dependencies.entries_for_entity(entity) {
-                scope
-                    .read_budget()
-                    .checkpoint(1)
-                    .map_err(DerivedRelationReadDenial::Structural)?;
-                if !changed_keys.contains(key) {
-                    return Err(ManagedIndexSourcePreparationDenial::IncompletePreparation.into());
-                }
-            }
+        if !inherited {
+            self.dependencies
+                .check_complete(scope, &self.entries, &changed_keys)?;
         }
         let mut delta = delta::SourceDelta::new(inherited);
         for (before, proposed) in changed {

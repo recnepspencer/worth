@@ -15,6 +15,7 @@ pub(in crate::validation::candidate_source) fn discover_home_target(
     });
     let mut closure = PreparedManagedIndexScopeClosure {
         scopes: BTreeMap::new(),
+        changed_records: BTreeSet::new(),
         support: Vec::new(),
     };
     for record in records {

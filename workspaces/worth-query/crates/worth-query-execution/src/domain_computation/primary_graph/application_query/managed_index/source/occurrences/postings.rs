@@ -15,6 +15,59 @@ impl OccurrencePostings {
             .flat_map(|entries| entries.keys())
     }
 
+    pub(super) fn check_complete(
+        &self,
+        scope: &ManagedIndexSourceScope<'_>,
+        entries: &ExecutionOrderedMap<EntityId, Arc<Entry>>,
+        changed_keys: &BTreeSet<EntityId>,
+    ) -> Result<(), MaterialDenial> {
+        let budget = scope.read_budget();
+        for row in scope.changed_entities() {
+            budget
+                .checkpoint(1)
+                .map_err(DerivedRelationReadDenial::Structural)?;
+            if entries.contains_key(&row) && !changed_keys.contains(&row) {
+                return Err(ManagedIndexSourcePreparationDenial::IncompletePreparation.into());
+            }
+        }
+        let changed_records = scope.changed_record_entities();
+        if changed_records.len() <= self.entities.len() {
+            for entity in changed_records {
+                budget
+                    .checkpoint(1)
+                    .map_err(DerivedRelationReadDenial::Structural)?;
+                self.check_entity_dependents(entity, changed_keys, &budget)?;
+            }
+        } else {
+            for &entity in self.entities.keys() {
+                budget
+                    .checkpoint(1)
+                    .map_err(DerivedRelationReadDenial::Structural)?;
+                if scope.is_changed_record_entity(entity) {
+                    self.check_entity_dependents(entity, changed_keys, &budget)?;
+                }
+            }
+        }
+        Ok(())
+    }
+
+    fn check_entity_dependents(
+        &self,
+        entity: EntityId,
+        changed_keys: &BTreeSet<EntityId>,
+        budget: &worth_relational::facade::runtime::CustomInvariantReadBudget<'_>,
+    ) -> Result<(), MaterialDenial> {
+        for key in self.entries_for_entity(entity) {
+            budget
+                .checkpoint(1)
+                .map_err(DerivedRelationReadDenial::Structural)?;
+            if !changed_keys.contains(key) {
+                return Err(ManagedIndexSourcePreparationDenial::IncompletePreparation.into());
+            }
+        }
+        Ok(())
+    }
+
     pub(super) fn insert_entry(
         &mut self,
         entry: EntityId,

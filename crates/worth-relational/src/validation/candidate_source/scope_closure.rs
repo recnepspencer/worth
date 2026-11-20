@@ -23,7 +23,20 @@ pub(super) use home_target::discover_home_target;
 /// on public sessions, retained provider roots, or positive query matches.
 pub(crate) struct PreparedManagedIndexScopeClosure {
     pub(crate) scopes: BTreeMap<EntityId, BTreeSet<EntityId>>,
+    pub(crate) changed_records: BTreeSet<EntityId>,
     pub(crate) support: Vec<DerivedRelationData>,
+}
+
+fn record_changed_entity(
+    source: &mut LifecycleSource<'_, '_>,
+    closure: &mut PreparedManagedIndexScopeClosure,
+    entity: EntityId,
+) -> Result<(), Denial> {
+    if !closure.changed_records.contains(&entity) {
+        source.retain(size_of::<EntityId>() * 5)?;
+        closure.changed_records.insert(entity);
+    }
+    Ok(())
 }
 
 pub(crate) fn discover(
@@ -57,6 +70,7 @@ pub(crate) fn discover(
     )?;
     let mut closure = PreparedManagedIndexScopeClosure {
         scopes: BTreeMap::new(),
+        changed_records: BTreeSet::new(),
         support: affected.support,
     };
     for root in affected.roots {
@@ -87,6 +101,7 @@ pub(crate) fn discover(
         for source in [&mut old, &mut new] {
             match source.entity_kind(id) {
                 Ok(kind) if kind == program.row_kind() => {
+                    record_changed_entity(source, &mut closure, id)?;
                     rows.insert(NativeMemberKey::Entity(id));
                 }
                 Ok(kind) if kind == program.scope_kind() => {

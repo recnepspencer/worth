@@ -97,13 +97,20 @@ pub(super) fn discover(
             }
         }
     }
-    let changed = created
+    let changed: BTreeSet<_> = created
         .into_iter()
         .filter(|entity| *entity != scope)
         .collect();
-    new.retain(size_of::<(EntityId, BTreeSet<EntityId>)>())?;
+    let changed_records_bytes = changed
+        .len()
+        .checked_mul(size_of::<EntityId>() * 5)
+        .and_then(|bytes| bytes.checked_add(size_of::<(EntityId, BTreeSet<EntityId>)>()))
+        .ok_or(Definition::WorkBudgetExceeded)?;
+    new.retain(changed_records_bytes)?;
+    let changed_records = changed.clone();
     Ok(Some(PreparedManagedIndexScopeClosure {
         scopes: BTreeMap::from([(scope, changed)]),
+        changed_records,
         support: Vec::new(),
     }))
 }

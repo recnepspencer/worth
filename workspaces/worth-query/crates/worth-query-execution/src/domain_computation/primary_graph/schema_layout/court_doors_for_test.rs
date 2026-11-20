@@ -116,4 +116,12 @@ impl WorthQueryPrimaryGraphLayout {
     ) -> Result<(Self, RelationalSchemaRegistry), WorthQueryPrimaryGraphInstallationDenial> {
         Self::lower(schema, native_contracts, existing_registry, value_bindings)
     }
+
+    #[doc(hidden)]
+    pub fn managed_source_for_test(
+        &self,
+        index: &str,
+    ) -> Option<&worth_relational::facade::runtime::ManagedIndexSourceProgram> {
+        Self::managed_source(self, index)
+    }
 }
