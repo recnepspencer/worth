@@ -676,7 +676,9 @@ Choose a task and follow its guide for the exact calls and result handling.
 | Retire or revoke an inbound source across a graceful Home reopen | `retire_inbound_occurrence_source` and `revoke_inbound_occurrence_source` record Home-level facts before Directory success. Fresh verifier installation and audience configuration preserve that posture across every slot for the same source. Retirement cannot downgrade revocation; unsettled control publication fences consumption. Source controls are supported independently of inbound-completion custody. | [Home-level source controls](../workspaces/worth-query/docs/execution/application-aftermath-and-recovery.md#home-level-inbound-source-controls) |
 | Preserve an inbound callback or transport completion across graceful reopen | Accepted message identity, original audience, pending work, deduplication, terminal acknowledgement and exact-message expiry survive. Fresh verifier configuration cannot replace an accepted or selected transport audience. `maintain_inbound_occurrences` continues retained obligations; recorded completed transport observations never contact the rail again. Canonical terminals rebuild from actual Native and World sources. A live durable `ProductUnpublished` completion follows `ReopenRequired`: close may refuse with its original Home, and the caller ends that ownership and opens through Host before continuing the original. Crash recovery remains uncertified. | [Durable inbound custody](../workspaces/worth-query/docs/execution/application-aftermath-and-recovery.md#durable-inbound-custody-on-a-directory-home) |
 | Retain an external recovery claim across graceful Home reopen | The Home records claim identity, original deadline and terminal status. A fresh selected original-intent admission reissues current-incarnation capability for the same live claim. Deferred Drop disposal and material-pin release require funded maintenance or close. | [Durable recovery claims](../workspaces/worth-query/docs/execution/application-aftermath-and-recovery.md#durable-recovery-claims-on-a-directory-home) |
-| Diagnose an unclean Directory Home refusal | Track H refuses before service with `UncleanRecoveryUnsupported`, naming the durable owner and exact effect digest found after the selected checkpoint. The Host opening refusal's `unclean_recovery_unsupported()` reports Store's Native case and an unobserved dispatch attempt; Signal effects and unresolved branch creation arrive inside the World readmission cause (see `detail()`). See [After a crash](application-home.md#after-a-crash-or-unclean-close). Graceful close and quiescent kill remain supported. C5 retires this refusal when crash recovery is certified. | [Delivery tracks D18](../plans/database-foundation/milestone-3.md#the-happy-constraint-track-h) |
+| Reopen a Directory Home after a kill | Open the same `Directory(path)` in a fresh process. A Native effect without its World occurrence is retained as recovered `ProductUnpublished` custody and the same key continues it without rerunning the handler; a no-effect original is durably released before service and its key then executes fresh once; a Signal effect with its recorded open is readmitted; an unresolved branch creation reopens as recovered custody that can only be released (no owner fork) or continued to exactly its durable forks, while a partly performed creation refuses with `WorldReadmissionDenial::PartlyPerformedCreation`; an interrupted program transition resumes when reopened with the same transition request (a changed plan refuses `TransitionPlanDrift`, a different successor `TransitionPending`); a kill during close's checkpoint publication recovers the pre-close committed state. After a kill while an attempt held a managed run, graceful close refuses `ManagedCleanup(ManagedRunPending { .. })` until C3. Crash recovery is not yet certified (C4/C5). | [After a crash](application-home.md#after-a-crash-or-unclean-close) |
+| Diagnose an unclean Directory Home refusal | Opening refuses before service with `UncleanRecoveryUnsupported` (D18), naming the durable owner and exact effect digest, only for an external dispatch attempt with no recorded observation (owner `Dispatch`), a Signal effect with no recorded open, or a Native branch fork with no creation intent; the last two arise only from damage. The Host opening refusal's `unclean_recovery_unsupported()` returns `Some(..)` for all three. C5 retires this refusal. | [After a crash](application-home.md#after-a-crash-or-unclean-close), [Delivery tracks D18](../plans/database-foundation/milestone-3.md#the-happy-constraint-track-h) |
+| Recognize a contended or discard-pending Home open | `refused.physical_refusal()` returns `Option<&host::ApplicationHomePhysicalRefusal>`; match its `kind()` against `host::ApplicationHomePhysicalRefusalKind::MutationOwnerContended` or `DiscardPending`. Complete an interrupted discard with `host::discard_home`. | [After a crash](application-home.md#after-a-crash-or-unclean-close), [Discard](application-home.md#discard) |
 For a descriptive full physical coordinate, `relation_where_entity(relation,
 nested, parameter)` uses `EntityRefApplicationValueBinding` and the existing
 foundational EntityId scalar. It selects only actual live members of the
@@ -1046,8 +1048,9 @@ case; empty fresh resources cannot stand in for a recorded release.
 
 Branch adoption preserves the actual performed prefix and ordered remainder.
 A cancelled Native effect without World occurrence/disposition refuses close with
-`UnresolvedBusinessCustody` and unclean reopen with
-`UncleanRecoveryUnsupported(Relational)` (D18); continuation is C1.
+`UnresolvedBusinessCustody`. After an unclean end, reopen retains it as recovered
+`ProductUnpublished` custody that the same key continues without rerunning its
+handler.
 Durable history and branch-publication cleanup are C2;
 C4 owns the adversarial oracle; C5 owns final retirement and certification.
 **Crash recovery is not yet certified.** Do not substitute MemoryOnly for a
@@ -1861,10 +1864,12 @@ Native root and authored Signal state, with its original fork association.
 Graceful close/reopen and a quiescent kill preserve published authored state
 and committed receipts without executing either effect again. Foreign owners
 and unknown codec versions refuse with typed reasons. Unresolved live
-unpublished custody refuses close; an unclean tail with an associated owner
-effect but no occurrence or disposition refuses reopen with
-`UncleanRecoveryUnsupported` (D18). Original crash continuation, pending
-settlement and resource/temporal runtime recovery retain their later boundaries.
+unpublished custody refuses close. After an unclean end, reopen continues a
+Native effect without its World occurrence as recovered `ProductUnpublished`
+custody and readmits a Signal effect with its recorded open; a Signal effect
+with no recorded open (damage only) still refuses with
+`UncleanRecoveryUnsupported` (D18). Pending settlement and resource/temporal
+runtime recovery retain their later boundaries.
 Writeback diagnostics remain process-local and never substitute for durable
 owner evidence. See [derived recovery and Home composition](build-an-application.md#current-durable-home-composition-boundary).
 

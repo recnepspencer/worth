@@ -15,8 +15,9 @@ module (such as `host::primary_graph::..`) lives in that module.
 | `host::WorthQueryApplicationHomeLocation::MemoryOnly` | No restart guarantee | Tests and process-local tools |
 
 **Crash recovery is not yet certified.** A Directory Home survives graceful
-close, and a process kill while no operation is executing. A kill during an
-operation can leave a Home that refuses to open; see
+close, and a process kill while no operation is executing. After a kill during
+an operation, the named cases reopen and continue or release the interrupted
+work, and a few damage-shaped cases still refuse to open; see
 [After a crash](#after-a-crash-or-unclean-close).
 
 ## Open a Home
@@ -188,25 +189,51 @@ If the recorded program or schema differs from the request, opening refuses and
 
 ## After a crash or unclean close
 
-- **Graceful close, or a kill while no operation was running:** reopen normally.
-- **A kill during an operation:** if the journal ends with an owner effect that
-  has no recorded occurrence or disposition, opening refuses before service with
-  a typed `UncleanRecoveryUnsupported { owner, effect }` (the
-  `DurableOwnerFamily` and the effect digest). Close the refusal as above. There
-  is no supported way to open such a Home yet; a development Home can be
-  discarded.
-- **Which accessor reports it:** `refused.unclean_recovery_unsupported()`
-  returns `Some(..)` for a Relational (Native) effect found by Store's tail scan
-  and for an external dispatch attempt that has no recorded observation (owner
-  `Dispatch`). A Signal
-  effect without its occurrence, or an unresolved branch creation, also refuses
-  before service, but arrives inside the World readmission cause: the accessor
-  returns `None` and `refused.detail()` shows
-  `World(UncleanRecoveryUnsupported ..)`.
+Reopen the same Directory in a fresh process. Recovery finishes in Store's
+fixed owner order before the Home serves anything.
 
-Crash recovery for these cases is being built in Milestone 3's cleanup track
-(C1; see [Milestone 3 status](../plans/database-foundation/milestone-3.md#cleanup-track-status)).
-Until it lands on master, the refusal above is the behaviour.
+- **Graceful close, or a kill while no operation was running:** reopen normally.
+- **A kill after a Native effect became durable but before World recorded its
+  occurrence:** reopen succeeds. The Home keeps the original as recovered
+  `ProductUnpublished` custody. Send the same request with the same mutation key
+  and it continues the original; the handler does not run again.
+- **A kill after World durably opened an operation but before any Native
+  effect:** reopen durably releases that original before service. The same key
+  then executes fresh exactly once, and a later reopen answers it with
+  `RecoveredCommitted` and the same receipt.
+- **A kill after a Signal effect whose open World recorded:** the effect is
+  readmitted on reopen.
+- **An unfinished branch creation:** it reopens as recovered custody under its
+  original identity, and the target branch name stays fenced. With no owner
+  fork it can only be released; with every required fork durable it can only
+  continue to exactly those forks. A partly performed creation refuses before
+  service with `WorldReadmissionDenial::PartlyPerformedCreation`.
+- **An interrupted program transition:** reopen with the same transition request
+  and it resumes. Every step happens exactly once and the result equals an
+  uninterrupted run. If the recomputed plan differs from the recorded one,
+  opening refuses in phase `host::WorthQueryHomeProgramTransitionOpenPhase::Transition`
+  with `TransitionPlanDrift` and extends nothing; a different successor refuses
+  with `TransitionPending`.
+- **A kill while graceful close was publishing its checkpoint:** reopen recovers
+  the state committed before that close.
+- **Still refused (D18):** an external dispatch attempt with no recorded
+  observation (owner `Dispatch`), a Signal effect with no recorded open, and a
+  Native branch fork with no creation intent. The last two arise only from
+  damaged files, not from a kill. Opening refuses before service with a typed
+  `UncleanRecoveryUnsupported { owner, effect }` (the `DurableOwnerFamily` and
+  the effect digest); `refused.unclean_recovery_unsupported()` returns it in
+  every case. Close the refusal as above; a development Home can be discarded.
+- **Contended or discard-pending location:** `refused.physical_refusal()` returns
+  `Some(&host::ApplicationHomePhysicalRefusal)`; its `kind()` is
+  `host::ApplicationHomePhysicalRefusalKind::MutationOwnerContended` (another
+  owner holds the Home) or `DiscardPending` (finish it with `discard_home`).
+- **Known hold:** if the process died while an operation held a managed run,
+  the reopened Home's graceful close refuses with
+  `ManagedCleanup(ManagedRunPending { .. })` until the cold release contract lands
+  (Milestone 3 cleanup C3).
+
+Certification of crash recovery comes later in Milestone 3's cleanup track
+(C4–C5; see [Milestone 3 status](../plans/database-foundation/milestone-3.md#cleanup-track-status)).
 
 ## Discard
 

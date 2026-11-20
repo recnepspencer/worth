@@ -284,8 +284,10 @@ Three caveats:
 - **Restart means reopening the same Directory Home.** Close the Home gracefully,
   then open the same `Directory(path)` in a fresh process. Do not build host
   persistence of platform truth: no mirrored tables, saved authority, replayed
-  history or application-owned checkpoint bytes as a substitute. Crash recovery
-  is not yet certified.
+  history or application-owned checkpoint bytes as a substitute. Reopen after a
+  kill recovers the cases in
+  [After a crash](application-home.md#after-a-crash-or-unclean-close); crash
+  recovery is not yet certified.
 
 ---
 
