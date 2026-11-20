@@ -155,11 +155,23 @@ pub(super) fn prepare<A: ApplicationSchemaComposition, AP, B: ApplicationSchemaC
             ))
         }
     };
+    let compilation = match home.admit_home_program_transition_compilation_basis(&source, &request)
+    {
+        Ok(basis) => basis,
+        Err(cause) => {
+            return Err(Refused::before_compilation(
+                before,
+                after,
+                home,
+                Denial::PlanningRequest(cause),
+            ))
+        }
+    };
     let target = match after.prepare_home_program_transition_target(
         phase,
         home.relational().runtime(),
         &before,
-        source.basis().relational_basis(),
+        &compilation,
     ) {
         Ok(target) => target,
         Err(successor) => return Err(Refused::compilation(before, successor, home)),

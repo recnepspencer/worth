@@ -34,6 +34,7 @@ pub struct BranchBoundRelationalTransaction {
     pub(crate) home_step: Option<std::sync::Arc<crate::runtime::AdmittedRelationalHomeProgramStep>>,
     pub(crate) home_target_coverage:
         Option<std::sync::Arc<crate::runtime::RelationalHomeTargetCoverage>>,
+    pub(crate) schema_origin: TransactionSchemaOrigin,
     pub(crate) schema_authority: std::sync::Arc<crate::branch::RelationalBranchRootSchemaAuthority>,
     pub(crate) overlay: DetachedRelationalTransactionOverlay,
     pub(crate) maximum_savepoints: usize,
@@ -48,7 +49,23 @@ pub struct BranchBoundRelationalTransaction {
     pub(crate) control: crate::mvcc::RelationalOperationControl,
 }
 
+/// Where `schema_authority` came from. Only recovery replay of a recorded
+/// schema-changing commit replaces the basis root's schema with its result.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) enum TransactionSchemaOrigin {
+    BasisRoot,
+    RecordedReplayResult,
+}
+
 impl BranchBoundRelationalTransaction {
+    /// The recorded result schema this replayed commit is judged under.
+    pub(crate) fn recorded_result_schema(
+        &self,
+    ) -> Option<&std::sync::Arc<crate::branch::RelationalBranchRootSchemaAuthority>> {
+        (self.schema_origin == TransactionSchemaOrigin::RecordedReplayResult)
+            .then_some(&self.schema_authority)
+    }
+
     pub(crate) fn mutation_schema_authority(
         &self,
     ) -> &std::sync::Arc<crate::branch::RelationalBranchRootSchemaAuthority> {

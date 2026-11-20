@@ -21,6 +21,7 @@ pub(super) fn replay_envelope_effect(
     restored: &mut RelationalRuntime,
     positioned: &crate::history::data::PositionedCanonicalCommit,
     catalog: crate::durability::authority::RecoveredIndexCatalog,
+    recorded_result_schema: Option<crate::mvcc::RecordedReplayResultSchema>,
 ) -> Result<(), RelationalRecoveryStop> {
     // Replay is the untrusted-input entrance. Admit its existing checkpoint
     // image once, with the registered cold parity check, before native apply.
@@ -103,6 +104,7 @@ pub(super) fn replay_envelope_effect(
             envelope,
             positioned.position(),
             catalog,
+            recorded_result_schema,
         )?;
     } else {
         replay_merge_commit(
@@ -111,6 +113,7 @@ pub(super) fn replay_envelope_effect(
             envelope,
             positioned.position(),
             catalog,
+            recorded_result_schema,
         )?;
     }
     Ok(())
@@ -143,6 +146,7 @@ pub(super) fn replay_ordinary_commit(
     envelope: &CanonicalCommitEnvelope,
     position: crate::publication::patch::data::PatchStreamPosition,
     catalog: crate::durability::authority::RecoveredIndexCatalog,
+    recorded_result_schema: Option<crate::mvcc::RecordedReplayResultSchema>,
 ) -> Result<(), RelationalRecoveryStop> {
     crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
     let schema_basis = RecoveredSchemaBasis::admit(restored, envelope)?;
@@ -151,7 +155,7 @@ pub(super) fn replay_ordinary_commit(
         restored,
         &envelope.merge_parent_branches,
     )?);
-    let options = schema_basis.apply(options);
+    let options = with_recorded_result_schema(schema_basis.apply(options), recorded_result_schema);
     let options = apply_materialization_replay_mode(options, envelope)?;
     let mut txn = restored
         .begin_branch_transaction_with_owner_inputs(options)
@@ -196,6 +200,17 @@ pub(super) fn replay_ordinary_commit(
     };
     release_replayed_snapshot(restored, &outcome.snapshot)?;
     validation.map_err(Into::into)
+}
+
+/// A recorded schema-changing commit is judged under its recorded result.
+fn with_recorded_result_schema(
+    options: crate::mvcc::RelationalTransactionValidationInput,
+    recorded: Option<crate::mvcc::RecordedReplayResultSchema>,
+) -> crate::mvcc::RelationalTransactionValidationInput {
+    match recorded {
+        Some(recorded) => options.with_recorded_result_schema(recorded),
+        None => options,
+    }
 }
 
 fn apply_materialization_replay_mode(
@@ -243,6 +258,7 @@ pub(super) fn replay_merge_commit(
     envelope: &CanonicalCommitEnvelope,
     position: crate::publication::patch::data::PatchStreamPosition,
     catalog: crate::durability::authority::RecoveredIndexCatalog,
+    recorded_result_schema: Option<crate::mvcc::RecordedReplayResultSchema>,
 ) -> Result<(), RelationalRecoveryStop> {
     crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
     let merge_plan = require_merge_execution_authority(envelope, execution)?;
@@ -253,8 +269,7 @@ pub(super) fn replay_merge_commit(
         &envelope.merge_parent_branches,
     )?);
     let context = AuthoritativeCommitContext::from_merge(
-        schema_basis
-            .apply(options)
+        with_recorded_result_schema(schema_basis.apply(options), recorded_result_schema)
             .with_recovered_content(envelope.content.records().clone()),
         merge_plan,
     )

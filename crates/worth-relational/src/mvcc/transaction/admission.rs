@@ -193,6 +193,7 @@ impl crate::runtime::RelationalRuntime {
             home_step,
             home_target_coverage: None,
             recovered_codec_publication_custody: codec,
+            schema_origin: super::TransactionSchemaOrigin::BasisRoot,
             schema_authority: basis.inner.root.retained_schema_authority(),
             overlay: super::DetachedRelationalTransactionOverlay::default(),
             maximum_savepoints,

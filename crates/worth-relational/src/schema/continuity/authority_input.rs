@@ -105,6 +105,16 @@ impl SchemaContinuityAuthorityInput {
         }
     }
 
+    /// Recovery replay carries the recorded result schema's own registry with
+    /// the snapshot its commit recorded, so the new root is captured under it.
+    pub(crate) fn carrying_recorded_registry(
+        mut self,
+        registry: crate::branch::RetainedRelationalSchemaRegistry,
+    ) -> Self {
+        self.target_schema_registry = Some(registry);
+        self
+    }
+
     pub(crate) fn target_schema_registry(
         &self,
     ) -> Option<&crate::branch::RetainedRelationalSchemaRegistry> {

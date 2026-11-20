@@ -27,6 +27,7 @@ pub use query_root::ApplicationHomeQueryRootDenial;
 pub use readmission::{readmit_query_world, ApplicationHomeQueryCompositionDenial};
 pub use readmission::{readmit_world, WorldHomeReadmissionRefused, WorldReadmittedApplicationHome};
 pub use readmission::{ApplicationHomeOwnerAdmissionRefused, NoPendingApplicationHomeTransition};
+mod transition_compilation_basis;
 mod transition_planning_request;
 pub use readmission::{
     ApplicationHomeProgramTransitionResumption, ApplicationHomeTransitionBindingStageDenial,

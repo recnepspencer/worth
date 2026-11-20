@@ -27,6 +27,7 @@ pub enum ApplicationHomeTransitionPlanningRequestDenial {
     Native(worth_relational::facade::runtime::RelationalHomeProgramContractDenial),
     NativeRecoveryRequired,
     Catalogs(Box<RefusedRelationalHomeProgramCatalogReadmission>),
+    PlanningRoot(Box<worth_relational::facade::durability::RefusedRelationalRecordedComponent>),
 }
 
 /// Store's decision of which predecessor the author plans against.
