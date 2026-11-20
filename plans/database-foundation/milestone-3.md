@@ -459,8 +459,8 @@ publishes a second original. Release follows C1.2 fate rules: only a proved
 no-effect permits fresh execution. After complete World readmission the row
 is in exactly one of three states:
 - **recovered and unpublished:** it joins that original and follows C1.2;
-- **published** (the commit succeeded and only its receipt completion was
-  lost): the row finishes with the original occurrence, and a retry returns
+- **published** (classified by World's published state, whatever produced
+  the `Indeterminate`): the row finishes with the original occurrence, and a retry returns
   it and never runs fresh;
 - **no committed open, or an original World released as no-effect:** the row
   is released as proven no-effect before service, and its key may execute
