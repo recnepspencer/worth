@@ -1,7 +1,9 @@
 //! An operation reads one genuine Native phase. Applied rows do not borrow a
 //! mutable runtime or acquire the graph owner's lock during Native preparation.
 use super::*;
+mod own_outputs;
 mod selection;
+pub(in crate::domain_computation::primary_graph) use own_outputs::OwnOutputOverlay;
 pub(super) use selection::ProjectionEntitySelection;
 use worth_relational::facade::{
     runtime::{
@@ -16,6 +18,8 @@ pub enum NativeProjectionRead<'a> {
     Applied {
         before: &'a RelationalPinnedRead,
         candidate: &'a RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
+        /// A successor round's own records, read before its chain (§1.5).
+        own_outputs: Option<&'a OwnOutputOverlay>,
     },
 }
 
@@ -115,7 +119,14 @@ impl NativeProjectionRead<'_> {
         Option<Output>,
         worth_relational::facade::transactions::RelationalExecutionDenialCause,
     > {
-        let Some(view) = self.projection(snapshot) else {
+        let own = match self {
+            Self::Applied {
+                own_outputs: Some(own),
+                ..
+            } => own.head_for(entity).map(|head| head.project_candidate()),
+            _ => None,
+        };
+        let Some(view) = own.or_else(|| self.projection(snapshot)) else {
             return Ok(None);
         };
         super::super::application_attempt::observe_field_from_view_admitted(
@@ -156,10 +167,25 @@ impl NativeProjectionRead<'_> {
                     work,
                 )
             }
-            Self::Applied { before, candidate } => {
-                let (result, work) = installed.resolve_applied_with_work(
+            Self::Applied {
+                before,
+                candidate,
+                own_outputs,
+            } => {
+                let (mut result, mut work) = installed.resolve_applied_with_work(
                     execution, before, candidate, entity, aspect, field, &expected,
                 );
+                // A record the successor's own chain wrote resolves as it was
+                // before the chain: a Birth's own output is absent again.
+                if let (Some(own), Ok(resolved)) = (own_outputs, &result)
+                    && let Some(head) = own.head_for(resolved.entity)
+                {
+                    let (head_result, head_work) = installed.resolve_applied_with_work(
+                        execution, before, head, entity, aspect, field, &expected,
+                    );
+                    result = head_result;
+                    work = work.saturating_add(head_work);
+                }
                 (
                     result.map(|value| ProjectionResolvedEntity {
                         entity: value.entity,

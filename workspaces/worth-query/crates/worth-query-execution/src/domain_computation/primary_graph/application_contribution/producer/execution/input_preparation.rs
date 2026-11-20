@@ -287,6 +287,7 @@ where
             before_pin,
             candidate,
             None,
+            None,
             |reader, scope| {
                 (owner.capture)(
                     runtime,

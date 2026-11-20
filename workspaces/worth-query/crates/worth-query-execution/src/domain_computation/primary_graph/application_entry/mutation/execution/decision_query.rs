@@ -206,6 +206,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             admission,
             applied,
             None,
+            None,
             || {},
             allocation,
         ) {
