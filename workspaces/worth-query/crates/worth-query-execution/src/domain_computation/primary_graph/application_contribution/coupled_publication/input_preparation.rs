@@ -13,6 +13,14 @@ pub(in crate::domain_computation::primary_graph::application_contribution) enum 
     Recapture,
 }
 impl PreparedCoupledInputs {
+    /// A stored output with declared capture that verifies without capture.
+    /// Its wave task waits for the independent frontier, then re-reads at the
+    /// settled pin (#254); a changed read becomes an admitted capture.
+    pub(in crate::domain_computation::primary_graph::application_contribution) fn verifies_late(
+        &self,
+    ) -> bool {
+        matches!(self, Self::Ready(selected) if matches!(selected.read, execution::CoupledSourceRead::Verified(_)))
+    }
     pub(in crate::domain_computation::primary_graph::application_contribution) fn support_equal(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -46,9 +54,6 @@ impl<S: ApplicationSchema> CoupledApplicationAssembly<'_, '_, '_, S> {
         {
             return Ok(None);
         }
-        // Only an output already prepared in this envelope, or one retiring or
-        // restored, skips capture. A stored output that would still verify is
-        // captured here and verified at preparation, after its parents (#254).
         let selected = self.select_one(execution, before, demand, candidate)?;
         let execution::CoupledSourceRead::Source(source) = selected.read else {
             return Ok(Some(PreparedCoupledInputs::Ready(selected)));

@@ -127,7 +127,7 @@ where
             partition: *plan.parameter_binding_identity().bytes(),
         });
     }
-    if purpose.reuses_prepared()
+    if purpose == CoupledSourceReadPurpose::OutputPreparation
         && demand.reuse_prepared
         && let Some(index) = assembly.prepared_route_index(
             execution,

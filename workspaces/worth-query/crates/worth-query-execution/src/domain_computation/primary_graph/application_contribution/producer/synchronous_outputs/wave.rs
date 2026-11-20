@@ -28,6 +28,9 @@ struct Scheduled<S: ApplicationSchema> {
     _memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 impl<S: ApplicationSchema> Scheduled<S> {
+    fn verifies_late(&self) -> bool {
+        self.inputs.as_ref().is_some_and(PreparedCoupledInputs::verifies_late)
+    }
     fn clear_input_capture(&mut self) {
         self.closed = false;
         self.inputs = None;
@@ -185,11 +188,23 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
             }
             let _planning_memory = self.quote_frontier(context, allowed.map_or(0, |v| v.len()))?;
             let needed = self.needed(allowed);
+            // Verify last (#254): a stored captured output that would verify
+            // runs only once no ordinary task is ready. This adds no edge: its
+            // dependents still wait for it through `ready`, and it never waits
+            // for them. When nothing ordinary is ready, each remaining ordinary
+            // task waits on a deferred task or on another waiting task, so
+            // releasing the deferred tasks always makes progress.
+            let ordinary = self.tasks.iter().enumerate().any(|(i, t)| {
+                needed[i] && !t.done && self.ready(i) && !t.verifies_late()
+            });
+            let eligible = |i: usize, t: &Scheduled<S>| {
+                needed[i] && !t.done && self.ready(i) && !(ordinary && t.verifies_late())
+            };
             let rank = self
                 .tasks
                 .iter()
                 .enumerate()
-                .filter(|(i, t)| needed[*i] && !t.done && self.ready(*i))
+                .filter(|(i, t)| eligible(*i, t))
                 .map(|(_, t)| t.rank)
                 .min();
             let Some(rank) = rank else {
@@ -223,7 +238,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
                 ))
             })?;
             for (i, t) in self.tasks.iter().enumerate() {
-                if needed[i] && !t.done && t.rank == rank && self.ready(i) {
+                if t.rank == rank && eligible(i, t) {
                     ready.push(i);
                 }
             }

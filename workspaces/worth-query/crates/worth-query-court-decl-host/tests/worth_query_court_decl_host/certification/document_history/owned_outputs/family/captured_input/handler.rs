@@ -12,9 +12,20 @@ pub struct Data {
     pub parents: Vec<ParentData>,
 }
 /// A member of this authored weight makes the reader read `first:carriage:d`
-/// without declaring it: the missing declaration that must still refuse plainly
-/// when a later route writes it (#254).
+/// without declaring it. A stored reader verifies after the stage's routes
+/// settle, so a later route writing it derives the reader again (#254).
 pub const UNDECLARED: u64 = 9;
+
+thread_local! {
+    static CAPTURES: std::cell::Cell<u64> = const { std::cell::Cell::new(0) };
+}
+/// Capture runs on this thread: a capture admits the producer's operation.
+pub fn captures_on_this_thread() -> u64 {
+    CAPTURES.with(std::cell::Cell::get)
+}
+pub fn count_capture() {
+    CAPTURES.with(|count| count.set(count.get() + 1));
+}
 
 impl worth_execution::ChargedBytes for first::Demand {
     fn additional_charged_bytes(&self) -> u64 {
@@ -34,6 +45,7 @@ macro_rules! producer_capture_handler {
                 WorthQueryCapturedProducerInputs<Schema, Capture, handler::Data>,
                 Denial,
             > {
+                handler::count_capture();
                 let result = (|| {
                     let source = reader.scope().clone();
                     let members = reader.relations_from(ModelMember::reference(), &source)?;

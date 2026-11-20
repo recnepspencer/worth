@@ -1,15 +1,16 @@
-//! A stored reader reached from its supplier's tree waits for its captured parents (#254).
+//! A stored captured reader reached from its supplier's tree verifies last (#254).
 //!
 //! Each world is born through an unchanged supplier edit that creates
 //! `captured:capture:child` and captures its parents. The later edit changes
 //! only model `carriage:d` through the same tree: `first:carriage:late` roots
 //! it, its occurrence connections reach the stored reader, and its generator
-//! connection owes `first:carriage:d`.
+//! connection owes `first:carriage:d`. The stored reader would verify at the
+//! stage's first pin, so it waits until the independent routes settle, then
+//! re-reads: a changed read is captured with normal admission and derived.
 use super::super::super::synchronous_edit::envelope_fixture as fixture;
 use super::*;
 use worth_query_host::facade::{
     application_entry::WorthQueryEditEnvelopeOutcome as Outcome,
-    primary_graph::WorthQueryInvariantExecutionDenialKind as Kind,
     runtime::ExecutionAllocationPolicy,
 };
 
@@ -80,6 +81,9 @@ fn row(host: &Host, key: &str) -> query::Row {
     output(host, key).unwrap_or_else(|| panic!("{key} exists"))
 }
 
+/// A known-answer court: the hand-computed sequential value, not an executed
+/// sequential control. The declared captured parent `first:carriage:d` changes,
+/// so the reader is derived from it after it settles.
 #[test]
 fn a_reader_reached_from_its_supplier_follows_its_owed_captured_parent() {
     let host = world(false);
@@ -90,7 +94,6 @@ fn a_reader_reached_from_its_supplier_follows_its_owed_captured_parent() {
     let a = row(&host, "first:a");
     let outcome = edit_supplier(&host, "supplier-changed", 5);
     assert!(matches!(outcome, Outcome::Committed(_)), "{outcome:?}");
-    // The sequential world: every output derived from its current sources.
     let d = row(&host, "first:carriage:d");
     assert_eq!(d.value, 50, "the owed parent follows model carriage:d");
     let after = row(&host, READER);
@@ -104,26 +107,26 @@ fn a_reader_reached_from_its_supplier_follows_its_owed_captured_parent() {
     assert_eq!(row(&host, "first:a"), a);
 }
 
+/// A known-answer court for a read the capture does not declare: the reader
+/// still verifies last, so its re-read sees the settled child, and the edit
+/// derives it instead of refusing.
 #[test]
-fn a_reader_without_a_captured_parent_on_the_owed_child_still_refuses_plainly() {
+fn an_undeclared_changed_read_is_derived_from_the_settled_child() {
     let host = world(true);
     let reader = row(&host, READER);
     let owed = row(&host, "first:carriage:d");
     // Source 3 + seeds a10, late50 + the undeclared weight 9 * d40.
     assert_eq!((reader.value, owed.value), (3 + 10 + 50 + 9 * 40, 40));
     let outcome = edit_supplier(&host, "undeclared-changed", 5);
-    let Outcome::Uncommitted(WorthQueryApplicationUncommitted::Denied(cause)) = outcome else {
-        panic!("{outcome:?}")
-    };
-    let failure = cause
-        .invariant_execution_failure()
-        .expect("the final support owner refuses");
-    assert_eq!(failure.kind(), Kind::CoupledReadSupportChanged, "{failure:?}");
-    assert_eq!(failure.coupled_support_hold(), None, "{failure:?}");
-    assert_eq!(row(&host, READER), reader);
-    assert_eq!(row(&host, "first:carriage:d"), owed);
+    assert!(matches!(outcome, Outcome::Committed(_)), "{outcome:?}");
+    assert_eq!(row(&host, "first:carriage:d").value, 50);
+    let after = row(&host, READER);
+    assert_eq!(after.value, 3 + 10 + 50 + 9 * 50, "derived from the settled child");
+    assert_eq!(after.native_id, reader.native_id);
 }
 
+/// A healthy reader opens no capture, so no producer admission: an edit under
+/// a principal admitted for the supplier needs nothing more for the reader.
 #[test]
 fn an_unchanged_supplier_retains_the_reader_without_derivation() {
     let _execution = WorthQueryExecutionObservation::install_on_this_thread();
@@ -131,9 +134,15 @@ fn an_unchanged_supplier_retains_the_reader_without_derivation() {
     let keys = [READER, "first:a", "first:carriage:late", "first:carriage:d"];
     let before = keys.map(|key| row(&host, key));
     let contacts = host.producer_contacts_on_this_thread_for_test();
+    let captures = handler::captures_on_this_thread();
     let outcome = edit_supplier(&host, "supplier-unchanged", 4);
     assert!(matches!(outcome, Outcome::Committed(_)), "{outcome:?}");
     assert_eq!(keys.map(|key| row(&host, key)), before);
+    assert_eq!(
+        handler::captures_on_this_thread(),
+        captures,
+        "a verified reader runs no capture"
+    );
     assert_eq!(
         host.producer_contacts_on_this_thread_for_test(),
         contacts,

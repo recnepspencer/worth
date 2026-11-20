@@ -4842,7 +4842,13 @@ The same handler implements
   no writes or Current authority.
 
 Query first uses normal Native output readiness. An already-current output does
-not run this prelude or require a capture-only mutation admission. For a source
+not run this prelude or require a capture-only mutation admission. In an edit,
+such an output is verified last: it waits until no other route of the stage is
+ready, then re-reads at the settled candidate. Its dependents still wait for it,
+and it never waits for them. If it still verifies it is retained without a
+capture. If its support changed, including through a read the capture does not
+declare, it is captured with normal admission on the current candidate and
+derived; a principal the producer does not admit is refused there. For a source
 requiring computation, Query compares complete captured support before the next
 supplier and before consuming the data. A changed **unconsumed** pure capture is
 reacquired on the current candidate using the same request and work budget; its

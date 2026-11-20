@@ -72,15 +72,6 @@ pub(in crate::domain_computation::primary_graph::application_contribution) enum 
 {
     Route,
     OutputPreparation,
-    /// Input capture never retains a current output on its own. A stored reader
-    /// that would verify still captures, so its declared parents order it (#254);
-    /// verification waits for output preparation, after they have settled.
-    InputCapture,
-}
-impl CoupledSourceReadPurpose {
-    fn reuses_prepared(self) -> bool {
-        matches!(self, Self::OutputPreparation | Self::InputCapture)
-    }
 }
 
 pub(in crate::domain_computation::primary_graph::application_contribution) enum CoupledSourceRead {
@@ -274,7 +265,7 @@ where
             partition,
         });
     }
-    if purpose.reuses_prepared()
+    if purpose == CoupledSourceReadPurpose::OutputPreparation
         && demand.reuse_prepared
         && let Some(index) =
             assembly.prepared_route_index(execution, demand.family, root, &partition)?
@@ -369,7 +360,7 @@ where
     {
         return Ok(CoupledSourceRead::Verified(parent));
     }
-    if unlisted && purpose == CoupledSourceReadPurpose::OutputPreparation {
+    if unlisted {
         // A current proof is a read, never another retiring catalog's writer.
         // Refuse before lifecycle selection or any producer handler contact.
         assembly.require_unlisted_writer(execution, demand.family, root, &partition)?;
