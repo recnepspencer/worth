@@ -10,28 +10,46 @@
   ],
   "roster": [
     {
-      "label": "consumer",
+      "label": "examples",
       "cargo": [
         "build",
         "--manifest-path",
         "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/Cargo.toml",
         "-p",
         "worth-query-topology-entry",
-        "--examples",
-        "-p",
-        "worth-query-consumer-root"
+        "--examples"
       ],
       "executables": [
         "invariant_reads",
         "required_feature",
-        "shared_execution",
+        "shared_execution"
+      ]
+    },
+    {
+      "label": "consumer-root",
+      "cargo": [
+        "build",
+        "--manifest-path",
+        "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/Cargo.toml",
+        "-p",
+        "worth-query-consumer-root",
+        "--bins"
+      ],
+      "executables": [
         "worth-query-consumer-root"
       ]
     },
     {
       "label": "root",
-      "cargo": ["test", "--no-run", "-p", "worth-court-relational-certification"],
-      "executables": ["worth_court_relational_certification"]
+      "cargo": [
+        "test",
+        "--no-run",
+        "-p",
+        "worth-court-relational-certification"
+      ],
+      "executables": [
+        "worth_court_relational_certification"
+      ]
     },
     {
       "label": "store",
@@ -43,7 +61,9 @@
         "-p",
         "worth-store-court-application"
       ],
-      "executables": ["worth_store_court_application"]
+      "executables": [
+        "worth_store_court_application"
+      ]
     },
     {
       "label": "query",
@@ -55,7 +75,9 @@
         "-p",
         "worth-query-court-decl-host-integration"
       ],
-      "executables": ["worth_query_court_decl_host_integration"]
+      "executables": [
+        "worth_query_court_decl_host_integration"
+      ]
     },
     {
       "label": "bank",
@@ -67,7 +89,9 @@
         "-p",
         "worth-query-bank-court-external-rail-server"
       ],
-      "executables": ["worth_query_bank_court_external_rail_server"]
+      "executables": [
+        "worth_query_bank_court_external_rail_server"
+      ]
     }
   ]
 }

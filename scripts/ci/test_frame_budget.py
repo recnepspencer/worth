@@ -124,6 +124,8 @@ def pe_with_codeview(guid: bytes, age: int) -> frame_budget.PeImage:
     data[0x300:0x304] = b"RSDS"
     data[0x304:0x314] = guid
     struct.pack_into("<I", data, 0x314, age)
+    name = rb"C:\t\debug\deps\worth_query_consumer_root.pdb"
+    data[0x318 : 0x318 + len(name) + 1] = name + b"\0"
     return frame_budget.PeImage.parse(bytes(data))
 
 
@@ -140,12 +142,35 @@ class IdentityTests(unittest.TestCase):
         directory = Path(self.id().replace(".", "_"))
         image = pe_with_codeview(self.guid, 7)
         with unittest.mock.patch.object(Path, "is_file", return_value=True), unittest.mock.patch.object(
-            Path, "read_bytes", return_value=pdb(self.guid, 8)
+            frame_budget, "open_pdb", return_value=pdb(self.guid, 8)
         ):
             with self.assertRaisesRegex(frame_budget.UnwindError, "does not belong"):
                 frame_budget.require_matching_pdb(directory / "court.exe", image)
-            with unittest.mock.patch.object(Path, "read_bytes", return_value=pdb(self.guid, 7)):
+            with unittest.mock.patch.object(frame_budget, "open_pdb", return_value=pdb(self.guid, 7)):
                 frame_budget.require_matching_pdb(directory / "court.exe", image)
+
+    def test_a_hyphenated_binary_finds_the_pdb_its_linker_recorded(self):
+        image = pe_with_codeview(self.guid, 7)
+        self.assertEqual(image.pdb_name(), "worth_query_consumer_root.pdb")
+        seen = []
+
+        def is_file(path):
+            seen.append(path.name)
+            return True
+
+        with unittest.mock.patch.object(Path, "is_file", is_file), unittest.mock.patch.object(
+            frame_budget, "open_pdb", return_value=pdb(self.guid, 7)
+        ):
+            frame_budget.require_matching_pdb(Path("t") / "worth-query-consumer-root.exe", image)
+        self.assertEqual(seen, ["worth_query_consumer_root.pdb"])
+
+    def test_an_unnamed_function_belongs_to_its_contributing_crate(self):
+        image = pe_with_codeview(self.guid, 7)
+        module = r"C:\t\deps\worth_query_execution-0123abcd.worth_query_execution.5f-cgu.04.rcgu.o"
+        ranges = [(1, 0x10, 0x40, module), (1, 0x60, 0x20, "std-77aa.std.1-cgu.0.rcgu.o")]
+        self.assertEqual(frame_budget.contributing_crate(image, ranges, 0x1020), "worth_query_execution")
+        self.assertEqual(frame_budget.contributing_crate(image, ranges, 0x1060), "std")
+        self.assertIsNone(frame_budget.contributing_crate(image, ranges, 0x1100))
 
     def test_only_the_wanted_executables_of_this_build_are_measured(self):
         messages = "\n".join(

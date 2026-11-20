@@ -19,6 +19,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import bisect
 import dataclasses
 import json
 import os
@@ -152,42 +153,115 @@ class PeImage:
                 return guid, struct.unpack_from("<I", self.data, pointer + 20)[0]
         raise UnwindError("executable records no CodeView PDB identity")
 
+    def pdb_name(self) -> str:
+        """The PDB file name the linker recorded (cargo underscores hyphens)."""
+        rva, size = self.directory(6)
+        start = self.offset(rva) if size else 0
+        for entry in range(start, start + size, 28):
+            kind, _length, _address, pointer = struct.unpack_from("<IIII", self.data, entry + 12)
+            if kind == 2 and self.data[pointer : pointer + 4] == b"RSDS":
+                end = self.data.index(b"\0", pointer + 24)
+                return re.split(r"[\\/]", self.data[pointer + 24 : end].decode(errors="replace"))[-1]
+        raise UnwindError("executable records no CodeView PDB identity")
 
-def pdb_identity(data: bytes) -> tuple[bytes, int]:
+
+class MsfFile:
+    """Streams of an MSF 7.00 (PDB) container held in `data` (bytes or mmap)."""
+
+    def __init__(self, data) -> None:
+        if data[: len(MSF_MAGIC)] != MSF_MAGIC:
+            raise UnwindError("not an MSF 7.00 PDB")
+        self.data = data
+        self.block, _free, _count, directory_bytes, _unknown, map_block = struct.unpack_from("<6I", data, 32)
+        directory_blocks = -(-directory_bytes // self.block)
+        map_indices = struct.unpack_from(f"<{directory_blocks}I", data, map_block * self.block)
+        directory = self.gather(map_indices, directory_bytes)
+        streams = struct.unpack_from("<I", directory, 0)[0]
+        self.sizes = struct.unpack_from(f"<{streams}I", directory, 4)
+        cursor = 4 + 4 * streams
+        self.blocks: list[tuple[int, ...]] = []
+        for length in self.sizes:
+            count = 0 if length == 0xFFFFFFFF else -(-length // self.block)
+            self.blocks.append(struct.unpack_from(f"<{count}I", directory, cursor))
+            cursor += 4 * count
+
+    def gather(self, indices, length: int) -> bytes:
+        block = self.block
+        return b"".join(self.data[index * block : (index + 1) * block] for index in indices)[:length]
+
+    def stream(self, index: int) -> bytes:
+        if index >= len(self.sizes) or self.sizes[index] == 0xFFFFFFFF:
+            raise UnwindError(f"PDB has no stream {index}")
+        return self.gather(self.blocks[index], self.sizes[index])
+
+    def identity(self) -> tuple[bytes, int]:
+        """The (GUID, age) in the PDB information stream."""
+        info = self.stream(1)
+        return info[12:28], struct.unpack_from("<I", info, 8)[0]
+
+    def module_ranges(self) -> list[tuple[int, int, int, str]]:
+        """(section, offset, size, module object name) for every code contribution."""
+        dbi = self.stream(3)
+        module_bytes, contribution_bytes = struct.unpack_from("<ii", dbi, 24)
+        names: list[str] = []
+        cursor = 64
+        end = 64 + module_bytes
+        while cursor < end:
+            cursor += 64  # Unused1, SectionContr, flags, streams, sizes, files, offsets
+            module_end = dbi.index(b"\0", cursor)
+            names.append(dbi[cursor:module_end].decode(errors="replace"))
+            object_end = dbi.index(b"\0", module_end + 1)
+            cursor = (object_end + 1 + 3) & ~3
+        start = end
+        version = struct.unpack_from("<I", dbi, start)[0]
+        width = 32 if version == 0xEFFE0000 + 20140516 else 28
+        ranges = []
+        for entry in range(start + 4, start + contribution_bytes, width):
+            section, _, offset, size, characteristics, module = struct.unpack_from("<HHiiIH", dbi, entry)
+            if characteristics & 0x20 and module < len(names):  # IMAGE_SCN_CNT_CODE
+                ranges.append((section, offset, size, names[module]))
+        return ranges
+
+
+def pdb_identity(data) -> tuple[bytes, int]:
     """The (GUID, age) in an MSF 7.00 PDB's information stream."""
-    if not data.startswith(MSF_MAGIC):
-        raise UnwindError("not an MSF 7.00 PDB")
-    block, _free, _count, directory_bytes, _unknown, map_block = struct.unpack_from("<6I", data, 32)
-
-    def gather(indices, length: int) -> bytes:
-        return b"".join(data[index * block : (index + 1) * block] for index in indices)[:length]
-
-    directory_blocks = -(-directory_bytes // block)
-    map_indices = struct.unpack_from(f"<{directory_blocks}I", data, map_block * block)
-    directory = gather(map_indices, directory_bytes)
-    streams = struct.unpack_from("<I", directory, 0)[0]
-    if streams < 2:
-        raise UnwindError("PDB has no information stream")
-    sizes = struct.unpack_from(f"<{streams}I", directory, 4)
-    cursor = 4 + 4 * streams
-    for index in range(2):
-        length = sizes[index]
-        count = 0 if length == 0xFFFFFFFF else -(-length // block)
-        indices = struct.unpack_from(f"<{count}I", directory, cursor)
-        cursor += 4 * count
-        if index == 1:
-            info = gather(indices, length)
-            return info[12:28], struct.unpack_from("<I", info, 8)[0]
-    raise UnwindError("PDB has no information stream")
+    return MsfFile(data).identity()
 
 
-def require_matching_pdb(path: Path, image: PeImage) -> None:
+def open_pdb(path: Path):
+    """A read-only map of `path`; PDBs of court binaries reach gigabytes."""
+    import mmap
+
+    with path.open("rb") as handle:
+        return mmap.mmap(handle.fileno(), 0, access=mmap.ACCESS_READ)
+
+
+def require_matching_pdb(path: Path, image: PeImage) -> MsfFile:
     """Refuse an executable whose PDB came from another build."""
-    pdb = path.with_suffix(".pdb")
+    pdb = path.parent / image.pdb_name()
     if not pdb.is_file():
-        raise UnwindError(f"{path.name} has no PDB beside it")
-    if pdb_identity(pdb.read_bytes()) != image.codeview():
+        raise UnwindError(f"{path.name} has no PDB {pdb.name} beside it")
+    msf = MsfFile(open_pdb(pdb))
+    if msf.identity() != image.codeview():
         raise UnwindError(f"{pdb.name} does not belong to {path.name}; rebuild both")
+    return msf
+
+
+def module_crate(module: str) -> str:
+    """The crate a rustc object module was compiled for (`<crate>-<hash>.<cgu>.rcgu.o`)."""
+    stem = re.split(r"[\\/]", module)[-1]
+    return re.split(r"[-.]", stem, maxsplit=1)[0]
+
+
+def contributing_crate(image: PeImage, ranges, rva: int) -> str | None:
+    """The crate whose object contributed the code at `rva`."""
+    for section, offset, size, module in ranges:
+        if not 1 <= section <= len(image.sections):
+            continue
+        start = image.sections[section - 1][1] + offset
+        if start <= rva < start + size:
+            return module_crate(module)
+    return None
 
 
 def strip_generics(name: str) -> str:
@@ -278,7 +352,7 @@ class Frame:
 def measure(label: str, path: Path, floor: int, prefixes: list[str]) -> tuple[list[Frame], list[dict]]:
     """Owned frames at or above `floor`, and large entries no symbol names."""
     image = PeImage.read(path)
-    require_matching_pdb(path, image)
+    msf = require_matching_pdb(path, image)
     large: dict[int, int] = {}
     for begin, _end, unwind in image.functions:
         size = unwind_frame_bytes(image.data, image.offset, unwind)
@@ -286,12 +360,22 @@ def measure(label: str, path: Path, floor: int, prefixes: list[str]) -> tuple[li
             start = primary_start(image.data, image.offset, unwind, begin)
             large[start] = max(large.get(start, 0), size)
     names = pdb_symbols(path, image.base)
+    addresses = sorted(names)
     frames: list[Frame] = []
     unnamed: list[dict] = []
+    ranges = None
     for start, size in large.items():
         symbols = names.get(start)
         if not symbols:
-            unnamed.append({"binary": label, "rva": start, "bytes": size})
+            # Crates built without debug information name only public symbols.
+            # The contributing object module still identifies the crate.
+            ranges = msf.module_ranges() if ranges is None else ranges
+            crate = contributing_crate(image, ranges, start)
+            if crate is None or owned(crate, prefixes):
+                # The nearest preceding symbol only helps a reader find the code.
+                before = addresses[bisect.bisect_left(addresses, start) - 1] if addresses else None
+                nearest = names[before][0] if before is not None and before < start else None
+                unnamed.append({"binary": label, "rva": start, "bytes": size, "crate": crate, "after_symbol": nearest})
             continue
         for defining in {owner_path(symbol) for symbol in symbols}:
             if owned(defining, prefixes):
@@ -386,7 +470,7 @@ def measure_roster(arguments: argparse.Namespace) -> int:
     for row in over:
         print(f"OVER {row['bytes']} {row['path']} [{', '.join(row['binaries'])}]")
     for row in unnamed_over:
-        print(f"UNNAMED OVER {row['bytes']} rva {row['rva']:#x} in {row['binary']}")
+        print(f"UNNAMED OVER {row['bytes']} rva {row['rva']:#x} crate {row['crate']} in {row['binary']}")
     if over or unnamed_over:
         print(f"frame budget: {len(over) + len(unnamed_over)} functions exceed {ceiling} bytes")
         return 1

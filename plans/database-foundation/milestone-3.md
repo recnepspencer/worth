@@ -351,6 +351,12 @@ is fixed at its owner, never refitted to the observed value.
 - **Restore reference.** Where the ledger records a later refresh reference
   for the same file (the `22e638d638` integration protocol restoration
   refreshes), restore from the refresh.
+- **Test doors and caller rows.** A restored court reuses a `*_for_test` door
+  or `control-callers.txt` row only where its ledger entry restores that door
+  or row from the same SHA. Otherwise it reads the owner's public counted
+  observation; a court that still needs a new door or caller row records the
+  boundary ruling it requires in the progress note and does not add the row
+  without one.
 - **Wall-clock predicates.** A moved original that asserts elapsed time keeps
   the measure that predicate stands for: the timing comparison becomes the
   counted work, allocation or reads per window it bounds, or it is removed with
@@ -360,7 +366,10 @@ is fixed at its owner, never refitted to the observed value.
 The slices run in the order below. World durable history and branch retirement
 comes last: C3 also changes World recovery, so C2.8 starts only after merging
 C3's progress (`origin/m3/cleanup-c3`), and keeps its World edits minimal and
-additive. Each slice names the ledger entries it restores; together they cover
+additive. Before C2.8, C2's World writes are limited to the checkpoint capture
+owner (`crates/worth-runtime-world/src/durability/checkpoint/` and
+`durability/binding/`) for C2.3's capture cut; World recovery and readmission
+are not edited before C3's progress is merged. Each slice names the ledger entries it restores; together they cover
 every C2 entry in this file. Fourteen C4 roots also carry C2 cost, custody or
 residency guards: the six lifecycle lock-order roots, the two reservation-wait
 roots, the four branch-transition race roots,
@@ -378,20 +387,27 @@ artifact messages, and refuses an executable whose PDB identity (RSDS GUID and
 age) does not match it. It then parses the x64 unwind metadata
 (`.pdata`/`UNWIND_INFO`), attributes each function's fixed frame allocation to
 its symbol, and fails when a function of a declared owner crate (`worth_*` and
-the consumer examples) exceeds the ceiling. A future held by value occupies
+the consumer examples) exceeds the ceiling. Crates built without debug
+information (`debug = false` for `worth-query-execution` and
+`worth-query-topology-entry` in the consumer profile, `debug = 0` in test
+profiles) name only public symbols; an unnamed function is assigned to the
+crate whose object module contributed its code, from the PDB's section
+contributions, and fails when that crate is owned or unknown. Its refusal
+names the binary, address, crate and nearest preceding symbol. A future held by value occupies
 its holder's frame, so async state machines are covered; the lane bounds
 per-function frames, not total stack depth or heap-held futures. The ceiling
 and roster are declared in `scripts/ci/frame_budget.json`. The lane measures
 Windows x64 binaries, because the binding stack is the 1 MiB Windows main
-thread, and refuses on other platforms instead of passing. It is a Tier-3 lane,
-and a Tier-2 lane when the diff changes its script or configuration. The
+thread, and refuses on other platforms instead of passing. It is a Tier-3 lane
+run on the Windows landing machine, and a Tier-2 lane there when the diff
+changes its script or configuration; the Ubuntu CI does not run it. The
 large-frame census of 2026-11-06 is reduced to the ceiling at the owners, by
 boxing large values or variants and splitting inlined phase chains, never by a
 bigger stack, `RUST_MIN_STACK`, a thread or a profile change.
 
 | Evidence | Acceptance |
 |---|---|
-| Lane self-test | Plain-Python unit fixtures for the unwind parser cover a frameless leaf, a fixed allocation, a large allocation and a chained unwind record. The over-ceiling refusal names the function, crate, binary and size, and an executable whose PDB identity does not match refuses. |
+| Lane self-test | Plain-Python unit fixtures for the unwind parser cover a frameless leaf, a fixed allocation, a large allocation and a chained unwind record. An executable whose PDB identity does not match refuses; a hyphenated binary finds the PDB its linker recorded; an unnamed function is assigned to its contributing crate. The over-ceiling refusal names the function (or address and nearest symbol), crate, binary and size. |
 | Census | The lane runs over the declared roster: the three examples, consumer-root, the Bank court and one Root, Query and Store court binary. Before and after counts are recorded in `target/lane-evidence/c2-frame-census.md`. After this slice no `worth_*` function exceeds the ceiling. |
 | Ceiling | The ceiling is 256 KiB: a quarter of the 1 MiB Windows default main-thread stack, the smallest stack a consumer calls WORTH on, and a sixteenth of the 4 MiB red zone `worth_execution::run_with_execution_stack` guarantees at heavy public operations. Court and example functions are `worth_*` functions and meet it too. |
 
@@ -402,7 +418,12 @@ automatic upkeep run on the Home's maintenance allowance: counted work and
 memory, cancelled only by the Home's retirement. The closing request's own
 stops apply at close's consult points around the capture. No wall-clock
 maintenance deadline exists to refuse a graceful close: it is removed by clean
-cutover, not raised, and the type carries no timeout.
+cutover, not raised, and the type carries no timeout. The fixed 120-second
+deadlines the checkpoint path passes to Store's physical publication
+(`physical_start.rs`, `physical_checkpoint.rs`) are Store's physical-protocol
+liveness bound for one physical step, a required input of every physical
+mutation; they are not close maintenance's deadline, stay as they are, and no
+close court is certified by raising them.
 
 | Evidence | Acceptance |
 |---|---|
@@ -452,7 +473,7 @@ last owner drops, then refunds it exactly.
 | Evidence | Acceptance |
 |---|---|
 | Sharing court | Two Extras sharing one aspect map contribute the shared backing once, and the rows sum to an allocator-observed union. An unrepresentable inventory total refuses with a typed overflow. |
-| Exact-accounting reds | First record, in the deduplicated-backing ledger entry, the 24 exact-accounting and cost-equality courts that were red after the master merge, each with its path and red cause from the integration ledger (`merge-cleanup-reds.md`, recoverable at `ff73e2304b^:target/lane-evidence/`). Then classify each with its reason: exact-equality courts restore and pass; bound-at-least-actual courts stay and pass. |
+| Exact-accounting reds | First record, in the deduplicated-backing ledger entry, the 24 exact-accounting and cost-equality courts that were red after the second master merge: family F4 of `fable-repair-root-families.md`, with per-test names in `fable-repair-root-focused-families.txt` (both recoverable at `ff73e2304b^:target/lane-evidence/`). Mark each one that has since moved to a `9ed22bccaa` or `73ce80ebfc` C2 entry, so it is classified once, under that entry. Classify each remaining court with its reason: exact-equality courts restore and pass; bound-at-least-actual courts stay and pass. |
 | Retained-root holder | Identify, at its owner, the holder of the historical roots that producer succession's shrink invoice found retained (roots 4–9, `d13-retirement-census-attribution.md`). If the holder is Native, fix it here and restore the invoice in this slice; only if it is World's retired or inherited occurrences does the invoice move to C2.8. |
 | Restored ledger entries | The deduplicated nested-backing claim and its inspection wording; the shared-process exact memory campaign; the Batch 1 funding entries (`content_durable_artifact_*` ×3, `original_kind_custody_survives_successor_basis_checkpoint_tail_and_reopen`, `graph_relation_preparation_retains_its_funding_and_cannot_reset_the_entity_meter`, `unfunded_validated_proposal_backing_refuses_and_releases_original_custody`, `canonical_artifact_accounting_excludes_nested_diagnostic_perturbation`, `memory_frame_quota_and_cancel_refuse_before_position_or_head`, `clearing_reconstructed_last_aspect_retains_no_state_bill`, `funded_extra_refuses_copy_and_replacement_before_growth`, `repeated_dag_reachability_reuses_scratch_under_the_same_finite_policy`, both `controlled_field_lowering_*` closures, `cleared_entity_and_relation_extras_keep_only_their_fixed_original_bills`); the `86e84dc5cd` artifact, strategy-readmission, shared-readmission and snapshot-cleanup roots; the memory-frame old-layout portion; the B2 retention census, inspection bundle and managed field-text entries; both `controlled_resident_cell_*` charge courts; `request_root_refusal_preserves_original_and_releases_partial_backing`; `publication_cost_distinguishes_new_and_reused_schema_authority`; the `f9f15bf8c8` retention and index-generation roots (`branch_roots_with_one_schema_deduplicate_the_durable_carrier`, the derived-index reader and reclamation roots, `repeated_global_same_basis_builds_reclaim_duplicates_but_keep_pinned_root`, `durability_contract_branch_heads_do_not_mutate_legacy_record_pins`); the three copy-on-write and publication-footprint courts; the private fixture funding splits, handler-key custody split, selected-payload funding split and `memory_original_frame_survives_export_checkpoint_and_last_alias`. |
 
