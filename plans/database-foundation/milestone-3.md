@@ -150,17 +150,27 @@ guides state that crash recovery is not yet certified.
 
 ### Cleanup track status
 
-**2026-11-20.** C1 (crash core) is being built on branch `m3/cleanup-c1`; C2–C5
-have not started. Nothing from C1 is on master yet, so master still refuses an
-unclean Home open with `UncleanRecoveryUnsupported` (D18).
+**2026-11-20.** C1 (crash core) is complete on branch `m3/cleanup-c1` and
+lands with its PR; C2–C5 have not started. D18 remains only for the
+damage-shaped causes below, which C5 retires.
 
 | C1 slice | State on the branch |
 |---|---|
 | C1.1 Native effect before World publication | Done: the reopened Home retains the original and continues it without rerunning the handler |
-| C1.2 Unresolved fate, release and fork custody | Mostly done. Open: fresh same-key execution after a durable no-effect release, and the M2 unresolved fork |
+| C1.2 Unresolved fate, release and fork custody | Done. Reopen durably releases a no-effect original before service, and its key then executes fresh exactly once. An unresolved M2 branch creation reopens as recovered custody: with no owner fork it can only be released, and with every required fork durable it can only continue. A partly performed creation refuses with the typed `PartlyPerformedCreation`, not D18 |
 | C1.3 Exact Native components and selective readmission | Done. Selective readmission past an unrelated damaged body is proved at the Native owner; on the filesystem, Store's physical recovery refuses any damaged WAL |
-| C1.4 Program transition resume and drift | In progress: unclean transition effects recover and Store's D18 gate is removed; resuming a transition killed after its durable intent is not done |
-| C1.5 Home open refusals and interrupted discard | Done. Open notes: after a refused discard the live Home is shown to close, not to keep serving; `ConflictingOpenAttempt` has no test |
+| C1.4 Program transition resume and drift | Done. A transition killed in any of its 12 durable states resumes on reopen with the same request. Every step happens exactly once and the plan author reruns only before the binding is durable. A changed plan refuses with `TransitionPlanDrift` and extends nothing. The three transition-source courts are restored (D16) |
+| C1.5 Home open refusals and interrupted discard | Done. Contended and discard-pending opens are matched through `physical_refusal()`. Open notes: after a refused discard the live Home is shown to close, not to keep serving; `ConflictingOpenAttempt` has no test, because no public owner produces a second open for one attempt without rewriting the journal |
+| C1 close-checkpoint crash recovery | Done. A kill inside graceful-close checkpoint publication used to leave an unpublished candidate root that reopen refused as damage. Reopen now discards it and recovers to the pre-close committed state. Court: `interrupted_close::killed_checkpoint` |
+
+The Host accessor `unclean_recovery_unsupported()` now reads World's D18
+refusal. After C1, the only causes left are a Signal effect without its
+recorded open and a Native fork without a creation intent. Neither can come
+from a kill, because each owner writes only after World acknowledges its
+record, and WAL damage is refused earlier by physical recovery. A Host open
+therefore cannot produce them without forged bytes. The World owner court
+`owner_evidence::recovered_owners` covers the refusal, and C5 deletes the
+accessor along with D18.
 
 ### Track C items
 
@@ -307,7 +317,7 @@ when the corresponding behavior lands.
   - The C1-restored `process::host::durable_retry::fate_reopening::cancellation_after_native_effect_retains_key_across_kill_and_reopen` and `host::application_home::dispatch_custody::inbound_custody::unpublished` courts continue their originals, then meet the same pending managed run at close. They first assert that no World recovery custody remains, then end through `pending_support::end_with_pending_managed_run` (and `inbound_custody::fixture::end_recovered_home`), which require the typed `ManagedCleanup(ManagedRunPending)` refusal. When C3 lands the cold release contract, replace those two helpers with a graceful close and reopen.
 
 Cleanup courts moved out of the tree are listed under their C item, with `restore from <sha>:<path>`. Existing entries:
-- **C1:** the three transition-source recovery courts. They are listed in D16 under "Cleanup track: moved courts".
+- **C1:** the three transition-source recovery courts, listed in D16 under "Cleanup track: moved courts". Restored in C1; D16 names their new courts.
 - **C2 (cost and bounds): exact deduplicated physical accounting of nested persistent aspect backing.** No court has left the tree yet; the claim moved. Pending: 24 exact-accounting and cost-equality courts are still red after the master merge and are not yet classified court by court (exact-equality courts move here with a restore reference; bound-at-least-actual courts stay and must pass); and the full-inventory totals (`RecordArena::allocation_inventory`, `PartitionState::allocation_inventory`, the fork-materialized total in `branch/root.rs`) still saturate instead of refusing, which is open repair work until the coordinator accepts it as C2. `restore from 171d380829:crates/worth-relational/src/inspection/mvcc/sharing_authoritative_byte_metrics.rs` (lines 6–11, 25–28) and `restore from 171d380829:crates/worth-relational/src/inspection/mvcc/sharing_byte_metric_scope.rs` (lines 7–11, inspection version 6). Claim: `unique_physical_*` sums each distinct allocation exactly once, and shared payloads keep node and value granularity, including persistent aspect nodes and admitted values shared between distinct Extra carriers. Inspection version 7 reports that backing as a checked per-carrier upper bound that may count shared structure once per holder, and refuses an unrepresentable bound with a typed overflow. C2 supplies an allocation visitor that sees through shared nodes and values, restores the exact wording under a new version, and adds the court: two Extras sharing one aspect map contribute the shared backing once, and the rows sum to an allocator-observed union. C2 also makes full region inventories and reclamation counters refuse an unrepresentable bound instead of saturating.
 - **C2:** `reclose_before_any_image_demand_keeps_the_selections_the_image_carried`
   (restore from `10d117085f:crates/worth-relational/src/tests/durability/medium/complete_index_selections.rs`).
@@ -2339,6 +2349,27 @@ The supported development workflow is:
 **Cleanup track: moved courts.** The following transition-source recovery
 courts leave the happy-path tree under the M3 track split. Restore and migrate
 them against real Store Home/World authority; do not ignore or gate them.
+
+**Restored in C1 (2026-11-20).** The first two claims are now in the Store
+court, `process::application::no_pending_owners::transition_source`, against
+real Home/World authority. The setup is a closed A Home followed by one
+committed schema-changing intent and a durable target step. The court asserts:
+- exactly one durable step;
+- the catalogs' predecessor is the planning root, distinct from the current
+  World head and its truth version;
+- the runtime schema is version 2;
+- one row at the planning root and two at the current basis.
+
+`authority.admit_basis(planning).is_err()` is not reproduced literally,
+because Store holds the recovered authority by reference and `admit_basis`
+consumes it. The head and truth-version checks assert the same distinction.
+
+The third claim is in the Relational court,
+`process::home_program_transition_source`. A real Home cannot durably hold a
+Native tail its own plan does not cover, so that court builds its own
+transition owner bound to a pass-through receiver. A foreign step refuses
+`PrefixAssociation`, an unplanned extra commit refuses `PrefixLength`, and the
+receiver stays empty in both cases. Zero-step plans stay prohibited.
 
 - `transition_source_recovers_the_exact_durable_prefix_and_original_planning_root`: Recovers the exact durable transition prefix and original planning root, keeps that historical root distinct from the current execution basis, and readmits successor schema version 2.
   `restore from 34edd18ff6:crates/worth-court-relational-certification/tests/worth_court_relational_certification/process/home_program_transition_source.rs`. Migration needs catalog-grant access before
