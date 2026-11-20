@@ -172,6 +172,7 @@ fn mixed_fork_siblings_reopen_both_actual_owner_originals() {
 
 mod close_custody;
 mod original_continuation;
+mod unresolved_creation;
 
 #[test]
 fn home_sibling_refuses_a_foreign_programme_source_before_original_or_owner_publication() {

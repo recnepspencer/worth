@@ -10,8 +10,8 @@ pub use retention::{
 
 mod recovery;
 pub use recovery::{
-    RuntimeWorldRecoveryCursor, RuntimeWorldRecoveryPage, RuntimeWorldRecoveryRecordState,
-    RuntimeWorldRecoveryRow,
+    RuntimeWorldRecoveredOriginal, RuntimeWorldRecoveryCursor, RuntimeWorldRecoveryPage,
+    RuntimeWorldRecoveryRecordState, RuntimeWorldRecoveryRow,
 };
 
 mod recovery_accounting;

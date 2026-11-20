@@ -62,6 +62,10 @@ pub enum WorldReadmissionDenial {
     MissingCreationIntent,
     ConflictingCreationIntent,
     CreationEvidenceMismatch,
+    /// An unresolved creation has some, but not all, of its required owner
+    /// forks durable. Only the original's live source permit could perform
+    /// the missing fork, and it does not survive a process death.
+    PartlyPerformedCreation,
     ConflictingOpenAttempt,
     ConflictingDisposition,
     MissingPredecessor,

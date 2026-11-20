@@ -216,6 +216,10 @@ impl Fixture {
             native_medium: medium,
         })
     }
+    /// Signal's next branch advance never becomes durable in this process.
+    pub(super) fn hold_signal_advances(&self) {
+        self.signal_medium.hold_branch_advances();
+    }
     pub(super) fn finish(self, request: &ExecutionRequest<'_, '_>) {
         let report = self
             .world

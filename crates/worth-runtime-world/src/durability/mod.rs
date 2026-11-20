@@ -40,7 +40,8 @@ mod release_evidence;
 mod root_readmission;
 pub(crate) use artifact::{
     DurableWorldHead, PreparedWorldArtifact, WorldArtifactInput, WorldBranchCreatedRecord,
-    WorldCreatedBranchOwnerEvidence, WorldCreationIntentInput, WorldHeadInput,
+    WorldCreatedBranchOwnerEvidence, WorldCreationIntentInput, WorldCreationIntentRecord,
+    WorldHeadInput,
     WorldOpenAttemptInput, WorldOpenAttemptRecord, WorldRecord,
     WorldRecordedRelationalCreationPlan, WorldRelationalCreationInput, WorldRelationalEvidence,
     WorldRelationalForkEvidence,

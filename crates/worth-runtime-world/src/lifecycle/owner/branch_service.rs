@@ -25,6 +25,7 @@ mod observation;
 mod original_publication;
 mod port;
 mod readmission;
+mod recovered_creation;
 pub(crate) use durable_creation::WorldDurableCreationCustody;
 mod native_creation_source;
 mod native_fork_denial;

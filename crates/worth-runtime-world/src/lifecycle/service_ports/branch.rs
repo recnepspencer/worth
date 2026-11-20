@@ -57,6 +57,9 @@ impl RuntimeWorldBranchPort {
     }
 
     /// Resume the SAME durable creation. Existing inspection views must be dropped.
+    /// A cold-recovered creation takes the one decision its owners recorded:
+    /// a performed original continues to its exact forks, an effect-free one
+    /// releases. A handle from an earlier Home incarnation refuses as stale.
     pub fn resume_creation(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

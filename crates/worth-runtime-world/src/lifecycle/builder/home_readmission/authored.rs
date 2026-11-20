@@ -52,7 +52,7 @@ where
             binding.binding(),
             request,
         )?;
-        super::creation_effects::validate(
+        let creation_forks = super::creation_effects::validate(
             native,
             native_recovery,
             recovered,
@@ -80,6 +80,7 @@ where
             native_recovery,
             effects,
             signal_effects,
+            creation_forks,
             request,
         )?;
         Ok(RuntimeWorldOwner::from_root(root))

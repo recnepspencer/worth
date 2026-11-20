@@ -152,7 +152,8 @@ pub use crate::recovery::{
 };
 
 pub use crate::inspection::{
-    RuntimeWorldHistorySnapshot, RuntimeWorldRecoveryCosts, RuntimeWorldRecoveryCursor,
+    RuntimeWorldHistorySnapshot, RuntimeWorldRecoveredOriginal, RuntimeWorldRecoveryCosts,
+    RuntimeWorldRecoveryCursor,
     RuntimeWorldRecoveryPage, RuntimeWorldRecoveryRecordState, RuntimeWorldRecoveryRow,
     RuntimeWorldRecoverySnapshot, RuntimeWorldRetentionEntry,
     RuntimeWorldRetentionInspectionDenial, RuntimeWorldRetentionKey, RuntimeWorldRetentionSnapshot,

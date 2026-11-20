@@ -9,12 +9,16 @@ use worth_foundational::facade::{
 };
 use worth_signal::facade::durability::SignalDurableBranchSourcePort;
 
+type Points = worth_execution::ExecutionOrderedMap<
+    worth_foundational::facade::DurableCompositePublicationAttemptIdentity,
+    std::sync::Arc<worth_signal::facade::durability::SignalReadmittedSourcePoint>,
+>;
+/// Signal's own recovered inventory: original opens without an occurrence,
+/// and original creations with neither a selection nor a release.
 #[derive(Default)]
 pub(super) struct ReadmittedSignalEffects {
-    points: worth_execution::ExecutionOrderedMap<
-        worth_foundational::facade::DurableCompositePublicationAttemptIdentity,
-        std::sync::Arc<worth_signal::facade::durability::SignalReadmittedSourcePoint>,
-    >,
+    points: Points,
+    creations: Points,
 }
 impl ReadmittedSignalEffects {
     pub(super) fn get(
@@ -22,6 +26,13 @@ impl ReadmittedSignalEffects {
         attempt: &worth_foundational::facade::DurableCompositePublicationAttemptIdentity,
     ) -> Option<std::sync::Arc<worth_signal::facade::durability::SignalReadmittedSourcePoint>> {
         self.points.get(attempt).cloned()
+    }
+    /// Absence is Signal's own no-effect proof for an unresolved creation.
+    pub(super) fn creation(
+        &self,
+        attempt: &worth_foundational::facade::DurableCompositePublicationAttemptIdentity,
+    ) -> Option<std::sync::Arc<worth_signal::facade::durability::SignalReadmittedSourcePoint>> {
+        self.creations.get(attempt).cloned()
     }
 }
 pub(super) fn readmit<Dm, I, T>(
@@ -66,8 +77,12 @@ where
                     | worth_signal::facade::durability::SignalAuthoredBranchChange::Retired =>
                         return ControlFlow::Break(D::CreationEvidenceMismatch),
                 }
+                // A durable release is published only for never-submitted owners.
+                if recovered.creation_releases.contains_key(&association.attempt()) {
+                    return ControlFlow::Break(D::CreationEvidenceMismatch);
+                }
                 let Some(selected) = recovered.created.get(&association.attempt()) else {
-                    return ControlFlow::Break(unclean());
+                    return admit(&mut effects.creations, &association.attempt(), signal, point, request);
                 };
                 if selected.created().components.signal.point().reference() != effect.reference() {
                     return ControlFlow::Break(D::CreationEvidenceMismatch);
@@ -104,17 +119,7 @@ where
                 // No occurrence: the original is readmitted with its actual
                 // Signal effect, with or without a recorded disposition.
                 None => {
-                    let actual=match signal.readmit_source_point(point, request) {
-                        Ok(actual) => std::sync::Arc::new(actual),
-                        Err(cause) => return ControlFlow::Break(D::SignalSource(Box::new(cause))),
-                    };
-                    if effects.points.contains_key(&association.attempt()) {
-                        return ControlFlow::Break(D::OccurrenceEvidenceMismatch);
-                    }
-                    if let Err(cause)=effects.points.insert_cloned_native_for_request(
-                        &association.attempt(), &actual, *request) {
-                        return ControlFlow::Break(D::Medium(crate::durability::WorldDurableMediumDenial::Ordered(cause)));
-                    }
+                    return admit(&mut effects.points, &association.attempt(), signal, point, request);
                 }
             }
             ControlFlow::Continue(())
@@ -123,5 +128,33 @@ where
     match result {
         ControlFlow::Continue(()) => Ok(effects),
         ControlFlow::Break(cause) => Err(cause),
+    }
+}
+
+/// Readmit one original's actual Signal point; an original owns at most one.
+fn admit<Dm, I, T>(
+    points: &mut Points,
+    attempt: &worth_foundational::facade::DurableCompositePublicationAttemptIdentity,
+    signal: &SignalDurableBranchSourcePort<Dm, I, T>,
+    point: &worth_signal::facade::durability::SignalRecordedSourcePoint,
+    request: &worth_execution::ExecutionRequest<'_, '_>,
+) -> ControlFlow<D>
+where
+    Dm: Copy + Ord + std::fmt::Debug + 'static,
+    I: Copy + Ord + 'static,
+    T: Copy + Ord + 'static,
+{
+    let actual = match signal.readmit_source_point(point, request) {
+        Ok(actual) => std::sync::Arc::new(actual),
+        Err(cause) => return ControlFlow::Break(D::SignalSource(Box::new(cause))),
+    };
+    if points.contains_key(attempt) {
+        return ControlFlow::Break(D::OccurrenceEvidenceMismatch);
+    }
+    match points.insert_cloned_native_for_request(attempt, &actual, *request) {
+        Ok(_) => ControlFlow::Continue(()),
+        Err(cause) => ControlFlow::Break(D::Medium(
+            crate::durability::WorldDurableMediumDenial::Ordered(cause),
+        )),
     }
 }

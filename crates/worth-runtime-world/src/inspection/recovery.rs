@@ -9,11 +9,20 @@ pub enum RuntimeWorldRecoveryRecordState {
     Recovered,
     Busy,
 }
+/// Which original a cold-recovered row retains, and so which recovery door
+/// decides it: a publication through the recovery port, a branch creation
+/// through `RuntimeWorldBranchPort::resume_creation`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RuntimeWorldRecoveredOriginal {
+    Publication,
+    BranchCreation,
+}
 /// Descriptive page row. A busy update deliberately exposes no stale age.
 #[derive(Debug)]
 pub struct RuntimeWorldRecoveryRow {
     pub(crate) handle: ProductUnpublishedRecoveryHandle,
     pub(crate) state: RuntimeWorldRecoveryRecordState,
+    pub(crate) recovered: Option<RuntimeWorldRecoveredOriginal>,
     pub(crate) admitted_at: Option<RuntimeWorldInstant>,
     pub(crate) age_ticks: Option<u64>,
     pub(crate) deadline_expired: Option<bool>,
@@ -24,6 +33,10 @@ impl RuntimeWorldRecoveryRow {
     }
     pub fn state(&self) -> RuntimeWorldRecoveryRecordState {
         self.state
+    }
+    /// Present exactly when the state is `Recovered`.
+    pub fn recovered_original(&self) -> Option<RuntimeWorldRecoveredOriginal> {
+        self.recovered
     }
     pub fn admitted_at(&self) -> Option<RuntimeWorldInstant> {
         self.admitted_at

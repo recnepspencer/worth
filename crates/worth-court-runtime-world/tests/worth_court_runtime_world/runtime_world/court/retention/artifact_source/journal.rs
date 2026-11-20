@@ -22,6 +22,7 @@ pub(in super::super) struct Recorder {
     held: std::sync::atomic::AtomicBool,
     persist: bool,
     crashed: std::sync::atomic::AtomicBool,
+    surviving: Mutex<Option<u32>>,
     undecided: Mutex<Option<bool>>,
 }
 impl Recorder {
@@ -35,6 +36,10 @@ impl Recorder {
     pub(in super::super) fn crash(&self) {
         self.crashed
             .store(true, std::sync::atomic::Ordering::SeqCst);
+    }
+    /// Process death after `writes` more durable World writes.
+    pub(in super::super) fn crash_after(&self, writes: u32) {
+        *self.surviving.lock().unwrap() = Some(writes);
     }
     pub(in super::super) fn refuse_next_publication(&self) {
         self.refused
@@ -63,6 +68,7 @@ impl Recorder {
             held: std::sync::atomic::AtomicBool::new(false),
             persist,
             crashed: std::sync::atomic::AtomicBool::new(false),
+            surviving: Mutex::new(None),
             undecided: Mutex::new(None),
         })
     }
@@ -83,6 +89,7 @@ impl Recorder {
             held: std::sync::atomic::AtomicBool::new(false),
             persist: self.persist,
             crashed: std::sync::atomic::AtomicBool::new(false),
+            surviving: Mutex::new(None),
             undecided: Mutex::new(None),
         })
     }
@@ -187,6 +194,12 @@ impl RuntimeWorldDurableMedium for Recorder {
         self.subjects.lock().unwrap().push(subject.clone());
         if self.held.load(std::sync::atomic::Ordering::SeqCst) {
             return WorldPublicationObservation::Pending;
+        }
+        if let Some(left) = self.surviving.lock().unwrap().as_mut() {
+            match left.checked_sub(1) {
+                Some(next) => *left = next,
+                None => self.crash(),
+            }
         }
         let undecided = self.undecided.lock().unwrap().take();
         if undecided == Some(false) {

@@ -38,6 +38,15 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
                         return Err(Denial::UnclassifiedWorldCustody)
                     }
                 }
+                match row.recovered_original() {
+                    Some(RuntimeWorldRecoveredOriginal::Publication) => {}
+                    // Attachment decides every recovered creation first; one
+                    // here has no Query key or operation family to rejoin.
+                    Some(RuntimeWorldRecoveredOriginal::BranchCreation) => {
+                        return Err(Denial::UndecidedBranchCreation)
+                    }
+                    None => return Err(Denial::UnclassifiedWorldCustody),
+                }
                 let effects = recovery
                     .inspect_recovered_effects(row.handle())
                     .map_err(Denial::Recovery)?;

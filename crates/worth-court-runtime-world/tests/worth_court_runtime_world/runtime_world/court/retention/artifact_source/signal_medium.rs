@@ -14,6 +14,9 @@ pub(in super::super) struct Medium {
     binding: SignalDurableHomeBinding,
     registry: SignalDurableOwnerAdmissionRegistry,
     rows: Mutex<Vec<Row>>,
+    /// Process death before Signal's next branch advance becomes durable:
+    /// its writer sees an indeterminate fate and nothing is appended.
+    held: std::sync::atomic::AtomicBool,
 }
 impl Medium {
     pub(in super::super) fn new(request: &ExecutionRequest<'_, '_>) -> Arc<Self> {
@@ -31,6 +34,7 @@ impl Medium {
             binding,
             registry,
             rows: Mutex::new(Vec::new()),
+            held: std::sync::atomic::AtomicBool::new(false),
         })
     }
     pub(super) fn successor(&self, request: &ExecutionRequest<'_, '_>) -> Arc<Self> {
@@ -45,7 +49,11 @@ impl Medium {
             binding,
             registry,
             rows: Mutex::new(self.rows.lock().unwrap().clone()),
+            held: std::sync::atomic::AtomicBool::new(false),
         })
+    }
+    pub(in super::super) fn hold_branch_advances(&self) {
+        self.held.store(true, std::sync::atomic::Ordering::SeqCst);
     }
     fn append(
         &self,
@@ -161,6 +169,11 @@ impl SignalDurableMedium for Medium {
         artifact: &SignalBranchAdvanceArtifact,
         _: &ExecutionRequest<'_, '_>,
     ) -> SignalPublicationObservation {
+        if self.held.load(std::sync::atomic::Ordering::SeqCst) {
+            return SignalPublicationObservation::Finished(
+                SignalPublicationCompletion::indeterminate(SignalDurableMediumDenial::Unavailable),
+            );
+        }
         self.append(
             SignalDurableJournal::Advances,
             artifact.as_bytes(),

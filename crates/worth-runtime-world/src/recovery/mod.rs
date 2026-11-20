@@ -8,6 +8,11 @@ pub(crate) use catalog::PreparedReleasedOriginal;
 pub use released_original::{WorldReleasedOriginal, WorldReleasedOriginalPage};
 mod released_effects;
 pub use released_effects::WorldReleasedEffects;
+pub(crate) mod recovered_creation;
+pub(crate) use recovered_creation::{
+    RecoveredCreationCustody, RecoveredCreationFate, RecoveredCreationForks,
+    RecoveredWorldCreationInputs, RecoveredWorldCreationRecord,
+};
 pub(crate) mod recovered_publication;
 pub(crate) use recovered_publication::{
     ContinuationCommon, OriginalContinuationAdvance, OriginalHomeTransitionContinuation,
@@ -42,6 +47,7 @@ pub enum RuntimeWorldSettledRelationalAdoptionDenial {
 }
 
 pub(crate) use catalog::ReservedProductUnpublishedRecordUpdate;
+pub(crate) use catalog::ClaimedRecoveredCreation;
 pub(crate) use catalog::{RecoveryCatalog, RecoveryCatalogDenial, ReservedProductUnpublishedSlot};
 pub(crate) use cleanup::RecoveryCleanupOutcome;
 
