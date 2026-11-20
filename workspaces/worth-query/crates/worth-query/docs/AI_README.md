@@ -5,7 +5,7 @@
 > [Capability Index](../../../../../docs/capability-index.md). This document is
 > engine-internal and names types you must not import.
 
-> **Internal engine surface.** This page maps the internal Query engine for platform maintainers: the owner crates behind `worth-query-decl` and `worth-query-host`, and the Workspace engine surface (`WorthQueryWorkspace`, `worth_query::facade`) that `worth-ui-query-binding`, `worth-server`, and `worth-query-replay` use. Application code uses `worth-query-decl` and `worth-query-host`; start with the [API Map](../../../../../docs/api.md).
+> **Internal engine surface.** This page maps the internal Query engine for platform maintainers: the owner crates behind `worth-query-decl` and `worth-query-host`, and the Workspace engine surface (`WorthQueryWorkspace`, `worth_query::facade`) that `worth-ui-query-binding` and `worth-ui-certification` use. Application code uses `worth-query-decl` and `worth-query-host`; start with the [API Map](../../../../../docs/api.md).
 
 ## Who This Is For
 
@@ -71,7 +71,7 @@ behavior.
 |---|---|---|
 | `worth-query-decl` | Application declarations, from `entry`-band and `cert`-band crates | Declaration modules and macros from `worth-query-declaration`, its only dependency |
 | `worth-query-host` | Application hosts, from `entry`-band and `cert`-band crates | Namespaces from `worth-query-admission`, `worth-query-declaration`, `worth-query-execution`, `worth-query-installation`, and `worth-query-publication` |
-| `worth-query-replay` | Certification only, from `cert`-band crates | Replay and certification-cost types from `worth-query`, its only dependency |
+| `worth-query-replay` | Certification only, from `cert`-band crates | Certification-cost types from `worth-query-execution`, its only dependency |
 | `worth-query-certification` | Certification only | Provider comparison and hostile scenarios, with no construction authority |
 
 `tools/boundary-check/snapshots/facades.toml` snapshots the exports of
@@ -83,8 +83,11 @@ is a deliberate snapshot update, not a side effect.
 ### Engine consumers
 
 Inside this repository, the crates that depend on the `worth-query` engine are
-`worth-ui-query-binding`, `worth-ui-certification`, `worth-server`,
-`worth-query-replay`, and `worth-query-certification`. The boundary
+`worth-ui-query-binding`, `worth-ui-certification`, and the engine's own legacy
+courts and testkits (`worth-query-court-query`,
+`worth-query-court-query-installed-operating-world`,
+`worth-query-court-query-installed-operations`, `worth-query-testkit-query` and
+`worth-query-testkit-installed-operation-fixture`). The boundary
 constitution (`tools/boundary-check/config/road1.toml`) names
 `worth-ui-query-binding` as the only UI production consumer. A new engine
 consumer is a boundary change, not a convenience import.

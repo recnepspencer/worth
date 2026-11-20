@@ -411,8 +411,8 @@ keep a second stage ledger.
 
 Completed workflow traces also support fresh ordinary re-execution and
 trace-bound lineage inspection. Certification replay is deliberately absent
-from the ordinary host surface; import it through
-`worth_query_replay::facade`.
+from the ordinary host surface; engine certification code imports it through
+`worth_query::facade::certification`.
 
 ## How It Relates To Other Features
 
