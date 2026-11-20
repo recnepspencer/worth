@@ -390,3 +390,10 @@ pub use worth_query_execution::facade::application_home_integration::QueryHomeSi
 /// Existing owner refusal vocabulary for retained Home custody.
 pub use crate::application_home::ApplicationHomeCloseDenial;
 pub use worth_runtime_world::facade::{RuntimeWorldCloseDenial, RuntimeWorldServiceDenial};
+
+/// Store's own open refusal, so an application matches a contended or
+/// discard-pending open by type (`Physical` with `MutationOwnerContended` or
+/// `DiscardPending`). Store owns this vocabulary; Host does not copy it.
+pub use worth_store_application::{
+    ApplicationHomeOpenRefusal, ApplicationHomePhysicalRefusal, ApplicationHomePhysicalRefusalKind,
+};

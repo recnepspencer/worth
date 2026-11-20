@@ -248,7 +248,7 @@ fn transition_seam_child() {
     let lease = checkpoint_capture::lease(256 * 1024 * 1024);
     // The request stays on this thread; the watcher holds only the media gate.
     let done = Arc::new(std::sync::atomic::AtomicBool::new(false));
-    let watcher = {
+    let _watcher = {
         let (done, markers) = (done.clone(), markers.clone());
         std::thread::spawn(move || {
             while !done.load(std::sync::atomic::Ordering::SeqCst) {
@@ -274,5 +274,4 @@ fn transition_seam_child() {
         },
     )
     .unwrap();
-    drop(watcher);
 }
