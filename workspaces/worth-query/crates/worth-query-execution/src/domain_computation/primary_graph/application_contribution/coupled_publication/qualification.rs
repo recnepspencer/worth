@@ -154,10 +154,13 @@ impl<S: ApplicationSchema> CoupledApplicationAssembly<'_, '_, '_, S> {
 
     /// Compare each suspect exactly at the current candidate. Returns the
     /// retained parents to reopen; each is superseded at its invalidator.
+    /// Only a parent whose derivation `reopenable` can run again is
+    /// superseded: any other keeps its old proof live, checked in full (R4).
     pub(in crate::domain_computation::primary_graph::application_contribution) fn qualify(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         candidate: &RelationalAuthoredCoupledCandidate<'_>,
+        reopenable: impl Fn(ParentRead) -> bool,
     ) -> Result<Vec<Reopen>, CoupledSourceReadStop> {
         if self.ledger.borrow().is_quiet() {
             return Ok(Vec::new());
@@ -171,7 +174,7 @@ impl<S: ApplicationSchema> CoupledApplicationAssembly<'_, '_, '_, S> {
         let authored = !self.all_stage_captures().is_empty();
         let mut reopens = Vec::new();
         for id in suspects {
-            reopens.extend(self.requalify(execution, id, &current, authored)?);
+            reopens.extend(self.requalify(execution, id, &current, authored, &reopenable)?);
         }
         Ok(reopens)
     }
@@ -186,6 +189,7 @@ impl<S: ApplicationSchema> CoupledApplicationAssembly<'_, '_, '_, S> {
             worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
         >,
         authored: bool,
+        reopenable: &impl Fn(ParentRead) -> bool,
     ) -> Result<Option<Reopen>, CoupledSourceReadStop> {
         let (read, position, owed, invalidator, invalidator_owed) = {
             let ledger = self.ledger.borrow();
@@ -196,7 +200,8 @@ impl<S: ApplicationSchema> CoupledApplicationAssembly<'_, '_, '_, S> {
             (entry.read, entry.position, entry.owed, invalidator, owed)
         };
         // A derivation that already consumed this output keeps it until its
-        // own settlement or reopen can follow (R3): the old proof stays live,
+        // own settlement or reopen can follow (R3), and a retention no wave
+        // task owns has no derivation to run again: the old proof stays live,
         // so final support refuses exactly as base does.
         let consumed = self
             .writers
@@ -215,7 +220,7 @@ impl<S: ApplicationSchema> CoupledApplicationAssembly<'_, '_, '_, S> {
                     .as_ref()
                     .is_some_and(|(owed, meaning)| *owed >= position && parent.has_route(meaning))
         };
-        let answer = if consumed {
+        let answer = if consumed || !reopenable(read) {
             RetainedReadRequalification::Settled
         } else {
             self.application

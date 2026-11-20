@@ -14,7 +14,12 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
         candidate: &RelationalAuthoredCoupledCandidate<'_>,
     ) -> Result<bool, SynchronousOutputFailure> {
-        let reopens = context.owner.qualify(context.execution, candidate)?;
+        let by_read = &self.by_read;
+        let reopens = context
+            .owner
+            .qualify(context.execution, candidate, |read| {
+                by_read.contains_key(&read.0)
+            })?;
         let mut reopened = false;
         for reopen in reopens {
             let subject = "retained parent reopen";
@@ -24,9 +29,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
                 self.by_read.len().max(1).ilog2() as u64 + 1,
             )?;
             let Some(&i) = self.by_read.get(&reopen.read.0) else {
-                // Not retained by this wave's tasks: its window still ends at
-                // the invalidator and final support checks the old proof.
-                continue;
+                unreachable!("qualify supersedes only a retention a task owns")
             };
             observation::record(|| format!("reopen task={i} owed={}", reopen.owed));
             self.reopen_task(context, i, reopen.read, reopen.owed, reopen.invalidator)?;
