@@ -24,13 +24,9 @@ declaration macros (`worth_query_mutation_binding!`, `worth_query_capability!`,
 
 Use these entry points to find an API and its worked use.
 
-1. **Open the facade's API documentation.** Generate local rustdoc for
-   declarations and runtime calls:
-
-   ```bash
-   cargo doc --manifest-path workspaces/worth-query/Cargo.toml --no-deps -p worth-query-decl -p worth-query-host
-   ```
-
+1. **Open the facade's API documentation.** Generate local rustdoc with the
+   commands in
+   [API Map §9](api.md#9-reading-the-reference-documentation-rustdoc).
    Browse the [Decl facade](../workspaces/worth-query/crates/worth-query-decl/src/facade.rs)
    and [Host facade](../workspaces/worth-query/crates/worth-query-host/src/facade.rs)
    to find the module that exports a name.
