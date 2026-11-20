@@ -395,4 +395,6 @@ pub use worth_runtime_world::facade::{RuntimeWorldCloseDenial, RuntimeWorldServi
 /// `WorthQueryApplicationHomeOpenRefused::physical_refusal`, so an application
 /// matches a contended or discard-pending open by kind. Store owns this
 /// vocabulary; Host does not copy it.
-pub use crate::application_home::{ApplicationHomePhysicalRefusal, ApplicationHomePhysicalRefusalKind};
+pub use crate::application_home::{
+    ApplicationHomePhysicalRefusal, ApplicationHomePhysicalRefusalKind, ApplicationHomePhysicalStage,
+};
