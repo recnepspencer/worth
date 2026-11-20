@@ -60,6 +60,31 @@ pub fn transition_request(
         ) -> Result<Plan, WorthQueryPrimaryGraphInstallationDenial>,
     >,
 > {
+    authored_transition_request(location, build, contacts, planned, 8)
+}
+
+/// The same transition whose first step writes `first` instead of 8: a
+/// recomputed plan with a changed body (TransitionPlanDrift on resume).
+pub fn authored_transition_request(
+    location: std::path::PathBuf,
+    build: ApplicationBuildIdentity,
+    contacts: Arc<AtomicUsize>,
+    planned: Arc<AtomicUsize>,
+    first: u64,
+) -> WorthQueryApplicationHomeRequest<
+    'static,
+    SuccessorSchema,
+    ExtendedProgram,
+    WorthQueryHomeProgramTransition<
+        'static,
+        fixture::schema::HomeIdentitySchema,
+        fixture::HomeProgram,
+        impl FnOnce(
+            &WorthQueryHomeProgramTransitionReadSource<'_, '_>,
+            &WorthQueryHomeProgramTransitionTarget<'_>,
+        ) -> Result<Plan, WorthQueryPrimaryGraphInstallationDenial>,
+    >,
+> {
     let predecessor =
         fixture::request_with_initializer(location.clone(), build, contacts.clone(), |_, _, _| {
             panic!("A cannot initialize during transition")
@@ -95,7 +120,7 @@ pub fn transition_request(
                 target: 1,
                 schema_transition: Some((schema_change(source, target), None)),
                 steps: vec![
-                    step(row.entity_id, before, 8),
+                    step(row.entity_id, before, first),
                     target_body,
                     step(row.entity_id, after, 10),
                 ],

@@ -15,7 +15,7 @@ mod transition;
 pub use migration::{body, schema_change};
 use native_contribution::ExtendedSurface;
 pub use schema::SuccessorSchema;
-pub use transition::{resources, transition_request};
+pub use transition::{authored_transition_request, resources, transition_request};
 
 pub struct ExtendedProgram;
 pub struct BalanceCompletion;

@@ -209,6 +209,18 @@ fn a_transition_killed_in_each_durable_state_resumes_to_its_uninterrupted_end() 
 
 /// Kill a fresh A Home's transition after `barrier`, then resume it.
 fn killed_at(barrier: u64) -> (crate::killed_child::ChildEnd, Terminal) {
+    let (_directory, location, end) = killed_home(barrier);
+    (end, resumes_to_the_uninterrupted_end(&location, barrier))
+}
+
+/// Kill a fresh A Home's transition after `barrier`; nothing reopens it yet.
+fn killed_home(
+    barrier: u64,
+) -> (
+    tempfile::TempDir,
+    std::path::PathBuf,
+    crate::killed_child::ChildEnd,
+) {
     let directory = tempfile::tempdir().unwrap();
     let location = directory.path().join("home");
     let markers = directory.path().join("markers");
@@ -225,7 +237,59 @@ fn killed_at(barrier: u64) -> (crate::killed_child::ChildEnd, Terminal) {
         &markers.join("ready"),
         &markers.join("finished"),
     );
-    (end, resumes_to_the_uninterrupted_end(&location, barrier))
+    (directory, location, end)
+}
+
+/// A resumed plan whose recomputed body differs from the recorded one refuses
+/// with TransitionPlanDrift before any new effect: resuming afterwards with
+/// the original request still installs exactly the uninterrupted commits.
+#[test]
+fn a_resumed_transition_refuses_a_changed_plan_without_extending_its_prefix() {
+    use worth_query_host::facade::{
+        WorthQueryHomeProgramTransitionDenial as Denial,
+        WorthQueryHomeProgramTransitionOpenPhase as Phase,
+    };
+    use worth_store_application::{
+        ApplicationHomeTransitionIntentDenial as Intent,
+        ApplicationHomeTransitionResumptionDenial as Resumption,
+    };
+    let (_, control) = killed_at(UNINTERRUPTED);
+    // Step 0's Native effect is durable (DURABLE_STATES).
+    let (_directory, location, end) = killed_home(64);
+    assert_eq!(end, crate::killed_child::ChildEnd::KilledAtPark);
+    let lease = checkpoint_capture::lease(256 * 1024 * 1024);
+    let execution = worth_execution::ExecutionRequest::leased(&lease);
+    let changed = successor::authored_transition_request(
+        location.clone(),
+        build(),
+        Arc::default(),
+        Arc::default(),
+        7,
+    );
+    let refused = match with_bootstrap_advancement_from_request(execution, |phase| {
+        changed.open_in_advancement(&phase).map(Box::new)
+    })
+    .unwrap()
+    {
+        Ok(_) => panic!("a changed plan cannot resume the recorded transition"),
+        Err(refused) => refused,
+    };
+    let Phase::Transition { cause, .. } = refused.phase() else {
+        panic!("drift refuses inside the transition phase: {refused:?}");
+    };
+    assert!(
+        matches!(
+            cause,
+            Denial::Resumption(Resumption::Intent(Intent::TransitionPlanDrift))
+        ),
+        "{cause:?}"
+    );
+    drop(refused);
+    let resumed = resumes_to_the_uninterrupted_end(&location, 64);
+    assert_eq!(
+        resumed.installed_commits, control.installed_commits,
+        "the refused drift extended nothing"
+    );
 }
 
 #[test]
