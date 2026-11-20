@@ -144,9 +144,10 @@ where
             ),
             None => (None, None, selected_source_program),
         };
-        // An undecided recovered creation must find its recorded source where
-        // it was; recovered publications keep serving beside new work.
-        if self.state.recovery.has_recovered_creation() {
+        // An undecided recovered creation must find its recorded Signal source
+        // where it was. Relational-only opens (transition steps among them)
+        // and recovered publications keep serving beside it.
+        if intent.changes_signal() && self.state.recovery.has_recovered_creation() {
             return Err(Refusal::Reservation(NoEffectCompositePublication::new(
                 NoEffectCause::OwnerDeniedBeforeEffect,
                 Some(expected.clone()),

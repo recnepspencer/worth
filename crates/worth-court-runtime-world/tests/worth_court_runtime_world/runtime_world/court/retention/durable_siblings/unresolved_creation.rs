@@ -122,23 +122,39 @@ fn assert_fenced(f: &Fixture, request: &ExecutionRequest<'_, '_>, name: &str) {
         ),
         "{answer:?}"
     );
-    // Nor may a durable publication move the recorded source before the decision.
+    // Nor may a durable open move the recorded Signal source before the
+    // decision; a Relational-only open (a transition step, say) is admitted.
     let heads = f.recorder.heads();
-    let opened = f.world.publication_port().open_publication_without_signal(
+    let port = f.world.publication_port();
+    let token = RuntimeWorldCancellationSource::new().token();
+    let source = || f.recorder.program_source(&parent);
+    let signal = port.prepare_query_publication_with_signal(
         request,
         parent.clone(),
-        f.recorder.program_source(&parent),
-        worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
-        &RuntimeWorldCancellationSource::new().token(),
+        source(),
+        None,
+        &token,
         None,
     );
     assert!(
         matches!(
-            opened,
-            WorldOpenAttemptOutcome::Refused(WorldOpenAttemptRefusal::Reservation(_))
+            &signal,
+            Err(WorldOpenAttemptRefusal::Reservation(denied))
+                if denied.cause() == NoEffectCause::OwnerDeniedBeforeEffect
         ),
-        "{opened:?}"
+        "{:?}",
+        signal.err()
     );
+    let relational = port.prepare_query_publication_without_signal(
+        request,
+        parent.clone(),
+        source(),
+        worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
+        &token,
+        None,
+    );
+    assert!(relational.is_ok(), "{:?}", relational.err());
+    drop(relational);
     assert_eq!(f.recorder.heads(), heads);
 }
 
