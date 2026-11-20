@@ -220,8 +220,8 @@ def relocate_denial_exclusions(root):
 
 
 DOCS = ('docs/build-an-application.md', 'docs/how-it-works.md',
-        'workspaces/worth-query/crates/worth-query/docs/foundations/invariants-and-read-observations.md',
-        'workspaces/worth-query/crates/worth-query/docs/modeling/relation-laws.md')
+        'workspaces/worth-query/docs/foundations/invariants-and-read-observations.md',
+        'workspaces/worth-query/docs/modeling/relation-laws.md')
 LINK = re.compile(r'\]\(([^)\s#]*worth-query-execution/src/[^)\s#]+)(#[^)\s]*)?\)')
 
 

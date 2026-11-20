@@ -99,25 +99,6 @@ fn phase_six_semantic_families_share_the_foundational_digest_slot() {
     let evidence_slot =
         include_str!("../../../../worth-query-execution/src/domain_computation/evidence_identity/foundational.rs");
 
-    let capability = concat!(
-        include_str!(
-            "../../../../worth-query/src/domain_capabilities/payloads/invariant_capability/mod.rs"
-        ),
-        include_str!(
-            "../../../../worth-query/src/domain_capabilities/payloads/invariant_capability/graph_semantics.rs"
-        ),
-        include_str!(
-            "../../../../worth-query/src/domain_capabilities/payloads/invariant_capability/payload.rs"
-        ),
-        include_str!(
-            "../../../../worth-query/src/domain_capabilities/payloads/invariant_capability/posture.rs"
-        ),
-        include_str!(
-            "../../../../worth-query/src/domain_capabilities/payloads/invariant_capability/registration_semantics.rs"
-        ),
-    );
-    let aftermath =
-        include_str!("../../../../worth-query/src/domain_capabilities/payloads/aftermath.rs");
 
     assert!(declared_query.contains("prepare_canonical_basis_sequence"));
     assert!(!declared_query.contains("CanonicalDigestAlgorithmId::sha256()"));
@@ -167,15 +148,6 @@ fn phase_six_semantic_families_share_the_foundational_digest_slot() {
     assert!(query_definition.contains("controls.disclosure-classification"));
     assert!(evidence_slot.contains("CanonicalDigestFrontDoor"));
     assert!(evidence_slot.contains("derive_canonical_digest"));
-    for (family, source) in [("capability", capability), ("aftermath", aftermath)] {
-        assert!(source.contains("domain_capability_scope_encoder"));
-        assert!(!source.contains("use sha2"));
-        assert!(!source.contains("hash_parts"));
-        assert!(
-            !source.contains("format!(\"{:?}\""),
-            "{family} reintroduced debug-string identity"
-        );
-    }
 }
 
 #[test]

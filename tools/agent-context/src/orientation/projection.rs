@@ -74,8 +74,6 @@ fn project_context_orientation(
                 "Replay dependencies are admitted only for configured certification packages: {}.",
                 workspace.certification_packages.join(", ")
             ),
-            "Production dependencies on the direct Query engine remain confined by the configured Worth UI Query edge; certification-only test dependencies are outside that production fence."
-                .to_owned(),
         ],
         skeleton_fence: "No Road 1 seed skeleton applies; WORTH UI topology is workspace-owned and mechanically discovered.".to_owned(),
         machine_constitution: contract.machine_constitution.clone(),

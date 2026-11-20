@@ -24,7 +24,7 @@ import subprocess
 
 CRATES = 'workspaces/worth-query/crates'
 SPLITS = 'tools/boundary-check/config/court-frontier-splits.toml'
-REFERENCES = ('tools/boundary-check/config', 'docs', 'workspaces/worth-query/crates/worth-query/docs')
+REFERENCES = ('tools/boundary-check/config', 'docs', 'workspaces/worth-query/docs')
 
 
 def snake(name):

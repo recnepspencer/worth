@@ -7,7 +7,7 @@ It is not an API reference. Its job is to answer three questions:
 
 1. What kind of problem is `worth-foundational` for?
 2. When is `worth-foundational` the right crate, and when is a stronger crate
-   such as `worth-query` or a domain runtime the right one instead?
+   such as Query (`worth-query-host`) or a domain runtime the right one instead?
 3. Which docs should you read next for the real API details?
 
 If you need exact signatures, type names, or step-by-step examples, use the
@@ -61,7 +61,7 @@ just because the names look similar
 
 That one rule prevents most misuse.
 
-If `worth-query` already gives you typed projection-consumption facts,
+If Query (`worth-query-host`) already gives you typed projection-consumption facts,
 authority-lane state, read receipts, write receipts, execution artifacts, or
 support-bound result surfaces, keep those Query types while the meaning is
 still Query-owned.
@@ -113,7 +113,7 @@ If you have no idea where to start, read these first:
 This crate is not:
 
 - the public runtime facade for application reads and writes
-- a replacement for `worth-query` projection consumption
+- a replacement for Query projection consumption
 - a replacement for Query authority lanes
 - a planner
 - a storage engine
@@ -133,8 +133,8 @@ Use this matrix before writing code.
 
 | Need | Use |
 | --- | --- |
-| Typed facts from Query materialization | `worth-query` projection consumption |
-| Query-owned authoritative or derived state | `worth-query` state, inspection, receipts, bindings |
+| Typed facts from Query materialization | Query projection consumption |
+| Query-owned authoritative or derived state | Query (`worth-query-host`) state, inspection, receipts, bindings |
 | Domain-local runtime execution state | the owning runtime or domain crate |
 | Shared trust-boundary identity | `worth-foundational` identity boundaries |
 | Canonical basis, digest, export parity, mismatch classification | `worth-foundational` canonicalization |
@@ -1309,7 +1309,7 @@ runtime-local receipts:
 
 Do not do these things:
 
-- do not replace `worth-query` typed fact receipts with Foundational types while
+- do not replace Query (`worth-query-host`) typed fact receipts with Foundational types while
   the meaning is still Query-owned
 - do not replace Query authority-lane state with Foundational wrappers out of
   convenience
@@ -1347,7 +1347,7 @@ worse.
 
 Start from the strongest owning crate.
 
-- Start from `worth-query` when the semantics are Query-owned.
+- Start from Query (`worth-query-host`) when the semantics are Query-owned.
 - Start from the domain runtime when the semantics are runtime-local.
 - Start from `worth-proof` when the semantics are progression law.
 - Start from `worth-foundational` when the semantics are shared boundary

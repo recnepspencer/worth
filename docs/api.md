@@ -248,7 +248,7 @@ themselves. It is not a product API.
 | `worth-schema-graph` | `worth_schema_graph::facade` | Graph-constitution meaning: `PromotionRequest`, `SubelementKey`, `CarryingArtifactIdentity`, `DurableReferenceKind`, `lower_graph_promotion_identity_basis` |
 
 Both are pure: no Query, no runtime, and no dependencies. **`worth-schema-*`
-crates must never import `worth-query`.** Put meaning here when it should be
+crates must never import a Query crate.** Put meaning here when it should be
 reusable across applications and outlive any one runtime. Wire it into Query
 from your application's entry crate. Guide:
 [workspaces/worth-contracts/README.md](../workspaces/worth-contracts/README.md).

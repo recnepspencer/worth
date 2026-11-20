@@ -14,7 +14,7 @@ class CargoCaptureHandoffTests(unittest.TestCase):
     def test_command_publishes_its_overrides_without_mutating_the_gate_environment(self):
         with tempfile.TemporaryDirectory() as temporary:
             gate = query_gate.Gate(Path(temporary))
-            gate.env['RUSTC_WRAPPER'] = 'gate-wrapper'
+            gate.env['WORTH_CONSTITUTION_PREBUILT'] = '0'
             gate.env['WORTH_TEST_COST_CAPTURE_INDEX'] = 'capture-index.jsonl'
             argv = ['cargo', 'check', '--workspace']
 
@@ -26,11 +26,11 @@ class CargoCaptureHandoffTests(unittest.TestCase):
 
             with patch.object(query_gate, 'CargoRunner') as owner:
                 owner.return_value.side_effect = run
-                result = gate.command('check-ui-workspace', argv)
+                result = gate.command('constitution', argv)
             environment = owner.call_args.args[1]
-            self.assertEqual(environment['RUSTC_WRAPPER'], '')
+            self.assertEqual(environment['WORTH_CONSTITUTION_PREBUILT'], '1')
             self.assertEqual(environment['WORTH_TEST_COST_CAPTURE_INDEX'], 'capture-index.jsonl')
-            self.assertEqual(gate.env['RUSTC_WRAPPER'], 'gate-wrapper')
+            self.assertEqual(gate.env['WORTH_CONSTITUTION_PREBUILT'], '0')
             self.assertEqual(result['exit'], 0)
             owner.return_value.assert_called_once()
 

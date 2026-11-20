@@ -160,8 +160,6 @@ crates/worth-runtime-bridge/ crates/worth-court-runtime-world/tests/worth_court_
 crates/worth-runtime-bridge/ crates/worth-court-runtime-world/tests/worth_court_runtime_world/runtime_world/owned_async/process_local_retention/bridge/mod.rs
 crates/worth-runtime-bridge/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/execution_runtime/product_world/source_owner.rs
 crates/worth-runtime-bridge/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_runtime/operation_control.rs
-crates/worth-runtime-bridge/ workspaces/worth-query/crates/worth-query/src/runtime/tests/live_state/async_source_binding.rs
-crates/worth-runtime-bridge/ workspaces/worth-query/crates/worth-query/src/runtime/tests/live_state/async_source_drift.rs
 crates/worth-runtime-bridge/ workspaces/worth-ui/crates/worth-ui-certification/tests/application_contracts/projection_authority/qp_05.rs
 crates/worth-runtime-bridge/ workspaces/worth-ui/crates/worth-ui-certification/tests/application_contracts/projection_lifecycle/qp_02.rs
 crates/worth-runtime-bridge/ workspaces/worth-ui/crates/worth-ui-certification/tests/application_contracts/projection_lifecycle/support.rs
@@ -276,8 +274,6 @@ workspaces/worth-query-bank-world/crates/bank-server/ workspaces/worth-query-ban
 workspaces/worth-query-bank-world/crates/bank-server/ workspaces/worth-query-bank-world/crates/bank-http-adapter/src/http/server/tests/currency_work_stop.rs
 workspaces/worth-query-bank-world/crates/bank-server/ workspaces/worth-query-bank-world/crates/worth-query-bank-court-external-rail-server/tests/worth_query_bank_court_external_rail_server/process/server_owned_effects/server/approved_payment_workflow/postures/mod.rs
 workspaces/worth-query-bank-world/crates/bank-server/ workspaces/worth-query-bank-world/crates/worth-query-bank-court-external-rail-server/tests/worth_query_bank_court_external_rail_server/server/ordinary_reads/current_accounts/mod.rs
-workspaces/worth-query/crates/worth-query-admission/ workspaces/worth-query/crates/worth-query/src/harness/milestone_nine_certification/rows/rejection/narrowing/relationship_proof.rs
-workspaces/worth-query/crates/worth-query-admission/ workspaces/worth-query/crates/worth-query/src/harness/milestone_nine_certification/rows/rejection/narrowing/reuse_budget.rs
 workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/document_history/navigation_outputs/panic_disposal.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query-bank-world/crates/bank-http-adapter/src/http/server/tests.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query-bank-world/crates/bank-http-adapter/src/http/server/tests/currency_work_stop.rs
@@ -1656,7 +1652,6 @@ workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crat
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-host/src/host/temporal_conditional_operation/courtroom_settlement.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-host/src/host/temporal_conditional_operation/read_ceiling_terminal.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-host/src/host/temporal_conditional_operation/world.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-query/src/query/installed_operating_world/advancement_custody.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/host_oracle/continuation.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/host_oracle/execution.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/host_oracle/recovered_custody/child.rs
@@ -1853,7 +1848,6 @@ workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crat
 crates/worth-foundational/ workspaces/worth-query/crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/scalar_input/output/attribution.rs
 crates/worth-relational/ workspaces/worth-query/crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/scalar_input/output/attribution.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/scalar_input/output/attribution.rs
-workspaces/worth-query/crates/worth-query/ workspaces/worth-query/crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/scalar_input/output/attribution.rs
 crates/worth-foundational/ workspaces/worth-query/crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/scalar_input/continuation.rs
 crates/worth-relational/ workspaces/worth-query/crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/scalar_input/continuation.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/scalar_input/continuation.rs
@@ -1970,7 +1964,6 @@ crates/worth-runtime-bridge/ workspaces/worth-query/crates/worth-query-execution
 
 crates/worth-signal/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/managed_bridge/conditional_execution.rs
 
-crates/worth-runtime-bridge/ workspaces/worth-query/crates/worth-query/src/domain_installation/operation_execution/workflow_execution/progression/frontier/tests/dispatch/reservation.rs
 
 # Read-only original Work settlement recording; no request or publication authority.
 

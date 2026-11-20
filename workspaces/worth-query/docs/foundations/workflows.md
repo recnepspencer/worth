@@ -111,13 +111,6 @@ resuming an interrupted program transition are not yet certified.
 | Workflow runtime | `WorthQueryWorkflowApplicationRuntime`: the host value that carries the installed vocabularies. Instance requests take it (`&workflow` in the examples); definition publication does not. |
 | Owner custody | The state of an external operation that committed but whose settlement the owner has not yet accepted. |
 
-Two older `worth-query` modules also use the word *workflow*, and neither is
-this kernel. `worth_query::facade::workflow` declares preview, promotion,
-writeback, and branch merge. `worth_query::facade::installed::workflow`
-traces staged runs of installed domain operations and compares their replays.
-The audience facades re-export neither, and neither can start, advance, or
-read a workflow instance.
-
 ## Where the names live
 
 | Facade module | What it holds |

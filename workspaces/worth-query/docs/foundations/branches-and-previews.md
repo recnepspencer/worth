@@ -1,15 +1,10 @@
 # Branches and Previews
 
-This page covers two separate concepts that share the word "branch":
-
-| Concept | Entry point | Audience |
-|---|---|---|
-| Application product branch | `application.branches()` and `application.on_branch(...)` from `worth-query-host` | Application code |
-| Workspace preview and branch session | `workspace.preview(...)` and `workspace.branch(...)` from `worth_query::facade` | Internal engine code |
+This page covers application product branches: `application.branches()` and
+`application.on_branch(...)` from `worth-query-host`.
 
 A product branch is a Runtime World identity with its own history and program
-revision. A Workspace preview or branch session is a lane-shifted context over
-retained runtime surfaces and never mints product identity.
+revision.
 
 ## Application product branches (host)
 
@@ -938,29 +933,13 @@ For the request lanes that run against a selected branch, see
 
 ## Current Limits
 
-- Preview and branch sessions are stable as runtime-backed isolation contexts.
-- Preview-local writes, binding, discard, and typed promotion denials are part
-  of the current surface.
-- Temporal and async preview subscriptions are runtime-backed active objects,
-  not wrapper-only observers, and they do not share authoritative active state
-  when basis identity differs.
-- Preview closeout now preserves preview-owned temporal, async, and mixed-cause
-  residue explicitly, and promotion denies with typed rebinding recovery
-  posture when crossed preview residue cannot be promoted honestly.
-- Preview-local and branch-local intent work still depends on admitted intent
-  support and the correct sandboxed policy.
 - Relational branch-local MVCC, exact-basis readmission, detached transactions,
   and typed branch-merge settlement repair are implemented owner capabilities.
-  They do not make every Query branch-session effect family supported.
 - Signal owner services provide exact component bases and per-branch progress.
   [Runtime World](../../../../crates/worth-runtime-world/README.md) owns
   memory-resident composite history and coordinated Relational-plus-Signal
   publication. Query's product-branch facade carries that authority through
-  reads, mutations, aftermath, delivery, and inspection. Existing Query
-  preview and branch sessions remain lane controls and do not mint product
-  identity.
-- Durable preview replay and temporal/async branch-session behavior remain
-  future work.
+  reads, mutations, aftermath, delivery, and inspection.
 
 ## Related Docs
 

@@ -36,7 +36,7 @@ from lane_environment import validate as validate_environment
 
 from query_gate_courts import (
     BANK, BEFORE, BOUNDARY, FIXTURE, FIXTURE_PACKAGES, GROUPS, LOWER, QUERY,
-    QUERY_PUBLIC, ROOT, ROOT_TESTS, TEST_SUITES, UI, packages, selected, CATEGORY_SUITES,
+    ROOT, ROOT_TESTS, TEST_SUITES, packages, selected, CATEGORY_SUITES,
 )
 
 
@@ -120,8 +120,6 @@ COMMAND_SUITES = {
     ],
     "lint-bank": [
         ("clippy-bank", clippy("--manifest-path", BANK, "--workspace")),
-        ("clippy-ui-binding",
-         clippy("--manifest-path", UI, *packages("worth-ui-query-binding"))),
     ],
     "wasm": [
         ("wasm-check", ["cargo", "check", "-p", "worth-signal-wasm", "--all-targets"]),
@@ -140,8 +138,6 @@ COMMAND_SUITES = {
          ["cargo", "run", "--manifest-path", FIXTURE, "-p", "worth-query-consumer-root"]),
         ("check-query-workspace",
          ["cargo", "check", "--manifest-path", QUERY, "--workspace", "--all-targets"]),
-        ("check-ui-workspace",
-         ["cargo", "check", "--manifest-path", UI, "--workspace", "--all-targets"]),
         ("check-root-workspace", ["cargo", "check", "--workspace", "--all-targets"]),
     ],
 }
@@ -149,11 +145,6 @@ COMMAND_SUITES = {
 # Environment one command adds over the gate's own.
 COMMAND_ENV = {
     "constitution": {"WORTH_CONSTITUTION_PREBUILT": "1"},
-    # sccache 0.18.0 inserts `/WX-` between cc 1.9.0's `-Tp` and its file, so
-    # cl reads it as the source and libmimalloc-sys (via apps/platform-pulse)
-    # fails to build. The empty wrapper also overrides `rustc-wrapper = sccache` in
-    # ~/.cargo/config.toml; every other command keeps sccache.
-    "check-ui-workspace": {"RUSTC_WRAPPER": ""},
 }
 
 ORDER = ["tooling", "fmt", "lint-lower", "lint-query", "lint-fixture", "lint-bank",
@@ -344,8 +335,7 @@ class Gate:
         }
 
     def commands(self, suite):
-        rows = [self.command(label, argv) for label, argv in COMMAND_SUITES[suite]
-                if label not in ("check-ui-workspace", "clippy-ui-binding")]
+        rows = [self.command(label, argv) for label, argv in COMMAND_SUITES[suite]]
         return {
             "suite": suite, "ok": all(row["exit"] == 0 for row in rows),
             "failed": [row["name"] for row in rows if row["exit"] != 0],

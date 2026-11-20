@@ -1,9 +1,0 @@
-include!("facade_contract/admission_and_routing.rs");
-include!("facade_contract/relational_projection.rs");
-include!("facade_contract/runtime_construction_and_delivery.rs");
-include!("facade_contract/graph_read_execution.rs");
-include!("facade_contract/causal_inspection_and_journal.rs");
-include!("facade_contract/mutation_authoring.rs");
-include!("facade_contract/live_subscription_and_preview.rs");
-include!("facade_contract/read_composition_and_support.rs");
-include!("facade_contract/workspace_and_execution_installation.rs");

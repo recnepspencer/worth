@@ -52,7 +52,7 @@ prebuilt executable binary fields, allocator probes and expression binary
 operators. These do not consume the inline scalar. Lists are deliberately
 separate so those lexical matches do not become capability claims.
 
-### Inline scalar symbol paths (50)
+### Inline scalar symbol paths (47)
 
 - [docs/build-an-application.md](../docs/build-an-application.md)
 - [docs/capability-index.md](../docs/capability-index.md)
@@ -101,9 +101,6 @@ separate so those lexical matches do not become capability claims.
 - [workspaces/worth-query/crates/worth-query-declaration/src/application_schema/value_binding/canonical/binary.rs](../workspaces/worth-query/crates/worth-query-declaration/src/application_schema/value_binding/canonical/binary.rs)
 - [workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/domain_values/tests.rs](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/domain_values/tests.rs)
 - [workspaces/worth-query/crates/worth-query-declaration/src/application_schema/canonical_basis.rs](../workspaces/worth-query/crates/worth-query-declaration/src/application_schema/canonical_basis.rs)
-- [workspaces/worth-query/crates/worth-query/src/projection_consumption/consumed/native_refinement.rs](../workspaces/worth-query/crates/worth-query/src/projection_consumption/consumed/native_refinement.rs)
-- [workspaces/worth-query/crates/worth-query/src/projection_consumption/certification/oracle/value_terms.rs](../workspaces/worth-query/crates/worth-query/src/projection_consumption/certification/oracle/value_terms.rs)
-- [workspaces/worth-query/crates/worth-query/src/runtime/graph_read_access/schema_reference_evidence/admitted_field_kind.rs](../workspaces/worth-query/crates/worth-query/src/runtime/graph_read_access/schema_reference_evidence/admitted_field_kind.rs)
 
 ### Broader binary route paths (25)
 

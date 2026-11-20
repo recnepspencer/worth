@@ -46,7 +46,6 @@ application-home-recovered-finalization workspaces/worth-store/crates/worth-stor
 application-home-recovered-finalization workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/query_readmission/native_artifacts/epoch.rs
 application-home-recovered-finalization workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/query_readmission/native_artifacts/epoch/target_inventory.rs
 application-home-recovered-finalization workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/query_readmission/native_artifacts/successor_compilation.rs
-bridge workspaces/worth-query/crates/worth-query/src/domain_installation/dependency_impact/compiled/invalidation_manifest/structural_manifest_tests.rs
 installation workspaces/worth-query/crates/worth-query-admission/src/application_query/tests.rs
 installation workspaces/worth-query/crates/worth-query-admission/src/application_query/tests/complete_closure.rs
 installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-contribution/tests/worth_query_court_execution_primary_graph_application_contribution/domain_computation/primary_graph/conditional_operation/authorization_sources/tests/mod.rs
@@ -124,7 +123,6 @@ installation workspaces/worth-query/crates/worth-query-testkit-host/src/host/tem
 installation workspaces/worth-query/crates/worth-query-testkit-host/src/host/temporal_conditional_operation/public_product_journey/conditional_execution.rs
 installation workspaces/worth-query/crates/worth-query-testkit-host/src/host/temporal_conditional_operation/public_product_journey/conditional_execution/product_readback.rs
 installation workspaces/worth-query/crates/worth-query-testkit-host/src/host/temporal_conditional_operation/retained_query_batch/direct_limits.rs
-installation workspaces/worth-query/crates/worth-query/src/runtime/tests/graph_read_access/graph_read_access_architectural_closeout/application_query_equivalence/support.rs
 native-checkpoint-read-protection workspaces/worth-store/crates/worth-store-relational/src/cold_source/read_protection.rs
 native-durable-initial-installation crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/checkpoint_admission/contract_work.rs
 native-durable-initial-installation crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/checkpoint_admission/operational.rs
