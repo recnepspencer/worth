@@ -17,6 +17,8 @@ pub use discard::{discard_home, WorthQueryApplicationHomeDiscardDenial};
 pub use failure_close::{
     WorthQueryApplicationHomeOpeningCloseRefused, WorthQueryApplicationHomeOpeningClosed,
 };
+/// Store's physical refusal vocabulary, for `physical_refusal`.
+pub use worth_store_application::{ApplicationHomePhysicalRefusal, ApplicationHomePhysicalRefusalKind};
 pub use refusal::{
     HomeCustodyReadmissionDenial, UnadmittedHomeQueryCustodyRefused, UnadmittedHomeQueryService,
     WorthQueryApplicationHomeOpenRefused,
