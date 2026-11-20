@@ -460,8 +460,8 @@ permanent contract.
 
 - Applications import audience facades (for Query: `worth-query-decl` for
   declarations and `worth-query-host` for hosting and requests).
-- Certification and replay code imports `worth-query-replay`. Ordinary
-  application code never does.
+- Certification code imports `worth-query-replay` for cost evidence.
+  Ordinary application code never does.
 - Facade names are snapshotted and checked in CI, so a facade change is always
   deliberate.
 
