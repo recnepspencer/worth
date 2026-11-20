@@ -22,8 +22,15 @@ pub(in super::super) struct Recorder {
     held: std::sync::atomic::AtomicBool,
     persist: bool,
     refuse_occurrence: std::sync::atomic::AtomicBool,
+    crashed: std::sync::atomic::AtomicBool,
 }
 impl Recorder {
+    /// Process death at the World medium: no later World write becomes
+    /// durable. Native keeps whatever its own medium already made durable.
+    pub(in super::super) fn crash(&self) {
+        self.crashed
+            .store(true, std::sync::atomic::Ordering::SeqCst);
+    }
     pub(in super::super) fn refuse_next_publication(&self) {
         self.refused
             .store(true, std::sync::atomic::Ordering::SeqCst);
@@ -51,6 +58,7 @@ impl Recorder {
             held: std::sync::atomic::AtomicBool::new(false),
             persist,
             refuse_occurrence: std::sync::atomic::AtomicBool::new(false),
+            crashed: std::sync::atomic::AtomicBool::new(false),
         })
     }
     pub(in super::super) fn refuse_next_occurrence(&self) {
@@ -74,6 +82,7 @@ impl Recorder {
             held: std::sync::atomic::AtomicBool::new(false),
             persist: self.persist,
             refuse_occurrence: std::sync::atomic::AtomicBool::new(false),
+            crashed: std::sync::atomic::AtomicBool::new(false),
         })
     }
     /// This model installs one unchanged declared program; it has no adoption table.
@@ -121,6 +130,25 @@ impl Recorder {
         }
         Box::new(JournalSource { selected, rows })
     }
+    /// Untrusted DATA: rewrite the latest stored row of one journal in place,
+    /// as damage between processes. `None` removes that row.
+    pub(in super::super) fn rewrite_latest(
+        &self,
+        journal: WorldDurableJournal,
+        change: impl FnOnce(Vec<u8>) -> Option<Vec<u8>>,
+    ) {
+        let mut rows = self.rows.lock().unwrap();
+        let index = rows.iter().rposition(|row| row.journal == journal).unwrap();
+        match change(rows[index].bytes.clone()) {
+            Some(bytes) => {
+                rows[index].digest = Sha256::digest(&bytes).into();
+                rows[index].bytes = bytes;
+            }
+            None => {
+                rows.remove(index);
+            }
+        }
+    }
     pub(in super::super) fn snapshot_for_court(&self) -> Box<dyn WorldCheckpointReadSource> {
         self.snapshot()
     }
@@ -163,6 +191,7 @@ impl RuntimeWorldDurableMedium for Recorder {
             .refused
             .swap(false, std::sync::atomic::Ordering::SeqCst)
             || !self.persist
+            || self.crashed.load(std::sync::atomic::Ordering::SeqCst)
             || (subject.journal() == WorldDurableJournal::Occurrences
                 && self
                     .refuse_occurrence

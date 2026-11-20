@@ -50,13 +50,14 @@ pub(super) fn scan(
         let Some(caller) = subject.association() else {
             continue;
         };
-        let bytes = if HomeProgramTransitionCaller::recognizes(caller.as_bytes()) {
-            HomeProgramTransitionCaller::read(caller.as_bytes())
-                .map_err(|_| Denial::World(WorldReadmissionDenial::MalformedNativeAssociation))?
-                .original()
-        } else {
-            caller.as_bytes()
-        };
+        // An ordinary World-associated effect is recovered by World's own
+        // reconciliation, which joins it to its exact open attempt.
+        if !HomeProgramTransitionCaller::recognizes(caller.as_bytes()) {
+            continue;
+        }
+        let bytes = HomeProgramTransitionCaller::read(caller.as_bytes())
+            .map_err(|_| Denial::World(WorldReadmissionDenial::MalformedNativeAssociation))?
+            .original();
         let key = CanonicalDigestId::new(Sha256::digest(bytes).into());
         if open.contains_key(&key) {
             return Err(Denial::UncleanRecoveryUnsupported(

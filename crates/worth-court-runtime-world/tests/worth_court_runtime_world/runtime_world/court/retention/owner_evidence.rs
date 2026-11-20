@@ -8,6 +8,7 @@ use journey::*;
 mod authored_retirement;
 mod durable_cancellation;
 mod transport;
+mod unclean_native;
 mod unclean_signal;
 
 #[test]

@@ -193,8 +193,7 @@ impl Fixture {
                     recorder.binding().clone(),
                     recorder.snapshot(),
                     request,
-                )
-                .unwrap()
+                )?
                 .bind(recorder.clone(), request)
                 .unwrap();
                 builder.readmit_world_home(
