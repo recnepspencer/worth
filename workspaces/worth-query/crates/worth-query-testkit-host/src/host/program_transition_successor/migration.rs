@@ -1,7 +1,7 @@
 //! Native transition DATA from the actual A/B schema observations.
 use super::schema::{LaterIdentity, LaterRecord, LaterRecords};
 use worth_query_decl::facade::application_schema::fragment::FieldSelection;
-pub(in crate::host::application_home::program_transition) fn schema_change(
+pub fn schema_change(
     source: &WorthQueryHomeProgramTransitionReadSource<'_, '_>,
     target: &WorthQueryHomeProgramTransitionTarget<'_>,
 ) -> ProposedSchemaTransition {
@@ -51,7 +51,7 @@ use worth_query_host::facade::home_program_transition::{
     WorthQueryHomeProgramTransitionTarget,
 };
 
-pub(in crate::host::application_home::program_transition) fn body(
+pub fn body(
     target: &WorthQueryHomeProgramTransitionTarget<'_>,
 ) -> worth_query_host::facade::home_program_transition::WorkerIntentBatch {
     use worth_query_host::facade::home_program_transition::*;

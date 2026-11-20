@@ -1,5 +1,9 @@
 //! Native Home declaration; A and B share the same base model path and contracts.
 use super::native_contribution::ExtendedSurface;
+pub use crate::facade::host::application_home::schema::{
+    Account, AccountIdentity, ExternalIdentity, ExternalMapping, HomeRecords, MappingTarget,
+    Principal, PrincipalIdentity,
+};
 use worth_query_decl::facade::{
     application_schema::{
         fragment::{self, *},
@@ -14,10 +18,6 @@ use worth_query_host::facade::{
         WorthQueryApplicationPrincipalKey, WorthQueryPrimaryGraphBootstrap,
         WorthQueryPrimaryGraphInstallationDenial,
     },
-};
-pub use worth_query_testkit_host::facade::host::application_home::schema::{
-    Account, AccountIdentity, ExternalIdentity, ExternalMapping, HomeRecords, MappingTarget,
-    Principal, PrincipalIdentity,
 };
 #[path = "schema/later_records.rs"]
 mod later_records;

@@ -1,18 +1,21 @@
 //! The real closed successor application, including its typed B bindings.
-use super::super::*;
+use super::application_runtime_surface as identity;
+use std::sync::{atomic::AtomicUsize, Arc};
 use worth_query_decl::facade::{application_program::*, application_schema::*};
 use worth_query_host::facade::{
     application_installation::*, WorthQueryApplicationHomeLocation,
     WorthQueryApplicationHomeRequest,
 };
-pub(super) mod balance_query;
+pub mod balance_query;
 mod migration;
 mod native_contribution;
-pub(super) mod native_mutation;
-pub(super) mod schema;
-pub(super) use migration::{body, schema_change};
+pub mod native_mutation;
+pub mod schema;
+mod transition;
+pub use migration::{body, schema_change};
 use native_contribution::ExtendedSurface;
-pub(super) use schema::SuccessorSchema;
+pub use schema::SuccessorSchema;
+pub use transition::{resources, transition_request};
 
 pub struct ExtendedProgram;
 pub struct BalanceCompletion;
@@ -42,7 +45,7 @@ impl ApplicationProgramDefinition<SuccessorSchema> for ExtendedProgram {
         ]
     }
 }
-pub(super) fn request(
+pub fn request(
     location: std::path::PathBuf,
     build: ApplicationBuildIdentity,
     contacts: Arc<AtomicUsize>,
