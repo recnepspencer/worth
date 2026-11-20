@@ -2,11 +2,11 @@
 mod transition_catalog;
 mod transition_completion;
 mod transition_resumption;
-pub use transition_resumption::{
-    ApplicationHomeProgramTransitionResumption, ApplicationHomeTransitionResumptionDenial,
-};
 pub use transition_completion::{
     ApplicationHomeTransitionBindingStageDenial, ApplicationHomeTransitionFinishDenial,
+};
+pub use transition_resumption::{
+    ApplicationHomeProgramTransitionResumption, ApplicationHomeTransitionResumptionDenial,
 };
 use worth_execution::ExecutionRequest;
 use worth_proof::{AuthorityMarker, RelationalReadmitted, WorldReconciled};

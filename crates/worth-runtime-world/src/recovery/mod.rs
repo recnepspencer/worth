@@ -47,8 +47,8 @@ pub enum RuntimeWorldSettledRelationalAdoptionDenial {
     Publication(crate::publication::NoEffectCompositePublication),
 }
 
-pub(crate) use catalog::ReservedProductUnpublishedRecordUpdate;
 pub(crate) use catalog::ClaimedRecoveredCreation;
+pub(crate) use catalog::ReservedProductUnpublishedRecordUpdate;
 pub(crate) use catalog::{RecoveryCatalog, RecoveryCatalogDenial, ReservedProductUnpublishedSlot};
 pub(crate) use cleanup::RecoveryCleanupOutcome;
 

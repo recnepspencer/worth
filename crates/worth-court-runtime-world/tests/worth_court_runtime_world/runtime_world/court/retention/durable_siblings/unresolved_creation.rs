@@ -122,6 +122,24 @@ fn assert_fenced(f: &Fixture, request: &ExecutionRequest<'_, '_>, name: &str) {
         ),
         "{answer:?}"
     );
+    // Nor may a durable publication move the recorded source before the decision.
+    let heads = f.recorder.heads();
+    let opened = f.world.publication_port().open_publication_without_signal(
+        request,
+        parent.clone(),
+        f.recorder.program_source(&parent),
+        worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
+        &RuntimeWorldCancellationSource::new().token(),
+        None,
+    );
+    assert!(
+        matches!(
+            opened,
+            WorldOpenAttemptOutcome::Refused(WorldOpenAttemptRefusal::Reservation(_))
+        ),
+        "{opened:?}"
+    );
+    assert_eq!(f.recorder.heads(), heads);
 }
 
 fn resume(

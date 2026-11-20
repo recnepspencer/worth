@@ -19,7 +19,8 @@ type ReferenceKey = (
     DurableProductReferenceGeneration,
 );
 type Observations = ExecutionOrderedMap<ReferenceKey, crate::branch::ProductBranchObservation>;
-type Points = ExecutionOrderedMap<ReferenceKey, worth_signal::facade::durability::SignalRecordedSourcePoint>;
+type Points =
+    ExecutionOrderedMap<ReferenceKey, worth_signal::facade::durability::SignalRecordedSourcePoint>;
 type Descriptors = ExecutionOrderedMap<
     worth_foundational::facade::DurableCompositeCommitIdentity,
     worth_relational::facade::branch::RecordedRelationalComponentReference,

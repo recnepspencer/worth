@@ -151,8 +151,9 @@ guides state that crash recovery is not yet certified.
 ### Cleanup track status
 
 **2026-11-20.** C1 (crash core) is complete on branch `m3/cleanup-c1` and
-lands with its PR; C2–C5 have not started. D18 remains only for the
-damage-shaped causes below, which C5 retires.
+lands with its PR; C2–C5 have not started. D18 remains for the causes below:
+two damage-shaped World causes and the Dispatch cause (C3). C5 retires the
+surface.
 
 | C1 slice | State on the branch |
 |---|---|

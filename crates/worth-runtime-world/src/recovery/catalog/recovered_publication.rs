@@ -17,8 +17,19 @@ impl ReservedProductUnpublishedSlot {
 }
 
 impl ProductUnpublishedRecoveryCatalog {
-    /// Every undecided recovered original fences fresh work, so a recovered
-    /// creation's recorded source cannot move before its decision.
+    /// An undecided recovered creation also fences durable open attempts, so
+    /// its recorded source cannot move before its decision.
+    pub(crate) fn has_recovered_creation(&self) -> bool {
+        let state = self.locked_state();
+        (0..state.slots.span()).any(|position| {
+            matches!(
+                state.slots.at(position),
+                Some((_, RecoveryEntry::RecoveredCreation(_)))
+            )
+        })
+    }
+    /// Every undecided recovered original fences fresh work that issues
+    /// identities outside a durable open attempt (creations, plain publications).
     pub(crate) fn has_recovered(&self) -> bool {
         let state = self.locked_state();
         (0..state.slots.span()).any(|position| {

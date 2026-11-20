@@ -41,8 +41,7 @@ mod root_readmission;
 pub(crate) use artifact::{
     DurableWorldHead, PreparedWorldArtifact, WorldArtifactInput, WorldBranchCreatedRecord,
     WorldCreatedBranchOwnerEvidence, WorldCreationIntentInput, WorldCreationIntentRecord,
-    WorldHeadInput,
-    WorldOpenAttemptInput, WorldOpenAttemptRecord, WorldRecord,
+    WorldHeadInput, WorldOpenAttemptInput, WorldOpenAttemptRecord, WorldRecord,
     WorldRecordedRelationalCreationPlan, WorldRelationalCreationInput, WorldRelationalEvidence,
     WorldRelationalForkEvidence,
 };

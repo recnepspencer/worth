@@ -129,9 +129,9 @@ impl SignalDurableReadSource for Source {
         bytes
             .extend_from_slice(&row.bytes)
             .map_err(SignalDurableMediumDenial::Backing)?;
-        Ok(bytes
+        bytes
             .seal_immutable_bytes()
-            .map_err(SignalDurableMediumDenial::Backing)?)
+            .map_err(SignalDurableMediumDenial::Backing)
     }
 }
 impl SignalDurableMedium for Medium {

@@ -144,6 +144,14 @@ where
             ),
             None => (None, None, selected_source_program),
         };
+        // An undecided recovered creation must find its recorded source where
+        // it was; recovered publications keep serving beside new work.
+        if self.state.recovery.has_recovered_creation() {
+            return Err(Refusal::Reservation(NoEffectCompositePublication::new(
+                NoEffectCause::OwnerDeniedBeforeEffect,
+                Some(expected.clone()),
+            )));
+        }
         let identities =
             issue_publication_identities_for_attempt(self, assigned).map_err(|cause| {
                 Refusal::Reservation(NoEffectCompositePublication::new(

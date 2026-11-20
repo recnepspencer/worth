@@ -1,5 +1,5 @@
-pub(crate) use authority::RecoveredRootInventory;
 pub(crate) use authority::RecordedReplayResultSchema;
+pub(crate) use authority::RecoveredRootInventory;
 pub(crate) use authority::{AdmittedRecoveredCodecPublication, RecoveredCodecPublicationCustody};
 pub mod access;
 pub mod authority;

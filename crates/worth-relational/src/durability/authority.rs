@@ -48,8 +48,8 @@ pub use recovery::{
 };
 mod runtime_rebuild;
 pub(crate) use runtime_rebuild::replay_commit_stop;
-pub(crate) use runtime_rebuild::RecoveredIndexCatalog;
 pub(crate) use runtime_rebuild::RecordedReplayResultSchema;
+pub(crate) use runtime_rebuild::RecoveredIndexCatalog;
 
 use crate::branch::AdmittedRelationalBranchBasis;
 use crate::history::data::BranchId;

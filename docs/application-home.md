@@ -203,11 +203,11 @@ fixed owner order before the Home serves anything.
   `RecoveredCommitted` and the same receipt.
 - **A kill after a Signal effect whose open World recorded:** the effect is
   readmitted on reopen.
-- **An unfinished branch creation:** it reopens as recovered custody under its
-  original identity, and the target branch name stays fenced. With no owner
-  fork it can only be released; once any fork is durable it can only
-  continue. Recovery performs a missing planned fork once, at the recorded
-  basis, before the creation is published.
+- **An unfinished branch creation:** opening the Home decides it before
+  service, under its original identity. With no owner fork it is released;
+  once any fork is durable it continues. A kill between Native's fork and
+  Signal's completes Signal's planned fork once, at the recorded basis,
+  before the creation is published.
 - **An interrupted program transition:** reopen with the same transition request
   and it resumes. Every step happens exactly once and the result equals an
   uninterrupted run. If the recomputed plan differs from the recorded one,

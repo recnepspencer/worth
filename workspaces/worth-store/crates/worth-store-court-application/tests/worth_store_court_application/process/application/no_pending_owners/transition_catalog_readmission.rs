@@ -207,7 +207,9 @@ fn a_completed_transition_occurrence_restores_target_contracts_and_continues_onl
             .unwrap();
         assert_eq!(proof.len(), 1);
         assert_eq!(proof[0].receipt(), &original_receipt.1);
-        drop((proof, current, source, restored, root, grant, assigned, contracts));
+        drop((
+            proof, current, source, restored, root, grant, assigned, contracts,
+        ));
         close(fixture.home, &execution);
     }
     assert_eq!(readmission_memory.charged_memory_bytes(), 0);

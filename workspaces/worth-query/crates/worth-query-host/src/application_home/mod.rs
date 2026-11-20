@@ -17,10 +17,6 @@ pub use discard::{discard_home, WorthQueryApplicationHomeDiscardDenial};
 pub use failure_close::{
     WorthQueryApplicationHomeOpeningCloseRefused, WorthQueryApplicationHomeOpeningClosed,
 };
-/// Store's physical refusal vocabulary, for `physical_refusal`.
-pub use worth_store_application::{
-    ApplicationHomePhysicalRefusal, ApplicationHomePhysicalRefusalKind, ApplicationHomePhysicalStage,
-};
 pub use refusal::{
     HomeCustodyReadmissionDenial, UnadmittedHomeQueryCustodyRefused, UnadmittedHomeQueryService,
     WorthQueryApplicationHomeOpenRefused,
@@ -47,4 +43,9 @@ pub use worth_store_application::{
     ApplicationHomeCheckpointJournalObservation as WorthQueryApplicationHomeCheckpointJournalObservation,
     ApplicationHomeCloseDenial,
     ApplicationHomeCloseOutcome as WorthQueryApplicationHomeCloseOutcome,
+};
+/// Store's physical refusal vocabulary, for `physical_refusal`.
+pub use worth_store_application::{
+    ApplicationHomePhysicalRefusal, ApplicationHomePhysicalRefusalKind,
+    ApplicationHomePhysicalStage,
 };
