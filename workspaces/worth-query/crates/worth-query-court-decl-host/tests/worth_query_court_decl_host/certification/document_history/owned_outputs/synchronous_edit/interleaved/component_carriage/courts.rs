@@ -363,3 +363,74 @@ fn an_absent_supplier_does_not_force_its_prerequisite_at_an_authored_barrier() {
     assert_eq!(writes.published_rows.len() + writes.omitted_publications, 0);
     assert_eq!(native_head(&host), before);
 }
+
+/// #233 (H1): the positioned court above publishes `first:carriage:late` = 350
+/// eagerly. One commit per stage leaves it underived; a current demand on the
+/// sequential side must derive the same value.
+#[test]
+fn a_sequential_later_link_derives_the_positioned_value_on_demand() {
+    let _execution = WorthQueryExecutionObservation::install_on_this_thread();
+    let host: WorthQueryProgramApplicationRuntime<Schema, Program> = world::install_configured(
+        host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()), 1, None,
+        world::Configuration { envelope_records:true, interleaved_records:true, ..Default::default() });
+    let scope = request_scope();
+    let principal = authenticate_operator(host.installed_schema(), &scope);
+    let request = host.request(&principal, &scope);
+    for (ordinal, attach) in [false, true].into_iter().enumerate() {
+        let mut edit = request
+            .edit_envelope()
+            .idempotency(format!("sequential-link:{ordinal}"))
+            .runtime_stages(&host)
+            .ordered_authored()
+            .unwrap();
+        if attach {
+            edit.push_stage::<ApplicationNoOutputGraph, _>(attach::Intent {
+                parent: "a".into(),
+                child: "carriage:late".into(),
+                pending_child: false,
+            })
+        } else {
+            edit.push_stage::<Tree, _>(fixture::model::Intent {
+                key: "a".into(),
+                value: 3,
+                key_derived_target: false,
+            })
+        }
+        .unwrap();
+        let outcome = edit
+            .execute_performed(ExecutionAllocationPolicy::SystemAllocation)
+            .unwrap();
+        assert!(matches!(outcome, Outcome::Committed(_)), "{outcome:?}");
+    }
+    let committed = request
+        .query(query::first_output::Read("first:carriage:late".into()))
+        .execute()
+        .map(|rows| rows.rows().first().map(|row| row.value));
+    eprintln!("H1 sequential first:carriage:late before demand: {committed:?}");
+    let mut demand = request
+        .demand(Demand { source: "carriage:late".into(), selector: None })
+        .start_in_program::<Program, Tree>(&host)
+        .unwrap();
+    for count in 0..128 {
+        assert!(count < 127, "the demand did not settle");
+        match demand.settle(&request).unwrap() {
+            WorthQueryApplicationOutputDemandProgress::Settled(output) => {
+                drop(output);
+                break;
+            }
+            WorthQueryApplicationOutputDemandProgress::Progressed
+            | WorthQueryApplicationOutputDemandProgress::Pending => {}
+        }
+    }
+    demand.close();
+    let demanded = request
+        .query(query::first_output::Read("first:carriage:late".into()))
+        .execute()
+        .unwrap();
+    eprintln!("H1 sequential first:carriage:late after demand: {:?}", demanded.rows().first().map(|row| row.value));
+    assert_eq!(
+        demanded.rows()[0].value,
+        (5 + 30) * 10,
+        "a current demand derives the value the positioned edit publishes eagerly"
+    );
+}
