@@ -34,6 +34,32 @@ pub(super) fn record(event: impl FnOnce() -> String) {
         EVENTS.with(|events| events.borrow_mut().push(event()));
     }
 }
+/// Records one task prepare outcome, formatted only while observed.
+pub(super) fn record_prepare<S: super::ApplicationSchema>(
+    i: usize,
+    task: &super::Scheduled<S>,
+    prepared: &Result<super::PlannedOutput, super::SynchronousOutputFailure>,
+) {
+    record(|| {
+        let outcome = match prepared {
+            Ok(super::PlannedOutput::Prepared(parent)) => {
+                if parent.is_some() {
+                    "prepared"
+                } else {
+                    "prepared-none"
+                }
+            }
+            Ok(super::PlannedOutput::Recapture) => "recapture",
+            Err(_) => "refused",
+        };
+        format!(
+            "prepare task={i} subject={} family={} source={:?} {outcome}",
+            task.subject,
+            task.tree.family(),
+            task.key.as_ref().map(|key| key.scope),
+        )
+    });
+}
 impl crate::domain_computation::execution_observation::WorthQueryExecutionObservation {
     /// The wave decisions recorded on this thread since the last call, in
     /// order: each ranked batch, each prepare with its occurrence identity and

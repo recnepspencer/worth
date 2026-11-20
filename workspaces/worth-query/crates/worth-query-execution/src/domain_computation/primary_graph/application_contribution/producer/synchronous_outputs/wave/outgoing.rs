@@ -19,14 +19,16 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
             .pin_source(context.execution)
             .map_err(CoupledSourceReadStop::from)?;
         let mut next = Self::new();
-        for task in &mut self.tasks {
-            if task.alias.is_some() || !task.done || task.component.is_none() {
-                continue;
-            }
+        for (&i, ()) in self.done_components.iter() {
+            let owed = self.tasks[i].owed.clone();
+            let task = &mut self.tasks[i];
             checkpoint(context.execution, task.subject, 1)?;
-            if let Some(parent) = &mut task.parent {
+            if let state::TaskState::Done {
+                parent: Some(parent),
+            } = &mut task.state
+            {
                 parent.pin = pin.clone();
-                context.owner.owe(&task.owed);
+                context.owner.owe(&owed);
                 task.tree
                     .discover_occurrences(context, candidate, parent, &mut next)?;
             }

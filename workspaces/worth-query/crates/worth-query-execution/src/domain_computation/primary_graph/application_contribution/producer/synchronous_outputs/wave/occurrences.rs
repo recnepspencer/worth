@@ -1,59 +1,22 @@
-//! Close the finite typed occurrence frontier before preparing any supplier.
+//! Close the finite typed occurrence frontier incrementally without quadratic quotes.
 use super::*;
+use prerequisites::Frontier;
+use state::{map_insert, push_funded, TaskState};
+use worth_execution::ExecutionOrderedMap;
+
+pub(super) fn allowed_matches(family: &str, allowed: Option<&[String]>) -> bool {
+    allowed.is_none_or(|families| families.iter().any(|f| f == family))
+}
+
 impl<S: ApplicationSchema> SynchronousOutputWave<S> {
-    pub(super) fn quote_frontier(
-        &self,
-        context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
-        allowed: usize,
-    ) -> Result<Option<worth_execution::ExecutionMemoryReservation>, SynchronousOutputFailure> {
-        let denied = || {
-            SynchronousOutputFailure(CoupledSourceReadStop::from(
-                super::super::super::WorthQueryOutputDemandDenial::new(
-                    super::super::super::WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
-                    "required occurrence frontier",
-                ),
-            ))
-        };
-        let n = u64::try_from(self.tasks.len()).map_err(|_| denied())?;
-        let edges = self
-            .tasks
-            .iter()
-            .try_fold(0u64, |total, t| {
-                total.checked_add(t.prerequisites.len() as u64)
-            })
-            .ok_or_else(denied)?;
-        let width = n
-            .checked_add(edges)
-            .and_then(|v| v.checked_add(allowed as u64))
-            .and_then(|v| v.checked_add(1))
-            .ok_or_else(denied)?;
-        let work = n
-            .checked_add(1)
-            .and_then(|v| v.checked_mul(width))
-            .and_then(|v| v.checked_mul(8))
-            .ok_or_else(denied)?;
-        checkpoint(context.execution, "required occurrence frontier", work)?;
-        let bytes = n
-            .checked_mul((size_of::<usize>() + size_of::<bool>()) as u64)
-            .ok_or_else(denied)?;
-        context.execution.allocation_policy().reserve_memory(bytes).map_err(|cause| SynchronousOutputFailure(CoupledSourceReadStop::capture(
-            crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::allocation_denied("required occurrence frontier",cause))))
-    }
-    pub(super) fn blocked_frontier(&self, needed: &[bool]) -> SynchronousOutputFailure {
+    pub(super) fn blocked_frontier(&self) -> SynchronousOutputFailure {
         use super::super::super::{
             WorthQueryOutputDemandDenial as Denial, WorthQueryOutputDemandDenialKind as Kind,
         };
-        for task in self
-            .tasks
-            .iter()
-            .enumerate()
-            .filter(|(i, t)| needed[*i] && !t.done)
-            .map(|(_, t)| t)
-        {
+        for task in self.tasks.iter().filter(|t| t.needed && !t.is_done()) {
             for parent in &task.prerequisites {
                 let parent = &self.tasks[self.canonical(*parent)];
-                if parent.done
-                    && parent.parent.is_none()
+                if matches!(parent.state, TaskState::Done { parent: None })
                     && let Some(key) = &parent.key
                 {
                     return SynchronousOutputFailure(CoupledSourceReadStop::from(Denial::new(
@@ -63,12 +26,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
                 }
             }
         }
-        if let Some(task) = self
-            .tasks
-            .iter()
-            .enumerate()
-            .find(|(i, t)| needed[*i] && !t.done)
-            .map(|(_, t)| t)
+        if let Some(task) = self.tasks.iter().find(|t| t.needed && !t.is_done())
             && let Some(key) = &task.key
         {
             return SynchronousOutputFailure(CoupledSourceReadStop::from(Denial::new(
@@ -78,97 +36,244 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
         }
         super::super::occurrences::refusal("required outputs", "unavailable occurrence identity")
     }
+
     pub(super) fn canonical(&self, mut i: usize) -> usize {
-        while let Some(parent) = self.tasks[i].alias {
+        while let Some(parent) = self.tasks[i].canonical_parent() {
             i = parent;
         }
         i
     }
-    pub(super) fn ready(&self, i: usize) -> bool {
-        self.tasks[i].alias.is_none()
-            && self.tasks[i].closed
-            && self.tasks[i].prerequisites.iter().all(|parent| {
-                let parent = &self.tasks[self.canonical(*parent)];
-                parent.done && parent.parent.is_some()
-            })
+
+    pub(super) fn sync_allowed(
+        &mut self,
+        context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        allowed: Option<&[String]>,
+    ) -> Result<(), SynchronousOutputFailure> {
+        let unchanged = match (&self.last_allowed, allowed) {
+            (Some(None), None) => true,
+            (Some(Some(prev)), Some(curr)) => prev.as_slice() == curr,
+            _ => false,
+        };
+        if unchanged {
+            return Ok(());
+        }
+        checkpoint(
+            context.execution,
+            "required occurrence frontier",
+            allowed.map_or(1, |families| families.len() as u64 + 1),
+        )?;
+        self.last_allowed = Some(allowed.map(|families| families.to_vec()));
+        self.needed_dirty = true;
+        Ok(())
     }
-    pub(super) fn needed(&self, allowed: Option<&[String]>) -> Vec<bool> {
-        let mut needed = self
-            .tasks
-            .iter()
-            .map(|t| {
-                // A real root alias remains a seed even when coalescing marked
-                // its row done: its authentic supplier may still be pending.
-                t.root
-                    && allowed.is_none_or(|families| families.iter().any(|f| f == t.tree.family()))
-            })
-            .collect::<Vec<_>>();
-        loop {
-            let mut changed = false;
-            for i in 0..self.tasks.len() {
-                if !needed[i] {
-                    continue;
-                }
-                let canonical = self.canonical(i);
-                if canonical != i {
-                    needed[i] = false;
-                    if !self.tasks[canonical].done && !needed[canonical] {
-                        needed[canonical] = true;
-                        changed = true;
-                    }
-                    continue;
-                }
-                for parent in &self.tasks[i].prerequisites {
-                    let parent = self.canonical(*parent);
-                    if !self.tasks[parent].done && !needed[parent] {
-                        needed[parent] = true;
-                        changed = true;
-                    }
-                }
-            }
-            if !changed {
-                return needed;
+
+    pub(super) fn mark_needed(
+        &mut self,
+        context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        start: usize,
+        mut frontier: Option<&mut Frontier>,
+    ) -> Result<(), SynchronousOutputFailure> {
+        let first = self.canonical(start);
+        if self.tasks[first].needed || self.tasks[first].is_done() {
+            return Ok(());
+        }
+        if !self.activate_needed(context, first, frontier.as_deref_mut())? {
+            return Ok(());
+        }
+        let mut stack = Vec::new();
+        let mut memory = None;
+        let subject = self.tasks[first].subject;
+        for parent in &self.tasks[first].prerequisites {
+            let parent = self.canonical(*parent);
+            if !self.tasks[parent].needed && !self.tasks[parent].is_done() {
+                push_funded(&mut stack, &mut memory, parent, context.execution, subject)?;
             }
         }
+        while let Some(curr) = stack.pop() {
+            let curr = self.canonical(curr);
+            if self.tasks[curr].needed || self.tasks[curr].is_done() {
+                continue;
+            }
+            if !self.activate_needed(context, curr, frontier.as_deref_mut())? {
+                continue;
+            }
+            let subject = self.tasks[curr].subject;
+            for parent in &self.tasks[curr].prerequisites {
+                let parent = self.canonical(*parent);
+                if !self.tasks[parent].needed && !self.tasks[parent].is_done() {
+                    push_funded(&mut stack, &mut memory, parent, context.execution, subject)?;
+                }
+            }
+        }
+        Ok(())
     }
+
+    /// Marks one undone canonical task needed and updates its queue. Returns
+    /// `true` only if it is already `Closed` with pending prerequisites to walk.
+    fn activate_needed(
+        &mut self,
+        context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        i: usize,
+        frontier: Option<&mut Frontier>,
+    ) -> Result<bool, SynchronousOutputFailure> {
+        let subject = self.tasks[i].subject;
+        checkpoint(context.execution, subject, 1)?;
+        self.tasks[i].needed = true;
+        self.needed_undone_count += 1;
+        match self.tasks[i].state {
+            TaskState::Identified => {
+                if let Some(frontier) = frontier {
+                    self.enqueue_prerequisite(frontier, i);
+                } else {
+                    map_insert(&mut self.pending_close, &i, &(), context.execution, subject)?;
+                }
+                Ok(false)
+            }
+            TaskState::Closed { waiting: 0, .. } => {
+                let key = (self.tasks[i].rank, i);
+                map_insert(&mut self.ready_queue, &key, &(), context.execution, subject)?;
+                Ok(false)
+            }
+            TaskState::Closed { .. } => Ok(true),
+            TaskState::Pending | TaskState::Alias { .. } | TaskState::Done { .. } => Ok(false),
+        }
+    }
+
+    pub(super) fn recompute_needed(
+        &mut self,
+        context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        allowed: Option<&[String]>,
+    ) -> Result<(), SynchronousOutputFailure> {
+        let subject = "required occurrence frontier";
+        checkpoint(context.execution, subject, self.tasks.len() as u64 + 1)?;
+        self.pending_close = ExecutionOrderedMap::default();
+        self.ready_queue = ExecutionOrderedMap::default();
+        self.needed_undone_count = 0;
+        for task in &mut self.tasks {
+            task.needed = false;
+        }
+        // Only already-identified tasks exist in `0..unidentified_from`, matching
+        // base when `refresh_input_captures` runs before identifying new tasks.
+        for i in 0..self.unidentified_from {
+            // A real root alias remains a seed even when coalescing marked its
+            // row done: its authentic canonical supplier may still be pending.
+            if self.tasks[i].root && allowed_matches(self.tasks[i].tree.family(), allowed) {
+                self.mark_needed(context, i, None)?;
+            }
+        }
+        self.needed_dirty = false;
+        Ok(())
+    }
+
     /// Coalesce every real placement, including an unused alias's static tail.
     pub(super) fn identify(
         &mut self,
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
         candidate: &RelationalAuthoredCoupledCandidate<'_>,
         i: usize,
+        allowed: Option<&[String]>,
     ) -> Result<(), SynchronousOutputFailure> {
-        if self.tasks[i].identified {
+        if !matches!(self.tasks[i].state, TaskState::Pending) {
             return Ok(());
         }
-        checkpoint(context.execution, self.tasks[i].subject, 1)?;
+        let subject = self.tasks[i].subject;
+        checkpoint(context.execution, subject, 1)?;
         let occurrence = self.tasks[i].tree.occurrence(context, candidate)?;
         self.tasks[i].component = occurrence.as_ref().map(|(_, component)| *component);
         self.tasks[i].key = occurrence.map(|(key, _)| key);
-        self.tasks[i].identified = true;
-        let Some(key) = self.tasks[i].key.as_ref() else {
-            return Ok(());
+        let prior = if let Some(key) = self.tasks[i].key.as_ref() {
+            let bucket_key = (key.family, key.scope, key.partition);
+            checkpoint(
+                context.execution,
+                subject,
+                self.by_key.len().max(1).ilog2() as u64 + 1,
+            )?;
+            let mut cursor = self.by_key.get(&bucket_key).copied();
+            let mut found = None;
+            while let Some(earlier) = cursor {
+                checkpoint(context.execution, subject, 1)?;
+                if self.tasks[earlier].key.as_ref() == Some(key) {
+                    found = Some(earlier);
+                    break;
+                }
+                cursor = self.tasks[earlier].next_bucket;
+            }
+            found
+        } else {
+            None
         };
-        let mut prior = None;
-        for earlier in 0..i {
-            checkpoint(context.execution, self.tasks[i].subject, 1)?;
-            if self.tasks[earlier].key.as_ref() == Some(key) {
-                prior = Some(self.canonical(earlier));
-                break;
+        if let Some(prior) = prior {
+            self.bind_alias(context, i, prior, allowed)
+        } else {
+            self.bind_canonical(context, i, allowed)
+        }
+    }
+
+    fn bind_alias(
+        &mut self,
+        context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        i: usize,
+        prior: usize,
+        allowed: Option<&[String]>,
+    ) -> Result<(), SynchronousOutputFailure> {
+        let subject = self.tasks[i].subject;
+        if self.tasks[i].component != self.tasks[prior].component {
+            return Err(super::super::occurrences::refusal(
+                subject,
+                "shared occurrence has different complete component contexts",
+            ));
+        }
+        // The shared route is owed by its earliest actual demand.
+        let (earlier, later) = self.tasks.split_at(i);
+        earlier[prior].owed.coalesce(&later[0].owed);
+        self.tasks[i].state = TaskState::Alias { canonical: prior };
+        if !self.tasks[i].continuation_done {
+            if matches!(self.tasks[prior].state, TaskState::Done { .. }) {
+                map_insert(
+                    &mut self.ready_alias_continuations,
+                    &i,
+                    &(),
+                    context.execution,
+                    subject,
+                )?;
+            } else {
+                let prev = self.tasks[prior].waiting_aliases_head.replace(i);
+                self.tasks[i].next_waiting_alias = prev;
             }
         }
-        if let Some(prior) = prior {
-            if self.tasks[i].component != self.tasks[prior].component {
-                return Err(super::super::occurrences::refusal(
-                    self.tasks[i].subject,
-                    "shared occurrence has different complete component contexts",
-                ));
-            }
-            // The shared route is owed by its earliest actual demand.
-            let (earlier, later) = self.tasks.split_at(i);
-            earlier[prior].owed.coalesce(&later[0].owed);
-            self.tasks[i].alias = Some(prior);
-            self.tasks[i].done = true;
+        if !self.needed_dirty
+            && self.tasks[i].root
+            && allowed_matches(self.tasks[i].tree.family(), allowed)
+        {
+            self.mark_needed(context, prior, None)?;
+        }
+        Ok(())
+    }
+
+    fn bind_canonical(
+        &mut self,
+        context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        i: usize,
+        allowed: Option<&[String]>,
+    ) -> Result<(), SynchronousOutputFailure> {
+        let subject = self.tasks[i].subject;
+        self.tasks[i].state = TaskState::Identified;
+        if let Some(key) = self.tasks[i].key.as_ref() {
+            let bucket_key = (key.family, key.scope, key.partition);
+            self.tasks[i].next_bucket = self.by_key.get(&bucket_key).copied();
+            map_insert(
+                &mut self.by_key,
+                &bucket_key,
+                &i,
+                context.execution,
+                subject,
+            )?;
+        }
+        if !self.needed_dirty
+            && self.tasks[i].root
+            && allowed_matches(self.tasks[i].tree.family(), allowed)
+        {
+            self.mark_needed(context, i, None)?;
         }
         Ok(())
     }

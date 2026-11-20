@@ -9,11 +9,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
         index: usize,
     ) -> Result<(), SynchronousOutputFailure> {
         let task = &self.tasks[index];
-        let Some(consumer) = task
-            .parent
-            .as_ref()
-            .and_then(|parent| parent.input.as_ref())
-        else {
+        let Some(consumer) = task.parent().and_then(|parent| parent.input.as_ref()) else {
             return Ok(());
         };
         let capacity = task.prerequisites.len();
@@ -36,11 +32,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
         for parent in &task.prerequisites {
             checkpoint(context.execution, task.subject, 1)?;
             let parent = &self.tasks[self.canonical(*parent)];
-            if let Some(input) = parent
-                .parent
-                .as_ref()
-                .and_then(|parent| parent.input.as_ref())
-            {
+            if let Some(input) = parent.parent().and_then(|parent| parent.input.as_ref()) {
                 inputs.push(input);
             }
         }
