@@ -73,17 +73,27 @@ fn scope() -> (
     (cancellation, scope)
 }
 
+/// What a resumed open observed: World's installed commits (one per bootstrap
+/// and per transition step occurrence, so a repeated or lost step changes it)
+/// and how many times this process ran the plan author.
+#[derive(Debug, PartialEq, Eq)]
+struct Terminal {
+    installed_commits: usize,
+    authored: usize,
+}
+
 /// Reopen through the same Host transition request; the transition must
 /// resume to B's terminal state, then B serves a write and reopens plainly.
-fn resumes_to_the_uninterrupted_end(location: &std::path::Path, seam: usize) {
+fn resumes_to_the_uninterrupted_end(location: &std::path::Path, seam: u64) -> Terminal {
     let lease = checkpoint_capture::lease(256 * 1024 * 1024);
     let execution = worth_execution::ExecutionRequest::leased(&lease);
     let contacts = Arc::new(AtomicUsize::new(0));
+    let authored = Arc::new(AtomicUsize::new(0));
     let request = successor::transition_request(
         location.to_owned(),
         build(),
         contacts.clone(),
-        Arc::new(AtomicUsize::new(0)),
+        authored.clone(),
     );
     let home = with_bootstrap_advancement_from_request(execution, |phase| {
         Box::new(
@@ -98,6 +108,14 @@ fn resumes_to_the_uninterrupted_end(location: &std::path::Path, seam: usize) {
         10,
         "seam {seam}: terminal transition state"
     );
+    let terminal = Terminal {
+        installed_commits: home
+            .runtime()
+            .runtime()
+            .world_history_snapshot_for_test()
+            .installed_commits(),
+        authored: authored.load(std::sync::atomic::Ordering::SeqCst),
+    };
     let (_, scope) = scope();
     let principal = identity::inspection_authentication::authenticate(
         home.runtime().runtime().installed_schema(),
@@ -112,7 +130,7 @@ fn resumes_to_the_uninterrupted_end(location: &std::path::Path, seam: usize) {
             balance: 11,
         })
         .without_source()
-        .idempotency(&(0x5ea0_0000 + seam as u64))
+        .idempotency(&(0x5ea0_0000 + seam))
         .execute_in_program(
             home.runtime(),
             worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
@@ -143,77 +161,71 @@ fn resumes_to_the_uninterrupted_end(location: &std::path::Path, seam: usize) {
     (*home)
         .close(&execution)
         .unwrap_or_else(|cause| panic!("seam {seam}: ordinary B closes: {cause:?}"));
+    terminal
 }
 
-// One sweep exceeds a single case's runtime guard, so consecutive ranges
-// cover every barrier. Barriers after the durable binding belong to B's
-// timing-dependent service start, so the total varies between runs and any
-// range may reach the uninterrupted completion; the last range is open.
-#[test]
-fn a_transition_killed_at_barriers_1_to_50_resumes_to_its_uninterrupted_end() {
-    sweep(1, Some(50));
-}
-#[test]
-fn a_transition_killed_at_barriers_51_to_100_resumes_to_its_uninterrupted_end() {
-    sweep(51, Some(100));
-}
-#[test]
-fn a_transition_killed_at_barriers_101_to_150_resumes_to_its_uninterrupted_end() {
-    sweep(101, Some(150));
-}
-#[test]
-fn a_transition_killed_at_barriers_151_to_200_resumes_to_its_uninterrupted_end() {
-    sweep(151, Some(200));
-}
-#[test]
-fn a_transition_killed_at_barriers_201_to_250_resumes_to_its_uninterrupted_end() {
-    sweep(201, Some(250));
-}
-#[test]
-fn a_transition_killed_at_barriers_251_to_300_resumes_to_its_uninterrupted_end() {
-    sweep(251, Some(300));
-}
-#[test]
-fn a_transition_killed_at_barriers_301_to_350_resumes_to_its_uninterrupted_end() {
-    sweep(301, Some(350));
-}
-#[test]
-fn a_transition_killed_at_every_later_barrier_resumes_to_its_uninterrupted_end() {
-    sweep(351, None);
-}
+/// The first durable barrier of each durable state of the open (the barrier
+/// map in target/lane-evidence/c1-progress.md), and whether resuming from it
+/// runs the plan author again (every state before the binding is durable).
+const DURABLE_STATES: [(u64, &str, bool); 12] = [
+    (1, "before the durable intent", true),
+    (24, "intent durable", true),
+    (44, "step 0 open durable", true),
+    (64, "step 0 Native effect durable", true),
+    (85, "step 0 durable", true),
+    (105, "target step open durable", true),
+    (125, "target step Native effect durable", true),
+    (152, "target step durable", true),
+    (172, "step 2 open durable", true),
+    (192, "step 2 Native effect durable", true),
+    (213, "all steps durable, binding pending", true),
+    (233, "binding durable", false),
+];
+/// Far beyond every barrier: the child completes the open uninterrupted.
+const UNINTERRUPTED: u64 = 1_000_000;
 
-/// Kill at each barrier of `first..=last` (open when `last` is `None`); any
-/// range ends at the barrier the uninterrupted transition completes before.
-fn sweep(first: usize, last: Option<usize>) {
-    for seam in first.. {
-        if last.is_some_and(|last| seam > last) {
-            return;
-        }
-        let directory = tempfile::tempdir().unwrap();
-        let location = directory.path().join("home");
-        let markers = directory.path().join("markers");
-        std::fs::create_dir(&markers).unwrap();
-        predecessor(&location);
-        let ordinal = std::path::PathBuf::from(seam.to_string());
-        let end = crate::killed_child::run_and_kill(
-            CHILD,
-            &[
-                (LOCATION, location.as_path()),
-                (MARKERS, markers.as_path()),
-                (ORDINAL, ordinal.as_path()),
-            ],
-            &markers.join("ready"),
-            &markers.join("finished"),
+#[test]
+fn a_transition_killed_in_each_durable_state_resumes_to_its_uninterrupted_end() {
+    let (end, control) = killed_at(UNINTERRUPTED);
+    assert_eq!(end, crate::killed_child::ChildEnd::Finished);
+    assert_eq!(
+        control.authored, 0,
+        "a completed transition is never re-planned"
+    );
+    for (barrier, state, reauthored) in DURABLE_STATES {
+        let (end, resumed) = killed_at(barrier);
+        assert_eq!(
+            end,
+            crate::killed_child::ChildEnd::KilledAtPark,
+            "{state}: barrier {barrier} is no longer inside the open; refresh the map"
         );
-        resumes_to_the_uninterrupted_end(&location, seam);
-        if end == crate::killed_child::ChildEnd::Finished {
-            // The uninterrupted control: the transition completed before
-            // this barrier, and its end matches every killed prefix's end.
-            println!("swept {} durable transition barriers", seam - 1);
-            assert!(seam > 1, "at least one durable barrier precedes completion");
-            return;
-        }
+        assert_eq!(
+            resumed.installed_commits, control.installed_commits,
+            "{state}: every step occurs exactly once, as in the uninterrupted run"
+        );
+        assert_eq!(resumed.authored, usize::from(reauthored), "{state}");
     }
+}
+
+/// Kill a fresh A Home's transition after `barrier`, then resume it.
+fn killed_at(barrier: u64) -> (crate::killed_child::ChildEnd, Terminal) {
+    let directory = tempfile::tempdir().unwrap();
+    let location = directory.path().join("home");
+    let markers = directory.path().join("markers");
+    std::fs::create_dir(&markers).unwrap();
+    predecessor(&location);
+    let ordinal = std::path::PathBuf::from(barrier.to_string());
+    let end = crate::killed_child::run_and_kill(
+        CHILD,
+        &[
+            (LOCATION, location.as_path()),
+            (MARKERS, markers.as_path()),
+            (ORDINAL, ordinal.as_path()),
+        ],
+        &markers.join("ready"),
+        &markers.join("finished"),
+    );
+    (end, resumes_to_the_uninterrupted_end(&location, barrier))
 }
 
 #[test]
