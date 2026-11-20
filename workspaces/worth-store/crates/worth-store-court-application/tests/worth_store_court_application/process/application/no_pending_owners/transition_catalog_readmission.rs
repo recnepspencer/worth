@@ -64,7 +64,10 @@ fn a_completed_transition_occurrence_restores_target_contracts_and_continues_onl
             .home
             .admit_home_program_transition_catalog(&execution)
             .unwrap();
-        request_controls::refuse(native, authority, &grant, &contracts);
+        let root = authority
+            .readmit_home_program_planning_root(&execution, native)
+            .unwrap();
+        request_controls::refuse(native, authority, &grant, &root, &contracts);
 
         let wrong = native
             .prepare_home_program_contracts(
@@ -76,20 +79,27 @@ fn a_completed_transition_occurrence_restores_target_contracts_and_continues_onl
             )
             .unwrap();
         let refused = authority
-            .readmit_home_program_catalogs(&execution, native, &grant, &wrong)
+            .readmit_home_program_catalogs(&execution, native, &grant, &root, &wrong)
             .unwrap_err();
         assert!(matches!(refused.reason(), Denial::TargetCatalogMismatch));
         assert!(!refused.retains_acquired_custody());
         drop(refused);
         let restored = authority
-            .readmit_home_program_catalogs(&readmission_execution, native, &grant, &contracts)
+            .readmit_home_program_catalogs(
+                &readmission_execution,
+                native,
+                &grant,
+                &root,
+                &contracts,
+            )
             .unwrap();
         assert!(readmission_memory.charged_memory_bytes() > 0);
         assert_eq!(restored.durable_native_steps(), 1);
         assert_eq!(restored.current(), source.basis().relational_basis());
+        assert_eq!(restored.predecessor(), root.basis());
         assert_ne!(restored.predecessor(), restored.current());
         let repeated = authority
-            .readmit_home_program_catalogs(&execution, native, &grant, &contracts)
+            .readmit_home_program_catalogs(&execution, native, &grant, &root, &contracts)
             .unwrap();
         assert_eq!(repeated.current(), restored.current());
         let competing = original::contracts(&fixture, &execution, resumed.clone());
@@ -98,7 +108,7 @@ fn a_completed_transition_occurrence_restores_target_contracts_and_continues_onl
             .catalog_receipt()
             .same_inventory(&contracts.catalog_receipt()));
         let refused = authority
-            .readmit_home_program_catalogs(&execution, native, &grant, &competing)
+            .readmit_home_program_catalogs(&execution, native, &grant, &root, &competing)
             .unwrap_err();
         assert!(matches!(refused.reason(), Denial::ConflictingInventory));
         assert!(refused.retains_acquired_custody());
@@ -197,7 +207,7 @@ fn a_completed_transition_occurrence_restores_target_contracts_and_continues_onl
             .unwrap();
         assert_eq!(proof.len(), 1);
         assert_eq!(proof[0].receipt(), &original_receipt.1);
-        drop((proof, current, source, restored, grant, assigned, contracts));
+        drop((proof, current, source, restored, root, grant, assigned, contracts));
         close(fixture.home, &execution);
     }
     assert_eq!(readmission_memory.charged_memory_bytes(), 0);
@@ -208,17 +218,17 @@ fn a_completed_transition_occurrence_restores_target_contracts_and_continues_onl
         .home
         .admit_home_program_transition_catalog(&execution)
         .unwrap();
-    let restored = fixture
+    let native = fixture.home.relational().runtime();
+    let authority = fixture
         .home
         .relational()
         .world_recovery_authority()
-        .unwrap()
-        .readmit_home_program_catalogs(
-            &execution,
-            fixture.home.relational().runtime(),
-            &grant,
-            &contracts,
-        )
+        .unwrap();
+    let root = authority
+        .readmit_home_program_planning_root(&execution, native)
+        .unwrap();
+    let restored = authority
+        .readmit_home_program_catalogs(&execution, native, &grant, &root, &contracts)
         .unwrap();
     assert_eq!(restored.durable_native_steps(), 2);
     assert_eq!(final_counter.load(Ordering::SeqCst), 0);
@@ -233,6 +243,6 @@ fn a_completed_transition_occurrence_restores_target_contracts_and_continues_onl
             .get(),
         2
     );
-    drop((restored, grant, contracts));
+    drop((restored, root, grant, contracts));
     close(fixture.home, &execution);
 }

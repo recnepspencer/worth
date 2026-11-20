@@ -27,7 +27,11 @@ pub enum ApplicationHomeTransitionPlanningRequestDenial {
     Native(worth_relational::facade::runtime::RelationalHomeProgramContractDenial),
     NativeRecoveryRequired,
     Catalogs(Box<RefusedRelationalHomeProgramCatalogReadmission>),
-    PlanningRoot(Box<worth_relational::facade::durability::RefusedRelationalRecordedComponent>),
+    PlanningRoot(
+        Box<worth_relational::facade::durability::RelationalHomeProgramCatalogReadmissionDenial>,
+    ),
+    /// A resumed plan must have been compiled on its readmitted planning root.
+    FreshCompilationBasis,
 }
 
 /// Store's decision of which predecessor the author plans against.
@@ -103,10 +107,13 @@ where
 
     /// Readmit the pending intent's original planning root and its durable
     /// prefix through Native. `target` must be the recorded successor's exact
-    /// prepared catalogs; nothing here opens, validates or executes a step.
+    /// prepared catalogs, compiled on `compilation`, whose planning root is
+    /// installed as the author's lens without a second readmission. Nothing
+    /// here opens, validates or executes a step.
     pub fn readmit_home_program_transition_planning_root(
         &self,
         _required: ApplicationHomeTransitionResumeRequired,
+        compilation: &super::ApplicationHomeTransitionCompilationBasis,
         expected: &ProductBranchObservation,
         target: &PreparedRelationalHomeProgramContracts,
         request: &ExecutionRequest<'_, '_>,
@@ -116,6 +123,9 @@ where
     > {
         use ApplicationHomeTransitionPlanningRequestDenial as Denial;
         request.consult().map_err(Denial::Execution)?;
+        let root = compilation
+            .planning_root()
+            .ok_or(Denial::FreshCompilationBasis)?;
         let native = self.home.relational.runtime();
         let authority = self
             .home
@@ -127,7 +137,7 @@ where
                 crate::open::readmission::transition::admit_catalog(&self.home.context, request)
                     .map_err(Denial::Transition)?;
             authority
-                .readmit_home_program_catalogs(request, native, &grant, target)
+                .readmit_home_program_catalogs(request, native, &grant, root, target)
                 .map_err(|cause| Denial::Catalogs(Box::new(cause)))?
         };
         let admitted = self.admit_planning_source(expected, catalogs.predecessor(), request)?;

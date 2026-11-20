@@ -20,8 +20,7 @@ pub enum ApplicationHomeNativeSchemaPreparation<'runtime> {
     Existing {
         native: &'runtime mut RelationalRuntime,
         source: &'runtime worth_relational::facade::schema::RelationalSchemaRegistry,
-        maximum_kind: Option<worth_relational::facade::identity::KindId>,
-        maximum_aspect: Option<worth_foundational::facade::AspectIdentity>,
+        identities: ApplicationHomeNativeIdentityBound,
         installation: Option<
             worth_proof::AdmittedHomeProgramTransitionSuccessor<
                 worth_foundational::facade::HomeProgramTransitionInstallationBinding,
@@ -29,6 +28,40 @@ pub enum ApplicationHomeNativeSchemaPreparation<'runtime> {
         >,
     },
 }
+
+/// The occupied identities a readmitted Native meaning continues from. Store
+/// chooses the bound for the open it admitted; the compiler only consumes it.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ApplicationHomeNativeIdentityBound {
+    /// No transition is pending: every durable schema role stays reserved.
+    Occupied {
+        maximum_kind: Option<worth_relational::facade::identity::KindId>,
+        maximum_aspect: Option<worth_foundational::facade::AspectIdentity>,
+    },
+    /// A pending transition resumes from its recorded planning predecessor:
+    /// the identities occupied when that predecessor was durable, so the
+    /// successor recompile reproduces the recorded plan.
+    TransitionPlanning {
+        maximum_kind: Option<worth_relational::facade::identity::KindId>,
+        maximum_aspect: Option<worth_foundational::facade::AspectIdentity>,
+    },
+}
+impl ApplicationHomeNativeIdentityBound {
+    pub fn maximum_kind(&self) -> Option<worth_relational::facade::identity::KindId> {
+        match self {
+            Self::Occupied { maximum_kind, .. } | Self::TransitionPlanning { maximum_kind, .. } => {
+                *maximum_kind
+            }
+        }
+    }
+    pub fn maximum_aspect(&self) -> Option<worth_foundational::facade::AspectIdentity> {
+        match self {
+            Self::Occupied { maximum_aspect, .. }
+            | Self::TransitionPlanning { maximum_aspect, .. } => *maximum_aspect,
+        }
+    }
+}
+
 impl UnrecoveredApplicationHome {
     pub fn prepare_native_schema_for_home(
         &mut self,
@@ -49,63 +82,28 @@ impl UnrecoveredApplicationHome {
                 })
             }
             HomeInitializationOrigin::Available(RecoveryStorePresence::ExistingArtifacts) => {
-                let installation = self.context.transition.installation_binding(&self.context.descriptor.binding)
+                let binding = &self.context.descriptor.binding;
+                let installation = self.context.transition.installation_binding(binding)
                     .map_err(Denial::Transition)?;
                 let target = installation.as_ref().map(|binding| binding.binding().target());
-                let (native, source, maximum_kind, maximum_aspect) = self.relational.prepare_home_existing_schema_source(request, target)
+                // An open admitted with a pending intent is its transition's
+                // resumption; ordinary opens of a pending Home refuse earlier.
+                let planning = self.context.transition.committed_intent(binding)
+                    .map_err(Denial::Transition)?
+                    .map(|intent| intent.native_predecessor());
+                let (native, source, maximum_kind, maximum_aspect) = self.relational
+                    .prepare_home_existing_schema_source(request, target, planning)
                     .map_err(Denial::Source)?;
-                Ok(ApplicationHomeNativeSchemaPreparation::Existing { native, source, maximum_kind, maximum_aspect, installation })
+                let identities = match planning {
+                    Some(_) => ApplicationHomeNativeIdentityBound::TransitionPlanning { maximum_kind, maximum_aspect },
+                    None => ApplicationHomeNativeIdentityBound::Occupied { maximum_kind, maximum_aspect },
+                };
+                Ok(ApplicationHomeNativeSchemaPreparation::Existing { native, source, identities, installation })
             }
             HomeInitializationOrigin::ConsumedNewHome => Err(Denial::Initialization(
                 worth_relational::facade::runtime::RelationalInitialSchemaInstallationDenial::from_initial_inputs(
                     worth_relational::facade::durability::RelationalInitialInputsRefusal::Malformed),
             )),
         }
-    }
-}
-
-/// The identities occupied at a pending transition's recorded planning
-/// predecessor. Distinct from the prepared bound, which keeps reporting every
-/// schema role; only the resumed successor recompile consumes this.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct ApplicationHomeTransitionPlanningMaxima {
-    maximum_kind: Option<worth_relational::facade::identity::KindId>,
-    maximum_aspect: Option<worth_foundational::facade::AspectIdentity>,
-}
-impl ApplicationHomeTransitionPlanningMaxima {
-    pub fn maximum_kind(&self) -> Option<worth_relational::facade::identity::KindId> {
-        self.maximum_kind
-    }
-    pub fn maximum_aspect(&self) -> Option<worth_foundational::facade::AspectIdentity> {
-        self.maximum_aspect
-    }
-}
-
-impl UnrecoveredApplicationHome {
-    /// `None` when no transition intent is pending.
-    pub fn home_program_transition_planning_maxima(
-        &mut self,
-        request: &ExecutionRequest<'_, '_>,
-    ) -> Result<
-        Option<ApplicationHomeTransitionPlanningMaxima>,
-        ApplicationHomeNativeSchemaPreparationDenial,
-    > {
-        use ApplicationHomeNativeSchemaPreparationDenial as Denial;
-        let Some(intent) = self
-            .context
-            .transition
-            .committed_intent(&self.context.descriptor.binding)
-            .map_err(Denial::Transition)?
-        else {
-            return Ok(None);
-        };
-        let (maximum_kind, maximum_aspect) = self
-            .relational
-            .home_transition_planning_maxima(request, intent.native_predecessor())
-            .map_err(Denial::Source)?;
-        Ok(Some(ApplicationHomeTransitionPlanningMaxima {
-            maximum_kind,
-            maximum_aspect,
-        }))
     }
 }

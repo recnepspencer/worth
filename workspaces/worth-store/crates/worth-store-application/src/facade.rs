@@ -54,7 +54,7 @@ pub use crate::query_dispatch::{
 pub use crate::relational_preparation::{
     attach_relational, ApplicationHomeInitializationDenial, ApplicationHomeInitializationRefused,
     ApplicationHomeNativeSchemaPreparation, ApplicationHomeNativeSchemaPreparationDenial,
-    ApplicationHomeTransitionPlanningMaxima,
+    ApplicationHomeNativeIdentityBound,
     RelationalAttachmentFailedHome, RelationalAttachmentRefused, RelationalHomeOpenRefused,
     RelationalHomeReadmissionRefused, UnrecoveredApplicationHome,
     UnrecoveredApplicationHomeCloseRefused, UnsharedApplicationHomeCloseRefused,
@@ -68,7 +68,7 @@ pub use crate::world_section::{
     ApplicationHomeTransitionPlanningRequest, ApplicationHomeTransitionPlanningRequestDenial,
     ApplicationHomeTransitionResumeRequired, ApplicationHomeWorldDefinition,
     ApplicationWorldDefinition, ApplicationWorldPorts, NoPendingApplicationHomeTransition,
-    ResumedApplicationHomeTransitionPlanning,
+    ApplicationHomeTransitionCompilationBasis, ResumedApplicationHomeTransitionPlanning,
     WorldHomeClosePosture, WorldHomeCloseRefused, WorldHomeReadmissionRefused,
     WorldReadmittedApplicationHome, WorldSealedApplicationHome,
 };

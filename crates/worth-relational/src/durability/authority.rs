@@ -43,8 +43,8 @@ pub use recovery::{
     ReadmittedRelationalHomeProgramCatalogs, RefusedPreparedRelationalHomeRecovery,
     RefusedRelationalForkReadmission, RefusedRelationalHomeProgramCatalogReadmission,
     RelationalForkReadmissionCause, RelationalHomeProgramCatalogReadmissionDenial,
-    RelationalHomeProgramTransitionSource, RelationalHomeProgramTransitionSourceRefusal,
-    RelationalHomeRecoveryPreparationDenial,
+    RelationalHomeProgramPlanningRoot, RelationalHomeProgramTransitionSource,
+    RelationalHomeProgramTransitionSourceRefusal, RelationalHomeRecoveryPreparationDenial,
 };
 mod runtime_rebuild;
 pub(crate) use runtime_rebuild::replay_commit_stop;

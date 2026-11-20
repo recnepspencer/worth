@@ -64,7 +64,11 @@ impl<A: ApplicationSchemaComposition, AP, B: ApplicationSchemaComposition, BP>
             worth_query_execution::facade::primary_graph::WorthQueryPrimaryGraphInstallationDenial,
         >,
     {
-        let Self { owners, binding } = self;
+        let Self {
+            owners,
+            binding,
+            compilation,
+        } = self;
         let request = phase.execution_request();
         let before = &owners.before;
         let target = &owners.target;
@@ -105,6 +109,7 @@ impl<A: ApplicationSchemaComposition, AP, B: ApplicationSchemaComposition, BP>
                     let (admitted, catalogs) = home
                         .readmit_home_program_transition_planning_root(
                             required,
+                            &compilation,
                             source,
                             target.native_contracts(),
                             &request,
@@ -195,6 +200,8 @@ impl<A: ApplicationSchemaComposition, AP, B: ApplicationSchemaComposition, BP>
             };
             Ok((bridge, plan, origin))
         })();
+        // A resumed plan's catalogs now hold the planning root.
+        drop(compilation);
         let (bridge, plan, origin) = match prepared {
             Ok(parts) => parts,
             Err(cause) => return Err(owners.refused(cause)),

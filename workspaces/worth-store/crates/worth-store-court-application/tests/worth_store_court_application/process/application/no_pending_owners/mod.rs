@@ -21,6 +21,7 @@ mod transition_opening;
 mod transition_planning;
 mod transition_request;
 mod transition_seams;
+mod transition_source;
 mod transition_step_affinity;
 mod transition_steps;
 mod transition_unopened_resume;

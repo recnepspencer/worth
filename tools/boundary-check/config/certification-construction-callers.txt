@@ -205,6 +205,7 @@ native-world-readmission workspaces/worth-store/crates/worth-store-application/s
 native-world-readmission workspaces/worth-store/crates/worth-store-application/src/world_section/transition_compilation_basis.rs
 native-world-readmission workspaces/worth-store/crates/worth-store-application/src/world_section/transition_planning_request.rs
 native-world-readmission workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_catalog_readmission.rs
+native-world-readmission workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_source/interrupted.rs
 query-home-preparation workspaces/worth-query/crates/worth-query-host/src/application_home/opening/existing.rs
 query-home-preparation workspaces/worth-query/crates/worth-query-host/src/application_home/opening/fresh.rs
 query-home-preparation workspaces/worth-query/crates/worth-query-host/src/application_home/opening/preparation.rs

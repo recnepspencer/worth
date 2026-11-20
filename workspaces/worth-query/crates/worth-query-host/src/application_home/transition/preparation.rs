@@ -12,7 +12,8 @@ use worth_query_execution::facade::{
 };
 use worth_store_application::{
     prepare_query_home_source, readmit_query_signal, readmit_query_world,
-    ApplicationHomeWorldDefinition, UnsharedReadmittedApplicationHome,
+    ApplicationHomeTransitionCompilationBasis, ApplicationHomeWorldDefinition,
+    UnsharedReadmittedApplicationHome,
 };
 pub(super) type SuccessorBinding = worth_proof::AdmittedApplicationHomeBinding<
     worth_query_installation::facade::WorthQueryHomeBindingAdmission,
@@ -50,6 +51,8 @@ pub(super) struct PreparedHomeProgramTransition<
 > {
     pub(super) owners: Box<ReadmittedHomeProgramTransition<A, AP, B, BP>>,
     pub(super) binding: SuccessorBinding,
+    /// The root `target` compiled on; a resumed plan's lens is this same root.
+    pub(super) compilation: ApplicationHomeTransitionCompilationBasis,
 }
 #[inline(never)]
 pub(super) fn prepare<A: ApplicationSchemaComposition, AP, B: ApplicationSchemaComposition, BP>(
@@ -171,7 +174,7 @@ pub(super) fn prepare<A: ApplicationSchemaComposition, AP, B: ApplicationSchemaC
         phase,
         home.relational().runtime(),
         &before,
-        &compilation,
+        compilation.basis(),
     ) {
         Ok(target) => target,
         Err(successor) => return Err(Refused::compilation(before, successor, home)),
@@ -184,5 +187,6 @@ pub(super) fn prepare<A: ApplicationSchemaComposition, AP, B: ApplicationSchemaC
             source,
         }),
         binding,
+        compilation,
     })
 }

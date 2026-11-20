@@ -68,7 +68,7 @@ where
         ApplicationHomeOpeningStage::NativeReadmission,
         ApplicationHomeOpeningEdge::Before,
     );
-    let (query, home) = readmit_native(phase, query, home, NativeIdentityBound::Prepared)?;
+    let (query, home) = readmit_native(phase, query, home)?;
     observation.arrive_for_test(
         ApplicationHomeOpeningStage::NativeReadmission,
         ApplicationHomeOpeningEdge::After,
@@ -82,21 +82,11 @@ where
     })
 }
 
-/// Which occupied identities a readmitted meaning continues from.
-pub(in crate::application_home) enum NativeIdentityBound {
-    /// Every durable schema role stays reserved.
-    Prepared,
-    /// A pending transition's predecessor continues from its recorded planning
-    /// predecessor, so its successor recompile reproduces the recorded plan.
-    TransitionPlanning,
-}
-
 #[inline(never)]
 pub(in crate::application_home) fn readmit_native<Schema, Program>(
     phase: &WorthQueryBootstrapAdvancementPhase<'_>,
     query: PreparedHomeApplication<Schema, Program>,
     home: worth_proof::HomeAdmitted<AdmittedApplicationHome>,
-    identities: NativeIdentityBound,
 ) -> Result<
     (
         PreparedHomeNativeMeaning<Schema, Program>,
@@ -117,15 +107,7 @@ where
         Ok(home) => home,
         Err(home) => return Err(Refused::RelationalAttachment { query, home }),
     };
-    let planning = match identities {
-        NativeIdentityBound::Prepared => None,
-        NativeIdentityBound::TransitionPlanning => {
-            match home.home_program_transition_planning_maxima(&request) {
-                Ok(planning) => planning,
-                Err(cause) => return Err(Refused::NativePreparation { query, home, cause }),
-            }
-        }
-    };
+    // Store chooses the identity bound for the open it admitted.
     let installed = match home.prepare_native_schema_for_home(&request) {
         Ok(ApplicationHomeNativeSchemaPreparation::Fresh {
             native,
@@ -134,15 +116,14 @@ where
         Ok(ApplicationHomeNativeSchemaPreparation::Existing {
             native,
             source,
-            maximum_kind,
-            maximum_aspect,
+            identities,
             installation,
         }) => query.prepare_home_native_receiver_schema(
             phase,
             native,
             source,
-            planning.map_or(maximum_kind, |planning| planning.maximum_kind()),
-            planning.map_or(maximum_aspect, |planning| planning.maximum_aspect()),
+            identities.maximum_kind(),
+            identities.maximum_aspect(),
             installation,
         ),
         Err(cause) => return Err(Refused::NativePreparation { query, home, cause }),

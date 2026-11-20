@@ -4,10 +4,15 @@ use crate::section::source_preparation::receiver::HomeReceiverPreparation as Sta
 use worth_relational::facade::schema::RelationalSchemaRegistry;
 
 impl UnrecoveredRelationalSection {
+    /// `planning` is a pending transition's recorded planning predecessor.
+    /// With it, the maxima are those occupied when that predecessor was
+    /// durable, so a resumed successor recompile reproduces its recorded plan.
+    /// Without it, every durable schema role stays reserved.
     pub fn prepare_home_existing_schema_source(
         &mut self,
         request: &ExecutionRequest<'_, '_>,
         acknowledged_target: Option<worth_foundational::facade::HomeProgramTransitionTargetMeaning>,
+        planning: Option<&worth_relational::facade::branch::RecordedRelationalComponentReference>,
     ) -> Result<
         (
             &mut RelationalRuntime,
@@ -25,9 +30,11 @@ impl UnrecoveredRelationalSection {
             .ok_or(Denial::PreparedHomeSourceRequired)?;
         match &prepared.receiver {
             State::Prepared(recovery) => {
-                let (maximum_kind, maximum_aspect) = recovery
-                    .occupied_identity_maxima(request)
-                    .map_err(Denial::HomePreparation)?;
+                let (maximum_kind, maximum_aspect) = match planning {
+                    Some(predecessor) => recovery.occupied_identity_maxima_at(request, predecessor),
+                    None => recovery.occupied_identity_maxima(request),
+                }
+                .map_err(Denial::HomePreparation)?;
                 Ok((
                     &mut self.attached.runtime,
                     match acknowledged_target {
@@ -44,37 +51,6 @@ impl UnrecoveredRelationalSection {
             State::NotRequested | State::Consumed => {
                 unreachable!("prepared Home Source was retained")
             }
-        }
-    }
-}
-
-impl UnrecoveredRelationalSection {
-    /// The identities occupied when a pending transition's recorded planning
-    /// predecessor was durable. Only a resumed successor recompile asks for
-    /// these; the prepared identity bound keeps reporting every schema role.
-    pub fn home_transition_planning_maxima(
-        &mut self,
-        request: &ExecutionRequest<'_, '_>,
-        predecessor: &worth_relational::facade::branch::RecordedRelationalComponentReference,
-    ) -> Result<
-        (
-            Option<worth_relational::facade::identity::KindId>,
-            Option<worth_foundational::facade::AspectIdentity>,
-        ),
-        RelationalSectionReadmissionDenial,
-    > {
-        use RelationalSectionReadmissionDenial as Denial;
-        self.prepare_home_receiver(request)?;
-        match &self
-            .prepared_source
-            .as_ref()
-            .ok_or(Denial::PreparedHomeSourceRequired)?
-            .receiver
-        {
-            State::Prepared(recovery) => recovery
-                .occupied_identity_maxima_at(request, predecessor)
-                .map_err(Denial::HomePreparation),
-            State::NotRequested | State::Consumed => Err(Denial::PreparedHomeSourceRequired),
         }
     }
 

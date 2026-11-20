@@ -1,4 +1,3 @@
-#![recursion_limit = "256"]
 #![cfg_attr(test, allow(clippy::disallowed_methods))]
 //! # worth-relational
 //!
