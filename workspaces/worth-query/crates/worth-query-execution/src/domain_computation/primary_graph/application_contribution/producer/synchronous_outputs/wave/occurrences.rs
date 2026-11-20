@@ -141,7 +141,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
         if self.tasks[i].identified {
             return Ok(());
         }
-        context.checkpoint(self.tasks[i].subject)?;
+        checkpoint(context.execution, self.tasks[i].subject, 1)?;
         let occurrence = self.tasks[i].tree.occurrence(context, candidate)?;
         self.tasks[i].component = occurrence.as_ref().map(|(_, component)| *component);
         self.tasks[i].key = occurrence.map(|(key, _)| key);
@@ -151,7 +151,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
         };
         let mut prior = None;
         for earlier in 0..i {
-            context.checkpoint(self.tasks[i].subject)?;
+            checkpoint(context.execution, self.tasks[i].subject, 1)?;
             if self.tasks[earlier].key.as_ref() == Some(key) {
                 prior = Some(self.canonical(earlier));
                 break;

@@ -30,7 +30,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
             .pin_source(context.execution)
             .map_err(CoupledSourceReadStop::from)?;
         while let Some(i) = self.pop_prerequisite(&mut frontier) {
-            context.checkpoint(self.tasks[i].subject)?;
+            checkpoint(context.execution, self.tasks[i].subject, 1)?;
             self.tasks[i].closed = true;
             let Some(source) = self.tasks[i].key.as_ref().map(|key| key.scope) else {
                 continue;

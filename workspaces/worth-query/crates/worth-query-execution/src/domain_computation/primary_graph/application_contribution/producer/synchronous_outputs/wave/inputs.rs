@@ -34,7 +34,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
             super::super::occurrences::refusal(task.subject, "required input allocation")
         })?;
         for parent in &task.prerequisites {
-            context.checkpoint(task.subject)?;
+            checkpoint(context.execution, task.subject, 1)?;
             let parent = &self.tasks[self.canonical(*parent)];
             if let Some(input) = parent
                 .parent

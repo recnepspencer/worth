@@ -24,7 +24,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
             if !self.tasks[canonical].done {
                 continue;
             }
-            context.checkpoint(self.tasks[i].subject)?;
+            checkpoint(context.execution, self.tasks[i].subject, 1)?;
             // Aliases always point to an earlier retained row. Its authentic
             // Parent supplies data; this row supplies its own static intent.
             let (earlier, remaining) = self.tasks.split_at_mut(i);

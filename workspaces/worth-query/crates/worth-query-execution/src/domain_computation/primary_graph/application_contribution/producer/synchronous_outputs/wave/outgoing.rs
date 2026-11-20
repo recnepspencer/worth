@@ -23,7 +23,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
             if task.alias.is_some() || !task.done || task.component.is_none() {
                 continue;
             }
-            context.checkpoint(task.subject)?;
+            checkpoint(context.execution, task.subject, 1)?;
             if let Some(parent) = &mut task.parent {
                 parent.pin = pin.clone();
                 context.owner.owe(&task.owed);

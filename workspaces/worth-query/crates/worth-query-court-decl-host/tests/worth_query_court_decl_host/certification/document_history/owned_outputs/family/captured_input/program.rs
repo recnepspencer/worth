@@ -192,6 +192,7 @@ where
 pub(in super::super::super) fn seed(
     graph: &mut WorthQueryPrimaryGraphBootstrap<Schema>,
     parent_switch: Option<bool>,
+    undeclared_anchor: bool,
 ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
     graph.bind_entity(
         WorthQueryApplicationEntitySeed::new(
@@ -211,7 +212,13 @@ pub(in super::super::super) fn seed(
         ("capture:choice", "carriage:late", 2),
         ("capture:retained-late", "carriage:late", 1),
     ];
+    let undeclared = [
+        ("capture:seed-a", "a", 1),
+        ("capture:seed-late", "carriage:late", 1),
+        ("capture:undeclared-d", "", handler::UNDECLARED),
+    ];
     let members: &[_] = match parent_switch {
+        None if undeclared_anchor => &undeclared,
         None => &ordinary,
         Some(false) => &switching[..2],
         Some(true) => &switching,
@@ -231,6 +238,9 @@ pub(in super::super::super) fn seed(
             WorthQueryApplicationEntityKey::new("capture:child").unwrap(),
             WorthQueryApplicationEntityKey::new(key).unwrap(),
         ))?;
+        if weight == handler::UNDECLARED {
+            continue;
+        }
         graph.bind_relation(WorthQueryApplicationRelationSeed::new(
             UpstreamOf::reference(),
             format!("uses:{key}"),

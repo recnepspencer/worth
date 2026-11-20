@@ -2,9 +2,20 @@
 use super::*;
 mod continuations;
 mod inputs;
+mod observation;
 mod occurrences;
 mod outgoing;
 mod prerequisites;
+/// Every wave charge goes through here, so its observed units are the
+/// wave's whole share of the request's work accounting.
+fn checkpoint(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    subject: &str,
+    work: u64,
+) -> Result<(), SynchronousOutputFailure> {
+    observation::charged(work);
+    super::checkpoint(execution, subject, work)
+}
 struct Scheduled<S: ApplicationSchema> {
     root: bool,
     key: Option<super::occurrences::OccurrenceKey>,
@@ -54,7 +65,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
         tree_bytes: usize,
         tree: impl FnOnce() -> Box<dyn capture::RequiredTree<S>>,
     ) -> Result<(), SynchronousOutputFailure> {
-        context.checkpoint(subject)?;
+        checkpoint(context.execution, subject, 1)?;
         let capacity = || {
             SynchronousOutputFailure(
                 super::super::WorthQueryOutputDemandDenial::new(
@@ -178,6 +189,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
         candidate: &mut RelationalAuthoredCoupledCandidate<'_>,
         allowed: Option<&[String]>,
     ) -> Result<(), SynchronousOutputFailure> {
+        let mut batch_id = 0usize;
         loop {
             self.close_frontier(context, candidate, allowed)?;
             if self.discover_alias_continuations(context, candidate)? {
@@ -193,6 +205,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
                 .map(|(_, t)| t.rank)
                 .min();
             let Some(rank) = rank else {
+                observation::record(|| "quiescence".to_owned());
                 self.refresh_outgoing(context, candidate, allowed)?;
                 let needed = self.needed(allowed);
                 if self
@@ -209,6 +222,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
                     .enumerate()
                     .any(|(i, t)| needed[i] && !t.done)
                 {
+                    observation::record(|| "blocked".to_owned());
                     return Err(self.blocked_frontier(&needed));
                 }
                 break;
@@ -227,21 +241,43 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
                     ready.push(i);
                 }
             }
+            observation::record(|| format!("batch id={batch_id} rank={rank} ready={ready:?}"));
+            batch_id += 1;
             let mut completed = 0;
             for i in &ready {
                 // Earlier real suppliers can change a still-unconsumed child's
                 // desired parents. Reclose before computing any orphaned row.
                 if self.refresh_input_captures(context, candidate, allowed)? {
+                    observation::record(|| format!("break input-captures before={i}"));
                     break;
                 }
                 context.owner.consume(self.consumed_reads(*i));
                 let task = &mut self.tasks[*i];
-                context.checkpoint(task.subject)?;
+                checkpoint(context.execution, task.subject, 1)?;
                 context.owner.owe(&task.owed);
                 let prepared =
                     task.tree
                         .prepare(context, candidate, task.inputs.take(), task.component);
                 context.owner.consume(Vec::new());
+                observation::record(|| {
+                    let outcome = match &prepared {
+                        Ok(PlannedOutput::Prepared(parent)) => {
+                            if parent.is_some() {
+                                "prepared"
+                            } else {
+                                "prepared-none"
+                            }
+                        }
+                        Ok(PlannedOutput::Recapture) => "recapture",
+                        Err(_) => "refused",
+                    };
+                    format!(
+                        "prepare task={i} subject={} family={} source={:?} {outcome}",
+                        task.subject,
+                        task.tree.family(),
+                        task.key.as_ref().map(|key| key.scope),
+                    )
+                });
                 match prepared? {
                     PlannedOutput::Prepared(parent) => {
                         task.parent = parent;
@@ -249,6 +285,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
                         completed += 1;
                     }
                     PlannedOutput::Recapture => {
+                        observation::record(|| format!("break recapture at={i}"));
                         task.clear_input_capture();
                         break;
                     }
