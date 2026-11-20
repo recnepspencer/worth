@@ -1,5 +1,7 @@
 # Worth UI Architecture
 
+> **Parked (2026-11-20). Doesn't build.** Worth UI is parked by user ruling: `worth-ui-query-binding` and `worth-ui-certification` still depend on the retired `worth-query` engine, so the `workspaces/worth-ui` workspace does not compile. Commands, compiled examples and compile-pass fragments on this page do not build or run until the migration to `worth-query-host` tracked in [#262](https://github.com/recnepspencer/worth/issues/262) lands.
+
 Worth UI turns authored application meaning into a host-neutral mounted frame.
 Application code chooses declarations, capabilities, and Query views. The
 framework chooses and binds the host exactly once.
@@ -176,11 +178,12 @@ and then the binding crate. Runtime sends sealed mounted mechanics to the host
 contract. Host consumers depend on the host contract and never on runtime
 internals.
 
-The current raw `worth-query` dependency in `worth-ui-query-binding` is a
-temporarily admitted predecessor edge, not this destination contract. New work
-must not widen it; the binding owner must remove the remaining raw-engine
-imports so `worth-query-decl` and `worth-query-host` are its only ordinary
-Query audiences before broader Query-facing capabilities land.
+`worth-ui-query-binding` still depends on the retired `worth-query` engine,
+which no longer exists, so the workspace does not build. This unresolved
+dependency is tracked in
+[#262](https://github.com/recnepspencer/worth/issues/262): the binding owner
+must replace the remaining raw-engine imports so `worth-query-decl` and
+`worth-query-host` are its only Query audiences.
 
 The ordinary host lane is receipt-keyed work, not a complete projection:
 

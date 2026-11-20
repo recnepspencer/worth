@@ -1,5 +1,7 @@
 # Text platform
 
+> **Parked (2026-11-20). Doesn't build.** Worth UI is parked by user ruling: `worth-ui-query-binding` and `worth-ui-certification` still depend on the retired `worth-query` engine, so the `workspaces/worth-ui` workspace does not compile. Commands, compiled examples and compile-pass fragments on this page do not build or run until the migration to `worth-query-host` tracked in [#262](https://github.com/recnepspencer/worth/issues/262) lands.
+
 WORTH UI qualifies text once and carries the same typed layout through measurement,
 accessibility geometry, headless presentation, native rendering, and reconstruction. Text
 consumers do not choose fonts, reshape source strings, or ask the operating system for a
@@ -273,6 +275,8 @@ Unsupported input is denied rather than substituted, and external pixel evidence
 only inside the qualified source/class and host posture recorded by owner-issued receipts.
 
 ## Compiling example
+
+> **Parked ([#262](https://github.com/recnepspencer/worth/issues/262)): doesn't build.** This example and its run command fail while the Worth UI workspace is parked; they are kept as the intended workflow after #262.
 
 The repository example registers two application families, selects them through explicit ordered
 family stacks, enables OpenType features, requests `wght` coordinates, and qualifies mixed Latin,

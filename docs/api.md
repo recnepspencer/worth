@@ -367,8 +367,15 @@ Application API. Name the packages explicitly, because the Query workspace's
 default members also include every court crate:
 
 ```bash
-cargo doc --manifest-path workspaces/worth-query/Cargo.toml --no-deps -p worth-query-decl -p worth-query-host
+cargo doc --manifest-path workspaces/worth-query/Cargo.toml --no-deps -p worth-query-decl
 ```
+
+rustdoc for `worth-query-host` currently fails with E0275, a trait-depth
+overflow in its `im`-backed runtime types tracked in
+[#211](https://github.com/recnepspencer/worth/issues/211). Until that lands,
+read the Host facade from its
+[crate root](../workspaces/worth-query/crates/worth-query-host/src/lib.rs) and
+[README](../workspaces/worth-query/crates/worth-query-host/README.md).
 
 Certification API:
 
@@ -382,21 +389,23 @@ Schema contracts:
 cargo doc --manifest-path workspaces/worth-contracts/Cargo.toml --no-deps
 ```
 
-Root runtimes (Signal, Relational; add others with more `-p` flags):
+Root runtimes (add others with more `-p` flags):
 
 ```bash
-cargo doc --no-deps -p worth-signal -p worth-relational
+cargo doc --no-deps -p worth-signal
 ```
 
-Store and UI:
+rustdoc for `worth-relational` fails with the same E0275 overflow
+([#211](https://github.com/recnepspencer/worth/issues/211)); read its
+[API overview](../crates/worth-relational/API_OVERVIEW.md) until then.
+
+Store:
 
 ```bash
 cargo doc --manifest-path workspaces/worth-store/Cargo.toml --no-deps -p worth-store
 ```
 
-```bash
-cargo doc --manifest-path workspaces/worth-ui/Cargo.toml --no-deps -p worth-ui
-```
+Worth UI is parked ([#262](https://github.com/recnepspencer/worth/issues/262)) and its workspace doesn't build, so it has no working `cargo doc` command until that migration lands.
 
 Bank reference world:
 
