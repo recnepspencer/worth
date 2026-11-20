@@ -5,6 +5,7 @@ use worth_query_declaration::facade::application_schema::ApplicationSchemaCompos
 use worth_query_execution::facade::application_home_integration::{
     QueryDispatchJournalDenial, QueryHomeCustodyReadmissionDenial,
 };
+use worth_runtime_world::facade::WorldReadmissionDenial;
 use worth_store_application::ApplicationHomeOpenRefusal;
 
 impl<Schema: ApplicationSchemaComposition, Program>
@@ -35,7 +36,10 @@ impl<Schema: ApplicationSchemaComposition, Program>
         else {
             return None;
         };
-        let ApplicationHomeOpenRefusal::UncleanRecoveryUnsupported(cause) = home.reason() else {
+        let ApplicationHomeOpenRefusal::World(WorldReadmissionDenial::UncleanRecoveryUnsupported(
+            cause,
+        )) = home.reason()
+        else {
             return None;
         };
         Some(*cause)

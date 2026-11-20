@@ -88,6 +88,11 @@ where
             plan: plan.commitment(),
             association,
             common: ContinuationCommon {
+                control: record
+                    .control
+                    .lock()
+                    .unwrap_or_else(|cause| cause.into_inner())
+                    .clone(),
                 before: record.expected.clone(),
                 after: prepared.after,
                 attempt: prepared.attempt,

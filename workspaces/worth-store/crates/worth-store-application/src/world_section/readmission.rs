@@ -70,13 +70,6 @@ where
     T: Copy + Ord + Send + Sync + 'static,
 {
     native.consume(|home| {
-        if let Err(cause) = crate::open::readmission::unclean::admit(&home, request) {
-            return Err(WorldHomeReadmissionRefused {
-                cause,
-                home: Box::new(home),
-                composition: None,
-            });
-        }
         let super::ApplicationWorldDefinition {
             world: configuration,
             signal: program,

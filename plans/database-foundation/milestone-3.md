@@ -741,6 +741,11 @@ Cleanup courts moved out of the tree are listed under their C item, with `restor
   Reintroducing the removed `query-world-commit-preparation` certification
   caller for `transition_native_effect/native_original.rs` requires a fresh
   boundary ruling; restoration references grant no caller-list expansion.
+  C1 ruling (2026-11-20): the row is restored for that one test file only. It
+  binds the original Native transition-step effect to its real World open,
+  the same door its sibling courts `transition_indexes/{promotion,publication}.rs`
+  already hold, and it is the only way to leave exactly that Native effect
+  without a World occurrence. No production caller is added.
   Restore complete courts only through public owner recovery after C1 supports
   this Native-effect prefix and C5 lifts D18. No graceful close may replace
   their abandoned prefix or weaken the original assertions.
