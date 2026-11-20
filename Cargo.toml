@@ -1,7 +1,7 @@
 [workspace]
 "resolver" = "3"
 "exclude" = ["workspaces/*", "workspaces/worth-contracts", "workspaces/worth-query", "workspaces/worth-query-bank-world", "workspaces/worth-store", "workspaces/worth-ui"]
-"members" = ["crates/worth-court-execution", "crates/worth-court-foundational-certification-boundary-artifacts", "crates/worth-court-foundational-certification-boundary-evidence", "crates/worth-court-foundational-expressions", "crates/worth-court-proof", "crates/worth-court-relational-branch-reference-compile-time", "crates/worth-court-relational-certification", "crates/worth-court-relational-cold-residency", "crates/worth-court-runtime-bridge", "crates/worth-court-runtime-world", "crates/worth-court-server-certification-suite", "crates/worth-court-server-product-operation-phase-eleven", "crates/worth-court-server-product-operation-phase-thirteen-shared-read", "crates/worth-court-signal-branch-retention-contract", "crates/worth-court-signal-owner-services", "crates/worth-court-signal-wasm", "crates/worth-execution", "crates/worth-foundational", "crates/worth-harness", "crates/worth-proof", "crates/worth-relational", "crates/worth-runtime-bridge", "crates/worth-runtime-world", "crates/worth-server", "crates/worth-server-client-generation", "crates/worth-signal", "crates/worth-signal-wasm", "crates/worth-testkit-compiler", "crates/worth-testkit-foundational", "crates/worth-testkit-relational", "crates/worth-testkit-server", "crates/worth-value-shape-derive"]
+"members" = ["crates/worth-court-execution", "crates/worth-court-foundational-certification-boundary-artifacts", "crates/worth-court-foundational-certification-boundary-evidence", "crates/worth-court-foundational-expressions", "crates/worth-court-proof", "crates/worth-court-relational-branch-reference-compile-time", "crates/worth-court-relational-certification", "crates/worth-court-relational-cold-residency", "crates/worth-court-runtime-bridge", "crates/worth-court-runtime-world", "crates/worth-court-signal-branch-retention-contract", "crates/worth-court-signal-owner-services", "crates/worth-court-signal-wasm", "crates/worth-execution", "crates/worth-foundational", "crates/worth-harness", "crates/worth-proof", "crates/worth-relational", "crates/worth-runtime-bridge", "crates/worth-runtime-world", "crates/worth-signal", "crates/worth-signal-wasm", "crates/worth-testkit-compiler", "crates/worth-testkit-foundational", "crates/worth-testkit-relational", "crates/worth-value-shape-derive"]
 
 
 [workspace.metadata.worth_topology]
@@ -20,14 +20,6 @@ license = "BUSL-1.1"
 [workspace.dependencies]
 worth-harness = { path = "crates/worth-harness", version = "0.1.0" }
 worth-runtime-bridge = { path = "crates/worth-runtime-bridge" }
-worth-server = { path = "crates/worth-server" }
-worth-server-client-generation = { path = "crates/worth-server-client-generation" }
-worth-query = { path = "workspaces/worth-query/crates/worth-query" }
-worth-query-decl = { path = "workspaces/worth-query/crates/worth-query-decl" }
-worth-query-host = { path = "workspaces/worth-query/crates/worth-query-host" }
-worth-query-publication = { path = "workspaces/worth-query/crates/worth-query-publication" }
-worth-query-replay = { path = "workspaces/worth-query/crates/worth-query-replay" }
-worth-schema-graph = { path = "workspaces/worth-contracts/crates/worth-schema-graph" }
 worth-foundational = { path = "crates/worth-foundational" }
 worth-proof = { path = "crates/worth-proof" }
 worth-execution = { path = "crates/worth-execution" }
@@ -76,17 +68,6 @@ debug = "line-tables-only"
 
 [profile.dev.package]
 "*".opt-level = 2
-# First-party crates owned by other workspaces arrive here as path dependencies,
-# which "*" would optimize. They stay on the member profile so every workspace
-# compiles them identically and editing one never pays an optimizing rebuild.
-worth-query.opt-level = 0
-worth-query-admission.opt-level = 0
-worth-query-declaration.opt-level = 0
-worth-query-execution.opt-level = 0
-worth-query-host.opt-level = 0
-worth-query-installation.opt-level = 0
-worth-query-publication.opt-level = 0
-worth-schema-graph.opt-level = 0
 
 [profile.test]
 opt-level = 0
@@ -95,14 +76,6 @@ debug = 0
 
 [profile.test.package]
 "*".opt-level = 2
-worth-query.opt-level = 0
-worth-query-admission.opt-level = 0
-worth-query-declaration.opt-level = 0
-worth-query-execution.opt-level = 0
-worth-query-host.opt-level = 0
-worth-query-installation.opt-level = 0
-worth-query-publication.opt-level = 0
-worth-schema-graph.opt-level = 0
 
 [profile.perf]
 inherits = "dev"

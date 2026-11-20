@@ -2032,19 +2032,13 @@ To survive a restart, close the Home and reopen the same Directory; see
 [Use an Application Home](application-home.md). Do not build host persistence of
 platform truth as a substitute.
 
-### 15.2 Server: the transport boundary
+### 15.2 Network transport
 
-`worth-server` (`worth_server::facade::{WorthServer, WorthServerBuilder}`)
-serves a Query application over the network. It offers WORTH-native
-operations, plus a strict HTTP compatibility boundary for reads, writes,
-streams, uploads, and downloads.
-
-The server is transport, not authority. It carries a request to Query's
-admission and carries the typed outcome back. It does not decide legality. In the
-Bank reference world, identity-provider tokens end at the HTTP adapter; what
-reaches Query is an authenticated principal and a request scope. `worth-server-client-generation`
-renders TypeScript and Python clients from the server's protocol catalog.
-Guide: [Server docs](../crates/worth-server/docs/README.md).
+WORTH has no platform server crate. An application that serves remote callers
+owns its transport adapter: it authenticates, then hands Query an authenticated
+principal and a request scope through `worth-query-host`, and carries the typed
+outcome back. Transport never decides legality. The Bank reference world's
+`bank-http-adapter` is the worked example.
 
 ### 15.3 UI: authored presentation
 
@@ -2079,7 +2073,8 @@ browser: derived work is still derived, and still reconstructible. Guide:
 infrastructure. The runtimes use it to test themselves at their real
 boundaries: run a scenario, capture what happened, replay it, and compare the
 two exactly. It is not a product API. Query's certification audience
-(`worth-query-replay`, `worth-query-certification`) is the application-level
+(`worth-query-replay` for cost evidence, `worth-query-certification` for
+provider comparison and hostile scenarios) is the application-level
 counterpart. See [API Map §4](api.md#4-certification-api).
 
 ### 15.6 The Bank reference world

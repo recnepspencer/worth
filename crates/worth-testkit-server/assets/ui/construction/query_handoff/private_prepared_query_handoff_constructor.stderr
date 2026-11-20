@@ -1,9 +1,0 @@
-error[E0451]: fields `kind` and `operation_name` of struct `WorthServerPreparedQueryHandoffIntent` are private
- --> tests/ui/construction/query_handoff/private_prepared_query_handoff_constructor.rs:5:9
-  |
-4 |     let _ = WorthServerPreparedQueryHandoffIntent {
-  |             ------------------------------------- in this type
-5 |         kind: supplied(),
-  |         ^^^^ private field
-6 |         operation_name: "users.profile".to_string(),
-  |         ^^^^^^^^^^^^^^ private field

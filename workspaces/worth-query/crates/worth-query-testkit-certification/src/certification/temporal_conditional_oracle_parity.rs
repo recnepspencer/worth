@@ -8,10 +8,6 @@ pub use worth_query_testkit_host::facade::host::world;
 pub use courtroom_support::{assert_authoritative_value, observe};
 pub use schema::IntentEffectField;
 pub use world::CourtroomWorld;
-pub use worth_query::facade::{
-    certification::internal_conditional_outcome_for_certification,
-    installed::conditional::WorthQueryConditionalOutcomeClass as InternalOutcome,
-};
 pub use worth_query_host::facade::primary_graph::{
     WorthQueryConditionalClockObservationOutcome as ClockOutcome,
     WorthQueryConditionalExecutionTerminal as Terminal,
@@ -215,17 +211,16 @@ pub fn assert_oracle(
         adapters::CourtroomClock,
     >,
 ) {
-    let oracle = internal_conditional_outcome_for_certification(signal_class);
     let [lineage] = receipt.execution_provenance() else {
         panic!("one oracle lineage")
     };
-    match oracle {
-        InternalOutcome::ComputedChanged => {
+    match signal_class {
+        SignalClass::ComputedChanged => {
             assert_eq!(lineage.signal_decision(), Some(SignalDecision::Eligible));
             assert_eq!(lineage.terminal(), Terminal::Committed);
             assert_eq!(receipt.committed_operation_count(), 1);
         }
-        InternalOutcome::Suppressed => {
+        SignalClass::SuppressedBeforeCompute => {
             assert_eq!(lineage.signal_decision(), Some(SignalDecision::Suppressed));
             assert_eq!(lineage.terminal(), Terminal::SuppressedRetained);
             assert_eq!(receipt.committed_operation_count(), 0);

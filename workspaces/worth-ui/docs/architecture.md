@@ -149,7 +149,7 @@ sample.
   effect-free application preparation, then exclusively enters the qualified
   native event loop after preparation succeeds.
 - `worth-ui-certification` proves boundaries and may consume
-  `worth-query-replay` when Query reconstruction is required; neither is an
+  `worth-query-replay` for certification-cost evidence; neither is an
   ordinary application API.
 
 An identity or digest can explain what happened. It cannot launch an

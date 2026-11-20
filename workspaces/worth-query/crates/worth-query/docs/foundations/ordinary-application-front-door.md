@@ -48,8 +48,8 @@ use worth_query_host::facade::{
 };
 ```
 
-Certification code may separately import `worth_query_replay::facade`. Replay
-is not an application or host entry point.
+Certification code may separately import `worth_query_replay::facade` for
+certification-cost evidence. It is not an application or host entry point.
 
 Most applications should expose domain-native methods over these facades. A
 bank may offer `account_summary(...)` or `send_money(...)`; those names improve

@@ -28,14 +28,16 @@ Ordinary host/runtime code uses:
 - `domain::WorthQueryWorkflowIntentStage`
 - `domain::WorthQueryWorkflowReexecutionStop`
 
-Certification code imports `worth_query_replay::facade` and uses:
+Engine certification code imports the engine's cert-only
+`worth_query::facade::certification` namespace and uses:
 
 - `issue_query_certification_replay_capability()`
 - `replay_installed_workflow(...)`
 - `admit_installed_historical_replay_basis(...)`
 - `replay_installed_workflow_historical(...)`
 - `WorthQueryCertificationReplayResult`
-- `WorthQueryReplayComparison` and `WorthQueryReplayDivergence`
+- `WorthQueryReplayComparison` and `WorthQueryReplayDivergence`, from
+  `worth_query::facade::domain`
 
 An installed replay contract also requires a matching
 `WorthQueryDomainReplaySemanticComparator`. Runtime construction rejects a
@@ -52,9 +54,10 @@ Certification replay adds two gates:
 2. The installed domain comparator may impose stricter domain meaning, but it
    cannot override drift Query already detected.
 
-Replay authority stays in the cert-only `worth-query-replay` package. The
-ordinary host facade can execute and publish a workflow but cannot issue a
-certification replay capability. A successful certification result contains
+Replay authority stays in the engine's cert-only certification namespace.
+`worth-query-replay` does not re-export it; that facade carries only
+certification-cost evidence. The ordinary host facade can execute and publish a
+workflow but cannot issue a certification replay capability. A successful certification result contains
 inspection data, not the ordinary completed-trace phase object.
 
 ## How It Executes
@@ -101,23 +104,25 @@ execution; do not try to reset or clone a workflow run.
 ## Real Example
 
 Certification replay keeps the original trace, fresh bound operation, intent,
-and workspace explicit:
+execution-resource request and workspace explicit. The resource request is the
+`WorthQueryExecutionResourceRequest` the replay run is admitted under:
 
 ```rust
-use worth_query_replay::facade as replay;
+use worth_query::facade::{certification as replay, domain};
 
 let result = replay::replay_installed_workflow(
     replay::issue_query_certification_replay_capability(),
     &original_trace,
     replay_bound,
     intent,
+    execution_resource_request,
     &mut workspace,
 )
 .unwrap();
 
 assert!(matches!(
     result.comparison(),
-    &replay::WorthQueryReplayComparison::Equivalent
+    &domain::WorthQueryReplayComparison::Equivalent
 ));
 assert_ne!(
     result.original_trace_identity(),

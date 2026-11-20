@@ -1014,7 +1014,7 @@ canonical owners. A checkpoint's decoded index-write descriptions do not carry
 that live verification; decoded-only intervals return incomplete-history refusal
 until a genuine preparation/replay owner reissues the live verification.
 
-See the [compiled correction example](../../../worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/certification/application_graph/correction/consecutive_undo.rs)
+See the [compiled correction example](../../../worth-query-court-decl-host-integration/tests/worth_query_court_decl_host_integration/certification/application_graph/correction/consecutive_undo.rs)
 for selecting original receipts, retaining endpoint observations and publishing
 reversals through the ordinary request API.
 

@@ -1639,7 +1639,9 @@ projections over the real lower-authority model built in Milestones 1 through
 - ordinary, checked, proof-visible, helper, grouped, continuation, and
   contribution-composed parity where those public lanes exist
 - legal audience-facade routing through `worth-query-decl` and
-  `worth-query-host`; certification-only replay through `worth-query-replay`
+  `worth-query-host`; certification-only cost evidence through
+  `worth-query-replay`, with certification-owned replay a dependency on a
+  Query replay route that does not exist today
 
 ### Authority And Derivation
 

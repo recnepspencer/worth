@@ -130,8 +130,6 @@ Audience legend:
 | `worth-signal-wasm` | A worker-first WebAssembly and TypeScript browser package for Signal, published to npm as `worth-signals-wasm`. | Consumer (npm) | Active | [README](crates/worth-signal-wasm/README.md) |
 | `worth-runtime-bridge` | The causal protocol between Relational and Signal: installed correspondence, exact routing of committed changes, lowering of conditional meaning. | Internal | Active | [README](crates/worth-runtime-bridge/README.md) |
 | `worth-runtime-world` | Product branches over exact Relational and Signal bases, immutable composite history, and coordinated publication across component owners. | Internal | Active | [README](crates/worth-runtime-world/README.md) |
-| `worth-server` | A typed server facade and transport boundary: WORTH-native operations plus a strict HTTP compatibility boundary. | Consumer | Active | [Docs](crates/worth-server/docs/README.md) |
-| `worth-server-client-generation` | Renders TypeScript and Python remote clients from a server protocol catalog. | Tooling | Dormant | — |
 | `worth-harness` | Scenario, capture, replay, comparison, and workload infrastructure for certification. It is not a product API. | Certification | Active | [README](crates/worth-harness/README.md) |
 
 ### Query (`workspaces/worth-query/`)
@@ -143,7 +141,7 @@ database, identity provider, or policy truth store: it composes those owners.
 |---|---|---|---|
 | [`worth-query-decl`](workspaces/worth-query/crates/worth-query-decl/README.md) | Declaration facade: schema, operations, queries, capabilities, workflows, and programs, as types and macros. It adds no behavior. | **Consumer** | **Stable** |
 | [`worth-query-host`](workspaces/worth-query/crates/worth-query-host/README.md) | Host facade: installation, requests, admission, execution, commit outcomes, publication, branches, programs, workflows, and aftermath. | **Consumer** | **Stable** |
-| [`worth-query-replay`](workspaces/worth-query/crates/worth-query-replay/README.md) | Replay and reconstruction, for certification code only. | Certification | Stable |
+| [`worth-query-replay`](workspaces/worth-query/crates/worth-query-replay/README.md) | Certification cost evidence, for certification code only. | Certification | Stable |
 | `worth-query-certification` | Reusable certification support, and runnable examples of complete applications. | Certification | Stable |
 | `worth-query-declaration` | Owns canonical declarations, validation, and binding grammar. | Internal | Active |
 | `worth-query-installation` | Owns portable packages, installed contracts, graph obligations, and touch contracts. | Internal | Active |
@@ -237,7 +235,7 @@ worth-proof
                  └─ worth-runtime-world
                       └─ Query authority crates
                            └─ worth-query-host, worth-query (engine)
-                                └─ worth-server, worth-ui, reference apps
+                                └─ worth-ui, reference apps
 ```
 
 `worth-query-decl` depends only on `worth-query-declaration`.

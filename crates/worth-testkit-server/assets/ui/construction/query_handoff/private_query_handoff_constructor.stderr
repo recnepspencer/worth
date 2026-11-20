@@ -1,5 +1,0 @@
-error[E0451]: fields `operation_admission`, `operation`, `workspace`, `downstream_delivery_contract`, `operation_support_posture`, `support_composition_receipt`, `precondition_posture`, `concurrency_class`, `support_posture` and `canonical_digest` of struct `WorthServerQueryHandoff` are private
- --> tests/ui/construction/query_handoff/private_query_handoff_constructor.rs:4:33
-  |
-4 |     WorthServerQueryHandoff { ..value }
-  |                                 ^^^^^ fields `operation_admission`, `operation`, `workspace`, `downstream_delivery_contract`, `operation_support_posture`, `support_composition_receipt`, `precondition_posture`, `concurrency_class`, `support_posture` and `canonical_digest` are private

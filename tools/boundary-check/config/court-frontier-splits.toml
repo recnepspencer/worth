@@ -72,27 +72,6 @@ owners = ["relational/branch_reference_compile_time", "relational/branch_referen
 delegates = []
 
 [[splits]]
-court = "worth-court-server-certification-suite"
-frontier = ["worth-server"]
-area = "certification-suite"
-owners = ["server/certification_suite/mixed_hostility_matrix", "server/certification_suite/response_denial_localization", "server/certification_suite/response_envelope_parity", "server/certification_suite/structural_sabotage_suite", "server/certification_suite/worth_native_hostility_matrix", "server/certification_suite/worth_native_no_glue_equivalence", "server/certification_suite/worth_native_retained_fact_parity", "server/certification_suite/worth_native_sabotage_suite", "server/compat_http_phase_eleven/compat_http_phase_eleven_counter_honesty_cases", "server/compat_http_phase_eleven/compat_http_phase_eleven_diagnostics_richness_cases", "server/compat_http_phase_nine_boundary/compat_http_phase_nine_divergence_cases", "server/compat_http_phase_nine_boundary/compat_http_phase_nine_policy_branch_cases", "server/compat_http_phase_thirteen/compat_http_phase_thirteen_blob_truth_separation_cases", "server/compat_http_phase_thirteen/compat_http_phase_thirteen_operator_evidence_cases", "server/compat_http_phase_thirteen/compat_http_phase_thirteen_parity_matrix_cases", "server/compat_http_phase_thirteen/compat_http_phase_thirteen_retry_precondition_cases", "server/compat_http_phase_thirteen_boundary/compat_http_phase_thirteen_multipart_range_cases", "server/compat_http_phase_thirteen_boundary/compat_http_phase_thirteen_normalization_cases", "server/compat_http_phase_thirteen_boundary/compat_http_phase_thirteen_transfer_hostility_cases", "server/durable_product_mutation_concurrency", "server/worth_native_facade_entry/declaration_denials", "server/worth_native_facade_entry/declaration_intake", "server/worth_native_facade_entry/direct_composition", "server/worth_native_facade_entry/direct_context", "server/worth_native_facade_entry/direct_delivery", "server/worth_native_facade_entry/direct_mutation", "server/worth_native_facade_entry/direct_projection", "server/worth_native_facade_entry/direct_runtime", "server/worth_native_facade_entry/entry_boundary"]
-delegates = []
-
-[[splits]]
-court = "worth-court-server-product-operation-phase-eleven"
-frontier = ["worth-server"]
-area = "product-operation-phase-eleven"
-owners = ["server/compat_http_admission", "server/compat_http_phase_eight", "server/compat_http_phase_eight_boundary", "server/compat_http_phase_five/early_admission", "server/compat_http_phase_five/malformed_uploads", "server/compat_http_phase_five/metadata_truth", "server/compat_http_phase_five/transport_truth", "server/compat_http_phase_four", "server/compat_http_phase_nine/compat_http_phase_nine_truth_linkage_cases", "server/compat_http_phase_seven", "server/compat_http_phase_six/cleanup_receipts", "server/compat_http_phase_six/ingress_bounds", "server/compat_http_phase_six/integrity", "server/compat_http_phase_three", "server/compat_http_phase_twelve/compat_http_phase_twelve_abuse_budget_cases", "server/compat_http_phase_twelve/compat_http_phase_twelve_transfer_lifecycle_cases", "server/compat_http_phase_two", "server/durable_product_mutation_crash_recovery", "server/durable_product_mutation_specimens", "server/operation_admission", "server/operation_planning", "server/operation_readiness_preconditions", "server/operation_request_boundaries", "server/operation_scheduler", "server/operation_scheduler_phase_eight", "server/product_adapter_phase_nine", "server/product_adapter_registration_contracts", "server/product_operation_application_authorization", "server/product_operation_phase_eleven", "server/product_operation_phase_thirteen_certification", "server/product_read_nested_lease", "server/product_retry_ownership", "server/product_session_phase_ten", "server/request_context_resolution", "server/route_assembly_phase_twelve"]
-delegates = []
-
-[[splits]]
-court = "worth-court-server-product-operation-phase-thirteen-shared-read"
-frontier = ["worth-server"]
-area = "product-operation-phase-thirteen-shared-read"
-owners = ["server/compat_http_entry", "server/compat_http_phase_eleven_boundary/compat_http_phase_eleven_operator_reconstruction_cases", "server/compat_http_phase_seven_boundary", "server/compat_http_phase_ten/compat_http_phase_ten_canonical_identity_cases", "server/compat_http_phase_ten_boundary/compat_http_phase_ten_cacheability_cases", "server/compat_http_phase_ten_boundary/compat_http_phase_ten_normalization_hostility_cases", "server/compat_http_phase_three_followups", "server/compat_http_phase_twelve_boundary/compat_http_phase_twelve_slowloris_cutoff_cases", "server/compile_fail", "server/durable_product_mutation_idempotency", "server/durable_product_mutation_preconditions", "server/external_resource_execution", "server/facade_bootstrap", "server/middleware_progression", "server/operation_readiness", "server/operation_readiness_boundaries", "server/operation_registry", "server/operation_request", "server/product_adapter_phase_nine_query_derived", "server/product_operation_phase_eleven_boundaries", "server/product_operation_phase_eleven_stateful", "server/product_operation_phase_thirteen", "server/product_operation_phase_thirteen_parity", "server/product_operation_phase_thirteen_shared_read", "server/product_result_artifact", "server/product_result_registration", "server/product_result_surface_parity", "server/product_session_scope_phase_ten", "server/query_dependency_audit", "server/query_handoff_denials", "server/query_handoff_parity", "server/route_assembly_phase_twelve_boundary", "server/surface_family_isolation", "server/surface_registration"]
-delegates = []
-
-[[splits]]
 court = "worth-court-signal-owner-services"
 frontier = ["worth-signal"]
 area = "owner-services"
@@ -196,7 +175,16 @@ delegates = []
 court = "worth-query-court-decl-host"
 frontier = ["worth-query-decl", "worth-query-host"]
 area = "decl-host"
-owners = ["producer_succession", "producer_aggregate_succession", "certification", "aspect_patterns", "cost", "determinism", "effect_order", "content_door", "inspection_refusal"]
+owners = ["producer_succession", "producer_aggregate_succession", "certification", "aspect_patterns", "aspect_absence", "cost", "determinism", "document_history", "effect_order", "content_door", "inspection_refusal", "recorded_original_descriptors", "relation_only_inverse", "source_content_identity"]
+delegates = ["application_graph/canonical_transition", "application_graph/correction", "granular_invalidation", "managed_phase_storage", "native_graph_input_guards", "program_example_authority", "runtime_world_branching", "temporal_conditional_oracle_parity"]
+
+# Host integration worlds (certification fixtures, dependent dispatch, Host
+# application surfaces) formerly also reached the retired Query engine.
+[[splits]]
+court = "worth-query-court-decl-host-integration"
+frontier = ["worth-query-decl", "worth-query-host"]
+area = "integration"
+owners = ["certification/application_graph/canonical_transition", "certification/application_graph/correction", "certification/granular_invalidation", "certification/managed_phase_storage", "certification/native_graph_input_guards", "certification/program_example_authority", "certification/runtime_world_branching", "certification/temporal_conditional_oracle_parity", "dependent_dispatch", "execution", "host"]
 delegates = []
 
 [[splits]]

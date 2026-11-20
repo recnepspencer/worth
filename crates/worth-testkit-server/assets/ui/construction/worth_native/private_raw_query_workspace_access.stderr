@@ -1,5 +1,0 @@
-error[E0599]: no associated function or constant named `workspace` found for struct `WorthServerWorthNativeDirectFacade` in the current scope
- --> tests/ui/construction/worth_native/private_raw_query_workspace_access.rs:2:69
-  |
-2 |     let _method = worth_server::WorthServerWorthNativeDirectFacade::workspace;
-  |                                                                     ^^^^^^^^^ associated function or constant not found in `WorthServerWorthNativeDirectFacade`

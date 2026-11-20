@@ -337,7 +337,7 @@ proves the read-only adoption view reports one `GraphRead` row owned by
 Relational and requiring a `GraphReadProduct` terminal.
 
 The executable example is the
-[host graph-progression court](../../../worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/host/canonical_graph_progression/mod.rs).
+[host graph-progression court](../../../worth-query-court-decl-host-integration/tests/worth_query_court_decl_host_integration/host/canonical_graph_progression/mod.rs).
 It uses the shared Host testkit to exercise the installed read and obligation
 surfaces.
 

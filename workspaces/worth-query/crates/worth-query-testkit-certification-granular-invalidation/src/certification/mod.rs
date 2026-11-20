@@ -4,11 +4,3 @@ pub mod delivery_convergence;
 pub mod financial_runtime_world;
 #[path = "granular_invalidation.rs"]
 pub mod granular_invalidation;
-#[path = "granular_invalidation/query_runtime_world.rs"]
-pub mod query_runtime_world;
-#[path = "granular_invalidation/runtime_composition.rs"]
-pub mod runtime_composition;
-#[path = "granular_invalidation/shared_lifecycle.rs"]
-pub mod shared_lifecycle;
-#[path = "granular_invalidation/structural_slopes.rs"]
-pub mod structural_slopes;
