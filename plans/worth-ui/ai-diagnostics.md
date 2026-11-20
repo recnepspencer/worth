@@ -459,9 +459,11 @@ guess from missing behavior.
 
 Replay is not another `UiInspectionQuery` target or scope. Certification owns a
 separate query and result family whose inputs are versioned source, declaration,
-recorded observation, and external-evidence artifacts. Query reconstruction may
-enter that family only through `worth-query-replay`; ordinary Worth UI and
-`worth-ui-inspection` cannot depend on it.
+recorded observation, and external-evidence artifacts. `worth-query-replay`
+carries only certification-cost evidence and provides no reconstruction. Query
+reconstruction for this family needs a certification-owned Query replay route,
+which is a dependency of this work; ordinary Worth UI and `worth-ui-inspection`
+cannot depend on it.
 
 ### AI Tools
 
@@ -643,8 +645,10 @@ That enables targeted questions like:
 
 At the Query-binding stop, Worth UI certification may inspect the exact retained
 Query publication or projection evidence. If Query semantic replay is required,
-the certification owner must use `worth-query-replay`; it may not reconstruct a
-Query operation from UI facts, digests, reports, or mounted evidence. No replay
+it waits on a certification-owned Query replay route, a dependency of this work
+(`worth-query-replay` carries only cost evidence). The certification owner may
+not reconstruct a Query operation from UI facts, digests, reports, or mounted
+evidence. No replay
 result can re-enter the live application as authority.
 
 ## Relevance Filtering
@@ -960,7 +964,8 @@ worth-ui-inspector
 
 worth-ui-certification
   replay/reconstruction sessions over versioned certification inputs
-  optional Query replay only through worth-query-replay
+  optional Query replay only through a certification-owned Query replay route
+  (a dependency; worth-query-replay is cost evidence only)
 ```
 
 The key is not the exact crate count.
