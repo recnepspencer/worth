@@ -1,6 +1,10 @@
 //! Concrete Home custody cannot skip Native recovery or duplicate its World slot.
 mod transition_catalog;
 mod transition_completion;
+mod transition_resumption;
+pub use transition_resumption::{
+    ApplicationHomeProgramTransitionResumption, ApplicationHomeTransitionResumptionDenial,
+};
 pub use transition_completion::{
     ApplicationHomeTransitionBindingStageDenial, ApplicationHomeTransitionFinishDenial,
 };

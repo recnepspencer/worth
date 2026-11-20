@@ -6,7 +6,9 @@ pub(crate) use catalog_admission::{
 };
 mod history;
 mod intent;
-pub(crate) use history::{HomeTransitionAdmission, ReadmittedHomeProgramTransitions};
+pub(crate) use history::{
+    HomeTransitionAdmission, HomeTransitionPlanningOrigin, ReadmittedHomeProgramTransitions,
+};
 pub(crate) mod completion;
 mod opening;
 mod owner;
@@ -20,6 +22,8 @@ pub use publication::{
     ApplicationHomeTransitionIntentOutcome, ApplicationHomeTransitionStartRefused,
 };
 mod readmitted_step_admission;
+mod resumption;
+pub(crate) use resumption::{durable_prefix, DurableHomeTransitionPrefix};
 mod staging;
 mod step_admission;
 mod step_source;

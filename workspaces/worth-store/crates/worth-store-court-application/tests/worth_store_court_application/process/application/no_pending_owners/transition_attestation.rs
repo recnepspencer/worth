@@ -116,6 +116,7 @@ fn home_planning_request_records_the_actual_owner_and_refuses_other_source_admis
     let native = home.relational().runtime();
     let admitted = home
         .admit_home_program_transition_planning_request(&source, &execution)
+        .map(fresh)
         .unwrap();
     assert_eq!(
         admitted.source().actor(),
@@ -220,6 +221,7 @@ fn retained_home_planning_request_refuses_after_graceful_reopen_before_source_in
         .unwrap();
     let admitted = home
         .admit_home_program_transition_planning_request(&source, &execution)
+        .map(fresh)
         .unwrap();
     let incarnation = home.incarnation();
     drop(source);
@@ -246,6 +248,7 @@ fn retained_home_planning_request_refuses_after_graceful_reopen_before_source_in
     ));
     let current = home
         .admit_home_program_transition_planning_request(&source, &execution)
+        .map(fresh)
         .unwrap();
     assert_eq!(
         native
@@ -266,4 +269,20 @@ fn retained_home_planning_request_refuses_after_graceful_reopen_before_source_in
     );
     drop(source);
     close(home, &execution);
+}
+
+/// With no recorded intent the Home admits planning on the current head.
+fn fresh(
+    planning: worth_store_application::ApplicationHomeTransitionPlanningRequest,
+) -> worth_proof::AdmittedHomeProgramTransitionPlanningRequest<
+    worth_relational::facade::runtime::RelationalHomeProgramPlanningSource,
+> {
+    match planning {
+        worth_store_application::ApplicationHomeTransitionPlanningRequest::Fresh(admitted) => {
+            admitted
+        }
+        worth_store_application::ApplicationHomeTransitionPlanningRequest::Resume(_) => {
+            panic!("no transition intent is recorded")
+        }
+    }
 }

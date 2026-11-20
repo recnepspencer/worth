@@ -9,7 +9,9 @@ mod publication;
 mod refusal;
 mod request;
 mod required;
+mod resumption;
 mod source_attachment;
+mod step_execution;
 pub use plan::{WorthQueryHomeProgramTransitionPlan, WorthQueryHomeProgramTransitionStep};
 pub use refusal::{
     WorthQueryHomeProgramTransitionDenial, WorthQueryHomeProgramTransitionOpenPhase,
