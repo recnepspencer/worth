@@ -45,16 +45,7 @@ fn push_changed_occurrence_record(
     records: &mut Vec<EntityId>,
     entity: EntityId,
 ) -> Result<(), Denial> {
-    if records.len() == records.capacity() {
-        let more = records.capacity().max(4);
-        let bytes = more
-            .checked_mul(size_of::<EntityId>())
-            .ok_or(Definition::WorkBudgetExceeded)?;
-        source.retain(bytes)?;
-        records
-            .try_reserve_exact(more)
-            .map_err(|_| Definition::WorkBudgetExceeded)?;
-    }
+    crate::derived_relation::source_buffer::reserve(source, records, 1)?;
     records.push(entity);
     Ok(())
 }
