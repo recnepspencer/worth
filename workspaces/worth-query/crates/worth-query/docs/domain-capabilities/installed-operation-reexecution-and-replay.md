@@ -104,7 +104,8 @@ execution; do not try to reset or clone a workflow run.
 ## Real Example
 
 Certification replay keeps the original trace, fresh bound operation, intent,
-and workspace explicit:
+execution-resource request and workspace explicit. The resource request is the
+`WorthQueryExecutionResourceRequest` the replay run is admitted under:
 
 ```rust
 use worth_query::facade::{certification as replay, domain};
@@ -114,6 +115,7 @@ let result = replay::replay_installed_workflow(
     &original_trace,
     replay_bound,
     intent,
+    execution_resource_request,
     &mut workspace,
 )
 .unwrap();

@@ -13,7 +13,7 @@
 |---|---|
 | Writing application code: a schema, operations, handlers, queries, or a host that installs and runs them | The [API Map](../../../../../docs/api.md), then the [`worth-query-decl` README](../../worth-query-decl/README.md) and the [`worth-query-host` README](../../worth-query-host/README.md) |
 | Learning what happens to a request and what each outcome means | [How WORTH Works §9 to §14](../../../../../docs/how-it-works.md#9-query-the-life-of-one-request) |
-| Writing certification or replay evidence | [API Map §4](../../../../../docs/api.md#4-certification-api) and the [`worth-query-replay` README](../../worth-query-replay/README.md) |
+| Writing certification cost evidence | [API Map §4](../../../../../docs/api.md#4-certification-api) and the [`worth-query-replay` README](../../worth-query-replay/README.md) |
 | Looking up a term such as *basis*, *performed*, or *settled* | The [Glossary](../../../../../docs/glossary.md) |
 
 This page covers the remaining case: you are **changing the Query engine
@@ -245,9 +245,11 @@ a maintainer keeps when changing the facades.
   namespace is a contract change even when existing imports still compile. Do
   not preserve an obsolete path by re-exporting the same types from a second
   authority lane.
-- **Replay stays in certification.** `worth-query-replay` reconstructs and
-  compares prior semantic execution. Certification cost evidence also enters
-  there, through `WorthQueryCertificationCostRuntimeExt` and a bounded
+- **Replay stays in certification.** Engine workflow replay, which
+  reconstructs and compares prior semantic execution, lives in the engine's
+  cert-only `worth_query::facade::certification` namespace.
+  `worth-query-replay` is the cost-evidence facade:
+  `WorthQueryCertificationCostRuntimeExt` and a bounded
   `WorthQueryCertificationCostScope`. Neither may enter application or host
   code.
 - **Facade rule.** If an application example needs `worth_query`,
