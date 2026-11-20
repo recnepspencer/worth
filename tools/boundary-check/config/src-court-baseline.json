@@ -1859,7 +1859,7 @@
 {"source":"workspaces/worth-query/crates/worth-query-publication/src/application_entry/workflow/operation/binding_denial_tests.rs","module":"file","roots":["ExecutionRequest"]},
 {"source":"crates/worth-runtime-bridge/src/builder/tests/correspondence/conditional_compatibility/source_packet_affinity/causal_retention/envelope.rs","module":"file","roots":["RuntimeBridge"]},
 {"source":"crates/worth-runtime-bridge/src/builder/tests/correspondence/conditional_compatibility/source_packet_affinity/causal_retention/history.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]},
-{"source":"workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/admitted_capture/retained_stage/tests.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]},
+{"source":"workspaces/worth-query/crates/worth-query-execution-foundation/src/domain_computation/primary_graph/admitted_capture/retained_stage/tests.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]},
 {"source":"workspaces/worth-query/crates/worth-query-installation/src/application_operation/contracts/graph_touches/tests.rs","module":"file","roots":["WorthQueryInstalledPackageIndex"]},
 {"source":"workspaces/worth-query/crates/worth-query-installation/src/application_schema/native_contract/compilation/scalar_aspect/tests/installed_read_scope.rs","module":"file","roots":["WorthQueryInstalledPackageIndex"]},
 {"source":"crates/worth-execution/src/authority/lease/byte_backing/immutable/request_tests.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]},

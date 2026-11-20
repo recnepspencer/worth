@@ -33,7 +33,7 @@ pub(super) fn finish(
                 Ok(receipt) => Posture::DirectCleanup {
                     terminal: receipt.inspection().terminal(),
                     disposition: receipt.inspection().disposition(),
-                    resources: crate::domain_computation::primary_graph::query_obligations::QueryManagedRunResources::observe(
+                    resources: crate::domain_computation::managed_run::durable_custody::observe_managed_run_resources(
                         receipt.inspection().resources_released(), receipt.inspection().provider_work()),
                 },
                 Err(failure) => Posture::CleanupRequired {

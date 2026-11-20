@@ -65,14 +65,16 @@ impl WorthQueryExecutionInstallationAuthority {
         let values = installed_schema.value_bindings();
         let (layout, mut additions) = match source {
             NativeSchemaCompilation::Fresh(base) => {
-                WorthQueryPrimaryGraphLayout::lower(schema, contracts, base, values)
+                worth_query_execution_layout::facade::lowering::lower_layout(
+                    schema, contracts, base, values,
+                )
             }
             NativeSchemaCompilation::Original {
                 base,
                 source,
                 maximum_kind,
                 maximum_aspect,
-            } => WorthQueryPrimaryGraphLayout::lower_with_original(
+            } => worth_query_execution_layout::facade::lowering::lower_layout_with_original(
                 schema,
                 contracts,
                 base,
@@ -82,7 +84,7 @@ impl WorthQueryExecutionInstallationAuthority {
                 maximum_aspect,
             ),
             NativeSchemaCompilation::Successor { base, predecessor } => {
-                WorthQueryPrimaryGraphLayout::lower_successor(
+                worth_query_execution_layout::facade::lowering::lower_layout_successor(
                     schema,
                     contracts,
                     base,

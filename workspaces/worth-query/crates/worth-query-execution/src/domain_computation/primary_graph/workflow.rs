@@ -15,8 +15,8 @@ pub(crate) mod instance;
 pub(crate) mod operation_output;
 pub(in crate::domain_computation::primary_graph) mod proposal;
 pub(in crate::domain_computation::primary_graph) mod readmission;
-pub(crate) mod schema;
 pub use readmission::QueryHomeWorkflowReadmissionDenial;
+pub(crate) use worth_query_execution_layout::facade::workflow_schema as schema;
 
 pub(in crate::domain_computation::primary_graph) use approval::{
     visit_workflow_approval_facts, workflow_approval_fields, workflow_approval_instance_identity,

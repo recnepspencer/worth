@@ -1,18 +1,18 @@
 //! External effects, recovery custody, and canonical recorded correction causality.
 
 mod correction;
-pub(crate) mod correction_material;
 pub(in crate::domain_computation) use correction::OriginalCorrectionDisclosure;
+pub(crate) use worth_query_execution_obligations::facade::aftermath::correction_material;
 pub(crate) mod commit_causality;
 pub(crate) use commit_causality::ApplicationCommitCausality;
 pub(crate) mod causal_fact;
 mod correction_coordinates;
 pub use correction_coordinates::WorthQueryCorrectionSourceCoordinates;
-pub mod derivation_failure;
+pub use worth_query_execution_obligations::facade::aftermath::derivation_failure;
 pub mod dispatch_journal;
 pub mod external_effect;
 pub mod recovery_handle;
-mod recovery_posture;
+use worth_query_execution_obligations::facade::aftermath::recovery_posture;
 pub mod recovery_progression;
 pub mod retained_preimage;
 mod retained_relations;

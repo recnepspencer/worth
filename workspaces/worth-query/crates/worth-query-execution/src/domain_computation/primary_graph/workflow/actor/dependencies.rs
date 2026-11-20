@@ -136,7 +136,15 @@ impl WorkflowActorDependencies {
                     "recorded actor entity is unavailable",
                 )
             })?;
-        fields.observe(runtime, execution, snapshot, entity, kind, &mut Vec::new())
+        super::record::observe_actor_fields(
+            &fields,
+            runtime,
+            execution,
+            snapshot,
+            entity,
+            kind,
+            &mut Vec::new(),
+        )
     }
     pub(in crate::domain_computation::primary_graph) fn restore(
         execution: &ExecutionRequest<'_, '_>,

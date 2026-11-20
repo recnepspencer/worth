@@ -1,5 +1,7 @@
 //! Stopped branch-set DATA uses the same serialized Query publisher.
 use super::*;
+use worth_foundational::facade::CanonicalDigestId;
+use worth_query_execution_obligations::facade::ledger_inspect;
 impl QueryObligationHistory {
     pub(in crate::domain_computation::primary_graph) fn retain_stopped_adoption(
         &self,
@@ -11,12 +13,11 @@ impl QueryObligationHistory {
         };
         let driver = self.lock_publication()?;
         driver.finish_pending(medium.as_ref(), request)?;
-        if let Some(prior) = self
-            .state()
-            .journal
-            .as_ref()
-            .and_then(|j| j.ledger.adoption.stopped.get(&row.attempt))
-        {
+        if let Some(prior) = self.state().journal.as_ref().and_then(|j| {
+            ledger_inspect::adoption(&j.ledger)
+                .stopped
+                .get(&row.attempt)
+        }) {
             return if prior == &row {
                 Ok(())
             } else {
@@ -39,12 +40,11 @@ impl QueryObligationHistory {
         };
         let driver = self.lock_publication()?;
         driver.finish_pending(medium.as_ref(), request)?;
-        if !self
-            .state()
-            .journal
-            .as_ref()
-            .is_some_and(|j| j.ledger.adoption.stopped.contains_key(&attempt))
-        {
+        if !self.state().journal.as_ref().is_some_and(|j| {
+            ledger_inspect::adoption(&j.ledger)
+                .stopped
+                .contains_key(&attempt)
+        }) {
             return Err(QueryObligationDenial::UnknownObligation);
         }
         driver.publish(
@@ -59,7 +59,13 @@ impl QueryObligationHistory {
         self.state()
             .journal
             .as_ref()
-            .map(|j| j.ledger.adoption.stopped.values().cloned().collect())
+            .map(|j| {
+                ledger_inspect::adoption(&j.ledger)
+                    .stopped
+                    .values()
+                    .cloned()
+                    .collect()
+            })
             .unwrap_or_default()
     }
     pub(in crate::domain_computation::primary_graph) fn rostered_revision(

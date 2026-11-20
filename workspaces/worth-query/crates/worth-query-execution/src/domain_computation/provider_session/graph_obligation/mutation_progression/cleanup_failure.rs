@@ -5,13 +5,7 @@ use crate::domain_computation::{
     WorthQueryRunningDirectRun,
 };
 
-/// Native cleanup refusal is distinct from an inconsistent binding or completion witness.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryMutationCleanupFailureKind {
-    Native(crate::domain_computation::WorthQueryManagedRunCleanupFailureKind),
-    AffinityInconsistent,
-    CompletionInconsistent,
-}
+pub use worth_query_execution_foundation::facade::domain_computation::managed_run_vocabulary::WorthQueryMutationCleanupFailureKind;
 
 /// A refused mutation cleanup retains its native owner and exact graph-work binding.
 #[must_use = "retain failed native cleanup until lawful discharge"]

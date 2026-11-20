@@ -1900,6 +1900,10 @@ dependencies = [
  "worth-proof",
  "worth-query-admission",
  "worth-query-declaration",
+ "worth-query-execution-diagnostics",
+ "worth-query-execution-foundation",
+ "worth-query-execution-layout",
+ "worth-query-execution-obligations",
  "worth-query-installation",
  "worth-query-testkit-decl",
  "worth-query-testkit-installation",
@@ -1908,6 +1912,62 @@ dependencies = [
  "worth-runtime-world",
  "worth-signal",
  "worth-testkit-relational",
+]
+
+[[package]]
+name = "worth-query-execution-diagnostics"
+version = "0.1.0"
+dependencies = [
+ "sha2",
+ "worth-foundational",
+ "worth-proof",
+ "worth-query-admission",
+ "worth-runtime-bridge",
+]
+
+[[package]]
+name = "worth-query-execution-foundation"
+version = "0.1.0"
+dependencies = [
+ "sha2",
+ "worth-execution",
+ "worth-foundational",
+ "worth-query-admission",
+ "worth-query-declaration",
+ "worth-query-installation",
+ "worth-relational",
+ "worth-runtime-bridge",
+ "worth-runtime-world",
+]
+
+[[package]]
+name = "worth-query-execution-layout"
+version = "0.1.0"
+dependencies = [
+ "sha2",
+ "worth-execution",
+ "worth-foundational",
+ "worth-query-declaration",
+ "worth-query-installation",
+ "worth-relational",
+]
+
+[[package]]
+name = "worth-query-execution-obligations"
+version = "0.1.0"
+dependencies = [
+ "rmp-serde",
+ "serde",
+ "serde_json",
+ "sha2",
+ "worth-execution",
+ "worth-foundational",
+ "worth-proof",
+ "worth-query-execution-foundation",
+ "worth-relational",
+ "worth-runtime-bridge",
+ "worth-runtime-world",
+ "worth-signal",
 ]
 
 [[package]]
