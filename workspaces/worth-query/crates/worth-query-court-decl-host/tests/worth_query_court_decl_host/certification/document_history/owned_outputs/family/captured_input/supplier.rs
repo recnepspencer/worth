@@ -15,7 +15,7 @@ impl ApplicationConnectionIdentity for Supplier {
     const IDENTITY: &'static str = "captured-input.supplier";
 }
 impl ApplicationOccurrenceConnectionBinding<Schema, entry::Entry, hierarchy::Parent> for Supplier {}
-type SupplierConnection = ApplicationConnectionRef<
+pub type SupplierConnection = ApplicationConnectionRef<
     Schema,
     entry::Entry,
     entry::EntryOutput,

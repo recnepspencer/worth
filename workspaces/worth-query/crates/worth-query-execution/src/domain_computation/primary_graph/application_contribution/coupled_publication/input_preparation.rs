@@ -13,13 +13,24 @@ pub(in crate::domain_computation::primary_graph::application_contribution) enum 
     Recapture,
 }
 impl PreparedCoupledInputs {
-    /// A stored output with declared capture that verifies without capture.
-    /// Its wave task waits for the independent frontier, then re-reads at the
-    /// settled pin (#254); a changed read becomes an admitted capture.
-    pub(in crate::domain_computation::primary_graph::application_contribution) fn verifies_late(
+    /// A stored output with declared capture that verifies without capture
+    /// runs provisionally (#254): this parent carries its outgoing discovery
+    /// and no consumable read. The wave seals it later through the ordinary
+    /// Ready path, which re-reads at the sealing pin.
+    pub(in crate::domain_computation::primary_graph::application_contribution) fn provisional_parent(
         &self,
-    ) -> bool {
-        matches!(self, Self::Ready(selected) if matches!(selected.read, execution::CoupledSourceRead::Verified(_)))
+    ) -> Option<synchronous_outputs::AppliedOutputParent> {
+        let Self::Ready(selected) = self else {
+            return None;
+        };
+        let execution::CoupledSourceRead::Verified(parent) = &selected.read else {
+            return None;
+        };
+        Some(synchronous_outputs::AppliedOutputParent::new(
+            selected.pin.clone(),
+            parent.source(),
+            None,
+        ))
     }
     pub(in crate::domain_computation::primary_graph::application_contribution) fn support_equal(
         &self,

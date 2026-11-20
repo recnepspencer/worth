@@ -5,6 +5,7 @@ use super::*;
 mod handler;
 #[cfg(test)]
 mod cold_contract;
+pub mod composed;
 #[cfg(test)]
 mod courts;
 pub mod program;

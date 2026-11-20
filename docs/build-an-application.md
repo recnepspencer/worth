@@ -4843,13 +4843,21 @@ The same handler implements
 
 Query first uses normal Native output readiness. An already-current output does
 not run this prelude or require a capture-only mutation admission. In an edit,
-such an output is verified last: it waits until no other route of the stage is
-ready, then re-reads at the settled candidate. Its dependents still wait for it,
-and it never waits for them. If it still verifies it is retained without a
-capture. If its support changed, including through a read the capture does not
-declare, it is captured with normal admission on the current candidate and
-derived; a principal the producer does not admit is refused there. For a source
-requiring computation, Query compares complete captured support before the next
+such an output verifies provisionally at its normal rank: its outgoing routes
+are discovered in order, but no route consumes it yet. It is sealed when no
+route is ready and outgoing reclosure at the current candidate links no new
+ready route, re-reading at that candidate; by then every route that does not
+wait on a provisional output, including routes found by that reclosure, has
+settled. While routes wait on provisional outputs, each round seals only the
+awaited outputs of the earliest batch the stage ran, so outputs seal in the
+order the stage ran them and outputs of one batch, such as same-rank siblings,
+seal together; the rest seal when nothing waits. If it still verifies it is
+retained without a capture. If its support changed, including through a read
+the capture does not declare, it is captured with normal admission on that
+candidate and derived before its consumers run; a principal the producer does
+not admit is refused there. A route that consumes it and then changes its read
+still refuses with `CoupledReadSupportChanged`. For a source requiring
+computation, Query compares complete captured support before the next
 supplier and before consuming the data. A changed **unconsumed** pure capture is
 reacquired on the current candidate using the same request and work budget; its
 superseded incoming edges do not become independent delivery roots. Other real

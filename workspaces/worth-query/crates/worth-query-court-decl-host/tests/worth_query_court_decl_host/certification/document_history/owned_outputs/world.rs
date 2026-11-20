@@ -17,6 +17,7 @@ pub struct Configuration {
     pub captured_inputs: bool,
     pub captured_parent_switch: Option<bool>,
     pub captured_undeclared_anchor: bool,
+    pub captured_composed: Option<(usize, bool)>,
     pub wrong_inverse_member: bool,
 }
 impl WorthQueryApplicationContribution<Schema> for Contribution {
@@ -229,6 +230,9 @@ where
                     configuration.captured_parent_switch,
                     configuration.captured_undeclared_anchor,
                 )?;
+            }
+            if let Some((width, waits)) = configuration.captured_composed {
+                family::captured_input::composed::seed(graph, width, waits)?;
             }
             if configuration.reconciliation_peer_caps {
                 synchronous_edit::reconciliation::peer_caps::seed(graph)?;

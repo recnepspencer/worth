@@ -12,8 +12,8 @@ pub struct Data {
     pub parents: Vec<ParentData>,
 }
 /// A member of this authored weight makes the reader read `first:carriage:d`
-/// without declaring it. A stored reader verifies after the stage's routes
-/// settle, so a later route writing it derives the reader again (#254).
+/// without declaring it. A stored reader seals only after every route that
+/// does not wait on it settles, so such a writer derives it again (#254).
 pub const UNDECLARED: u64 = 9;
 
 thread_local! {

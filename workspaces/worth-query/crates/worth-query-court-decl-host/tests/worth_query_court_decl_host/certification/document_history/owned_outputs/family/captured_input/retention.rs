@@ -1,12 +1,12 @@
-//! A stored captured reader reached from its supplier's tree verifies last (#254).
+//! A stored captured reader reached from its supplier's tree seals last (#254).
 //!
 //! Each world is born through an unchanged supplier edit that creates
 //! `captured:capture:child` and captures its parents. The later edit changes
 //! only model `carriage:d` through the same tree: `first:carriage:late` roots
 //! it, its occurrence connections reach the stored reader, and its generator
-//! connection owes `first:carriage:d`. The stored reader would verify at the
-//! stage's first pin, so it waits until the independent routes settle, then
-//! re-reads: a changed read is captured with normal admission and derived.
+//! connection owes `first:carriage:d`. The stored reader verifies
+//! provisionally at its rank and seals once the routes that do not wait on it
+//! settle: a changed read is then captured with normal admission and derived.
 use super::super::super::synchronous_edit::envelope_fixture as fixture;
 use super::*;
 use worth_query_host::facade::{
@@ -49,7 +49,7 @@ fn world(undeclared_anchor: bool) -> Host {
     assert!(matches!(born, Outcome::Committed(_)), "{born:?}");
     host
 }
-fn edit_supplier(host: &Host, key: &str, value: u64) -> Outcome {
+pub(super) fn edit_supplier(host: &Host, key: &str, value: u64) -> Outcome {
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.request(&principal, &scope);
@@ -77,7 +77,7 @@ fn output(host: &Host, key: &str) -> Option<query::Row> {
         .ok()?;
     Some(rows.rows()[0].clone())
 }
-fn row(host: &Host, key: &str) -> query::Row {
+pub(super) fn row(host: &Host, key: &str) -> query::Row {
     output(host, key).unwrap_or_else(|| panic!("{key} exists"))
 }
 
@@ -108,7 +108,7 @@ fn a_reader_reached_from_its_supplier_follows_its_owed_captured_parent() {
 }
 
 /// A known-answer court for a read the capture does not declare: the reader
-/// still verifies last, so its re-read sees the settled child, and the edit
+/// still seals last, so its re-read sees the settled child, and the edit
 /// derives it instead of refusing.
 #[test]
 fn an_undeclared_changed_read_is_derived_from_the_settled_child() {

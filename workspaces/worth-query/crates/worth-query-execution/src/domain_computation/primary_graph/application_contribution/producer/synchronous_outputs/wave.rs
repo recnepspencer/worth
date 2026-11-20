@@ -5,6 +5,7 @@ mod inputs;
 mod occurrences;
 mod outgoing;
 mod prerequisites;
+mod seal;
 struct Scheduled<S: ApplicationSchema> {
     root: bool,
     key: Option<super::occurrences::OccurrenceKey>,
@@ -15,6 +16,10 @@ struct Scheduled<S: ApplicationSchema> {
     prerequisite_queued: bool,
     next_prerequisite: Option<usize>,
     done: bool,
+    /// A stored captured reader that verified provisionally (#254), with
+    /// the ordinal of the batch it ran in: it has discovered its outgoing
+    /// routes but is not done until sealed.
+    provisional: Option<usize>,
     alias: Option<usize>,
     continuation_done: bool,
     prerequisites: Vec<usize>,
@@ -28,9 +33,6 @@ struct Scheduled<S: ApplicationSchema> {
     _memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 impl<S: ApplicationSchema> Scheduled<S> {
-    fn verifies_late(&self) -> bool {
-        self.inputs.as_ref().is_some_and(PreparedCoupledInputs::verifies_late)
-    }
     fn clear_input_capture(&mut self) {
         self.closed = false;
         self.inputs = None;
@@ -103,6 +105,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
             prerequisite_queued: false,
             next_prerequisite: None,
             done: false,
+            provisional: None,
             alias: None,
             continuation_done,
             prerequisites: Vec::new(),
@@ -181,6 +184,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
         candidate: &mut RelationalAuthoredCoupledCandidate<'_>,
         allowed: Option<&[String]>,
     ) -> Result<(), SynchronousOutputFailure> {
+        let mut batch = 0;
         loop {
             self.close_frontier(context, candidate, allowed)?;
             if self.discover_alias_continuations(context, candidate)? {
@@ -188,17 +192,8 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
             }
             let _planning_memory = self.quote_frontier(context, allowed.map_or(0, |v| v.len()))?;
             let needed = self.needed(allowed);
-            // Verify last (#254): a stored captured output that would verify
-            // runs only once no ordinary task is ready. This adds no edge: its
-            // dependents still wait for it through `ready`, and it never waits
-            // for them. When nothing ordinary is ready, each remaining ordinary
-            // task waits on a deferred task or on another waiting task, so
-            // releasing the deferred tasks always makes progress.
-            let ordinary = self.tasks.iter().enumerate().any(|(i, t)| {
-                needed[i] && !t.done && self.ready(i) && !t.verifies_late()
-            });
             let eligible = |i: usize, t: &Scheduled<S>| {
-                needed[i] && !t.done && self.ready(i) && !(ordinary && t.verifies_late())
+                needed[i] && !t.done && t.provisional.is_none() && self.ready(i)
             };
             let rank = self
                 .tasks
@@ -214,8 +209,12 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
                     .tasks
                     .iter()
                     .enumerate()
-                    .any(|(i, t)| needed[i] && !t.done && self.ready(i))
+                    .any(|(i, t)| needed[i] && !t.done && t.provisional.is_none() && self.ready(i))
                 {
+                    continue;
+                }
+                // Seal only after outgoing reclosure found no new work (#254).
+                if self.seal(context, candidate, &needed)? {
                     continue;
                 }
                 if self
@@ -243,11 +242,26 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
                 }
             }
             let mut completed = 0;
+            batch += 1;
             for i in &ready {
                 // Earlier real suppliers can change a still-unconsumed child's
                 // desired parents. Reclose before computing any orphaned row.
                 if self.refresh_input_captures(context, candidate, allowed)? {
                     break;
+                }
+                // A stored reader that would verify discovers in rank order now
+                // and seals later (#254); nothing consumes it before then.
+                let task = &mut self.tasks[*i];
+                if let Some(parent) = task
+                    .inputs
+                    .as_ref()
+                    .and_then(PreparedCoupledInputs::provisional_parent)
+                {
+                    context.checkpoint(task.subject)?;
+                    task.parent = Some(parent);
+                    task.provisional = Some(batch);
+                    completed += 1;
+                    continue;
                 }
                 context.owner.consume(self.consumed_reads(*i));
                 let task = &mut self.tasks[*i];
