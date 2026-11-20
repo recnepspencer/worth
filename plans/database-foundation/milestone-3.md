@@ -151,7 +151,9 @@ guides state that crash recovery is not yet certified.
 ### Cleanup track status
 
 **2026-11-20.** C1 (crash core) is complete on branch `m3/cleanup-c1` and
-lands with its PR; C2–C5 have not started. D18 remains for the causes below:
+lands with its PR. C2 (cost and bounds) started on `m3/cleanup-c2`, branched
+from C1; its slices are listed below. C3 started on `m3/cleanup-c3`; C4 and C5
+have not started. D18 remains for the causes below:
 two damage-shaped World causes and the Dispatch cause (C3). C5 retires the
 surface.
 
@@ -178,6 +180,17 @@ refusal. After C1, it reports two kinds of cause.
   C3 scope (crashes after dispatch).
 
 C5 deletes the accessor along with D18.
+
+| C2 slice | State on the branch |
+|---|---|
+| C2.1 Frame and future size budget lane | Planned |
+| C2.2 Graceful close without the maintenance deadline | Planned |
+| C2.3 Automatic triggers and the cross-owner capture cut | Planned |
+| C2.4 Proportional reopen and request-funded cold materialization | Planned |
+| C2.5 Exact physical accounting and funded backing | Planned |
+| C2.6 Work budgets and exact work accounts | Planned |
+| C2.7 Growth campaigns | Planned |
+| C2.8 Durable World history and branch retirement | Planned; starts after merging C3's progress |
 
 ### Track C items
 
@@ -310,6 +323,185 @@ case. See [the adversarial constraint](#adversarial-constraint) for the broader
 C4 campaign and the existing [verification tiers](#verification-tiers-every-phase)
 for promotion. Update the existing Host recovery and Native component guides
 when the corresponding behavior lands.
+
+### C2 implementation and acceptance slices
+
+C2 makes cost and bounds certifiable. Every C2 claim is a counted measure that
+can fail: work units, allocation bytes, reads, pins, frames or bytes on the
+medium. No C2 court asserts wall-clock time (Iteration Law 22), and growth
+courts sit under a `cost` path segment (Iteration Law 15). Budgets, funding and
+accounting live in their owning crate. A C2 court restores its moved original
+in full, from the `restore from <sha>:<path>` reference in its ledger entry,
+and runs it against the current owners and genuine owned media; the retired
+runtime-discovery adapters, fixed-generation selection and local provider
+adapters are never revived. Where a moved court needs a physical observation
+(resident census, pin count, allocation identity) that the owner no longer
+exposes, the owner supplies it as a counted, read-only observation in the same
+crate. Exact-equality courts stay exact; a court that fails on the current tree
+is fixed at its owner, never refitted to the observed value.
+
+- **Placement.** A restored court goes to its owner's court crate (Iteration
+  Laws 2 and 3), and a growth court goes under that crate's `cost/` segment. It
+  reaches the owner through the public testkit and the owner's counted
+  read-only observations, over genuine owned media: the testkit's
+  `TestDurableMedium`, or the owner's own Memory placement for a claim with no
+  physical-medium content. A restored court stays in `src/` only when it tests
+  module-private logic, as Iteration Law 2 allows; no
+  `src-court-baseline.json` row is added.
+- **Restore reference.** Where the ledger records a later refresh reference
+  for the same file (the `22e638d638` integration protocol restoration
+  refreshes), restore from the refresh.
+- **Wall-clock predicates.** A moved original that asserts elapsed time keeps
+  the measure that predicate stands for: the timing comparison becomes the
+  counted work, allocation or reads per window it bounds, or it is removed with
+  the guarantee that replaces it named under `test-suite-simplify`. A court that
+  can pass or fail with machine load is not restored as such.
+
+The slices run in the order below. World durable history and branch retirement
+comes last: C3 also changes World recovery, so C2.8 starts only after merging
+C3's progress (`origin/m3/cleanup-c3`), and keeps its World edits minimal and
+additive. Each slice names the ledger entries it restores; together they cover
+every C2 entry in this file. Fourteen C4 roots also carry C2 cost, custody or
+residency guards: the six lifecycle lock-order roots, the two reservation-wait
+roots, the four branch-transition race roots,
+`divergent_mirror_partition_rebuilds_cross_partition_adjacency_after_reuse` and
+`managed_fork_refusal_and_success_drop_lookup_outside_native_coordination`.
+They stay C4's to restore; C2 supplies the counted observations their C2
+guards read, so C4 can restore them unchanged.
+
+#### C2.1 — Frame and future size budget lane
+
+A tool lane, first because it is self-contained:
+`python scripts/ci/frame_budget.py run`. It builds the declared roster with
+the committed profiles, takes executables only from that build's own cargo
+artifact messages, and refuses an executable whose PDB identity (RSDS GUID and
+age) does not match it. It then parses the x64 unwind metadata
+(`.pdata`/`UNWIND_INFO`), attributes each function's fixed frame allocation to
+its symbol, and fails when a function of a declared owner crate (`worth_*` and
+the consumer examples) exceeds the ceiling. A future held by value occupies
+its holder's frame, so async state machines are covered; the lane bounds
+per-function frames, not total stack depth or heap-held futures. The ceiling
+and roster are declared in `scripts/ci/frame_budget.json`. The lane measures
+Windows x64 binaries, because the binding stack is the 1 MiB Windows main
+thread, and refuses on other platforms instead of passing. It is a Tier-3 lane,
+and a Tier-2 lane when the diff changes its script or configuration. The
+large-frame census of 2026-11-06 is reduced to the ceiling at the owners, by
+boxing large values or variants and splitting inlined phase chains, never by a
+bigger stack, `RUST_MIN_STACK`, a thread or a profile change.
+
+| Evidence | Acceptance |
+|---|---|
+| Lane self-test | Plain-Python unit fixtures for the unwind parser cover a frameless leaf, a fixed allocation, a large allocation and a chained unwind record. The over-ceiling refusal names the function, crate, binary and size, and an executable whose PDB identity does not match refuses. |
+| Census | The lane runs over the declared roster: the three examples, consumer-root, the Bank court and one Root, Query and Store court binary. Before and after counts are recorded in `target/lane-evidence/c2-frame-census.md`. After this slice no `worth_*` function exceeds the ceiling. |
+| Ceiling | The ceiling is 256 KiB: a quarter of the 1 MiB Windows default main-thread stack, the smallest stack a consumer calls WORTH on, and a sixteenth of the 4 MiB red zone `worth_execution::run_with_execution_stack` guarantees at heavy public operations. Court and example functions are `worth_*` functions and meet it too. |
+
+#### C2.2 — Graceful close without the maintenance deadline
+
+Close maintenance's 60-second deadline is a timing trigger. Close capture and
+automatic upkeep run on the Home's maintenance allowance: counted work and
+memory, cancelled only by the Home's retirement. The closing request's own
+stops apply at close's consult points around the capture. No wall-clock
+maintenance deadline exists to refuse a graceful close: it is removed by clean
+cutover, not raised, and the type carries no timeout.
+
+| Evidence | Acceptance |
+|---|---|
+| Close court | A close whose capture exceeds the maintenance work allowance still returns `Closed`, reporting the typed work stop as its failed checkpoint (D11, D12), and the next open replays the retained tail to the same acknowledged state. |
+| Type and callers | `ApplicationHomeCheckpointLimits` carries no maintenance timeout and the maintenance request has no deadline; every caller and guide migrates in the same change. No graceful-close court can pass or fail because of elapsed time. |
+
+#### C2.3 — Automatic triggers and the cross-owner capture cut
+
+D12's track-C half: the threshold trigger checkpoints while operations
+execute. World's checkpoint owner freezes its exact root and open-custody
+snapshot, plus the external Native component leases that snapshot needs, and
+retains them through Home manifest selection. Later World publications remain
+journal tails instead of refusing. Capture selects exact Native component
+obligations at one owner capture boundary under concurrent acquire and
+release, without inheriting the previous checkpoint's physical union.
+Includes C1.3's deferred concurrent-capture growth bounds.
+
+| Evidence | Acceptance |
+|---|---|
+| Trigger court | Count and byte thresholds each trigger exactly one automatic checkpoint, with its coverage at the observed journal heads, while a business operation is in flight. Publication that overlaps capture is admitted as a tail, not refused `Busy`. |
+| Capture-cut courts | An attempt executing or loaned during capture is either retained with World's successor component or the cut refuses with its typed reason; artifact bytes never stand in for root custody. Capture pins are released before Native `prepare_close`. Reopen from that checkpoint plus tails recovers the reference state. |
+| Restored ledger entries | `selected_ack` (both campaigns) and the two delayed-selection variants; `completing_an_older_capture_cannot_replace_the_compacted_transition_basis`; `native_custody_correction_last_actual_capture_abandonment_releases_shared_root_custody`; `native_custody_correction_cross_lane_acquire_release_has_one_actual_capture_cut`; `native_custody_correction_current_lane_inventory_is_collected_inside_actual_cut`; `native_checkpoint_retains_all_admitted_capture_owners_and_restores_editable_truth`; `unpublished_client_keys_leave_checkpoint_dictionary_equal_and_published_keys_restore`; `fresh_source_keeps_actual_runtime_root_and_installed_schema_for_complete`; the C2 portions of `recorded_component_checkpoint_*`, `recorded_original_retirement_preserves_both_leases_across_busy_and_stop` and its fixture closure; the snapshot-handle census portions of the three `checkpoint_transition` tests; `repeated_native_captures_do_not_retain_checkpoint_images`; `repeated_edits_checkpoint_only_the_live_index_payload`; `cold_complete_recapture_preserves_original_index_generations_and_live_tail`. |
+
+#### C2.4 — Proportional reopen and request-funded cold materialization
+
+Reopen work is proportional to the manifest, the bounded tails and the
+demanded root and artifact material, never to history. Cold material is
+materialized only on a request that funds it. P-A's funding (on master since
+`e4d3b01c8d`) lands here as certified behavior. Residency, pin and dictionary
+observations the moved private courts need come from the Native owner as
+counted read-only observations.
+
+| Evidence | Acceptance |
+|---|---|
+| Reopen growth court | Reopening a Home with 10 and with 10,000 historical commits behind its checkpoint, and an equal tail, costs equal counted reopen work and reads. Tails of three lengths with equal differences show equal cost increments, so tail cost is linear. |
+| Restored ledger entries | `reclose_before_any_image_demand_keeps_the_selections_the_image_carried` and its carried-only fixture; the complete physical cold-locality campaign (`current_custody_contacts_only_the_touched_publication_and_leaves_other_regions_cold`); the generation-selection counter remainder; the pinned-reader restoration remainders; `checkpoint_restore_protects_published_lineage_identities_in_each_lane` and `inflight_tail_replay_resumes_after_the_largest_durable_lineage_values`; the four index, merge, bulk and empty-head remainders at `622f101e99`; the envelope-residency, symbol-frontier, retained-export skip and structural-identity roots at `86e84dc5cd`; `equal_exact_root_reuses_the_readmitted_partition_substrate`; the B2 split's `tail_replay_consumes_canonical_reused_record_allocation`; the associated-effects and caller-association residency portions; `a_recovered_runtime_publishes_its_next_commit_at_the_next_position`; `checkpoint_size_tracks_branch_state_not_covered_transitions`; `checkpoint_recovery_readmits_shared_root_once_for_sibling_heads`; `durability_contract_checkpoint_tail_recovery_preserves_post_checkpoint_commits`; the `f9f15bf8c8` reopen roots (`replay_reads_only_the_gap_after_its_checkpoint`, `durability_tail_replay_releases_each_commit_snapshot_beyond_live_capacity`, `native_field_text_checkpoint_readmission_denial_keeps_bytes_and_target_root_intact`, the three record-allocation recovery roots, `an_attachment_the_medium_moved_out_of_publishes_nothing`); `replay_pin_of_a_cold_partition_is_typed_and_has_no_effect`, `resident_pin_custody_refuses_unread_mirror_frames_after_exact_source_admission`, `selected_branch_views_preserve_cold_probe_and_demand`; every C2 cold-residency entry from the lineage matrices through `complete_index_selections` (`ea2ffee250`, `427700edd0`, `81d41f5575`, `1403ddb275`, `8283728aff`, `14e282569e`, `3fa8da0cb4`), including the restored `resident_replay_pins` and `LineageSubsystem::node` probes; the Batch 1 cold entries `cold_selected_index_refresh_preserves_budget_gate_and_reads_head_without_history`, `shared_history_custody_refuses_unfunded_admission_then_survives_until_the_last_basis_drops` and `checkpoint_image_roots_build_cold_and_incremental_indexes_without_canonical_body_reads`; both `cold_inline_bytes_*` courts and the `selected_source` fixture closure. |
+
+#### C2.5 — Exact physical accounting and funded backing
+
+Physical accounting counts each distinct allocation once. An allocation
+visitor sees through shared nodes and values, inspection gains a new version
+for exact deduplicated backing of nested persistent aspects, and full region
+inventories and reclamation counters refuse an unrepresentable bound instead
+of saturating. Every funded value keeps its original request's bill until its
+last owner drops, then refunds it exactly.
+
+| Evidence | Acceptance |
+|---|---|
+| Sharing court | Two Extras sharing one aspect map contribute the shared backing once, and the rows sum to an allocator-observed union. An unrepresentable inventory total refuses with a typed overflow. |
+| Exact-accounting reds | First record, in the deduplicated-backing ledger entry, the 24 exact-accounting and cost-equality courts that were red after the master merge, each with its path and red cause from the integration ledger (`merge-cleanup-reds.md`, recoverable at `ff73e2304b^:target/lane-evidence/`). Then classify each with its reason: exact-equality courts restore and pass; bound-at-least-actual courts stay and pass. |
+| Retained-root holder | Identify, at its owner, the holder of the historical roots that producer succession's shrink invoice found retained (roots 4–9, `d13-retirement-census-attribution.md`). If the holder is Native, fix it here and restore the invoice in this slice; only if it is World's retired or inherited occurrences does the invoice move to C2.8. |
+| Restored ledger entries | The deduplicated nested-backing claim and its inspection wording; the shared-process exact memory campaign; the Batch 1 funding entries (`content_durable_artifact_*` ×3, `original_kind_custody_survives_successor_basis_checkpoint_tail_and_reopen`, `graph_relation_preparation_retains_its_funding_and_cannot_reset_the_entity_meter`, `unfunded_validated_proposal_backing_refuses_and_releases_original_custody`, `canonical_artifact_accounting_excludes_nested_diagnostic_perturbation`, `memory_frame_quota_and_cancel_refuse_before_position_or_head`, `clearing_reconstructed_last_aspect_retains_no_state_bill`, `funded_extra_refuses_copy_and_replacement_before_growth`, `repeated_dag_reachability_reuses_scratch_under_the_same_finite_policy`, both `controlled_field_lowering_*` closures, `cleared_entity_and_relation_extras_keep_only_their_fixed_original_bills`); the `86e84dc5cd` artifact, strategy-readmission, shared-readmission and snapshot-cleanup roots; the memory-frame old-layout portion; the B2 retention census, inspection bundle and managed field-text entries; both `controlled_resident_cell_*` charge courts; `request_root_refusal_preserves_original_and_releases_partial_backing`; `publication_cost_distinguishes_new_and_reused_schema_authority`; the `f9f15bf8c8` retention and index-generation roots (`branch_roots_with_one_schema_deduplicate_the_durable_carrier`, the derived-index reader and reclamation roots, `repeated_global_same_basis_builds_reclaim_duplicates_but_keep_pinned_root`, `durability_contract_branch_heads_do_not_mutate_legacy_record_pins`); the three copy-on-write and publication-footprint courts; the private fixture funding splits, handler-key custody split, selected-payload funding split and `memory_original_frame_survives_export_checkpoint_and_last_alias`. |
+
+#### C2.6 — Work budgets and exact work accounts
+
+One work account bounds each request across its entries; a charge is exact,
+and one unit short stops before any effect with its typed owning cause. The
+complexity declarations whose proofs moved out are Verified again with their
+registered proofs.
+
+| Evidence | Acceptance |
+|---|---|
+| Work-prefix sweep | For a healthy operation, every real charged prefix rerun one unit short ends in the terminal of its typed owning cause, with no effect. The sweep lives under a `cost/` segment, records the number of prefixes it executed, and each replay costs what its prefix costs, so it finishes inside the ordinary kill without a raised deadline. |
+| Restored ledger entries | The parameter exact-work campaign; `conditional_operation_work_stop_terminal_matches_its_typed_cause`; both `temporal_identity_work_is_cold_or_fresh_admission_only` wrappers and their shared campaign; both `one_work_account_*` courts and the original-account invoice remainder; `positioned_agreement_uses_original_work_budget_and_preserves_authoritative_digest`; `content_original_field_capture_charges_real_aspect_count_and_key_bytes`; `entity_boundary_refuses_wrong_model_kind_and_original_request_limits`; `ownership_observation_preserves_work_and_memory_refusals`; the four `checkpoint_stage` courts; the B2 descriptor-continuity and schema-mismatch counters; the merge instrumentation halves and the verification and topology-detection counter roots; the five `complexity_budget_*` roots; the Home-step invoice campaign; the `runtime.merge.*` metadata and the four deferred complexity declarations, with the universal nonempty-proof assertion. |
+
+#### C2.7 — Growth campaigns
+
+Each growth court compares counted work, reads or bytes across a small and a
+large unrelated population and asserts the stated growth law. No population is
+reduced and no limit raised to make a campaign fit.
+
+| Evidence | Acceptance |
+|---|---|
+| Installation at scale | Neither large installation's outcome can depend on elapsed time or on the size of the unrelated population. The component-island installation's `CanonicalArtifactEncoding(SizeLimit)` refusal is fixed by bounding the installation artifact to the installed delta, not by a raised limit. The logical-rule installation's `CandidateLifetimeExpired` refusal is fixed by bounding that candidate with counted work instead of the 30-second wall-clock lifetime, not by a longer lifetime. |
+| Restored ledger entries | The component-island growth campaign; the logical-rule acquisition growth campaign; `restoration_header_is_validated_once_and_work_grows_linearly` and `public_create_grow_retire_restore_relation_scale_report`; the root final-partition growth courts (`fixed_kind_read_is_flat_in_unrelated_regions_and_history`, both lazy-pin courts' C2 parts, `equal_payload_jumps_charge_the_same_receiving_owner_work_at_near_and_distant_history_nodes`, both `count_only_read_*`, both `renewed_cell_symbol_admission_*`, `a_fixed_edit_does_not_pay_the_previous_large_edit_again`); `embedded_restore_allocation_grows_linearly_in_relation_bearing_regions`; `synthetic_native_restore_and_image_digest_benchmark`; the twelve adapter-dependent performance matrices and their campaign fixtures, each timing predicate converted under the wall-clock rule above. |
+
+#### C2.8 — Durable World history and branch retirement
+
+Starts after merging C3's progress. World history becomes durable and
+authoritative: durable branch creation and retirement publish through World's
+journals, and reclamation disposes of retired and inherited occurrences under
+the same durable history. Track H keeps funded disposal of released unpublished
+originals. Both Refused rows are lifted completely and their variants deleted:
+`DurableBranchPublicationRequired` from `RuntimeWorldBranchAdmissionDenial`
+(creation) and `RuntimeWorldBranchRetirementDenial` (retirement), with the
+Query and Bank mappings that name it, and `AuthoritativeDurableHistory` from
+`HistoryReclamationDenial`. The build-an-application guide and the Query Host
+README sections that promise this to C2 are updated.
+
+| Evidence | Acceptance |
+|---|---|
+| Creation journey | A durable branch is created (Native and Signal forks), the Home is closed and reopened, and the branch and its fork survive with their history; a quiescent kill after creation reopens to the same state. |
+| Retirement journey | A durable branch is retired, the Home is closed and reopened, and the branch stays retired with its history readable to the retained horizon; a quiescent kill after retirement reopens to the same state. |
+| Disposal court | Retired and inherited occurrences are disposed exactly once under durable history; their roots and envelopes are released, counted, and a later reopen does not resurrect them. |
+| Restored ledger entries | `a_reused_relation_slot_keeps_retention_readmission_valid` and `mixed_retirement_replacement_reuse_and_cold_roundtrips_keep_region_integrity`; producer succession's exact physical shrink invoice if C2.5 found World to be its holder; the refusal assertions in the current `world_branch_retirement` and `world_original_observation` courts become success assertions. |
+
+C2 slice checks run the focused owner tests and the named courts; T2
+(diff-reachable lanes) runs before landing. Update `docs/application-home.md`
+and the related guides when each behavior lands.
 
 ### Moved courts
 
