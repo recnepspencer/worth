@@ -1749,7 +1749,7 @@ worth-ui-host-headless
 worth-ui-certification
   -> worth-ui
   -> worth-ui-host-contract
-  -> worth-query-replay when Query reconstruction is required
+  -> worth-query-replay for certification-cost evidence
 
 apps/*
   -> worth-ui

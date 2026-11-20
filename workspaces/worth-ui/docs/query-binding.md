@@ -39,7 +39,7 @@ The governing Query audience crates are:
 
 - `worth-query-decl` for application declarations and requirements;
 - `worth-query-host` for hosted installation and progression; and
-- `worth-query-replay` only for certification-owned replay or reconstruction.
+- `worth-query-replay` only for certification-owned cost evidence.
 
 Ordinary UI code does not use `worth-query-replay`, and product applications do
 not import the raw Query engine as a convenience surface.
