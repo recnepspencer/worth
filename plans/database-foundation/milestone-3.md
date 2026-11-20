@@ -160,7 +160,7 @@ unclean Home open with `UncleanRecoveryUnsupported` (D18).
 | C1.2 Unresolved fate, release and fork custody | Mostly done. Open: fresh same-key execution after a durable no-effect release, and the M2 unresolved fork |
 | C1.3 Exact Native components and selective readmission | Done. Selective readmission past an unrelated damaged body is proved at the Native owner; on the filesystem, Store's physical recovery refuses any damaged WAL |
 | C1.4 Program transition resume and drift | In progress: unclean transition effects recover and Store's D18 gate is removed; resuming a transition killed after its durable intent is not done |
-| C1.5 Home open refusals and interrupted discard | Done. Open note: after a refused discard the live Home is shown to close, not to keep serving |
+| C1.5 Home open refusals and interrupted discard | Done. Open notes: after a refused discard the live Home is shown to close, not to keep serving; `ConflictingOpenAttempt` has no test |
 
 ### Track C items
 

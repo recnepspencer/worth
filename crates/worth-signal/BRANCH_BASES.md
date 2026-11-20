@@ -510,8 +510,10 @@ Do not infer liveness from graph diagnostic output; ask the runtime owner.
 ## Current Limits
 
 - Branch state, descriptors awaiting readmission, and retention accounting are
-  memory-resident in standalone Signal. Under an application Home, Signal's
-  authored state is durable and readmitted on reopen; derived values recompute.
+  memory-resident, and admitted bases and retention leases belong to one
+  process in every configuration. Under a Directory application Home, Signal's
+  authored state is journaled and readmitted on reopen; derived values
+  recompute, and owners reacquire bases and retention under fresh authority.
 - Automatic rebase, distributed reference movement, and offline synchronization
   are not supported.
 - Signal and Relational operations do not form a cross-owner atomic commit.
@@ -602,9 +604,10 @@ still obtain that governed receipt. The surviving ledger is observability, not
 a promise that the retained state can still be produced.
 
 All Signal branch catalog state, admitted bases, stored branch snapshots, and
-retention accounting remain memory-resident in standalone Signal. Under an
-application Home, Signal's authored state is durable and readmitted on reopen.
-The port does not expose a serializable authority token or persistence promise.
+retention accounting remain memory-resident, and admitted bases and retention
+leases belong to one process. Under a Directory application Home, Signal's
+authored state is journaled and readmitted on reopen; owners reacquire bases and
+retention under fresh authority. The port does not expose a serializable authority token or persistence promise.
 
 ## Related Docs
 

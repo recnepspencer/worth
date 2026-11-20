@@ -80,7 +80,7 @@ workflows, consume the Home with
 `home.retain_workflow_spec(installed_spec, signing_owner)`. It returns a
 `host::WorthQueryWorkflowApplicationHome` with the same lifecycle, or a
 `host::WorthQueryWorkflowHomeBindingRefused` that gives back the Home, the
-vocabulary and the signing owner.
+installed spec and the signing owner.
 
 ## Initialize once, reopen many times
 
@@ -196,8 +196,9 @@ If the recorded program or schema differs from the request, opening refuses and
   is no supported way to open such a Home yet; a development Home can be
   discarded.
 - **Which accessor reports it:** `refused.unclean_recovery_unsupported()`
-  returns `Some(..)` for a Relational (Native) effect and for an external
-  dispatch attempt that has no recorded observation (owner `Dispatch`). A Signal
+  returns `Some(..)` for a Relational (Native) effect found by Store's tail scan
+  and for an external dispatch attempt that has no recorded observation (owner
+  `Dispatch`). A Signal
   effect without its occurrence, or an unresolved branch creation, also refuses
   before service, but arrives inside the World readmission cause: the accessor
   returns `None` and `refused.detail()` shows
