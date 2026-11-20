@@ -175,8 +175,8 @@ delegates = []
 court = "worth-query-court-decl-host"
 frontier = ["worth-query-decl", "worth-query-host"]
 area = "decl-host"
-owners = ["producer_succession", "producer_aggregate_succession", "certification", "aspect_patterns", "cost", "determinism", "effect_order", "content_door", "inspection_refusal"]
-delegates = ["application_graph/canonical_transition", "application_graph/correction", "granular_invalidation", "native_graph_input_guards", "program_example_authority", "runtime_world_branching", "temporal_conditional_oracle_parity"]
+owners = ["producer_succession", "producer_aggregate_succession", "certification", "aspect_patterns", "aspect_absence", "cost", "determinism", "document_history", "effect_order", "content_door", "inspection_refusal", "recorded_original_descriptors", "relation_only_inverse", "source_content_identity"]
+delegates = ["application_graph/canonical_transition", "application_graph/correction", "granular_invalidation", "managed_phase_storage", "native_graph_input_guards", "program_example_authority", "runtime_world_branching", "temporal_conditional_oracle_parity"]
 
 # Host integration worlds (certification fixtures, dependent dispatch, Host
 # application surfaces) formerly also reached the retired Query engine.
@@ -184,7 +184,7 @@ delegates = ["application_graph/canonical_transition", "application_graph/correc
 court = "worth-query-court-decl-host-integration"
 frontier = ["worth-query-decl", "worth-query-host"]
 area = "integration"
-owners = ["certification/application_graph/canonical_transition", "certification/application_graph/correction", "certification/granular_invalidation", "certification/native_graph_input_guards", "certification/program_example_authority", "certification/runtime_world_branching", "certification/temporal_conditional_oracle_parity", "dependent_dispatch", "execution", "host"]
+owners = ["certification/application_graph/canonical_transition", "certification/application_graph/correction", "certification/granular_invalidation", "certification/managed_phase_storage", "certification/native_graph_input_guards", "certification/program_example_authority", "certification/runtime_world_branching", "certification/temporal_conditional_oracle_parity", "dependent_dispatch", "execution", "host"]
 delegates = []
 
 [[splits]]
