@@ -48,8 +48,9 @@ pub use crate::mvcc::{
 pub use crate::mvcc::{
     RelationalAuthoredCoupledCandidate, RelationalAuthoredCoupledOwners,
     RelationalAuthoredCoupledProducerAssembly, RelationalAuthoredCoupledTransaction,
-    RelationalAuthoredRestoration, RelationalAuthoredRetirement, RelationalCoupledAssemblyFailure,
-    RelationalCoupledAuthoredPublication, RelationalCoupledAuthoredSourceEffects,
+    RelationalAuthoredRestoration, RelationalAuthoredRetirement, RelationalCoupledAppendTouches,
+    RelationalCoupledAssemblyFailure, RelationalCoupledAuthoredPublication,
+    RelationalCoupledAuthoredSourceEffects, RelationalCoupledChainOverlay,
     RelationalCoupledContribution, RelationalCoupledProducerContinuation,
     RelationalCoupledProducerPosture, RelationalDeclaredCoupledOwner,
     RelationalHistoricalOutputSelection, RelationalPerformedOutputPublications,

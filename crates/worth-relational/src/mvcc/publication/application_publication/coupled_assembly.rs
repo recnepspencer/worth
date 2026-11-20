@@ -41,6 +41,8 @@ mod stage;
 pub use producer_posture::RelationalCoupledProducerPosture;
 mod scoped_preparation;
 mod succession;
+mod touches;
+pub use touches::{RelationalCoupledAppendTouches, RelationalCoupledChainOverlay};
 mod writer_custody;
 pub(crate) use completion::CoupledAppliedCandidate;
 pub use completion::RelationalCoupledAuthoredPublication;

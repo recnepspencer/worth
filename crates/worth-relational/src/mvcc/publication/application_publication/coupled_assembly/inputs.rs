@@ -2,13 +2,15 @@
 use super::*;
 use crate::publication::data::AuthoredRetirementRefusal as Cause;
 
+mod settlement;
+
 /// Request-local carriage of an existing Native publication or an admitted part.
 /// Descriptive routes alone cannot construct this input or enroll a writer.
 #[derive(Clone, Debug)]
 pub struct RelationalRequiredOutputInput {
-    proposal: RelationalMutationProposalIdentity,
-    issuance: Arc<InputIssuance>,
-    origin: InputOrigin,
+    pub(super) proposal: RelationalMutationProposalIdentity,
+    pub(super) issuance: Arc<InputIssuance>,
+    pub(super) origin: InputOrigin,
 }
 
 #[derive(Debug)]
@@ -23,7 +25,7 @@ pub(crate) struct RequiredOutputInputs {
 }
 
 #[derive(Clone, Debug)]
-enum InputOrigin {
+pub(super) enum InputOrigin {
     Current(RelationalRequiredOutputPublication),
     Applied(usize),
     Restored {

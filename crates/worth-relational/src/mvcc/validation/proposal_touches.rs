@@ -259,6 +259,81 @@ impl ValidatedRelationalProposal {
         preparation::project(self, execution, false)
     }
 }
+
+/// Project semantic touches directly from an applied suffix's normalized intents
+/// and current working state, charged to `execution` (PR C append-time touches).
+pub(crate) fn project_applied_intents(
+    execution: &ExecutionRequest<'_, '_>,
+    state: &crate::storage::overlay::WorkingState,
+    intents: &[crate::transactions::data::MutationIntent],
+) -> Result<Vec<ValidatedMutationTouch>, crate::transactions::data::TransactionCommitError> {
+    use crate::execution::request_stage::checkpoint;
+    use crate::transactions::data::{EntityMutationIntent, MutationIntent};
+
+    let map_err = |err: ValidatedMutationTouchProjectionError| match err {
+        ValidatedMutationTouchProjectionError::Execution(cause) => {
+            crate::transactions::data::TransactionCommitError::execution(cause)
+        }
+        ValidatedMutationTouchProjectionError::Allocation(denial) => {
+            crate::transactions::data::TransactionCommitError::conflict(
+                crate::transactions::data::CommitConflict::new(
+                    crate::transactions::data::ConflictClass::ExecutionAllocationDenied { denial },
+                ),
+            )
+        }
+        other => crate::mvcc::origin_denial(format!("applied touch projection failed: {other:?}")),
+    };
+    let mut touches = Vec::new();
+    execution
+        .run_native_with_checkpoint(|context| {
+            let mut charge = |units: u64| {
+                checkpoint(context, units).map_err(|stop| collection::execution(stop.into()))
+            };
+            let mut sink = collection::TouchCollection {
+                extent: collection::Extent::default(),
+                backing: Some(TouchBacking {
+                    touches: Vec::new(),
+                    structs: Vec::new(),
+                    _memory: None,
+                }),
+                failure: None,
+                checkpoint: &mut charge,
+            };
+            let mut work = ValidatedMutationTouchProjectionWork::default();
+            for intent in intents {
+                (sink.checkpoint)(1).map_err(map_err)?;
+                match intent {
+                    MutationIntent::Entity(EntityMutationIntent::ApplyAspectPatch(spec)) => {
+                        let kind = intent_projection::entity_kind(state, spec.entity_id, &mut work)
+                            .map_err(map_err)?;
+                        intent_projection::project_entity_aspect_patch(
+                            kind,
+                            &spec.aspect_patch,
+                            &mut sink,
+                        );
+                    }
+                    _ => intent_projection::project_intent(intent, state, &mut sink, &mut work)
+                        .map_err(map_err)?,
+                }
+                if let Some(failure) = sink.failure.take() {
+                    return Err(map_err(failure));
+                }
+            }
+            let backing = sink.backing.expect("owned touch backing");
+            touches = backing.touches;
+            let comparisons = touches.len().saturating_mul(
+                usize::BITS as usize - touches.len().max(1).leading_zeros() as usize,
+            );
+            checkpoint(context, comparisons as u64 + 1)
+                .map_err(crate::mvcc::publication::custody_stop)?;
+            touches.sort_unstable();
+            touches.dedup();
+            Ok::<_, crate::transactions::data::TransactionCommitError>(())
+        })
+        .map_err(crate::mvcc::publication::custody_stop)?
+        .0?;
+    Ok(touches)
+}
 #[cfg(test)]
 #[path = "proposal_touches/tests.rs"]
 mod tests;

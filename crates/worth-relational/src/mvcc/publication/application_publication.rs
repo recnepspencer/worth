@@ -24,8 +24,9 @@ mod ownership_reach;
 pub(crate) use coupled_assembly::{BoundAuthoredCoupling, RequiredOutputInputs};
 pub use coupled_assembly::{
     RelationalAuthoredCoupledCandidate, RelationalAuthoredCoupledProducerAssembly,
-    RelationalAuthoredCoupledTransaction, RelationalCoupledAssemblyFailure,
-    RelationalCoupledAuthoredPublication, RelationalCoupledAuthoredSourceEffects,
+    RelationalAuthoredCoupledTransaction, RelationalCoupledAppendTouches,
+    RelationalCoupledAssemblyFailure, RelationalCoupledAuthoredPublication,
+    RelationalCoupledAuthoredSourceEffects, RelationalCoupledChainOverlay,
     RelationalCoupledContribution, RelationalCoupledProducerContinuation,
     RelationalCoupledProducerPosture, RelationalRequiredOutputInput,
 };

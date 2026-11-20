@@ -24,6 +24,10 @@ type Read = RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>;
 /// One route's chain in the candidate. Positions are physical: transaction
 /// batches and patch fragments are only ever appended before completion.
 pub(crate) struct Chain {
+    /// The candidate read immediately before the chain's head appended.
+    pub(crate) head_input: Read,
+    /// Cumulative certified touches of superseded rounds of this chain.
+    pub(crate) prior_touches: Vec<crate::mvcc::validation::ValidatedMutationTouch>,
     /// The latest round's transaction batches.
     pub(crate) batches: Range<usize>,
     /// Earlier rounds' batches, withdrawn once at completion.
@@ -125,7 +129,15 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             .changed_records
             .len();
         let batches_end = self.transaction.batches().len();
+        let prior_round_touches = crate::mvcc::validation::project_applied_intents(
+            execution,
+            &self.mutation.state,
+            &self.parts[index].commands.plan().merged_intents,
+        )?;
         let part = &mut self.parts[index];
+        part.chain.prior_touches.extend(prior_round_touches);
+        part.chain.prior_touches.sort_unstable();
+        part.chain.prior_touches.dedup();
         let mut records = std::mem::take(&mut part.records);
         execution
             .run_native_with_checkpoint(|context| {
