@@ -230,3 +230,44 @@ fn recorded_component_checkpoint_reexport_refuses_corrupt_original_source() {
     assert_eq!(medium.canonical_journal_reads(), journal_reads);
     assert_recorded_basis(&runtime, &basis, &recorded);
 }
+
+/// C1.3: only the selected subject's body is read. Losing an unrelated
+/// historical body leaves the selected readmission and its readback intact.
+#[test]
+fn recorded_component_checkpoint_readmits_the_selected_subject_without_an_unrelated_body() {
+    let host = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
+    let execution = &ExecutionRequest::serial(&host);
+    let original = original(execution, false);
+    let selected = original.before.clone();
+    let Target::Canonical(unrelated) = original.after.target() else {
+        panic!("the later history is canonical")
+    };
+    let unrelated = unrelated.position();
+    let medium = original.medium.clone();
+    drop(original);
+    let (runtime, authority) = recover(execution, &medium);
+    let member = selected_member(&medium, unrelated);
+    medium.drop_artifact(unrelated);
+    medium.refuse_member_read_for_test(member, RelationalStorageUnavailableCause::MissingMember);
+    let basis = authority
+        .admit_recorded_component(execution, &runtime, &selected)
+        .expect("the selected subject never reads the unrelated body")
+        .into_basis();
+    assert_recorded_basis(&runtime, &basis, &selected);
+    assert_eq!(
+        runtime
+            .owner_component_services()
+            .basis_port()
+            .export_recorded_retained_component(execution, &basis)
+            .unwrap(),
+        selected
+    );
+    let lease = runtime.retain_component_basis(&basis).unwrap();
+    let snapshot = runtime
+        .snapshots()
+        .snapshot_for_observation(&basis.observation())
+        .unwrap();
+    runtime.snapshots().release_snapshot(&snapshot).unwrap();
+    runtime.release_component_basis(lease).unwrap();
+    assert_eq!(medium.last_member_fault_for_test(), None);
+}
