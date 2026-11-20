@@ -141,12 +141,13 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         // creates, so its touches match the one-round answer) but applies them
         // lowered onto the chain's allocations.
         let recorded = if successor {
-            let recorded = crate::mvcc::OwnedNormalizedPlan::copy_for_request(
-                intents.plan(),
+            let recorded =
+                crate::mvcc::OwnedNormalizedPlan::copy_for_request(intents.plan(), execution)?;
+            intents = intents.lower_coupled_recreates(
+                &self.mutation.outcome.created_entities,
+                self.prepared.schema_authority.aspect_plans(),
                 execution,
             )?;
-            intents = intents
-                .lower_coupled_recreates(&self.mutation.outcome.created_entities, execution)?;
             Some(recorded)
         } else {
             None

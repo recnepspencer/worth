@@ -20,7 +20,7 @@ pub(crate) mod retained_entity_selection;
 mod round_denial;
 mod stale_targets;
 mod succession_record;
-pub(crate) use succession_record::succession_record;
+pub(crate) use succession_record::{restamp_succession_entity, succession_record};
 mod workspace;
 
 pub(crate) use canonical_deltas::{

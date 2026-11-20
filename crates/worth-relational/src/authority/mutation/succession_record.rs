@@ -108,3 +108,83 @@ fn updated(entity: EntityId, prepared: PreparedEntityAspectMutation) -> RecordMu
         authoritative_patch: Some(patch),
     }
 }
+
+/// Reset `entity`'s revision maps in `state` (and `delta_state` when the
+/// round materialized that slot) to `base`'s pre-chain maps (empty for
+/// `Created`), then re-stamp the folded `delta` at `version`.
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn restamp_succession_entity(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    state: &mut crate::storage::overlay::WorkingState,
+    delta_state: &mut crate::storage::overlay::WorkingState,
+    symbols: &mut dyn crate::runtime::MutationSymbolMeanings,
+    base: &impl CurrentPartitionAccess,
+    delta: &CanonicalRecordAspectDelta,
+    entity: EntityId,
+    version: crate::identity::data::VersionId,
+) -> Result<(), super::MutationApplyDenial> {
+    use crate::publication::patch::data::RecordStructuralChange;
+    use crate::storage::substrate::{
+        partition_of, slot_of, AspectVersions, EntityRecordKind, FieldRevisions,
+    };
+
+    let partition_id = partition_of::<EntityRecordKind>(&entity);
+    let slot = slot_of::<EntityRecordKind>(&entity);
+    let (base_aspects, base_fields) = if delta.structural_change == RecordStructuralChange::Created
+    {
+        (AspectVersions::new(), Some(FieldRevisions::new()))
+    } else {
+        let base_partition = base.get_current_partition(partition_id);
+        let aspects = base_partition
+            .as_ref()
+            .and_then(|p| p.entity_arena().aspect_versions_at(slot))
+            .cloned()
+            .unwrap_or_default();
+        let fields = base_partition
+            .as_ref()
+            .and_then(|p| p.entity_arena().field_revisions_at(slot))
+            .cloned();
+        (aspects, fields)
+    };
+    let stop = |cause: crate::execution::RelationalExecutionDenialCause| {
+        super::MutationApplyDenial::Commit(TransactionCommitError::execution(cause.into()))
+    };
+    state
+        .get_partition_mut_for_request(partition_id, execution)
+        .map_err(stop)?
+        .entity_arena
+        .replace_revision_maps_for_request(slot, base_aspects, base_fields, execution)
+        .map_err(stop)?;
+    let admitted = super::delta_symbols::AdmittedDeltaSymbols::admit(delta, symbols)?;
+    super::aspect_versions::write_aspect_versions_for_delta_for_request(
+        execution, state, &admitted, version,
+    )
+    .map_err(stop)?;
+    super::field_versions::write_field_versions_for_delta(execution, state, &admitted, version)
+        .map_err(stop)?;
+    // Share the freshly folded persistent revision maps with `delta_state`
+    // when this round materialized the slot, so `advance_pin` publishes the
+    // same folded stamps into the candidate pin.
+    if delta_state
+        .get_current_partition(partition_id)
+        .and_then(|p| p.entity_arena().aspect_versions_at(slot))
+        .is_some()
+    {
+        let partition = state
+            .get_current_partition(partition_id)
+            .expect("folded entity partition was just stamped in state");
+        let aspects = partition
+            .entity_arena()
+            .aspect_versions_at(slot)
+            .cloned()
+            .unwrap_or_default();
+        let fields = partition.entity_arena().field_revisions_at(slot).cloned();
+        delta_state
+            .get_partition_mut_for_request(partition_id, execution)
+            .map_err(stop)?
+            .entity_arena
+            .replace_revision_maps_for_request(slot, aspects, fields, execution)
+            .map_err(stop)?;
+    }
+    Ok(())
+}

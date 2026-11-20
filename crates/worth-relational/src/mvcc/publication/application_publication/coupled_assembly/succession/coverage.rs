@@ -10,7 +10,9 @@ pub(super) type Unit = (EntityId, AspectKey, Option<CanonicalFieldPath>);
 /// The entity an update or aspect patch writes.
 pub(super) fn entity_write(intent: &MutationIntent) -> Option<EntityId> {
     match intent {
-        MutationIntent::Entity(EntityMutationIntent::UpdateFields(update)) => Some(update.entity_id),
+        MutationIntent::Entity(EntityMutationIntent::UpdateFields(update)) => {
+            Some(update.entity_id)
+        }
         MutationIntent::Entity(EntityMutationIntent::ApplyAspectPatch(patch)) => {
             Some(patch.entity_id)
         }
@@ -74,7 +76,13 @@ pub(super) fn covered(
 }
 
 /// One canonical role: name, entity name, kind, posture, actual record.
-pub(super) type Role<'a> = (&'a str, &'a str, crate::identity::data::KindId, u8, EntityId);
+pub(super) type Role<'a> = (
+    &'a str,
+    &'a str,
+    crate::identity::data::KindId,
+    u8,
+    EntityId,
+);
 
 /// A posture's roles as one canonical set over actual records; `None` when a
 /// created target has no allocation.
