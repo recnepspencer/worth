@@ -39,7 +39,7 @@ write begins from a newly selected and admitted product occurrence.
 
 Declaration consumers use `worth_query_decl::facade`:
 
-- `application_schema::ApplicationExternalEffectPayload`
+- `application_schema::ApplicationExternalEffectBinding`
 - `application_schema::ApplicationExternalEffectProtocol`
 - `application_schema::WorthQueryExternalEffectCorrelationFamily`
 - `application_schema::ApplicationOperationDefinitionBuilder::external_effect`
@@ -338,45 +338,40 @@ separate typed value.
 <!-- illustrative -->
 ```rust,ignore
 // Illustrative: not compiled.
-use worth_foundational::facade::{
-    BoundaryProtocolIdentity, BoundaryProtocolVersion,
-};
-use worth_query_decl::facade::application_schema::{
-    ApplicationEffectPayload, ApplicationExternalEffectPayload,
-    ApplicationExternalEffectProtocol, WorthQueryExternalEffectCorrelationFamily,
+use worth_foundational::facade::{BoundaryProtocolIdentity, BoundaryProtocolVersion};
+use worth_query_decl::facade::{
+    application_schema::{ApplicationExternalEffectBinding, ApplicationExternalEffectProtocol},
+    worth_query_effect, worth_query_structured_value_binding,
 };
 
-struct InvoiceReady {
-    invoice_id: u64,
-}
+worth_query_structured_value_binding!(pub InvoiceReadyBinding for InvoiceReady {
+    identity: "billing.effect.invoice-ready.payload.v1"
+});
 
-impl ApplicationEffectPayload for InvoiceReady {
-    fn retained_bytes(&self) -> u64 {
-        8
-    }
-}
-
-impl ApplicationExternalEffectPayload for InvoiceReady {
-    const PROTOCOL: ApplicationExternalEffectProtocol =
-        ApplicationExternalEffectProtocol::new(
-            BoundaryProtocolIdentity::new("billing.invoice-ready"),
-            BoundaryProtocolVersion::new(1),
-        );
+impl ApplicationExternalEffectBinding for InvoiceReadyBinding {
+    const PROTOCOL: ApplicationExternalEffectProtocol = ApplicationExternalEffectProtocol::new(
+        BoundaryProtocolIdentity::new("billing.invoice-ready"),
+        BoundaryProtocolVersion::new(1),
+    );
     const MAX_EXTERNAL_BYTES: u64 = 8;
 
-    fn external_effect_bytes(&self) -> Vec<u8> {
-        self.invoice_id.to_be_bytes().to_vec()
+    fn external_effect_bytes(value: &Self::Value) -> Vec<u8> {
+        value.invoice_id().to_be_bytes().to_vec()
     }
 }
+
+worth_query_effect!(pub InvoiceReadyEffect for BillingSchema, payload InvoiceReadyBinding);
 ```
 
-The schema must also declare the typed emission and bind that emission to an
-external-effect correlation family with the operation definition's
-`external_effect` transition. A payload implementation alone does not create a
-dispatch lane.
+`InvoiceReady` and `BillingSchema` belong to the application. Bank's
+[death-notification effect](../../../../../worth-query-bank-world/crates/bank-domain/src/schema/estate/effects/death_notification.rs)
+is a compiled instance of this shape.
 
-Assume `InvoiceReadyEffect` is the schema's typed effect reference and
-`declared_aftermath` is its installed declaration contract. The operation
+The operation must also bind that effect to an external-effect correlation
+family with the operation definition's `external_effect` transition. A declared
+effect alone does not create a dispatch lane.
+
+Assume `declared_aftermath` is the installed declaration contract. The operation
 builder then makes both static choices before `finish()` becomes available:
 
 <!-- illustrative -->
@@ -536,31 +531,19 @@ restore creates different intent and cannot promise historical replay. Do not
 substitute `without_source` for a required query source, retain a foreign old
 observation, or change the key/source to force a match.
 
-When the original intent matches and its live receipt is absent,
-`WorthQueryApplicationMutationOutcome::PreviouslyCommitted` carries
-the sealed `WorthQueryHistoricalApplicationCommit` and its `commit_id()`. This
-is a landed historical fact: the request commits nothing again. It carries no
-handler result, publication authority, workflow settlement authority, or live
-receipt. Current state under fresh authority does not establish that an ambiguous
-external effect never occurred. Reconcile the existing authoritative outcome
-through its native, domain or Store recovery owner as appropriate before choosing
-any new business operation. Do not automatically reissue an uncertain effect under
-a new key. Process-local owning handles and Store's durable restart responsibility
-are distinct; live owners are not serialized to recreate authority.
-
-Within-runtime owning retry and recovery continue to retain their original native
-custody. An owning operation preserves `PreviouslyCommitted` as terminal historical
-evidence: it does not rerun the handler, recover a handler result, or complete
-output settlement. Retain that terminal owner and close it with a fresh request;
-a refused close returns its custody.
+When the original intent matches and its live receipt is absent, the retry
+returns `WorthQueryApplicationMutationOutcome::RecoveredCommitted` with a
+`WorthQueryRecoveredApplicationCommitReceipt`. The request commits nothing
+again. The receipt is recorded data from the sealed owner artifacts: it carries
+no handler result, publication authority, workflow settlement authority or live
+output capability. Current state under fresh authority does not establish that an
+ambiguous external effect never occurred. Reconcile the existing authoritative
+outcome through its native, domain or Store recovery owner before choosing any new
+business operation. Do not automatically reissue an uncertain effect under a new
+key. Live owners are not serialized to recreate authority.
 
 In-process retries whose original receipt remains retained continue to
 return `AlreadyCommitted(receipt)`.
-
-Lower APIs that require a live receipt retain the typed
-`CommittedReceiptNotRetained { commit }` denial. Its `historical_commit()`
-accessor exposes the same descriptive fact; it cannot grant the missing
-authority or fabricate receipt evidence from durable identifiers.
 
 Split the application commit outcome with `landed()` before entering aftermath
 handling. A landed commit returns its receipt; every other terminal arrives as a

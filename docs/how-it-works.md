@@ -406,8 +406,9 @@ a `RelationalChangeReceipt`. A receipt cannot be built any other way, so
 holding one proves the checks passed. The API names no consumer: Relational
 does not know who reads it.
 
-**Today's limits.** Relational is memory-resident. Durability across
-restarts belongs to Store ([section 15](#15-durability-and-the-other-surfaces)).
+**Durability.** Relational serves from memory. Under a Directory application
+Home its commits are durable in Store before they are live, and it readmits from Store
+on reopen ([section 15](#15-durability-and-the-other-surfaces)).
 
 ### 6.2 Signal: derived computation
 
@@ -682,20 +683,26 @@ references, partial masks, paths and bindings remain exact. See
 <!-- illustrative -->
 ```rust,ignore
 // Illustrative: not compiled.
-let runtime = in_memory_program(
+let request = WorthQueryApplicationHomeRequest::new(
+    WorthQueryApplicationHomeLocation::Directory(path), // or MemoryOnly
     program,        // ValidatedApplicationProgram<Schema, Program>
+    roster,         // WorthQueryApplicationProgramRoster
     declaration,
     configuration,  // handlers, invariants, producers, conditional nodes
+    build,          // ApplicationBuildIdentity
     limits,         // WorthQueryApplicationLimits
     initial_state,
-)?;
+);
+let home = with_bootstrap_advancement(policy, |phase| request.open_in_advancement(&phase))??;
+let runtime = home.runtime();
 ```
 
-- `in_memory_program` installs an application with a program. This is the
-  ordinary path.
+- `WorthQueryApplicationHomeRequest` installs an application with a program into
+  an application Home. This is the ordinary path; see
+  [Use an Application Home](application-home.md).
 - `initial_state` is a closure that seeds the primary graph. Installation
-  calls it once, before the first publication, with three arguments and
-  expects `Ok(())` or a `WorthQueryPrimaryGraphInstallationDenial`:
+  calls it once, for a new Home only, before the first publication, with three
+  arguments and expects `Ok(())` or a `WorthQueryPrimaryGraphInstallationDenial`:
 
   <!-- illustrative -->
   ```rust,ignore
@@ -714,10 +721,8 @@ let runtime = in_memory_program(
   resolves installed names, such as a principal binding, for the seed. The
   types are exported from the host facade modules
   `application_contribution`, `primary_graph`, and `domain`, in that order.
-- `in_memory_rostered_program` supports several program revisions against one
-  installed schema.
-
-- `*_from_checkpoint` variants restore from a `WorthQueryApplicationCheckpoint`.
+- The roster (`WorthQueryApplicationProgramRoster::new().support(successor)`)
+  supports several program revisions against one installed schema.
 - Worked installs with real limits and a roster:
   [Build an Application §4](build-an-application.md#4-install-or-reopen).
 
@@ -948,7 +953,7 @@ program runtime first.
 | Lane | Use it when |
 |---|---|
 | `execute(allocation_policy)` | The runtime was installed without a program (`in_memory`). On a runtime installed with a program, it refuses every mutation with `ApplicationProgramRequired`. |
-| `execute_in_program(&program_runtime, allocation_policy)` | The runtime was installed with a program (`in_memory_program` or `in_memory_rostered_program`). This deliberate native lane executes under the selected program. The runtime reads which program the branch runs; the caller never names it. |
+| `execute_in_program(&program_runtime, allocation_policy)` | The runtime was installed with a program (for example from a Home's `runtime()`). This deliberate native lane executes under the selected program. The runtime reads which program the branch runs; the caller never names it. |
 | `execute_capability_in_program` | As above, through a capability. |
 | `execute_retained` / `execute_retained_in_program` | You want to commit and keep a retained read of the result. `execute_retained` is for a runtime without a program, like `execute(..)`; on a program runtime use `execute_retained_in_program`. |
 | `execute_performed` / `execute_performed_discovered` | You need the program outputs the operation requires to be produced after commit. |
@@ -1676,7 +1681,7 @@ different response.
 
 | Family | Variants | What to do |
 |---|---|---|
-| Landed | `Committed { receipt, result }`, `AlreadyCommitted(receipt)`, `PreviouslyCommitted(historical)` | Use the receipt. `AlreadyCommitted` is an idempotent replay. `PreviouslyCommitted` means the same intent committed earlier, but its live receipt and handler result are not retained: read current state with a fresh query. |
+| Landed | `Committed { receipt, result }`, `AlreadyCommitted(receipt)`, `RecoveredCommitted(receipt)` | Use the receipt. `AlreadyCommitted` is an idempotent replay. `RecoveredCommitted` means the same intent committed earlier (for example before a Home reopen): its recorded receipt is returned, but no handler result. Read current state with a fresh query. |
 | Domain | `DomainDenied(denial)`, `IdempotencyIntentDrift` | Report it. New intent needs a new key. |
 | Stopped | `Cancelled`, `DeadlineExceeded` | Nothing landed. |
 | Not a clean landing | `Commit(WorthQueryApplicationUncommitted)` | Match the inner commit outcome (below). Some of these *did* move the branch. Never treat this family as "retry". |
@@ -1986,15 +1991,15 @@ rolls them back.
 
 ## 15. Durability and the other surfaces
 
-Everything above runs in memory. Relational, Signal, Runtime World, and Query
-hold their state in the process. This section covers the surfaces beside the
-stack: where durability will come from, how applications reach the network
-and the screen, and how the platform proves itself. The
+Relational, Signal, Runtime World, and Query run in the process; a Directory
+application Home makes their state durable. This section covers the surfaces beside the
+stack: where durability comes from, how applications reach the network and the
+screen, and how the platform proves itself. The
 [Platform README](../README.md) has the full crate map.
 
 ### 15.1 Store: durable physical survival
 
-**WORTH Store** (`workspaces/worth-store`, 42 crates) is the durable physical
+**WORTH Store** (`workspaces/worth-store`) is the durable physical
 foundation. Its job is narrow and hard: make accepted physical records survive
 process failure, reopen persisted roots in a fresh process, and say plainly
 when something is corrupt or when an outcome is unknown.
@@ -2013,22 +2018,19 @@ indeterminate. Independent verifiers (`worth-store-offline-verifier`,
 `worth-store-offline-integrity-observer`) read persisted bytes without trusting
 the writer.
 
-**Current state:** no crate outside the Store workspace depends on Store yet.
-Query's store-backed execution parity and durable restore are planned work.
-Nine crates for semantic durable programs (snapshots, branch deltas, schema
-lineage, live-query sync, subscriptions, bulk ingest, extensions, analysis,
-claim boundaries) exist but are dormant. Until the wiring lands, treat Query
-applications as memory-resident.
+**Current state:** Query Host opens the application Home that Store
+Application (`worth-store-application`) owns. Each runtime owner publishes its
+own durable records to it and readmits them when the Home reopens: graph state,
+original occurrences and receipts, Signal and Bridge definitions, programs,
+workflows, external dispatch and corrections. Graceful close and fresh-process
+reopen are supported; crash recovery is in progress (Milestone 3 cleanup track)
+and not yet certified. Nine crates for semantic durable programs (snapshots,
+branch deltas, schema lineage, live-query sync, subscriptions, bulk ingest,
+extensions, analysis, claim boundaries) exist but are dormant.
 
-To survive a restart today, use the app-owned checkpoint lane. The installed
-runtime captures an opaque `WorthQueryApplicationCheckpoint` with
-`capture_application_checkpoint_with_sections`; the application stores and
-transports its bytes, and reinstalls with
-`in_memory_rostered_program_from_checkpoint` (or another `*_from_checkpoint`
-constructor), which readmits committed truth and accepted-output identities.
-Live handles and retained observations are not restored.
-See [Build an Application §4.4](build-an-application.md#44-checkpoint-program-transitions).
-Do not build host persistence of platform truth as a substitute.
+To survive a restart, close the Home and reopen the same Directory; see
+[Use an Application Home](application-home.md). Do not build host persistence of
+platform truth as a substitute.
 
 ### 15.2 Server: the transport boundary
 

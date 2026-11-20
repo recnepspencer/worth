@@ -5,8 +5,8 @@
 This feature gives diagnostics a typed subject, a typed locator, a typed
 outcome, and a family-distinct row model.
 
-It is the layer that lets you say â€œthis denial belongs to this commit receipt
-at this exact locatorâ€ without flattening everything into one generic event
+It is the layer that lets you say “this denial belongs to this commit receipt
+at this exact locator” without flattening everything into one generic event
 record.
 
 ## Why You Use It
@@ -19,8 +19,8 @@ Use this surface when you need to:
   and provenance-ready rows
 - preserve locality and widened-fallout meaning explicitly
 
-This is the line between â€œwe have diagnostic wordsâ€ and â€œwe can actually tell a
-blind consumer what happened.â€
+This is the line between “we have diagnostic words” and “we can actually tell a
+blind consumer what happened.”
 
 ## Stable Entry Points
 

@@ -54,10 +54,10 @@ For engine internals, start with:
 - [Ordinary Product Workflow](./crates/worth-query-certification/examples/ordinary_product_workflow.rs)
 - [Advanced Product Branching](./crates/worth-query-certification/examples/advanced_product_branching.rs)
 
-Product branches, exact composite history, retained observations, live recovery
-handles, and pending cleanup are memory-resident. Process loss releases those
-capabilities. Restart durability belongs to Store and requires fresh owner
-readmission; Query does not serialize live authority.
+Live handles (selectors, retained observations, recovery handles) belong to one
+process and one Home incarnation. Durable state lives in the application Home
+and is readmitted by its owners when the Home reopens; Query does not serialize
+live authority. See [Use an Application Home](../../docs/application-home.md).
 
 Installed record/aspect history captures genuine disclosed record generations
 and pages canonical changes at a pinned product through fresh SubjectRead and

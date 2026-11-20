@@ -108,7 +108,7 @@ What gets inspected:
 Check these first:
 
 - `receipt.counter_rows()`
-- the bundleâ€™s attached counter specs
+- the bundle’s attached counter specs
 - counter row names and expected values
 
 If construction fails, expect a precise receipt denial rather than a vague

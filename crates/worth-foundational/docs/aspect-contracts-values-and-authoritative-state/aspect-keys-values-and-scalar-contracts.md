@@ -138,7 +138,7 @@ let contract = aspects()
     );
 ```
 
-What is authoritative here is the contract, not the callerâ€™s local idea of
+What is authoritative here is the contract, not the caller’s local idea of
 what `"build.status"` ought to mean.
 
 The same is true for entity-reference and opaque shapes: their contract

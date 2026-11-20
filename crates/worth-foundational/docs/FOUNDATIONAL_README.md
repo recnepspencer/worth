@@ -375,7 +375,7 @@ Do not use this family for:
 - silently routing native authoring through JSON because it feels easier
 - teaching app code to start from JSON when native aspect authoring is
   available
-- flattening typed compatibility outcomes into one â€œparse failedâ€ branch
+- flattening typed compatibility outcomes into one “parse failed” branch
 - treating compatibility-lowered artifacts as if they erase the fact that a
   compatibility bridge was involved
 
@@ -474,7 +474,7 @@ includes distinct categories for:
 - digest identity evidence
 - external identity tokens before admission
 
-That means AI consumers should not collapse â€œidentityâ€ into one bucket just
+That means AI consumers should not collapse “identity” into one bucket just
 because all of the payloads might be strings, integers, or digests underneath.
 
 Do not use it for:
@@ -526,7 +526,7 @@ Use this family when you need:
   profile meaning
 - a grouped public lane for staged profile work instead of ad hoc profile bags
 
-This family is much broader than â€œpick some profile enums.â€ It includes:
+This family is much broader than “pick some profile enums.” It includes:
 
 - profile-family composition into one coherent profile set
 - staged progression from requested -> admitted -> materialized meaning
@@ -585,7 +585,7 @@ The actual profile families matter enough to name directly:
 - `CertificationPostureProfile`
 
 AI consumers should preserve those families as semantic categories, not treat
-them as random knobs that can be collapsed into one vague â€œmode.â€
+them as random knobs that can be collapsed into one vague “mode.”
 
 Do not use it as:
 
@@ -661,8 +661,8 @@ The shipped role families are explicit:
 - `PlannedWork`
 - `ReceiptEvidence`
 
-The materialization subsystem is also much richer than â€œturn object into
-output.â€ It makes these things explicit:
+The materialization subsystem is also much richer than “turn object into
+output.” It makes these things explicit:
 
 - materialization source
 - materialization seam
@@ -683,8 +683,8 @@ Reasonable nuance to preserve:
 - materialization is a boundary crossing, not a cheap getter or view
 - bundles are typed coordinated outputs with one primary artifact plus legal
   optional members; they are not arbitrary result bags
-- delivery and availability are part of the contract, so â€œdeferred,â€
-  â€œreconstructable,â€ and â€œunavailableâ€ are first-class postures rather than
+- delivery and availability are part of the contract, so “deferred,”
+  “reconstructable,” and “unavailable” are first-class postures rather than
   prose notes
 - planned-work and same-family wrappers are intentionally descriptive only;
   they exist to preserve meaning without smuggling branch, merge, or commit
@@ -856,7 +856,7 @@ Use it when you need:
 
 This is one of the most important boundaries in the crate.
 
-This family is broader than â€œreceipts and provenance.â€ It includes:
+This family is broader than “receipts and provenance.” It includes:
 
 - primitive evidence categories, locality postures, execution postures,
   descriptive-role postures, and freshness postures
@@ -888,10 +888,10 @@ The grouped public lane structure is part of the real feature surface:
 Reasonable nuance to preserve:
 
 - category, locality, execution posture, descriptive role, and freshness are
-  separate axes; they are not one catch-all â€œevidence statusâ€
+  separate axes; they are not one catch-all “evidence status”
 - provenance explains basis and freshness, but does not prove execution or
   continuity by itself
-- receipts answer â€œwhat completed boundary truth do I have?â€ and still keep
+- receipts answer “what completed boundary truth do I have?” and still keep
   planned, executed, and completed-closeout families distinct
 - completed closeout is not automatically successful execution; blocked or
   denied closeout can still produce real receipt artifacts
@@ -942,7 +942,7 @@ Do not use it to:
   readmission
 - treat raw attachment bundles as if they had already crossed the stronger
   readmission boundary
-- hide stale, reduced, replayed, or rebuilt posture behind generic â€œavailableâ€
+- hide stale, reduced, replayed, or rebuilt posture behind generic “available”
   wording
 
 If the domain crate still owns the true execution semantics, keep the domain

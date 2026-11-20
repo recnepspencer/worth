@@ -725,13 +725,13 @@ Process-local owning handles are not serialized restart authority; Store retains
 its distinct durable restart responsibility.
 
 When the original intent does match but its live receipt is no longer retained,
-native replay answers `PreviouslyCommitted(observation)`, naming the original
-`commit_id()` and committing nothing. It carries no live receipt or handler result.
+the retry answers `RecoveredCommitted(receipt)` with the original recorded
+`WorthQueryRecoveredApplicationCommitReceipt` and commits nothing. It carries no
+live receipt or handler result.
 A fresh current read is not proof that an ambiguous external effect never occurred.
 Reconcile the authoritative outcome through the existing native, domain or Store
 recovery owner as appropriate before choosing a new business operation; a new key
-is not recovery for an uncertain old effect. Lower surfaces that require a live
-receipt retain `CommittedReceiptNotRetained { commit }`.
+is not recovery for an uncertain old effect.
 A record from an earlier intent encoding that cannot be checked against the
 request answers `RecordedIntentUnverifiable`, never drift.
 
@@ -814,9 +814,9 @@ owner already performed.
 Every commit either landed or did not. The request lanes already report that
 split: `WorthQueryApplicationMutationOutcome::Committed { receipt, result }` and
 `AlreadyCommitted(receipt)` carry the canonical product receipt.
-`PreviouslyCommitted(observation)` proves an earlier commit with the same
-durable intent when its live receipt is unavailable; it grants no performed
-mutation, publication, or workflow settlement authority. Every
+`RecoveredCommitted(receipt)` returns the recorded receipt of an earlier commit
+with the same durable intent when its live receipt is unavailable; it grants no
+performed mutation, publication, or workflow settlement authority. Every
 commit terminal that did not land arrives as
 `WorthQueryApplicationMutationOutcome::Commit(WorthQueryApplicationUncommitted)`.
 
@@ -1224,15 +1224,14 @@ owns the detailed read policies and outcomes.
   installed query whose declared support and current admission allow that lane.
 - Conditional providers and managed clocks use the primary-graph application
   runtime and its installed temporal bindings.
-- Recovery handles and temporal wake state are runtime-local. An application
-  may capture Query's opaque native checkpoint with its accepted-output
-  identities, then readmit it through its installed schema on restart; the
-  application owns the enclosing artifact and Store transport. Temporal wakes reconstruct from surviving
-  authoritative domain truth rather than persisted wake handles.
-- Product branches, retained observations, and pending cleanup are
-  memory-resident live capabilities. Process loss releases them; checkpoint
-  readmission restores native committed truth and accepted output identities,
-  not these handles or producer execution.
+- Recovery handles and temporal wake state are runtime-local. To survive a
+  restart, close the application Home and reopen the same Directory; see
+  [Use an Application Home](../../../../../../docs/application-home.md).
+  Temporal wakes reconstruct from surviving authoritative domain truth rather
+  than persisted wake handles.
+- Product branch selectors, retained observations and live cleanup handles
+  belong to one process and one Home incarnation. Reopen readmits the recorded
+  state through its owners; reacquire these handles under fresh authority.
 - Recorded correction requires retained source history and fresh disclosure
   and inverse admission. Its source selection owns the optional history pin;
   the corrective action owns its publication, delivery and cleanup custody.

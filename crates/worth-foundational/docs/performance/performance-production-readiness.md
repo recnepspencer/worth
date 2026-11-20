@@ -30,7 +30,7 @@ of what the performance feature set really ships today.
 
 - the plain report is the inspectable closure artifact
 - the certified artifact is the proof-bearing stronger form
-- exact inventory matters more than broad â€œcontains these ideasâ€ compliance
+- exact inventory matters more than broad “contains these ideas” compliance
 - if a seam is not frozen here, it is not part of the shipped closure claim
 
 ## How It Executes
@@ -117,7 +117,7 @@ bug.
 ## Anti-Patterns
 
 - using readiness as a substitute for seam-specific docs
-- assuming â€œpasses checklistâ€ means downstream crates are already migrated
+- assuming “passes checklist” means downstream crates are already migrated
 - letting grouped public surfaces drift without updating readiness inventory
   and doc coverage
 

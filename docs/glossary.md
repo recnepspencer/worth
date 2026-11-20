@@ -55,6 +55,13 @@ explained). Rust names are given where a type embodies the term.
   An escaping external effect cannot be reversible.
   **See** [How WORTH Works §14](how-it-works.md#14-aftermath-and-recovery).
 
+**Application Home**
+: The durable place where one application's state lives. Query Host opens it
+  with `WorthQueryApplicationHomeRequest` at a `Directory(path)` (durable) or
+  `MemoryOnly` (no restart guarantee); Store owns the files, and each runtime
+  owner readmits its own records when the Home reopens. One process owns a
+  Directory Home at a time. See [Use an Application Home](application-home.md).
+
 **Approval**
 : In a workflow, an `Approval` node (`approval::<Capability>(id)`) waits for a
   decision about a *proposal*. The decision is a control step
@@ -646,9 +653,8 @@ explained). Rust names are given where a type embodies the term.
 **Settled**
 : Performed, and also published by Query. A Relational commit is durable
   before it is live, so a performed commit always settles; an unknown durable
-  answer installs nothing and is `Indeterminate`. Query's in-memory
-  settlement records do not themselves guarantee survival of a process
-  restart; that requires Store's durable ownership
+  answer installs nothing and is `Indeterminate`. Surviving a process restart
+  requires a Directory [application Home](application-home.md)
   ([How WORTH Works §15.1](how-it-works.md#151-store-durable-physical-survival)).
 
 **Settlement**

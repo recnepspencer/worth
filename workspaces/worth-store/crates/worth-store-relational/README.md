@@ -87,18 +87,27 @@ ApplicationHome or physical close. See the [Native facade](../../../../crates/wo
 
 ## Existing home format
 
-`RelationalStoreHome::open` owns physical recovery, descriptor admission and
-Relational readmission. It initializes a record family only when the lease
-holder proves it absent; existing partial or damaged stores are completed or
-refused, never overwritten. A surviving namespace identity alone counts as
-an existing Store; losing its record family cannot reset incarnation. Competing writers receive the typed
-`RelationalStorePhysicalRefusalKind::MutationOwnerContended`.
+The application Home is opened by Store Application (`worth-store-application`),
+which applications reach only through Query Host's
+`WorthQueryApplicationHomeRequest`; see the
+[application Home guide](../../../../docs/application-home.md). This crate
+supplies the Relational section that Home readmits. The former standalone
+`RelationalStoreHome` door is deleted.
+
+Home open owns physical recovery, descriptor admission and Relational
+readmission. It initializes a record family only when the lease holder proves it
+absent; existing partial or damaged stores are completed or refused, never
+overwritten. A surviving namespace identity alone counts as an existing Store;
+losing its record family cannot reset incarnation. Competing writers receive
+`ApplicationHomeOpenRefusal::Physical` with
+`ApplicationHomePhysicalRefusalKind::MutationOwnerContended`.
 
 A recovery-to-serving handoff retains the same OS mutation lease throughout.
-The home declares registry version 2, containing `relational.canonical-commits`
-and `relational.branch-transitions`. Each journal retains its own unresolved
-publication state. The `home` and `relational.checkpoint` records remain
-separate anchors.
+The Home declares registry version 3. Its ordered journals include
+`relational.canonical-commits` and `relational.branch-transitions` beside the
+Home, World, Signal and Query journals; each journal retains its own unresolved
+publication state. The `home`, `home.checkpoint` and `relational.initial-inputs`
+records are separate anchors.
 
 Schema 12 roots carry 32 anchors in a 3,760-byte payload. Schema 11 refuses with
 `UnsupportedRootSchema` before recovery effects. The offline observer reads
@@ -108,9 +117,9 @@ Descriptor format 2 under `home` records the Store-issued stable namespace
 identity as the home identity, and a checked `u64` incarnation. It uses magic
 `WSRHOME1`, version `u16`, identity `[u8;16]`, incarnation `u64`, then runtime
 and profile as length-prefixed UTF-8 (`u32` lengths), and a `u16` binding count.
-Tagged binding entries are `(u16 tag, u32 length, payload)`; Phase 2 emits zero
-entries and refuses unknown tags. Later phases add tags without altering this
-format. Integers are little-endian. Descriptor integrity is protected by the
+Tagged binding entries are `(u16 tag, u32 length, payload)`. The Home emits
+two: the application binding (tag 1) and the 16-byte build identity (tag 2).
+Unknown tags refuse. Integers are little-endian. Descriptor integrity is protected by the
 anchored-record frame and root selection.
 
 Every open publishes the next incarnation before Relational readmission and
@@ -119,10 +128,11 @@ service. Exhaustion refuses. `home_identity()` is unchanged across reopens;
 open may have selected its advance even if it never served. Recovery decides
 that fate and the next open advances from it once. Incarnation is a lifecycle
 counter, not a commit identity; durable data remains valid across opens.
-Authority-value fencing belongs to the application lifecycle in Phase 3.
+Prior-incarnation authority values refuse with `StaleIncarnation` at their
+receivers.
 
 Older descriptor versions and the retired `relational.home` anchor refuse with
-`UnsupportedDescriptorVersion`; they are never migrated. A missing descriptor
+`ApplicationHomeDescriptorDenial::UnsupportedVersion`; they are never migrated. A missing descriptor
 is completed only when no Relational checkpoint or journal history exists.
 
 The `relational_home` oracle compares recovered owner artifacts and graph state
