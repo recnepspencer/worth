@@ -164,13 +164,19 @@ damage-shaped causes below, which C5 retires.
 | C1 close-checkpoint crash recovery | Done. A kill inside graceful-close checkpoint publication used to leave an unpublished candidate root that reopen refused as damage. Reopen now discards it and recovers to the pre-close committed state. Court: `interrupted_close::killed_checkpoint` |
 
 The Host accessor `unclean_recovery_unsupported()` now reads World's D18
-refusal. After C1, the only causes left are a Signal effect without its
-recorded open and a Native fork without a creation intent. Neither can come
-from a kill, because each owner writes only after World acknowledges its
-record, and WAL damage is refused earlier by physical recovery. A Host open
-therefore cannot produce them without forged bytes. The World owner court
-`owner_evidence::recovered_owners` covers the refusal, and C5 deletes the
-accessor along with D18.
+refusal. After C1, it reports two kinds of cause.
+
+- **World-wrapped causes:** a Signal effect without its recorded open, and a
+  Native fork without a creation intent. Neither can come from a kill, because
+  each owner writes only after World acknowledges its record, and WAL damage
+  is refused earlier by physical recovery. A Host open therefore cannot
+  produce them without forged bytes. The World owner court
+  `owner_evidence::recovered_owners` covers the refusal.
+- **Dispatch cause:** an external dispatch attempt with no recorded
+  observation. A kill during external contact can produce it. Its recovery is
+  C3 scope (crashes after dispatch).
+
+C5 deletes the accessor along with D18.
 
 ### Track C items
 

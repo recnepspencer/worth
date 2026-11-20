@@ -88,8 +88,10 @@ refuse before the transition intent is recorded. Completed dispositions survive
 graceful close and successor-only reopen.
 
 These guarantees cover quiescent boundaries between operations. Executing
-managed runs and cleanup have separate lifecycle contracts. Crash recovery and
-resuming an interrupted program transition are not yet certified.
+managed runs and cleanup have separate lifecycle contracts. A program
+transition killed after its durable intent resumes when the Home reopens with
+the same transition request; a changed plan refuses with `TransitionPlanDrift`.
+Crash recovery is not yet certified (C4/C5).
 
 ## Terms
 

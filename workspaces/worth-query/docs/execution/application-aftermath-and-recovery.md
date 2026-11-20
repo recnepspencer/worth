@@ -242,7 +242,7 @@ preserves the exact execution or journal cause.
 Directory Home also readmits accepted-message, canonical-terminal and recovery-claim
 custody after graceful close/reopen. Those records retain their independent owner
 requirements; source control never supplies callback authority. Crash recovery is
-not yet certified (C1–C5).
+not yet certified (C4/C5).
 
 ## Core Mental Model
 
