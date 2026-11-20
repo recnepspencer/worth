@@ -34,6 +34,27 @@ pub(super) struct Model {
 }
 
 impl Model {
+    /// An undecided performed Native effect fences fresh work on its branch:
+    /// Native refuses the World head's basis before any new effect. (Keys are
+    /// fenced by Query, not World.)
+    pub fn assert_fenced(&self, fixture: &Fixture) {
+        if self
+            .originals
+            .iter()
+            .all(|original| original.receipt.is_none())
+        {
+            return;
+        }
+        let head = root(fixture);
+        assert!(matches!(
+            fixture.native.begin_branch_transaction(
+                head.basis().relational_basis(),
+                RelationalTransactionIntent::ordinary(),
+            ),
+            Err(worth_relational::facade::mvcc::RelationalBranchTransactionAdmissionDenial::StaleBasis)
+        ));
+    }
+
     /// Fresh work after a released Native effect refuses before any effect.
     pub fn fresh(
         &mut self,

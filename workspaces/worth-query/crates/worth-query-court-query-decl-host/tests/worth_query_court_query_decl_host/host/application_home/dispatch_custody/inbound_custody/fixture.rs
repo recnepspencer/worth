@@ -314,6 +314,15 @@ pub(super) fn end_recovered_home(
     home: Arc<Home>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) {
+    assert!(
+        home.runtime()
+            .runtime()
+            .product_publication_recovery_page(None, std::num::NonZeroUsize::MIN)
+            .unwrap()
+            .rows()
+            .is_empty(),
+        "no World recovery custody remains; only C3's managed run refuses close"
+    );
     pending_support::end_with_pending_managed_run(
         Arc::into_inner(home)
             .expect("no live Home alias")

@@ -184,6 +184,15 @@ fn retained_reader() {
     };
     assert_eq!(contacts.load(Ordering::SeqCst), 0);
     assert_eq!(balance(home.runtime(), &live), 8);
+    assert!(
+        home.runtime()
+            .runtime()
+            .product_publication_recovery_page(None, std::num::NonZeroUsize::MIN)
+            .unwrap()
+            .rows()
+            .is_empty(),
+        "no World recovery custody remains; only C3's managed run refuses close"
+    );
     pending_support::end_with_pending_managed_run(
         home.close(&execution)
             .err()

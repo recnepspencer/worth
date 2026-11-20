@@ -76,7 +76,10 @@ fn run(steps: &[Step]) {
                 fixture = model.reopen(fixture, &request);
             }
             // Fresh work waits until every recovered original is decided.
-            _ if unresolved => model.decide_all(&fixture, &request, false),
+            _ if unresolved => {
+                model.assert_fenced(&fixture);
+                model.decide_all(&fixture, &request, false)
+            }
             Step::Undecided { .. } => {
                 fixture = model.fresh(fixture, &request, Step::Acknowledged);
             }

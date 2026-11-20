@@ -1,7 +1,7 @@
-//! C1.3 bounded property: recovery readmits exactly the recorded component and
-//! refuses any single changed commitment without grants or head substitution.
+//! C1.3: recovery readmits exactly the recorded component and refuses any
+//! single changed commitment without grants or head substitution. The domain
+//! is small, so every (component, commitment) pair runs.
 use super::*;
-use proptest::test_runner::{Config, FileFailurePersistence, TestRunner};
 
 /// Each recorded commitment a readmission must match, as a serialized path.
 const COMMITMENTS: [&str; 10] = [
@@ -42,58 +42,38 @@ fn recovery_readmits_only_the_exact_recorded_component() {
         .durability_recovery()
         .recover_with_authority(execution, plan)
         .unwrap();
-    let mut runner = TestRunner::new(Config {
-        cases: 48,
-        failure_persistence: Some(Box::new(FileFailurePersistence::Direct(
-            "proptest-regressions/recorded_component_property.txt",
-        ))),
-        ..Config::default()
-    });
-    let cases = (
-        0..recorded.len(),
-        proptest::option::of(0..COMMITMENTS.len()),
-    );
-    runner
-        .run(&cases, |(component, change)| {
-            let original = &recorded[component];
-            let Some(change) = change else {
-                let basis = authority
-                    .admit_recorded_component(execution, &recovered, original)
-                    .expect("the exact recorded component readmits")
-                    .into_basis();
-                assert_recorded_basis(&recovered, &basis, original);
-                assert_eq!(
-                    &recovered
-                        .owner_component_services()
-                        .basis_port()
-                        .export_recorded_retained_component(execution, &basis)
-                        .unwrap(),
-                    original,
-                    "readmission re-exports the component captured before the crash"
-                );
-                return Ok(());
-            };
-            let Some(changed) = change_one(original, COMMITMENTS[change]) else {
-                // An Empty target records no Canonical commitments.
-                return Ok(());
+    for (component, original) in recorded.iter().enumerate() {
+        let basis = authority
+            .admit_recorded_component(execution, &recovered, original)
+            .expect("the exact recorded component readmits")
+            .into_basis();
+        assert_recorded_basis(&recovered, &basis, original);
+        assert_eq!(
+            &recovered
+                .owner_component_services()
+                .basis_port()
+                .export_recorded_retained_component(execution, &basis)
+                .unwrap(),
+            original,
+            "readmission re-exports the component captured before the crash"
+        );
+        drop(basis);
+        for path in COMMITMENTS {
+            // An Empty target records no Canonical commitments.
+            let Some(changed) = change_one(original, path) else {
+                continue;
             };
             let refused = authority
                 .admit_recorded_component(execution, &recovered, &changed)
                 .err()
-                .unwrap_or_else(|| {
-                    panic!(
-                        "{} changed, yet component {component} readmitted",
-                        COMMITMENTS[change]
-                    )
-                });
+                .unwrap_or_else(|| panic!("{path} changed, yet component {component} readmitted"));
             assert!(
                 !refused.retains_acquired_custody(),
                 "a refusal returns no grant: {:?}",
                 refused.cause()
             );
-            Ok(())
-        })
-        .unwrap();
+        }
+    }
 }
 
 /// Change exactly one recorded value; `None` when the path is not recorded.

@@ -1,5 +1,6 @@
-//! A recovered Native effect whose recorded open is missing, conflicting or
-//! names another predecessor refuses before any World service exists.
+//! A recovered Native effect whose recorded open is missing or names another
+//! predecessor, a second effect for the same association, or an effect for
+//! another World owner refuses before any World service exists.
 use super::*;
 
 /// Kill after the durable Native effect of the second publication, then damage
@@ -34,8 +35,6 @@ fn refusal(change: impl FnOnce(&mut Vec<u8>, u64) -> bool) -> WorldReadmissionDe
 
 /// Offsets of the open payload's association and expected head fields.
 struct Open {
-    association_incarnation: usize,
-    head_incarnation: usize,
     head_generation: usize,
     head_commit: usize,
 }
@@ -46,8 +45,6 @@ impl Open {
         let head = association_incarnation + 8 + 8 + 8;
         let head_incarnation = head + 24 + 2 + name;
         Self {
-            association_incarnation,
-            head_incarnation,
             head_generation: head_incarnation + 8,
             head_commit: head_incarnation + 16,
         }
@@ -66,24 +63,6 @@ fn a_native_effect_without_its_recorded_open_refuses_as_an_orphan() {
         refusal(|_, _| false),
         WorldReadmissionDenial::OrphanNativeAssociation
     ));
-}
-
-/// The open's association and head must agree, so another association names a
-/// branch incarnation the recorded lineage never had.
-#[test]
-fn a_native_effect_whose_open_records_another_association_refuses_before_service() {
-    let denial = refusal(|bytes, _| {
-        let open = Open::locate(bytes);
-        for at in [open.association_incarnation, open.head_incarnation] {
-            let actual = read(bytes, at);
-            write(bytes, at, actual + 1);
-        }
-        true
-    });
-    assert!(
-        matches!(denial, WorldReadmissionDenial::MissingPredecessor),
-        "{denial:?}"
-    );
 }
 
 #[test]
@@ -105,4 +84,66 @@ fn a_native_effect_admitted_against_another_recorded_predecessor_refuses_at_nati
         refused.cause(),
         worth_relational::facade::durability::RelationalRecoveredPublicationAdmissionCause::SubjectMismatch
     ));
+}
+
+/// Kill after the durable Native effect, then let Native perform one more real
+/// effect bound to `association(original)` before the next process reopens.
+fn forged(association: impl FnOnce(Vec<u8>) -> Vec<u8>) -> WorldReadmissionDenial {
+    let funding = crate::test_execution_policy::serial_request();
+    let request = ExecutionRequest::serial(&funding);
+    let mut fixture = Fixture::journal(&request);
+    match fixture.offer(&request, "primary") {
+        WorldDurableBootstrapOutcome::Performed(_) => {}
+        other => panic!("real bootstrap: {other:?}"),
+    }
+    let mut model = Model::default();
+    assert!(model.attempt(&fixture, &request, Step::EffectOnly));
+    let subjects = fixture
+        .native
+        .durability_authority()
+        .discover_all_associated_effects(&request)
+        .unwrap();
+    let [original] = subjects.as_slice() else {
+        panic!("one original Native effect");
+    };
+    let bytes = association(original.association().unwrap().as_bytes().to_vec());
+    let bound =
+        worth_relational::facade::mvcc::RelationalCallerAssociation::from_bytes(&bytes).unwrap();
+    drop(worth_testkit_relational::durable_publication::perform(
+        &request,
+        &fixture.native,
+        &bound,
+        "forged-effect",
+    ));
+    drop(subjects);
+    match fixture.try_reopen(&request) {
+        Ok(_) => panic!("a conflicting or foreign effect cannot reach service"),
+        Err(denial) => denial,
+    }
+}
+
+#[test]
+fn a_second_native_effect_for_the_same_association_refuses() {
+    let denial = forged(|original| original);
+    assert!(
+        matches!(denial, WorldReadmissionDenial::DuplicateNativeEffect),
+        "{denial:?}"
+    );
+}
+
+#[test]
+fn a_native_effect_for_another_world_owner_refuses_as_foreign() {
+    use sha2::{Digest, Sha256};
+    let denial = forged(|mut bytes| {
+        // WWASSOC1 frame: 52-byte header, then owner home (16) and slot (8).
+        assert_eq!(&bytes[..8], b"WWASSOC1");
+        bytes[52 + 16..52 + 24].copy_from_slice(&1u64.to_le_bytes());
+        let digest = Sha256::digest(&bytes[52..]);
+        bytes[20..52].copy_from_slice(&digest);
+        bytes
+    });
+    assert!(
+        matches!(denial, WorldReadmissionDenial::ForeignOwner),
+        "{denial:?}"
+    );
 }

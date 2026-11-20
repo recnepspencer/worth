@@ -1942,7 +1942,6 @@ dependencies = [
 name = "worth-court-relational-certification"
 version = "0.1.0"
 dependencies = [
- "proptest",
  "rmp-serde",
  "serde",
  "serde_json",

@@ -4,13 +4,19 @@ use super::*;
 use worth_relational::facade::mvcc::RelationalTransactionIntent;
 #[test]
 fn recovered_signal_only_original_keeps_its_owner_and_continues_without_reexecution() {
-    run(false);
+    run(false, false);
 }
 #[test]
 fn recovered_mixed_original_keeps_both_owners_and_continues_without_reexecution() {
-    run(true);
+    run(true, false);
 }
-fn run(mixed: bool) {
+/// D18 still refuses a Signal effect whose recorded open is gone: nothing
+/// joins it to an original, so it never reaches service.
+#[test]
+fn a_signal_effect_without_its_recorded_open_refuses_before_serving() {
+    run(false, true);
+}
+fn run(mixed: bool, orphan: bool) {
     let funding = crate::test_execution_policy::serial_request();
     let request = &ExecutionRequest::serial(&funding);
     let mut fixture = Fixture::journal(request);
@@ -90,6 +96,29 @@ fn run(mixed: bool) {
     let original_native = fixture.native.history().historical_latest_commit();
     let original_signal = fixture.signal.published_advance_count().unwrap();
     drop((custody, root, control, pause));
+    if orphan {
+        fixture
+            .recorder
+            .rewrite_latest(WorldDurableJournal::Custody, |bytes| {
+                assert_eq!(bytes[52], 3, "the latest custody row is the original open");
+                None
+            });
+        let denial = match fixture.try_reopen(request) {
+            Ok(_) => panic!("an orphan Signal effect cannot reach service"),
+            Err(denial) => denial,
+        };
+        assert!(
+            matches!(
+                denial,
+                WorldReadmissionDenial::UncleanRecoveryUnsupported(UncleanRecoveryUnsupported {
+                    owner: DurableOwnerFamily::Signal,
+                    ..
+                })
+            ),
+            "{denial:?}"
+        );
+        return;
+    }
     let fixture = fixture.reopen(request);
     let recovery = fixture.world.recovery_port();
     let page = fixture
