@@ -17,12 +17,17 @@ impl ReservedProductUnpublishedSlot {
 }
 
 impl ProductUnpublishedRecoveryCatalog {
+    /// Every undecided recovered original fences fresh work, so a recovered
+    /// creation's recorded source cannot move before its decision.
     pub(crate) fn has_recovered(&self) -> bool {
         let state = self.locked_state();
         (0..state.slots.span()).any(|position| {
             matches!(
                 state.slots.at(position),
-                Some((_, RecoveryEntry::Recovered(_)))
+                Some((
+                    _,
+                    RecoveryEntry::Recovered(_) | RecoveryEntry::RecoveredCreation(_)
+                ))
             )
         })
     }

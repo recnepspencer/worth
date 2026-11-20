@@ -59,7 +59,7 @@ where
         self.state.recovery.admit_handle(handle)?;
         // A cold-recovered original has no live driver; its owners decided it.
         if let Some(claim) = self.state.recovery.claim_recovered_creation(handle)? {
-            return self.resolve_recovered_creation(execution, claim);
+            return self.resolve_recovered_creation(execution, claim, cancellation);
         }
         let operation = self
             .reserve_creation_operation()

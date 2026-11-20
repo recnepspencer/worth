@@ -55,6 +55,22 @@ impl PreparedWorldSignalFork {
         let grant = permit.admit_signal_binding(issuer, &self.original, self.prepared.commitment());
         self.prepared.begin(request, grant, cancellation)
     }
+    /// The readmitted durable intent stands in for the live intent ACK. Only
+    /// readmission mints a recovered creation, and only from that journal row.
+    pub(crate) fn begin_recovered(
+        self,
+        request: ExecutionRequest<'_, '_>,
+        original: &crate::recovery::RecoveredWorldCreationRecord,
+        issuer: &InstalledCompositeSignalPublicationOwner,
+        cancellation: &worth_signal::facade::branch::SignalOwnerCancellationToken,
+    ) -> Result<SignalDurableAdvanceTask, WorldSignalForkPreparationDenial> {
+        assert_eq!(
+            original.intent.association, self.original,
+            "the recovered original binds its own Signal fork"
+        );
+        let grant = issuer.admit_original(self.prepared.commitment());
+        self.prepared.begin(request, grant, cancellation)
+    }
 }
 struct StandaloneFork<D, I, T>
 where

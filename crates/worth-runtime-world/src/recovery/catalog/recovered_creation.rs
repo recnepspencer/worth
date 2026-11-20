@@ -46,6 +46,20 @@ impl ProductUnpublishedRecoveryCatalog {
     }
 }
 
+impl ProductUnpublishedRecoveryCatalog {
+    /// A recovered creation has no release door: `resume_creation` takes the
+    /// one decision its owners recorded, and a performed one never releases.
+    pub(crate) fn refuse_recovered_creation_release(
+        &self,
+        handle: &ProductUnpublishedRecoveryHandle,
+    ) -> Result<(), Denial> {
+        match self.locked_state().slots.get(handle.identity()) {
+            Some(RecoveryEntry::RecoveredCreation(_)) => Err(Denial::RecoveredCustodyRequired),
+            _ => Ok(()),
+        }
+    }
+}
+
 impl ClaimedRecoveredCreation {
     pub(crate) fn custody(&mut self) -> &mut RecoveredCreationCustody {
         self.custody.as_mut().expect("claimed original custody")

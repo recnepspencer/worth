@@ -11,7 +11,8 @@ pub use released_effects::WorldReleasedEffects;
 pub(crate) mod recovered_creation;
 pub(crate) use recovered_creation::{
     RecoveredCreationCustody, RecoveredCreationFate, RecoveredCreationForks,
-    RecoveredWorldCreationInputs, RecoveredWorldCreationRecord,
+    RecoveredSignalForkCompletion, RecoveredSignalForkPhase, RecoveredWorldCreationInputs,
+    RecoveredWorldCreationRecord,
 };
 pub(crate) mod recovered_publication;
 pub(crate) use recovered_publication::{

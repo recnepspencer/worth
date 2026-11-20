@@ -1,6 +1,7 @@
 //! A creation killed after its durable intent reopens as the SAME recovered
-//! custody. The owners' recorded forks decide it: no fork releases only, every
-//! required fork continues only, a partial creation refuses before service.
+//! custody. The owners' recorded forks decide it: no fork releases only; a
+//! performed fork continues only, completing Signal's planned fork once if a
+//! kill fell between Native's fork and Signal's.
 use super::*;
 
 /// What the killed process issued, observed before it died.
@@ -87,7 +88,8 @@ fn assert_stale(
     );
 }
 
-/// No fresh creation takes the undecided original's name.
+/// Fresh work, including a creation under the original's name, waits for
+/// the undecided original.
 fn assert_fenced(f: &Fixture, request: &ExecutionRequest<'_, '_>, name: &str) {
     let parent = f
         .world
@@ -115,7 +117,7 @@ fn assert_fenced(f: &Fixture, request: &ExecutionRequest<'_, '_>, name: &str) {
         matches!(
             answer,
             Err(RuntimeWorldServiceDenial::Denied(
-                RuntimeWorldBranchAdmissionDenial::DuplicateName
+                RuntimeWorldBranchAdmissionDenial::OwnerUnavailable
             ))
         ),
         "{answer:?}"
@@ -273,10 +275,12 @@ fn killed_creation_after_both_owner_forks_continues_exactly_those_forks() {
     continues_exactly_its_original_forks(true, true);
 }
 
-/// Native forked, Signal's fork never became durable. Only the lost live
-/// source permit could begin Signal's fork, so the open refuses typed.
+/// Native forked, Signal's fork never became durable. The performed effect
+/// only continues: recovery performs Signal's planned fork once, at the
+/// recorded source point. Kills during that fork reopen into the same case or
+/// into the both-forks case; the fork never runs twice.
 #[test]
-fn killed_creation_with_only_its_native_fork_durable_refuses_typed_before_service() {
+fn killed_creation_with_only_its_native_fork_durable_completes_signals_fork_once() {
     let funding = crate::test_execution_policy::serial_request();
     let request = ExecutionRequest::serial(&funding);
     let mut f = Fixture::journal(&request);
@@ -284,21 +288,79 @@ fn killed_creation_with_only_its_native_fork_durable_refuses_typed_before_servic
     let before = frontiers(&f, &request);
     f.recorder.crash_after(1);
     f.hold_signal_advances();
-    let _killed = kill(&f, &request, &parent, "mixed", true, true);
+    let killed = kill(&f, &request, &parent, "mixed", true, true);
     let partial = frontiers(&f, &request);
     assert_ne!(partial.0, before.0, "Native's fork is durable");
     assert_eq!(partial.1, before.1, "Signal's fork is not");
     drop(parent);
-    let denial = match f.try_reopen(&request) {
-        Ok(_) => panic!("a partly performed creation has no admissible decision"),
-        Err(denial) => denial,
-    };
+    let (f, row) = reopen_undecided(f, &request, &killed, "mixed");
+    let release = f
+        .world
+        .recovery_port()
+        .release_effects(&request, &row, 0, None);
     assert!(
         matches!(
-            &denial,
-            WorldReadmissionDenial::NativeCustody { cause, .. }
-                if matches!(cause.as_ref(), WorldReadmissionDenial::PartlyPerformedCreation)
+            release,
+            Err(RuntimeWorldRecoveryDenial::RecoveredCustodyRequired)
         ),
-        "{denial:?}"
+        "a performed fork never releases: {release:?}"
     );
+    // Killed during the recovered Signal fork: its fate is left to reopen.
+    f.hold_signal_advances();
+    for _ in 0..2 {
+        let lost = resume(&f, &request, &row);
+        assert!(
+            matches!(lost, Err(RuntimeWorldRecoveryDenial::ReopenRequired)),
+            "{lost:?}"
+        );
+    }
+    assert_eq!(
+        frontiers(&f, &request),
+        partial,
+        "a lost fork never begins twice"
+    );
+    let (f, row) = reopen_undecided(f, &request, &killed, "mixed");
+    // Killed after the recovered Signal fork commits, before the selection.
+    f.recorder.crash_after(0);
+    let unselected = resume(&f, &request, &row);
+    assert!(
+        matches!(unselected, Err(RuntimeWorldRecoveryDenial::Busy)),
+        "{unselected:?}"
+    );
+    let forked = frontiers(&f, &request);
+    assert_eq!((forked.0, forked.1), (partial.0, partial.1 + 1));
+    let (f, row) = reopen_undecided(f, &request, &killed, "mixed");
+    let outcome = resume(&f, &request, &row).unwrap();
+    let RuntimeWorldBranchCreationOutcome::Performed(child) = outcome else {
+        panic!("the original continues with both forks: {outcome:?}")
+    };
+    let parent = f
+        .world
+        .observation_port()
+        .observe_root_product_branch()
+        .unwrap();
+    assert_eq!(child.branch_identity().name().as_str(), "mixed");
+    assert_eq!(child.lifecycle_incarnation().ordinal(), killed.incarnation);
+    assert_eq!(
+        child.basis().relational_basis().descriptor().branch_id().0,
+        "mixed-native"
+    );
+    assert_ne!(
+        child.basis().signal_basis().branch_id(),
+        parent.basis().signal_basis().branch_id()
+    );
+    assert_eq!(frontiers(&f, &request), forked, "each owner forked once");
+    assert!(matches!(
+        resume(&f, &request, &row),
+        Err(RuntimeWorldRecoveryDenial::MissingRecord)
+    ));
+    let selected = descriptions(&f, &request);
+    drop((child, parent, row));
+    let f = f.reopen(&request);
+    assert_eq!(
+        descriptions(&f, &request),
+        selected,
+        "the selection is durable"
+    );
+    f.finish(&request);
 }

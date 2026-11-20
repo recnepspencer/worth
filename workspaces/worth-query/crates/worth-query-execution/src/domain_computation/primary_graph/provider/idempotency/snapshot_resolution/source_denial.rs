@@ -119,7 +119,6 @@ fn world_source(cause: worth_runtime_world::facade::WorldReadmissionDenial) -> D
         | Source::MissingCreationIntent
         | Source::ConflictingCreationIntent
         | Source::CreationEvidenceMismatch
-        | Source::PartlyPerformedCreation
         | Source::MissingOpenAttempt
         | Source::ConflictingOpenAttempt
         | Source::ConflictingDisposition

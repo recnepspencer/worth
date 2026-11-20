@@ -9,7 +9,8 @@ use crate::durability::{
 };
 use crate::identity::readmission::readmit_custody;
 use crate::recovery::{
-    RecoveredCreationFate, RecoveredCreationForks, RecoveredWorldCreationInputs,
+    RecoveredCreationFate, RecoveredCreationForks, RecoveredSignalForkCompletion,
+    RecoveredSignalForkPhase, RecoveredWorldCreationInputs,
 };
 use worth_relational::facade::{
     durability::ReadmittedRelationalAssociatedFork, mvcc::RelationalCallerAssociation,
@@ -36,6 +37,22 @@ enum RecordedCreationFate {
     Continue {
         native: Option<WorldRelationalForkEvidence>,
         signal: Option<Arc<SignalReadmittedSourcePoint>>,
+    },
+    CompleteSignalFork {
+        native: WorldRelationalForkEvidence,
+    },
+}
+
+/// What readmission holds for the record while its admitted fork, if any,
+/// stays in the refusal custody at `fork`.
+enum AdmittedCreationFate {
+    Release,
+    Continue {
+        fork: usize,
+        signal: Option<Arc<SignalReadmittedSourcePoint>>,
+    },
+    CompleteSignalFork {
+        fork: usize,
     },
 }
 
@@ -66,14 +83,14 @@ where
             .points
             .get(&(intent.source.incarnation, intent.source.generation))
             .ok_or(Denial::MissingPredecessor)?;
-        // A continuing original's admitted fork stays in the refusal custody
+        // A performed original's admitted fork stays in the refusal custody
         // until the same record takes it.
         let decided = match classify(
             intent,
             owners.forks.get(attempt).cloned(),
             owners.signal.creation(attempt),
         )? {
-            RecordedCreationFate::Release => None,
+            RecordedCreationFate::Release => AdmittedCreationFate::Release,
             RecordedCreationFate::Continue {
                 native: fork,
                 signal,
@@ -85,7 +102,19 @@ where
                     None => None,
                 };
                 custody.creation_forks.push(admitted);
-                Some((custody.creation_forks.len() - 1, signal))
+                AdmittedCreationFate::Continue {
+                    fork: custody.creation_forks.len() - 1,
+                    signal,
+                }
+            }
+            RecordedCreationFate::CompleteSignalFork { native: fork } => {
+                let admitted = admit_fork(
+                    root, native, authority, intent, &fork, references, execution,
+                )?;
+                custody.creation_forks.push(Some(admitted));
+                AdmittedCreationFate::CompleteSignalFork {
+                    fork: custody.creation_forks.len() - 1,
+                }
             }
         };
         let identity = readmit_custody(owner, intent.custody).ok_or(Denial::ForeignOwner)?;
@@ -96,11 +125,21 @@ where
             .reserve_product_unpublished(owner)
             .map_err(|_| Denial::RecoveryCapacity)?;
         let fate = match decided {
-            None => RecoveredCreationFate::Release,
-            Some((index, signal)) => RecoveredCreationFate::Continue(RecoveredCreationForks {
-                native: custody.creation_forks[index].take(),
-                signal,
-            }),
+            AdmittedCreationFate::Release => RecoveredCreationFate::Release,
+            AdmittedCreationFate::Continue { fork, signal } => {
+                RecoveredCreationFate::Continue(RecoveredCreationForks {
+                    native: custody.creation_forks[fork].take(),
+                    signal,
+                })
+            }
+            AdmittedCreationFate::CompleteSignalFork { fork } => {
+                RecoveredCreationFate::CompleteSignalFork(RecoveredSignalForkCompletion {
+                    native: custody.creation_forks[fork]
+                        .take()
+                        .expect("the admitted Native fork"),
+                    phase: RecoveredSignalForkPhase::Unbegun,
+                })
+            }
         };
         slot.install_recovered_creation(RecoveredWorldCreationInputs {
             identity,
@@ -115,8 +154,10 @@ where
     Ok(())
 }
 
-/// No owner effect releases; every required fork continues; a partial
-/// creation has no admissible decision without its lost live source permit.
+/// No owner effect releases; every required fork continues. The live driver
+/// makes Native's fork durable before Signal's, so a kill between them leaves
+/// only Signal's planned fork outstanding: a performed effect that continues.
+/// A durable Signal fork without Native's contradicts that order.
 fn classify(
     intent: &WorldCreationIntentRecord,
     native: Option<WorldRelationalForkEvidence>,
@@ -124,14 +165,17 @@ fn classify(
 ) -> Result<RecordedCreationFate, Denial> {
     let native_forks = matches!(intent.relational, NativePlan::ForkExact { .. });
     let signal_forks = matches!(intent.signal, SignalPlan::ForkExact { .. });
-    match (native.is_some(), signal.is_some()) {
-        (false, false) => Ok(RecordedCreationFate::Release),
-        (native_done, signal_done)
-            if native_done == native_forks && signal_done == signal_forks =>
+    match (native, signal) {
+        (None, None) => Ok(RecordedCreationFate::Release),
+        (native, signal)
+            if native.is_some() == native_forks && signal.is_some() == signal_forks =>
         {
             Ok(RecordedCreationFate::Continue { native, signal })
         }
-        (_, _) => Err(Denial::PartlyPerformedCreation),
+        (Some(native), None) if native_forks && signal_forks => {
+            Ok(RecordedCreationFate::CompleteSignalFork { native })
+        }
+        (_, _) => Err(Denial::CreationEvidenceMismatch),
     }
 }
 

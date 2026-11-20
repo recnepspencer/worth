@@ -18,6 +18,28 @@ pub(crate) enum RecoveredCreationFate {
     Release,
     /// Every required owner fork is durable: the original continues only.
     Continue(RecoveredCreationForks),
+    /// Native's fork is durable and Signal's planned fork is not. The
+    /// performed effect may only continue: recovery performs the original's
+    /// Signal fork once, at the recorded source point, then continues.
+    CompleteSignalFork(RecoveredSignalForkCompletion),
+}
+
+/// The original's outstanding Signal fork beside its admitted Native fork.
+#[derive(Debug)]
+pub(crate) struct RecoveredSignalForkCompletion {
+    pub(crate) native: ReadmittedRelationalAssociatedFork,
+    pub(crate) phase: RecoveredSignalForkPhase,
+}
+
+#[derive(Debug)]
+pub(crate) enum RecoveredSignalForkPhase {
+    /// No Signal fork has begun in this process.
+    Unbegun,
+    /// The one Signal fork task, driven again until Signal reports its fate.
+    Driving(Arc<crate::publication::durable_signal::WorldDurableSignalAdvance>),
+    /// Signal could not report the fork's fate here. It is never begun again
+    /// in this process; the next reopen reads Signal's own inventory.
+    ReopenRequired,
 }
 
 /// Owner-admitted forks of the original; each exists exactly when its plan forks.

@@ -1,6 +1,7 @@
 //! Decide one cold-recovered creation by the fate its owners recorded: a
-//! performed original continues to its exact forks, an effect-free one releases.
-//! The decision is durable before any live installation and is never repeated.
+//! performed original continues to its exact forks (first completing its one
+//! outstanding Signal fork), an effect-free one releases. The decision is
+//! durable before any live installation and is never repeated.
 use super::*;
 use crate::durability::{
     WorldArtifactInput, WorldCommittedPublication, WorldCreatedBranchOwnerEvidence as Owners,
@@ -22,11 +23,13 @@ where
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         mut claim: ClaimedRecoveredCreation,
+        cancellation: &crate::publication::RuntimeWorldCancellationToken,
     ) -> Result<RuntimeWorldBranchCreationOutcome, Denial> {
         let _operation = self
             .reserve_recovery_operation_if_open_and_bootstrapped()
             .map_err(|()| crate::lifecycle::RuntimeWorldOwnerUnavailable::new())?;
         let record = claim.record.clone();
+        self.complete_recovered_signal_fork(execution, &record, claim.custody(), cancellation)?;
         if claim.custody().decision.is_none() {
             let decision = self.prepare_recovered_decision(execution, &record, claim.custody())?;
             claim.custody().decision = Some(decision);
@@ -39,6 +42,9 @@ where
             RecoveredCreationFate::Release => None,
             RecoveredCreationFate::Continue(_) => {
                 Some(self.install_recovered_creation(execution, &record, claim.custody())?)
+            }
+            RecoveredCreationFate::CompleteSignalFork(_) => {
+                unreachable!("Signal's fork completes before the decision")
             }
         };
         let custody = claim.finish();
@@ -74,6 +80,9 @@ where
                 owners: owner_evidence(execution, forks)?,
                 publishing_incarnation: record.binding.binding().incarnation(),
             },
+            RecoveredCreationFate::CompleteSignalFork(_) => {
+                unreachable!("Signal's fork completes before the decision")
+            }
         };
         WorldDurableArtifact::from_input(input, execution)
             .map_err(|_| Denial::OutputCapacityExhausted)
