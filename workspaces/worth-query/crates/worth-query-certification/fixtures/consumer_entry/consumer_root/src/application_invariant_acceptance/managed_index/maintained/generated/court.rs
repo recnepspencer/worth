@@ -9,30 +9,8 @@ use worth_query_host::facade::{application_entry::*, primary_graph::*};
 mod cancellation;
 mod fallback;
 mod reconstruction;
-
-fn find(directory: &str) -> query::FindPrefix {
-    query::FindPrefix {
-        directory: directory.into(),
-        prefix: "taken".into(),
-    }
-}
-fn values(rows: &[query::ItemRow]) -> Vec<(String, String)> {
-    let mut rows: Vec<_> = rows
-        .iter()
-        .map(|row| (row.identity.clone(), row.name.clone()))
-        .collect();
-    rows.sort();
-    rows
-}
-// A literal authored universe independent of provider nodes and Source lookup.
-fn expected(directory: &str, name: &str) -> Vec<(String, String)> {
-    let mut rows = vec![("generated-item".into(), name.into())];
-    if directory == "B" {
-        rows.push(("y".into(), "taken".into()));
-    }
-    rows.sort();
-    rows
-}
+mod support;
+use support::{assert_suspended, expected, find, values};
 #[test]
 fn generated_catalog_suspension_preserves_logical_source_and_restoration_judges_real_candidate() {
     lifecycle::isolated_allocation_case(run, concat!(module_path!(), "::generated_catalog_suspension_preserves_logical_source_and_restoration_judges_real_candidate"));
@@ -400,16 +378,4 @@ fn journey() {
     assert_eq!(provider.builds.load(Ordering::SeqCst), builds, "fresh resumed public reads use the judged canonical material without another reconstruction");
     fallback::restore_changed_unprojected_field(&world, &provider, &scope);
     a.close();
-}
-fn assert_suspended<T>(result: Result<T, WorthQueryApplicationRequestQueryDenial>) {
-    match result {
-        Err(WorthQueryApplicationRequestQueryDenial::PrincipalResolution(denial)) => assert_eq!(
-            denial.kind(),
-            WorthQueryPrincipalResolutionDenialKind::Refused(
-                WorthQueryPrincipalResolutionRefusalKind::BranchMaterializationSuspended
-            )
-        ),
-        Err(denial) => panic!("wrong current read cause: {denial:?}"),
-        Ok(_) => panic!("a current physical read cannot expose retained logical material"),
-    }
 }
