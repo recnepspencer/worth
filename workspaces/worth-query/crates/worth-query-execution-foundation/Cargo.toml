@@ -1,0 +1,22 @@
+[package]
+name = "worth-query-execution-foundation"
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+license.workspace = true
+description = "Foundational execution primitives, identities, outcome vocabularies, and leaf primary-graph types."
+publish = false
+
+[dependencies]
+sha2 = "0.10"
+worth-execution = { path = "../../../../crates/worth-execution" }
+worth-foundational = { path = "../../../../crates/worth-foundational" }
+worth-relational = { path = "../../../../crates/worth-relational" }
+worth-runtime-bridge = { path = "../../../../crates/worth-runtime-bridge" }
+worth-runtime-world = { path = "../../../../crates/worth-runtime-world" }
+worth-query-admission = { path = "../worth-query-admission" }
+worth-query-declaration = { path = "../worth-query-declaration" }
+worth-query-installation = { path = "../worth-query-installation" }
+
+[lints]
+workspace = true

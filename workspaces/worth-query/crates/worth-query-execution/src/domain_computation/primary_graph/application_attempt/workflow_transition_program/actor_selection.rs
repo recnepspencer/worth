@@ -144,18 +144,16 @@ impl WorthQueryWorkflowActorContext {
         };
         let actor = handle.with_runtime(execution, |runtime| match requirement.source() {
             Source::BoundProposal => match proposal {
-                Some(entity) => layout
-                    .proposal
-                    .proposer
-                    .observe(
-                        runtime,
-                        execution,
-                        snapshot,
-                        entity,
-                        layout.proposal.entity_kind,
-                        &mut facts,
-                    )
-                    .and_then(|actor| crate::domain_computation::primary_graph::workflow::actor::record::validate_actor_applicability(actor, true)),
+                Some(entity) => crate::domain_computation::primary_graph::workflow::actor::record::observe_actor_fields(
+                    &layout.proposal.proposer,
+                    runtime,
+                    execution,
+                    snapshot,
+                    entity,
+                    layout.proposal.entity_kind,
+                    &mut facts,
+                )
+                .and_then(|actor| crate::domain_computation::primary_graph::workflow::actor::record::validate_actor_applicability(actor, true)),
                 None => Ok(None),
             },
             Source::BoundTransition => match transition {
@@ -168,7 +166,8 @@ impl WorthQueryWorkflowActorContext {
                         Role::Executor => &layout.transition.executor,
                         _ => return Err(affinity("invalid transition role")),
                     };
-                    let actor = fields.observe(
+                    let actor = crate::domain_computation::primary_graph::workflow::actor::record::observe_actor_fields(
+                        fields,
                         runtime,
                         execution,
                         snapshot,

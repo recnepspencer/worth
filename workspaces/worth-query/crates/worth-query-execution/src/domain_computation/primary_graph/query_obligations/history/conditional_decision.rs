@@ -5,13 +5,14 @@ use journal::{
     QueryObligationDenial,
 };
 use worth_execution::ExecutionRequest;
+use worth_query_execution_obligations::facade::ledger_inspect;
 
 impl QueryObligationHistory {
     fn conditional_decision(&self, key: &[u8; 32]) -> Option<QueryConditionalDecision> {
         self.state()
             .journal
             .as_ref()
-            .and_then(|journal| journal.ledger.conditional_decision(key).cloned())
+            .and_then(|journal| ledger_inspect::conditional_decision(&journal.ledger, key).cloned())
     }
     pub(in crate::domain_computation::primary_graph) fn conditional_decisions(
         &self,

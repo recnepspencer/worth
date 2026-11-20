@@ -59,7 +59,7 @@ fn resource_disposal_resume_consumes_only_its_acknowledged_original_discharge() 
     let mut disposal = ResourceDisposal::Discharging;
     // Pending DATA is not an acknowledged discharge: the original remains.
     disposal
-        .resume_after_settlement(journal.ledger.resources.contains_key(&identity))
+        .resume_after_settlement(ledger_inspect::resources(&journal.ledger).contains_key(&identity))
         .unwrap();
     assert_eq!(disposal, ResourceDisposal::Discharging);
     // Model only the shared driver's admitted DATA cutover, not physical IO.
@@ -69,7 +69,7 @@ fn resource_disposal_resume_consumes_only_its_acknowledged_original_discharge() 
         .unwrap();
     let acknowledged = journal.ledger.position();
     disposal
-        .resume_after_settlement(journal.ledger.resources.contains_key(&identity))
+        .resume_after_settlement(ledger_inspect::resources(&journal.ledger).contains_key(&identity))
         .unwrap();
     assert_eq!(disposal, ResourceDisposal::Discharged);
     disposal.resume_after_settlement(false).unwrap();

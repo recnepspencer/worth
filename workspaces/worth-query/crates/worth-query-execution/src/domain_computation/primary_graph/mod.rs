@@ -9,13 +9,18 @@ mod access_strategy;
 mod facade;
 pub use facade::*;
 mod aggregate_identity;
+#[cfg(test)]
+mod aggregate_identity_layout_tests;
 pub(crate) mod aggregate_observation;
 pub(crate) mod aggregate_projection;
+pub(crate) use worth_query_execution_foundation::facade::primary_graph::{
+    admitted_capture, application_branch, exact_basis_access, index_maintenance_budget,
+    output_binding_identity, output_family_identity, principal_key, projection_read_origin,
+    publication_request_denial, request_allocation_control, request_local, value_decode,
+};
 pub(crate) mod application_attempt;
-pub(crate) mod application_branch;
 pub(crate) mod application_checkpoint;
 pub(crate) mod application_contribution;
-pub(crate) mod projection_read_origin;
 pub(in crate::domain_computation) use application_contribution::ComputationPrior;
 pub(in crate::domain_computation) use application_contribution::SealedComputationRetention;
 pub(crate) mod application_discovery;
@@ -44,14 +49,12 @@ pub(crate) mod authenticated_principal;
 mod bootstrap;
 pub(crate) mod bootstrap_publication;
 pub(crate) mod conditional_operation;
-pub(crate) mod publication_request_denial;
 pub(crate) use conditional_operation::classify_bridge_signal;
 pub use conditional_operation::conditional_intent_read_is_active_for_test;
 mod denial;
 pub(crate) mod entity_key;
 pub(crate) mod entity_resolution;
 mod entity_resolution_denial;
-pub(crate) mod exact_basis_access;
 mod expression;
 mod fragment_view;
 pub(crate) mod freshness;
@@ -64,7 +67,6 @@ pub use fragment_view::{
 };
 pub(in crate::domain_computation) use handler::DecisionContextUse;
 pub(crate) mod index_currency;
-pub(crate) mod index_maintenance_budget;
 pub(crate) mod index_refresh;
 mod initial_schema_denial;
 mod invariant_installation;
@@ -87,13 +89,9 @@ mod observations;
 mod operation_body;
 mod ordinary_read;
 pub(crate) mod output_lineage;
-mod request_allocation_control;
 pub(in crate::domain_computation) use output_lineage::SourceInvalidationOwner;
-pub(crate) mod output_binding_identity;
-pub(crate) mod output_family_identity;
 pub(crate) mod output_reuse;
 mod principal_currentness_capture;
-mod principal_key;
 pub(in crate::domain_computation) use principal_currentness_capture::capture_principal_currentness_admitted;
 pub(in crate::domain_computation) use principal_currentness_capture::PrincipalCurrentnessCaptureStop;
 pub(crate) mod product_activation;
@@ -153,14 +151,12 @@ pub(in crate::domain_computation) use provider::QueryPreparingApplicationCommit;
 pub(in crate::domain_computation) use provider::RegisteredPrimaryRead;
 pub use retained_correction::WorthQueryCorrectionRetentionDenial;
 pub(crate) mod component_selection;
-mod request_local;
 pub(crate) mod resolution;
 pub(crate) mod resolution_denial;
 pub(crate) mod root;
 mod root_path_selection;
-pub(crate) mod schema_layout;
+pub(crate) use worth_query_execution_layout::facade::schema_layout;
 mod typed_bootstrap;
-pub(crate) mod value_decode;
 pub(crate) mod workflow;
 pub use workflow::captured_input::{
     PreparedWorkflowCapturedInput, WorkflowCapturedInputContract, WorkflowCapturedInputDenial,
@@ -242,7 +238,6 @@ pub use observations::principal_target_reads_on_this_thread_for_test;
 pub use application_runtime::WorthQueryOperationInputCaptureDenial;
 pub(in crate::domain_computation) mod selected_read_indexes;
 
-pub(crate) mod admitted_capture;
 pub(crate) mod causal_inspection;
 mod record_reservations;
 

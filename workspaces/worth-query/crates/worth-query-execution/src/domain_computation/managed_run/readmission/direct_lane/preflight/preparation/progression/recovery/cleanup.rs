@@ -23,7 +23,7 @@ use crate::domain_computation::{
 mod inspection;
 use crate::domain_computation::managed_run::durable_custody::ManagedRunCustody;
 use crate::domain_computation::primary_graph::query_obligations::{
-    QueryManagedExecutionRelease, QueryManagedRunPosture, QueryManagedRunResources,
+    QueryManagedRunPosture, QueryManagedRunResources,
 };
 
 use inspection::WorthQueryCompletedDirectReadmissionCleanup;
@@ -117,7 +117,10 @@ impl WorthQueryDirectReadmissionCleanupRequired {
     pub fn finish(mut self) -> WorthQueryDirectReadmissionCleanupOutcome {
         let custody = self.affinity.custody();
         let mut resources =
-            QueryManagedRunResources::observe(false, &self.affinity.provider_work_snapshot());
+            crate::domain_computation::managed_run::durable_custody::observe_managed_run_resources(
+                false,
+                &self.affinity.provider_work_snapshot(),
+            );
         let provider = self.provider.finish();
         self.affinity
             .provider_work_mut()
@@ -126,7 +129,7 @@ impl WorthQueryDirectReadmissionCleanupRequired {
         resources.restored_execution = provider
             .restored_execution_release
             .as_ref()
-            .map(QueryManagedExecutionRelease::observe);
+            .map(crate::domain_computation::managed_run::durable_custody::observe_managed_execution_release);
         if let Some(release) = &provider.restored_execution_release {
             self.affinity
                 .provider_work_mut()

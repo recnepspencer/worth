@@ -77,7 +77,22 @@ impl WorthQueryApplicationAttemptDenial {
     pub fn new(kind: WorthQueryApplicationAttemptDenialKind, subject: impl Into<String>) -> Self {
         Self::from_cause(kind, subject.into(), AttemptDenialCause::None)
     }
+}
 
+impl From<worth_query_execution_layout::facade::schema_layout::WorthQueryUndeclaredRecordSelection>
+    for WorthQueryApplicationAttemptDenial
+{
+    fn from(
+        cause: worth_query_execution_layout::facade::schema_layout::WorthQueryUndeclaredRecordSelection,
+    ) -> Self {
+        Self::new(
+            WorthQueryApplicationAttemptDenialKind::UndeclaredEffect,
+            cause.into_subject(),
+        )
+    }
+}
+
+impl WorthQueryApplicationAttemptDenial {
     /// The attempt's request lost its authority: it was cancelled, passed
     /// its deadline, or its authentication expired.
     pub(in crate::domain_computation::primary_graph) fn request_authority_lost(

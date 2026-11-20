@@ -3,6 +3,7 @@ use super::*;
 use journal::*;
 use worth_execution::ExecutionRequest;
 use worth_foundational::facade::DurableCompositeCommitIdentity;
+use worth_query_execution_obligations::facade::ledger_inspect;
 
 impl QueryObligationHistory {
     /// Same canonical source-root meaning and scope; liveness belongs to the
@@ -12,7 +13,11 @@ impl QueryObligationHistory {
         current: DurableCompositeCommitIdentity,
     ) -> Vec<DurableCompositeCommitIdentity> {
         let state = self.state();
-        let Some(output) = state.journal.as_ref().map(|journal| &journal.ledger.output) else {
+        let Some(output) = state
+            .journal
+            .as_ref()
+            .map(|journal| ledger_inspect::output(&journal.ledger))
+        else {
             return Vec::new();
         };
         let Some(current_row) = output.sources.get(&current) else {
@@ -44,7 +49,13 @@ impl QueryObligationHistory {
         self.state()
             .journal
             .as_ref()
-            .map(|journal| journal.ledger.output.sources.values().cloned().collect())
+            .map(|journal| {
+                ledger_inspect::output(&journal.ledger)
+                    .sources
+                    .values()
+                    .cloned()
+                    .collect()
+            })
             .unwrap_or_default()
     }
     pub(in crate::domain_computation::primary_graph) fn retain_output_source(
@@ -57,12 +68,11 @@ impl QueryObligationHistory {
         };
         let driver = self.lock_publication()?;
         driver.finish_pending(medium.as_ref(), request)?;
-        if let Some(prior) = self
-            .state()
-            .journal
-            .as_ref()
-            .and_then(|journal| journal.ledger.output.sources.get(&row.commit))
-        {
+        if let Some(prior) = self.state().journal.as_ref().and_then(|journal| {
+            ledger_inspect::output(&journal.ledger)
+                .sources
+                .get(&row.commit)
+        }) {
             return if prior == &row {
                 Ok(())
             } else {
@@ -85,12 +95,11 @@ impl QueryObligationHistory {
         };
         let driver = self.lock_publication()?;
         driver.finish_pending(medium.as_ref(), request)?;
-        if !self
-            .state()
-            .journal
-            .as_ref()
-            .is_some_and(|journal| journal.ledger.output.sources.contains_key(&commit))
-        {
+        if !self.state().journal.as_ref().is_some_and(|journal| {
+            ledger_inspect::output(&journal.ledger)
+                .sources
+                .contains_key(&commit)
+        }) {
             return Ok(());
         }
         driver.publish(
@@ -116,7 +125,12 @@ impl QueryObligationHistory {
             .state()
             .journal
             .as_ref()
-            .and_then(|journal| journal.ledger.output.sources.get(&commit).cloned())
+            .and_then(|journal| {
+                ledger_inspect::output(&journal.ledger)
+                    .sources
+                    .get(&commit)
+                    .cloned()
+            })
             .ok_or(QueryObligationDenial::UnknownObligation)?;
         if let Some(known) = prior.bindings {
             return if known == sources {

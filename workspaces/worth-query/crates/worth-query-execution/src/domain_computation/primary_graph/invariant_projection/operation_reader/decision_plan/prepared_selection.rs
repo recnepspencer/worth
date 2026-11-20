@@ -59,7 +59,13 @@ impl<Schema: ApplicationSchema, Operation>
         self.reader
             .layout
             .record_selection(field)
-            .map_err(HandlerExecutionDenial::new)?;
+            .map_err(|cause| {
+                HandlerExecutionDenial::new(
+                    crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::from(
+                        cause,
+                    ),
+                )
+            })?;
         let execution = self.reader.execution;
         self.reader
             .retention_control

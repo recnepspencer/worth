@@ -15,9 +15,9 @@
 
 mod basis;
 mod domain_computation;
-mod equality_type_id;
-mod execution_digest;
-mod relational_snapshot_release;
+pub(crate) use worth_query_execution_foundation::facade::{
+    equality_type_id, execution_digest, relational_snapshot_release,
+};
 
 pub mod facade;
 pub mod publication_boundary;

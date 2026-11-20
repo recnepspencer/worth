@@ -22,6 +22,10 @@ worth-runtime-world = { path = "../../../../crates/worth-runtime-world" }
 worth-signal = { path = "../../../../crates/worth-signal" }
 worth-query-admission = { path = "../worth-query-admission" }
 worth-query-declaration = { path = "../worth-query-declaration" }
+worth-query-execution-diagnostics = { path = "../worth-query-execution-diagnostics" }
+worth-query-execution-foundation = { path = "../worth-query-execution-foundation" }
+worth-query-execution-layout = { path = "../worth-query-execution-layout" }
+worth-query-execution-obligations = { path = "../worth-query-execution-obligations" }
 worth-query-installation = { path = "../worth-query-installation" }
 
 [dev-dependencies]
