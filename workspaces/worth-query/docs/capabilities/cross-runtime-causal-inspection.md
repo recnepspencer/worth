@@ -425,9 +425,11 @@ protocol lives in the Execution owner,
 `worth_query_execution::facade::evidence_identity`. An identity has a scope, a
 canonicalization scheme, sequence boundaries and an opaque comparison key.
 
-- Compare identities with the scheme-qualified comparison
-  (`eq_same_scheme`). Two identities from different schemes are not equal even
-  when their bytes match.
+- Compare identities with the scheme-qualified comparison. `eq_same_scheme`
+  returns `Ok(bool)` for two identities of the same scheme and
+  `Err(WorthQueryEvidenceIdentityComparisonError)` for different schemes; it
+  never compares bytes across schemes. `same_scheme_as` checks the scheme
+  alone.
 - `reporting_projection()` and `terminal_projection_for_reporting()` are for
   display and logs only.
 - `bridge_evidence_identity()` carries the identity across to Runtime Bridge

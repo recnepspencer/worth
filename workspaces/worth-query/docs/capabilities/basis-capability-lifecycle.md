@@ -1,6 +1,5 @@
 # Basis Capability Lifecycle
 
-
 ## What This Feature Is
 
 The basis capability lifecycle lets an application choose which version of
@@ -102,41 +101,24 @@ This is the smallest honest call. `observation_basis` is already the sealed
 proof required by the observation lane; the application does not assemble or
 stamp it.
 
-## Real Example
+## Selection is not snapshot admission
 
-```rust
-use worth_query_host::facade::admission::basis::{
-    basis_lifecycle, emit_observation_basis_receipt, envelope_basis_use,
-    readmit_lower_runtime_evidence, LowerRuntimeBasisEvidence,
-};
+Selecting a world, for example `runtime_snapshot(snapshot, binding)`, declares
+which world the operation must use and records the expected lower-runtime
+binding. It does not observe the snapshot or prove that it exists. The scoped
+capability is authority for the declared lane only.
 
-let scoped = basis_lifecycle()
-    .runtime_snapshot(
-        "workspace-generation-42",
-        "runtime:workspace-generation-42",
-    )
-    .observe()?;
+Proof that a snapshot exists can only come from the lower runtime that actually
+resolved it. `readmit_lower_runtime_evidence` checks a
+`LowerRuntimeBasisEvidence` against the capability's expected binding before
+`emit_observation_basis_receipt` emits a use receipt. Construct that evidence
+only from an owner-issued observation: `LowerRuntimeBasisEvidence::from_runtime_bridge_facade`
+stores the identity, digest and version it is given and proves nothing by
+itself. No Host route issues Runtime Bridge snapshot evidence for this
+readmission today, so applications use the scoped capability directly, as in
+the small example, and do not emit lower-runtime basis-use receipts.
 
-let bound = readmit_lower_runtime_evidence(
-    scoped,
-    LowerRuntimeBasisEvidence::from_runtime_bridge_facade(
-        "runtime:workspace-generation-42",
-        "workspace-observation-evidence",
-        1,
-    ),
-)?;
-
-let receipt = emit_observation_basis_receipt(bound);
-let envelope = envelope_basis_use(receipt);
-
-assert_eq!(envelope.receipt().basis_family().as_str(), "runtime_snapshot");
-```
-
-Query owns admission and capability identity. The runtime bridge contributes
-evidence for the snapshot it actually resolved. Readmission proves that the
-evidence matches the sealed capability before a use receipt is emitted. The
-envelope can be inspected or reported, but its digest does not replace the
-capability it describes.
+## Subscriptions
 
 For subscriptions, derive activation from the admitted declaration proof:
 
@@ -152,6 +134,40 @@ let activation_basis = activate_subscription_basis(&declaration_basis);
 ```
 
 This keeps subscription activation tied to the exact declaration authority.
+
+## Policy, tenant and relationship-proof admission
+
+Admission also owns the policy and tenant context a query runs under and the
+relationship-proof descriptors that narrow it. Host re-exports them as
+`worth_query_host::facade::admission::{policy, tenant, relationship}`.
+
+- `policy::admit_policy_tenant_context(query, policy, tenant, branch, schema,
+  mode)` admits an `AdmittedPolicyTenantContext` for one
+  `CanonicalQueryArtifact`, or refuses with `PolicyTenantAdmissionError`.
+- `relationship::admit_relationship_proofs(query, &admitted, &descriptors)`
+  admits a `RelationshipProofDescriptorSet` against that context. Descriptors
+  are built with `direct_edge`, `bounded_ancestor`, `bounded_descendant` and
+  `tenant_membership`.
+- The topology descriptors must cover the query's canonical traversal exactly:
+  each traversal step is matched by a descriptor for the same relation with
+  enough depth, and every topology descriptor is used. Anything else refuses
+  with `QueryShapeMismatch`. A descriptor's policy digest must match the
+  admitted policy (`PolicyMismatch`), and a tenant-membership descriptor must
+  match the admitted tenant schema (`TenantSchemaMismatch`).
+- The set's `RelationshipProofBudget` bounds descriptor count and topology
+  width (`RelationshipProofBudgetExceeded`, `UnboundedProofTopology`).
+  Unbounded recursive walks and host callback descriptors always refuse
+  (`UnboundedRecursiveWalk`, `HostCallbackForbidden`).
+
+A successful admission proves only that the descriptors are legal for this
+query, policy and tenant context. It does not evaluate the relationship at
+runtime or prove that it holds:
+`relationship::runtime_backed_relationship_proof_support_profile()` reports
+descriptor admission and the four topologies as verified, runtime proof
+evaluation as deferred, and host callback proofs as forbidden. It also grants
+no request permission. Each request still passes its own capability
+authorization; see
+[Application Authorization And Emergency Elevation](./application-authorization-and-emergency-elevation.md).
 
 ## How It Relates To Other Features
 
@@ -183,6 +199,8 @@ Use typed errors first:
 - Treating a declaration draft, label, or digest as a scoped capability.
 - Rebuilding admission, scoping, or capability identity in a consumer crate.
 - Activating a subscription from independently selected basis information.
+- Building `LowerRuntimeBasisEvidence` from caller-chosen strings and reporting
+  the resulting receipt as evidence of an observed snapshot.
 - Importing certification tooling as an ordinary runtime API.
 - Treating a deferred store or durable lane as runtime-backed support.
 

@@ -8,15 +8,30 @@ changes and reads. For laws enforced when an application changes its graph, see
 
 Canonical query validation is the legality gate for canonical query bundles. It
 confirms that a query's projections, predicates, ordering, traversal and
-result-shape bindings are legal for the schema basis it targets, then freezes a
-stable validated identity for the bundle. The Declaration owner implements it;
-applications reach it through `worth_query_decl::facade::validation`:
+result-shape bindings are legal for the schema it targets, then freezes a stable
+validated identity for the bundle. The Declaration owner implements it;
+applications reach it through `worth_query_decl::facade`:
 
-- `validate_canonical_bundle(bundle, schema_view)` and
-  `validate_canonical_bundle_with_failure_artifact(...)`
-- `ValidatedQueryBundle`, `QueryValidationReport`, `QueryValidationCounters`
-- `ValidationEvent`, `ValidationRejectionMatrix`
-- `QueryValidationError` and its `ValidationFailureClass`
+```rust
+use worth_query_decl::facade::{canonicalization::CanonicalQueryBundle, typed::QuerySchemaView, validation};
+
+fn check(bundle: CanonicalQueryBundle, schema: QuerySchemaView) {
+    match validation::validate_canonical_bundle(bundle, schema) {
+        Ok(validated) => {
+            // `validated.report().events()` ends with `IdentityFrozen`.
+            let _ = (validated.query(), validated.result_shape(), validated.counters());
+        }
+        Err(error) => {
+            // A rejection carries no bundle and no report.
+            let _ = (error.failure_class(), error.failure_digest());
+        }
+    }
+}
+```
+
+`validate_canonical_bundle(bundle, schema)` takes the `CanonicalQueryBundle`
+and the `QuerySchemaView` by value and returns
+`Result<ValidatedQueryBundle, QueryValidationError>`.
 
 What validation proves:
 
@@ -28,25 +43,21 @@ What validation proves:
   query;
 - the declared schema basis is compatible with the bundle.
 
-How it runs:
+**On success** the `ValidatedQueryBundle` exposes `query()`, `result_shape()`,
+`counters()` and `report()`. The `QueryValidationReport` lists the stages that
+passed in order through `events()`: `ProjectionValidated`, `OrderingValidated`,
+`PredicateValidated`, `TraversalValidated`, `ResultShapeBindingValidated`,
+`CompatibilityEstablished` and finally
+`IdentityFrozen { query_digest, result_shape_digest }`.
 
-1. Authoring and composition produce a `CanonicalQueryBundle`.
-2. `validate_canonical_bundle` walks projection, ordering, predicate, traversal
-   and result-shape legality against the `QuerySchemaView`.
-3. Each successful stage emits a `ValidationEvent`: `ProjectionValidated`,
-   `OrderingValidated`, `PredicateValidated`, `TraversalValidated`,
-   `ResultShapeBindingValidated`, `CompatibilityEstablished`.
-4. If every stage succeeds, validation freezes the identity and emits
-   `IdentityFrozen { query_digest, result_shape_digest }`.
-5. If any stage fails, validation returns a typed `QueryValidationError`, such
-   as `ProjectionWideningDenied` or
-   `IllegalWorkflowPredicateCapabilityOrContextShape`, grouped by
-   `ValidationFailureClass`.
+**On rejection** the caller gets only the `QueryValidationError`. Its variant
+names the failing rule, for example `ProjectionWideningDenied` or
+`IllegalWorkflowPredicateCapabilityOrContextShape`; `failure_class()` groups it
+as a `ValidationFailureClass`, and `failure_digest()` gives a stable digest of
+the failure. There is no bundle, report or event list for a rejected query.
 
 Validation runs before planning; a plan never guesses whether a bundle was
-legal. To debug a rejection, read the bundle's `report()`: the ordered events
-show which stage succeeded before the failure, and the rejection matrix shows
-which failure family accumulated.
+legal.
 
 Anti-patterns:
 
