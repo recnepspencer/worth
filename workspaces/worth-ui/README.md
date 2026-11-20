@@ -1,5 +1,7 @@
 # Worth UI Workspace
 
+> **Parked (2026-11-20).** Worth UI is parked by user ruling and does not build: `worth-ui-query-binding` and `worth-ui-certification` still depend on the retired `worth-query` engine. Migration to `worth-query-host` is tracked in [#262](https://github.com/recnepspencer/worth/issues/262).
+
 This workspace is the dedicated home for the Worth UI product facade,
 DSL-to-runtime application lifecycle, Query binding edge, host contract,
 native and headless mechanics, and certification surfaces.

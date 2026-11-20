@@ -25,23 +25,23 @@ application helpers.
 Milestone 5.5 delivered:
 
 - query-owned workflow declaration, basis-binding, and admission surfaces in
-  [crates/worth-query/src/workflow/foundation.rs](../../workspaces/worth-query/crates/worth-query/src/workflow/foundation.rs)
+  [crates/worth-query/src/workflow/foundation.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/workflow/foundation.rs)
 - query-owned workflow lowering for relational mutation, relational merge, and
   bridge writeback in
-  [crates/worth-query/src/workflow/lowering.rs](../../workspaces/worth-query/crates/worth-query/src/domain_capabilities/canonical_runtime/workflow/lowering.rs)
+  [crates/worth-query/src/workflow/lowering.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/domain_capabilities/canonical_runtime/workflow/lowering.rs)
 - query-shaped conflict inspection, post-merge inspection, authority-outcome
   shaping, and replay-safe bundling in
-  [crates/worth-query/src/workflow/inspection.rs](../../workspaces/worth-query/crates/worth-query/src/workflow/inspection.rs)
+  [crates/worth-query/src/workflow/inspection.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/workflow/inspection.rs)
   and
-  [crates/worth-query/src/workflow/inspection_projection.rs](../../workspaces/worth-query/crates/worth-query/src/workflow/inspection_projection.rs)
+  [crates/worth-query/src/workflow/inspection_projection.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/workflow/inspection_projection.rs)
 - dedicated workflow performance and counter surfaces in
-  [crates/worth-query/src/workflow/performance.rs](../../workspaces/worth-query/crates/worth-query/src/workflow/performance.rs)
+  [crates/worth-query/src/workflow/performance.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/workflow/performance.rs)
 - relational authority-owned merge inspection proof minting in
   [crates/worth-relational/src/merge/data/artifacts.rs](../../crates/worth-relational/src/merge/data/artifacts/mod.rs)
   and
   `crates/worth-relational/src/merge/logic/mod.rs`
 - milestone-native workflow certification in
-  [crates/worth-query/src/harness/workflow_certification](../../workspaces/worth-query/crates/worth-query/src/harness/workflow_certification)
+  [crates/worth-query/src/harness/workflow_certification](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/harness/workflow_certification)
 - compile-fail proof boundaries for workflow declarations, lowered artifacts,
   inspection artifacts, authority outcomes, replay bundles, and authority
   override in
@@ -61,10 +61,10 @@ now exist directly.
 
 Covered by:
 
-- [mod.rs](../../workspaces/worth-query/crates/worth-query/src/harness/workflow_certification/mod.rs)
-- [lane.rs](../../workspaces/worth-query/crates/worth-query/src/harness/workflow_certification/lane.rs)
+- [mod.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/harness/workflow_certification/mod.rs)
+- [lane.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/harness/workflow_certification/lane.rs)
 - `matrix.rs`
-- [row_catalog.rs](../../workspaces/worth-query/crates/worth-query/src/harness/workflow_certification/row_catalog.rs)
+- [row_catalog.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/harness/workflow_certification/row_catalog.rs)
 - `tests.rs`
 
 What is proven:
@@ -111,9 +111,9 @@ What is proven:
 
 Covered by:
 
-- [crates/worth-query/src/workflow/inspection.rs](../../workspaces/worth-query/crates/worth-query/src/workflow/inspection.rs)
-- [crates/worth-query/src/workflow/inspection_projection.rs](../../workspaces/worth-query/crates/worth-query/src/workflow/inspection_projection.rs)
-- [crates/worth-query/src/workflow/tests/inspection.rs](../../workspaces/worth-query/crates/worth-query/src/workflow/tests/inspection.rs)
+- [crates/worth-query/src/workflow/inspection.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/workflow/inspection.rs)
+- [crates/worth-query/src/workflow/inspection_projection.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/workflow/inspection_projection.rs)
+- [crates/worth-query/src/workflow/tests/inspection.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/workflow/tests/inspection.rs)
 - [crates/worth-relational/src/merge/data/artifacts.rs](../../crates/worth-relational/src/merge/data/artifacts/mod.rs)
 - [crates/worth-relational/src/tests/history/milestone_7d_phase_e.rs](../../crates/worth-relational/src/tests/history/milestone_7d_phase_e.rs)
 
@@ -133,8 +133,8 @@ What is proven:
 
 Covered by:
 
-- [crates/worth-query/src/workflow/lowering.rs](../../workspaces/worth-query/crates/worth-query/src/domain_capabilities/canonical_runtime/workflow/lowering.rs)
-- [crates/worth-query/src/workflow/tests/lowering.rs](../../workspaces/worth-query/crates/worth-query/src/workflow/tests/lowering.rs)
+- [crates/worth-query/src/workflow/lowering.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/domain_capabilities/canonical_runtime/workflow/lowering.rs)
+- [crates/worth-query/src/workflow/tests/lowering.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/workflow/tests/lowering.rs)
 - `crates/worth-query/src/harness/workflow_certification/matrix.rs`
 
 What is proven:

@@ -35,26 +35,26 @@ Milestone 1 delivered:
 
 - the `worth-query` crate wired into the workspace
 - a narrow public facade in
-  [facade.rs](../../workspaces/worth-query/crates/worth-query/src/facade.rs)
+  [facade.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/facade.rs)
 - typed admitted authoring families under
-  [authoring](../../workspaces/worth-query/crates/worth-query/src/authoring)
+  [authoring](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/authoring)
 - a decomposed request-entry subdomain under
   [authoring/request](../../workspaces/worth-query/crates/worth-query-declaration/src/authoring/request)
 - canonical artifact construction, failure taxonomy, pipeline stages, and bundle
   proof state under
-  [canonicalization](../../workspaces/worth-query/crates/worth-query/src/canonicalization)
+  [canonicalization](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/canonicalization)
 - explicit canonical digests and equivalence contracts under
-  [identity](../../workspaces/worth-query/crates/worth-query/src/identity)
+  [identity](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/identity)
 - result-shape family, field, and compatibility helpers under
   [result_shape](../../workspaces/worth-query/crates/worth-query-declaration/src/result_shape)
 - query-owned binding descriptors, slots, and metadata policy under
-  [binding](../../workspaces/worth-query/crates/worth-query/src/binding)
+  [binding](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/binding)
 - canonicalization reports, warnings, counters, and identity-freeze evidence
   under
-  [diagnostics](../../workspaces/worth-query/crates/worth-query/src/diagnostics)
+  [diagnostics](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/diagnostics)
 - milestone-native certification adapters, matrices, fixtures, and profiles
   under
-  [harness](../../workspaces/worth-query/crates/worth-query/src/harness)
+  [harness](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/harness)
 - compile-fail authority-boundary tests under
   [tests](../../workspaces/worth-query/crates/worth-query/tests)
 

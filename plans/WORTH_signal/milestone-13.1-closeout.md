@@ -101,7 +101,7 @@ policy, tier, runtime generation, direct/derived count, or owner identity is
 rejected.
 
 The application-facing guide is
-[Granular Live Invalidation](../../workspaces/worth-query/crates/worth-query/docs/runtime-surfaces/granular-live-invalidation.md).
+[Granular Live Invalidation](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/docs/runtime-surfaces/granular-live-invalidation.md).
 
 ## Production Certification Worlds
 

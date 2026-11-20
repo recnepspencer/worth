@@ -47,8 +47,6 @@ def main(driver, argv=None, default_suites=None, default_out=None, allowed_suite
         parser.error("suite is outside this workspace gate")
     if refused_scale_suites(suites, args.census):
         parser.error("ignored scale tests are scheduled-only, outside census execution")
-    if args.census and "ui" in suites:
-        parser.error("worth-ui is excluded from census execution")
     args.out.mkdir(parents=True, exist_ok=True)
     gate = driver.Gate(args.out, census=args.census)
     gate.plan(suites)

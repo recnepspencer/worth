@@ -8,7 +8,7 @@ delivery roots from one member body. Applications import only `worth-query-decl`
 and `worth-query-host`.
 
 To explain an original query result or authored operation, use
-[`request.inspect` and `request.inspect_source`](crates/worth-query/docs/capabilities/cross-runtime-causal-inspection.md).
+[`request.inspect` and `request.inspect_source`](docs/capabilities/cross-runtime-causal-inspection.md).
 The guide shows how to save originals, read a settled producer output, admit
 current inspection access and handle missing detail.
 
@@ -18,7 +18,7 @@ Query carries the original request through preparation, computation and completi
 the owner supplies its domain algorithm. Build and reopen installations also require
 the embedded [application build identity](../../docs/build-an-application.md#application-build-identity).
 
-Ordinary fixed, discovered, source-only and bound workflow actions use the [owning entry](crates/worth-query/docs/foundations/ordinary-application-front-door.md#owning-fixed-and-source-only-actions).
+Ordinary fixed, discovered, source-only and bound workflow actions use the [owning entry](docs/foundations/ordinary-application-front-door.md#owning-fixed-and-source-only-actions).
 Each advance accepts fresh authority and delegates one admitted native phase.
 Provider managed runs remain the resource/execution owners; application ownership
 adds no polling, budgets or second scheduler. Delivery and cleanup remain separate;
@@ -27,8 +27,8 @@ operation funnel; discovered ownership retains the original required-output grap
 Manual native controls are explicit advanced entrances.
 
 
-This workspace owns the Query engine, its audience facades, and its explicit
-cold certification package.
+This workspace owns the Query authority crates, their audience facades, and
+the explicit cold certification package.
 
 Application code imports only the audience facades `worth-query-decl` and
 `worth-query-host`. Start with the [API Map](../../docs/api.md), then the
@@ -36,33 +36,24 @@ Application code imports only the audience facades `worth-query-decl` and
 [`worth-query-host` README](./crates/worth-query-host/README.md). Certification
 code also uses `worth-query-replay` and `worth-query-certification`.
 
-The `worth-query` crate is the internal engine. Its `worth_query::facade`
-Workspace surface serves platform crates such as `worth-ui-query-binding` and
-is not an application API.
-
 For engine internals, start with:
 
-- [`docs/AI_README.md`](./crates/worth-query/docs/AI_README.md), the internal
+- [`docs/AI_README.md`](./docs/AI_README.md), the internal
   architecture map of the Query engine
-- [Runtime-Installed Domains And Operations](./crates/worth-query/docs/domain-capabilities/runtime-installed-domains.md)
-- [Conditional Installed Operations](./crates/worth-query/docs/domain-capabilities/conditional-installed-operations.md)
-- [Installed Operation Re-Execution And Replay](./crates/worth-query/docs/domain-capabilities/installed-operation-reexecution-and-replay.md)
-- [Typed Stops And Remediation Guidance](./crates/worth-query/docs/domain-capabilities/typed-stops-and-remediation-guidance.md)
-- [Installed Operation Lineage And Promotion](./crates/worth-query/docs/domain-capabilities/installed-operation-lineage-and-promotion.md)
-- [Application Aftermath, External Effects, And Recovery](./crates/worth-query/docs/execution/application-aftermath-and-recovery.md)
-- [Granular Live Invalidation](./crates/worth-query/docs/runtime-surfaces/granular-live-invalidation.md)
+- [Conditional Installed Operations](./docs/domain-capabilities/conditional-installed-operations.md)
+- [Application Aftermath, External Effects, And Recovery](./docs/execution/application-aftermath-and-recovery.md)
 - [Ordinary Product Workflow](./crates/worth-query-certification/examples/ordinary_product_workflow.rs)
 - [Advanced Product Branching](./crates/worth-query-certification/examples/advanced_product_branching.rs)
 
-Product branches, exact composite history, retained observations, live recovery
-handles, and pending cleanup are memory-resident. Process loss releases those
-capabilities. Restart durability belongs to Store and requires fresh owner
-readmission; Query does not serialize live authority.
+Live handles (selectors, retained observations, recovery handles) belong to one
+process and one Home incarnation. Durable state lives in the application Home
+and is readmitted by its owners when the Home reopens; Query does not serialize
+live authority. See [Use an Application Home](../../docs/application-home.md).
 
 Installed record/aspect history captures genuine disclosed record generations
 and pages canonical changes at a pinned product through fresh SubjectRead and
 independent history metadata decisions. See the
-[Decl/Host capture and paging guide](./crates/worth-query/docs/capabilities/record-and-aspect-history.md)
+[Decl/Host capture and paging guide](./docs/capabilities/record-and-aspect-history.md)
 for finite work/storage limits, typed retired gaps and release. The compiled
 facade audit qualifies public and governed history, including current-security
 revocation while truth stays pinned.
@@ -97,7 +88,7 @@ Decode verifies framing and checksum before the same-backing native handoff;
 ordinary native recovery still owns readmission. Byte equality and wire grammar
 do not encode allocation policy. Native codec temporaries, decoded rows and
 allocator/Arc metadata remain outside this payload charge. See the
-[capture and reopen contract](./crates/worth-query/docs/foundations/ordinary-application-front-door.md#capture-and-reopen-cost-boundary).
+[capture and reopen contract](./docs/foundations/ordinary-application-front-door.md#capture-and-reopen-cost-boundary).
 
 Required output progression rechecks native consumer decision facts before
 following its previously consumed dependencies. Sealed child entity/field content
@@ -159,14 +150,6 @@ certification:
 ```text
 cargo check --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-installation
 cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-installation
-```
-
-For behavior owned by the main `worth-query` runtime package, choose either a
-check or a test command. Do not pre-run check and `--no-run` before the test:
-
-```text
-cargo check --manifest-path workspaces/worth-query/Cargo.toml -p worth-query --tests
-cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query
 ```
 
 Admission, execution, aftermath progression, publication, and host facade

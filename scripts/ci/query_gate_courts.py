@@ -9,7 +9,6 @@ FIXTURE = (
     "consumer_entry/Cargo.toml"
 )
 BANK = "workspaces/worth-query-bank-world/Cargo.toml"
-UI = "workspaces/worth-ui/Cargo.toml"
 BOUNDARY = "tools/boundary-check/Cargo.toml"
 
 def packages(*names):
@@ -18,21 +17,18 @@ def packages(*names):
 
 LOWER = ("worth-relational", "worth-execution", "worth-signal",
          "worth-runtime-bridge", "worth-runtime-world")
-QUERY_PUBLIC = ("worth-query-execution", "worth-query-publication", "worth-query",
-                "worth-query-host")
 FIXTURE_PACKAGES = ("worth-query-topology-entry", "worth-query-parameter-entry",
                     "worth-query-consumer-root")
 
 # One test build per group. Every suite of a group takes its binaries from
 # the same cargo selection, so the first-party chain is compiled once.
 ROOT_TESTS = ["--workspace", "--lib", "--tests"]
-COURT_OWNERS = {'worth-court-execution': ['worth-execution'], 'worth-court-foundational-certification-boundary-artifacts': ['worth-foundational'], 'worth-court-foundational-expressions': ['worth-foundational'], 'worth-court-foundational-certification-boundary-evidence': ['worth-foundational'], 'worth-court-proof': ['worth-proof'], 'worth-court-relational-certification': ['worth-relational'], 'worth-court-relational-branch-reference-compile-time': ['worth-relational'], 'worth-court-runtime-bridge': ['worth-runtime-bridge'], 'worth-court-runtime-world': ['worth-runtime-world'], 'worth-court-server-certification-suite': ['worth-server'], 'worth-court-server-product-operation-phase-eleven': ['worth-server'], 'worth-court-server-product-operation-phase-thirteen-shared-read': ['worth-server'], 'worth-court-signal-owner-services': ['worth-signal'], 'worth-court-signal-branch-retention-contract': ['worth-signal'], 'worth-court-signal-wasm': ['worth-signal-wasm']}
+COURT_OWNERS = {'worth-court-execution': ['worth-execution'], 'worth-court-foundational-certification-boundary-artifacts': ['worth-foundational'], 'worth-court-foundational-expressions': ['worth-foundational'], 'worth-court-foundational-certification-boundary-evidence': ['worth-foundational'], 'worth-court-proof': ['worth-proof'], 'worth-court-relational-certification': ['worth-relational'], 'worth-court-relational-branch-reference-compile-time': ['worth-relational'], 'worth-court-runtime-bridge': ['worth-runtime-bridge'], 'worth-court-runtime-world': ['worth-runtime-world'], 'worth-court-signal-owner-services': ['worth-signal'], 'worth-court-signal-branch-retention-contract': ['worth-signal'], 'worth-court-signal-wasm': ['worth-signal-wasm']}
 
 GROUPS = {
     "root": ROOT_TESTS,
     "fixture": ["--manifest-path", FIXTURE, *packages(*FIXTURE_PACKAGES),
                 "--lib", "--bins", "--tests"],
-    "ui": ["--manifest-path", UI, "-p", "worth-ui-query-binding", "--lib"],
 }
 
 CATEGORIES = ("process", "oracle", "cost", "determinism", "compile_fail")
@@ -91,7 +87,6 @@ TEST_SUITES = {
     ),
     # Topology cases get individual processes; other fixture owners use normal chunks.
     "fixture": ("fixture", everything, 150, 16),
-    "ui": ("ui", everything, 100, 2),
     "bank": ("bank", everything, 150, 1),
 }
 # Category suites reuse the same build and select top-level path prefixes.

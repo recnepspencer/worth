@@ -30,7 +30,7 @@ A paired `.why_changed(&before)` independently admits both originals and their
 diagnostics. Source-only inspection uses
 `fresh.inspect_source::<SourceDisclosure>(&receipt).why_performed()`.
 
-The [capability guide](../../workspaces/worth-query/crates/worth-query/docs/capabilities/cross-runtime-causal-inspection.md)
+The [capability guide](../../workspaces/worth-query/docs/capabilities/cross-runtime-causal-inspection.md)
 owns exact signatures, declarations, supported shapes and refusal handling. The
 [application guide](../../docs/build-an-application.md#inspect-original-source-and-query-evidence)
 connects acquisition, admission, rich views and close.
@@ -90,16 +90,16 @@ assembly prevents publication and releases fresh funding; it is not evidence
 expiry. Close each report and the last original holder. Closing one sibling
 leaves the survivor usable, and owner eviction detaches successor custody.
 
-## Retained platform audience
+## Retired platform audience
 
-The older `worth-query` engine keeps its separately authorized legacy
-`QueryObservationReceipt` plus `ScopedInspectionBasis` orchestration. It is not
-an application entrance for current original observations. Publication forwards
-current observations through the narrow `application_inspection` contract; Host's
-inspection namespace cannot import the legacy builder/basis. Query and Bridge
-Native-materialization fences require the fresh application route.
+The older `worth-query` engine and its legacy `QueryObservationReceipt` plus
+`ScopedInspectionBasis` orchestration were retired with the engine
+([#261](https://github.com/recnepspencer/worth/pull/261)). Publication forwards
+current observations through the narrow `application_inspection` contract;
+Host's inspection namespace cannot import the legacy builder/basis. Query and
+Bridge Native-materialization fences require the fresh application route.
 
-Preserve that legacy receipt audience rather than creating a second application
-engine or requiring raw Bridge/Signal/Relational handles. Durable causal archives,
+Do not create a second application engine or require raw
+Bridge/Signal/Relational handles. Durable causal archives,
 restart-stable narrative reload and generic forensic reconstruction remain later
 work. They are not implied by these in-memory original/reference/rich guarantees.

@@ -1,5 +1,0 @@
-error[E0451]: field `inner` of struct `WorthServerOperatorCounterReceipt` is private
- --> tests/ui/construction/response/private_counter_receipt_constructor.rs:4:49
-  |
-4 |     let _ = WorthServerOperatorCounterReceipt { inner: supplied() };
-  |                                                 ^^^^^ private field

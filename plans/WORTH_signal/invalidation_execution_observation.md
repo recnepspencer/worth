@@ -177,4 +177,4 @@ changing the receipt.
 - [Signal Architecture](./signal_architecture2.md)
 - [Milestone 13 Plan](./milestone-13-plan.md)
 - [Cross-Runtime Granular Invalidation](./milestone-13.1-plan.md)
-- [Granular Live Invalidation](../../workspaces/worth-query/crates/worth-query/docs/runtime-surfaces/granular-live-invalidation.md)
+- [Granular Live Invalidation](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/docs/runtime-surfaces/granular-live-invalidation.md)

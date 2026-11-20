@@ -112,5 +112,5 @@ the boundary but cannot satisfy it.
 
 - [`README.md`](./README.md)
 - [`API_OVERVIEW.md`](./API_OVERVIEW.md)
-- [Query Conditional Installed Operations](../../workspaces/worth-query/crates/worth-query/docs/domain-capabilities/conditional-installed-operations.md)
-- [Query Aspects And Authority Lanes](../../workspaces/worth-query/crates/worth-query/docs/modeling/aspects-and-authority-lanes.md)
+- [Query Conditional Installed Operations](../../workspaces/worth-query/docs/domain-capabilities/conditional-installed-operations.md)
+- [Query Aspects And Authority Lanes](../../workspaces/worth-query/docs/modeling/aspects-and-authority-lanes.md)

@@ -288,11 +288,17 @@ occurrences, Signal definitions, programs, workflows and their obligations,
 external custody and corrections.
 
 Milestone 3 is delivered in numbered phases, specified in
-[milestone-3.md](milestone-3.md). Master receives three certified landings:
-Phases 1–2, Phases 3–4 together, then Phases 5–10 together. Until the phase that
-supports a state family lands, operations that
-would create it refuse before their first effect, and opening a home that
-holds it refuses before serving.
+[milestone-3.md](milestone-3.md), through a happy track (H3–H10: everything works
+across graceful close and reopen) and a cleanup track (C1–C5: crash and fault
+recovery, cost bounds and certification). Until the work that supports a state
+family lands, operations that would create it refuse before their first effect,
+and opening a home that holds it refuses before serving.
+
+**Status (2026-11-20).** Phases 1–2 and the whole happy track (H3–H10) are on
+master; PR #240 made master green at `8a75a9bcfb` on 2026-11-19. The cleanup
+track has started: C1 (crash core) is in progress on `m3/cleanup-c1`, and C2–C5
+have not started. Crash recovery is not yet certified, so the decisive journey
+below is not yet met. Details: [cleanup track status](milestone-3.md#cleanup-track-status).
 
 ### Requirements
 

@@ -7,7 +7,7 @@ It is not an API reference. Its job is to answer three questions:
 
 1. What kind of problem is `worth-foundational` for?
 2. When is `worth-foundational` the right crate, and when is a stronger crate
-   such as `worth-query` or a domain runtime the right one instead?
+   such as Query (`worth-query-host`) or a domain runtime the right one instead?
 3. Which docs should you read next for the real API details?
 
 If you need exact signatures, type names, or step-by-step examples, use the
@@ -61,10 +61,9 @@ just because the names look similar
 
 That one rule prevents most misuse.
 
-If `worth-query` already gives you typed projection-consumption facts,
-authority-lane state, read receipts, write receipts, execution artifacts, or
-support-bound result surfaces, keep those Query types while the meaning is
-still Query-owned.
+If Query (`worth-query-host`) already gives you authority-lane state, read
+receipts, write receipts, execution artifacts, or support-bound result
+surfaces, keep those Query types while the meaning is still Query-owned.
 
 If a domain runtime already owns the semantics of a hot execution plan, mounted
 receipt, scheduling artifact, or mutation result, keep the domain type while
@@ -113,7 +112,6 @@ If you have no idea where to start, read these first:
 This crate is not:
 
 - the public runtime facade for application reads and writes
-- a replacement for `worth-query` projection consumption
 - a replacement for Query authority lanes
 - a planner
 - a storage engine
@@ -133,8 +131,7 @@ Use this matrix before writing code.
 
 | Need | Use |
 | --- | --- |
-| Typed facts from Query materialization | `worth-query` projection consumption |
-| Query-owned authoritative or derived state | `worth-query` state, inspection, receipts, bindings |
+| Query-owned authoritative or derived state | Query (`worth-query-host`) state, inspection, receipts, bindings |
 | Domain-local runtime execution state | the owning runtime or domain crate |
 | Shared trust-boundary identity | `worth-foundational` identity boundaries |
 | Canonical basis, digest, export parity, mismatch classification | `worth-foundational` canonicalization |
@@ -262,7 +259,6 @@ Reasonable nuance to preserve:
 
 Do not use this family for:
 
-- Query projection-consumption facts that Query already typed for you
 - runtime-local hot state just because it looks aspect-shaped
 - replacing domain semantics with generic aspect maps too early
 - flattening the validated-state-admitted progression into one helper just to
@@ -375,7 +371,7 @@ Do not use this family for:
 - silently routing native authoring through JSON because it feels easier
 - teaching app code to start from JSON when native aspect authoring is
   available
-- flattening typed compatibility outcomes into one â€œparse failedâ€ branch
+- flattening typed compatibility outcomes into one “parse failed” branch
 - treating compatibility-lowered artifacts as if they erase the fact that a
   compatibility bridge was involved
 
@@ -474,7 +470,7 @@ includes distinct categories for:
 - digest identity evidence
 - external identity tokens before admission
 
-That means AI consumers should not collapse â€œidentityâ€ into one bucket just
+That means AI consumers should not collapse “identity” into one bucket just
 because all of the payloads might be strings, integers, or digests underneath.
 
 Do not use it for:
@@ -526,7 +522,7 @@ Use this family when you need:
   profile meaning
 - a grouped public lane for staged profile work instead of ad hoc profile bags
 
-This family is much broader than â€œpick some profile enums.â€ It includes:
+This family is much broader than “pick some profile enums.” It includes:
 
 - profile-family composition into one coherent profile set
 - staged progression from requested -> admitted -> materialized meaning
@@ -585,7 +581,7 @@ The actual profile families matter enough to name directly:
 - `CertificationPostureProfile`
 
 AI consumers should preserve those families as semantic categories, not treat
-them as random knobs that can be collapsed into one vague â€œmode.â€
+them as random knobs that can be collapsed into one vague “mode.”
 
 Do not use it as:
 
@@ -661,8 +657,8 @@ The shipped role families are explicit:
 - `PlannedWork`
 - `ReceiptEvidence`
 
-The materialization subsystem is also much richer than â€œturn object into
-output.â€ It makes these things explicit:
+The materialization subsystem is also much richer than “turn object into
+output.” It makes these things explicit:
 
 - materialization source
 - materialization seam
@@ -683,8 +679,8 @@ Reasonable nuance to preserve:
 - materialization is a boundary crossing, not a cheap getter or view
 - bundles are typed coordinated outputs with one primary artifact plus legal
   optional members; they are not arbitrary result bags
-- delivery and availability are part of the contract, so â€œdeferred,â€
-  â€œreconstructable,â€ and â€œunavailableâ€ are first-class postures rather than
+- delivery and availability are part of the contract, so “deferred,”
+  “reconstructable,” and “unavailable” are first-class postures rather than
   prose notes
 - planned-work and same-family wrappers are intentionally descriptive only;
   they exist to preserve meaning without smuggling branch, merge, or commit
@@ -856,7 +852,7 @@ Use it when you need:
 
 This is one of the most important boundaries in the crate.
 
-This family is broader than â€œreceipts and provenance.â€ It includes:
+This family is broader than “receipts and provenance.” It includes:
 
 - primitive evidence categories, locality postures, execution postures,
   descriptive-role postures, and freshness postures
@@ -888,10 +884,10 @@ The grouped public lane structure is part of the real feature surface:
 Reasonable nuance to preserve:
 
 - category, locality, execution posture, descriptive role, and freshness are
-  separate axes; they are not one catch-all â€œevidence statusâ€
+  separate axes; they are not one catch-all “evidence status”
 - provenance explains basis and freshness, but does not prove execution or
   continuity by itself
-- receipts answer â€œwhat completed boundary truth do I have?â€ and still keep
+- receipts answer “what completed boundary truth do I have?” and still keep
   planned, executed, and completed-closeout families distinct
 - completed closeout is not automatically successful execution; blocked or
   denied closeout can still produce real receipt artifacts
@@ -942,7 +938,7 @@ Do not use it to:
   readmission
 - treat raw attachment bundles as if they had already crossed the stronger
   readmission boundary
-- hide stale, reduced, replayed, or rebuilt posture behind generic â€œavailableâ€
+- hide stale, reduced, replayed, or rebuilt posture behind generic “available”
   wording
 
 If the domain crate still owns the true execution semantics, keep the domain
@@ -1276,12 +1272,6 @@ Read next:
 
 Use these rules when the right crate still feels ambiguous.
 
-If you need typed facts from Query materialization:
-
-- use Query projection consumption
-- do not lower immediately into Foundational aspect state or generic boundary
-  artifacts
-
 If you need one portable identity that must remain admitted, bridged,
 projected, or readmitted across a trust boundary:
 
@@ -1309,7 +1299,7 @@ runtime-local receipts:
 
 Do not do these things:
 
-- do not replace `worth-query` typed fact receipts with Foundational types while
+- do not replace Query (`worth-query-host`) typed fact receipts with Foundational types while
   the meaning is still Query-owned
 - do not replace Query authority-lane state with Foundational wrappers out of
   convenience
@@ -1347,7 +1337,7 @@ worse.
 
 Start from the strongest owning crate.
 
-- Start from `worth-query` when the semantics are Query-owned.
+- Start from Query (`worth-query-host`) when the semantics are Query-owned.
 - Start from the domain runtime when the semantics are runtime-local.
 - Start from `worth-proof` when the semantics are progression law.
 - Start from `worth-foundational` when the semantics are shared boundary

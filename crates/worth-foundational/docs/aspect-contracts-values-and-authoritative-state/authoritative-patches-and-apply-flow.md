@@ -115,7 +115,7 @@ else {
 ```
 
 What is authoritative here is the applied state artifact after patch
-application, not the callerâ€™s local expectation of what the patch "should have"
+application, not the caller’s local expectation of what the patch "should have"
 done.
 
 ## How It Relates To Other Features

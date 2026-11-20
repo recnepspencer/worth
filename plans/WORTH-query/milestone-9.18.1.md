@@ -480,7 +480,7 @@ decisions and declared queries through one Native aggregate identity/lineage
 owner. The independent permutation, anchor-removal, split/merge, replay/fork,
 write-guard and currentness courts qualify that owner. `topology_entry` consumes
 orbit windows instead of its former hand ring walk. The
-[feature guide](../../workspaces/worth-query/crates/worth-query/docs/modeling/relation-laws.md)
+[feature guide](../../workspaces/worth-query/docs/modeling/relation-laws.md)
 links compiled projection, handler, query and privileged lineage examples.
 Proprietary's [CAD adoption contract](https://github.com/recnepspencer/worth-proprietary/blob/main/cad/docs/plans/query-9.18.1-adoption.md)
 records genuine sheet edits, holes, split/merge lineage and current-main
@@ -648,7 +648,7 @@ this phase. The SDK remains `5b01312ed0048ad4591e6b4a50e08685ea6d77ba`.
   shell identity.
 - The feature guide documents component sets with compiled examples.
 
-The public [topology island consumer](../../workspaces/worth-query/crates/worth-query/docs/modeling/relation-laws.md#public-topology-island-consumer)
+The public [topology island consumer](../../workspaces/worth-query/docs/modeling/relation-laws.md#public-topology-island-consumer)
 now uses complete component reads plus genuine ordered orbits. Its existing
 grouped topology target includes independent seeded union-find comparison across
 ordinary coupling edits and least-member replacement, and original business-read
@@ -657,7 +657,7 @@ audit actual cert-only replay after split/merge and compare complete published
 membership, identities, incident lineage and historical-name resolution across
 one, two and eight workers. Parallel runs require actual overlapping invariant
 readers and staged-parallel metadata; they do not claim parallel partition
-maintenance. See [component replay and worker determinism](../../workspaces/worth-query/crates/worth-query/docs/modeling/relation-laws.md#component-replay-and-worker-determinism).
+maintenance. See [component replay and worker determinism](../../workspaces/worth-query/docs/modeling/relation-laws.md#component-replay-and-worker-determinism).
 **Accepted, 2026-10-27.** Installed CAD reads retain genuine Native shell
 components over derived face-use adjacency. The eleven focused Entry courts
 cover independent topology oracles, actual split/merge and least-member removal,
@@ -1989,8 +1989,8 @@ correction example support. Other crate-relative paths name their crate.
 | [Original supplier custody](../../workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_output_demand/settlement/observation.rs) | Descriptive original evidence; cannot grant currentness, execution or disclosure. |
 | [Legacy materialization contract](../../workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/causal_inspection/materialization/contract.rs) | Preserve its application-evidence admission fence while reusing policy/artifact mechanics behind the admitted route. |
 | [Bridge causal observation](../../crates/worth-runtime-bridge/src/conditional_execution/causal_observation.rs), [causal assembly](../../crates/worth-runtime-bridge/src/diagnostics/causal_envelope/assembly/), [Signal decisions](../../crates/worth-signal/src/data/conditional_execution/decision.rs), [Signal availability](../../crates/worth-signal/src/diagnostics/policy/materialization.rs) | Native evidence provenance, assembly, actual decision meanings and optional-detail availability; Query consumes rather than invents them. |
-| [Correction model](../../workspaces/worth-query/crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/), [grouped causal court](../../workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/certification/application_graph/correction/causal_inspection.rs) | Real installed source/producer/query worlds and independently expected public outcomes. Add semantic scenario modules here, not one test binary per phase. |
-| [Host inspection journey](../../workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/host/application_runtime_surface/inspection.rs) | Real ordinary request/receipt entry, facade type/lifetime contracts and final release. |
+| [Correction model](../../workspaces/worth-query/crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/), [grouped causal court](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/certification/application_graph/correction/causal_inspection.rs) | Real installed source/producer/query worlds and independently expected public outcomes. Add semantic scenario modules here, not one test binary per phase. |
+| [Host inspection journey](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/host/application_runtime_surface/inspection.rs) | Real ordinary request/receipt entry, facade type/lifetime contracts and final release. |
 
 **Focused development.** Establish the selected capability's failing public case
 and narrow owner failure before expanding the implementation. Run cheap discovery,
@@ -2121,7 +2121,7 @@ availability. The original payer retains evidence; the fresh request funds its
 report and any requested materialization.
 
 The current consumer API and supported shapes are documented in the
-[causal inspection guide](../../workspaces/worth-query/crates/worth-query/docs/capabilities/cross-runtime-causal-inspection.md).
+[causal inspection guide](../../workspaces/worth-query/docs/capabilities/cross-runtime-causal-inspection.md).
 Phase 9 remains open until all requirements and their ordinary Decl/Host evidence
 below are met, including genuine suppression, rich materialization and the actual
 consumer handoff. Native-only shape courts do not establish an installed Query
@@ -2198,9 +2198,9 @@ Paired comparison uses `inspect::<Binding>(after).why_changed(before)` and a
 separate actual diagnostic capability through `execute_with_diagnostic`, or both
 metadata and diagnostic capabilities through `execute_governed`. Both ordinary
 executions must have requested `retain_projection_for_inspection()`. The
-[capability guide](../../workspaces/worth-query/crates/worth-query/docs/capabilities/cross-runtime-causal-inspection.md#fresh-application-inspection)
+[capability guide](../../workspaces/worth-query/docs/capabilities/cross-runtime-causal-inspection.md#fresh-application-inspection)
 describes custody, refusal views, source/producer connections and the supported
-[paired comparison](../../workspaces/worth-query/crates/worth-query/docs/capabilities/cross-runtime-causal-inspection.md#paired-original-comparison).
+[paired comparison](../../workspaces/worth-query/docs/capabilities/cross-runtime-causal-inspection.md#paired-original-comparison).
 
 ### How We Know It's Done
 
@@ -2229,7 +2229,7 @@ IDs, deletion/replacement, current-security revoke/regrant, typed retired gaps,
 cancellation and final Native/World release. Native and World owner courts qualify
 finite source visits, page backing and immutable request-bound successors.
 Partial ordered/live capture and restart-persistent continuations remain outside
-this contract. The [capability guide](../../workspaces/worth-query/crates/worth-query/docs/capabilities/record-and-aspect-history.md)
+this contract. The [capability guide](../../workspaces/worth-query/docs/capabilities/record-and-aspect-history.md)
 describes the supported route and its explicit work/storage limits. The
 [Native growth court](../../crates/worth-court-runtime-world/tests/worth_court_runtime_world/cost/runtime_world/court/record_history/growth/mod.rs)
 compares ten and 10,000 real unrelated retained record changes with identical
@@ -3487,9 +3487,9 @@ Unavailable retained evidence and unsupported shapes return typed refusals. If
 publication finds a stale target, prepare again against the current target while
 keeping the same client key for the same command.
 
-Follow the [recorded-source correction guide](../../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md#reverse-consecutive-original-sources)
+Follow the [recorded-source correction guide](../../workspaces/worth-query/docs/execution/recorded-source-correction.md#reverse-consecutive-original-sources)
 for the request, preparation, publication and retry sequence. The
-[compiled correction example](../../workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/certification/application_graph/correction/consecutive_undo.rs)
+[compiled correction example](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/certification/application_graph/correction/consecutive_undo.rs)
 shows the same calls with original receipts and retained endpoint observations.
 
 ## Documentation And Successor Handoff For The Added Phases

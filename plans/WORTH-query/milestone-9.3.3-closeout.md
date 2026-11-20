@@ -88,23 +88,23 @@ writeback semantics, or durable replay behavior locally.
 Milestone 9.3.3 delivered:
 
 - effect lifecycle implementation in
-  [crates/worth-query/src/effect_lifecycle](../../workspaces/worth-query/crates/worth-query/src/effect_lifecycle)
+  [crates/worth-query/src/effect_lifecycle](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/effect_lifecycle)
 - unified closeout certification in
-  [crates/worth-query/src/effect_lifecycle/certification/closeout](../../workspaces/worth-query/crates/worth-query/src/effect_lifecycle/certification/closeout)
+  [crates/worth-query/src/effect_lifecycle/certification/closeout](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/effect_lifecycle/certification/closeout)
 - independent relational and bridge oracle verification in
-  [crates/worth-query/src/effect_lifecycle/oracle](../../workspaces/worth-query/crates/worth-query/src/effect_lifecycle/oracle)
+  [crates/worth-query/src/effect_lifecycle/oracle](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/effect_lifecycle/oracle)
 - public-surface inventory, support matrix, and DX closure in
   `inventory.rs`,
-  [inventory_rows.rs](../../workspaces/worth-query/crates/worth-query/src/effect_lifecycle/inventory_rows.rs),
+  [inventory_rows.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/effect_lifecycle/inventory_rows.rs),
   `support_matrix.rs`, and
-  [support_contract.rs](../../workspaces/worth-query/crates/worth-query/src/effect_lifecycle/support_contract.rs)
+  [support_contract.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/effect_lifecycle/support_contract.rs)
 - receipt, envelope, diagnostics, and transition rules in
-  [receipt.rs](../../workspaces/worth-query/crates/worth-query/src/effect_lifecycle/receipt.rs),
+  [receipt.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/effect_lifecycle/receipt.rs),
   `envelope.rs`,
-  [diagnostics.rs](../../workspaces/worth-query/crates/worth-query/src/effect_lifecycle/diagnostics.rs), and
-  [receipt_transitions.rs](../../workspaces/worth-query/crates/worth-query/src/effect_lifecycle/receipt_transitions.rs)
+  [diagnostics.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/effect_lifecycle/diagnostics.rs), and
+  [receipt_transitions.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/effect_lifecycle/receipt_transitions.rs)
 - facade exports in
-  [crates/worth-query/src/facade/exports_foundation.rs](../../workspaces/worth-query/crates/worth-query/src/facade/exports_foundation.rs)
+  [crates/worth-query/src/facade/exports_foundation.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/facade/exports_foundation.rs)
 - compile-fail proof boundaries in
   `crates/worth-query/tests/phase_boundaries_effect_lifecycle_compile_fail.rs` and
   `crates/worth-query/tests/ui/effect_lifecycle`
@@ -128,11 +128,11 @@ closure, and family-complete public DX evidence.
 
 Covered by:
 
-- [crates/worth-query/src/effect_lifecycle/tests/authoring](../../workspaces/worth-query/crates/worth-query/src/effect_lifecycle/tests/authoring)
-- [crates/worth-query/src/effect_lifecycle/tests/batch](../../workspaces/worth-query/crates/worth-query/src/effect_lifecycle/tests/batch)
-- [crates/worth-query/src/effect_lifecycle/tests/execution](../../workspaces/worth-query/crates/worth-query/src/effect_lifecycle/tests/execution)
-- [crates/worth-query/src/effect_lifecycle/tests/closeout](../../workspaces/worth-query/crates/worth-query/src/effect_lifecycle/tests/closeout)
-- [crates/worth-query/src/effect_lifecycle/tests/support.rs](../../workspaces/worth-query/crates/worth-query/src/effect_lifecycle/tests/support.rs)
+- [crates/worth-query/src/effect_lifecycle/tests/authoring](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/effect_lifecycle/tests/authoring)
+- [crates/worth-query/src/effect_lifecycle/tests/batch](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/effect_lifecycle/tests/batch)
+- [crates/worth-query/src/effect_lifecycle/tests/execution](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/effect_lifecycle/tests/execution)
+- [crates/worth-query/src/effect_lifecycle/tests/closeout](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/effect_lifecycle/tests/closeout)
+- [crates/worth-query/src/effect_lifecycle/tests/support.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/effect_lifecycle/tests/support.rs)
 - `crates/worth-query/tests/phase_boundaries_effect_lifecycle_compile_fail.rs`
 - `crates/worth-query/tests/ui/effect_lifecycle`
 

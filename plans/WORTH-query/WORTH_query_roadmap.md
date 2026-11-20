@@ -1,5 +1,7 @@
 # WORTH Query Future Roadmap
 
+> **Retirement note (2026-11-20).** The `worth-query` engine crate (`WorthQueryWorkspace`, `worth_query::facade`), its Workspace read and graph-composition surfaces, its Consumer Kit and its legacy courts were retired in [#260](https://github.com/recnepspencer/worth/pull/260) and [#261](https://github.com/recnepspencer/worth/pull/261) ([last version](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query)). Statements below that the engine or those surfaces remain available are historical. Query is consumed through `worth-query-decl` and `worth-query-host`.
+
 ## Purpose
 
 This document defines the future work for `worth-query`.
@@ -4768,7 +4770,7 @@ have one governing home in Milestone 9.16 and Milestones 9.19 through 9.22.
 
 **Status:** Completed. The undo and redo lane is provisional; Milestone 9.18 owns
 its product contract and proof. Developer guidance is
-[Application Aftermath, External Effects, And Recovery](../../workspaces/worth-query/crates/worth-query/docs/execution/application-aftermath-and-recovery.md).
+[Application Aftermath, External Effects, And Recovery](../../workspaces/worth-query/docs/execution/application-aftermath-and-recovery.md).
 Closure ledgers: [Phase 8](./milestone-9.16-runtime-phase-8-closure-ledger.md),
 [Phase 9](./milestone-9.16-runtime-phase-9-closure-ledger.md), and
 [Phase 10](./milestone-9.16-runtime-phase-10-closure-ledger.md).
@@ -5500,7 +5502,7 @@ Ordinary query/output-demand resource policy belongs to installed runtime owners
 with optional caller narrowing and owner-derived candidate validator closure;
 applications do not duplicate internal work formulas. The governing ownership and
 adversarial cutover proof are in the
-[execution-resource guide](../../workspaces/worth-query/crates/worth-query/docs/domain-capabilities/execution-resource-admission-and-managed-runs.md#ordinary-work-limit-ownership).
+[execution-resource guide](../../workspaces/worth-query/docs/domain-capabilities/execution-resource-admission-and-managed-runs.md#ordinary-work-limit-ownership).
 This shared correction precedes the remaining House automatic-update closeout.
 Required inventory survives supplier removal, approvals bind exact proposal/source/
 evidence, duplicate wakes cannot duplicate effects, and status records cannot
@@ -5823,7 +5825,7 @@ ones. Retain each original receipt and the required endpoint read observation;
 select each original through a fresh request, then prepare and publish its
 reversal. Live or reapplied overlaps and changed independent dependencies still
 refuse; equal values alone do not establish restoration. Use the
-[recorded-source correction guide](../../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md#reverse-consecutive-original-sources)
+[recorded-source correction guide](../../workspaces/worth-query/docs/execution/recorded-source-correction.md#reverse-consecutive-original-sources)
 for the ordinary request and retry sequence.
 These additions do not reopen the original phases. The 2026-10-27 Proprietary
 report against SDK `ba86433627` adds compiler and unobserved-write refusals,

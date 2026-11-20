@@ -20,7 +20,10 @@ internals.
 or reopen a Home (`WorthQueryApplicationHomeRequest::open_in_advancement`), run
 program-owned actions (`retain_operation`, then fresh-request `advance`), install a workflow vocabulary
 and publish, start, and advance workflows, and adopt a new program on a
-branch. This README covers the host's deeper contracts.
+branch. For the Home lifecycle in one page (open, write, retry, close, crash
+behavior, discard, checkpoints), read
+[Use an Application Home](../../../../docs/application-home.md). This README
+covers the host's deeper contracts.
 
 ## Open, initialize and reopen a Home
 
@@ -197,9 +200,14 @@ refuses `MutationOwnerContended`. Interrupted discard leaves `discard.pending`,
 and opening refuses `DiscardPending` until another explicit discard completes.
 The next successful open after discard initializes a new Home identity.
 
-### Checkpoint admission — pending (owner P-A, D12)
+### Checkpoints
 
-### Recovery after a selected checkpoint — pending (owner P-A, D12)
+A Directory Home runs checkpoint maintenance after advancements when a journal
+reaches its `with_checkpoint_limits` threshold. `home.checkpoint(&request)`,
+`inspect_checkpoint(&request)` and `recover_checkpoint(&request)` act on the
+Directory's actual checkpoint owner; MemoryOnly returns
+`WorthQueryApplicationHomeCheckpointDenial::MemoryLifecycleRequired`. See
+[Checkpoints](../../../../docs/application-home.md#checkpoints).
 
 ### Development workflow with program transitions
 
@@ -256,12 +264,16 @@ replayed. A refusal owns its actual preparation and Home phase. Inspect
 `refused.phase()` for the typed outcome and retain the owner after an intent has
 been recorded.
 
-#### Interrupted transitions — cleanup track (owner P-C)
+#### Interrupted transitions
 
 Resume, plan-drift qualification, interrupted binding and process-kill courts
 remain cleanup work; the graceful workflow above does not qualify them.
 
-### Durable branch creation — pending (owner P-C, after D12)
+### Durable branch creation
+
+On a Directory Home, creating a branch that must fork Signal state refuses with
+`RuntimeWorldBranchAdmissionDenial::DurableBranchPublicationRequired`. Durable
+branch publication and retirement belong to Milestone 3's cleanup track (C2).
 
 ## Explain a query result or source operation
 
@@ -270,7 +282,7 @@ Start with `request.inspect::<ReadBinding>(&original)` for a completed query or
 operation. Choose reference inspection, comparison, a producer connection, or
 materialized original values through `facade::causal_inspection`.
 
-[Inspect original evidence](../worth-query/docs/capabilities/cross-runtime-causal-inspection.md)
+[Inspect original evidence](../../docs/capabilities/cross-runtime-causal-inspection.md)
 shows how to keep the right receipts, query a producer settlement and admit the
 current metadata/diagnostic access each request needs. Use it for audit and
 debugging views that must describe the original work after later state changes.
@@ -291,8 +303,8 @@ The root lists its contributions once; the macro carries that same list into
 The [public consumer fixture](../worth-query-certification/fixtures/consumer_entry/consumer_root/src/main.rs)
 checks separately compiled contributions and static program validation. The
 [ordinary product workflow](../worth-query-certification/examples/ordinary_product_workflow.rs)
-installs a validated program with `application_installation::in_memory_program`,
-advances a declared source-only owning action, reads the
+installs a validated program in a Directory Home with
+`WorthQueryApplicationHomeRequest`, advances a declared source-only owning action, reads the
 successor, and closes conditional resources. Its source is the executable host
 entry example.
 
@@ -438,7 +450,7 @@ For independent native custody tests, select `request.advanced().mutate(intent)`
 before `execute_performed_discovered`, unpublished recovery or promotion.
 Registered native recovery also starts at `request.advanced()`. These controls
 preserve actual partial/source owners and return them on refusal; they are not
-ordinary business retry helpers. See [owning discovered actions](../worth-query/docs/foundations/ordinary-application-front-door.md#owning-discovered-actions).
+ordinary business retry helpers. See [owning discovered actions](../../docs/foundations/ordinary-application-front-door.md#owning-discovered-actions).
 
 ### Advanced fixed publication and recovery
 
@@ -702,7 +714,7 @@ with contribution inventory, ownership, and handler-completeness denials in
 [contribution denials](../worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/contribution_denials.rs).
 The synchronous application foundation, branch-local program evolution, and
 authored workflow definitions (see the authored workflow example above and the
-[workflows guide](../worth-query/docs/foundations/workflows.md)) are
+[workflows guide](../../docs/foundations/workflows.md)) are
 available through this facade. An installed inbound source can complete the
 exact external-effect owner; `await_inbound` reads that result on fresh
 workflow advance. No callback or resume message advances an instance itself.
@@ -732,7 +744,7 @@ let outcome = prepared.publish();
 ```
 
 Migrations, workflow dispositions, and every outcome are shown with real code
-in [Build an Application Â§7](../../../../docs/build-an-application.md#7-adopt-a-new-program-on-a-branch).
+in [Build an Application §7](../../../../docs/build-an-application.md#7-adopt-a-new-program-on-a-branch).
 
 Inspection and semantic comparison are descriptive. Preparation consumes exact
 branch, source-program, target-support, target-rule, migration, resource, and
@@ -854,7 +866,7 @@ worker equivalence or replace warm reconciliation and entry refresh.
 ## Typed Handler And Invariant Access
 
 For literal guards and assignments on required scope fields, prefer an
-[executable scope-field body](../worth-query/docs/authoring/scope-field-operation-bodies.md).
+[executable scope-field body](../../docs/authoring/scope-field-operation-bodies.md).
 Attach its completed typed body to the operation definition, bind that schema
 into program authoring, and call `setup.operation_body::<Binding>()`. Query owns
 the installed values and native execution; ordinary handler registration cannot
@@ -1025,19 +1037,15 @@ admission, and currentness checks.
 ## Related Docs
 
 - [Build an Application](../../../../docs/build-an-application.md): the centerpiece guide
-- [Programs And Adoption](../worth-query/docs/foundations/programs-and-adoption.md)
-- [Workflows](../worth-query/docs/foundations/workflows.md)
-- [Ordinary Application Front Door](../worth-query/docs/foundations/ordinary-application-front-door.md)
+- [Programs And Adoption](../../docs/foundations/programs-and-adoption.md)
+- [Workflows](../../docs/foundations/workflows.md)
+- [Ordinary Application Front Door](../../docs/foundations/ordinary-application-front-door.md)
 - [Capability Index](../../../../docs/capability-index.md): find the facade call for a task
-- [Query Engine Architecture Map](../worth-query/docs/AI_README.md): engine-internal, for Query maintainers
-- [Application Authorization And Emergency Elevation](../worth-query/docs/capabilities/application-authorization-and-emergency-elevation.md)
-- [Runtime-Installed Domains And Operations](../worth-query/docs/domain-capabilities/runtime-installed-domains.md)
-- [Canonical Graph Obligation Progression](../worth-query/docs/domain-capabilities/canonical-graph-obligation-progression.md)
-- [Conditional Installed Operations](../worth-query/docs/domain-capabilities/conditional-installed-operations.md)
-- [Installed Operation Re-Execution And Replay](../worth-query/docs/domain-capabilities/installed-operation-reexecution-and-replay.md)
-- [Typed Stops And Remediation Guidance](../worth-query/docs/domain-capabilities/typed-stops-and-remediation-guidance.md)
-- [Installed Operation Lineage And Promotion](../worth-query/docs/domain-capabilities/installed-operation-lineage-and-promotion.md)
-- [Application Aftermath, External Effects, And Recovery](../worth-query/docs/execution/application-aftermath-and-recovery.md)
+- [Query Engine Architecture Map](../../docs/AI_README.md): engine-internal, for Query maintainers
+- [Application Authorization And Emergency Elevation](../../docs/capabilities/application-authorization-and-emergency-elevation.md)
+- [Canonical Graph Obligation Progression](../../docs/domain-capabilities/canonical-graph-obligation-progression.md)
+- [Conditional Installed Operations](../../docs/domain-capabilities/conditional-installed-operations.md)
+- [Application Aftermath, External Effects, And Recovery](../../docs/execution/application-aftermath-and-recovery.md)
 
 Input capture uses the initiating request's native resources before moving any
 original fields. Its refusal returns `(original_builder, owned_key,
@@ -1055,7 +1063,7 @@ once; keep capture-refusal custody. Supply fresh requests to `advance` and
 `close`, retain same-owner refusals, and use completed `close_with_evidence` to
 transfer native Fresh/Recovered receipt evidence after cleanup. Commands are
 not domain mutations and have no public execute/recover or clone escape.
-See [owning capability commands](../worth-query/docs/foundations/workflows.md#owning-capability-commands)
+See [owning capability commands](../../docs/foundations/workflows.md#owning-capability-commands)
 for native replay and authority distinctions.
 
 ## Mixed workflow consumer

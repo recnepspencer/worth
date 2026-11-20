@@ -38,7 +38,6 @@ pub(crate) struct QueryAudienceFacadeSpec {
 #[derive(Clone, Debug)]
 pub(crate) struct QueryAudienceContractSpec {
     pub(crate) workspace: String,
-    pub(crate) engine_package: String,
     pub(crate) certification_package: Option<String>,
     pub(crate) certification_authority_packages: Vec<String>,
     pub(crate) certification_consumers: Vec<String>,
@@ -86,7 +85,6 @@ pub(crate) fn load_orientation_contract(path: &Path) -> Result<OrientationContra
         .join("; ");
     let query_audience = QueryAudienceContractSpec {
         workspace: config.rule_contracts.query_audience.workspace,
-        engine_package: config.rule_contracts.query_audience.engine_package,
         certification_package: config.rule_contracts.query_audience.certification_package,
         certification_authority_packages: config
             .rule_contracts
@@ -163,7 +161,6 @@ struct RuleContracts {
 struct QueryAudienceConfig {
     #[serde(default = "default_query_workspace")]
     workspace: String,
-    engine_package: String,
     #[serde(default)]
     certification_package: Option<String>,
     #[serde(default)]

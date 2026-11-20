@@ -21,7 +21,7 @@ None is evidence of a deployed application.
 The counter's actual [conditional consumer](../workspaces/worth-query/crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/composite_definition_runtime.rs),
 [schema installation](../workspaces/worth-query/crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/schema.rs) and
 [binary delegate](../workspaces/worth-query/crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/domain_binding.rs) carry that dataflow. The executable correction
-courts live in `worth-query-court-query-decl-host`'s `inline_domain` family.
+courts live in `worth-query-court-decl-host-integration`'s `inline_domain` family.
 The ratio's delegate is the topology entry `domain_values/binding.rs`.
 
 The existing Native content door cannot replace these pure atomic contracts:
@@ -52,7 +52,7 @@ prebuilt executable binary fields, allocator probes and expression binary
 operators. These do not consume the inline scalar. Lists are deliberately
 separate so those lexical matches do not become capability claims.
 
-### Inline scalar symbol paths (51)
+### Inline scalar symbol paths (47)
 
 - [docs/build-an-application.md](../docs/build-an-application.md)
 - [docs/capability-index.md](../docs/capability-index.md)
@@ -91,22 +91,18 @@ separate so those lexical matches do not become capability claims.
 - [crates/worth-relational/src/aspect_wire/aspect_value_canonical_codec/inline_bytes_tests.rs](../crates/worth-relational/src/aspect_wire/aspect_value_canonical_codec/inline_bytes_tests.rs)
 - [workspaces/worth-query/crates/worth-query-installation/src/application_schema/value_binding/compilation_tests/domain_posture.rs](../workspaces/worth-query/crates/worth-query-installation/src/application_schema/value_binding/compilation_tests/domain_posture.rs)
 - [workspaces/worth-query/crates/worth-query-installation/src/application_schema/value_binding/compilation.rs](../workspaces/worth-query/crates/worth-query-installation/src/application_schema/value_binding/compilation.rs)
-- [crates/worth-server-client-generation/src/typescript.rs](../crates/worth-server-client-generation/src/typescript.rs)
 - [workspaces/worth-query/crates/worth-query-declaration/src/validation/predicates.rs](../workspaces/worth-query/crates/worth-query-declaration/src/validation/predicates.rs)
 - [workspaces/worth-query/crates/worth-query-declaration/src/facade.rs](../workspaces/worth-query/crates/worth-query-declaration/src/facade.rs)
-- [workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/certification/application_graph/correction/inline_domain.rs](../workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/certification/application_graph/correction/inline_domain.rs)
-- [workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/certification/application_graph/correction/inline_domain/predicate.rs](../workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/certification/application_graph/correction/inline_domain/predicate.rs)
-- [workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/certification/application_graph/correction/inline_domain/native.rs](../workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/certification/application_graph/correction/inline_domain/native.rs)
+- [workspaces/worth-query/crates/worth-query-court-decl-host-integration/tests/worth_query_court_decl_host_integration/certification/application_graph/correction/inline_domain.rs](../workspaces/worth-query/crates/worth-query-court-decl-host-integration/tests/worth_query_court_decl_host_integration/certification/application_graph/correction/inline_domain.rs)
+- [workspaces/worth-query/crates/worth-query-court-decl-host-integration/tests/worth_query_court_decl_host_integration/certification/application_graph/correction/inline_domain/predicate.rs](../workspaces/worth-query/crates/worth-query-court-decl-host-integration/tests/worth_query_court_decl_host_integration/certification/application_graph/correction/inline_domain/predicate.rs)
+- [workspaces/worth-query/crates/worth-query-court-decl-host-integration/tests/worth_query_court_decl_host_integration/certification/application_graph/correction/inline_domain/native.rs](../workspaces/worth-query/crates/worth-query-court-decl-host-integration/tests/worth_query_court_decl_host_integration/certification/application_graph/correction/inline_domain/native.rs)
 - [workspaces/worth-query/crates/worth-query-declaration/src/binary_value_binding_macro.rs](../workspaces/worth-query/crates/worth-query-declaration/src/binary_value_binding_macro.rs)
 - [workspaces/worth-query/crates/worth-query-declaration/src/application_schema/value_binding/canonical/mod.rs](../workspaces/worth-query/crates/worth-query-declaration/src/application_schema/value_binding/canonical/mod.rs)
 - [workspaces/worth-query/crates/worth-query-declaration/src/application_schema/value_binding/canonical/binary.rs](../workspaces/worth-query/crates/worth-query-declaration/src/application_schema/value_binding/canonical/binary.rs)
 - [workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/domain_values/tests.rs](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/domain_values/tests.rs)
 - [workspaces/worth-query/crates/worth-query-declaration/src/application_schema/canonical_basis.rs](../workspaces/worth-query/crates/worth-query-declaration/src/application_schema/canonical_basis.rs)
-- [workspaces/worth-query/crates/worth-query/src/projection_consumption/consumed/native_refinement.rs](../workspaces/worth-query/crates/worth-query/src/projection_consumption/consumed/native_refinement.rs)
-- [workspaces/worth-query/crates/worth-query/src/projection_consumption/certification/oracle/value_terms.rs](../workspaces/worth-query/crates/worth-query/src/projection_consumption/certification/oracle/value_terms.rs)
-- [workspaces/worth-query/crates/worth-query/src/runtime/graph_read_access/schema_reference_evidence/admitted_field_kind.rs](../workspaces/worth-query/crates/worth-query/src/runtime/graph_read_access/schema_reference_evidence/admitted_field_kind.rs)
 
-### Broader binary route paths (27)
+### Broader binary route paths (25)
 
 - [workspaces/worth-ui/apps/platform-pulse/tests/executable_world/product_process/installation_progression.rs](../workspaces/worth-ui/apps/platform-pulse/tests/executable_world/product_process/installation_progression.rs)
 - [workspaces/worth-ui/apps/platform-pulse/tests/executable_world/courtroom/native_phase_f.rs](../workspaces/worth-ui/apps/platform-pulse/tests/executable_world/courtroom/native_phase_f.rs)
@@ -114,8 +110,6 @@ separate so those lexical matches do not become capability claims.
 - [workspaces/worth-query/crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/write_admission/mod.rs](../workspaces/worth-query/crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/write_admission/mod.rs)
 - [workspaces/worth-query/crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/write_admission/binary.rs](../workspaces/worth-query/crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/write_admission/binary.rs)
 - [workspaces/worth-query/crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/domain_binding.rs](../workspaces/worth-query/crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/domain_binding.rs)
-- [crates/worth-server/src/surfaces/mod.rs](../crates/worth-server/src/surfaces/mod.rs)
-- [crates/worth-server/src/surfaces/facade.rs](../crates/worth-server/src/surfaces/facade.rs)
 - [workspaces/worth-store/crates/worth-store-court-physical-format/tests/worth_store_court_physical_format/process/offline_integrity_observer/observation_contracts/report_boundary_and_binary/mod.rs](../workspaces/worth-store/crates/worth-store-court-physical-format/tests/worth_store_court_physical_format/process/offline_integrity_observer/observation_contracts/report_boundary_and_binary/mod.rs)
 - [workspaces/worth-store/crates/worth-store-court-physical-format/tests/worth_store_court_physical_format/offline_integrity_observer/observation_contracts/report_boundary_and_binary/mod.rs](../workspaces/worth-store/crates/worth-store-court-physical-format/tests/worth_store_court_physical_format/offline_integrity_observer/observation_contracts/report_boundary_and_binary/mod.rs)
 - [workspaces/worth-store/crates/worth-store-physical-format/src/header/authority.rs](../workspaces/worth-store/crates/worth-store-physical-format/src/header/authority.rs)

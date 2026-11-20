@@ -1,5 +1,7 @@
 # Query-Backed UI Views
 
+> **Parked (2026-11-20). Doesn't build.** Worth UI is parked by user ruling: `worth-ui-query-binding` and `worth-ui-certification` still depend on the retired `worth-query` engine, so the `workspaces/worth-ui` workspace does not compile. Commands, compiled examples and compile-pass fragments on this page do not build or run until the migration to `worth-query-host` tracked in [#262](https://github.com/recnepspencer/worth/issues/262) lands.
+
 ## What This Feature Is
 
 Query-backed views let Worth UI mount native values produced by an installed
@@ -39,7 +41,7 @@ The governing Query audience crates are:
 
 - `worth-query-decl` for application declarations and requirements;
 - `worth-query-host` for hosted installation and progression; and
-- `worth-query-replay` only for certification-owned replay or reconstruction.
+- `worth-query-replay` only for certification-owned cost evidence.
 
 Ordinary UI code does not use `worth-query-replay`, and product applications do
 not import the raw Query engine as a convenience surface.
@@ -68,7 +70,7 @@ An installation owner first obtains an `UiInstalledProjectionView` from Query
 authority. Product application code then declares the required shape and
 registers it before `freeze()`.
 
-The following fragment is compiled inside the public facade contract.
+The following fragment was compiled inside the public facade contract before Worth UI was parked; it does not compile until #262 lands.
 
 <!-- compile-pass-fragment:register_scalar_projection -->
 ```rust
@@ -204,4 +206,4 @@ before broader Query-facing capabilities are added.
 - [Worth UI architecture](./architecture.md)
 - [Runtime subsystems](./runtime-subsystems.md)
 - [Application inspection](./inspection.md)
-- [Worth Query AI README](../../worth-query/crates/worth-query/docs/AI_README.md)
+- [Worth Query AI README](../../worth-query/docs/AI_README.md)

@@ -36,7 +36,7 @@ class WorkspacePrerequisiteHandoffTests(unittest.TestCase):
         prerequisites = GatePrebuild(Path('.'), Path('out'), {}, object(),
                                      lambda *args, **kwargs: calls.append((args, kwargs)) or {},
                                      lambda *args: proof_calls.append(args) or Path('proof'))
-        prerequisites.prepare('root', [{'package': 'worth-court-server-certification-suite'}])
+        prerequisites.prepare('root', [{'package': 'worth-court-runtime-world'}])
         prerequisites.prepare('root', [])
         self.assertEqual(len(calls), 1)
         self.assertEqual(calls[0][1], {'include_proof': False})
@@ -76,9 +76,9 @@ class WorkspacePrerequisiteHandoffTests(unittest.TestCase):
 class RootOrdinaryCoverageTests(unittest.TestCase):
     def test_ordinary_root_suites_select_each_product_frontier_exactly_once(self):
         ordinary = ['relational', 'signal', 'execution', 'root-rest']
-        packages = ['worth-foundational', 'worth-proof', 'worth-server', 'worth-runtime-world',
+        packages = ['worth-foundational', 'worth-proof', 'worth-runtime-world',
                     'worth-runtime-bridge', 'worth-court-foundational-expressions',
-                    'worth-court-proof', 'worth-court-server-certification-suite',
+                    'worth-court-proof',
                     'worth-court-runtime-world', 'worth-court-runtime-bridge',
                     'worth-court-relational-certification', 'worth-court-signal-owner-services',
                     'worth-court-execution', 'worth-value-shape-derive']

@@ -77,7 +77,7 @@ What is derived:
 
 What gets retained:
 
-- public lane classification and â€œdoes not hideâ€ statements
+- public lane classification and “does not hide” statements
 
 What gets inspected:
 

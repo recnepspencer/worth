@@ -141,17 +141,17 @@ publish, discover, start, and progress those definitions through
 `worth-query-host`; the
 [authored workflow example](../worth-query-certification/examples/authored_workflow/main.rs)
 shows the complete journey, and the
-[workflows guide](../worth-query/docs/foundations/workflows.md) documents it
+[workflows guide](../../docs/foundations/workflows.md) documents it
 step by step.
 
 Workflow declarations also make three boundaries explicit:
 
 - `ApplicationWorkflowSpec::observation_policy()` and `actor_policy()` declare
-  governed disclosure and recorded-role policy; see [workflow actors](../worth-query/docs/foundations/workflows.md#recorded-workflow-actors).
+  governed disclosure and recorded-role policy; see [workflow actors](../../docs/foundations/workflows.md#recorded-workflow-actors).
 - `ApplicationMutationBinding::workflow_execution_requirements()` returns an
   explicit `ApplicationWorkflowExecutionRequirements`; see [guarded operations](../../../../docs/build-an-application.md#65-who-may-run-a-guarded-operation).
 - `ApplicationCapabilityRecordedActorRule` in `application_capability` declares
-  how a command relates to a recorded native actor; see [actor declarations](../worth-query/docs/foundations/workflows.md#declare-evidence-not-authorization-modes).
+  how a command relates to a recorded native actor; see [actor declarations](../../docs/foundations/workflows.md#declare-evidence-not-authorization-modes).
 
 These declarations describe policy. Hosts still require fresh native admission;
 an observed actor or workflow locator grants no execution permission.
@@ -181,7 +181,7 @@ The logical-source extension binds this meaning to registered Native domain and
 case handles. Genuine proposed/committed invariant views, admitted operation
 reads and installation-owned committed projection readers issue the live
 observations; descriptive coordinates cannot construct them. See the
-[privileged logical component reader](../worth-query/docs/modeling/relation-laws.md#privileged-logical-component-inspection)
+[privileged logical component reader](../../docs/modeling/relation-laws.md#privileged-logical-component-inspection)
 for source affinity and retained ownership. Its broad stored-snapshot observation
 does not issue tracked decision facts or a feature-history-prefix view.
 The
@@ -201,11 +201,11 @@ change without replacing the carrier/case identity.
 ## Related Docs
 
 - [Build an Application](../../../../docs/build-an-application.md): the centerpiece guide
-- [Programs And Adoption](../worth-query/docs/foundations/programs-and-adoption.md)
-- [Workflows](../worth-query/docs/foundations/workflows.md)
-- [Ordinary Application Front Door](../worth-query/docs/foundations/ordinary-application-front-door.md)
-- [Branches And Previews](../worth-query/docs/foundations/branches-and-previews.md)
-- [Query Engine Architecture Map](../worth-query/docs/AI_README.md): engine-internal, for Query maintainers
-- [Feature Capsule Authoring](../worth-query/docs/authoring/feature-capsule-authoring.md)
-- [Read Composition](../worth-query/docs/authoring/read-composition.md)
-- [Query Docs Index](../worth-query/docs/README.md)
+- [Programs And Adoption](../../docs/foundations/programs-and-adoption.md)
+- [Workflows](../../docs/foundations/workflows.md)
+- [Ordinary Application Front Door](../../docs/foundations/ordinary-application-front-door.md)
+- [Branches And Previews](../../docs/foundations/branches-and-previews.md)
+- [Query Engine Architecture Map](../../docs/AI_README.md): engine-internal, for Query maintainers
+- [Feature Capsule Authoring](../../docs/authoring/feature-capsule-authoring.md)
+- [Read Composition](../../docs/authoring/read-composition.md)
+- [Query Docs Index](../../docs/README.md)

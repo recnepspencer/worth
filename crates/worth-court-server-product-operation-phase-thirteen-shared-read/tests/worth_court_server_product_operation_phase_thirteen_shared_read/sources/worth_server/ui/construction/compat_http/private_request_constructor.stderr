@@ -1,9 +1,0 @@
-error[E0451]: fields `admission` and `request_contract` of struct `WorthServerCompatibilityRequest` are private
- --> tests/ui/construction/compat_http/private_request_constructor.rs:5:9
-  |
-4 |     let _request = WorthServerCompatibilityRequest {
-  |                    ------------------------------- in this type
-5 |         admission: supplied(),
-  |         ^^^^^^^^^ private field
-6 |         request_contract: supplied(),
-  |         ^^^^^^^^^^^^^^^^ private field

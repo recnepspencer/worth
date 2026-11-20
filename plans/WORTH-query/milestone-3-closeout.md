@@ -26,26 +26,26 @@ ad hoc test logic.
 Milestone 3 delivered:
 
 - planner-owned artifacts and lowering in
-  [crates/worth-query/src/planning](../../workspaces/worth-query/crates/worth-query/src/planning)
+  [crates/worth-query/src/planning](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/planning)
 - explicit basis intent, basis resolution, and preflight coupling in
-  [crates/worth-query/src/basis](../../workspaces/worth-query/crates/worth-query/src/basis)
+  [crates/worth-query/src/basis](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/basis)
 - query-owned binding fulfillment and resolution in
-  [crates/worth-query/src/binding](../../workspaces/worth-query/crates/worth-query/src/binding)
+  [crates/worth-query/src/binding](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/binding)
 - runtime-backed execution envelopes and exact execution counters in
-  [crates/worth-query/src/execution](../../workspaces/worth-query/crates/worth-query/src/execution)
+  [crates/worth-query/src/execution](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/execution)
 - plan/basis/binding/result digest authority in
-  [crates/worth-query/src/identity](../../workspaces/worth-query/crates/worth-query/src/identity)
+  [crates/worth-query/src/identity](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/identity)
 - compile-fail proof-boundary tests for planned, basis, and execution
   artifacts under
   `crates/worth-query/tests/ui`
 - a shared certification core and requirements registry under
-  [crates/worth-query/src/harness/certification](../../workspaces/worth-query/crates/worth-query/src/harness/certification)
+  [crates/worth-query/src/harness/certification](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/harness/certification)
 - phase-aligned fixture layers under
-  [crates/worth-query/src/harness/fixtures](../../workspaces/worth-query/crates/worth-query/src/harness/fixtures)
+  [crates/worth-query/src/harness/fixtures](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/harness/fixtures)
 - the named Milestone 3 certification surface under
-  [crates/worth-query/src/harness/planning_certification](../../workspaces/worth-query/crates/worth-query/src/harness/planning_certification)
+  [crates/worth-query/src/harness/planning_certification](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/harness/planning_certification)
   and
-  [crates/worth-query/src/harness/planning_matrix](../../workspaces/worth-query/crates/worth-query/src/harness/planning_matrix)
+  [crates/worth-query/src/harness/planning_matrix](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/harness/planning_matrix)
 
 ## Acceptance Mapping
 
@@ -61,9 +61,9 @@ directly.
 
 Covered by:
 
-- [planning_certification/mod.rs](../../workspaces/worth-query/crates/worth-query/src/harness/planning_certification/mod.rs)
-- [planning_certification/tests.rs](../../workspaces/worth-query/crates/worth-query/src/harness/planning_certification/tests.rs)
-- [planning_matrix](../../workspaces/worth-query/crates/worth-query/src/harness/planning_matrix)
+- [planning_certification/mod.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/harness/planning_certification/mod.rs)
+- [planning_certification/tests.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/harness/planning_certification/tests.rs)
+- [planning_matrix](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/harness/planning_matrix)
 
 What is proven:
 
@@ -145,11 +145,11 @@ What is proven:
 Covered by:
 
 - shared certification grammar under
-  [harness/certification](../../workspaces/worth-query/crates/worth-query/src/harness/certification)
+  [harness/certification](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/harness/certification)
 - Milestone 1, 2, and 3 completeness reports deriving from the shared
   requirements registry
 - shared phase fixtures under
-  [harness/fixtures](../../workspaces/worth-query/crates/worth-query/src/harness/fixtures)
+  [harness/fixtures](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/harness/fixtures)
 
 What is proven:
 

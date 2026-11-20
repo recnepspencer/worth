@@ -23,7 +23,6 @@ worth-harness = { path = "../../../../crates/worth-harness" }
 serde.workspace = true
 sha2.workspace = true
 worth-foundational.workspace = true
-worth-query.workspace = true
 worth-query-decl.workspace = true
 worth-query-admission = { path = "../worth-query-admission" }
 worth-query-execution = { path = "../worth-query-execution" }

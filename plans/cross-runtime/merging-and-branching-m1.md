@@ -387,7 +387,9 @@ arbitrary caller-defined marker as equivalent authority.
 
 - ordinary product code consumes Query through `worth-query-decl` and
   `worth-query-host`;
-- certification reconstruction consumes `worth-query-replay`;
+- certification code consumes `worth-query-replay` for cost evidence only;
+  certification reconstruction needs a certification-owned Query replay route,
+  which is a dependency of any M1 work that requires it;
 - pure schema/meaning crates remain Query-agnostic;
 - Relational, Signal, and Runtime Bridge expose only their existing legal
   audience facades while M1 classifications are installed.

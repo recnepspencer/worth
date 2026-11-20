@@ -1,0 +1,1455 @@
+# Query Engine Architecture Map
+
+> **Building an application on WORTH?** Start at
+> [Build an Application](../../../docs/build-an-application.md) and the
+> [Capability Index](../../../docs/capability-index.md). This document is
+> engine-internal and names types you must not import.
+
+> **Owner-crate map.** This page maps the Query owner crates behind `worth-query-decl` and `worth-query-host` for platform maintainers. Application code uses `worth-query-decl` and `worth-query-host`; start with the [API Map](../../../docs/api.md).
+
+## Who This Is For
+
+| If you are... | Read this instead |
+|---|---|
+| Writing application code: a schema, operations, handlers, queries, or a host that installs and runs them | The [API Map](../../../docs/api.md), then the [`worth-query-decl` README](../crates/worth-query-decl/README.md) and the [`worth-query-host` README](../crates/worth-query-host/README.md) |
+| Learning what happens to a request and what each outcome means | [How WORTH Works §9 to §14](../../../docs/how-it-works.md#9-query-the-life-of-one-request) |
+| Writing certification cost evidence | [API Map §4](../../../docs/api.md#4-certification-api) and the [`worth-query-replay` README](../crates/worth-query-replay/README.md) |
+| Looking up a term such as *basis*, *performed*, or *settled* | The [Glossary](../../../docs/glossary.md) |
+
+This page covers the remaining case: you are **changing the Query engine
+itself**, its audience facades, or the boundaries between them. It records
+which crate owns which authority, where each stage of a request lives in the
+source, and which laws a change must keep.
+
+One rule for reading it:
+
+- **The application API is `worth_query_decl::facade` and
+  `worth_query_host::facade`.** A name on this page that neither facade
+  exposes is engine-internal. Do not add it to an application's imports. If an
+  application needs it, the missing facade export is the defect to report.
+
+Every claim here describes the engine that exists. If a capability is not
+described here or exposed by an audience facade, do not infer it from a type
+name, an internal module, a digest, a report, or a neighboring runtime.
+
+## Query In One Sentence
+
+WORTH Query turns typed application intent and proof from the runtimes that own
+truth into an admitted, bounded operation whose execution, aftermath, recovery,
+and publication retain the exact authority, basis, and causality that made it
+lawful.
+
+Query is not a database, policy engine, identity provider, or storage system.
+It composes those owners into governed application work. How WORTH Works
+[§2](../../../docs/how-it-works.md#2-the-shape-of-the-platform) places it
+in the platform.
+
+## Query Crate Map
+
+The Query workspace (`workspaces/worth-query/crates/`) splits authority across
+owner crates. The audience facades re-export exact owner namespaces and add no
+behavior.
+
+### Owner crates
+
+| Crate | Owns | Does not own | Applications reach it through |
+|---|---|---|---|
+| `worth-query-declaration` | Authored intent, canonicalization, schema-visible validation, binding grammar, result shapes, collection declarations, and the declaration macros | Installation, execution, publication, replay | `worth_query_decl::facade`; `worth_query_host::facade::declaration` |
+| `worth-query-installation` | Callback-free domain package meaning, installation admission, generation affinity, conflict semantics, installed indexes, and installed operation contracts such as `WorthQueryOperationTouchContract` | Execution providers and workspaces | `worth_query_host::facade::domain` |
+| `worth-query-admission` | Basis, policy, support, resource, and descriptive graph-read planning decisions, and the proof-bearing handoffs that execution accepts | Executable plans, allocation, provider contact, execution, publication | `worth_query_host::facade::admission` |
+| `worth-query-execution` | Consuming admission proof, attempt-local provider sessions, and execution evidence. It also holds the primary-graph application runtime: installation, contributions, handlers, request admission, candidate touch admission, compare-and-commit, commit receipts and outcomes, settlement deferral, product branches, program adoption, discovery, workflows, recorded correction and recovery | Derived publication and disclosure copies | `worth_query_host::facade::{application_installation, application_contribution, application_discovery, application_invariants, installed, primary_graph, product, runtime, convergence_epoch}` |
+| `worth-query-publication` | Derived publication: policy-materialized decision attachments, canonical disclosure copies, published application results, application aftermath publication, and the borrowed request API (`WorthQueryApplicationRequestExt`, mutation outcomes, output demand, live reads) | Execution | `worth_query_host::facade::{publication, application_entry}` |
+| `worth-query-package-archive` | The store-neutral, authority-free archive protocol for portable packages | Trust, activation, or runtime authority | Release tooling only |
+
+### Audience facades
+
+| Crate | Audience | Re-exports |
+|---|---|---|
+| `worth-query-decl` | Application declarations, from `entry`-band and `cert`-band crates | Declaration modules and macros from `worth-query-declaration`, its only dependency |
+| `worth-query-host` | Application hosts, from `entry`-band and `cert`-band crates | Namespaces from `worth-query-admission`, `worth-query-declaration`, `worth-query-execution`, `worth-query-installation`, and `worth-query-publication` |
+| `worth-query-replay` | Certification only, from `cert`-band crates | Certification-cost types from `worth-query-execution`, its only dependency |
+| `worth-query-certification` | Certification only | Provider comparison and hostile scenarios, with no construction authority |
+
+`tools/boundary-check/snapshots/facades.toml` snapshots the exports of
+`worth-query-decl`, `worth-query-host`, `worth-query-host::primary_graph`,
+`worth-query-replay`, and
+`worth-query-certification`. Adding, removing, or renaming one of those exports
+is a deliberate snapshot update, not a side effect.
+
+## Runtime Authority Owners
+
+How WORTH Works
+[§2.3](../../../docs/how-it-works.md#23-who-owns-what) summarizes the
+owners. This is the maintainer's version, with what each owner must not be
+asked to do:
+
+| Owner | Owns | Does not own |
+|---|---|---|
+| Application domain | Business vocabulary, schema meaning, operations, invariants, capability intent, and disclosure classifications | Runtime proof or lower-runtime truth |
+| Proof substrate (`worth-proof`) | Generic proof-bearing progression, freshness, readmission, composition, and capability carriers | Query permission, live runtime state, or owner-specific authority |
+| Foundational | Exact canonical values, keys, paths, portable bases, provenance, receipts, and shared boundary vocabulary | Proof progression, application permission, or relational truth |
+| Relational | Entities, relations, aspects, immutable branch roots, mutable branch-reference cells, exact branch observations, detached transactions, opaque prepared candidates, branch-local linearization, commit history, and durable publication settlement | Product authorization, application operation meaning, Query index publication, or external completion |
+| Runtime Bridge | Installed correspondence and lawful lowering between Query and lower runtimes | Relational facts, Signal decisions, or application policy |
+| Signal | Policy evaluation, producer-local scoped invalidation, readiness and scheduling, performed execution receipts, component branch graph and bases, per-branch execution cells, weak owner services, local evaluation slots, and condition outcomes | Application capability admission, Query maintenance authority, composite product currentness, or relational mutation |
+| Runtime World | Memory-resident product branch references, immutable single-parent composite history, exact component-basis composition, coordinated publication, and bounded retained owner effects | Application authorization, component truth or settlement authority, durable restart, or Query public completion |
+| Query | Installed application meaning, authority composition, admission, typed progression, execution products, idempotency and outbox meaning, Query index publication, typed unresolved-durability outcomes, runtime-local aftermath recovery, and consumer publication | Authentication truth, graph truth, policy truth, external completion, or Relational durability authority |
+| Store | Durable persistence, journals, restart checkpoints, and reconstructive state | Ordinary Query admission, live recovery authority, or external completion |
+| External effect owner | Whether an escaping consequence was accepted or completed | Query commit, application authorization, or recovery authority |
+
+The distinction between **truth** and **authority** is fundamental. A lower
+runtime can truthfully report that it can perform an action without proving
+that a particular application principal may request that action for a
+particular purpose and scope.
+
+## Where Each Request Stage Lives
+
+How WORTH Works explains each stage from the application's side. This table
+maps each stage to the crate that owns it and to the host facade module that
+exposes it. Read the linked section for the behavior; change the owner crate.
+
+| Stage | Explained in | Owner crate | Host facade module |
+|---|---|---|---|
+| Declare | [§9.1](../../../docs/how-it-works.md#91-declare) | `worth-query-declaration` | `worth_query_decl::facade`; `declaration` |
+| Install | [§9.2](../../../docs/how-it-works.md#92-install) | `worth-query-installation` for package meaning and installed contracts; `worth-query-execution` for `in_memory_program` and the application runtime | `domain`, `application_installation`, `application_contribution` |
+| Request entry | [§9.3](../../../docs/how-it-works.md#93-request-entry) | `worth-query-publication` | `application_entry` |
+| Admission | [§9.4](../../../docs/how-it-works.md#94-admission) | `worth-query-admission` for basis, policy, support, resource, and planning decisions; `worth-query-execution` for principal, scope, and operation authorization | `admission`, `primary_graph` |
+| Execution | [§9.5](../../../docs/how-it-works.md#95-execution) | `worth-query-execution` (`DecisionReader`, `CandidateWriter`) | `primary_graph` |
+| Candidate check and touched graph | [§9.6](../../../docs/how-it-works.md#96-candidate-check), [§10](../../../docs/how-it-works.md#10-the-touched-graph) | `worth-query-installation` for the declared ceiling; `worth-query-execution` for candidate touch admission and commit-sealed records | `domain`, `primary_graph` |
+| Commit | [§9.7](../../../docs/how-it-works.md#97-commit), [§7](../../../docs/how-it-works.md#7-one-change-through-the-whole-stack) | `worth-query-execution` over Relational and Runtime World | `primary_graph` |
+| Publication, live reads, output demand | [§9.8](../../../docs/how-it-works.md#98-publication-live-reads-and-output-demand) | `worth-query-publication` | `publication`, `application_entry` |
+| Resources and budgets | [§9.9](../../../docs/how-it-works.md#99-resources-execution-and-cost) | Each owner enforces its own bounds | All |
+| Outcomes | [§11](../../../docs/how-it-works.md#11-outcomes-every-way-a-request-can-end) | `worth-query-publication` (`WorthQueryApplicationMutationOutcome`); `worth-query-execution` (`WorthQueryApplicationCommitOutcome`) | `application_entry`, `primary_graph` |
+| Branches, programs, adoption | [§12](../../../docs/how-it-works.md#12-branches-programs-and-adoption); calls in [Build an Application §7](../../../docs/build-an-application.md#7-adopt-a-new-program-on-a-branch); full guide [foundations/programs-and-adoption.md](foundations/programs-and-adoption.md) | `worth-query-execution` for rosters, activation, and adoption publication; `worth-query-publication` for `programs()` and branch-set requests | `application_entry`, `application_installation`, `product`, `primary_graph` |
+| Workflows | [§13](../../../docs/how-it-works.md#13-workflows); calls in [Build an Application §6](../../../docs/build-an-application.md#6-author-publish-and-run-workflows); full guide [foundations/workflows.md](foundations/workflows.md) | `worth-query-declaration` for specs, builders, and node kinds; `worth-query-installation` for vocabulary installation and resource ceilings; `worth-query-execution` for the workflow kernel, runtime, outcomes, discovery, and adoption inventory; `worth-query-publication` for workflow requests and their preparation denials | `application_program`, `domain`, `application_installation`, `application_discovery`, `application_entry`, `primary_graph` |
+| Workflow-bound operation checks (operation authorization, occurrence authority, approval evidence) | [workflows guide, Operations](foundations/workflows.md#operations); summary in [three independent checks](#three-independent-checks) | `worth-query-declaration` for `workflow_authority` and `ApplicationWorkflowExecutionRequirements`; `worth-query-execution` for admission, authority issue, and commit rechecks; `worth-query-publication` for `for_workflow_operation` | `worth_query_decl::facade::application_operation`; `declaration`, `application_entry`, `primary_graph` |
+| Correction and recovery | [§14](../../../docs/how-it-works.md#14-aftermath-and-recovery); full guide [recorded source correction](execution/recorded-source-correction.md) | `worth-query-execution` for canonical source selection, correction lineage and recovery; `worth-query-publication` for `corrections()` and ordinary operation delivery | `application_entry`, `primary_graph`, `publication` |
+
+## Engine Laws
+
+The platform [principles](../../../docs/philosophy.md#principles) bind
+the engine, and How WORTH Works
+[§8](../../../docs/how-it-works.md#8-state-versus-truth-as-the-code-enforces-it)
+lists where the code enforces them. Their engine consequences:
+
+- **Meaning is declared; authority is admitted.** Declaration, installation,
+  admission, and execution are separate owners. Skipping a step, or letting one
+  crate mint another crate's product, creates a parallel authority lane.
+- **Proof is carried, not rediscovered.** An admitted object carries what its
+  legal successor needs. `worth-proof` supplies generic progression law, but a
+  generic proof or a caller-defined `AuthorityMarker` cannot open a Query
+  operation. Authority-bearing Query methods accept the exact Query-owned types
+  that their owning workflows return.
+- **Narrowing cannot widen.** Purpose, tenant, relationship proof, capability,
+  disclosure, branch, basis, and lifecycle constraints may narrow a request. No
+  projection, helper, adapter, or lower-runtime result may widen it again.
+- **Reporting is not authority.** Digests, counters, inspection reports,
+  explanations, support rows, serialized documents, and public projections
+  authorize nothing unless a typed contract says they do.
+- **Progression is explicit.** Requested, admitted, prepared, executing,
+  performed, settled, completed, stopped, published, and released are different
+  states. `performed` means the branch reference moved; `settled` means the
+  owning runtime also acknowledged durability and any required Query
+  publication. Methods appear only on states that may perform them. Do not
+  simulate progression with booleans or status strings.
+- **Currentness is part of authority.** Authentication, principal mapping,
+  graph observations, Signal decisions, grants, lifecycle, branch, snapshot,
+  and version can change. Query binds them to the request and revalidates the
+  relevant ones before governed work or commit.
+- **Commit is not external completion.** A committed mutation or outbox row
+  proves local state only. Acknowledgement, silence, timeout, disconnect, and
+  lost response keep their exact typed posture. An installed signed inbound
+  source or the original transport observation can complete that same owner;
+  only the canonical World publication makes it terminal. A workflow
+  `await_inbound` node observes the owner on fresh advance, never from callback
+  bytes or a receipt-local status alone.
+- **Correction uses current admission.** `corrections()` selects retained
+  source meaning and prepares a new operation on the current target branch.
+  Reapplication runs the retained input through the original installed binding.
+
+Inbound meaning starts in
+`worth-query-declaration/src/application_schema/inbound_occurrence`;
+installation fixes the verifier to the operation, and
+`worth-query-execution/src/domain_computation/application_aftermath/external_effect/inbound`
+owns accepted evidence and terminal correlation.
+The primary graph runtime publishes through World; the publication
+`application_entry/inbound_occurrence` module supplies the ordinary host call.
+Bank's compiled [payment declaration](../../worth-query-bank-world/crates/bank-domain/src/schema/contributions/payments.rs),
+[workflow wait](../../worth-query-bank-world/crates/bank-server/src/application_definition/workflows.rs),
+and [installed route](../../worth-query-bank-world/crates/bank-server/src/inbound_completion.rs)
+show the audience path. See the [aftermath guide](./execution/application-aftermath-and-recovery.md#authenticated-inbound-completion)
+for custody, duplicate, and recovery postures.
+
+## Audience Facade Rules
+
+Application-facing imports are documented in
+[API Map §3](../../../docs/api.md#3-application-api). These are the rules
+a maintainer keeps when changing the facades.
+
+- **`worth-query-decl` adds nothing.** It re-exports declaration types and
+  macros without another type identity or behavior layer. Pure schema crates
+  stay Query-agnostic; declaration integration belongs in the entry band.
+- **`worth-query-host` exposes the production authority graph, not the
+  engine.** It does not expose raw primary-graph handles that would let a
+  consumer bypass Query. Program-output publication custody is deliberately
+  absent; the boundary checker reserves its issuer to the publication owner.
+- **Correction enters through `application_entry`.** Use the request's
+  `corrections()` methods for source inspection, preparation and alternative
+  selection. The returned ordinary operation owns source publication,
+  required-output delivery and close. Recovery products remain available through
+  `primary_graph` and `publication::application_aftermath`.
+- **Unresolved durability stays typed.** Relational publishes every commit to
+  its durable medium before the live cutover, so a performed commit has no
+  settlement left to repair. An unknown durable fate reaches the host as
+  `WorthQueryApplicationCommitOutcome::Indeterminate` (commit recovery
+  required) or, for a World-published commit, as `ProductUnpublished` with
+  `ProductUnpublishedCause::RelationalDurabilityUnresolved`. Nothing was
+  installed live; the Relational owner refuses later publications until it is
+  reopened, and reopening resolves the fate. The host never receives
+  Relational's raw unresolved-durability value and never reruns the operation.
+- **Product workflow enters through `primary_graph` and `application_entry`.**
+  On the application runtime, `current_world()` returns the managed occurrence
+  and `branches()` covers fork and reuse creation, bounded history, recovery
+  inspection, and cleanup. On the borrowed request, `on_branch(branch)` covers
+  reads, transactions, conditional delivery, and close. These accept
+  Query-issued branch occurrences, never raw World or component identities.
+- **Installed meaning is inspectable without an owner import.** Through
+  `facade::domain`, `installed_schema.native_contracts()` gives the sealed
+  native aspect catalog, and an installed operation's `contracts().graph_reads()`,
+  `contracts().touches()`, `contracts().emissions()`,
+  `contracts().external_effect()`, and `contracts().aftermath()` give its exact
+  graph scopes, emissions, escaping-effect meaning, and aftermath meaning. These
+  are borrowed inspection values, not operational authority.
+- **The facade route is part of the contract.** Boundary enforcement verifies
+  that `worth-query-host` re-exports the exact installed owner namespace and
+  snapshots it recursively. Retargeting an alias to a broader implementation
+  namespace is a contract change even when existing imports still compile. Do
+  not preserve an obsolete path by re-exporting the same types from a second
+  authority lane.
+- **Certification evidence stays in certification.** Engine workflow replay
+  was retired with the `worth-query` engine. `worth-query-replay` is the
+  cost-evidence facade:
+  `WorthQueryCertificationCostRuntimeExt` and a bounded
+  `WorthQueryCertificationCostScope`. Neither may enter application or host
+  code.
+- **Facade rule.** If an application example needs `worth_query`,
+  `worth_query_installation`, `worth_query_admission`, `worth_query_execution`,
+  `worth_query_publication`, Relational, Runtime Bridge, Signal, or Runtime
+  World directly, it crosses an authority boundary. The audience facade must
+  expose the lawful product instead.
+
+Before finishing a change that touches a manifest or a facade, run
+`cargo run --manifest-path tools/boundary-check/Cargo.toml -- --root .` and
+`cargo run --manifest-path tools/agent-context/Cargo.toml -- check`.
+
+## Engine Contracts By Subsystem
+
+Each subsection lists the invariants the engine must keep. The
+application-facing usage of the same subsystem lives in the guide named at the
+top of the subsection; do not copy it here.
+
+### Installed query bindings and result projection
+
+Application usage:
+[host README, Ordinary Typed Query Entry](../crates/worth-query-host/README.md#ordinary-typed-query-entry).
+
+- `ApplicationQueryBinding<Schema>` is one installed contract: the input and
+  its structured-value binding, the installed query, parameter and result
+  bindings, exact principal mapping, scope resolution, stable binding identity,
+  a finite result ceiling. Ordinary bindings use
+  `ApplicationQueryBindingLimits::results(n)`; the installed query profile controls
+  simultaneous graph work, not a per-query work or byte invoice.
+  `ApplicationQueryIntent<Schema>` carries
+  only the request values needed for parameters and scope.
+- Installation compiles that association once.
+  `installed_schema.installed_query_binding::<Binding>()` exposes the installed
+  query, principal binding, scope, identity, and limits together.
+- A borrowed request reads no World state. Each `execute()` selects the current
+  World once and carries that occurrence through principal and scope
+  resolution, admission, execution, and publication. `.limit_results(NonZeroUsize)`
+  may only narrow the installed binding's result ceiling; widening is denied before
+  provider or basis work. All modes, including retained reads and continuation,
+  use the same resolution policy.
+- Result projectors receive only disclosure-admitted rows.
+  `WorthQueryApplicationProjectionRow::entity_id()` distinguishes repeated
+  traversal of one entity from distinct entities; topology membership and
+  deduplication use it rather than projected field values.
+- `ApplicationQueryResultShapeBuilder::relation_where_equal(...)` binds a typed
+  equality-queryable field on a nested entity to a typed query parameter. Query
+  filters actual relation targets before cardinality and child projection,
+  while source evidence retains the complete examined sibling set and predicate
+  aspect revisions. Filtered result relations are not continuation targets.
+
+### Programs, contributions, and installation
+
+Application usage:
+[decl README, Application Program Meaning](../crates/worth-query-decl/README.md#application-program-meaning),
+[host README, Contribution-Composed Applications](../crates/worth-query-host/README.md#contribution-composed-applications),
+[host README, Branch-Local Program Evolution](../crates/worth-query-host/README.md#branch-local-program-evolution),
+and How WORTH Works
+[§12](../../../docs/how-it-works.md#12-branches-programs-and-adoption).
+
+**Program validation.** `ApplicationProgramDefinition<Schema>` is the canonical
+static root. It owns one program identity and the typed inventories of
+contributions, feature instances, declared outputs, actions, output-graph
+connections, and scoped rules. `ApplicationProgramAuthoring::<Schema, Program>::begin()`
+followed by `.validated_program()` validates that meaning before installation.
+Invalid or duplicate identities, dangling features, missing required inputs,
+undeclared outputs, duplicate bindings, cycles, and unexported cross-instance
+connections are typed denials, never deferred to the first request.
+
+**Features and the output graph.** Features declare semantic ownership and
+typed ports. Composition-instance identity distinguishes installations of one
+reusable feature; it does not identify a domain entity. Connections bind
+compatible ports at explicit instances. Each output-graph child edge must leave
+its parent feature, and `ApplicationOutputLeaf` terminates a branch.
+Declaration order, registration ordinal, strings, and traversal never create
+these relationships. `worth_query_feature_spec!` removes builder plumbing but
+still produces the canonical `ApplicationFeatureSpec` and creates no registry;
+see [Feature Capsule Authoring](./authoring/feature-capsule-authoring.md).
+
+**Action attachments.** `.action::<Binding, Delivery>()` begins one complete
+ordinary action. Consuming `.locality_and_change`, `.correspondence`,
+`.evaluated_requirement` and `.external_input` attach each optional contract
+once; `.finish_action()` returns its feature parent. The feature macro's
+`action(Binding, Delivery) { ... };` block delegates to that same progression.
+Delivery derives required-output-source meaning. Specialized native declarations
+use `.native_action::<Binding>()` without delivery or an output-source toggle;
+ordinary products do not move manual execution/retry under that spelling.
+
+Delivery/locality/change belong to the exact action occurrence. Correspondence
+lookup is binding-scoped and preserves `Unchanged`, `Set` and `Clear`.
+Rule/provider capabilities remain operation-plus-rule/provider scoped across
+actions. The installed evaluator's result supplies guidance and submission
+enforcement; declaring a rule creates no unbypassable authorization gate.
+External input resolves values, revision and provenance; explicit admission
+checks that revision before the captured values enter the mutation. No clause
+creates permission or a second capability registry.
+
+The sealed five-part `ApplicationActionReference` returns an
+`ApplicationActionSelector`, not a full declaration. Installation resolves the
+complete actual action, including metadata, and fresh progression compares that
+meaning. Duplicate native type or portable occurrence/feature/binding keys are
+rejected by the existing definition validator.
+
+**Retained operations.** Fixed/discovered owners retain the authentic runtime
+allocation and actual installed action through pending, refused, settled and
+terminal states; the construction borrow ends at return. Applications retain
+an independent genuine runtime handle for fresh requests and configure initial
+workflow vocabulary before cloning handles or retaining operations. Consuming
+vocabulary refusal preserves runtime, installed spec and signing owner;
+borrowed support refusal returns the original spec with its denial. Keepalive
+is custody, not permission, cleanup or durable continuation. Close and every
+business handoff retain their native fresh-authority and refusal contracts.
+
+**Derived artifacts.** `ApplicationProgramDefinition::DERIVED_ARTIFACT_GOVERNANCE`
+selects the posture. `Compatible` admits a program with no artifact meaning.
+`Required` makes it complete: every connected output target declares at least
+one derived artifact, or program validation denies it. An artifact declaration
+binds producer family, succession, locality, retention, resource ceiling,
+stopped outcome, and exact dependencies as one contract. Query rejects a demand
+whose family, occurrence, change, source evidence, resource use, or parent
+settlement does not match it. Recompute, replacement, and reconstruction remain
+distinct meanings, and a caller cannot invent a no-work or reuse outcome by
+reproducing identifiers. Once a program selects `Required`, do not switch back
+to `Compatible` to admit a new path.
+
+**Managed computations and derived collections.** A contribution declares each
+computation's input, output artifact, computation partition key, reuse, stopped
+outcome, execution posture and determinism contract, then installs
+one owner for that declaration. A `Deterministic` computation declares
+`ApplicationSingleComputationPartition` and installs its owner with
+`computation`; a `DeterministicPartitioned` one declares its own key and
+installs a `WorthQueryPartitionedComputationOwner` with
+`partitioned_computation`. A key is the same key when its canonical encoding
+is, and partitions reduce in partition identity order over the canonical tree.
+Program validation denies either key mismatch. Installation rejects missing,
+foreign, duplicate, or mismatched owners, an owner binding that does not serve
+the declared execution, and a `ContractEquivalent` declaration.
+Execution evidence is minted only by the active `DecisionReader`, which borrows
+the real request scope and checks deadline, cancellation, retained bytes, and
+work. There is no unscoped or test-only execution path. A derived collection
+declaration grants no mutable collection authority: product runtimes own
+incremental state, mark a row complete only from current contributor evidence
+observed through one retained request observation, and must reproduce the same
+rows on reconstruction.
+
+**Rule-readable derived endpoint sets (Phase 6 first vertical).** Declare an
+`ApplicationDerivedRelation` recipe, its actual typed collection association
+and each operation's `operation_read_derived_relation`. The supported runtime
+subset has unbounded endpoint-set laws and forbids cross-context traversal on
+every physical leaf; unsupported authored laws still return
+`DerivedSourceUnavailable`. Ordinary invariants prepare exact proposed and
+committed sources separately, then consume only their frozen view-issued proofs.
+Decisions require the declared operation/marker and issued physical read scopes.
+`setup.derived_relation_count` installs the framework's closed endpoint-count
+owner into the existing managed collection machinery. A custom computation with
+the same descriptive association cannot substitute for that owner.
+
+The existing derived-view registry retains the disposable count, physical and
+empty-adjacency dependencies, invalidation and reconstruction state. Every read
+first acquires a genuine Native source; a warm cache does not remove that proof
+work or grant authority. `runtime.discard_rule_readable_collections()` disposes
+only those projections. Source laws, walks, orbits, components, logical member
+domains and CAD adoption remain separate Phase 6 completion gates. See the
+[graph obligation guide](domain-capabilities/canonical-graph-obligation-progression.md#derived-relation-meaning).
+
+**Projected member domains (Phases 5–6 prerequisite).** Typed domain/case
+declarations describe finite read-only carrier/case meaning without declaring a
+stored entity. Fresh schema admission validates the actual stored carrier and
+canonical case roster; archive tag44/v1 preserves that meaning. Installation
+returns `ProjectedMemberDomainUnavailable` until Native can issue genuine
+members. Follow the [declaration contract](../crates/worth-query-decl/README.md#projected-member-domain-meaning)
+for current APIs and the [component guide](modeling/relation-laws.md#component-set-declarations)
+for available entity-domain reads and the remaining CAD shell boundary.
+
+Ordinary handlers return the installed owner's `decision_plan`, which carries
+that same request through preparation, computation and completion. Use
+`checkpoint.poll()` for a control-only safe point; `advance(work)` deliberately
+charges request work. `HandlerFailure<Domain>` and `HandlerResult::from_result`
+preserve typed domain, execution and interruption causes. Computation declarations
+require no result-byte forecast or payload `ChargedBytes` implementation. See the
+[managed computation guide](../../../docs/build-an-application.md#36-declare-and-install-a-partitioned-managed-computation).
+
+Cold managed pair views distinguish independent preplanned reads from serial
+reads whose second scope is supplied by the first row. Independent plans use
+`WorthQueryDerivedPairReadPlans::new` or `in_batch` and the closed reconstruction
+map. Dependent callers use
+`reconstruct_managed_derived_collection_pair_dependent_in_batch`: each local
+admission executes through its Query-issued `WorthQueryDependentPairReadContext`
+on the calling thread, under one execution request, exact product basis and
+native loan. Query retains both issued row claims until link/source checks and
+projection finish and publishes the retained image atomically. See the
+[Host pair read contract](../crates/worth-query-host/README.md#dependent-managed-pair-reads)
+for the ordinary call shape.
+
+**Speculative work.** A preview starts from a Query-issued retained read
+observation, keeps that exact Bridge source basis live, carries no mutation or
+publication authority, and must be readmitted against the current program
+runtime before the real mutation. Source or runtime drift denies readmission.
+Discard, replacement, close, and drop all terminate the speculative Bridge
+work.
+
+**Normalized manifests.** `ValidatedApplicationProgram::normalized_manifest()`
+derives a deterministic, sorted diagnostic description from validated meaning.
+It holds owned strings only, no type identity, handle, or authority, and it
+never participates in validation or installation.
+
+**Installation and ordinary actions.** `in_memory_program` installs canonical
+program/action/delivery meaning. `request.mutate` captures original meaning into
+an owned descriptor and `retain_operation::<Program, Action>` resolves the exact
+occurrence. Fixed, discovered, source-only and guarded workflow owners accept fresh
+ordinary requests for advancement, delivery where supported, and close. They retain
+no principal or grant.
+Capability admission follows the binding at every relevant native handoff.
+The [host contract fences](../crates/worth-query-host/src/ordinary_contract.rs) reject
+manual execution through ordinary receivers.
+
+#### Advanced native execution
+
+Use the [ordinary owning entry](foundations/ordinary-application-front-door.md#owning-fixed-and-source-only-actions)
+for fixed, discovered, source-only and guarded workflow actions. Deliberate manual
+execution, two-phase prepare and recovery select `request.advanced()`; native types are exported under
+`application_entry::advanced`. Current native allocation/admission rules remain
+unchanged. The ordinary builder cannot prepare or execute a manual mutation.
+
+**Rosters and adoption.** One host may roster several validated revisions. The
+revision and its codec describe meaning; they do not select current meaning.
+Each World product occurrence carries one performed branch-program activation.
+Semantic comparison is admission input, never write authority. A prepared
+adoption binds exact source and target programs, branch head, affected state,
+target-rule validation, migration, dispositions, resources, and custody; only
+World's final performed publication activates the target. Retained reads and
+unpublished adoption recoveries lease exact program support, and
+`retire_program_support` cannot evict a program still needed for correctness.
+Broader adoption is owner-covered, ordered, and explicitly non-atomic.
+
+**Contributions.** `worth_query_application!` lists independently compiled
+contributions once and supplies `ApplicationSchemaComposition::Contributions`.
+Each declares members through `ApplicationSchemaContribution<Schema>` and
+implements `WorthQueryApplicationContribution<Schema>`. Contributions are
+implementation and provider slots under the program, not a second semantic
+root. Installation validates the exact contribution inventory before any
+callback, restricts each setup to its members, and denies missing, duplicate,
+foreign, mismatched, uncovered, or ambiguous members before the runtime or
+initial state becomes visible. Handler completeness, producer and conditional
+binding, and invariant installation precede the initial-state callback. The
+[public consumer](../crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/main.rs)
+holds the executable definitions.
+
+### Handlers, candidates, and invariants
+
+Application usage:
+[host README, Typed Handler And Invariant Access](../crates/worth-query-host/README.md#typed-handler-and-invariant-access)
+and How WORTH Works
+[§9.5](../../../docs/how-it-works.md#95-execution).
+
+For authored scalar edits and one in-scope creation, use an
+[executable scope-bound body](./authoring/scope-field-operation-bodies.md), attach
+it to the completed operation definition, bind the same completed schema through
+program authoring's `with_schema`, and install with `setup.operation_body::<Binding>()`.
+Its literals, flat canonical-input assignments, optional Set/Clear and one-level
+Option-valued replacement/initialization, tracked
+preimage initializers and field/count/child-field-list expression requirements enter canonical
+schema/program meaning and drive native tracked execution. A replacement handler
+is denied. A creation-only body declares `in_scope(Entity::reference())`; it does
+not need a dummy scope write or bootstrapped business entity. Fixed output uses
+`preserve_scope_output::<Binding, Role>()` and creation `create_output::<Binding, Role>()`
+bind the exact typed output contract through the existing candidate/commit owner.
+Output-only scope preservation observes Entity membership and needs no dummy write.
+Portable output labels never grant native authority; mandatory uncovered roles
+and unsupported mandatory families deny. Producer/source/settlement currentness
+remain separate owners. Guidance and native
+submission share the installed requirements. Creation `link_from_scope` and
+`link_to_scope` bind only the admitted scope and that body's actual created row,
+derive Link membership, and use the existing native relation-effect owner.
+For an at-most-one current-subject link, use creation `replace_from_scope`.
+The installed relation must have outgoing edge maximum exactly one, and the
+operation must declare Reads, Links and Unlinks. Query seals empty/nonempty
+selection and liveness, carries the predecessor, retires only its observed edges
+and links the actual created row in the same guarded publication. Declare a
+separate append-only history/ownership link. Replacement does not delete the old
+subject or supersede signatures. Body v19 preserves this distinct posture;
+old Append bytes remain unchanged. This does not provide arbitrary retargeting,
+approval-round policy, Reopen or existing-subject enrollment. Do not fill those
+joins with host effects or a mutable certified generation counter.
+Creation `initialize_from_principal_identity::<Binding, _, _, _, _, _>(actor)`
+binds a unitless actor field to the exact mutation/principal identity codec and
+captures admission's actual principal through the tracked decision observation.
+It records unsigned actor attribution, not a signing event or approval grant.
+For authenticated creation, use the same body's
+[`signed_by` handoff](./authoring/signed-operation-creations.md). The v2 native
+subject-provenance codec also persists source-to-snapshot dependencies from the
+installed `capture_from_scope`/`capture_from_present_scope` initializers explicitly
+classified `Subject`. `AuditContext` values are authenticated, immutable and
+tracked for publication, but excluded from the certified dependency footprint.
+V2 refuses unclassified captures; role and source presence travel in body v14
+without reinterpreting v1–v13. Admission facts remain separate. Neither that descriptive
+carrier nor a coverage digest grants approval or implements business supersession.
+For permanent supersession, declare `supersede_on_subject_change` on the same v2
+signed creation, with distinct history/current/consequence relations and the
+native read-only supersession payload field. Query derives source-writer
+publication closure, bounded current-evidence observation and same-commit
+consequences. Only each immutable row's own `Subject` dependencies count; no-op,
+unrelated and audit-context edits preserve it. A dependency edit appends immutable
+supersession and removes current membership without rewriting history; ABA never
+revives it. Membership observation is native currentness, not an evictable cache.
+Retained replay precedes this work; stale/refused batches publish neither half.
+Lifecycle declarations use body v15 without changing older versions. The host
+must not author changed-field maps, relationship repairs or supersession effects.
+Effectful program migration for such a schema currently fails closed.
+For a later business requirement over early attestation, derive
+`completed_signing_body.signed_evidence::<Binding>()` once and bind it with
+`operation.requirement_operands().signed_evidence(name, &reference)`. The native
+Boolean observes matching Current membership, exact producer-body meaning,
+binding/purpose/subject and the same canonical active program revision. Guidance
+and admission use the same evaluator and retained native observation. Healthy
+other attestations do not match; unavailable/malformed observations deny. Do not
+reconstruct approval authority, compare field stamps for continued validity,
+or duplicate evidence selectors in the host. Body v16 carries this operand;
+cross-program-revision compatibility is not inferred and mismatch does not supersede history.
+When the consumer root differs from the signable subject, use
+`signed_evidence_from_related(name, relation, &reference)`. The typed outgoing
+relation targets the producer binding's actual scope. Native selection admits
+one distinct live subject, evaluates that subject's evidence, and seals selection
+adjacency/liveness together with the evidence facts. Zero yields Boolean false
+(requirement status comes from the authored expression); multiple
+subjects deny with `AmbiguousRelation`; dangling endpoints remain unavailable.
+No first/latest choice, evidence union or host-selected ID supplies this truth.
+Body v18 carries the distinct selector; older encodings keep their meaning.
+Changing selection is not signature supersession. Model historical rounds as
+separate signable subjects; this selector does not supply round creation,
+relationship replacement, business-open policy or Reopen. Do not implement
+those missing joins with host effects or a mutable certified round counter.
+Context alone is not domain membership; membership alone is not authorization
+and does not replace a capability's grant witness. General assignment expressions,
+multiple creations, arbitrary relation edits, conversion into kernel approval authority and multi-operation commands
+remain unsupported here; do not fill those missing joins with a host substitute
+and call it declarative.
+
+Operation input identity minting validates the structured binding before input
+serialization, through both ordinary and admitted producers. Preencoded handoffs
+carry that validated input rather than recreating or revalidating it. A binding's
+validator is not optional host guidance.
+
+- Handlers implement `decide` and `build_candidate`; computing handlers override
+  `prepare_decision` with their installed computation's `decision_plan`. Query
+  retains and completes the decision's actual read dependencies and lets
+  `CandidateWriter` bind effects without selecting a new runtime basis or
+  requiring candidate-size estimates.
+- An existing target with no scalar identity field crosses the phase boundary
+  through `DecisionReader::mutation_target` on an entity observed through typed
+  reads, then `CandidateWriter::projected_entity`. The installed projection
+  authority mints the target with its runtime, schema binding, and exact
+  operation admission. A target from another runtime, binding, or admission, or
+  absent from this attempt's completed read set, is rejected.
+- Candidate construction and validation require no authored representation-byte
+  or aggregate validator-work quote. Relation integrity and installed invariants inspect
+  the actual candidate and its affected untouched neighbors before atomic
+  publication. Domain prechecks or handler success cannot substitute for
+  invariant receipts. Denied, cancelled, or invalid candidates do not publish.
+- `DecisionReader::prior_output_family` returns the live members of a declared
+  output-role family in semantic role order, resolved at the selected branch
+  occurrence and product generation, under the ordinary decision work budget.
+  Undeclared families, mismatched markers, exhausted budget, or unresolvable
+  correspondence return `WorthQueryPriorOutputDenial`.
+  `prior_output_family_if_present` returns `None` only when the binding has no
+  correspondence at that occurrence and generation; integrity and resource
+  failures stay denials.
+- Installed invariant factories resolve typed field and relation bindings once.
+  Their proposed and committed views enforce binding, view, declared-access,
+  prepared-scope, entity-kind, value, and finite-work rules. Application code
+  never decodes native aspect payloads or constructs lower-runtime effect
+  programs.
+
+**Optional fields.** An operation must declare the field as both a decision
+read and a write. The projection observes the exact value or lawful absence,
+and `write_optional_field` authors presence or absence:
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
+let note = reader.decision_field(projected, DraftNote::reference())?;
+let quantity = reader.decision_field(projected, DraftQuantity::reference())?;
+
+// After projected dependencies are completed and the effect target is bound:
+set_effects.write_optional_field(&draft, DraftNote::reference(), Some(String::new()))?;
+set_effects.write_optional_field(&draft, DraftQuantity::reference(), Some(0_u64))?;
+
+// A later admitted operation clears the optional note without a sentinel:
+clear_effects.write_optional_field(&draft, DraftNote::reference(), None)?;
+```
+
+Empty text, zero, and absence are distinct authoritative states, and absence is
+a retained decision fact: a competing absent-to-present change makes the older
+attempt stale. Required fields cannot call `write_optional_field`; the field
+marker enforces that at compile time. Never encode absence as an empty string,
+zero, `AspectValue::Null`, or a sentinel, and never bypass the projection with a
+direct Relational patch. For optional fields the admitted operation declares as
+writable, Query also retains the aspect's presence at the same decision
+observation. Read-only decisions keep their narrower value/absence dependency.
+When the aspect is absent, a first set initializes it
+through native complete-struct validation; missing required siblings still deny.
+When it is present, including present-empty, the write remains a native field
+patch. Clearing a field in an absent aspect leaves the aspect absent. The same
+rules apply when `write_field` sets a concrete value on an optional field.
+
+Do not bootstrap a dummy value or relocate a derived field merely to make its
+first write possible. A concurrent materialization of the aspect invalidates the
+captured absence even if the selected field remains absent. Native validated
+touch evidence grants exact initialization fields only from its own pre-effect
+basis; ordinary whole-aspect replacement does not acquire field-only authority.
+Presence dependencies remain explicit in native output currentness, checkpoint
+facts and durable workflow assessment evidence.
+
+### Output correspondence and program outputs
+
+Application usage:
+[host README, Contribution-Composed Applications](../crates/worth-query-host/README.md#contribution-composed-applications)
+(output roles and committed changes) and
+[host README, Output Demand, Exact Observation, And Live Reads](../crates/worth-query-host/README.md#output-demand-exact-observation-and-live-reads).
+
+- An output role is a marker type; its `WorthQueryApplicationOutputRole` impl
+  declares the schema, contract, entity marker, action, cardinality and name.
+  The contract lists the derived
+  `<Role as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR` in `ROLES`,
+  and one marker serves every binding sharing that contract. Handlers and
+  readers name the marker: `create_output::<Role>(&entity)`,
+  `outputs_of::<Contract>()?.entity::<Role>()`, `prior_output::<Binding, Role>()`.
+  The role name supplies no persistent identity; Relational resolves created
+  identities and co-commits their structural changes and lineage. The projected
+  identity still needs fresh admission for later use.
+- A role use that disagrees with its contract fails to compile. Writer and
+  prior-read bounds fix the contract and the action; every use evaluates
+  `DECLARED`, which requires the contract to list the role with the same name,
+  entity, posture and cardinality. `DECLARED` is a post-monomorphization
+  constant: `cargo build` and `cargo test` report it, `cargo check` does not.
+- Commit receipts and output-demand settlements store outputs erased. `outputs_of::<Contract>()` checks the commit's contract once at run
+  time (`ForeignContract` otherwise) and returns
+  `WorthQueryApplicationTypedOutputCorrespondence<'_, Contract>`; its `entity`,
+  `member` and `family_entries` bound every marker's contract to `Contract`, so
+  a read of another contract's role fails `cargo check`.
+- The cardinality is `WorthQueryExactlyOneOutput` or `WorthQueryAtMostOneOutput`.
+  Leaving an exactly-one role unbound fails the candidate with
+  `MissingOutputRole`, and its reads are total. An at-most-one role may be
+  omitted, and the same reads return `Option`, `None` meaning the commit left
+  the role unbound. A second binding of either is `DuplicateOutputRole`. The
+  cardinality is part of the canonical schema identity and the portable and
+  archived descriptions. Declare an optional single output this way, never as a
+  family with minimum zero. A producer's `type OutputRole` must be an
+  exactly-one role of its operation's contract, for its output family's entity.
+- A family is a marker type implementing `WorthQueryApplicationOutputRoleFamily`
+  with `PREFIX`, `POSTURES` and `MINIMUM`, listed in `ROLE_FAMILIES` by its
+  derived descriptor. Handlers bind members with
+  `create_member::<Family>(suffix, &entity)` (and `preserve_member`,
+  `retire_member`); readers use `member::<Family, Action>(suffix)` and
+  `family_entries::<Family>()`. An undeclared family or an action outside its
+  postures fails to compile; the suffix is validated at run time. It creates no
+  second lineage store.
+- Run-time checks remain where the types cannot carry the contract: a stored
+  receipt has no contract type (`outputs_of` refuses another contract with
+  `ForeignContract`), a family member's committed action is data
+  (`ActionMismatch`), and portable and readmitted forms are validated on
+  admission.
+- `committed_changes()` returns `WorthQueryApplicationCommittedChanges`, an
+  immutable view with no field payloads or mutation authority. Its constructor
+  and canonical artifact stay private. Event order and numeric identity do not
+  establish an entity-to-lineage association. Receipt clones and
+  `AlreadyCommitted` recovery keep the observations, but the receipt's
+  performed product-change capability is single-use and never recreated.
+
+**Required outputs.** For a program-owned action, required output means the
+complete authored output graph. `performed.start_required_outputs(&application, &request, controls)`
+and `request.start_program_outputs(&application, demand, controls)` return
+`WorthQueryApplicationProgramOutputHandle`.
+
+```text
+typed action intent + exact installed program
+    -> program-affine mutation admission and publication
+    -> performed source result
+    -> retained exact root demand basis
+    -> authored output-graph traversal
+    -> per-edge occurrence discovery at the carried parent basis
+    -> producer admission, readiness, and exact settlement
+    -> complete program-output settlement
+```
+
+- `settle(&application, &fresh_request)` performs at most the resolved installed-host
+  settlement allowance, optionally narrowed by caller controls, and returns
+  `Pending` when that bound is exhausted. `Default::default()` controls use the
+  installed host policy without copied numeric caps. `advance(&application, &fresh_request)` serves hosts that wait on owner
+  notifications between advances. Ordinary consumers never hard-code an
+  advance count or rediscover the dependent graph.
+- Settlement of the root and every discovered edge returns one
+  `WorthQueryApplicationProgramOutputSettlement`, with typed
+  `outputs_for::<Schema, Connection>()` and instance-qualified outputs.
+- Dependent discovery runs at the exact carried traversal basis. A later
+  unrelated observation, equal visible ordinal, foreign installation, or
+  foreign parent settlement cannot authorize an edge. Completed outputs retain
+  their owner settlement, so reconstruction and retry never depend on a
+  consumer keeping a view alive.
+- `settled_root_observation()` reports that the source output completed when a
+  dependent edge later denies. It does not prove graph completion.
+  `notifications()` exposes owner progress.
+- `request.demand(demand).controls(controls).start()` settles one producer
+  family. It is not a substitute for the program-output handle when the program
+  declares transitive required outputs. Source drift returns `Superseded`.
+
+An installed producer whose handler rejects its input returns
+`ProducerDomainDenied`, with terminal posture for that demand. Its provider can
+implement `domain_denial_reason(&typed_denial)` to supply static domain-owned
+words; `denial.domain_reason()` returns those diagnostic words. Missing producers
+and execution failures remain distinct. Match the typed kind for control flow;
+never parse the Debug subject or treat a reason as execution authority.
+
+### Source expectations, exact reads, and live reads
+
+Application usage:
+[host README, Output Demand, Exact Observation, And Live Reads](../crates/worth-query-host/README.md#output-demand-exact-observation-and-live-reads)
+and How WORTH Works
+[§9.4](../../../docs/how-it-works.md#94-admission) and
+[§9.8](../../../docs/how-it-works.md#98-publication-live-reads-and-output-demand).
+
+- Source-bound edits compare the declared source footprint during fresh
+  admission and publication. Sibling edits outside the footprint stay legal;
+  membership and selector-field changes may invalidate it. Missing, foreign,
+  retired, ABA-changed, or changed evidence returns a typed source-expectation
+  denial.
+- Input-selected subjects need the binding's `expected_source_parameters`, so
+  Query rejects a row or result-set proof for different selectors before the
+  handler runs. Matching the query type alone binds nothing.
+- Exact reads (`retain_read`, `at`) and live reads (`subscribe`) recheck
+  application, branch, principal, and scope on every use. A retained request
+  cannot open a live subscription. Observations identify state but grant no
+  mutation, retention, or publication authority.
+- `application.discovery()` describes installed declarations. It grants no
+  execution authority or promise of current authorization.
+
+The [public application proof](../crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof.rs)
+exercises program-owned actions, source-bound edits, candidate construction,
+invariant access, transitive output demand, readiness delivery, exact and live
+reads, cleanup, output correspondence, and idempotent recovery.
+
+### Authentication and principal resolution
+
+Authentication answers who an external caller claims to be. It does not answer
+what that caller may do.
+
+```text
+external identity proof
+    -> authenticated external principal
+    -> installed principal-binding resolution
+    -> Query principal bound to request scope
+```
+
+The request scope carries cancellation and deadline state. The resolved
+principal stays bound to the authentication and mapping evidence that
+constructed it; a role string, subject string, or copied identifier cannot
+replace that proof. Cancellation or mapping drift can deny a later transition
+even after an earlier admission succeeded.
+
+### Capability authorization
+
+Keep four concepts separate:
+
+1. A **lower-runtime ability** says that infrastructure can perform or observe
+   something.
+2. An **application capability** says that a principal may request a declared
+   application operation under exact constraints.
+3. A **lifecycle command** says which state transition the principal may
+   perform now.
+4. A **governed upper bound** states the maximum resource, operation, purpose,
+   field, and provenance authority that progression may activate.
+
+Capability admission evaluates installed subject-relation-object paths against
+current Relational truth through the installed Bridge lowering and Signal
+decision boundary. The path answers **who may perform the requested command**.
+Query also verifies the installed operation, input scope, purpose, exact grant,
+prohibitions, and composition rules.
+
+For a parent grant authorizing an actual descendant mutation/signing scope, use
+`ApplicationCapabilityResourcePath::root(grant_resource_relation, parent_slot)`
+and its typed forward/reverse continuation on the ordinary capability target.
+The request binds the parent through its declared context slot; Query resolves
+that claim and proves the full required path to the actual child. Every Allow
+clause must anchor the same parent slot. Parent predicates and current-child
+membership remain native path semantics, not host lookups or copied grants.
+The rich grant's enabled/purpose/action/trusted-time/revision checks and exact
+retained witness still apply. Rooted delegation/elevation/lifecycle profiles
+are cold-refused, not silently downgraded. Direct resources remain unchanged.
+See the descendant-scope example in the authorization guide below.
+
+- **Exact-grant binding.** When several grants could satisfy a capability,
+  Query retains the exact grant witness that authorized the request, and later
+  revalidation uses it. An equivalent-looking grant does not silently replace
+  it.
+- **Composition.** An operation may require all named capabilities, one lawful
+  alternative, distinct principals for distinct duties, conflict prohibitions,
+  exact relationship or tenant scope, or purpose and field constraints. Query
+  evaluates the installed composition law; callers cannot combine independent
+  booleans.
+- **Delegation.** Delegation derives a narrower capability with lineage to its
+  source and enforces depth, scope, purpose, resource, operation, field, and
+  validity bounds. A selected delegation-activation program may be a proper,
+  duplicate-free subset of the operation's installed program union. Delegation
+  cannot widen its source, discard provenance, outlive its source, cross a
+  foreign runtime, branch, or installation generation, or turn a report into a
+  grant.
+- **Revocation** is a separately authorized command over the delegated grant,
+  not proof that the revoker may perform the governed operation.
+
+See [Application Authorization And Emergency Elevation](./capabilities/application-authorization-and-emergency-elevation.md).
+
+#### Workflow-bound operations
+
+Retain the original guarded no-output operation through
+`for_workflow_operation(..)?.retain_operation::<Program, Action>(program)`.
+Every `advance(&fresh_request)` rechecks current action/binding authority. Native
+unpublished and dispatch custody stay in the same owner, without retaining a
+principal or prepared admission. Completed effect cleanup is retained separately
+from workflow acceptance; an assessment owns its actual admitted demand.
+
+##### Advanced native workflow execution
+
+Use the ordinary owner above for application operations. Deliberate native controls
+use the [borrowed native chain](foundations/workflows.md#advanced-native-workflow-execution).
+
+##### Three independent checks
+
+A workflow-bound business operation passes up to three checks. They answer
+different questions, are declared in different places, and none grants another.
+
+| Check | Question it answers | Declared by | Checked when |
+|---|---|---|---|
+| Operation authorization | May this principal perform this business operation on this scope? | The operation's capability or policy binding | Ordinary mutation admission, on every execution, including workflow-bound ones |
+| Workflow occurrence authority | Is this exactly the operation, input, and branch the instance is waiting for now, and not already spent? | `workflow_authority required` on the mutation binding | Issued by an advance that reaches a guarded Operation node (`AwaitingOperation`); bound by `for_workflow_operation`; rechecked at commit |
+| Required approval evidence | Must a current signed Approve decision also exist? | The binding's `workflow_requirements` plus any `approval_authority` edge authored in the definition | Resolved by the advance before authority is issued; the approver's grant is rechecked at commit |
+
+Decision procedure:
+
+1. An unguarded business mutation needs check 1 only.
+2. A guarded mutation (`workflow_authority required`) needs checks 1 and 2,
+   always.
+3. It also needs check 3 when the installed requirement asks for an approval,
+   or when the definition wires an `approval_authority` edge to the operation.
+4. Approving needs the approval capability plus a fresh signature. Advancing
+   needs the advance capability. Neither satisfies check 1. Permission to pump
+   an instance is not permission to execute the business operations in it.
+5. An approval is evidence, not permission. Workflow authority is a binding to
+   one occurrence, not permission.
+
+The installed requirement (`workflow_requirements` inside
+`worth_query_mutation_binding!`):
+
+| Declared | Meaning |
+|---|---|
+| Guarded requirement omitted | Compile refusal; manual bindings must implement the requirement method explicitly. |
+| `ApplicationWorkflowExecutionRequirements::not_applicable()` | Explicit non-workflow applicability; refused for a guarded binding. |
+| `ApplicationWorkflowExecutionRequirements::occurrence_only()` | No additional evidence. Zero or one approval edge; an authored edge is still enforced. |
+| `ApplicationWorkflowExecutionRequirements::requiring_approval::<Cap>()` | An approval by `Cap` is required, and an edited definition cannot remove it. |
+
+Guarded bindings explicitly declare `occurrence_only()` or a mandatory approval
+capability; omission is a compile refusal. A definition cannot weaken the installed evidence floor. Execute
+through fallible `idempotency_owned`, `for_workflow_operation`, the installed
+action's `retain_operation`, and fresh owning `advance`/`close`.
+Do not invent signed/unsigned authorization modes, dummy approvals, host permit
+flags, or a parallel state machine to bridge it.
+
+When the approval action must also publish a business attestation, attach its
+compiled signed body to that approval control and call
+`prepare_workflow_approval_with_body`. Query joins both into one candidate on
+the original snapshot and consumes one genuine event. Plain
+`prepare_workflow_approval` refuses an attached body; it never ignores it.
+`Settled` carries the resolved native outcome, including denials; inspect it.
+Exact committed replay precedes new body evaluation or authentication.
+This is explicit same-action composition, not conversion of old signature
+rows into grants. See [approval with attestation](./authoring/signed-operation-creations.md#one-approval-action-with-a-business-attestation)
+for the supported scalar profile and refusal boundaries.
+
+The full contract is in the
+[workflows guide, Operations](foundations/workflows.md#operations); the
+[information-gathering example](../crates/worth-query-certification/examples/authored_workflow/information.rs)
+executes a guarded binding declared with `new()`, without signing.
+
+### Emergency elevation
+
+Emergency elevation is a governed state machine over a request for a bounded
+application capability, not a superuser switch. The request retains requester,
+governed resource, operation, purpose, exact field or disclosure bound, grant
+and provenance constraints, validity window, and installed lifecycle identity.
+
+```text
+request -> approve -> active use -> close -> required review -> reviewed
+                    \-> expire
+```
+
+Each lifecycle command (approve, use, close, revoke, review) targets the
+lifecycle object and needs its own installed command authorization. The carried
+upper bound remains the maximum authority the elevation may activate, so
+approving is not using. Consequences:
+
+- requesters cannot approve their own elevation when separation of duty forbids
+  it, and a conflicting approver relationship blocks approval;
+- ordinary operation admission cannot publish lifecycle-transition authority;
+- lifecycle drift before commit is a stale outcome, not a false success;
+- expiry is evaluated from trusted runtime time, and revocation or expiry stops
+  publication;
+- completion does not erase the required review.
+
+### Purpose and disclosure
+
+Permission to use a protected fact inside governed computation is distinct from
+permission to disclose it. An admitted operation may use a protected field for
+membership, ordering, conflict, or invariant outcome when its capability and
+purpose allow. Publication then evaluates the result shape and field-level
+disclosure for the same request authority, and can omit values that lawfully
+influenced computation.
+
+Omission must cover indirect channels: result membership, ordering or rank,
+counts and aggregates, cursors, summaries, explanations, patches or
+invalidation metadata, and live-delivery timing or shape. Masking after
+materialization is not sufficient; Query shapes the published result from
+governed disclosure authority.
+
+### Graph obligations and access planning
+
+Application meaning describes graph work through sealed obligation rows: graph
+reads, authorization observations, mutation touches, effect application, and
+invariant execution. Each row names its owner, selection basis, resource
+posture, and required terminal evidence. A support row or obligation kind is
+not execution proof.
+
+Graph-read access planning answers a different question: how the declared read
+executes without hidden N+1 traversal, unbounded expansion, or consumer-local
+materialization. The plan binds required adjacency, predicate, ordering,
+traversal, deduplication, proof, and buffering support; cost and capacity
+bounds; the selected strategy; plan consumption; and receipt counters. Do not
+collapse obligation meaning (what must be proved) into access strategy (how the
+read obtains it).
+
+See [Canonical Graph Obligation Progression](./domain-capabilities/canonical-graph-obligation-progression.md),
+[Graph Touch Obligation Authority](./authoring/graph-touch-obligation-authority.md),
+and [Graph Read Access Planning](./authoring/graph-read-access-planning.md).
+
+### Provider sessions, execution, and commit
+
+How WORTH Works
+[§9.5 to §9.7](../../../docs/how-it-works.md#95-execution) and
+[§7](../../../docs/how-it-works.md#7-one-change-through-the-whole-stack)
+describe the read and mutation paths step by step. The engine invariants
+behind them:
+
+- Execution occurs inside a managed provider session bound to the admitted
+  application, branch, basis, request, and installed graph obligations. The
+  session coordinates lower-runtime observations without taking their
+  ownership. It retains session and installation identity, the branch-qualified
+  snapshot and version basis, principal and authorization dependencies,
+  graph-read products, Bridge correspondence, Signal decision facts, proposed
+  state, invariant receipts, and commit serialization and terminal evidence.
+- A read result retains query identity, basis, ordering, cursor, disclosure,
+  and execution evidence, not only values.
+- A proposed state is not committed truth. A selected invariant is not an
+  executed invariant. A successful local effect program is not a commit
+  receipt.
+- The prepared candidate is opaque, runtime-affine, branch-bound, and
+  single-use. It has no method that publishes itself; only the Relational owner
+  consumes it, through compare-and-publish or explicit discard.
+- Commit revalidates the dependencies whose drift could make the operation
+  unlawful. Commit authority stays bound to its admission and serialization
+  proof and cannot be paired with another admitted operation.
+- With a declared external effect, the local mutation and dispatch intent share
+  one Relational commit, and Query dispatches only from that committed fact.
+  Even an operation with no domain mutation must commit its outbox and
+  idempotency fact before a consequence escapes. The external owner decides
+  completion; Query records what it observed.
+- Relational publishes a commit to its durable medium before the live cutover,
+  so settlement after a performed commit cannot fail or defer. When the durable
+  fate is unknown, nothing was installed live but the commit may be durable:
+  the application outcome is `Indeterminate`, the Relational owner refuses
+  later publications until reopened, and reopening resolves the fate. The
+  caller never retries the mutation from that outcome. The outcome table is in
+  [§11](../../../docs/how-it-works.md#11-outcomes-every-way-a-request-can-end).
+
+See [Provider Sessions And Decision Read-Sets](./domain-capabilities/provider-sessions-and-decision-read-sets.md),
+and [Provisional State And Invariant Execution](./domain-capabilities/provisional-state-and-invariant-execution.md).
+
+### Aftermath and recovery
+
+How WORTH Works
+[§14](../../../docs/how-it-works.md#14-aftermath-and-recovery) describes
+declared aftermath, undo, settlement recovery, external effects, and product
+publication recovery. Engine notes:
+
+- Relational savepoints and rollback discard provisional transaction work. They
+  create no application authority, do not alter committed history, and are not
+  a recorded inverse, compensation, reconciliation, or recovery.
+- An unresolved durable fate comes before ordinary aftermath: an
+  `Indeterminate` application outcome requires commit recovery, and no
+  aftermath handle opens until the Relational owner is reopened and the fate
+  is resolved.
+- Runtime-local recovery opens from the exact sealed commit receipt and stays
+  bound to the originating runtime, operation, principal, action, scope,
+  idempotency record, outbox observation, and currentness evidence. A wire
+  identity or published recovery report is not the live handle.
+- The accepted recovery surface supports inspection, resolution, safe retry,
+  disposal, and expiry. Reconciliation and compensation currently stop at
+  owner-bound admission products; Query does not yet execute those corrective
+  effects.
+
+See [Application Aftermath, External Effects, And Recovery](./execution/application-aftermath-and-recovery.md).
+
+### Basis, branch, and currentness
+
+A **basis** identifies the exact truth context against which work was admitted
+or executed: runtime and installation generation, branch, snapshot and version,
+schema and query identity, policy, tenant, relationship, and purpose context,
+principal mapping, and continuation, cursor, or live-delivery identity. Equal
+version ordinals on different branches are not equal bases. Matching digests
+from different owners are not interchangeable. A cursor means something only
+with the query, ordering, branch, and basis that produced it.
+
+- **Relational.** Branch truth has an immutable root selected by an exact basis
+  and a mutable reference cell. An owner-issued reference observation records
+  the target and branch-local version seen together. A serialized descriptor
+  proves only its shape until the owner readmits it. An admitted basis pins its
+  root, so reads through it are repeatable; a branch-bound transaction keeps
+  that basis, and publication compares the prepared candidate's expected
+  observation with the one current branch cell.
+- **Signal.** One canonical component branch graph. Its owner-issued
+  `SignalOwnerServicePorts` expose weak basis, mutation, and lifecycle ports;
+  same-branch work serializes in one execution cell. These are lower-owner
+  contracts, not Query composite branches.
+- **Runtime World.** `ProductBranchObservation` binds the exact product
+  reference and admitted Relational, Signal, and Bridge bases. Only its final
+  compare-and-publish installs a performed composite publication. Component
+  movement without it stays `ProductUnpublished`, with settlement or cleanup
+  obligations; it is neither rollback nor permission to run a missing sibling.
+  See the [Runtime World contract](../../../crates/worth-runtime-world/README.md).
+- **Query.** The host facade selects World-owned product branches, carries the
+  exact composite observation through reads and changes, and returns World's
+  terminal unchanged. Outbox eligibility is bound to the original performed
+  occurrence. A caller cannot substitute a branch token, component basis, or
+  fresh latest observation after admission.
+- **Programs.** Selected program meaning follows the occurrence. Sibling
+  branches can run different revisions at once; no path consults global
+  latest-program state.
+- **History.** `application.branches().history(branch, maximum)` retains one
+  bounded ancestry segment and selects an entry only by asking World for an
+  exact historical observation. Commit identities and history entries stay
+  descriptive. A `RuntimeWorldRecoveryCursor` is a descriptive position in the
+  bounded recovery catalog; it retains no owner effects and grants no cleanup
+  authority. Drop retained reads and history pages before expecting branch
+  close to complete.
+
+Currentness checks compare retained dependencies with the owning runtime; they
+never rebuild authority from a fresh report. See
+[Branches And Previews](./foundations/branches-and-previews.md).
+
+### Query authoring and result shapes
+
+Query authoring is typed intent, not a string query language. The declaration
+surface supports field and aspect selection, predicates, graph traversal and
+composition, ordering and stable cursors, collections, grouping, aggregation,
+named scopes and templates, saved queries and view shapes, and detail, table,
+inspector, and grouped result families. Canonicalization resolves equivalent
+forms into one portable artifact; validation rejects ill-typed fields,
+incompatible predicates, unsupported graph shapes, invalid result bindings, and
+ambiguous ordering before runtime work. A caller may not add an undeclared field
+to a published row or reinterpret one result family as another.
+
+### Installed domain computation
+
+Domains contribute portable operation meaning; Query owns installation,
+admission, execution state, and typed outcomes. Domain hooks provide semantics
+at the installed seam and gain no raw authority to mutate Relational state or
+mint Query receipts. Managed artifacts stay owned by the runtime that produced
+them; copying their fields into a domain struct transfers neither ownership nor
+proof strength.
+
+Installation validates the complete package, binds related declarations so
+execution cannot mix pieces from different schemas, generations, operations,
+policies, or layouts, and is the only point where domain meaning becomes
+executable. Hosts may supply adapters and resources but cannot alter semantics
+afterward. Operation builders are typestates: `finish()` requires an explicit
+external-effect choice and an explicit aftermath choice. Do not recover
+installed meaning by parsing rendered scope strings or rebuilding aspect
+contracts during execution.
+
+After validation, `export_typed_records()` (through `facade::domain`) yields a
+versioned, bounded, authority-free record set. Every decoded payload, signed
+envelope, repository load, and reconstructed candidate stays untrusted until
+the consuming host selects the expected identity, applies its trust policy, and
+obtains fresh validation. See [Portable Query Packages](./portable-packages.md).
+
+See also [Installed Computation Artifact Contracts](./domain-capabilities/installed-computation-artifact-contracts.md),
+and [Managed Artifact Ownership And Native Access](./domain-capabilities/managed-artifact-ownership-and-native-access.md).
+
+### Conditional operations, temporal wakes, and Signal
+
+Query installs conditional meaning; Bridge lowers the exact correspondence;
+Signal evaluates the condition and mints decision evidence. Evaluated true can
+make an effect eligible, false can skip it, unfinished evaluation keeps a typed
+continuation posture, and denial performs nothing. An effect still needs its own
+admitted execution. A Signal boolean, slot value, or explanation never
+authorizes an application effect.
+
+- **Ownership.** Durable temporal intent is authoritative Relational and domain
+  truth; Signal's wake table is volatile derived state. The host supplies a
+  typed predicate, a named clock, a bounded reconstruction projection, and an
+  ordinary operation invoker through `worth-query-host`. A clock reading is
+  time evidence only. Signal decides eligibility; Query then performs fresh
+  principal, capability, purpose, invariant, idempotency, and compare-and-publish
+  progression, and the effect and the intent's completed posture commit
+  atomically.
+- **Decision postures.** Bridge evidence enters Query as eligible,
+  dependency-unchanged, reverted-clean, suppressed, or deferred. Only eligible
+  evidence reaches admission. Query classifies the real Bridge evidence rather
+  than re-running the predicate.
+- **Identity.** The portable binding identity covers the node authority, clock,
+  source, timeline, reconstruction query and projector, principal source, and
+  invoker; publication derives a runtime-qualified identity from it. Both use
+  Foundational canonical-basis preparation and typed digests. A due wake derives
+  its idempotency key and intent identity once, during fresh admission; no later
+  phase of that attempt regenerates it.
+- **Reinstallation.** Commit publication refreshes the derived temporal-intent
+  index before returning, and clock observation never performs reconstruction.
+  Same-installation reinstallation discards Bridge and Signal state and
+  reconstructs active work from current authoritative intent; completed or
+  cancelled work does not return, and committed effects are not repeated. A
+  successor installation must be rebound or fails closed.
+- **Evidence.** Clock receipts expose descriptive `execution_provenance()` and
+  report ordinary and reconstructive work separately. The
+  `conditional_runtime_lifecycle_probe()` observes the real owners weakly;
+  `live_inventory()` after `Drop` reports whether they were released. Neither
+  carries execution authority.
+
+See [Conditional Installed Operations](./domain-capabilities/conditional-installed-operations.md).
+
+### Continuations and managed runs
+
+The checks a workflow-bound business operation passes are in
+[Workflow-bound operations: three independent checks](#three-independent-checks).
+
+Business lifecycle actions use this same native funnel: attach an explicit prior
+route with `back_action::<Binding, _, _>` or one definition-wide ending with
+`termination_action::<Binding>()`. Fresh preparation uses the binding's own
+capability; its guarded native body and kernel return/ending publish together.
+Do not implement a business mutation followed by a separate cursor/end call.
+See the workflows guide for retained exact retry and current support limits.
+
+When a new subject must be born enrolled, attach
+`creation.enroll_in_workflow::<Spec, Binding, Role>()` and install its
+`birth_operation::<Binding, Role>()`. The creator's own container-scoped
+capability and the current published definition prepare `RequiredWorkflowBirth`;
+`for_workflow_birth` binds its exact intent/key before the normal capability
+mutation funnel co-publishes the body creation and native instance. Never
+predict the subject ID, enroll a placeholder, reuse an ended instance's permit,
+or substitute two commits for that join. This is current-definition enrollment,
+not full Reopen or a restart-persistable authority. See
+[Workflow-Enrolled Creations](./authoring/workflow-enrolled-creations.md).
+
+Application workflows are in How WORTH Works
+[§13](../../../docs/how-it-works.md#13-workflows) and the full
+[workflows guide](foundations/workflows.md). Underneath, a
+continuation retains unfinished work together with the basis, workspace,
+runtime, query, request, and execution posture needed to resume it. Resumption
+is a new checked transition, not a callback that inherits ambient authority. The
+current stage product carries the only lawful next-stage authority; naming a
+stage or reconstructing a prior receipt cannot jump to it. Suggested next
+actions from a stop are descriptive guidance only.
+
+See [Execution Resource Admission And Managed Runs](./domain-capabilities/execution-resource-admission-and-managed-runs.md).
+
+### Live views and invalidation
+
+Live execution promotes an admitted result into a managed subscription bound to
+the same query, basis, branch, disclosure, and support contracts.
+
+```text
+published query result
+    -> live promotion
+    -> lower-runtime change evidence
+    -> Query invalidation and patch admission
+    -> authorization and disclosure revalidation
+    -> governed patch or typed termination
+```
+
+A lower-runtime notification is evidence that something changed, not a lawful
+patch. Live delivery preserves subscription selection, current authorization
+and disclosure, ordering and cursor meaning, region or collection scope,
+mixed-cause classification, backpressure, and terminal release. Permission,
+purpose, relationship, tenant, or elevation drift can narrow or terminate
+delivery before protected data is projected.
+
+A conditional clock observation receipt carries a granular invalidation batch;
+see [Granular Invalidation Batches](./runtime-surfaces/granular-invalidation-batches.md).
+
+### Publication and downstream consumption
+
+Publication is an authority boundary, not serialization convenience. It takes
+a completed or recovered Query-owned terminal and derives the consumer product
+that its disclosure, purpose, basis, and publication contract allow, keeping
+omission evidence and enough identity for verification. Published mutation
+values (commit, aftermath posture, dispatch posture, recovery support) are
+weaker than execution authority: they cannot mint a recovery handle,
+redispatch, compensate, or resolve an indeterminate result.
+
+A mutation whose durable fate is unknown returns a typed unresolved posture,
+never a denial. Generic effect paths use `EffectExecutionDurabilityUnresolved`
+or `EffectBatchDurabilityUnresolved`; branch merge uses
+`WorthQueryBranchMergeDurabilityUnresolved` with next action
+`ReopenRelationalOwner`; application paths surface `Indeterminate`. Nothing was
+installed live, and reopening the Relational owner resolves the fate.
+
+Downstream runtimes consume bound projections or publication receipts and never
+reach behind the facade. Transport adapts a published product to HTTP,
+messaging, UI, or another process; headers, routes, and user-node state do not
+become policy or Query authority.
+
+### Outcomes and managed resources
+
+The application-facing outcome families are in How WORTH Works
+[§11](../../../docs/how-it-works.md#11-outcomes-every-way-a-request-can-end),
+and resource bounds in
+[§9.9](../../../docs/how-it-works.md#99-resources-execution-and-cost). Engine
+code also keeps these distinctions typed: skipped versus suppressed, pending
+versus terminal, published versus internally completed, partial effect versus
+indeterminate, and live recovery authority versus published recovery support.
+Never flatten a distinction into `bool`, `Option`, or an error string when it
+changes legal next actions, effects, inspection, or release.
+
+Every terminal path releases or transfers its managed resources (sessions,
+runs, subscriptions, continuations, leases, checkpoints, recovery handles, and
+admitted capacity) explicitly. Dropping a report or serializing an opaque
+recovery identity proves neither.
+
+### Support and admission
+
+Public vocabulary and executable support are different facts. The Query support
+matrix is the runtime-owned source of support posture; admission is the
+executable check. A report, matching digest, or provider presence never becomes
+support. Installed operations carry consumer-support requirements, and their
+admission returns either a pair-bound witness or a typed denial.
+
+### Inspection, explanation, and certification
+
+Inspection explains retained runtime state without creating operational
+authority. Explanation keeps typed causes distinct across boundaries: a scope
+mismatch, authorization denial, stale basis, unsupported access strategy, or
+invariant failure never collapses into a generic failure. Certification uses
+independent evidence and hostile cases; replay stays in that audience because
+reconstruction must not become an execution shortcut.
+
+See [Cross-Runtime Causal Inspection](./capabilities/cross-runtime-causal-inspection.md).
+
+## Lower-Runtime Routing
+
+Use this table when deciding where a change belongs.
+
+| Question | Owner |
+|---|---|
+| What entities, relations, fields, or versions exist? | Relational |
+| What transaction committed and at which version? | Relational |
+| Which immutable root and exact observation does a branch reference select? | Relational |
+| Which branch cell linearizes a prepared candidate? | Relational, independently per branch |
+| Which exact Signal branch basis and execution cell govern component work? | Signal owner services, independently per branch |
+| Is a commit's durable fate unresolved? | Relational `DurabilityUnresolved`; reopening the Relational owner resolves it |
+| May a performed commit whose witness was lost be repaired? | Query pending-settlement repair by commit identity over the owning Relational runtime |
+| How does installed Query meaning correspond to lower-runtime structures? | Runtime Bridge |
+| Which installed semantic dependencies match one committed change? | Runtime Bridge candidate selection followed by Query admission |
+| Which scoped recomputation did the lower runtime actually perform? | Signal performed execution receipt |
+| Which projection, membership, ordering, group, or window consequence is required? | Query impact admission and maintenance |
+| What did an installed policy condition evaluate to? | Signal |
+| Which Relational and Signal bases form the current product? | Runtime World composition authority, selected and carried through Query's host facade |
+| What generic proof progression or readmission law applies? | `worth-proof` |
+| What exact canonical value, provenance, receipt, or portable basis represents this meaning? | Foundational |
+| What application operation or query was declared? | Application domain |
+| Is this principal authorized for this operation, purpose, and scope? | Query composition over owner evidence |
+| May this field be disclosed to this consumer? | Query publication over installed disclosure meaning |
+| Which lifecycle transition is legal now? | Query typed progression over current owner evidence |
+| What idempotency and dispatch-outbox meaning belongs to this operation? | Query over committed Relational facts |
+| Did an escaping consequence complete? | External effect owner |
+| Is a receipt-bound recovery action legal now? | Query runtime |
+| Can a live Query aftermath recovery handle survive restart or cross a process boundary? | Store-backed capability; currently deferred |
+| How is committed graph state persisted and versioned? | Relational |
+| How are durable reconstructive artifacts retained? | Store |
+| How is a published product encoded for another process? | Transport adapter |
+
+Put pure meaning in the domain schema. Put lower-runtime truth and mechanics in
+their owning runtime. Put cross-owner application authority in Query. Put
+presentation outside all of them.
+
+## Prohibited Shortcuts
+
+Do not:
+
+- treat authentication as authorization;
+- treat a role as an unconstrained capability;
+- treat entity visibility as field disclosure;
+- treat a lower-runtime ability as application permission;
+- treat a lifecycle command as the governed application operation;
+- use the governed upper bound as the authority target of every lifecycle
+  command;
+- reconstruct proof from a digest, ID, report, serialized document, or copied
+  fields;
+- use a generic proof marker where a Query operation requires its concrete
+  owner-issued proof, authority, or capability type;
+- combine independently valid proofs when no installed composition contract
+  authorizes the combination;
+- expose internal Query authority packages to application consumers;
+- import Query into pure schema crates;
+- import replay into ordinary code;
+- read Relational directly to bypass graph obligations or access planning;
+- accept a Signal decision as effect authority;
+- treat direct Bridge truth as proof that Signal executed, or require a Signal
+  receipt for a direct Query consequence that performs no Signal work;
+- copy a producer-local aspect or semantic scope through transitive Signal
+  descendants instead of deriving each immediate dependency cause;
+- treat a reverse-index lookup key such as `ProducerAspectKey`, a semantic
+  scope path, or a shard, region, or worker identifier as authority;
+- reuse a granular invalidation binding, delivery batch, source-read basis, or
+  consumer lease after runtime restore, reinstallation, or rebind;
+- construct Query patches directly from raw change data or copied Bridge or
+  Signal fields;
+- dispatch an external effect without its co-committed local outbox and
+  idempotency fact;
+- treat acknowledgement, silence, timeout, disconnect, or lost response as
+  external completion;
+- serialize a recovery handle or reuse its opaque wire identity as live
+  authority;
+- treat a recovery cursor as retained owner effects, cleanup authority, or a
+  product-history continuation;
+- treat proposed state as committed truth;
+- treat selected invariants as executed invariants;
+- publish protected fields and mask them afterward;
+- use a cursor outside its query, ordering, branch, and basis;
+- reuse consumed lifecycle or commit authority;
+- infer support from method presence;
+- execute a program-owned action through the weaker ordinary mutation entry;
+- settle only the root producer when the installed program declares dependent
+  required outputs;
+- hard-code an ordinary output-advance loop, rediscover output dependencies, or
+  replace retained recovery custody with a fresh demand;
+- use `settled_root_observation()` as evidence that the complete output graph
+  settled;
+- rediscover a dependent output from a current or consumer-retained view when
+  Query carries the exact parent traversal basis and owner settlement;
+- add production glob imports or glob re-exports to an authority-governed
+  surface; keep those bindings explicit and named;
+- hide typed denial, stale, cancellation, or resource state inside a generic
+  success or failure flag;
+- treat Relational rollback as an application-level authority transition;
+- retry an application mutation or merge after a durability-unresolved or
+  `Indeterminate` outcome;
+- keep a caller-held intent, idempotency key, and preconditions to hand-roll a
+  retry or continuation wrapper for a performed or required-output mutation.
+  [Milestone 9.17.6.4](../../../plans/WORTH-query/milestone-9.17.6.4.md)
+  (planned) makes Query own the ordinary application's operation continuation;
+  until it lands, use the existing documented recovery entrances and report
+  any gap instead of building a wrapper;
+- let an opaque prepared Relational candidate publish itself or be reused after
+  publication or discard.
+
+## Documentation Map
+
+Platform documentation, for everyone:
+
+- [API Map](../../../docs/api.md): which crate to import
+- [How WORTH Works](../../../docs/how-it-works.md): the request lifecycle, outcomes, and guarantees
+- [Philosophy](../../../docs/philosophy.md) and [Glossary](../../../docs/glossary.md)
+
+Application API guides:
+
+- [`worth-query-decl` README](../crates/worth-query-decl/README.md) and [`worth-query-host` README](../crates/worth-query-host/README.md)
+- [Ordinary Application Front Door](./foundations/ordinary-application-front-door.md)
+- [Executable Scope-Field Operation Bodies](./authoring/scope-field-operation-bodies.md): author scalar effects and typed Scope/Related/Create output correspondence once; related outputs preserve the single tracked preimage, not a post-commit lookup or workflow-currentness proof.
+- [Signed Operation Creations](./authoring/signed-operation-creations.md): immutable early attestation, not a replacement for workflow approval authority.
+- [Branches And Previews](./foundations/branches-and-previews.md)
+- [Application Authorization And Emergency Elevation](./capabilities/application-authorization-and-emergency-elevation.md)
+- [Application Aftermath, External Effects, And Recovery](./execution/application-aftermath-and-recovery.md)
+- [Ordinary Product Workflow](../crates/worth-query-certification/examples/ordinary_product_workflow.rs)
+- [Advanced Product Branching](../crates/worth-query-certification/examples/advanced_product_branching.rs)
+
+Engine internals, for maintainers:
+
+- [Query Docs Index](./README.md): every page, grouped by audience
+- [Canonical Graph Obligation Progression](./domain-capabilities/canonical-graph-obligation-progression.md)
+- [Graph Touch Obligation Authority](./authoring/graph-touch-obligation-authority.md)
+- [Graph Read Access Planning](./authoring/graph-read-access-planning.md)
+- [Provider Sessions And Decision Read-Sets](./domain-capabilities/provider-sessions-and-decision-read-sets.md)
+- [Provisional State And Invariant Execution](./domain-capabilities/provisional-state-and-invariant-execution.md)
+- [worth-proof Authority And Workflow Contracts](../../../crates/worth-proof/docs/features/authority-and-workflow-contracts.md)
+
+Generated `AGENT_CONTEXT.md` files describe each crate's local dependencies and
+enforcement; never hand-edit them. Plans and engineering ledgers describe
+intent and are not a substitute for this map.
+
+## AI Checklist Before Editing
+
+Before changing the Query engine, answer these questions:
+
+1. Which runtime owns the underlying truth?
+2. Which application declaration owns the meaning?
+3. Which Query crate owns the authority being changed?
+4. What exact typed authority enters this path?
+5. What does the next product prove that the input did not?
+6. Is the proof carried forward or being reconstructed from representation?
+7. Which basis and currentness dependencies remain bound?
+8. Does the change preserve capability, purpose, disclosure, branch, and
+   lifecycle bounds?
+9. Does application code still enter only through `worth_query_decl::facade`
+   and `worth_query_host::facade`, from the correct repository band?
+10. Are denial, stale, cancellation, and resource-release outcomes still typed?
+11. Could a forged, copied, foreign, stale, or equivalent-looking product open
+    the path?
+12. Does a lower-runtime observation remain evidence rather than application
+    authority?
+13. If an external effect exists, what local fact was co-committed before it
+    escaped, and which owner decides completion?
+14. Does an uncertain result remain acknowledged, unresolved, partial, or
+    indeterminate instead of being guessed into success or failure?
+15. Is the API accepted, provisional, deferred, or vocabulary-only?
+16. Is the authority an exact owner-issued type rather than a generic proof
+    substrate value?
+17. Do the focused tests fail if the disputed authority check is bypassed?
+
+If any answer is unclear, stop and identify the semantic owner before editing.

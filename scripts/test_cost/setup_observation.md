@@ -24,9 +24,6 @@ cannot be shared on that evidence.
 
 | Owning testkit | Observed recipe | Complete variable input set |
 |---|---|---|
-| `worth-testkit-server` | `root-default-query-provider-server` | `register_worth_native`; concrete `TestWorkspaceProvider` and remaining configuration are fixed by revision 1 |
-| `worth-query-testkit-installed-operation-fixture` | `query-default-installed-runtime` | no caller inputs; fixed `reversed=false`, `conflicting_duplicate=false`, default schema/executors and revision 1 |
-| `worth-query-testkit-installed-operation-fixture` | `query-installed-geometry-package` | `reversed`, `conflicting_duplicate`; remaining declaration is fixed by revision 1 |
 | `worth-query-bank-testkit-server` | `bank-parallel-history-seeded-world` | `seed`; names, balances, memberships and funding derive from it in revision 1 |
 | `worth-query-bank-testkit-server` | `bank-default-auth-ordinary-read-world` | `scenario`, `unrelated_accounts`, `pending_payment_count`; default approval authentication, one approver and payment 900 are fixed and included explicitly in revision 1 |
 
@@ -38,7 +35,7 @@ workspace. No full-world equivalence is inferred from a smaller recipe.
 
 Closed-owner search: `rg -l` for the three exact package names across governed
 Root/Query/Bank/Store `Cargo.toml` families finds only their own manifests,
-`worth-query-testkit-query`, `worth-query-bank-testkit-courtroom`,
+`worth-query-bank-testkit-courtroom`,
 `bank-courtroom`, and named court consumers. The shared Rust module is private;
 no new public facade type is introduced.
 

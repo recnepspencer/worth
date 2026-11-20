@@ -20,15 +20,10 @@ pub use world as host_world;
 pub mod cost;
 #[path = "runtime_world_branching/cumulative.rs"]
 pub mod cumulative;
-pub use worth_query_testkit_certification_granular_invalidation::facade::certification::delivery_convergence;
 pub use worth_query_testkit_certification_granular_invalidation::facade::certification::financial_runtime_world;
 #[path = "runtime_world_branching/model.rs"]
 pub mod model;
 pub use crate::facade::certification::query_probe;
-pub use worth_query_testkit_certification_granular_invalidation::facade::certification::query_runtime_world;
-pub use worth_query_testkit_certification_granular_invalidation::facade::certification::runtime_composition;
-pub use worth_query_testkit_certification_granular_invalidation::facade::certification::shared_lifecycle;
-pub use worth_query_testkit_certification_granular_invalidation::facade::certification::structural_slopes;
 
 pub use courtroom_support::observe;
 pub use world::CourtroomWorld;

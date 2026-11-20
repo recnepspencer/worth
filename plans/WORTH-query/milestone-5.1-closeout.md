@@ -30,9 +30,9 @@ Milestone 5.1 delivered:
 - region-scoped live planning, locality admission, locality-aware execution,
   widening policy, stream-contract lowering, and replay-bearing delivery
   artifacts in
-  [crates/worth-query/src/live](../../workspaces/worth-query/crates/worth-query/src/live)
+  [crates/worth-query/src/live](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/live)
 - explicit region-scoped lifecycle decomposition in
-  [crates/worth-query/src/live/region_scoped.rs](../../workspaces/worth-query/crates/worth-query/src/live/region_scoped.rs)
+  [crates/worth-query/src/live/region_scoped.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/live/region_scoped.rs)
   rather than leaving Milestone 5.1 responsibilities collapsed into one live
   mega-module
 - locality and stream proof artifacts including `RegionScopedLivePlan`,
@@ -40,10 +40,10 @@ Milestone 5.1 delivered:
   `RegionScopedReplayBundle`, `QueryDeliveryContract`,
   `DeliveryContractLowering`, `StreamMemberProjection`,
   `StreamWindowCompatibility`, and `DeliveryContractReplayRecord` in
-  [crates/worth-query/src/live/mod.rs](../../workspaces/worth-query/crates/worth-query/src/live/mod.rs)
+  [crates/worth-query/src/live/mod.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/live/mod.rs)
 - milestone-native region-live certification artifacts, row catalogs, and
   scenario coverage under
-  [crates/worth-query/src/harness/region_live_certification](../../workspaces/worth-query/crates/worth-query/src/harness/region_live_certification)
+  [crates/worth-query/src/harness/region_live_certification](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/harness/region_live_certification)
 - typed certification taxonomy shared through
   `crates/worth-query/src/harness/live_certification/model.rs`
 - compile-fail proof-boundary tests for locality-bearing and stream-lowered
@@ -64,9 +64,9 @@ now exists directly.
 
 Covered by:
 
-- [region_live_certification/mod.rs](../../workspaces/worth-query/crates/worth-query/src/harness/region_live_certification/mod.rs)
-- [region_live_certification/row_catalog.rs](../../workspaces/worth-query/crates/worth-query/src/harness/region_live_certification/row_catalog.rs)
-- [region_live_certification/tests.rs](../../workspaces/worth-query/crates/worth-query/src/harness/region_live_certification/tests.rs)
+- [region_live_certification/mod.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/harness/region_live_certification/mod.rs)
+- [region_live_certification/row_catalog.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/harness/region_live_certification/row_catalog.rs)
+- [region_live_certification/tests.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/harness/region_live_certification/tests.rs)
 
 What is proven:
 
@@ -112,9 +112,9 @@ Covered by:
 - `live::RegionScopedLivePlan`
 - `live::LocalityAwareRelevanceContract`
 - region-scoped tests in
-  [crates/worth-query/src/live/mod.rs](../../workspaces/worth-query/crates/worth-query/src/live/mod.rs)
+  [crates/worth-query/src/live/mod.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/live/mod.rs)
   and
-  [crates/worth-query/src/live/region_scoped.rs](../../workspaces/worth-query/crates/worth-query/src/live/region_scoped.rs)
+  [crates/worth-query/src/live/region_scoped.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/live/region_scoped.rs)
 
 What is proven:
 
@@ -186,7 +186,7 @@ Covered by:
 - `live::DeliveryContractReplayRecord`
 - region-live replay and parity tests
 - counter assertions in
-  [crates/worth-query/src/harness/region_live_certification/tests.rs](../../workspaces/worth-query/crates/worth-query/src/harness/region_live_certification/tests.rs)
+  [crates/worth-query/src/harness/region_live_certification/tests.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/harness/region_live_certification/tests.rs)
 
 What is proven:
 

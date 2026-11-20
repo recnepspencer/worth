@@ -27,6 +27,7 @@ major runtimes have their own workspaces, documentation, tests, and lifecycle.
 | Look up an exact term | [Glossary](docs/glossary.md) |
 | **Build an application: declare features and a program, install the application graph, author workflows, adopt a new program** | [**Build an Application**](docs/build-an-application.md) |
 | **Check whether a capability exists, and the one way to use it** | [**Capability Index**](docs/capability-index.md) |
+| **Keep application data on disk: open, close, retry and recover a Home** | [**Use an Application Home**](docs/application-home.md) |
 | Explain an original query result, changed output, or source operation | [Inspect original evidence](docs/build-an-application.md#inspect-original-source-and-query-evidence) |
 | Find which crate to import for any job | [API Map](docs/api.md) |
 | Contribute to the platform itself | [Coding Guidelines](docs/coding-guidelines/) and [AGENTS.md](AGENTS.md) |
@@ -42,7 +43,8 @@ For a new feature, start with the [complete feature definition](docs/build-an-ap
 one typed declaration supplies schema members, actions, required producer roles,
 configuration and output roots. Use [managed computation](docs/build-an-application.md#36-declare-and-install-a-partitioned-managed-computation)
 for numerical work and the [owning action lifecycle](docs/build-an-application.md#53-execute-through-the-program)
-for delivery and recovery. Every application build also supplies its immutable
+for delivery and recovery. Store data through an [application Home](docs/application-home.md):
+open, write with idempotency keys, close and reopen. Every application build also supplies its immutable
 [build identity](docs/build-an-application.md#application-build-identity).
 Before you conclude that the platform lacks something, look it up in the
 [Capability Index](docs/capability-index.md) and follow its procedure. Never
@@ -128,8 +130,6 @@ Audience legend:
 | `worth-signal-wasm` | A worker-first WebAssembly and TypeScript browser package for Signal, published to npm as `worth-signals-wasm`. | Consumer (npm) | Active | [README](crates/worth-signal-wasm/README.md) |
 | `worth-runtime-bridge` | The causal protocol between Relational and Signal: installed correspondence, exact routing of committed changes, lowering of conditional meaning. | Internal | Active | [README](crates/worth-runtime-bridge/README.md) |
 | `worth-runtime-world` | Product branches over exact Relational and Signal bases, immutable composite history, and coordinated publication across component owners. | Internal | Active | [README](crates/worth-runtime-world/README.md) |
-| `worth-server` | A typed server facade and transport boundary: WORTH-native operations plus a strict HTTP compatibility boundary. | Consumer | Active | [Docs](crates/worth-server/docs/README.md) |
-| `worth-server-client-generation` | Renders TypeScript and Python remote clients from a server protocol catalog. | Tooling | Dormant | — |
 | `worth-harness` | Scenario, capture, replay, comparison, and workload infrastructure for certification. It is not a product API. | Certification | Active | [README](crates/worth-harness/README.md) |
 
 ### Query (`workspaces/worth-query/`)
@@ -141,7 +141,7 @@ database, identity provider, or policy truth store: it composes those owners.
 |---|---|---|---|
 | [`worth-query-decl`](workspaces/worth-query/crates/worth-query-decl/README.md) | Declaration facade: schema, operations, queries, capabilities, workflows, and programs, as types and macros. It adds no behavior. | **Consumer** | **Stable** |
 | [`worth-query-host`](workspaces/worth-query/crates/worth-query-host/README.md) | Host facade: installation, requests, admission, execution, commit outcomes, publication, branches, programs, workflows, and aftermath. | **Consumer** | **Stable** |
-| [`worth-query-replay`](workspaces/worth-query/crates/worth-query-replay/README.md) | Replay and reconstruction, for certification code only. | Certification | Stable |
+| [`worth-query-replay`](workspaces/worth-query/crates/worth-query-replay/README.md) | Certification cost evidence, for certification code only. | Certification | Stable |
 | `worth-query-certification` | Reusable certification support, and runnable examples of complete applications. | Certification | Stable |
 | `worth-query-declaration` | Owns canonical declarations, validation, and binding grammar. | Internal | Active |
 | `worth-query-installation` | Owns portable packages, installed contracts, graph obligations, and touch contracts. | Internal | Active |
@@ -149,7 +149,6 @@ database, identity provider, or policy truth store: it composes those owners.
 | `worth-query-execution` | Owns execution over admitted plans, the primary graph, product branches, and program runtimes. | Internal | Active |
 | `worth-query-publication` | Owns the request API, disclosure, and publication. | Internal | Active |
 | `worth-query-package-archive` | The deterministic archive format for publishing portable Query packages. | Internal (package publishing) | Active |
-| `worth-query` | The internal Query engine, used by the UI binding and the server. | Internal | Active |
 
 Workspace guide: [workspaces/worth-query/README.md](workspaces/worth-query/README.md).
 
@@ -170,11 +169,14 @@ survive process failure, reopens persisted roots in a fresh process, and
 reports corruption or indeterminate outcomes without inventing semantic truth.
 Store does not decide whether a Query operation is legal, does not redefine
 Relational truth, and does not treat a checksum as proof of authenticity.
-Today no crate outside the Store workspace depends on it.
+Applications reach it only through `worth-query-host`, which opens the
+application Home owned by `worth-store-application`; see
+[Use an Application Home](docs/application-home.md).
 
 | Group | Crates | Status |
 |---|---|---|
 | Public facade and physical runtime lifecycle | `worth-store` | Active |
+| Application Home, opened through Query Host | `-application`, `-relational` | Active |
 | Shared vocabulary and boundary claims | `worth-store-contracts`, `-aspect-native`, `-authority`, `-readiness` | Active |
 | Physical format and media | `-physical-format`, `-physical-backend`, `-buffer-pool`, `-io-scheduler`, `-blob-chunks`, `-lsm-authority`, `-layout-indexes` | Active |
 | Durability and recovery | `-wal`, `-modes`, `-recovery-physics`, `-recovery-runtime` | Active |
@@ -188,6 +190,8 @@ Guides: [workspace README](workspaces/worth-store/README.md) and
 Engineering sequence: [Database Foundation Roadmap](plans/database-foundation/roadmap.md).
 
 ### UI (`workspaces/worth-ui/`)
+
+> **Parked (2026-11-20).** Worth UI does not build: its Query binding still depends on the retired `worth-query` engine. Migration is tracked in [#262](https://github.com/recnepspencer/worth/issues/262).
 
 The product-facing UI platform. It owns authored UI meaning, compilation,
 active application state, planning, mounting, interaction and intent
@@ -231,13 +235,13 @@ worth-proof
             └─ worth-runtime-bridge      (depends on Relational and Signal)
                  └─ worth-runtime-world
                       └─ Query authority crates
-                           └─ worth-query-host, worth-query (engine)
-                                └─ worth-server, worth-ui, reference apps
+                           └─ worth-query-host
+                                └─ worth-ui, reference apps
 ```
 
 `worth-query-decl` depends only on `worth-query-declaration`.
-`worth-query-host` sits on the five Query authority crates and does not depend
-on the internal engine. Neither consumer facade depends directly on
+`worth-query-host` sits on the five Query authority crates. Neither consumer
+facade depends directly on
 `worth-proof`. Applications receive authority from its owners; they never
 construct it.
 

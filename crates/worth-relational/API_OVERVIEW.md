@@ -319,7 +319,7 @@ partitioner or membership cache is introduced. Individual Of reads never invoke
 this census. A deliberate census can grow with the complete partition/slot
 inventory; original request stops refuse without a partial successful result.
 Application invariants must declare member/source applicability through Query's
-[typed factory binding](../../workspaces/worth-query/crates/worth-query/docs/modeling/relation-laws.md#ordinary-invariant-component-reads)
+[typed factory binding](../../workspaces/worth-query/docs/modeling/relation-laws.md#ordinary-invariant-component-reads)
 so genuine create/delete/coupling changes schedule fresh preparation.
 
 

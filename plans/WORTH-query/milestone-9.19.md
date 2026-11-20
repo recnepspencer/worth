@@ -1854,7 +1854,7 @@ and [admit_application_query_governance](../../workspaces/worth-query/crates/wor
 with existing [continuation readmission](../../workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/continuation/readmission.rs).
 These owners still decide protected influence and fresh disclosure; provider
 selection cannot bypass them. Extend the existing public provider journeys and
-[continuation court family](../../workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/certification/application_graph/canonical_transition/related/continuation/mod.rs)
+[continuation court family](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/certification/application_graph/canonical_transition/related/continuation/mod.rs)
 at the new consumers. Phase 4 may trust qualified coverage and tracked refinement,
 but only its verifier may convert them into narrowed authority.
 

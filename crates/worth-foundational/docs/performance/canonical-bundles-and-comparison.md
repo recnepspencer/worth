@@ -29,7 +29,7 @@ executed rows are necessarily present.
 
 - the claim still carries boundary, strength, postures, and work disclosure
 - the bundle adds canonical lowering and shared attachment surfaces
-- comparison happens on the bundleâ€™s full meaning, not just one or two fields
+- comparison happens on the bundle’s full meaning, not just one or two fields
 - digest-ready lowering is about canonical basis participation, not proof
   certification
 

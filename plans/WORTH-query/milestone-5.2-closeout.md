@@ -32,14 +32,14 @@ Milestone 5.2 delivered:
 
 - preview basis binding, preview execution, promotion-parity comparison,
   preview-live admission/execution/drift, and workflow-foundation artifacts in
-  [crates/worth-query/src/preview/mod.rs](../../workspaces/worth-query/crates/worth-query/src/preview/mod.rs)
+  [crates/worth-query/src/preview/mod.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/preview/mod.rs)
 - the public preview facade surface in
-  [crates/worth-query/src/facade.rs](../../workspaces/worth-query/crates/worth-query/src/facade.rs)
+  [crates/worth-query/src/facade.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/facade.rs)
 - milestone-native preview certification artifacts, completeness reports, row
   catalogs, and matrix assertions under
-  [crates/worth-query/src/harness/preview_certification](../../workspaces/worth-query/crates/worth-query/src/harness/preview_certification)
+  [crates/worth-query/src/harness/preview_certification](https://github.com/recnepspencer/worth/tree/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/harness/preview_certification)
 - shared milestone requirement wiring in
-  [crates/worth-query/src/harness/certification/requirements.rs](../../workspaces/worth-query/crates/worth-query/src/harness/certification/requirements.rs)
+  [crates/worth-query/src/harness/certification/requirements.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/harness/certification/requirements.rs)
   and
   [crates/worth-query/src/harness/certification/tests.rs](../../workspaces/worth-query/crates/worth-query/src/harness/certification/tests.rs)
 - compile-fail proof-boundary tests for preview proof types, preview-live
@@ -61,8 +61,8 @@ exists directly.
 
 Covered by:
 
-- [preview_certification/mod.rs](../../workspaces/worth-query/crates/worth-query/src/harness/preview_certification/mod.rs)
-- [preview_certification/row_catalog.rs](../../workspaces/worth-query/crates/worth-query/src/harness/preview_certification/row_catalog.rs)
+- [preview_certification/mod.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/harness/preview_certification/mod.rs)
+- [preview_certification/row_catalog.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/harness/preview_certification/row_catalog.rs)
 - `preview_certification/model.rs`
 
 What is proven:
@@ -111,7 +111,7 @@ Covered by:
 - `preview::PreviewSessionBindingTuple`
 - `preview::PreviewSessionPlanBinding`
 - preview binding tests in
-  [crates/worth-query/src/preview/mod.rs](../../workspaces/worth-query/crates/worth-query/src/preview/mod.rs)
+  [crates/worth-query/src/preview/mod.rs](https://github.com/recnepspencer/worth/blob/8a75a9bcfb54febe8ca1da067b2e57b782eaa9eb/workspaces/worth-query/crates/worth-query/src/preview/mod.rs)
 
 What is proven:
 

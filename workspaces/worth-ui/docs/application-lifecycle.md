@@ -1,5 +1,7 @@
 # Application Lifecycle
 
+> **Parked (2026-11-20). Doesn't build.** Worth UI is parked by user ruling: `worth-ui-query-binding` and `worth-ui-certification` still depend on the retired `worth-query` engine, so the `workspaces/worth-ui` workspace does not compile. Commands, compiled examples and compile-pass fragments on this page do not build or run until the migration to `worth-query-host` tracked in [#262](https://github.com/recnepspencer/worth/issues/262) lands.
+
 ## What This Feature Is
 
 The application lifecycle prepares, launches, runs, inspects, and shuts down
@@ -370,6 +372,8 @@ own portal, focus, motion, command, scroll, selection, Query, or application
 meaning.
 
 ### Launch
+
+> **Parked ([#262](https://github.com/recnepspencer/worth/issues/262)): doesn't build.** These launch commands fail while the Worth UI workspace is parked; they are kept as the intended workflow after #262.
 
 From the repository root:
 

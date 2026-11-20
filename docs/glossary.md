@@ -55,6 +55,13 @@ explained). Rust names are given where a type embodies the term.
   An escaping external effect cannot be reversible.
   **See** [How WORTH Works §14](how-it-works.md#14-aftermath-and-recovery).
 
+**Application Home**
+: The durable place where one application's state lives. Query Host opens it
+  with `WorthQueryApplicationHomeRequest` at a `Directory(path)` (durable) or
+  `MemoryOnly` (no restart guarantee); Store owns the files, and each runtime
+  owner readmits its own records when the Home reopens. One process owns a
+  Directory Home at a time. See [Use an Application Home](application-home.md).
+
 **Approval**
 : In a workflow, an `Approval` node (`approval::<Capability>(id)`) waits for a
   decision about a *proposal*. The decision is a control step
@@ -69,7 +76,7 @@ explained). Rust names are given where a type embodies the term.
   capability lifecycle (`authorize_elevation_approval`), where approving is
   also not using.
   **See** [How WORTH Works §13.1](how-it-works.md#131-who-may-run-a-guarded-operation)
-  and [Workflows, Approvals](../workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md#approvals).
+  and [Workflows, Approvals](../workspaces/worth-query/docs/foundations/workflows.md#approvals).
 
 **Artifact**
 : A payload that carries its phase, proof set, and assumption basis in its
@@ -319,15 +326,6 @@ explained). Rust names are given where a type embodies the term.
   `WorthQueryObservedSource`. At admission, the source is checked against
   the facts built from its footprint and no others, so an edit outside the
   footprint does not invalidate the source.
-
-**Frontier (staged execution)**
-: Two or more ready stages of one installed staged operation, ordered by
-  unique stage identity.
-  Preparation and application run on the owner; pure task computation can
-  run on workers. Frontier entry sorts the supplied identities and refuses
-  fewer than two members or duplicates. Ordinary single-stage computation
-  uses the underlying checked map. This engine surface is distinct from
-  the application's workflow kernel and its caller-pumped control mutations.
 
 **Freshness**
 : How current a basis is, recorded in its type: `CurrentValidity`,
@@ -646,9 +644,8 @@ explained). Rust names are given where a type embodies the term.
 **Settled**
 : Performed, and also published by Query. A Relational commit is durable
   before it is live, so a performed commit always settles; an unknown durable
-  answer installs nothing and is `Indeterminate`. Query's in-memory
-  settlement records do not themselves guarantee survival of a process
-  restart; that requires Store's durable ownership
+  answer installs nothing and is `Indeterminate`. Surviving a process restart
+  requires a Directory [application Home](application-home.md)
   ([How WORTH Works §15.1](how-it-works.md#151-store-durable-physical-survival)).
 
 **Settlement**
@@ -688,7 +685,7 @@ explained). Rust names are given where a type embodies the term.
   the recorded decision without a new event.
   **Not** a package release signature or an inbound-message signature, which
   are verified by their own owners and authorize no approval.
-  **See** *Capability* and [Workflows, Approvals](../workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md#approvals).
+  **See** *Capability* and [Workflows, Approvals](../workspaces/worth-query/docs/foundations/workflows.md#approvals).
 
 **Span**
 : An execution-layer cost measuring the structural length of charged dependent
@@ -772,7 +769,7 @@ explained). Rust names are given where a type embodies the term.
 **Workflow**
 : A branch-local, versioned graph of steps, authored against an installed
   vocabulary (*spec*). Its node vocabulary is
-  [source-derived in the workflow guide](../workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md).
+  [source-derived in the workflow guide](../workspaces/worth-query/docs/foundations/workflows.md).
   A *definition* is one published revision. An
   *instance* is one run of a pinned definition revision. *Control steps*
   (publish or retire a definition; start, cancel, migrate, or continue an
@@ -781,9 +778,7 @@ explained). Rust names are given where a type embodies the term.
   authorizes and records them, never a handler. Applications reach the kernel
   through the workflow runtime (`WorthQueryWorkflowApplicationRuntime`).
   Progress is caller-pumped.
-  **Not** preview, promotion, writeback, branch merge, or a staged run of
-  installed domain operations. Applications import only `worth-query-decl`
-  and `worth-query-host`.
+  Applications import only `worth-query-decl` and `worth-query-host`.
   **See** [Build an Application §6](build-an-application.md#6-author-publish-and-run-workflows)
   and [How WORTH Works §13](how-it-works.md#13-workflows).
 
@@ -815,15 +810,6 @@ explained). Rust names are given where a type embodies the term.
   approver publishes an approval decision. Full partition/slot/generation
   identity is compared. Historical attribution never reauthorizes that actor or
   transfers the role to a later settler.
-
-**Workflow frontier**
-: A declared set of independent stages in an installed domain operation's
-  staged run. Preparation fixes each stage's facts on the owner; compute takes
-  only its inert task; application returns to the owner in canonical stage
-  order. The least failing stage bounds the applied prefix. An apply failure
-  does not refund compute work already settled. This frontier is
-  separate from a required wave and from application workflow control steps.
-  **See** [How WORTH Works §9.9](how-it-works.md#99-resources-execution-and-cost).
 
 **Workflow occurrence authority**
 : The single-use binding an advance issues when it reaches a guarded
