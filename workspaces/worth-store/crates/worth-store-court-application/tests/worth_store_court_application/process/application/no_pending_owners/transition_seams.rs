@@ -146,7 +146,9 @@ fn resumes_to_the_uninterrupted_end(location: &std::path::Path, seam: usize) {
 }
 
 // One sweep exceeds a single case's runtime guard, so consecutive ranges
-// cover every barrier; only the last, open range may reach completion.
+// cover every barrier. Barriers after the durable binding belong to B's
+// timing-dependent service start, so the total varies between runs and any
+// range may reach the uninterrupted completion; the last range is open.
 #[test]
 fn a_transition_killed_at_barriers_1_to_50_resumes_to_its_uninterrupted_end() {
     sweep(1, Some(50));
@@ -164,12 +166,24 @@ fn a_transition_killed_at_barriers_151_to_200_resumes_to_its_uninterrupted_end()
     sweep(151, Some(200));
 }
 #[test]
+fn a_transition_killed_at_barriers_201_to_250_resumes_to_its_uninterrupted_end() {
+    sweep(201, Some(250));
+}
+#[test]
+fn a_transition_killed_at_barriers_251_to_300_resumes_to_its_uninterrupted_end() {
+    sweep(251, Some(300));
+}
+#[test]
+fn a_transition_killed_at_barriers_301_to_350_resumes_to_its_uninterrupted_end() {
+    sweep(301, Some(350));
+}
+#[test]
 fn a_transition_killed_at_every_later_barrier_resumes_to_its_uninterrupted_end() {
-    sweep(201, None);
+    sweep(351, None);
 }
 
-/// Kill at each barrier of `first..=last`; an open range continues until the
-/// uninterrupted transition completes before its barrier.
+/// Kill at each barrier of `first..=last` (open when `last` is `None`); any
+/// range ends at the barrier the uninterrupted transition completes before.
 fn sweep(first: usize, last: Option<usize>) {
     for seam in first.. {
         if last.is_some_and(|last| seam > last) {
@@ -195,10 +209,6 @@ fn sweep(first: usize, last: Option<usize>) {
         if end == crate::killed_child::ChildEnd::Finished {
             // The uninterrupted control: the transition completed before
             // this barrier, and its end matches every killed prefix's end.
-            assert!(
-                last.is_none(),
-                "the transition completes before barrier {seam}; only the last range may end it"
-            );
             println!("swept {} durable transition barriers", seam - 1);
             assert!(seam > 1, "at least one durable barrier precedes completion");
             return;
@@ -253,18 +263,16 @@ fn transition_seam_child() {
     with_bootstrap_advancement_from_request(
         worth_execution::ExecutionRequest::leased(&lease),
         |phase| {
-            let home = Box::new(
-                request
-                    .open_in_advancement(&phase)
-                    .unwrap_or_else(|cause| panic!("uninterrupted transition: {cause:?}")),
-            );
-            (*home)
-                .close(&worth_execution::ExecutionRequest::leased(&lease))
-                .unwrap_or_else(|cause| panic!("B closes: {cause:?}"));
+            let _home = request
+                .open_in_advancement(&phase)
+                .unwrap_or_else(|cause| panic!("uninterrupted transition: {cause:?}"));
+            // The sweep covers exactly the transition open: B is never closed
+            // here, so no close checkpoint's barriers enter the sweep.
+            done.store(true, std::sync::atomic::Ordering::SeqCst);
+            crate::killed_child::announce(&markers.join("finished"), b"transition completed");
+            std::process::exit(0);
         },
     )
     .unwrap();
-    done.store(true, std::sync::atomic::Ordering::SeqCst);
-    watcher.join().unwrap();
-    crate::killed_child::announce(&markers.join("finished"), b"transition completed");
+    drop(watcher);
 }

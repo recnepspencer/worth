@@ -269,8 +269,13 @@ where
                 observation,
                 initial_state,
             } => {
-                let (query, home) = opening::preparation::readmit_native(phase, query, home)
-                    .map_err(Refused::successor)?;
+                let (query, home) = opening::preparation::readmit_native(
+                    phase,
+                    query,
+                    home,
+                    opening::preparation::NativeIdentityBound::Prepared,
+                )
+                .map_err(Refused::successor)?;
                 Ok(Box::new(ReadyHomeProgramOpening::Current(
                     opening::preparation::DirectoryOpening {
                         query,
@@ -291,8 +296,12 @@ where
                 checkpoint_limits,
                 observation,
             } => {
-                let (query, home) = match opening::preparation::readmit_native(phase, before, home)
-                {
+                let (query, home) = match opening::preparation::readmit_native(
+                    phase,
+                    before,
+                    home,
+                    opening::preparation::NativeIdentityBound::TransitionPlanning,
+                ) {
                     Ok(parts) => parts,
                     Err(refused) => return Err(Refused::predecessor(refused, after)),
                 };

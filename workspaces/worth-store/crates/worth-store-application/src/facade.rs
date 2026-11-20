@@ -54,6 +54,7 @@ pub use crate::query_dispatch::{
 pub use crate::relational_preparation::{
     attach_relational, ApplicationHomeInitializationDenial, ApplicationHomeInitializationRefused,
     ApplicationHomeNativeSchemaPreparation, ApplicationHomeNativeSchemaPreparationDenial,
+    ApplicationHomeTransitionPlanningMaxima,
     RelationalAttachmentFailedHome, RelationalAttachmentRefused, RelationalHomeOpenRefused,
     RelationalHomeReadmissionRefused, UnrecoveredApplicationHome,
     UnrecoveredApplicationHomeCloseRefused, UnsharedApplicationHomeCloseRefused,

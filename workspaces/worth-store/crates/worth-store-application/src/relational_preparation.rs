@@ -18,6 +18,7 @@ pub use refusal::{
 };
 pub use unrecovered::{
     ApplicationHomeNativeSchemaPreparation, ApplicationHomeNativeSchemaPreparationDenial,
+    ApplicationHomeTransitionPlanningMaxima,
     UnrecoveredApplicationHome,
 };
 pub use unshared::UnsharedReadmittedApplicationHome;

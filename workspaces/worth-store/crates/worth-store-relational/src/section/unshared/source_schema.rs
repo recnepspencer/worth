@@ -18,25 +18,11 @@ impl UnrecoveredRelationalSection {
         RelationalSectionReadmissionDenial,
     > {
         use RelationalSectionReadmissionDenial as Denial;
+        self.prepare_home_receiver(request)?;
         let prepared = self
             .prepared_source
             .as_mut()
             .ok_or(Denial::PreparedHomeSourceRequired)?;
-        match &prepared.receiver {
-            State::NotRequested => {
-                let input = prepared
-                    .original
-                    .copy_home_input_for_request(request)
-                    .map_err(Denial::InitialInputs)?;
-                let recovery = request.in_scope(|_| {
-                    self.attached.runtime.durability().prepare_home_recovery_source(
-                        request, input, worth_relational::facade::durability::RecoveryVerificationMode::NormalRecoveryVerification)
-                }).map_err(Denial::Execution)?.map_err(Denial::HomePreparation)?;
-                prepared.receiver = State::Prepared(recovery);
-            }
-            State::Prepared(_) => (),
-            State::Consumed => return Err(Denial::PreparedHomeSourceRequired),
-        }
         match &prepared.receiver {
             State::Prepared(recovery) => {
                 let (maximum_kind, maximum_aspect) = recovery
@@ -58,6 +44,64 @@ impl UnrecoveredRelationalSection {
             State::NotRequested | State::Consumed => {
                 unreachable!("prepared Home Source was retained")
             }
+        }
+    }
+}
+
+impl UnrecoveredRelationalSection {
+    /// The identities occupied when a pending transition's recorded planning
+    /// predecessor was durable. Only a resumed successor recompile asks for
+    /// these; the prepared identity bound keeps reporting every schema role.
+    pub fn home_transition_planning_maxima(
+        &mut self,
+        request: &ExecutionRequest<'_, '_>,
+        predecessor: &worth_relational::facade::branch::RecordedRelationalComponentReference,
+    ) -> Result<
+        (
+            Option<worth_relational::facade::identity::KindId>,
+            Option<worth_foundational::facade::AspectIdentity>,
+        ),
+        RelationalSectionReadmissionDenial,
+    > {
+        use RelationalSectionReadmissionDenial as Denial;
+        self.prepare_home_receiver(request)?;
+        match &self
+            .prepared_source
+            .as_ref()
+            .ok_or(Denial::PreparedHomeSourceRequired)?
+            .receiver
+        {
+            State::Prepared(recovery) => recovery
+                .occupied_identity_maxima_at(request, predecessor)
+                .map_err(Denial::HomePreparation),
+            State::NotRequested | State::Consumed => Err(Denial::PreparedHomeSourceRequired),
+        }
+    }
+
+    fn prepare_home_receiver(
+        &mut self,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<(), RelationalSectionReadmissionDenial> {
+        use RelationalSectionReadmissionDenial as Denial;
+        let prepared = self
+            .prepared_source
+            .as_mut()
+            .ok_or(Denial::PreparedHomeSourceRequired)?;
+        match &prepared.receiver {
+            State::NotRequested => {
+                let input = prepared
+                    .original
+                    .copy_home_input_for_request(request)
+                    .map_err(Denial::InitialInputs)?;
+                let recovery = request.in_scope(|_| {
+                    self.attached.runtime.durability().prepare_home_recovery_source(
+                        request, input, worth_relational::facade::durability::RecoveryVerificationMode::NormalRecoveryVerification)
+                }).map_err(Denial::Execution)?.map_err(Denial::HomePreparation)?;
+                prepared.receiver = State::Prepared(recovery);
+                Ok(())
+            }
+            State::Prepared(_) => Ok(()),
+            State::Consumed => Err(Denial::PreparedHomeSourceRequired),
         }
     }
 }

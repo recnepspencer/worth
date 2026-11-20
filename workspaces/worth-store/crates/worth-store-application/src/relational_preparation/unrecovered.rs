@@ -15,6 +15,7 @@ pub struct UnrecoveredApplicationHome {
 mod schema_preparation;
 pub use schema_preparation::{
     ApplicationHomeNativeSchemaPreparation, ApplicationHomeNativeSchemaPreparationDenial,
+    ApplicationHomeTransitionPlanningMaxima,
 };
 impl UnrecoveredApplicationHome {
     pub fn home_identity(&self) -> worth_foundational::facade::HomeIdentity {

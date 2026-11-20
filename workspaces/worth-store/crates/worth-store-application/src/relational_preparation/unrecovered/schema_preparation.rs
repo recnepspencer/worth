@@ -63,3 +63,49 @@ impl UnrecoveredApplicationHome {
         }
     }
 }
+
+/// The identities occupied at a pending transition's recorded planning
+/// predecessor. Distinct from the prepared bound, which keeps reporting every
+/// schema role; only the resumed successor recompile consumes this.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct ApplicationHomeTransitionPlanningMaxima {
+    maximum_kind: Option<worth_relational::facade::identity::KindId>,
+    maximum_aspect: Option<worth_foundational::facade::AspectIdentity>,
+}
+impl ApplicationHomeTransitionPlanningMaxima {
+    pub fn maximum_kind(&self) -> Option<worth_relational::facade::identity::KindId> {
+        self.maximum_kind
+    }
+    pub fn maximum_aspect(&self) -> Option<worth_foundational::facade::AspectIdentity> {
+        self.maximum_aspect
+    }
+}
+
+impl UnrecoveredApplicationHome {
+    /// `None` when no transition intent is pending.
+    pub fn home_program_transition_planning_maxima(
+        &mut self,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<
+        Option<ApplicationHomeTransitionPlanningMaxima>,
+        ApplicationHomeNativeSchemaPreparationDenial,
+    > {
+        use ApplicationHomeNativeSchemaPreparationDenial as Denial;
+        let Some(intent) = self
+            .context
+            .transition
+            .committed_intent(&self.context.descriptor.binding)
+            .map_err(Denial::Transition)?
+        else {
+            return Ok(None);
+        };
+        let (maximum_kind, maximum_aspect) = self
+            .relational
+            .home_transition_planning_maxima(request, intent.native_predecessor())
+            .map_err(Denial::Source)?;
+        Ok(Some(ApplicationHomeTransitionPlanningMaxima {
+            maximum_kind,
+            maximum_aspect,
+        }))
+    }
+}
