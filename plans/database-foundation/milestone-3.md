@@ -528,6 +528,105 @@ old review certificates apply only where their qualified bytes remain unchanged.
   - Boundary gates at zero; re-audit; no deleted callers.
   - Tier 3 and the cumulative oracle; milestone certification.
 
+### C1 implementation and acceptance slices
+
+Start with one ordinary Native write killed between the durable Native effect
+and World occurrence. The application reopens the same directory in a fresh
+process and can continue the original without running its handler again.
+Expand that path in the order below. C1 keeps the D8 service gate in force;
+Store admits the Home, Native proves what it recovered, World classifies the
+original, and Query readmits the caller's key and outcome. Only the complete
+D8 progression grants service. C1 supplies recovery for its qualified cases;
+C5 retires the D18 refusal surface after the remaining cases are qualified.
+
+#### C1.1 — Native effect before World publication
+
+Use the existing Store `readmit_world` path, Native's
+`RecoveredRelationalRuntimeAuthority::discover_recovered_associated_effects`
+and `admit_recorded_publication`, and World's associated-effect reconciliation
+and recovered-publication catalog. Join the owner-issued effect to the exact
+`OpenAttempt`, branch and predecessor before returning `ReadmittedRuntimeWorld`.
+If the effect has no World occurrence or disposition, retain the original
+`ProductUnpublished` custody with its receipt and continuation. The live head
+stays at its predecessor until an occurrence is committed. If World already
+committed the occurrence, readmit that movement even if the old process never
+installed it live. The retry consumer uses the existing recovered claim and
+`continue_effects` / `prepare_settled_relational_adoption` path.
+
+| Evidence | Acceptance |
+|---|---|
+| Bounded stateful property in the existing World model court | Generate short sequences of durable open, owner effect, World occurrence, reopen and duplicate retry. Compare the reconciler's catalog, selected head, original identities and retry posture with a small model derived from the recorded facts. Cover open-only, owner-effect-only and acknowledged World occurrence states. Reopening the same prefix repeatedly preserves durable state. A subsequent fresh operation takes an attempt, commit and custody identity beyond their respective durable frontiers, including identities from unfinished opens. |
+| Owner negative cases | A genuine effect with a missing original, a wrong owner or predecessor, or a conflicting effect for the same association refuses before service. The matching case admits the same recorded receipt. Exercise recovery/runtime affinity even with no World originals. |
+| Fresh-process journey | Use the Store `world_durable_release` child fixture and the preserved Query `durable_retry::fate_reopening` case. Kill after Native commits and before World submits an occurrence. Assert the old product head, the exact recovered receipt and key, a single continuation, and zero handler reruns. Reopen again and observe the same outcome. Use a separate cut after the World occurrence is durable and before live head installation to prove it moves exactly once. Quiet reopen is the positive control. |
+
+#### C1.2 — Unresolved fate, release and fork custody
+
+Build on C1.1's recovered original. The issuing owner resolves publication fate
+under recovered authority. Continue or `release_effects` through World's
+existing recovery ports and persist the matching disposition before changing
+live custody. Query retains the original key until its disposition permits a
+fresh operation. For an M2 unresolved fork, retain the original fork, exact
+predecessor and custody while Native determines the fate.
+
+| Evidence | Acceptance |
+|---|---|
+| Extend the C1.1 property with fate and disposition | Add `Indeterminate`, `ProvenNoEffect`, durable `Released` and durable `Continued`. Pending or indeterminate evidence fences fresh work and cannot release an original as no-effect. A proved no-effect original permits a fresh same-key execution after durable release. A durable disposition is monotone across duplicate requests and repeated reopen. A performed effect never becomes open-only. |
+| Real release kill and fork cases | Kill immediately before release publication and after it commits but before live removal. The first reopen retains the original, the second does not reclaim it. In the no-effect case a fresh same-key operation runs once after release. Readmit an M2 unresolved fork and verify the same fork and custody survive with no replacement branch or identity. Use a genuinely stale claim as a negative twin. |
+| Caller integration | Restore the C1 Native-before-disposition, adoption and inbound-original cases from [Moved courts](#moved-courts) as their continuation paths become available. Preserve the recorded receipt, dedupe, original effect count and affinity assertions. |
+
+#### C1.3 — Exact Native components and selective readmission
+
+Run through the existing Native `admit_recorded_component` and
+`admit_recorded_publication` ports. Discover the relevant subject from the
+checkpoint and uncovered tails, validate the recorded component commitments,
+then admit and pin the demanded predecessor and successor. C1 qualifies that
+selection and its refusal behavior. C2 owns growth bounds and concurrent
+checkpoint capture.
+
+| Evidence | Acceptance |
+|---|---|
+| Bounded component property at the Native owner | Start with genuine Empty and Canonical predecessors and a later Native head. Vary one recorded commitment at a time across owner/branch, schema/root/reference, and positioned effect identity. Exact inputs readmit the recorded components; each relevant mismatch refuses without returning grants or substituting the latest head. Compare with the components captured before the crash. |
+| Existing `native_components` filesystem court | Recover a retained Empty and a historical Canonical predecessor, with the selected effect represented in checkpoint or tail as applicable. A missing or corrupt selected body refuses before exposure. Removing one unrelated historical body still permits the selected readmission. Observe exact predecessor and successor, the retained receipt, and actual pin/readback through the admitted component. |
+
+#### C1.4 — Program transition resume and drift
+
+D16's existing Host transition request and Store-owned transition executor
+use the recorded plan digest, original planning predecessor and durable step
+prefix. Reconcile any C1.1?C1.3 Native effect before selecting the first
+nondurable step. Resume under the same plan, refuse changed meaning with
+`TransitionPlanDrift`, and refuse a different successor with
+`TransitionPending`. A refusal precedes new owner effects and service.
+
+| Evidence | Acceptance |
+|---|---|
+| Prefix property at the transition owner | Use a short nonempty roster with distinguishable step effects. Enumerate the valid durable prefixes, including all steps durable with binding pending. Resume selects precisely the suffix. Changed same-successor body or plan and a different successor produce their distinct typed refusals without extending the recorded prefix. |
+| Existing `no_pending_owners` process courts | Kill at durable intent, at each step seam of one small real transition, and at binding. Reopen through Store/Host, assert the original planning root and exactly-once steps, and compare terminal program/schema and data to the uninterrupted run. Restore the preserved transition-source and Native-effect continuation cases, including refusal/reclaim and spent movement. |
+
+#### C1.5 — Home open refusals and interrupted discard
+
+Use the existing Host directory open and `discard_home` entry points. Store's
+mutation lease and descriptor admission decide the Phase 3 refusals. Store
+persists the discard tombstone before removal and keeps the directory fenced
+until discard completes. This slice can proceed alongside C1.1?C1.4 because
+its descriptor and discard authorities are independent of recovered custody.
+
+| Evidence | Acceptance |
+|---|---|
+| Table-driven Phase 3 Home cases | Use the existing Store application suites. Cover fresh initialization and valid reopen alongside damaged descriptor, foreign Home, unknown root schema, incomplete recovery and a competing opener. Assert the specific refusal and absence of serving authority. Observe that a refused competing open or discard leaves the live Home usable. |
+| Existing `discard` and `discard::interruption` cases | Kill after the tombstone is durable during removal. Verify `DiscardPending`, then explicit discard completion and idempotent retry, including the damaged Store case. A subsequent open initializes a fresh Home identity. |
+
+C1 slice checks select the affected owner tests and named process cases. Keep
+generated cases bounded and reproducible, with the failing seed or shortest
+operation trace in the test output. Use real owner issuance and durable state
+for process courts, and use public reads, receipts and effect counts as the
+observations. Reuse existing fixtures and the preserved cases before adding
+another process journey. Run a real kill only where it distinguishes durable
+state from live state. A green model or graceful reopen cannot qualify a kill
+case. See [the adversarial constraint](#adversarial-constraint) for the broader
+C4 campaign and the existing [verification tiers](#verification-tiers-every-phase)
+for promotion. Update the existing Host recovery and Native component guides
+when the corresponding behavior lands.
+
 ### Moved courts
 
 - **C3:** cold discharge of an H7 process-local application-resource obligation whose provider/queue/Native release was outstanding at quiescent kill; keep its original input/request and typed pending record; never release it against fresh empty resources.
