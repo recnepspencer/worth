@@ -25,7 +25,7 @@ is not yet certified.
 |---|---|---|
 | Choose durable facts, names and links | [Native representations](native-representations.md), then [source subgraphs](source-subgraphs.md) | Independently mutable fields, entities, typed relations and an explicit read closure; canonical atoms need a recorded reason |
 | Explain a query result or an authored operation | [Inspect original evidence](#inspect-original-source-and-query-evidence) | Saved source/query receipts and current inspection permissions |
-| Correct a recorded source operation | [Recorded source correction](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md), including [consecutive original sources](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md#reverse-consecutive-original-sources) and the [compiled consecutive-undo journeys](../workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/certification/application_graph/correction/consecutive_undo.rs) | A source receipt, current principal, target branch and client key; declare the inverse and disclosure query in the contribution. Canonical authored writes require exact later source/reversal pairs on the selected ancestry. Original and target support must agree under compatible installed meaning and full-generation identity, including complete aspect content, presence and live adjacency. Relation-dependent fields remain separate dependencies. Retain endpoint custody; handle typed unavailable evidence and stale-target refusals through the returned owners. |
+| Correct a recorded source operation | [Recorded source correction](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md), including [consecutive original sources](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md#reverse-consecutive-original-sources) and the [compiled consecutive-undo journeys](../workspaces/worth-query/crates/worth-query-court-decl-host-integration/tests/worth_query_court_decl_host_integration/certification/application_graph/correction/consecutive_undo.rs) | A source receipt, current principal, target branch and client key; declare the inverse and disclosure query in the contribution. Canonical authored writes require exact later source/reversal pairs on the selected ancestry. Original and target support must agree under compatible installed meaning and full-generation identity, including complete aspect content, presence and live adjacency. Relation-dependent fields remain separate dependencies. Retain endpoint custody; handle typed unavailable evidence and stale-target refusals through the returned owners. |
 | Add an ordinary feature | [Complete feature definitions](#complete-feature-definitions) | Typed members, actual handlers and domain configuration |
 | Declare operation access | [Operation access](#21-declare-operation-access-once) | Reads, effects and preconditions in one declaration |
 | Compute from tracked inputs | [Managed computation](#36-declare-and-install-a-partitioned-managed-computation) | Tracked gathering, pure numerical data and original-owner completion |
@@ -470,7 +470,7 @@ Render terminal values through the owner's reader/renderer, as the Ratio example
 Use these bindings on fields in an existing struct aspect. The explicit
 `scalar_aspect_field` declaration currently requires a codec-free scalar binding;
 it refuses a domain codec. This capability adds no aspect shape form.
-The [correction and recovery courts](../workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/certification/application_graph/correction/inline_domain.rs)
+The [correction and recovery courts](../workspaces/worth-query/crates/worth-query-court-decl-host-integration/tests/worth_query_court_decl_host_integration/certification/application_graph/correction/inline_domain.rs)
 exercise the opaque field through ordinary owners. Their literal encodings and
 the production decode/re-encode check certify stored byte identity across recovery.
 Whole model checkpoint equality separately checks that admitted reads have no
@@ -1078,7 +1078,7 @@ sources. A declared relation names each source's immediate parent. A parent's ou
 witness covers the whole source entity, including absent aspects: a child writing
 its realization onto that source invalidates the parent's witness. Corrections
 to a generated source therefore go through its owning producer, from that
-producer's input. See the [generic split-record courts](../workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/dependent_dispatch/split_courts.rs)
+producer's input. See the [generic split-record courts](../workspaces/worth-query/crates/worth-query-court-decl-host-integration/tests/worth_query_court_decl_host_integration/dependent_dispatch/split_courts.rs)
 for installed roots, sealed dependent dispatch and current delivery.
 
 The block below is a **shape with illustrative names**. The compiled

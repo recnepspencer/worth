@@ -4,11 +4,11 @@ edition.workspace = true
 rust-version.workspace = true
 version.workspace = true
 license.workspace = true
-description = "Query replay audience facade over worth-query (cert-only)."
+description = "Query certification audience facade over the Query authority crates (cert-only)."
 publish = false
 
 [dependencies]
-worth-query = { path = "../worth-query" }
+worth-query-execution = { path = "../worth-query-execution" }
 
 [lints]
 workspace = true

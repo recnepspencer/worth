@@ -818,8 +818,8 @@ authority_packages = [
 package = "worth-query-replay"
 label = "replay"
 allowed_bands = ["cert"]
-guidance = "cert-only reconstruction and replay"
-authority_packages = ["worth-query"]
+guidance = "cert-only certification cost evidence"
+authority_packages = ["worth-query-execution"]
 
 [[rule_contracts.replay_surfaces]]
 label = "certification replay"

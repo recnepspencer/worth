@@ -24,7 +24,6 @@ cannot be shared on that evidence.
 
 | Owning testkit | Observed recipe | Complete variable input set |
 |---|---|---|
-| `worth-testkit-server` | `root-default-query-provider-server` | `register_worth_native`; concrete `TestWorkspaceProvider` and remaining configuration are fixed by revision 1 |
 | `worth-query-testkit-installed-operation-fixture` | `query-default-installed-runtime` | no caller inputs; fixed `reversed=false`, `conflicting_duplicate=false`, default schema/executors and revision 1 |
 | `worth-query-testkit-installed-operation-fixture` | `query-installed-geometry-package` | `reversed`, `conflicting_duplicate`; remaining declaration is fixed by revision 1 |
 | `worth-query-bank-testkit-server` | `bank-parallel-history-seeded-world` | `seed`; names, balances, memberships and funding derive from it in revision 1 |

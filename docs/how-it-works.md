@@ -2030,19 +2030,13 @@ Live handles and retained observations are not restored.
 See [Build an Application §4.4](build-an-application.md#44-checkpoint-program-transitions).
 Do not build host persistence of platform truth as a substitute.
 
-### 15.2 Server: the transport boundary
+### 15.2 Network transport
 
-`worth-server` (`worth_server::facade::{WorthServer, WorthServerBuilder}`)
-serves a Query application over the network. It offers WORTH-native
-operations, plus a strict HTTP compatibility boundary for reads, writes,
-streams, uploads, and downloads.
-
-The server is transport, not authority. It carries a request to Query's
-admission and carries the typed outcome back. It does not decide legality. In the
-Bank reference world, identity-provider tokens end at the HTTP adapter; what
-reaches Query is an authenticated principal and a request scope. `worth-server-client-generation`
-renders TypeScript and Python clients from the server's protocol catalog.
-Guide: [Server docs](../crates/worth-server/docs/README.md).
+WORTH has no platform server crate. An application that serves remote callers
+owns its transport adapter: it authenticates, then hands Query an authenticated
+principal and a request scope through `worth-query-host`, and carries the typed
+outcome back. Transport never decides legality. The Bank reference world's
+`bank-http-adapter` is the worked example.
 
 ### 15.3 UI: authored presentation
 
