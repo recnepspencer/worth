@@ -101,7 +101,10 @@ pub(super) fn execution_is_row(kind: WorthQueryApplicationOneShotDenialKind) -> 
 fn projection_is_row(kind: WorthQueryApplicationProjectionDenialKind) -> bool {
     use WorthQueryApplicationProjectionDenialKind as Kind;
     match kind {
-        Kind::ValueDecode(cause) => cause.request_cause().is_none(),
+        Kind::ValueDecode(cause) => {
+            crate::domain_computation::primary_graph::value_decode::decode_request_cause(cause)
+                .is_none()
+        }
         Kind::FieldOmitted | Kind::RelationOmitted => false,
         Kind::FieldNotProjected
         | Kind::FieldContractMismatch

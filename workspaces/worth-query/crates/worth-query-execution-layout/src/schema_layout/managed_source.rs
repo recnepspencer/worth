@@ -1,0 +1,193 @@
+//! Compile the actual installed Source into Native's existing path owner.
+use super::{required_kind, WorthQueryPrimaryFieldLayout, WorthQuerySchemaLayoutDenial as Denial};
+use std::collections::BTreeMap;
+
+mod membership;
+mod projection;
+use worth_foundational::facade::RelationDirection;
+use worth_query_declaration::facade::application_query::{
+    ApplicationManagedIndexColdSource as Cold, ApplicationQueryRootPathTraversal,
+    ErasedApplicationManagedIndexDefinition, ErasedApplicationQueryDefinition,
+};
+use worth_query_installation::facade::{
+    ApplicationSchemaMember as Member, ErasedApplicationSchemaDeclaration,
+};
+use worth_relational::facade::identity::KindId;
+use worth_relational::facade::runtime::{ManagedIndexSourceField, ManagedIndexSourceProgram};
+use worth_relational::facade::schema::{
+    DerivedRelationDefinitionParts, DerivedRelationIdentity, DerivedRelationNode as Node,
+    RelationalSchemaRegistry, SchemaId, SchemaVersionId,
+};
+
+/// The sole lowered Source requirement consumed by rule resolution and setup.
+#[derive(Clone, Debug)]
+pub struct ManagedSource {
+    pub program: ManagedIndexSourceProgram,
+    pub definition: ErasedApplicationManagedIndexDefinition,
+    pub cold: Cold,
+    pub public_parent: bool,
+}
+
+pub(super) fn requirements(schema: &ErasedApplicationSchemaDeclaration) -> BTreeMap<&str, Cold> {
+    let mut required = BTreeMap::new();
+    for member in schema.members() {
+        let requirement = match member {
+            Member::ManagedIndex { definition } => definition
+                .maintenance()
+                .native_cold()
+                .map(|cold| (definition.parts().name.as_str(), cold)),
+            Member::InvariantManagedIndexSource { requirement, .. } => {
+                Some((requirement.index(), requirement.cold()))
+            }
+            _ => None,
+        };
+        if let Some((index, cold)) = requirement {
+            let effective = required.entry(index).or_insert(cold);
+            if cold == Cold::Refuse {
+                *effective = Cold::Refuse;
+            }
+        }
+    }
+    required
+}
+
+pub(super) fn lower(
+    sources: super::source_registration::SourceRegistration<'_>,
+    mut registry: RelationalSchemaRegistry,
+    schema: &ErasedApplicationSchemaDeclaration,
+    basis: (&SchemaId, SchemaVersionId),
+    entities: &BTreeMap<String, KindId>,
+    relations: &BTreeMap<String, KindId>,
+    fields: &BTreeMap<(String, String, String), WorthQueryPrimaryFieldLayout>,
+) -> Result<(RelationalSchemaRegistry, BTreeMap<String, ManagedSource>), Denial> {
+    let required = requirements(schema);
+    let mut programs = BTreeMap::new();
+    for member in schema.members() {
+        let Member::ManagedIndex { definition } = member else {
+            continue;
+        };
+        let Some(&cold) = required.get(definition.parts().name.as_str()) else {
+            continue;
+        };
+        let source_name = &definition.parts().source.binding.parts().query_name;
+        let source = schema
+            .members()
+            .iter()
+            .find_map(|member| match member {
+                Member::ApplicationQuery { definition } if definition.name() == source_name => {
+                    Some(definition)
+                }
+                _ => None,
+            })
+            .ok_or_else(|| unsupported(source_name))?;
+        let identity = DerivedRelationIdentity {
+            schema: basis.0.clone(),
+            version: basis.1,
+            name: format!("managed-index-source::{}", definition.parts().name),
+        };
+        let nodes = membership::path(source, entities, relations, &registry, basis)?;
+        let (next_registry, projection, routes) = projection::lower(
+            sources, registry, source, &identity, entities, relations, fields,
+        )?;
+        registry = next_registry;
+        registry = sources
+            .derived(
+                registry,
+                vec![DerivedRelationDefinitionParts {
+                    identity: identity.clone(),
+                    from: required_kind(entities, source.scope_entity())?.into(),
+                    to: required_kind(entities, source.root_entity())?.into(),
+                    nodes,
+                    laws: None,
+                }],
+            )
+            .map_err(|_| unsupported(source_name))?;
+        let handle = registry
+            .derived_relation(&identity)
+            .ok_or_else(|| unsupported(source_name))?;
+        let program = match definition.parts().source.scope {
+            worth_query_declaration::facade::application_query::ApplicationManagedIndexSourceScope::SameAdmittedScope => registry.bind_managed_index_source(&handle, projection, routes),
+            worth_query_declaration::facade::application_query::ApplicationManagedIndexSourceScope::OrderedPredecessor => registry.bind_ordered_predecessor_managed_index_source(&handle, projection, routes),
+        }.map_err(|cause| source_binding_denial(cause, source_name))?;
+        programs.insert(
+            definition.parts().name.clone(),
+            ManagedSource {
+                program,
+                definition: definition.clone(),
+                cold,
+                // This is the declared public Parent audience, independent of
+                // the additional public-maintenance posture. The Source is
+                // already required and compiled above; do not invent one here.
+                public_parent: schema.members().iter().any(|member| match member {
+                    Member::ApplicationQuery { definition: parent } => {
+                        parent.managed_index().is_some_and(|selection| {
+                            selection.parts().index == definition.parts().name
+                        })
+                    }
+                    _ => false,
+                }),
+            },
+        );
+    }
+    Ok((registry, programs))
+}
+
+fn unsupported(name: &str) -> Denial {
+    crate::denial::WorthQuerySchemaLayoutDenial::new(
+        crate::denial::WorthQuerySchemaLayoutDenialKind::UnsupportedManagedSource,
+        name,
+    )
+}
+
+fn source_binding_denial(
+    cause: worth_relational::facade::schema::DerivedRelationDenial,
+    name: &str,
+) -> Denial {
+    use crate::denial::WorthQuerySchemaLayoutDenialKind as Kind;
+    use worth_relational::facade::schema::DerivedRelationDenial as Native;
+    let kind = match cause {
+        Native::SourceProgramIdentityExhausted => Kind::SourceProgramIdentityExhausted,
+        Native::OrderedPredecessorMembershipRequired => Kind::OrderedPredecessorMembershipRequired,
+        Native::OrderedPredecessorMustBeToOne => Kind::OrderedPredecessorMustBeToOne,
+        _ => return unsupported(name),
+    };
+    Denial::new(kind, name)
+}
+
+#[test]
+fn source_program_identity_exhaustion_is_preserved_at_installation() {
+    use crate::denial::WorthQuerySchemaLayoutDenialKind as Kind;
+    use worth_relational::facade::schema::DerivedRelationDenial as Native;
+    for (cause, expected) in [
+        (
+            Native::SourceProgramIdentityExhausted,
+            Kind::SourceProgramIdentityExhausted,
+        ),
+        (Native::ForeignDefinition, Kind::UnsupportedManagedSource),
+        (
+            Native::OrderedPredecessorMembershipRequired,
+            Kind::OrderedPredecessorMembershipRequired,
+        ),
+        (
+            Native::OrderedPredecessorMustBeToOne,
+            Kind::OrderedPredecessorMustBeToOne,
+        ),
+    ] {
+        assert_eq!(
+            source_binding_denial(cause, "bounded-source").kind(),
+            expected
+        );
+    }
+}
+
+impl super::WorthQueryPrimaryGraphLayout {
+    pub fn required_managed_sources(&self) -> impl Iterator<Item = &ManagedSource> {
+        self.managed_sources.values()
+    }
+
+    pub fn managed_source(&self, index: &str) -> Option<&ManagedIndexSourceProgram> {
+        self.managed_sources
+            .get(index)
+            .map(|source| &source.program)
+    }
+}

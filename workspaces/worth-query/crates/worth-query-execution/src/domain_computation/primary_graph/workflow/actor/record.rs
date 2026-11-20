@@ -66,89 +66,68 @@ impl WorkflowAdmittedActor {
         );
     }
 }
-#[derive(Clone, Debug)]
-pub struct WorkflowActorFields {
-    pub(in crate::domain_computation) partition: AspectFieldLocator,
-    pub(in crate::domain_computation) slot: AspectFieldLocator,
-    pub(in crate::domain_computation) generation: AspectFieldLocator,
+pub use worth_query_execution_layout::facade::WorkflowActorFields;
+
+pub(in crate::domain_computation::primary_graph) fn read_adoption_actor_fields(
+    locators: &WorkflowActorFields,
+    record: &super::super::adoption::WorkflowAdoptionEntity<'_>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    entity: EntityId,
+) -> Result<Option<EntityId>, super::super::adoption::WorkflowAdoptionReadDenial> {
+    let invalid =
+        || super::super::adoption::WorkflowAdoptionReadDenial::UnreadableEntity { entity };
+    decode_actor_components([
+        record.optional_u64(execution, &locators.partition)?,
+        record.optional_u64(execution, &locators.slot)?,
+        record.optional_u64(execution, &locators.generation)?,
+    ])
+    .map_err(|_| invalid())
 }
-impl WorkflowActorFields {
-    pub(in crate::domain_computation::primary_graph) fn read_adoption(
-        &self,
-        record: &super::super::adoption::WorkflowAdoptionEntity<'_>,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        entity: EntityId,
-    ) -> Result<Option<EntityId>, super::super::adoption::WorkflowAdoptionReadDenial> {
-        let invalid =
-            || super::super::adoption::WorkflowAdoptionReadDenial::UnreadableEntity { entity };
-        decode_actor_components([
-            record.optional_u64(execution, &self.partition)?,
-            record.optional_u64(execution, &self.slot)?,
-            record.optional_u64(execution, &self.generation)?,
-        ])
-        .map_err(|_| invalid())
-    }
-    pub(in crate::domain_computation) fn observe(
-        &self,
-        runtime: &worth_relational::facade::runtime::RelationalRuntime,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
-        entity: EntityId,
-        kind: worth_relational::facade::identity::KindId,
-        facts: &mut Vec<
-            crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact,
-        >,
-    ) -> Result<
-        Option<EntityId>,
-        crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
-    > {
-        use crate::domain_computation::primary_graph::application_attempt::observe_field_value;
-        use crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact as Fact;
-        let malformed = actor_record_corruption;
-        let mut components = [None; 3];
-        for (index, locator) in [&self.partition, &self.slot, &self.generation]
-            .into_iter()
-            .enumerate()
-        {
-            match observe_field_value(runtime, execution, snapshot, entity, kind, locator)? {
-                Some(value @ AspectValue::UInt64(_)) => {
-                    let AspectValue::UInt64(component) = &value else {
-                        unreachable!()
-                    };
-                    components[index] = Some(*component);
-                    facts.push(Fact::Field {
-                        entity_id: entity,
-                        kind,
-                        locator: locator.clone(),
-                        value,
-                    });
-                }
-                None => {
-                    facts.push(Fact::AbsentField {
-                        entity_id: entity,
-                        kind,
-                        locator: locator.clone(),
-                    });
-                }
-                _ => return Err(malformed()),
+
+pub(in crate::domain_computation) fn observe_actor_fields(
+    locators: &WorkflowActorFields,
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    entity: EntityId,
+    kind: worth_relational::facade::identity::KindId,
+    facts: &mut Vec<crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact>,
+) -> Result<
+    Option<EntityId>,
+    crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
+> {
+    use crate::domain_computation::primary_graph::application_attempt::observe_field_value;
+    use crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact as Fact;
+    let malformed = actor_record_corruption;
+    let mut components = [None; 3];
+    for (index, locator) in [&locators.partition, &locators.slot, &locators.generation]
+        .into_iter()
+        .enumerate()
+    {
+        match observe_field_value(runtime, execution, snapshot, entity, kind, locator)? {
+            Some(value @ AspectValue::UInt64(_)) => {
+                let AspectValue::UInt64(component) = &value else {
+                    unreachable!()
+                };
+                components[index] = Some(*component);
+                facts.push(Fact::Field {
+                    entity_id: entity,
+                    kind,
+                    locator: locator.clone(),
+                    value,
+                });
             }
+            None => {
+                facts.push(Fact::AbsentField {
+                    entity_id: entity,
+                    kind,
+                    locator: locator.clone(),
+                });
+            }
+            _ => return Err(malformed()),
         }
-        decode_actor_components(components).map_err(|_| malformed())
     }
-    pub(in crate::domain_computation::primary_graph) fn planned(
-        aspect: &str,
-        role: &str,
-    ) -> Result<
-        Self,
-        crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenial,
-    > {
-        use crate::domain_computation::primary_graph::schema_layout::planned_field_locator;
-        Ok(Self {
-            partition: planned_field_locator(aspect, &format!("{role}-partition"))?,
-            slot: planned_field_locator(aspect, &format!("{role}-slot"))?,
-            generation: planned_field_locator(aspect, &format!("{role}-generation"))?,
-        })
-    }
+    decode_actor_components(components).map_err(|_| malformed())
 }
 
 /// One decoder for current native records and passive corruption inspection.
@@ -195,3 +174,4 @@ pub(in crate::domain_computation) fn actor_record_corruption(
 }
 
 mod court_doors_for_test;
+pub use court_doors_for_test::observe_actor_fields_for_test;

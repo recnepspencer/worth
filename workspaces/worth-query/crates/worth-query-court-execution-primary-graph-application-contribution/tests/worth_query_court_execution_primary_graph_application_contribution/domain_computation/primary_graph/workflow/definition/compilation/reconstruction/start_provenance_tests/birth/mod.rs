@@ -169,18 +169,16 @@ fn birth_subject_provenance_and_start_actor_remain_readable() {
                 .is_err(),
                 "another real subject cannot substitute for the birth endpoint"
             );
-            let start = (*(*layout
-                .instance_for_test())
-                .start_advancer_for_test())
-                .observe_for_test(
-                    runtime,
-                    &execution,
-                    current.1.snapshot_handle(),
-                    instance,
-                    *(*layout.instance_for_test()).entity_kind_for_test(),
-                    &mut Vec::new(),
-                )
-                .unwrap();
+            let start = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::actor::record::observe_actor_fields_for_test(
+                (*layout.instance_for_test()).start_advancer_for_test(),
+                runtime,
+                &execution,
+                current.1.snapshot_handle(),
+                instance,
+                *(*layout.instance_for_test()).entity_kind_for_test(),
+                &mut Vec::new(),
+            )
+            .unwrap();
             assert_eq!(start, Some(actor.entity_for_test()));
         });
     // Deliberate native corruption, not an alternate valid encoding: the

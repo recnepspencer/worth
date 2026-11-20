@@ -2,6 +2,7 @@
 use super::*;
 use journal::*;
 use worth_execution::ExecutionRequest;
+use worth_query_execution_obligations::facade::ledger_inspect;
 
 impl QueryObligationHistory {
     pub(in crate::domain_computation::primary_graph) fn record_accepted_output(
@@ -15,7 +16,7 @@ impl QueryObligationHistory {
         let driver = self.lock_publication()?;
         driver.finish_pending(medium.as_ref(), request)?;
         if self.state().journal.as_ref().is_some_and(|journal| {
-            journal.ledger.output.accepted.get(&(
+            ledger_inspect::output(&journal.ledger).accepted.get(&(
                 row.branch.clone(),
                 row.producer.clone(),
                 row.scope,
@@ -32,7 +33,13 @@ impl QueryObligationHistory {
         self.state()
             .journal
             .as_ref()
-            .map(|journal| journal.ledger.output.accepted.values().cloned().collect())
+            .map(|journal| {
+                ledger_inspect::output(&journal.ledger)
+                    .accepted
+                    .values()
+                    .cloned()
+                    .collect()
+            })
             .unwrap_or_default()
     }
 }
