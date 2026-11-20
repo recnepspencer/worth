@@ -30,6 +30,8 @@ import sys
 import uuid
 from pathlib import Path
 
+import rust_symbol
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 CONFIG = Path(__file__).resolve().with_name("frame_budget.json")
 
@@ -253,14 +255,21 @@ def module_crate(module: str) -> str:
     return re.split(r"[-.]", stem, maxsplit=1)[0]
 
 
-def contributing_crate(image: PeImage, ranges, rva: int) -> str | None:
-    """The crate whose object contributed the code at `rva`."""
+def code_ranges(image: PeImage, ranges) -> list[tuple[int, int, str]]:
+    """(start RVA, end RVA, crate) for each contribution, sorted by start."""
+    spans = []
     for section, offset, size, module in ranges:
-        if not 1 <= section <= len(image.sections):
-            continue
-        start = image.sections[section - 1][1] + offset
-        if start <= rva < start + size:
-            return module_crate(module)
+        if 1 <= section <= len(image.sections):
+            start = image.sections[section - 1][1] + offset
+            spans.append((start, start + size, module_crate(module)))
+    return sorted(spans)
+
+
+def contributing_crate(spans: list[tuple[int, int, str]], rva: int) -> str | None:
+    """The crate whose object contributed the code at `rva`."""
+    index = bisect.bisect_right(spans, (rva, float("inf"), "")) - 1
+    if index >= 0 and spans[index][0] <= rva < spans[index][1]:
+        return spans[index][2]
     return None
 
 
@@ -282,7 +291,14 @@ def strip_generics(name: str) -> str:
 
 
 def owner_path(symbol: str) -> str:
-    """The defining path of a demangled symbol, without instantiation details."""
+    """The defining path of a symbol, without instantiation details.
+
+    Crates built without debug information name functions only by mangled
+    public symbols; those are decoded to their defining path.
+    """
+    decoded = rust_symbol.defining_path(symbol.strip())
+    if decoded is not None:
+        return decoded
     value = symbol.strip()
     if value.startswith("<") and " as " in value:
         # `<Type as Trait>::method` is defined beside the impl's self type.
@@ -315,7 +331,7 @@ def pdb_symbols(path: Path, base: int) -> dict[int, list[str]]:
     callback = c.WINFUNCTYPE(c.c_int, c.c_void_p, c.c_uint, c.c_void_p)
     help_.SymEnumSymbols.argtypes = [c.c_void_p, c.c_ulonglong, c.c_char_p, callback, c.c_void_p]
     process = kernel.GetCurrentProcess()
-    help_.SymSetOptions(0x10 | 0x200)  # SYMOPT_LOAD_LINES off; FAIL_CRITICAL_ERRORS
+    help_.SymSetOptions(0x200)  # SYMOPT_FAIL_CRITICAL_ERRORS; no line loading
     if not help_.SymInitializeW(process, str(path.parent), False):
         raise UnwindError("SymInitializeW failed")
     names: dict[int, list[str]] = {}
@@ -369,8 +385,8 @@ def measure(label: str, path: Path, floor: int, prefixes: list[str]) -> tuple[li
         if not symbols:
             # Crates built without debug information name only public symbols.
             # The contributing object module still identifies the crate.
-            ranges = msf.module_ranges() if ranges is None else ranges
-            crate = contributing_crate(image, ranges, start)
+            ranges = code_ranges(image, msf.module_ranges()) if ranges is None else ranges
+            crate = contributing_crate(ranges, start)
             if crate is None or owned(crate, prefixes):
                 # The nearest preceding symbol only helps a reader find the code.
                 before = addresses[bisect.bisect_left(addresses, start) - 1] if addresses else None
@@ -470,7 +486,7 @@ def measure_roster(arguments: argparse.Namespace) -> int:
     for row in over:
         print(f"OVER {row['bytes']} {row['path']} [{', '.join(row['binaries'])}]")
     for row in unnamed_over:
-        print(f"UNNAMED OVER {row['bytes']} rva {row['rva']:#x} crate {row['crate']} in {row['binary']}")
+        print(f"UNNAMED OVER {row['bytes']} rva {row['rva']:#x} crate {row['crate']} in {row['binary']} after {row['after_symbol']}")
     if over or unnamed_over:
         print(f"frame budget: {len(over) + len(unnamed_over)} functions exceed {ceiling} bytes")
         return 1

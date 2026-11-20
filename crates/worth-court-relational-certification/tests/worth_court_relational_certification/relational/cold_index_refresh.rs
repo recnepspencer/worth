@@ -130,7 +130,7 @@ fn reopened(execution: &ExecutionRequest<'_, '_>) -> Reopened {
     let manifest = rmp_serde::from_slice::<Checkpoint>(
         checkpoint
             .bytes()
-            .strip_prefix(b"WORTH-REL-CHK22\n")
+            .strip_prefix(b"WORTH-REL-CHK23\n")
             .unwrap(),
     )
     .unwrap()

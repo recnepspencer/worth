@@ -167,10 +167,23 @@ class IdentityTests(unittest.TestCase):
     def test_an_unnamed_function_belongs_to_its_contributing_crate(self):
         image = pe_with_codeview(self.guid, 7)
         module = r"C:\t\deps\worth_query_execution-0123abcd.worth_query_execution.5f-cgu.04.rcgu.o"
-        ranges = [(1, 0x10, 0x40, module), (1, 0x60, 0x20, "std-77aa.std.1-cgu.0.rcgu.o")]
-        self.assertEqual(frame_budget.contributing_crate(image, ranges, 0x1020), "worth_query_execution")
-        self.assertEqual(frame_budget.contributing_crate(image, ranges, 0x1060), "std")
-        self.assertIsNone(frame_budget.contributing_crate(image, ranges, 0x1100))
+        ranges = [(1, 0x60, 0x20, "std-77aa.std.1-cgu.0.rcgu.o"), (1, 0x10, 0x40, module)]
+        spans = frame_budget.code_ranges(image, ranges)
+        self.assertEqual(frame_budget.contributing_crate(spans, 0x1020), "worth_query_execution")
+        self.assertEqual(frame_budget.contributing_crate(spans, 0x1060), "std")
+        self.assertIsNone(frame_budget.contributing_crate(spans, 0x1100))
+        self.assertIsNone(frame_budget.contributing_crate(spans, 0x1000))
+
+    def test_mangled_only_symbols_are_judged_by_their_defining_crate(self):
+        owned = "_RINvNtNtCscILQswMFqH6_24worth_query_installation17application_query7history7compileNtNtCs1twkGDue0Y0_16shared_execution7program13ExampleSchemaEB1n_"
+        path = frame_budget.owner_path(owned)
+        self.assertEqual(path, "worth_query_installation::application_query::history::compile")
+        self.assertTrue(frame_budget.owned(path, ["worth_"]))
+        foreign = "_RINvNtCs1_4core3ptr13drop_in_placeNtCs2_11worth_store4HomeEB4_"
+        self.assertEqual(frame_budget.owner_path(foreign), "core::ptr::drop_in_place")
+        self.assertFalse(frame_budget.owned(frame_budget.owner_path(foreign), ["worth_"]))
+        legacy = "_ZN11worth_store4Home4open17h0123456789abcdefE"
+        self.assertEqual(frame_budget.owner_path(legacy), "worth_store::Home::open")
 
     def test_only_the_wanted_executables_of_this_build_are_measured(self):
         messages = "\n".join(

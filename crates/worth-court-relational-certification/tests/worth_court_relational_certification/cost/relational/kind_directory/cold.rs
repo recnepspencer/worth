@@ -59,7 +59,8 @@ fn scan(regions: usize, history: usize) -> [u64; 2] {
         relations: vec![],
     };
     let selected = pin(&cold, &request);
-    assert!(source.reads.lock().unwrap().is_empty());
+    // Recovery reads checkpoint metadata (the index catalog); record regions stay cold.
+    assert_eq!(source.region_read_count(), 0);
     assert_eq!(ids(&selected, &request, KindId(1)), expected);
     let bytes = source.bytes.load(Ordering::SeqCst);
     // Use a second real pin over the now admitted immutable Head so this work

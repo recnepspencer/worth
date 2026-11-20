@@ -390,7 +390,9 @@ its symbol, and fails when a function of a declared owner crate (`worth_*` and
 the consumer examples) exceeds the ceiling. Crates built without debug
 information (`debug = false` for `worth-query-execution` and
 `worth-query-topology-entry` in the consumer profile, `debug = 0` in test
-profiles) name only public symbols; an unnamed function is assigned to the
+profiles) name functions only by mangled public symbols, which the lane
+decodes to their defining path, so a foreign generic over an owned type stays
+foreign; a function with no symbol at all is assigned to the
 crate whose object module contributed its code, from the PDB's section
 contributions, and fails when that crate is owned or unknown. Its refusal
 names the binary, address, crate and nearest preceding symbol. A future held by value occupies

@@ -136,11 +136,13 @@ fn fixed_read_work(regions: u32, history: usize, width: usize) -> ReadWork {
         World::new().runtime,
     );
     assert!(
-        source.reads.lock().unwrap().is_empty(),
+        source.region_read_count() == 0,
         "recovery leaves record regions cold"
     );
+    // Recovery reads checkpoint metadata (the index catalog); count only reads after it.
+    let recovered = source.reads.lock().unwrap().len() as u64;
     let read = pin(&runtime, &request);
-    let pin_members = source.reads.lock().unwrap().len() as u64;
+    let pin_members = source.reads.lock().unwrap().len() as u64 - recovered;
     let selected = world.entities[0];
     let symbol_at_pin = read.symbols().resolve(text_symbol).is_some();
     let actual = read
@@ -181,7 +183,7 @@ fn fixed_read_work(regions: u32, history: usize, width: usize) -> ReadWork {
         .into_records();
     assert_eq!(relations.len(), 1);
     assert_eq!(relations[0].relation_id, relation);
-    let work = source.reads.lock().unwrap().len() as u64;
+    let work = source.reads.lock().unwrap().len() as u64 - recovered;
     assert!(work > 0, "the fixed read must actually cross cold storage");
     let again = read
         .project_read()
@@ -189,7 +191,7 @@ fn fixed_read_work(regions: u32, history: usize, width: usize) -> ReadWork {
         .unwrap();
     assert_eq!(again, Some(selected));
     assert_eq!(
-        source.reads.lock().unwrap().len() as u64,
+        source.reads.lock().unwrap().len() as u64 - recovered,
         work,
         "accepted region is reused"
     );
