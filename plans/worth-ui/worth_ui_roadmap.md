@@ -60,8 +60,10 @@ The shipped baseline for Worth UI today is:
   the resulting Worth-owned aspect-native host baseline
 - Worth Query's current audience model: UI declarations and application-facing
   requirements cross `worth-query-decl`, host progression crosses
-  `worth-query-host`, and Query replay or reconstruction crosses
-  `worth-query-replay` only from certification-owned lanes
+  `worth-query-host`, and certification-cost evidence crosses
+  `worth-query-replay` only from certification-owned lanes; Query replay or
+  reconstruction has no current route and is a dependency of any work that
+  needs it
 - the milestone ordering needed to avoid drifting into widget-first or
   application-local infrastructure before the platform foundations exist
 
@@ -2596,8 +2598,9 @@ agent-only model do not close the pulse.
 
 A separate certification lane must replay the versioned edit to the same stop
 point without opening authority in the live ordinary runtime. Query-owned
-replay, when required, is consumed only through `worth-query-replay` from that
-certification lane.
+replay, when required, depends on a certification-owned Query replay route that
+does not exist today (`worth-query-replay` carries only cost evidence), consumed
+only from that certification lane.
 
 Executable-world closure attaches the agent tools to the already-running child
 and starts from its externally selected visible point and recorded edit. They
@@ -2632,8 +2635,9 @@ controls to tools attached to the live child.
 - an ordinary agent can identify the first denial point from retained evidence
   without acquiring replay authority
 - a certification harness can replay the last versioned edit to that denial
-  point through cert-owned inputs, including `worth-query-replay` only when
-  Query reconstruction is actually required
+  point through cert-owned inputs; Query reconstruction, when actually
+  required, uses a certification-owned Query replay route (a dependency, not
+  `worth-query-replay`)
 - an agent can compare before/after frames or receipts by aspect scope
 
 ### Milestone 3.22: Worth Inspector Surface
