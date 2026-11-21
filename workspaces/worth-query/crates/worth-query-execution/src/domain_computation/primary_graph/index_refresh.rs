@@ -230,7 +230,6 @@ fn maintenance_denial(
         | Native::PriorEntryMismatch
         | Native::WorkBudgetExceeded
         | Native::ForeignCandidate
-        | Native::CandidateLifetimeExpired { .. }
         | Native::CandidateUnavailable
         | Native::CandidateIndexesAlreadyPrepared
         | Native::GenerationIdentityExhausted => {}

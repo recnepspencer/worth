@@ -18,9 +18,6 @@ pub enum WorthQueryProviderSessionCommitDeferredKind {
     RelationalDeferred(worth_relational::facade::mvcc::RelationalPublicationDeferred),
     RetentionCapacityExhausted,
     PatchPositionReservationContended,
-    CandidateLifetimeExpired {
-        maximum_lifetime_millis: u64,
-    },
     CandidateCapacityExhausted {
         maximum_candidates: usize,
     },

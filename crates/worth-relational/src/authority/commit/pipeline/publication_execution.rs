@@ -301,11 +301,9 @@ impl PreparedCommitPublicationCompletion {
     pub(crate) fn admit_prepared_indexes(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        expires_at: std::time::Instant,
-        maximum_lifetime_millis: u64,
     ) -> Result<(), crate::mvcc::RelationalPublicationOutcome> {
         if let Some(indexes) = &mut self.prepared_indexes {
-            indexes.admit_catalog(execution, expires_at, maximum_lifetime_millis)?;
+            indexes.admit_catalog(execution)?;
         }
         Ok(())
     }

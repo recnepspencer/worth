@@ -48,7 +48,6 @@ fn index_preparation_denial(
         | Index::ColdReconstructionRequired
         | Index::WorkBudgetExceeded
         | Index::ForeignCandidate
-        | Index::CandidateLifetimeExpired { .. }
         | Index::CandidateUnavailable
         | Index::CandidateIndexesAlreadyPrepared
         | Index::GenerationIdentityExhausted => World::OwnerUnavailable,

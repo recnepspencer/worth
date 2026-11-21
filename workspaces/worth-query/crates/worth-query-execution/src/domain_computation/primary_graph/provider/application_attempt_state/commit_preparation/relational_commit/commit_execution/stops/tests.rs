@@ -34,14 +34,6 @@ fn maintenance_lifetime_and_budgets_keep_their_paths() {
         };
         assert_eq!(failure.kind(), expected);
     }
-    let Stop::Deferred(_) = index_preparation_stop(DerivedIndexMaintenanceDenial {
-        kind: Maintenance::CandidateLifetimeExpired {
-            maximum_lifetime_millis: 42,
-        },
-        work: Default::default(),
-    }) else {
-        panic!("expired candidate must defer")
-    };
 }
 
 mod native_preparation;

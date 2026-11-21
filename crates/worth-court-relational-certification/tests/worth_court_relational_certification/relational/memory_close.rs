@@ -11,7 +11,7 @@ use worth_relational::facade::{
         RelationalPublicationCompanionCustody as Companion,
         RelationalPublicationCustodyHolders as Holders,
         RelationalPublicationRegistryCustody as Registry, RelationalRuntimeApi,
-        RelationalRuntimeCloseDenial as Denial, RelationalRuntimeConfig,
+        RelationalRuntimeCloseDenial as Denial,
     },
 };
 use worth_testkit_relational::{
@@ -190,20 +190,17 @@ fn memory_terminal_close_refuses_shared_and_actual_source_affinity_without_losin
 }
 
 #[test]
-fn memory_terminal_close_refuses_actual_expired_candidate_until_owner_discards_it() {
+fn memory_terminal_close_refuses_actual_live_candidate_until_owner_discards_it() {
     let host = serial_request();
     let request = &ExecutionRequest::serial(&host);
-    let mut policy = RelationalRuntimeConfig::default().publication.policy;
-    policy.candidate_max_lifetime_millis = 0;
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(schema())
-        .publication(policy)
         .build()
         .unwrap();
     let mut transaction = begin_main_transaction(&runtime);
     transaction
         .push_batch(
-            batch_create("expired-live-candidate"),
+            batch_create("held-live-candidate"),
             request.allocation_policy(),
         )
         .unwrap();

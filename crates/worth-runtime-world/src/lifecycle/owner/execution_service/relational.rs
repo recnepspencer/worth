@@ -159,7 +159,6 @@ fn deferred_no_effect(deferred: RelationalPublicationDeferred) -> NoEffectCause 
         }
         RelationalPublicationDeferred::RetentionBackpressure => NoEffectCause::CapacityExhausted,
         RelationalPublicationDeferred::PatchPositionReservationContended
-        | RelationalPublicationDeferred::CandidateLifetimeExpired { .. }
         | RelationalPublicationDeferred::CandidateCapacityExhausted { .. }
         | RelationalPublicationDeferred::PublishedSnapshotCapacityExhausted { .. } => {
             NoEffectCause::PreEffectFailure

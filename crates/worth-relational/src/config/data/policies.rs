@@ -198,7 +198,8 @@ pub struct PublicationConfig {
     /// Optional active snapshot population policy, independent of backing allocation.
     pub max_active_snapshot_handles: Option<usize>,
     pub max_transaction_savepoints: usize,
-    /// Optional prepared-candidate population policy; lifetime validity is separate.
+    /// Optional prepared-candidate population policy. A candidate has no
+    /// wall-clock lifetime: its publication is bounded by the publishing
+    /// request's work ceiling and deadline.
     pub max_prepared_candidates: Option<usize>,
-    pub candidate_max_lifetime_millis: u64,
 }

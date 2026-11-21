@@ -428,8 +428,7 @@ These are the complete sets the Runtime World composition owner must match on.
 `OwnerMismatch`, `BranchUnavailable`, `Archived`, `Deleting`.
 
 `RelationalPublicationDeferred`: `PatchPositionReservationContended`,
-`RetentionBackpressure`, `CandidateLifetimeExpired`,
-`CandidateCapacityExhausted`, `PublishedSnapshotCapacityExhausted`.
+`RetentionBackpressure`, `CandidateCapacityExhausted`, `PublishedSnapshotCapacityExhausted`.
 
 `RelationalPublicationFailureKind`: `SnapshotIdentityExhausted`,
 `CandidateIdentityExhausted`,

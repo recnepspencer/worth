@@ -2,11 +2,6 @@ use crate::runtime::RelationalRuntime;
 use crate::transactions::data::{CommitResult, TransactionCommitError};
 
 impl RelationalRuntime {
-    /// Requestless cleanup: expired retained resources must be released even after cancellation.
-    pub fn reap_expired_prepared_candidates(&self) -> usize {
-        self.publication_binding().reap_expired_candidates()
-    }
-
     pub fn discard_prepared_candidate(
         &self,
         candidate: crate::mvcc::PreparedRelationalCommitCandidate,

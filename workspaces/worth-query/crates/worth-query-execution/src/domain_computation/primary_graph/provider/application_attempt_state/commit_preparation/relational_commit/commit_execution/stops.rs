@@ -26,19 +26,6 @@ pub(super) fn index_preparation_stop(
     denial: worth_relational::facade::indexes::DerivedIndexMaintenanceDenial,
 ) -> crate::domain_computation::WorthQueryProviderSessionCommitStop {
     use worth_relational::facade::indexes::DerivedIndexMaintenanceDenialKind as Kind;
-    if let Kind::CandidateLifetimeExpired {
-        maximum_lifetime_millis,
-    } = &denial.kind
-    {
-        return crate::domain_computation::WorthQueryProviderSessionCommitStop::Deferred(
-            crate::domain_computation::WorthQueryProviderSessionCommitDeferred::new(
-                crate::domain_computation::WorthQueryProviderSessionCommitDeferredKind::CandidateLifetimeExpired {
-                    maximum_lifetime_millis: *maximum_lifetime_millis,
-                },
-                "prepared candidate expired before primary index admission",
-            ),
-        );
-    }
     let kind = match denial.kind {
         Kind::Execution(cause) => return relational_execution_stop(cause, None),
         Kind::WorkBudgetExceeded | Kind::ColdReconstructionRequired => {
@@ -55,7 +42,6 @@ pub(super) fn index_preparation_stop(
         | Kind::GenerationKindMismatch(_)
         | Kind::PriorEntryMismatch
         | Kind::ForeignCandidate
-        | Kind::CandidateLifetimeExpired { .. }
         | Kind::CandidateUnavailable
         | Kind::CandidateIndexesAlreadyPrepared => {
             crate::domain_computation::WorthQueryProviderSessionDenialKind::ProviderRejected
@@ -156,11 +142,6 @@ fn publication_deferred(
         | Deferred::CompanionPreflight(_) => Kind::RelationalDeferred(deferred),
         Deferred::PatchPositionReservationContended => Kind::PatchPositionReservationContended,
         Deferred::RetentionBackpressure => Kind::RetentionCapacityExhausted,
-        Deferred::CandidateLifetimeExpired {
-            maximum_lifetime_millis,
-        } => Kind::CandidateLifetimeExpired {
-            maximum_lifetime_millis,
-        },
         Deferred::CandidateCapacityExhausted { maximum_candidates } => {
             Kind::CandidateCapacityExhausted { maximum_candidates }
         }

@@ -151,8 +151,8 @@ The terminal outcomes are intentionally distinct:
 - `Denied` means owner, runtime, branch, or lifecycle admission failed.
 - `Interrupted` means cancellation or timeout won before linearization.
 - `Deferred` means one bounded mechanical condition stopped this attempt:
-  `PatchPositionReservationContended` (memory-only runtimes), `RetentionBackpressure`, or
-  `CandidateLifetimeExpired`. The two capacity variants of
+  `PatchPositionReservationContended` (memory-only runtimes) or
+  `RetentionBackpressure`. The two capacity variants of
   `RelationalPublicationDeferred` are refused earlier, during preparation, and
   never arrive here.
 - `Failed` means an owner invariant or required publication step failed before

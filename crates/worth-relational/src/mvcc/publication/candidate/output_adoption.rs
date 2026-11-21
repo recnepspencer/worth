@@ -85,8 +85,7 @@ impl PreparedRelationalCommitCandidate {
                 let payload = payload.as_ref().ok_or_else(|| {
                     crate::mvcc::origin_denial("executed adoption candidate is unavailable")
                 })?;
-                if self.lifetime_expired()
-                    || !basis.is_current()
+                if !basis.is_current()
                     || basis.descriptor() != &payload.expected_basis
                     || previous.runtime_instance_id != self.runtime_instance_id
                     || !payload.execution.application_unchanged()
