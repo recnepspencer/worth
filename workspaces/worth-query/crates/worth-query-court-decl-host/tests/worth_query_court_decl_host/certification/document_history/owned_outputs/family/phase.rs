@@ -42,6 +42,15 @@ macro_rules! producer_operation {
     (CrossConvergePreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_write CrossConvergePreserve, $entity, $key, $value, $of); };
     (CrossOscillateInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_write CrossOscillateInitial, $entity, $key, $value, $of); };
     (CrossOscillatePreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_write CrossOscillatePreserve, $entity, $key, $value, $of); };
+    (SelfWriteInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@self_write SelfWriteInitial, $entity, $key, $value, $of); };
+    (SelfWritePreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@self_write SelfWritePreserve, $entity, $key, $value, $of); };
+    // The source is the member it writes: each record and field once.
+    (@self_write $operation:ident, $entity:ident, $key:ident, $value:ident, $of:ident) => {
+        worth_query_operation!(pub $operation for Schema, input InputBinding; access {
+            read_entities: [Member, $entity]; read_fields: [MemberKey::at("MemberKey"), MemberValue::at("MemberValue"), $key::at(stringify!($key)), $value::at(stringify!($value))];
+            read_relations: [$of]; writes: [$key::at(stringify!($key)), $value::at(stringify!($value)), MemberValue::at("MemberValue")]; creates: [$entity]; links: [$of];
+        });
+    };
     (@member_write $operation:ident, $entity:ident, $key:ident, $value:ident, $of:ident) => {
         worth_query_operation!(pub $operation for Schema, input InputBinding; access {
             read_entities: [SourceEntity, $entity, Member]; read_fields: [source_key(), source_value(), $key::at(stringify!($key)), $value::at(stringify!($value)), MemberKey::at("MemberKey"), MemberValue::at("MemberValue")];
@@ -62,6 +71,14 @@ macro_rules! producer_operation {
     };
 }
 macro_rules! producer_decision_dependency {
+    (SelfWriteInitial, $reader:ident, $source:ident, $input:ident) => {{
+        let first = $reader.resolve_entity(FirstKey::at("FirstKey"), "first:a".to_owned())?;
+        $reader.field(&first, FirstValue::at("FirstValue"))?.expect("derived first:a has its value")
+    }};
+    (SelfWritePreserve, $reader:ident, $source:ident, $input:ident) => {{
+        let first = $reader.resolve_entity(FirstKey::at("FirstKey"), "first:a".to_owned())?;
+        $reader.field(&first, FirstValue::at("FirstValue"))?.expect("derived first:a has its value")
+    }};
     (CrossReaderInitial, $reader:ident, $source:ident, $input:ident) => { producer_decision_dependency!(@cross_member $reader, $input) };
     (CrossReaderPreserve, $reader:ident, $source:ident, $input:ident) => { producer_decision_dependency!(@cross_member $reader, $input) };
     (CrossConvergeInitial, $reader:ident, $source:ident, $input:ident) => { producer_decision_dependency!(@cross_supplier $reader, $input) };
@@ -112,6 +129,8 @@ macro_rules! producer_member_target {
         let member = $reader.resolve_entity(MemberKey::at("MemberKey"), "m".to_owned())?;
         Some($reader.mutation_target(&member)?)
     }};
+    (SelfWriteInitial, $reader:ident) => { producer_member_target!(@write $reader) };
+    (SelfWritePreserve, $reader:ident) => { producer_member_target!(@write $reader) };
     (DecisionWriteInitial, $reader:ident) => { producer_member_target!(@write $reader) };
     (DecisionWritePreserve, $reader:ident) => { producer_member_target!(@write $reader) };
     (@write $reader:ident) => {{
@@ -134,6 +153,8 @@ macro_rules! producer_member_effect {
         let member = $writer.projected_entity($decision.member_target.as_ref().expect("completed calibration decision"))?;
         $writer.write_field(&member, CalibrationReady::at("Ready"), 1)?;
     }};
+    (SelfWriteInitial, $writer:ident, $decision:ident, $input:ident) => { producer_member_effect!(@write $writer, $decision, $input) };
+    (SelfWritePreserve, $writer:ident, $decision:ident, $input:ident) => { producer_member_effect!(@write $writer, $decision, $input) };
     (DecisionWriteInitial, $writer:ident, $decision:ident, $input:ident) => { producer_member_effect!(@write $writer, $decision, $input) };
     (DecisionWritePreserve, $writer:ident, $decision:ident, $input:ident) => { producer_member_effect!(@write $writer, $decision, $input) };
     (@write $writer:ident, $decision:ident, $input:ident) => {{

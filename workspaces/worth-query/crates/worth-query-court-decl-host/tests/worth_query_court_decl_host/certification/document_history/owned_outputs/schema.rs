@@ -120,6 +120,7 @@ fn declare(
     let schema = family::convergent::declare(schema);
     let schema = family::parity_input::declare(schema);
     let schema = family::saturated_input::declare(schema);
+    let schema = family::self_write::declare(schema);
     let schema = family::cross_reader::declare(schema);
     let schema = family::cross_converge::declare(schema);
     let schema = family::cross_oscillate::declare(schema);
