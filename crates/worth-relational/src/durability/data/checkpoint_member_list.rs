@@ -1,7 +1,9 @@
 //! The mixed captured member roster shares actual fixed storage and its own bill.
 use super::{RelationalCheckpointMember, RelationalNativeCheckpointCaptureDenial as Denial};
 use std::{alloc::Layout, sync::Arc};
-use worth_execution::{ExecutionArray, ExecutionMemoryReservation};
+use worth_execution::{
+    ExecutionArray, ExecutionMemoryReservation, ExecutionRequest, ExecutionRequestArrayBuilder,
+};
 #[derive(Debug)]
 struct Backing {
     entries: ExecutionArray<RelationalCheckpointMember>,
@@ -15,8 +17,8 @@ impl CapturedCheckpointMembers {
             .as_ref()
             .map_or(&[], |owner| owner.entries.elements())
     }
-    pub(crate) fn capture<'request, 'authority: 'request>(
-        meter: &mut impl crate::durability::capture_meter::CaptureMeter<'request, 'authority>,
+    pub(crate) fn capture(
+        request: &ExecutionRequest<'_, '_>,
         count: usize,
         entries: impl IntoIterator<Item = RelationalCheckpointMember>,
     ) -> Result<Self, Denial> {
@@ -28,9 +30,10 @@ impl CapturedCheckpointMembers {
             .0
             .pad_to_align()
             .size();
-        let memory = meter.reserve(bytes as u64).map_err(Denial::Request)?;
-        let mut building = meter
-            .array(count)
+        let memory = request
+            .reserve_retained_memory(bytes as u64)
+            .map_err(|cause| Denial::Request(cause.into()))?;
+        let mut building = ExecutionRequestArrayBuilder::allocate(*request, count)
             .map_err(crate::durability::checkpoint_history::capture::array_capture_stop)?;
         for entry in entries {
             building

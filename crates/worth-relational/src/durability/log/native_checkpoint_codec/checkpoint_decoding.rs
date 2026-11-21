@@ -60,10 +60,7 @@ fn decode(
         drop(memory);
         return Err(corrupt("canonical inventory shared before original admission").into());
     }
-    crate::durability::checkpoint_history::inventory::validate(
-        &wire.manifest,
-        &mut execution.clone(),
-    )?;
+    crate::durability::checkpoint_history::inventory::validate(&wire.manifest, execution)?;
     let manifest = wire.manifest.seal_ordinary();
     let facts =
         crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| {

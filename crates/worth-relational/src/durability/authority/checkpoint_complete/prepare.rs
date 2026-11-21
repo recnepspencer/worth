@@ -117,7 +117,7 @@ pub(super) fn prepare(
     let through = draft.coverage.up_to_branch_transition;
     let manifest = draft.seal_for_request(execution)?;
     let members = CapturedCheckpointMembers::capture(
-        &mut execution.clone(),
+        execution,
         member_map.len(),
         member_map.values().cloned(),
     )?;
