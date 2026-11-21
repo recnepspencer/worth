@@ -1,5 +1,11 @@
 # Document history over declared owned models
 
+> **Current spec:** Remaining owned-model document history work (recording
+> `WorthQueryEditEnvelope`, owned session handles, closing `#53`/`#54`/`#55`/`#57`,
+> and authored correction / retirement navigation under `#56`) is specified in
+> [tree-based-undo.md](tree-based-undo.md). The log below is retained as
+> historical implementation evidence for the landed `#53`–`#57` foundation.
+
 Governing increment to milestone 9.18.2, public issues #53–#57.
 Ownership ruling: D1113, 2026-11-03. D1159 integration order: #55, #53,
 #57 under D1119, then #56. The implemented #54 checkpoint is retained.
