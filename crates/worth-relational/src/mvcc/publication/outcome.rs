@@ -285,23 +285,6 @@ pub enum RelationalPublicationDeferred {
     /// `release_component_basis` for one that was retained externally, then
     /// prepare and publish again.
     RetentionBackpressure,
-    /// The prepared candidate outlived `PublicationConfig`'s
-    /// `candidate_max_lifetime_millis`, echoed here as
-    /// `maximum_lifetime_millis`.
-    ///
-    /// Expiry is checked before the candidate is consumed and again after the
-    /// wait for branch coordination, so a candidate can expire while queued
-    /// behind another publisher on its own branch. A candidate whose registry
-    /// entry was already reaped reports the same variant.
-    ///
-    /// Either way the candidate is spent, and its candidate slot and retention
-    /// are returned; a candidate that is never consumed discards itself when it
-    /// drops, so no path keeps the slot.
-    ///
-    /// Prepare again. An expired candidate cannot be renewed.
-    CandidateLifetimeExpired {
-        maximum_lifetime_millis: u64,
-    },
     /// The prepared-candidate population is full at `PublicationConfig`'s
     /// `max_prepared_candidates`, echoed here as `maximum_candidates`.
     ///
@@ -310,7 +293,7 @@ pub enum RelationalPublicationDeferred {
     /// prepared: no candidate, no settlement reservation, no movement.
     ///
     /// Free a slot before preparing again by publishing a candidate, by
-    /// `discard_prepared_candidate`, or by `reap_expired_prepared_candidates`.
+    /// `discard_prepared_candidate`, or by dropping it.
     CandidateCapacityExhausted {
         maximum_candidates: usize,
     },

@@ -125,8 +125,6 @@ pub(super) fn commit(
     }
 }
 
-#[cfg(test)]
-mod index_preparation_tests;
 
 // These three governed producer calls stay in this exact registered module.
 mod durable_components;

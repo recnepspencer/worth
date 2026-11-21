@@ -23,8 +23,8 @@ impl PreparedMemoryRelationalCutover<'_, '_, '_> {
 
     /// Narrow this cutover with an additional deadline, checked after owner
     /// waits and before canonical position assignment. This cannot extend the
-    /// original request or candidate lifetime. Actual custody still returns
-    /// outside the callback; expiry performs nothing.
+    /// original request. Actual custody still returns outside the callback;
+    /// an elapsed cutoff performs nothing.
     pub fn perform_before(self, deadline: std::time::Instant) {
         self.inner.perform_before(Some(deadline));
     }
@@ -215,13 +215,6 @@ impl RelationalPublicationPort {
                 RelationalPublicationDenial::StaleConfigurationEpoch,
             ));
         }
-        if candidate.lifetime_expired() {
-            return Err(RelationalPublicationOutcome::deferred(
-                RelationalPublicationDeferred::CandidateLifetimeExpired {
-                    maximum_lifetime_millis: candidate.maximum_lifetime_millis,
-                },
-            ));
-        }
         if let Some(cause) = candidate.omitted_appendix_publication_refusal() {
             return Err(RelationalPublicationOutcome::failed(
                 super::RelationalPublicationFailure::new(
@@ -267,9 +260,7 @@ impl RelationalPublicationPort {
             })
             .transpose()
             .map_err(RelationalPublicationOutcome::denied)?;
-        let parts = candidate
-            .into_publication_parts()
-            .map_err(RelationalPublicationOutcome::deferred)?;
+        let parts = candidate.into_publication_parts();
         let retention_binding =
             parts
                 .publication_cell

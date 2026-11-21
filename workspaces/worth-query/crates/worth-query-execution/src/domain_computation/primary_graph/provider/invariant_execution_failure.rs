@@ -125,7 +125,6 @@ pub fn map_validation_failure(
                     maximum_handles,
                 }
             }
-            Deferred::CandidateLifetimeExpired { .. } => return owner_failure(),
         },
         Error::PublicationFailed { failure, .. } => match failure.kind() {
             Failure::SnapshotIdentityExhausted => {

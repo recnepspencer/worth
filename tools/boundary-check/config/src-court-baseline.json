@@ -655,7 +655,6 @@
 {"source":"crates/worth-relational/src/tests/transactions/core/pending_settlement_recovery.rs","module":"file","roots":["ExecutionRequest","RelationalRuntime"]},
 {"source":"crates/worth-relational/src/tests/transactions/core/pending_settlement_reservation.rs","module":"file","roots":["ExecutionRequest","RelationalRuntime"]},
 {"source":"crates/worth-relational/src/tests/transactions/core/prepared_candidate_change_summary.rs","module":"file","roots":["ExecutionRequest"]},
-{"source":"crates/worth-relational/src/tests/transactions/core/prepared_candidate_change_summary/expired_scope.rs","module":"file","roots":["ExecutionRequest"]},
 {"source":"crates/worth-relational/src/tests/transactions/core/prepared_candidate_fork.rs","module":"file","roots":["ExecutionRequest"]},
 {"source":"crates/worth-relational/src/tests/transactions/core/prepared_candidate_lifecycle.rs","module":"file","roots":["ExecutionRequest","RelationalRuntime"]},
 {"source":"crates/worth-relational/src/tests/transactions/core/prepared_candidates.rs","module":"file","roots":["ExecutionRequest"]},

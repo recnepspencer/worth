@@ -379,6 +379,3 @@ fn summary_budget_and_foreign_owner_deny_without_consuming_candidate() {
         .is_empty());
     runtime.discard_prepared_candidate(candidate).unwrap();
 }
-
-#[path = "prepared_candidate_change_summary/expired_scope.rs"]
-mod expired_scope;

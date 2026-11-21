@@ -46,9 +46,6 @@ pub fn map_bootstrap_commit_denial(
                     maximum_handles: *maximum_handles,
                 }
             }
-            Deferred::CandidateLifetimeExpired { .. } => {
-                WorthQueryPrimaryGraphInstallationDenialKind::RelationalCommitRejected
-            }
         },
         Error::PublicationFailed { failure, .. } => match failure.kind() {
             Failure::SnapshotIdentityExhausted => {

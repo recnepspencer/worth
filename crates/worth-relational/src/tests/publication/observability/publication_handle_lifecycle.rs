@@ -142,7 +142,6 @@ fn publication_handle_retention_is_bounded_by_policy() {
             max_active_snapshot_handles: Some(4_096),
             max_transaction_savepoints: 8,
             max_prepared_candidates: Some(8),
-            candidate_max_lifetime_millis: 30_000,
         })
         .build()
         .expect("valid native runtime configuration");
@@ -204,7 +203,6 @@ fn published_handle_and_admitted_observation_remain_exact_until_release() {
             max_active_snapshot_handles: Some(4_096),
             max_transaction_savepoints: 8,
             max_prepared_candidates: Some(8),
-            candidate_max_lifetime_millis: 30_000,
         })
         .build()
         .expect("valid native runtime configuration");
@@ -248,7 +246,6 @@ fn leased_commit_preparation_preserves_publication_surfaces() {
             max_active_snapshot_handles: Some(4_096),
             max_transaction_savepoints: 8,
             max_prepared_candidates: Some(8),
-            candidate_max_lifetime_millis: 30_000,
         })
         .build()
         .expect("valid native runtime configuration");
@@ -261,7 +258,6 @@ fn leased_commit_preparation_preserves_publication_surfaces() {
             max_active_snapshot_handles: Some(4_096),
             max_transaction_savepoints: 8,
             max_prepared_candidates: Some(8),
-            candidate_max_lifetime_millis: 30_000,
         })
         .build()
         .expect("valid native runtime configuration");

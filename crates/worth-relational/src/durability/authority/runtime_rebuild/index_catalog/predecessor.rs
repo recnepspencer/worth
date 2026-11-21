@@ -46,7 +46,6 @@ pub(in super::super) fn reconstruct_predecessor(
             | DerivedIndexMaintenanceDenialKind::ColdReconstructionRequired
             | DerivedIndexMaintenanceDenialKind::WorkBudgetExceeded
             | DerivedIndexMaintenanceDenialKind::ForeignCandidate
-            | DerivedIndexMaintenanceDenialKind::CandidateLifetimeExpired { .. }
             | DerivedIndexMaintenanceDenialKind::CandidateUnavailable
             | DerivedIndexMaintenanceDenialKind::CandidateIndexesAlreadyPrepared
             | DerivedIndexMaintenanceDenialKind::GenerationIdentityExhausted => {

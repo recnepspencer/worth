@@ -124,7 +124,6 @@ fn exact_commit_snapshot_capacity_defers_movement_until_explicit_release() {
             max_active_snapshot_handles: Some(4_096),
             max_transaction_savepoints: 8,
             max_prepared_candidates: Some(8),
-            candidate_max_lifetime_millis: 30_000,
         })
         .build()
         .expect("valid native runtime configuration");

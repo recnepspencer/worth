@@ -98,54 +98,6 @@ fn cutoff_expiring_in_the_real_transition_queue_assigns_nothing_and_preserves_th
 }
 
 #[test]
-fn a_looser_cutoff_cannot_mask_the_original_candidates_earlier_expiry() {
-    let host = serial_request();
-    let execution = ExecutionRequest::serial(&host);
-    let policy = worth_relational::facade::config::PublicationConfig {
-        coherent_publication_required: true,
-        max_patch_records_per_commit: None,
-        max_published_snapshot_handles: None,
-        max_active_snapshot_handles: None,
-        max_transaction_savepoints: 1,
-        max_prepared_candidates: None,
-        candidate_max_lifetime_millis: 300,
-    };
-    let runtime = worth_relational::facade::runtime::RelationalRuntimeApi::builder()
-        .schema_registry(fixture().build_registry())
-        .publication(policy)
-        .build()
-        .unwrap();
-    let original = create(&execution, &runtime, "control", "allowed");
-    let source = runtime
-        .admit_branch_basis(&runtime.main_branch_identity())
-        .unwrap();
-    let prepared = prepare(&execution, &runtime, &source);
-    let before = runtime.patch_position_reservation_counters().assignments;
-    let scoped = runtime
-        .publication_port()
-        .with_prepared_memory_cutover(&execution, prepared, |cutover| {
-            let additional = Instant::now() + Duration::from_millis(350);
-            std::thread::sleep(Duration::from_millis(400));
-            cutover.perform_before(additional);
-        })
-        .unwrap();
-    assert!(matches!(scoped.into_parts().1, Some(RelationalPublicationOutcome::Deferred(
-        worth_relational::facade::mvcc::RelationalPublicationDeferred::CandidateLifetimeExpired { maximum_lifetime_millis: 300 },
-    ))));
-    assert_eq!(
-        runtime.patch_position_reservation_counters().assignments,
-        before
-    );
-    assert_eq!(
-        runtime
-            .admit_branch_basis(&runtime.main_branch_identity())
-            .unwrap(),
-        source
-    );
-    release_test_commit_snapshot(&runtime, &original);
-}
-
-#[test]
 fn expired_cutover_deadline_assigns_nothing_and_drops_prepared_payload_after_callback() {
     let host = serial_request();
     let execution = ExecutionRequest::serial(&host);

@@ -40,7 +40,6 @@ fn runtime_with_savepoint_limit(maximum_savepoints: usize) -> crate::runtime::Re
             max_active_snapshot_handles: Some(8),
             max_transaction_savepoints: maximum_savepoints,
             max_prepared_candidates: Some(8),
-            candidate_max_lifetime_millis: 30_000,
         })
         .build()
         .expect("valid native runtime configuration")

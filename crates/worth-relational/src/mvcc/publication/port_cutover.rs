@@ -23,20 +23,9 @@ impl PreparedBranchPublicationPreflight {
             ) {
                 return RelationalPublicationOutcome::RequestStopped(stop);
             }
-            if std::time::Instant::now() >= deadline.min(self.expires_at) {
-                return narrowed_deadline_elapsed(
-                    Some(deadline),
-                    self.expires_at,
-                    self.maximum_lifetime_millis,
-                );
+            if std::time::Instant::now() >= deadline {
+                return cutover_deadline_elapsed();
             }
-        }
-        if std::time::Instant::now() >= self.expires_at {
-            return RelationalPublicationOutcome::deferred(
-                RelationalPublicationDeferred::CandidateLifetimeExpired {
-                    maximum_lifetime_millis: self.maximum_lifetime_millis,
-                },
-            );
         }
         match self
             .control
@@ -66,13 +55,6 @@ impl PreparedBranchPublicationPreflight {
                 &self.publication_cell,
                 self.current_read.as_ref(),
             );
-        if std::time::Instant::now() >= self.expires_at {
-            return RelationalPublicationOutcome::deferred(
-                RelationalPublicationDeferred::CandidateLifetimeExpired {
-                    maximum_lifetime_millis: self.maximum_lifetime_millis,
-                },
-            );
-        }
         if let Some(event) = self
             .control
             .observe(crate::mvcc::RelationalInterruptionBoundary::BeforeCriticalSection)
@@ -188,7 +170,7 @@ impl PreparedBranchPublicationPreflight {
             .record_performed_with_cutover(
                 self.publication_cell.clone(),
                 admission,
-                Some(deadline.map_or(self.expires_at, |deadline| deadline.min(self.expires_at))),
+                deadline,
                 medium.as_deref(),
                 execution,
                 |position| {
@@ -223,7 +205,7 @@ impl PreparedBranchPublicationPreflight {
                 return RelationalPublicationOutcome::RequestStopped(stop);
             }
             Err(crate::runtime::CanonicalPublicationRecordError::CutoverDeadlineElapsed) => {
-                return narrowed_deadline_elapsed(deadline, self.expires_at, self.maximum_lifetime_millis);
+                return cutover_deadline_elapsed();
             }
             Err(crate::runtime::CanonicalPublicationRecordError::PositionCapacityExhausted) => {
                 return RelationalPublicationOutcome::failed(RelationalPublicationFailure::new(
@@ -291,20 +273,8 @@ impl PreparedBranchPublicationPreflight {
     }
 }
 
-fn narrowed_deadline_elapsed(
-    additional: Option<std::time::Instant>,
-    candidate_expiry: std::time::Instant,
-    maximum_lifetime_millis: u64,
-) -> RelationalPublicationOutcome {
-    if additional.is_some_and(|deadline| deadline <= candidate_expiry) {
-        RelationalPublicationOutcome::denied(RelationalPublicationDenial::CutoverDeadlineElapsed)
-    } else {
-        RelationalPublicationOutcome::deferred(
-            RelationalPublicationDeferred::CandidateLifetimeExpired {
-                maximum_lifetime_millis,
-            },
-        )
-    }
+fn cutover_deadline_elapsed() -> RelationalPublicationOutcome {
+    RelationalPublicationOutcome::denied(RelationalPublicationDenial::CutoverDeadlineElapsed)
 }
 
 /// The answer for a commit the medium did not make durable. Nothing was

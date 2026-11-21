@@ -68,7 +68,6 @@ pub(super) fn publication(cause: NoEffectCause) -> BankHttpDenial {
             | RelationalPublicationDeferred::CompanionRebindRequired
             | RelationalPublicationDeferred::PatchPositionReservationContended
             | RelationalPublicationDeferred::RetentionBackpressure
-            | RelationalPublicationDeferred::CandidateLifetimeExpired { .. }
             | RelationalPublicationDeferred::CandidateCapacityExhausted { .. }
             | RelationalPublicationDeferred::PublishedSnapshotCapacityExhausted { .. } => {
                 unavailable()
