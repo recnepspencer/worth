@@ -275,8 +275,7 @@ where
     {
         return Ok(CoupledSourceRead::Prepared(index));
     }
-    // A reopened route that already has a part reads the owner its part
-    // claimed: the successor round continues that chain (§1.5).
+    // A reopened route with a part reads the owner its part claimed (§1.5).
     let owner = if purpose == CoupledSourceReadPurpose::Supersede {
         assembly.read_successor_parent_owner(execution, demand.family, root, &partition)?
     } else {

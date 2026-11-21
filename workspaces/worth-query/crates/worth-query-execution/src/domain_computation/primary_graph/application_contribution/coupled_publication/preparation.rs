@@ -326,47 +326,14 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             stage: Some(CoupledWriterStage::Inspected(writer)),
             meaning: meaning.clone(),
         };
-        let index = match chain {
-            Some(chain) => {
-                let superseded = self.writers.borrow()[chain.index].produces;
-                self.retire_part(superseded);
-                self.replace_writer(execution, chain.index, next);
-                let token = candidate.next_producer_round(execution, chain.index)?;
-                candidate.append_successor_publication(
-                    execution,
-                    token,
-                    publication,
-                    &content,
-                    vec![batch],
-                )?;
-                chain.index
-            }
-            None => {
-                self.writers.borrow_mut().push(next);
-                match self
-                    .application
-                    .runtime
-                    .primary_provider
-                    .application_attempt_operation_control
-                    .take_coupled_participant_corruption(self.writers.borrow().len())
-                {
-                    fault @ (1..=9) => candidate.append_corrupt_participant_for_test(
-                        execution,
-                        publication,
-                        &content,
-                        vec![batch],
-                        fault,
-                    )?,
-                    _ => candidate.append_publication(
-                        execution,
-                        publication,
-                        &content,
-                        vec![batch],
-                    )?,
-                }
-                self.writers.borrow().len() - 1
-            }
-        };
+        let chain = chain.map(|chain| chain.index);
+        let index = self.append_round(
+            execution,
+            candidate,
+            chain,
+            next,
+            (publication, content, batch),
+        )?;
         let owed = self.writers.borrow()[index].owed.position();
         self.mark_append(
             execution,
