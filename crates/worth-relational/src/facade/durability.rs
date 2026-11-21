@@ -38,7 +38,8 @@ pub use crate::durability::data::{
     RecoveryAuthorityContinuityMismatch, RecoveryAuthorityParity, RecoveryCoverage,
     RecoveryFailureClass, RecoveryOutcome, RecoveryPlan, RecoveryVerificationMode,
     RecoveryVerificationOutcome, RecoveryVerificationPlan, RelationIntegrityContractFamily,
-    RelationalCheckpointArtifactPolicy, RelationalCheckpointMember, RelationalNativeCheckpoint,
+    RelationalCheckpointArtifactPolicy, RelationalCheckpointComponentRoster,
+    RelationalCheckpointMember, RelationalNativeCheckpoint,
     RelationalNativeCheckpointCaptureDenial, RelationalRecoveryStop,
 };
 pub use crate::durability::medium::RelationalHomeProgramWriteDenial;

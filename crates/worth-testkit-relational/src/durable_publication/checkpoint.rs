@@ -23,6 +23,9 @@ pub struct Original {
     pub before: Recorded,
     pub after: Recorded,
     pub association: Association,
+    /// The unrelated later commit the capture covers but no component names.
+    pub unrelated: worth_relational::facade::publication::PatchStreamPosition,
+    pub unrelated_id: worth_relational::facade::history::CommitId,
 }
 pub fn original(execution: &ExecutionRequest<'_, '_>, empty: bool) -> Original {
     original_with_retained_successor(execution, empty, true)
@@ -56,6 +59,9 @@ pub fn original_with_retained_successor(
     let after_lease = retain_after.then(|| source.retain_component_basis(&after_basis).unwrap());
     drop(after_basis);
     create_entity(execution, &source, "unrelated-body");
+    let unrelated_artifact = medium.offered().pop().unwrap();
+    let unrelated = unrelated_artifact.position();
+    let unrelated_id = unrelated_artifact.commit_id();
     create_entity(execution, &source, "checkpoint-current-head");
     let checkpoint = capture(execution, &source);
     // The original unique leases may disappear after capture without weakening
@@ -71,5 +77,7 @@ pub fn original_with_retained_successor(
         before,
         after,
         association,
+        unrelated,
+        unrelated_id,
     }
 }

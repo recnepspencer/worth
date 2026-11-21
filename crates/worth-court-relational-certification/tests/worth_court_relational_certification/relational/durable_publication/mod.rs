@@ -9,6 +9,7 @@ mod checkpoint_capture_custody;
 mod native_checkpoint_capture_owners;
 mod recorded_basis;
 mod recorded_component_checkpoint;
+mod recorded_component_custody;
 mod recorded_component_property;
 mod recorded_component_recovery;
 mod recorded_component_validation;

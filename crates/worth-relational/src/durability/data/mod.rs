@@ -59,7 +59,9 @@ pub(crate) use checkpoint_images::{
 pub(crate) use checkpoint_manifest::*;
 pub use checkpoint_member::{RelationalCheckpointArtifactPolicy, RelationalCheckpointMember};
 pub use checkpoint_restore_work::CheckpointRestoreWork;
-pub use native_checkpoint::{NativeCheckpointSectionBytes, RelationalNativeCheckpoint};
+pub use native_checkpoint::{
+    NativeCheckpointSectionBytes, RelationalCheckpointComponentRoster, RelationalNativeCheckpoint,
+};
 pub use native_checkpoint_capture_denial::RelationalNativeCheckpointCaptureDenial;
 pub(crate) use recovery_branch_transitions::RecoveryBranchTransitions;
 pub use recovery_errors::{

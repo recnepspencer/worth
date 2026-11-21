@@ -2,6 +2,8 @@ use std::sync::Arc;
 use worth_execution::ExecutionImmutableBytes;
 
 mod component_custody;
+mod component_roster;
+pub use component_roster::RelationalCheckpointComponentRoster;
 mod publication_binding;
 mod region_publications;
 use region_publications::CapturedRegionPublications;
