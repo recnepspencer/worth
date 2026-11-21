@@ -1,5 +1,6 @@
-//! A cross-write reader (PR C C3b): its output is its own member `x:<key>`.
-use super::super::schema::{
+//! A cross-write writer (PR C C3b) that never converges: it reads
+//! `cross:<key>` and writes the other reader's member as value + 1.
+use super::super::super::schema::{
     Model as SourceEntity, ModelKey as SourceKey, ModelValue as SourceValue,
 };
 use super::*;
@@ -10,9 +11,9 @@ fn source_key() -> SourceKey {
 fn source_value() -> SourceValue {
     SourceValue::at("ModelValue")
 }
-const PROFILE: &str = "cross-reader";
+const PROFILE: &str = "cross-oscillate";
 pub fn output_key(row: &query::Row) -> String {
-    format!("cross:{}", row.key)
+    format!("oscillate:{}", row.key)
 }
 pub fn derived(_: u64) -> u64 {
     0
@@ -43,12 +44,12 @@ phase!(
     SourceScopeCascade,
     output,
     producer_model,
-    CrossReaderInitial,
+    CrossOscillateInitial,
     false,
     Initial,
     WorthQueryCreateOutput,
     create_output,
-    "owned-outputs.cross-reader.initial",
+    "owned-outputs.cross-oscillate.initial",
     FirstOutput,
     FirstFacts,
     FirstKey,
@@ -60,12 +61,12 @@ phase!(
     SourceScopeCascade,
     output,
     producer_model,
-    CrossReaderPreserve,
+    CrossOscillatePreserve,
     true,
     Preserve,
     WorthQueryPreserveOutput,
     preserve_output,
-    "owned-outputs.cross-reader.preserve",
+    "owned-outputs.cross-oscillate.preserve",
     FirstOutput,
     FirstFacts,
     FirstKey,
@@ -102,16 +103,16 @@ pub struct InputPort;
 pub struct OutputPort;
 impl ApplicationFeature<Schema> for Feature {
     type Inputs = ApplicationFeatureInputList<InputPort, ApplicationFeatureInputLeaf>;
-    const IDENTITY: &'static str = "owned-outputs.cross-reader.feature";
+    const IDENTITY: &'static str = "owned-outputs.cross-oscillate.feature";
 }
 impl ApplicationInputPort<Schema, Feature> for InputPort {
     type Value = query::RowBinding;
-    const IDENTITY: &'static str = "cross-reader-source";
+    const IDENTITY: &'static str = "cross-oscillate-source";
     const REQUIRED: bool = false;
 }
 impl ApplicationOutputPort<Schema, Feature> for OutputPort {
     type Value = query::RowBinding;
-    const IDENTITY: &'static str = "cross-reader-result";
+    const IDENTITY: &'static str = "cross-oscillate-result";
 }
 pub fn feature() -> ApplicationFeatureSpec {
     ApplicationFeatureSpec::root::<Schema, Feature>()

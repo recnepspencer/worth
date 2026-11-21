@@ -27,18 +27,7 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
         contracts: &mut WorthQueryApplicationContributionContracts<Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
         synchronous_edit::reconciliation::contracts(contracts)?;
-        family::decision_write::contracts(contracts)?;
-        family::convergent::contracts(contracts)?;
-        family::decision_input::contracts(contracts)?;
-        family::parity_input::contracts(contracts)?;
-        family::saturated_input::contracts(contracts)?;
-        family::self_write::contracts(contracts)?;
-        family::cross_reader::contracts(contracts)?;
-        family::cross_converge::contracts(contracts)?;
-        family::cross_oscillate::contracts(contracts)?;
-        family::ordinary_input::contracts(contracts)?;
-        family::diamond::contracts(contracts)?;
-        family::predecessor_family::contracts(contracts)?;
+        family::registry::contracts(contracts)?;
         from_first::contracts(contracts)?;
         restricted_from_first::contracts(contracts)?;
         first::contracts(contracts)?;
@@ -84,18 +73,7 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
         setup.handler::<query::identity::expectation::Binding, _>(
             query::identity::expectation::Handler,
         )?;
-        family::decision_write::install(setup)?;
-        family::convergent::install(setup)?;
-        family::decision_input::install(setup)?;
-        family::parity_input::install(setup)?;
-        family::saturated_input::install(setup)?;
-        family::self_write::install(setup)?;
-        family::cross_reader::install(setup)?;
-        family::cross_converge::install(setup)?;
-        family::cross_oscillate::install(setup)?;
-        family::ordinary_input::install(setup)?;
-        family::diamond::install(setup)?;
-        family::predecessor_family::install(setup)?;
+        family::registry::install(setup)?;
         from_first::install(setup)?;
         restricted_from_first::install(setup)?;
         first::install(setup)?;

@@ -392,8 +392,6 @@ pub mod ordinary_input;
 
 pub mod convergent;
 pub mod parity_input;
-pub mod saturated_input;
-pub mod self_write;
-pub mod cross_converge;
-pub mod cross_oscillate;
-pub mod cross_reader;
+pub mod c3b;
+pub mod registry;
+pub use c3b::{cross_converge, cross_oscillate, cross_reader, saturated_input, self_write};

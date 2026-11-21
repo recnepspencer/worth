@@ -1,26 +1,27 @@
-//! A cross-write writer (PR C C3b) that converges: it reads `cross:<key>` and
-//! writes the other reader's member as min(value + 1, 3).
-use super::super::schema::{
-    Model as SourceEntity, ModelKey as SourceKey, ModelValue as SourceValue,
+//! A producer whose source is member `m` (read through the public member
+//! source query) and which writes `m` itself: m = source + 1. Its decision
+//! also reads `first:a` (PR C C3b entity PriorEffectRead fixture).
+use super::super::super::schema::{
+    Member as SourceEntity, MemberKey as SourceKey, MemberValue as SourceValue,
 };
 use super::*;
 type Scope = ApplicationMutationFieldScope<SourceKey>;
 fn source_key() -> SourceKey {
-    SourceKey::at("ModelKey")
+    SourceKey::at("MemberKey")
 }
 fn source_value() -> SourceValue {
-    SourceValue::at("ModelValue")
+    SourceValue::at("MemberValue")
 }
-const PROFILE: &str = "cross-converge";
+const PROFILE: &str = "self-write";
 pub fn output_key(row: &query::Row) -> String {
-    format!("converge:{}", row.key)
+    format!("self:{}", row.key)
 }
-pub fn derived(_: u64) -> u64 {
-    0
+pub fn derived(value: u64) -> u64 {
+    value
 }
 pub struct Family;
 impl WorthQueryProducerOutputFamily<Schema> for Family {
-    type Source = query::producer_model::Binding;
+    type Source = query::member_public::Binding;
     type Entity = FirstOutput;
     const IDENTITY: &'static str = PROFILE;
     const SUPPORTED: &'static [WorthQueryProducerApplicability] = &[
@@ -35,21 +36,21 @@ impl WorthQueryProducerOutputFamily<Schema> for Family {
 pub struct Demand(pub String);
 impl WorthQueryApplicationOutputDemand<Schema> for Demand {
     type OutputFamily = Family;
-    fn source_intent(&self) -> query::producer_model::Read {
-        query::producer_model::Read::from(self.0.clone())
+    fn source_intent(&self) -> query::member_public::Read {
+        query::member_public::Read::from(self.0.clone())
     }
 }
 phase!(
     initial,
     SourceScopeCascade,
-    output,
-    producer_model,
-    CrossConvergeInitial,
+    none,
+    member_public,
+    SelfWriteInitial,
     false,
     Initial,
     WorthQueryCreateOutput,
     create_output,
-    "owned-outputs.cross-converge.initial",
+    "owned-outputs.self-write.initial",
     FirstOutput,
     FirstFacts,
     FirstKey,
@@ -59,14 +60,14 @@ phase!(
 phase!(
     preserve,
     SourceScopeCascade,
-    output,
-    producer_model,
-    CrossConvergePreserve,
+    none,
+    member_public,
+    SelfWritePreserve,
     true,
     Preserve,
     WorthQueryPreserveOutput,
     preserve_output,
-    "owned-outputs.cross-converge.preserve",
+    "owned-outputs.self-write.preserve",
     FirstOutput,
     FirstFacts,
     FirstKey,
@@ -103,16 +104,16 @@ pub struct InputPort;
 pub struct OutputPort;
 impl ApplicationFeature<Schema> for Feature {
     type Inputs = ApplicationFeatureInputList<InputPort, ApplicationFeatureInputLeaf>;
-    const IDENTITY: &'static str = "owned-outputs.cross-converge.feature";
+    const IDENTITY: &'static str = "owned-outputs.self-write.feature";
 }
 impl ApplicationInputPort<Schema, Feature> for InputPort {
     type Value = query::RowBinding;
-    const IDENTITY: &'static str = "cross-converge-source";
+    const IDENTITY: &'static str = "self-write-source";
     const REQUIRED: bool = false;
 }
 impl ApplicationOutputPort<Schema, Feature> for OutputPort {
     type Value = query::RowBinding;
-    const IDENTITY: &'static str = "cross-converge-result";
+    const IDENTITY: &'static str = "self-write-result";
 }
 pub fn feature() -> ApplicationFeatureSpec {
     ApplicationFeatureSpec::root::<Schema, Feature>()

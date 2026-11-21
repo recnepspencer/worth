@@ -1,7 +1,7 @@
 //! A producer of its source value plus an authored member it reads, capped at
 //! 5: a member change above the cap re-derives an identical output (PR C
 //! C3b R3 settlement fixture).
-use super::super::schema::{
+use super::super::super::schema::{
     Model as SourceEntity, ModelKey as SourceKey, ModelValue as SourceValue,
 };
 use super::*;

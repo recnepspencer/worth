@@ -1,6 +1,6 @@
-//! A cross-write writer (PR C C3b) that never converges: it reads
-//! `cross:<key>` and writes the other reader's member as value + 1.
-use super::super::schema::{
+//! A cross-write writer (PR C C3b) that converges: it reads `cross:<key>` and
+//! writes the other reader's member as min(value + 1, 3).
+use super::super::super::schema::{
     Model as SourceEntity, ModelKey as SourceKey, ModelValue as SourceValue,
 };
 use super::*;
@@ -11,9 +11,9 @@ fn source_key() -> SourceKey {
 fn source_value() -> SourceValue {
     SourceValue::at("ModelValue")
 }
-const PROFILE: &str = "cross-oscillate";
+const PROFILE: &str = "cross-converge";
 pub fn output_key(row: &query::Row) -> String {
-    format!("oscillate:{}", row.key)
+    format!("converge:{}", row.key)
 }
 pub fn derived(_: u64) -> u64 {
     0
@@ -44,12 +44,12 @@ phase!(
     SourceScopeCascade,
     output,
     producer_model,
-    CrossOscillateInitial,
+    CrossConvergeInitial,
     false,
     Initial,
     WorthQueryCreateOutput,
     create_output,
-    "owned-outputs.cross-oscillate.initial",
+    "owned-outputs.cross-converge.initial",
     FirstOutput,
     FirstFacts,
     FirstKey,
@@ -61,12 +61,12 @@ phase!(
     SourceScopeCascade,
     output,
     producer_model,
-    CrossOscillatePreserve,
+    CrossConvergePreserve,
     true,
     Preserve,
     WorthQueryPreserveOutput,
     preserve_output,
-    "owned-outputs.cross-oscillate.preserve",
+    "owned-outputs.cross-converge.preserve",
     FirstOutput,
     FirstFacts,
     FirstKey,
@@ -103,16 +103,16 @@ pub struct InputPort;
 pub struct OutputPort;
 impl ApplicationFeature<Schema> for Feature {
     type Inputs = ApplicationFeatureInputList<InputPort, ApplicationFeatureInputLeaf>;
-    const IDENTITY: &'static str = "owned-outputs.cross-oscillate.feature";
+    const IDENTITY: &'static str = "owned-outputs.cross-converge.feature";
 }
 impl ApplicationInputPort<Schema, Feature> for InputPort {
     type Value = query::RowBinding;
-    const IDENTITY: &'static str = "cross-oscillate-source";
+    const IDENTITY: &'static str = "cross-converge-source";
     const REQUIRED: bool = false;
 }
 impl ApplicationOutputPort<Schema, Feature> for OutputPort {
     type Value = query::RowBinding;
-    const IDENTITY: &'static str = "cross-oscillate-result";
+    const IDENTITY: &'static str = "cross-converge-result";
 }
 pub fn feature() -> ApplicationFeatureSpec {
     ApplicationFeatureSpec::root::<Schema, Feature>()
