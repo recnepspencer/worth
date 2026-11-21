@@ -5,6 +5,9 @@ use worth_query_declaration::facade::{
     application_program::ApplicationWorkflowSpec,
     application_schema::ApplicationOperationMarkerIdentity,
 };
+use worth_query_execution_attempt::facade::ports::{
+    CompleteReadSetInternalPort as _, EffectProgramInternalPort as _,
+};
 use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryInstalledApplicationWorkflowSpec,
 };
@@ -113,7 +116,7 @@ where
             .map_err(WorkflowProposalPreparationDenial::Attempt)?;
         if selected_occurrence
             != crate::basis::WorthQueryProductBranchReadIdentity::from_observation(
-                read_set.lease.product().observation(),
+                read_set.lease().product().observation(),
             )
         {
             return Err(WorkflowProposalPreparationDenial::Binding(

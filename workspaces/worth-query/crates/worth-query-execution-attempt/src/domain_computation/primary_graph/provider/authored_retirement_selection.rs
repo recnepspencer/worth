@@ -2,6 +2,9 @@
 use super::WorthQueryPrimaryGraphApplicationAttempt;
 use crate::domain_computation::application_aftermath::WorthQueryAftermathCausalRole;
 use crate::domain_computation::primary_graph::WorthQueryApplicationOutputPosture as Posture;
+use worth_query_execution_lineage::facade::ports::{
+    CommitAuthorityBindingInternalPort as _, RetainedGovernedInputInternalPort as _,
+};
 use worth_relational::facade::{mvcc::CompanionPreflightStop, transactions::EntityReference};
 
 /// An installed live-owner inverse changes members while its authored scope stays live.

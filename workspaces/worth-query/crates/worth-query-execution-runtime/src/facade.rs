@@ -8,7 +8,11 @@ pub mod ports {
     pub use crate::commit_touches::{
         CommitTouchEntities, CommitTouchInterest, TouchedCommit, TouchedCommits,
     };
-    pub use crate::owner_cleanup_port::ProductBranchOwnerCleanupPort;
+    pub use crate::domain_computation::execution_runtime::product_world::owner_cleanup::continued_original::{
+        continue_original, continue_original_with_cleanup, release_original,
+        ContinuedOriginalOutcome,
+    };
+    pub use crate::managed_run_custody_port::ExecutionRuntimeManagedRunCustodyPort;
     pub use crate::ports::*;
 }
 

@@ -3,6 +3,9 @@ use super::*;
 use crate::domain_computation::primary_graph::{
     WorthQueryCompleteApplicationReadSet, WorthQueryProjectedApplicationMutation,
 };
+use worth_query_execution_attempt::facade::ports::{
+    CompleteReadSetInternalPort as _, EffectProgramInternalPort as _,
+};
 
 impl<S: ApplicationSchema> WorthQuerySelectedProductOperation<'_, S> {
     pub fn prepare_transition_observation<O, I, Scope, Spec>(
@@ -70,7 +73,7 @@ impl<S: ApplicationSchema> WorthQuerySelectedProductOperation<'_, S> {
             .map_err(WorkflowTransitionPreparationDenial::Attempt)?;
         if selected_occurrence
             != crate::basis::WorthQueryProductBranchReadIdentity::from_observation(
-                read_set.lease.product().observation(),
+                read_set.lease().product().observation(),
             )
         {
             return Err(WorkflowTransitionPreparationDenial::Binding(

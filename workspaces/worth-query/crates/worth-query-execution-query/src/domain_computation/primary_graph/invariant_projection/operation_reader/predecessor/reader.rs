@@ -28,10 +28,11 @@ impl<S: ApplicationSchema, O> BeforeDecisionReader<'_, '_, '_, S, O> {
         entity: ApplicationEntityRef<S, E>,
         current: &WorthQueryInvariantEntityIdentity<S, E>,
     ) -> Result<BeforeEntity<S, E>, WorthQueryCurrentOutputDenial> {
+        use worth_query_execution_lineage::facade::ports::InvariantEntityIdentityInternalPort as _;
         let _ = entity;
         let execution = *self.reader.reader.execution;
         self.reader
-            .live_current_identity(&execution, E::IDENTIFIER, current.entity_id)
+            .live_current_identity(&execution, E::IDENTIFIER, current.entity_id())
             .map(|identity| BeforeEntity { identity })
     }
     pub fn field<E, A, F, V>(

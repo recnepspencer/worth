@@ -3,6 +3,9 @@ use crate::domain_computation::primary_graph::application_attempt::{
     approved_outcome, validate_elevation_approval_program,
 };
 use crate::domain_computation::primary_graph::WorthQueryElevationApprovalOutcome;
+use worth_query_execution_attempt::facade::ports::{
+    CompleteReadSetInternalPort as _, EffectProgramInternalPort as _,
+};
 impl<Schema: ApplicationSchema, Operation, Input, Scope>
     CurrentCommitProgram<
         '_,
@@ -29,15 +32,19 @@ impl<Schema: ApplicationSchema, Operation, Input, Scope>
         } = self;
         let mut program = program.into_inner();
         if let Some(denial) = direct_denial {
-            let Some(binding) = program.read_set.admission.take_elevation_approval_binding() else {
+            let Some(binding) = program
+                .read_set_mut()
+                .admission_mut()
+                .take_elevation_approval_binding()
+            else {
                 return WorthQueryElevationApprovalOutcome::Indeterminate;
             };
             return WorthQueryElevationApprovalOutcome::Denied(denial, binding.into_requested());
         }
         if validate_elevation_approval_program(&program).is_err() {
             let binding = program
-                .read_set
-                .admission
+                .read_set_mut()
+                .admission_mut()
                 .take_elevation_approval_binding()
                 .expect("typed approval programs retain their lifecycle binding");
             return WorthQueryElevationApprovalOutcome::Denied(
@@ -46,11 +53,15 @@ impl<Schema: ApplicationSchema, Operation, Input, Scope>
             );
         }
         let currentness = program
-            .read_set
-            .admission
+            .read_set()
+            .admission()
             .elevation_approval_binding()
             .map(WorthQueryElevationCommitCurrentness::approval);
-        let Some(binding) = program.read_set.admission.take_elevation_approval_binding() else {
+        let Some(binding) = program
+            .read_set_mut()
+            .admission_mut()
+            .take_elevation_approval_binding()
+        else {
             return WorthQueryElevationApprovalOutcome::Indeterminate;
         };
         approved_outcome(

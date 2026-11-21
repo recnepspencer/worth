@@ -1,71 +1,42 @@
-use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
-use worth_query_execution_attempt::facade::domain_computation::primary_graph::application_attempt::read_set::source_facts::SourceFacts;
 use super::*;
+use worth_query_execution_attempt::facade::ports::{
+    AdmittedOperationExecutionPort as _, ApplicationReadAttemptAdmissionPort as _,
+    WorthQueryReadAttemptRuntimeContext,
+};
+
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
     Schema: ApplicationSchema,
 {
+    pub(super) fn read_attempt_runtime_context(&self) -> WorthQueryReadAttemptRuntimeContext<'_> {
+        let primary_graph = self.runtime.primary_graph().map(|graph| {
+            (
+                Arc::clone(&graph.layout),
+                graph.retain_entity_resolution_context(),
+            )
+        });
+        WorthQueryReadAttemptRuntimeContext {
+            world_owner: self.runtime.product_runtime.owner.owner_identity(),
+            runtime_authority: self.runtime.authority_identity(),
+            binding_identity: self.installed_schema.binding_identity(),
+            installed_operations: &self.runtime.installed_operations,
+            primary_graph,
+            value_decode: super::super::super::value_decode::ValueDecodeState::new(
+                self.installed_schema.value_bindings().clone(),
+            ),
+        }
+    }
+
     pub fn begin_application_read_attempt<'request, 'authority, Operation, Input, Scope>(
         &self,
         execution: &worth_execution::ExecutionRequest<'request, 'authority>,
-        mut admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
+        admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
     ) -> Result<
         WorthQueryApplicationReadAttempt<'request, 'authority, Schema, Operation, Input, Scope>,
         WorthQueryApplicationAttemptDenial,
     > {
-        admission
-            .refuse_stale_home_authority(self.runtime.product_runtime.owner.owner_identity())
-            .map_err(WorthQueryApplicationAttemptDenial::request_authority_lost)?;
-        if !admission.belongs_to(
-            self.runtime.authority_identity(),
-            &self.installed_schema.binding_identity(),
-        ) {
-            return Err(denial(
-                WorthQueryApplicationAttemptDenialKind::ForeignApplication,
-                admission.operation(),
-            ));
-        }
-        admission
-            .validate_installed_operation(&self.runtime.installed_operations)
-            .and_then(|()| admission.validate_current_authority())
-            .map_err(WorthQueryApplicationAttemptDenial::request_authority_lost)?;
-        let graph = self.runtime.primary_graph().ok_or_else(|| {
-            denial(
-                WorthQueryApplicationAttemptDenialKind::ForeignApplication,
-                admission.operation(),
-            )
-        })?;
-        let read_scope = WorthQueryApplicationReadScope::root_only(admission.scope_entity_id());
-        use crate::domain_computation::provider_session::ManagedGraphWorkSessionPrimaryExt;
-        let lease = admission
-            .graph_work_mut()
-            .take_mutation_lease_typed()
-            .ok_or_else(|| {
-                denial(
-                    WorthQueryApplicationAttemptDenialKind::CurrentAuthorityDenied,
-                    admission.operation(),
-                )
-            })?;
-        let source_facts =
-            SourceFacts::Admitted(validate_source_facts(execution, &mut admission, &lease)?);
-        use worth_query_execution_attempt::facade::ports::{
-            ApplicationReadAttemptAdmissionPort as _, WorthQueryApplicationReadAttemptInit,
-        };
-        WorthQueryApplicationReadAttempt::admit_read_attempt(WorthQueryApplicationReadAttemptInit {
-            execution: *execution,
-            value_decode: super::super::super::value_decode::ValueDecodeState::new(self.installed_schema.value_bindings().clone()),
-            admission,
-            lease,
-            layout: Arc::clone(&graph.layout),
-            entity_resolution: graph.retain_entity_resolution_context(),
-            read_scope,
-            expected_facts: None,
-            computation_reads: (crate::domain_computation::primary_graph::invariant_projection::ObservedComputationInputs::None, crate::domain_computation::primary_graph::application_contribution::CompletedComputationRetention::Absent(
-                crate::domain_computation::primary_graph::application_contribution::PriorAbsence::NotProduced)),
-            source_facts,
-            consumed_outputs: Vec::new(),
-            _phase: PhantomData,
-        })
+        let context = self.read_attempt_runtime_context();
+        WorthQueryApplicationReadAttempt::admit_ordinary_read_attempt(execution, context, admission)
     }
 
     /// Consumes a projection lease typed for this exact admitted operation.
@@ -92,7 +63,14 @@ where
     > {
         let phase_request = match phase.execution_request_for(&self.runtime.product_runtime) {
             Ok(request) => request,
-            Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::ForeignPhase, "application-read-phase")),
+            Err(_) => {
+                return Err(
+                    crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::new(
+                        crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::ForeignPhase,
+                        "application-read-phase",
+                    ),
+                )
+            }
         };
         let execution = &phase_request;
         self.begin_projected_application_read_attempt_with_request(
@@ -127,79 +105,13 @@ where
         >,
         WorthQueryApplicationAttemptDenial,
     > {
-        admission
-            .refuse_stale_home_authority(self.runtime.product_runtime.owner.owner_identity())
-            .map_err(WorthQueryApplicationAttemptDenial::request_authority_lost)?;
-        if !admission.belongs_to(
-            self.runtime.authority_identity(),
-            &self.installed_schema.binding_identity(),
-        ) {
-            return Err(denial(
-                WorthQueryApplicationAttemptDenialKind::ForeignApplication,
-                admission.operation(),
-            ));
-        }
-        admission
-            .validate_installed_operation(&self.runtime.installed_operations)
-            .map_err(WorthQueryApplicationAttemptDenial::request_authority_lost)?;
-        if !projection.belongs_to(
-            self.runtime.authority_identity(),
-            &self.installed_schema.binding_identity(),
-            admission.admission_identity(),
-        ) {
-            return Err(denial(
-                WorthQueryApplicationAttemptDenialKind::ProjectionAdmissionMismatch,
-                admission.operation(),
-            ));
-        }
-        admission
-            .validate_current_authority()
-            .map_err(WorthQueryApplicationAttemptDenial::request_authority_lost)?;
-        let graph = self.runtime.primary_graph().ok_or_else(|| {
-            denial(
-                WorthQueryApplicationAttemptDenialKind::ForeignApplication,
-                admission.operation(),
-            )
-        })?;
-        let root = admission.scope_entity_id();
-        let (lease, projected_scope, decision_reads, dependent_source_facts, consumed_outputs) =
-            projection.into_lease_and_realized_scope();
-        // A read whose failure the decision swallowed left an outcome its fact
-        // does not hold, so no fact can stand for it.
-        let (expected_facts, computation_reads) = decision_reads
-            .into_expected(execution)
-            .map_err(|failed| failed.into_attempt_denial(admission.operation()))?;
-        let mut admission = admission;
-        let admitted_source_facts = validate_source_facts(execution, &mut admission, &lease)?;
-        let source_facts = merge_source_facts(
-            admitted_source_facts,
-            dependent_source_facts,
-            admission.operation(),
-            super::super::retained_decision_facts::StorageControl::new(
-                allocation_policy,
-                Some(admission.publication_request()),
-            )
-            .with_execution(*execution),
-        )?;
-        let layout = Arc::clone(&lease.layout);
-        use worth_query_execution_attempt::facade::ports::{
-            ApplicationReadAttemptAdmissionPort as _, WorthQueryApplicationReadAttemptInit,
-        };
-        WorthQueryApplicationReadAttempt::admit_read_attempt(WorthQueryApplicationReadAttemptInit {
-            execution: *execution,
-            value_decode: super::super::super::value_decode::ValueDecodeState::new(
-                self.installed_schema.value_bindings().clone(),
-            ),
+        let context = self.read_attempt_runtime_context();
+        WorthQueryApplicationReadAttempt::admit_projected_snapshot_read_attempt(
+            execution,
+            context,
             admission,
-            lease,
-            layout,
-            entity_resolution: graph.retain_entity_resolution_context(),
-            read_scope: WorthQueryApplicationReadScope::projected(root, projected_scope),
-            expected_facts: Some(expected_facts),
-            computation_reads,
-            source_facts,
-            consumed_outputs,
-            _phase: PhantomData,
-        })
+            projection,
+            allocation_policy,
+        )
     }
 }

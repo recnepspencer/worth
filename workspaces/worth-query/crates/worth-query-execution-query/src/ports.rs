@@ -100,3 +100,80 @@ pub trait HistoryStepConstructionPort: Sized {
 
     fn label_arc(&self) -> Option<std::sync::Arc<str>>;
 }
+
+/// Crate-boundary port exposing owner-private `WorthQueryAdmittedApplicationQueryPlan`
+/// fields strictly to `worth-query-execution`'s document history lanes. Never exported
+/// on `worth-query-execution::facade`, Publication, or Host.
+pub trait AdmittedQueryPlanInternalPort<
+    'a,
+    Schema,
+    Query,
+    Parameters,
+    QueryResult,
+    Principal,
+    PrincipalIdentity,
+    Scope,
+>
+{
+    fn basis(
+        &self,
+    ) -> &crate::domain_computation::primary_graph::application_query::basis::WorthQueryApplicationQueryBasisCustody;
+
+    fn controls(
+        &self,
+    ) -> &crate::domain_computation::primary_graph::application_query::WorthQueryAdmittedApplicationQueryControls<'a>;
+
+    fn governance(
+        &self,
+    ) -> &crate::domain_computation::primary_graph::application_query::disclosure::WorthQueryApplicationQueryGovernance;
+
+    fn take_governance_readmission(
+        &mut self,
+    ) -> Option<
+        crate::domain_computation::primary_graph::application_query::disclosure::WorthQueryPendingApplicationQueryGovernance,
+    >;
+
+    fn history_metadata(
+        &self,
+    ) -> Option<
+        &crate::domain_computation::primary_graph::application_query::history::HistoryMetadataAdmission,
+    >;
+
+    fn set_history_metadata(
+        &mut self,
+        metadata: Option<
+            crate::domain_computation::primary_graph::application_query::history::HistoryMetadataAdmission,
+        >,
+    );
+
+    fn parameters(
+        &self,
+    ) -> &worth_query_admission::facade::application_query::WorthQueryAdmittedApplicationQueryParameters;
+
+    fn principal_ref(
+        &self,
+    ) -> &'a crate::domain_computation::primary_graph::WorthQueryAuthenticatedPrincipal<
+        Schema,
+        Principal,
+        PrincipalIdentity,
+    >;
+
+    fn query(
+        &self,
+    ) -> &'a worth_query_installation::facade::WorthQueryInstalledApplicationQuery<
+        Schema,
+        Query,
+        Parameters,
+        QueryResult,
+        Scope,
+    >;
+
+    fn scope(
+        &self,
+    ) -> &'a crate::domain_computation::primary_graph::WorthQueryApplicationEntityIdentity<
+        Schema,
+        Scope,
+    >;
+
+    fn security_product(&self) -> &crate::basis::WorthQueryProductObservationLease;
+}

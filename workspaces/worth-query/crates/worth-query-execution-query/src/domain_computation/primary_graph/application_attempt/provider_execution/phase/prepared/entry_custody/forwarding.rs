@@ -1,6 +1,9 @@
 use super::*;
 use crate::domain_computation::application_aftermath::ApplicationCommitCausality;
 use crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerInvocation;
+use worth_query_execution_attempt::facade::ports::{
+    CompleteReadSetInternalPort as _, EffectProgramInternalPort as _,
+};
 impl<Schema: ApplicationSchema, Operation, Input, Scope>
     CurrentCommitProgram<
         '_,
@@ -69,17 +72,22 @@ impl<Schema: ApplicationSchema, Operation, Input, Scope>
     where
         Input: Clone + Send + Sync + 'static,
     {
-        if let Some(denial) = plain_publication_posture(&self.program.read_set.admission) {
+        if let Some(denial) = plain_publication_posture(&self.program.read_set().admission()) {
             return WorthQueryApplicationCommitOutcome::Denied(denial);
         }
         if self
             .program
-            .read_set
-            .admission
+            .read_set()
+            .admission()
             .allowed_graph_contract()
             .aftermath()
             .is_some_and(|contract| contract.correction_disclosure().is_some())
-            && self.program.read_set.admission.original_program().is_none()
+            && self
+                .program
+                .read_set()
+                .admission()
+                .original_program()
+                .is_none()
         {
             return WorthQueryApplicationCommitOutcome::Denied(
                 WorthQueryApplicationCommitDenial::application_program_required(),
@@ -89,7 +97,7 @@ impl<Schema: ApplicationSchema, Operation, Input, Scope>
         if retain_output_observation {
             entry.program = entry.program.with_output_demand_observation();
         }
-        let pending = match causality.admit(&entry.program.read_set.admission) {
+        let pending = match causality.admit(&entry.program.read_set().admission()) {
             Ok(pending) => pending,
             Err(denial) => return WorthQueryApplicationCommitOutcome::Denied(denial),
         };

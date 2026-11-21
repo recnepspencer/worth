@@ -5,6 +5,9 @@
 //! installed aftermath with reconstructed objects.
 
 use worth_proof::Binding;
+use worth_query_execution_lineage::facade::ports::{
+    CommitAuthorityBindingInternalPort as _, RetainedGovernedInputInternalPort as _,
+};
 use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::history::BranchId;
 

@@ -2,6 +2,7 @@
 
 use std::any::Any;
 use std::sync::Arc;
+use worth_query_execution_lineage::facade::ports::RetainedGovernedInputInternalPort as _;
 
 use crate::domain_computation::authorization::WorthQueryAdmittedApplicationOperation;
 use crate::domain_computation::primary_graph::application_attempt::{

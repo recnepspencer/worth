@@ -37,11 +37,12 @@ impl<Schema, Operation, Input, Scope>
         original.consult().map_err(|cause| {
             crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial::relational_read_stopped(cause.into(),relation.name())
         })?;
-        Ok(WorthQueryApplicationCreatedRelation {
+        use worth_query_execution_lineage::facade::ports::CreatedRelationInternalPort as _;
+        Ok(WorthQueryApplicationCreatedRelation::from_parts(
             relation,
-            created_effect: position,
-            program: Arc::clone(&self.program),
-        })
+            position,
+            Arc::clone(&self.program),
+        ))
     }
 
     pub fn initialize_relation_field<Relation, From, To, Field>(
@@ -60,10 +61,11 @@ impl<Schema, Operation, Input, Scope>
             To = To,
         >,
     {
+        use worth_query_execution_lineage::facade::ports::CreatedRelationInternalPort as _;
         self.native_effects().initialize_relation_field(
             original, bindings, super::core::CreatedRelation {
-                name: target.relation.name(), from: target.relation.from(), to: target.relation.to(),
-                program: &target.program, created_effect: target.created_effect,
+                name: target.relation().name(), from: target.relation().from(), to: target.relation().to(),
+                program: target.program(), created_effect: target.created_effect(),
             }, field.identity(), (field.from(), field.to()),
             worth_query_installation::facade::WorthQueryInstalledApplicationValueBinding::matches_binding::<Field::Binding>,
             value.into_foundational_value(),

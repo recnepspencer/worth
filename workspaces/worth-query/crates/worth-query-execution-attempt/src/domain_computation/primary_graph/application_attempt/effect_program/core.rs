@@ -37,11 +37,12 @@ pub trait EffectEntityBorrowedExt {
 impl<S, E> EffectEntityBorrowedExt for WorthQueryApplicationEffectEntity<S, E> {
     #[inline(always)]
     fn borrowed(&self) -> Target<'_> {
+        use worth_query_execution_lineage::facade::ports::EffectEntityInternalPort as _;
         Target {
-            reference: &self.reference,
-            entity: &self.entity,
-            created_effect: self.created_effect,
-            program: &self.program,
+            reference: self.reference(),
+            entity: self.entity(),
+            created_effect: self.created_effect(),
+            program: self.program(),
         }
     }
 }

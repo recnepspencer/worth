@@ -16,11 +16,11 @@ pub use emission::{WorthQueryAdmittedApplicationEmissionBatch, WorthQueryApplica
 /// `create_entity`, then write fields or link relations through it. A handle
 /// from another effect program is refused.
 pub struct WorthQueryApplicationEffectEntity<Schema, Entity> {
-    pub reference: EntityReference,
-    pub entity: String,
-    pub created_effect: Option<usize>,
-    pub program: Arc<()>,
-    pub _marker: PhantomData<fn() -> (Schema, Entity)>,
+    pub(crate) reference: EntityReference,
+    pub(crate) entity: String,
+    pub(crate) created_effect: Option<usize>,
+    pub(crate) program: Arc<()>,
+    pub(crate) _marker: PhantomData<fn() -> (Schema, Entity)>,
 }
 
 impl<Schema, Entity> WorthQueryApplicationEffectEntity<Schema, Entity> {
@@ -71,10 +71,81 @@ impl WorthQueryApplicationEffectEntity<(), ()> {
 
 /// Only the creating effect program can initialize this new relation's payload.
 pub struct WorthQueryApplicationCreatedRelation<Schema, Relation, From, To> {
-    pub relation:
+    pub(crate) relation:
         worth_query_installation::facade::ApplicationRelationRef<Schema, Relation, From, To>,
-    pub created_effect: usize,
-    pub program: Arc<()>,
+    pub(crate) created_effect: usize,
+    pub(crate) program: Arc<()>,
+}
+
+impl<Schema, Entity> crate::ports::EffectEntityInternalPort<Schema, Entity>
+    for WorthQueryApplicationEffectEntity<Schema, Entity>
+{
+    fn from_parts(
+        reference: EntityReference,
+        entity: String,
+        created_effect: Option<usize>,
+        program: Arc<()>,
+    ) -> Self {
+        Self {
+            reference,
+            entity,
+            created_effect,
+            program,
+            _marker: PhantomData,
+        }
+    }
+
+    fn reference(&self) -> &EntityReference {
+        &self.reference
+    }
+
+    fn entity(&self) -> &str {
+        &self.entity
+    }
+
+    fn created_effect(&self) -> Option<usize> {
+        self.created_effect
+    }
+
+    fn program(&self) -> &Arc<()> {
+        &self.program
+    }
+}
+
+impl<Schema, Relation, From, To>
+    crate::ports::CreatedRelationInternalPort<Schema, Relation, From, To>
+    for WorthQueryApplicationCreatedRelation<Schema, Relation, From, To>
+{
+    fn from_parts(
+        relation: worth_query_installation::facade::ApplicationRelationRef<
+            Schema,
+            Relation,
+            From,
+            To,
+        >,
+        created_effect: usize,
+        program: Arc<()>,
+    ) -> Self {
+        Self {
+            relation,
+            created_effect,
+            program,
+        }
+    }
+
+    fn relation(
+        &self,
+    ) -> &worth_query_installation::facade::ApplicationRelationRef<Schema, Relation, From, To> {
+        &self.relation
+    }
+
+    fn created_effect(&self) -> usize {
+        self.created_effect
+    }
+
+    fn program(&self) -> &Arc<()> {
+        &self.program
+    }
 }
 
 pub struct WorthQueryApplicationOptionalFieldWrite {

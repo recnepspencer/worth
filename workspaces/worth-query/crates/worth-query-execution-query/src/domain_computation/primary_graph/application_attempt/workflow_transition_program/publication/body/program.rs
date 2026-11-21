@@ -43,7 +43,10 @@ where
                 MutationHandlerExecutionDenial::ForeignAdvancementPhase(cause),
             )
         })?;
-    let WorthQueryApplicationEffectProgram {
+    use worth_query_execution_attempt::facade::ports::{
+        CompleteReadSetInternalPort as _, EffectProgramInternalPort as _, EffectProgramParts,
+    };
+    let EffectProgramParts {
         synchronous_outputs,
         authored_stages,
         producer_round_limits: _,
@@ -57,7 +60,7 @@ where
         producer_required_invariants,
         output_currentness_facts,
         content_attachments,
-    } = program;
+    } = program.into_parts();
     // Native approval has no application outputs/emissions/conditional definition.
     // Refuse an unimplemented future profile rather than erase its carried state.
     if !authored_stages.is_empty() || !synchronous_outputs.is_empty() || !content_attachments.is_empty() || conditional_definition.is_some() || !output_correspondence.is_empty()
@@ -66,7 +69,7 @@ where
         return Err(WorkflowApprovalBodyDenial::UnsupportedProfile);
     }
     if read_set
-        .admission
+        .admission()
         .governed_input_identity()
         .is_some_and(|input| input != identities.input_identity())
     {
@@ -76,13 +79,13 @@ where
     }
     let context = Cell::new(DecisionContextUse::default());
     let interruption = Cell::new(None);
-    let operation_scope = read_set.admission.operation_scope_binding().clone();
+    let operation_scope = read_set.admission().operation_scope_binding().clone();
     let (plan, projection, _) = runtime
         .mutation_projection
         .project_existing_operation(
             &request,
-            &read_set.admission,
-            &read_set.lease,
+            read_set.admission(),
+            read_set.lease(),
             |reader, scope| {
                 let reader = DecisionReader::<Schema, Binding>::new(
                     reader,
@@ -94,7 +97,7 @@ where
                     &context,
                     &interruption,
                     crate::domain_computation::primary_graph::handler::ConditionalDefinitionAdmission::new(
-                        runtime, read_set.admission.graph_work().mutation_product(),
+                        runtime, read_set.admission().graph_work().mutation_product(),
                     ),
                     None,
                 );
@@ -115,7 +118,7 @@ where
     }
     let decision = ready(plan.run(execution))?;
     read_set
-        .admission
+        .admission_mut()
         .record_decision_context_use(context.get());
     read_set
         .complete_compiled_body_projection(
@@ -137,18 +140,18 @@ where
         .map_err(WorkflowApprovalBodyDenial::Handler)?,
     )?;
     let (mut body, ()) = completed.into_parts();
-    if body.output_currentness_facts.is_some() {
+    if body.output_currentness_facts().is_some() {
         return Err(WorkflowApprovalBodyDenial::UnsupportedProfile);
     }
-    body.effects
+    body.effects_mut()
         .try_reserve(effects.len())
         .map_err(|_| WorkflowApprovalBodyDenial::UnsupportedProfile)?;
     // The body stays first: its native deferred signing slot retains its index.
-    body.effects.extend(effects);
-    body.effect_posture = crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::ApplicationWithPlatform;
-    body.retain_output_demand_observation |= retain_output_demand_observation;
-    body.retain_client_observation |= retain_client_observation;
-    body.output_currentness_facts = output_currentness_facts;
+    body.effects_mut().extend(effects);
+    body.set_effect_posture(crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::ApplicationWithPlatform);
+    body.or_retain_output_demand_observation(retain_output_demand_observation);
+    body.or_retain_client_observation(retain_client_observation);
+    body.set_output_currentness_facts(output_currentness_facts);
     let body =
         super::super::super::super::signed_creation::WorthQuerySignedCreationAdapter::prepare::<
             Schema,

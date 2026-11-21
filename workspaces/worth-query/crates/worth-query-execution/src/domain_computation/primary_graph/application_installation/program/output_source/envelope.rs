@@ -65,7 +65,8 @@ where
             Ok(execution) => execution,
             Err(cause) => return cause.into_commit_outcome(),
         };
-        if program.authored_stages.is_empty() || program.synchronous_outputs.is_empty() {
+        use worth_query_execution_attempt::facade::ports::EffectProgramInternalPort as _;
+        if program.authored_stages().is_empty() || program.synchronous_outputs().is_empty() {
             return WorthQueryApplicationCommitOutcome::Denied(
                 WorthQueryApplicationCommitDenial::required_output_preparation_missing(B::IDENTITY),
             );
@@ -113,12 +114,13 @@ where
         B::Input: Clone + Send + Sync,
     {
         use super::super::WorthQueryProgramOwner;
+        use worth_query_execution_attempt::facade::ports::EffectProgramInternalPort as _;
         if !std::ptr::eq(owner.owned_runtime(), self.runtime())
             || !self.contains_action::<B>()
             || !owner.contains_action::<B>()
             || self.owns_output_source(std::any::TypeId::of::<B>())
             || owner.owns_output_source(std::any::TypeId::of::<B>())
-            || program.authored_stages.is_empty()
+            || program.authored_stages().is_empty()
         {
             return WorthQueryApplicationCommitOutcome::Denied(
                 WorthQueryApplicationCommitDenial::application_program_required(),

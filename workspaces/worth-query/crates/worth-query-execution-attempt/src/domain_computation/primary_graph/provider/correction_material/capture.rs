@@ -9,6 +9,9 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationCommitAuthorityBinding,
 };
 use worth_foundational::facade::AspectFieldLocator;
+use worth_query_execution_lineage::facade::ports::{
+    CommitAuthorityBindingInternalPort as _, RetainedGovernedInputInternalPort as _,
+};
 use worth_relational::facade::identity::{EntityId, PartitionId};
 
 impl WorthQueryPrimaryGraphProvider {

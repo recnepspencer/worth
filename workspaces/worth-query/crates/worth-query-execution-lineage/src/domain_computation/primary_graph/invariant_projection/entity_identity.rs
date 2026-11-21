@@ -1,13 +1,40 @@
 //! Projected identity traits do not impose traits on schema and entity markers.
 use super::{Arc, EntityId, KindId, PhantomData};
 pub struct WorthQueryInvariantEntityIdentity<Schema, Entity> {
-    pub entity_id: EntityId,
-    pub kind: KindId,
-    pub entity: Arc<str>,
-    pub authority_identity: u64,
-    pub phase:
+    pub(crate) entity_id: EntityId,
+    pub(crate) kind: KindId,
+    pub(crate) entity: Arc<str>,
+    pub(crate) authority_identity: u64,
+    pub(crate) phase:
         Option<worth_relational::facade::runtime::RelationalAppliedCandidateReadQualification>,
-    pub _marker: PhantomData<fn() -> (Schema, Entity)>,
+    pub(crate) _marker: PhantomData<fn() -> (Schema, Entity)>,
+}
+
+impl<S, E> crate::ports::InvariantEntityIdentityInternalPort<S, E>
+    for WorthQueryInvariantEntityIdentity<S, E>
+{
+    fn entity_id(&self) -> EntityId {
+        self.entity_id
+    }
+
+    fn kind(&self) -> KindId {
+        self.kind
+    }
+
+    fn entity(&self) -> &Arc<str> {
+        &self.entity
+    }
+
+    fn authority_identity(&self) -> u64 {
+        self.authority_identity
+    }
+
+    fn phase(
+        &self,
+    ) -> Option<worth_relational::facade::runtime::RelationalAppliedCandidateReadQualification>
+    {
+        self.phase
+    }
 }
 
 impl<S, E> Clone for WorthQueryInvariantEntityIdentity<S, E> {

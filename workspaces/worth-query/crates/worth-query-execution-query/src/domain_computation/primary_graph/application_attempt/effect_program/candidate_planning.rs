@@ -252,10 +252,13 @@ impl<S, O, I, E> EffectProgramCandidatePlanningExt<S, O, I, E>
         unseen: &crate::domain_computation::primary_graph::application_contribution::authored_edit::UnseenAuthoredEnvelope<'_>,
         binding: crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding,
     ) -> bool {
-        unseen.admits(binding.bind_admission(&*self.read_set.admission))
+        use worth_query_execution_attempt::facade::ports::{
+            CompleteReadSetInternalPort as _, EffectProgramInternalPort as _,
+        };
+        unseen.admits(binding.bind_admission(self.read_set().admission()))
             && self
-                .read_set
-                .admission
+                .read_set()
+                .admission()
                 .graph_work()
                 .mutation_product()
                 .is_some_and(|product| unseen.coordination.admits(product.observation()))
@@ -264,29 +267,32 @@ impl<S, O, I, E> EffectProgramCandidatePlanningExt<S, O, I, E>
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Option<CandidateFootprint>, WorthQueryApplicationAttemptDenial> {
-        let reads = &self.read_set;
-        if !self.authored_stages.is_empty()
-            || !self.synchronous_outputs.is_empty()
-            || self.conditional_definition.is_some()
-            || self.output_currentness_facts.is_some()
-            || reads.postcondition_carry.is_some()
-            || !self.content_attachments.is_empty()
-            || reads.workflow_authority_binding.is_some()
-            || reads.workflow_birth_binding.is_some()
-            || reads.workflow_succession_binding.is_some()
-            || reads.local_action_settlement.is_some()
-            || reads.body_external_emission.is_some()
-            || reads.signed_creation.is_some()
-            || reads.workflow_deadline.is_some()
-            || reads.new_commit_refusal.is_some()
-            || reads.computation_facts.is_some()
-            || !reads.computation_fact_ordinals.is_empty()
-            || !reads.consumed_outputs.is_empty()
-            || reads.facts.iter().any(|fact| !supported(fact))
+        use worth_query_execution_attempt::facade::ports::{
+            CompleteReadSetInternalPort as _, EffectProgramInternalPort as _,
+        };
+        let reads = self.read_set();
+        if !self.authored_stages().is_empty()
+            || !self.synchronous_outputs().is_empty()
+            || self.conditional_definition().is_some()
+            || self.output_currentness_facts().is_some()
+            || reads.postcondition_carry().is_some()
+            || !self.content_attachments().is_empty()
+            || reads.workflow_authority_binding().is_some()
+            || reads.workflow_birth_binding().is_some()
+            || reads.workflow_succession_binding().is_some()
+            || reads.local_action_settlement().is_some()
+            || reads.body_external_emission().is_some()
+            || reads.signed_creation().is_some()
+            || reads.workflow_deadline().is_some()
+            || reads.new_commit_refusal().is_some()
+            || reads.computation_facts().is_some()
+            || !reads.computation_fact_ordinals().is_empty()
+            || !reads.consumed_outputs().is_empty()
+            || reads.facts().iter().any(|fact| !supported(fact))
         {
             return Ok(None);
         }
-        let Some((count, bytes)) = scalar_write_storage(&self.effects)? else {
+        let Some((count, bytes)) = scalar_write_storage(self.effects())? else {
             return Ok(None);
         };
         let memory = execution
@@ -298,11 +304,11 @@ impl<S, O, I, E> EffectProgramCandidatePlanningExt<S, O, I, E>
                     cause,
                 )
             })?;
-        let Some(writes) = copy_scalar_writes(&reads.facts, &self.effects, count)? else {
+        let Some(writes) = copy_scalar_writes(reads.facts(), self.effects(), count)? else {
             return Ok(None);
         };
         Ok(Some(CandidateFootprint(Arc::new(Footprint {
-            reads: reads.facts.clone(),
+            reads: reads.facts().clone(),
             writes,
             _memory: memory,
         }))))
@@ -321,9 +327,17 @@ impl<S, O, I, E> EffectProgramCandidatePlanningExt<S, O, I, E>
     where
         S: ApplicationSchema,
     {
+        use worth_query_execution_attempt::facade::ports::{
+            CompleteReadSetInternalPort as _, EffectProgramInternalPort as _,
+        };
         if applied.is_some_and(|pin| {
             pin.candidate_identity().proposal().branch_observation()
-                != self.read_set.lease.product().relational_basis().reference()
+                != self
+                    .read_set()
+                    .lease()
+                    .product()
+                    .relational_basis()
+                    .reference()
         }) {
             return Err(denial(
                 WorthQueryApplicationAttemptDenialKind::ProjectionAdmissionMismatch,
@@ -351,11 +365,11 @@ impl<S, O, I, E> EffectProgramCandidatePlanningExt<S, O, I, E>
             .primary_provider
             .graph
             .with_runtime(execution, |runtime| {
-                for fact in self.read_set.facts.iter() {
+                for fact in self.read_set().facts().iter() {
                     if !fact.remains_equal_in_image(
                         runtime,
                         execution,
-                        self.read_set.lease.snapshot(),
+                        self.read_set().lease().snapshot(),
                         applied,
                     )? {
                         return Err(denial(
@@ -367,7 +381,9 @@ impl<S, O, I, E> EffectProgramCandidatePlanningExt<S, O, I, E>
                 Ok(())
             })?;
         if let Some(pin) = applied {
-            self.read_set.lease.retain_applied_projection(pin.clone());
+            self.read_set_mut()
+                .lease_mut()
+                .retain_applied_projection(pin.clone());
         }
         Ok(())
     }

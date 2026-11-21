@@ -14,6 +14,9 @@ use worth_query_declaration::facade::{
     application_operation::{ApplicationMutationBinding, ApplicationMutationIdentities},
     application_schema::ApplicationSchema,
 };
+use worth_query_execution_attempt::facade::ports::{
+    CompleteReadSetInternalPort as _, EffectProgramInternalPort as _,
+};
 
 pub struct WorthQuerySignedCreationAdapter;
 impl WorthQuerySignedCreationAdapter {
@@ -25,9 +28,8 @@ impl WorthQuerySignedCreationAdapter {
         principal: &worth_query_declaration::facade::authentication::WorthQueryExternalPrincipalIdentity,
     ) -> Result<(), WorthQueryAuthenticationEventDenial> {
         let state = candidate
-            .read_set
-            .signed_creation
-            .as_ref()
+            .read_set()
+            .signed_creation()
             .ok_or(WorthQueryAuthenticationEventDenial::MissingSigningProof)?;
         let sealed = state
             .sealed

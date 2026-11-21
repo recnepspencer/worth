@@ -41,42 +41,42 @@ pub use publication_source::WorthQueryApplicationCommitPublicationSource;
 /// is descriptive history only.
 #[derive(Debug, PartialEq)]
 pub struct WorthQueryApplicationCommitReceipt {
-    pub authoritative_provider_session:
+    pub(crate) authoritative_provider_session:
         crate::domain_computation::provider_session::WorthQueryProviderSessionTerminalBinding,
-    pub outcome_identity: Option<super::super::WorthQueryApplicationCommitOutcomeIdentity>,
-    pub provider_runtime_instance_id: u64,
-    pub commit: RelationalCommitReceipt,
-    pub committed_product_publication: super::WorthQueryCommittedProductPublication,
-    pub basis_descriptor: worth_relational::facade::branch::RelationalBranchBasisDescriptor,
-    pub changed_record_count: usize,
-    pub emitted_effect_count: usize,
-    pub mutation_work:
+    pub(crate) outcome_identity: Option<super::super::WorthQueryApplicationCommitOutcomeIdentity>,
+    pub(crate) provider_runtime_instance_id: u64,
+    pub(crate) commit: RelationalCommitReceipt,
+    pub(crate) committed_product_publication: super::WorthQueryCommittedProductPublication,
+    pub(crate) basis_descriptor: worth_relational::facade::branch::RelationalBranchBasisDescriptor,
+    pub(crate) changed_record_count: usize,
+    pub(crate) emitted_effect_count: usize,
+    pub(crate) mutation_work:
         Option<super::super::super::provider::WorthQueryPrimaryMutationWorkEvidence>,
-    pub precondition_comparison: WorthQueryMutationPreconditionComparisonEvidence,
-    pub canonical_work: WorthQueryCanonicalWorkPhases,
-    pub terminal: WorthQueryApplicationCommitTerminalEvidence,
-    pub committed_dispatch_outbox:
+    pub(crate) precondition_comparison: WorthQueryMutationPreconditionComparisonEvidence,
+    pub(crate) canonical_work: WorthQueryCanonicalWorkPhases,
+    pub(crate) terminal: WorthQueryApplicationCommitTerminalEvidence,
+    pub(crate) committed_dispatch_outbox:
         Option<super::super::super::provider::WorthQueryCommittedDispatchOutboxBinding>,
-    pub external_dispatch: Option<WorthQueryExternalEffectDispatch>,
-    pub external_dispatch_preparation_denial:
+    pub(crate) external_dispatch: Option<WorthQueryExternalEffectDispatch>,
+    pub(crate) external_dispatch_preparation_denial:
         Option<super::super::WorthQueryExternalDispatchPreparationDenial>,
     /// R8.62 / C1 â€” derived from admission at construction; never caller-supplied.
-    pub authority_binding: WorthQueryApplicationCommitAuthorityBinding,
+    pub(crate) authority_binding: WorthQueryApplicationCommitAuthorityBinding,
     /// R8.2 â€” exact inverse pre-image slice retained from the decision read-set.
-    pub retained_preimage: Option<WorthQueryRetainedPreImage>,
-    pub aftermath_causality: Option<WorthQueryCommittedAftermathCausality>,
-    pub performed_product_change: Option<
+    pub(crate) retained_preimage: Option<WorthQueryRetainedPreImage>,
+    pub(crate) aftermath_causality: Option<WorthQueryCommittedAftermathCausality>,
+    pub(crate) performed_product_change: Option<
         crate::domain_computation::execution_runtime::product_world::WorthQueryPerformedRelationalProductChange,
     >,
-    pub committed_changes: WorthQueryApplicationCommittedChanges,
-    pub performed_input_facts: Option<crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload>,
-    pub performed_output_fields: Option<Result<crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload, crate::domain_computation::primary_graph::application_attempt::OutputFieldCaptureFailure>>,
-    pub output_correspondence: std::sync::Arc<WorthQueryApplicationOutputCorrespondence>,
-    pub exact_output_settlement: Option<std::sync::Arc<
+    pub(crate) committed_changes: WorthQueryApplicationCommittedChanges,
+    pub(crate) performed_input_facts: Option<crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload>,
+    pub(crate) performed_output_fields: Option<Result<crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload, crate::domain_computation::primary_graph::application_attempt::OutputFieldCaptureFailure>>,
+    pub(crate) output_correspondence: std::sync::Arc<WorthQueryApplicationOutputCorrespondence>,
+    pub(crate) exact_output_settlement: Option<std::sync::Arc<
         crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity,
     >>,
     /// Set where the rebase of this commit failed, so it retains no fact.
-    pub unrebased_own_effect:
+    pub(crate) unrebased_own_effect:
         Option<crate::domain_computation::primary_graph::provider::OwnEffectOnReads>,
 }
 

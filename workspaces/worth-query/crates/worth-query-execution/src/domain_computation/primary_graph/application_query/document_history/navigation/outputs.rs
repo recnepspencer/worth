@@ -34,15 +34,15 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             .source_intent()
             .require_control(self, &execution, binding, control)?;
         let request = admission.retain_admitted_request();
-        if !request.same_request(control.controls.request_scope())
-            || control.security_product.observation() != read.current_product().observation()
-            || control.basis.selected_product().observation() != read.current_product().observation()
-            || !control.controls.is_current_product_one_shot()
-            || crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(control.principal.principal_entity_id()) != read.principal()
+        if !request.same_request(control.controls().request_scope())
+            || control.security_product().observation() != read.current_product().observation()
+            || control.basis().selected_product().observation() != read.current_product().observation()
+            || !control.controls().is_current_product_one_shot()
+            || crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(control.principal().principal_entity_id()) != read.principal()
         { return Err(ReadDenial::Authority(NavigationDenial::ForeignDocument)); }
         read.confirm(document, ())
             .map_err(|cause| ReadDenial::Authority(NavigationDenial::Document(cause)))?;
-        validate_execution_lifetimes(self.inner(), &control.controls, control.principal)
+        validate_execution_lifetimes(self.inner(), &control.controls(), control.principal())
             .map_err(super::super::output_read::control_denial)
     }
 
@@ -160,7 +160,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         // A stopped callback leaves its SDK owners in the document registry.
         // The actual Native transition remains authoritative if its delivery lapses.
         if let Some(source) = &source {
-            validate_execution_lifetimes(self.inner(), &source.controls, source.principal)
+            validate_execution_lifetimes(self.inner(), &source.controls(), source.principal())
                 .map_err(|cause| {
                     Denial::Source(super::super::output_read::control_denial(cause))
                 })?;

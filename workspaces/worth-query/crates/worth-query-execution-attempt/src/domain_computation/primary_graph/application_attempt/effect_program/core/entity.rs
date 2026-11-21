@@ -59,13 +59,13 @@ impl EffectCore<'_> {
                 fields: std::collections::BTreeMap::new(),
                 partition,
             });
-        Ok(WorthQueryApplicationEffectEntity {
+        use worth_query_execution_lineage::facade::ports::EffectEntityInternalPort as _;
+        Ok(WorthQueryApplicationEffectEntity::from_parts(
             reference,
-            entity: entity_name.to_string(),
-            created_effect: Some(created_effect),
-            program: Arc::clone(self.program),
-            _marker: PhantomData,
-        })
+            entity_name.to_string(),
+            Some(created_effect),
+            Arc::clone(self.program),
+        ))
     }
 }
 pub fn context_partition(

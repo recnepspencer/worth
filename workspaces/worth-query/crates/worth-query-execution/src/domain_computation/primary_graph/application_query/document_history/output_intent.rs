@@ -1,4 +1,5 @@
 //! Complete source intent captured from a real plan, without its grant or session.
+use worth_query_execution_query::facade::ports::AdmittedQueryPlanInternalPort as _;
 mod owned_scope;
 mod recording;
 mod source_read;
@@ -163,26 +164,26 @@ impl WorthQueryHistoryOutputIntent {
     ) -> Result<(), WorthQueryHistoryOutputReadDenial> {
         use WorthQueryHistoryOutputReadDenial as ReadDenial;
         validate_execution_plan(runtime.inner(), control).map_err(control_denial)?;
-        validate_execution_lifetimes(runtime.inner(), &control.controls, control.principal)
+        validate_execution_lifetimes(runtime.inner(), &control.controls(), control.principal())
             .map_err(control_denial)?;
         let _comparison = fund_comparison(
             execution,
             &self.backing.parameters,
-            &control.parameters,
+            &control.parameters(),
             scope_work(&self.backing.scope).map_err(ReadDenial::Preparation)?,
         )
         .map_err(ReadDenial::Preparation)?;
         let compared = execution.run_native_with_checkpoint(|_context| {
             Ok(self.matches_binding(&self.backing.model, binding)
-                && control.query.identity() == binding.query().identity()
-                && self.backing.scope.subject() == control.scope.entity_id()
-                && self.backing.scope.locator() == control.scope.identity_locator()
-                && self.backing.scope.value() == control.scope.identity_value()
+                && control.query().identity() == binding.query().identity()
+                && self.backing.scope.subject() == control.scope().entity_id()
+                && self.backing.scope.locator() == control.scope().identity_locator()
+                && self.backing.scope.value() == control.scope().identity_value()
                 && self
                     .backing
                     .parameters
                     .canonical_basis()
-                    .is_equivalent_to(control.parameters.canonical_basis()))
+                    .is_equivalent_to(control.parameters().canonical_basis()))
         });
         let matches = match compared {
             Ok((result, _)) => result.map_err(ReadDenial::Preparation)?,
@@ -211,13 +212,13 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
     ) -> Result<WorthQueryHistoryOutputIntent, WorthQueryHistoryOutputReadDenial> {
         use WorthQueryHistoryOutputReadDenial as ReadDenial;
         validate_execution_plan(self.inner(), &control).map_err(control_denial)?;
-        validate_execution_lifetimes(self.inner(), &control.controls, control.principal)
+        validate_execution_lifetimes(self.inner(), &control.controls(), control.principal())
             .map_err(control_denial)?;
         if !std::ptr::eq(self, document.application())
-            || control.query.identity() != binding.query().identity()
-            || !control.controls.is_current_product_one_shot()
-            || control.basis.selected_product().observation()
-                != control.security_product.observation()
+            || control.query().identity() != binding.query().identity()
+            || !control.controls().is_current_product_one_shot()
+            || control.basis().selected_product().observation()
+                != control.security_product().observation()
         {
             return Err(ReadDenial::Authority(
                 WorthQueryHistoryNavigationDenial::ForeignDocument,
@@ -231,14 +232,14 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         self.require_history_output_scope(
             &execution,
             document,
-            control.scope,
-            control.basis.selected_product(),
+            control.scope(),
+            control.basis().selected_product(),
         )?;
         let (layout, _) = std::alloc::Layout::new::<[usize; 2]>()
             .extend(std::alloc::Layout::new::<IntentBacking>())
             .map_err(|_| ReadDenial::Preparation(Cause::ChargedBytesOverflow))?;
         let bytes = control
-            .parameters
+            .parameters()
             .retained_owned_capacity_bytes()
             .and_then(|n| n.checked_add(layout.pad_to_align().size()))
             .and_then(|n| u64::try_from(n).ok())
@@ -250,7 +251,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         )
         .map_err(ReadDenial::Preparation)?;
         let scope = control
-            .scope
+            .scope()
             .retain_scope_selector_funded(&execution)
             .map_err(|cause| {
                 use crate::domain_computation::primary_graph::{
@@ -272,7 +273,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
                 model: document.model.clone(),
                 binding: crate::equality_type_id::EqualityTypeId::of::<B>().into_external(),
                 query: binding.query().identity().clone(),
-                parameters: control.parameters,
+                parameters: control.parameters().clone(),
                 scope,
                 _memory: memory,
             }),

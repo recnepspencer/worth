@@ -34,13 +34,16 @@ impl<S: worth_query_installation::facade::ApplicationSchema>
         >,
         FragmentDenial,
     > {
-        if !candidate.read_set.admission.belongs_to(
+        use worth_query_execution_attempt::facade::ports::{
+            CompleteReadSetInternalPort as _, EffectProgramBuilderInternalPort as _,
+        };
+        if !candidate.read_set().admission().belongs_to(
             self.runtime.authority_identity(),
             &self.installed_schema.binding_identity(),
         ) {
             return Err(Denial::new(
                 Kind::ForeignApplication,
-                candidate.read_set.admission.operation(),
+                candidate.read_set().admission().operation(),
             )
             .into());
         }
@@ -58,11 +61,12 @@ impl<S: worth_query_installation::facade::ApplicationSchema>
 }
 
 fn erase<S, E>(target: &EffectEntity<S, E>) -> ErasedCandidate {
+    use worth_query_execution_lineage::facade::ports::EffectEntityInternalPort as _;
     ErasedCandidate {
-        reference: target.reference.clone(),
-        entity: target.entity.clone(),
-        created_effect: target.created_effect,
-        program: Arc::clone(&target.program),
+        reference: target.reference().clone(),
+        entity: target.entity().to_owned(),
+        created_effect: target.created_effect(),
+        program: Arc::clone(target.program()),
     }
 }
 pub fn prepare_fields(

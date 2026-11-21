@@ -23,7 +23,11 @@ where
         elevation_currentness,
         aftermath_causality,
     } = request;
-    let (core, _) = entry.program.read_set.admission.reentry_parts();
+    use worth_query_execution_attempt::facade::ports::{
+        CompleteReadSetInternalPort as _, CompleteReadSetParts, EffectProgramInternalPort as _,
+        EffectProgramParts,
+    };
+    let (core, _) = entry.program.read_set().admission().reentry_parts();
     if let Err(outcome) = entry
         .application
         .runtime
@@ -36,7 +40,7 @@ where
         program,
         phase,
     } = entry;
-    let WorthQueryApplicationEffectProgram {
+    let EffectProgramParts {
         synchronous_outputs,
         authored_stages,
         producer_round_limits,
@@ -50,7 +54,8 @@ where
         retain_client_observation,
         producer_required_invariants,
         output_currentness_facts,
-    } = program;
+    } = program.into_parts();
+    let read_set: CompleteReadSetParts<_, _, _, _, _> = read_set.into_parts();
     let workflow_settlement = read_set.workflow_authority_binding;
     let body_external_emission = read_set.body_external_emission;
     let workflow_deadline = read_set.workflow_deadline;

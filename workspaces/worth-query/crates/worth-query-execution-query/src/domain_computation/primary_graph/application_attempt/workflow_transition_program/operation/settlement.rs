@@ -1,5 +1,8 @@
 //! Settlement consumes a validated performed receipt, never a proposed input.
 use super::*;
+use worth_query_execution_attempt::facade::ports::{
+    CompleteReadSetInternalPort as _, EffectProgramInternalPort as _,
+};
 
 pub trait PreparedWorkflowOperationSettlementExt<Schema, Operation, Input, Scope>: Sized
 where
@@ -58,7 +61,7 @@ where
             runtime,
             &self.required,
             self.admitted.subject(),
-            self.admitted.read_set().lease.product().product_branch(),
+            self.admitted.read_set().lease().product().product_branch(),
             receipt,
             None,
         )?;
@@ -81,7 +84,7 @@ where
             runtime,
             &self.required,
             self.admitted.subject(),
-            self.admitted.read_set().lease.product().product_branch(),
+            self.admitted.read_set().lease().product().product_branch(),
             receipt,
             Some(recovery),
         )?;
@@ -133,7 +136,7 @@ where
         );
         self.admitted
             .read_set()
-            .admission
+            .admission()
             .validate_current_authority()
             .map_err(WorthQueryApplicationAttemptDenial::request_authority_lost)?;
         let transition_identity = self.admitted.identity().to_owned();
@@ -146,8 +149,8 @@ where
             Some(basis.prepare_progress_update(receipt_identity)?)
         };
         let mut read_set = self.admitted.into_read_set();
-        read_set.local_action_settlement = local_origin;
-        let program = WorthQueryApplicationEffectProgram {
+        read_set.set_local_action_settlement(local_origin);
+        let program = WorthQueryApplicationEffectProgram::from_parts(worth_query_execution_attempt::facade::ports::EffectProgramParts {
             synchronous_outputs: Vec::new(),
             authored_stages: Vec::new(),
             producer_round_limits: crate::domain_computation::primary_graph::application_contribution::producer::synchronous_outputs::default_producer_round_bounds(),
@@ -161,7 +164,7 @@ where
             producer_required_invariants: &[],
             output_currentness_facts: None,
             content_attachments: Default::default(),
-        };
+        });
         Ok(PreparedWorkflowAdvance::Transition {
             program,
             program_revision: self.program_revision,

@@ -41,7 +41,7 @@ impl WorthQueryRetainedGovernedInput {
         clippy::disallowed_methods,
         reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
     )]
-    pub fn from_admission<Input>(
+    pub(crate) fn from_admission<Input>(
         input: &ApplicationSharedInput<Input>,
         governed_identity: Option<[u8; 32]>,
         original_scope: Option<&Arc<super::super::WorthQueryObservedScopeSelector>>,
@@ -81,7 +81,7 @@ impl WorthQueryRetainedGovernedInput {
             .flatten()
     }
 
-    pub fn material_input(
+    pub(crate) fn material_input(
         &self,
     ) -> Option<(
         &worth_query_declaration::facade::application_operation::ApplicationCanonicalInput,
@@ -92,7 +92,7 @@ impl WorthQueryRetainedGovernedInput {
             .as_ref()
             .map(|(snapshot, binding, identity)| (snapshot, *binding, *identity))
     }
-    pub fn retained_input<Binding>(
+    pub(crate) fn retained_input<Binding>(
         &self,
     ) -> Option<
         &worth_query_declaration::facade::application_operation::ApplicationRetainedInput<Binding>,
@@ -104,14 +104,16 @@ impl WorthQueryRetainedGovernedInput {
         self.captured.as_ref()?.downcast_ref()
     }
 
-    pub const fn governed_identity(&self) -> Option<[u8; 32]> {
+    pub(crate) const fn governed_identity(&self) -> Option<[u8; 32]> {
         self.governed_identity
     }
 
-    pub fn original_scope(&self) -> Option<&Arc<super::super::WorthQueryObservedScopeSelector>> {
+    pub(crate) fn original_scope(
+        &self,
+    ) -> Option<&Arc<super::super::WorthQueryObservedScopeSelector>> {
         self.original_scope.as_ref()
     }
-    pub fn correction(
+    pub(crate) fn correction(
         &self,
     ) -> Option<&crate::domain_computation::application_aftermath::OriginalCorrectionDisclosure>
     {
@@ -122,7 +124,7 @@ impl WorthQueryRetainedGovernedInput {
         clippy::disallowed_methods,
         reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
     )]
-    pub fn axis_probe(governed_identity: [u8; 32]) -> Self {
+    pub(crate) fn axis_probe(governed_identity: [u8; 32]) -> Self {
         Self {
             material: None,
             captured: None,
@@ -289,25 +291,25 @@ impl WorthQueryApplicationCommitAuthorityBinding {
         self.retained_governed_input.as_ref()?.downcast_ref()
     }
 
-    pub const fn retained_governed_input_carrier(
+    pub(crate) const fn retained_governed_input_carrier(
         &self,
     ) -> Option<&WorthQueryRetainedGovernedInput> {
         self.retained_governed_input.as_ref()
     }
 
-    pub fn original_inspection_disclosure(
+    pub(crate) fn original_inspection_disclosure(
         &self,
     ) -> Option<&super::super::source_disclosure::OriginalSourceInspectionDisclosure> {
         self.original_inspection_disclosure.as_deref()
     }
 
-    pub fn retain_original_inspection_disclosure(
+    pub(crate) fn retain_original_inspection_disclosure(
         &self,
     ) -> Option<Arc<super::super::source_disclosure::OriginalSourceInspectionDisclosure>> {
         self.original_inspection_disclosure.clone()
     }
 
-    pub fn corrupt_original_disclosure(
+    pub(crate) fn corrupt_original_disclosure(
         &mut self,
         disclosure: Arc<super::super::source_disclosure::OriginalSourceInspectionDisclosure>,
     ) {
@@ -323,3 +325,4 @@ impl WorthQueryApplicationCommitAuthorityBinding {
 }
 
 mod court_doors_for_test;
+mod internal_ports;

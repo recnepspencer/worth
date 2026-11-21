@@ -16,14 +16,24 @@ use worth_relational::facade::{
 
 /// A local read-only graph member; a projected case cannot become an Entity target.
 pub struct WorthQueryInvariantGraphMember<S, M> {
-    pub key: Key,
+    pub(crate) key: Key,
     domain: Domain,
     entity: Option<Entity<S, M>>,
-    pub carrier_name: Arc<str>,
+    pub(crate) carrier_name: Arc<str>,
     origin: super::super::projection_read_origin::ProjectionReadOrigin,
     cookie: u64,
     _source: Option<Arc<PinnedDerivedRelationRead>>,
     _allocation: Option<Arc<SourceFactsAllocation>>,
+}
+
+impl<S, M> crate::ports::InvariantGraphMemberInternalPort for WorthQueryInvariantGraphMember<S, M> {
+    fn key(&self) -> &Key {
+        &self.key
+    }
+
+    fn carrier_name(&self) -> &Arc<str> {
+        &self.carrier_name
+    }
 }
 impl<S, M> Clone for WorthQueryInvariantGraphMember<S, M> {
     fn clone(&self) -> Self {

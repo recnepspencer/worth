@@ -10,6 +10,9 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationCommitDenialStage, WorthQueryApplicationCommitOutcome,
 };
 use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
+use worth_query_execution_attempt::facade::ports::{
+    CompleteReadSetInternalPort as _, EffectProgramInternalPort as _,
+};
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 
 /// Opaque entry refusal. Its causes cannot contain a landed receipt or cleanup
@@ -147,7 +150,7 @@ impl<Schema, Operation, Input, Scope> EffectProgramInstalledEntryExt
         runtime: &WorthQueryApplicationRuntimeCore,
         binding: &ApplicationSchemaBindingIdentity,
     ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
-        self.read_set.admission.validate_installed_entry(
+        self.read_set().admission().validate_installed_entry(
             runtime.authority_identity(),
             binding,
             runtime.installed_operations(),

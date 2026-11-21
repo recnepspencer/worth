@@ -5,6 +5,9 @@ use worth_foundational::facade::{
     CorrectionMaterialPinIdentity as Identity, CorrectionMaterialPinOwner as Owner,
     DurableCompositePublicationAttemptIdentity as Original, RetentionClass,
 };
+use worth_query_execution_lineage::facade::ports::{
+    CommitAuthorityBindingInternalPort as _, RetainedGovernedInputInternalPort as _,
+};
 
 impl CorrectionMaterialOwner {
     pub fn acquire_prepared(

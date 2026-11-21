@@ -1,6 +1,7 @@
 //! Resume the actual original through World, never a new adoption transaction.
 use super::*;
-use worth_runtime_world::facade::WorldRecoveredContinuationOutcome as Original;
+use crate::domain_computation::primary_graph::home_original_progression::ContinuedOriginalOutcome as Original;
+use worth_query_execution_lineage::facade::ports::ProductUnpublishedRecoveryInternalPort as _;
 impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     pub(super) fn continue_recovered_adoption(
         &self,
@@ -48,7 +49,10 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             );
         let branch = expected.branch_identity().clone();
         drop(inspected);
-        let result = match recovery.product.continue_original_in_request(execution) {
+        let result = match recovery
+            .product
+            .continue_original_in_request_with_cleanup(execution)
+        {
             Ok(result) => result,
             Err(cause) => {
                 return Err(failure(
@@ -57,8 +61,8 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 ))
             }
         };
-        let commit = match result {
-            Original::Published { commit } => commit,
+        let (commit, cleanup) = match result {
+            Original::Published { commit, cleanup } => (commit, Ok(cleanup)),
             Original::Pending(_) => {
                 return Err(failure(
                     WorthQueryBranchAdoptionRecoveryDenial::RecoveredPending,
@@ -93,12 +97,6 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             product,
             support_custody: _,
         } = recovery;
-        use worth_query_execution_runtime::facade::ports::ProductBranchOwnerCleanupPort as _;
-        let cleanup = Ok(
-            crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanupReceipt::continued_original_for_published(
-                &commit,
-            ),
-        );
         let adoption = WorthQueryPerformedBranchAdoption::recovered(
             commit,
             branch,

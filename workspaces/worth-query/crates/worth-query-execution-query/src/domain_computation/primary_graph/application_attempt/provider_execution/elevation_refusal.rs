@@ -5,6 +5,9 @@ use crate::domain_computation::primary_graph::{
     WorthQueryAdvancementDenial, WorthQueryPrimaryGraphApplicationRuntime,
 };
 use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
+use worth_query_execution_attempt::facade::ports::{
+    CompleteReadSetInternalPort as _, EffectProgramInternalPort as _,
+};
 use worth_query_installation::facade::ApplicationSchema;
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
@@ -15,8 +18,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     ) -> WorthQueryElevationRequestOutcome {
         let mut candidate = candidate.into_inner();
         let Some(binding) = candidate
-            .read_set
-            .admission
+            .read_set_mut()
+            .admission_mut()
             .take_elevation_request_binding()
         else {
             return WorthQueryElevationRequestOutcome::Denied(
@@ -33,8 +36,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     ) -> WorthQueryElevationApprovalOutcome {
         let mut candidate = candidate.into_inner();
         let Some(binding) = candidate
-            .read_set
-            .admission
+            .read_set_mut()
+            .admission_mut()
             .take_elevation_approval_binding()
         else {
             return WorthQueryElevationApprovalOutcome::Indeterminate;
@@ -48,7 +51,11 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         denial: WorthQueryAdvancementDenial,
     ) -> WorthQueryElevationCloseOutcome {
         let mut candidate = candidate.into_inner();
-        let Some(binding) = candidate.read_set.admission.take_elevation_close_binding() else {
+        let Some(binding) = candidate
+            .read_set_mut()
+            .admission_mut()
+            .take_elevation_close_binding()
+        else {
             return WorthQueryElevationCloseOutcome::Indeterminate;
         };
         closed_outcome(denial.into_commit_outcome(), binding)
@@ -60,7 +67,11 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         denial: WorthQueryAdvancementDenial,
     ) -> WorthQueryMandatoryReviewOutcome {
         let mut candidate = candidate.into_inner();
-        let Some(binding) = candidate.read_set.admission.take_mandatory_review_binding() else {
+        let Some(binding) = candidate
+            .read_set_mut()
+            .admission_mut()
+            .take_mandatory_review_binding()
+        else {
             return WorthQueryMandatoryReviewOutcome::Indeterminate;
         };
         reviewed_outcome(denial.into_commit_outcome(), binding)

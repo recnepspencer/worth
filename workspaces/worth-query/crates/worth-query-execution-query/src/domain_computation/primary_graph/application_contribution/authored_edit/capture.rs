@@ -101,7 +101,7 @@ pub struct CapturedAuthoredEditStage<S> {
 }
 
 impl<S: 'static> From<CapturedAuthoredEditStage<S>>
-    for worth_query_execution_attempt::facade::ports::OpaqueAuthoredEditStage
+    for worth_query_execution_attempt::facade::ports::OpaqueAuthoredEditStage<S>
 {
     fn from(stage: CapturedAuthoredEditStage<S>) -> Self {
         Self::new(stage)

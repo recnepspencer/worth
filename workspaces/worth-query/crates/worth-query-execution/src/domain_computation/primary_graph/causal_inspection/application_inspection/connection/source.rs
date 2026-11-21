@@ -1,6 +1,9 @@
 //! Original source affinity consumes the separately admitted source when selected.
 use super::*;
 use crate::domain_computation::primary_graph::admitted_capture::checkpoint;
+use worth_query_execution_lineage::facade::ports::{
+    CommitAuthorityBindingInternalPort as _, RetainedGovernedInputInternalPort as _,
+};
 pub(super) fn validate(
     context: &mut worth_execution::MapKernelContext<'_, '_>,
     target: &WorthQueryApplicationInspectionTarget,

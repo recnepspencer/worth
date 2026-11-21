@@ -3,6 +3,9 @@ use crate::domain_computation::primary_graph::application_attempt::{
     requested_outcome, validate_elevation_request_program,
 };
 use crate::domain_computation::primary_graph::WorthQueryElevationRequestOutcome;
+use worth_query_execution_attempt::facade::ports::{
+    CompleteReadSetInternalPort as _, EffectProgramInternalPort as _,
+};
 impl<Schema: ApplicationSchema, Operation, Input, Scope>
     CurrentCommitProgram<
         '_,
@@ -33,11 +36,15 @@ impl<Schema: ApplicationSchema, Operation, Input, Scope>
             );
         }
         let currentness = program
-            .read_set
-            .admission
+            .read_set()
+            .admission()
             .elevation_request_binding()
             .map(WorthQueryElevationCommitCurrentness::request);
-        let Some(binding) = program.read_set.admission.take_elevation_request_binding() else {
+        let Some(binding) = program
+            .read_set_mut()
+            .admission_mut()
+            .take_elevation_request_binding()
+        else {
             return WorthQueryElevationRequestOutcome::Denied(
                 WorthQueryApplicationCommitDenial::elevation_request_program_mismatch(),
             );

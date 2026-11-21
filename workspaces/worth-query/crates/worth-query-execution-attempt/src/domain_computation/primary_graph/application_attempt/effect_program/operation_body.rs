@@ -26,7 +26,8 @@ impl<Schema, Operation, Input, Scope>
             field: field.field().to_owned(),
         })?;
         let locator = self.field_locator(field.entity(), field.aspect(), field.field())?;
-        let effect = target.created_effect.ok_or_else(|| {
+        use worth_query_execution_lineage::facade::ports::EffectEntityInternalPort as _;
+        let effect = target.created_effect().ok_or_else(|| {
             denial(
                 WorthQueryApplicationAttemptDenialKind::ForeignEffectTarget,
                 field.entity(),

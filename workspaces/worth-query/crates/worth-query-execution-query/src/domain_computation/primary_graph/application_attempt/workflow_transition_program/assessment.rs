@@ -1,7 +1,10 @@
 use crate::domain_computation::primary_graph::application_attempt::check_request_live;
 use crate::domain_computation::primary_graph::application_checkpoint::facts::FactSequence;
 use crate::domain_computation::primary_graph::OutputDemandSettlementRuntimeExt;
-use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
+use worth_query_execution_attempt::facade::ports::{
+    AdmittedOperationExecutionPort as _, CompleteReadSetInternalPort as _,
+    EffectProgramInternalPort as _, EffectProgramParts,
+};
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::{
@@ -83,7 +86,7 @@ where
         let durable_currentness_facts: std::sync::Arc<[_]> = durable_currentness_facts.into();
         let read_set = self.admitted.read_set();
         check_request_live(
-            read_set.admission.publication_request(),
+            read_set.admission().publication_request(),
             self.required.node_path(),
         )?;
         let mut meaning = evidence_meaning(
@@ -137,11 +140,11 @@ where
             currentness_facts.iter().cloned().collect(),
             super::super::retained_decision_facts::StorageControl::new(
                 execution.allocation_policy(),
-                Some(read_set.admission.publication_request()),
+                Some(read_set.admission().publication_request()),
             ),
         )
         .map_err(|cause| cause.into_attempt_denial(&node_path))?;
-        let program = WorthQueryApplicationEffectProgram {
+        let program = WorthQueryApplicationEffectProgram::from_parts(EffectProgramParts {
             synchronous_outputs: Vec::new(),
             authored_stages: Vec::new(),
             producer_round_limits: crate::domain_computation::primary_graph::application_contribution::producer::synchronous_outputs::default_producer_round_bounds(),
@@ -155,9 +158,7 @@ where
             retain_client_observation: false,
             producer_required_invariants: &[],
             output_currentness_facts: Some(currentness_facts),
-        };
-        let assessment = Some(projection(&self.layout, meaning));
-        let replays = self.replays;
+        });
         Ok(PreparedWorkflowAdvance::Transition {
             program,
             program_revision: self.program_revision,
@@ -167,7 +168,7 @@ where
             assessment_identity_locator: self.layout.assessment_evidence.identity.clone(),
             instance: self.required.instance(),
             node_path,
-            assessment,
+            assessment: Some(projection(&self.layout, meaning)),
             supporting_identity: None,
             operation_receipt_identity: None,
             progress_update: Some(progress_update),
@@ -175,7 +176,7 @@ where
             approval: None,
             approval_identity: None,
             approval_authentication: None,
-            replays,
+            replays: self.replays,
         })
     }
 }
@@ -192,12 +193,12 @@ pub fn bind_currentness_facts<Schema, Operation, Input, Scope>(
     currentness_facts: &(impl FactSequence + ?Sized),
     subject: &str,
 ) -> Result<(), WorthQueryApplicationAttemptDenial> {
-    check_request_live(read_set.admission.publication_request(), subject)?;
+    check_request_live(read_set.admission().publication_request(), subject)?;
     ensure_current(execution, read_set, currentness_facts, subject)?;
     let mut merged = std::collections::BTreeMap::new();
     // Completion's original prefix owns the installed projection ordinals.
     // Index dependencies for conflict checks without rearranging that prefix.
-    for (ordinal, fact) in read_set.facts.iter().enumerate() {
+    for (ordinal, fact) in read_set.facts().iter().enumerate() {
         let locator = fact.dependency_key();
         match merged.entry(locator) {
             std::collections::btree_map::Entry::Vacant(entry) => {
@@ -205,7 +206,7 @@ pub fn bind_currentness_facts<Schema, Operation, Input, Scope>(
             }
             std::collections::btree_map::Entry::Occupied(entry) => {
                 let (_, existing) = *entry.get();
-                if read_set.facts.get(existing) != Some(fact) {
+                if read_set.facts().get(existing) != Some(fact) {
                     return Err(currentness_mismatch(subject));
                 }
             }
@@ -223,7 +224,7 @@ pub fn bind_currentness_facts<Schema, Operation, Input, Scope>(
                 let existing = if additional {
                     currentness_facts.get(appended[position])
                 } else {
-                    read_set.facts.get(position)
+                    read_set.facts().get(position)
                 };
                 if existing != Some(fact) {
                     return Err(currentness_mismatch(subject));
@@ -234,7 +235,7 @@ pub fn bind_currentness_facts<Schema, Operation, Input, Scope>(
     // The completed-read owner retains original backing and replaces facts
     // with their matching effect routes only after admission succeeds.
     read_set
-        .admission
+        .admission()
         .validate_current_authority()
         .map_err(WorthQueryApplicationAttemptDenial::request_authority_lost)?;
     read_set.append_completed_facts(
@@ -262,15 +263,18 @@ pub fn ensure_current<Schema, Operation, Input, Scope>(
     currentness_facts: &(impl FactSequence + ?Sized),
     subject: &str,
 ) -> Result<(), WorthQueryApplicationAttemptDenial> {
-    let current = read_set.lease.handle().with_runtime(execution, |runtime| {
-        for fact in currentness_facts.iter() {
-            check_request_live(read_set.admission.publication_request(), subject)?;
-            if !fact.remains_equal_in(runtime, execution, read_set.lease.snapshot())? {
-                return Ok::<bool, WorthQueryApplicationAttemptDenial>(false);
+    let current = read_set
+        .lease()
+        .handle()
+        .with_runtime(execution, |runtime| {
+            for fact in currentness_facts.iter() {
+                check_request_live(read_set.admission().publication_request(), subject)?;
+                if !fact.remains_equal_in(runtime, execution, read_set.lease().snapshot())? {
+                    return Ok::<bool, WorthQueryApplicationAttemptDenial>(false);
+                }
             }
-        }
-        Ok(true)
-    })?;
+            Ok(true)
+        })?;
     if current {
         Ok(())
     } else {
@@ -297,7 +301,7 @@ where
     let fresh_branch = prepared
         .admitted
         .read_set()
-        .lease
+        .lease()
         .product()
         .product_branch();
     let authority_matches = if let Some(receipt) = settlement.publication_view() {

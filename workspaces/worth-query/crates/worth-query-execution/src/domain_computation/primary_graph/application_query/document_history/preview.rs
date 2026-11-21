@@ -1,6 +1,7 @@
 //! Retained truth and the current document READ have distinct custody and checks.
 use super::*;
 use crate::domain_computation::primary_graph::{WorthQueryHistoryNodeId, WorthQueryHistoryPreview};
+use worth_query_execution_query::facade::ports::AdmittedQueryPlanInternalPort as _;
 
 mod admission;
 pub use admission::WorthQueryHistoryPreviewReadAdmission;
@@ -37,15 +38,15 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
     where
         Rows<S, H>: WorthQueryApplicationProjection<S, Query<S, H>>,
     {
-        let query = read.plan.query.identity().clone();
+        let query = read.plan.query().identity().clone();
         let binding = read
             .plan
-            .query
+            .query()
             .binding_observation()
             .cloned()
             .ok_or(Denial::InstalledBindingMismatch)?;
-        let parameters = *read.plan.parameters.identity();
-        let principal = read.plan.principal.principal_entity_id();
+        let parameters = *read.plan.parameters().identity();
+        let principal = read.plan.principal().principal_entity_id();
         let completed = read.complete_metadata_read(self, phase, document, access)?;
         if !document
             .selection
@@ -73,7 +74,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         Rows<S, H>: WorthQueryApplicationProjection<S, Query<S, H>>,
     {
         admission.validate_plan(phase, &read.plan)?;
-        if read.binding.query().binding_observation() != read.plan.query.binding_observation() {
+        if read.binding.query().binding_observation() != read.plan.query().binding_observation() {
             return Err(Denial::InstalledBindingMismatch);
         }
         let (historical, result) = read.execute(self, phase)?;

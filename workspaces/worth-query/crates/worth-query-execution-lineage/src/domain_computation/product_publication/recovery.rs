@@ -237,3 +237,28 @@ impl std::fmt::Debug for WorthQueryProductUnpublishedRecovery {
             .finish_non_exhaustive()
     }
 }
+
+impl crate::ports::ProductUnpublishedRecoveryInternalPort for WorthQueryProductUnpublishedRecovery {
+    fn continue_original_in_request_with_cleanup(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<
+        crate::domain_computation::primary_graph::home_original_progression::ContinuedOriginalOutcome,
+        RuntimeWorldRecoveryDenial,
+    >{
+        let effects = self.recovery.inspect_recovered_effects(&self.handle)?;
+        let outcome =
+            crate::domain_computation::primary_graph::home_original_progression::continue_original_with_cleanup(
+                &self.recovery,
+                execution,
+                effects,
+            );
+        if matches!(
+            outcome,
+            crate::domain_computation::primary_graph::home_original_progression::ContinuedOriginalOutcome::Published { .. }
+        ) {
+            self.disposition.finish_recovered(&self.handle);
+        }
+        Ok(outcome)
+    }
+}

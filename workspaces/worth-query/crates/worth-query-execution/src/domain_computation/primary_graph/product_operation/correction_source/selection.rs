@@ -1,5 +1,8 @@
 //! Select genuine source occurrences before any corrective disclosure.
 use super::*;
+use worth_query_execution_lineage::facade::ports::{
+    CommitAuthorityBindingInternalPort as _, RetainedGovernedInputInternalPort as _,
+};
 
 impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'runtime, Schema> {
     pub fn select_correction_source(

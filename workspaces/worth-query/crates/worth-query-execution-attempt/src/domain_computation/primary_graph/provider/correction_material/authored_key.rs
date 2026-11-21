@@ -11,6 +11,9 @@ use worth_query_declaration::facade::{
     application_operation::ApplicationMutationOutputPosture as Posture,
     application_schema::ApplicationSchemaMember,
 };
+use worth_query_execution_lineage::facade::ports::{
+    CommitAuthorityBindingInternalPort as _, RetainedGovernedInputInternalPort as _,
+};
 
 pub(super) fn retain(
     application: &WorthQueryPrimaryGraphCommittedApplication,

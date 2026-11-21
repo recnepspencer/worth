@@ -1,6 +1,9 @@
 //! Immutable, sendable required demand carried into its source's assembly.
 use super::*;
 use source::{Source, SourceInput};
+use worth_query_execution_attempt::facade::ports::{
+    CompleteReadSetInternalPort as _, EffectProgramInternalPort as _,
+};
 mod continuation;
 mod tree;
 pub use continuation::{Continuation, Static};
@@ -213,7 +216,7 @@ impl<S: ApplicationSchema, O, I, Scope> EffectProgramSynchronousOutputsExt<S, O,
                 <Source<S, C::Demand> as ApplicationQueryBinding<S>>::PrincipalIdentity,
             >,
     {
-        self.synchronous_outputs.push(
+        self.synchronous_outputs_mut().push(
             worth_query_execution_attempt::facade::ports::OpaqueSynchronousOutputs::new(
                 CapturedSynchronousOutputs::capture(
                     execution,

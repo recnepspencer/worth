@@ -73,9 +73,10 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
             )
             .map_err(WorkflowTransitionPreparationDenial::Attempt)?;
+        use worth_query_execution_attempt::facade::ports::CompleteReadSetInternalPort as _;
         if selected_occurrence
             != crate::basis::WorthQueryProductBranchReadIdentity::from_observation(
-                read_set.lease.product().observation(),
+                read_set.lease().product().observation(),
             )
         {
             return Err(WorkflowTransitionPreparationDenial::Binding(

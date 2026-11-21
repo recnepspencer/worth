@@ -249,10 +249,11 @@ where
         Ok(WorthQueryObservedOutputAvailability::from_state(state))
     })();
     if result.is_err() {
+        use worth_query_execution_lineage::facade::ports::InvariantEntityIdentityInternalPort as _;
         reader_self.decision_facts.record(
             WorthQueryApplicationFactKey::Entity {
                 entity: Producer::IDENTIFIER.to_owned(),
-                entity_id: producer.entity_id,
+                entity_id: producer.entity_id(),
             },
             decision_reads::DecisionReadOutcome::Failed,
         );

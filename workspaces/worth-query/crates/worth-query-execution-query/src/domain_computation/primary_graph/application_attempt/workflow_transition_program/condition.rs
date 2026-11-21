@@ -1,5 +1,8 @@
 use worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome;
 use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
+use worth_query_execution_attempt::facade::ports::{
+    CompleteReadSetInternalPort as _, EffectProgramInternalPort as _,
+};
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::{PreparedWorkflowAdvance, PreparedWorkflowCondition};
@@ -53,7 +56,7 @@ where
             .primary_graph()
             .ok_or_else(|| denial(&node_path))?;
         let selected_product = crate::basis::WorthQueryProductBranchReadIdentity::from_observation(
-            self.admitted.read_set().lease.product().observation(),
+            self.admitted.read_set().lease().product().observation(),
         );
         // Every source must be current before any value is read: a stale
         // operand denies as stale, never as an expression result.
@@ -73,13 +76,13 @@ where
                     .validate_and_into_facts(
                         runtime.runtime.authority_identity().as_u64(),
                         &runtime.installed_schema().binding_identity(),
-                        self.admitted.read_set().admission.graph_work_branch(),
+                        self.admitted.read_set().admission().graph_work_branch(),
                         self.admitted.subject(),
                         &selected_product,
                         operand.query,
                         expected_query_identity,
                         &graph.layout,
-                        Some(self.admitted.read_set().admission.publication_request()),
+                        Some(self.admitted.read_set().admission().publication_request()),
                         execution,
                     )
                     .map_err(|cause| match cause.retention_denial() {
@@ -145,11 +148,11 @@ where
             currentness_facts,
             super::super::retained_decision_facts::StorageControl::new(
                 execution.allocation_policy(),
-                Some(read_set.admission.publication_request()),
+                Some(read_set.admission().publication_request()),
             ),
         )
         .map_err(|cause| cause.into_attempt_denial(&node_path))?;
-        let program = WorthQueryApplicationEffectProgram {
+        let program = WorthQueryApplicationEffectProgram::from_parts(worth_query_execution_attempt::facade::ports::EffectProgramParts {
             synchronous_outputs: Vec::new(),
             authored_stages: Vec::new(),
             producer_round_limits: crate::domain_computation::primary_graph::application_contribution::producer::synchronous_outputs::default_producer_round_bounds(),
@@ -163,7 +166,7 @@ where
             retain_client_observation: false,
             producer_required_invariants: &[],
             output_currentness_facts: Some(currentness_facts),
-        };
+        });
         Ok(PreparedWorkflowAdvance::Transition {
             program,
             program_revision: self.program_revision,

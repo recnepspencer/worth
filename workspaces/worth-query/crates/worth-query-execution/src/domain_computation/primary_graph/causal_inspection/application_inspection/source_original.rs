@@ -4,6 +4,9 @@ use crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt
 use worth_query_declaration::facade::application_operation::{
     ApplicationSourceDisclosureBinding, DeclaredApplicationSourceDisclosure,
 };
+use worth_query_execution_lineage::facade::ports::{
+    CommitAuthorityBindingInternalPort as _, RetainedGovernedInputInternalPort as _,
+};
 use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryInstalledApplicationQueryBinding,
 };

@@ -18,9 +18,10 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let request = phase
             .checked_execution_request_for(&self.runtime.product_runtime)
             .map_err(|_| QueryObligationDenial::StaleIncarnation)?;
+        use worth_query_execution_runtime::facade::ports::ExecutionRuntimeManagedRunCustodyPort as _;
         self.runtime
             .execution()
-            .managed_run_custody
+            .managed_run_custody()
             .flush(&request)?;
         self.installed_program_support()
             .ok_or(QueryObligationDenial::SupportUnavailable)?

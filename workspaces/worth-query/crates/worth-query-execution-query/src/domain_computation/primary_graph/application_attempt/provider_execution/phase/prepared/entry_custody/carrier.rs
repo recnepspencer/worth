@@ -1,6 +1,9 @@
 //! Closed correspondence to each existing typed program's actual admission.
 use super::*;
 use crate::domain_computation::primary_graph::application_attempt::effect_program::WorthQueryCommitEntryRefusal;
+use worth_query_execution_attempt::facade::ports::{
+    CompleteReadSetInternalPort as _, EffectProgramInternalPort as _,
+};
 mod sealed {
     pub trait Sealed {}
 }
@@ -27,7 +30,7 @@ impl<S, O, I, E> CommitCarrier<S> for WorthQueryApplicationEffectProgram<S, O, I
         refusal.into_outcome()
     }
     fn admission(&self) -> &WorthQueryAdmittedApplicationOperation<S, O, I, E> {
-        &self.read_set.admission
+        &self.read_set().admission()
     }
 }
 
@@ -40,12 +43,12 @@ macro_rules! lifecycle_carrier {
             type Scope = E;
             type Refusal = $outcome;
             fn admission(&self) -> &WorthQueryAdmittedApplicationOperation<S, O, I, E> {
-                &self.application_program().read_set.admission
+                &self.application_program().read_set().admission()
             }
             fn refuse(self, refusal: WorthQueryCommitEntryRefusal) -> Self::Refusal {
                 let outcome = refusal.into_outcome();
                 let mut program = self.into_inner();
-                let Some(binding) = program.read_set.admission.$take() else {
+                let Some(binding) = program.read_set_mut().admission_mut().$take() else {
                     return $missing;
                 };
                 $convert(outcome, binding)
@@ -99,7 +102,7 @@ macro_rules! commit_carrier {
             type Scope = E;
             type Refusal = WorthQueryApplicationCommitOutcome;
             fn admission(&self) -> &WorthQueryAdmittedApplicationOperation<S, O, I, E> {
-                &self.application_program().read_set.admission
+                &self.application_program().read_set().admission()
             }
             fn refuse(self, refusal: WorthQueryCommitEntryRefusal) -> Self::Refusal {
                 refusal.into_outcome()

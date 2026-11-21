@@ -16,6 +16,9 @@ use worth_query_declaration::facade::{
     },
     application_schema::ApplicationStructuredValueBinding,
 };
+use worth_query_execution_attempt::facade::ports::{
+    CompleteReadSetInternalPort as _, EffectProgramInternalPort as _,
+};
 type Binding<S, C> = <C as ApplicationConnectionShape<S>>::Binding;
 type Recipe<S, C> =
     <Binding<S, C> as WorthQueryApplicationDiscoveredOutputConnection<S>>::Discovery;
@@ -184,7 +187,7 @@ where
         if let CapturedSynchronousOutputs::Prepared { source_recipe, .. } = &mut captured {
             *source_recipe = recording;
         }
-        program.synchronous_outputs.push(
+        program.synchronous_outputs_mut().push(
             worth_query_execution_attempt::facade::ports::OpaqueSynchronousOutputs::new(captured),
         );
         program

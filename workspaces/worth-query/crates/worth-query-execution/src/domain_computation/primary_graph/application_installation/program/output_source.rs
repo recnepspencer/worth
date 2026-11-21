@@ -193,7 +193,8 @@ where
         let idempotency = correction
             .as_ref()
             .map_or(idempotency, |command| command.bind(idempotency));
-        let discovery_recipe = match program.synchronous_outputs.iter().find_map(|root| {
+        use worth_query_execution_attempt::facade::ports::EffectProgramInternalPort as _;
+        let discovery_recipe = match program.synchronous_outputs().iter().find_map(|root| {
             root.downcast_ref::<crate::domain_computation::primary_graph::application_contribution::producer::synchronous_outputs::CapturedSynchronousOutputs>()
                 .expect("synchronous outputs slot always holds CapturedSynchronousOutputs")
                 .source_recipe()

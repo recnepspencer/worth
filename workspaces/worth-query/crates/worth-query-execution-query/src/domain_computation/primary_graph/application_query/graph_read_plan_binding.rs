@@ -34,34 +34,34 @@ pub struct WorthQueryAdmittedApplicationQueryPlan<
     PrincipalIdentity,
     Scope,
 > {
-    pub planned_batch_item: Option<super::batch::PlannedBatchItem>,
-    pub retain_expression_context: bool,
-    pub retain_projection_for_inspection: bool,
-    pub runtime_authority: WorthQueryRuntimeAuthorityIdentity,
-    pub graph_authority_identity: String,
-    pub provider_identity: String,
-    pub query:
+    pub(crate) planned_batch_item: Option<super::batch::PlannedBatchItem>,
+    pub(crate) retain_expression_context: bool,
+    pub(crate) retain_projection_for_inspection: bool,
+    pub(crate) runtime_authority: WorthQueryRuntimeAuthorityIdentity,
+    pub(crate) graph_authority_identity: String,
+    pub(crate) provider_identity: String,
+    pub(crate) query:
         &'a WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
     pub principal: &'a WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
-    pub scope: &'a WorthQueryApplicationEntityIdentity<Schema, Scope>,
-    pub parameters: WorthQueryAdmittedApplicationQueryParameters,
-    pub controls: WorthQueryAdmittedApplicationQueryControls<'a>,
-    pub canonical_work: WorthQueryCanonicalWorkPhases,
-    pub continuation_index_id: Option<DerivedIndexId>,
-    pub continuation_state: Option<WorthQueryAdmittedContinuationState>,
-    pub basis: WorthQueryApplicationQueryBasisCustody,
-    pub index_posture: WorthQueryQueryIndexPosture,
-    pub security_product: crate::basis::WorthQueryProductObservationLease,
-    pub security_basis: Option<super::basis::WorthQueryApplicationQueryBasisCustody>,
+    pub(crate) scope: &'a WorthQueryApplicationEntityIdentity<Schema, Scope>,
+    pub(crate) parameters: WorthQueryAdmittedApplicationQueryParameters,
+    pub(crate) controls: WorthQueryAdmittedApplicationQueryControls<'a>,
+    pub(crate) canonical_work: WorthQueryCanonicalWorkPhases,
+    pub(crate) continuation_index_id: Option<DerivedIndexId>,
+    pub(crate) continuation_state: Option<WorthQueryAdmittedContinuationState>,
+    pub(crate) basis: WorthQueryApplicationQueryBasisCustody,
+    pub(crate) index_posture: WorthQueryQueryIndexPosture,
+    pub(crate) security_product: crate::basis::WorthQueryProductObservationLease,
+    pub(crate) security_basis: Option<super::basis::WorthQueryApplicationQueryBasisCustody>,
     pub graph_work: crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession,
-    pub authorization:
+    pub(crate) authorization:
         crate::domain_computation::authorization::WorthQueryRetainedAuthorizationDecisionFacts,
-    pub authorization_work: super::WorthQueryApplicationAuthorizationWorkEvidence,
-    pub selected_access: Option<
+    pub(crate) authorization_work: super::WorthQueryApplicationAuthorizationWorkEvidence,
+    pub(crate) selected_access: Option<
         super::admission::SelectedIssuedAccessRoot<'a, Schema, Principal, PrincipalIdentity, Scope>,
     >,
-    pub governance: super::disclosure::WorthQueryApplicationQueryGovernance,
-    pub history_metadata: Option<super::history::HistoryMetadataAdmission>,
+    pub(crate) governance: super::disclosure::WorthQueryApplicationQueryGovernance,
+    pub(crate) history_metadata: Option<super::history::HistoryMetadataAdmission>,
 }
 
 pub struct WorthQueryAdmittedContinuationState {
@@ -98,7 +98,98 @@ impl<'a, Schema, Query, Parameters, QueryResult, Principal, PrincipalIdentity, S
         self.retain_projection_for_inspection = true;
         self
     }
+}
 
+impl<'a, Schema, Query, Parameters, QueryResult, Principal, PrincipalIdentity, Scope>
+    crate::ports::AdmittedQueryPlanInternalPort<
+        'a,
+        Schema,
+        Query,
+        Parameters,
+        QueryResult,
+        Principal,
+        PrincipalIdentity,
+        Scope,
+    >
+    for WorthQueryAdmittedApplicationQueryPlan<
+        'a,
+        Schema,
+        Query,
+        Parameters,
+        QueryResult,
+        Principal,
+        PrincipalIdentity,
+        Scope,
+    >
+{
+    fn basis(&self) -> &super::basis::WorthQueryApplicationQueryBasisCustody {
+        &self.basis
+    }
+
+    fn controls(&self) -> &WorthQueryAdmittedApplicationQueryControls<'a> {
+        &self.controls
+    }
+
+    fn governance(&self) -> &super::disclosure::WorthQueryApplicationQueryGovernance {
+        &self.governance
+    }
+
+    fn take_governance_readmission(
+        &mut self,
+    ) -> Option<super::disclosure::WorthQueryPendingApplicationQueryGovernance> {
+        std::mem::replace(
+            &mut self.governance,
+            super::disclosure::WorthQueryApplicationQueryGovernance::Public,
+        )
+        .into_readmission()
+    }
+
+    fn history_metadata(&self) -> Option<&super::history::HistoryMetadataAdmission> {
+        self.history_metadata.as_ref()
+    }
+
+    fn set_history_metadata(&mut self, metadata: Option<super::history::HistoryMetadataAdmission>) {
+        self.history_metadata = metadata;
+    }
+
+    fn parameters(&self) -> &WorthQueryAdmittedApplicationQueryParameters {
+        &self.parameters
+    }
+
+    fn principal_ref(
+        &self,
+    ) -> &'a WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity> {
+        self.principal
+    }
+
+    fn query(
+        &self,
+    ) -> &'a WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>
+    {
+        self.query
+    }
+
+    fn scope(&self) -> &'a WorthQueryApplicationEntityIdentity<Schema, Scope> {
+        self.scope
+    }
+
+    fn security_product(&self) -> &crate::basis::WorthQueryProductObservationLease {
+        &self.security_product
+    }
+}
+
+impl<'a, Schema, Query, Parameters, QueryResult, Principal, PrincipalIdentity, Scope>
+    WorthQueryAdmittedApplicationQueryPlan<
+        'a,
+        Schema,
+        Query,
+        Parameters,
+        QueryResult,
+        Principal,
+        PrincipalIdentity,
+        Scope,
+    >
+{
     pub fn carry_planned_batch_item(&mut self, item: Option<super::batch::PlannedBatchItem>) {
         self.planned_batch_item = item;
     }

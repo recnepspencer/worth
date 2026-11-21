@@ -18,7 +18,7 @@ use super::{
 /// binding and provider routing consume. It is not reconstructible from an
 /// index digest or workspace label.
 pub struct WorthQueryExecutionRuntime {
-    pub managed_run_custody:
+    pub(crate) managed_run_custody:
         crate::domain_computation::managed_run::durable_custody::ManagedRunCustodyRegistry,
     authority_identity: WorthQueryRuntimeAuthorityIdentity,
     installed_packages: Arc<WorthQueryInstalledPackageIndex>,

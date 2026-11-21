@@ -2,6 +2,7 @@
 
 mod admitted;
 mod component;
+pub mod continued_original;
 pub mod follower;
 mod history;
 pub mod registry;

@@ -6,6 +6,9 @@ use worth_query_declaration::facade::{
     application_aftermath::ApplicationInverseBinding,
     application_operation::{ApplicationEncodedInput, ApplicationMutationBinding},
 };
+use worth_query_execution_lineage::facade::ports::{
+    CommitAuthorityBindingInternalPort as _, RetainedGovernedInputInternalPort as _,
+};
 
 /// Correction-command lookup under fresh disclosure for the chosen action binding.
 ///

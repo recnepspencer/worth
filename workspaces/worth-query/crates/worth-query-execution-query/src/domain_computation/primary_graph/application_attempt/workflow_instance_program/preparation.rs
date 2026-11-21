@@ -1,3 +1,6 @@
+use worth_query_execution_attempt::facade::ports::{
+    CompleteReadSetInternalPort as _, EffectProgramInternalPort as _,
+};
 mod adapter;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use worth_query_declaration::facade::{
@@ -213,7 +216,7 @@ where
             .map_err(WorkflowInstancePreparationDenial::Attempt)?;
         if selected_occurrence
             != crate::basis::WorthQueryProductBranchReadIdentity::from_observation(
-                read_set.lease.product().observation(),
+                read_set.lease().product().observation(),
             )
         {
             return Err(WorkflowInstancePreparationDenial::Binding(

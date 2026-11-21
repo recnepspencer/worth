@@ -80,13 +80,13 @@ impl EffectSelection<'_> {
                 field.entity(),
             ));
         }
-        Ok(WorthQueryApplicationEffectEntity {
-            reference: EntityReference::Existing(entity_id),
-            entity: field.entity().to_owned(),
-            created_effect: None,
-            program: Arc::clone(self.program),
-            _marker: std::marker::PhantomData,
-        })
+        use worth_query_execution_lineage::facade::ports::EffectEntityInternalPort as _;
+        Ok(WorthQueryApplicationEffectEntity::from_parts(
+            EntityReference::Existing(entity_id),
+            field.entity().to_owned(),
+            None,
+            Arc::clone(self.program),
+        ))
     }
     pub fn select(
         &self,
@@ -123,12 +123,12 @@ impl EffectSelection<'_> {
                 entity,
             ));
         }
-        Ok(WorthQueryApplicationEffectEntity {
-            reference: EntityReference::Existing(entity_id),
-            entity: entity.to_owned(),
-            created_effect: None,
-            program: Arc::clone(self.program),
-            _marker: std::marker::PhantomData,
-        })
+        use worth_query_execution_lineage::facade::ports::EffectEntityInternalPort as _;
+        Ok(WorthQueryApplicationEffectEntity::from_parts(
+            EntityReference::Existing(entity_id),
+            entity.to_owned(),
+            None,
+            Arc::clone(self.program),
+        ))
     }
 }

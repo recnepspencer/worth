@@ -3,6 +3,9 @@ use crate::domain_computation::primary_graph::application_attempt::{
     closed_outcome, validate_elevation_close_program,
 };
 use crate::domain_computation::primary_graph::WorthQueryElevationCloseOutcome;
+use worth_query_execution_attempt::facade::ports::{
+    CompleteReadSetInternalPort as _, EffectProgramInternalPort as _,
+};
 impl<Schema: ApplicationSchema, Operation, Input, Scope>
     CurrentCommitProgram<
         '_,
@@ -29,13 +32,21 @@ impl<Schema: ApplicationSchema, Operation, Input, Scope>
         } = self;
         let mut program = program.into_inner();
         if let Some(denial) = direct_denial {
-            let Some(binding) = program.read_set.admission.take_elevation_close_binding() else {
+            let Some(binding) = program
+                .read_set_mut()
+                .admission_mut()
+                .take_elevation_close_binding()
+            else {
                 return WorthQueryElevationCloseOutcome::Indeterminate;
             };
             return WorthQueryElevationCloseOutcome::Denied(denial, binding.into_approved());
         }
         if validate_elevation_close_program(&program).is_err() {
-            let Some(binding) = program.read_set.admission.take_elevation_close_binding() else {
+            let Some(binding) = program
+                .read_set_mut()
+                .admission_mut()
+                .take_elevation_close_binding()
+            else {
                 return WorthQueryElevationCloseOutcome::Indeterminate;
             };
             return WorthQueryElevationCloseOutcome::Denied(
@@ -44,11 +55,15 @@ impl<Schema: ApplicationSchema, Operation, Input, Scope>
             );
         }
         let currentness = program
-            .read_set
-            .admission
+            .read_set()
+            .admission()
             .elevation_close_binding()
             .map(WorthQueryElevationCommitCurrentness::close);
-        let Some(binding) = program.read_set.admission.take_elevation_close_binding() else {
+        let Some(binding) = program
+            .read_set_mut()
+            .admission_mut()
+            .take_elevation_close_binding()
+        else {
             return WorthQueryElevationCloseOutcome::Indeterminate;
         };
         closed_outcome(

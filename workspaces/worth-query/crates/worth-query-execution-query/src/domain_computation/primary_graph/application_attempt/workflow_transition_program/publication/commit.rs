@@ -1,3 +1,4 @@
+use worth_query_execution_attempt::facade::ports::{CompleteReadSetInternalPort as _, EffectProgramInternalPort as _};
 use crate::domain_computation::primary_graph::application_attempt::workflow_transition_program::publication::transition_replay::PreparedWorkflowAdvanceTransitionReplayExt as _;
 use crate::domain_computation::primary_graph::WorthQueryApplicationUncommitted;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementDenialCommitExt as _;
@@ -122,7 +123,7 @@ where
             (true, Some(authentication)) => {
                 if !authentication.matches_basis(
                     program
-                        .output_currentness_facts
+                        .output_currentness_facts()
                         .as_ref()
                         .map(|facts| facts.facts()),
                 ) {

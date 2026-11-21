@@ -1,6 +1,9 @@
 //! Immutable recovery binding derived from the committed receipt (R8.28).
 
 use worth_query_execution_lineage::facade::ports::CommitReceiptPreimagePort as _;
+use worth_query_execution_lineage::facade::ports::{
+    CommitAuthorityBindingInternalPort as _, RetainedGovernedInputInternalPort as _,
+};
 
 use worth_query_installation::facade::{
     InstalledAftermathRecoveryContract, PublishedAftermathPosture,

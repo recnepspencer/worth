@@ -16,6 +16,9 @@ use worth_query_declaration::facade::{
     application_schema::{ApplicationSchema, ApplicationSigningProvenanceMetadata},
 };
 use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
+use worth_query_execution_attempt::facade::ports::{
+    CompleteReadSetInternalPort as _, EffectProgramInternalPort as _,
+};
 
 pub type BodyCandidate<Schema, Binding> = WorthQueryApplicationEffectProgram<Schema, <Binding as ApplicationMutationBinding<Schema>>::Operation, <Binding as ApplicationMutationBinding<Schema>>::Input, <<Binding as ApplicationMutationBinding<Schema>>::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Scope>;
 
@@ -29,7 +32,7 @@ pub fn seal<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schem
     candidate: BodyCandidate<Schema, Binding>,
     identities: &ApplicationMutationIdentities<'_, Schema, Binding>,
 ) -> Result<BodyCandidate<Schema, Binding>, Denial> {
-    let Some(state) = candidate.read_set.signed_creation.as_ref() else {
+    let Some(state) = candidate.read_set().signed_creation() else {
         return Ok(candidate);
     };
     if state.sealed.is_some() {
@@ -41,16 +44,15 @@ pub fn seal<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schem
     let candidate = super::super::signing_lifecycle::capture_signing(execution, candidate)?;
     let (mut candidate, dependencies_memory) = super::dependencies::capture(execution, candidate)?;
     let state = candidate
-        .read_set
-        .signed_creation
-        .as_ref()
+        .read_set()
+        .signed_creation()
         .ok_or(Denial::CandidateMismatch)?;
     let request = phase
         .execution_request_for(&application.runtime.product_runtime)
         .map_err(|_| Denial::CandidateMismatch)?;
     candidate
-        .read_set
-        .admission
+        .read_set()
+        .admission()
         .validate_current_authority()
         .map_err(|cause| {
             Denial::Attempt(WorthQueryApplicationAttemptDenial::request_authority_lost(
@@ -72,8 +74,8 @@ pub fn seal<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schem
         .cloned()
         .ok_or(Denial::OwnerUnavailable)?;
     let principal = candidate
-        .read_set
-        .admission
+        .read_set()
+        .admission()
         .signed_creation_principal()
         .map(Arc::clone)
         .ok_or(Denial::Authentication(
@@ -82,7 +84,7 @@ pub fn seal<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schem
     let revision_text = revision.to_string();
     let metadata = ApplicationSigningProvenanceMetadata {
         program_revision: revision_text,
-        operation: candidate.read_set.admission.operation().to_owned(),
+        operation: candidate.read_set().admission().operation().to_owned(),
         binding: Binding::IDENTITY.to_owned(),
         signer_issuer: principal.issuer().to_owned(),
         signer_subject: principal.subject().to_owned(),
@@ -92,7 +94,7 @@ pub fn seal<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schem
         clock_timeline: owner.metadata().clock_timeline().to_owned(),
     };
     let super::super::WorthQueryApplicationRealizedEffect::CreateEntity { fields, .. } = candidate
-        .effects
+        .effects()
         .get(state.slot.effect)
         .ok_or(Denial::CandidateMismatch)?
     else {
@@ -101,8 +103,8 @@ pub fn seal<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schem
     if fields.contains_key(&state.slot.field) {
         return Err(Denial::CandidateMismatch);
     }
-    let subject = candidate.read_set.admission.scope_entity_id();
-    let signer = candidate.read_set.admission.graph_work().principal();
+    let subject = candidate.read_set().admission().scope_entity_id();
+    let signer = candidate.read_set().admission().graph_work().principal();
     let subject_binding = execution
         .decision_stage(|context| {
             super::subject_binding::capture::<Schema, Binding>(&candidate, &request, context)
@@ -130,7 +132,7 @@ pub fn seal<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schem
                 CapturedSubject::Authentication => identity::subject(
                     fields,
                     subject,
-                    &candidate.read_set.facts,
+                    candidate.read_set().facts(),
                     &request,
                     context,
                 ),
@@ -140,12 +142,12 @@ pub fn seal<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schem
     let (effect_identity, candidate_work) = execution
         .decision_stage(|context| {
             context.checkpoint(1).map_err(stopped)?;
-            identity::candidate(&candidate.effects, &request, context)
+            identity::candidate(&candidate.effects(), &request, context)
         })
         .map_err(|cause| Denial::Execution(cause.into()))??;
     let operation_meaning = *candidate
-        .read_set
-        .admission
+        .read_set()
+        .admission()
         .installed_operation_identity_bytes();
     let observation = if !matches!(
         subject_binding,
@@ -155,27 +157,34 @@ pub fn seal<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schem
             .decision_stage(|context| {
                 super::super::dependency_identity::authentication_observation_identity(
                     operation_meaning,
-                    &candidate.read_set.facts,
+                    candidate.read_set().facts(),
                     &request,
                     context,
                 )
             })
             .map_err(|cause| Denial::Execution(cause.into()))??;
         candidate
-            .read_set
-            .admission
+            .read_set_mut()
+            .admission_mut()
             .retain_execution_canonical_work(work);
         Some(digest)
     } else {
         None
     };
+    let purpose = candidate
+        .read_set()
+        .signed_creation()
+        .ok_or(Denial::CandidateMismatch)?
+        .slot
+        .spec
+        .purpose();
     let (signing, signing_work) = execution
         .decision_stage(|context| {
             context.checkpoint(0).map_err(stopped)?;
             let mut signing = identity::IdentityEntries::new();
             signing.text("program", revision.to_string());
             signing.text("binding", Binding::IDENTITY);
-            signing.text("purpose", state.slot.spec.purpose());
+            signing.text("purpose", purpose);
             signing.digest("operation", operation_meaning);
             signing.digest("logical-request", *identities.key_identity());
             signing.digest("input", *identities.input_identity());
@@ -204,20 +213,20 @@ pub fn seal<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schem
         })
         .map_err(|cause| Denial::Execution(cause.into()))??;
     let intent = WorthQueryAuthenticationEventIntent::new(
-        state.slot.spec.purpose(),
+        purpose,
         CanonicalDigestId::new(signing),
         CanonicalDigestId::new(coverage),
     )
     .map_err(|_| Denial::CandidateMismatch)?;
     for work in [coverage_work, candidate_work, signing_work] {
         candidate
-            .read_set
-            .admission
+            .read_set_mut()
+            .admission_mut()
             .retain_execution_canonical_work(work);
     }
     candidate
-        .read_set
-        .signed_creation
+        .read_set_mut()
+        .signed_creation_mut()
         .as_mut()
         .ok_or(Denial::CandidateMismatch)?
         .sealed = Some(SealedSigningContext {
@@ -249,8 +258,8 @@ pub fn intent<Schema, Operation, Input, Scope>(
     candidate: &WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
 ) -> Option<&WorthQueryAuthenticationEventIntent> {
     candidate
-        .read_set
-        .signed_creation
+        .read_set()
+        .signed_creation()
         .as_ref()?
         .sealed
         .as_ref()
@@ -264,9 +273,14 @@ pub fn sign<Schema, Operation, Input, Scope>(
     >,
     principal: &worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal<Schema>,
 ) -> Result<(), WorthQueryAuthenticationEventDenial> {
+    let request = candidate
+        .read_set()
+        .admission()
+        .publication_request()
+        .clone();
     let state = candidate
-        .read_set
-        .signed_creation
+        .read_set_mut()
+        .signed_creation_mut()
         .as_mut()
         .ok_or(WorthQueryAuthenticationEventDenial::MissingSigningProof)?;
     let sealed = state
@@ -283,7 +297,7 @@ pub fn sign<Schema, Operation, Input, Scope>(
         event,
         principal,
         &sealed.intent,
-        candidate.read_set.admission.publication_request(),
+        &request,
     )?);
     Ok(())
 }

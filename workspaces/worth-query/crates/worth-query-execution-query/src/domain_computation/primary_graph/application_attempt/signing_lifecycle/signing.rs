@@ -2,14 +2,17 @@
 use super::super::signed_creation::WorthQuerySignedCreationPreparationDenial as SigningDenial;
 use super::super::WorthQueryApplicationEffectProgram;
 use super::{observation, Denial, Kind, QueryRequestExecution};
+use worth_query_execution_attempt::facade::ports::{
+    CompleteReadSetInternalPort as _, EffectProgramInternalPort as _,
+};
 
 pub fn capture_signing<Schema, Operation, Input, Scope>(
     execution: &QueryRequestExecution<'_>,
     mut candidate: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
 ) -> Result<WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>, SigningDenial> {
     let Some(spec) = candidate
-        .read_set
-        .admission
+        .read_set()
+        .admission()
         .allowed_graph_contract()
         .body()
         .and_then(|body| body.creation())
@@ -17,7 +20,7 @@ pub fn capture_signing<Schema, Operation, Input, Scope>(
     else {
         return Ok(candidate);
     };
-    let lease = &candidate.read_set.lease;
+    let lease = &candidate.read_set().lease();
     let request = execution.execution_request().map_err(|cause| {
         SigningDenial::Execution(
             crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(cause),
@@ -36,7 +39,7 @@ pub fn capture_signing<Schema, Operation, Input, Scope>(
                 runtime,
                 &request,
                 lease.snapshot(),
-                candidate.read_set.admission.scope_entity_id(),
+                candidate.read_set().admission().scope_entity_id(),
                 current.kind,
                 limit,
                 &mut extra,
@@ -51,7 +54,7 @@ pub fn capture_signing<Schema, Operation, Input, Scope>(
         )));
     }
     candidate
-        .read_set
+        .read_set_mut()
         .append_completed_facts(extra, request.allocation_policy())
         .map_err(SigningDenial::Attempt)?;
     Ok(candidate)

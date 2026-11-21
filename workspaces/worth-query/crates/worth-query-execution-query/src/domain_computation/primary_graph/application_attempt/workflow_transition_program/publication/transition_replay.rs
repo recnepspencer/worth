@@ -7,6 +7,9 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationIdempotencyResolution, WorthQueryApplicationIdempotencyResolutionDenial,
     WorthQueryApplicationUncommitted, WorthQueryPrimaryGraphApplicationRuntime,
 };
+use worth_query_execution_attempt::facade::ports::{
+    CompleteReadSetInternalPort as _, EffectProgramInternalPort as _,
+};
 use worth_query_installation::facade::ApplicationSchema;
 
 #[path = "transition_replay/condition.rs"]
@@ -70,7 +73,7 @@ impl<Schema, Operation, Input, Scope>
                 replays,
                 ..
             } => (
-                &program.read_set.admission,
+                &program.read_set().admission(),
                 *approval_identity,
                 approval_authentication
                     .as_ref()
@@ -78,17 +81,17 @@ impl<Schema, Operation, Input, Scope>
                     .unwrap_or(replays),
             ),
             Self::AwaitingAssessment(prepared) => (
-                &prepared.admitted.read_set().admission,
+                &prepared.admitted.read_set().admission(),
                 None,
                 &prepared.replays,
             ),
             Self::AwaitingCondition(prepared) => (
-                &prepared.admitted.read_set().admission,
+                &prepared.admitted.read_set().admission(),
                 None,
                 &prepared.replays,
             ),
             Self::AwaitingOperation(prepared) => (
-                &prepared.admitted.read_set().admission,
+                &prepared.admitted.read_set().admission(),
                 None,
                 &prepared.replays,
             ),
@@ -104,7 +107,7 @@ impl<Schema, Operation, Input, Scope>
             | Self::ReplayOnly {
                 read_set, replays, ..
             } => (
-                &read_set.admission,
+                &read_set.admission(),
                 match self {
                     Self::ReplayOnly {
                         approval_identity, ..
@@ -209,39 +212,39 @@ impl<Schema, Operation, Input, Scope>
                 replays,
                 ..
             } => (
-                &program.read_set.admission,
-                program.read_set.lease.product().product_branch(),
+                &program.read_set().admission(),
+                program.read_set().lease().product().product_branch(),
                 transition_identity_locator,
                 replays,
             ),
             Self::AwaitingAssessment(prepared) => (
-                &prepared.admitted.read_set().admission,
+                &prepared.admitted.read_set().admission(),
                 prepared
                     .admitted
                     .read_set()
-                    .lease
+                    .lease()
                     .product()
                     .product_branch(),
                 &prepared.layout.transition.identity,
                 &prepared.replays,
             ),
             Self::AwaitingCondition(prepared) => (
-                &prepared.admitted.read_set().admission,
+                &prepared.admitted.read_set().admission(),
                 prepared
                     .admitted
                     .read_set()
-                    .lease
+                    .lease()
                     .product()
                     .product_branch(),
                 &prepared.layout.transition.identity,
                 &prepared.replays,
             ),
             Self::AwaitingOperation(prepared) => (
-                &prepared.admitted.read_set().admission,
+                &prepared.admitted.read_set().admission(),
                 prepared
                     .admitted
                     .read_set()
-                    .lease
+                    .lease()
                     .product()
                     .product_branch(),
                 &prepared.layout.transition.identity,
@@ -271,8 +274,8 @@ impl<Schema, Operation, Input, Scope>
                 replays,
                 ..
             } => (
-                &read_set.admission,
-                read_set.lease.product().product_branch(),
+                &read_set.admission(),
+                read_set.lease().product().product_branch(),
                 transition_identity_locator,
                 replays,
             ),

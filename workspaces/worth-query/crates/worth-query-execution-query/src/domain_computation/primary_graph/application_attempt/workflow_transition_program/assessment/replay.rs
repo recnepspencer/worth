@@ -1,3 +1,6 @@
+use worth_query_execution_attempt::facade::ports::{
+    CompleteReadSetInternalPort as _, EffectProgramInternalPort as _,
+};
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::{decode_hex_identity, evidence_meaning, projection_with_locator};
@@ -68,24 +71,24 @@ where
                 program,
                 assessment_identity_locator,
                 ..
-            } => (&program.read_set.admission, assessment_identity_locator),
+            } => (&program.read_set().admission(), assessment_identity_locator),
             Self::AwaitingAssessment(prepared) => (
-                &prepared.admitted.read_set().admission,
+                &prepared.admitted.read_set().admission(),
                 &prepared.layout.assessment_evidence.identity,
             ),
             Self::AwaitingCondition(prepared) => (
-                &prepared.admitted.read_set().admission,
+                &prepared.admitted.read_set().admission(),
                 &prepared.layout.assessment_evidence.identity,
             ),
             Self::AwaitingOperation(prepared) => (
-                &prepared.admitted.read_set().admission,
+                &prepared.admitted.read_set().admission(),
                 &prepared.layout.assessment_evidence.identity,
             ),
             Self::ReplayOnly {
                 read_set,
                 assessment_identity_locator,
                 ..
-            } => (&read_set.admission, assessment_identity_locator),
+            } => (&read_set.admission(), assessment_identity_locator),
             Self::AwaitingEvidence {
                 read_set,
                 assessment_identity_locator,
@@ -95,12 +98,12 @@ where
                 read_set,
                 assessment_identity_locator,
                 ..
-            } => (&read_set.admission, assessment_identity_locator),
+            } => (&read_set.admission(), assessment_identity_locator),
             Self::AwaitingApproval {
                 read_set,
                 assessment_identity_locator,
                 ..
-            } => (&read_set.admission, assessment_identity_locator),
+            } => (&read_set.admission(), assessment_identity_locator),
         };
         resolve_replay(
             execution,

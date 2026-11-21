@@ -1,5 +1,6 @@
 //! Complete current READ/metadata before admitting the independent NAV operation.
 use super::*;
+use worth_query_execution_query::facade::ports::AdmittedQueryPlanInternalPort as _;
 mod forest;
 mod output_driver;
 mod outputs;
@@ -49,8 +50,8 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         }
         // These references remain owned by the original binding-aware READ
         // callback. No principal or admitted query is retained by the attempt.
-        let principal = self.plan.principal;
-        let request = self.plan.controls.request_scope().clone();
+        let principal = self.plan.principal_ref();
+        let request = self.plan.controls().request_scope().clone();
         let completed = self
             .complete_metadata_read(runtime, phase, document, access)
             .map_err(NavigationDenial::Document)?;

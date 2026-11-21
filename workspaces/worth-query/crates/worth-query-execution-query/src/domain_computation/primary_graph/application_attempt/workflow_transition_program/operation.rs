@@ -4,6 +4,9 @@ use worth_query_declaration::facade::{
     application_schema::ApplicationOperationMarkerIdentity,
 };
 use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
+use worth_query_execution_attempt::facade::ports::{
+    CompleteReadSetInternalPort as _, EffectProgramInternalPort as _,
+};
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::{
@@ -121,11 +124,11 @@ where
         let source_transition = progress
             .latest_transition(source.entity())
             .ok_or_else(|| mismatch(selected.node_path()))?;
-        let source_settlement = self.lease.handle().with_runtime(execution, |runtime| {
+        let source_settlement = self.lease().handle().with_runtime(execution, |runtime| {
             observe_retained_transition(
                 execution,
                 runtime,
-                self.lease.snapshot(),
+                self.lease().snapshot(),
                 layout,
                 source_transition,
                 &mut facts,
@@ -137,13 +140,13 @@ where
         if source_settlement.occurrence() != source_transition.settlement().occurrence() {
             return Err(mismatch(selected.node_path()));
         }
-        check_request_live(self.admission.publication_request(), selected.node_path())?;
-        let input_request = self.admission.publication_request();
-        let mut input_observation = self.lease.handle().with_runtime(execution, |runtime| {
+        check_request_live(self.admission().publication_request(), selected.node_path())?;
+        let input_request = self.admission().publication_request();
+        let mut input_observation = self.lease().handle().with_runtime(execution, |runtime| {
             observe_workflow_operation_input(
                 execution,
                 runtime,
-                self.lease.snapshot(),
+                self.lease().snapshot(),
                 layout,
                 source_transition.entity(),
                 source_identity,
@@ -172,10 +175,10 @@ where
                     selected.node_path(),
                 )
                 .ok_or_else(|| mismatch("captured workflow input support changed"))?;
-            let contract = self.lease.handle().with_runtime(execution, |runtime| {
+            let contract = self.lease().handle().with_runtime(execution, |runtime| {
                 crate::domain_computation::primary_graph::workflow::proposal::observe_captured_workflow_input(
-                    execution, runtime, self.lease.snapshot(), layout, input_observation.proposal,
-                    &input_observation.proposal_identity, selected.node_path(), self.admission.scope_entity_id(),
+                    execution, runtime, self.lease().snapshot(), layout, input_observation.proposal,
+                    &input_observation.proposal_identity, selected.node_path(), self.admission().scope_entity_id(),
                     &mut input_observation.facts,
                 )
             })?;
@@ -198,32 +201,32 @@ where
         // advance cannot see the operation's own external posture, so the
         // reading is pinned for every operation; only an external commit
         // ever writes the field, so a local operation is never staled by it.
-        let (_, custody) = self.lease.handle().with_runtime(execution, |runtime| {
+        let (_, custody) = self.lease().handle().with_runtime(execution, |runtime| {
             instance_binding::owner_custody(
                 execution,
                 runtime,
-                self.lease.snapshot(),
+                self.lease().snapshot(),
                 layout,
                 instance.entity_id(),
             )
         })?;
         facts.push(custody);
         check_request_live(
-            self.admission.publication_request(),
-            self.admission.operation(),
+            self.admission().publication_request(),
+            self.admission().operation(),
         )?;
         let evidence = self.resolve_operation_evidence(
             execution, compiled, layout, &instance, &selected, progress, &operation, &mut facts,
         )?;
         check_request_live(
-            self.admission.publication_request(),
-            self.admission.operation(),
+            self.admission().publication_request(),
+            self.admission().operation(),
         )?;
-        let parent_instance = self.lease.handle().with_runtime(execution, |runtime| {
+        let parent_instance = self.lease().handle().with_runtime(execution, |runtime| {
             super::super::workflow_instance_observation::original_parent(
                 execution,
                 runtime,
-                self.lease.snapshot(),
+                self.lease().snapshot(),
                 layout,
                 source_transition.entity(),
                 &mut facts,
@@ -235,11 +238,11 @@ where
             .and_then(|source| progress.latest_transition(source.entity()));
         let approval_parent = original_approval
             .map(|approval| {
-                self.lease.handle().with_runtime(execution, |runtime| {
+                self.lease().handle().with_runtime(execution, |runtime| {
                     super::super::workflow_instance_observation::original_parent(
                         execution,
                         runtime,
-                        self.lease.snapshot(),
+                        self.lease().snapshot(),
                         layout,
                         approval.entity(),
                         &mut facts,
@@ -262,20 +265,20 @@ where
             facts,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )?;
-        let subject = self.admission.scope_entity_id();
-        let branch = self.lease.product().product_branch();
+        let subject = self.admission().scope_entity_id();
+        let branch = self.lease().product().product_branch();
         let binding = operation
             .binding
             .clone()
             .ok_or_else(|| mismatch(selected.node_path()))?;
-        let runtime_authority = self.admission.runtime_authority().as_u64();
-        let session_identity = self.admission.graph_work_session_identity();
+        let runtime_authority = self.admission().runtime_authority().as_u64();
+        let session_identity = self.admission().graph_work_session_identity();
         let observation = crate::basis::WorthQueryProductBranchReadIdentity::from_observation(
-            self.lease.product().observation(),
+            self.lease().product().observation(),
         );
-        let handle = self.lease.handle().clone();
-        let graph_layout = std::sync::Arc::clone(&self.lease.layout);
-        let deadline = self.workflow_deadline;
+        let handle = self.lease().handle().clone();
+        let graph_layout = std::sync::Arc::clone(&self.lease().layout);
+        let deadline = self.workflow_deadline();
         let admitted =
             crate::domain_computation::primary_graph::workflow::instance::admit_workflow_transition(
                 self,

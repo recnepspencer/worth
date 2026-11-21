@@ -200,19 +200,30 @@ pub trait SupportedProgramRecordPort: Send + Sync + Any {
 }
 
 /// Opaque upper-layer `CapturedAuthoredEditStage<Schema>` carried by `WorthQueryApplicationEffectProgram`.
-pub struct OpaqueAuthoredEditStage(pub Box<dyn Any + Send + Sync>);
+/// Parameterized by `Schema` with a private backing box so stages cannot cross schemas
+/// or be forged from Host.
+pub struct OpaqueAuthoredEditStage<Schema> {
+    inner: Box<dyn Any + Send + Sync>,
+    _schema: std::marker::PhantomData<fn() -> Schema>,
+}
 
-impl OpaqueAuthoredEditStage {
+impl<Schema> OpaqueAuthoredEditStage<Schema> {
     pub fn new<T: Any + Send + Sync>(value: T) -> Self {
-        Self(Box::new(value))
+        Self {
+            inner: Box::new(value),
+            _schema: std::marker::PhantomData,
+        }
     }
 
     pub fn downcast_ref<T: Any>(&self) -> Option<&T> {
-        self.0.downcast_ref::<T>()
+        self.inner.downcast_ref::<T>()
     }
 
     pub fn downcast<T: Any>(self) -> Result<Box<T>, Self> {
-        self.0.downcast::<T>().map_err(Self)
+        self.inner.downcast::<T>().map_err(|inner| Self {
+            inner,
+            _schema: std::marker::PhantomData,
+        })
     }
 }
 
@@ -362,9 +373,15 @@ pub mod admitted_operation_port;
 pub use admitted_operation_port::AdmittedOperationExecutionPort;
 pub mod commit_and_retirement;
 pub use commit_and_retirement::{CommitAuthorizationRuntimePort, WorkflowDefinitionRetirementPort};
+pub mod complete_read_set_port;
+pub use complete_read_set_port::{CompleteReadSetInternalPort, CompleteReadSetParts};
+pub mod effect_program_port;
+pub use effect_program_port::{
+    EffectProgramBuilderInternalPort, EffectProgramInternalPort, EffectProgramParts,
+};
 pub mod read_attempt_admission;
 pub use read_attempt_admission::{
-    ApplicationReadAttemptAdmissionPort, WorthQueryApplicationReadAttemptInit,
+    ApplicationReadAttemptAdmissionPort, WorthQueryReadAttemptRuntimeContext,
 };
 pub mod runtime_ports;
 pub use runtime_ports::*;

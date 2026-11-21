@@ -11,6 +11,7 @@ use worth_query_declaration::facade::{
     application_capability::{ApplicationCapabilityRef, ApplicationCapabilityRequest},
     application_schema::{ApplicationOperationMarkerIdentity, ApplicationOperationRef},
 };
+use worth_query_execution_query::facade::ports::AdmittedQueryPlanInternalPort as _;
 
 /// Only a completed ordinary READ with the independent metadata decision can
 /// create this final correspondence check. It stays within its original phase.
@@ -102,7 +103,7 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         let selected = runtime
             .on_branch(
                 crate::basis::WorthQueryProductBranchReadIdentity::from_observation(
-                    self.plan.basis.selected_product().observation(),
+                    self.plan.basis().selected_product().observation(),
                 )
                 .product_branch(),
             )
@@ -111,21 +112,21 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         let capability = selected
             .admit_capability_access(
                 phase,
-                self.plan.principal,
+                self.plan.principal(),
                 &installed,
                 input,
-                self.plan.controls.request_scope(),
+                self.plan.controls().request_scope(),
             )
             .map_err(|cause| Denial::Metadata(MetadataDenial::Authorization(cause)))?;
         let access =
-            WorthQueryApplicationQueryAccessContext::new(self.plan.principal, self.plan.scope);
+            WorthQueryApplicationQueryAccessContext::new(self.plan.principal(), self.plan.scope());
         self.metadata = Some(
             prepare_governed_access(
                 runtime.inner(),
-                self.plan.query,
+                self.plan.query(),
                 &access,
                 capability,
-                self.plan.controls.request_scope(),
+                self.plan.controls().request_scope(),
             )
             .map_err(|cause| Denial::Metadata(MetadataDenial::Query(cause)))?,
         );
@@ -165,10 +166,10 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         if runtime.installed_schema().binding_identity() != *self.history.binding_identity()
             || document.binding != *self.history.binding_identity()
             || self.binding.query().identity() != self.history.access_binding().query().identity()
-            || self.plan.query.binding_observation().is_none()
-            || self.plan.query.binding_observation()
+            || self.plan.query().binding_observation().is_none()
+            || self.plan.query().binding_observation()
                 != self.history.access_binding().query().binding_observation()
-            || self.binding.query().binding_observation() != self.plan.query.binding_observation()
+            || self.binding.query().binding_observation() != self.plan.query().binding_observation()
         {
             return Err(Denial::InstalledBindingMismatch);
         }
@@ -196,11 +197,11 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         if !metadata.belongs_to::<H>() {
             return Err(Denial::InstalledBindingMismatch);
         }
-        self.plan.history_metadata = Some(metadata);
+        self.plan.set_history_metadata(Some(metadata));
         // The original binding owns projection, body/filter denials, completion
         // and cleanup. Its common current-security validation consumes this
         // carried decision before the original query body may read.
-        let principal = crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(self.plan.principal.principal_entity_id());
+        let principal = crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(self.plan.principal().principal_entity_id());
         let (source, _read) = self.execute(runtime, phase)?;
         if source.model() != document.model {
             return Err(Denial::ForeignModel);

@@ -4,6 +4,7 @@ use crate::basis::{
 };
 use crate::domain_computation::primary_graph::product_operation::document_history::HistoryModelIdentity;
 use crate::domain_computation::primary_graph::ReadObservationRuntimeExt;
+use worth_query_execution_query::facade::ports::AdmittedQueryPlanInternalPort as _;
 
 pub(super) struct PendingDocumentRead {
     product: WorthQueryProductObservationLease,
@@ -31,9 +32,9 @@ impl PendingDocumentRead {
         plan: &WorthQueryAdmittedApplicationQueryPlan<'_, S, Q, P, R, A, I, E>,
     ) -> Self {
         Self {
-            product: plan.basis.retained_product(),
-            model: HistoryModelIdentity::from_resolved(plan.scope),
-            current: plan.controls.is_current_product_one_shot(),
+            product: plan.basis().retained_product(),
+            model: HistoryModelIdentity::from_resolved(plan.scope()),
+            current: plan.controls().is_current_product_one_shot(),
         }
     }
 

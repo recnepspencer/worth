@@ -7,6 +7,7 @@ use super::*;
 use crate::basis::WorthQueryProductBranchReadIdentity;
 use crate::domain_computation::primary_graph::application_output_demand::ReadyCompletion;
 use crate::domain_computation::primary_graph::ReadObservationRuntimeExt;
+use worth_query_execution_lineage::facade::ports::CommitAuthorityBindingInternalPort as _;
 
 pub trait OriginalSettledProducerObservationExt: Sized {
     fn ready<Schema: worth_query_installation::facade::ApplicationSchema>(

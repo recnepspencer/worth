@@ -21,10 +21,10 @@ pub use worth_query_execution_lineage::facade::primary_graph::application_attemp
 /// application runtime's `compare_and_commit_application` with an idempotency
 /// binding. Building it changed nothing.
 pub struct WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope> {
-    pub producer_round_limits: (std::num::NonZeroUsize, std::num::NonZeroUsize),
-    pub authored_stages: Vec<crate::ports::OpaqueAuthoredEditStage>,
-    pub synchronous_outputs: Vec<crate::domain_computation::primary_graph::application_contribution::producer::synchronous_outputs::CapturedSynchronousOutputs>,
-    pub read_set:
+    pub(crate) producer_round_limits: (std::num::NonZeroUsize, std::num::NonZeroUsize),
+    pub(crate) authored_stages: Vec<crate::ports::OpaqueAuthoredEditStage<Schema>>,
+    pub(crate) synchronous_outputs: Vec<crate::domain_computation::primary_graph::application_contribution::producer::synchronous_outputs::CapturedSynchronousOutputs>,
+    pub(crate) read_set:
         WorthQueryCompleteApplicationReadSet<
             Schema,
             Operation,
@@ -32,21 +32,21 @@ pub struct WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope> {
             Scope,
             WorthQueryProjectedApplicationMutation,
         >,
-    pub effects:
+    pub(crate) effects:
         Vec<WorthQueryApplicationRealizedEffect>,
-    pub conditional_definition:
+    pub(crate) conditional_definition:
         Option<crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition>,
-    pub effect_posture:
+    pub(crate) effect_posture:
         crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture,
-    pub output_correspondence:
+    pub(crate) output_correspondence:
         super::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate,
-    pub retain_output_demand_observation: bool,
-    pub retain_client_observation: bool,
-    pub producer_required_invariants:
+    pub(crate) retain_output_demand_observation: bool,
+    pub(crate) retain_client_observation: bool,
+    pub(crate) producer_required_invariants:
         &'static [crate::domain_computation::primary_graph::WorthQueryProducerInvariantRequirement],
-    pub output_currentness_facts:
+    pub(crate) output_currentness_facts:
         Option<super::super::OutputCurrentnessFacts>,
-    pub content_attachments:
+    pub(crate) content_attachments:
         worth_relational::facade::content::RelationalContentAttachments,
     // Last to drop: physical backing releases before its retained grant.
 
@@ -80,26 +80,26 @@ impl<Schema, Operation, Input, Scope>
 /// Begin with `begin_effect_program`. Each write, create, delete, link, unlink,
 /// or emit is checked against the operation's installed authority. Call `finish` to get the [`WorthQueryApplicationEffectProgram`].
 pub struct WorthQueryApplicationEffectProgramBuilder<Schema, Operation, Input, Scope> {
-    pub read_set: WorthQueryCompleteApplicationReadSet<
+    pub(crate) read_set: WorthQueryCompleteApplicationReadSet<
         Schema,
         Operation,
         Input,
         Scope,
         WorthQueryProjectedApplicationMutation,
     >,
-    pub layout: Arc<super::super::super::schema_layout::WorthQueryPrimaryGraphLayout>,
-    pub program: Arc<()>,
-    pub effects: Vec<WorthQueryApplicationRealizedEffect>,
-    pub field_write_positions: super::FieldWriteIndex,
-    pub case_transitions: super::case_transition::CaseTransitions,
-    pub keys: BTreeSet<(KindId, String)>,
-    pub conditional_definition:
+    pub(crate) layout: Arc<super::super::super::schema_layout::WorthQueryPrimaryGraphLayout>,
+    pub(crate) program: Arc<()>,
+    pub(crate) effects: Vec<WorthQueryApplicationRealizedEffect>,
+    pub(crate) field_write_positions: super::FieldWriteIndex,
+    pub(crate) case_transitions: super::case_transition::CaseTransitions,
+    pub(crate) keys: BTreeSet<(KindId, String)>,
+    pub(crate) conditional_definition:
         Option<crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition>,
-    pub output_correspondence:
+    pub(crate) output_correspondence:
         super::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate,
-    pub creation_partition: Option<WorthQueryApplicationCreationPartition>,
-    pub content_attachments: worth_relational::facade::content::RelationalContentAttachments,
-    pub content_denial: Option<crate::domain_computation::primary_graph::WorthQueryValueDecodeDenial>,
+    pub(crate) creation_partition: Option<WorthQueryApplicationCreationPartition>,
+    pub(crate) content_attachments: worth_relational::facade::content::RelationalContentAttachments,
+    pub(crate) content_denial: Option<crate::domain_computation::primary_graph::WorthQueryValueDecodeDenial>,
     // Last to drop: physical backing releases before its retained grant.
 
 }
@@ -146,7 +146,7 @@ impl<Schema, Operation, Input, Scope>
         self
     }
 
-    pub fn with_authored_edit_stages<Stage: Into<crate::ports::OpaqueAuthoredEditStage>>(
+    pub fn with_authored_edit_stages<Stage: Into<crate::ports::OpaqueAuthoredEditStage<Schema>>>(
         mut self,
         _access: &worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccess,
         stages: Vec<Stage>,

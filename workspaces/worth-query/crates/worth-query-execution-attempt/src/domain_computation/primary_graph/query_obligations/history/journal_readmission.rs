@@ -48,7 +48,8 @@ impl QueryObligationHistoryJournalReadmissionExt for QueryObligationHistory {
         worth_query_execution_obligations::facade::query_obligations::QueryObligationDenial,
     > {
         provider.bind_original_meaning_support(self)?;
-        execution.managed_run_custody.bind(Arc::clone(self)
+        use worth_query_execution_runtime::facade::ports::ExecutionRuntimeManagedRunCustodyPort as _;
+        execution.managed_run_custody().bind(Arc::clone(self)
             as Arc<dyn worth_query_execution_runtime::facade::ports::ManagedRunObligationPort>)
     }
 

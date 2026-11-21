@@ -1,5 +1,8 @@
 //! Failure-site data stays with the original retention reason until commit reports it.
 use crate::domain_computation::application_aftermath::WorthQueryPreImageRetentionDenial;
+use worth_query_execution_lineage::facade::ports::{
+    CommitAuthorityBindingInternalPort as _, RetainedGovernedInputInternalPort as _,
+};
 use worth_query_installation::facade::InstalledPreImageLocus;
 use worth_relational::facade::transactions::RecordRef;
 

@@ -53,19 +53,22 @@ where
                 super::WorthQueryApplicationAttemptDenial::request_authority_lost(denial),
             )
         })?;
+    use worth_query_execution_attempt::facade::ports::{
+        CompleteReadSetInternalPort as _, EffectProgramInternalPort as _, EffectProgramParts,
+    };
     // Adoption lowers effects without ordinary signing publication. A signed
     // body must never lose its deferred slot/proof by entering that lane.
-    if program.read_set.signed_creation.is_some() {
+    if program.read_set().signed_creation().is_some() {
         return Err(
             WorthQueryProgramMigrationPreparationDenial::UnsupportedPosture(
                 "program migration cannot publish signed creations",
             ),
         );
     }
-    if program.read_set.workflow_succession_binding.is_some()
+    if program.read_set().workflow_succession_binding().is_some()
         || program
-            .read_set
-            .admission
+            .read_set()
+            .admission()
             .allowed_graph_contract()
             .body()
             .is_some_and(|body| body.succession().is_some())
@@ -76,10 +79,10 @@ where
             ),
         );
     }
-    if program.read_set.workflow_birth_binding.is_some()
+    if program.read_set().workflow_birth_binding().is_some()
         || program
-            .read_set
-            .admission
+            .read_set()
+            .admission()
             .allowed_graph_contract()
             .body()
             .and_then(|body| body.creation())
@@ -92,14 +95,21 @@ where
             ),
         );
     }
-    if !program.read_set.lease.layout.signing_lifecycle.is_empty() && !program.effects.is_empty() {
+    if !program
+        .read_set()
+        .lease()
+        .layout
+        .signing_lifecycle
+        .is_empty()
+        && !program.effects().is_empty()
+    {
         return Err(
             WorthQueryProgramMigrationPreparationDenial::UnsupportedPosture(
                 "program migration cannot bypass signing lifecycle consequences",
             ),
         );
     }
-    let WorthQueryApplicationEffectProgram {
+    let EffectProgramParts {
         synchronous_outputs,
         authored_stages,
         producer_round_limits: _,
@@ -113,7 +123,8 @@ where
         producer_required_invariants,
         output_currentness_facts,
         content_attachments,
-    } = program;
+    } = program.into_parts();
+    let read_set = read_set.into_parts();
 
     if !authored_stages.is_empty() || !synchronous_outputs.is_empty() {
         return Err(

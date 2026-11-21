@@ -1,14 +1,22 @@
-use std::marker::PhantomData;
 use std::sync::Arc;
 
-use crate::domain_computation::primary_graph::application_attempt::read_phase::WorthQueryOrdinaryApplicationRead;
-use crate::domain_computation::primary_graph::application_attempt::read_scope::WorthQueryApplicationReadScope;
-use crate::domain_computation::primary_graph::application_attempt::read_set::source_facts::SourceFacts;
-use crate::domain_computation::primary_graph::application_attempt::snapshot_lease::WorthQueryApplicationSnapshotLease;
+use worth_execution::{ExecutionAllocationPolicy, ExecutionRequest};
+use worth_query_installation::facade::{
+    ApplicationSchema, ApplicationSchemaBindingIdentity, InstalledOperationCatalog,
+};
+use worth_relational::facade::runtime::{
+    RelationalAppliedCandidateReadIdentity, RelationalPinnedRead,
+};
+use worth_runtime_world::facade::RuntimeWorldOwnerIdentity;
+
+use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
+use crate::domain_computation::primary_graph::application_attempt::read_phase::{
+    WorthQueryOrdinaryApplicationRead, WorthQueryProjectedApplicationMutation,
+};
+use crate::domain_computation::primary_graph::application_attempt::read_set::WorthQueryApplicationReadAttempt;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial;
-use crate::domain_computation::primary_graph::application_contribution::CompletedComputationRetention;
 use crate::domain_computation::primary_graph::invariant_projection::{
-    ConsumedOutputEvidence, ExpectedFactKeys, ObservedComputationInputs,
+    AppliedOperationProjection, WorthQueryApplicationOperationInvariantProjectionSnapshot,
 };
 use crate::domain_computation::primary_graph::schema_layout::WorthQueryPrimaryGraphLayout;
 use crate::domain_computation::primary_graph::value_decode::ValueDecodeState;
@@ -16,53 +24,88 @@ use crate::domain_computation::primary_graph::{
     WorthQueryAdmittedApplicationOperation, WorthQueryInstalledEntityResolutionContext,
 };
 
-/// Unexported crate-boundary initialization bundle for admitting a
-/// `WorthQueryApplicationReadAttempt` from `worth-query-execution-query`.
-pub struct WorthQueryApplicationReadAttemptInit<
-    'request,
-    'authority,
-    Schema,
-    Operation,
-    Input,
-    Scope,
-    Phase = WorthQueryOrdinaryApplicationRead,
-> {
-    pub execution: worth_execution::ExecutionRequest<'request, 'authority>,
+/// Installed application runtime context supplied to `worth-query-execution-attempt`
+/// when admitting a read attempt. Carries no caller-assembled lease, phase,
+/// read scope, or expected facts; those are verified and derived inside `attempt`.
+pub struct WorthQueryReadAttemptRuntimeContext<'a> {
+    pub world_owner: RuntimeWorldOwnerIdentity,
+    pub runtime_authority: WorthQueryRuntimeAuthorityIdentity,
+    pub binding_identity: ApplicationSchemaBindingIdentity,
+    pub installed_operations: &'a InstalledOperationCatalog,
+    pub primary_graph: Option<(
+        Arc<WorthQueryPrimaryGraphLayout>,
+        WorthQueryInstalledEntityResolutionContext,
+    )>,
     pub value_decode: ValueDecodeState,
-    pub admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
-    pub lease: WorthQueryApplicationSnapshotLease,
-    pub layout: Arc<WorthQueryPrimaryGraphLayout>,
-    pub entity_resolution: WorthQueryInstalledEntityResolutionContext,
-    pub read_scope: WorthQueryApplicationReadScope,
-    pub expected_facts: Option<ExpectedFactKeys>,
-    pub computation_reads: (ObservedComputationInputs, CompletedComputationRetention),
-    pub source_facts: SourceFacts,
-    pub consumed_outputs: Vec<ConsumedOutputEvidence>,
-    pub _phase: PhantomData<fn() -> Phase>,
 }
 
 /// Crate-boundary port for admitting a `WorthQueryApplicationReadAttempt`.
 /// Exported only on `worth_query_execution_attempt::facade::ports`, never on
-/// `worth_query_execution::facade` or Host.
+/// `worth_query_execution::facade` or Host. Every transition validates home,
+/// application, installed-operation, current-authority, and projection/lease
+/// affinity inside `worth-query-execution-attempt`.
 pub trait ApplicationReadAttemptAdmissionPort<
     'request,
     'authority,
-    Schema,
+    Schema: ApplicationSchema,
     Operation,
     Input,
     Scope,
-    Phase,
 >: Sized
 {
-    fn admit_read_attempt(
-        init: WorthQueryApplicationReadAttemptInit<
+    fn admit_ordinary_read_attempt(
+        execution: &ExecutionRequest<'request, 'authority>,
+        context: WorthQueryReadAttemptRuntimeContext<'_>,
+        admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
+    ) -> Result<
+        WorthQueryApplicationReadAttempt<
             'request,
             'authority,
             Schema,
             Operation,
             Input,
             Scope,
-            Phase,
+            WorthQueryOrdinaryApplicationRead,
         >,
-    ) -> Result<Self, WorthQueryApplicationAttemptDenial>;
+        WorthQueryApplicationAttemptDenial,
+    >;
+
+    fn admit_projected_snapshot_read_attempt(
+        execution: &ExecutionRequest<'request, 'authority>,
+        context: WorthQueryReadAttemptRuntimeContext<'_>,
+        admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
+        projection: WorthQueryApplicationOperationInvariantProjectionSnapshot<Schema, Operation>,
+        allocation_policy: ExecutionAllocationPolicy<'_, '_>,
+    ) -> Result<
+        WorthQueryApplicationReadAttempt<
+            'request,
+            'authority,
+            Schema,
+            Operation,
+            Input,
+            Scope,
+            WorthQueryProjectedApplicationMutation,
+        >,
+        WorthQueryApplicationAttemptDenial,
+    >;
+
+    fn admit_applied_projection_read_attempt(
+        execution: &ExecutionRequest<'request, 'authority>,
+        context: WorthQueryReadAttemptRuntimeContext<'_>,
+        admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
+        projection: AppliedOperationProjection<Schema, Operation>,
+        candidate: RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
+        allocation_policy: ExecutionAllocationPolicy<'_, '_>,
+    ) -> Result<
+        WorthQueryApplicationReadAttempt<
+            'request,
+            'authority,
+            Schema,
+            Operation,
+            Input,
+            Scope,
+            WorthQueryProjectedApplicationMutation,
+        >,
+        WorthQueryApplicationAttemptDenial,
+    >;
 }

@@ -57,10 +57,11 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         self.conditional_cleanup
             .resources
             .handoff_home(self, request)?;
+        use worth_query_execution_runtime::facade::ports::ExecutionRuntimeManagedRunCustodyPort as _;
         self.inner
             .runtime
             .execution()
-            .managed_run_custody
+            .managed_run_custody()
             .flush(request)
             .map_err(WorthQueryHomeRetirementDenial::ManagedCleanup)?;
         if let Some(support) = self.installed_program_support() {

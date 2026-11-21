@@ -101,10 +101,11 @@ impl<S, O, I, Scope> WritePort for Builder<S, O, I, Scope> {
 }
 
 fn erase<S, E>(target: &EffectEntity<S, E>) -> ErasedCandidate {
+    use worth_query_execution_lineage::facade::ports::EffectEntityInternalPort as _;
     ErasedCandidate {
-        reference: target.reference.clone(),
-        entity: target.entity.clone(),
-        created_effect: target.created_effect,
-        program: Arc::clone(&target.program),
+        reference: target.reference().clone(),
+        entity: target.entity().to_owned(),
+        created_effect: target.created_effect(),
+        program: Arc::clone(target.program()),
     }
 }

@@ -78,16 +78,16 @@ impl<'phase, 'scope> WorthQueryHistoryPreviewReadAdmission<'phase, 'scope> {
     ) -> Result<(), Denial> {
         self.validate_selection(
             phase,
-            plan.query.identity(),
-            plan.query.binding_observation(),
+            plan.query().identity(),
+            plan.query().binding_observation(),
             WorthQueryProductBranchReadIdentity::from_observation(
-                plan.security_product.observation(),
+                plan.security_product().observation(),
             ),
-            HistoryModelIdentity::from_resolved(plan.scope),
+            HistoryModelIdentity::from_resolved(plan.scope()),
         )
         .map_err(|_| Denial::ForeignHistoryNode)?;
-        if plan.parameters.identity() != &self.parameters
-            || plan.principal.principal_entity_id() != self.principal
+        if plan.parameters().identity() != &self.parameters
+            || plan.principal().principal_entity_id() != self.principal
         {
             return Err(Denial::InstalledBindingMismatch);
         }

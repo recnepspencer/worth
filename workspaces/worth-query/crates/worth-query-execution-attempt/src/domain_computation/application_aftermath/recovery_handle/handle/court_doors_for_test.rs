@@ -1,5 +1,8 @@
 //! Sealed test doors over this module's private members.
 use super::*;
+use worth_query_execution_lineage::facade::ports::{
+    CommitAuthorityBindingInternalPort as _, RetainedGovernedInputInternalPort as _,
+};
 
 impl WorthQueryRecoveryHandle {
     #[doc(hidden)]

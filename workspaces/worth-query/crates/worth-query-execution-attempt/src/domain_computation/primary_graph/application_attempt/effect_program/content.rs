@@ -5,6 +5,7 @@ use worth_foundational::facade::ContentRefId;
 use worth_query_declaration::facade::application_schema::{
     ApplicationContentBinding, ApplicationContentFieldRef,
 };
+use worth_query_execution_lineage::facade::ports::EffectEntityInternalPort as _;
 use worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog as Catalog;
 use worth_relational::facade::content::RelationalContentAttachments;
 
@@ -24,7 +25,7 @@ impl<S, O, I, P> WorthQueryApplicationEffectProgramBuilder<S, O, I, P> {
         })?;
         let locator = self.field_locator(entity, aspect, field)?;
         if initialize {
-            let Some(position) = target.created_effect else {
+            let Some(position) = target.created_effect() else {
                 return Err(denial(
                     WorthQueryApplicationAttemptDenialKind::ForeignEffectTarget,
                     field,
@@ -40,7 +41,7 @@ impl<S, O, I, P> WorthQueryApplicationEffectProgramBuilder<S, O, I, P> {
                 ));
             }
         } else {
-            let EntityReference::Existing(entity_id) = target.reference else {
+            let EntityReference::Existing(entity_id) = *target.reference() else {
                 return Err(denial(
                     WorthQueryApplicationAttemptDenialKind::ForeignEffectTarget,
                     field,

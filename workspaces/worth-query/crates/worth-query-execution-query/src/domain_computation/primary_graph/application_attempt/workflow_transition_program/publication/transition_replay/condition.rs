@@ -1,4 +1,7 @@
 use super::*;
+use worth_query_execution_attempt::facade::ports::{
+    CompleteReadSetInternalPort as _, EffectProgramInternalPort as _,
+};
 
 pub trait PreparedWorkflowAdvanceConditionReplayExt<Schema, Operation, Input, Scope>:
     Sized
@@ -42,43 +45,43 @@ impl<Schema, Operation, Input, Scope>
             Self::Transition {
                 program, replays, ..
             } => (
-                &program.read_set.admission,
+                &program.read_set().admission(),
                 program
-                    .read_set
-                    .lease
+                    .read_set()
+                    .lease()
                     .product()
                     .product_branch()
                     .occurrence(),
                 replays,
             ),
             Self::AwaitingAssessment(prepared) => (
-                &prepared.admitted.read_set().admission,
+                &prepared.admitted.read_set().admission(),
                 prepared
                     .admitted
                     .read_set()
-                    .lease
+                    .lease()
                     .product()
                     .product_branch()
                     .occurrence(),
                 &prepared.replays,
             ),
             Self::AwaitingCondition(prepared) => (
-                &prepared.admitted.read_set().admission,
+                &prepared.admitted.read_set().admission(),
                 prepared
                     .admitted
                     .read_set()
-                    .lease
+                    .lease()
                     .product()
                     .product_branch()
                     .occurrence(),
                 &prepared.replays,
             ),
             Self::AwaitingOperation(prepared) => (
-                &prepared.admitted.read_set().admission,
+                &prepared.admitted.read_set().admission(),
                 prepared
                     .admitted
                     .read_set()
-                    .lease
+                    .lease()
                     .product()
                     .product_branch()
                     .occurrence(),
@@ -96,8 +99,8 @@ impl<Schema, Operation, Input, Scope>
             | Self::ReplayOnly {
                 read_set, replays, ..
             } => (
-                &read_set.admission,
-                read_set.lease.product().product_branch().occurrence(),
+                &read_set.admission(),
+                read_set.lease().product().product_branch().occurrence(),
                 replays,
             ),
         };

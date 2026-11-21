@@ -1,6 +1,9 @@
 //! Move-only recovery handle (R8.28 / R8.29). Neither Clone nor Copy.
 
 use std::sync::Arc;
+use worth_query_execution_lineage::facade::ports::{
+    CommitAuthorityBindingInternalPort as _, RetainedGovernedInputInternalPort as _,
+};
 
 use worth_proof::LinearResource;
 use worth_query_installation::facade::WorthQueryCanonicalWorkPhases;

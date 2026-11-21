@@ -10,6 +10,9 @@ use worth_foundational::facade::{
     DurableCompositePublicationAttemptIdentity, FieldKey, LocatorAuthority,
 };
 use worth_query_declaration::facade::application_operation::ApplicationMutationOutputPosture;
+use worth_query_execution_lineage::facade::ports::{
+    CommitAuthorityBindingInternalPort as _, RetainedGovernedInputInternalPort as _,
+};
 
 impl WorthQueryPrimaryGraphProvider {
     pub fn seal_correction_material(
