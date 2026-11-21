@@ -32,7 +32,6 @@ impl QueryObligationHistory {
         use QueryObligationDenial as Denial;
         material.admit_obligation_scope(medium.as_ref())?;
         let driver = self.lock_publication()?;
-        let mut cold_releases = Vec::new();
         let medium = if let Some(installed) = self.medium.get() {
             installed
                 .authority()
@@ -57,9 +56,9 @@ impl QueryObligationHistory {
                 fold.readmit(QueryObligationFrame::readmit(&bytes)?)?;
             }
             // D7 fenced the incarnation that retained every folded row, so its
-            // process-local resources are gone. Release them before service.
+            // process-local resources are gone. The journal keeps the witness
+            // until every such row is cold-released before service.
             let (ledger, ended) = fold.finish();
-            cold_releases = ended.into_cold_releases(&ledger)?;
             // Joined originals retain their durable counts. Adoption's owning
             // consumer remains a separate admission requirement.
             self.join_original_interpretations(&ledger, originals, material)?;
@@ -74,13 +73,11 @@ impl QueryObligationHistory {
             self.medium
                 .set(Arc::clone(&medium))
                 .map_err(|_| Denial::SupportUnavailable)?;
-            state.journal = Some(QueryObligationJournalState::from_ledger(ledger));
+            state.journal = Some(QueryObligationJournalState::from_cold_fold(ledger, ended));
             medium
         };
         driver.finish_pending(medium.as_ref(), request)?;
-        for release in cold_releases {
-            driver.publish(medium.as_ref(), release, request)?;
-        }
+        driver.publish_cold_releases(medium.as_ref(), request)?;
         // The exclusive Home open has admitted the complete protected World
         // prefix. A pre-effect acquire with no World open has no owner effect;
         // terminal original fates no longer carry adoption custody.
@@ -190,6 +187,7 @@ impl QueryObligationHistory {
             .ok_or(QueryObligationDenial::SupportUnavailable)?;
         let driver = self.lock_publication()?;
         driver.finish_pending(medium.as_ref(), request)?;
+        driver.publish_cold_releases(medium.as_ref(), request)?;
         let state = self.state();
         let ledger = &state
             .journal

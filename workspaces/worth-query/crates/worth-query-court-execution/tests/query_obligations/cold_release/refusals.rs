@@ -1,5 +1,6 @@
 //! The cold route refuses live rows, other folds' witnesses, inconsistent
-//! evidence, released rows and owner-held mandatory requests.
+//! evidence, released rows and owner-held mandatory requests; a partial
+//! publication resumes from the ledger.
 use super::*;
 
 fn active_run(journal: &mut Journal) -> QueryColdReleaseSubject {
@@ -20,7 +21,7 @@ fn a_live_row_and_another_folds_release_refuse_the_cold_route() {
     let release = witness.cold_release(&journal.ledger, cold).unwrap();
     assert_eq!(release.fence(), witness.fence());
     assert_eq!(
-        witness.into_cold_releases(&journal.ledger),
+        witness.pending_cold_releases(&journal.ledger),
         Ok(vec![release.clone()]),
         "only the ended incarnation's row"
     );
@@ -100,7 +101,10 @@ fn inconsistent_evidence_and_released_rows_are_not_cold_released() {
         Err(QueryObligationDenial::ObligationSubjectMismatch),
         "a live release needs no cold release"
     );
-    assert_eq!(witness.into_cold_releases(&journal.ledger), Ok(Vec::new()));
+    assert_eq!(
+        witness.pending_cold_releases(&journal.ledger),
+        Ok(Vec::new())
+    );
 }
 
 #[test]
@@ -134,7 +138,7 @@ fn a_mandatory_owned_async_request_stays_pending_beside_the_opted_in_process_loc
         }),
         "the cold door cannot admit the owner-held mandatory request"
     );
-    let releases = witness.into_cold_releases(&journal.ledger).unwrap();
+    let releases = witness.pending_cold_releases(&journal.ledger).unwrap();
     assert_eq!(
         releases
             .iter()
@@ -165,4 +169,50 @@ fn a_mandatory_owned_async_request_stays_pending_beside_the_opted_in_process_loc
             identity: mandatory
         })
     );
+}
+
+#[test]
+fn a_partially_published_cold_release_resumes_from_the_ledger_and_never_repeats() {
+    let mut ended = Journal::new(home());
+    let run = active_run(&mut ended);
+    let resource = retain(&mut ended, Pending::Resource { result: false });
+    let (mut journal, witness) = ended.reopen();
+    let remaining = witness.pending_cold_releases(&journal.ledger).unwrap();
+    assert_eq!(
+        remaining
+            .iter()
+            .map(QueryColdRelease::subject)
+            .collect::<Vec<_>>(),
+        [run, resource]
+    );
+    // The first publication is proven no-effect: prepared, never admitted.
+    journal
+        .ledger
+        .prepare(remaining[0].clone(), &mut journal.generations)
+        .unwrap();
+    assert_eq!(
+        witness.pending_cold_releases(&journal.ledger),
+        Ok(remaining.clone()),
+        "a no-effect publication released nothing"
+    );
+    // The retry commits the first, then is interrupted before the second.
+    journal.append(remaining[0].clone());
+    assert_eq!(
+        witness.pending_cold_releases(&journal.ledger),
+        Ok(vec![remaining[1].clone()]),
+        "a retry finishes exactly the rest"
+    );
+    journal.append(remaining[1].clone());
+    assert_eq!(
+        witness.pending_cold_releases(&journal.ledger),
+        Ok(Vec::new())
+    );
+    assert!(journal
+        .ledger
+        .managed_runs()
+        .all(QueryManagedRunObligation::released));
+    assert!(journal
+        .ledger
+        .resources()
+        .all(QueryResourceObligation::released));
 }

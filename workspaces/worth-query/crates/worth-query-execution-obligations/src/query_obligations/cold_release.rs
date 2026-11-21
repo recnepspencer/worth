@@ -143,14 +143,22 @@ impl QueryEndedIncarnation {
         ledger.validate_cold_release(&release, position)?;
         Ok(release)
     }
-    /// Consumes the witness: one cold release for every pending row the ended
-    /// incarnation retained. Rows retained after the fence, released rows,
-    /// cleanup rows with inconsistent evidence and owner-held rows outside
-    /// these families are not candidates and stay as they are.
-    pub fn into_cold_releases(
-        self,
+    /// One cold release for every row the ended incarnation retained that the
+    /// ledger still holds pending. Recomputed from the ledger on every call, so
+    /// a holder that retries after a partial publication finishes exactly the
+    /// rest. Rows retained after the fence, released rows, cleanup rows with
+    /// inconsistent evidence and owner-held rows outside these families are
+    /// not candidates and stay as they are.
+    pub fn pending_cold_releases(
+        &self,
         ledger: &QueryObligationLedger,
     ) -> Result<Vec<QueryColdRelease>, Denial> {
+        if ledger.home() != self.home {
+            return Err(Denial::ForeignHome);
+        }
+        if ledger.cold_fence != Some(self.fence) {
+            return Err(Denial::IncarnationNotEnded);
+        }
         ledger
             .cold_release_candidates()
             .into_iter()

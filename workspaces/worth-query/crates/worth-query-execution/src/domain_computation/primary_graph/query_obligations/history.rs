@@ -25,6 +25,7 @@ mod output_source;
 mod resource;
 use interpretation_membership::InterpretationMembership;
 pub(in crate::domain_computation::primary_graph) use resource::ResourceDisposal;
+mod cold_release;
 mod journal_publication;
 mod journal_readmission;
 pub(in crate::domain_computation::primary_graph) mod managed_cleanup;

@@ -26,6 +26,9 @@ impl QueryObligationHistory {
     }
 }
 impl QueryObligationPublication<'_> {
+    pub(super) const fn history(&self) -> &QueryObligationHistory {
+        self.lifecycle
+    }
     /// This carrier owns the original driver, never the token-state lock.
     pub(super) fn finish_pending(
         &self,

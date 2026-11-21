@@ -298,7 +298,7 @@ fn every_pending_family_and_posture_is_cold_released_once_and_then_discharges() 
             Err(pending_denial(subject)),
             "{pending:?}: a cold fold alone never releases"
         );
-        let releases = witness.into_cold_releases(&journal.ledger).unwrap();
+        let releases = witness.pending_cold_releases(&journal.ledger).unwrap();
         let [release] = releases.as_slice() else {
             panic!("{pending:?}: exactly one cold release: {releases:?}");
         };
@@ -325,7 +325,10 @@ fn every_pending_family_and_posture_is_cold_released_once_and_then_discharges() 
             before,
             "{pending:?}: stable fold"
         );
-        assert_eq!(again.into_cold_releases(&reopened.ledger), Ok(Vec::new()));
+        assert_eq!(
+            again.pending_cold_releases(&reopened.ledger),
+            Ok(Vec::new())
+        );
         reopened.append(discharge(subject));
         assert_eq!(
             row(&reopened.ledger, subject),
