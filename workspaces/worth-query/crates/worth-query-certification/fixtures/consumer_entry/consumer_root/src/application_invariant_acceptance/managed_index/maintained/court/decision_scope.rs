@@ -91,7 +91,10 @@ fn decision_index_requires_the_declared_parent_and_the_original_operation_scope(
                         WorthQueryInvariantDecisionPlanDenialKind::UndeclaredDecisionTarget
                     );
                 }
-                DecisionRead::Declared | DecisionRead::Empty | DecisionRead::TwoProbes => {
+                DecisionRead::Declared
+                | DecisionRead::Empty
+                | DecisionRead::TwoProbes
+                | DecisionRead::Partitioned(_) => {
                     unreachable!()
                 }
             }

@@ -37,6 +37,11 @@ pub struct Calls {
     pub(crate) first_source: Mutex<Option<WorthQueryManagedIndexSourceSlot>>,
     #[cfg(test)]
     pub(crate) after_second_match: Mutex<Option<Box<dyn FnOnce() + Send>>>,
+    /// Runs once inside the first provider probe validation for this exact
+    /// prefix, before that validation's own request checkpoint.
+    #[cfg(test)]
+    #[allow(clippy::type_complexity)]
+    pub(crate) at_probe: Mutex<Option<(String, Box<dyn FnOnce() + Send>)>>,
     #[cfg(test)]
     pub(crate) repeat_candidates: std::sync::atomic::AtomicBool,
     #[cfg(test)]

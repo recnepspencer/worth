@@ -35,6 +35,9 @@ pub use derived_relation::{
 };
 mod managed_index;
 pub(in crate::domain_computation::primary_graph) use managed_index::native_index_decision_cause;
+pub use managed_index::{
+    WorthQueryComputationManagedIndexDenial, WorthQueryComputationManagedIndexDenialKind,
+};
 mod output_availability;
 pub use output_availability::{
     WorthQueryObservedOutputAvailability, WorthQueryOutputAvailabilityDenial,

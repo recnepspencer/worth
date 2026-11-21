@@ -20,6 +20,14 @@ impl<Stopped: std::fmt::Debug + 'static> std::error::Error
                     ),
                 ..
             } => Some(stop.as_ref()),
+            Self::Read(WorthQueryComputationReadDenial::ManagedIndex(stop))
+            | Self::Partition {
+                cause:
+                    WorthQueryComputationPartitionStop::Read(
+                        WorthQueryComputationReadDenial::ManagedIndex(stop),
+                    ),
+                ..
+            } => Some(stop),
             _ => None,
         }
     }

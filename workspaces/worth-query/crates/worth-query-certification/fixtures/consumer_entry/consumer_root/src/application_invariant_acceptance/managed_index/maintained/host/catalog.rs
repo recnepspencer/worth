@@ -61,7 +61,10 @@ impl WorthQueryApplicationContribution<Catalog> for Contribution {
         };
         registration.install()?;
         correction::configure(setup)?;
-        setup.handler::<mutation::Binding, _>(Handler(configuration.decision_read))?;
+        let probe = setup.partitioned_computation::<Feature, super::super::probe::Computation, _>(
+            super::super::probe::Owner,
+        )?;
+        setup.handler::<mutation::Binding, _>(Handler(configuration.decision_read, probe))?;
         setup.handler::<super::super::refinement::mutation::Binding, _>(mutation::Handler)?;
         setup.handler::<protected::expectation::Binding, _>(mutation::Handler)?;
         setup.handler::<authoring::Binding, _>(authoring::Handler)?;
@@ -142,6 +145,8 @@ impl ApplicationProgramDefinition<Catalog> for Program {
                 .finish_action()
                 .action::<generated::indexed::nested_source::motion::Binding, generated::indexed::nested_source::motion::Delivery>()
                 .finish_action()
+                .derived_artifact::<super::super::probe::Artifact>()
+                .managed_computation::<super::super::probe::Computation>()
                 .native_action::<mutation::Binding>()
                 .finish_action()
                 .native_action::<super::super::refinement::mutation::Binding>()
