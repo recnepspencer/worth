@@ -29,11 +29,16 @@ impl super::super::WorthQueryPrimaryGraphProvider {
         else {
             return false;
         };
-        consumer
+        // Every output the consumer's own derivation read from this route
+        // must be exactly what the replacement publishes. A consumer that
+        // named the route only as its prerequisite read none: nothing on the
+        // Query side changes, and Native still requires exact equality of
+        // what its retained input consumed.
+        let mut links = consumer
             .consumed_outputs()
             .iter()
             .filter_map(|consumed| consumed.applied())
-            .find(|link| link.reads_route(&outputs.producer, &outputs.meaning))
-            .is_some_and(|link| link.settles_to(replacement, settle))
+            .filter(|link| link.reads_route(&outputs.producer, &outputs.meaning));
+        links.all(|link| link.settles_to(replacement, settle))
     }
 }
