@@ -112,6 +112,22 @@ impl NativeProjectionRead<'_> {
             Self::Applied { candidate, .. } => Some(candidate.project_candidate()),
         }
     }
+    /// The projection one record is read at: for a successor round, a record
+    /// its own chain wrote is read as it was at the chain head (§1.5).
+    pub(super) fn projection_of(
+        &self,
+        snapshot: &SnapshotHandle,
+        entity: EntityId,
+    ) -> Option<VisibilityProjectionView> {
+        let own = match self {
+            Self::Applied {
+                own_outputs: Some(own),
+                ..
+            } => own.head_for(entity).map(|head| head.project_candidate()),
+            _ => None,
+        };
+        own.or_else(|| self.projection(snapshot))
+    }
     pub(super) fn observe_field<Output>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -126,14 +142,7 @@ impl NativeProjectionRead<'_> {
         Option<Output>,
         worth_relational::facade::transactions::RelationalExecutionDenialCause,
     > {
-        let own = match self {
-            Self::Applied {
-                own_outputs: Some(own),
-                ..
-            } => own.head_for(entity).map(|head| head.project_candidate()),
-            _ => None,
-        };
-        let Some(view) = own.or_else(|| self.projection(snapshot)) else {
+        let Some(view) = self.projection_of(snapshot, entity) else {
             return Ok(None);
         };
         super::super::application_attempt::observe_field_from_view_admitted(
