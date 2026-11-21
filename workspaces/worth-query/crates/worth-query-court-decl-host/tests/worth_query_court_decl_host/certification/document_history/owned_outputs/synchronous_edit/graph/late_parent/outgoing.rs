@@ -3,7 +3,6 @@
 //! quiescent refresh, so the drop must refuse in the wave itself.
 use super::*;
 use family::{decision_input, decision_write};
-use worth_query_host::facade::application_entry::WorthQueryEditEnvelopeOutcome as Outcome;
 
 /// `decision-input(a)` links `decision-write(b)` as an occurrence while
 /// `first:a` is 7, and nothing at 11. The child names no prerequisite, so it
