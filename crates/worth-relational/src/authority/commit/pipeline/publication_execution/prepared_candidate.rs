@@ -100,6 +100,11 @@ impl PreparedCommitPublicationExecution {
         self.publication.value().prepared_root()
     }
 
+    /// The parents its commit receipt names, resolved before publication.
+    pub(crate) fn successor_parent_count(&self) -> usize {
+        self.history.commit_reference.parents.len()
+    }
+
     pub(crate) fn is_retained_entity_selection(&self) -> bool {
         self.admitted.value().semantic_plan().selection().is_some()
     }

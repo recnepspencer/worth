@@ -1,5 +1,7 @@
 //! Root-free original Native coordinates captured from an actual admitted basis.
 mod capture;
+mod successor;
+pub use successor::AdmittedRelationalMemoryComponent;
 use super::{
     copying, RecordedRelationalComponentReference, RelationalRecordedComponentRefusal as Refusal,
 };
@@ -141,36 +143,17 @@ impl RelationalRuntime {
                 )
             });
         }
-        let parents = descriptor
-            .reference()
-            .target()
-            .as_basis()
-            .map_or(0, |target| target.parent_commit_ids().len());
-        let bytes = std::mem::size_of::<MemoryComponentOrigin>()
-            .checked_add(2 * std::mem::size_of::<usize>())
-            .and_then(|bytes| bytes.checked_add(descriptor.branch_id().0.len()))
-            .and_then(|bytes| bytes.checked_add(descriptor.reference().branch_id().as_str().len()))
-            .and_then(|bytes| {
-                parents
-                    .checked_mul(std::mem::size_of::<u64>())
-                    .and_then(|parents| bytes.checked_add(parents))
-            })
-            .ok_or_else(copying::malformed)?;
-        let funding = copying::reserve(execution, bytes)?;
-        let mut charged = None;
-        let scope = execution.run_native_with_checkpoint(|context| {
-            charged = Some(if context.has_accounting() {
-                context.checkpoint(bytes as u64)
-            } else {
-                context.poll()
-            });
-        });
-        match (scope, charged) {
-            (Ok(_), Some(Ok(()))) => {}
-            (_, Some(Err(cause))) => return Err(Refusal::Request(cause.into())),
-            (Err(cause), _) => return Err(Refusal::Request(cause.into())),
-            (Ok(_), None) => unreachable!("the original capture charged its copy"),
-        }
+        let bytes = successor::live_bytes(descriptor, successor::parent_count(descriptor))?;
+        let funding = successor::fund_and_charge(execution, bytes)?;
+        self.live_component(basis, funding)
+    }
+    /// The Live observation of `basis`, whose copy `funding` already paid.
+    fn live_component(
+        &self,
+        basis: &AdmittedRelationalBranchBasis,
+        funding: Option<worth_execution::ExecutionMemoryReservation>,
+    ) -> Result<ObservedRelationalMemoryComponent, Refusal> {
+        let descriptor = basis.descriptor();
         let canonical = basis.inner.root.canonical_envelope();
         if descriptor.reference().target().as_basis().is_some() && canonical.is_none() {
             return Err(Refusal::CanonicalMismatch {

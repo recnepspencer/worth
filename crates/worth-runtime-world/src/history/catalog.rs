@@ -9,7 +9,7 @@ mod entry;
 mod exact_position;
 mod history_retirement;
 mod memory_original;
-pub(crate) use memory_original::MemoryOriginalRegistration;
+pub(crate) use memory_original::{MemoryOriginalRegistration, MemoryOriginalSlot};
 mod metadata;
 mod publication;
 mod publication_page;

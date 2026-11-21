@@ -5,7 +5,8 @@ mod publication;
 mod reclamation;
 mod retention;
 
-pub(crate) use catalog::MemoryOriginalRegistration;
+pub(crate) use catalog::{MemoryOriginalRegistration, MemoryOriginalSlot};
+pub(crate) use publication::MemoryOriginalSuccessor;
 pub(crate) use catalog::{AncestorSelectionPath, HistoryTraversalControl};
 pub use catalog::{
     CompositeAncestorSelectionDenial, CompositeHistoryCatalogDenial, CompositeHistoryTraversal,

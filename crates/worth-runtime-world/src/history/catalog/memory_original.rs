@@ -8,6 +8,8 @@ mod readmission;
 #[derive(Debug)]
 enum Slot {
     Vacant(Option<usize>),
+    /// Held by one admitted original, before its owner effect.
+    Reserved,
     Original(Arc<MemoryPublicationRecord>),
 }
 #[derive(Debug, Default)]
@@ -36,6 +38,51 @@ pub(crate) struct MemoryOriginalRegistration {
     slot: usize,
     record: Arc<MemoryPublicationRecord>,
 }
+/// One registry slot an admitted original holds from before its owner effect.
+/// A registry holding a slot admits no readmission, so filling it cannot be
+/// refused; dropping it unfilled returns the slot.
+#[derive(Debug)]
+pub(crate) struct MemoryOriginalSlot {
+    registry: Weak<Registry>,
+    slot: usize,
+    filled: bool,
+}
+impl MemoryOriginalSlot {
+    pub(crate) fn fill(
+        mut self,
+        record: Arc<MemoryPublicationRecord>,
+    ) -> MemoryOriginalRegistration {
+        if let Some(registry) = self.registry.upgrade() {
+            let mut records = registry
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            assert!(matches!(records.slots[self.slot], Slot::Reserved));
+            records.slots[self.slot] = Slot::Original(Arc::clone(&record));
+        }
+        self.filled = true;
+        MemoryOriginalRegistration {
+            registry: self.registry.clone(),
+            slot: self.slot,
+            record,
+        }
+    }
+}
+impl Drop for MemoryOriginalSlot {
+    fn drop(&mut self) {
+        if self.filled {
+            return;
+        }
+        if let Some(registry) = self.registry.upgrade() {
+            let mut records = registry
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            assert!(matches!(records.slots[self.slot], Slot::Reserved));
+            let vacant = records.vacant;
+            records.slots[self.slot] = Slot::Vacant(vacant);
+            records.vacant = Some(self.slot);
+        }
+    }
+}
 impl MemoryOriginalRegistration {
     pub(crate) fn mark_committed(&self, movement: &crate::branch::ProductBranchReferenceMovement) {
         let registry = self.registry.upgrade();
@@ -58,7 +105,7 @@ impl Drop for MemoryOriginalRegistration {
                 .unwrap_or_else(std::sync::PoisonError::into_inner);
             let matches = match &records.slots[self.slot] {
                 Slot::Original(record) => Arc::ptr_eq(record, &self.record),
-                Slot::Vacant(_) => false,
+                Slot::Vacant(_) | Slot::Reserved => false,
             };
             assert!(
                 matches,
@@ -98,7 +145,7 @@ impl CompositeHistoryCatalog {
             .iter()
             .filter(|slot| match slot {
                 Slot::Original(record) => record.committed.load(Ordering::Acquire),
-                Slot::Vacant(_) => false,
+                Slot::Vacant(_) | Slot::Reserved => false,
             })
             .count();
         let mut builder =
@@ -110,7 +157,7 @@ impl CompositeHistoryCatalog {
                 Slot::Original(record) if record.committed.load(Ordering::Acquire) => {
                     builder.push(record.clone()).map_err(Stop::Backing)?
                 }
-                Slot::Original(_) | Slot::Vacant(_) => {}
+                Slot::Original(_) | Slot::Vacant(_) | Slot::Reserved => {}
             }
         }
         builder.seal().map_err(Stop::Backing)
@@ -138,18 +185,19 @@ impl CompositeHistoryCatalog {
                         return Ok(false);
                     }
                 }
-                Slot::Original(_) | Slot::Vacant(_) => {}
+                Slot::Original(_) | Slot::Vacant(_) | Slot::Reserved => {}
             }
         }
         Ok(originals.next().is_none())
     }
 
-    pub(crate) fn register_memory_original(
+    /// Reserve one original slot, growing the registry on this request
+    /// before any owner effect. Filling it later charges nothing.
+    pub(crate) fn reserve_memory_original(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        record: Arc<MemoryPublicationRecord>,
     ) -> Result<
-        MemoryOriginalRegistration,
+        MemoryOriginalSlot,
         worth_relational::facade::branch::RelationalRecordedComponentRefusal,
     > {
         use worth_relational::facade::branch::RelationalRecordedComponentRefusal as Refusal;
@@ -212,17 +260,16 @@ impl CompositeHistoryCatalog {
                 unreachable!("free slot is vacant")
             };
             records.vacant = next;
-            records.slots[slot] = Slot::Original(Arc::clone(&record));
+            records.slots[slot] = Slot::Reserved;
             slot
         } else {
-            let slot = records.slots.len();
-            records.slots.push(Slot::Original(Arc::clone(&record)));
-            slot
+            records.slots.push(Slot::Reserved);
+            records.slots.len() - 1
         };
-        Ok(MemoryOriginalRegistration {
+        Ok(MemoryOriginalSlot {
             registry: Arc::downgrade(&self.originals.0),
             slot,
-            record,
+            filled: false,
         })
     }
     pub(crate) fn observe_memory_original(

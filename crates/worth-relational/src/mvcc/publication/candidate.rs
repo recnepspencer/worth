@@ -166,6 +166,22 @@ impl PreparedRelationalCommitCandidate {
             .map(|payload| payload.expected_basis.clone())
     }
 
+    /// The basis this candidate moves and its successor's parent count.
+    pub(crate) fn with_successor_shape<R>(
+        &self,
+        read: impl FnOnce(&crate::branch::RelationalBranchBasisDescriptor, usize) -> R,
+    ) -> Option<R> {
+        let payload = self
+            ._payload
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        let payload = payload.as_ref()?;
+        Some(read(
+            &payload.expected_basis,
+            payload.execution.successor_parent_count(),
+        ))
+    }
+
     pub(crate) fn belongs_to_publication_owner(
         &self,
         binding: &crate::runtime::RelationalRuntimePublicationBinding,

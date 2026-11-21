@@ -66,6 +66,12 @@ impl ActiveAttemptCustody {
             .as_ref()
             .expect("ordinary attempt reserves original publication")
     }
+    /// The original publication envelope, when this attempt reserved one.
+    pub(crate) fn original_publication_envelope(
+        &self,
+    ) -> Option<&Arc<crate::history::CanonicalPublicationEnvelope>> {
+        self.record.publication.as_ref()
+    }
     pub(crate) fn reserved_commit_identity(&self) -> crate::identity::CompositeCommitIdentity {
         self.record
             .state()

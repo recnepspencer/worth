@@ -2,6 +2,8 @@
 //! allocation; a caller's linear delivery claim never becomes its truth source.
 
 mod delivery;
+mod memory_admission;
+pub(crate) use memory_admission::MemoryOriginalSuccessor;
 mod retirement;
 pub(crate) use retirement::PublicationFactsRetirement;
 pub(super) mod memory_observation;
@@ -69,6 +71,7 @@ pub(crate) struct CanonicalPublicationEnvelope {
     facts: OnceLock<PerformedPublicationFacts>,
     committed: AtomicBool,
     memory_original: OnceLock<crate::history::MemoryOriginalRegistration>,
+    admitted_original: Mutex<Option<memory_admission::AdmittedMemoryOriginal>>,
     delivery: AtomicU8,
     successor_observation: Mutex<Option<crate::branch::ProductBranchObservation>>,
     revision: Arc<PublicationRevision>,
@@ -107,6 +110,7 @@ impl CanonicalPublicationEnvelope {
             facts: OnceLock::new(),
             committed: AtomicBool::new(false),
             memory_original: OnceLock::new(),
+            admitted_original: Mutex::new(None),
             delivery: AtomicU8::new(delivery::AVAILABLE),
             successor_observation: Mutex::new(None),
             revision,
