@@ -8,6 +8,7 @@ use worth_execution::ExecutionRequest;
 use worth_foundational::facade::{
     CanonicalDigestId, ProgramSupportObligationIdentity, ProgramSupportObligationKind,
 };
+use worth_query_execution_obligations::facade::ledger_inspect;
 use worth_runtime_world::facade::WorldProgramActivationHistory;
 
 impl QueryObligationHistory {
@@ -77,12 +78,8 @@ impl QueryObligationHistory {
         // terminal original fates no longer carry adoption custody.
         let finished_adoptions = {
             let state = self.state();
-            let fold = &state
-                .journal
-                .as_ref()
-                .expect("admitted journal")
-                .ledger
-                .adoption;
+            let fold =
+                ledger_inspect::adoption(&state.journal.as_ref().expect("admitted journal").ledger);
             fold.branches
                 .keys()
                 .copied()
@@ -216,11 +213,11 @@ impl QueryObligationHistory {
         originals: &WorldProgramActivationHistory,
         material: &MaterialPublication<'_>,
     ) -> Result<Vec<ProgramSupportObligationIdentity>, QueryObligationDenial> {
-        for row in ledger
-            .adoption
+        let adoption = ledger_inspect::adoption(ledger);
+        for row in adoption
             .branches
             .values()
-            .filter(|row| !ledger.adoption.completed.contains(&row.attempt))
+            .filter(|row| !adoption.completed.contains(&row.attempt))
         {
             for revision in [row.source, row.target] {
                 if !entries
@@ -237,7 +234,7 @@ impl QueryObligationHistory {
                 }
             }
         }
-        for row in ledger.adoption.stopped.values() {
+        for row in adoption.stopped.values() {
             for revision in std::iter::once(row.target)
                 .chain(row.remaining.iter().map(|(_, _, source)| *source))
             {
@@ -255,7 +252,8 @@ impl QueryObligationHistory {
                 }
             }
         }
-        for row in ledger.output.sources.values() {
+        let output = ledger_inspect::output(ledger);
+        for row in output.sources.values() {
             let original = originals
                 .recorded_entry(row.commit)
                 .ok_or(QueryObligationDenial::ObligationSubjectMismatch)?;
@@ -267,19 +265,13 @@ impl QueryObligationHistory {
                 return Err(QueryObligationDenial::ObligationSubjectMismatch);
             }
         }
-        let revisions = ledger
-            .output
-            .sources
-            .values()
-            .map(|row| row.revision)
-            .chain(
-                ledger
-                    .output
-                    .demands
-                    .values()
-                    .filter(|row| !ledger.output.completed.contains(&row.acquire_position))
-                    .map(|row| row.revision),
-            );
+        let revisions = output.sources.values().map(|row| row.revision).chain(
+            output
+                .demands
+                .values()
+                .filter(|row| !output.completed.contains(&row.acquire_position))
+                .map(|row| row.revision),
+        );
         for revision in revisions {
             if !entries
                 .keys()

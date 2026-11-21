@@ -23,7 +23,31 @@ pub(super) use home_target::discover_home_target;
 /// on public sessions, retained provider roots, or positive query matches.
 pub(crate) struct PreparedManagedIndexScopeClosure {
     pub(crate) scopes: BTreeMap<EntityId, BTreeSet<EntityId>>,
+    /// Sorted, deduplicated row-kind and projection-endpoint entity IDs whose
+    /// own entity record changed, or `None` on a target-only rebuild.
+    pub(crate) changed_occurrence_records: Option<Vec<EntityId>>,
     pub(crate) support: Vec<DerivedRelationData>,
+}
+
+fn is_occurrence_dependency_kind(
+    program: &ManagedIndexSourceProgram,
+    kind: crate::identity::data::KindId,
+) -> bool {
+    kind == program.row_kind()
+        || program
+            .projection_routes()
+            .iter()
+            .any(|route| route.endpoint_kind() == kind)
+}
+
+fn push_changed_occurrence_record(
+    source: &mut LifecycleSource<'_, '_>,
+    records: &mut Vec<EntityId>,
+    entity: EntityId,
+) -> Result<(), Denial> {
+    crate::derived_relation::source_buffer::reserve(source, records, 1)?;
+    records.push(entity);
+    Ok(())
 }
 
 pub(crate) fn discover(
@@ -57,6 +81,7 @@ pub(crate) fn discover(
     )?;
     let mut closure = PreparedManagedIndexScopeClosure {
         scopes: BTreeMap::new(),
+        changed_occurrence_records: None,
         support: affected.support,
     };
     for root in affected.roots {
@@ -78,25 +103,38 @@ pub(crate) fn discover(
     )?;
     // Lifecycle pullback intentionally excludes unchanged-kind scalar writes.
     // Route every actually changed row endpoint, including owner-induced edits,
-    // through the same inverse Source program on BOTH real physical sides.
+    // through the same inverse Source program on BOTH real physical sides, and
+    // record changed entity IDs in the occurrence-dependency kind domain.
+    let mut changed_occurrence_records = Vec::new();
     for record in records {
         new.checkpoint(1)?;
         let RecordRef::Entity(id) = *record else {
             continue;
         };
+        let mut is_dependency_record = false;
         for source in [&mut old, &mut new] {
             match source.entity_kind(id) {
-                Ok(kind) if kind == program.row_kind() => {
-                    rows.insert(NativeMemberKey::Entity(id));
+                Ok(kind) => {
+                    if kind == program.row_kind() {
+                        rows.insert(NativeMemberKey::Entity(id));
+                    } else if kind == program.scope_kind() {
+                        closure.scopes.entry(id).or_default();
+                    }
+                    if is_occurrence_dependency_kind(program, kind) {
+                        is_dependency_record = true;
+                    }
                 }
-                Ok(kind) if kind == program.scope_kind() => {
-                    closure.scopes.entry(id).or_default();
-                }
-                Ok(_) | Err(Denial::Definition(Definition::RecordUnavailable)) => {}
+                Err(Denial::Definition(Definition::RecordUnavailable)) => {}
                 Err(cause) => return Err(cause),
             }
         }
+        if is_dependency_record {
+            push_changed_occurrence_record(&mut new, &mut changed_occurrence_records, id)?;
+        }
     }
+    changed_occurrence_records.sort_unstable();
+    changed_occurrence_records.dedup();
+    closure.changed_occurrence_records = Some(changed_occurrence_records);
     let position = program
         .0
         .path

@@ -1,16 +1,9 @@
 use super::WorthQueryProviderCheckpointEvidence;
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryProviderCheckpointReleaseDisposition {
-    Released,
-    Panicked,
-}
-
-impl WorthQueryProviderCheckpointReleaseDisposition {
-    pub const fn recovery_required(self) -> bool {
-        matches!(self, Self::Panicked)
-    }
-}
+pub use worth_query_execution_foundation::facade::domain_computation::managed_run_vocabulary::{
+    WorthQueryProviderCheckpointReleaseDisposition,
+    WorthQueryProviderCheckpointRetentionFailureKind,
+};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryProviderCheckpointReleaseEvidence {
@@ -36,11 +29,6 @@ impl WorthQueryProviderCheckpointReleaseEvidence {
     pub const fn disposition(&self) -> WorthQueryProviderCheckpointReleaseDisposition {
         self.disposition
     }
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryProviderCheckpointRetentionFailureKind {
-    RetainedByteProbePanicked,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]

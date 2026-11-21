@@ -2,8 +2,8 @@ use std::sync::Arc;
 
 use crate::domain_computation::provider_session::graph_provider::bounded_step::{
     WorthQueryOwnedGraphProviderExecution, WorthQueryProviderCheckpointReleaseEvidence,
-    WorthQueryProviderCheckpointRetentionFailure, WorthQueryProviderCheckpointRetentionFailureKind,
-    WorthQueryProviderExecutionInvocation, WorthQueryProviderExecutionReleaseEvidence,
+    WorthQueryProviderCheckpointRetentionFailure, WorthQueryProviderExecutionInvocation,
+    WorthQueryProviderExecutionReleaseEvidence,
 };
 use crate::domain_computation::WorthQueryGraphProviderCheckpoint;
 
@@ -12,14 +12,7 @@ use super::retained_graph_execution::{
     WorthQueryRetainedManagedGraphExecution, WorthQueryRetainedManagedGraphExecutionParts,
 };
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryProviderCheckpointSuspensionFailureKind {
-    ProviderRejected,
-    ProviderPanicked,
-    ProviderExecutionReleaseRecoveryRequired,
-    CheckpointMemoryMismatch,
-    CheckpointRetention(WorthQueryProviderCheckpointRetentionFailureKind),
-}
+pub use worth_query_execution_foundation::facade::domain_computation::managed_run_vocabulary::WorthQueryProviderCheckpointSuspensionFailureKind;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryProviderCheckpointSuspensionFailureEvidence {

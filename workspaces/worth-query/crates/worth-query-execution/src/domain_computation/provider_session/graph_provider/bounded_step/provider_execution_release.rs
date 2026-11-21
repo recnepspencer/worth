@@ -1,17 +1,9 @@
 use std::sync::Arc;
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryProviderExecutionDisposalDisposition {
-    Completed,
-    Rejected,
-    Panicked,
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryProviderExecutionDestructorDisposition {
-    Completed,
-    Panicked,
-}
+pub use worth_query_execution_foundation::facade::domain_computation::managed_run_vocabulary::{
+    WorthQueryProviderExecutionDestructorDisposition,
+    WorthQueryProviderExecutionDisposalDisposition,
+};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryProviderExecutionReleaseEvidence {

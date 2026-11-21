@@ -2,7 +2,7 @@
 pub(super) mod failure;
 pub(crate) mod initialization;
 pub(crate) mod installation;
-pub(super) mod occurrences;
+pub(crate) mod occurrences;
 pub(super) mod projection;
 pub(super) mod projection_support;
 mod read_work;

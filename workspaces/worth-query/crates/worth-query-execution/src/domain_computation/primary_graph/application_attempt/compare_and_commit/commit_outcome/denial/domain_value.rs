@@ -19,7 +19,9 @@ impl Denial {
     pub(in crate::domain_computation::primary_graph) fn domain_value_admission_rejected(
         cause: Admission,
     ) -> Self {
-        if let Some(request) = cause.request_cause() {
+        if let Some(request) =
+            crate::domain_computation::primary_graph::value_decode::decode_request_cause(cause)
+        {
             return Self::provider_execution_denied(Stage::EffectLowering,
                 crate::domain_computation::primary_graph::provider::relational_execution_denial::relational_execution_kind(request.into(), None),
                 "domain value write admission refused the original request");

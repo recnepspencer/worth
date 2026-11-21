@@ -3,6 +3,7 @@ use super::*;
 use journal::*;
 use worth_execution::ExecutionRequest;
 use worth_foundational::facade::ProgramSupportObligationIdentity;
+use worth_query_execution_obligations::facade::ledger_inspect;
 impl QueryObligationHistory {
     pub(in crate::domain_computation::primary_graph) fn retain_original_operation(
         &self,
@@ -63,7 +64,7 @@ impl QueryObligationHistory {
         self.state()
             .journal
             .as_ref()
-            .and_then(|journal| journal.ledger.original_operations.get(&identity))
+            .and_then(|journal| ledger_inspect::original_operations(&journal.ledger).get(&identity))
             .cloned()
             .ok_or(QueryObligationDenial::UnknownObligation)
     }
@@ -85,13 +86,13 @@ impl QueryObligationHistory {
                 .as_ref()
                 .ok_or(QueryObligationDenial::SupportUnavailable)?;
             match &record {
-                QueryOriginalOperationRecord::Advance { identity, position } => journal
-                    .ledger
-                    .original_operations
-                    .get(identity)
-                    .is_some_and(|row| row.position == *position),
+                QueryOriginalOperationRecord::Advance { identity, position } => {
+                    ledger_inspect::original_operations(&journal.ledger)
+                        .get(identity)
+                        .is_some_and(|row| row.position == *position)
+                }
                 QueryOriginalOperationRecord::Discharge { identity } => {
-                    !journal.ledger.original_operations.contains_key(identity)
+                    !ledger_inspect::original_operations(&journal.ledger).contains_key(identity)
                 }
                 QueryOriginalOperationRecord::Retain(_) => false,
             }

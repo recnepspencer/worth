@@ -97,13 +97,21 @@ pub(super) fn discover(
             }
         }
     }
+    new.retain(size_of::<(EntityId, BTreeSet<EntityId>)>())?;
+    let mut changed_occurrence_records = Vec::new();
+    for &entity in &created {
+        new.checkpoint(1)?;
+        if is_occurrence_dependency_kind(program, new.entity_kind(entity)?) {
+            push_changed_occurrence_record(&mut new, &mut changed_occurrence_records, entity)?;
+        }
+    }
     let changed = created
         .into_iter()
         .filter(|entity| *entity != scope)
         .collect();
-    new.retain(size_of::<(EntityId, BTreeSet<EntityId>)>())?;
     Ok(Some(PreparedManagedIndexScopeClosure {
         scopes: BTreeMap::from([(scope, changed)]),
+        changed_occurrence_records: Some(changed_occurrence_records),
         support: Vec::new(),
     }))
 }

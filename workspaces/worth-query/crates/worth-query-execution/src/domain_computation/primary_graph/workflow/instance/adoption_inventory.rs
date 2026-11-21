@@ -75,16 +75,20 @@ pub(in crate::domain_computation::primary_graph) fn read_live_instances(
         {
             return Err(unreadable);
         }
-        if layout
-            .instance
-            .start_advancer
-            .read_adoption(&record, execution, instance)?
-            .is_none()
-            || layout
-                .instance
-                .ending_actor
-                .read_adoption(&record, execution, instance)?
-                .is_some()
+        if super::super::actor::record::read_adoption_actor_fields(
+            &layout.instance.start_advancer,
+            &record,
+            execution,
+            instance,
+        )?
+        .is_none()
+            || super::super::actor::ending::read_adoption_ending_actor(
+                &layout.instance.ending_actor,
+                &record,
+                execution,
+                instance,
+            )?
+            .is_some()
         {
             return Err(unreadable);
         }
@@ -162,16 +166,20 @@ fn read_transition(
     if context.is_some() && !receipted {
         return Err(unreadable);
     }
-    if layout
-        .transition
-        .advancer
-        .read_adoption(&record, execution, transition)?
-        .is_none()
-        || layout
-            .transition
-            .executor
-            .read_adoption(&record, execution, transition)?
-            .is_some()
+    if super::super::actor::record::read_adoption_actor_fields(
+        &layout.transition.advancer,
+        &record,
+        execution,
+        transition,
+    )?
+    .is_none()
+        || super::super::actor::record::read_adoption_actor_fields(
+            &layout.transition.executor,
+            &record,
+            execution,
+            transition,
+        )?
+        .is_some()
             != receipted
     {
         return Err(unreadable);

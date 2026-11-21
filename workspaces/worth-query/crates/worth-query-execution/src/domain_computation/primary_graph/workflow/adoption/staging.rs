@@ -73,10 +73,11 @@ pub(in crate::domain_computation::primary_graph) fn stage_workflow_dispositions(
                     layout.instance.state.clone(),
                     AspectValue::UInt64(WorkflowInstanceState::Cancelled.persisted_tag()),
                 )]);
-                layout
-                    .instance
-                    .ending_actor
-                    .append(advancer, &mut actor_fields);
+                super::super::actor::ending::append_ending_actor(
+                    &layout.instance.ending_actor,
+                    advancer,
+                    &mut actor_fields,
+                );
                 intents.push(MutationIntent::Entity(EntityMutationIntent::UpdateFields(
                     UpdateEntityFieldsIntent {
                         entity_id: occurrence.entity_id(),

@@ -26,3 +26,40 @@ impl From<worth_relational::facade::runtime::RelationalRuntimeConstructionDenial
         .with_runtime_construction_cause(cause)
     }
 }
+
+impl From<worth_query_execution_layout::facade::WorthQuerySchemaLayoutDenial>
+    for WorthQueryPrimaryGraphInstallationDenial
+{
+    fn from(cause: worth_query_execution_layout::facade::WorthQuerySchemaLayoutDenial) -> Self {
+        use worth_query_execution_layout::facade::WorthQuerySchemaLayoutDenialKind as LayoutKind;
+        let (layout_kind, subject, content_cause) = cause.into_parts();
+        let kind = match layout_kind {
+            LayoutKind::ContentAdmissionRejected => {
+                WorthQueryPrimaryGraphInstallationDenialKind::ContentAdmissionRejected
+            }
+            LayoutKind::InvalidSchemaMember => {
+                WorthQueryPrimaryGraphInstallationDenialKind::InvalidSchemaMember
+            }
+            LayoutKind::RelationalSchemaRejected => {
+                WorthQueryPrimaryGraphInstallationDenialKind::RelationalSchemaRejected
+            }
+            LayoutKind::UnsupportedManagedSource => {
+                WorthQueryPrimaryGraphInstallationDenialKind::UnsupportedManagedSource
+            }
+            LayoutKind::SourceProgramIdentityExhausted => {
+                WorthQueryPrimaryGraphInstallationDenialKind::SourceProgramIdentityExhausted
+            }
+            LayoutKind::OrderedPredecessorMembershipRequired => {
+                WorthQueryPrimaryGraphInstallationDenialKind::OrderedPredecessorMembershipRequired
+            }
+            LayoutKind::OrderedPredecessorMustBeToOne => {
+                WorthQueryPrimaryGraphInstallationDenialKind::OrderedPredecessorMustBeToOne
+            }
+        };
+        let denial = Self::new(kind, subject);
+        match content_cause {
+            Some(content) => denial.with_content_cause(content),
+            None => denial,
+        }
+    }
+}

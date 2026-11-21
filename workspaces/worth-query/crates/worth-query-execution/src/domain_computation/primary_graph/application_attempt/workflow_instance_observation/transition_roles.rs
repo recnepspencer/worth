@@ -16,14 +16,26 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
     facts: &mut Vec<WorthQueryApplicationObservedFact>,
 ) -> Result<WorkflowTransitionRoles, WorthQueryApplicationAttemptDenial> {
     let kind = layout.transition.entity_kind;
-    let advancer = layout
-        .transition
-        .advancer
-        .observe(runtime, execution, snapshot, transition, kind, facts)?;
-    let executor = layout
-        .transition
-        .executor
-        .observe(runtime, execution, snapshot, transition, kind, facts)?;
+    let advancer =
+        crate::domain_computation::primary_graph::workflow::actor::record::observe_actor_fields(
+            &layout.transition.advancer,
+            runtime,
+            execution,
+            snapshot,
+            transition,
+            kind,
+            facts,
+        )?;
+    let executor =
+        crate::domain_computation::primary_graph::workflow::actor::record::observe_actor_fields(
+            &layout.transition.executor,
+            runtime,
+            execution,
+            snapshot,
+            transition,
+            kind,
+            facts,
+        )?;
     let applicable = crate::domain_computation::primary_graph::workflow::actor::record::validate_actor_applicability;
     applicable(advancer, true)?;
     applicable(executor, has_operation_receipt)?;

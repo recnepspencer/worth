@@ -362,6 +362,8 @@ pub(super) fn envelope_actions<
         .finish_action()
         .action::<synchronous_edit::interleaved::ObserveValueBinding, Completion>()
         .finish_action()
+        .action::<synchronous_edit::interleaved::ObserveAvailabilityBinding, Completion>()
+        .finish_action()
         .action::<synchronous_edit::interleaved::AuthoredParentBinding, Completion>()
         .finish_action()
         .action::<query::identity::expectation::Binding, Completion>()

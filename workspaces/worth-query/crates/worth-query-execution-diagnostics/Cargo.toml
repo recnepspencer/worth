@@ -1,0 +1,18 @@
+[package]
+name = "worth-query-execution-diagnostics"
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+license.workspace = true
+description = "Canonical diagnostic evidence identity and causal inspection protocol for Query execution."
+publish = false
+
+[dependencies]
+sha2 = "0.10"
+worth-foundational = { path = "../../../../crates/worth-foundational" }
+worth-proof = { path = "../../../../crates/worth-proof" }
+worth-runtime-bridge = { path = "../../../../crates/worth-runtime-bridge" }
+worth-query-admission = { path = "../worth-query-admission" }
+
+[lints]
+workspace = true

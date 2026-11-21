@@ -16,15 +16,27 @@ pub(in crate::domain_computation::primary_graph) fn observe(
 ) -> Result<WorkflowInstanceRoles, WorthQueryApplicationAttemptDenial> {
     let kind = layout.instance.entity_kind;
     let applicable = crate::domain_computation::primary_graph::workflow::actor::record::validate_actor_applicability;
-    let start_actor = layout
-        .instance
-        .start_advancer
-        .observe(runtime, execution, snapshot, entity, kind, facts)?;
+    let start_actor =
+        crate::domain_computation::primary_graph::workflow::actor::record::observe_actor_fields(
+            &layout.instance.start_advancer,
+            runtime,
+            execution,
+            snapshot,
+            entity,
+            kind,
+            facts,
+        )?;
     applicable(start_actor, true)?;
-    let end_actor = layout
-        .instance
-        .ending_actor
-        .observe(runtime, execution, snapshot, entity, kind, facts)?;
+    let end_actor =
+        crate::domain_computation::primary_graph::workflow::actor::ending::observe_ending_actor(
+            &layout.instance.ending_actor,
+            runtime,
+            execution,
+            snapshot,
+            entity,
+            kind,
+            facts,
+        )?;
     let state = observe_field_value(
         runtime,
         execution,

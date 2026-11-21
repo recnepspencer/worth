@@ -648,6 +648,12 @@ Cleanup courts moved out of the tree are listed under their C item, with `restor
   the same door its sibling courts `transition_indexes/{promotion,publication}.rs`
   already hold, and it is the only way to leave exactly that Native effect
   without a World occurrence. No production caller is added.
+  C1 ruling (2026-11-20, review 5): one more test-only row, for the World
+  court `durable_siblings/unresolved_creation.rs`. Its fence probe prepares
+  a Relational-only durable open without advancing it, to show that an
+  undecided recovered creation fences only Signal-carrying opens (transition
+  steps pass). A durable open would journal an original and change the
+  court's recovered state. No production caller is added.
   Restore complete courts only through public owner recovery after C1 supports
   this Native-effect prefix and C5 lifts D18. No graceful close may replace
   their abandoned prefix or weaken the original assertions.

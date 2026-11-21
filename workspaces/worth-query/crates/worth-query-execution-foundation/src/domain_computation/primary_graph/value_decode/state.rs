@@ -1,0 +1,134 @@
+//! Original decode control and optional explicitly accounted memory custody.
+use super::{session::ValueDecodeSession, WorthQueryValueDecodeDenial as Stop};
+use std::cell::{Cell, RefCell};
+use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, ExecutionWorkCeiling};
+use worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog;
+
+pub struct ValueDecodeState {
+    pub(super) bindings: WorthQueryInstalledApplicationValueBindingCatalog,
+    pub(super) memory: RefCell<Option<ExecutionMemoryReservation>>,
+    first: Cell<Option<Stop>>,
+    pub(super) require_admitted: bool,
+}
+
+impl ValueDecodeState {
+    pub fn new(bindings: WorthQueryInstalledApplicationValueBindingCatalog) -> Self {
+        Self {
+            bindings,
+            memory: RefCell::new(None),
+            first: Cell::new(None),
+            require_admitted: false,
+        }
+    }
+
+    /// Managed source callbacks require the actual admitted scalar codec.
+    pub fn admitted(bindings: WorthQueryInstalledApplicationValueBindingCatalog) -> Self {
+        Self {
+            require_admitted: true,
+            ..Self::new(bindings)
+        }
+    }
+
+    pub fn denial(&self) -> Option<Stop> {
+        self.first.get()
+    }
+
+    pub fn refuse(&self, cause: Stop) {
+        self.first.set(self.first.get().or(Some(cause)));
+    }
+
+    /// Poll the original request at the final handoff, without releasing the
+    /// cumulative parse reservation or replacing an earlier refusal.
+    pub fn check(&self, execution: &ExecutionRequest<'_, '_>) -> Result<(), Stop> {
+        if let Some(cause) = self.denial() {
+            return Err(cause);
+        }
+        execution.consult().map_err(|cause| {
+            let cause = Stop::Scope(cause);
+            self.refuse(cause);
+            cause
+        })
+    }
+
+    /// Retains the first failure and any explicitly accounted grants across reads.
+    /// Its owner supplies the original borrowed request each time.
+    pub fn run<R>(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        body: impl FnOnce(&ValueDecodeSession<'_>) -> R,
+    ) -> Result<R, Stop> {
+        self.run_with_scope_refusal(execution, &mut |_| {}, body)
+    }
+
+    /// The managed invocation observes actual SDK envelope failures separately
+    /// from this decoder's ordinary first semantic refusal.
+    pub fn run_with_scope_refusal<R>(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        scope_refusal: &mut dyn FnMut(worth_execution::WorkCeilingDenial),
+        body: impl FnOnce(&ValueDecodeSession<'_>) -> R,
+    ) -> Result<R, Stop> {
+        if let Some(cause) = self.denial() {
+            return Err(cause);
+        }
+        let result = execution
+            .in_scope(|lease| {
+                let decode = |context: &mut worth_execution::MapKernelContext<'_, '_>| {
+                    let accounted = context.has_accounting();
+                    if accounted && self.memory.borrow().is_none() {
+                        *self.memory.borrow_mut() = Some(
+                            ExecutionMemoryReservation::reserve_in_scope(lease, 0)
+                                .map_err(Stop::Reservation)?,
+                        );
+                    }
+                    let context = RefCell::new(context);
+                    let checkpoint = |work| context.borrow_mut().checkpoint(work);
+                    let poll = || context.borrow_mut().poll();
+                    let session = ValueDecodeSession {
+                        on_refusal: None,
+                        state: self,
+                        checkpoint: accounted.then_some(
+                            &checkpoint
+                                as &dyn Fn(u64) -> Result<(), worth_execution::MapKernelStop>,
+                        ),
+                        poll: &poll,
+                    };
+                    let output = body(&session);
+                    if let Some(cause) = self.denial() {
+                        drop(output);
+                        return Err(cause);
+                    }
+                    Ok(output)
+                };
+                if execution.has_accounting() {
+                    ExecutionWorkCeiling::new(execution.work_ceiling())
+                        .run_with_checkpoint(lease, None, decode)
+                        .map(|(result, _)| result)
+                } else {
+                    execution
+                        .run_native_with_checkpoint(decode)
+                        .map(|(result, _)| result)
+                }
+            })
+            .map_err(|cause| {
+                scope_refusal(cause);
+                Stop::Scope(cause)
+            })
+            .and_then(|result| {
+                result.map_err(|cause| {
+                    scope_refusal(cause);
+                    Stop::Scope(cause)
+                })
+            })
+            .and_then(|result| result);
+        if let Err(cause) = &result {
+            self.refuse(*cause);
+        }
+        match self.denial() {
+            Some(cause) => Err(cause),
+            None => result,
+        }
+    }
+}
+
+mod court_doors_for_test;
