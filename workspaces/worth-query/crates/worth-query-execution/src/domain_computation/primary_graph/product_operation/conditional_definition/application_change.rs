@@ -78,28 +78,47 @@ impl WorthQueryAdmittedApplicationConditionalDefinition {
         &self.identity
     }
 
-    /// Why the selected product's Signal basis serves no installed
-    /// predecessor, checked by the commit after its key resolves.
-    pub(in crate::domain_computation::primary_graph) fn successor_refusal(
-        &self,
-    ) -> Option<&worth_runtime_bridge::facade::BridgeConditionalDenial> {
-        self.successor.as_ref().err()
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn into_parts(
+    /// The commit's check, after its key resolves: the successor at the
+    /// selected product's Signal basis, or why that basis serves none.
+    pub(in crate::domain_computation::primary_graph) fn check(
         self,
     ) -> Result<
-        WorthQueryApplicationConditionalDefinitionParts,
+        WorthQueryCheckedApplicationConditionalDefinition,
         worth_runtime_bridge::facade::BridgeConditionalDenial,
     > {
         let (predecessor, request) = self.successor?;
-        Ok(WorthQueryApplicationConditionalDefinitionParts {
-            expected_product: self.expected_product,
-            predecessor,
-            request,
-            bridge: self.bridge,
-            activations: self.activations,
+        Ok(WorthQueryCheckedApplicationConditionalDefinition {
+            parts: WorthQueryApplicationConditionalDefinitionParts {
+                expected_product: self.expected_product,
+                predecessor,
+                request,
+                bridge: self.bridge,
+                activations: self.activations,
+            },
         })
+    }
+}
+
+/// An admitted definition whose successor the commit found installed at its
+/// product's Signal basis, after its key resolved. Only `check` mints it.
+pub struct WorthQueryCheckedApplicationConditionalDefinition {
+    parts: WorthQueryApplicationConditionalDefinitionParts,
+}
+
+impl WorthQueryCheckedApplicationConditionalDefinition {
+    pub(in crate::domain_computation::primary_graph) fn into_parts(
+        self,
+    ) -> WorthQueryApplicationConditionalDefinitionParts {
+        self.parts
+    }
+}
+
+impl std::fmt::Debug for WorthQueryCheckedApplicationConditionalDefinition {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("WorthQueryCheckedApplicationConditionalDefinition")
+            .field("expected_product", &self.parts.expected_product)
+            .finish_non_exhaustive()
     }
 }
 

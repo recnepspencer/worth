@@ -2,7 +2,10 @@ use std::sync::Arc;
 
 mod admission;
 mod application_change;
-pub use application_change::WorthQueryAdmittedApplicationConditionalDefinition;
+pub use application_change::{
+    WorthQueryAdmittedApplicationConditionalDefinition,
+    WorthQueryCheckedApplicationConditionalDefinition,
+};
 
 use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryAuthoredHostConditionalPredicateProvider,

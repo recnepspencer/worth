@@ -69,7 +69,7 @@ pub(crate) fn collect(census: &mut crate::inline_type_sizes::Census) {
         owner.field::<Option<worth_query_installation::facade::InstalledPreImageDemand>>(
             "preimage_demand",
         );
-        owner.field::<Option<crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition>>("conditional_definition");
+        owner.field::<Option<crate::domain_computation::primary_graph::product_operation::WorthQueryCheckedApplicationConditionalDefinition>>("conditional_definition");
         owner.field::<crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture>("effect_posture");
         owner.field::<super::super::super::super::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate>("output_correspondence");
         owner.field::<bool>("retain_output_demand_observation");

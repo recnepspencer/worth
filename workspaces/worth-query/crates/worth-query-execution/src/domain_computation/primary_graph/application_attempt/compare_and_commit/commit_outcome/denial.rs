@@ -3,6 +3,7 @@
 mod advancement;
 mod authored_retirement;
 mod capacity;
+mod conditional_definition;
 mod coupled_producer;
 mod decision_read_set;
 mod denial_cause;

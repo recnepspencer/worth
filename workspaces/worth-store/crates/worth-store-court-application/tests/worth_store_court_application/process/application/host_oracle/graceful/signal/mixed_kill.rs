@@ -38,10 +38,21 @@ struct Observation {
 struct Recovered {
     owner_effects: usize,
     continue_offered: bool,
+    /// Both-durable cut only: a fresh key's answer before any recovery.
+    fresh_key: Option<FreshKey>,
     duplicate_key_is_original: bool,
     published: bool,
     key_answers_recovered_commit: bool,
     after: Observation,
+}
+
+/// A fresh key while Signal's leg is durable but unpublished: Bridge serves
+/// the successor, so the product's basis has no installed predecessor.
+#[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+struct FreshKey {
+    denied_product_basis_stale_at_bridge_planning: bool,
+    only_the_original_recovered: bool,
+    frontiers_unchanged: bool,
 }
 
 #[test]
@@ -89,6 +100,15 @@ fn journey(cut: Cut, acting_owners: usize) {
         "exactly the acting owners"
     );
     assert!(recovered.continue_offered);
+    assert_eq!(
+        recovered.fresh_key,
+        (acting_owners == 2).then_some(FreshKey {
+            denied_product_basis_stale_at_bridge_planning: true,
+            only_the_original_recovered: true,
+            frontiers_unchanged: true,
+        }),
+        "a fresh key is refused before any effect, after its key resolves"
+    );
     assert!(
         recovered.duplicate_key_is_original,
         "the original key answers its retained original"
@@ -304,6 +324,7 @@ fn recover(
         .next_actions()
         .contains(&ProductUnpublishedNextAction::ContinueOriginalPublication);
     drop(original);
+    let fresh_key = (owner_effects == 2).then(|| fresh_key(home, branch, ordinal, &handle));
     // The same request: its key resolves before any Bridge basis check, so
     // it answers the retained original in both cuts.
     let duplicate_key_is_original = match operations::commit_mixed(home, branch, ordinal) {
@@ -326,9 +347,37 @@ fn recover(
     Recovered {
         owner_effects,
         continue_offered,
+        fresh_key,
         duplicate_key_is_original,
         published,
         key_answers_recovered_commit,
         after: observe(home),
+    }
+}
+
+/// Another key's mixed commit on the same product, before any recovery.
+fn fresh_key(
+    home: &opening::Home,
+    branch: worth_query_host::facade::product::WorthQueryProductBranch,
+    ordinal: u8,
+    original: &worth_runtime_world::facade::ProductUnpublishedRecoveryHandle,
+) -> FreshKey {
+    let before = operations::frontiers(home, &[branch]);
+    let denied = match operations::commit_mixed(home, branch, ordinal + 100) {
+        primary_graph::WorthQueryApplicationCommitOutcome::Denied(denial) => {
+            denial.kind() == primary_graph::WorthQueryApplicationCommitDenialKind::ProductBasisStale
+                && denial.stage()
+                    == primary_graph::WorthQueryApplicationCommitDenialStage::BridgePlanning
+        }
+        other => panic!("a fresh key refuses before any effect: {other:?}"),
+    };
+    let page = home
+        .runtime()
+        .product_publication_recovery_page(None, std::num::NonZeroUsize::new(16).unwrap())
+        .unwrap();
+    FreshKey {
+        denied_product_basis_stale_at_bridge_planning: denied,
+        only_the_original_recovered: page.rows().len() == 1 && page.rows()[0].handle() == original,
+        frontiers_unchanged: operations::frontiers(home, &[branch]) == before,
     }
 }
