@@ -34,6 +34,7 @@ pub struct Case {
     pub work: Option<u64>,
     pub contacts: [usize; 4],
     pub publications: usize,
+    pub native_head_unchanged: bool,
 }
 
 pub fn run_case(
@@ -59,6 +60,13 @@ pub fn run_case(
         worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
     let program = crate::domain_computation::primary_graph::tests::application_attempt::checked_invariant_hooks::program::prepare(&world, &scope);
+    let core = world.application.runtime_for_test();
+    let before_native = core
+        .product_runtime_for_test()
+        .source_for_test()
+        .observe_branch_basis(core.relational_branch_identity_for_test())
+        .unwrap()
+        .0;
     // Installation completes before the rule control targets this commit.
     contacts
         .armed
@@ -100,13 +108,20 @@ pub fn run_case(
         .ok()
         .map(|report| report.charged_work());
     let after = contacts.snapshot();
+    let after_native = core
+        .product_runtime_for_test()
+        .source_for_test()
+        .observe_branch_basis(core.relational_branch_identity_for_test())
+        .unwrap()
+        .0;
     Case {
         outcome: outcome.expect("the public commit door ran"),
         opening,
         work,
         contacts: std::array::from_fn(|index| after[index] - before[index]),
-        publications: (*(*world.application.runtime_for_test()).primary_provider_for_test())
+        publications: (*core.primary_provider_for_test())
             .published_application_commit_count_for_test(),
+        native_head_unchanged: after_native == before_native,
     }
 }
 
@@ -138,24 +153,29 @@ fn checked_application_rule_charges_its_exact_work_and_refuses_one_unit_short() 
     assert_eq!(exact.work, Some(exact_ceiling));
     assert_eq!(exact.contacts, [0, 1, 1, authored_work as usize]);
     assert_eq!(exact.publications, 1);
+    assert!(!exact.native_head_unchanged);
     let short = run_case(true, true, Some(exact_ceiling - 1), false);
-    let WorthQueryApplicationCommitOutcome::ProductUnpublished(unpublished) = short.outcome else {
+    let WorthQueryApplicationCommitOutcome::Denied(denial) = short.outcome else {
         panic!(
-            "the final original-capture stop must retain the actual Native effect: {:?}",
+            "one-unit-short work ceiling must refuse before any Native effect: {:?}",
             short.outcome
         );
     };
-    assert_eq!(
-        unpublished.cause(),
-        worth_runtime_world::facade::ProductUnpublishedCause::OriginalObservationStopped(
-            worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkExhausted
-        )
+    assert!(
+        matches!(
+            denial.kind(),
+            WorthQueryApplicationCommitDenialKind::ExecutionResource {
+                denial: Resource::WorkExhausted,
+                ..
+            }
+        ),
+        "{:?}",
+        denial.kind()
     );
-    assert_eq!(unpublished.owner_effect_count(), 1);
-    assert!(unpublished
-        .next_actions()
-        .contains(&worth_runtime_world::facade::ProductUnpublishedNextAction::Inspect));
-    assert!(unpublished.live_obligation_count() > 0);
+    assert!(
+        short.native_head_unchanged,
+        "one-unit-short work stop must leave Native head unchanged"
+    );
     assert_eq!(short.publications, 0);
     assert_eq!(short.contacts[0], 0);
 }

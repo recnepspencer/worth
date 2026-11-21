@@ -41,48 +41,71 @@ where
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         attempt: &mut ReservedCompositePublicationAttempt,
         candidate: PreparedRelationalCommitCandidate,
+        cancellation: &crate::publication::RuntimeWorldCancellationToken,
         handoff: Option<&mut RelationalCutoverHandoff<'_>>,
-    ) -> Result<RelationalPublicationOutcome, Denial> {
+    ) -> Result<RelationalPublicationOutcome, NoEffectCause> {
         let port = self.state.relational_services().publication_port();
         let Some(current) = attempt.plan().relational().current_read() else {
             if handoff.is_some() {
-                return Err(Denial::CurrentReadRequired);
+                return Err(NoEffectCause::CurrentReadDependency(
+                    Denial::CurrentReadRequired,
+                ));
             }
             return Ok(port.compare_and_publish(execution, candidate));
         };
-        let scope = self.current_read_scope(current)?;
+        let scope = self
+            .current_read_scope(current)
+            .map_err(NoEffectCause::CurrentReadDependency)?;
+        let expected_head = attempt.expected_head();
+        let deadline = attempt.deadline();
         // The scope owns an operation, but holds no cell guard during Native
         // companion preparation or owning cleanup. No Signal/World effect runs
         // inside the purpose-specific cutover receiver.
         let scoped = match port.with_prepared_memory_cutover(execution, candidate, |cutover| {
             let Some(handoff) = handoff else {
-                return (Some(scope.perform_memory_publication(cutover, None)), None);
+                if let Err(cause) =
+                    self.check_pre_effect_cutoff(expected_head, deadline, cancellation)
+                {
+                    return (None, Some(cause), None);
+                }
+                return (
+                    Some(scope.perform_memory_publication(cutover, None)),
+                    None,
+                    None,
+                );
             };
             let mut scope = Some(scope);
             let mut guarded = None;
-            let mut perform = |native, deadline| {
+            let mut cutoff_stop = None;
+            let mut perform = |native, native_deadline| {
+                if let Err(cause) =
+                    self.check_pre_effect_cutoff(expected_head, deadline, cancellation)
+                {
+                    cutoff_stop = Some(cause);
+                    return;
+                }
                 guarded = Some(
                     scope
                         .take()
                         .expect("one World token consumes one scope")
-                        .perform_memory_publication(native, deadline),
+                        .perform_memory_publication(native, native_deadline),
                 );
             };
             let unwind = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
                 handoff(PreparedWorldRelationalCutover::new(
                     cutover,
                     current,
-                    attempt.expected_head(),
+                    expected_head,
                     &mut perform,
                 ));
             }))
             .err();
-            (guarded, unwind)
+            (guarded, cutoff_stop, unwind)
         }) {
             Ok(scoped) => scoped,
             Err(outcome) => return Ok(outcome),
         };
-        let ((guarded, unwind), publication) = scoped.into_parts();
+        let ((guarded, cutoff_stop, unwind), publication) = scoped.into_parts();
         if let Some(payload) = unwind {
             // Native returned the actual outcome after all callback/World
             // guards and owning preflight cleanup. Preserve its occurrence
@@ -96,9 +119,16 @@ where
         match publication {
             // An actual Native fact wins over the caller's callback result.
             Some(outcome) => Ok(outcome),
-            None => Err(guarded
-                .and_then(Result::err)
-                .unwrap_or(Denial::CutoverNotPerformed)),
+            None => {
+                if let Some(cause) = cutoff_stop {
+                    return Err(cause);
+                }
+                Err(NoEffectCause::CurrentReadDependency(
+                    guarded
+                        .and_then(Result::err)
+                        .unwrap_or(Denial::CutoverNotPerformed),
+                ))
+            }
         }
     }
 

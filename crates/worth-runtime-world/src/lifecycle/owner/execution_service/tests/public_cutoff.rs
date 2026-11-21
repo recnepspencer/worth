@@ -128,3 +128,114 @@ fn cancellation_during_clock_check_prevents_product_movement() {
         RelationalAttemptProgressPosture::Settled
     );
 }
+
+#[test]
+fn cutover_callback_world_cancellation_and_deadline_stop_before_native_effect() {
+    use crate::publication::NoEffectCause;
+    use worth_execution::{CancellationToken, ExecutionRequest, SerialMemoryBudget, SerialRequest};
+
+    let native_head = |fixture: &RealReferenceFixture| {
+        let rt = fixture.relational_runtime();
+        rt.observe_branch(&rt.main_branch_identity())
+            .unwrap()
+            .1
+            .descriptor()
+            .clone()
+    };
+    let seed_with_clock = |clock: RuntimeWorldClock| {
+        let (fixture, owner, expected) = setup_with_clock(clock);
+        let ready = ready_relational_competitor(&fixture, &owner, &expected, "cutover-seed");
+        let seeded = publish_ready_competing_head(&owner, ready, &expected);
+        (fixture, owner, seeded)
+    };
+    let host = crate::test_execution_policy::serial_request();
+    let setup_exec = ExecutionRequest::serial(&host);
+
+    // 1. Cancel the World token inside the cutover callback before calling perform().
+    let clock = MutableClock::new(0);
+    let (fixture, owner, expected) =
+        seed_with_clock(RuntimeWorldClock::from_source(clock.clone()));
+    let before_native = native_head(&fixture);
+    let cancel = RuntimeWorldCancellationSource::new();
+    let mut intent =
+        CompositePublicationIntent::without_signal(RelationalTransactionIntent::ordinary())
+            .with_prepared_relational_candidate(
+                fixture.prepare_relational_owner_candidate(&setup_exec, "cutover-cancel"),
+            );
+    intent.require_current_read(expected.clone()).unwrap();
+    let prepared = RuntimeWorldPreparationService::prepare_publication(
+        owner.as_ref(),
+        expected.clone(),
+        intent,
+        &cancel.token(),
+        Some(RuntimeWorldInstant::from_ticks(10)),
+    )
+    .unwrap();
+    let mem = SerialMemoryBudget::from_policy(&owner.state.execution.request_policy());
+    let req = SerialRequest::from_memory(mem.clone(), CancellationToken::new(), None);
+    let mut callback_ran = false;
+    let outcome = RuntimeWorldOwnerExecutionService::execute_without_signal_with_cutover(
+        owner.as_ref(),
+        ExecutionRequest::serial(&req),
+        prepared,
+        &cancel.token(),
+        Some(&mut |cutover| {
+            callback_ran = true;
+            cancel.cancel();
+            cutover.perform();
+        }),
+    );
+    assert!(callback_ran);
+    assert!(matches!(
+        outcome,
+        OwnerExecutionOutcome::NoEffect(refused)
+            if refused.cause() == NoEffectCause::CancelledBeforeEffect
+    ));
+    assert_eq!(native_head(&fixture), before_native);
+    assert!(owner.recovery_handles().is_empty());
+    assert_eq!(mem.charged_memory_bytes(), 0);
+
+    // 2. Advance the World clock past deadline inside the cutover callback before perform().
+    let clock = MutableClock::new(0);
+    let (fixture, owner, expected) =
+        seed_with_clock(RuntimeWorldClock::from_source(clock.clone()));
+    let before_native = native_head(&fixture);
+    let cancel = RuntimeWorldCancellationSource::new();
+    let mut intent =
+        CompositePublicationIntent::without_signal(RelationalTransactionIntent::ordinary())
+            .with_prepared_relational_candidate(
+                fixture.prepare_relational_owner_candidate(&setup_exec, "cutover-deadline"),
+            );
+    intent.require_current_read(expected.clone()).unwrap();
+    let prepared = RuntimeWorldPreparationService::prepare_publication(
+        owner.as_ref(),
+        expected,
+        intent,
+        &cancel.token(),
+        Some(RuntimeWorldInstant::from_ticks(10)),
+    )
+    .unwrap();
+    let mem = SerialMemoryBudget::from_policy(&owner.state.execution.request_policy());
+    let req = SerialRequest::from_memory(mem.clone(), CancellationToken::new(), None);
+    let mut callback_ran = false;
+    let outcome = RuntimeWorldOwnerExecutionService::execute_without_signal_with_cutover(
+        owner.as_ref(),
+        ExecutionRequest::serial(&req),
+        prepared,
+        &cancel.token(),
+        Some(&mut |cutover| {
+            callback_ran = true;
+            clock.set(10);
+            cutover.perform();
+        }),
+    );
+    assert!(callback_ran);
+    assert!(matches!(
+        outcome,
+        OwnerExecutionOutcome::NoEffect(refused)
+            if refused.cause() == NoEffectCause::DeadlineBeforeEffect
+    ));
+    assert_eq!(native_head(&fixture), before_native);
+    assert!(owner.recovery_handles().is_empty());
+    assert_eq!(mem.charged_memory_bytes(), 0);
+}

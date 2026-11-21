@@ -253,7 +253,8 @@ where
             .settled_adoption()
             .map(SignalAttemptProgress::retained_image)
             .unwrap_or_else(SignalAttemptProgress::untouched);
-        let relational = match self.execute_relational(execution, &mut attempt, cutover) {
+        let relational = match self.execute_relational(execution, &mut attempt, cancellation, cutover)
+        {
             Ok(progress) => progress,
             Err(RelationalExecutionFailure {
                 cause,

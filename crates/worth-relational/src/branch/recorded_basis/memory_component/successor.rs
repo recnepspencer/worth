@@ -9,8 +9,8 @@ use super::*;
 #[derive(Debug)]
 pub struct AdmittedRelationalMemoryComponent {
     owner: Weak<RelationalRuntimeState>,
-    branch_id: crate::history::data::BranchId,
-    expected_envelope: Weak<CanonicalCommitEnvelope>,
+    expected_root_id: u64,
+    expected_commit_id: crate::history::data::CommitId,
     bytes: usize,
     funding: Option<worth_execution::ExecutionMemoryReservation>,
 }
@@ -83,10 +83,9 @@ impl RelationalRuntime {
                 },
             ));
         }
-        let (branch_id, bytes, expected_envelope) = candidate
-            .with_successor_shape(|descriptor, parents, envelope| {
-                live_bytes(descriptor, parents)
-                    .map(|bytes| (descriptor.branch_id().clone(), bytes, envelope))
+        let (bytes, expected_root_id, expected_commit_id) = candidate
+            .with_successor_shape(|descriptor, parents, root_id, commit_id| {
+                live_bytes(descriptor, parents).map(|bytes| (bytes, root_id, commit_id))
             })
             .ok_or(Refusal::Basis(
                 crate::branch::RelationalBranchBasisDenial::WrongImmutableTarget,
@@ -94,8 +93,8 @@ impl RelationalRuntime {
         let funding = fund_and_charge(execution, bytes)?;
         Ok(AdmittedRelationalMemoryComponent {
             owner: self.state_binding(),
-            branch_id,
-            expected_envelope,
+            expected_root_id,
+            expected_commit_id,
             bytes,
             funding,
         })
@@ -119,12 +118,18 @@ impl RelationalRuntime {
         )
         .map_err(Refusal::Basis)?;
         let descriptor = basis.descriptor();
-        let matches_candidate = descriptor.branch_id() == &admitted.branch_id
-            && basis
-                .inner
-                .root
-                .canonical_envelope()
-                .is_some_and(|env| Weak::ptr_eq(&admitted.expected_envelope, &Arc::downgrade(env)));
+        let matches_candidate = basis.inner.root.id() == admitted.expected_root_id
+            && descriptor.root_identity() == admitted.expected_root_id
+            && basis.inner.root.canonical_envelope().is_some()
+            && basis.inner.root.commit_receipt().is_some_and(|receipt| {
+                receipt.commit_id == admitted.expected_commit_id
+                    && &receipt.branch_id == descriptor.branch_id()
+            })
+            && descriptor
+                .reference()
+                .target()
+                .as_basis()
+                .is_some_and(|target| target.selected_commit_id() == admitted.expected_commit_id.0);
         if !matches_candidate {
             return Err(Refusal::Basis(
                 crate::branch::RelationalBranchBasisDenial::WrongImmutableTarget,

@@ -89,11 +89,36 @@ fn successor_memory_component_admission_binds_owner_and_exact_candidate_successo
     ));
 
     let candidate_c = prepare_main_candidate(&runtime, &execution, "candidate-c");
+    let measure_budget = SerialMemoryBudget::new(None);
+    let measure_host = SerialRequest::from_memory(
+        measure_budget.clone(),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
     let admitted_c = runtime
         .owner_component_services()
         .basis_port()
-        .admit_successor_memory_component(&execution, &candidate_c)
+        .admit_successor_memory_component(&ExecutionRequest::serial(&measure_host), &candidate_c)
         .unwrap();
+    let admitted_bytes = measure_budget.charged_memory_bytes();
+    assert!(admitted_bytes > 0);
+    // One byte short must refuse with typed PolicyMemoryExhausted and zero retained charge.
+    let tight_budget = SerialMemoryBudget::new(Some(admitted_bytes - 1));
+    let tight_host = SerialRequest::from_memory(
+        tight_budget.clone(),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    assert!(matches!(
+        runtime
+            .owner_component_services()
+            .basis_port()
+            .admit_successor_memory_component(&ExecutionRequest::serial(&tight_host), &candidate_c),
+        Err(Refusal::Request(
+            crate::execution::RelationalExecutionDenialCause::PolicyMemoryExhausted { .. }
+        ))
+    ));
+    assert_eq!(tight_budget.charged_memory_bytes(), 0);
     let outcome = runtime
         .owner_component_services()
         .publication_port()
@@ -109,11 +134,14 @@ fn successor_memory_component_admission_binds_owner_and_exact_candidate_successo
     let (_, successor_c) = runtime
         .observe_branch(&runtime.main_branch_identity())
         .unwrap();
-    assert!(runtime
+    let observed = runtime
         .owner_component_services()
         .basis_port()
         .observe_admitted_memory_component(admitted_c, &successor_c)
-        .is_ok());
+        .unwrap();
+    assert_eq!(measure_budget.charged_memory_bytes(), admitted_bytes);
+    drop(observed);
+    assert_eq!(measure_budget.charged_memory_bytes(), 0);
 }
 
 #[test]

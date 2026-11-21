@@ -3,6 +3,7 @@ use super::{lock_state, validate_owner, CompositeHistoryCatalog};
 use crate::history::publication::memory_observation::MemoryPublicationRecord;
 use crate::history::{WorldObservedMemoryPublication, WorldReadmittedPublicationDenial as Denial};
 use std::sync::{atomic::Ordering, Arc, Mutex, Weak};
+mod growth;
 mod readmission;
 
 #[derive(Debug)]
@@ -10,14 +11,39 @@ enum Slot {
     Vacant(Option<usize>),
     Original(Arc<MemoryPublicationRecord>),
 }
-#[derive(Debug, Default)]
+#[derive(Debug)]
 struct Records {
     receiver: ReceiverAdmission,
     slots: Vec<Slot>,
     vacant: Option<usize>,
     free_count: usize,
     pending_reservations: usize,
+    pending_by_tier: [usize; growth::MAX_GROWTH_TIERS],
     _capacity_funding: Option<worth_execution::ExecutionMemoryReservation>,
+}
+impl Records {
+    fn drop_pending(&mut self, tier: u8) {
+        self.pending_reservations = self
+            .pending_reservations
+            .checked_sub(1)
+            .expect("pending reservation was counted");
+        self.pending_by_tier[tier as usize] = self.pending_by_tier[tier as usize]
+            .checked_sub(1)
+            .expect("pending reservation tier was counted");
+    }
+}
+impl Default for Records {
+    fn default() -> Self {
+        Self {
+            receiver: ReceiverAdmission::default(),
+            slots: Vec::new(),
+            vacant: None,
+            free_count: 0,
+            pending_reservations: 0,
+            pending_by_tier: [0; growth::MAX_GROWTH_TIERS],
+            _capacity_funding: None,
+        }
+    }
 }
 #[derive(Debug, Default)]
 enum ReceiverAdmission {
@@ -38,18 +64,14 @@ pub(crate) struct MemoryOriginalRegistration {
     slot: usize,
     record: Arc<MemoryPublicationRecord>,
 }
-#[derive(Debug)]
-struct ProvisionalGrowth {
-    backing: Vec<Slot>,
-    funding: Option<worth_execution::ExecutionMemoryReservation>,
-}
 /// One provisional registry reservation held before owner effects. Any growth
 /// stays provisional until a sealed original is accepted; dropping it unfilled
 /// refunds its backing and leaves the registry unchanged.
 #[derive(Debug)]
 pub(crate) struct MemoryOriginalSlot {
     registry: Weak<Registry>,
-    growth: Option<ProvisionalGrowth>,
+    growth: Option<growth::ProvisionalGrowth>,
+    growth_tier: u8,
     filled: bool,
 }
 impl MemoryOriginalSlot {
@@ -64,18 +86,20 @@ impl MemoryOriginalSlot {
             let mut records = registry
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner);
-            records.pending_reservations = records
-                .pending_reservations
-                .checked_sub(1)
-                .expect("filled reservation was counted");
+            records.drop_pending(self.growth_tier);
+            let cur_cap = records.slots.capacity();
             let used_after = (records.slots.len() - records.free_count) + 1;
-            let needs_larger_backing =
-                used_after + records.pending_reservations > records.slots.capacity();
-            let must_grow_now = records.vacant.is_none()
-                && records.slots.len() == records.slots.capacity();
+            let must_grow = records.vacant.is_none() && records.slots.len() == cur_cap;
             if let Some(mut growth) = growth {
-                if growth.backing.capacity() > records.slots.capacity()
-                    && (must_grow_now || needs_larger_backing)
+                let gcap = growth.backing.capacity();
+                if gcap > cur_cap
+                    && (must_grow
+                        || growth::backing_needed_for_pending(
+                            &records.pending_by_tier,
+                            cur_cap,
+                            gcap,
+                            used_after,
+                        ))
                 {
                     growth.backing.append(&mut records.slots);
                     records.slots = growth.backing;
@@ -123,10 +147,7 @@ impl Drop for MemoryOriginalSlot {
             let mut records = registry
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner);
-            records.pending_reservations = records
-                .pending_reservations
-                .checked_sub(1)
-                .expect("dropped reservation was counted");
+            records.drop_pending(self.growth_tier);
         }
     }
 }
@@ -272,51 +293,23 @@ impl CompositeHistoryCatalog {
             .checked_add(1)
             .ok_or_else(malformed)?;
         let needed = used.checked_add(next_pending).ok_or_else(malformed)?;
-        let growth = if needed > records.slots.capacity() {
-            let capacity = records
-                .slots
-                .capacity()
-                .checked_mul(2)
-                .and_then(|n| n.checked_add(1))
-                .ok_or_else(malformed)?
-                .max(needed);
-            let bytes = capacity
-                .checked_mul(std::mem::size_of::<Slot>())
-                .ok_or_else(malformed)?;
-            let funding = execution
-                .reserve_retained_memory(bytes as u64)
-                .map_err(|cause| Refusal::Request(cause.into()))?;
-            let mut charged = None;
-            let scope = execution.run_native_with_checkpoint(|context| {
-                charged = Some(if context.has_accounting() {
-                    context.checkpoint(capacity as u64)
-                } else {
-                    context.poll()
-                });
-            });
-            match (scope, charged) {
-                (Ok(_), Some(Ok(()))) => {}
-                (_, Some(Err(cause))) => return Err(Refusal::Request(cause.into())),
-                (Err(cause), _) => return Err(Refusal::Request(cause.into())),
-                (Ok(_), None) => unreachable!("registry growth charged before allocation"),
-            }
-            let mut backing = Vec::new();
-            backing
-                .try_reserve_exact(capacity)
-                .map_err(|_| malformed())?;
-            // Vec reports the requested element capacity; refuse a wider backing
-            // before retaining it against this request's exact capacity quote.
-            if backing.capacity() != capacity {
-                return Err(malformed());
-            }
-            Some(ProvisionalGrowth { backing, funding })
+        let (growth, growth_tier) = if needed > records.slots.capacity() {
+            let (growth, tier) = growth::reserve_provisional_growth(
+                execution,
+                records.slots.capacity(),
+                needed,
+                malformed,
+            )?;
+            (Some(growth), tier)
         } else {
-            None
+            (None, 0)
         };
         records.pending_reservations = next_pending;
+        records.pending_by_tier[growth_tier as usize] += 1;
         Ok(MemoryOriginalSlot {
             registry: Arc::downgrade(&self.originals.0),
             growth,
+            growth_tier,
             filled: false,
         })
     }
@@ -378,5 +371,20 @@ impl CompositeHistoryCatalog {
             record,
             native: effect,
         })
+    }
+
+    #[cfg(test)]
+    pub(crate) fn memory_original_capacity_for_test(&self) -> usize {
+        self.originals
+            .0
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .slots
+            .capacity()
+    }
+
+    #[cfg(test)]
+    pub(crate) const fn memory_original_slot_size_for_test() -> usize {
+        std::mem::size_of::<Slot>()
     }
 }

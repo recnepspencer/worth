@@ -331,42 +331,60 @@ fn world_cancellation_and_deadline_after_first_gate_stop_before_native_effect() 
 
 #[test]
 fn post_admission_no_effect_refunds_registry_growth_and_leaves_no_phantom_slot() {
-    use crate::lifecycle::RuntimeWorldOwnerExecutionService;
-    use crate::publication::RuntimeWorldCancellationSource;
-    use worth_execution::ExecutionWorkCeiling;
+    use crate::lifecycle::{RuntimeWorldOwnerExecutionService, RuntimeWorldPreparationService};
+    use crate::publication::{
+        CompositePublicationIntent, CurrentProductReadDependencyDenial,
+        RuntimeWorldCancellationSource,
+    };
+    use worth_relational::facade::mvcc::RelationalTransactionIntent;
 
-    let (fixture, owner, expected) = setup();
+    // Seed one Relational head so current-read preparation succeeds while the
+    // memory-original registry starts empty (capacity == 0) and must fund
+    // provisional growth during original admission.
+    let (fixture, owner, expected) = super::setup_with_relational_source();
+    let before_native = relational_head(&fixture);
+    assert_eq!(owner.state.history.memory_original_capacity_for_test(), 0);
     let setup_host = crate::test_execution_policy::serial_request();
     let setup_exec = ExecutionRequest::serial(&setup_host);
-    let prepared = prepare_relational(&setup_exec, &fixture, &owner, &expected, "declined-cutover");
+    let cancel = RuntimeWorldCancellationSource::new();
+    let mut intent =
+        CompositePublicationIntent::without_signal(RelationalTransactionIntent::ordinary())
+            .with_prepared_relational_candidate(
+                fixture.prepare_relational_owner_candidate(&setup_exec, "declined-cutover"),
+            );
+    intent.require_current_read(expected.clone()).unwrap();
+    let prepared = RuntimeWorldPreparationService::prepare_publication(
+        owner.as_ref(),
+        expected.clone(),
+        intent,
+        &cancel.token(),
+        None,
+    )
+    .unwrap();
     let memory = SerialMemoryBudget::from_policy(&owner.state.execution.request_policy());
     let serial = SerialRequest::from_memory(memory.clone(), CancellationToken::new(), None);
     let request = ExecutionRequest::serial(&serial);
-    let cancel = RuntimeWorldCancellationSource::new();
+    let mut entered = false;
     let outcome = RuntimeWorldOwnerExecutionService::execute_without_signal_with_cutover(
         owner.as_ref(),
         request,
         prepared,
         &cancel.token(),
-        Some(&mut |_cutover| ()),
+        Some(&mut |_cutover| {
+            entered = true;
+        }),
     );
+    assert!(entered, "declined-cutover test must enter the cutover callback");
     assert!(matches!(
         outcome,
         OwnerExecutionOutcome::NoEffect(refused)
-            if matches!(refused.cause(), NoEffectCause::CurrentReadDependency(_))
+            if refused.cause() == NoEffectCause::CurrentReadDependency(
+                CurrentProductReadDependencyDenial::CutoverNotPerformed
+            )
     ));
-    assert_eq!(
-        memory.charged_memory_bytes(),
-        0,
-        "declined post-admission attempt must refund provisional registry growth"
-    );
-    // Zero-work checkpoint snapshot proves records.slots.len() == 0 (no phantom slot).
-    let (snapshot, report) = request
-        .run(ExecutionWorkCeiling::new(Some(0)), |_| {
-            owner.state.history.snapshot_memory_originals(&request)
-        })
-        .unwrap();
-    assert_eq!(snapshot.unwrap().len(), 0);
-    assert_eq!(report.charged_work(), 0);
+    assert_eq!(relational_head(&fixture), before_native);
+    assert_eq!(memory.charged_memory_bytes(), 0);
+    assert_eq!(owner.state.history.memory_original_capacity_for_test(), 0);
+    assert_eq!(owner.state.history.snapshot_memory_originals(&request).unwrap().len(), 0);
     assert!(owner.state.history.reserve_memory_readmission().is_ok());
 }

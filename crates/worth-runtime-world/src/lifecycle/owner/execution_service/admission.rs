@@ -71,16 +71,27 @@ where
         attempt: &ReservedCompositePublicationAttempt,
         cancellation: &RuntimeWorldCancellationToken,
     ) -> Result<(), NoEffectCause> {
+        self.check_pre_effect_cutoff(attempt.expected_head(), attempt.deadline(), cancellation)
+    }
+
+    /// Pre-effect World stop gate consulted immediately before crossing into
+    /// Native publication, including after any public cutover callback work.
+    pub(in super::super) fn check_pre_effect_cutoff(
+        &self,
+        expected_head: &ProductBranchObservation,
+        deadline: Option<RuntimeWorldInstant>,
+        cancellation: &RuntimeWorldCancellationToken,
+    ) -> Result<(), NoEffectCause> {
         if cancellation
             .check(RuntimeWorldCancellationBoundary::BeforeFirstOwnerEffect)
             .is_err()
         {
             return Err(NoEffectCause::CancelledBeforeEffect);
         }
-        if self.deadline_expired(attempt.deadline()) {
+        if self.deadline_expired(deadline) {
             return Err(NoEffectCause::DeadlineBeforeEffect);
         }
-        if !self.current_product_head_is(attempt.expected_head()) {
+        if !self.current_product_head_is(expected_head) {
             return Err(NoEffectCause::StaleExpectedProductHead);
         }
         Ok(())
