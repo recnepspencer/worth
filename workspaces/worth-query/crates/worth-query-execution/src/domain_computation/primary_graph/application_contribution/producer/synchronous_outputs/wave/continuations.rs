@@ -40,10 +40,20 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
                 discovered?;
                 task.continuation_done = true;
                 selections.push((i, start..next.tasks.len()));
+            } else if matches!(earlier[canonical].state, TaskState::Done { parent: None })
+                && task.reopen_check.is_some()
+            {
+                // A reopened canonical that now retires selects nothing: its
+                // reopened alias is verified against no children, as the
+                // canonical itself is.
+                task.continuation_done = true;
+                selections.push((i, 0..0));
             }
         }
         let appended = !next.tasks.is_empty();
         self.adopt_discovered(context, next, selections, Selection::Replace)?;
-        Ok(appended)
+        // A re-discovery to verify closes its frontier before another batch
+        // can reopen the canonical again.
+        Ok(appended || !self.rediscovered.is_empty())
     }
 }

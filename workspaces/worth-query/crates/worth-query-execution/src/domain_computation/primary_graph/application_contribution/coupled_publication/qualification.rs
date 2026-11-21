@@ -214,11 +214,13 @@ impl<S: ApplicationSchema> CoupledApplicationAssembly<'_, '_, '_, S> {
     }
 
     /// Whether every derivation that consumed `read` is owned by a wave task,
-    /// so reopening `read` reopens each consumer after it (R3).
+    /// so reopening `read` reopens each consumer after it (R3). The part
+    /// being appended (`appending`) is owned by the task preparing it.
     fn consumers_reopenable(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         read: ParentRead,
+        appending: Option<ParentRead>,
     ) -> Result<bool, CoupledSourceReadStop> {
         let subject = "consumed parent outputs";
         let consumed = self.consumed.borrow();
@@ -235,7 +237,7 @@ impl<S: ApplicationSchema> CoupledApplicationAssembly<'_, '_, '_, S> {
                 break;
             }
             charge(execution, subject, ledger.find_work())?;
-            if !ledger.claimed(ParentRead(consumer)) {
+            if appending != Some(ParentRead(consumer)) && !ledger.claimed(ParentRead(consumer)) {
                 return Ok(false);
             }
             rank += 1;
@@ -256,6 +258,10 @@ impl<S: ApplicationSchema> CoupledApplicationAssembly<'_, '_, '_, S> {
         if self.ledger.borrow().is_empty() {
             return Ok(());
         }
+        let appending = match &member {
+            AppendedMember::Part { index, .. } => Some(self.writers.borrow()[*index].produces),
+            AppendedMember::Stage { .. } => None,
+        };
         let (touches, position, owed, route) = match member {
             AppendedMember::Part {
                 index,
@@ -286,7 +292,15 @@ impl<S: ApplicationSchema> CoupledApplicationAssembly<'_, '_, '_, S> {
         }
         let current = candidate.pin_source(execution)?;
         for id in hits {
-            self.requalify(execution, id, &current, position, owed, route.as_ref())?;
+            self.requalify(
+                execution,
+                id,
+                &current,
+                position,
+                owed,
+                route.as_ref(),
+                appending,
+            )?;
         }
         Ok(())
     }
@@ -304,13 +318,14 @@ impl<S: ApplicationSchema> CoupledApplicationAssembly<'_, '_, '_, S> {
         invalidator: usize,
         invalidator_owed: usize,
         route: Option<&worth_relational::facade::mvcc::RequiredOutputPublicationMeaning>,
+        appending: Option<ParentRead>,
     ) -> Result<(), CoupledSourceReadStop> {
         let (read, position, claimed, writer) = {
             let ledger = self.ledger.borrow();
             let entry = ledger.entry(id);
             (entry.read, entry.position, entry.claimed, entry.writer)
         };
-        if !claimed || !self.consumers_reopenable(execution, read)? {
+        if !claimed || !self.consumers_reopenable(execution, read, appending)? {
             return Ok(());
         }
         if let Some(index) = writer {

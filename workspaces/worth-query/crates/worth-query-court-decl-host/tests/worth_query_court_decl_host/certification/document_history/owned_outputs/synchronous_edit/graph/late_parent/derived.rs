@@ -9,11 +9,11 @@ use super::*;
 /// What the D3 courts compare: `first:a`, derived as model `a` (2) plus the
 /// member `m` that `decision-write(b)` writes as model `b` + 1.
 #[derive(Debug, PartialEq, Eq)]
-struct World {
-    first: u64,
+pub(super) struct World {
+    pub(super) first: u64,
 }
 
-fn observe(request: &family::Request<'_, '_, '_>) -> World {
+pub(super) fn observe(request: &family::Request<'_, '_, '_>) -> World {
     World {
         first: request
             .query(query::first_output::Read("first:a".into()))
@@ -25,14 +25,16 @@ fn observe(request: &family::Request<'_, '_, '_>) -> World {
 }
 
 /// The edit commits whole.
-fn committed(outcome: worth_query_host::facade::application_entry::WorthQueryEditEnvelopeOutcome) {
+pub(super) fn committed(
+    outcome: worth_query_host::facade::application_entry::WorthQueryEditEnvelopeOutcome,
+) {
     use worth_query_host::facade::application_entry::WorthQueryEditEnvelopeOutcome as Outcome;
     assert!(matches!(outcome, Outcome::Committed(_)), "{outcome:?}");
 }
 
 /// The sequential oracle: `decision-write(b)` commits alone (`b = 8`), then
 /// `first:a` is derived on demand from the committed `m`.
-fn sequential() -> World {
+pub(super) fn sequential() -> World {
     let host = world::install_program_with_other_model::<NonConsumingProgram>(
         host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
         2,

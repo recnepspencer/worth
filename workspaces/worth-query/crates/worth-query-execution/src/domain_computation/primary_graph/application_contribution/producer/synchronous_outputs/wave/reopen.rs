@@ -4,8 +4,8 @@
 //! close again and wait on it. Its earlier discovery and prerequisite
 //! evidence stays live until its re-derivation proves every child and
 //! parent it selected before is selected again; only then does that evidence
-//! end at the invalidator (R4). A dropped selection keeps the old evidence,
-//! so final support refuses it.
+//! end at the invalidator (R4). A dropped selection refuses in the wave
+//! itself (`verify_rediscovered`).
 use super::*;
 use state::{map_remove, TaskState};
 
