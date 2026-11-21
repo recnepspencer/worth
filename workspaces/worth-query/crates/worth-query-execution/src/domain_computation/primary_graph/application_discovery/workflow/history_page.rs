@@ -13,6 +13,7 @@ use crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation
 use worth_execution::ExecutionArrayBuilder;
 use worth_query_execution_attempt::facade::ports::{
     WorkflowHistoryPageInternalPort as _, WorkflowHistoryPageParts,
+    WorkflowReadBasisInternalPort as _,
 };
 use worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
@@ -93,10 +94,14 @@ impl<S: ApplicationSchema> WorthQuerySelectedProductOperation<'_, S> {
             return Err(Denial::PolicyMismatch);
         }
         if let Some(prior) = after
-            && (!prior.basis_ref().0.belongs_to_selected_occurrence(
-                self.application().inner(),
-                data.product().observation(),
-            ) || prior.instance() != target.instance
+            && (!prior
+                .basis_ref()
+                .observation()
+                .belongs_to_selected_occurrence(
+                    self.application().inner(),
+                    data.product().observation(),
+                )
+                || prior.instance() != target.instance
                 || prior.subject() != target.subject
                 || prior.scope() != access.resource_entity_id()
                 || prior.width() != width

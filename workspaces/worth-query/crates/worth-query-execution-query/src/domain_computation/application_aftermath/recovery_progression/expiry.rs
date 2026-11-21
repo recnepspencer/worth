@@ -1,4 +1,5 @@
 //! Runtime-clock recovery expiry evaluation on `WorthQueryPrimaryGraphApplicationRuntime`.
+use worth_query_execution_attempt::facade::ports::RecoveryHandleInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::super::recovery_handle::{WorthQueryRecoveryHandle, WorthQueryRecoveryHandleDenial};

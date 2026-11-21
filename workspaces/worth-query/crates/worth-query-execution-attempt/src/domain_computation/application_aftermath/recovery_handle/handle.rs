@@ -4,7 +4,9 @@ use std::sync::Arc;
 use worth_query_execution_lineage::facade::ports::{
     CommitAuthorityBindingInternalPort as _, RetainedGovernedInputInternalPort as _,
 };
-use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::{
+    AdvancementPhaseInternalPort as _, RecoveryHandleRegistryInternalPort as _,
+};
 
 use worth_proof::LinearResource;
 use worth_query_installation::facade::WorthQueryCanonicalWorkPhases;
@@ -88,19 +90,19 @@ impl WorthQueryRecoveryHandle {
     }
 
     /// Execution-runtime authority identity this handle's registry belongs to (Q8.20).
-    pub fn runtime_authority(
+    pub(crate) fn runtime_authority(
         &self,
     ) -> crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity {
         self.registry.runtime_authority()
     }
 
     /// Owner-test observation of this handle's instance registry.
-    pub fn registry_arc(&self) -> Arc<WorthQueryRecoveryHandleRegistry> {
+    pub(crate) fn registry_arc(&self) -> Arc<WorthQueryRecoveryHandleRegistry> {
         Arc::clone(&self.registry)
     }
 
     /// Owner-test observation of this handle's opaque membership slot.
-    pub const fn registry_slot(&self) -> WorthQueryRecoveryRegistrySlot {
+    pub(crate) const fn registry_slot(&self) -> WorthQueryRecoveryRegistrySlot {
         self.slot
     }
 
@@ -108,7 +110,7 @@ impl WorthQueryRecoveryHandle {
     ///
     /// This is what lets `ensure_for` re-sample the deadline at *use* without a
     /// transition ever taking a clock or a timestamp from its caller.
-    pub fn registry_clock(
+    pub(crate) fn registry_clock(
         &self,
     ) -> &crate::domain_computation::runtime_time::WorthQueryRuntimeClock {
         self.registry.clock()
@@ -123,18 +125,18 @@ impl WorthQueryRecoveryHandle {
         WorthQueryOpaqueRecoveryWireIdentity::project(self.identity())
     }
 
-    pub fn identity(&self) -> &WorthQueryRecoveryHandleIdentity {
+    pub(crate) fn identity(&self) -> &WorthQueryRecoveryHandleIdentity {
         self.lifecycle
             .as_ref()
             .expect("live handle owns one linear resource")
             .id()
     }
 
-    pub fn authority_identity(&self) -> WorthQueryRecoveryHandleAuthorityIdentity {
+    pub(crate) fn authority_identity(&self) -> WorthQueryRecoveryHandleAuthorityIdentity {
         WorthQueryRecoveryHandleAuthorityIdentity::from_handle(self.identity())
     }
 
-    pub fn ensure_live(&self) -> Result<(), WorthQueryRecoveryHandleDenial> {
+    pub(crate) fn ensure_live(&self) -> Result<(), WorthQueryRecoveryHandleDenial> {
         if self.registry.is_live(self.slot) {
             if self
                 .registry
@@ -165,7 +167,7 @@ impl WorthQueryRecoveryHandle {
         }
     }
 
-    pub fn consume(
+    pub(crate) fn consume(
         mut self,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         terminal: RecoveryClaimDisposition,

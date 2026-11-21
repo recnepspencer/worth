@@ -61,3 +61,43 @@ impl std::fmt::Debug for WorthQueryApplicationQueryObservation {
 }
 
 mod court_doors_for_test;
+
+/// Crate-boundary port for `WorthQueryApplicationQueryObservation` consumed by
+/// `worth-query-execution`. Never exported on `worth-query-execution::facade`
+/// or Host.
+pub trait ApplicationQueryObservationInternalPort: Sized {
+    fn from_parts(
+        source: WorthQueryObservedSource<()>,
+        basis: WorthQueryApplicationBasisIdentity,
+        result_count: usize,
+    ) -> Self;
+    fn source(&self) -> &WorthQueryObservedSource<()>;
+    fn basis(&self) -> &WorthQueryApplicationBasisIdentity;
+    fn result_count(&self) -> usize;
+}
+
+impl ApplicationQueryObservationInternalPort for WorthQueryApplicationQueryObservation {
+    fn from_parts(
+        source: WorthQueryObservedSource<()>,
+        basis: WorthQueryApplicationBasisIdentity,
+        result_count: usize,
+    ) -> Self {
+        Self {
+            source,
+            basis,
+            result_count,
+        }
+    }
+
+    fn source(&self) -> &WorthQueryObservedSource<()> {
+        &self.source
+    }
+
+    fn basis(&self) -> &WorthQueryApplicationBasisIdentity {
+        &self.basis
+    }
+
+    fn result_count(&self) -> usize {
+        self.result_count
+    }
+}

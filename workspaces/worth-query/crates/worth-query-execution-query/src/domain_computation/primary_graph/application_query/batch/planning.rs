@@ -252,3 +252,28 @@ impl WorthQueryApplicationQueryBatchAdmission {
 }
 
 mod court_doors_for_test;
+
+/// Crate-boundary port for `WorthQueryApplicationQueryBatchAdmission` consumed
+/// by `worth-query-execution`. Never exported on `worth-query-execution::facade`
+/// or Host.
+pub trait BatchAdmissionInternalPort {
+    fn take_planned_read(
+        &self,
+        runtime: u64,
+        schema: &ApplicationSchemaBindingIdentity,
+        query: &WorthQueryInstalledApplicationQueryIdentity,
+        maximum_roots: usize,
+    ) -> Result<Option<PlannedBatchItem>, WorthQueryApplicationQueryBatchResourceDenial>;
+}
+
+impl BatchAdmissionInternalPort for WorthQueryApplicationQueryBatchAdmission {
+    fn take_planned_read(
+        &self,
+        runtime: u64,
+        schema: &ApplicationSchemaBindingIdentity,
+        query: &WorthQueryInstalledApplicationQueryIdentity,
+        maximum_roots: usize,
+    ) -> Result<Option<PlannedBatchItem>, WorthQueryApplicationQueryBatchResourceDenial> {
+        Self::take_planned_read(self, runtime, schema, query, maximum_roots)
+    }
+}

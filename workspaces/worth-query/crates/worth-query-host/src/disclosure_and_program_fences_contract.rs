@@ -179,7 +179,7 @@
 //! ```compile_fail,E0624
 //! use worth_query_host::facade::primary_graph::WorthQueryAuthenticatedPrincipal;
 //! fn mint_principal<S, P, Id>(
-//!     external: worth_query_host::facade::admission::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal<S, P, Id>,
+//!     _external: worth_query_host::facade::admission::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal<S>,
 //! ) {
 //!     let _ = WorthQueryAuthenticatedPrincipal::<S, P, Id>::mint;
 //! }
@@ -222,7 +222,55 @@
 //!
 //! ```compile_fail,E0624
 //! use worth_query_host::facade::primary_graph::WorthQueryAdvancementPhase;
-//! fn extract_execution_request(phase: &WorthQueryAdvancementPhase<'_>) {
-//!     let _ = phase.execution_request_for;
+//! fn extract_execution_request() {
+//!     let _ = WorthQueryAdvancementPhase::execution_request_for;
+//! }
+//! ```
+//!
+//! Host callers cannot consume a recovery handle or extract its registry custody:
+//!
+//! ```compile_fail,E0624
+//! use worth_query_host::facade::primary_graph::WorthQueryRecoveryHandle;
+//! fn consume_recovery_handle() {
+//!     let _ = WorthQueryRecoveryHandle::consume;
+//! }
+//! ```
+//!
+//! ```compile_fail,E0624
+//! use worth_query_host::facade::primary_graph::WorthQueryRecoveryHandle;
+//! fn inspect_recovery_registry(handle: &WorthQueryRecoveryHandle) {
+//!     let _ = handle.registry_arc();
+//! }
+//! ```
+//!
+//! Host callers cannot replace or extract the snapshot basis of a selected product:
+//!
+//! ```compile_fail,E0624
+//! use worth_query_host::facade::product::WorthQuerySelectedProductOperation;
+//! fn mutate_selected_basis<S>(selected: &mut WorthQuerySelectedProductOperation<'_, S>) {
+//!     let _ = selected.application_basis_mut();
+//! }
+//! ```
+//!
+//! ```compile_fail,E0624
+//! use worth_query_host::facade::product::WorthQuerySelectedProductOperation;
+//! fn decompose_selected<S>(selected: WorthQuerySelectedProductOperation<'_, S>) {
+//!     let _ = selected.into_parts();
+//! }
+//! ```
+//!
+//! Workflow history projection entries keep backing fields private:
+//!
+//! ```compile_fail,E0616
+//! use worth_query_host::facade::application_discovery::WorthQueryWorkflowHistoryEntry;
+//! fn read_entry_field(entry: &WorthQueryWorkflowHistoryEntry) {
+//!     let _ = &entry.outcome;
+//! }
+//! ```
+//!
+//! ```compile_fail,E0616
+//! use worth_query_host::facade::application_discovery::WorthQueryWorkflowApprovalRead;
+//! fn read_approval_field(approval: &WorthQueryWorkflowApprovalRead) {
+//!     let _ = &approval.decision;
 //! }
 //! ```

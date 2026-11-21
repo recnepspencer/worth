@@ -268,7 +268,7 @@ impl WorthQueryRecoveryHandleRegistry {
     /// identity instead of the resource. Crate-private: the only production
     /// callers are `WorthQueryRecoveryHandle::consume` and its `Drop`, both of
     /// which hold the handle itself and name the terminal the runtime caused.
-    pub fn mark_terminal(
+    pub(crate) fn mark_terminal(
         &self,
         slot: WorthQueryRecoveryRegistrySlot,
         terminal: RecoveryClaimDisposition,
@@ -348,5 +348,25 @@ impl crate::ports::RecoveryDispatchJournalPort for VacantRecoveryDispatchJournal
 
     fn as_any(&self) -> &(dyn std::any::Any + Send + Sync) {
         self
+    }
+}
+
+/// Crate-boundary port for owner-checked recovery terminal recording.
+/// Never exported on `worth-query-execution::facade` or Host.
+pub trait RecoveryHandleRegistryInternalPort {
+    fn mark_terminal(
+        &self,
+        slot: WorthQueryRecoveryRegistrySlot,
+        terminal: RecoveryClaimDisposition,
+    ) -> bool;
+}
+
+impl RecoveryHandleRegistryInternalPort for WorthQueryRecoveryHandleRegistry {
+    fn mark_terminal(
+        &self,
+        slot: WorthQueryRecoveryRegistrySlot,
+        terminal: RecoveryClaimDisposition,
+    ) -> bool {
+        Self::mark_terminal(self, slot, terminal)
     }
 }

@@ -8,8 +8,15 @@ pub mod domain_computation {
 }
 
 pub mod ports {
+    pub use crate::domain_computation::execution_runtime::QueryExecutionRuntimeInternalPort;
+    pub use crate::domain_computation::primary_graph::application_query::batch::planning::BatchAdmissionInternalPort;
+    pub use crate::domain_computation::primary_graph::causal_inspection::application_observation::declared_query::ApplicationQueryObservationInternalPort;
+    pub use crate::domain_computation::primary_graph::conditional_operation::installation::clock_handle::ConditionalClockHandleInternalPort;
+    pub use crate::domain_computation::primary_graph::product_operation::document_history::internal_port::{
+        HistoryNodeIdInternalPort, HistoryPreviewInternalPort,
+    };
+    pub use crate::domain_computation::primary_graph::product_operation::query_controls::ProductQueryControlsInternalPort;
     pub use crate::ports::*;
-    pub use crate::ports_internal::*;
 }
 
 pub mod runtime {

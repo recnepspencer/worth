@@ -41,3 +41,42 @@ impl<Schema, Node, Clock> WorthQueryConditionalClockHandle<Schema, Node, Clock> 
         &self.lease
     }
 }
+
+/// Crate-boundary port for `WorthQueryConditionalClockHandle` construction.
+/// Never exported on `worth-query-execution::facade` or Host.
+pub trait ConditionalClockHandleInternalPort<Schema, Node, Clock>: Sized {
+    fn from_parts(
+        binding_identity: Arc<str>,
+        binding_identity_digest: [u8; 32],
+        node_authority: Arc<str>,
+        binding_canonical_work: worth_query_installation::facade::WorthQueryCanonicalWorkEvidence,
+        lease: Arc<ConditionalClockLease>,
+    ) -> Self;
+
+    fn new_lease() -> Arc<ConditionalClockLease>;
+}
+
+impl<Schema, Node, Clock> ConditionalClockHandleInternalPort<Schema, Node, Clock>
+    for WorthQueryConditionalClockHandle<Schema, Node, Clock>
+{
+    fn from_parts(
+        binding_identity: Arc<str>,
+        binding_identity_digest: [u8; 32],
+        node_authority: Arc<str>,
+        binding_canonical_work: worth_query_installation::facade::WorthQueryCanonicalWorkEvidence,
+        lease: Arc<ConditionalClockLease>,
+    ) -> Self {
+        Self {
+            binding_identity,
+            binding_identity_digest,
+            node_authority,
+            binding_canonical_work,
+            lease,
+            marker: PhantomData,
+        }
+    }
+
+    fn new_lease() -> Arc<ConditionalClockLease> {
+        Arc::new(ConditionalClockLease)
+    }
+}

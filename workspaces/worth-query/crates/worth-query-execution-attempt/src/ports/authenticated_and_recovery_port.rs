@@ -167,6 +167,23 @@ pub trait RecoveryHandleInternalPort: Sized {
         &self,
         receiver: RuntimeWorldOwnerIdentity,
     ) -> Result<(), WorthQueryRecoveryHandleDenial>;
+
+    fn runtime_authority(&self) -> WorthQueryRuntimeAuthorityIdentity;
+
+    fn registry_clock(&self) -> &crate::domain_computation::runtime_time::WorthQueryRuntimeClock;
+
+    fn authority_identity(&self) -> WorthQueryRecoveryHandleAuthorityIdentity;
+
+    fn ensure_live(&self) -> Result<(), WorthQueryRecoveryHandleDenial>;
+
+    fn consume(
+        self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        terminal: crate::domain_computation::managed_run::RecoveryClaimDisposition,
+    ) -> Result<
+        WorthQueryRecoveryHandleBinding,
+        crate::domain_computation::application_aftermath::recovery_handle::WorthQueryRecoveryTransitionDenial,
+    >;
 }
 
 impl RecoveryHandleInternalPort for WorthQueryRecoveryHandle {
@@ -185,6 +202,33 @@ impl RecoveryHandleInternalPort for WorthQueryRecoveryHandle {
         receiver: RuntimeWorldOwnerIdentity,
     ) -> Result<(), WorthQueryRecoveryHandleDenial> {
         Self::admit_home_owner(self, receiver)
+    }
+
+    fn runtime_authority(&self) -> WorthQueryRuntimeAuthorityIdentity {
+        Self::runtime_authority(self)
+    }
+
+    fn registry_clock(&self) -> &crate::domain_computation::runtime_time::WorthQueryRuntimeClock {
+        Self::registry_clock(self)
+    }
+
+    fn authority_identity(&self) -> WorthQueryRecoveryHandleAuthorityIdentity {
+        Self::authority_identity(self)
+    }
+
+    fn ensure_live(&self) -> Result<(), WorthQueryRecoveryHandleDenial> {
+        Self::ensure_live(self)
+    }
+
+    fn consume(
+        self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        terminal: crate::domain_computation::managed_run::RecoveryClaimDisposition,
+    ) -> Result<
+        WorthQueryRecoveryHandleBinding,
+        crate::domain_computation::application_aftermath::recovery_handle::WorthQueryRecoveryTransitionDenial,
+    >{
+        Self::consume(self, phase, terminal)
     }
 }
 

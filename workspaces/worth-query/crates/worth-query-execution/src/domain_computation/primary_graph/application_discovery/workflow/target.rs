@@ -13,6 +13,7 @@ use worth_query_admission::facade::authenticated_principal::WorthQueryAuthentica
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_declaration::facade::application_program::ApplicationWorkflowReadBinding;
 use worth_query_declaration::facade::application_program::ApplicationWorkflowSpec;
+use worth_query_execution_attempt::facade::ports::WorkflowReadBasisInternalPort as _;
 use worth_query_execution_query::facade::ports::AdmittedCapabilityAccessInspectionPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
@@ -86,7 +87,7 @@ impl WorthQueryWorkflowReadTarget {
     {
         // Fresh security precedes even locator affinity and existence-dependent reads.
         let access = admit(current, phase, binding, principal, input, request)?;
-        if !self.basis.0.belongs_to_selected_occurrence(
+        if !self.basis.observation().belongs_to_selected_occurrence(
             current.application().inner(),
             data.product().observation(),
         ) || !std::ptr::eq(current.application(), data.application())

@@ -4,6 +4,8 @@ use crate::domain_computation::primary_graph::application_attempt::PublishedWork
 use crate::domain_computation::primary_graph::ReadObservationRuntimeExt;
 use crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation;
 
+use worth_query_execution_attempt::facade::ports::WorkflowReadBasisInternalPort as _;
+
 pub use worth_query_execution_query::facade::domain_computation::primary_graph::application_discovery::{
     WorthQueryWorkflowAudit, WorthQueryWorkflowObservedState, WorthQueryWorkflowTransitionActors,
 };
@@ -48,7 +50,7 @@ impl WorthQueryWorkflowReadBasisRuntimeExt for WorthQueryWorkflowReadBasis {
     ) -> Self {
         // Retain only the native read lease for the result's observer lifetime.
         // The selected operation's publication source and fresh admission stay private.
-        Self(WorthQueryApplicationReadObservation::from_product(
+        Self::from_observation(WorthQueryApplicationReadObservation::from_product(
             selected.application().inner(),
             selected.product().read_lease(),
         ))

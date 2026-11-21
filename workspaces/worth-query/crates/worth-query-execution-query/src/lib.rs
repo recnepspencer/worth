@@ -13,7 +13,6 @@
 
 pub(crate) mod domain_computation;
 pub(crate) mod ports;
-pub(crate) mod ports_internal;
 
 pub(crate) mod publication_boundary {
 

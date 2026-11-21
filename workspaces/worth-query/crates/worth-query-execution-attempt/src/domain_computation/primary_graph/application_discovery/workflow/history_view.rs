@@ -5,9 +5,9 @@ use worth_execution::{ExecutionArray, ExecutionImmutableBytes};
 use worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome;
 /// An approval at the exact data basis, not permission to perform the proposed operation.
 pub struct WorthQueryWorkflowApprovalRead {
-    pub decision:
+    pub(crate) decision:
         crate::domain_computation::primary_graph::application_attempt::WorkflowApprovalDecision,
-    pub proposal_identity: ExecutionImmutableBytes,
+    pub(crate) proposal_identity: ExecutionImmutableBytes,
 }
 impl WorthQueryWorkflowApprovalRead {
     pub fn decision(
@@ -32,12 +32,12 @@ pub enum WorthQueryWorkflowHistoryAudit {
 }
 /// One canonical recorded transition, projected without advancing or warming progress.
 pub struct WorthQueryWorkflowHistoryEntry {
-    pub occurrence: u64,
-    pub path: ExecutionImmutableBytes,
-    pub outcome: ApplicationWorkflowControlOutcome,
-    pub proposal: Option<PublishedWorkflowProposalRef>,
-    pub approval: Option<WorthQueryWorkflowApprovalRead>,
-    pub audit: WorthQueryWorkflowHistoryAudit,
+    pub(crate) occurrence: u64,
+    pub(crate) path: ExecutionImmutableBytes,
+    pub(crate) outcome: ApplicationWorkflowControlOutcome,
+    pub(crate) proposal: Option<PublishedWorkflowProposalRef>,
+    pub(crate) approval: Option<WorthQueryWorkflowApprovalRead>,
+    pub(crate) audit: WorthQueryWorkflowHistoryAudit,
 }
 impl WorthQueryWorkflowHistoryEntry {
     pub fn occurrence(&self) -> u64 {

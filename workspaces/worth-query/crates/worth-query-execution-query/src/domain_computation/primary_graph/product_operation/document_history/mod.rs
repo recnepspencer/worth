@@ -3,6 +3,7 @@ pub mod authority_lifetime;
 pub mod current_head;
 pub mod denial;
 pub mod discovery_recipes;
+pub(crate) mod internal_port;
 pub mod model;
 pub mod navigation;
 pub mod preview;

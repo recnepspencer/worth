@@ -13,6 +13,7 @@ pub mod ports {
         continue_original, continue_original_with_cleanup, release_original,
         ContinuedOriginalOutcome,
     };
+    pub use crate::domain_computation::managed_run::recovery_registry::RecoveryHandleRegistryInternalPort;
     pub use crate::execution_runtime_internal_port::ExecutionRuntimeInternalPort;
     pub use crate::managed_run_custody_port::ExecutionRuntimeManagedRunCustodyPort;
     pub use crate::ports::*;

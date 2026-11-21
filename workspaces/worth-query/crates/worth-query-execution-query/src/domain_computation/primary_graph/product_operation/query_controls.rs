@@ -16,3 +16,23 @@ impl<'request> WorthQueryProductQueryControls<'request> {
         }
     }
 }
+
+/// Crate-boundary port for `WorthQueryProductQueryControls` consumed by
+/// `worth-query-execution`. Never exported on `worth-query-execution::facade`
+/// or Host.
+pub trait ProductQueryControlsInternalPort<'request> {
+    fn maximum_results(&self) -> NonZeroUsize;
+    fn request(&self) -> &'request WorthQueryRequestScope;
+}
+
+impl<'request> ProductQueryControlsInternalPort<'request>
+    for WorthQueryProductQueryControls<'request>
+{
+    fn maximum_results(&self) -> NonZeroUsize {
+        self.maximum_results
+    }
+
+    fn request(&self) -> &'request WorthQueryRequestScope {
+        self.request
+    }
+}

@@ -57,7 +57,7 @@ impl<'runtime, Schema> WorthQuerySelectedProductOperation<'runtime, Schema> {
         self.inner.inspect_selected_program()
     }
 
-    pub fn selection_origin(&self) -> SelectedQueryOrigin {
+    pub(crate) fn selection_origin(&self) -> SelectedQueryOrigin {
         self.inner.selection_origin()
     }
 
@@ -65,17 +65,17 @@ impl<'runtime, Schema> WorthQuerySelectedProductOperation<'runtime, Schema> {
         self.inner.product()
     }
 
-    pub fn application(&self) -> &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+    pub(crate) fn application(&self) -> &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         self.application
     }
 
-    pub fn application_basis(
+    pub(crate) fn application_basis(
         &self,
     ) -> &super::super::application_query::resource_lifecycle::WorthQueryApplicationBasisLease {
         self.inner.application_basis()
     }
 
-    pub fn original_settled_producer(
+    pub(crate) fn original_settled_producer(
         &self,
     ) -> Option<
         &std::sync::Arc<
@@ -85,14 +85,14 @@ impl<'runtime, Schema> WorthQuerySelectedProductOperation<'runtime, Schema> {
         self.inner.original_settled_producer()
     }
 
-    pub fn application_basis_mut(
+    pub(crate) fn application_basis_mut(
         &mut self,
     ) -> &mut super::super::application_query::resource_lifecycle::WorthQueryApplicationBasisLease
     {
         self.inner.application_basis_mut()
     }
 
-    pub fn into_parts(
+    pub(crate) fn into_parts(
         self,
     ) -> (
         &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
@@ -105,7 +105,7 @@ impl<'runtime, Schema> WorthQuerySelectedProductOperation<'runtime, Schema> {
 }
 
 impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'runtime, Schema> {
-    pub fn with_original_settled_producer(
+    pub(crate) fn with_original_settled_producer(
         self,
         producer: Option<
             std::sync::Arc<
@@ -119,7 +119,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         }
     }
 
-    pub fn retain_selection(
+    pub(crate) fn retain_selection(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Self, WorthQueryProductBranchAdmissionDenial> {
@@ -218,7 +218,7 @@ impl<'runtime, Schema> WorthQueryProductEntry<'runtime, Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub fn select_for_managed_index<Stop: From<WorthQueryProductBranchAdmissionDenial>>(
+    pub(crate) fn select_for_managed_index<Stop: From<WorthQueryProductBranchAdmissionDenial>>(
         self,
         request: &worth_execution::ExecutionRequest<'_, '_>,
         before_basis: impl FnOnce(

@@ -5,6 +5,7 @@ use crate::domain_computation::primary_graph::application_discovery::{
     WorthQueryWorkflowRecordedActor as Actor, WorthQueryWorkflowTransitionActors,
 };
 use worth_execution::ExecutionArrayBuilder;
+use worth_query_execution_attempt::facade::ports::WorkflowRecordedActorInternalPort as _;
 
 pub fn observe(
     execution: &worth_execution::ExecutionRequest<'_, '_>,

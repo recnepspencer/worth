@@ -8,6 +8,7 @@ use crate::domain_computation::{
     authorization::WorthQueryOperationScopeEntityBinding,
     primary_graph::WorthQueryPrimaryGraphApplicationRuntime,
 };
+use worth_query_execution_attempt::facade::ports::RecoveryHandleInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 
 pub(super) fn require_authority<Schema: ApplicationSchema>(

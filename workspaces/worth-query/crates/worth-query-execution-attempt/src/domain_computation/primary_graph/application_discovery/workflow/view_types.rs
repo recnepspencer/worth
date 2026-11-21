@@ -4,10 +4,10 @@ use std::sync::Arc;
 use worth_relational::facade::identity::EntityId;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct WorthQueryWorkflowRecordedActor(pub EntityId);
+pub struct WorthQueryWorkflowRecordedActor(pub(crate) EntityId);
 
 impl WorthQueryWorkflowRecordedActor {
-    pub fn observed(entity: EntityId) -> Self {
+    pub(crate) fn observed(entity: EntityId) -> Self {
         Self(entity)
     }
 
@@ -17,14 +17,14 @@ impl WorthQueryWorkflowRecordedActor {
 }
 
 #[derive(Clone)]
-pub struct WorthQueryWorkflowReadBasis(pub Arc<WorthQueryApplicationReadObservation>);
+pub struct WorthQueryWorkflowReadBasis(pub(crate) Arc<WorthQueryApplicationReadObservation>);
 
 impl WorthQueryWorkflowReadBasis {
-    pub fn from_observation(observation: Arc<WorthQueryApplicationReadObservation>) -> Self {
+    pub(crate) fn from_observation(observation: Arc<WorthQueryApplicationReadObservation>) -> Self {
         Self(observation)
     }
 
-    pub fn observation(&self) -> &WorthQueryApplicationReadObservation {
+    pub(crate) fn observation(&self) -> &WorthQueryApplicationReadObservation {
         &self.0
     }
 

@@ -191,6 +191,39 @@ impl crate::ports::ExecutionRuntimePrimaryGraphPort for WorthQueryExecutionRunti
     }
 }
 
+/// Crate-boundary port for `WorthQueryExecutionRuntime` consumed by
+/// `worth-query-execution`. Never exported on `worth-query-execution::facade`
+/// or Host.
+pub trait QueryExecutionRuntimeInternalPort: Sized {
+    fn from_inner(inner: rt::WorthQueryExecutionRuntime) -> Self;
+    fn primary_graph_mut(
+        &mut self,
+    ) -> Option<&mut crate::domain_computation::primary_graph::WorthQueryPrimaryGraph>;
+    fn install_primary_graph(
+        &mut self,
+        graph: crate::domain_computation::primary_graph::WorthQueryPrimaryGraph,
+    );
+}
+
+impl QueryExecutionRuntimeInternalPort for WorthQueryExecutionRuntime {
+    fn from_inner(inner: rt::WorthQueryExecutionRuntime) -> Self {
+        Self::from_inner(inner)
+    }
+
+    fn primary_graph_mut(
+        &mut self,
+    ) -> Option<&mut crate::domain_computation::primary_graph::WorthQueryPrimaryGraph> {
+        Self::primary_graph_mut(self)
+    }
+
+    fn install_primary_graph(
+        &mut self,
+        graph: crate::domain_computation::primary_graph::WorthQueryPrimaryGraph,
+    ) {
+        Self::install_primary_graph(self, graph)
+    }
+}
+
 #[cfg(test)]
 #[path = "mod_inline_type_budget.rs"]
 pub(crate) mod inline_type_budget;

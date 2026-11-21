@@ -11,9 +11,12 @@ use worth_runtime_world::facade::ProductBranchObservation;
 use crate::domain_computation::execution_runtime::product_world::WorthQueryPerformedRelationalProductChange;
 use crate::domain_computation::primary_graph::application_discovery::workflow::{
     WorthQueryWorkflowHistoryEntry, WorthQueryWorkflowHistoryPage, WorthQueryWorkflowReadBasis,
+    WorthQueryWorkflowRecordedActor,
 };
 use crate::domain_computation::primary_graph::application_installation::output_source_recovery::WorthQueryRecoveredProgramOutputSource;
-use crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication;
+use crate::domain_computation::primary_graph::{
+    WorthQueryApplicationReadObservation, WorthQueryCommittedProductPublication,
+};
 
 pub struct WorkflowHistoryPageParts {
     pub basis: WorthQueryWorkflowReadBasis,
@@ -97,5 +100,30 @@ impl RecoveredProgramOutputSourceInternalPort for WorthQueryRecoveredProgramOutp
 
     fn observation_ref(&self) -> Option<&ProductBranchObservation> {
         self.observation.as_ref()
+    }
+}
+
+pub trait WorkflowRecordedActorInternalPort: Sized {
+    fn observed(entity: EntityId) -> Self;
+}
+
+impl WorkflowRecordedActorInternalPort for WorthQueryWorkflowRecordedActor {
+    fn observed(entity: EntityId) -> Self {
+        Self::observed(entity)
+    }
+}
+
+pub trait WorkflowReadBasisInternalPort: Sized {
+    fn from_observation(observation: Arc<WorthQueryApplicationReadObservation>) -> Self;
+    fn observation(&self) -> &WorthQueryApplicationReadObservation;
+}
+
+impl WorkflowReadBasisInternalPort for WorthQueryWorkflowReadBasis {
+    fn from_observation(observation: Arc<WorthQueryApplicationReadObservation>) -> Self {
+        Self::from_observation(observation)
+    }
+
+    fn observation(&self) -> &WorthQueryApplicationReadObservation {
+        Self::observation(self)
     }
 }
