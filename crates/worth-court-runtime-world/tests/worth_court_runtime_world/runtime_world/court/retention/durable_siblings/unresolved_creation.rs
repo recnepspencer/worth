@@ -154,6 +154,8 @@ fn assert_fenced(f: &Fixture, request: &ExecutionRequest<'_, '_>, name: &str) {
         None,
     );
     assert!(relational.is_ok(), "{:?}", relational.err());
+    // Dropped unadvanced, it leaves an unjournaled in-memory row: callers end
+    // this process with `reopen`, never a recovery-page read or `finish`.
     drop(relational);
     assert_eq!(f.recorder.heads(), heads);
 }
