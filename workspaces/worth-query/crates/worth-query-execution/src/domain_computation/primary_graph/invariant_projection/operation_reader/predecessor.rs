@@ -61,6 +61,8 @@ impl<S: ApplicationSchema, O>
         let retention = self.reader.retention_control;
         let remaining = self.reader.work_budget.remaining();
         let authority = &access.application.mutation_projection;
+        // A successor round reads its own prior output as before its chain.
+        let own_outputs = self.reader.native.own_outputs().cloned();
         let project = |native: &worth_relational::facade::runtime::RelationalRuntime| {
             let (prior, input, contracts, authorization) =
                 access.prepare_predecessor(&execution, native, operation, scope, partition)?;
@@ -73,6 +75,7 @@ impl<S: ApplicationSchema, O>
                 native,
                 &input,
                 limit,
+                own_outputs.as_ref(),
                 |reader| {
                     let (output, facts) =
                         authority.inspect_reader(reader, Some(contracts), None, |reader| {

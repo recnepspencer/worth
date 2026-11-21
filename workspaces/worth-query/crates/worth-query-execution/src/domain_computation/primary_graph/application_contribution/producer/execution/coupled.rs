@@ -77,6 +77,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution) trait
         before: &crate::basis::WorthQueryProductBranchLease,
         before_pin: &RelationalPinnedRead,
         candidate: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
+        own_outputs: Option<&crate::domain_computation::primary_graph::invariant_projection::read_basis::OwnOutputOverlay>,
         participants: &dyn crate::domain_computation::primary_graph::provider::AppliedOutputParticipants,
         source: ErasedAppliedProducerSource,
         edition: super::super::InstalledProducerEdition,
@@ -95,6 +96,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution) trait
         source: ErasedAppliedProducerSource,
         edition: super::super::InstalledProducerEdition,
         component: std::any::TypeId,
+        own_outputs: Option<&crate::domain_computation::primary_graph::invariant_projection::read_basis::OwnOutputOverlay>,
     ) -> Result<Box<dyn CapturedProducerInputRead>, ProducerExecutionStop>;
 }
 impl<Schema, Binding> InstalledCoupledProducerExecutor<Schema>
@@ -169,6 +171,7 @@ where
         before: &crate::basis::WorthQueryProductBranchLease,
         before_pin: &RelationalPinnedRead,
         candidate: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
+        own_outputs: Option<&crate::domain_computation::primary_graph::invariant_projection::read_basis::OwnOutputOverlay>,
         participants: &dyn crate::domain_computation::primary_graph::provider::AppliedOutputParticipants,
         source: ErasedAppliedProducerSource,
         edition: super::super::InstalledProducerEdition,
@@ -207,6 +210,7 @@ where
             before,
             before_pin,
             candidate,
+            own_outputs,
             participants,
             source,
             predecessor.as_ref(),
@@ -223,6 +227,7 @@ where
             runtime,
             registered,
             candidate,
+            own_outputs,
             predecessor,
         )
         .map_err(|outcome| coupled_preparation::preparation_denial(Binding::IDENTITY, outcome))?;
@@ -246,6 +251,7 @@ where
         source: ErasedAppliedProducerSource,
         edition: super::super::InstalledProducerEdition,
         component: std::any::TypeId,
+        own_outputs: Option<&crate::domain_computation::primary_graph::invariant_projection::read_basis::OwnOutputOverlay>,
     ) -> Result<Box<dyn CapturedProducerInputRead>, ProducerExecutionStop> {
         let owner = self.input_capture.ok_or_else(|| {
             denial(
@@ -254,8 +260,18 @@ where
             )
         })?;
         (owner.admit)(
-            self, phase, runtime, principal, request, before, before_pin, candidate, source,
-            edition, component,
+            self,
+            phase,
+            runtime,
+            principal,
+            request,
+            before,
+            before_pin,
+            candidate,
+            source,
+            edition,
+            component,
+            own_outputs,
         )
     }
 }

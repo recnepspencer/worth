@@ -8,9 +8,11 @@ use crate::domain_computation::primary_graph::application_attempt::fact::touch_k
 use crate::domain_computation::primary_graph::provider::ParentRead;
 use worth_execution::{ExecutionMemoryReservation, ExecutionOrderedMap, ExecutionRequest};
 
-/// One retained derivation: a verified parent the assembly retained.
+/// One derivation qualified use watches: a verified parent the assembly
+/// retained, or a producer part (`writer`, its index in the writer roster).
 pub(super) struct Derivation {
     pub(super) read: ParentRead,
+    pub(super) writer: Option<usize>,
     /// The applied position its retained support was observed at.
     pub(super) position: usize,
     /// A wave task owns it and can derive it again.
@@ -22,8 +24,13 @@ pub(super) struct Derivation {
 
 impl Derivation {
     pub(super) fn new(read: ParentRead, position: usize) -> Self {
+        Self::part(read, position, None)
+    }
+
+    pub(super) fn part(read: ParentRead, position: usize, writer: Option<usize>) -> Self {
         Self {
             read,
+            writer,
             position,
             claimed: false,
             superseded: false,
@@ -101,6 +108,11 @@ impl DerivationLedger {
     /// The work of one `find`.
     pub(super) fn find_work(&self) -> u64 {
         self.entries.len().max(1).ilog2() as u64 + 1
+    }
+
+    /// The derivation `read` names, if registered and still claimed.
+    pub(super) fn claimed(&self, read: ParentRead) -> bool {
+        self.find(read).is_some_and(|id| self.entries[id].claimed)
     }
 
     /// A wave task owns the derivation retained as `read`.

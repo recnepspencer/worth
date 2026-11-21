@@ -298,10 +298,12 @@ fn a_consumed_child_keeps_its_incoming_support_strict() {
 }
 
 /// The observation stage's barrier prepares `first:a`; the later authored link
-/// then changes the discovery that selected its incoming parents. Discovery
-/// support stays strict: nothing proves the selection it governed was derived
-/// again, so the edit refuses atomically, attributed to the link stage, with
-/// no #229 hold. The absent supplier is never forced at the barrier.
+/// then changes the discovery that selected its incoming parents. Qualified
+/// use reopens `first:a`, but its successor round's source reads the incoming
+/// lineage edge its own chain linked: relations are outside the own-output
+/// view (PR C §1.5, entities only), so the round stops before append with
+/// #119 `PriorEffectRead` and the edit refuses atomically. The absent
+/// supplier is never forced at the barrier.
 #[test]
 fn an_absent_supplier_does_not_force_its_prerequisite_at_an_authored_barrier() {
     let _execution = WorthQueryExecutionObservation::install_on_this_thread();
@@ -344,21 +346,16 @@ fn an_absent_supplier_does_not_force_its_prerequisite_at_an_authored_barrier() {
     let Outcome::Uncommitted(WorthQueryApplicationUncommitted::Denied(cause)) = outcome else {
         panic!("{outcome:?}")
     };
-    let failure = cause.invariant_execution_failure().unwrap();
     assert_eq!(
-        failure.kind(),
-        WorthQueryInvariantExecutionDenialKind::CoupledReadSupportChanged
-    );
-    // A later authored stage changed what the earlier stage discovered (#238).
-    assert_eq!(
-        failure.coupled_support_hold(),
-        Some(worth_query_host::facade::primary_graph::WorthQueryCoupledSupportHold::DiscoverySupportChanged),
+        cause
+            .authored_retirement_error()
+            .expect("the successor round's Native refusal")
+            .authored_retirement_refusal(),
+        Some(worth_relational::facade::publication::AuthoredRetirementRefusal::CoupledContinuationProvenancePostponed {
+            issue: 119,
+            reason: worth_relational::facade::publication::CoupledProvenancePostponement::PriorEffectRead,
+        }),
         "{cause:?}"
-    );
-    assert!(
-        failure.detail().contains("later writer authored stage 2")
-            && failure.detail().contains("discovery support"),
-        "{failure:?}"
     );
     assert_eq!(writes.published_rows.len() + writes.omitted_publications, 0);
     assert_eq!(native_head(&host), before);

@@ -32,6 +32,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     ErasedAppliedProducerSource,
     super::super::InstalledProducerEdition,
     std::any::TypeId,
+    Option<&crate::domain_computation::primary_graph::invariant_projection::read_basis::OwnOutputOverlay>,
 ) -> Result<Box<dyn CapturedProducerInputRead>, ProducerExecutionStop>;
 
 pub(in crate::domain_computation::primary_graph::application_contribution) trait CapturedProducerInputRead:
@@ -153,6 +154,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     erased: ErasedAppliedProducerSource,
     edition: super::super::InstalledProducerEdition,
     component: std::any::TypeId,
+    own_outputs: Option<&crate::domain_computation::primary_graph::invariant_projection::read_basis::OwnOutputOverlay>,
 ) -> Result<Box<dyn CapturedProducerInputRead>, ProducerExecutionStop>
 where
     S: ApplicationSchema,
@@ -286,6 +288,7 @@ where
             &admission,
             before_pin,
             candidate,
+            own_outputs,
             None,
             |reader, scope| {
                 (owner.capture)(
@@ -320,6 +323,7 @@ where
             projection,
             candidate.clone(),
             execution.allocation_policy(),
+            own_outputs,
         )
         .and_then(|reads| {
             reads.complete_projected_dependencies_with_request(

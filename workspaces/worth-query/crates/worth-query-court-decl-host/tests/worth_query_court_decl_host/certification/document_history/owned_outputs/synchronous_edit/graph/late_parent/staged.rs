@@ -202,56 +202,18 @@ fn stage(key: &str, value: u64) -> edit::Intent {
     }
 }
 
-/// The whole edit refuses on the final support owner, attributed to the
-/// `decision-write(b)` writer, with exactly `hold`.
-fn require_refusal(
-    outcome: worth_query_host::facade::application_entry::WorthQueryEditEnvelopeOutcome,
-    request: &family::Request<'_, '_, '_>,
-    hold: Option<worth_query_host::facade::primary_graph::WorthQueryCoupledSupportHold>,
-) {
-    use worth_query_host::facade::application_entry::WorthQueryEditEnvelopeOutcome as Outcome;
-    let Outcome::Uncommitted(WorthQueryApplicationUncommitted::Denied(cause)) = outcome else {
-        panic!("{outcome:?}")
-    };
-    let failure = cause
-        .invariant_execution_failure()
-        .unwrap_or_else(|| panic!("the final support owner refuses: {cause:?}"));
-    assert_eq!(failure.kind(), worth_query_host::facade::primary_graph::WorthQueryInvariantExecutionDenialKind::CoupledReadSupportChanged);
-    assert_eq!(failure.coupled_support_hold(), hold, "{failure:?}");
-    assert!(
-        failure
-            .detail()
-            .contains("later writer producer owned-outputs.decision-write")
-            && failure.detail().contains("verified output support")
-            && failure.detail().contains("MemberValue"),
-        "{failure:?}"
-    );
-    let model = |key: &str| {
-        worth_relational::facade::transactions::RecordRef::Entity(
-            request
-                .query(query::model::Read(key.into()))
-                .execute()
-                .unwrap()
-                .rows()[0]
-                .native_id,
-        )
-    };
-    // The reader's source, then the exact writer's source.
-    assert_eq!(failure.affected_records(), [model("a"), model("b")]);
-}
-
 /// Stage 0 (edit `a = 2`, root `second(a)`) appends at 1 and stage 1 (edit
 /// `b = 8`, root `decision-input(a)`) at 2. In the final drive `second(a)` runs first
 /// and appends at 3, so `first:a` is adopted verified and observed at 3. Its
 /// own child `decision-write(b)`, whose strict prerequisite supplier is
 /// `first:a` and which is owed by stage 1 at 2, appends at 4 and changes `m`,
 /// which `first:a` read. The child's owed position (2) is not the parent's
-/// observed position (3), so a predicate keyed on owed positions would give no
-/// hold. The child consumed `first:a`, so the edit refuses whole with CoupledReadSupportChanged held
-/// for own-producer settlement (#239), attributed to the child, and nothing
-/// commits.
+/// observed position (3), so a predicate keyed on owed positions would miss
+/// it. The child consumed `first:a`, so the verified parent reopens as a fresh
+/// part with its consumer (#239), and the edit commits the fixed point:
+/// `first:a` = 2 + 9, equal to the sequential world.
 #[test]
-fn a_consuming_child_after_an_intervening_append_is_still_held() {
+fn a_consuming_child_after_an_intervening_append_reaches_the_fixed_point() {
     let _execution = WorthQueryExecutionObservation::install_on_this_thread();
     let host = world::install_program_with_other_model::<InterveningProgram>(
         host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
@@ -262,8 +224,6 @@ fn a_consuming_child_after_an_intervening_append_is_still_held() {
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.request(&principal, &scope);
     settle_staged!(&host, &request, super::prerequisite::Tree);
-    let before = super::super::super::failure::checkpoint(&host);
-    let head = courts::native_head(&host);
     let contacts = host.producer_contacts_on_this_thread_for_test();
     let mut edit = request
         .edit_envelope()
@@ -275,19 +235,18 @@ fn a_consuming_child_after_an_intervening_append_is_still_held() {
         .unwrap();
     edit.push_stage::<super::prerequisite::Tree, _>(stage("b", 8))
         .unwrap();
-    require_refusal(
+    super::derived::committed(
         edit.execute_performed(ExecutionAllocationPolicy::SystemAllocation)
             .unwrap(),
-        &request,
-        Some(worth_query_host::facade::primary_graph::WorthQueryCoupledSupportHold::ReaderProducerSupersession),
     );
     assert_eq!(
         host.producer_contacts_on_this_thread_for_test(),
-        contacts + 2,
-        "second(a) and the child derive; the verified parent stays unopened"
+        contacts + 4,
+        "second(a), first:a reopened as a fresh part, the child, then its successor round"
     );
-    assert_eq!(courts::native_head(&host), head);
-    super::super::super::failure::assert_model_unchanged(&host, &before);
+    let world = super::derived::observe(&request);
+    assert_eq!(world.first, 11, "first:a re-derived from m = 9");
+    assert_eq!(world, super::derived::sequential());
 }
 
 /// Stage 0 (edit `a = 2`, root `decision-input(a)`) appends at 1 and stage 1

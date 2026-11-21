@@ -87,3 +87,62 @@ pub(in crate::domain_computation::primary_graph) fn touch_probe(touch: &Touch) -
         | Touch::UnrepresentableRelationMutation { .. } => TouchProbe::Everything,
     }
 }
+
+/// The one record a single-record fact reads, if it reads exactly one.
+pub(in crate::domain_computation::primary_graph) fn fact_record(
+    fact: &Fact,
+) -> Option<worth_relational::facade::identity::EntityId> {
+    match fact {
+        Fact::Entity { entity_id, .. }
+        | Fact::Field { entity_id, .. }
+        | Fact::AbsentField { entity_id, .. }
+        | Fact::OptionalAspectAbsent { entity_id, .. }
+        | Fact::AspectPresence { entity_id, .. }
+        | Fact::RetiredOutputEntity { entity_id, .. }
+        | Fact::SourceEntity { entity_id }
+        | Fact::SourceAspectRevision { entity_id, .. }
+        | Fact::SourceFieldRevision { entity_id, .. } => Some(*entity_id),
+        _ => None,
+    }
+}
+
+/// Whether a certified touch could change what `fact` read. Field reads and
+/// indexed selections compare the field path; every other fact compares
+/// its keys, and a conservative fact always could.
+pub(in crate::domain_computation::primary_graph) fn touch_changes(
+    touch: &Touch,
+    fact: &Fact,
+) -> bool {
+    let overlaps = |left: &worth_foundational::facade::AspectFieldLocator,
+                    right: &worth_foundational::facade::AspectFieldLocator| {
+        left.aspect().aspect_key() == right.aspect().aspect_key() && {
+            let (a, b) = (left.field_path().fields(), right.field_path().fields());
+            a.starts_with(b) || b.starts_with(a)
+        }
+    };
+    match (touch, fact) {
+        (
+            Touch::WriteEntityField { kind, locator },
+            Fact::Field {
+                kind: read,
+                locator: field,
+                ..
+            }
+            | Fact::AbsentField {
+                kind: read,
+                locator: field,
+                ..
+            }
+            | Fact::IndexedEntitySelection {
+                entity_kind: read,
+                locator: field,
+                ..
+            },
+        ) => kind == read && overlaps(locator, field),
+        _ => match (touch_probe(touch), fact_keys(fact)) {
+            (TouchProbe::Nothing, _) => false,
+            (TouchProbe::Everything, _) | (TouchProbe::Keys(_), None) => true,
+            (TouchProbe::Keys(touched), Some(read)) => touched.iter().any(|key| read.contains(key)),
+        },
+    }
+}

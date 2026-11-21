@@ -88,6 +88,8 @@ pub struct WorthQueryApplicationSnapshotLease {
     product: crate::basis::WorthQueryProductBranchLease,
     selection_origin: super::super::product_operation::SelectedQueryOrigin,
     pub(super) layout: std::sync::Arc<super::super::schema_layout::WorthQueryPrimaryGraphLayout>,
+    /// A successor round's own-output view (§1.5) over the applied image.
+    own_outputs: Option<crate::domain_computation::primary_graph::invariant_projection::read_basis::OwnOutputOverlay>,
 }
 
 impl WorthQueryApplicationSnapshotLease {
@@ -126,6 +128,26 @@ impl WorthQueryApplicationSnapshotLease {
     ) -> Option<worth_relational::facade::runtime::RelationalAppliedCandidateReadQualification>
     {
         self.applied_source_qualification
+    }
+    /// Observe a successor's own chain records as before the chain (§1.5).
+    pub(super) fn retain_own_outputs(
+        &mut self,
+        own_outputs: Option<&crate::domain_computation::primary_graph::invariant_projection::read_basis::OwnOutputOverlay>,
+    ) {
+        self.own_outputs = own_outputs.cloned();
+    }
+    /// The applied image a single-record fact of `entity` is observed at.
+    pub(super) fn applied_projection_of(
+        &self,
+        entity: Option<worth_relational::facade::identity::EntityId>,
+    ) -> Option<
+        &worth_relational::facade::runtime::RelationalPinnedRead<
+            worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
+        >,
+    > {
+        entity
+            .and_then(|entity| self.own_outputs.as_ref()?.head_for(entity))
+            .or(self.applied_projection.as_ref())
     }
     pub(super) fn applied_projection(
         &self,
@@ -177,6 +199,7 @@ impl WorthQueryApplicationSnapshotLease {
         let retained = Self {
             applied_source_qualification: self.applied_source_qualification,
             applied_projection: self.applied_projection.clone(),
+            own_outputs: self.own_outputs.clone(),
             custody: Some(SnapshotCustody::Original(shared)),
             product: self.product.retained_clone(),
             selection_origin: self.selection_origin,
@@ -213,6 +236,7 @@ impl WorthQueryApplicationSnapshotLease {
         Ok(Self {
             applied_source_qualification: None,
             applied_projection: None,
+            own_outputs: None,
             custody: Some(SnapshotCustody::Owned { handle, snapshot }),
             product,
             selection_origin: Default::default(),
@@ -245,6 +269,7 @@ impl WorthQueryApplicationSnapshotLease {
         Self {
             applied_source_qualification: None,
             applied_projection: None,
+            own_outputs: None,
             custody: Some(SnapshotCustody::Owned { handle, snapshot }),
             product,
             selection_origin: Default::default(),
@@ -272,6 +297,7 @@ impl WorthQueryApplicationSnapshotLease {
         Ok(Self {
             applied_source_qualification: None,
             applied_projection: None,
+            own_outputs: None,
             custody: Some(SnapshotCustody::Shared(basis)),
             product: selected.product().retained_clone(),
             selection_origin: selected.selection_origin(),

@@ -273,6 +273,14 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             source.partition,
             &producer.declaration.identity,
         )?;
+        // A reopened route that already has a part continues its chain (§1.5).
+        let chain = self.continued_chain(
+            execution,
+            candidate,
+            demand.family,
+            source.scope,
+            &source.partition,
+        )?;
         let pin = candidate.pin_source(execution)?;
         let prepared = producer.coupled_executor().prepare_coupled_writer(
             self.phase,
@@ -283,6 +291,7 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             self.before,
             before_pin,
             &pin,
+            chain.as_ref().map(|chain| &chain.own),
             self,
             source,
             producer.edition,
@@ -291,7 +300,7 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
         let PreparedCoupledWriter {
             writer,
             publication,
-            batch,
+            mut batch,
             content,
         } = prepared;
         // Keep the session even when Native requests an ordinary symbol retry;
@@ -302,33 +311,62 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             .clone();
         let source_scope = meaning.source_scope;
         let position = self.applied_position() + 1;
-        self.record_consumption(execution, &self.consuming())?;
-        self.writers.borrow_mut().push(CoupledWriter {
+        let produces = self.next_read();
+        self.record_consumption(execution, &self.consuming(), produces)?;
+        if let Some(chain) = &chain {
+            self.require_independent(execution, candidate, chain, writer.session(), &pin)?;
+            self.rekey_original(chain.index, writer.session(), &mut batch);
+        }
+        let next = CoupledWriter {
             position,
             owed: self.owing(),
             consumes: self.consuming(),
-            produces: self.next_read(),
+            produces,
             producer: std::sync::Arc::clone(producer),
             stage: Some(CoupledWriterStage::Inspected(writer)),
             meaning: meaning.clone(),
-        });
-        match self
-            .application
-            .runtime
-            .primary_provider
-            .application_attempt_operation_control
-            .take_coupled_participant_corruption(self.writers.borrow().len())
-        {
-            fault @ (1..=9) => candidate.append_corrupt_participant_for_test(
-                execution,
-                publication,
-                &content,
-                vec![batch],
-                fault,
-            )?,
-            _ => candidate.append_publication(execution, publication, &content, vec![batch])?,
-        }
-        let index = self.writers.borrow().len() - 1;
+        };
+        let index = match chain {
+            Some(chain) => {
+                let superseded = self.writers.borrow()[chain.index].produces;
+                self.retire_part(superseded);
+                self.replace_writer(execution, chain.index, next);
+                let token = candidate.next_producer_round(execution, chain.index)?;
+                candidate.append_successor_publication(
+                    execution,
+                    token,
+                    publication,
+                    &content,
+                    vec![batch],
+                )?;
+                chain.index
+            }
+            None => {
+                self.writers.borrow_mut().push(next);
+                match self
+                    .application
+                    .runtime
+                    .primary_provider
+                    .application_attempt_operation_control
+                    .take_coupled_participant_corruption(self.writers.borrow().len())
+                {
+                    fault @ (1..=9) => candidate.append_corrupt_participant_for_test(
+                        execution,
+                        publication,
+                        &content,
+                        vec![batch],
+                        fault,
+                    )?,
+                    _ => candidate.append_publication(
+                        execution,
+                        publication,
+                        &content,
+                        vec![batch],
+                    )?,
+                }
+                self.writers.borrow().len() - 1
+            }
+        };
         let owed = self.writers.borrow()[index].owed.position();
         self.mark_append(
             execution,
@@ -340,14 +378,13 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
                 meaning: meaning.clone(),
             },
         )?;
+        self.register_part(execution, index, produces)?;
         let entities = candidate
             .appended_output_entities(execution, &producer.declaration.identity, &meaning)?
             .expect("Native appended this participant");
         let after_own = candidate.pin_source(execution)?;
         let writers = self.writers.borrow();
-        let Some(CoupledWriterStage::Inspected(writer)) =
-            writers.last().and_then(|writer| writer.stage.as_ref())
-        else {
+        let Some(CoupledWriterStage::Inspected(writer)) = writers[index].stage.as_ref() else {
             unreachable!("actual appended writer")
         };
         self.application
@@ -362,7 +399,7 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
                     entities,
                 },
             );
-        let writer = writers.last().expect("actual appended writer");
+        let writer = &writers[index];
         let input = candidate.applied_output_input(execution, &writer.meaning)?;
         Ok(Some(
             synchronous_outputs::AppliedOutputParent::new(after_own, source_scope, input)

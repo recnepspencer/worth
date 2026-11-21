@@ -44,6 +44,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthorit
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
         before: &RelationalPinnedRead,
         candidate: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
+        own_outputs: Option<&crate::domain_computation::primary_graph::invariant_projection::read_basis::OwnOutputOverlay>,
         predecessor_access: Option<
             &crate::domain_computation::primary_graph::application_query::SourceQueryReaderAccess<
                 '_,
@@ -86,6 +87,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthorit
                 product.relational_basis(),
                 lease.snapshot(),
                 Some((before, candidate)),
+                own_outputs,
                 |reader| {
                     super::admitted::project(
                         self,

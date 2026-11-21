@@ -20,6 +20,8 @@ mod commit_completion;
 mod coupled_extraction;
 mod coupled_preparation;
 mod coupled_settlement;
+mod successor_independence;
+mod writer_qualification;
 pub(in crate::domain_computation::primary_graph) use coupled_preparation::{
     AppliedParticipantOutputs, CoupledApplicationMember, CoupledApplicationMemberKind,
     CoupledAttemptPreparation, CoupledProducerPreparation,
