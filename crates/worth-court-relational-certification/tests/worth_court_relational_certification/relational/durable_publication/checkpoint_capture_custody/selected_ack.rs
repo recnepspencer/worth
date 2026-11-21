@@ -4,7 +4,9 @@
 //! `observe_commit_envelope_custody` census (selected directory and source
 //! placement as weak allocation identities, so `same_owner` becomes
 //! `same_allocation`); checkpoint selection through `observe_checkpoint_selection`;
-//! the strict original frame read through `read_original_commit_artifact`; the
+//! the strict original frame read (no journal fallback, as the original's
+//! `require_original_artifact(.., None)`) through
+//! `read_original_commit_artifact_without_journal`; the
 //! publication owner identity through `publication_subject().same_capture`;
 //! the region count through `region_publication_count`; basis custody through
 //! `RelationalBasisCustodyWitness`.
@@ -15,9 +17,7 @@ use worth_relational::facade::{
         RelationalCommitEnvelopeCustody,
     },
     history::CommitId,
-    indexes::{
-        DerivedIndexBuildRequest, DerivedIndexDefinition, DerivedIndexId, DerivedIndexKind,
-    },
+    indexes::{DerivedIndexBuildRequest, DerivedIndexDefinition, DerivedIndexId, DerivedIndexKind},
 };
 use worth_testkit_relational::{
     aspect_storage::publications::release_test_commit_snapshot,
@@ -89,9 +89,11 @@ fn selected_ack_partial_transfer_preserves_later_cells_and_resumes_same_capture(
         .selected_directory
         .is_some());
     assert!(
-        cells[1..].iter().all(|original| cell(&runtime, original.commit_id)
-            .selected_directory
-            .is_none()),
+        cells[1..]
+            .iter()
+            .all(|original| cell(&runtime, original.commit_id)
+                .selected_directory
+                .is_none()),
         "a real stop leaves every later covered cell untouched"
     );
     let later_cell = cell(&runtime, later_id);
@@ -220,7 +222,7 @@ fn selected_ack_exposes_backed_data_before_retirement_and_releases_holds_only_on
         let directory = cell.selected_directory.unwrap();
         assert!(selected.directory.same_allocation(&directory));
         let frame = runtime
-            .read_original_commit_artifact(&execution, cell.commit_id)
+            .read_original_commit_artifact_without_journal(&execution, cell.commit_id)
             .unwrap()
             .unwrap();
         assert_eq!(frame.commit_id(), cell.commit_id);

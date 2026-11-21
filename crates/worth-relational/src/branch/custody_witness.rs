@@ -1,8 +1,8 @@
 //! Read-only custody witness of one admitted basis and its immutable root.
 //!
-//! A witness holds only weak identities plus copied descriptive schema facts.
-//! It never extends custody, never yields a basis or root, and grants no
-//! currentness or reclamation authority.
+//! A witness holds only weak identities and a copied schema digest. It never
+//! extends custody, never yields a basis or root, and grants no currentness or
+//! reclamation authority.
 //! Custody courts use it to observe whether the actual owners (leases, capture
 //! holds, acknowledgement progress) still retain that exact observation.
 use super::{AdmittedRelationalBranchBasis, AdmittedRelationalBranchBasisInner};
@@ -16,7 +16,6 @@ pub struct RelationalBasisCustodyWitness {
     root: Weak<RelationalBranchRoot>,
     schema_authority: Weak<RelationalBranchRootSchemaAuthority>,
     schema_authority_digest: [u8; 32],
-    schema_authority_snapshot: crate::schema::data::SchemaAuthoritySnapshot,
 }
 
 impl AdmittedRelationalBranchBasis {
@@ -27,12 +26,6 @@ impl AdmittedRelationalBranchBasis {
             root: Arc::downgrade(&self.inner.root),
             schema_authority: Arc::downgrade(&self.inner.root.retained_schema_authority()),
             schema_authority_digest: self.inner.root.schema_authority().authority_digest(),
-            schema_authority_snapshot: self
-                .inner
-                .root
-                .schema_authority()
-                .registry()
-                .authority_snapshot(),
         }
     }
 }
@@ -58,18 +51,14 @@ impl RelationalBasisCustodyWitness {
         Weak::ptr_eq(&self.schema_authority, &other.schema_authority)
     }
 
-    /// The witnessed root's installed schema registry authority snapshot.
-    pub fn schema_authority_snapshot(&self) -> &crate::schema::data::SchemaAuthoritySnapshot {
-        &self.schema_authority_snapshot
-    }
-
     /// The witnessed root's installed schema authority digest.
     pub fn schema_authority_digest(&self) -> [u8; 32] {
         self.schema_authority_digest
     }
 
-    /// Demand every region of the still-retained observation fully, then take
-    /// and release one read snapshot of it. Returns the retained root's schema
+    /// On `runtime`, the witnessed observation's owner, demand every region of
+    /// the still-retained observation fully, then take and release one read
+    /// snapshot of it. A foreign runtime refuses before any effect. Returns the retained root's schema
     /// authority digest, or `None` when no owner retains the observation. The
     /// transient strong reference ends before this returns; residency loads
     /// are charged to `execution` like any other demand.
@@ -82,6 +71,11 @@ impl RelationalBasisCustodyWitness {
             return Ok(None);
         };
         let held = AdmittedRelationalBranchBasis { inner };
+        // Ownership precedes every effect: a foreign runtime's symbols and
+        // residency are never touched for another runtime's observation.
+        if held.observation().identity().runtime_instance_id() != runtime.runtime_instance_id() {
+            return Err(RelationalBasisCustodyReadDenial::ForeignRuntime);
+        }
         held.inner
             .root
             .demand_all_full(execution, &runtime.services.symbols)
@@ -101,6 +95,7 @@ impl RelationalBasisCustodyWitness {
 /// A witnessed read refused; the witness and its owners are unchanged.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RelationalBasisCustodyReadDenial {
+    ForeignRuntime,
     Demand(crate::execution::RelationalExecutionDenialCause),
     Snapshot,
 }

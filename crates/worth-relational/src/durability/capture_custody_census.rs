@@ -14,7 +14,8 @@ pub struct RelationalAllocationWitness(Weak<dyn Any + Send + Sync>);
 
 impl RelationalAllocationWitness {
     pub(crate) fn of<T: Any + Send + Sync>(owner: &Arc<T>) -> Self {
-        let weak: Weak<dyn Any + Send + Sync> = Arc::downgrade(owner) as Weak<dyn Any + Send + Sync>;
+        let weak: Weak<dyn Any + Send + Sync> =
+            Arc::downgrade(owner) as Weak<dyn Any + Send + Sync>;
         Self(weak)
     }
     /// Whether some owner still retains the witnessed allocation.
@@ -78,10 +79,11 @@ impl RelationalRuntime {
             .collect()
     }
 
-    /// Read one retained commit's original canonical frame strictly from its
-    /// cell's backing (memory original, journal or selected member), never by
-    /// re-encoding a resident body. `None` names no retained commit.
-    pub fn read_original_commit_artifact(
+    /// Read one retained commit's original canonical frame from its memory
+    /// original or its selected checkpoint member only: never by re-encoding a
+    /// resident body and never through the journal. A journal-backed cell
+    /// refuses with `SourceUnavailable`. `None` names no retained commit.
+    pub fn read_original_commit_artifact_without_journal(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         commit_id: crate::history::data::CommitId,
@@ -104,22 +106,22 @@ impl RelationalRuntime {
         &self,
         source: &Arc<dyn crate::durability::medium::RelationalDurableColdSource>,
     ) -> bool {
-        self.durability.cold_source().is_some_and(|attached| {
-            std::ptr::addr_eq(Arc::as_ptr(&attached), Arc::as_ptr(source))
-        })
+        self.durability
+            .cold_source()
+            .is_some_and(|attached| std::ptr::addr_eq(Arc::as_ptr(&attached), Arc::as_ptr(source)))
     }
 
     /// Observe the served checkpoint selection and acknowledged catalog frontier.
     pub fn observe_checkpoint_selection(&self) -> RelationalCheckpointSelectionCensus {
         let selection = self.durability.checkpoint_selection();
         RelationalCheckpointSelectionCensus {
-            selected: selection
-                .snapshot()
-                .map(|directory| RelationalSelectedCheckpointObservation {
+            selected: selection.snapshot().map(|directory| {
+                RelationalSelectedCheckpointObservation {
                     directory: RelationalAllocationWitness::of(&directory),
                     covered_position: directory.manifest.covered_position,
                     index_definition_frontier: directory.manifest.index_definition_frontier,
-                }),
+                }
+            }),
             acknowledged_index_definition_frontier: selection
                 .acknowledged_index_definition_frontier(),
         }

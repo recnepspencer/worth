@@ -748,16 +748,27 @@ anything:
 - `basis.custody_witness()` holds weak identities of one admitted basis and its
   root. `basis_retained()`/`root_retained()` report whether any owner (lease,
   capture hold, pending acknowledgement) still keeps them;
-  `read_retained_full(&request, &runtime)` demands the still-retained root fully
-  and takes and releases one snapshot, returning its schema digest or `None`.
+  `same_root`/`same_schema_authority` compare identities;
+  `read_retained_full(&request, &runtime)` performs a transient full demand of
+  the still-retained root on its owning runtime (loads are charged to the
+  request) and takes and releases one snapshot, returning its schema digest or
+  `None`; a foreign runtime refuses before any effect.
 - `runtime.observe_commit_envelope_custody()` lists each retained commit cell:
   resident or cold, its selected directory and its source placement as
   `RelationalAllocationWitness` identities (`same_allocation`, `is_retained`).
 - `runtime.observe_checkpoint_selection()` reports the served selected directory,
   its covered position and index-definition frontier, and the acknowledged
   frontier.
-- `runtime.read_original_commit_artifact(&request, commit)` reads one original
-  frame strictly from its cell's backing, never re-encoding a resident body.
+- `runtime.read_original_commit_artifact_without_journal(&request, commit)`
+  reads one original frame from its memory original or selected checkpoint
+  member, never re-encoding a resident body; a journal-backed cell refuses.
+- `runtime.reads_durable_source(&source)` reports whether the runtime's
+  attached durable read port is exactly `source`.
+- `checkpoint.inspect_component_roster(&request, source)` decodes a capture's
+  directory and counts its retained roots, retained Empty components, recorded
+  component descriptors and readmitted schema registries.
+- `envelope.index_definition_additions()` lists the index definitions a
+  commit's canonical catalog delta adds.
 - `checkpoint.region_publication_count()` counts the region publications its
   acknowledgement places; `storage_stats` also counts occupied preparation
   snapshot slots (`published_snapshot_slot_count`).

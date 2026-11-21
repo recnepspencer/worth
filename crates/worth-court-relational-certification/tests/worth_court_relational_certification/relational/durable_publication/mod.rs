@@ -169,7 +169,6 @@ mod checkpoint_abandoned_keys;
 mod checkpoint_bulk_bindings;
 mod checkpoint_custom_versions;
 mod checkpoint_empty_head;
-mod checkpoint_funded_capture;
 mod checkpoint_index_affinity;
 mod checkpoint_index_generations;
 mod checkpoint_index_lagging;

@@ -22,13 +22,16 @@ impl super::RelationalNativeCheckpoint {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         source: Option<Arc<dyn crate::durability::medium::RelationalDurableColdSource>>,
-    ) -> Result<Option<RelationalCheckpointComponentRoster>, crate::durability::data::RelationalRecoveryStop>
-    {
-        let decoded = crate::durability::log::native_checkpoint_codec::decode_checkpoint_from_source(
-            execution,
-            self.bytes(),
-            source,
-        )?;
+    ) -> Result<
+        Option<RelationalCheckpointComponentRoster>,
+        crate::durability::data::RelationalRecoveryStop,
+    > {
+        let decoded =
+            crate::durability::log::native_checkpoint_codec::decode_checkpoint_from_source(
+                execution,
+                self.bytes(),
+                source,
+            )?;
         let checkpoint = decoded.checkpoint;
         let directory = checkpoint
             .directory
@@ -51,13 +54,13 @@ impl super::RelationalNativeCheckpoint {
                         )
                     })?;
                 Ok(RelationalCheckpointComponentRoster {
-                retained_roots: manifest.roots.len(),
-                retained_empty_components: manifest.retained_empty_components.len(),
-                recorded_components: manifest
-                    .roots
-                    .iter()
-                    .flat_map(|root| root.recorded_components.iter().cloned())
-                    .collect(),
+                    retained_roots: manifest.roots.len(),
+                    retained_empty_components: manifest.retained_empty_components.len(),
+                    recorded_components: manifest
+                        .roots
+                        .iter()
+                        .flat_map(|root| root.recorded_components.iter().cloned())
+                        .collect(),
                     schema_registries,
                 })
             })

@@ -1,5 +1,27 @@
 //! Real cold checkpoints preserve both original component bases of a publication.
+//! The C2 portions of
+//! 0615dd733c:crates/worth-relational/src/tests/durability/contracts/recorded_component_checkpoint.rs
+//! (`original_custody`) are restored in place: the selected and unrelated
+//! envelope cells stay cold, the selected envelope demand carries the readmitted
+//! semantic result, and both original roots remain fully demandable. Fixture
+//! adaptations: residency comes from the owner's `observe_commit_envelope_custody`;
+//! the envelope demand is the public replay read of the same cell; full root
+//! demand and its snapshot are `RelationalBasisCustodyWitness::read_retained_full`.
+//! The unrelated-artifact deletion belongs to C4 and is not restored here.
 use super::*;
+use worth_relational::facade::history::CommitId;
+
+fn resident(
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    commit: CommitId,
+) -> bool {
+    runtime
+        .observe_commit_envelope_custody()
+        .into_iter()
+        .find(|cell| cell.commit_id == commit)
+        .expect("retained commit cell")
+        .resident
+}
 
 fn readmit_original(empty: bool) {
     let host=worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
@@ -13,6 +35,7 @@ fn readmit_original(empty: bool) {
         .unwrap()
         .pop()
         .unwrap();
+    assert!(!resident(&runtime, subject.receipt().commit_id));
     let effect = runtime
         .durability_authority()
         .readmit_associated_effect(request, &subject)
@@ -24,6 +47,12 @@ fn readmit_original(empty: bool) {
     .unwrap();
     let semantic = frame.envelope().semantic_result();
     assert_eq!(effect.semantic_result(), semantic);
+    let selected = runtime
+        .replay()
+        .canonical_commit_envelope(request, subject.receipt().commit_id)
+        .unwrap()
+        .unwrap();
+    assert_eq!(effect.semantic_result(), selected.semantic_result());
     let proof = authority
         .admit_recorded_publication(request, &runtime, effect, &original.before, &original.after)
         .unwrap();
@@ -49,6 +78,11 @@ fn readmit_original(empty: bool) {
             .export_recorded_retained_component(request, basis)
             .unwrap();
         assert_eq!(&exported, recorded);
+        let witness = basis.custody_witness();
+        assert_eq!(
+            witness.read_retained_full(request, &runtime).unwrap(),
+            Some(witness.schema_authority_digest())
+        );
         let snapshot = runtime
             .snapshots()
             .snapshot_for_observation(&basis.observation())
@@ -77,12 +111,13 @@ fn readmit_original(empty: bool) {
         offers,
         "recovery never republishes"
     );
+    assert!(!resident(&runtime, original.unrelated_id));
     drop(proof);
     runtime.prepare_close().unwrap().finish();
 }
 
 #[test]
-fn recorded_component_checkpoint_readmits_canonical_predecessor_and_successor() {
+fn recorded_component_checkpoint_readmits_cold_canonical_predecessor_and_successor() {
     readmit_original(false);
 }
 

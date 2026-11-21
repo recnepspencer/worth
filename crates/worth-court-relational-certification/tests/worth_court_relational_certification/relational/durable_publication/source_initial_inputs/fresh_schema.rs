@@ -28,82 +28,6 @@ fn installation() -> RelationalSchemaRegistry {
         .register_relation_kind(unused)
         .unwrap()
 }
-#[test]
-fn fresh_source_keeps_original_installation_receipts_and_unused_constraints_in_complete() {
-    let policy = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
-    let request = ExecutionRequest::serial(&policy);
-    let medium = TestDurableMedium::new();
-    let mut runtime = worth_testkit_relational::durable_publication::durable_runtime(&medium);
-    let born = current(&request, &runtime);
-    let additions = installation();
-    let expected_constraint = additions
-        .relation_registration(KindId(901))
-        .unwrap()
-        .relation_integrity
-        .clone();
-    let permission = runtime.begin_fresh_home_initialization(&request).unwrap();
-    let installed = runtime
-        .prepare_fresh_home_schema_installation(&request, permission)
-        .unwrap()
-        .install_with_managed_sources(&request, additions, vec![], vec![])
-        .unwrap();
-    let recorded = current(&request, &runtime);
-    let id = runtime.runtime_instance_id();
-    let source: Arc<dyn RelationalDurableColdSource> = medium.clone();
-    let plan = runtime
-        .durability()
-        .recovery_plan_from_source(
-            &request,
-            RelationalDurableRecoverySource::new(None, vec![], vec![], source),
-            RecoveryVerificationMode::NormalRecoveryVerification,
-        )
-        .unwrap();
-    let admitted = runtime
-        .durability_recovery()
-        .admit_fresh_home_source(&request, plan)
-        .unwrap();
-    admitted
-        .validate_fresh_source_runtime(&request, &runtime)
-        .unwrap();
-    runtime
-        .validate_fresh_initial_schema_installation(&request, &admitted, &installed)
-        .unwrap();
-    assert_eq!(runtime.runtime_instance_id(), id);
-    let complete = worth_testkit_relational::initial_input_source::capture(&runtime, &request);
-    let input = initial(complete.source_artifact());
-    let schemas = input["schemas"].as_array().unwrap();
-    let expected_constraint =
-        crate::source_wire_value::read(&rmp_serde::to_vec_named(&expected_constraint).unwrap());
-    for original in [&born, &recorded] {
-        assert!(schemas.iter().any(|schema| schema["schema_root"]
-            == serde_json::to_value(original.descriptor().schema_commitment()).unwrap()));
-    }
-    assert!(
-        schemas.iter().any(|schema| schema["relation_registrations"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .any(|kind| {
-                kind["kind_id"] == 901 && kind["relation_integrity"] == expected_constraint
-            })),
-        "Complete carries the unused original physical constraint without any record using it"
-    );
-    let foreign_medium = TestDurableMedium::new();
-    let mut foreign =
-        worth_testkit_relational::durable_publication::durable_runtime(&foreign_medium);
-    let wrong = foreign
-        .prepare_initial_schema_installation()
-        .unwrap()
-        .install(RelationalSchemaRegistry::new())
-        .unwrap();
-    assert!(runtime
-        .validate_fresh_initial_schema_installation(&request, &admitted, &wrong)
-        .is_err());
-    assert!(admitted
-        .validate_fresh_source_runtime(&request, &foreign)
-        .is_err());
-}
-
 fn source_plan(
     runtime: &RelationalRuntime,
     source: Arc<dyn RelationalDurableColdSource>,
@@ -127,13 +51,16 @@ fn source_plan(
 /// shared `installation()` fixture built from the same declaration; root and
 /// schema `Arc` identities become `RelationalBasisCustodyWitness` identities;
 /// the attached source identity is `reads_durable_source`; the private Complete
-/// decode is the owner's `inspect_component_roster`.
+/// decode is the owner's `inspect_component_roster`. The public Complete wire
+/// readback of both original schema roots and the unused constraint (formerly
+/// a separate journey over the same inputs) is asserted here too.
 #[test]
 fn fresh_source_keeps_actual_runtime_root_and_installed_schema_for_complete() {
     let policy = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = ExecutionRequest::serial(&policy);
     let medium = TestDurableMedium::new();
     let mut runtime = durable_runtime(&medium);
+    let born = current(&execution, &runtime);
     let additions = installation();
     let expected_constraint = additions
         .relation_registration(KindId(901))
@@ -146,9 +73,14 @@ fn fresh_source_keeps_actual_runtime_root_and_installed_schema_for_complete() {
         .unwrap()
         .install_with_managed_sources(&execution, additions, vec![], vec![])
         .unwrap();
+    let recorded = current(&execution, &runtime);
     let id = runtime.runtime_instance_id();
     let identity = runtime.main_branch_identity();
-    let original = runtime.observe_branch(&identity).unwrap().1.custody_witness();
+    let original = runtime
+        .observe_branch(&identity)
+        .unwrap()
+        .1
+        .custody_witness();
     let source: Arc<dyn RelationalDurableColdSource> = medium.clone();
     assert!(runtime.reads_durable_source(&source));
     let plan = source_plan(&runtime, source.clone(), &execution);
@@ -164,7 +96,11 @@ fn fresh_source_keeps_actual_runtime_root_and_installed_schema_for_complete() {
         .unwrap();
     assert_eq!(runtime.runtime_instance_id(), id);
     assert!(runtime.reads_durable_source(&source));
-    let actual = runtime.observe_branch(&identity).unwrap().1.custody_witness();
+    let actual = runtime
+        .observe_branch(&identity)
+        .unwrap()
+        .1
+        .custody_witness();
     assert!(original.same_root(&actual));
     assert!(original.same_schema_authority(&actual));
     let complete = worth_testkit_relational::initial_input_source::capture(&runtime, &execution);
@@ -177,12 +113,28 @@ fn fresh_source_keeps_actual_runtime_root_and_installed_schema_for_complete() {
     assert!(roster
         .schema_registries
         .iter()
-        .any(|registry| registry.authority_snapshot() == *actual.schema_authority_snapshot()));
+        .any(|registry| registry.authority_digest_bytes() == actual.schema_authority_digest()));
     assert!(
         roster.schema_registries.iter().any(|registry| registry
             .relation_registration(KindId(901))
             .is_ok_and(|kind| kind.relation_integrity == expected_constraint)),
         "unused physical constraint comes from original installation, not records"
+    );
+    let input = initial(complete.source_artifact());
+    let schemas = input["schemas"].as_array().unwrap();
+    let expected_wire =
+        crate::source_wire_value::read(&rmp_serde::to_vec_named(&expected_constraint).unwrap());
+    for original in [&born, &recorded] {
+        assert!(schemas.iter().any(|schema| schema["schema_root"]
+            == serde_json::to_value(original.descriptor().schema_commitment()).unwrap()));
+    }
+    assert!(
+        schemas.iter().any(|schema| schema["relation_registrations"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|kind| kind["kind_id"] == 901 && kind["relation_integrity"] == expected_wire)),
+        "Complete carries the unused original physical constraint without any record using it"
     );
     let foreign_medium = TestDurableMedium::new();
     let mut foreign = durable_runtime(&foreign_medium);

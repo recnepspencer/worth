@@ -3,8 +3,10 @@
 //! Fixture adaptations (C2.3): the source and recovered runtimes are bound to
 //! the testkit's `TestDurableMedium` (the original used the retired in-crate
 //! medium), so the capture binds its medium publication owner as before. The
-//! private `history().branch_head` reads become the public recorded current
-//! component and the main branch's selected commit.
+//! private `history().branch_head` reads become the public `current_head`
+//! receipt read. This court subsumes the former public subset
+//! `original_capture_request_refusals_and_escaped_output_preserve_editable_truth`.
+use super::branch_history_recovery::current_head;
 use super::*;
 use std::num::NonZeroUsize;
 use worth_execution::{
@@ -15,7 +17,7 @@ use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
 };
 use worth_relational::facade::{
-    durability::RelationalNativeCheckpointCaptureDenial as Denial,
+    durability::RelationalNativeCheckpointCaptureDenial as Denial, history::BranchId,
     transactions::RelationalExecutionDenialCause,
 };
 
@@ -31,18 +33,6 @@ fn request(bytes: u64, cancellation: CancellationToken) -> LeaseRequest {
     }
 }
 
-fn head_commit(runtime: &worth_relational::facade::runtime::RelationalRuntime) -> u64 {
-    let (descriptor, _) = runtime
-        .observe_branch(&runtime.main_branch_identity())
-        .unwrap();
-    let worth_foundational::FoundationalBranchTarget::Basis(target) =
-        descriptor.reference().target()
-    else {
-        panic!("main selects a real commit");
-    };
-    target.selected_commit_id()
-}
-
 #[test]
 fn native_checkpoint_retains_all_admitted_capture_owners_and_restores_editable_truth() {
     let host_request = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
@@ -51,7 +41,7 @@ fn native_checkpoint_retains_all_admitted_capture_owners_and_restores_editable_t
     let medium = TestDurableMedium::new();
     let runtime = durable_runtime(&medium);
     let committed = create_entity_outcome(execution, &runtime, "native-custody-source");
-    let head = current(execution, &runtime);
+    let head = current_head(&runtime, &BranchId("main".into()));
     let system = runtime
         .durability_authority()
         .native_checkpoint(execution, Policy::SystemAllocation)
@@ -75,7 +65,7 @@ fn native_checkpoint_retains_all_admitted_capture_owners_and_restores_editable_t
         "{error:?}"
     );
     assert_eq!(parent.charged_memory_bytes(), 0);
-    assert_eq!(current(execution, &runtime), head);
+    assert_eq!(current_head(&runtime, &BranchId("main".into())), head);
     drop(zero);
 
     let cancellation = CancellationSource::new();
@@ -141,7 +131,10 @@ fn native_checkpoint_retains_all_admitted_capture_owners_and_restores_editable_t
     assert_eq!(restored.latest_commit.as_ref(), Some(&committed.commit));
     assert_ne!(recovered.runtime_instance_id(), prior_owner);
     let later = create_entity_outcome(execution, &recovered, "native-custody-edit");
-    assert_eq!(head_commit(&recovered), later.commit.commit_id.0);
+    assert_eq!(
+        current_head(&recovered, &BranchId("main".into())).as_ref(),
+        Some(&later.commit)
+    );
     release_test_commit_snapshot(&recovered, &later);
     drop(later);
     drop(recovered);

@@ -82,13 +82,14 @@ fn unpublished_client_keys_leave_checkpoint_dictionary_equal_and_published_keys_
     // Fixture adaptation: the image constructor now takes its optional retained
     // memory charge; a decoded comparison image carries none, and image
     // equality never compares that charge.
-    after.record_identity = crate::durability::data::DurableRecordIdentityState::current_with_memory(
-        before.record_identity.generation_high_water.clone(),
-        before.record_identity.reusable_slots.clone(),
-        before.record_identity.append_frontiers.clone(),
-        after.record_identity.pending_reservations.clone(),
-        None,
-    );
+    after.record_identity =
+        crate::durability::data::DurableRecordIdentityState::current_with_memory(
+            before.record_identity.generation_high_water.clone(),
+            before.record_identity.reusable_slots.clone(),
+            before.record_identity.append_frontiers.clone(),
+            after.record_identity.pending_reservations.clone(),
+            None,
+        );
     let mut original_directory = after.canonical_directory.take().unwrap().into_original();
     let changed_directory = std::sync::Arc::get_mut(&mut original_directory)
         .expect("decoded checkpoint owns its original directory uniquely");
