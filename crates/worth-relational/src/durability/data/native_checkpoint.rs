@@ -257,6 +257,12 @@ impl RelationalNativeCheckpoint {
     ) -> Option<&crate::runtime::RelationalCheckpointManifestPublication> {
         self.manifest_publication.as_ref()
     }
+    /// Count of captured region publications this capture's acknowledgement
+    /// places; a counted read-only observation of its DATA work.
+    pub fn region_publication_count(&self) -> usize {
+        self.publications.entries().len()
+    }
+
     pub(crate) fn region_publications(
         &self,
     ) -> &[crate::storage::residency::RelationalCheckpointRegionPublication] {

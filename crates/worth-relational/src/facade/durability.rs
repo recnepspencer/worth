@@ -62,6 +62,10 @@ pub use crate::durability::source_initial_inputs::{
     RelationalSourceInitialInputsArtifact,
 };
 pub use crate::durability::{
+    RelationalAllocationWitness, RelationalCheckpointSelectionCensus,
+    RelationalCommitEnvelopeCustody, RelationalSelectedCheckpointObservation,
+};
+pub use crate::durability::{
     RecoveredCheckpointTransition, RecoveredCheckpointTransitionDenial,
     RecoveredCheckpointTransitionError, RecoveredRelationalBranchBasis,
     RecoveredRelationalRuntimeAuthority, RefusedRecoveredCheckpointTransition,

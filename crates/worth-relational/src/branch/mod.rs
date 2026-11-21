@@ -4,6 +4,8 @@ pub use basis::{
     RelationalBranchBasisRetirementProgress, RetiredRelationalBranchBasis,
 };
 mod authority;
+mod custody_witness;
+pub use custody_witness::{RelationalBasisCustodyReadDenial, RelationalBasisCustodyWitness};
 mod basis;
 mod basis_admission_identity;
 mod basis_axis_validation;

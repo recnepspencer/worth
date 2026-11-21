@@ -13,6 +13,11 @@ pub(crate) mod artifact_payload_emission;
 pub(crate) mod branch_transition_artifact;
 pub(crate) mod canonical_commit_artifact;
 pub(crate) mod capture_meter;
+mod capture_custody_census;
+pub use capture_custody_census::{
+    RelationalAllocationWitness, RelationalCheckpointSelectionCensus,
+    RelationalCommitEnvelopeCustody, RelationalSelectedCheckpointObservation,
+};
 pub(crate) mod checkpoint_admission;
 pub(crate) mod checkpoint_history;
 pub(crate) mod checkpoints;

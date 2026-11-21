@@ -5,6 +5,7 @@ mod cold_envelope_custody;
 mod index_catalog;
 mod initial_schema_recovery;
 mod prepared_home_schema;
+mod checkpoint_capture_custody;
 mod native_checkpoint_capture_owners;
 mod recorded_basis;
 mod recorded_component_checkpoint;

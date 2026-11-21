@@ -739,6 +739,29 @@ weak-retained control metadata keeps its existing ordinary allocation contract.
 This ordinary checkpoint path does not issue Complete, reconstruct every historical schema/root,
 or provide service-free reconstruction or a complete-checkpoint preparation port.
 
+### Observe capture custody
+
+Custody courts read capture and acknowledgement custody through counted,
+read-only owner observations. None of them retains, advances or authorizes
+anything:
+
+- `basis.custody_witness()` holds weak identities of one admitted basis and its
+  root. `basis_retained()`/`root_retained()` report whether any owner (lease,
+  capture hold, pending acknowledgement) still keeps them;
+  `read_retained_full(&request, &runtime)` demands the still-retained root fully
+  and takes and releases one snapshot, returning its schema digest or `None`.
+- `runtime.observe_commit_envelope_custody()` lists each retained commit cell:
+  resident or cold, its selected directory and its source placement as
+  `RelationalAllocationWitness` identities (`same_allocation`, `is_retained`).
+- `runtime.observe_checkpoint_selection()` reports the served selected directory,
+  its covered position and index-definition frontier, and the acknowledged
+  frontier.
+- `runtime.read_original_commit_artifact(&request, commit)` reads one original
+  frame strictly from its cell's backing, never re-encoding a resident body.
+- `checkpoint.region_publication_count()` counts the region publications its
+  acknowledgement places; `storage_stats` also counts occupied preparation
+  snapshot slots (`published_snapshot_slot_count`).
+
 ## Admit the original fresh Home source
 
 The closed Store Home route uses
