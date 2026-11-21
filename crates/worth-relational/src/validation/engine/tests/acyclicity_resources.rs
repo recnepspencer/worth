@@ -12,11 +12,16 @@ use worth_execution::{CancellationToken, ExecutionRequest};
 
 #[test]
 fn repeated_dag_reachability_reuses_scratch_under_the_same_finite_policy() {
-    let fixture = DagFixture::new(128);
+    let fixture = DagFixture::new(512);
     let before = fixture.head();
     // Deliberate ordinary finite policy, independent of an observed operation
-    // total. The old per-visit allocation accumulator exceeds this allowance.
-    let lease = request(1024 * 1024, 4_000_000, CancellationToken::new(), None);
+    // total. Validation retains original-request funding that grows linearly
+    // with the graph (the proposal and its relation-source witness, about
+    // 8 KiB per node: 4 MiB here). The old per-visit allocation accumulator
+    // grows with the square of the node count: past 1 MiB at 128 nodes, so
+    // past 16 MiB here. 8 MiB funds the linear law and refuses the quadratic.
+    // Work is fixture funding here, not the claim.
+    let lease = request(8 * 1024 * 1024, 400_000_000, CancellationToken::new(), None);
     let candidate = fixture
         .validate(&ExecutionRequest::leased(&lease), fixture.chain_batch(2))
         .expect("a DAG needs live scratch, not the sum of every freed successor buffer");

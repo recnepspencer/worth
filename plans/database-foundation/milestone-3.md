@@ -346,8 +346,11 @@ is fixed at its owner, never refitted to the observed value.
   read-only observations, over genuine owned media: the testkit's
   `TestDurableMedium`, or the owner's own Memory placement for a claim with no
   physical-medium content. A restored court stays in `src/` only when it tests
-  module-private logic, as Iteration Law 2 allows; no
-  `src-court-baseline.json` row is added.
+  module-private logic, as Iteration Law 2 allows. It keeps the
+  `src-court-baseline.json` row its restore SHA recorded for that file, as a
+  restored door keeps its caller row; no other baseline row is added. A
+  restored source closure that constructs a runtime root and had no row at its
+  restore SHA moves to its owner's court crate.
 - **Restore reference.** Where the ledger records a later refresh reference
   for the same file (the `22e638d638` integration protocol restoration
   refreshes), restore from the refresh.

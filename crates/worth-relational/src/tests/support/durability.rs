@@ -39,11 +39,7 @@ pub(crate) fn retained_byte_owner_bill(bytes: &[u8]) -> u64 {
     let budget = worth_execution::SerialMemoryBudget::new(Some(
         (bytes.len() as u64).checked_add(64 * 1024).unwrap(),
     ));
-    let host = worth_execution::SerialRequest::from_memory(
-        budget.clone(),
-        worth_execution::CancellationSource::new().token(),
-        None,
-    );
+    let host = crate::test_execution_policy::serial_request_with_memory(budget.clone());
     let request = worth_execution::ExecutionRequest::serial(&host);
     let mut building =
         worth_execution::ExecutionRequestArrayBuilder::<u8>::allocate(request, bytes.len())
