@@ -8,6 +8,7 @@ mod owner_context;
 pub use owner_context::ExecutionOwnerContext;
 mod ordered;
 mod panic_boundary;
+pub(crate) use panic_boundary::contain;
 mod payload_storage;
 mod perturbation;
 mod port;

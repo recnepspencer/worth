@@ -6,17 +6,21 @@
 //! stage's. It therefore charges, admits memory and stops on that stage's
 //! meter. Work is charged once, cumulatively, so the request's ceiling bounds
 //! the whole operation and a stop belongs to the stage it occurred in. A
-//! joined measured result keeps its caller's reservation, which already
-//! draws on the stage's lineage, and admits its retained and payload bytes
-//! there exactly as its own scope would.
-use super::{ExecutionRequest, RequestBacking};
+//! joined call ends as its own scope would: a latched or control stop refuses
+//! it before entry, a panic is contained, and a failure or a refusal it
+//! raised stops the stage as a failed child stops its parent. A joined
+//! measured result takes its caller's reservation over onto the stage's
+//! lineage, refusing a foreign one, and admits its retained and payload bytes
+//! there exactly as its own scope would. Only an accounted stage joins one.
+use super::{ExecutionRequest, ExecutionResourceLease, RequestBacking};
 use crate::authority::StageOrigin;
-use crate::backend::{KernelFailure, KernelStop, ScopeOutcome, ScopeStop};
+use crate::backend::{contain, KernelFailure, KernelStop, ScopeOutcome, ScopeStop};
 use crate::{ChargedBytes, ExecutionMemoryReservation, ExecutionResultMemory, LeaseDenial};
 use crate::{MapKernelContext, WorkCeilingDenial};
+use std::panic::AssertUnwindSafe;
 use worth_foundational::{ExecutionPhysicalReport, ExecutionPosture, ExecutionReport};
 
-impl ExecutionRequest<'_, '_> {
+impl<'request, 'authority> ExecutionRequest<'request, 'authority> {
     /// Run `operation` as the single stage of this request. Inside it, this
     /// request's native stages and scope adaptations that declare no ceiling,
     /// and its measured results whose ceiling leaves the stage's remaining
@@ -43,6 +47,18 @@ impl ExecutionRequest<'_, '_> {
         }
     }
 
+    pub(super) fn lease(self) -> Option<&'request ExecutionResourceLease<'authority>> {
+        match self.form {
+            RequestBacking::Leased(lease) => Some(lease),
+            RequestBacking::Serial(_) => None,
+        }
+    }
+
+    pub(super) fn active_lease(self) -> Option<ExecutionResourceLease<'authority>> {
+        self.lease()
+            .and_then(ExecutionResourceLease::current_descendant)
+    }
+
     /// This request's declared single stage, when it is the innermost one.
     pub(super) fn joined_stage<'a, 'lease>(self) -> Option<MapKernelContext<'a, 'lease>> {
         crate::backend::joined_stage(&self.stage_origin())
@@ -50,28 +66,44 @@ impl ExecutionRequest<'_, '_> {
 }
 
 /// Runs a native kernel on the joined stage and ends it as its own scope
-/// would: a control stop before entry, a latched checkpoint stop or a nested
-/// stop refuses it. The report carries the work this kernel charged.
+/// would. The report carries the work this kernel charged.
 pub(super) fn run_joined<R, E>(
     stage: &mut MapKernelContext<'_, '_>,
     operation: impl FnOnce(&mut MapKernelContext<'_, '_>) -> Result<R, KernelFailure<E>>,
 ) -> ScopeOutcome<R, E> {
-    let (work, span) = stage.cost();
-    let invoked = match stage.safe_point() {
-        Ok(()) => operation(stage),
+    let cost = stage.cost();
+    let pending = stage.refusal_pending();
+    let invoked = match stage
+        .checkpoint_stop()
+        .map_or_else(|| stage.safe_point(), Err)
+    {
+        Ok(()) => {
+            contain(AssertUnwindSafe(|| operation(stage))).unwrap_or(Err(KernelFailure::Panic))
+        }
         Err(stop) => Err(KernelFailure::Stop(stop)),
     };
-    let invoked = match (stage.checkpoint_stop(), invoked) {
-        (Some(stop), _) => Err(KernelFailure::Stop(stop)),
-        (None, Ok(_)) if stage.nested_stopped() => {
-            Err(KernelFailure::Stop(KernelStop::NestedStopped))
+    // A stop the kernel swallowed still ends it; its payload is discarded.
+    let stop = stage.checkpoint_stop().or_else(|| {
+        (stage.nested_stopped() && invoked.is_ok()).then_some(KernelStop::NestedStopped)
+    });
+    let invoked = match (stop, invoked) {
+        (Some(stop), invoked) => {
+            discard(invoked);
+            Err(KernelFailure::Stop(stop))
         }
         (None, invoked) => invoked,
     };
+    let result = invoked.map_err(ScopeStop::Failure);
+    stage.settle_joined(pending, result.as_ref().err());
     ScopeOutcome {
-        result: invoked.map_err(ScopeStop::Failure),
-        report: report(stage, (work, span)),
+        result,
+        report: report(stage, cost),
     }
+}
+
+/// A panicking destructor cannot replace the outcome that disposed of it.
+fn discard<T>(payload: T) {
+    let _ = contain(AssertUnwindSafe(|| drop(payload)));
 }
 
 /// The work and span the stage charged since the given cost.
@@ -89,11 +121,13 @@ fn report(stage: &MapKernelContext<'_, '_>, (work, span): (u64, u64)) -> Executi
     }
 }
 
-/// A measured result on the joined stage: the caller's reservation holds its
-/// retained bytes before the kernel, its result memory during it, and its
-/// value's or domain error's heap after it; any stop leaves it holding nothing.
+/// A measured result on the joined stage: the caller's reservation is taken
+/// over for its retained bytes before the kernel, holds its result memory
+/// during it and its value's or domain error's heap after it; any other end
+/// leaves it holding nothing.
 pub(super) fn run_measured_joined<R: ChargedBytes, E: ChargedBytes>(
     stage: &mut MapKernelContext<'_, '_>,
+    lease: Option<&ExecutionResourceLease<'_>>,
     retained_bytes: u64,
     memory: &mut ExecutionMemoryReservation,
     kernel: impl FnOnce(
@@ -101,10 +135,14 @@ pub(super) fn run_measured_joined<R: ChargedBytes, E: ChargedBytes>(
         &mut ExecutionResultMemory<'_>,
     ) -> Result<R, KernelFailure<E>>,
 ) -> ScopeOutcome<R, E> {
-    if let Err(denial) = memory.resize(retained_bytes) {
+    let cost = stage.cost();
+    let pending = stage.refusal_pending();
+    if let Err(denial) = stage.hold_joined(memory, lease, retained_bytes) {
+        let result = Err(ScopeStop::Admission(denial));
+        stage.settle_joined(pending, result.as_ref().err());
         return ScopeOutcome {
-            result: Err(ScopeStop::Admission(LeaseDenial::MemoryExhausted(denial))),
-            report: report(stage, stage.cost()),
+            result,
+            report: report(stage, cost),
         };
     }
     let mut outcome = run_joined(stage, |stage| {
@@ -113,27 +151,37 @@ pub(super) fn run_measured_joined<R: ChargedBytes, E: ChargedBytes>(
             &mut ExecutionResultMemory::new(memory, retained_bytes),
         )
     });
-    let payload = match &outcome.result {
-        Ok(value) => Some(value.additional_charged_bytes()),
+    let measured = match &outcome.result {
+        Ok(value) => Some(contain(AssertUnwindSafe(|| {
+            value.additional_charged_bytes()
+        }))),
         Err(ScopeStop::Failure(KernelFailure::Domain(error))) => {
-            Some(error.additional_charged_bytes())
+            Some(contain(AssertUnwindSafe(|| {
+                error.additional_charged_bytes()
+            })))
         }
         Err(_) => None,
     };
-    let admitted = payload.map(|payload| {
-        retained_bytes
+    let pending = stage.refusal_pending();
+    let refusal = match measured {
+        None => None,
+        Some(Err(())) => Some(ScopeStop::Failure(KernelFailure::Panic)),
+        Some(Ok(payload)) => retained_bytes
             .checked_add(payload)
             .ok_or_else(LeaseDenial::charged_bytes_overflow)
             .and_then(|total| memory.resize(total).map_err(LeaseDenial::MemoryExhausted))
-            .map(|()| payload)
-    });
-    let kept = match admitted {
-        Some(Ok(payload)) => payload,
-        Some(Err(denial)) => {
-            outcome.result = Err(ScopeStop::Admission(denial));
-            0
+            .err()
+            .map(ScopeStop::Admission),
+    };
+    if let Some(refusal) = refusal {
+        discard(std::mem::replace(&mut outcome.result, Err(refusal)));
+        stage.settle_joined(pending, outcome.result.as_ref().err());
+    }
+    let kept = match &outcome.result {
+        Ok(_) | Err(ScopeStop::Failure(KernelFailure::Domain(_))) => {
+            memory.bytes() - retained_bytes
         }
-        None => 0,
+        Err(_) => 0,
     };
     memory
         .resize(kept)

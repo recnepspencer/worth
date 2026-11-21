@@ -326,9 +326,18 @@ impl<'request, 'authority> ExecutionRequest<'request, 'authority> {
         ) -> Result<R, crate::MapKernelFailure<E>>,
     ) -> crate::ScopeOutcome<R, E> {
         if let Some(mut stage) = self.joined_stage()
+            && stage.has_accounting()
             && stage.leaves_ceiling(ceiling.work_units())
         {
-            return single_stage::run_measured_joined(&mut stage, retained_bytes, memory, kernel);
+            let active = self.active_lease();
+            let lease = active.as_ref().or(self.lease());
+            return single_stage::run_measured_joined(
+                &mut stage,
+                lease,
+                retained_bytes,
+                memory,
+                kernel,
+            );
         }
         match self.form {
             RequestBacking::Leased(lease) => {

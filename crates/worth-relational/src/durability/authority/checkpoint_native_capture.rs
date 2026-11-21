@@ -373,8 +373,9 @@ fn corrupt(detail: impl Into<String>) -> DurabilityError {
 
 type RegionCapture = crate::storage::residency::RelationalCapturedRegionCheckpoint;
 
-/// A region without a recorded checkpoint is reconstructed into new images:
-/// its owner's reconstructive work, a phase apart from the encoding rate.
+/// Capturing a region, from its recorded checkpoint or by reconstructing its
+/// images, and checking a root region against its selection, is its residency
+/// owner's work: one named phase, apart from the capture's encoding rate.
 fn region_capture(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     capture: impl FnOnce() -> Result<RegionCapture, RelationalNativeCheckpointCaptureDenial>,

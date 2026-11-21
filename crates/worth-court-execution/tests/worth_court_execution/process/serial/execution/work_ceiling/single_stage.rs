@@ -2,7 +2,7 @@
 use worth_execution::{
     CancellationSource, ChargedBytes, ExecutionMemoryReservation, ExecutionRequest,
     ExecutionScopeSetupCountsForTest as Setup, ExecutionScopeSetupObservationForTest,
-    ExecutionWorkCeiling, MapKernelStop, SerialRequest, WorkCeilingDenial,
+    ExecutionWorkCeiling, MapKernelStop, ScopeStop, SerialRequest, WorkCeilingDenial,
 };
 use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
@@ -127,4 +127,145 @@ fn outside_a_single_stage_nested_stages_are_set_up_as_before() {
         })
         .unwrap();
     assert_eq!(observer.counts_for_test(), stages(2));
+}
+
+fn lease_request(policy: ExecutionRequestPolicy) -> worth_execution::LeaseRequest {
+    worth_execution::LeaseRequest {
+        policy,
+        deadline: None,
+        cancellation: worth_execution::CancellationToken::new(),
+    }
+}
+
+#[test]
+fn a_leased_single_stage_joins_its_own_nested_stages() {
+    if crate::test_process::reexecute_isolated_test() {
+        return;
+    }
+    let policy = ExecutionRequestPolicy::new(
+        ExecutionPosture::Serial,
+        DeterminismContract::CanonicalBitwise,
+        ExecutionBudget::new(std::num::NonZeroUsize::MIN, Some(1 << 16), Some(100)),
+    );
+    let lease = crate::work_ceiling::ordinary_context::authority()
+        .request_lease(lease_request(policy))
+        .unwrap();
+    let request = ExecutionRequest::leased(&lease);
+    let observer = ExecutionScopeSetupObservationForTest::install_on_this_thread_for_test();
+    let (work, _) = request
+        .run_single_stage(|stage| {
+            stage.checkpoint(3).unwrap();
+            request
+                .run_native_with_checkpoint(|inner| inner.checkpoint(4).unwrap())
+                .unwrap();
+            let held = request.reserve_retained_memory(5).unwrap();
+            let mut memory = ExecutionMemoryReservation::reserve_in_scope(Some(&lease), 0).unwrap();
+            let outcome = request.run_measured_result::<_, Kept>(
+                ExecutionWorkCeiling::new(request.work_ceiling()),
+                0,
+                &mut memory,
+                |inner, _| {
+                    inner.checkpoint(2).unwrap();
+                    Ok(Kept(7))
+                },
+            );
+            assert!(outcome.result.is_ok());
+            assert_eq!(memory.bytes(), 7);
+            drop((held, memory));
+            stage.charged_work()
+        })
+        .unwrap();
+    assert_eq!(work, 9);
+    assert_eq!(observer.counts_for_test(), stages(1));
+    assert_eq!(lease.charged_memory_bytes(), 0);
+}
+
+#[test]
+fn a_foreign_reservation_is_refused_and_stops_the_single_stage() {
+    let backing = serial(Some(1 << 20), Some(100));
+    let request = ExecutionRequest::serial(&backing);
+    let mut ran = false;
+    let outcome = request.run_single_stage(|_| {
+        let mut foreign = worth_execution::SerialMemoryBudget::new(None)
+            .reserve(0)
+            .unwrap();
+        let refused = request.run_measured_result::<_, Kept>(
+            ExecutionWorkCeiling::new(None),
+            0,
+            &mut foreign,
+            |_, _| {
+                ran = true;
+                Ok(Kept(0))
+            },
+        );
+        assert!(matches!(refused.result, Err(ScopeStop::Admission(_))));
+    });
+    assert!(!ran, "a refused reservation never runs its kernel");
+    assert!(
+        outcome.is_err(),
+        "a swallowed refusal still stops the stage"
+    );
+}
+
+#[test]
+fn a_refused_payload_releases_its_reservation_and_stops_the_single_stage() {
+    let backing = serial(Some(1 << 12), Some(100));
+    let request = ExecutionRequest::serial(&backing);
+    let outcome = request.run_single_stage(|_| {
+        let mut memory = ExecutionMemoryReservation::reserve_in_scope(None, 0).unwrap();
+        let refused = request.run_measured_result::<_, Kept>(
+            ExecutionWorkCeiling::new(None),
+            0,
+            &mut memory,
+            |_, _| Ok(Kept(1 << 20)),
+        );
+        assert!(matches!(refused.result, Err(ScopeStop::Admission(_))));
+        assert_eq!(memory.bytes(), 0);
+    });
+    assert!(outcome.is_err());
+    assert_eq!(backing.memory().unwrap().charged_memory_bytes(), 0);
+}
+
+#[test]
+fn a_joined_panic_is_contained_and_releases_its_result_memory() {
+    let backing = serial(Some(1 << 20), Some(100));
+    let request = ExecutionRequest::serial(&backing);
+    let outcome = request.run_single_stage(|_| {
+        let native = request.run_native_with_checkpoint(|_| panic!("joined native kernel"));
+        assert_eq!(native.err(), Some(WorkCeilingDenial::Panicked));
+        let mut memory = ExecutionMemoryReservation::reserve_in_scope(None, 0).unwrap();
+        let measured = request.run_measured_result::<Kept, Kept>(
+            ExecutionWorkCeiling::new(None),
+            0,
+            &mut memory,
+            |_, result| {
+                result.resize(100).unwrap();
+                panic!("joined measured kernel")
+            },
+        );
+        assert!(matches!(
+            measured.result,
+            Err(ScopeStop::Failure(worth_execution::MapKernelFailure::Panic))
+        ));
+        assert_eq!(memory.bytes(), 0);
+    });
+    assert!(outcome.is_err(), "a contained panic stops the stage");
+    assert_eq!(backing.memory().unwrap().charged_memory_bytes(), 0);
+}
+
+#[test]
+fn a_latched_stop_refuses_a_joined_stage_before_its_effect() {
+    let backing = serial(None, Some(5));
+    let request = ExecutionRequest::serial(&backing);
+    let mut ran = false;
+    let outcome = request.run_single_stage(|stage| {
+        assert_eq!(stage.checkpoint(6), Err(MapKernelStop::WorkCeiling));
+        let refused = request.run_native(|_| ran = true);
+        assert_eq!(
+            refused.err(),
+            Some(WorkCeilingDenial::Stopped(MapKernelStop::WorkCeiling))
+        );
+    });
+    assert!(!ran, "a stopped stage runs no joined effect");
+    assert!(outcome.is_err());
 }

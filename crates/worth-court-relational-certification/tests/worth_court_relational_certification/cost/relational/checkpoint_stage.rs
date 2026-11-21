@@ -2,12 +2,13 @@
 //!
 //! The control owner documents the rate: one work unit per byte produced by
 //! each serializer pass (sizing and emission are each charged), per payload
-//! byte hashed and per byte copied; zero-work boundaries are free. Every
-//! oracle below is derived from encoded byte counts read independently of the
-//! charging code: the checkpoint length, its reported sections, the journal
-//! artifacts and a MessagePack walk of the checkpoint's inline members.
-//! Reconstructing a region that has no recorded checkpoint is its residency
-//! owner's own phase, observed apart from the encoding rate.
+//! byte hashed and per byte copied; zero-work boundaries are free. The
+//! encoding oracle is derived from encoded byte counts read independently of
+//! the charging code: the checkpoint length, its reported sections, the
+//! journal artifacts and a MessagePack walk of the checkpoint's inline members.
+//! Capturing a region is its residency owner's own phase, observed apart: the
+//! court bounds it by the region images it copies, the records its root check
+//! visits and linear growth, not by the encoding rate.
 use worth_execution::{
     CancellationSource, ExecutionAllocationDenialClass, ExecutionAllocationPolicy as Allocation,
     ExecutionRequest, ExecutionScopeSetupCountsForTest as Setup,
@@ -44,6 +45,10 @@ const ARTIFACT_HEADER_BYTES: usize = 66;
 /// The payload digest's root hashes its domain `worth.relational.canonical.v8\0`,
 /// the position, the commit and the three field digests.
 const DIGEST_ROOT_BYTES: usize = 30 + 8 + 8 + 3 * 32;
+/// A region image member: `WORTH-REL-REG7\n`, then version 2, partition 4,
+/// schema digest 32 and kind 1 before its payload.
+const REGION_IMAGE_MAGIC: &[u8] = b"WORTH-REL-REG7\n";
+const REGION_IMAGE_FRAME_BYTES: usize = 15 + 2 + 4 + 32 + 1;
 /// The empty checkpoint's total charge: 2 x 2,645 - 16 + 175, the first court.
 const EMPTY_TOTAL: u64 = 5_449;
 
@@ -53,7 +58,7 @@ fn checkpoint_stage_charges_the_documented_rate_for_each_encoded_byte() {
     //   + classified sections          one more sizing pass per section
     //   + sum(digest inputs)           one digest pass per resident envelope
     //   + sum(embedded artifacts)      one locator hash per envelope carried inline
-    //   + region capture               a region with no recorded checkpoint
+    //   + region capture               the residency owner's phase, bounded below
     //
     // CHK23 carries each envelope as its original journal artifact, so no
     // envelope is serialized again: embedding costs its member's locator hash.
@@ -64,6 +69,7 @@ fn checkpoint_stage_charges_the_documented_rate_for_each_encoded_byte() {
     // classified = envelopes + roots + cells + mirror + index definitions:
     //   0 + 1 + 172 + 1 + 1; 43,900 + 1,351 + 340 + 776 + 1;
     //   352,512 + 3,646 + 340 + 3,071 + 1.
+    let mut per_row_reconstruction = Vec::new();
     for (rows, bytes, sections, digests, artifacts, encoding) in [
         (0, 2_645, [0, 1, 172, 1, 1], 0, 0, EMPTY_TOTAL),
         (
@@ -139,7 +145,10 @@ fn checkpoint_stage_charges_the_documented_rate_for_each_encoded_byte() {
             + artifacts as u64;
         assert_eq!(derived, encoding, "rows={rows}: the arithmetic above");
         // With rows, the main root's region and the partition mirror's region
-        // have no recorded checkpoint and are each reconstructed once.
+        // have no recorded checkpoint, and each capture reconstructs the same
+        // two images: it copies each image's payload (the member less its
+        // 54-byte frame). The root's capture also checks each record against
+        // its selected root, one unit a record.
         assert_eq!(observed.omitted_phases, 0);
         let regions: Vec<u64> = observed
             .phases
@@ -147,12 +156,37 @@ fn checkpoint_stage_charges_the_documented_rate_for_each_encoded_byte() {
             .filter(|row| row.phase == "region_capture")
             .map(|row| row.charged_work)
             .collect();
-        assert_eq!(regions.len(), if rows == 0 { 0 } else { 2 }, "rows={rows}");
-        let region: u64 = regions.iter().sum();
+        let copies: u64 = inline_members(checkpoint.bytes())
+            .into_iter()
+            .filter(|member| member.starts_with(REGION_IMAGE_MAGIC))
+            .map(|member| (member.len() - REGION_IMAGE_FRAME_BYTES) as u64)
+            .sum();
+        let region = match regions[..] {
+            [] => {
+                assert_eq!((rows, copies), (0, 0));
+                0
+            }
+            [root, mirror] => {
+                assert_eq!(root, mirror + rows as u64, "rows={rows}");
+                assert!(mirror > copies, "rows={rows}: {mirror} <= {copies}");
+                per_row_reconstruction.push((rows as u64, mirror - copies));
+                root + mirror
+            }
+            _ => panic!("rows={rows}: {regions:?}"),
+        };
         assert_eq!(report.charged_work(), encoding + region, "rows={rows}");
         drop(checkpoint);
         assert_eq!(request.memory().unwrap().charged_memory_bytes(), 0);
     }
+    // Reconstruction beyond the copies stays linear in rows: from 8 to 64 rows
+    // its work per row grows by less than a quarter.
+    let [(few, small), (many, large)] = per_row_reconstruction[..] else {
+        panic!("two populated captures: {per_row_reconstruction:?}")
+    };
+    assert!(
+        4 * large * few < 5 * small * many,
+        "{small}/{few} -> {large}/{many}"
+    );
 }
 
 #[test]
@@ -295,44 +329,5 @@ fn checkpoint_reconstruction_preserves_complete_identity_and_data() {
         assert_eq!(before.index_definitions, reopened.index_definitions);
         drop((before, after, reopened, checkpoint, runtime, restored));
         assert_eq!(request.memory().unwrap().charged_memory_bytes(), 0);
-    }
-}
-
-#[test]
-fn checkpoint_reconstruction_scope_growth_is_linear_in_cold_input() {
-    // The unchanged fixture grows current records and retained publication
-    // metadata together. Cold admission may grow with that input, but must not
-    // repeat whole-population scope preparation for every record.
-    let capture = |rows| {
-        let request = serial_request();
-        let execution = ExecutionRequest::serial(&request);
-        let runtime = runtime_with_rows(rows);
-        let observer = ExecutionScopeSetupObservationForTest::install_on_this_thread_for_test();
-        let checkpoint = runtime
-            .durability_authority()
-            .native_checkpoint(&execution, execution.allocation_policy())
-            .unwrap();
-        let counts = observer.counts_for_test();
-        drop(checkpoint);
-        counts
-    };
-    let (base, doubled) = (capture(32), capture(64));
-    for (name, first, second) in [
-        ("stage setups", base.stage_setups, doubled.stage_setups),
-        (
-            "limit derivations",
-            base.limit_derivations,
-            doubled.limit_derivations,
-        ),
-        ("admissions", base.admissions, doubled.admissions),
-    ] {
-        assert!(
-            first > 0,
-            "cold export must use its original request: {name}"
-        );
-        assert!(
-            (second as u128) * 2 < (first as u128) * 5,
-            "{name}: cold scope work outgrows cold input: {first}->{second}"
-        );
     }
 }
