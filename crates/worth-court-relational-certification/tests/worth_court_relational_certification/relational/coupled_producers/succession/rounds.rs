@@ -19,27 +19,31 @@ fn linked_round(
         kind_id: KindId(1),
         client_key: ClientKey::raw(key),
     };
-    let entities = keys.iter().fold(WorkerIntentBatch::new("round"), |batch, key| {
-        batch.push(MutationIntent::Create(CreateIntent::Entity(EntitySpec {
-            partition_id: partition,
-            kind_id: KindId(1),
-            client_key: ClientKey::raw(*key),
-            fields: string_aspect_field_patch([(
-                aspect_key("name"),
-                field_key("name"),
-                format!("{key}:{value}").as_str(),
-            )]),
-        })))
-    });
+    let entities = keys
+        .iter()
+        .fold(WorkerIntentBatch::new("round"), |batch, key| {
+            batch.push(MutationIntent::Create(CreateIntent::Entity(EntitySpec {
+                partition_id: partition,
+                kind_id: KindId(1),
+                client_key: ClientKey::raw(*key),
+                fields: string_aspect_field_patch([(
+                    aspect_key("name"),
+                    field_key("name"),
+                    format!("{key}:{value}").as_str(),
+                )]),
+            })))
+        });
     let batch = links.iter().fold(entities, |batch, key| {
-        batch.push(MutationIntent::Create(CreateIntent::Relation(RelationSpec {
-            partition_id: partition,
-            kind_id: KindId(2),
-            client_key: ClientKey::raw(format!("link:{key}")),
-            source: EntityReference::Created(created(key)),
-            target: EntityReference::Existing(world.source),
-            fields: AspectFieldPatch::default(),
-        })))
+        batch.push(MutationIntent::Create(CreateIntent::Relation(
+            RelationSpec {
+                partition_id: partition,
+                kind_id: KindId(2),
+                client_key: ClientKey::raw(format!("link:{key}")),
+                source: EntityReference::Created(created(key)),
+                target: EntityReference::Existing(world.source),
+                fields: AspectFieldPatch::default(),
+            },
+        )))
     });
     vec![batch]
 }
