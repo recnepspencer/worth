@@ -12,6 +12,7 @@ mod input_preparation;
 mod ledger;
 mod preparation;
 mod qualification;
+mod settlement;
 mod source_selection;
 mod succession;
 mod verified_parents;

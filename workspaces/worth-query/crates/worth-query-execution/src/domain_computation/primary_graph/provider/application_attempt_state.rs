@@ -17,6 +17,7 @@ pub(in crate::domain_computation::primary_graph) use candidate_read_support::{
 mod applied_output;
 pub(in crate::domain_computation::primary_graph) use applied_output::AppliedOutputParticipants;
 mod commit_completion;
+mod consumed_settlement;
 mod coupled_extraction;
 mod coupled_preparation;
 mod coupled_settlement;
