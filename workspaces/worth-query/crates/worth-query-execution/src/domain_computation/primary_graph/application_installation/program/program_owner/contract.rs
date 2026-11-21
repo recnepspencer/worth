@@ -1,6 +1,7 @@
 use super::*;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementDenialCommitExt as _;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
+use worth_query_execution_attempt::facade::ports::EffectProgramMethodsInternalPort as _;
 
 /// One owner of a rostered program on one published host.
 pub trait WorthQueryProgramOwner<Schema>: sealed::WorthQueryProgramOwnership {

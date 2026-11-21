@@ -1,5 +1,6 @@
 //! Runs the existing native retention owner, without changing policy or pins.
 use super::WorthQueryPrimaryGraphApplicationRuntime;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S> {
     #[doc(hidden)]

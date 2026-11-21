@@ -1,5 +1,6 @@
 use super::*;
 use crate::equality_type_id::EqualityTypeId as TypeId;
+use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
 
 impl WorthQueryOutputDemandRegistry {
     pub fn retain_performed_source(

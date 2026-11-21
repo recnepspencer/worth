@@ -1,6 +1,7 @@
 //! Source binding consumes the validation owner's unique admission loan.
 use super::*;
 use crate::domain_computation::primary_graph::SourceFactExpansionControlExt;
+use worth_query_execution_lineage::facade::ports::BoundSourceExpectationInternalPort as _;
 impl<Schema: worth_query_installation::facade::ApplicationSchema, Operation, Input, Scope>
     CheckedMutableSourceAdmission<'_, Schema, Operation, Input, Scope>
 {
@@ -36,13 +37,13 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema, Operation, Inp
                 Binding::IDENTITY,
             )?,
         )?;
-        let bound = WorthQueryBoundSourceExpectation {
+        let bound = WorthQueryBoundSourceExpectation::from_parts(
             kind,
             identity,
-            partition_identity: source.partition_identity(),
-        };
-        admission.bind_source_partition(bound.partition_identity);
-        admission.bind_source_expectation_kind(bound.kind);
+            source.partition_identity(),
+        );
+        admission.bind_source_partition(bound.partition_identity_bytes());
+        admission.bind_source_expectation_kind(bound.kind());
         Ok(WorthQueryPendingSourceExpectation {
             admission_identity: admission.admission_identity(),
             selected_product: checked.selected_product,

@@ -1,5 +1,6 @@
 //! Compare a real recording query's complete artifact, never only its partition digest.
 use super::*;
+use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
 impl WorthQueryHistoryOutputIntent {
     pub(in crate::domain_computation::primary_graph) fn matches_recording_source<Q>(
         &self,
@@ -10,15 +11,15 @@ impl WorthQueryHistoryOutputIntent {
         let _comparison = fund_comparison(
             execution,
             &self.backing.parameters,
-            &source.parameters,
+            &source.parameters(),
             scope_work(&self.backing.scope)?,
         )?;
-        Ok(self.backing.query == source.query_identity
+        Ok(self.backing.query == source.query_identity()
             && self.matches_output_source(source, observation)
             && self
                 .backing
                 .parameters
                 .canonical_basis()
-                .is_equivalent_to(source.parameters.canonical_basis()))
+                .is_equivalent_to(source.parameters().canonical_basis()))
     }
 }

@@ -16,7 +16,7 @@ pub struct WorthQueryWorkflowArtifactAuthority {
 }
 
 impl WorthQueryWorkflowArtifactAuthority {
-    pub fn mint(
+    pub(crate) fn mint(
         binding: Arc<WorthQueryExecutionBoundOperationAuthority>,
         provider_session_identity: &str,
         run_generation: u64,

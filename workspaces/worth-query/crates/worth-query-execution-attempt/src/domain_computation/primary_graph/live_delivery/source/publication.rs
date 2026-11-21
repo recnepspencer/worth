@@ -1,6 +1,7 @@
 //! Publish the real World successor; retire queue custody after the Source gate.
 use super::*;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryAdmittedApplicationEmissionBatch;
+use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 
 impl WorthQueryLiveDeliverySource {
     pub fn publish(
@@ -91,7 +92,9 @@ impl WorthQueryLiveDeliverySource {
             .set(WorthQueryLiveCommitBatch {
                 sequence,
                 publication,
-                product: crate::basis::WorthQueryProductObservationLease::new(observation),
+                product: crate::basis::WorthQueryProductObservationLease::from_observation(
+                    observation,
+                ),
                 emissions,
                 _emission_memory: emission_memory,
                 predicate,

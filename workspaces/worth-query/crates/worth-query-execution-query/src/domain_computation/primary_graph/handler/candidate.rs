@@ -3,6 +3,7 @@ use worth_query_declaration::facade::application_operation::{
     WorthQueryApplicationOutputRole, WorthQueryApplicationOutputRoleFamily, WorthQueryCreateOutput,
     WorthQueryPreserveOutput, WorthQueryRetireOutput,
 };
+use worth_query_execution_attempt::facade::ports::EffectProgramBuilderAuthoringInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_query_installation::facade::{ApplicationRelationRef, OperationReads, OperationUnlinks};
 

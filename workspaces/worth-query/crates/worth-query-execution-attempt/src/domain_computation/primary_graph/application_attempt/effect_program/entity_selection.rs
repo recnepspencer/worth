@@ -3,11 +3,13 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationEntityIdentity,
     WorthQueryInvariantMutationTarget,
 };
+use worth_query_execution_lineage::facade::ports::EffectEntityErasedInternalPort as _;
+use worth_query_execution_lineage::facade::ports::InvariantMutationTargetInternalPort as _;
 
 impl<Schema, Operation, Input, Scope>
     WorthQueryApplicationEffectProgramBuilder<Schema, Operation, Input, Scope>
 {
-    pub fn resolve_observed_entity<Entity, Aspect, Field, Value>(
+    pub(crate) fn resolve_observed_entity<Entity, Aspect, Field, Value>(
         &self,
         field: Field,
         value: Value,
@@ -38,11 +40,11 @@ impl<Schema, Operation, Input, Scope>
         Ok(self
             .native_selection()
             .select(
-                target.entity_id,
-                target.entity.as_ref(),
-                target.runtime_authority,
-                &target.binding_identity,
-                Some((target.admission_identity, target.phase)),
+                target.entity_id(),
+                target.entity().as_ref(),
+                target.runtime_authority(),
+                target.binding_identity(),
+                Some((target.admission_identity(), target.phase())),
             )?
             .into_typed())
     }

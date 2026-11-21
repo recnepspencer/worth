@@ -14,7 +14,7 @@ pub struct WorthQueryArtifactTransferAdmission {
 }
 
 impl WorthQueryArtifactTransferAdmission {
-    pub fn mint(parts: WorthQueryArtifactTransferAdmissionParts) -> Self {
+    pub(crate) fn mint(parts: WorthQueryArtifactTransferAdmissionParts) -> Self {
         Self {
             expected_contract: parts.expected_contract,
             domain_authority: parts.domain_authority,

@@ -1,4 +1,5 @@
 //! Original transition/approval/proposal correspondence, never progression or replay retention.
+use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
 use super::*;
 use crate::domain_computation::primary_graph::application_attempt::workflow_instance_observation::{history_projection,history::operation_outputs,settlement};
 

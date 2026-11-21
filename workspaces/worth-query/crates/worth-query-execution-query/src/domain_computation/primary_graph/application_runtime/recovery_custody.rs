@@ -12,6 +12,7 @@ use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use worth_foundational::facade::{
     DurableCompositeCommitIdentity, DurableCompositePublicationAttemptIdentity,
 };
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 mod completion;
 mod readmission;

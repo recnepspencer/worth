@@ -1,5 +1,6 @@
 //! A carried effect program is checked before current-owner policy or I/O.
 use super::*;
+use worth_query_execution_attempt::facade::ports::EffectProgramMethodsInternalPort as _;
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub fn require_program_incarnation<Operation, Input, Scope>(
         &self,

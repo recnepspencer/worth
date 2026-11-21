@@ -3,6 +3,7 @@ use super::super::*;
 use crate::domain_computation::primary_graph::workflow::correction::{
     retain_current_continuation, unavailable, PreparedWorkflowCorrection,
 };
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 
 pub(in crate::domain_computation::primary_graph::product_operation::correction_source) fn prepare_workflow<
     S,

@@ -9,7 +9,7 @@ use worth_runtime_world::facade::{RuntimeWorldClockSource, RuntimeWorldInstant};
 #[derive(Clone)]
 pub struct WorthQueryProductWorldClock {
     origin: Instant,
-    pub admission_clock:
+    pub(crate) admission_clock:
         worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock,
 }
 

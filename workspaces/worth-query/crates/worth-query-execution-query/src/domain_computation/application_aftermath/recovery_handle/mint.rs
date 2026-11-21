@@ -1,6 +1,10 @@
 //! Mint a recovery handle from an admitted commit receipt (R8.28 / R8.62 / R8.33).
 
 use std::sync::Arc;
+use worth_query_execution_attempt::facade::ports::RecoveryHandleBindingInternalPort as _;
+use worth_query_execution_attempt::facade::ports::RecoveryHandleInternalPort as _;
+use worth_query_execution_lineage::facade::ports::CommitReceiptInternalPort as _;
+use worth_query_execution_lineage::facade::ports::ManagedCleanupReceiptInternalPort as _;
 
 use worth_foundational::facade::AspectValue;
 use worth_query_declaration::facade::application_capability::ApplicationCapabilityValidityTimeline;
@@ -76,7 +80,7 @@ where
         cleanup: &crate::domain_computation::primary_graph::WorthQueryApplicationManagedCleanupReceipt,
     ) -> Result<WorthQueryRecoveryHandle, WorthQueryRecoveryHandleDenial> {
         use crate::domain_computation::primary_graph::WorthQueryCleanupDispatchPosture as Posture;
-        match cleanup.posture {
+        match cleanup.posture() {
             Posture::Pending | Posture::DiagnosticCopy | Posture::TerminalObserved => {
                 return Err(WorthQueryRecoveryHandleDenial::new(
                     WorthQueryRecoveryHandleDenialKind::RecoveryNotAdmitted,
@@ -85,8 +89,7 @@ where
             Posture::NotDeclared | Posture::AttemptedUnresolved | Posture::Observed => {}
         }
         let original = cleanup
-            .original
-            .as_ref()
+            .original()
             .ok_or_else(|| {
                 WorthQueryRecoveryHandleDenial::new(
                     WorthQueryRecoveryHandleDenialKind::RecoveryNotAdmitted,
@@ -100,7 +103,7 @@ where
         let registry = Arc::clone(&self.runtime.recovery_handles);
         let mut binding = WorthQueryRecoveryHandleBinding::from_pending_original(
             original,
-            cleanup.dispatch.as_ref(),
+            cleanup.dispatch(),
             expiry_deadline(registry.clock())?,
         )?;
         let claim = WorthQueryRecoveryMintClaim::new(
@@ -148,7 +151,7 @@ pub fn mint_from_slot(
     canonical_work: worth_query_installation::facade::WorthQueryCanonicalWorkPhases,
     registry: Arc<WorthQueryRecoveryHandleRegistry>,
 ) -> WorthQueryRecoveryHandle {
-    WorthQueryRecoveryHandle::new(
+    WorthQueryRecoveryHandle::from_parts(
         WorthQueryRecoveryHandleIdentity::mint(),
         slot,
         registry,

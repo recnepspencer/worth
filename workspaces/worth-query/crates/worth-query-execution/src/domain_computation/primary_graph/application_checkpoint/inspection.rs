@@ -1,5 +1,6 @@
 //! Read-only exact-field inspection through the current Query and native codecs.
 use super::*;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 pub use worth_relational::facade::durability::RecordAllocationClass as WorthQueryCheckpointRecordClass;
 pub use worth_relational::facade::durability::{
     CheckpointAllocatorInspection, CheckpointRecordFrontier, CheckpointRecordIdentity,

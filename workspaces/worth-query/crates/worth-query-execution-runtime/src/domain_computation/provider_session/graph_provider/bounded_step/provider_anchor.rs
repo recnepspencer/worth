@@ -193,7 +193,7 @@ impl WorthQueryGraphProviderAnchor {
         self.session_lifecycle.is_some()
     }
 
-    pub fn retains_convergence_and_phase_seven_through_ten(&self) -> bool {
+    pub(crate) fn retains_convergence_and_phase_seven_through_ten(&self) -> bool {
         self.convergence_provider.is_some()
             && self.session_lifecycle.is_some()
             && self.decision_fact_provider.is_some()

@@ -1,5 +1,7 @@
 //! Capability-access progression into installed operation authority.
 
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_lineage::facade::ports::OperationScopeBindingInternalPort as _;
 use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
 use crate::domain_computation::authorization::operation_admission::capability_admission::preparation::observation::admitted_access::AdmittedCapabilityAccessRuntimeExt as _;
 use crate::domain_computation::authorization::graph_work_session::start_capability_operation_graph_work;

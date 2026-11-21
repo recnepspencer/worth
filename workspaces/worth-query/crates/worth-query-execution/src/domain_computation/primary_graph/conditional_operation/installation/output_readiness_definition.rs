@@ -4,6 +4,7 @@ use super::*;
 use crate::domain_computation::primary_graph::application_contribution::{
     TypedPendingOutputReadiness, WorthQueryApplicationProducerBinding,
 };
+use worth_query_execution_query::facade::ports::ConditionalClockHandleInternalPort as _;
 use worth_query_installation::facade::{
     WorthQueryAuthoredHostConditionalPredicateProvider, WorthQueryAuthoredHostPredicateBinding,
     WorthQueryInstalledApplicationConditionalNode,
@@ -103,7 +104,7 @@ impl<Schema: ApplicationSchema + 'static>
                 Arc::clone(&node_authority),
             ),
         );
-        let lease = Arc::new(ConditionalClockLease);
+        let lease = WorthQueryConditionalClockHandle::<Schema, (), ()>::new_lease();
         self.output_readiness
             .push(Box::new(TypedPendingOutputReadiness::new(
                 Producer::IDENTITY,
@@ -111,13 +112,12 @@ impl<Schema: ApplicationSchema + 'static>
                 node,
                 Some((identity.clone(), lease.clone(), providers)),
             )));
-        Ok(WorthQueryConditionalClockHandle {
-            binding_identity: identity,
-            binding_identity_digest: *digest.bytes(),
+        Ok(WorthQueryConditionalClockHandle::from_parts(
+            identity,
+            *digest.bytes(),
             node_authority,
-            binding_canonical_work: work.with_digest_text_materializations(1),
+            work.with_digest_text_materializations(1),
             lease,
-            marker: PhantomData,
-        })
+        ))
     }
 }

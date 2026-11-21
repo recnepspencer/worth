@@ -1,6 +1,7 @@
 //! Source facts can be prepared only from the validation owner's shared loan.
 use super::*;
 use crate::domain_computation::primary_graph::SourceFactExpansionControlExt;
+use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
 impl<Schema: worth_query_installation::facade::ApplicationSchema, Operation, Input, Scope>
     CheckedSourceAdmission<'_, Schema, Operation, Input, Scope>
 {
@@ -42,7 +43,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema, Operation, Inp
         let facts = prepared_facts.into_facts()?;
         let context = source.retain_expression_binding();
         let super::WorthQueryApplicationBasisSelectionIdentity::Product(observed_product) =
-            source.selection
+            source.selection()
         else {
             unreachable!("validated product source retains its selected observation")
         };
@@ -51,11 +52,11 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema, Operation, Inp
             admission_identity: admission.admission_identity(),
             selected_product: checked.selected_product,
             observed_product,
-            bound: WorthQueryBoundSourceExpectation {
-                kind: WorthQuerySourceExpectationKind::Row,
+            bound: WorthQueryBoundSourceExpectation::from_parts(
+                WorthQuerySourceExpectationKind::Row,
                 identity,
                 partition_identity,
-            },
+            ),
             facts,
         })
     }

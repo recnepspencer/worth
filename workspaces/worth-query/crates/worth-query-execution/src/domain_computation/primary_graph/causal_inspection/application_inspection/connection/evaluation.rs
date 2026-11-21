@@ -4,6 +4,8 @@ use crate::domain_computation::primary_graph::application_contribution::{
     ProducerOutputEvaluation, ProducerOutputEvaluationState,
 };
 use worth_execution::MapKernelContext;
+use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationQueryObservationInternalPort as _;
 
 pub(in crate::domain_computation::primary_graph::causal_inspection::application_inspection) fn require_compared(
     state: &ProducerOutputEvaluationState,
@@ -169,10 +171,10 @@ fn evaluate_installed(
             .original()
             .ok_or(MapKernelFailure::Domain(Denial::ForeignSource.into()))?;
         let supplier = original
-            .source
+            .source()
             .original_settled_producer()
             .ok_or(MapKernelFailure::Domain(Denial::ProducerUnavailable.into()))?;
-        if !matches!(&original.source.selection, WorthQueryApplicationBasisSelectionIdentity::Product(read) if supplier.read() == read)
+        if !matches!(&original.source().selection(), WorthQueryApplicationBasisSelectionIdentity::Product(read) if supplier.read() == read)
         {
             return Err(MapKernelFailure::Domain(Denial::ProducerUnavailable.into()));
         }
@@ -215,7 +217,7 @@ fn evaluate_installed(
             .map(|(_, _, _, entity)| entity);
         let mut projected = false;
         if observed.projected(field.entity(), field.aspect(), field.field()) {
-            for row in original.source.original_row_footprints() {
+            for row in original.source().original_row_footprints() {
                 for seen in &row.aspects {
                     crate::domain_computation::primary_graph::admitted_capture::checkpoint(
                         context, 1,
@@ -261,7 +263,7 @@ fn observed_field(
     compared: &crate::domain_computation::primary_graph::application_contribution::ComparedProducerOutput,
 ) -> Result<bool, MapKernelFailure<ConnectionRefusal>> {
     let locus = compared.field();
-    for row in observed.original.source.original_row_footprints() {
+    for row in observed.original.source().original_row_footprints() {
         for field in &row.aspects {
             crate::domain_computation::primary_graph::admitted_capture::checkpoint(context, 1)
                 .map_err(MapKernelFailure::Stop)?;

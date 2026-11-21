@@ -3,14 +3,15 @@ use crate::domain_computation::execution_runtime::product_world::{
     WorthQueryPerformedRelationalProductChange, WorthQueryProductPublicationReceipt,
 };
 use std::sync::Arc;
+use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
 
 /// Query projection or history retirement. Missing parts remain owned and
 /// refuse promotion; a partial transfer never drops an already-taken witness.
 pub struct WorthQueryRecoveredProgramOutputSource {
-    pub publication:
+    pub(crate) publication:
         crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication,
-    pub change: Option<Arc<WorthQueryPerformedRelationalProductChange>>,
-    pub observation: Option<worth_runtime_world::facade::ProductBranchObservation>,
+    pub(crate) change: Option<Arc<WorthQueryPerformedRelationalProductChange>>,
+    pub(crate) observation: Option<worth_runtime_world::facade::ProductBranchObservation>,
 }
 
 impl WorthQueryRecoveredProgramOutputSource {
@@ -85,7 +86,7 @@ impl WorthQueryRecoveredProgramOutputSource {
         }
     }
 
-    pub fn take_original(publication: &WorthQueryProductPublicationReceipt) -> Self {
+    pub(crate) fn take_original(publication: &WorthQueryProductPublicationReceipt) -> Self {
         Self {
             publication: crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication::from_receipt(publication.clone()),
             change: publication.take_fresh_delivery().map(Arc::new),

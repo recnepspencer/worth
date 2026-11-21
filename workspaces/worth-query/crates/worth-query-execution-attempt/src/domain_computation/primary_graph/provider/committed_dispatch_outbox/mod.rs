@@ -1,4 +1,5 @@
 use worth_foundational::facade::AspectValue;
+use worth_query_execution_lineage::facade::ports::CommitReceiptInternalPort as _;
 use worth_relational::facade::history::RelationalCommitReceipt;
 use worth_relational::facade::runtime::{ProjectionAspectRequirement, ProjectionAspectScope};
 use worth_relational::facade::transactions::RecordRef;

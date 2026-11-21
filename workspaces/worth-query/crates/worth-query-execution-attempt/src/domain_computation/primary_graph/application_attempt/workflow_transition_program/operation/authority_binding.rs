@@ -2,11 +2,12 @@ use super::*;
 use crate::domain_computation::primary_graph::application_attempt::read_set::{
     MutationHandlerBindingProof, WorkflowOperationBindingProof,
 };
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 
 impl<Schema, Operation, Input, Scope>
     WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>
 {
-    pub fn bind_mutation_handler_input<Binding>(
+    pub(crate) fn bind_mutation_handler_input<Binding>(
         mut self,
         identities: &ApplicationMutationIdentities<'_, Schema, Binding>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -66,7 +67,7 @@ impl<Schema, Operation, Input, Scope>
         Ok(self)
     }
 
-    pub fn matches_workflow_authority_binding<Binding>(
+    pub(crate) fn matches_workflow_authority_binding<Binding>(
         &self,
         idempotency: &crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding,
     ) -> bool

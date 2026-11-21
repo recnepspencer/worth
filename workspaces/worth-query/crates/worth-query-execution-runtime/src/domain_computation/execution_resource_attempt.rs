@@ -13,7 +13,7 @@ use super::{
 };
 
 impl WorthQueryExecutionRuntime {
-    pub fn start_reserved_direct_resource_attempt(
+    pub(crate) fn start_reserved_direct_resource_attempt(
         &self,
         authority: &WorthQueryExecutionBoundOperationAuthority,
         resources: worth_query_admission::integration::WorthQueryCapacityReservedExecutionResourcePlan,

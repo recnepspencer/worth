@@ -1,5 +1,6 @@
 //! Admission and custody progression under one runtime-issued advancement.
 use super::*;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     /// Opens one advancement under the fresh request scope and lends its native

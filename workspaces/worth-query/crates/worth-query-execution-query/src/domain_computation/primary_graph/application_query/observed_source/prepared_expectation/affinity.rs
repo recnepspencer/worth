@@ -1,4 +1,5 @@
 use super::*;
+use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
 
 impl<Schema>
     crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>
@@ -31,7 +32,7 @@ where
     {
         let checked =
             self.checked_source_contract::<Binding, Scope>(admission, input, |expected| {
-                compare_parameters(&source.parameters, expected)
+                compare_parameters(&source.parameters(), expected)
             })?;
         source.validate_affinity(
             self.runtime.authority_identity().as_u64(),

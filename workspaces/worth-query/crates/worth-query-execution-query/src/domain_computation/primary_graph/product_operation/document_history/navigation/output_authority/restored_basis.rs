@@ -1,6 +1,7 @@
 //! One exact restored basis and its grant-free Native selection read.
 use super::super::super::WorthQueryHistoryNodeId;
 use super::*;
+use worth_query_execution_lineage::facade::ports::ReadObservationInternalPort as _;
 use worth_relational::facade::{
     mvcc::RelationalBranchObservation,
     runtime::{

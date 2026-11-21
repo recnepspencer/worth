@@ -13,7 +13,7 @@ use crate::domain_computation::primary_graph::WorthQueryObservedApplicationRelat
 impl<Schema, Operation, Input, Scope>
     WorthQueryApplicationEffectProgramBuilder<Schema, Operation, Input, Scope>
 {
-    pub fn unlink_observed<Relation, From, To>(
+    pub(crate) fn unlink_observed<Relation, From, To>(
         &mut self,
         relation: ApplicationRelationRef<Schema, Relation, From, To>,
         from: &WorthQueryApplicationEffectEntity<Schema, From>,
@@ -33,7 +33,7 @@ impl<Schema, Operation, Input, Scope>
         )
     }
 
-    pub fn unlink_at_target<From, To>(
+    pub(crate) fn unlink_at_target<From, To>(
         &mut self,
         target: &ApplicationOperationProgramTarget,
         from: &WorthQueryApplicationEffectEntity<Schema, From>,
@@ -66,7 +66,7 @@ impl<Schema, Operation, Input, Scope>
     }
 
     /// Typed writers and installed bodies share the same relation effect admission.
-    pub fn link_at_target<From, To>(
+    pub(crate) fn link_at_target<From, To>(
         &mut self,
         target: &ApplicationOperationProgramTarget,
         key: impl Into<String>,

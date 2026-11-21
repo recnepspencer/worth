@@ -1,5 +1,6 @@
 //! Sole producer source/lifecycle selection on the original native borrow.
 use super::*;
+use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
 pub mod current_verification;
 pub use current_verification::VerifiedAppliedParent;
 
@@ -22,8 +23,8 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
     where
         Family: WorthQueryProducerOutputFamily<Schema>,
     {
-        if source.runtime_authority != self.runtime.authority_identity().as_u64()
-            || source.schema_binding != self.installed_schema.binding_identity()
+        if source.runtime_authority() != self.runtime.authority_identity().as_u64()
+            || source.schema_binding() != self.installed_schema.binding_identity()
         {
             return Err(WorthQueryOutputDemandDenial::new(
                 WorthQueryOutputDemandDenialKind::ForeignSource,
@@ -40,7 +41,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                 )
             })?;
         require_installed_output_dependencies(installed.query().output_dependencies(), source)?;
-        let WorthQueryApplicationBasisSelectionIdentity::Product(observation) = &source.selection
+        let WorthQueryApplicationBasisSelectionIdentity::Product(observation) = &source.selection()
         else {
             return Err(WorthQueryOutputDemandDenial::new(
                 WorthQueryOutputDemandDenialKind::ForeignSource,
@@ -83,7 +84,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         // Lineage is registered by the admitted mutation scope, which the
         // Source expectation binds to the query scope. A projected row can
         // have a different root; that root still identifies the demand below.
-        let lineage_scope = crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(source.model_root);
+        let lineage_scope = crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(source.model_root());
         let mut lineage = self
             .runtime
             .primary_provider

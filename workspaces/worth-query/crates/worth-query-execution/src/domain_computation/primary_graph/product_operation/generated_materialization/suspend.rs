@@ -4,6 +4,8 @@ use crate::domain_computation::execution_runtime::product_world::publication_den
     WorthQueryProductPublicationOutcome as PublicationOutcome,
 };
 use crate::domain_computation::primary_graph::application_contribution::advancement_denial;
+use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 
 use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::sync::Arc;
@@ -80,7 +82,7 @@ where
         let source_identity = source.idempotency_identity();
         let checkpoint_source_identity = source.checkpoint_identity();
         let source_root = source.source_root();
-        let crate::domain_computation::primary_graph::application_query::WorthQueryApplicationBasisSelectionIdentity::Product(selection) = source.selection.clone() else {
+        let crate::domain_computation::primary_graph::application_query::WorthQueryApplicationBasisSelectionIdentity::Product(selection) = source.selection().clone() else {
             return Err(WorthQueryGeneratedOutputSuspensionFailure::Qualification(
                 WorthQueryGeneratedOutputSuspensionDenial::SourceMismatch,
             ));
@@ -89,8 +91,8 @@ where
             phase,
             request,
             ExpectedSourceQualification {
-                runtime_authority: source.runtime_authority,
-                schema: source.schema_binding,
+                runtime_authority: source.runtime_authority(),
+                schema: source.schema_binding(),
                 scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(source_root),
                 runtime_source_identity: source_identity,
                 checkpoint_source_identity,

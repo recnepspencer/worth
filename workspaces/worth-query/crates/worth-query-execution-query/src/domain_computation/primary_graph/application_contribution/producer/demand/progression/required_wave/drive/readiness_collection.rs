@@ -1,4 +1,5 @@
 //! Prepare only exact rows whose consumed predecessors are Current on this basis.
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use super::*;
 use super::super::member_key::RequiredMemberKey;
 use crate::domain_computation::primary_graph::application_contribution::producer::execution::prepared_plan::OwnerPlan;

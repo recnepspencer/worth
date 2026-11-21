@@ -5,6 +5,7 @@ use super::super::{
 };
 use super::*;
 use worth_query_declaration::facade::application_query::ApplicationManagedIndexBinding;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
     /// Makes the current maintained material cold under this Parent admission.
     /// Historical Native/World images may retain their immutable temporal shares.

@@ -13,6 +13,7 @@ use worth_query_declaration::facade::{
         ApplicationMutationScopeResolution,
     },
 };
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 
 pub(in crate::domain_computation::primary_graph) fn derive_correction_inverse<Schema, C>(
     target: &WorthQuerySelectedProductOperation<'_, Schema>,

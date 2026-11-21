@@ -1,5 +1,6 @@
 //! Freshly prepare the ordered remaining branch targets.
 use super::*;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub fn prepare_branch_set_adoption(
         &self,

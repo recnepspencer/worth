@@ -22,7 +22,7 @@ pub struct WorthQueryApplicationCommitPublicationSource {
 }
 
 impl WorthQueryApplicationCommitPublicationSource {
-    pub fn from_receipt(receipt: &WorthQueryApplicationCommitReceipt) -> Self {
+    pub(crate) fn from_receipt(receipt: &WorthQueryApplicationCommitReceipt) -> Self {
         Self {
             terminal_kind: receipt.terminal().kind(),
             mutation_work: receipt.mutation_work().cloned(),

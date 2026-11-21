@@ -2,6 +2,8 @@
 
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
+use worth_query_execution_attempt::facade::ports::InboundAdmissionDenialInternalPort as _;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 
 use worth_foundational::facade::AspectValue;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
@@ -140,7 +142,7 @@ impl<'a, Schema: ApplicationSchema> WorthQueryAuthenticatedInboundOccurrence<'a,
     }
 
     /// The phase witnesses admission before verifier, provenance, or custody access.
-    pub fn correlate_in_advancement(
+    pub(crate) fn correlate_in_advancement(
         self,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     ) -> Result<WorthQueryCorrelatedInboundOccurrence<'a, Schema>, Denial> {
@@ -162,7 +164,7 @@ impl<'a, Schema: ApplicationSchema> WorthQueryCorrelatedInboundOccurrence<'a, Sc
     }
 
     /// The phase witnesses admission before verifier, provenance, or custody access.
-    pub fn accept_in_advancement(
+    pub(crate) fn accept_in_advancement(
         self,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     ) -> Result<WorthQueryAdmittedInboundOccurrence<'a, Schema>, Denial> {
@@ -225,7 +227,7 @@ impl<Schema: ApplicationSchema> WorthQueryAdmittedInboundOccurrence<'_, Schema> 
             .map_err(Denial::advancement)?
     }
 
-    pub fn into_admission(mut self) -> WorthQueryInboundAdmission {
+    pub(crate) fn into_admission(mut self) -> WorthQueryInboundAdmission {
         self.admission.take().expect("sealed admitted phase")
     }
 }
@@ -252,7 +254,7 @@ impl<Schema: ApplicationSchema> Drop for WorthQueryAdmittedInboundOccurrence<'_,
 impl<Schema: ApplicationSchema> WorthQueryAuthenticatedInboundOccurrence<'_, Schema> {
     /// Recorded DATA from this exact authenticated phase and original owner.
     /// A raw claims value cannot enter the journal's acceptance operation.
-    pub fn accepted_message_record(
+    pub(crate) fn accepted_message_record(
         &self,
         journal: &crate::domain_computation::application_aftermath::dispatch_journal::WorthQueryDispatchJournal,
         owner: &crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxObservation,

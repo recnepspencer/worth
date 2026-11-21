@@ -1,6 +1,7 @@
 //! Phase-bound constructor on `SourceFactExpansionControl`.
 
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 
 use crate::domain_computation::primary_graph::application_query::observed_source::fact_conversion::SourceFactExpansionControl;
 use crate::domain_computation::primary_graph::{

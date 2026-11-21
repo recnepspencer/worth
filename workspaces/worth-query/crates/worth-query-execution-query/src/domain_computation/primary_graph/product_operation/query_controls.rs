@@ -4,8 +4,8 @@ use worth_query_admission::facade::authenticated_principal::WorthQueryRequestSco
 /// Result cardinality and request scope for an already selected product. These controls
 /// cannot select a second basis or change the operation's retained occurrence.
 pub struct WorthQueryProductQueryControls<'request> {
-    pub maximum_results: NonZeroUsize,
-    pub request: &'request WorthQueryRequestScope,
+    pub(crate) maximum_results: NonZeroUsize,
+    pub(crate) request: &'request WorthQueryRequestScope,
 }
 
 impl<'request> WorthQueryProductQueryControls<'request> {

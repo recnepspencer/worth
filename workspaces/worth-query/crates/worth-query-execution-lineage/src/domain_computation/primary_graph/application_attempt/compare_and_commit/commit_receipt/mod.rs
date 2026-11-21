@@ -1,4 +1,5 @@
 //! Closed application commit receipt.
+use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
 pub mod recording;
 
 pub mod committed_changes;
@@ -157,7 +158,7 @@ impl WorthQueryApplicationCommitReceipt {
     /// for a commit that rebased: its facts answer. One whose effect moved a
     /// read is superseded at its own publication, as it is where its rebase
     /// succeeds.
-    pub fn currentness_without_facts_at(
+    pub(crate) fn currentness_without_facts_at(
         &self,
         observation: &worth_runtime_world::facade::ProductBranchObservation,
     ) -> Option<crate::domain_computation::primary_graph::provider::FactlessCurrentness> {
@@ -204,13 +205,13 @@ impl WorthQueryApplicationCommitReceipt {
         self.output_correspondence.as_ref()
     }
 
-    pub fn retain_output_correspondence(
+    pub(crate) fn retain_output_correspondence(
         &self,
     ) -> std::sync::Arc<WorthQueryApplicationOutputCorrespondence> {
         std::sync::Arc::clone(&self.output_correspondence)
     }
 
-    pub fn exact_output_settlement(
+    pub(crate) fn exact_output_settlement(
         &self,
     ) -> Option<
         &std::sync::Arc<
@@ -220,7 +221,7 @@ impl WorthQueryApplicationCommitReceipt {
         self.exact_output_settlement.as_ref()
     }
 
-    pub fn publication_source(&self) -> WorthQueryApplicationCommitPublicationSource {
+    pub(crate) fn publication_source(&self) -> WorthQueryApplicationCommitPublicationSource {
         WorthQueryApplicationCommitPublicationSource::from_receipt(self)
     }
 
@@ -250,7 +251,7 @@ impl WorthQueryApplicationCommitReceipt {
             .map(super::super::super::provider::WorthQueryCommittedDispatchOutboxBinding::record)
     }
 
-    pub fn committed_dispatch_outbox(
+    pub(crate) fn committed_dispatch_outbox(
         &self,
     ) -> Option<&super::super::super::provider::WorthQueryCommittedDispatchOutboxBinding> {
         self.committed_dispatch_outbox.as_ref()
@@ -274,13 +275,13 @@ impl WorthQueryApplicationCommitReceipt {
         self.authority_binding.installed_operation()
     }
 
-    pub const fn runtime_authority(
+    pub(crate) const fn runtime_authority(
         &self,
     ) -> crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity {
         self.authority_binding.runtime_authority()
     }
 
-    pub const fn installed_aftermath(
+    pub(crate) const fn installed_aftermath(
         &self,
     ) -> Option<&worth_query_installation::facade::WorthQueryInstalledAftermathContract> {
         self.authority_binding.installed_aftermath()
@@ -341,7 +342,10 @@ impl WorthQueryApplicationCommitReceipt {
         self.performed_product_change.take()
     }
 
-    pub fn with_external_dispatch(mut self, dispatch: WorthQueryExternalEffectDispatch) -> Self {
+    pub(crate) fn with_external_dispatch(
+        mut self,
+        dispatch: WorthQueryExternalEffectDispatch,
+    ) -> Self {
         self.canonical_work = self
             .canonical_work
             .with_external_dispatch_work(dispatch.canonical_work());
@@ -349,7 +353,7 @@ impl WorthQueryApplicationCommitReceipt {
         self
     }
 
-    pub fn with_external_dispatch_preparation_denial(
+    pub(crate) fn with_external_dispatch_preparation_denial(
         mut self,
         denial: super::super::WorthQueryExternalDispatchPreparationDenial,
     ) -> Self {

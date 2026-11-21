@@ -1,5 +1,6 @@
 use worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
+use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
 
 use super::super::super::InstalledProducerEdition;
 use crate::domain_computation::primary_graph::application_query::WorthQueryApplicationQueryRequestAffinity;
@@ -65,7 +66,7 @@ impl<Query, Value> FreshOutputDisclosure<Query, Value> {
         selected: &ProductBranchObservation,
     ) -> bool {
         self.0.affinity.admits(principal, request)
-            && matches!(&self.0.source.selection,
+            && matches!(&self.0.source.selection(),
                 crate::domain_computation::primary_graph::WorthQueryApplicationBasisSelectionIdentity::Product(disclosed) if disclosed.matches_observation(selected))
     }
 }

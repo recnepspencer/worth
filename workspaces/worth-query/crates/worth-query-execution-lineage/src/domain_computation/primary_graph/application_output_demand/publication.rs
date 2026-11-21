@@ -1,5 +1,6 @@
 //! Read-only evidence shared by genuine fresh and recovered producer phases.
 use std::sync::Arc;
+use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
 pub mod join;
 use super::super::application_attempt::OutputFieldCaptureFailure;
 use super::super::application_checkpoint::facts::FactPayload;

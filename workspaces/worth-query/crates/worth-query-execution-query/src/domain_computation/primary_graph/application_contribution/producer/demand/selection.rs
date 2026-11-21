@@ -6,6 +6,7 @@ use crate::domain_computation::primary_graph::output_reuse::retained_output_sett
 use crate::domain_computation::primary_graph::output_reuse::OutputDependencySelection;
 use crate::domain_computation::primary_graph::WorthQueryApplicationBasisSelectionIdentity;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 
 type SelectedWithEntry<'a, Schema> = (
     WorthQuerySelectedApplicationProducer,

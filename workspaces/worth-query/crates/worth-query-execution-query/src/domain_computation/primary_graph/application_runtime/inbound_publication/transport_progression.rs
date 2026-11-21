@@ -7,6 +7,7 @@ use crate::domain_computation::execution_runtime::product_world::publication_den
 use crate::domain_computation::primary_graph::application_contribution::advancement_denial;
 use crate::domain_computation::primary_graph::provider::WorthQueryInboundCompletionPreparationDenial as Preparation;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_relational::facade::mvcc::ValidatedRelationalProposal;
 
 use std::sync::Arc;

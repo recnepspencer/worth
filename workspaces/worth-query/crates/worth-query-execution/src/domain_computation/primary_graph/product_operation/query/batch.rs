@@ -3,6 +3,10 @@ use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRe
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationQueryBatchAdmission, WorthQueryApplicationQueryBatchResourceDenial,
 };
+use worth_query_execution_query::facade::ports::AdmittedQueryPlanInternalPort as _;
+use worth_query_execution_query::facade::ports::BatchAdmissionInternalPort as _;
+use worth_query_execution_query::facade::ports::ProductQueryControlsInternalPort as _;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 
 /// Refusal of independently scoped ordinary batch admission: either the
 /// original authorization/planning cause or the shared custody allowance.
@@ -90,7 +94,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
                 application.inner.runtime.authority_identity().as_u64(),
                 &application.inner.installed_schema.binding_identity(),
                 query.identity(),
-                controls.maximum_results.get(),
+                controls.maximum_results().get(),
             )
             .map_err(Resource)?;
         let application_basis = retained
@@ -108,8 +112,8 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
                     security,
                     product,
                     application_basis,
-                    controls.maximum_results,
-                    controls.request,
+                    controls.maximum_results(),
+                    controls.request(),
                 )
                 .with_original_settled_producer(retained.original_settled_producer().cloned()),
             )

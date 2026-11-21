@@ -32,7 +32,7 @@ pub struct WorthQueryArtifactAccessAuthority {
 }
 
 impl WorthQueryArtifactAccessAuthority {
-    pub fn mint(
+    pub(crate) fn mint(
         contract: Arc<WorthQueryInstalledArtifactContractAuthority>,
         domain_authority: Arc<
             crate::domain_computation::WorthQueryInstalledDomainExecutionAuthority,

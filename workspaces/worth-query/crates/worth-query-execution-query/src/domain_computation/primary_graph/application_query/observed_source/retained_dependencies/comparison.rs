@@ -8,6 +8,7 @@ use crate::domain_computation::primary_graph::output_reuse::{
 use crate::domain_computation::primary_graph::request_allocation_control::RequestAllocationControl;
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandSettlement;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
+use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
 
 impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     /// Validates every retained output and every original query dependency at
@@ -87,7 +88,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         let source = &retained.source;
         let prepared = source.admit_fact_materialization(
             &runtime.runtime.primary_provider.graph.layout,
-            &source.query_identifier,
+            &source.query_identifier(),
             SourceFactExpansionControl::in_request(*execution, Some(request)),
         )?;
         let facts = prepared.into_facts()?;

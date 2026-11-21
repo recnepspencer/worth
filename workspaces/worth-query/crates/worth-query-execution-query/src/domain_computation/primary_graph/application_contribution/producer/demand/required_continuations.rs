@@ -10,6 +10,7 @@ use super::progression::PerformedMembers;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::any::Any;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 
 use worth_query_installation::facade::ApplicationSchema;
 

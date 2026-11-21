@@ -18,7 +18,7 @@ impl<Schema, Operation, Input, Scope>
 {
     /// Equality neither moves the original admission nor issues a write target.
     /// Only the occurrence owner may supersede an unconsumed capture on false.
-    pub fn captured_inputs_remain_equal(
+    pub(crate) fn captured_inputs_remain_equal(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         current: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,

@@ -2,6 +2,7 @@
 use super::*;
 use crate::domain_computation::primary_graph::provider::unpublished_idempotency::UnpublishedIdempotencyDispositionExt as _;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
+use worth_query_execution_runtime::facade::ports::ProductBranchOwnerCleanupInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_runtime_world::facade::WorldRecoveredReleaseOutcome as Outcome;
 
@@ -47,7 +48,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                         .finish_recovered_release(&handle, original);
                 }
                 let identity = reservation.install_unpublished(cleanup);
-                return Ok(crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanup::new(self.runtime.product_runtime.0.clone(), identity));
+                return Ok(crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanup::from_runtime_identity(self.runtime.product_runtime.0.clone(), identity));
             }
             Outcome::AdmissionRefused { cause, custody } => {
                 drop(custody);

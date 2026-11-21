@@ -23,14 +23,12 @@ pub struct BeforeRelation<S, R, F, T> {
 }
 impl<S, R, F, T> BeforeRelation<S, R, F, T> {
     pub fn from_read(relation: WorthQueryInvariantRelation<S, R, F, T>) -> Self {
+        use worth_query_execution_lineage::facade::ports::InvariantRelationInternalPort as _;
+        let (relation_id, from, to) = relation.into_parts();
         Self {
-            from: BeforeEntity {
-                identity: relation.from,
-            },
-            to: BeforeEntity {
-                identity: relation.to,
-            },
-            relation: relation.relation_id,
+            from: BeforeEntity { identity: from },
+            to: BeforeEntity { identity: to },
+            relation: relation_id,
             marker: PhantomData,
         }
     }

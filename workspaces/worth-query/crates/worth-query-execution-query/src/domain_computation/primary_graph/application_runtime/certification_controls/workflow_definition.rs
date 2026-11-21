@@ -1,6 +1,7 @@
 //! Read-only probe of a published definition's revision provenance.
 
 use worth_foundational::facade::AspectValue;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::WorthQueryPrimaryGraphApplicationRuntime;

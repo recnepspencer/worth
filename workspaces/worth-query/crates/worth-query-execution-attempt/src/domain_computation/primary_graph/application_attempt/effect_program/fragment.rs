@@ -11,6 +11,7 @@ use crate::domain_computation::primary_graph::fragment_view::{
 use std::collections::BTreeMap;
 use std::sync::Arc;
 use worth_query_declaration::facade::application_schema::fragment::RelationDefinition;
+use worth_query_execution_lineage::facade::ports::InvariantMutationTargetInternalPort as _;
 
 use worth_foundational::facade::AspectValue;
 use worth_query_declaration::facade::application_schema::fragment::{

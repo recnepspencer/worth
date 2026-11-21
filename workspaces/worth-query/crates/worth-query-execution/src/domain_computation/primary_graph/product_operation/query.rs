@@ -1,6 +1,8 @@
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_query_declaration::facade::application_capability::ApplicationCapabilityRequest;
 use worth_query_declaration::facade::application_query::ApplicationQueryParameterSet;
+use worth_query_execution_query::facade::ports::ProductQueryControlsInternalPort as _;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledApplicationQuery};
 
 use super::WorthQuerySelectedProductOperation;
@@ -76,8 +78,8 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
             WorthQueryApplicationQueryControls::product_one_shot(
                 product,
                 application_basis,
-                controls.maximum_results,
-                controls.request,
+                controls.maximum_results(),
+                controls.request(),
             )
             .with_selection_origin(selection_origin)
             .with_original_settled_producer(producer),
@@ -193,8 +195,8 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
             WorthQueryApplicationQueryControls::product_continuation(
                 product.into_read_lease(),
                 application_basis,
-                controls.maximum_results,
-                controls.request,
+                controls.maximum_results(),
+                controls.request(),
             )
             .with_original_settled_producer(producer),
         )
@@ -270,8 +272,8 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
             WorthQueryApplicationQueryControls::product_one_shot(
                 product,
                 application_basis,
-                controls.maximum_results,
-                controls.request,
+                controls.maximum_results(),
+                controls.request(),
             )
             .with_selection_origin(selection_origin)
             .with_original_settled_producer(producer),
@@ -347,8 +349,8 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
             WorthQueryApplicationQueryControls::product_continuation(
                 product.into_read_lease(),
                 application_basis,
-                controls.maximum_results,
-                controls.request,
+                controls.maximum_results(),
+                controls.request(),
             )
             .with_original_settled_producer(producer),
         )

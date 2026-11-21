@@ -14,6 +14,8 @@ use crate::domain_computation::primary_graph::product_operation::SharedSelectedP
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use crate::domain_computation::primary_graph::WorthQueryObservedSource;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
+use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
 use worth_runtime_bridge::facade::BridgeConditionalDenial;
 
 const OUTPUT_SCHEDULE_DOMAIN: &[u8] = b"worth-query:output-schedule:v1";
@@ -90,7 +92,7 @@ where
                     route,
                     &truth,
                     signal_basis,
-                    &observed_source.query_identifier,
+                    &observed_source.query_identifier(),
                     query_identity,
                     &selected.identity,
                     attempt,
@@ -161,7 +163,7 @@ where
                     route,
                     &truth,
                     signal_basis,
-                    &observed_source.query_identifier,
+                    &observed_source.query_identifier(),
                     query_identity,
                     &selected.identity,
                     attempt,
@@ -238,8 +240,8 @@ where
         let mut identity = sha2::Sha256::new();
         use sha2::Digest;
         identity.update(OUTPUT_SCHEDULE_DOMAIN);
-        identity.update(observed_source.query_identity.as_bytes());
-        identity.update(observed_source.parameter_binding_identity.bytes());
+        identity.update(observed_source.query_identity().as_bytes());
+        identity.update(observed_source.parameter_binding_identity().bytes());
         let identity = identity.finalize();
         let mut identity_bytes = [0_u8; 8];
         identity_bytes.copy_from_slice(&identity[..8]);

@@ -18,6 +18,7 @@ use worth_query_declaration::facade::{
     },
     application_schema::{ApplicationScalarValueBinding, ApplicationSchema},
 };
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 
 #[derive(Debug)]
 /// A source-disclosure, semantic-comparison or inverse-derivation refusal.

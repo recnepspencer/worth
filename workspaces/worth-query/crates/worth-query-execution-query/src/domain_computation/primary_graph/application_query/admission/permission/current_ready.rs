@@ -1,4 +1,5 @@
 use super::*;
+use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
 
 /// The exact prepared Query permission after its issued World head was
 /// checked. Actor currentness still runs outside the World guard.

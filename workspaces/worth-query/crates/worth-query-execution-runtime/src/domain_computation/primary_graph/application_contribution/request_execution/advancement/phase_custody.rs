@@ -54,7 +54,9 @@ pub struct WorthQueryAdvancementPhase<'scope> {
 }
 
 impl<'scope> WorthQueryAdvancementPhase<'scope> {
-    pub fn world_owner(&self) -> Option<worth_runtime_world::facade::RuntimeWorldOwnerIdentity> {
+    pub(crate) fn world_owner(
+        &self,
+    ) -> Option<worth_runtime_world::facade::RuntimeWorldOwnerIdentity> {
         self.owner
     }
 
@@ -65,7 +67,7 @@ impl<'scope> WorthQueryAdvancementPhase<'scope> {
             .expect("admitted advancement")
     }
     /// Borrows execution only after the receiving installed runtime accepts custody.
-    pub fn execution_request_for(
+    pub(crate) fn execution_request_for(
         &self,
         runtime: &crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime,
     ) -> Result<ExecutionRequest<'scope, 'scope>, WorthQueryForeignAdvancementPhase> {
@@ -92,7 +94,7 @@ impl<'scope> WorthQueryAdvancementPhase<'scope> {
             })
     }
 
-    pub fn request_for_owner(
+    pub(crate) fn request_for_owner(
         &self,
         owner: worth_runtime_world::facade::RuntimeWorldOwnerIdentity,
     ) -> Result<ExecutionRequest<'scope, 'scope>, WorthQueryForeignAdvancementPhase> {
@@ -102,7 +104,7 @@ impl<'scope> WorthQueryAdvancementPhase<'scope> {
         Ok(self.admitted_request())
     }
 
-    pub fn request_for_source(
+    pub(crate) fn request_for_source(
         &self,
         source_instance: u64,
     ) -> Result<ExecutionRequest<'scope, 'scope>, WorthQueryForeignAdvancementPhase> {
@@ -112,7 +114,7 @@ impl<'scope> WorthQueryAdvancementPhase<'scope> {
         Ok(self.admitted_request())
     }
 
-    pub fn request_for_managed(
+    pub(crate) fn request_for_managed(
         &self,
         observation: &crate::domain_computation::managed_run::WorthQueryManagedRelationalObservation,
     ) -> Result<ExecutionRequest<'scope, 'scope>, WorthQueryForeignAdvancementPhase> {
@@ -123,7 +125,7 @@ impl<'scope> WorthQueryAdvancementPhase<'scope> {
     }
 
     pub fn complete(self) {}
-    pub fn execution_for(
+    pub(crate) fn execution_for(
         &self,
         runtime: &crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime,
     ) -> Result<&QueryRequestExecution<'scope>, WorthQueryForeignAdvancementPhase> {
@@ -133,7 +135,7 @@ impl<'scope> WorthQueryAdvancementPhase<'scope> {
 }
 
 impl<'scope> WorthQueryAdvancementPhase<'scope> {
-    pub fn test_host_request(&self) -> super::test_host_policy::TestHostRequest<'scope> {
+    pub(crate) fn test_host_request(&self) -> super::test_host_policy::TestHostRequest<'scope> {
         super::test_host_policy::TestHostRequest::from_installed(self)
     }
 

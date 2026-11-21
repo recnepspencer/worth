@@ -1,4 +1,5 @@
 use crate::domain_computation::primary_graph::application_attempt::effect_program::EffectEntityBorrowedExt;
+use worth_query_execution_lineage::facade::ports::EffectEntityErasedInternalPort as _;
 use worth_query_installation::facade::ApplicationEntityRef;
 use worth_query_installation::facade::OperationCreates;
 
@@ -50,7 +51,7 @@ impl<Schema, Operation, Input, Scope>
 
     /// Only the installed native body may enter this dynamic bridge. The
     /// complete body and its Create membership were readmitted at installation.
-    pub fn create_body_entity_in_context<ContextEntity>(
+    pub(crate) fn create_body_entity_in_context<ContextEntity>(
         &mut self,
         context: &WorthQueryApplicationEffectEntity<Schema, ContextEntity>,
         entity: &str,

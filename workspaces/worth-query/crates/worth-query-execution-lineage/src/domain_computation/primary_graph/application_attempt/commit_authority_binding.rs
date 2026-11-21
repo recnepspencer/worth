@@ -227,7 +227,7 @@ impl WorthQueryApplicationCommitAuthorityBinding {
     }
 
     #[allow(clippy::too_many_arguments)]
-    pub fn from_parts(
+    pub(crate) fn from_parts(
         original_mutation_binding: Option<std::any::TypeId>,
         runtime_authority: WorthQueryRuntimeAuthorityIdentity,
         installed_operation: [u8; 32],

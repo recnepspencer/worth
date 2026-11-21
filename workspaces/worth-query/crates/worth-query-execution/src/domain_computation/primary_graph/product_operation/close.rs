@@ -1,5 +1,8 @@
 //! Application-scoped close of one Query product occurrence.
 
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchCloseReceiptInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::{

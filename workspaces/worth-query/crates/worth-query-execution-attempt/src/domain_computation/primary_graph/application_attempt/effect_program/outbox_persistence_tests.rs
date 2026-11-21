@@ -17,6 +17,9 @@ use worth_foundational::facade::{
 use worth_query_declaration::facade::application_schema::{
     ApplicationExternalEffectBinding, ApplicationExternalEffectProtocol,
 };
+use worth_query_execution_lineage::facade::ports::{
+    CommitOutcomeIdentityInternalPort as _, IdempotencyBindingInternalPort as _,
+};
 use worth_query_installation::facade::InstalledExternalEffectContract;
 use worth_relational::facade::history::BranchId;
 use worth_relational::facade::identity::KindId;
@@ -88,7 +91,9 @@ fn declared_outbox_projection() -> OutboxProjectionEvidence {
         external_payload: Some(&projected),
         operation_slot: "notify-death",
         operation_version: 1,
-        idempotency: WorthQueryApplicationIdempotencyBinding::new([0xAB; 32], [0xCD; 32]),
+        idempotency: WorthQueryApplicationIdempotencyBinding::from_identities(
+            [0xAB; 32], [0xCD; 32],
+        ),
         outcome_identity: outcome,
         branch: &BranchId("main".to_owned()),
     })
@@ -199,7 +204,9 @@ fn a_declared_lane_with_no_projected_payload_derives_nothing() {
         external_payload: None,
         operation_slot: "notify-death",
         operation_version: 1,
-        idempotency: WorthQueryApplicationIdempotencyBinding::new([0xAB; 32], [0xCD; 32]),
+        idempotency: WorthQueryApplicationIdempotencyBinding::from_identities(
+            [0xAB; 32], [0xCD; 32],
+        ),
         outcome_identity: WorthQueryApplicationCommitOutcomeIdentity::mint()
             .expect("outcome identity"),
         branch: &BranchId("main".to_owned()),
@@ -219,7 +226,9 @@ fn an_undeclared_lane_derives_and_persists_nothing() {
         external_payload: Some(NOTICE),
         operation_slot: "release-estate",
         operation_version: 1,
-        idempotency: WorthQueryApplicationIdempotencyBinding::new([0xAB; 32], [0xCD; 32]),
+        idempotency: WorthQueryApplicationIdempotencyBinding::from_identities(
+            [0xAB; 32], [0xCD; 32],
+        ),
         outcome_identity: WorthQueryApplicationCommitOutcomeIdentity::mint()
             .expect("outcome identity"),
         branch: &BranchId("main".to_owned()),

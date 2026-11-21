@@ -28,7 +28,7 @@ pub struct WorthQueryReleasedApplicationEffect {
     original: WorldReleasedOriginal,
 }
 impl WorthQueryReleasedApplicationEffect {
-    pub fn new(binding: Arc<OriginalBinding>, original: WorldReleasedOriginal) -> Self {
+    pub(crate) fn new(binding: Arc<OriginalBinding>, original: WorldReleasedOriginal) -> Self {
         assert!(
             original.native_semantic_result().is_some(),
             "effect-bearing terminal original"

@@ -13,6 +13,7 @@ use crate::domain_computation::primary_graph::{
 };
 use sha2::{Digest, Sha256};
 use std::sync::Arc;
+use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
 
 pub fn capture<Q>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -43,7 +44,7 @@ pub fn capture<Q>(
         for row in rows {
             control.checkpoint(1)?;
             owners
-                .push(Arc::clone(&row.source_meaning))
+                .push(Arc::clone(&row.source_meaning()))
                 .map_err(|cause| control.refuse(Stop::Storage(cause)))?;
         }
         owners
@@ -55,12 +56,12 @@ pub fn capture<Q>(
     for source in rows.iter().chain(std::iter::once(result_set.source())) {
         storage.work(1)?;
         source.validate_completeness("managed source")?;
-        if !ManagedSourceDependencies::accepts(&source.source_meaning) {
+        if !ManagedSourceDependencies::accepts(&source.source_meaning()) {
             return Err(Denial::new(Kind::SourceContractMismatch, "managed source").into());
         }
         // Derive counts during the admitted completed-footprint visit; a
         // later count does not traverse the Source roster or spend its grant.
-        let footprint = source.source_meaning.footprint();
+        let footprint = source.source_meaning().footprint();
         fact_count = footprint
             .fact_count()
             .and_then(|count| fact_count.checked_add(count))
@@ -90,7 +91,7 @@ pub fn capture<Q>(
     Ok(Arc::new(ManagedSourceDependencies {
         rows: owners,
         authorization,
-        result_set: Some(Arc::clone(&result_set.source().source_meaning)),
+        result_set: Some(Arc::clone(&result_set.source().source_meaning())),
         maintained: None,
         applied: None,
         identity: digest.finalize().into(),

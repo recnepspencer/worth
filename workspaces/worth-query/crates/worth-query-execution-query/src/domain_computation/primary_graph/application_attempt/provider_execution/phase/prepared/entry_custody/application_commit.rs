@@ -1,6 +1,7 @@
 use super::*;
 use crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerInvocation;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementDenialCommitExt as _;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 impl<Schema: ApplicationSchema, Operation, Input, Scope>
     CurrentCommitProgram<
         '_,

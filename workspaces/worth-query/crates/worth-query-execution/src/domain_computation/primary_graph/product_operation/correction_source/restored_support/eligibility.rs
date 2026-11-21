@@ -12,6 +12,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryAdvancementPhase,
 };
 use worth_execution::ExecutionRequest;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::runtime::RelationalRuntime;
 

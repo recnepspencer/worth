@@ -7,6 +7,7 @@ use crate::domain_computation::primary_graph::application_attempt::effect_progra
 use crate::domain_computation::primary_graph::{
     WorthQueryAdvancementPhase, WorthQueryApplicationCommitDenial,
 };
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 
 pub struct WorkflowBirthBindingProof {
     binding: &'static str,

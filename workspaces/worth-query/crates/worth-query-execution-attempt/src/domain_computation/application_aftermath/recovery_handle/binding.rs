@@ -1,5 +1,6 @@
 //! Immutable recovery binding derived from the committed receipt (R8.28).
 
+use worth_query_execution_lineage::facade::ports::CommitReceiptInternalPort as _;
 use worth_query_execution_lineage::facade::ports::CommitReceiptPreimagePort as _;
 use worth_query_execution_lineage::facade::ports::{
     CommitAuthorityBindingInternalPort as _, RetainedGovernedInputInternalPort as _,
@@ -86,7 +87,7 @@ impl RecoveryInputCustody {
     }
 }
 impl WorthQueryRecoveryHandleBinding {
-    pub fn from_receipt(
+    pub(crate) fn from_receipt(
         receipt: &WorthQueryApplicationCommitReceipt,
         expires_at_unix_ms: Option<u64>,
     ) -> Result<Self, WorthQueryRecoveryHandleDenial> {
@@ -147,7 +148,7 @@ impl WorthQueryRecoveryHandleBinding {
         })
     }
 
-    pub fn from_pending_original(
+    pub(crate) fn from_pending_original(
         original: &crate::domain_computation::primary_graph::application_attempt::WorthQueryPendingApplicationCommitReceipt,
         dispatch: Option<
             &crate::domain_computation::application_aftermath::WorthQueryExternalEffectDispatch,

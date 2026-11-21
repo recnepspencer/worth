@@ -11,6 +11,9 @@ use worth_query_declaration::facade::{
     application_query::ApplicationQueryBinding,
     application_schema::{ApplicationSchema, ApplicationStructuredValueBinding},
 };
+use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 use worth_relational::facade::identity::EntityId;
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct WorthQueryOriginalSourceData {
@@ -36,7 +39,7 @@ pub fn capture_original_operation_source<Q>(
     let commit = source
         .selected_product_commit()
         .ok_or(D::OwnershipMaterialUnavailable)?;
-    let locator = source.scope_selector.locator();
+    let locator = source.scope_selector().locator();
     let fields = locator
         .field_path()
         .fields()
@@ -49,16 +52,16 @@ pub fn capture_original_operation_source<Q>(
             .durable()
             .ok_or(D::OwnershipMaterialUnavailable)?,
         commit: commit.ordinal(),
-        branch: source.branch.0.as_str().to_owned(),
-        query: *source.query_identity.as_bytes(),
-        root: source.model_root,
-        parameters: rmp_serde::to_vec(source.parameters.bindings())
+        branch: source.branch().0.as_str().to_owned(),
+        query: *source.query_identity().as_bytes(),
+        root: source.model_root(),
+        parameters: rmp_serde::to_vec(source.parameters().bindings())
             .map_err(|_| D::OwnershipMaterialUnavailable)?,
         scope: rmp_serde::to_vec(&(
             locator.aspect().aspect_key().as_str(),
             fields,
-            source.scope_selector.value(),
-            source.scope_selector.subject(),
+            source.scope_selector().value(),
+            source.scope_selector().subject(),
         ))
         .map_err(|_| D::OwnershipMaterialUnavailable)?,
         commitment: source.idempotency_identity().bytes(),
@@ -103,7 +106,7 @@ impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S>
         let branch = WorthQueryProductBranch::from_occurrence(basis.lifecycle_incarnation());
         let observation = WorthQueryApplicationReadObservation::from_product(
             self,
-            crate::basis::WorthQueryProductObservationLease::new(basis),
+            crate::basis::WorthQueryProductObservationLease::from_observation(basis),
         );
         let retained = self
             .select_application_read_observation_with_request(&execution, &observation)
@@ -171,7 +174,7 @@ impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S>
             let row = source
                 .observed_sources()
                 .iter()
-                .find(|row| row.model_root == data.root)
+                .find(|row| row.model_root() == data.root)
                 .ok_or(D::OwnershipMaterialUnavailable)?
                 .clone();
             if row.idempotency_identity().bytes() != data.commitment {

@@ -1,5 +1,6 @@
 //! Runtime qualification of an applied query source onto an `OutputSourceAddress`.
 
+use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::{
@@ -92,7 +93,7 @@ where
             Family::IDENTITY,
         ));
     }
-    let crate::domain_computation::primary_graph::application_query::WorthQueryApplicationBasisSelectionIdentity::Product(observation) = &source.selection
+    let crate::domain_computation::primary_graph::application_query::WorthQueryApplicationBasisSelectionIdentity::Product(observation) = &source.selection()
     else {
         return Err(WorthQueryOutputDemandDenial::new(
             WorthQueryOutputDemandDenialKind::ForeignSource,
@@ -101,8 +102,8 @@ where
     };
     Ok(QualifiedOutputSource::from_parts(
         OutputSourceAddress::from_parts(
-            source.runtime_authority,
-            source.schema_binding.clone(),
+            source.runtime_authority(),
+            source.schema_binding().clone(),
             observation.lifecycle_incarnation(),
             WorthQueryOperationScopeEntityBinding::from_entity(source.source_root()),
             OutputFamilyIdentity::declared(Family::IDENTITY),

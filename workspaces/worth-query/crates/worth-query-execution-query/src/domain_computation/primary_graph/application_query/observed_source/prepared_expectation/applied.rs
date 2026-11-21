@@ -3,6 +3,7 @@ use super::super::AppliedQuerySource;
 use super::*;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;
+use worth_query_execution_lineage::facade::ports::BoundSourceExpectationInternalPort as _;
 use worth_relational::facade::runtime::{
     RelationalAppliedCandidateReadIdentity, RelationalPinnedRead,
 };
@@ -69,13 +70,13 @@ impl<Query, Value> AppliedQuerySource<Query, Value> {
                     crate::domain_computation::primary_graph::application_query::WorthQueryAdmittedOneShotStop::Admission(
                         worth_relational::facade::mvcc::CompanionPreflightStop::Execution(cause))))?;
         }
-        let bound = WorthQueryBoundSourceExpectation {
-            kind: WorthQuerySourceExpectationKind::Row,
-            identity: self.idempotency_identity(),
-            partition_identity: self.partition(),
-        };
-        admission.bind_source_partition(bound.partition_identity);
-        admission.bind_source_expectation_kind(bound.kind);
+        let bound = WorthQueryBoundSourceExpectation::from_parts(
+            WorthQuerySourceExpectationKind::Row,
+            self.idempotency_identity(),
+            self.partition(),
+        );
+        admission.bind_source_partition(bound.partition_identity_bytes());
+        admission.bind_source_expectation_kind(bound.kind());
         admission.bind_source_facts(facts, None);
         use crate::domain_computation::provider_session::ManagedGraphWorkSessionPrimaryExt;
         admission

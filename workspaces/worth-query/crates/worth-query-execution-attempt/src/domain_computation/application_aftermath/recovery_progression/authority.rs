@@ -45,7 +45,7 @@ pub struct WorthQueryRecoveryEffectAuthority {
 }
 
 impl WorthQueryRecoveryEffectAuthority {
-    pub fn mint(
+    pub(crate) fn mint(
         runtime_authority: WorthQueryRuntimeAuthorityIdentity,
         handle_authority: WorthQueryRecoveryHandleAuthorityIdentity,
         home_owner: worth_runtime_world::facade::RuntimeWorldOwnerIdentity,
@@ -89,7 +89,7 @@ pub struct WorthQueryRecoveryInspectAuthority {
 }
 
 impl WorthQueryRecoveryInspectAuthority {
-    pub fn mint(
+    pub(crate) fn mint(
         runtime_authority: WorthQueryRuntimeAuthorityIdentity,
         handle_authority: WorthQueryRecoveryHandleAuthorityIdentity,
         home_owner: worth_runtime_world::facade::RuntimeWorldOwnerIdentity,

@@ -8,6 +8,8 @@ use crate::domain_computation::primary_graph::{
 use worth_query_declaration::facade::application_program::ApplicationConnectionShape;
 use worth_query_declaration::facade::application_query::ApplicationQueryBinding;
 use worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding;
+use worth_query_execution_lineage::facade::ports::ReadObservationInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
 type Connection<S,R> = <<R as ApplicationOutputGraphShape<S>>::RootConnection as ApplicationConnectionShape<S>>::Binding;
 type Demand<S, R> = <Connection<S, R> as WorthQueryApplicationRequiredOutputConnection<S>>::Demand;
 type Family<S, R> = <Demand<S, R> as WorthQueryApplicationOutputDemand<S>>::OutputFamily;

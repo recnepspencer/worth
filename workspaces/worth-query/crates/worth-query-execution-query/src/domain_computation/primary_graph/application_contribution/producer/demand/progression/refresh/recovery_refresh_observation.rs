@@ -1,5 +1,6 @@
 //! Exercise the direct refresh door after genuine exact-publication admission.
 use super::*;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     /// Certification-only entry into the direct door. Public program recovery
     /// uses selected execution; this admits a genuine Recovery demand and

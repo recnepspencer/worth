@@ -1,6 +1,8 @@
 //! Allocation-free custody checks precede selection of protected state.
 use super::*;
 use worth_query_declaration::facade::application_query::ApplicationQueryBinding;
+use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationQueryObservationInternalPort as _;
 use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryInstalledApplicationQueryBinding,
 };
@@ -27,9 +29,9 @@ where
         .binding_observation()
         .and_then(|binding| binding.inspection_contract())
         .ok_or(InspectionAdmissionDenial::MissingInspection)?;
-    if original.source.runtime_authority != runtime.inner.runtime.authority_identity().as_u64()
-        || &original.source.schema_binding != contract.graph_obligations().binding_identity()
-        || original.source.original_binding() != Some(contract.binding_observation())
+    if original.source().runtime_authority() != runtime.inner.runtime.authority_identity().as_u64()
+        || &original.source().schema_binding() != contract.graph_obligations().binding_identity()
+        || original.source().original_binding() != Some(contract.binding_observation())
     {
         return Err(InspectionAdmissionDenial::ForeignIssuedAccess);
     }

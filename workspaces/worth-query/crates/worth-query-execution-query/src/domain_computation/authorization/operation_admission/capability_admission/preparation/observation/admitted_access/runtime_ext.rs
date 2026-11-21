@@ -1,4 +1,5 @@
 use super::*;
+use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
 
 impl<Schema, Capability, Operation, Input>
     AdmittedCapabilityAccessRuntimeExt<Schema, Capability, Operation, Input>

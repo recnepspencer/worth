@@ -8,6 +8,7 @@ use crate::domain_computation::primary_graph::provider::WorthQueryInboundComplet
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_relational::facade::mvcc::ValidatedRelationalProposal;
 
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;

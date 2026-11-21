@@ -10,6 +10,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryHistoryOutputReadDenial as Denial, WorthQueryHistoryRecordingOutputOrigin,
 };
 use worth_query_declaration::facade::application_query::ApplicationQueryScopeResolution;
+use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
 impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
     WorthQueryProgramApplicationRuntime<S, P>
 {

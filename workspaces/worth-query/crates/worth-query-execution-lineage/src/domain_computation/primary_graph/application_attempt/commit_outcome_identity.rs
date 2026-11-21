@@ -10,7 +10,7 @@ use crate::domain_computation::application_outcome_identity::WorthQueryApplicati
 pub struct WorthQueryApplicationCommitOutcomeIdentity(WorthQueryApplicationOutcomeIdentity);
 
 impl WorthQueryApplicationCommitOutcomeIdentity {
-    pub fn mint() -> Option<Self> {
+    pub(crate) fn mint() -> Option<Self> {
         WorthQueryApplicationOutcomeIdentity::mint().map(Self)
     }
 

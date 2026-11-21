@@ -5,6 +5,8 @@ use crate::domain_computation::primary_graph::{
     application_attempt::prepare_coupled_application, application_query::AppliedQuerySource,
 };
 use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
+use worth_query_execution_attempt::facade::ports::EffectProgramMethodsInternalPort as _;
+use worth_query_execution_lineage::facade::ports::IdempotencyBindingInternalPort as _;
 use worth_relational::facade::runtime::{
     RelationalAppliedCandidateReadIdentity, RelationalPinnedRead,
 };
@@ -322,8 +324,11 @@ where
     );
     let idempotency = bound
         .bind_idempotency(
-            WorthQueryApplicationIdempotencyBinding::new(key, *identities.input_identity())
-                .bind_mutation::<Schema, Operation<Schema, Binding>>(),
+            WorthQueryApplicationIdempotencyBinding::from_identities(
+                key,
+                *identities.input_identity(),
+            )
+            .bind_mutation::<Schema, Operation<Schema, Binding>>(),
         )
         .bind_producer_dependency(&dependency)
         .bind_producing_implementation(implementation);

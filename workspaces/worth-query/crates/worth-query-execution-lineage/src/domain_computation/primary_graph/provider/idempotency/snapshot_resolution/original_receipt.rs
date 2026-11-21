@@ -58,7 +58,7 @@ pub struct RecordedOriginalBinding {
 }
 
 impl WorthQueryRecoveredApplicationCommitReceipt {
-    pub const fn retained_backing_bytes() -> usize {
+    pub(crate) const fn retained_backing_bytes() -> usize {
         std::mem::size_of::<RecordedReceipt>() + 2 * std::mem::size_of::<usize>()
     }
     pub fn commit_reference(&self) -> &RelationalCommitReceipt {

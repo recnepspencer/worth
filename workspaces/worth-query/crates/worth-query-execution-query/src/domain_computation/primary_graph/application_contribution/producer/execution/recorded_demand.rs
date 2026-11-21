@@ -9,6 +9,8 @@ use crate::domain_computation::primary_graph::{
     WorthQueryProductQueryControls,
 };
 use worth_query_declaration::facade::application_query::ApplicationQueryBinding;
+use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 use worth_query_installation::facade::WorthQueryInstalledApplicationQueryBinding;
 
 pub fn readmit<S, B>(
@@ -87,7 +89,7 @@ where
     let branch = WorthQueryProductBranch::from_occurrence(basis.lifecycle_incarnation());
     let observation = WorthQueryApplicationReadObservation::from_product(
         runtime,
-        crate::basis::WorthQueryProductObservationLease::new(basis),
+        crate::basis::WorthQueryProductObservationLease::from_observation(basis),
     );
     let retained = runtime
         .select_application_read_observation_with_request(execution, &observation)

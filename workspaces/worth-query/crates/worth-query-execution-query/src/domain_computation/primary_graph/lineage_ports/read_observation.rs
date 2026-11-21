@@ -1,6 +1,7 @@
 //! Runtime constructors and occurrence checks on `WorthQueryApplicationReadObservation`.
 
 use std::sync::Arc;
+use worth_query_execution_lineage::facade::ports::ReadObservationInternalPort as _;
 
 use worth_query_installation::facade::ApplicationSchema;
 
@@ -49,6 +50,7 @@ impl ReadObservationRuntimeExt for WorthQueryApplicationReadObservation {
         product: WorthQueryProductObservationLease,
         memory: Option<worth_execution::ExecutionMemoryReservation>,
     ) -> Arc<Self> {
+        use worth_query_execution_lineage::facade::ports::ReadObservationInternalPort as _;
         Self::from_parts(
             runtime.runtime.authority_identity().as_u64(),
             runtime.installed_schema.binding_identity(),
@@ -63,6 +65,7 @@ impl ReadObservationRuntimeExt for WorthQueryApplicationReadObservation {
         producer: Arc<OriginalSettledProducerObservation>,
         product: WorthQueryProductObservationLease,
     ) -> Arc<Self> {
+        use worth_query_execution_lineage::facade::ports::ReadObservationInternalPort as _;
         let matched = producer
             .matches(runtime, product.observation())
             .then_some(producer);

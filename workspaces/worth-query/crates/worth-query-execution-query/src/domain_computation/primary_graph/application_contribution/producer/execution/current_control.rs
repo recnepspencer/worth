@@ -2,6 +2,7 @@
 use super::*;
 use crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerInvocation;
 use crate::domain_computation::primary_graph::SharedSelectedProductOperation;
+use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
 
 pub fn select_invocation_control<'runtime, Schema: ApplicationSchema>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,

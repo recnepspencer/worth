@@ -5,6 +5,7 @@ use worth_query_execution_attempt::facade::ports::{
     EffectProgramOriginalInputRuntimePort, ProducerIdentityRuntimePort,
     SelectedProductOperationPort, WorkflowOperationAuthorityRuntimePort,
 };
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledApplicationSchema};
 
 use crate::basis::WorthQueryProductBranchReadIdentity;

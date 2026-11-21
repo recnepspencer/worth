@@ -32,7 +32,7 @@ where
 {
     /// Work is bounded by the selected node's declared evidence, not history or
     /// unrelated workflow instances. The compiled source lookup is indexed.
-    pub fn resolve_operation_evidence(
+    pub(crate) fn resolve_operation_evidence(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         compiled: &CompiledWorkflowDefinition,

@@ -128,7 +128,7 @@ impl WorthQueryUnpublishedIdempotencyStore {
                 .is_none()
         }) || !self.by_recovery.is_empty()
     }
-    pub fn new(maximum_entries: Option<usize>) -> Self {
+    pub(crate) fn new(maximum_entries: Option<usize>) -> Self {
         assert!(
             maximum_entries != Some(0),
             "explicit unpublished capacity must be nonzero"

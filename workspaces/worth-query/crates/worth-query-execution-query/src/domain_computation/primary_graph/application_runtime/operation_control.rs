@@ -1,6 +1,7 @@
 //! Feature-only access to the installed World's real operation boundary.
 
 use super::WorthQueryPrimaryGraphApplicationRuntime;
+use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
 
 pub use worth_query_execution_attempt::facade::domain_computation::primary_graph::application_runtime::operation_control::attempt_registration;
 pub mod coupled_participant;

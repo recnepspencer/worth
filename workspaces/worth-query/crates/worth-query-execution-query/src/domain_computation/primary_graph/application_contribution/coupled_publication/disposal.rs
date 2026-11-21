@@ -6,6 +6,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationCleanupRequired, WorthQueryApplicationCommitOutcome,
     WorthQueryApplicationUncommitted as Uncommitted,
 };
+use worth_query_execution_lineage::facade::ports::CleanupRequiredInternalPort as _;
 impl<S: ApplicationSchema> CoupledApplicationAssembly<'_, '_, '_, S> {
     pub fn abort_writers(&self, execution: &worth_execution::ExecutionRequest<'_, '_>) -> bool {
         for writer in self.authored.borrow_mut().drain(..) {

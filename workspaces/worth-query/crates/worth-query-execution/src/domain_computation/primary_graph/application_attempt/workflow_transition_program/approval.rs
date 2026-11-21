@@ -1,5 +1,6 @@
 //! Selected-product workflow approval preparation using L6 workflow vocabulary.
 use super::*;
+use worth_query_execution_attempt::facade::ports::CompleteReadSetWorkflowInternalPort as _;
 
 impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     #[allow(clippy::too_many_arguments)]

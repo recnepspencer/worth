@@ -9,6 +9,7 @@ use crate::domain_computation::primary_graph::output_reuse::{
     first_moved_fact_in, RetainedFactVerification,
 };
 use std::sync::Arc;
+use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
 
 pub struct RetainedQuerySource {
     pub source: WorthQueryObservedSource<()>,
@@ -76,7 +77,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 .map_err(storage)?;
             let prepared = source.admit_fact_materialization(
                 &self.application().runtime.primary_provider.graph.layout,
-                &source.query_identifier,
+                &source.query_identifier(),
                 SourceFactExpansionControl::in_request(*execution, None),
             )?;
             let facts = prepared.into_facts()?;

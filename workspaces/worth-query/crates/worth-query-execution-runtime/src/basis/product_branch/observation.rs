@@ -18,7 +18,7 @@ pub struct WorthQueryProductObservationLease {
 }
 
 impl WorthQueryProductObservationLease {
-    pub fn new(observation: worth_runtime_world::facade::ProductBranchObservation) -> Self {
+    pub(crate) fn new(observation: worth_runtime_world::facade::ProductBranchObservation) -> Self {
         Self {
             observation,
             current_security_guard: None,
@@ -116,7 +116,7 @@ impl WorthQueryProductBranchLease {
         self.observation() == other.observation()
     }
 
-    pub fn new(
+    pub(crate) fn new(
         publication: crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding,
         bridge_source: worth_runtime_bridge::facade::RelationalBridgeObservationLease,
     ) -> Self {

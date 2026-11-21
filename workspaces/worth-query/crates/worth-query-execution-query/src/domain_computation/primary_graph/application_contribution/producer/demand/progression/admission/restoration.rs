@@ -1,3 +1,4 @@
+use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
 mod verification_denial;
 use crate::equality_type_id::EqualityTypeId as TypeId;
 use worth_query_installation::facade::ApplicationSchema;
@@ -98,7 +99,8 @@ where
         // source's current Product and verify both the original revisions and
         // decoded producer observations before admitting a restored row.
 
-        let source_read = match &observed_source.selection {
+        let selection = observed_source.selection();
+        let source_read = match &selection {
             crate::domain_computation::primary_graph::WorthQueryApplicationBasisSelectionIdentity::Product(source_read) => source_read,
             crate::domain_computation::primary_graph::WorthQueryApplicationBasisSelectionIdentity::Relational => return Ok(None),
         };

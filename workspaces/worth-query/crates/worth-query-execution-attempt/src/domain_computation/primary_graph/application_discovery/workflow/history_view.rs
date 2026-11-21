@@ -65,14 +65,14 @@ fn text(value: &ExecutionImmutableBytes) -> &str {
 }
 /// A complete page and its opaque continuation, retaining exact data but no grant.
 pub struct WorthQueryWorkflowHistoryPage {
-    pub basis: WorthQueryWorkflowReadBasis,
-    pub instance: worth_relational::facade::identity::EntityId,
-    pub subject: worth_relational::facade::identity::EntityId,
-    pub scope: worth_relational::facade::identity::EntityId,
-    pub support: [u8; 32],
-    pub width: usize,
-    pub rows: ExecutionArray<WorthQueryWorkflowHistoryEntry>,
-    pub native: worth_relational::facade::indexes::BoundedRelatedEntityPrefixPage,
+    pub(crate) basis: WorthQueryWorkflowReadBasis,
+    pub(crate) instance: worth_relational::facade::identity::EntityId,
+    pub(crate) subject: worth_relational::facade::identity::EntityId,
+    pub(crate) scope: worth_relational::facade::identity::EntityId,
+    pub(crate) support: [u8; 32],
+    pub(crate) width: usize,
+    pub(crate) rows: ExecutionArray<WorthQueryWorkflowHistoryEntry>,
+    pub(crate) native: worth_relational::facade::indexes::BoundedRelatedEntityPrefixPage,
 }
 impl WorthQueryWorkflowHistoryPage {
     pub fn basis(&self) -> &WorthQueryWorkflowReadBasis {

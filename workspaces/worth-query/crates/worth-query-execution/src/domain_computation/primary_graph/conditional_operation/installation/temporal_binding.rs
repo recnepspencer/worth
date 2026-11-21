@@ -1,5 +1,6 @@
 //! Temporal operation installation retains its existing reconstruction and execution admission.
 use super::*;
+use worth_query_execution_query::facade::ports::ConditionalClockHandleInternalPort as _;
 impl<Schema> WorthQueryConditionalApplicationRuntimeInstallation<Schema>
 where
     Schema: ApplicationSchema + 'static,
@@ -206,7 +207,7 @@ where
             ));
         }
         let binding_canonical_work = identity.canonical_work();
-        let lease = Arc::new(ConditionalClockLease);
+        let lease = WorthQueryConditionalClockHandle::<Schema, (), ()>::new_lease();
         let node_authority = Arc::from(
             binding
                 .clocked_node()
@@ -223,13 +224,12 @@ where
                 execution,
             ),
         ));
-        Ok(WorthQueryConditionalClockHandle {
-            binding_identity: support_identity,
-            binding_identity_digest: *identity.digest().bytes(),
+        Ok(WorthQueryConditionalClockHandle::from_parts(
+            support_identity,
+            *identity.digest().bytes(),
             node_authority,
             binding_canonical_work,
             lease,
-            marker: PhantomData,
-        })
+        ))
     }
 }

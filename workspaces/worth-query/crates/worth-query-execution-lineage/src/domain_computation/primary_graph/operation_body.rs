@@ -40,19 +40,19 @@ use serde::{Deserialize, Serialize};
 
 /// A native body decision retains its exact scope and observed replacement targets.
 pub struct WorthQueryOperationBodyDecision<Schema, Scope> {
-    pub target: WorthQueryInvariantMutationTarget<Schema, Scope>,
-    pub inputs: Option<PreparedBodyInputs>,
-    pub sources: Vec<Option<PreparedBodySource>>,
-    pub selections: PreparedBodySelections<Schema>,
-    pub emission: Option<emission::BodyExternalEffectSelection>,
-    pub values: Option<value::PreparedBodyValues>,
-    pub retirements: PreparedBodyRetirements<Schema>,
-    pub path_writes: PreparedBodyPathWrites<Schema>,
-    pub path_links: PreparedBodyPathLinks<Schema>,
-    pub principal_link: Option<WorthQueryInvariantMutationTarget<Schema, ()>>,
-    pub references: reference_input::PreparedBodyReferences<Schema>,
-    pub creation_disposition: reuse::CreationDisposition,
-    pub children: Option<PreparedBodyChildren<Schema>>,
+    pub(crate) target: WorthQueryInvariantMutationTarget<Schema, Scope>,
+    pub(crate) inputs: Option<PreparedBodyInputs>,
+    pub(crate) sources: Vec<Option<PreparedBodySource>>,
+    pub(crate) selections: PreparedBodySelections<Schema>,
+    pub(crate) emission: Option<emission::BodyExternalEffectSelection>,
+    pub(crate) values: Option<value::PreparedBodyValues>,
+    pub(crate) retirements: PreparedBodyRetirements<Schema>,
+    pub(crate) path_writes: PreparedBodyPathWrites<Schema>,
+    pub(crate) path_links: PreparedBodyPathLinks<Schema>,
+    pub(crate) principal_link: Option<WorthQueryInvariantMutationTarget<Schema, ()>>,
+    pub(crate) references: reference_input::PreparedBodyReferences<Schema>,
+    pub(crate) creation_disposition: reuse::CreationDisposition,
+    pub(crate) children: Option<PreparedBodyChildren<Schema>>,
 }
 
 /// A declared source expectation failed before any candidate effect.

@@ -66,7 +66,7 @@ pub struct WorthQueryProductBranchCreationRecovery {
 }
 
 impl WorthQueryProductBranchCreationRecovery {
-    pub fn new(
+    pub(crate) fn new(
         effects: ProductUnpublishedOwnerEffects,
         recovery: RuntimeWorldRecoveryPort,
         runtime: crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime,

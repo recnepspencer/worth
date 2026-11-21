@@ -3,6 +3,9 @@ use super::*;
 use crate::domain_computation::primary_graph::{
     OriginalSettledProducerObservationExt, ReadObservationRuntimeExt,
 };
+use worth_query_execution_lineage::facade::ports::{
+    OutputDemandSettlementInternalPort as _, OutputDemandSettlementParts,
+};
 
 pub trait OutputDemandSettlementReusedExt: Sized {
     fn from_restoration<Schema>(
@@ -64,8 +67,8 @@ impl OutputDemandSettlementReusedExt for WorthQueryOutputDemandSettlement {
                     "recovered output root is no longer current",
                 )
             })?;
-        Ok(Arc::new(Self {
-            _original_delivery_memory: None,
+        Ok(Arc::new(Self::from_parts(OutputDemandSettlementParts {
+            original_delivery_memory: None,
             posture: restored.settlement_posture(),
             runtime_authority: runtime.runtime.authority_identity().as_u64(),
             schema_binding: runtime.installed_schema.binding_identity(),
@@ -94,7 +97,7 @@ impl OutputDemandSettlementReusedExt for WorthQueryOutputDemandSettlement {
                 )?,
                 product.read_lease(),
             ),
-        }))
+        })))
     }
 
     fn from_stable<Schema>(
@@ -109,8 +112,8 @@ impl OutputDemandSettlementReusedExt for WorthQueryOutputDemandSettlement {
     where
         Schema: worth_query_installation::facade::ApplicationSchema,
     {
-        Ok(Arc::new(Self {
-            _original_delivery_memory: None,
+        Ok(Arc::new(Self::from_parts(OutputDemandSettlementParts {
+            original_delivery_memory: None,
             posture: WorthQueryOutputSettlementPosture::StableReused,
             runtime_authority: runtime.runtime.authority_identity().as_u64(),
             schema_binding: runtime.installed_schema.binding_identity(),
@@ -134,6 +137,6 @@ impl OutputDemandSettlementReusedExt for WorthQueryOutputDemandSettlement {
                 )?,
                 selected.product().read_lease(),
             ),
-        }))
+        })))
     }
 }

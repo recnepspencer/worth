@@ -75,6 +75,10 @@ pub trait AdmittedCapabilityAccessInspectionPort {
         crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
         worth_proof::HomeIncarnationDenial,
     >;
+
+    fn principal_entity_id(&self) -> worth_relational::facade::identity::EntityId;
+
+    fn resource_entity_id(&self) -> worth_relational::facade::identity::EntityId;
 }
 
 /// Crate-boundary port exposing `WorthQueryExecutionRuntime::retain_primary_graph_integration_handle`
@@ -176,4 +180,11 @@ pub trait AdmittedQueryPlanInternalPort<
     >;
 
     fn security_product(&self) -> &crate::basis::WorthQueryProductObservationLease;
+
+    fn carry_planned_batch_item(
+        &mut self,
+        item: Option<
+            crate::domain_computation::primary_graph::application_query::batch::PlannedBatchItem,
+        >,
+    );
 }

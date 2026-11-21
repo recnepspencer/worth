@@ -1,5 +1,6 @@
 //! Original principal admission on a supplied native Query borrow.
 use super::*;
+use worth_query_execution_attempt::facade::ports::AuthenticatedPrincipalInternalPort as _;
 
 impl<'runtime, Schema: ApplicationSchema>
     crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation<'runtime, Schema>

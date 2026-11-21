@@ -15,7 +15,7 @@ use crate::domain_computation::{
 };
 
 impl WorthQueryExecutionRuntime {
-    pub fn admit_direct_run(
+    pub(crate) fn admit_direct_run(
         &self,
         operation: &WorthQueryExecutionBoundOperationAuthority,
         resource_attempt: WorthQueryDirectExecutionResourceAttempt,

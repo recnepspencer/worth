@@ -5,6 +5,7 @@ use crate::domain_computation::primary_graph::query_obligations::{
     QueryAdoptionPerformedDescription, QueryObligationDenial, QueryStoppedBranchSetObligation,
 };
 use worth_foundational::facade::{CanonicalDigestId, DurableCompositeCommitIdentity};
+use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
 impl WorthQueryPreparedBranchSetAdoption {
     pub fn begin_resume<Schema: ApplicationSchema>(
         mut self,

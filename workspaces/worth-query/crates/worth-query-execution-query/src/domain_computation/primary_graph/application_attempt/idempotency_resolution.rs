@@ -1,5 +1,8 @@
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use worth_query_execution_attempt::facade::ports::AdmittedIdempotencyReadInternalPort as _;
 use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
+use worth_query_execution_lineage::facade::ports::CommitReceiptInternalPort as _;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 
 pub use worth_query_execution_lineage::facade::domain_computation::primary_graph::application_attempt::idempotency_resolution::denial;

@@ -6,6 +6,8 @@ use crate::domain_computation::primary_graph::{
 use worth_query_declaration::facade::application_operation::{
     ApplicationMutationBinding, ApplicationMutationIdentities,
 };
+use worth_query_execution_attempt::facade::ports::EffectProgramMethodsInternalPort as _;
+use worth_query_execution_lineage::facade::ports::IdempotencyBindingInternalPort as _;
 type Program<S, B> = WorthQueryApplicationEffectProgram<
     S,
     <Operation<S, B> as ApplicationMutationBinding<S>>::Operation,
@@ -79,7 +81,7 @@ where
         })?;
     let idempotency = bound_source
         .bind_idempotency(
-            WorthQueryApplicationIdempotencyBinding::new(
+            WorthQueryApplicationIdempotencyBinding::from_identities(
                 key_identity,
                 *identities.input_identity(),
             )

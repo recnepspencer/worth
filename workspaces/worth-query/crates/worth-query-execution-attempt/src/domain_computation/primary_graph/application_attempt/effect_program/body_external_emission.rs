@@ -5,7 +5,7 @@ use crate::domain_computation::primary_graph::operation_body::emission::BodyExte
 impl<Schema, Operation, Input, Scope>
     WorthQueryApplicationEffectProgramBuilder<Schema, Operation, Input, Scope>
 {
-    pub fn body_external_emission(
+    pub(crate) fn body_external_emission(
         &mut self,
         mut selection: BodyExternalEffectSelection,
     ) -> Result<(), WorthQueryApplicationAttemptDenial> {

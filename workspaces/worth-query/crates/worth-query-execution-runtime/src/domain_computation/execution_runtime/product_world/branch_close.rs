@@ -26,7 +26,7 @@ pub struct WorthQueryProductBranchCloseReceipt {
 }
 
 impl WorthQueryProductBranchCloseReceipt {
-    pub fn from_owner_cleanup(
+    pub(crate) fn from_owner_cleanup(
         branch: WorthQueryProductBranch,
         cleanup: super::WorthQueryProductBranchOwnerCleanupReceipt,
     ) -> Self {

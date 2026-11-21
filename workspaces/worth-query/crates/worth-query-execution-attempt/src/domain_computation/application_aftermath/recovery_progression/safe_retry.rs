@@ -65,7 +65,7 @@ impl WorthQueryRecoverySafeRetryAdmission {
         self.outbox_durability
     }
 
-    pub fn completes_receipt(
+    pub(crate) fn completes_receipt(
         &self,
         receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
     ) -> bool {

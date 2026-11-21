@@ -2,6 +2,7 @@
 
 use std::sync::Arc;
 use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
+use worth_query_execution_lineage::facade::ports::OperationScopeBindingInternalPort as _;
 
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;

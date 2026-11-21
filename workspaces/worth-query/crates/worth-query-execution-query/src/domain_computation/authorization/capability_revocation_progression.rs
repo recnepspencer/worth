@@ -1,5 +1,6 @@
 //! Command/target binding for one exact capability revocation.
 
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
 pub use worth_query_execution_attempt::facade::domain_computation::authorization::capability_revocation_progression::*;
 

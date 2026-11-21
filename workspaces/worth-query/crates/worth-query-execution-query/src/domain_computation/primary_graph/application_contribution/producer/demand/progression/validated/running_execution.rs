@@ -1,4 +1,5 @@
 //! Consume an admitted Running phase after its preparation frame has unwound.
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use super::*;
 use crate::domain_computation::primary_graph::application_contribution::producer::execution;
 use crate::domain_computation::primary_graph::application_contribution::producer::execution::prepared_plan::OwnerPlan;

@@ -148,19 +148,24 @@ impl WorthQueryExecutionRuntime {
         Arc::clone(&self.installed_packages)
     }
 
-    pub fn primary_graph_any(&self) -> Option<&(dyn std::any::Any + Send + Sync)> {
+    pub(crate) fn primary_graph_any(&self) -> Option<&(dyn std::any::Any + Send + Sync)> {
         self.primary_graph.as_deref()
     }
 
-    pub fn primary_graph_any_mut(&mut self) -> Option<&mut (dyn std::any::Any + Send + Sync)> {
+    pub(crate) fn primary_graph_any_mut(
+        &mut self,
+    ) -> Option<&mut (dyn std::any::Any + Send + Sync)> {
         self.primary_graph.as_deref_mut()
     }
 
-    pub fn install_primary_graph_any(&mut self, graph: Box<dyn std::any::Any + Send + Sync>) {
+    pub(crate) fn install_primary_graph_any(
+        &mut self,
+        graph: Box<dyn std::any::Any + Send + Sync>,
+    ) {
         self.primary_graph = Some(graph);
     }
 
-    pub fn retain_current_generation(&self) -> Arc<AtomicU64> {
+    pub(crate) fn retain_current_generation(&self) -> Arc<AtomicU64> {
         Arc::clone(&self.current_generation)
     }
 

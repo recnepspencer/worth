@@ -3,6 +3,7 @@ use super::super::{
 };
 use super::*;
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 
 pub mod result;
 pub use result::WorthQueryApplicationBatchResult;

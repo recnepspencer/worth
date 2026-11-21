@@ -1,5 +1,6 @@
 //! Runtime read-request close on `WorthQueryAdmittedOutputDemand`.
 
+use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::{

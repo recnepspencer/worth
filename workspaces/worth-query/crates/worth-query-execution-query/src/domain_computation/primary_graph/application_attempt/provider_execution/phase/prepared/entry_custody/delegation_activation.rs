@@ -1,4 +1,5 @@
 use super::*;
+use worth_query_execution_attempt::facade::ports::SpecializedEffectProgramInternalPort as _;
 impl<Schema: ApplicationSchema, Operation, Input, Scope>
     CurrentCommitProgram<
         '_,

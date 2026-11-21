@@ -4,6 +4,7 @@ use super::super::mutation_partition::ApplicationMutationPartitions;
 use super::*;
 use crate::domain_computation::authorization::WorthQueryRuntimeClock;
 use crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime;
+use worth_query_execution_query::facade::ports::QueryExecutionRuntimeInternalPort as _;
 
 pub(in crate::domain_computation::primary_graph) struct HomeApplicationServices<
     Schema: ApplicationSchema,

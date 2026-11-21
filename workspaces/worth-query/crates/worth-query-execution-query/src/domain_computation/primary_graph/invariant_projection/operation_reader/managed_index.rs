@@ -1,5 +1,7 @@
 //! Ordinary declared index queries inside an admitted decision reader.
 
+use worth_query_execution_lineage::facade::ports::InvariantProjectionReaderInternalPort as _;
+use worth_query_execution_lineage::facade::ports::OperationInvariantProjectionReaderInternalPort as _;
 use super::*;
 use crate::domain_computation::primary_graph::application_query::{
     self, ApplicationQueryNativeAccess, SourceQueryReaderAccess,
@@ -38,13 +40,12 @@ where
 {
     let result = (|| {
         let access = source_query.ok_or_else(unavailable)?;
-        let context = reader_self.source_context_use.ok_or_else(unavailable)?;
-        let admission = reader_self.admission_identity.ok_or_else(unavailable)?;
+        let context = reader_self.source_context_use().ok_or_else(unavailable)?;
+        let admission = reader_self.admission_identity().ok_or_else(unavailable)?;
         let contracts = reader_self
-            .admitted_contracts
-            .as_ref()
-            .ok_or_else(unavailable)?
-            .clone();
+            .admitted_contracts()
+            .cloned()
+            .ok_or_else(unavailable)?;
         reader_self
             .admit_decision_target(
                 &worth_query_installation::facade::ApplicationOperationDecisionReadTarget::ManagedIndex {
@@ -53,7 +54,7 @@ where
             )
             .map_err(HandlerExecutionDenial::new)?;
         let scope = reader_self
-            .operation_scope
+            .operation_scope()
             .as_ref()
             .ok_or_else(unavailable)?
             .clone();
@@ -75,25 +76,25 @@ where
         }
         let selected = access.shared.selected();
         let original = reader_self
-            .reader
-            .native
+            .reader()
+            .native()
             .committed_runtime()
             .ok_or_else(unavailable)?
             .read_truth()
-            .positioned_snapshot(reader_self.reader.snapshot)
+            .positioned_snapshot(reader_self.reader().snapshot())
             .map_err(|_| HandlerExecutionDenial::new(IndexDecisionStop::ForeignProjection))?;
         let borrowed = reader_self
-            .reader
-            .native
+            .reader()
+            .native()
             .committed_runtime()
             .ok_or_else(unavailable)?
             .read_truth()
             .positioned_snapshot(selected.application_basis().snapshot_handle())
             .map_err(|_| HandlerExecutionDenial::new(IndexDecisionStop::ForeignProjection))?;
         if original != borrowed
-            || reader_self.reader.selected_product_occurrence
+            || reader_self.reader().selected_product_occurrence()
                 != Some(selected.product().observation().lifecycle_incarnation())
-            || reader_self.reader.selected_product_generation
+            || reader_self.reader().selected_product_generation()
                 != Some(
                     selected
                         .product()
@@ -106,7 +107,7 @@ where
                 IndexDecisionStop::ForeignProjection,
             ));
         }
-        let execution = reader_self.reader.execution;
+        let execution = reader_self.reader().execution();
         let graph = access
             .application
             .runtime
@@ -115,8 +116,8 @@ where
         let mut native = ApplicationQueryNativeAccess::borrowed(
             graph,
             reader_self
-                .reader
-                .native
+                .reader()
+                .native()
                 .committed_runtime()
                 .ok_or_else(unavailable)?,
         )
@@ -130,20 +131,15 @@ where
             &mut native,
         )
         .map_err(HandlerExecutionDenial::new)?;
+        let snapshot = reader_self.reader().snapshot();
         reader_self
-            .decision_facts
-            .record_managed_source(
-                &observation,
-                admission,
-                contracts,
-                reader_self.reader.snapshot,
-                execution,
-            )
+            .decision_facts_mut()
+            .record_managed_source(&observation, admission, contracts, snapshot, execution)
             .map_err(|cause| HandlerExecutionDenial::new(IndexDecisionStop::Native(cause)))?;
         Ok(rows)
     })();
     if result.is_err() {
-        reader_self.decision_facts.fail_managed_source();
+        reader_self.decision_facts_mut().fail_managed_source();
     }
     result
 }

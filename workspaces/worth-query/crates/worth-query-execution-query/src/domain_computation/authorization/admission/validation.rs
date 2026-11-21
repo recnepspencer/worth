@@ -2,6 +2,7 @@ use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRe
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryRequestInterruption, WorthQueryRequestScope,
 };
+use worth_query_execution_lineage::facade::ports::OperationScopeBindingInternalPort as _;
 use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryInstalledApplicationOperation,
 };

@@ -1,4 +1,5 @@
 use sha2::{Digest, Sha256};
+use worth_query_execution_lineage::facade::ports::OutputDemandSettlementInternalPort as _;
 
 use super::{
     RequiredWorkflowAssessment, WorkflowAssessmentEvidenceMeaning, WorthQueryObservedSource,
@@ -133,13 +134,10 @@ pub fn evidence_meaning<Query>(
                 ),
                 output_content_identity(receipt, source.idempotency_identity().bytes()),
             )
-        } else if let Some(restored) = settlement.restored_source.as_ref() {
+        } else if let Some(restored) = settlement.restored_source() {
             restored_output_identities(restored)
         } else {
-            stable_output_identities(
-                settlement.stable.as_ref()?,
-                source.idempotency_identity().bytes(),
-            )?
+            stable_output_identities(settlement.stable()?, source.idempotency_identity().bytes())?
         };
     let passing = posture == WorthQueryWorkflowAssessmentPosture::Passing;
     let mut digest = Sha256::new();

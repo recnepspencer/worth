@@ -3,6 +3,7 @@ use super::*;
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationOutputDemandSource, WorthQueryPreparedRequiredOutputSource,
 };
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub fn finish_unavailable_output_demand<Family>(
         &self,

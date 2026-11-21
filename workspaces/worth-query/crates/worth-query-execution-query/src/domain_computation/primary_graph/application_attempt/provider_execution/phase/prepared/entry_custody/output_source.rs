@@ -5,6 +5,7 @@ use crate::domain_computation::application_aftermath::ApplicationCommitCausality
 use crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerInvocation;
 use crate::domain_computation::primary_graph::program_occurrence::WorthQueryPresentedProgram;
 use crate::equality_type_id::EqualityTypeId as TypeId;
+use worth_query_execution_attempt::facade::ports::EffectProgramMethodsInternalPort as _;
 
 impl<Schema: ApplicationSchema, Operation, Input, Scope>
     CurrentCommitProgram<

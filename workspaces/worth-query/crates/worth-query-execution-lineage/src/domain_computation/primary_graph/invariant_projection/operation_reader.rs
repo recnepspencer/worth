@@ -1,5 +1,6 @@
 use std::marker::PhantomData;
 use std::sync::Arc;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 
 use worth_query_declaration::facade::application_schema::ApplicationEntityMarkerIdentity;
 use worth_query_installation::facade::{
@@ -82,27 +83,28 @@ pub struct WorthQueryApplicationOperationInvariantProjectionReader<
     Schema,
     Operation,
 > {
-    pub reader: &'reader mut WorthQueryApplicationInvariantProjectionReader<'runtime, Schema>,
-    pub source_query: Option<&'reader dyn SourceQueryReaderPort>,
-    pub source_context_use: Option<
+    pub(crate) reader:
+        &'reader mut WorthQueryApplicationInvariantProjectionReader<'runtime, Schema>,
+    pub(crate) source_query: Option<&'reader dyn SourceQueryReaderPort>,
+    pub(crate) source_context_use: Option<
         &'reader std::cell::Cell<
             crate::domain_computation::primary_graph::handler::DecisionContextUse,
         >,
     >,
-    pub admitted_contracts: Option<Arc<WorthQueryCompiledApplicationOperationContracts>>,
-    pub runtime_authority:
+    pub(crate) admitted_contracts: Option<Arc<WorthQueryCompiledApplicationOperationContracts>>,
+    pub(crate) runtime_authority:
         crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
-    pub binding_identity:
+    pub(crate) binding_identity:
         &'reader worth_query_installation::facade::ApplicationSchemaBindingIdentity,
-    pub admission_identity: Option<WorthQueryOperationAdmissionIdentity>,
-    pub selected_product: Option<&'reader crate::basis::WorthQueryProductBranchLease>,
-    pub admitted_root: Option<admitted::AdmittedReadRoot>,
-    pub admitted_principal: Option<worth_relational::facade::identity::EntityId>,
-    pub query_context:
+    pub(crate) admission_identity: Option<WorthQueryOperationAdmissionIdentity>,
+    pub(crate) selected_product: Option<&'reader crate::basis::WorthQueryProductBranchLease>,
+    pub(crate) admitted_root: Option<admitted::AdmittedReadRoot>,
+    pub(crate) admitted_principal: Option<worth_relational::facade::identity::EntityId>,
+    pub(crate) query_context:
         Option<&'reader super::super::application_query::ObservedQueryExpressionContext>,
-    pub operation_scope:
+    pub(crate) operation_scope:
         Option<crate::domain_computation::authorization::WorthQueryOperationScopeBinding>,
-    pub decision_facts: &'reader mut DecisionReads,
+    pub(crate) decision_facts: &'reader mut DecisionReads,
     _operation: PhantomData<fn() -> Operation>,
     request_local: RequestLocal,
 }

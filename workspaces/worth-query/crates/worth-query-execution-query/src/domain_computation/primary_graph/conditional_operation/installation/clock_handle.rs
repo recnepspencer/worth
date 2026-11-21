@@ -7,12 +7,13 @@ use std::{marker::PhantomData, sync::Arc};
 /// Returned by `bind_temporal_operation`; pass it to `conditional_clock` to
 /// feed that binding clock readings.
 pub struct WorthQueryConditionalClockHandle<Schema, Node, Clock> {
-    pub binding_identity: Arc<str>,
-    pub binding_identity_digest: [u8; 32],
-    pub node_authority: Arc<str>,
-    pub binding_canonical_work: worth_query_installation::facade::WorthQueryCanonicalWorkEvidence,
-    pub lease: Arc<ConditionalClockLease>,
-    pub marker: PhantomData<fn() -> (Schema, Node, Clock)>,
+    pub(crate) binding_identity: Arc<str>,
+    pub(crate) binding_identity_digest: [u8; 32],
+    pub(crate) node_authority: Arc<str>,
+    pub(crate) binding_canonical_work:
+        worth_query_installation::facade::WorthQueryCanonicalWorkEvidence,
+    pub(crate) lease: Arc<ConditionalClockLease>,
+    pub(crate) marker: PhantomData<fn() -> (Schema, Node, Clock)>,
 }
 
 pub struct ConditionalClockLease;

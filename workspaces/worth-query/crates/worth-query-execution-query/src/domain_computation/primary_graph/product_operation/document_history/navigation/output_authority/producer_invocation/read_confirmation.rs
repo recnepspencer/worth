@@ -1,6 +1,7 @@
 //! Deliver an already prepared result through the original C and lifetime owners.
 use super::*;
 use crate::domain_computation::primary_graph::product_operation::current_read::CurrentReadControlRuntimeExt as _;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 
 impl HistoryProducerInvocation<'_> {
     pub fn confirm_read<S: ApplicationSchema, T>(

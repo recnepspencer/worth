@@ -39,7 +39,7 @@ pub struct NativeRead<'a, 'r> {
 }
 impl<'r, S> WorthQueryApplicationInvariantProjectionReader<'r, S> {
     #[inline(always)]
-    pub fn native_read(&mut self) -> NativeRead<'_, 'r> {
+    pub(crate) fn native_read(&mut self) -> NativeRead<'_, 'r> {
         NativeRead {
             native: &mut self.native,
             execution: self.execution,
@@ -57,7 +57,7 @@ impl<'r, S> WorthQueryApplicationInvariantProjectionReader<'r, S> {
 }
 impl<S, E> WorthQueryInvariantEntityIdentity<S, E> {
     #[inline(always)]
-    pub fn native_identity(&self) -> NativeIdentity<'_> {
+    pub(crate) fn native_identity(&self) -> NativeIdentity<'_> {
         NativeIdentity {
             entity: &self.entity,
             entity_id: self.entity_id,
@@ -135,7 +135,7 @@ impl NativeRead<'_, '_> {
 
 impl WorthQueryInvariantEntityIdentity<(), ()> {
     #[inline(always)]
-    pub fn into_typed<S, E>(self) -> WorthQueryInvariantEntityIdentity<S, E> {
+    pub(crate) fn into_typed<S, E>(self) -> WorthQueryInvariantEntityIdentity<S, E> {
         WorthQueryInvariantEntityIdentity {
             entity_id: self.entity_id,
             kind: self.kind,

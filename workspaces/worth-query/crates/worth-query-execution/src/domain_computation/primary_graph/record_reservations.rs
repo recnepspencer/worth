@@ -1,5 +1,6 @@
 //! Bounded host observation of actual Native reservations, including refusals.
 use super::*;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 pub use worth_relational::facade::inspection::{
     RecordReservationObservation as WorthQueryRecordReservationObservation,
     RecordReservationObservationDenial as WorthQueryRecordReservationObservationFailure,

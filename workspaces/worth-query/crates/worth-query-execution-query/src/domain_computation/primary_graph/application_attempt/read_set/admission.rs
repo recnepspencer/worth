@@ -3,6 +3,7 @@ use worth_query_execution_attempt::facade::ports::{
     AdmittedOperationExecutionPort as _, ApplicationReadAttemptAdmissionPort as _,
     WorthQueryReadAttemptRuntimeContext,
 };
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where

@@ -3,6 +3,7 @@ use super::*;
 use crate::domain_computation::primary_graph::{
     WorthQueryIssuedSelectedPrincipal, WorthQueryIssuedSelectedScope,
 };
+use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     /// Ordinary and governed reads share actual principal/scope resolution and

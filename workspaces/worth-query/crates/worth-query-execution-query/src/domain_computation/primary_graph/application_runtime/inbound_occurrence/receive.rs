@@ -2,6 +2,8 @@
 
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
+use worth_query_execution_attempt::facade::ports::InboundAdmissionDenialInternalPort as _;
+use worth_query_execution_attempt::facade::ports::InboundReceiptInternalPort as _;
 
 use worth_foundational::facade::{AspectValue, CanonicalDigestId};
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;

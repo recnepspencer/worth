@@ -49,7 +49,7 @@ impl<Schema, Operation, Input, Scope>
         )
     }
 
-    pub fn coupled_producer_identities<OutputBinding: 'static>(
+    pub(crate) fn coupled_producer_identities<OutputBinding: 'static>(
         &mut self,
         runtime: &dyn crate::ports::ProducerIdentityRuntimePort,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

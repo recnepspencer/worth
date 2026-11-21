@@ -3,6 +3,7 @@ use super::*;
 use crate::domain_computation::authorization::WorthQueryInstalledAuthorizationRegistry;
 use crate::domain_computation::primary_graph::SourceReadAuthorizationRuntimeExt;
 use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
+use worth_query_execution_attempt::facade::ports::CompleteReadSetProjectedInternalPort as _;
 use worth_query_execution_attempt::facade::ports::{
     CompleteReadSetInternalPort as _, EffectProgramInternalPort as _,
 };

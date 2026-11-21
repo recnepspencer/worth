@@ -1,6 +1,7 @@
 //! Native candidate assembly consumes one sealed body decision; no graph rereads.
 use super::super::reuse;
 use super::*;
+use worth_query_execution_lineage::facade::ports::OperationBodyDecisionInternalPort as _;
 impl<Schema, Binding> OperationBodyHandler<Schema, Binding>
 where
     Schema: ApplicationSchema,
@@ -16,6 +17,7 @@ where
         decision: Binding::Decision,
         writer: &mut CandidateWriter<'_, Schema, Binding>,
     ) -> HandlerResult<(), Binding::Denial> {
+        let decision = decision.into_parts();
         let target = match writer.projected_entity(&decision.target) {
             Ok(target) => target,
             Err(cause) => {

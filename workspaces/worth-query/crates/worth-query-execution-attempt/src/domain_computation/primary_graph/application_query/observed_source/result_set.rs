@@ -1,9 +1,10 @@
 use super::WorthQueryObservedSource;
+use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
 
 /// Owner-issued evidence for the membership of one completed query result set.
 /// Unlike a row source, this also retains observations that selected no row.
 pub struct WorthQueryObservedResultSet<Query> {
-    pub source: WorthQueryObservedSource<Query>,
+    pub(crate) source: WorthQueryObservedSource<Query>,
 }
 
 // Retain the same completed-set proof for a retry; cloning does not issue a
@@ -17,7 +18,7 @@ impl<Query> Clone for WorthQueryObservedResultSet<Query> {
 }
 
 impl<Query> WorthQueryObservedResultSet<Query> {
-    pub fn new(source: WorthQueryObservedSource<Query>) -> Self {
+    pub(crate) fn new(source: WorthQueryObservedSource<Query>) -> Self {
         Self { source }
     }
 
@@ -31,7 +32,7 @@ impl<Query> WorthQueryObservedResultSet<Query> {
 
     pub fn declared_orbit(&self) -> Option<&super::DeclaredOrbitSelection> {
         self.source
-            .source_meaning
+            .source_meaning()
             .footprint()
             .root_selection
             .as_ref()?
@@ -41,7 +42,7 @@ impl<Query> WorthQueryObservedResultSet<Query> {
 
     pub fn declared_components(&self) -> Option<&super::DeclaredComponentSelection> {
         self.source
-            .source_meaning
+            .source_meaning()
             .footprint()
             .root_selection
             .as_ref()?
@@ -51,7 +52,7 @@ impl<Query> WorthQueryObservedResultSet<Query> {
 
     pub fn selection_for_test(&self) -> &super::WorthQueryObservedRootSelection {
         self.source
-            .source_meaning
+            .source_meaning()
             .footprint()
             .root_selection
             .as_deref()

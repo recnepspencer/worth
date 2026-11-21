@@ -176,6 +176,10 @@ impl<'a, Schema, Query, Parameters, QueryResult, Principal, PrincipalIdentity, S
     fn security_product(&self) -> &crate::basis::WorthQueryProductObservationLease {
         &self.security_product
     }
+
+    fn carry_planned_batch_item(&mut self, item: Option<super::batch::PlannedBatchItem>) {
+        Self::carry_planned_batch_item(self, item);
+    }
 }
 
 impl<'a, Schema, Query, Parameters, QueryResult, Principal, PrincipalIdentity, Scope>
@@ -190,7 +194,10 @@ impl<'a, Schema, Query, Parameters, QueryResult, Principal, PrincipalIdentity, S
         Scope,
     >
 {
-    pub fn carry_planned_batch_item(&mut self, item: Option<super::batch::PlannedBatchItem>) {
+    pub(crate) fn carry_planned_batch_item(
+        &mut self,
+        item: Option<super::batch::PlannedBatchItem>,
+    ) {
         self.planned_batch_item = item;
     }
 
@@ -292,7 +299,9 @@ impl<'a, Schema, Query, Parameters, QueryResult, Principal, PrincipalIdentity, S
         self.authorization_work
     }
 
-    pub fn take_governance(&mut self) -> super::disclosure::WorthQueryApplicationQueryGovernance {
+    pub(crate) fn take_governance(
+        &mut self,
+    ) -> super::disclosure::WorthQueryApplicationQueryGovernance {
         std::mem::replace(
             &mut self.governance,
             super::disclosure::WorthQueryApplicationQueryGovernance::Public,

@@ -5,6 +5,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryAdvancementDenial, WorthQueryPrimaryGraphApplicationRuntime,
 };
 use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
+use worth_query_execution_attempt::facade::ports::SpecializedEffectProgramInternalPort as _;
 use worth_query_execution_attempt::facade::ports::{
     CompleteReadSetInternalPort as _, EffectProgramInternalPort as _,
 };

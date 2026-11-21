@@ -22,7 +22,7 @@ pub struct WorthQueryRecoveryDisclosureAdmission {
 }
 
 impl WorthQueryRecoveryDisclosureAdmission {
-    pub const fn mint(
+    pub(crate) const fn mint(
         runtime_authority: WorthQueryRuntimeAuthorityIdentity,
         home_owner: worth_runtime_world::facade::RuntimeWorldOwnerIdentity,
     ) -> Self {

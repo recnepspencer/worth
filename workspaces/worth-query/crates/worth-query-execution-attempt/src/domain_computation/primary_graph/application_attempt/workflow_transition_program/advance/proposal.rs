@@ -20,7 +20,7 @@ where
     Schema: ApplicationSchema,
     Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
 {
-    pub fn await_proposal(
+    pub(crate) fn await_proposal(
         self,
         layout: &WorthQueryWorkflowLayout,
         instance: worth_relational::facade::identity::EntityId,

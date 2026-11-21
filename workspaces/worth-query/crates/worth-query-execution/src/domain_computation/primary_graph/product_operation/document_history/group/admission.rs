@@ -1,6 +1,7 @@
 //! Every member's real admission precedes reservation and candidate creation.
 use super::*;
 use sha2::{Digest, Sha256};
+use worth_query_execution_lineage::facade::ports::IdempotencyBindingInternalPort;
 
 impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
     WorthQueryDocumentHistory<'runtime, S, H>
@@ -96,7 +97,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             intent_hash.update((intent.len() as u64).to_le_bytes());
             intent_hash.update(intent.as_bytes());
         }
-        let meaning = WorthQueryApplicationIdempotencyBinding::new(
+        let meaning = <WorthQueryApplicationIdempotencyBinding as IdempotencyBindingInternalPort>::from_identities(
             key_hash.finalize().into(),
             intent_hash.finalize().into(),
         );

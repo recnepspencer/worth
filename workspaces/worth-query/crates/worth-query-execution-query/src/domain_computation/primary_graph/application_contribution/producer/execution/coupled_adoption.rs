@@ -6,6 +6,8 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationIdempotencyResolution as Resolution, WorthQueryApplicationUncommitted,
     WorthQuerySelectedProductOperation,
 };
+use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 pub struct CoupledAdoption {
     candidate: RetainedInputCutoffCandidate,
     receipt: WorthQueryApplicationCommitReceipt,
@@ -42,7 +44,7 @@ impl CoupledAdoption {
             .prior_input_cutoff_candidate::<Operation<Schema, Binding>>(
                 operation.operation_scope_binding(),
                 selected.product().observation(),
-                *source.parameter_binding_identity.bytes(),
+                *source.parameter_binding_identity().bytes(),
                 execution,
             )
             .map_err(|cause| source_readmission::ready_resource_denial(Binding::IDENTITY, cause))?;

@@ -97,7 +97,7 @@ impl<Schema, Operation, Input, Scope>
 impl<Schema, Operation, Input, Scope>
     WorthQueryApplicationEffectProgramBuilder<Schema, Operation, Input, Scope>
 {
-    pub fn handler_checkpoint(
+    pub(crate) fn handler_checkpoint(
         &self,
     ) -> Result<
         (),
@@ -132,7 +132,7 @@ impl<Schema, Operation, Input, Scope>
         )
     }
 
-    pub fn initialize_body_field<Entity>(
+    pub(crate) fn initialize_body_field<Entity>(
         &mut self,
         target: &WorthQueryApplicationEffectEntity<Schema, Entity>,
         field: &worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus,
@@ -203,7 +203,7 @@ impl<Schema, Operation, Input, Scope>
     }
 
     /// Intrinsic uniqueness is a native write obligation, not supplier read authority.
-    pub fn observe_unique_write_dependencies(
+    pub(crate) fn observe_unique_write_dependencies(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         allocation: worth_execution::ExecutionAllocationPolicy<'_, '_>,
@@ -212,7 +212,7 @@ impl<Schema, Operation, Input, Scope>
             .observe_unique_write_values(execution, &self.effects, allocation)
     }
 
-    pub fn validate_target<Entity>(
+    pub(crate) fn validate_target<Entity>(
         &self,
         target: &WorthQueryApplicationEffectEntity<Schema, Entity>,
         entity: &str,
@@ -220,7 +220,7 @@ impl<Schema, Operation, Input, Scope>
         core::validate_target(&self.program, target.borrowed(), entity)
     }
 
-    pub fn admit_program_target(
+    pub(crate) fn admit_program_target(
         &self,
         target: &ApplicationOperationProgramTarget,
     ) -> Result<(), WorthQueryApplicationAttemptDenial> {
@@ -231,7 +231,7 @@ impl<Schema, Operation, Input, Scope>
         )
     }
 
-    pub fn field_locator(
+    pub(crate) fn field_locator(
         &self,
         entity: &str,
         aspect: &str,

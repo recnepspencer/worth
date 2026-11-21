@@ -1,5 +1,6 @@
 use std::ops::{Deref, DerefMut};
 use worth_query_execution_runtime::facade::execution_runtime as rt;
+use worth_query_execution_runtime::facade::ports::ExecutionRuntimeInternalPort as _;
 use worth_query_installation::facade::{
     WorthQueryAdmittedPortableDomainPackage, WorthQueryInstallationGeneration,
     WorthQueryInstallationRuntimeIdentity, WorthQueryInstalledPackageIndexDenial,
@@ -33,8 +34,7 @@ impl DerefMut for WorthQueryExecutionRuntime {
 }
 
 impl WorthQueryExecutionRuntime {
-    #[doc(hidden)]
-    pub fn from_inner(inner: rt::WorthQueryExecutionRuntime) -> Self {
+    pub(crate) fn from_inner(inner: rt::WorthQueryExecutionRuntime) -> Self {
         Self(inner)
     }
 
@@ -46,7 +46,7 @@ impl WorthQueryExecutionRuntime {
             .and_then(|any| any.downcast_ref())
     }
 
-    pub fn primary_graph_mut(
+    pub(crate) fn primary_graph_mut(
         &mut self,
     ) -> Option<&mut crate::domain_computation::primary_graph::WorthQueryPrimaryGraph> {
         self.0
@@ -63,7 +63,7 @@ impl WorthQueryExecutionRuntime {
         )
     }
 
-    pub fn install_primary_graph(
+    pub(crate) fn install_primary_graph(
         &mut self,
         graph: crate::domain_computation::primary_graph::WorthQueryPrimaryGraph,
     ) {

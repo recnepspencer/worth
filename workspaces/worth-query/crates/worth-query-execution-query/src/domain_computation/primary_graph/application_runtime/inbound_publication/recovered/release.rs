@@ -1,5 +1,6 @@
 //! A stale original releases through World before publication becomes retryable.
 use super::*;
+use worth_query_execution_runtime::facade::ports::ProductBranchOwnerCleanupInternalPort as _;
 use worth_runtime_world::facade::{
     WorldRecoveredContinuationDenial, WorldRecoveredReleaseOutcome as Outcome,
 };
@@ -39,7 +40,7 @@ impl RecordedCompletionContinuationReleaseExt for RecordedCompletionContinuation
                         drop(original);
                         let identity = reservation.install_unpublished(cleanup);
                         self.state = OriginalCompletionState::Cleanup(
-                            WorthQueryProductBranchOwnerCleanup::new(
+                            WorthQueryProductBranchOwnerCleanup::from_runtime_identity(
                                 runtime.runtime.product_runtime.0.clone(),
                                 identity,
                             ),

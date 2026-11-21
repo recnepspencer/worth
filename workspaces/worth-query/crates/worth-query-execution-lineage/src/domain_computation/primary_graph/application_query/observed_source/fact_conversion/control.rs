@@ -6,6 +6,7 @@ use crate::domain_computation::primary_graph::{
 };
 use worth_execution::{ExecutionRequest, WorkCeilingDenial};
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 
 #[derive(Clone, Copy)]
 pub struct SourceFactExpansionControl<'request, 'authority> {

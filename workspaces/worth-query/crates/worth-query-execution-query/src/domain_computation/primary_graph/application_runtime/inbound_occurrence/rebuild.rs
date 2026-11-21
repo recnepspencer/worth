@@ -1,6 +1,7 @@
 //! Explicit finite repair of the disposable terminal correlation index.
 
 use std::num::NonZeroUsize;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 
 use super::reconstruct::pair_world_history;
 use super::{WorthQueryInboundVerifierHandle, WorthQueryPrimaryGraphApplicationRuntime};

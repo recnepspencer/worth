@@ -1,5 +1,6 @@
 //! Readonly contacts and warm current-fact readmission probes.
 use super::*;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S> {
     #[doc(hidden)]
     pub fn current_ownership_sources_for_record_for_test(

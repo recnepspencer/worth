@@ -11,13 +11,13 @@ use super::super::runtime::WorthQueryProductRootIdentity;
 /// snapshot. Recovered application receipts never contain this value.
 #[derive(Debug)]
 pub struct WorthQueryPerformedRelationalProductChange {
-    pub root_identity: Arc<WorthQueryProductRootIdentity>,
+    pub(crate) root_identity: Arc<WorthQueryProductRootIdentity>,
     publication: super::super::WorthQueryProductPublicationReceipt,
     patch: RelationalCommittedPatchRequest,
 }
 
 impl WorthQueryPerformedRelationalProductChange {
-    pub fn new(publication: super::super::WorthQueryProductPublicationReceipt) -> Self {
+    pub(crate) fn new(publication: super::super::WorthQueryProductPublicationReceipt) -> Self {
         let root_identity = publication.root_identity();
         let relational = publication
             .publication()

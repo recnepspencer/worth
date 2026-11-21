@@ -39,7 +39,7 @@ where
     Schema: ApplicationSchema,
     Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
 {
-    pub fn materialize_workflow_definition_publication<Capability, Spec>(
+    pub(crate) fn materialize_workflow_definition_publication<Capability, Spec>(
         mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         bound: BoundWorkflowDefinitionContract<Schema, Spec>,

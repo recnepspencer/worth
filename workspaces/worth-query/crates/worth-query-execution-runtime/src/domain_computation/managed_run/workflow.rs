@@ -48,7 +48,7 @@ pub struct WorthQueryAdmittedWorkflowRun {
 }
 
 impl WorthQueryAdmittedWorkflowRun {
-    pub fn new(
+    pub(crate) fn new(
         _operation: &WorthQueryExecutionBoundOperationAuthority,
         resource_attempt: WorthQueryWorkflowExecutionResourceAttempt,
         bridge_basis: BridgeBoundExecutionBasis,
@@ -75,7 +75,7 @@ impl WorthQueryAdmittedWorkflowRun {
         &self.counters
     }
 
-    pub fn belongs_to_operation(
+    pub(crate) fn belongs_to_operation(
         &self,
         operation: &WorthQueryExecutionBoundOperationAuthority,
     ) -> bool {

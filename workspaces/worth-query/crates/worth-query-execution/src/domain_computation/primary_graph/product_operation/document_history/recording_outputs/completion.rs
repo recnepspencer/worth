@@ -1,5 +1,7 @@
 //! The canonical collection owner seals one endpoint; the journal adopts it atomically.
 use super::*;
+use worth_query_execution_lineage::facade::ports::ReadObservationInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
 impl<S: ApplicationSchema>
     crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<S>
 {

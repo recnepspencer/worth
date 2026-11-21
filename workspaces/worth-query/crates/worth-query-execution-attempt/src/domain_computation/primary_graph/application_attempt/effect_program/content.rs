@@ -70,7 +70,7 @@ impl<S, O, I, P> WorthQueryApplicationEffectProgramBuilder<S, O, I, P> {
             session.content_binding::<C>(entity, aspect, field)
         })
     }
-    pub fn initialize_content<E, F, C>(
+    pub(crate) fn initialize_content<E, F, C>(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         bindings: &Catalog,
@@ -106,7 +106,7 @@ impl<S, O, I, P> WorthQueryApplicationEffectProgramBuilder<S, O, I, P> {
         self.content_attachments = staged;
         Ok(())
     }
-    pub fn write_content<E, F, C>(
+    pub(crate) fn write_content<E, F, C>(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         bindings: &Catalog,

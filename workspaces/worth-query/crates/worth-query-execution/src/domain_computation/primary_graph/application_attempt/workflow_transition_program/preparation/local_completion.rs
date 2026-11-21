@@ -10,6 +10,7 @@ use super::*;
 use crate::domain_computation::primary_graph::{
     workflow::instance::SelectedWorkflowOperation, WorthQueryApplicationCommitReceipt,
 };
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 #[path = "local_completion/replay.rs"]
 mod replay;
 use worth_query_declaration::facade::{

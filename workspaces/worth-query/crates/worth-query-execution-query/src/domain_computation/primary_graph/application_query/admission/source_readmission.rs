@@ -1,5 +1,6 @@
 use worth_query_admission::facade::application_query::WorthQueryAdmittedApplicationQueryParameters;
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
+use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
 use worth_query_installation::facade::WorthQueryInstalledApplicationQuery;
 use worth_query_installation::facade::WorthQueryInstalledApplicationQueryIdentity;
 
@@ -125,9 +126,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     > {
         let selector = observed.retained_scope_selector();
 
-        if observed.runtime_authority != self.runtime.authority_identity().as_u64()
-            || observed.query_identity != *query.identity()
-            || observed.schema_binding != *query.binding_identity()
+        if observed.runtime_authority() != self.runtime.authority_identity().as_u64()
+            || observed.query_identity() != *query.identity()
+            || observed.schema_binding() != *query.binding_identity()
         {
             return Err(WorthQueryApplicationQueryAdmissionDenial::new(
                 WorthQueryApplicationQueryAdmissionDenialKind::InstalledQuery(
@@ -147,7 +148,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let (parameters, controls) = self.prepare_application_query_source_readmission(
             query,
             access,
-            &observed.parameters,
+            &observed.parameters(),
             controls,
         )?;
         Ok(PreparedApplicationQuerySourceReadmission {

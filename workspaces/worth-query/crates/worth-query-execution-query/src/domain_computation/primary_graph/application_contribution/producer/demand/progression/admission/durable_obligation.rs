@@ -6,6 +6,8 @@ use crate::domain_computation::primary_graph::application_output_demand::registr
 };
 use std::sync::Arc;
 use worth_foundational::facade::{CanonicalDigestId, DurableCompositeCommitIdentity};
+use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
 
 impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
     pub fn prepare_demand_recording<Q: 'static>(
@@ -63,7 +65,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
                 producer,
                 branch,
                 basis,
-                query: *source.query_identity.as_bytes(),
+                query: *source.query_identity().as_bytes(),
                 root: source.source_root(),
                 parameters: Arc::clone(source.retained_parameters()),
                 scope: Arc::clone(source.retained_scope_selector()),

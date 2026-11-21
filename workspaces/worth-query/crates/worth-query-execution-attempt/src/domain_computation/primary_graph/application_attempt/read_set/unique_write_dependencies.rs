@@ -46,7 +46,7 @@ impl<Schema, Operation, Input, Scope>
 {
     /// Appends one indexed selection for each distinct written unique value.
     /// Replacement fact backing is admitted before copying retained facts.
-    pub fn observe_unique_write_values(
+    pub(crate) fn observe_unique_write_values(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         effects: &[WorthQueryApplicationRealizedEffect],

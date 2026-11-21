@@ -1,6 +1,8 @@
 //! Bounded host-requested turnover of settled inbound terminal custody.
 
 use std::num::NonZeroUsize;
+use worth_query_execution_attempt::facade::ports::InboundAdmissionDenialInternalPort as _;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 
 use worth_foundational::facade::AspectValue;
 use worth_query_declaration::facade::application_capability::ApplicationCapabilityValidityTimeline;

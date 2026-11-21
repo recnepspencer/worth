@@ -3,6 +3,7 @@ use super::*;
 use crate::domain_computation::primary_graph::application_contribution::authored_edit::{
     AuthoredEditStageContext, CapturedAuthoredEditStage,
 };
+use worth_query_execution_lineage::facade::ports::CleanupRequiredInternalPort as _;
 impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run, 'phase, S> {
     pub fn stage_captures(&self) -> &[CapturedAuthoredEditStage<S>] {
         self.all_stage_captures().get(1..).unwrap_or_default()

@@ -14,37 +14,37 @@ use crate::domain_computation::primary_graph::provider::{
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryPrimaryGraphCommitEvidence {
-    pub workflow_origin: Option<crate::domain_computation::primary_graph::workflow::operation_output::WorkflowOperationOrigin>,
-    pub provider_session_binding:
+    pub(crate) workflow_origin: Option<crate::domain_computation::primary_graph::workflow::operation_output::WorkflowOperationOrigin>,
+    pub(crate) provider_session_binding:
         crate::domain_computation::provider_session::WorthQueryProviderSessionTerminalBinding,
-    pub idempotency:
+    pub(crate) idempotency:
         crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding,
-    pub commit: worth_relational::facade::history::RelationalCommitReceipt,
-    pub mutation_work: WorthQueryPrimaryMutationWorkEvidence,
-    pub retained_preimage:
+    pub(crate) commit: worth_relational::facade::history::RelationalCommitReceipt,
+    pub(crate) mutation_work: WorthQueryPrimaryMutationWorkEvidence,
+    pub(crate) retained_preimage:
         Option<crate::domain_computation::application_aftermath::WorthQueryRetainedPreImage>,
-    pub original_authority: std::sync::Arc<
+    pub(crate) original_authority: std::sync::Arc<
         crate::domain_computation::primary_graph::WorthQueryApplicationCommitAuthorityBinding,
     >,
-    pub committed_dispatch_outbox: WorthQueryCommittedDispatchOutboxResolution,
-    pub committed_changes: crate::domain_computation::primary_graph::WorthQueryApplicationCommittedChanges,
-    pub output_correspondence: std::sync::Arc<
+    pub(crate) committed_dispatch_outbox: WorthQueryCommittedDispatchOutboxResolution,
+    pub(crate) committed_changes: crate::domain_computation::primary_graph::WorthQueryApplicationCommittedChanges,
+    pub(crate) output_correspondence: std::sync::Arc<
         crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence,
     >,
-    pub operation_scope: crate::domain_computation::authorization::WorthQueryOperationScopeBinding,
-    pub observed_source_facts: RebasedSourceFacts,
-    pub performed_input_facts: Option<crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload>,
-    pub performed_output_fields: Option<Result<crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload, crate::domain_computation::primary_graph::application_attempt::OutputFieldCaptureFailure>>,
+    pub(crate) operation_scope: crate::domain_computation::authorization::WorthQueryOperationScopeBinding,
+    pub(crate) observed_source_facts: RebasedSourceFacts,
+    pub(crate) performed_input_facts: Option<crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload>,
+    pub(crate) performed_output_fields: Option<Result<crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload, crate::domain_computation::primary_graph::application_attempt::OutputFieldCaptureFailure>>,
 }
 
 impl WorthQueryPrimaryGraphCommitEvidence {
-    pub fn performed_output_fields(
+    pub(crate) fn performed_output_fields(
         &self,
     ) -> Option<&Result<crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload, crate::domain_computation::primary_graph::application_attempt::OutputFieldCaptureFailure>>{
         self.performed_output_fields.as_ref()
     }
 
-    pub fn performed_input_facts(
+    pub(crate) fn performed_input_facts(
         &self,
     ) -> Option<&crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload>
     {

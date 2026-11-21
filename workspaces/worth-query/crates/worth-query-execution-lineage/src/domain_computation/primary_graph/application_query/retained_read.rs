@@ -19,7 +19,7 @@ pub struct WorthQueryApplicationReadObservation {
 }
 
 impl WorthQueryApplicationReadObservation {
-    pub fn from_parts(
+    pub(crate) fn from_parts(
         runtime_authority: u64,
         schema_binding: ApplicationSchemaBindingIdentity,
         product: WorthQueryProductObservationLease,
@@ -37,22 +37,22 @@ impl WorthQueryApplicationReadObservation {
         })
     }
 
-    pub fn runtime_authority(&self) -> u64 {
+    pub(crate) fn runtime_authority(&self) -> u64 {
         self.runtime_authority
     }
 
-    pub fn schema_binding(&self) -> &ApplicationSchemaBindingIdentity {
+    pub(crate) fn schema_binding(&self) -> &ApplicationSchemaBindingIdentity {
         &self.schema_binding
     }
 
-    pub fn producer_arc(
+    pub(crate) fn producer_arc(
         &self,
     ) -> Option<Arc<super::super::application_output_demand::OriginalSettledProducerObservation>>
     {
         self.producer.clone()
     }
 
-    pub fn with_original_producer(
+    pub(crate) fn with_original_producer(
         &self,
         producer: Arc<super::super::application_output_demand::OriginalSettledProducerObservation>,
     ) -> Arc<Self> {
@@ -65,21 +65,23 @@ impl WorthQueryApplicationReadObservation {
         })
     }
 
-    pub fn original_settled_producer(
+    pub(crate) fn original_settled_producer(
         &self,
     ) -> Option<&super::super::application_output_demand::OriginalSettledProducerObservation> {
         self.producer.as_deref()
     }
 
-    pub fn retained_product_lease(&self) -> WorthQueryProductObservationLease {
+    pub(crate) fn retained_product_lease(&self) -> WorthQueryProductObservationLease {
         self.product.retained_clone()
     }
 
-    pub fn product_observation(&self) -> &worth_runtime_world::facade::ProductBranchObservation {
+    pub(crate) fn product_observation(
+        &self,
+    ) -> &worth_runtime_world::facade::ProductBranchObservation {
         self.product.observation()
     }
 
-    pub fn same_application_occurrence(&self, other: &Self) -> bool {
+    pub(crate) fn same_application_occurrence(&self, other: &Self) -> bool {
         self.runtime_authority == other.runtime_authority
             && self.schema_binding == other.schema_binding
             && self.branch_identity() == other.branch_identity()
@@ -98,7 +100,7 @@ impl WorthQueryApplicationReadObservation {
         self.product.selected_commit()
     }
 
-    pub fn matches_occurrence(
+    pub(crate) fn matches_occurrence(
         &self,
         runtime_authority: u64,
         schema_binding: &ApplicationSchemaBindingIdentity,

@@ -1,4 +1,5 @@
 use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
+use worth_query_execution_lineage::facade::ports::BoundSourceExpectationInternalPort as _;
 mod admission;
 mod affinity;
 mod applied;
@@ -44,7 +45,7 @@ impl PreparedObservedSourceExpectation {
     /// Descriptive partition coordinate for selecting the existing owner
     /// candidate before this move-only source is consumed.
     pub const fn partition_identity(&self) -> [u8; 32] {
-        self.bound.partition_identity
+        self.bound.partition_identity()
     }
 
     fn matches_admission<Schema, Operation, Input, Scope>(
@@ -71,8 +72,8 @@ impl PreparedObservedSourceExpectation {
                 "prepared source expectation",
             ));
         }
-        admission.bind_source_partition(self.bound.partition_identity);
-        admission.bind_source_expectation_kind(self.bound.kind);
+        admission.bind_source_partition(self.bound.partition_identity_bytes());
+        admission.bind_source_expectation_kind(self.bound.kind());
         admission.bind_source_facts(self.facts, self.context);
         Ok(self.bound)
     }
@@ -228,11 +229,12 @@ where
             Schema,
         >,
 {
+        use worth_query_execution_attempt::facade::ports::ObservedResultSetInternalPort as _;
         let identity = result_set.idempotency_identity();
         self.bind_checked_source_expectation::<Binding, Scope>(
             phase,
             admission,
-            result_set.source,
+            result_set.into_source(),
             identity,
             input,
             WorthQuerySourceExpectationKind::ResultSet,

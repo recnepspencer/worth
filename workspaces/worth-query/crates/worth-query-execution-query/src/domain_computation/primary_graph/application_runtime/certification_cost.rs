@@ -1,6 +1,7 @@
 //! Read-only cost evidence for the certification audience.
 
 use std::sync::atomic::Ordering;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 
 use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::inspection::{

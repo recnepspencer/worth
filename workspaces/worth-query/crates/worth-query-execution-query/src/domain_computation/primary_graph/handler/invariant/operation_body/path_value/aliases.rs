@@ -2,6 +2,7 @@
 use super::*;
 use crate::domain_computation::primary_graph::application_contribution::QueryRequestExecution;
 use worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus;
+use worth_query_execution_lineage::facade::ports::InvariantMutationTargetInternalPort as _;
 use worth_relational::facade::identity::EntityId;
 /// O(w log w) work and O(w) temporary slots for all actual authored write targets.
 pub fn reject<S>(
@@ -41,7 +42,7 @@ pub fn reject<S>(
                 body.path_value_assignments()
                     .iter()
                     .zip(targets)
-                    .map(|(step, target)| (target.entity_id, &step.target.field)),
+                    .map(|(step, target)| (target.entity_id(), &step.target.field)),
             );
             keys.sort_unstable();
             if let Some(pair) = keys.windows(2).find(|pair| pair[0] == pair[1]) {

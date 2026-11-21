@@ -6,10 +6,10 @@ use std::marker::PhantomData;
 /// A relation observed by an invariant projection, with the identities of its
 /// source and target entities.
 pub struct WorthQueryInvariantRelation<Schema, Relation, From, To> {
-    pub relation_id: RelationId,
-    pub from: WorthQueryInvariantEntityIdentity<Schema, From>,
-    pub to: WorthQueryInvariantEntityIdentity<Schema, To>,
-    pub _relation: PhantomData<fn() -> Relation>,
+    pub(crate) relation_id: RelationId,
+    pub(crate) from: WorthQueryInvariantEntityIdentity<Schema, From>,
+    pub(crate) to: WorthQueryInvariantEntityIdentity<Schema, To>,
+    pub(crate) _relation: PhantomData<fn() -> Relation>,
 }
 
 impl<Schema, Relation, From, To> WorthQueryInvariantRelation<Schema, Relation, From, To> {

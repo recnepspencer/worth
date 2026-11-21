@@ -1,6 +1,7 @@
 //! Closed correspondence to each existing typed program's actual admission.
 use super::*;
 use crate::domain_computation::primary_graph::application_attempt::effect_program::WorthQueryCommitEntryRefusal;
+use worth_query_execution_attempt::facade::ports::SpecializedEffectProgramInternalPort as _;
 use worth_query_execution_attempt::facade::ports::{
     CompleteReadSetInternalPort as _, EffectProgramInternalPort as _,
 };

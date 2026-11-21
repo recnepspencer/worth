@@ -8,6 +8,7 @@ use worth_query_declaration::facade::application_program::{
     ApplicationConnectionShape, ApplicationFixedOutputRoot, ApplicationOutputGraphShape,
     ApplicationProgramDefinition,
 };
+use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 
 type Artifact =

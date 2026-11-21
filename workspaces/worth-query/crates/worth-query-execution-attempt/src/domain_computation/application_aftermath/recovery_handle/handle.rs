@@ -4,6 +4,7 @@ use std::sync::Arc;
 use worth_query_execution_lineage::facade::ports::{
     CommitAuthorityBindingInternalPort as _, RetainedGovernedInputInternalPort as _,
 };
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 
 use worth_proof::LinearResource;
 use worth_query_installation::facade::WorthQueryCanonicalWorkPhases;
@@ -40,7 +41,7 @@ pub struct WorthQueryRecoveryHandle {
 }
 
 impl WorthQueryRecoveryHandle {
-    pub fn new(
+    pub(crate) fn new(
         identity: WorthQueryRecoveryHandleIdentity,
         slot: WorthQueryRecoveryRegistrySlot,
         registry: Arc<WorthQueryRecoveryHandleRegistry>,
@@ -65,7 +66,7 @@ impl WorthQueryRecoveryHandle {
             .composite_commit()
             .owner_identity()
     }
-    pub fn admit_home_owner(
+    pub(crate) fn admit_home_owner(
         &self,
         receiver: worth_runtime_world::facade::RuntimeWorldOwnerIdentity,
     ) -> Result<(), WorthQueryRecoveryHandleDenial> {

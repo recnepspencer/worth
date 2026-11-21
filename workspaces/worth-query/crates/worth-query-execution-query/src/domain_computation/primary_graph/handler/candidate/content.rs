@@ -3,6 +3,7 @@ use super::CandidateWriter;
 use crate::domain_computation::primary_graph::{
     ContentWriteDenial, WorthQueryApplicationEffectEntity,
 };
+use worth_query_execution_attempt::facade::ports::EffectProgramBuilderAuthoringInternalPort as _;
 
 use worth_query_declaration::facade::{
     application_operation::ApplicationMutationBinding,

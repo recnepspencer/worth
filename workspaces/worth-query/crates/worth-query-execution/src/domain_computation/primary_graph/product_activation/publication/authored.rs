@@ -1,5 +1,6 @@
 //! Selected authored definitions open the same durable Signal-only World intent.
 use super::*;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_runtime_world::facade::WorldOpenAttemptOutcome;
 
 pub(super) fn publish<

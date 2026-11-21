@@ -35,6 +35,28 @@ impl<S, M> crate::ports::InvariantGraphMemberInternalPort for WorthQueryInvarian
         &self.carrier_name
     }
 }
+
+impl<S: ApplicationSchema, M> crate::ports::InvariantGraphMemberOpsInternalPort<S, M>
+    for WorthQueryInvariantGraphMember<S, M>
+{
+    fn check(&self, reader: &Reader<'_, S>, domain: &Domain) -> Result<(), Denial> {
+        Self::check(self, reader, domain)
+    }
+
+    fn from_entity(reader: &Reader<'_, S>, entity: &Entity<S, M>) -> Result<Self, Denial> {
+        Self::from_entity(reader, entity)
+    }
+
+    fn from_source(
+        reader: &mut Reader<'_, S>,
+        key: &Key,
+        domain: &Domain,
+        source: &Arc<PinnedDerivedRelationRead>,
+        allocation: Option<&Arc<SourceFactsAllocation>>,
+    ) -> Result<Self, Denial> {
+        Self::from_source(reader, key, domain, source, allocation)
+    }
+}
 impl<S, M> Clone for WorthQueryInvariantGraphMember<S, M> {
     fn clone(&self) -> Self {
         Self {
@@ -64,7 +86,7 @@ impl<S, M> WorthQueryInvariantGraphMember<S, M> {
     }
 }
 impl<S: ApplicationSchema, M> WorthQueryInvariantGraphMember<S, M> {
-    pub fn check(&self, reader: &Reader<'_, S>, domain: &Domain) -> Result<(), Denial> {
+    pub(crate) fn check(&self, reader: &Reader<'_, S>, domain: &Domain) -> Result<(), Denial> {
         if self.cookie != reader.authority_identity
             || self.origin != reader.native.origin(reader.snapshot)
             || &self.domain != domain
@@ -76,7 +98,10 @@ impl<S: ApplicationSchema, M> WorthQueryInvariantGraphMember<S, M> {
         }
         Ok(())
     }
-    pub fn from_entity(reader: &Reader<'_, S>, entity: &Entity<S, M>) -> Result<Self, Denial> {
+    pub(crate) fn from_entity(
+        reader: &Reader<'_, S>,
+        entity: &Entity<S, M>,
+    ) -> Result<Self, Denial> {
         if !reader.identity_is_local(entity, &entity.entity)
             || reader.layout.entity_kind(&entity.entity) != Some(entity.kind)
         {
@@ -93,7 +118,7 @@ impl<S: ApplicationSchema, M> WorthQueryInvariantGraphMember<S, M> {
             _allocation: None,
         })
     }
-    pub fn from_source(
+    pub(crate) fn from_source(
         reader: &mut Reader<'_, S>,
         key: &Key,
         domain: &Domain,

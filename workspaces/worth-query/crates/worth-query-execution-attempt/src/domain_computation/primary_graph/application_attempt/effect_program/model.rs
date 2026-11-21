@@ -107,14 +107,14 @@ pub struct WorthQueryApplicationEffectProgramBuilder<Schema, Operation, Input, S
 impl<Schema, Operation, Input, Scope>
     WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>
 {
-    pub fn refuse_stale_home_authority(
+    pub(crate) fn refuse_stale_home_authority(
         &self,
         current: worth_runtime_world::facade::RuntimeWorldOwnerIdentity,
     ) -> Result<(), crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial>
     {
         self.read_set.admission.refuse_stale_home_authority(current)
     }
-    pub fn belongs_to_application(
+    pub(crate) fn belongs_to_application(
         &self,
         runtime_authority: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
         binding_identity: &worth_query_installation::facade::ApplicationSchemaBindingIdentity,
@@ -133,12 +133,12 @@ impl<Schema, Operation, Input, Scope>
         self
     }
 
-    pub fn with_client_observation(mut self) -> Self {
+    pub(crate) fn with_client_observation(mut self) -> Self {
         self.retain_client_observation = true;
         self
     }
 
-    pub fn with_producer_required_invariants(
+    pub(crate) fn with_producer_required_invariants(
         mut self,
         requirements: &'static [crate::domain_computation::primary_graph::WorthQueryProducerInvariantRequirement],
     ) -> Self {

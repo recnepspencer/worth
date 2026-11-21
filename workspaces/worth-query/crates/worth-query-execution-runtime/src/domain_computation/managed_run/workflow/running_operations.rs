@@ -11,7 +11,7 @@ use crate::domain_computation::{
 };
 
 impl WorthQueryRunningWorkflowRun {
-    pub fn release_or_retain_queue_occupancy(
+    pub(crate) fn release_or_retain_queue_occupancy(
         &mut self,
         occupancy: worth_runtime_bridge::facade::BridgeManagedQueueOccupancy,
     ) -> bool {
@@ -24,7 +24,7 @@ impl WorthQueryRunningWorkflowRun {
         self.affinity.provider_work_mut().begin_step_call();
     }
 
-    pub fn complete_provider_step_call(&mut self) {
+    pub(crate) fn complete_provider_step_call(&mut self) {
         self.affinity.provider_work_mut().complete_step_call();
     }
 
@@ -32,17 +32,17 @@ impl WorthQueryRunningWorkflowRun {
         self.affinity.provider_work_mut().interrupt_step_call();
     }
 
-    pub fn abandon_provider_step_call(&mut self) {
+    pub(crate) fn abandon_provider_step_call(&mut self) {
         self.affinity.provider_work_mut().abandon();
     }
 
-    pub fn record_provider_step_attempt(&mut self) {
+    pub(crate) fn record_provider_step_attempt(&mut self) {
         self.affinity
             .provider_work_mut()
             .record_provider_step_attempt();
     }
 
-    pub fn record_provider_step_admission(
+    pub(crate) fn record_provider_step_admission(
         &mut self,
         counters: super::super::provider_step_admission::WorthQueryProviderStepAdmissionCounters,
     ) {
@@ -51,14 +51,17 @@ impl WorthQueryRunningWorkflowRun {
             .record_provider_step_admission(counters);
     }
 
-    pub fn record_provider_step_report(&mut self, report: &WorthQueryGraphProviderStepReport) {
+    pub(crate) fn record_provider_step_report(
+        &mut self,
+        report: &WorthQueryGraphProviderStepReport,
+    ) {
         self.affinity.provider_work_mut().admit_step(report);
         self.affinity
             .provider_work_mut()
             .settle_artifacts(self.provider_artifact_occurrences.snapshot());
     }
 
-    pub fn record_safe_point(
+    pub(crate) fn record_safe_point(
         &mut self,
         observation: &super::super::WorthQueryManagedSafePointObservation,
     ) {
@@ -74,13 +77,13 @@ impl WorthQueryRunningWorkflowRun {
         self.bridge_basis.enqueue_managed_queue(width)
     }
 
-    pub fn record_queue_mutation(&mut self, counters: BridgeManagedQueueMutationCounters) {
+    pub(crate) fn record_queue_mutation(&mut self, counters: BridgeManagedQueueMutationCounters) {
         self.affinity
             .provider_work_mut()
             .record_queue_mutation(counters);
     }
 
-    pub fn release_projection_bytes(&mut self, retained_bytes: usize) -> bool {
+    pub(crate) fn release_projection_bytes(&mut self, retained_bytes: usize) -> bool {
         self.affinity
             .provider_work_mut()
             .release_projection_bytes(retained_bytes)
@@ -106,13 +109,13 @@ impl WorthQueryRunningWorkflowRun {
             .transfer_output_to_receipt(envelope_bytes, total_output_bytes)
     }
 
-    pub fn release_output_bytes(&mut self, retained_bytes: usize) -> bool {
+    pub(crate) fn release_output_bytes(&mut self, retained_bytes: usize) -> bool {
         self.affinity
             .provider_work_mut()
             .release_output_bytes(retained_bytes)
     }
 
-    pub fn record_provider_execution_release(
+    pub(crate) fn record_provider_execution_release(
         &mut self,
         evidence: &WorthQueryProviderExecutionReleaseEvidence,
     ) {
@@ -130,7 +133,7 @@ impl WorthQueryRunningWorkflowRun {
             .observe_active_provider_memory(memory);
     }
 
-    pub fn retain_provider_memory(&mut self, memory: WorthQueryGraphProviderMemoryArena) {
+    pub(crate) fn retain_provider_memory(&mut self, memory: WorthQueryGraphProviderMemoryArena) {
         self.affinity
             .provider_work_mut()
             .retain_provider_memory(memory);

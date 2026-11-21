@@ -2,6 +2,10 @@ use super::*;
 use crate::domain_computation::primary_graph::{
     OriginalSettledProducerObservationExt, ReadObservationRuntimeExt,
 };
+use worth_query_execution_lineage::facade::ports::{
+    CommitReceiptInternalPort as _, OutputDemandSettlementInternalPort as _,
+    OutputDemandSettlementParts,
+};
 
 pub trait OutputDemandSettlementCurrentExt: Sized {
     fn from_current_accepted<Schema>(
@@ -66,8 +70,8 @@ impl OutputDemandSettlementCurrentExt for WorthQueryOutputDemandSettlement {
         let readiness_delivery = restored_source
             .is_none()
             .then(|| completion.readiness.clone());
-        Ok(Arc::new(Self {
-            _original_delivery_memory: None,
+        Ok(Arc::new(Self::from_parts(OutputDemandSettlementParts {
+            original_delivery_memory: None,
             posture,
             runtime_authority: runtime.runtime.authority_identity().as_u64(),
             schema_binding: runtime.installed_schema.binding_identity(),
@@ -89,6 +93,6 @@ impl OutputDemandSettlementCurrentExt for WorthQueryOutputDemandSettlement {
                 )?,
                 bound.product().retained_clone(),
             ),
-        }))
+        })))
     }
 }

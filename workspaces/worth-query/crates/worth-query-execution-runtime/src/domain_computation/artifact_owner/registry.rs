@@ -114,7 +114,7 @@ impl WorthQueryWorkflowArtifactRegistry {
             .is_closed()
     }
 
-    pub fn freeze_production(&self) -> WorthQueryWorkflowArtifactRegistryEvidence {
+    pub(crate) fn freeze_production(&self) -> WorthQueryWorkflowArtifactRegistryEvidence {
         let mut state = self
             .state
             .lock()
@@ -144,7 +144,7 @@ impl WorthQueryWorkflowArtifactRegistry {
         }
     }
 
-    pub fn prepare_next_generation(
+    pub(crate) fn prepare_next_generation(
         self: &Arc<Self>,
     ) -> Result<WorthQueryArtifactProductionGenerationPending, WorthQueryArtifactDenial> {
         let mut state = self

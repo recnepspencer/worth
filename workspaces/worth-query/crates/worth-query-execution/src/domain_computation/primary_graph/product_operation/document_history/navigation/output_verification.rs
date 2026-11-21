@@ -4,6 +4,8 @@ use crate::domain_computation::primary_graph::{
     WorthQueryAdvancementPhase, WorthQueryHistoryOutputQualificationDenial as Denial,
     WorthQueryPrimaryGraphApplicationRuntime, WorthQuerySelectedProductOperation,
 };
+use worth_query_execution_lineage::facade::ports::ReadObservationInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::runtime::{RelationalHistoricalSelectionRead, RelationalRuntime};
 

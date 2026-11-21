@@ -66,15 +66,15 @@ impl<Schema, Principal, PrincipalIdentity> std::fmt::Debug
 ///
 /// Serialized data cannot mint the proof:
 pub struct WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity> {
-    pub external: std::sync::Arc<WorthQueryAuthenticatedExternalPrincipal<Schema>>,
-    pub application_principal:
+    pub(crate) external: std::sync::Arc<WorthQueryAuthenticatedExternalPrincipal<Schema>>,
+    pub(crate) application_principal:
         WorthQueryApplicationPrincipalIdentity<Schema, Principal, PrincipalIdentity>,
-    pub binding_identity: ApplicationSchemaBindingIdentity,
-    pub binding: String,
-    pub mapping_entity_id: EntityId,
-    pub target_relation_id: RelationId,
-    pub freshness: WorthQueryPrincipalFreshnessEvidence,
-    pub examined_candidate_count: usize,
+    pub(crate) binding_identity: ApplicationSchemaBindingIdentity,
+    pub(crate) binding: String,
+    pub(crate) mapping_entity_id: EntityId,
+    pub(crate) target_relation_id: RelationId,
+    pub(crate) freshness: WorthQueryPrincipalFreshnessEvidence,
+    pub(crate) examined_candidate_count: usize,
 }
 
 pub struct WorthQueryResolvedPrincipalEvidence<PrincipalIdentity> {
@@ -92,7 +92,7 @@ pub struct WorthQueryResolvedPrincipalEvidence<PrincipalIdentity> {
 impl<Schema, Principal, PrincipalIdentity>
     WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>
 {
-    pub fn mint(
+    pub(crate) fn mint(
         external: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         evidence: WorthQueryResolvedPrincipalEvidence<PrincipalIdentity>,
     ) -> Self {

@@ -9,13 +9,13 @@ use worth_runtime_bridge::facade::BridgeBoundExecutionBasis;
 
 #[must_use = "a direct run terminal retains resources that must be cleaned up"]
 pub struct WorthQueryDirectRunTerminal {
-    pub affinity: WorthQueryDirectRunTerminalAffinity,
-    pub kind: WorthQueryManagedRunTerminalKind,
-    pub bridge_basis: BridgeBoundExecutionBasis,
-    pub relational_basis: WorthQueryManagedRelationalObservation,
-    pub counters: WorthQueryManagedRunCounters,
-    pub provider_work: WorthQueryManagedProviderWorkEvidence,
-    pub provider_cleanup: WorthQueryManagedProviderCleanupAuthority,
+    pub(crate) affinity: WorthQueryDirectRunTerminalAffinity,
+    pub(crate) kind: WorthQueryManagedRunTerminalKind,
+    pub(crate) bridge_basis: BridgeBoundExecutionBasis,
+    pub(crate) relational_basis: WorthQueryManagedRelationalObservation,
+    pub(crate) counters: WorthQueryManagedRunCounters,
+    pub(crate) provider_work: WorthQueryManagedProviderWorkEvidence,
+    pub(crate) provider_cleanup: WorthQueryManagedProviderCleanupAuthority,
 }
 
 impl WorthQueryDirectRunTerminal {

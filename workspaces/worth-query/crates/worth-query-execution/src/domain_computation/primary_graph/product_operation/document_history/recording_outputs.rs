@@ -16,6 +16,7 @@ use worth_query_admission::facade::authenticated_principal::WorthQueryRequestSco
 use worth_query_declaration::facade::application_program::{
     ApplicationOutputGraphShape, ApplicationProgramDefinition,
 };
+use worth_query_execution_lineage::facade::ports::ReadObservationInternalPort as _;
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
 mod completion;
 mod origin;

@@ -9,6 +9,7 @@ use crate::domain_computation::primary_graph::{
 };
 use std::{collections::BTreeMap, sync::Mutex};
 use worth_query_declaration::facade::application_history::ApplicationHistoryBinding;
+use worth_query_execution_query::facade::ports::HistoryPreviewInternalPort as _;
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledDocumentHistory};
 
 pub(in crate::domain_computation::primary_graph::product_operation::document_history) struct NavigationJournal<
@@ -158,7 +159,7 @@ where
     let pending_slot = selected
         .navigation
         .capacity
-        .acquire(source.step.endpoint().product_branch())?;
+        .acquire(source.step().endpoint().product_branch())?;
     selected
         .journal
         .prepare_navigation(requested)

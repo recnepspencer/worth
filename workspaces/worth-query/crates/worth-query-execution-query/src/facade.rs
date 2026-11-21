@@ -9,6 +9,7 @@ pub mod domain_computation {
 
 pub mod ports {
     pub use crate::ports::*;
+    pub use crate::ports_internal::*;
 }
 
 pub mod runtime {

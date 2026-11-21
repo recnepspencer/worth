@@ -2,6 +2,8 @@
 use super::super::{source_original::SourceOriginal, WorthQueryApplicationInspectionTarget};
 use super::*;
 use worth_query_declaration::facade::application_query::ApplicationQueryBinding;
+use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationQueryObservationInternalPort as _;
 use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryInstalledApplicationInspectionContract,
     WorthQueryInstalledApplicationQueryBinding,
@@ -33,9 +35,9 @@ impl InspectionSubject<'_> {
                 validate_original_affinity(runtime, installed, original)?;
                 let same = |selection: &crate::domain_computation::primary_graph::WorthQueryApplicationBasisSelectionIdentity| matches!(selection,
                     crate::domain_computation::primary_graph::WorthQueryApplicationBasisSelectionIdentity::Product(original) if original.same_branch_occurrence_observation(selected.product().observation()));
-                same(&original.source.selection)
-                    && same(original.basis.selection())
-                    && original.source.retained_scope_selector().subject() == scope
+                same(&original.source().selection())
+                    && same(original.basis().selection())
+                    && original.source().retained_scope_selector().subject() == scope
             }
             Self::Source(original) => {
                 original.runtime == runtime.inner.runtime.authority_identity().as_u64()

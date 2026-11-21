@@ -4,6 +4,7 @@
 //! copy moves to the registry's retained readmission owner. This child is
 //! registered only with the selected execution continuation.
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 
 use worth_query_installation::facade::ApplicationSchema;
 

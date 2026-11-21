@@ -1,6 +1,7 @@
 //! One original selection guard adopts the final endpoint and completes one edge.
 use super::super::{journal::RecordedNode, sealing::PreparedBinding};
 use super::*;
+use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
 
 impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
     WorthQueryDocumentHistory<'runtime, S, H>

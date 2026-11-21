@@ -2,6 +2,7 @@
 use super::super::signed_creation::WorthQuerySignedCreationPreparationDenial as SigningDenial;
 use super::super::WorthQueryApplicationEffectProgram;
 use super::{observation, Denial, Kind, QueryRequestExecution};
+use worth_query_execution_attempt::facade::ports::CompleteReadSetFactAppendInternalPort as _;
 use worth_query_execution_attempt::facade::ports::{
     CompleteReadSetInternalPort as _, EffectProgramInternalPort as _,
 };

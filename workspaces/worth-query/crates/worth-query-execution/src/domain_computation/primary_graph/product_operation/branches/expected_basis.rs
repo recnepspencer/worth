@@ -6,6 +6,7 @@ use crate::basis::{
 use crate::domain_computation::primary_graph::{
     WorthQueryAdvancementDenial, WorthQueryAdvancementPhase, WorthQuerySelectedProductOperation,
 };
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_relational::facade::branch::RelationalBranchBasisDenial;
 
 #[derive(Debug)]

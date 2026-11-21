@@ -4,6 +4,8 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationManagedCleanupReceipt as Receipt,
     WorthQueryCleanupDispatchDenial as Denial, WorthQueryCleanupDispatchPosture as Posture,
 };
+use worth_query_execution_lineage::facade::ports::ManagedCleanupReceiptInternalPort as _;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     /// Finish only this owner's original first-send obligation. This cannot
     /// accept recovered receipt data or a descriptive cleanup copy. Any physical
@@ -14,7 +16,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         receipt: &'a mut Receipt,
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     ) -> Result<Option<&'a WorthQueryExternalEffectDispatch>, Denial> {
-        match receipt.posture {
+        match receipt.posture() {
             Posture::NotDeclared => return Ok(None),
             Posture::DiagnosticCopy => return Err(Denial::OriginalNotOwned),
             Posture::AttemptedUnresolved | Posture::Observed => {
@@ -36,8 +38,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .execution_request_for(&self.runtime.product_runtime)
             .map_err(|denial| Denial::ExecutionDenied(denial.into()))?;
         let original = receipt
-            .original
-            .as_ref()
+            .original()
             .ok_or(Denial::OriginalNotOwned)?
             .original();
         if original.original_authority().runtime_authority() != self.runtime.authority_identity() {
@@ -62,22 +63,22 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             request,
             |event| match event {
                 OriginalDispatchObservation::Starting => {
-                    receipt.posture = Posture::AttemptedUnresolved
+                    receipt.set_posture(Posture::AttemptedUnresolved)
                 }
                 OriginalDispatchObservation::Observed(dispatch) => {
-                    receipt.posture = Posture::Observed;
-                    receipt.dispatch = Some(dispatch.clone());
+                    receipt.set_posture(Posture::Observed);
+                    receipt.set_dispatch(Some(dispatch.clone()));
                 }
             },
         );
         if matches!(
             &result,
             Err(WorthQueryExternalDispatchPreparationDenial::AlreadyCompleted)
-        ) && receipt.posture == Posture::Pending
+        ) && receipt.posture() == Posture::Pending
         {
-            receipt.posture = Posture::TerminalObserved;
+            receipt.set_posture(Posture::TerminalObserved);
         }
         result.map_err(Denial::DispatchDenied)?;
-        Ok(receipt.dispatch.as_ref())
+        Ok(receipt.dispatch())
     }
 }

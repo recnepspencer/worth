@@ -1,5 +1,7 @@
 //! Replace an application head only while the candidate's exact source is current.
 use super::*;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
 use worth_runtime_world::facade::{ProductBranchCurrentnessFailure, ProductBranchObservation};
 
 pub use worth_query_execution_query::facade::domain_computation::primary_graph::product_operation::document_history::WorthQueryExpectedProductBranchAdoptionDenial;

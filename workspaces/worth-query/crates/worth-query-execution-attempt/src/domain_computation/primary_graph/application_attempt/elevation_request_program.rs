@@ -81,13 +81,15 @@ impl<Schema, Operation, Input, Scope>
     }
 
     #[inline]
-    pub fn application_program(
+    pub(crate) fn application_program(
         &self,
     ) -> &WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope> {
         &self.program
     }
 
-    pub fn into_inner(self) -> WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope> {
+    pub(crate) fn into_inner(
+        self,
+    ) -> WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope> {
         self.program
     }
 }

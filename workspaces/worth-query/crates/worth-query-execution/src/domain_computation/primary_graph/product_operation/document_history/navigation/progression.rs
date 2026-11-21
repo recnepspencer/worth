@@ -5,6 +5,8 @@ use crate::domain_computation::primary_graph::{
     WorthQueryAdvancementPhase, WorthQueryExpectedProductBranch,
 };
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
+use worth_query_execution_lineage::facade::ports::ReadObservationInternalPort as _;
+use worth_query_execution_query::facade::ports::HistoryPreviewInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::mvcc::{
     RelationalRetainedEntitySelectionPreparationError as Preparation, RelationalTransactionIntent,
@@ -32,7 +34,10 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
                 .runtime
                 .product_runtime
                 .require_live_product_occurrence(
-                    source.source.product_observation().lifecycle_incarnation(),
+                    source
+                        .source()
+                        .product_observation()
+                        .lifecycle_incarnation(),
                 )
                 .map_err(Denial::ProductAdmission)?;
         }
@@ -154,7 +159,7 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
             .expect("pending selection owns the original retained source");
         let historical = self
             .application
-            .select_application_read_observation(phase, &source.source)
+            .select_application_read_observation(phase, &source.source())
             .map_err(Denial::ProductAdmission)?;
         let graph = &self.application.inner.runtime.primary_provider.graph;
         let publisher = graph.application_publication.as_deref();

@@ -19,7 +19,7 @@ impl<Schema, Operation, Input, Scope>
             .prepare_test_contract::<Schema, Contract>();
     }
 
-    pub fn prepare_output_contract<Binding>(
+    pub(crate) fn prepare_output_contract<Binding>(
         &mut self,
     ) -> Result<(), WorthQueryApplicationAttemptDenial>
     where
@@ -42,7 +42,7 @@ impl<Schema, Operation, Input, Scope>
     /// Bind `target` under `role`. Public writers build `role` from a
     /// declaration marker, which checks it against the contract at compile
     /// time; the runtime checks here guard the erased use.
-    pub fn bind_output<Entity>(
+    pub(crate) fn bind_output<Entity>(
         &mut self,
         role: OutputRoleUse,
         target: &WorthQueryApplicationEffectEntity<Schema, Entity>,

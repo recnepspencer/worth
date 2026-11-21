@@ -5,6 +5,7 @@ use super::original_receipt::{
 };
 use super::*;
 use crate::domain_computation::primary_graph::provider::OriginalPublication;
+use worth_query_execution_lineage::facade::ports::RecoveredCommitReceiptInternalPort as _;
 use worth_relational::facade::{history::RelationalCommitReceipt, identity::EntityId};
 type Denial = WorthQueryProviderIdempotencyResolutionDenial;
 

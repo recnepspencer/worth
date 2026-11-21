@@ -58,7 +58,7 @@ impl<Schema, Entity> WorthQueryApplicationEffectEntity<Schema, Entity> {
 
 impl WorthQueryApplicationEffectEntity<(), ()> {
     #[inline(always)]
-    pub fn into_typed<S, E>(self) -> WorthQueryApplicationEffectEntity<S, E> {
+    pub(crate) fn into_typed<S, E>(self) -> WorthQueryApplicationEffectEntity<S, E> {
         WorthQueryApplicationEffectEntity {
             reference: self.reference,
             entity: self.entity,
@@ -66,6 +66,12 @@ impl WorthQueryApplicationEffectEntity<(), ()> {
             program: self.program,
             _marker: PhantomData,
         }
+    }
+}
+
+impl crate::ports::EffectEntityErasedInternalPort for WorthQueryApplicationEffectEntity<(), ()> {
+    fn into_typed<S, E>(self) -> WorthQueryApplicationEffectEntity<S, E> {
+        Self::into_typed(self)
     }
 }
 

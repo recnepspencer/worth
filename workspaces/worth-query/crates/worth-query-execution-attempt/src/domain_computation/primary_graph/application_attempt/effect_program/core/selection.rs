@@ -18,7 +18,7 @@ pub struct EffectSelection<'a> {
 }
 impl<S, O, I, Scope> WorthQueryApplicationEffectProgramBuilder<S, O, I, Scope> {
     #[inline(always)]
-    pub fn native_selection(&self) -> EffectSelection<'_> {
+    pub(crate) fn native_selection(&self) -> EffectSelection<'_> {
         EffectSelection {
             layout: &self.layout,
             program: &self.program,

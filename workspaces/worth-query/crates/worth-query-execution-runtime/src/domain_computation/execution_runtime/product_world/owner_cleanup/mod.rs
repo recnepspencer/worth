@@ -113,7 +113,7 @@ impl std::fmt::Debug for WorthQueryProductBranchOwnerCleanup {
 }
 
 impl WorthQueryProductBranchOwnerCleanup {
-    pub fn new(runtime: WorthQueryProductRuntime, identity: u64) -> Self {
+    pub(crate) fn new(runtime: WorthQueryProductRuntime, identity: u64) -> Self {
         Self { runtime, identity }
     }
 
@@ -121,7 +121,7 @@ impl WorthQueryProductBranchOwnerCleanup {
         self.runtime.owner_cleanup.pending_work(self.identity)
     }
 
-    pub fn release_retired_history(
+    pub(crate) fn release_retired_history(
         &self,
         retirements: &mut OwnerCleanupRetirements,
     ) -> Result<(), WorthQueryProductBranchOwnerCleanupDenial> {
@@ -130,7 +130,7 @@ impl WorthQueryProductBranchOwnerCleanup {
             .release_history(self.identity, &self.runtime, retirements)
     }
 
-    pub fn pending_signal_bases(
+    pub(crate) fn pending_signal_bases(
         &self,
     ) -> Result<
         Vec<worth_signal::facade::branch::AdmittedSignalBranchBasis>,

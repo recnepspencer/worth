@@ -43,9 +43,9 @@ pub use source_identity::{
 
 #[derive(Clone, Copy)]
 pub struct WorthQueryBoundSourceExpectation {
-    pub kind: WorthQuerySourceExpectationKind,
-    pub identity: [u8; 32],
-    pub partition_identity: [u8; 32],
+    pub(crate) kind: WorthQuerySourceExpectationKind,
+    pub(crate) identity: [u8; 32],
+    pub(crate) partition_identity: [u8; 32],
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -93,25 +93,25 @@ pub struct WorthQueryObservedSourceFootprint {
 }
 
 pub struct WorthQueryObservedSource<Query> {
-    pub expression_context: Option<Arc<RetainedExpressionContext>>,
-    pub runtime_authority: u64,
-    pub schema_binding: ApplicationSchemaBindingIdentity,
-    pub query_identity: WorthQueryInstalledApplicationQueryIdentity,
-    pub parameter_binding_identity: CanonicalDigestId,
-    pub parameters: Arc<WorthQueryRetainedObservedParameters>,
-    pub query_identifier: Arc<String>,
-    pub branch: Arc<BranchId>,
-    pub selection: WorthQueryApplicationBasisSelectionIdentity,
-    pub model_root: EntityId,
-    pub invocation_source_authorization: Option<
+    pub(crate) expression_context: Option<Arc<RetainedExpressionContext>>,
+    pub(crate) runtime_authority: u64,
+    pub(crate) schema_binding: ApplicationSchemaBindingIdentity,
+    pub(crate) query_identity: WorthQueryInstalledApplicationQueryIdentity,
+    pub(crate) parameter_binding_identity: CanonicalDigestId,
+    pub(crate) parameters: Arc<WorthQueryRetainedObservedParameters>,
+    pub(crate) query_identifier: Arc<String>,
+    pub(crate) branch: Arc<BranchId>,
+    pub(crate) selection: WorthQueryApplicationBasisSelectionIdentity,
+    pub(crate) model_root: EntityId,
+    pub(crate) invocation_source_authorization: Option<
         Arc<crate::domain_computation::primary_graph::application_attempt::SourceReadAuthorization>,
     >,
-    pub invocation_managed_source: Option<
+    pub(crate) invocation_managed_source: Option<
         Arc<crate::domain_computation::primary_graph::application_attempt::ManagedSourceRead>,
     >,
-    pub source_meaning: Arc<source_identity::WorthQueryObservedSourceMeaning>,
-    pub scope_selector: Arc<WorthQueryObservedScopeSelector>,
-    pub _marker: PhantomData<fn() -> Query>,
+    pub(crate) source_meaning: Arc<source_identity::WorthQueryObservedSourceMeaning>,
+    pub(crate) scope_selector: Arc<WorthQueryObservedScopeSelector>,
+    pub(crate) _marker: PhantomData<fn() -> Query>,
 }
 
 impl<Query> std::fmt::Debug for WorthQueryObservedSource<Query> {
@@ -161,7 +161,7 @@ impl<Query> WorthQueryObservedSource<Query> {
         })
     }
 
-    pub fn retained_parameters(&self) -> &Arc<WorthQueryRetainedObservedParameters> {
+    pub(crate) fn retained_parameters(&self) -> &Arc<WorthQueryRetainedObservedParameters> {
         &self.parameters
     }
 

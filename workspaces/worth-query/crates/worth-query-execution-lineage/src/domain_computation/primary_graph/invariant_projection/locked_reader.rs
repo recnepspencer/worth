@@ -3,6 +3,7 @@ use std::collections::{BTreeMap, HashMap};
 use std::marker::PhantomData;
 use std::panic::{catch_unwind, resume_unwind, AssertUnwindSafe};
 use std::sync::Arc;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 
 use worth_query_installation::facade::{ApplicationReadableScalarValueBinding, ApplicationSchema};
 
@@ -41,53 +42,53 @@ pub use traversal_denial::{
 /// It resolves entities by identity field, reads fields, traverses relations,
 /// and summarizes aggregates. Every read is charged to the projection's work.
 pub struct WorthQueryApplicationInvariantProjectionReader<'runtime, Schema> {
-    pub value_bindings: &'runtime worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog,
-    pub value_decode: &'runtime super::super::value_decode::ValueDecodeSession<'runtime>,
-    pub execution: &'runtime worth_execution::ExecutionRequest<'runtime, 'runtime>,
-    pub native: NativeProjectionRead<'runtime>,
-    pub layout: &'runtime super::super::schema_layout::WorthQueryPrimaryGraphLayout,
-    pub snapshot: &'runtime worth_relational::facade::snapshots::SnapshotHandle,
-    pub entity_resolution: &'runtime super::super::WorthQueryInstalledEntityResolutionContext,
-    pub observation: worth_relational::facade::mvcc::RelationalBranchObservation,
-    pub authority_identity: u64,
-    pub binding_identity: &'runtime worth_query_installation::facade::ApplicationSchemaBindingIdentity,
-    pub program_activation:
+    pub(crate) value_bindings: &'runtime worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog,
+    pub(crate) value_decode: &'runtime super::super::value_decode::ValueDecodeSession<'runtime>,
+    pub(crate) execution: &'runtime worth_execution::ExecutionRequest<'runtime, 'runtime>,
+    pub(crate) native: NativeProjectionRead<'runtime>,
+    pub(crate) layout: &'runtime super::super::schema_layout::WorthQueryPrimaryGraphLayout,
+    pub(crate) snapshot: &'runtime worth_relational::facade::snapshots::SnapshotHandle,
+    pub(crate) entity_resolution: &'runtime super::super::WorthQueryInstalledEntityResolutionContext,
+    pub(crate) observation: worth_relational::facade::mvcc::RelationalBranchObservation,
+    pub(crate) authority_identity: u64,
+    pub(crate) binding_identity: &'runtime worth_query_installation::facade::ApplicationSchemaBindingIdentity,
+    pub(crate) program_activation:
         Option<&'runtime super::super::program_occurrence::WorthQueryProgramActivationCell>,
-    pub work: WorthQueryInvariantProjectionWork,
-    pub work_budget: WorthQueryInvariantProjectionWorkBudget,
+    pub(crate) work: WorthQueryInvariantProjectionWork,
+    pub(crate) work_budget: WorthQueryInvariantProjectionWorkBudget,
     /// A read found no capacity to retain its evidence. The projection then
     /// ends as that capacity's stop, whatever the closure made of the read's
     /// refusal, as it ends for an exceeded work budget.
-    pub retention_exhausted: bool,
+    pub(crate) retention_exhausted: bool,
     /// The first native read refusal vetoes the closure's output at completion.
-    pub native_read_stop:
+    pub(crate) native_read_stop:
         Option<worth_relational::facade::transactions::RelationalExecutionDenialCause>,
-    pub realized_scope: WorthQueryRealizedProjectionScope,
-    pub aggregate_projections:
+    pub(crate) realized_scope: WorthQueryRealizedProjectionScope,
+    pub(crate) aggregate_projections:
         Arc<std::sync::Mutex<super::super::aggregate_projection::WorthQueryAggregateProjections>>,
-    pub output_lineage:
+    pub(crate) output_lineage:
         Arc<std::sync::Mutex<super::super::output_lineage::WorthQueryApplicationOutputLineage>>,
-    pub invalidation_owner: Arc<super::super::SourceInvalidationOwner>,
-    pub managed_views: Arc<dyn crate::ports::ManagedDerivedViewPort>,
-    pub selected_product_occurrence:
+    pub(crate) invalidation_owner: Arc<super::super::SourceInvalidationOwner>,
+    pub(crate) managed_views: Arc<dyn crate::ports::ManagedDerivedViewPort>,
+    pub(crate) selected_product_occurrence:
         Option<worth_runtime_world::facade::ProductBranchIncarnation>,
-    pub selected_product_generation: Option<u64>,
-    pub selected_source_partition_identity: Option<[u8; 32]>,
-    pub prior_output_bindings:
+    pub(crate) selected_product_generation: Option<u64>,
+    pub(crate) selected_source_partition_identity: Option<[u8; 32]>,
+    pub(crate) prior_output_bindings:
         HashMap<TypeId, Arc<super::super::WorthQueryApplicationOutputCorrespondence>>,
-    pub current_output_families: HashMap<
+    pub(crate) current_output_families: HashMap<
         (TypeId, worth_relational::facade::identity::EntityId),
         Vec<super::operation_reader::CertifiedOutputCorrespondence>,
     >,
-    pub dependent_source_facts:
+    pub(crate) dependent_source_facts:
         super::super::application_attempt::retained_decision_facts::AuthoringSourceFacts,
-    pub retention_control:
+    pub(crate) retention_control:
         super::super::application_attempt::retained_decision_facts::StorageControl<
             'runtime,
             'runtime,
         >,
-    pub applied_consumptions: Vec<crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence>,
-    pub consumed_outputs: BTreeMap<
+    pub(crate) applied_consumptions: Vec<crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence>,
+    pub(crate) consumed_outputs: BTreeMap<
         Arc<super::super::output_lineage::RecordedSettlementIdentity>,
         super::ConsumedOutputEvidence,
     >,

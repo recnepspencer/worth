@@ -5,11 +5,11 @@ use std::sync::Arc;
 
 #[must_use = "retain this historical source or close its holder"]
 pub struct WorthQueryHistoryPreview {
-    pub discovery_recipes: Option<Arc<super::discovery_recipes::HistoryDiscoveryRecipes>>,
-    pub step: WorthQueryHistoryStep,
-    pub model: HistoryModelIdentity,
-    pub source: Arc<WorthQueryApplicationReadObservation>,
-    pub root_posture:
+    pub(crate) discovery_recipes: Option<Arc<super::discovery_recipes::HistoryDiscoveryRecipes>>,
+    pub(crate) step: WorthQueryHistoryStep,
+    pub(crate) model: HistoryModelIdentity,
+    pub(crate) source: Arc<WorthQueryApplicationReadObservation>,
+    pub(crate) root_posture:
         Option<crate::domain_computation::primary_graph::WorthQueryOutputSettlementPosture>,
 }
 

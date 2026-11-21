@@ -37,7 +37,7 @@ impl<Query> WorthQueryObservedSource<Query> {
         self.parameters.binding_observation()
     }
 
-    pub fn retained_scope_selector(&self) -> &Arc<WorthQueryObservedScopeSelector> {
+    pub(crate) fn retained_scope_selector(&self) -> &Arc<WorthQueryObservedScopeSelector> {
         &self.scope_selector
     }
 

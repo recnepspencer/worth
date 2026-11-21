@@ -31,7 +31,7 @@ pub struct WorthQueryAdmittedIdempotencyRead {
 }
 
 impl WorthQueryAdmittedIdempotencyRead {
-    pub const fn mint(
+    pub(crate) const fn mint(
         binding: WorthQueryApplicationIdempotencyBinding,
         resolution: WorthQueryApplicationIdempotencyResolution,
     ) -> Self {

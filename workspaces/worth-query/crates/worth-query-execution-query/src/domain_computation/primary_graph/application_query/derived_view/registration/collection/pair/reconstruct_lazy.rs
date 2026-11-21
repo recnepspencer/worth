@@ -16,6 +16,7 @@ use crate::domain_computation::primary_graph::{
 use std::collections::BTreeMap;
 use worth_execution::{ExecutionMemoryReservation, ExecutionWorkCeiling};
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_relational::facade::identity::EntityId;
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {

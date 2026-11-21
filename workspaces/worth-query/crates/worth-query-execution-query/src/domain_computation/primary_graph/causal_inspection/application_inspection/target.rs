@@ -8,6 +8,7 @@ use std::{
     sync::{atomic::AtomicUsize, Arc},
 };
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, MapKernelFailure};
+use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
 use worth_query_installation::facade::WorthQueryInstalledApplicationInspectionContract;
 
 pub struct WorthQueryApplicationInspectionTarget {
@@ -151,7 +152,7 @@ impl WorthQueryApplicationInspectionTarget {
     pub fn parameters(&self) -> worth_foundational::facade::CanonicalDigestId {
         match &self.original {
             InspectionOriginal::Query { original, .. } => {
-                original.source.parameter_binding_identity
+                original.source.parameter_binding_identity()
             }
             InspectionOriginal::Source(source) => {
                 *source.disclosure.disclosure().parameters().identity()
@@ -165,7 +166,7 @@ impl WorthQueryApplicationInspectionTarget {
 
     pub fn runtime_authority(&self) -> u64 {
         match &self.original {
-            InspectionOriginal::Query { original, .. } => original.source.runtime_authority,
+            InspectionOriginal::Query { original, .. } => original.source.runtime_authority(),
             InspectionOriginal::Source(source) => source.runtime,
         }
     }
@@ -174,7 +175,7 @@ impl WorthQueryApplicationInspectionTarget {
         &self,
     ) -> &worth_query_installation::facade::ApplicationSchemaBindingIdentity {
         match &self.original {
-            InspectionOriginal::Query { original, .. } => &original.source.schema_binding,
+            InspectionOriginal::Query { original, .. } => original.source.schema_binding_ref(),
             InspectionOriginal::Source(source) => source.disclosure.schema(),
         }
     }

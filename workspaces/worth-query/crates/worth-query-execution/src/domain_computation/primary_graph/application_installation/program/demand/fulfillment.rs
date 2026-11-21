@@ -4,6 +4,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryFulfilledRequiredRoot, WorthQueryOutputDemandDenialKind as Kind,
     WorthQueryOutputSourceEvidence,
 };
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 impl<Schema, Program, Demand> WorthQueryAdmittedProgramOutput<Schema, Program, Demand>
 where
     Schema: ApplicationSchema + 'static,

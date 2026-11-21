@@ -66,7 +66,7 @@ pub use request_control::{
 
 pub use resources::test_product_world_resources_with_history_limit_for_test;
 pub use resources::WorthQueryProductWorldResources;
-pub use runtime::WorthQueryProductRuntime;
+pub use runtime::{WorthQueryProductRootIdentity, WorthQueryProductRuntime};
 #[doc(hidden)]
 pub use shared_root::WorthQueryProductSharedRoot;
 pub use source_installation::WorthQueryProductRelationalInstallation;

@@ -83,7 +83,7 @@ impl<Query> WorthQueryObservedSource<Query> {
         )
     }
 
-    pub fn retained_checkpoint_facts(
+    pub(crate) fn retained_checkpoint_facts(
         &self,
         layout: &WorthQueryPrimaryGraphLayout,
         request: Option<

@@ -15,7 +15,7 @@ impl<Schema, Operation, Input, Scope>
         WorthQueryProjectedApplicationMutation,
     >
 {
-    pub fn append_authority_facts(
+    pub(crate) fn append_authority_facts(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         incoming: &[WorthQueryApplicationObservedFact],

@@ -1,5 +1,7 @@
 //! Issue a succession slot only from exact fresh capability and native completed-chain facts.
 use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
+use worth_query_execution_attempt::facade::ports::CompleteReadSetWorkflowInternalPort as _;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 pub struct WorthQueryWorkflowSuccessionAdapter;
 
 impl WorthQueryWorkflowSuccessionAdapter {

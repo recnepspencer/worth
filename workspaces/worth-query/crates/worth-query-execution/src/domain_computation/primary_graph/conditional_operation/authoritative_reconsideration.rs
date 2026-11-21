@@ -1,4 +1,5 @@
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_relational::facade::publication::PatchStreamPosition;
 use worth_runtime_bridge::facade::BridgeConditionalExecutionView;
 use worth_runtime_bridge::facade::{

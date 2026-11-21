@@ -3,6 +3,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryAdvancementPhase, WorthQueryApplicationCleanupRequired,
     WorthQueryApplicationCommitOutcome, WorthQueryApplicationManagedCleanup,
 };
+use worth_query_execution_lineage::facade::ports::ManagedCleanupReceiptInternalPort as _;
 pub(super) struct RetainedManagedCleanup {
     outcome: WorthQueryApplicationCommitOutcome,
     pending: Option<WorthQueryApplicationManagedCleanup>,
@@ -28,7 +29,7 @@ impl RetainedManagedCleanup {
         &mut self,
     ) -> Option<crate::domain_computation::primary_graph::WorthQueryApplicationManagedCleanupReceipt>
     {
-        if self.pending.is_some() || self.receipt.as_ref()?.original.is_none() {
+        if self.pending.is_some() || self.receipt.as_ref()?.original().is_none() {
             return None;
         }
         let original = self.receipt.take()?;

@@ -30,19 +30,19 @@ pub use producing_publication::OriginalProducingPublication;
 pub use receipt_custody::SettlementReceiptCustody;
 
 pub struct WorthQueryOutputDemandSettlement {
-    pub _original_delivery_memory: Option<worth_execution::ExecutionMemoryReservation>,
-    pub posture: WorthQueryOutputSettlementPosture,
-    pub runtime_authority: u64,
-    pub schema_binding: ApplicationSchemaBindingIdentity,
-    pub producer_identity: SettlementProducerIdentity,
-    pub output_family_identity: String,
-    pub receipt: Option<SettlementReceiptCustody>,
+    pub(crate) _original_delivery_memory: Option<worth_execution::ExecutionMemoryReservation>,
+    pub(crate) posture: WorthQueryOutputSettlementPosture,
+    pub(crate) runtime_authority: u64,
+    pub(crate) schema_binding: ApplicationSchemaBindingIdentity,
+    pub(crate) producer_identity: SettlementProducerIdentity,
+    pub(crate) output_family_identity: String,
+    pub(crate) receipt: Option<SettlementReceiptCustody>,
     pub stable: Option<PublishedStableLineage>,
     pub output_correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
     pub restored_source: Option<WorthQueryRestoredAcceptedOutput>,
-    pub readiness_delivery: Option<WorthQueryOutputReadinessDeliveryEvidence>,
-    pub producer_contacts_in_this_demand: usize,
-    pub observation: Arc<WorthQueryApplicationReadObservation>,
+    pub(crate) readiness_delivery: Option<WorthQueryOutputReadinessDeliveryEvidence>,
+    pub(crate) producer_contacts_in_this_demand: usize,
+    pub(crate) observation: Arc<WorthQueryApplicationReadObservation>,
 }
 
 impl WorthQueryOutputDemandSettlement {

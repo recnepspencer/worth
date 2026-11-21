@@ -23,7 +23,7 @@ impl<Schema, Operation, Input, Scope>
 where
     Schema: ApplicationSchema,
 {
-    pub fn materialize_approval_requirement(
+    pub(crate) fn materialize_approval_requirement(
         mut self,
         layout: &WorthQueryWorkflowLayout,
         instance: PublishedWorkflowInstanceRef,

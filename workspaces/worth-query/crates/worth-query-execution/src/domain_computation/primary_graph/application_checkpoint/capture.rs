@@ -3,6 +3,7 @@ use super::{
     facts, WorthQueryApplicationCheckpoint, WorthQueryApplicationCheckpointSectionBytes,
     WorthQueryCheckpointCaptureDenial, WorthQueryCheckpointCapturePolicy,
 };
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 
 pub(crate) mod native_priors;
 pub(in crate::domain_computation::primary_graph) use worth_query_execution_lineage::facade::domain_computation::primary_graph::application_checkpoint::capture::output_facts;

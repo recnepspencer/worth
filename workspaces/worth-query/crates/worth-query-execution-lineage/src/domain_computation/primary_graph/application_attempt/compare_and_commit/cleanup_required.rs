@@ -69,7 +69,7 @@ impl WorthQueryApplicationCleanupRequired {
         ));
         self
     }
-    pub fn from_parts(
+    pub(crate) fn from_parts(
         outcome: WorthQueryApplicationCommitOutcome,
         mut cleanup: WorthQueryApplicationManagedCleanup,
     ) -> Box<Self> {
@@ -84,7 +84,7 @@ impl WorthQueryApplicationCleanupRequired {
         owner.parts = Some((outcome, cleanup));
         owner
     }
-    pub fn retain_for_home(
+    pub(crate) fn retain_for_home(
         &mut self,
         request: &worth_execution::ExecutionRequest<'_, '_>,
         history: std::sync::Arc<crate::domain_computation::primary_graph::query_obligations::history::QueryObligationHistory>,

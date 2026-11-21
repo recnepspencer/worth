@@ -23,11 +23,11 @@ pub enum WorthQueryOutputReadCloseDenial {
 #[derive(Debug)]
 #[must_use = "native producer cleanup and recovery must remain owned until discharged"]
 pub struct WorthQueryOutputReadCleanup {
-    pub custody: denial::cleanup_custody::DemandCleanupCustody,
+    pub(crate) custody: denial::cleanup_custody::DemandCleanupCustody,
 }
 
 impl WorthQueryOutputReadCleanup {
-    pub fn from_custody(custody: denial::cleanup_custody::DemandCleanupCustody) -> Self {
+    pub(crate) fn from_custody(custody: denial::cleanup_custody::DemandCleanupCustody) -> Self {
         Self { custody }
     }
 

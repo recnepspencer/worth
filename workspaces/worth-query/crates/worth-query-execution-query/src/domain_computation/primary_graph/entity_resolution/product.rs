@@ -1,4 +1,5 @@
 use crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalKind as ResolutionRefusal;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 mod record;
 mod retained_scope;
 use super::admit_request;

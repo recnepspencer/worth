@@ -1,6 +1,7 @@
 //! Resume an unfinished successor, and hand a queue frame's unfinished
 //! successors to registry custody on their own rows.
 
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 mod local_resume;
 
 use super::super::progression::PerformedMembers;

@@ -16,6 +16,10 @@ use crate::domain_computation::primary_graph::value_decode::ValueDecodeState;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use std::marker::PhantomData;
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
+use worth_query_execution_attempt::facade::ports::ObservedResultSetInternalPort as _;
+use worth_query_execution_lineage::facade::ports::{
+    ObservedSourceInternalPort as _, ObservedSourceParts,
+};
 mod ordinary;
 pub use ordinary::{
     complete_one_shot, complete_one_shot_with_projection, finalize_one_shot,
@@ -207,28 +211,29 @@ where
     };
     for source_meaning in source_parameters.row_meanings() {
         admit_request(request, plan.query.name())?;
-        observed_sources.push(super::super::WorthQueryObservedSource {
-            expression_context: expression_context.clone(),
-            runtime_authority: plan.runtime_authority.as_u64(),
-            schema_binding: plan.query.binding_identity().clone(),
-            query_identity: plan.query.identity().clone(),
-            parameter_binding_identity,
-            parameters: std::sync::Arc::clone(&source_parameters),
-            query_identifier: std::sync::Arc::clone(&query_identifier),
-            branch: std::sync::Arc::clone(&branch),
-            selection: basis_identity.selection().clone(),
-            model_root: plan.scope.entity_id(),
-            source_meaning: std::sync::Arc::clone(source_meaning),
-            invocation_managed_source: invocation_managed_source.clone(),
-            invocation_source_authorization: invocation_source_authorization.clone(),
-            scope_selector: std::sync::Arc::clone(&scope_selector),
-
-            _marker: PhantomData,
-        });
+        observed_sources.push(super::super::WorthQueryObservedSource::from_parts(
+            ObservedSourceParts {
+                expression_context: expression_context.clone(),
+                runtime_authority: plan.runtime_authority.as_u64(),
+                schema_binding: plan.query.binding_identity().clone(),
+                query_identity: plan.query.identity().clone(),
+                parameter_binding_identity,
+                parameters: std::sync::Arc::clone(&source_parameters),
+                query_identifier: std::sync::Arc::clone(&query_identifier),
+                branch: std::sync::Arc::clone(&branch),
+                selection: basis_identity.selection().clone(),
+                model_root: plan.scope.entity_id(),
+                source_meaning: std::sync::Arc::clone(source_meaning),
+                invocation_managed_source: invocation_managed_source.clone(),
+                invocation_source_authorization: invocation_source_authorization.clone(),
+                scope_selector: std::sync::Arc::clone(&scope_selector),
+                _marker: PhantomData,
+            },
+        ));
     }
     let result_set_meaning = meanings.result_set(result_set_footprint, &mut source_comparisons)?;
-    let result_set_observation =
-        super::super::WorthQueryObservedResultSet::new(super::super::WorthQueryObservedSource {
+    let result_set_observation = super::super::WorthQueryObservedResultSet::from_source(
+        super::super::WorthQueryObservedSource::from_parts(ObservedSourceParts {
             expression_context,
             runtime_authority: plan.runtime_authority.as_u64(),
             schema_binding: plan.query.binding_identity().clone(),
@@ -243,9 +248,9 @@ where
             invocation_managed_source,
             invocation_source_authorization,
             scope_selector,
-
             _marker: PhantomData,
-        });
+        }),
+    );
     let basis_release = plan.basis.release();
     // A producer's exact selected wave may retain the authentic native
     // resources. The receipt separately reports physical release; completing

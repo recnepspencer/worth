@@ -7,6 +7,7 @@ use super::{
 };
 use crate::domain_computation::authorization::delegation_progression::binding::program::WorthQueryDelegationActivationEffect;
 use crate::domain_computation::authorization::WorthQueryDelegationActivationBinding;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 
 /// Exact child activation produced from Query-owned delegation authority.
 pub struct WorthQueryDelegationActivationProgram<Schema, Operation, Input, Scope> {
@@ -70,13 +71,15 @@ impl<Schema, Operation, Input, Scope>
     WorthQueryDelegationActivationProgram<Schema, Operation, Input, Scope>
 {
     #[inline]
-    pub fn application_program(
+    pub(crate) fn application_program(
         &self,
     ) -> &WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope> {
         &self.program
     }
 
-    pub fn into_inner(self) -> WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope> {
+    pub(crate) fn into_inner(
+        self,
+    ) -> WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope> {
         self.program
     }
 }

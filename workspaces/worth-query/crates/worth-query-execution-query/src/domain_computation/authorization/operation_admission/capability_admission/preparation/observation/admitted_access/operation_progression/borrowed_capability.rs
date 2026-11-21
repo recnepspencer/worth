@@ -1,5 +1,6 @@
 //! Explicit borrowed preconditions use the same native capability progression.
 use super::*;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub fn authorize_borrowed_capability_operation<Capability, Operation, Input>(
         &self,

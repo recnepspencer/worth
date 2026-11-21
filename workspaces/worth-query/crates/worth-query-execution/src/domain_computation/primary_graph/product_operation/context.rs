@@ -138,7 +138,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         self.inner.product_runtime()
     }
 
-    pub fn select_product_branch(
+    pub(crate) fn select_product_branch(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         identity: &ProductBranchIdentity,
@@ -174,7 +174,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         }
     }
 
-    pub fn on_product(
+    pub(crate) fn on_product(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         product: WorthQueryProductBranchLease,
@@ -187,7 +187,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .map(|inner| WorthQuerySelectedProductOperation::from_inner(self, inner))
     }
 
-    pub fn on_mutation_product(
+    pub(crate) fn on_mutation_product(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         lease: &super::super::application_attempt::WorthQueryApplicationSnapshotLease,
@@ -200,7 +200,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .map(|inner| WorthQuerySelectedProductOperation::from_inner(self, inner))
     }
 
-    pub fn on_product_for_owner_recovery(
+    pub(crate) fn on_product_for_owner_recovery(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         product: WorthQueryProductBranchLease,

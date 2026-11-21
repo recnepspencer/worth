@@ -21,7 +21,7 @@ where
 {
     /// This method consumes no key and runs no authored definition. The existing
     /// admitted request supplies the subject; an unrelated subject sees no state.
-    pub fn refuse_ended_workflow_instance(
+    pub(crate) fn refuse_ended_workflow_instance(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         instance: &PublishedWorkflowInstanceRef,

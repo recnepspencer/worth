@@ -35,7 +35,7 @@ pub struct
 }
 
 impl WorthQueryAdmittedApplicationConditionalDefinition {
-    pub fn from_admitted_parts(
+    pub(crate) fn from_admitted_parts(
         runtime_authority: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
         application_binding: worth_query_installation::facade::ApplicationSchemaBindingIdentity,
         expected_product: ProductBranchObservation,
@@ -59,7 +59,7 @@ impl WorthQueryAdmittedApplicationConditionalDefinition {
         }
     }
 
-    pub fn admits_application(
+    pub(crate) fn admits_application(
         &self,
         runtime_authority: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
         application_binding: &worth_query_installation::facade::ApplicationSchemaBindingIdentity,

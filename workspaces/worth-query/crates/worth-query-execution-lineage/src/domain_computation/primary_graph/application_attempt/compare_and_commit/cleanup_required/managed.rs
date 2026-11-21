@@ -15,8 +15,8 @@ use crate::domain_computation::{
 /// The same cleanup owner has a valid native cleanup result.
 #[must_use = "cleanup refusal returns this original owner"]
 pub struct WorthQueryApplicationManagedCleanup {
-    pub state: Box<Option<ManagedCleanupState>>,
-    pub return_owner: Option<Box<super::WorthQueryApplicationCleanupRequired>>,
+    pub(crate) state: Box<Option<ManagedCleanupState>>,
+    pub(crate) return_owner: Option<Box<super::WorthQueryApplicationCleanupRequired>>,
 }
 pub struct ManagedCleanupState {
     pub business_original: Option<crate::domain_computation::primary_graph::query_obligations::QueryManagedCleanupOriginal>,
@@ -53,7 +53,7 @@ impl WorthQueryApplicationManagedCleanup {
         let _owner=census.owner::<Self>("workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/compare_and_commit/cleanup_required/managed.rs","WorthQueryApplicationManagedCleanup",64);
         let _state=census.owner::<ManagedCleanupState>("workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/compare_and_commit/cleanup_required/managed.rs","ManagedCleanupState",16*1024);
     }
-    pub fn retain_for_home(
+    pub(crate) fn retain_for_home(
         &mut self,
         request: &worth_execution::ExecutionRequest<'_, '_>,
         history: std::sync::Arc<QueryObligationHistory>,

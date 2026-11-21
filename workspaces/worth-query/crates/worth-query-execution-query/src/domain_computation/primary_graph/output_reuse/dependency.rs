@@ -1,4 +1,5 @@
 use worth_query_declaration::facade::application_query::ApplicationQueryDependencyEquivalence;
+use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
 use worth_query_installation::facade::WorthQueryInstalledOutputDependencyContract;
 
 use crate::domain_computation::primary_graph::{
@@ -13,7 +14,7 @@ pub fn require_installed_output_dependencies<Query>(
     contract: WorthQueryInstalledOutputDependencyContract<'_>,
     source: &WorthQueryObservedSource<Query>,
 ) -> Result<(), WorthQueryOutputDemandDenial> {
-    if &source.query_identity != contract.query_identity() {
+    if &source.query_identity() != contract.query_identity() {
         return Err(WorthQueryOutputDemandDenial::new(
             WorthQueryOutputDemandDenialKind::ForeignSource,
             "output source query meaning differs from the installed dependency contract",

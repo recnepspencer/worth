@@ -83,7 +83,7 @@ impl WorthQueryOperationScopeBinding {
         }
     }
 
-    pub fn mint(
+    pub(crate) fn mint(
         runtime_authority: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
         binding_identity: &ApplicationSchemaBindingIdentity,
         operation_authority_identity: &str,

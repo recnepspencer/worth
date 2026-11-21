@@ -8,6 +8,7 @@ use crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation
 use worth_execution::ExecutionArray;
 use worth_execution::ExecutionArrayBuilder;
 use worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccess;
+use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 
 mod comparison;
@@ -99,12 +100,12 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
 
             self.validate_dependency(observed, true)?;
             let original = set.source();
-            if observed.query_identifier != original.query_identifier
-                || observed.query_identity != original.query_identity
-                || observed.parameter_binding_identity != original.parameter_binding_identity
-                || observed.model_root != original.model_root
-                || !std::sync::Arc::ptr_eq(&observed.parameters, &original.parameters)
-                || !std::sync::Arc::ptr_eq(&observed.scope_selector, &original.scope_selector)
+            if observed.query_identifier() != original.query_identifier()
+                || observed.query_identity() != original.query_identity()
+                || observed.parameter_binding_identity() != original.parameter_binding_identity()
+                || observed.model_root() != original.model_root()
+                || !std::sync::Arc::ptr_eq(&observed.parameters(), &original.parameters())
+                || !std::sync::Arc::ptr_eq(&observed.scope_selector(), &original.scope_selector())
             {
                 return Err(source_denial(
                     WorthQuerySourceExpectationDenialKind::SourceContractMismatch,
@@ -177,14 +178,14 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             runtime.runtime.authority_identity().as_u64(),
             &runtime.installed_schema.binding_identity(),
             self.application_basis().identity().branch_id(),
-            source.model_root,
+            source.model_root(),
             &selected,
-            &source.query_identifier,
-            &source.query_identity,
+            &source.query_identifier(),
+            &source.query_identity(),
         )?;
-        source.validate_completeness(&source.query_identifier)?;
+        source.validate_completeness(&source.query_identifier())?;
         if exact
-            && !matches!(&source.selection, WorthQueryApplicationBasisSelectionIdentity::Product(original) if original == &selected)
+            && !matches!(&source.selection(), WorthQueryApplicationBasisSelectionIdentity::Product(original) if original == &selected)
         {
             return Err(source_denial(
                 WorthQuerySourceExpectationDenialKind::ForeignOperation,

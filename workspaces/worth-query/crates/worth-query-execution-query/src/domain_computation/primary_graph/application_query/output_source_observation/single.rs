@@ -1,5 +1,6 @@
 //! Exactly-one Source completion uses the common real permission admission.
 use super::*;
+use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
 
 impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
     pub fn read<Binding>(

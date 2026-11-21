@@ -2,9 +2,13 @@ use crate::domain_computation::primary_graph::application_attempt::check_request
 use crate::domain_computation::primary_graph::application_checkpoint::facts::FactSequence;
 use crate::domain_computation::primary_graph::OutputDemandSettlementRuntimeExt;
 use worth_query_execution_attempt::facade::ports::{
-    AdmittedOperationExecutionPort as _, CompleteReadSetInternalPort as _,
-    EffectProgramInternalPort as _, EffectProgramParts,
+    AdmittedOperationExecutionPort as _, CompleteReadSetFactAppendInternalPort as _,
+    CompleteReadSetInternalPort as _, EffectProgramInternalPort as _, EffectProgramParts,
 };
+use worth_query_execution_lineage::facade::ports::{
+    ObservedSourceInternalPort as _, OutputDemandSettlementInternalPort as _,
+};
+use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::{
@@ -20,8 +24,9 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrimaryGraphApplicationRuntime, WorthQueryWorkflowAssessmentPosture,
 };
 
-pub use worth_query_execution_attempt::facade::domain_computation::primary_graph::application_attempt::workflow_transition_program::assessment::evidence_budget;
-pub use worth_query_execution_attempt::facade::domain_computation::primary_graph::application_attempt::workflow_transition_program::assessment::identity;
+pub use worth_query_execution_attempt::facade::domain_computation::primary_graph::application_attempt::workflow_transition_program::assessment::{
+    evidence_budget, identity,
+};
 #[path = "assessment/replay.rs"]
 pub mod replay;
 
@@ -63,18 +68,19 @@ where
         PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
         WorthQueryApplicationAttemptDenial,
     > {
+        use crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact as Fact;
         let currentness_facts = validate(execution, runtime, &self, settlement, source)?;
         let mut durable_currentness_facts = currentness_facts
             .iter()
-            .filter(|fact| {
+            .filter(|f| {
                 matches!(
-                fact,
-                crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact::Entity { .. }
-                    | crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact::SourceEntity { .. }
-                    | crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact::SourceAspectRevision { .. }
-                    | crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact::AspectPresence { .. }
-                    | crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact::SourceFieldRevision { .. }
-                    | crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact::SourceAdjacencyRevision { .. }
+                    f,
+                    Fact::Entity { .. }
+                        | Fact::SourceEntity { .. }
+                        | Fact::SourceAspectRevision { .. }
+                        | Fact::AspectPresence { .. }
+                        | Fact::SourceFieldRevision { .. }
+                        | Fact::SourceAdjacencyRevision { .. }
                 )
             })
             .cloned()
@@ -168,7 +174,10 @@ where
             assessment_identity_locator: self.layout.assessment_evidence.identity.clone(),
             instance: self.required.instance(),
             node_path,
-            assessment: Some(projection(&self.layout, meaning)),
+            assessment: Some(projection_with_locator(
+                &self.layout.assessment_evidence.identity,
+                meaning,
+            )),
             supporting_identity: None,
             operation_receipt_identity: None,
             progress_update: Some(progress_update),
@@ -309,7 +318,7 @@ where
             && receipt.idempotency_binding().source_identity()
                 == Some(source.idempotency_identity().bytes())
             && receipt.product_branch() == fresh_branch
-    } else if let Some(stable) = settlement.stable.as_ref() {
+    } else if let Some(stable) = settlement.stable() {
         source.selected_product_occurrence() == Some(stable.observation().lifecycle_incarnation())
             && stable.source_identity().is_some_and(|identity| {
                 identity
@@ -319,7 +328,7 @@ where
             && crate::basis::WorthQueryProductBranch::from_occurrence(
                 stable.observation().lifecycle_incarnation(),
             ) == fresh_branch
-    } else if let Some(restored) = settlement.restored_source.as_ref() {
+    } else if let Some(restored) = settlement.restored_source() {
         use crate::domain_computation::primary_graph::application_output_demand::RestoredOutputOrigin;
         let identity = match &restored.origin {
             RestoredOutputOrigin::Checkpoint(_) => Some(
@@ -341,29 +350,14 @@ where
     };
     let valid = settlement.belongs_to(runtime)
         && source.source_root() == prepared.admitted.subject()
-        && source.query_identifier.as_str() == prepared.required.query()
+        && source.query_identifier().as_str() == prepared.required.query()
         && authority_matches;
     if !valid {
-        return Err(WorthQueryApplicationAttemptDenial::new(
-            WorthQueryApplicationAttemptDenialKind::WorkflowAssessmentEvidenceMismatch,
-            prepared.required.node_path(),
-        ));
+        return Err(currentness_mismatch(prepared.required.node_path()));
     }
     runtime
         .current_output_source_facts(execution, settlement)
-        .map_err(|_| {
-            WorthQueryApplicationAttemptDenial::new(
-                WorthQueryApplicationAttemptDenialKind::WorkflowAssessmentEvidenceMismatch,
-                prepared.required.node_path(),
-            )
-        })
-}
-
-fn projection(
-    layout: &crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout,
-    meaning: WorkflowAssessmentEvidenceMeaning,
-) -> PreparedWorkflowAssessmentProjection {
-    projection_with_locator(&layout.assessment_evidence.identity, meaning)
+        .map_err(|_| currentness_mismatch(prepared.required.node_path()))
 }
 
 fn projection_with_locator(

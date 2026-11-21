@@ -8,6 +8,8 @@ use super::*;
 use crate::domain_computation::primary_graph::{
     application_query::FreshQueryPermissionStop, WorthQueryApplicationBasisSelectionIdentity,
 };
+use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationQueryObservationInternalPort as _;
 use worth_query_installation::facade::WorthQueryInstalledApplicationQueryBinding;
 use worth_relational::facade::identity::EntityId;
 enum PreparedConnectedOutcome<'o> {
@@ -94,7 +96,7 @@ impl<
             )
             .map_err(InspectionCause::Admission)?;
             let WorthQueryApplicationBasisSelectionIdentity::Product(original) =
-                &self.request.original.source.selection
+                &self.request.original.source().selection()
             else {
                 return Err(InspectionCause::Unavailable);
             };
@@ -112,7 +114,7 @@ impl<
                     &query,
                     None,
                     self.request.external,
-                    &self.request.original.source,
+                    &self.request.original.source(),
                     &selected,
                     self.request.request,
                     |_, principal, scope| {

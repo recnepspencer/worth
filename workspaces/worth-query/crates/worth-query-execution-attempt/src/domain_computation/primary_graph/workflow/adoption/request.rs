@@ -73,14 +73,14 @@ impl WorthQueryWorkflowDispositions {
         self
     }
     /// Empty population accepts total policies, never references to absent facts.
-    pub fn admit_empty_population(&self) -> Result<(), ()> {
+    pub(crate) fn admit_empty_population(&self) -> Result<(), ()> {
         if self.definitions.is_empty() && self.instances.is_empty() {
             Ok(())
         } else {
             Err(())
         }
     }
-    pub fn resolve(
+    pub(crate) fn resolve(
         &self,
         inventory: &WorthQueryWorkflowAdoptionInventory,
         branch: WorthQueryProductBranch,

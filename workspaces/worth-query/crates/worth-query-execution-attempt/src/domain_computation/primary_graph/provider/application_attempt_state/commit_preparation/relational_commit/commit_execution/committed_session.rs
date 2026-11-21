@@ -1,5 +1,6 @@
 //! Access to the actual performed application session.
 use super::*;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphCommitEvidenceInternalPort as _;
 impl WorthQueryCommittedApplicationSession {
     pub fn retain_recovered_producer_facts(
         &self,

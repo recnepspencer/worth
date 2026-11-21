@@ -1,3 +1,6 @@
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_attempt::facade::ports::RecoveryHandleInternalPort as _;
+use worth_query_execution_lineage::facade::ports::CommitReceiptInternalPort as _;
 use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
 pub use worth_query_execution_attempt::facade::domain_computation::primary_graph::application_attempt::provider_execution::external_dispatch::*;
 mod cleanup_dispatch;

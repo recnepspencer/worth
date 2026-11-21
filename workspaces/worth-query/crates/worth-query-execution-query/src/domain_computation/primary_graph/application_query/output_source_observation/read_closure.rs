@@ -1,5 +1,6 @@
 //! Original Query session and authorization custody through publication.
 
+use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
 use crate::domain_computation::primary_graph::application_attempt::fact::source_read_authorization::applied_query::SourceReadAuthorizationAppliedQueryExt;
 use super::*;
 use crate::domain_computation::authorization::{
@@ -70,9 +71,9 @@ impl SourceQueryReadClosure {
         let SourceQueryReadAuthority::Committed { receipt, support } = &self.authority else {
             return false;
         };
-        receipt.query_identity() == &source.query_identity
-            && receipt.parameter_binding_identity() == &source.parameter_binding_identity
-            && receipt.basis_identity().selection() == &source.selection
+        receipt.query_identity() == &source.query_identity()
+            && receipt.parameter_binding_identity() == &source.parameter_binding_identity()
+            && receipt.basis_identity().selection() == &source.selection()
             && support.belongs_to_session(receipt.read_completion().session_identity())
     }
 

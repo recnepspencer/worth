@@ -1,4 +1,5 @@
 //! One wave: owner preparation, owned compute dispatch, consuming ordered apply.
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use super::*;
 use super::member_refusal::RefusalCustody;
 use super::super::super::super::required_continuations::WaveCheckpointTurn;

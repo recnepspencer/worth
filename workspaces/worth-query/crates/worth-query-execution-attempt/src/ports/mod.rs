@@ -371,6 +371,18 @@ where
 
 pub mod admitted_operation_port;
 pub use admitted_operation_port::AdmittedOperationExecutionPort;
+pub mod authenticated_and_recovery_port;
+mod complete_read_set_methods_port;
+mod complete_read_set_workflow_impl;
+mod effect_program_builder_port;
+mod effect_program_methods_port;
+mod history_and_output_source_port;
+mod specialized_program_port;
+pub use {
+    authenticated_and_recovery_port::*, complete_read_set_methods_port::*,
+    effect_program_builder_port::*, effect_program_methods_port::*,
+    history_and_output_source_port::*, specialized_program_port::*,
+};
 pub mod commit_and_retirement;
 pub use commit_and_retirement::{CommitAuthorizationRuntimePort, WorkflowDefinitionRetirementPort};
 pub mod complete_read_set_port;

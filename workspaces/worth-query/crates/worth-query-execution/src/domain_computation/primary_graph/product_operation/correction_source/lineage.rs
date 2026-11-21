@@ -4,6 +4,7 @@ use crate::domain_computation::application_aftermath::{
     WorthQueryAftermathCausalRole, WorthQueryCorrectionLineageBinding,
     WorthQueryRecordedCorrectionSource,
 };
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 
 pub(super) fn source_locator<Schema>(
     source: &WorthQuerySelectedCorrectionSource<'_, Schema>,

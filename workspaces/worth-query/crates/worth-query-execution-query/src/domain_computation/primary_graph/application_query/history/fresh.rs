@@ -5,6 +5,8 @@ use worth_query_admission::facade::authenticated_principal::{
 use worth_query_declaration::facade::{
     application_query::ApplicationHistoryQueryBinding, application_schema::ApplicationSchema,
 };
+use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_installation::facade::WorthQueryInstalledApplicationHistoryQuery;
 
 use super::super::{
@@ -74,7 +76,7 @@ where
             |access, source, _principal, _scope| {
                 // A later occupant with the same descriptive scope key cannot lend
                 // disclosure to the captured generation, even when ordinary readmission permits that key.
-                if access.scope().entity_id() != subjects.owner.observed.source().model_root {
+                if access.scope().entity_id() != subjects.owner.observed.source().model_root() {
                     return Err(FreshQueryPermissionStop::Inspect(Denial::SubjectMismatch));
                 }
                 let (subject_pending, history_pending) =

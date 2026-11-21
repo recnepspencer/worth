@@ -1,6 +1,7 @@
 //! Declare one conditional definition without installing its temporal runtime.
 use super::super::canonical_identity::CanonicalIdentityMaterial;
 use super::*;
+use worth_query_execution_query::facade::ports::ConditionalClockHandleInternalPort as _;
 use worth_query_installation::facade::{
     WorthQueryAuthoredHostConditionalPredicateProvider,
     WorthQueryInstalledNamedClockConditionalNode,
@@ -108,7 +109,7 @@ impl<Schema: ApplicationSchema + 'static>
             ));
         }
         let node_authority = Arc::from(node.authority_identity());
-        let lease = Arc::new(ConditionalClockLease);
+        let lease = WorthQueryConditionalClockHandle::<Schema, (), ()>::new_lease();
         self.definitions.push(Box::new(
             super::super::pending_definition::PendingTypedDefinition {
                 provider: clocked.into_definition_provider(),
@@ -116,13 +117,12 @@ impl<Schema: ApplicationSchema + 'static>
                 lease: lease.clone(),
             },
         ));
-        Ok(WorthQueryConditionalClockHandle {
-            binding_identity: identity,
-            binding_identity_digest: *digest.bytes(),
+        Ok(WorthQueryConditionalClockHandle::from_parts(
+            identity,
+            *digest.bytes(),
             node_authority,
-            binding_canonical_work: work.with_digest_text_materializations(1),
+            work.with_digest_text_materializations(1),
             lease,
-            marker: PhantomData,
-        })
+        ))
     }
 }

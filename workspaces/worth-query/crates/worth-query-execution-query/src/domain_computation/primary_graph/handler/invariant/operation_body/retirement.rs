@@ -11,6 +11,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryOperationBodyDenial,
 };
 use worth_query_declaration::facade::application_schema::ApplicationOperationBodyProgram;
+use worth_query_execution_lineage::facade::ports::InvariantMutationTargetInternalPort as _;
 impl<S: ApplicationSchema, B: ApplicationMutationBinding<S>> DecisionReader<'_, '_, '_, S, B> {
     pub fn body_retirements(
         &mut self,
@@ -85,7 +86,7 @@ fn reject_overlap<S>(
         let work=u64::try_from(count).ok().and_then(|n|n.checked_mul(u64::from(usize::BITS-count.leading_zeros())+1)).ok_or_else(overflow)?;
         context.checkpoint(work).map_err(|cause|HandlerExecutionDenial::new(crate::domain_computation::primary_graph::application_contribution::advancement_denial(worth_execution::WorkCeilingDenial::Stopped(cause))))?;
         let mut selected=Vec::with_capacity(count);
-        selected.extend(batches.iter().flat_map(|batch|batch.targets.iter().map(|(_,target)|target.entity_id)));
+        selected.extend(batches.iter().flat_map(|batch|batch.targets.iter().map(|(_,target)|target.entity_id())));
         selected.sort_unstable();
         if selected.windows(2).any(|pair|pair[0]==pair[1]){return Err(HandlerExecutionDenial::new(WorthQueryApplicationAttemptDenial::new(WorthQueryApplicationAttemptDenialKind::ConflictingEffectStep,"overlapping owned selection retirements")));}
         Ok(())

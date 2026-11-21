@@ -2,6 +2,7 @@
 use super::*;
 use crate::domain_computation::primary_graph::application_query::derived_view::PredicateWorld;
 use crate::domain_computation::primary_graph::live_delivery::WorthQueryLiveAdmissionDenial;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 
 impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
     pub fn open_application_managed_index_watch<B, I>(

@@ -3,6 +3,7 @@ use crate::domain_computation::primary_graph::application_attempt::{
     closed_outcome, validate_elevation_close_program,
 };
 use crate::domain_computation::primary_graph::WorthQueryElevationCloseOutcome;
+use worth_query_execution_attempt::facade::ports::SpecializedEffectProgramInternalPort as _;
 use worth_query_execution_attempt::facade::ports::{
     CompleteReadSetInternalPort as _, EffectProgramInternalPort as _,
 };

@@ -1,9 +1,11 @@
 //! Original source affinity consumes the separately admitted source when selected.
 use super::*;
 use crate::domain_computation::primary_graph::admitted_capture::checkpoint;
+use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
 use worth_query_execution_lineage::facade::ports::{
     CommitAuthorityBindingInternalPort as _, RetainedGovernedInputInternalPort as _,
 };
+use worth_query_execution_query::facade::ports::ApplicationQueryObservationInternalPort as _;
 pub(super) fn validate(
     context: &mut worth_execution::MapKernelContext<'_, '_>,
     target: &WorthQueryApplicationInspectionTarget,
@@ -14,12 +16,13 @@ pub(super) fn validate(
     let original = target
         .original()
         .ok_or(MapKernelFailure::Domain(Denial::ForeignSource.into()))?;
-    let WorthQueryApplicationBasisSelectionIdentity::Product(read) = &original.source.selection
+    let WorthQueryApplicationBasisSelectionIdentity::Product(read) = &original.source().selection()
     else {
         return Err(MapKernelFailure::Domain(Denial::ForeignSource.into()));
     };
     let publication = source.committed_product_publication();
-    if source.authority_binding().runtime_authority().as_u64() != original.source.runtime_authority
+    if source.authority_binding().runtime_authority().as_u64()
+        != original.source().runtime_authority()
         || publication.product_branch() != read.branch_identity()
         || publication.product_incarnation() != read.lifecycle_incarnation()
     {
@@ -49,10 +52,10 @@ pub(super) fn validate(
     }
     if disclosure.association().declaration().parts().query
         != target.contract().definition().parts().binding
-        || disclosure.scope().subject() != original.source.model_root
-        || disclosure.disclosure().query() != &original.source.query_identity
+        || disclosure.scope().subject() != original.source().model_root()
+        || disclosure.disclosure().query() != &original.source().query_identity()
         || disclosure.disclosure().parameters().identity()
-            != &original.source.parameter_binding_identity
+            != &original.source().parameter_binding_identity()
         || source.authority_binding().original_mutation_binding()
             != Some(disclosure.association().source_type())
     {

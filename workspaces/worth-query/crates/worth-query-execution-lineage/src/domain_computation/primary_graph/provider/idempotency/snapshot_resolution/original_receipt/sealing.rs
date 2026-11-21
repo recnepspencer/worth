@@ -40,7 +40,7 @@ pub struct MemoryOriginalReceiptInputs {
 impl worth_proof::AuthorityMarker for MemoryOriginalReceiptInputs {}
 
 impl WorthQueryRecoveredApplicationCommitReceipt {
-    pub fn from_readmitted(
+    pub(crate) fn from_readmitted(
         original: QueryReadmitted<OriginalReceiptInputs>,
     ) -> Result<Self, super::super::WorthQueryProviderIdempotencyResolutionDenial> {
         original.consume(|original| {
@@ -60,7 +60,7 @@ impl WorthQueryRecoveredApplicationCommitReceipt {
         })
     }
 
-    pub fn from_memory(
+    pub(crate) fn from_memory(
         original: QueryReadmitted<MemoryOriginalReceiptInputs>,
     ) -> Result<Self, super::super::WorthQueryProviderIdempotencyResolutionDenial> {
         original.consume(|original| {

@@ -35,6 +35,23 @@ impl<S, E> crate::ports::InvariantEntityIdentityInternalPort<S, E>
     {
         self.phase
     }
+
+    fn fragment_schema<TargetSchema>(&self) -> WorthQueryInvariantEntityIdentity<TargetSchema, ()> {
+        Self::fragment_schema(self)
+    }
+
+    fn native_identity(
+        &self,
+    ) -> crate::domain_computation::primary_graph::invariant_projection::native_read::NativeIdentity<'_>
+{
+        Self::native_identity(self)
+    }
+}
+
+impl crate::ports::InvariantEntityErasedInternalPort for WorthQueryInvariantEntityIdentity<(), ()> {
+    fn into_typed<S, E>(self) -> WorthQueryInvariantEntityIdentity<S, E> {
+        Self::into_typed(self)
+    }
 }
 
 impl<S, E> Clone for WorthQueryInvariantEntityIdentity<S, E> {

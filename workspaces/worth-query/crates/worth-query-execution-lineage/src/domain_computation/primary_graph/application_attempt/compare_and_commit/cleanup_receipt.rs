@@ -38,12 +38,12 @@ pub enum WorthQueryCleanupDispatchPosture {
 pub struct WorthQueryApplicationManagedCleanupReceipt {
     native: WorthQueryDirectRunCleanupReceipt,
     obligation: Option<worth_foundational::facade::ManagedCleanupObligationIdentity>,
-    pub original: Option<RetainedOriginalCleanupCommit>,
-    pub posture: WorthQueryCleanupDispatchPosture,
-    pub dispatch: Option<WorthQueryExternalEffectDispatch>,
+    pub(crate) original: Option<RetainedOriginalCleanupCommit>,
+    pub(crate) posture: WorthQueryCleanupDispatchPosture,
+    pub(crate) dispatch: Option<WorthQueryExternalEffectDispatch>,
 }
 impl WorthQueryApplicationManagedCleanupReceipt {
-    pub fn new(
+    pub(crate) fn new(
         native: WorthQueryDirectRunCleanupReceipt,
         original: Option<RetainedOriginalCleanupCommit>,
         obligation: Option<worth_foundational::facade::ManagedCleanupObligationIdentity>,

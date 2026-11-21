@@ -6,6 +6,8 @@ use super::{
 use crate::domain_computation::execution_runtime::product_world::OwnerCleanupRetirements;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use std::num::NonZeroUsize;
+use worth_query_execution_lineage::facade::ports::ProductUnpublishedRecoveryInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchOwnerCleanupInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_runtime_world::facade::{
     ProductUnpublishedRecoveryHandle, RuntimeWorldRecoveryCursor, RuntimeWorldRecoveryDenial,
@@ -41,7 +43,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             }
             Err(cause) => return Err(cause),
         }
-        Ok(WorthQueryProductUnpublishedRecovery::new(
+        Ok(WorthQueryProductUnpublishedRecovery::from_handle_parts(
             handle.clone(),
             recovery,
             self.runtime
@@ -243,7 +245,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 Ok(cleanup) => cleanup,
                 Err(denial) => {
                     return Err(recovery_failure(
-                        WorthQueryProductUnpublishedRecovery::new(
+                        WorthQueryProductUnpublishedRecovery::from_handle_parts(
                             handle,
                             recovery_port,
                             disposition,
@@ -257,7 +259,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             provider_release.finish(original_binding, original);
         }
         let cleanup_identity = reservation.install_unpublished(cleanup);
-        Ok(crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanup::new(
+        Ok(crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanup::from_runtime_identity(
             self.runtime.product_runtime.0.clone(),
             cleanup_identity,
         ))

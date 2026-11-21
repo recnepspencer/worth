@@ -36,7 +36,7 @@ where
     Schema: ApplicationSchema,
     Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
 {
-    pub fn materialize_workflow_approval<Capability, Spec>(
+    pub(crate) fn materialize_workflow_approval<Capability, Spec>(
         mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         workflow: &dyn crate::ports::WorkflowVocabularyPort<Schema, Spec>,

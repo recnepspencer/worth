@@ -1,5 +1,6 @@
 //! Entity resolution within the admitted read attempt.
 use super::*;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 
 impl<Schema, Operation, Input, Scope, Phase>
     WorthQueryApplicationReadAttempt<'_, '_, Schema, Operation, Input, Scope, Phase>

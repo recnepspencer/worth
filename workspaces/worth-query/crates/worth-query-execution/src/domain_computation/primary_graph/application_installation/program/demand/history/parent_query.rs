@@ -1,6 +1,7 @@
 //! Actual parent queries share C admission while retaining distinct parent custody.
 use super::dependent::{DiscoveryBinding, QueryRows};
 use super::*;
+use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
 mod verification;
 use crate::domain_computation::primary_graph::application_query::output_source_observation::SourceQueryRequest;
 use crate::domain_computation::primary_graph::{

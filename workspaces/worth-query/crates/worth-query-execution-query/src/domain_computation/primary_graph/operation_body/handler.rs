@@ -17,6 +17,9 @@ use worth_query_declaration::facade::application_operation::{
 use worth_query_declaration::facade::application_schema::{
     ApplicationOperationBodyProgram, ApplicationOperationBodyScopeField,
 };
+use worth_query_execution_lineage::facade::ports::{
+    OperationBodyDecisionInternalPort as _, OperationBodyDecisionParts,
+};
 use worth_query_installation::facade::ApplicationSchema;
 
 type Scope<Schema, Binding> = <<Binding as ApplicationMutationBinding<Schema>>::ScopeBinding
@@ -183,21 +186,23 @@ where
             Err(cause) => return HandlerResult::ExecutionDenied(cause),
         };
         match reader.body_scope_target(&self.body) {
-            Ok(target) => HandlerResult::Completed(WorthQueryOperationBodyDecision {
-                target,
-                inputs,
-                sources,
-                selections,
-                emission,
-                values,
-                retirements,
-                path_writes,
-                path_links,
-                principal_link,
-                references,
-                creation_disposition,
-                children,
-            }),
+            Ok(target) => HandlerResult::Completed(WorthQueryOperationBodyDecision::from_parts(
+                OperationBodyDecisionParts {
+                    target,
+                    inputs,
+                    sources,
+                    selections,
+                    emission,
+                    values,
+                    retirements,
+                    path_writes,
+                    path_links,
+                    principal_link,
+                    references,
+                    creation_disposition,
+                    children,
+                },
+            )),
             Err(cause) => HandlerResult::ExecutionDenied(cause),
         }
     }

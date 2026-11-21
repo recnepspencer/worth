@@ -70,7 +70,7 @@ impl WorthQueryExecutionRuntime {
         .bind())
     }
 
-    pub fn bind_standalone_test_domain_operation<L: BasisOperationLane>(
+    pub(crate) fn bind_standalone_test_domain_operation<L: BasisOperationLane>(
         &self,
         installation_authority: &WorthQueryExecutionInstallationAuthority,
         operation: &WorthQueryInstalledDomainOperationAuthority,

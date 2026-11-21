@@ -1,5 +1,6 @@
 //! Request-local executable input sealing after actual producer selection.
 use std::any::Any;
+use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
 
 use super::super::super::registry::InstalledProducerEdition;
 use super::*;
@@ -49,8 +50,8 @@ where
         let source = disclosure.source();
         let same_admitted_source = self.matches_observed_source_admitted(source)?;
         if !same_admitted_source
-            || source.runtime_authority != self.runtime_authority
-            || source.schema_binding != self.schema_binding
+            || source.runtime_authority() != self.runtime_authority
+            || source.schema_binding() != self.schema_binding
             || entry.declaration.source_type != TypeId::of::<Family::Source>()
             || entry.declaration.output_family_type != TypeId::of::<Family>()
             || entry.declaration.output_family != Family::IDENTITY

@@ -3,6 +3,7 @@ use super::super::{
     WorthQueryApplicationCommitReceipt, WorthQueryRecoveredApplicationCommitReceipt,
 };
 use super::WorthQueryOutputSourceReplay;
+use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
 use worth_runtime_world::facade::{CompositeCommitIdentity, ProductBranchObservation};
 
 #[derive(Clone, Debug, Eq, PartialEq)]

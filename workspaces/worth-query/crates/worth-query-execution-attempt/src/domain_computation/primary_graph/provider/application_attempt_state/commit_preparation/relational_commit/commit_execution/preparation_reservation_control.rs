@@ -6,6 +6,7 @@ use super::*;
 use crate::domain_computation::primary_graph::provider::{
     WorthQueryProductIdempotencyAffinity, WorthQueryProviderIdempotencyResolution,
 };
+use worth_query_execution_lineage::facade::ports::IdempotencyBindingInternalPort as _;
 
 pub(super) fn refuse_duplicate_before_world_for_test(
     execution: worth_execution::ExecutionRequest<'_, '_>,
@@ -35,7 +36,7 @@ pub(super) fn refuse_duplicate_before_world_for_test(
     let mut different_intent = *binding.intent_identity();
     different_intent[0] ^= 1;
     let drift =
-        crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding::new(
+        crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding::from_identities(
             *binding.key_identity(),
             different_intent,
         );

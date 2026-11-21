@@ -1,3 +1,4 @@
+use worth_query_execution_lineage::facade::ports::CommitReceiptInternalPort as _;
 use worth_query_execution_lineage::facade::ports::CommitReceiptPreimagePort as _;
 use worth_relational::facade::identity::EntityId;
 

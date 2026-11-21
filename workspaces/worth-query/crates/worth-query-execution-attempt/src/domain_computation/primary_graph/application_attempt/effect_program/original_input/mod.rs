@@ -24,7 +24,7 @@ impl<Schema, Operation, Input, Scope>
         self.captures_original_input()
     }
 
-    pub fn captures_original_input(&self) -> bool {
+    pub(crate) fn captures_original_input(&self) -> bool {
         self.read_set
             .admission
             .allowed_graph_contract()
@@ -41,7 +41,7 @@ impl<Schema, Operation, Input, Scope>
         self.captures_original_source()
     }
 
-    pub fn captures_original_source(&self) -> bool {
+    pub(crate) fn captures_original_source(&self) -> bool {
         self.captures_original_input()
             || !self
                 .read_set
@@ -70,7 +70,7 @@ impl<Schema, Operation, Input, Scope>
     }
 
     /// The owned SDK stage uses the same checked retention without issuing a publication token.
-    pub fn retain_admitted_source_input<Binding>(
+    pub(crate) fn retain_admitted_source_input<Binding>(
         self,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         runtime: &dyn crate::ports::EffectProgramOriginalInputRuntimePort<Schema>,

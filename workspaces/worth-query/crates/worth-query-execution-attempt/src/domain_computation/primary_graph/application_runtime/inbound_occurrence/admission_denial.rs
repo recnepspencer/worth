@@ -53,7 +53,7 @@ pub enum WorthQueryInboundAdmissionDenial {
 }
 
 impl WorthQueryInboundAdmissionDenial {
-    pub fn advancement(
+    pub(crate) fn advancement(
         cause: crate::domain_computation::primary_graph::WorthQueryAdvancementDenial,
     ) -> Self {
         let stage = crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage::ResourceAdmission;

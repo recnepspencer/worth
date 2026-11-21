@@ -1,3 +1,4 @@
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 pub mod home_retirement;
 pub mod output_availability_candidate;
 pub mod retention;
@@ -158,13 +159,13 @@ pub mod entity_identity;
 /// It is minted only by the operation-typed invariant reader after validating
 /// the entity against that reader's authority.
 pub struct WorthQueryInvariantMutationTarget<Schema, Entity> {
-    pub entity_id: EntityId,
-    pub entity: Arc<str>,
-    pub runtime_authority: WorthQueryRuntimeAuthorityIdentity,
-    pub binding_identity: ApplicationSchemaBindingIdentity,
-    pub admission_identity:
+    pub(crate) entity_id: EntityId,
+    pub(crate) entity: Arc<str>,
+    pub(crate) runtime_authority: WorthQueryRuntimeAuthorityIdentity,
+    pub(crate) binding_identity: ApplicationSchemaBindingIdentity,
+    pub(crate) admission_identity:
         crate::domain_computation::authorization::WorthQueryOperationAdmissionIdentity,
-    pub phase:
+    pub(crate) phase:
         Option<worth_relational::facade::runtime::RelationalAppliedCandidateReadQualification>,
     _marker: PhantomData<fn() -> (Schema, Entity)>,
 }

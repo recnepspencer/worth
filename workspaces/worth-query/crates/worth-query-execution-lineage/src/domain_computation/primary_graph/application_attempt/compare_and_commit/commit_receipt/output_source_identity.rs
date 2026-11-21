@@ -3,7 +3,7 @@ use super::WorthQueryApplicationCommitReceipt;
 impl WorthQueryApplicationCommitReceipt {
     /// The immutable source of a required output can be described by a fresh
     /// receipt or by an authorized idempotency replay of that same publication.
-    pub fn same_retained_output_source_as(&self, other: &Self) -> bool {
+    pub(crate) fn same_retained_output_source_as(&self, other: &Self) -> bool {
         let publication = self.committed_product_publication();
         let other_publication = other.committed_product_publication();
         self.runtime_authority() == other.runtime_authority()

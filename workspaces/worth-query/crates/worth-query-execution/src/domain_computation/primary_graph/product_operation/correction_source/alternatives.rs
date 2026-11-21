@@ -1,4 +1,5 @@
 //! Bounded lineage projection carries complete active-reversal resolution into selection.
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 mod selection;
 
 use super::*;

@@ -72,7 +72,7 @@ where
     Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
 {
     #[allow(clippy::too_many_arguments)]
-    pub fn materialize_observed_local_action(
+    pub(crate) fn materialize_observed_local_action(
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         layout: &WorthQueryWorkflowLayout,
@@ -124,7 +124,7 @@ where
         )
     }
     #[allow(clippy::too_many_arguments)]
-    pub fn select_observed_local_action(
+    pub(crate) fn select_observed_local_action(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         layout: &WorthQueryWorkflowLayout,
@@ -190,7 +190,7 @@ where
     }
 
     #[allow(clippy::too_many_arguments)]
-    pub fn materialize_local_action_requirement(
+    pub(crate) fn materialize_local_action_requirement(
         mut self,
         layout: &WorthQueryWorkflowLayout,
         compiled: &CompiledWorkflowDefinition,

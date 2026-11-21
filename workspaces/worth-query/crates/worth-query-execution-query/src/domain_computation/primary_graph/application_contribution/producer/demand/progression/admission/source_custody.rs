@@ -1,6 +1,9 @@
 use super::*;
 use crate::domain_computation::primary_graph::ReadObservationRuntimeExt;
 use crate::equality_type_id::EqualityTypeId as TypeId;
+use worth_query_execution_runtime::facade::ports::PerformedRelationalProductChangeInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 
 pub fn validate_prepared_source_carrier<Query>(
     runtime_authority: u64,
@@ -52,7 +55,7 @@ where
     > {
         let publication = receipt.committed_product_publication();
         if !std::sync::Arc::ptr_eq(
-            &change.root_identity,
+            change.root_identity(),
             &self.runtime.product_runtime.root_identity(),
         ) || change.product_branch_identity() != publication.product_branch()
             || change.product_commit() != publication.composite_commit()
@@ -66,7 +69,7 @@ where
         }
         let retained = crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation::from_product(
             self,
-            crate::basis::WorthQueryProductObservationLease::new(observation.clone()),
+            crate::basis::WorthQueryProductObservationLease::from_observation(observation.clone()),
         );
         let product_occurrence = observation.lifecycle_incarnation();
         let source_commit = self.runtime.output_demands.retain_performed_source(
@@ -138,7 +141,7 @@ where
         };
         let retained = crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation::from_product(
             self,
-            crate::basis::WorthQueryProductObservationLease::new(observation),
+            crate::basis::WorthQueryProductObservationLease::from_observation(observation),
         );
         let prepared =
             crate::domain_computation::primary_graph::WorthQueryPreparedRequiredOutputSource {

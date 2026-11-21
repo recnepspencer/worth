@@ -1,4 +1,5 @@
 use super::*;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 
 impl WorthQueryWorkflowAdvanceAdapter {
     pub fn prepare<Schema, Capability, Operation, Input, Scope, Spec>(

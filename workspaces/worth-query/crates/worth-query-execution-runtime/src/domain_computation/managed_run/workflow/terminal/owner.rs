@@ -27,7 +27,7 @@ pub struct WorthQueryWorkflowRunTerminal {
 }
 
 impl WorthQueryWorkflowRunTerminal {
-    pub fn from_running(
+    pub(crate) fn from_running(
         mut running: WorthQueryRunningWorkflowRun,
         kind: WorthQueryManagedRunTerminalKind,
     ) -> Self {

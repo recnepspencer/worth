@@ -1,4 +1,6 @@
 use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
+use worth_query_execution_attempt::facade::ports::CompleteReadSetWorkflowInternalPort as _;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 pub struct WorthQueryWorkflowBirthAdapter;
 
 impl WorthQueryWorkflowBirthAdapter {

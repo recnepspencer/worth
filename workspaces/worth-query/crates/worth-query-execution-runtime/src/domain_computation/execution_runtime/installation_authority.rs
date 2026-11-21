@@ -11,7 +11,7 @@ pub struct WorthQueryExecutionInstallationAuthority {
 }
 
 impl WorthQueryExecutionInstallationAuthority {
-    pub fn new(
+    pub(crate) fn new(
         runtime_authority: WorthQueryRuntimeAuthorityIdentity,
         installation_runtime: worth_query_installation::facade::WorthQueryInstallationRuntimeIdentity,
     ) -> Self {
@@ -39,7 +39,7 @@ pub struct WorthQueryExecutionRuntimeInstallation {
 }
 
 impl WorthQueryExecutionRuntimeInstallation {
-    pub fn new(
+    pub(crate) fn new(
         runtime: WorthQueryExecutionRuntime,
         installation_runtime: worth_query_installation::facade::WorthQueryInstallationRuntimeIdentity,
     ) -> Self {

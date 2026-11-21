@@ -47,8 +47,8 @@ fn mint_document_ordinal(counter: &AtomicU64) -> Option<u64> {
 /// It conveys neither model READ permission nor writable head custody.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct WorthQueryHistoryNodeId {
-    pub document: DocumentIncarnation,
-    pub ordinal: u64,
+    pub(crate) document: DocumentIncarnation,
+    pub(crate) ordinal: u64,
 }
 
 /// A completed framework-issued binding. Copied metadata holds no snapshot lease.

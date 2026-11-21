@@ -11,6 +11,8 @@ use crate::domain_computation::primary_graph::{
 use worth_query_declaration::facade::application_schema::{
     ApplicationOperationMarkerIdentity, ApplicationOperationRef, ApplicationStructuredValueBinding,
 };
+use worth_query_execution_lineage::facade::ports::InvariantProjectionReaderInternalPort as _;
+use worth_query_execution_lineage::facade::ports::OperationInvariantProjectionReaderInternalPort as _;
 use worth_query_installation::facade::{
     WorthQueryInstalledApplicationSchema, WorthQueryInstalledPackageIndex,
 };
@@ -40,7 +42,9 @@ impl<S: ApplicationSchema + 'static, O> OperationReaderOriginalExt<S>
         R::InputBinding: ApplicationStructuredValueBinding<Value = I>,
         I: 'static,
     {
-        let access = self.source_query.ok_or(Denial::UndeclaredObservationRead)?;
+        let access = self
+            .source_query()
+            .ok_or(Denial::UndeclaredObservationRead)?;
         let result = read_original(self, operation, read);
         if let Err(cause) = &result {
             access.record_observation_failure(cause);
@@ -60,15 +64,15 @@ where
     I: 'static,
 {
     let access = reader_self
-        .source_query
+        .source_query()
         .ok_or(Denial::UndeclaredObservationRead)?;
     let product = reader_self
-        .selected_product
+        .selected_product()
         .ok_or(Denial::UndeclaredObservationRead)?;
-    let snapshot = reader_self.reader.snapshot;
-    let execution = *reader_self.reader.execution;
-    let retention = reader_self.reader.retention_control;
-    let remaining = reader_self.reader.work_budget.remaining();
+    let snapshot = reader_self.reader().snapshot();
+    let execution = *reader_self.reader().execution();
+    let retention = reader_self.reader_mut().retention_control();
+    let remaining = reader_self.reader().work_budget().remaining();
     let (schema_any, authority_any, packages_any, _, original_any) =
         access.observation_components_any();
     let installed_schema = schema_any
@@ -115,7 +119,7 @@ where
                     authority.inspect_reader(reader, Some(contracts), None, |reader| {
                         read(&mut BeforeDecisionReader { reader })
                     });
-                (output, facts, reader.work_budget.consumed())
+                (output, facts, reader.work_budget().consumed())
             },
             retention,
         );
@@ -123,7 +127,7 @@ where
         access.observation_control(&execution, native)?;
         Ok::<_, Denial>((authorization, completed.map_err(Denial::Projection)?))
     };
-    let (authorization, completed) = match reader_self.reader.native.committed_runtime() {
+    let (authorization, completed) = match reader_self.reader_mut().native().committed_runtime() {
         Some(native) => project(native)?,
         None => {
             let mut result = None;
@@ -134,23 +138,24 @@ where
         }
     };
     let (output, facts, consumed) = completed.output;
-    if !reader_self.reader.work_budget.consume(consumed) {
+    if !reader_self.reader_mut().work_budget_mut().consume(consumed) {
         return Err(Denial::Projection(
             WorthQueryInvariantProjectionDenial::work_budget_exceeded(completed.work),
         ));
     }
-    reader_self.reader.work = reader_self
-        .reader
-        .work
+    let combined = reader_self
+        .reader()
+        .work()
         .checked_combined(completed.work)
         .ok_or_else(|| Denial::Decision("original projection work overflow".into()))?;
+    reader_self.reader_mut().set_work(combined);
     // Validate C's own data locally. None of its value keys becomes a D expectation.
     facts
         .into_expected(&execution)
         .map_err(|cause| Denial::Decision(format!("{cause:?}")))?;
     reader_self
-        .reader
-        .dependent_source_facts
+        .reader_mut()
+        .dependent_source_facts_mut()
         .capture(
             Fact::SourceReadAuthorization {
                 observation: authorization,

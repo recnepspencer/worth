@@ -10,7 +10,7 @@ impl<Schema, Operation, Input, Scope>
     >
 {
     #[inline]
-    pub fn validate_current_authority(
+    pub(crate) fn validate_current_authority(
         &self,
     ) -> Result<(), crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial>
     {

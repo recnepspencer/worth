@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
 
 use worth_query_declaration::facade::{
     application_query::ApplicationDerivedViewDefinition, application_schema::ApplicationSchema,
@@ -248,16 +249,16 @@ where
         Value: WorthQueryManagedDerivedValue,
     {
         let state = &view.state;
-        if source.runtime_authority != state.runtime_authority {
+        if source.runtime_authority() != state.runtime_authority {
             return Err(Denial::ForeignApplication);
         }
-        if source.schema_binding != state.binding {
+        if source.schema_binding() != state.binding {
             return Err(Denial::ForeignInstallation);
         }
-        if &source.query_identity != expected_query {
+        if &source.query_identity() != expected_query {
             return Err(Denial::ForeignQuery);
         }
-        if source.branch.as_ref() != &state.branch
+        if source.branch().as_ref() != &state.branch
             || source.selected_product_occurrence() != Some(state.incarnation)
         {
             return Err(Denial::ForeignBranch);

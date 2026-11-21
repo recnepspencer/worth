@@ -10,7 +10,7 @@ use worth_query_installation::facade::{
 impl<Schema, Operation, Input, Scope>
     WorthQueryApplicationEffectProgramBuilder<Schema, Operation, Input, Scope>
 {
-    pub fn link_for_initialization<Relation, From, To>(
+    pub(crate) fn link_for_initialization<Relation, From, To>(
         &mut self,
         original: ExecutionRequest<'_, '_>,
         relation: ApplicationRelationRef<Schema, Relation, From, To>,
@@ -45,7 +45,7 @@ impl<Schema, Operation, Input, Scope>
         ))
     }
 
-    pub fn initialize_relation_field<Relation, From, To, Field>(
+    pub(crate) fn initialize_relation_field<Relation, From, To, Field>(
         &mut self,
         original: ExecutionRequest<'_, '_>,
         bindings: &WorthQueryInstalledApplicationValueBindingCatalog,

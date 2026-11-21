@@ -9,6 +9,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationRequiredOutputSource,
 };
 use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;
+use worth_query_execution_attempt::facade::ports::EffectProgramMethodsInternalPort as _;
 impl<S, P> WorthQueryProgramApplicationRuntime<S, P>
 where
     S: worth_query_installation::facade::ApplicationSchema,

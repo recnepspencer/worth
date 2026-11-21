@@ -62,7 +62,7 @@ pub(super) struct EffectCore<'a> {
 }
 impl<S, O, I, Scope> WorthQueryApplicationEffectProgramBuilder<S, O, I, Scope> {
     #[inline(always)]
-    pub fn native_effects(&mut self) -> EffectCore<'_> {
+    pub(crate) fn native_effects(&mut self) -> EffectCore<'_> {
         EffectCore {
             layout: &self.layout,
             program: &self.program,

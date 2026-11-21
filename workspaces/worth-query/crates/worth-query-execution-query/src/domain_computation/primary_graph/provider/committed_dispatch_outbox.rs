@@ -1,6 +1,7 @@
 //! Fresh Relational owner reads for committed dispatch-outbox rows.
 
 use crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 
 pub use worth_query_execution_attempt::facade::domain_computation::primary_graph::provider::committed_dispatch_outbox::correlation;
 pub use worth_query_execution_attempt::facade::domain_computation::primary_graph::provider::committed_dispatch_outbox::original_attempt;

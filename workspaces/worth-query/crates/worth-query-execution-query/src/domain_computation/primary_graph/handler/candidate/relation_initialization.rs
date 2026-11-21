@@ -1,6 +1,7 @@
 use super::*;
 use crate::domain_computation::primary_graph::WorthQueryApplicationCreatedRelation;
 use worth_query_declaration::facade::application_schema::ApplicationEncodedScalarValue;
+use worth_query_execution_attempt::facade::ports::EffectProgramBuilderAuthoringInternalPort as _;
 use worth_query_installation::facade::OperationLinks;
 
 impl<Schema, Binding> CandidateWriter<'_, Schema, Binding>

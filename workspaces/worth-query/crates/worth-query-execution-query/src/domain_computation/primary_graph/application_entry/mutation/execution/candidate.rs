@@ -5,6 +5,8 @@ use crate::domain_computation::primary_graph::{
     application_attempt::WorthQueryProjectedApplicationMutation,
     WorthQueryCompleteApplicationReadSet,
 };
+use worth_query_execution_attempt::facade::ports::EffectProgramBuilderAuthoringInternalPort as _;
+use worth_query_execution_attempt::facade::ports::EffectProgramMethodsInternalPort as _;
 
 pub fn build_handler_candidate<Schema, Binding>(
     reads: WorthQueryCompleteApplicationReadSet<

@@ -15,7 +15,7 @@ impl<Schema, Operation, Input, Scope>
         WorthQueryProjectedApplicationMutation,
     >
 {
-    pub fn complete_compiled_body_projection(
+    pub(crate) fn complete_compiled_body_projection(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         projection: BorrowedOperationProjection<Schema, Operation>,

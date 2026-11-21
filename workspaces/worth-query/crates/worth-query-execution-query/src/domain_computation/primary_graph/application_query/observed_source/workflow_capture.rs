@@ -10,6 +10,7 @@ use worth_query_declaration::facade::{
     },
     application_query::ApplicationQueryParameterSet,
 };
+use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
 type Scope<S, B> = <<B as ApplicationMutationBinding<S>>::ScopeBinding as ApplicationMutationScopeBinding<S>>::Scope;
 type Query<S, B> = <<B as ApplicationMutationBinding<S>>::SourceExpectation as ApplicationMutationSourceExpectation<S>>::Query;
 
@@ -44,7 +45,7 @@ impl<S: worth_query_installation::facade::ApplicationSchema>
             .is_some_and(|body| body.requires_query_context());
         if body_context
             && !source
-                .parameters
+                .parameters()
                 .matches_expected(ApplicationQueryParameterSet::<Query<S, B>>::new())
                 .map_err(|cause| prepared_expectation::parameter_denial(B::IDENTITY, cause))?
         {
@@ -55,7 +56,7 @@ impl<S: worth_query_installation::facade::ApplicationSchema>
         if let Some(expected) = B::expected_source_parameters(input)
             .map_err(|_| deny(WorthQuerySourceExpectationDenialKind::SourceParametersMismatch))?
             && !source
-                .parameters
+                .parameters()
                 .matches_expected(expected)
                 .map_err(|cause| prepared_expectation::parameter_denial(B::IDENTITY, cause))?
         {

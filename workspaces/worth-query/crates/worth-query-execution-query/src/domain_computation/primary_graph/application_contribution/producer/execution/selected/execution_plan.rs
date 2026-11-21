@@ -1,6 +1,7 @@
 //! Lower the selected producer execution into its owner-held plan.
 use super::*;
 use crate::domain_computation::primary_graph::InstalledProducerEditionExt;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 pub fn prepare_selected_execution<'owner, Schema, Binding>(
     this: &TypedInstalledProducer<Schema, Binding>,
     phase: &'owner WorthQueryAdvancementPhase<'owner>,

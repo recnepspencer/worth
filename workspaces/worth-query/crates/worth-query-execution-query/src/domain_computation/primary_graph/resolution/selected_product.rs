@@ -1,6 +1,8 @@
 use super::*;
 use crate::domain_computation::primary_graph::resolution_denial::principal_index_currency_denial;
 use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionRefusalKind as PrincipalRefusal;
+use worth_query_execution_attempt::facade::ports::AuthenticatedPrincipalInternalPort as _;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 
 #[path = "selected_product/admitted.rs"]
 pub mod admitted;

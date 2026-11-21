@@ -1,6 +1,7 @@
 //! Fresh admission and consuming handoff for one retained original publication.
 use super::*;
 use crate::domain_computation::primary_graph::application_installation::WorthQueryRecoveredProgramOutputSource;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub fn recover_admitted_unpublished_application_delivery<Operation, Input, Scope>(
         &self,

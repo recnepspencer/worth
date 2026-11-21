@@ -12,6 +12,7 @@ use crate::domain_computation::{
     provider_session::WorthQueryGraphWorkSessionIdentity,
 };
 use worth_query_admission::facade::graph_obligation::WorthQueryGraphWorkPlanIdentity;
+use worth_query_execution_query::facade::ports::ApplicationQueryObservationInternalPort as _;
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledApplicationQuery};
 
 pub(in super::super) struct RichReportScope {
@@ -49,7 +50,7 @@ impl AdmittedRichProjection<'_> {
                 .original()
                 .ok_or(InspectionAdmissionDenial::ForeignIssuedAccess)?;
             // The actual diagnostic loan exists before even this availability lookup.
-            match original.source.original_projection() {
+            match original.source().original_projection() {
                 None=>OriginalQueryDetail::NotRetained,
                 Some(projection)=>OriginalQueryDetail::Provided(
                     crate::domain_computation::primary_graph::application_query::materialize_original_projection(

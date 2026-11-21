@@ -93,7 +93,10 @@ pub(super) fn seal_on_runtime(
     } else {
         None
     };
-    WorthQueryPrimaryGraphCommitEvidence {
+    use worth_query_execution_lineage::facade::ports::{
+        PrimaryGraphCommitEvidenceInternalPort as _, PrimaryGraphCommitEvidenceParts,
+    };
+    WorthQueryPrimaryGraphCommitEvidence::from_parts(PrimaryGraphCommitEvidenceParts {
         workflow_origin: committed.attempt().workflow_origin().cloned(),
         provider_session_binding: committed.attempt().affinity().provider_session().clone(),
         idempotency: committed.attempt().idempotency(),
@@ -108,7 +111,7 @@ pub(super) fn seal_on_runtime(
         performed_input_facts,
         performed_output_fields,
         committed_changes: crate::domain_computation::primary_graph::WorthQueryApplicationCommittedChanges::from_commit(committed.committed()),
-    }
+    })
 }
 
 impl WorthQueryMutationWorkCommitSeal {

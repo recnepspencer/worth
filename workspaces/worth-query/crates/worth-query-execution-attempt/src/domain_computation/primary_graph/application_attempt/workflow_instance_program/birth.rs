@@ -151,7 +151,7 @@ where
                 Schema,
             > + 'static,
 {
-    pub fn into_required_workflow_birth<Binding, Role, Spec>(
+    pub(crate) fn into_required_workflow_birth<Binding, Role, Spec>(
         mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         installed: &worth_query_installation::facade::WorthQueryInstalledApplicationWorkflowSpec<

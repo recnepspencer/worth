@@ -8,7 +8,7 @@ use worth_query_declaration::facade::application_program::ApplicationProgramRevi
 impl<Schema, Operation, Input, Scope>
     WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>
 {
-    pub fn retain_original_program(
+    pub(crate) fn retain_original_program(
         mut self,
         support: &WorthQueryInstalledProgramSupport<Schema>,
         revision: &ApplicationProgramRevision,

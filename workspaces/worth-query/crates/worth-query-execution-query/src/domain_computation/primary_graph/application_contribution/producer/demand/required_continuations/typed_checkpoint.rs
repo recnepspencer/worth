@@ -1,5 +1,6 @@
 //! Drive the original typed successor checkpoint under fresh invocation authority.
 use super::*;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 impl<Schema, Family> TypedRequiredSuccessor<Schema, Family>
 where
     Schema: ApplicationSchema + 'static,

@@ -1,5 +1,6 @@
 use super::*;
 use crate::domain_computation::primary_graph::OutputDemandSettlementRuntimeExt;
+use worth_query_execution_lineage::facade::ports::OutputDemandSettlementInternalPort as _;
 impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     pub fn require_current_settlements_in<'s>(
         &self,
@@ -54,7 +55,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                         receipt,
                         &execution,
                     )
-                } else if let Some(stable) = settlement.stable.as_ref() {
+                } else if let Some(stable) = settlement.stable() {
                     lineage.source_facts_for_stable_output(
                         runtime.runtime.authority_identity().as_u64(),
                         &runtime.installed_schema.binding_identity(),

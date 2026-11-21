@@ -5,6 +5,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationEntityIdentity, WorthQueryEntityResolutionDenialKind as Resolution,
     WorthQueryEntityResolutionRefusalKind as Refusal,
 };
+use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
 
 impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
     #[allow(clippy::too_many_arguments)]

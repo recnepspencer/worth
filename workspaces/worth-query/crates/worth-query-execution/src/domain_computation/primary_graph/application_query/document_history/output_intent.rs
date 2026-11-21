@@ -1,4 +1,5 @@
 //! Complete source intent captured from a real plan, without its grant or session.
+use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
 use worth_query_execution_query::facade::ports::AdmittedQueryPlanInternalPort as _;
 mod owned_scope;
 mod recording;
@@ -97,10 +98,10 @@ impl WorthQueryHistoryOutputIntent {
         observation: &worth_runtime_world::facade::ProductBranchObservation,
     ) -> bool {
         self.backing.scope.matches_source_identity(
-            source.model_root,
-            source.runtime_authority,
-            &source.schema_binding,
-        ) && matches!(&source.selection,
+            source.model_root(),
+            source.runtime_authority(),
+            &source.schema_binding(),
+        ) && matches!(&source.selection(),
             crate::domain_computation::primary_graph::WorthQueryApplicationBasisSelectionIdentity::Product(product)
                 if product.matches_observation(observation))
     }

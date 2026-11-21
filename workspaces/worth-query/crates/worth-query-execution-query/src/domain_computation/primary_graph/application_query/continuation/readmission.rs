@@ -3,6 +3,7 @@ use worth_query_declaration::facade::{
     application_capability::ApplicationCapabilityRequest,
     application_query::ApplicationQueryParameterSet, application_schema::ApplicationSchema,
 };
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_installation::facade::WorthQueryInstalledApplicationQuery;
 
 use super::{

@@ -73,11 +73,11 @@ impl WorthQueryRunningWorkflowRun {
         self.affinity.provider_session_description()
     }
 
-    pub fn retained_capacity_reservation_count(&self) -> usize {
+    pub(crate) fn retained_capacity_reservation_count(&self) -> usize {
         self.affinity.retained_capacity_reservation_count()
     }
 
-    pub fn installation_is_current(&self) -> bool {
+    pub(crate) fn installation_is_current(&self) -> bool {
         self.affinity.installation_is_current()
     }
 
@@ -122,7 +122,7 @@ impl WorthQueryRunningWorkflowRun {
             .stage_graph_support_matches(stage_identity, role, expected)
     }
 
-    pub fn admit_bridge_step_contract(
+    pub(crate) fn admit_bridge_step_contract(
         &self,
         contract: worth_query_installation::facade::WorthQueryInstalledBoundedStepContract,
     ) -> Result<
@@ -153,7 +153,7 @@ impl WorthQueryRunningWorkflowRun {
         self.bridge_basis.request_cancellation(reason)
     }
 
-    pub fn admit_bridge_ready_timeout(
+    pub(crate) fn admit_bridge_ready_timeout(
         &self,
     ) -> Result<
         worth_runtime_bridge::facade::BridgeManagedExecutionTimeout,
@@ -205,7 +205,7 @@ impl WorthQueryRunningWorkflowRun {
         )
     }
 
-    pub fn mint_stage_graph_provider_call(
+    pub(crate) fn mint_stage_graph_provider_call(
         &self,
         stage_identity: &str,
         graph_authority: &worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority,
@@ -248,13 +248,13 @@ impl WorthQueryRunningWorkflowRun {
         )
     }
 
-    pub fn completed_evidence_authority(
+    pub(crate) fn completed_evidence_authority(
         &self,
     ) -> &crate::domain_computation::WorthQueryExecutionBoundOperationAuthority {
         self.affinity.completed_evidence_authority()
     }
 
-    pub fn completed_evidence_session(
+    pub(crate) fn completed_evidence_session(
         &self,
     ) -> &crate::domain_computation::WorthQueryExecutionProviderSession {
         self.affinity.completed_evidence_session()

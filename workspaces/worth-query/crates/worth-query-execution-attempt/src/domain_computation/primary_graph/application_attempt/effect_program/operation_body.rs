@@ -12,7 +12,7 @@ use worth_query_declaration::facade::application_schema::ApplicationFieldBinding
 impl<Schema, Operation, Input, Scope>
     WorthQueryApplicationEffectProgramBuilder<Schema, Operation, Input, Scope>
 {
-    pub fn reserve_body_signing_slot(
+    pub(crate) fn reserve_body_signing_slot(
         &mut self,
         target: &WorthQueryApplicationEffectEntity<Schema, ()>,
         spec: &worth_query_declaration::facade::application_schema::ApplicationOperationBodySigningSpec,
@@ -59,7 +59,7 @@ impl<Schema, Operation, Input, Scope>
         Ok(())
     }
 
-    pub fn write_body_input_field<Entity>(
+    pub(crate) fn write_body_input_field<Entity>(
         &mut self,
         target: &WorthQueryApplicationEffectEntity<Schema, Entity>,
         field: &ApplicationFieldBindingLocus,
@@ -67,7 +67,7 @@ impl<Schema, Operation, Input, Scope>
     ) -> Result<(), WorthQueryApplicationAttemptDenial> {
         self.write_body_value(target, field, std::borrow::Cow::Owned(value))
     }
-    pub fn write_body_field<Entity>(
+    pub(crate) fn write_body_field<Entity>(
         &mut self,
         target: &WorthQueryApplicationEffectEntity<Schema, Entity>,
         field: &ApplicationFieldBindingLocus,
@@ -86,7 +86,7 @@ impl<Schema, Operation, Input, Scope>
             .write_body_value(target.borrowed(), field, value)
     }
 
-    pub fn write_body_optional_field<Entity>(
+    pub(crate) fn write_body_optional_field<Entity>(
         &mut self,
         target: &WorthQueryApplicationEffectEntity<Schema, Entity>,
         field: &ApplicationFieldBindingLocus,

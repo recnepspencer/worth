@@ -1,5 +1,8 @@
 use crate::domain_computation::primary_graph::ReadObservationRuntimeExt;
 use crate::equality_type_id::EqualityTypeId as TypeId;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 mod cold_source;
 mod world_observation;
@@ -82,7 +85,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
             .retained_prepared_source_observation(receipt, root_type)?;
         let retained = WorthQueryApplicationReadObservation::from_product(
             self,
-            crate::basis::WorthQueryProductObservationLease::new(observation),
+            crate::basis::WorthQueryProductObservationLease::from_observation(observation),
         );
         Some((
             retained,

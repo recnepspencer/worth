@@ -1,4 +1,5 @@
 //! Execution-only native body write into the existing candidate owner.
+use worth_query_execution_attempt::facade::ports::EffectProgramBuilderAuthoringInternalPort as _;
 mod reference_input;
 use super::OutputRoleUse;
 use super::{

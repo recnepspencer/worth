@@ -8,6 +8,7 @@ use crate::domain_computation::primary_graph::{
     handler::HandlerRetirementCursor, WorthQueryOperationHomeRetirementProgress as Progress,
 };
 use worth_execution::ExecutionRequest;
+use worth_query_execution_query::facade::ports::QueryExecutionRuntimeInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 mod inbound;
 pub(in crate::domain_computation::primary_graph) use worth_query_execution_query::facade::domain_computation::primary_graph::application_runtime::home_retirement::participation;
@@ -212,7 +213,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         Ok(())
     }
 
-    pub fn into_home_retirement(self) -> RetiringPrimaryGraphRuntime<Schema> {
+    pub(crate) fn into_home_retirement(self) -> RetiringPrimaryGraphRuntime<Schema> {
         RetiringPrimaryGraphRuntime {
             runtime: self,
             handlers: Default::default(),

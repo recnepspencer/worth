@@ -1,7 +1,7 @@
 //! The runtime protects actual terminal sources before custody demotes receipt observations.
 use super::*;
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    pub fn preflight_inbound_home_retirement(
+    pub(crate) fn preflight_inbound_home_retirement(
         &self,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<(), WorthQueryHomeRetirementDenial> {

@@ -19,6 +19,7 @@ use worth_query_declaration::facade::{
     application_operation::{ApplicationMutationBinding, NoApplicationMutationSource},
     application_schema::ApplicationSchema,
 };
+use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
 use worth_query_installation::facade::WorthQueryInstalledDocumentHistory;
 
 #[must_use = "retain the original reservation and actual candidate after refusal"]

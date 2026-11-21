@@ -1,8 +1,30 @@
 //! Ports connecting primary-graph lineage, demand, and projection to higher execution layers.
 
 mod attempt;
+mod commit_receipt_internal_port;
+mod invariant_and_source_internal_port;
 mod lineage;
 mod query;
+mod read_observation_internal_port;
+mod reader_and_decision_internal_port;
+
+pub use commit_receipt_internal_port::{
+    CleanupRequiredInternalPort, CommitAuthorityMintInternalPort,
+    CommitOutcomeIdentityInternalPort, CommitReceiptInternalPort, IdempotencyBindingInternalPort,
+    OperationScopeBindingInternalPort, PrimaryGraphCommitEvidenceInternalPort,
+    PrimaryGraphCommitEvidenceParts, RecoveredCommitReceiptInternalPort,
+};
+pub use invariant_and_source_internal_port::{
+    BoundSourceExpectationInternalPort, InvariantMutationTargetInternalPort,
+    ObservedSourceInternalPort, ObservedSourceParts, OutputDemandSettlementInternalPort,
+    OutputDemandSettlementParts,
+};
+pub use read_observation_internal_port::ReadObservationInternalPort;
+pub use reader_and_decision_internal_port::{
+    InvariantProjectionReaderInternalPort, InvariantRelationInternalPort,
+    ManagedCleanupReceiptInternalPort, OperationBodyDecisionInternalPort,
+    OperationBodyDecisionParts, OperationInvariantProjectionReaderInternalPort,
+};
 
 pub use attempt::{
     AdmittedOperationPort, ApplicationAttemptPort, BasisLeasePort, CommitAuthorityAdmissionPort,
@@ -144,6 +166,15 @@ pub trait EffectEntityInternalPort<Schema, Entity>: Sized {
     fn program(&self) -> &std::sync::Arc<()>;
 }
 
+/// Crate-boundary port exposing owner-private type re-hydration on erased
+/// `WorthQueryApplicationEffectEntity<(), ()>` strictly to upper execution split
+/// crates. Never exported on `worth-query-execution::facade` or Host.
+pub trait EffectEntityErasedInternalPort: Sized {
+    fn into_typed<S, E>(
+        self,
+    ) -> crate::domain_computation::primary_graph::WorthQueryApplicationEffectEntity<S, E>;
+}
+
 /// Crate-boundary port exposing owner-private `WorthQueryApplicationCreatedRelation`
 /// internals strictly to upper execution split crates. Never exported on
 /// `worth-query-execution::facade` or Host.
@@ -178,19 +209,88 @@ pub trait InvariantEntityIdentityInternalPort<Schema, Entity> {
     fn phase(
         &self,
     ) -> Option<worth_relational::facade::runtime::RelationalAppliedCandidateReadQualification>;
+    fn fragment_schema<TargetSchema>(
+        &self,
+    ) -> crate::domain_computation::primary_graph::WorthQueryInvariantEntityIdentity<TargetSchema, ()>;
+    fn native_identity(
+        &self,
+    ) -> crate::domain_computation::primary_graph::invariant_projection::native_read::NativeIdentity<'_>;
+}
+
+/// Crate-boundary port exposing owner-private type re-hydration on erased
+/// `WorthQueryInvariantEntityIdentity<(), ()>` strictly to upper execution split
+/// crates. Never exported on `worth-query-execution::facade` or Host.
+pub trait InvariantEntityErasedInternalPort: Sized {
+    fn into_typed<S, E>(
+        self,
+    ) -> crate::domain_computation::primary_graph::WorthQueryInvariantEntityIdentity<S, E>;
 }
 
 /// Crate-boundary port exposing owner-private `WorthQueryInvariantGraphMember`
-/// fields strictly to upper execution split crates. Never exported on Host.
+/// fields and checks strictly to upper execution split crates. Never exported on Host.
 pub trait InvariantGraphMemberInternalPort {
     fn key(&self) -> &worth_relational::facade::schema::NativeMemberKey;
     fn carrier_name(&self) -> &std::sync::Arc<str>;
 }
 
+/// Crate-boundary port exposing owner-private `WorthQueryInvariantGraphMember`
+/// construction and check operations strictly to upper execution split crates.
+/// Never exported on `worth-query-execution::facade` or Host.
+pub trait InvariantGraphMemberOpsInternalPort<S, M>: Sized
+where
+    S: worth_query_installation::facade::ApplicationSchema,
+{
+    fn check(
+        &self,
+        reader: &crate::domain_computation::primary_graph::WorthQueryApplicationInvariantProjectionReader<'_, S>,
+        domain: &crate::domain_computation::primary_graph::schema_layout::MemberDomainBinding,
+    ) -> Result<
+        (),
+        crate::domain_computation::primary_graph::WorthQueryInvariantProjectionTraversalDenial,
+    >;
+
+    fn from_entity(
+        reader: &crate::domain_computation::primary_graph::WorthQueryApplicationInvariantProjectionReader<'_, S>,
+        entity: &crate::domain_computation::primary_graph::WorthQueryInvariantEntityIdentity<S, M>,
+    ) -> Result<
+        Self,
+        crate::domain_computation::primary_graph::WorthQueryInvariantProjectionTraversalDenial,
+    >;
+
+    fn from_source(
+        reader: &mut crate::domain_computation::primary_graph::WorthQueryApplicationInvariantProjectionReader<'_, S>,
+        key: &worth_relational::facade::schema::NativeMemberKey,
+        domain: &crate::domain_computation::primary_graph::schema_layout::MemberDomainBinding,
+        source: &std::sync::Arc<worth_relational::facade::runtime::PinnedDerivedRelationRead>,
+        allocation: Option<
+            &std::sync::Arc<
+                crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation,
+            >,
+        >,
+    ) -> Result<
+        Self,
+        crate::domain_computation::primary_graph::WorthQueryInvariantProjectionTraversalDenial,
+    >;
+}
+
 /// Crate-boundary port pairing recovered World continuation with its owner-issued
 /// cleanup receipt strictly when World itself publishes that continuation.
 /// Never exported on `worth-query-execution::facade` or Host.
-pub trait ProductUnpublishedRecoveryInternalPort {
+pub trait ProductUnpublishedRecoveryInternalPort: Sized {
+    fn from_handle_parts(
+        handle: worth_runtime_world::facade::ProductUnpublishedRecoveryHandle,
+        recovery: worth_runtime_world::facade::RuntimeWorldRecoveryPort,
+        disposition: crate::domain_computation::primary_graph::WorthQueryUnpublishedIdempotencyDisposition,
+    ) -> Self;
+
+    fn into_release_parts(
+        self,
+    ) -> (
+        worth_runtime_world::facade::ProductUnpublishedRecoveryHandle,
+        worth_runtime_world::facade::RuntimeWorldRecoveryPort,
+        crate::domain_computation::primary_graph::WorthQueryUnpublishedIdempotencyDisposition,
+    );
+
     fn continue_original_in_request_with_cleanup(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

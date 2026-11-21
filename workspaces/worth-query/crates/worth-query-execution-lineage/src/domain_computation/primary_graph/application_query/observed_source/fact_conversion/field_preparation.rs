@@ -1,7 +1,7 @@
 use super::*;
 
 impl<Query> WorthQueryObservedSource<Query> {
-    pub fn admit_fact_materialization<'source, 'request, 'authority>(
+    pub(crate) fn admit_fact_materialization<'source, 'request, 'authority>(
         &'source self,
         layout: &WorthQueryPrimaryGraphLayout,
         subject: &str,

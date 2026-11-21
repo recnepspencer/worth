@@ -14,7 +14,7 @@ where
     Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
 {
     #[allow(clippy::too_many_arguments)]
-    pub fn materialize_operation_requirement(
+    pub(crate) fn materialize_operation_requirement(
         mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         layout: &crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout,

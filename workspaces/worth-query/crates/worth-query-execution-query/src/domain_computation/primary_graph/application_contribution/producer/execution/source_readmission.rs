@@ -4,6 +4,7 @@ use worth_query_admission::facade::authenticated_principal::WorthQueryRequestSco
 use worth_query_declaration::facade::application_query::ApplicationQueryBinding;
 use worth_query_declaration::facade::application_query::ApplicationQueryScopeBinding;
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
+use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
 use worth_query_installation::facade::WorthQueryInstalledApplicationQueryBinding;
 
 use super::denial;
@@ -140,9 +141,9 @@ where
         .installed_query_binding::<SourceBinding<Schema, Binding>>()
         .map_err(|error| failed(Binding::IDENTITY, error))?;
     let query = installed.query();
-    if retained.runtime_authority != runtime.runtime.authority_identity().as_u64()
-        || retained.schema_binding != *query.binding_identity()
-        || retained.query_identity != *query.identity()
+    if retained.runtime_authority() != runtime.runtime.authority_identity().as_u64()
+        || retained.schema_binding() != *query.binding_identity()
+        || retained.query_identity() != *query.identity()
     {
         return Err(denial(
             WorthQueryOutputDemandDenialKind::Superseded,

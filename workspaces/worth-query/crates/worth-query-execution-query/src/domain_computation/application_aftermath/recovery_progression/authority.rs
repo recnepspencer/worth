@@ -5,6 +5,9 @@
 //! handle it admitted, so neither cross-runtime nor same-runtime substitution
 //! can open a transition.
 
+use worth_query_execution_attempt::facade::ports::RecoveryHandleInternalPort as _;
+use worth_query_execution_attempt::facade::ports::RecoveryInspectAuthorityInternalPort as _;
+use worth_query_execution_attempt::facade::ports::RecoveryEffectAuthorityInternalPort as _;
 use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
 pub use worth_query_execution_attempt::facade::domain_computation::application_aftermath::recovery_progression::authority::*;
 

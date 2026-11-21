@@ -1,5 +1,6 @@
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
+use worth_query_execution_lineage::facade::ports::CommitOutcomeIdentityInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::super::super::provider_binding::installed_preimage_demand;

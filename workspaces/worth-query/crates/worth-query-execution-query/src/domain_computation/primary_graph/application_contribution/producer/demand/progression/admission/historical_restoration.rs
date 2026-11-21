@@ -6,6 +6,7 @@ use crate::domain_computation::primary_graph::{
     application_query::WorthQueryApplicationBasisSelectionIdentity,
 };
 use crate::equality_type_id::EqualityTypeId;
+use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
 
 impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub fn readmit_historical_output<Family: WorthQueryProducerOutputFamily<Schema>>(
@@ -18,7 +19,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         owner_retained_program_basis: bool,
     ) -> Result<Option<ReadmittedOutput>, WorthQueryOutputDemandDenial> {
         let WorthQueryApplicationBasisSelectionIdentity::Product(source_read) =
-            &observed_source.selection
+            &observed_source.selection()
         else {
             return Ok(None);
         };

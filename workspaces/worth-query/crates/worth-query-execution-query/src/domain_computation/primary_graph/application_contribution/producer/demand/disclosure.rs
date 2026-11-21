@@ -1,5 +1,7 @@
 use worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
+use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::super::InstalledProducerEdition;
@@ -228,13 +230,15 @@ where
             .product()
             .observation()
     });
-    let WorthQueryApplicationBasisSelectionIdentity::Product(disclosed) = &source.selection else {
+    let WorthQueryApplicationBasisSelectionIdentity::Product(disclosed) = &source.selection()
+    else {
         return Err(denial(
             WorthQueryOutputDemandDenialKind::Superseded,
             subject,
         ));
     };
-    let WorthQueryApplicationBasisSelectionIdentity::Product(original) = &retained.selection else {
+    let WorthQueryApplicationBasisSelectionIdentity::Product(original) = &retained.selection()
+    else {
         return Err(denial(
             WorthQueryOutputDemandDenialKind::ForeignDemand,
             subject,
@@ -244,15 +248,15 @@ where
         // Metadata reads precede the variable-width source comparisons. The
         // same exact observation is then checked by the original validator.
     }
-    if source.runtime_authority != runtime.runtime.authority_identity().as_u64()
-        || source.schema_binding != runtime.installed_schema.binding_identity()
-        || receipt.query_identity() != &source.query_identity
-        || source.query_identity != retained.query_identity
-        || source.query_identifier != retained.query_identifier
+    if source.runtime_authority() != runtime.runtime.authority_identity().as_u64()
+        || source.schema_binding() != runtime.installed_schema.binding_identity()
+        || receipt.query_identity() != &source.query_identity()
+        || source.query_identity() != retained.query_identity()
+        || source.query_identifier() != retained.query_identifier()
         || (!allow_retained_program_basis && !disclosed.matches_observation(current))
         || (allow_retained_program_basis && !disclosed.same_branch_occurrence_observation(current))
         || !original.same_branch_occurrence(disclosed)
-        || source.model_root != retained.model_root
+        || source.model_root() != retained.model_root()
         || source.source_root() != retained.source_root()
     {
         return Err(denial(

@@ -13,6 +13,7 @@ use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort
 use worth_query_execution_attempt::facade::ports::{
     CompleteReadSetInternalPort as _, EffectProgramInternalPort as _,
 };
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 
 /// Opaque entry refusal. Its causes cannot contain a landed receipt or cleanup

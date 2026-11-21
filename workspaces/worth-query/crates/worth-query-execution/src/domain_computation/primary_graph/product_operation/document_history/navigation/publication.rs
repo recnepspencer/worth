@@ -17,6 +17,10 @@ use crate::domain_computation::{
     WorthQueryProductUnpublishedApplication, WorthQueryProductUnpublishedRecovery,
 };
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
+use worth_query_execution_lineage::facade::ports::ReadObservationInternalPort as _;
+use worth_query_execution_query::facade::ports::HistoryPreviewInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort;
 use worth_query_installation::facade::ApplicationSchema;
 
 pub(super) fn publication_denial(
@@ -110,7 +114,7 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
                     restored.into_publications(),
                 );
         }
-        let exact = crate::basis::WorthQueryProductObservationLease::new(observation);
+        let exact = <crate::basis::WorthQueryProductObservationLease as ProductObservationLeaseInternalPort>::from_observation(observation);
         if self.output_profile.is_some() || self.ownership.is_some() {
             let original = crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation::from_product_with_memory(
                 self.application.inner(), exact.retained_clone(), self.output_source_memory.take(),
@@ -119,7 +123,7 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
                 self.source
                     .as_ref()
                     .expect("a committed output restoration retains its selected preview")
-                    .source
+                    .source()
                     .product_observation()
                     .basis()
                     .relational_basis()

@@ -6,7 +6,7 @@ impl<Schema, Capability, Operation, Input>
 where
     Input: ApplicationCapabilityRequest<Schema, Capability>,
 {
-    pub fn capability_input(&self) -> &Input {
+    pub(crate) fn capability_input(&self) -> &Input {
         self.input.as_ref()
     }
 
@@ -81,11 +81,11 @@ where
         &self.operation
     }
 
-    pub fn capability_name(&self) -> &str {
+    pub(crate) fn capability_name(&self) -> &str {
         &self.capability
     }
 
-    pub fn capability_type(&self) -> &str {
+    pub(crate) fn capability_type(&self) -> &str {
         &self.capability_type
     }
 
@@ -100,19 +100,19 @@ where
         Ok(self.runtime_authority)
     }
 
-    pub const fn binding_identity(&self) -> &ApplicationSchemaBindingIdentity {
+    pub(crate) const fn binding_identity(&self) -> &ApplicationSchemaBindingIdentity {
         &self.binding_identity
     }
 
-    pub const fn principal_entity_id(&self) -> worth_relational::facade::identity::EntityId {
+    pub(crate) const fn principal_entity_id(&self) -> worth_relational::facade::identity::EntityId {
         self.principal_entity_id
     }
 
-    pub fn resource_entity_id(&self) -> worth_relational::facade::identity::EntityId {
+    pub(crate) fn resource_entity_id(&self) -> worth_relational::facade::identity::EntityId {
         self.resolved.resource_entity_id()
     }
 
-    pub fn disclosure_value(&self) -> Option<&worth_foundational::facade::AspectValue> {
+    pub(crate) fn disclosure_value(&self) -> Option<&worth_foundational::facade::AspectValue> {
         self.projection.field_value()
     }
 
@@ -195,5 +195,13 @@ where
         worth_proof::HomeIncarnationDenial,
     > {
         Self::runtime_authority_for(self, receiver)
+    }
+
+    fn principal_entity_id(&self) -> worth_relational::facade::identity::EntityId {
+        Self::principal_entity_id(self)
+    }
+
+    fn resource_entity_id(&self) -> worth_relational::facade::identity::EntityId {
+        Self::resource_entity_id(self)
     }
 }

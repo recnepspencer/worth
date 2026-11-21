@@ -1,13 +1,16 @@
 //! Runtime settlement construction, observation, and selection hooks.
 
 use std::sync::Arc;
+use worth_query_execution_lineage::facade::ports::{
+    CommitAuthorityBindingInternalPort as _, CommitReceiptInternalPort as _,
+    OutputDemandSettlementInternalPort as _, OutputDemandSettlementParts,
+};
 
 use super::current_commit::reacquire_current_committed_output;
 use super::*;
 use crate::basis::WorthQueryProductBranchReadIdentity;
 use crate::domain_computation::primary_graph::application_output_demand::ReadyCompletion;
 use crate::domain_computation::primary_graph::ReadObservationRuntimeExt;
-use worth_query_execution_lineage::facade::ports::CommitAuthorityBindingInternalPort as _;
 
 pub trait OriginalSettledProducerObservationExt: Sized {
     fn ready<Schema: worth_query_installation::facade::ApplicationSchema>(
@@ -289,8 +292,8 @@ impl OutputDemandSettlementRuntimeExt for WorthQueryOutputDemandSettlement {
                     "authoritative output is no longer current in its product occurrence",
                 )
             })?;
-        Ok(Arc::new(Self {
-            _original_delivery_memory: None,
+        Ok(Arc::new(Self::from_parts(OutputDemandSettlementParts {
+            original_delivery_memory: None,
             posture: match &completion.authority {
                 WorthQueryAcceptedOutputAuthority::Committed(_) => {
                     WorthQueryOutputSettlementPosture::Performed
@@ -334,7 +337,7 @@ impl OutputDemandSettlementRuntimeExt for WorthQueryOutputDemandSettlement {
                 )?,
                 observation,
             ),
-        }))
+        })))
     }
 
     fn from_original_program_ready<Schema: worth_query_installation::facade::ApplicationSchema>(
@@ -367,7 +370,7 @@ impl OutputDemandSettlementRuntimeExt for WorthQueryOutputDemandSettlement {
             Self::from_committed_ready(execution, runtime, completion, producer, family, contacts)?;
         Arc::get_mut(&mut original)
             .expect("the new original delivery has one owner")
-            ._original_delivery_memory = memory;
+            .set_original_delivery_memory(memory);
         Ok(original)
     }
 }

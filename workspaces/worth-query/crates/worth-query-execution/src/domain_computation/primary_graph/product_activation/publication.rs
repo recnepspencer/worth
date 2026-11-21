@@ -7,6 +7,7 @@ use crate::domain_computation::execution_runtime::product_world::{
 };
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use std::sync::Arc;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 
 use worth_runtime_bridge::facade::{
     BridgeConditionalDenial, BridgeInstalledConditionalLowering,

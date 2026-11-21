@@ -4,6 +4,7 @@ use super::{
     WorthQueryRetainedOutputDemandSource,
 };
 use crate::equality_type_id::EqualityTypeId as TypeId;
+use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum PreparedOutputRootKind {

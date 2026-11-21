@@ -1,6 +1,8 @@
 //! Read-only tracked access; no raw reader, mutation target, query or computation.
 use super::*;
 use worth_query_declaration::facade::application_schema::ApplicationEntityRef;
+use worth_query_execution_lineage::facade::ports::InvariantProjectionReaderInternalPort as _;
+use worth_query_execution_lineage::facade::ports::OperationInvariantProjectionReaderInternalPort as _;
 
 mod identity;
 pub use identity::{BeforeEntity, BeforeRelation};
@@ -17,9 +19,9 @@ impl<S: ApplicationSchema, O> BeforeDecisionReader<'_, '_, '_, S, O> {
     /// Descriptive version of this actual data basis, never a Current certificate.
     pub fn version(&self) -> worth_relational::facade::identity::VersionId {
         self.reader
-            .reader
-            .native
-            .version(self.reader.reader.snapshot)
+            .reader()
+            .native()
+            .version(self.reader.reader().snapshot())
     }
 
     /// Reacquire the same full-generation identity at the predecessor's basis.
@@ -30,7 +32,7 @@ impl<S: ApplicationSchema, O> BeforeDecisionReader<'_, '_, '_, S, O> {
     ) -> Result<BeforeEntity<S, E>, WorthQueryCurrentOutputDenial> {
         use worth_query_execution_lineage::facade::ports::InvariantEntityIdentityInternalPort as _;
         let _ = entity;
-        let execution = *self.reader.reader.execution;
+        let execution = *self.reader.reader().execution();
         self.reader
             .live_current_identity(&execution, E::IDENTIFIER, current.entity_id())
             .map(|identity| BeforeEntity { identity })

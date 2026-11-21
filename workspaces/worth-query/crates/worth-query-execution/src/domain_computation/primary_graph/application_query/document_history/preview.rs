@@ -2,6 +2,7 @@
 use super::*;
 use crate::domain_computation::primary_graph::{WorthQueryHistoryNodeId, WorthQueryHistoryPreview};
 use worth_query_execution_query::facade::ports::AdmittedQueryPlanInternalPort as _;
+use worth_query_execution_query::facade::ports::HistoryPreviewInternalPort as _;
 
 mod admission;
 pub use admission::WorthQueryHistoryPreviewReadAdmission;
@@ -52,8 +53,8 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             .selection
             .lock()
             .journal
-            .owns_node(preview.step.id())
-            || preview.model != document.model
+            .owns_node(preview.step().id())
+            || *preview.model() != document.model
         {
             return Err(Denial::ForeignHistoryNode);
         }

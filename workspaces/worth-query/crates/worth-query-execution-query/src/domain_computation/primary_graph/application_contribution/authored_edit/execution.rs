@@ -4,6 +4,7 @@ use super::*;
 use crate::domain_computation::primary_graph::application_attempt::{
     self, CommitPreparedCoupledWriter, InspectedAuthoredApplication, InspectedCoupledWriter,
 };
+use worth_query_execution_attempt::facade::ports::EffectProgramMethodsInternalPort as _;
 use worth_relational::facade::runtime::{
     RelationalAppliedCandidateReadIdentity, RelationalPinnedRead,
 };

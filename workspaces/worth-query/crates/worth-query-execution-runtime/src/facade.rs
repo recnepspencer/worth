@@ -5,6 +5,7 @@ pub mod basis {
 }
 
 pub mod ports {
+    pub use crate::advancement_phase_internal_port::AdvancementPhaseInternalPort;
     pub use crate::commit_touches::{
         CommitTouchEntities, CommitTouchInterest, TouchedCommit, TouchedCommits,
     };
@@ -12,8 +13,14 @@ pub mod ports {
         continue_original, continue_original_with_cleanup, release_original,
         ContinuedOriginalOutcome,
     };
+    pub use crate::execution_runtime_internal_port::ExecutionRuntimeInternalPort;
     pub use crate::managed_run_custody_port::ExecutionRuntimeManagedRunCustodyPort;
     pub use crate::ports::*;
+    pub use crate::product_world_internal_port::{
+        PerformedRelationalProductChangeInternalPort, ProductBranchCloseReceiptInternalPort,
+        ProductBranchInternalPort, ProductBranchOwnerCleanupInternalPort,
+        ProductObservationLeaseInternalPort, ProductWorldClockInternalPort,
+    };
 }
 
 pub mod artifact_owner {

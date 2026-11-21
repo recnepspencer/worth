@@ -1,6 +1,7 @@
 //! Rejoin stopped DATA to fresh World-issued branch selectors at Home service.
 use super::*;
 use crate::domain_computation::primary_graph::query_obligations::QueryObligationDenial;
+use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub fn readmit_stopped_branch_set_adoptions(
         &self,

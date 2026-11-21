@@ -1,6 +1,7 @@
 //! Creation order controls eligible sources; annotations convey no retention right.
 use super::*;
 use worth_query_declaration::facade::application_history::ApplicationHistoryRecentSteps;
+use worth_query_execution_query::facade::ports::HistoryNodeIdInternalPort as _;
 
 impl<S> HistoryJournal<'_, S> {
     pub(in crate::domain_computation::primary_graph::product_operation::document_history) fn retained_source(
@@ -14,7 +15,7 @@ impl<S> HistoryJournal<'_, S> {
             return Err(Denial::HistoryNodeUnavailable);
         }
         self.retained
-            .get(&node.ordinal)
+            .get(&node.ordinal())
             .and_then(|entry| entry.source.as_ref())
             .ok_or(Denial::HistoryNodeExcluded)
     }
@@ -22,7 +23,7 @@ impl<S> HistoryJournal<'_, S> {
     fn unprotected_count(&self) -> usize {
         let current_unbookmarked = usize::from(
             self.retained
-                .get(&self.current.ordinal)
+                .get(&self.current.ordinal())
                 .is_some_and(|entry| !entry.bookmarked),
         );
         self.retained_completed - self.bookmarked - current_unbookmarked
@@ -40,7 +41,7 @@ impl<S> HistoryJournal<'_, S> {
             .iter()
             .find_map(|(ordinal, entry)| {
                 self.access(Access::RetentionFrontier);
-                (*ordinal != self.current.ordinal && !entry.bookmarked && entry.source.is_some())
+                (*ordinal != self.current.ordinal() && !entry.bookmarked && entry.source.is_some())
                     .then_some(*ordinal)
             })
             .expect("the count proves an eligible unprotected source");
@@ -55,7 +56,7 @@ impl<S> HistoryJournal<'_, S> {
             self.nodes.get(&oldest).map(|node| &node.binding)
             && let Some(parent) = node.step.parent()
         {
-            removed.released_child = self.children.remove(&(parent.ordinal, oldest));
+            removed.released_child = self.children.remove(&(parent.ordinal(), oldest));
         }
         self.retained_completed -= 1;
         Some(removed)
@@ -134,7 +135,7 @@ impl<S> HistoryJournal<'_, S> {
         self.retained_source(node)?;
         let was_pinned = self
             .retained
-            .get(&node.ordinal)
+            .get(&node.ordinal())
             .expect("eligible source")
             .bookmarked;
         if pin == was_pinned {
@@ -151,7 +152,7 @@ impl<S> HistoryJournal<'_, S> {
             .checked_add(1)
             .ok_or(Denial::RecordingIdentityExhausted)?;
         self.retained
-            .get_mut(&node.ordinal)
+            .get_mut(&node.ordinal())
             .expect("eligible source")
             .bookmarked = pin;
         if pin {

@@ -161,7 +161,7 @@ impl<Query, QueryResult> WorthQueryAdmittedDisclosedApplicationResult<Query, Que
 
     /// Consumes the governed result at a downstream publication boundary.
     /// The receipt remains execution-owned and must be projected before drop.
-    pub fn into_parts(
+    pub(crate) fn into_parts(
         self,
     ) -> (
         Vec<QueryResult>,
@@ -250,7 +250,7 @@ impl<Query, QueryResult> WorthQueryApplicationOutputDemandSource<Query, QueryRes
         self.disclosure.result_set_observation
     }
 
-    pub fn into_single_source(
+    pub(crate) fn into_single_source(
         self,
     ) -> Option<(QueryResult, super::WorthQueryObservedSource<Query>)> {
         let (mut sources, _, _) = self.disclosure.into_parts();
@@ -259,7 +259,7 @@ impl<Query, QueryResult> WorthQueryApplicationOutputDemandSource<Query, QueryRes
         (rows.next().is_none() && sources.is_empty()).then_some(pair)
     }
 
-    pub fn into_parts(
+    pub(crate) fn into_parts(
         self,
     ) -> (
         Vec<QueryResult>,
@@ -282,7 +282,7 @@ impl<Query, QueryResult> WorthQueryApplicationOutputDemandSource<Query, QueryRes
 }
 
 impl<Query> WorthQueryApplicationOutputDemandDisclosure<Query> {
-    pub fn into_parts(
+    pub(crate) fn into_parts(
         self,
     ) -> (
         Vec<super::WorthQueryObservedSource<Query>>,

@@ -91,7 +91,7 @@ impl WorthQueryInboundReceipt {
         self.requires_maintenance_cue
     }
 
-    pub fn from_accepted(
+    pub(crate) fn from_accepted(
         accepted: &WorthQueryAcceptedInboundOccurrence,
         envelope: &[u8],
         posture: WorthQueryInboundReceiptPosture,
@@ -106,7 +106,7 @@ impl WorthQueryInboundReceipt {
         }
     }
 
-    pub fn from_claims(
+    pub(crate) fn from_claims(
         claims: &WorthQueryInboundOccurrenceClaims,
         envelope: &[u8],
         posture: WorthQueryInboundReceiptPosture,
@@ -121,7 +121,7 @@ impl WorthQueryInboundReceipt {
         }
     }
 
-    pub fn pending(
+    pub(crate) fn pending(
         accepted: &WorthQueryAcceptedInboundOccurrence,
         envelope: &[u8],
         posture: WorthQueryInboundReceiptPosture,

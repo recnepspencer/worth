@@ -1,6 +1,8 @@
 //! Fresh C-only source permission before a retained tree inspects cached custody.
 use super::*;
 use crate::domain_computation::primary_graph::WorthQueryHistoryOutputReadDenial;
+use worth_query_execution_lineage::facade::ports::ReadObservationInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
 
 impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
     WorthQueryProgramApplicationRuntime<S, P>

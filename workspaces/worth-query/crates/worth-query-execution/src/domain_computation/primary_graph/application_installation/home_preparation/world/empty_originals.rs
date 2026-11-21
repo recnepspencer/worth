@@ -1,5 +1,6 @@
 //! World alone releases recovered opens that retain no Native owner effect.
 use super::*;
+use worth_query_execution_runtime::facade::ports::ProductBranchOwnerCleanupInternalPort;
 use worth_runtime_world::facade::{
     WorldRecoveredReleaseOutcome as Outcome, WorldRecoveredUnpublishedEffects,
 };
@@ -37,7 +38,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
                 );
                 drop(original);
                 let identity = reservation.install_unpublished(cleanup);
-                let cleanup = crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanup::new(application.inner.runtime.product_runtime.0.clone(), identity);
+                let cleanup = <crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanup as ProductBranchOwnerCleanupInternalPort>::from_runtime_identity(application.inner.runtime.product_runtime.0.clone(), identity);
                 let mut retirements = crate::domain_computation::execution_runtime::product_world::OwnerCleanupRetirements::default();
                 cleanup
                     .retry_in_request_with_retirements(execution, &mut retirements)

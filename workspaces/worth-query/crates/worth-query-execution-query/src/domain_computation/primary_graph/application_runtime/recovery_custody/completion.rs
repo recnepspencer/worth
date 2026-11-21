@@ -5,6 +5,7 @@ use crate::domain_computation::application_aftermath::{
     WorthQueryRecoveryHandle, WorthQueryRecoveryTransitionDenial,
 };
 use crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     /// A recorded completion grants terminal claim settlement only. It grants

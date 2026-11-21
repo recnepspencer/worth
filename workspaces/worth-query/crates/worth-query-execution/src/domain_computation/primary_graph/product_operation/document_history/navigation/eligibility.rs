@@ -13,6 +13,8 @@ use worth_query_declaration::facade::{
     },
     application_query::ApplicationQueryBinding,
 };
+use worth_query_execution_lineage::facade::ports::ReadObservationInternalPort as _;
+use worth_query_execution_query::facade::ports::HistoryPreviewInternalPort as _;
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledDocumentHistory};
 use worth_relational::facade::mvcc::{
     RelationalRetainedEntitySelectionPreparationError as Preparation, RelationalTransactionIntent,
@@ -44,12 +46,12 @@ pub(super) fn require<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
     {
         return Err(correction(Eligibility::ModelDomain));
     }
-    if source.model != *model {
+    if *source.model() != *model {
         return Err(Denial::Document(
             super::super::WorthQueryDocumentHistoryDenial::ForeignModel,
         ));
     }
-    if source.root_posture.is_some()
+    if source.root_posture().is_some()
         && outputs.is_none()
         && definition.model_domain == ApplicationHistoryModelDomain::ScopeEntityRecord
     {
@@ -81,11 +83,14 @@ pub(super) fn require<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
         .runtime
         .product_runtime
         .require_live_product_occurrence(
-            source.source.product_observation().lifecycle_incarnation(),
+            source
+                .source()
+                .product_observation()
+                .lifecycle_incarnation(),
         )
         .map_err(Denial::ProductAdmission)?;
     let historical = application
-        .select_application_read_observation(phase, &source.source)
+        .select_application_read_observation(phase, &source.source())
         .map_err(Denial::ProductAdmission)?;
     if historical
         .product()

@@ -1,4 +1,5 @@
 use std::ops::Deref;
+use worth_query_execution_query::facade::ports::QueryExecutionRuntimeInternalPort as _;
 use worth_query_execution_runtime::facade::execution_runtime as rt;
 use worth_query_installation::facade::{
     WorthQueryAdmittedPortableDomainPackage, WorthQueryInstallationGeneration,

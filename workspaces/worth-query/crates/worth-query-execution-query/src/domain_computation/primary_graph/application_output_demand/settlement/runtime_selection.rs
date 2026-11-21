@@ -6,6 +6,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
     WorthQueryPrimaryGraphApplicationRuntime, WorthQuerySelectedProductOperation,
 };
+use worth_query_execution_lineage::facade::ports::OutputDemandSettlementInternalPort as _;
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
@@ -22,7 +23,7 @@ where
                 "output settlement belongs to another application runtime",
             ));
         }
-        self.select_application_read_observation_with_request(execution, &settlement.observation)
+        self.select_application_read_observation_with_request(execution, settlement.observation())
             .map_err(|error| match error {
                 stopped @ crate::basis::WorthQueryProductBranchAdmissionDenial::Stopped(_) => {
                     WorthQueryOutputDemandDenial::product_selection(
@@ -53,7 +54,7 @@ where
                 "output settlement belongs to another application runtime",
             ));
         }
-        if settlement.posture == WorthQueryOutputSettlementPosture::RecoveredStableReused {
+        if settlement.posture() == WorthQueryOutputSettlementPosture::RecoveredStableReused {
             return Err(WorthQueryOutputDemandDenial::new(
                 WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
                 "restored stable output requires native re-evidence",
@@ -86,7 +87,7 @@ where
                 receipt,
                 execution,
             ),
-            None => match settlement.stable.as_ref() {
+            None => match settlement.stable() {
                 Some(stable) => lineage.source_facts_for_stable_output(
                     self.runtime.authority_identity().as_u64(),
                     &self.installed_schema.binding_identity(),

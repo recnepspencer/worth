@@ -11,6 +11,7 @@ use crate::domain_computation::primary_graph::{
     },
     WorthQuerySelectedProductOperation,
 };
+use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
 use worth_query_installation::facade::WorthQueryInstalledManagedIndexParent;
 
 pub struct ParentContext<'a, S> {

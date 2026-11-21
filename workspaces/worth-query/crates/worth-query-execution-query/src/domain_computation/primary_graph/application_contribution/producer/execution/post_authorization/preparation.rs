@@ -2,6 +2,8 @@
 use super::*;
 use crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome;
 use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
+use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 #[allow(clippy::too_many_arguments)]
 pub fn prepare_authorized<'owner, Schema, Binding>(
     phase: &'owner WorthQueryAdvancementPhase<'owner>,
@@ -60,8 +62,8 @@ where
     let application_identity = crate::domain_computation::execution_observation::is_installed().then(|| {
         crate::domain_computation::primary_graph::application_contribution::request_execution::advancement::observation::WorthQueryAdvancementIdentityForTest::Producer {
         producer: Binding::IDENTITY.to_owned(),
-        query: *observed_source.query_identity.as_bytes(),
-        parameters: *observed_source.parameter_binding_identity.bytes(),
+        query: *observed_source.query_identity().as_bytes(),
+        parameters: *observed_source.parameter_binding_identity().bytes(),
         root: observed_source.source_root(),
         source: observed_source.checkpoint_observation_identity(),
         }
@@ -133,7 +135,7 @@ where
         },
     );
 
-    let contact_root = observed_source.model_root;
+    let contact_root = observed_source.model_root();
     let prepared_source = runtime
         .prepare_application_source_expectation::<Operation<Schema, Binding>, _>(
             phase,

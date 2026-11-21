@@ -16,7 +16,7 @@ pub struct WorthQueryProductUnpublishedRecovery {
 }
 
 impl WorthQueryProductUnpublishedRecovery {
-    pub fn new(
+    pub(crate) fn new(
         handle: ProductUnpublishedRecoveryHandle,
         recovery: RuntimeWorldRecoveryPort,
         disposition: crate::domain_computation::primary_graph::WorthQueryUnpublishedIdempotencyDisposition,
@@ -28,7 +28,7 @@ impl WorthQueryProductUnpublishedRecovery {
         }
     }
 
-    pub fn abandon_preparing_world(&self) -> Result<(), ()> {
+    pub(crate) fn abandon_preparing_world(&self) -> Result<(), ()> {
         self.disposition.abandon_preparing_world(&self.handle)
     }
 
@@ -95,7 +95,7 @@ impl WorthQueryProductUnpublishedRecovery {
         self.recovery.continue_effects(effects)
     }
 
-    pub fn into_release_parts(
+    pub(crate) fn into_release_parts(
         self,
     ) -> (
         ProductUnpublishedRecoveryHandle,
@@ -239,6 +239,24 @@ impl std::fmt::Debug for WorthQueryProductUnpublishedRecovery {
 }
 
 impl crate::ports::ProductUnpublishedRecoveryInternalPort for WorthQueryProductUnpublishedRecovery {
+    fn from_handle_parts(
+        handle: ProductUnpublishedRecoveryHandle,
+        recovery: RuntimeWorldRecoveryPort,
+        disposition: crate::domain_computation::primary_graph::WorthQueryUnpublishedIdempotencyDisposition,
+    ) -> Self {
+        Self::new(handle, recovery, disposition)
+    }
+
+    fn into_release_parts(
+        self,
+    ) -> (
+        ProductUnpublishedRecoveryHandle,
+        RuntimeWorldRecoveryPort,
+        crate::domain_computation::primary_graph::WorthQueryUnpublishedIdempotencyDisposition,
+    ) {
+        Self::into_release_parts(self)
+    }
+
     fn continue_original_in_request_with_cleanup(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

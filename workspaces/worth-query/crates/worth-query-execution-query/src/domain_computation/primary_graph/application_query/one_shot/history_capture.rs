@@ -2,6 +2,7 @@
 use worth_query_declaration::facade::{
     application_query::ApplicationHistoryQueryBinding, application_schema::ApplicationSchema,
 };
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 
 use super::{
     admit_request, denial, map_authorized_read_denial, refresh_governed_authorization,

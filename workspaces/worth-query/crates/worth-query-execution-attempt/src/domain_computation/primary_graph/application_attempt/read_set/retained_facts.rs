@@ -13,7 +13,7 @@ impl<Schema, Operation, Input, Scope, Phase>
 {
     /// Retains ordinary append order and original backing. Old and new roots
     /// coexist until admission, liveness and authority checks all succeed.
-    pub fn append_completed_facts<Facts>(
+    pub(crate) fn append_completed_facts<Facts>(
         &mut self,
         additional: Facts,
         policy: ExecutionAllocationPolicy<'_, '_>,

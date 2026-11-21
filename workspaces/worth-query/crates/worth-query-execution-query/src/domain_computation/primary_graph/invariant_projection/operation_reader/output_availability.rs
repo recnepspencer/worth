@@ -1,5 +1,7 @@
 //! Non-driving observation of an installed required output, in this reader.
 
+use worth_query_execution_lineage::facade::ports::InvariantProjectionReaderInternalPort as _;
+use worth_query_execution_lineage::facade::ports::OperationInvariantProjectionReaderInternalPort as _;
 use super::*;
 use crate::domain_computation::primary_graph::{
     application_attempt::{SourcePublicationRead, WorthQueryApplicationFactKey},
@@ -81,15 +83,15 @@ where
             .map_err(Cause::Decision)?;
         let access = source_query.ok_or(Cause::ContextUnavailable)?;
         let context = reader_self
-            .source_context_use
+            .source_context_use()
             .ok_or(Cause::ContextUnavailable)?;
         let admission_identity = reader_self
-            .admission_identity
+            .admission_identity()
             .ok_or(Cause::ContextUnavailable)?;
         let selected = access.shared.selected();
-        if reader_self.reader.selected_product_occurrence
+        if reader_self.reader_mut().selected_product_occurrence()
             != Some(selected.product().observation().lifecycle_incarnation())
-            || reader_self.reader.selected_product_generation
+            || reader_self.reader_mut().selected_product_generation()
                 != Some(
                     selected
                         .product()
@@ -101,16 +103,16 @@ where
             return Err(Cause::SourceMismatch.into());
         }
         let original = reader_self
-            .reader
-            .native
+            .reader()
+            .native()
             .committed_runtime()
             .ok_or(Cause::ContextUnavailable)?
             .read_truth()
-            .positioned_snapshot(reader_self.reader.snapshot)
+            .positioned_snapshot(reader_self.reader().snapshot())
             .map_err(|_| Cause::SourceMismatch)?;
         let borrowed = reader_self
-            .reader
-            .native
+            .reader()
+            .native()
             .committed_runtime()
             .ok_or(Cause::ContextUnavailable)?
             .read_truth()
@@ -125,8 +127,8 @@ where
         {
             return Err(Cause::SourceMismatch.into());
         }
-        let execution = reader_self.reader.execution;
-        let owner = std::sync::Arc::clone(&reader_self.reader.invalidation_owner);
+        let execution = reader_self.reader().execution();
+        let owner = std::sync::Arc::clone(&reader_self.reader_mut().invalidation_owner());
         let observed = (|| {
             let mut native = ApplicationQueryNativeAccess::borrowed(
                 access
@@ -135,8 +137,8 @@ where
                     .primary_graph()
                     .ok_or(Cause::ContextUnavailable)?,
                 reader_self
-                    .reader
-                    .native
+                    .reader()
+                    .native()
                     .committed_runtime()
                     .ok_or(Cause::ContextUnavailable)?,
             )
@@ -162,16 +164,15 @@ where
                 )
                 .map_err(Cause::Producer)?;
             let selected = reader_self
-                .reader
-                .native
+                .reader()
+                .native()
                 .committed_runtime()
                 .ok_or(Cause::ContextUnavailable)?
                 .read_truth()
-                .positioned_snapshot(reader_self.reader.snapshot)
+                .positioned_snapshot(reader_self.reader().snapshot())
                 .map_err(|_| Cause::SourceMismatch)?;
-            let lineage = reader_self
-                .reader
-                .output_lineage
+            let output_lineage = reader_self.reader().output_lineage().clone();
+            let lineage = output_lineage
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner);
             let mut covered = lineage
@@ -194,11 +195,11 @@ where
                         candidate,
                         &owner,
                         reader_self
-                            .reader
-                            .native
+                            .reader()
+                            .native()
                             .committed_runtime()
                             .ok_or(Cause::ContextUnavailable)?,
-                        reader_self.reader.snapshot,
+                        reader_self.reader().snapshot(),
                         &selected,
                     )
                     .map_err(Cause::Verification)?,
@@ -216,7 +217,7 @@ where
                 .map_err(Cause::Registration)?;
             let observation = std::sync::Arc::new(observed);
             reader_self
-                .decision_facts
+                .decision_facts_mut()
                 .record_source_publication(
                     SourcePublicationRead::new(admission_identity, observation.clone()),
                     observation,
@@ -250,7 +251,7 @@ where
     })();
     if result.is_err() {
         use worth_query_execution_lineage::facade::ports::InvariantEntityIdentityInternalPort as _;
-        reader_self.decision_facts.record(
+        reader_self.decision_facts_mut().record(
             WorthQueryApplicationFactKey::Entity {
                 entity: Producer::IDENTIFIER.to_owned(),
                 entity_id: producer.entity_id(),

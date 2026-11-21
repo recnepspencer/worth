@@ -7,6 +7,7 @@ use super::{mismatch, WorkflowSuccessionAuthority, WorthQueryApplicationAttemptD
 use crate::domain_computation::primary_graph::{
     WorthQueryAdvancementPhase, WorthQueryApplicationCommitDenial,
 };
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 pub struct WorkflowSuccessionBindingProof
 {
     binding: &'static str,

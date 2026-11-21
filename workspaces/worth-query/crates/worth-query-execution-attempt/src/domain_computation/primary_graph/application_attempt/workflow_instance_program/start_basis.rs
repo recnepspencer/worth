@@ -22,7 +22,7 @@ where
     Schema: ApplicationSchema,
     Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
 {
-    pub fn observe_workflow_start_basis<Spec>(
+    pub(crate) fn observe_workflow_start_basis<Spec>(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,

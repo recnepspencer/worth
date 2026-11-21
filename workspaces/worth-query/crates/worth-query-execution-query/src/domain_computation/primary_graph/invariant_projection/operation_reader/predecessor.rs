@@ -11,6 +11,8 @@ use crate::domain_computation::primary_graph::{
 use worth_query_declaration::facade::application_schema::{
     ApplicationOperationMarkerIdentity, ApplicationOperationRef, ApplicationStructuredValueBinding,
 };
+use worth_query_execution_lineage::facade::ports::InvariantProjectionReaderInternalPort as _;
+use worth_query_execution_lineage::facade::ports::OperationInvariantProjectionReaderInternalPort as _;
 use worth_query_installation::facade::{
     WorthQueryInstalledApplicationSchema, WorthQueryInstalledPackageIndex,
 };
@@ -42,7 +44,9 @@ impl<S: ApplicationSchema + 'static, O> OperationReaderPredecessorExt<S>
         R::InputBinding: ApplicationStructuredValueBinding<Value = I>,
         I: 'static,
     {
-        let access = self.source_query.ok_or(Denial::UndeclaredObservationRead)?;
+        let access = self
+            .source_query()
+            .ok_or(Denial::UndeclaredObservationRead)?;
         let result = read_predecessor(self, operation, read);
         if let Err(cause) = &result {
             access.record_observation_failure(cause);
@@ -62,10 +66,10 @@ where
     I: 'static,
 {
     let access = reader_self
-        .source_query
+        .source_query()
         .ok_or(Denial::UndeclaredObservationRead)?;
     let scope = reader_self
-        .operation_scope
+        .operation_scope()
         .as_ref()
         .ok_or(Denial::PredecessorMismatch)?
         .scope();
@@ -75,12 +79,12 @@ where
         scope.generation(),
     );
     let partition = reader_self
-        .reader
-        .selected_source_partition_identity
+        .reader()
+        .selected_source_partition_identity()
         .ok_or(Denial::PredecessorMismatch)?;
-    let execution = *reader_self.reader.execution;
-    let retention = reader_self.reader.retention_control;
-    let remaining = reader_self.reader.work_budget.remaining();
+    let execution = *reader_self.reader().execution();
+    let retention = reader_self.reader_mut().retention_control();
+    let remaining = reader_self.reader().work_budget().remaining();
     let (schema_any, authority_any, packages_any, predecessor_any, _) =
         access.observation_components_any();
     let installed_schema = schema_any
@@ -125,7 +129,7 @@ where
                     authority.inspect_reader(reader, Some(contracts), None, |reader| {
                         read(&mut BeforeDecisionReader { reader })
                     });
-                (output, facts, reader.work_budget.consumed())
+                (output, facts, reader.work_budget().consumed())
             },
             retention,
         );
@@ -139,7 +143,7 @@ where
         ))
     };
     let (prior, input, authorization, completed) =
-        match reader_self.reader.native.committed_runtime() {
+        match reader_self.reader_mut().native().committed_runtime() {
             Some(native) => project(native)?,
             // Scoped Native assembly holds its preparation port, not Query's
             // Native transport. This is the sole ordinary transport entrance.
@@ -152,16 +156,17 @@ where
             }
         };
     let (output, facts, consumed) = completed.output;
-    if !reader_self.reader.work_budget.consume(consumed) {
+    if !reader_self.reader_mut().work_budget_mut().consume(consumed) {
         return Err(Denial::Projection(
             WorthQueryInvariantProjectionDenial::work_budget_exceeded(completed.work),
         ));
     }
-    reader_self.reader.work = reader_self
-        .reader
-        .work
+    let combined = reader_self
+        .reader()
+        .work()
         .checked_combined(completed.work)
         .ok_or_else(|| Denial::Decision("predecessor projection work overflow".into()))?;
+    reader_self.reader_mut().set_work(combined);
     let (keys, _) = facts
         .into_expected(&execution)
         .map_err(|cause| Denial::Decision(format!("{cause:?}")))?;
@@ -174,8 +179,8 @@ where
     // Only C authorization becomes a current dependency. Old read keys and
     // old values are descriptive evidence and never rechecked at C.
     reader_self
-        .reader
-        .dependent_source_facts
+        .reader_mut()
+        .dependent_source_facts_mut()
         .capture(
             Fact::SourceReadAuthorization {
                 observation: authorization,

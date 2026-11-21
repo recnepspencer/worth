@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use worth_query_execution_attempt::facade::ports::AdmittedApplicationConditionalDefinitionInternalPort as _;
 
 use worth_runtime_bridge::facade::{
     BridgeInstalledConditionalLowering, BridgeOwnedConditionalInstallationRequest,

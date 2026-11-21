@@ -10,6 +10,7 @@ use crate::domain_computation::primary_graph::product_operation::SelectedQueryBa
 use crate::domain_computation::primary_graph::product_operation::SharedSelectedProductOperation;
 use crate::domain_computation::primary_graph::OutputDemandSettlementCurrentExt;
 use worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding;
+use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
 use worth_query_installation::facade::WorthQueryInstalledApplicationQueryBinding;
 use worth_relational::facade::runtime::PositionedRelationalSnapshot;
 
@@ -71,9 +72,9 @@ where
     // The retained identity comparison reads two schema digests and one
     // Query digest. Static denial subjects need no initialized backing.
 
-    if retained.runtime_authority != runtime.runtime.authority_identity().as_u64()
-        || retained.schema_binding != *query.binding_identity()
-        || retained.query_identity != *query.identity()
+    if retained.runtime_authority() != runtime.runtime.authority_identity().as_u64()
+        || retained.schema_binding() != *query.binding_identity()
+        || retained.query_identity() != *query.identity()
     {
         return Err(WorthQueryOutputDemandDenial::new(
             WorthQueryOutputDemandDenialKind::Superseded,

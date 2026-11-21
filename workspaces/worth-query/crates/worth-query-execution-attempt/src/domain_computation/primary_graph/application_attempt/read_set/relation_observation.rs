@@ -13,7 +13,7 @@ use super::{
 /// links.
 pub struct WorthQueryObservedApplicationRelation<Schema, Relation, From, To> {
     pub(super) count: usize,
-    pub matching_relations: Vec<worth_relational::facade::identity::RelationId>,
+    pub(crate) matching_relations: Vec<worth_relational::facade::identity::RelationId>,
     pub(super) _marker: std::marker::PhantomData<fn() -> (Schema, Relation, From, To)>,
 }
 
@@ -31,7 +31,7 @@ impl<Schema, Operation, Input, Scope, Phase>
     WorthQueryCompleteApplicationReadSet<Schema, Operation, Input, Scope, Phase>
 {
     /// Recovers only relation identities carried by this completed read set.
-    pub fn relation_observation<Relation, From, To>(
+    pub(crate) fn relation_observation<Relation, From, To>(
         &self,
         name: &str,
         kind: KindId,

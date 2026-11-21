@@ -216,7 +216,7 @@ impl WorthQueryApplicationQueryBatchAdmission {
         Ok(())
     }
 
-    pub fn take_planned_read(
+    pub(crate) fn take_planned_read(
         &self,
         runtime: u64,
         schema: &ApplicationSchemaBindingIdentity,

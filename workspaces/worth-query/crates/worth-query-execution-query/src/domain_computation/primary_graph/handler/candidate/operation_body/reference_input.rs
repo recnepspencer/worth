@@ -2,6 +2,8 @@
 use super::*;
 use crate::domain_computation::primary_graph::operation_body::reference_input::PreparedBodyReferences;
 use worth_query_declaration::facade::application_schema::ApplicationOperationBodyProgram;
+use worth_query_execution_attempt::facade::ports::EffectProgramBuilderAuthoringInternalPort as _;
+use worth_query_execution_lineage::facade::ports::InvariantMutationTargetInternalPort as _;
 impl<S: ApplicationSchema, B: ApplicationMutationBinding<S>> CandidateWriter<'_, S, B> {
     pub fn body_references<Entity>(
         &mut self,
@@ -11,8 +13,8 @@ impl<S: ApplicationSchema, B: ApplicationMutationBinding<S>> CandidateWriter<'_,
     ) -> Result<(), WorthQueryApplicationAttemptDenial> {
         let _memory = prepared._memory;
         for (reference, targets) in body.reference_inputs().iter().zip(prepared.targets) {
-            if targets.current.as_ref().map(|target| target.entity_id)
-                == targets.selected.as_ref().map(|target| target.entity_id)
+            if targets.current.as_ref().map(|target| target.entity_id())
+                == targets.selected.as_ref().map(|target| target.entity_id())
             {
                 continue;
             }

@@ -10,6 +10,8 @@
 
 use crate::domain_computation::primary_graph::OutputDemandSettlementReusedExt;
 use std::sync::Arc;
+use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 
 use worth_relational::facade::{runtime::ProjectionAspectScope, storage::RecordLifecycleState};
 
@@ -115,10 +117,10 @@ where
             denial(kind, Family::IDENTITY)
                 .with_recovery_posture(WorthQueryOutputDemandRecoveryPosture::Retryable)
         };
-        if observed_source.runtime_authority != self.runtime.authority_identity().as_u64()
-            || observed_source.schema_binding != self.installed_schema.binding_identity()
+        if observed_source.runtime_authority() != self.runtime.authority_identity().as_u64()
+            || observed_source.schema_binding() != self.installed_schema.binding_identity()
             || !matches!(
-                &observed_source.selection,
+                &observed_source.selection(),
                 WorthQueryApplicationBasisSelectionIdentity::Product(source) if source == read
             )
         {

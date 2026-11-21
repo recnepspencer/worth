@@ -38,7 +38,7 @@ pub struct WorthQueryArtifactProductionAuthorityParts {
 }
 
 impl WorthQueryArtifactProductionAuthority {
-    pub fn mint(parts: WorthQueryArtifactProductionAuthorityParts) -> Arc<Self> {
+    pub(crate) fn mint(parts: WorthQueryArtifactProductionAuthorityParts) -> Arc<Self> {
         Arc::new(Self {
             contract: parts.contract,
             domain_authority: parts.domain_authority,

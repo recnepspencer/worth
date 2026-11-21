@@ -1,5 +1,6 @@
 //! Only the completed disclosed query can bind a prepared native subject selection.
 use std::{marker::PhantomData, sync::Arc};
+use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
 
 use worth_foundational::facade::CanonicalDigestId;
 use worth_query_declaration::facade::{
@@ -70,17 +71,17 @@ impl<Schema: ApplicationSchema, History: ApplicationHistoryQueryBinding<Schema>>
         observed: &WorthQueryObservedResultSet<SubjectQuery<Schema, History>>,
     ) -> Result<WorthQueryCapturedApplicationHistorySubjects<Schema, History>, Denial> {
         let source = observed.source();
-        let same_root = match &source.selection {
+        let same_root = match &source.selection() {
             super::super::resource_lifecycle::WorthQueryApplicationBasisSelectionIdentity::Product(identity) => {
                 identity.matches_observation(self.product.observation())
             }
             super::super::resource_lifecycle::WorthQueryApplicationBasisSelectionIdentity::Relational => false,
         };
-        if source.runtime_authority != self.runtime
-            || source.schema_binding != self.schema
-            || source.query_identity != self.query
-            || source.parameter_binding_identity != self.parameters
-            || source.model_root != self.scope
+        if source.runtime_authority() != self.runtime
+            || source.schema_binding() != self.schema
+            || source.query_identity() != self.query
+            || source.parameter_binding_identity() != self.parameters
+            || source.model_root() != self.scope
             || !same_root
         {
             return Err(Denial::SubjectMismatch);
