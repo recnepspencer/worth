@@ -201,37 +201,36 @@ impl super::super::WorthQueryPrimaryGraphProvider {
         ))
     }
 }
-impl WorthQueryUnpublishedIdempotencyDisposition {
-    pub(in crate::domain_computation) fn finish_recovered(
-        &self,
-        handle: &ProductUnpublishedRecoveryHandle,
-    ) {
-        self.store
-            .lock()
-            .unwrap_or_else(|e| e.into_inner())
-            .recovered
-            .retain(|_, entry| match &entry.fate {
-                OriginalFate::Unpublished(current) => current != handle,
-                OriginalFate::Released(_) => true,
-            });
+pub(in crate::domain_computation::primary_graph::provider) fn finish_recovered(
+    store: &Arc<Mutex<WorthQueryUnpublishedIdempotencyStore>>,
+    handle: &ProductUnpublishedRecoveryHandle,
+) {
+    store
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .recovered
+        .retain(|_, entry| match &entry.fate {
+            OriginalFate::Unpublished(current) => current != handle,
+            OriginalFate::Released(_) => true,
+        });
+}
+
+pub(super) fn finish_recovered_release(
+    store: &Arc<Mutex<WorthQueryUnpublishedIdempotencyStore>>,
+    handle: &ProductUnpublishedRecoveryHandle,
+    original: WorldReleasedOriginal,
+) {
+    let mut store = store.lock().unwrap_or_else(|e| e.into_inner());
+    if original.native_semantic_result().is_none() {
+        return;
     }
-    pub(in crate::domain_computation) fn finish_recovered_release(
-        &self,
-        handle: &ProductUnpublishedRecoveryHandle,
-        original: WorldReleasedOriginal,
-    ) {
-        let mut store = self.store.lock().unwrap_or_else(|e| e.into_inner());
-        if original.native_semantic_result().is_none() {
-            return;
-        }
-        let entry = store
-            .recovered
-            .values_mut()
-            .find(|entry| match &entry.fate {
-                OriginalFate::Unpublished(current) => current == handle,
-                OriginalFate::Released(_) => false,
-            })
-            .expect("D8 admitted the exact original key before serving release");
-        entry.fate = OriginalFate::Released(original);
-    }
+    let entry = store
+        .recovered
+        .values_mut()
+        .find(|entry| match &entry.fate {
+            OriginalFate::Unpublished(current) => current == handle,
+            OriginalFate::Released(_) => false,
+        })
+        .expect("D8 admitted the exact original key before serving release");
+    entry.fate = OriginalFate::Released(original);
 }

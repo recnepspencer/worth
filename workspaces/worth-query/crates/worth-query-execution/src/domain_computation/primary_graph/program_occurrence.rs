@@ -19,11 +19,12 @@ use worth_query_installation::facade::{
 
 use super::WorthQueryApplicationCommitDenial;
 
-pub(crate) mod activation_cell;
+pub(crate) use worth_query_execution_lineage::facade::primary_graph::program_occurrence::{
+    activation_cell, revision_rendering,
+};
 mod original_meaning;
 pub(crate) mod presented_program;
 pub(in crate::domain_computation) use original_meaning::OriginalProgramMeaning;
-pub(crate) mod revision_rendering;
 use crate::domain_computation::primary_graph::query_obligations::history;
 
 pub(in crate::domain_computation::primary_graph) use activation_cell::WorthQueryProgramActivationCell;

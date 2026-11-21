@@ -1,8 +1,12 @@
+pub(crate) use worth_query_execution_lineage::facade::primary_graph::provider::{
+    branch_commit_coordination, invariant_execution_failure,
+    native_publication_roles, relational_execution_denial,
+};
 pub(crate) mod aftermath_causality;
+mod mutation_work;
+pub(crate) mod original_attempt_completion;
 mod authored_retirement_selection;
-pub(in crate::domain_computation::primary_graph) mod native_publication_roles;
 pub(in crate::domain_computation::primary_graph) mod publication_posture;
-pub(crate) mod relational_execution_denial;
 pub use aftermath_causality::WorthQueryAftermathCausalityReadDenial;
 pub(in crate::domain_computation::primary_graph) use aftermath_causality::{
     WorthQueryActiveReversalProgress, WorthQueryCanonicalCorrectionFact,
@@ -25,11 +29,9 @@ pub use application_attempt_state::{
 pub(crate) mod application_attempt_work;
 pub(crate) mod application_decision_fact;
 pub(crate) mod application_touch_admission;
-pub(crate) mod branch_commit_coordination;
 mod commit_causality;
 pub(crate) mod committed_dispatch_outbox;
 mod completed_observation;
-pub(crate) mod original_attempt_completion;
 pub(in crate::domain_computation::primary_graph) use original_attempt_completion::{
     OriginalCompletionPublisher, OriginalCompletionReceiver, OriginalCompletionSlot,
 };
@@ -73,13 +75,11 @@ mod installation;
 mod invariant_execution;
 pub(in crate::domain_computation::primary_graph) use invariant_execution::ClosedCoupledInvariantReceipts;
 pub(in crate::domain_computation::primary_graph) use invariant_execution::CoupledProducerAssembly;
-pub(crate) mod invariant_execution_failure;
 mod managed_application_recovery;
 pub(in crate::domain_computation::primary_graph) use managed_application_recovery::ProducerRecoveryCustody;
 pub(in crate::domain_computation::primary_graph) mod recovered_program_source_delivery;
 pub use recovered_program_source_delivery::WorthQueryRecoveredProgramSourceDeliveryDenialForTest;
 pub use recovered_program_source_delivery::WorthQueryRecoveredProgramSourceDeliveryForTest;
-mod mutation_work;
 pub use managed_application_recovery::WorthQueryManagedApplicationRecoveryDenial;
 pub use managed_application_recovery::WorthQueryManagedApplicationRecoveryOutcome;
 pub use managed_application_recovery::WorthQueryManagedApplicationRecoveryPerformed;
@@ -100,6 +100,7 @@ pub(crate) mod session_commit;
 mod session_lifecycle;
 mod terminal_dispatch_release;
 pub(crate) mod unpublished_idempotency;
+mod unpublished_idempotency_port;
 
 pub(in crate::domain_computation) use unpublished_idempotency::QueryDurablePreparationGuard;
 pub(in crate::domain_computation) use unpublished_idempotency::WorthQueryUnpublishedIdempotencyDisposition;
@@ -359,3 +360,37 @@ mod court_doors_for_test;
 #[cfg(test)]
 #[path = "provider_inline_type_budget.rs"]
 pub(crate) mod inline_type_budget;
+
+impl WorthQueryPrimaryGraphProvider {
+    pub(in crate::domain_computation::primary_graph) fn correction_commit_lanes(
+        &self,
+        bindings: impl IntoIterator<
+            Item = super::application_attempt::WorthQueryApplicationIdempotencyBinding,
+        >,
+    ) -> Vec<Arc<branch_commit_coordination::WorthQueryCorrectionCommitLane>> {
+        let lanes = bindings
+            .into_iter()
+            .filter_map(|binding| {
+                self.correction_commit_lane(&binding)
+                    .map(|lane| (*binding.key_identity(), lane))
+            })
+            .collect::<std::collections::BTreeMap<_, _>>();
+        lanes.into_values().collect()
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn correction_commit_lane(
+        &self,
+        binding: &super::application_attempt::WorthQueryApplicationIdempotencyBinding,
+    ) -> Option<Arc<branch_commit_coordination::WorthQueryCorrectionCommitLane>> {
+        self.branch_commit_coordination
+            .corrections
+            .for_binding(binding)
+    }
+
+    pub(in crate::domain_computation::primary_graph::provider) fn correction_key_lane(
+        &self,
+        key: &[u8; 32],
+    ) -> Arc<branch_commit_coordination::WorthQueryCorrectionCommitLane> {
+        self.branch_commit_coordination.corrections.for_key(key)
+    }
+}

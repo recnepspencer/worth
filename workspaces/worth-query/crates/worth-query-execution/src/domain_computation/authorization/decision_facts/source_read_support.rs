@@ -12,14 +12,7 @@ use worth_relational::facade::{
     mvcc::CompanionPreflightStop, runtime::RelationalRuntime, snapshots::SnapshotHandle,
 };
 
-pub(in crate::domain_computation) enum SourceReadSupportCurrentnessStop {
-    PrincipalStale,
-    AuthorizationStale,
-    Admission(CompanionPreflightStop),
-    Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
-    PrincipalUnavailable,
-    PrincipalWorkExhausted,
-}
+pub(in crate::domain_computation) use worth_query_execution_lineage::facade::authorization::decision_facts::source_read_support::SourceReadSupportCurrentnessStop;
 
 pub(in crate::domain_computation) struct SourceReadSupport {
     authorization: WorthQueryRetainedAuthorizationDecisionFacts,

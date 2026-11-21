@@ -1,0 +1,39 @@
+//! One sorted immutable role store, shared by correspondence clones.
+use super::CommittedOutputBinding;
+use crate::domain_computation::primary_graph::application_checkpoint::CheckpointMetadataFunding;
+
+#[derive(Debug, Default)]
+pub struct CorrespondenceStorage {
+    pub optional_roles: Vec<String>,
+    pub closure_evidence: Vec<(String, CommittedOutputBinding)>,
+    pub roles: Vec<(String, CommittedOutputBinding)>,
+    // Last to drop: the rows and their strings retain their actual admission.
+    pub _funding: Option<CheckpointMetadataFunding>,
+}
+impl PartialEq for CorrespondenceStorage {
+    fn eq(&self, other: &Self) -> bool {
+        // Closure describes one host's performed admission, not durable roles.
+        self.optional_roles == other.optional_roles && self.roles == other.roles
+    }
+}
+impl Eq for CorrespondenceStorage {}
+impl CorrespondenceStorage {
+    // The candidate consumes ordered B-tree iterators directly into these rows.
+    pub fn from_committed(
+        optional_roles: Vec<String>,
+        roles: Vec<(String, CommittedOutputBinding)>,
+    ) -> Self {
+        Self {
+            optional_roles,
+            closure_evidence: Vec::new(),
+            roles,
+            _funding: None,
+        }
+    }
+    pub fn binding(&self, name: &str) -> Option<&CommittedOutputBinding> {
+        self.roles
+            .binary_search_by(|(role, _)| role.as_str().cmp(name))
+            .ok()
+            .map(|slot| &self.roles[slot].1)
+    }
+}

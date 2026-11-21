@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::OriginalSettledProducerObservationExt;
 use super::super::application_output_demand::OriginalSettledProducerObservation;
 use std::marker::PhantomData;
 use std::num::NonZeroUsize;

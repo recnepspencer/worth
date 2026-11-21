@@ -13,6 +13,32 @@ use worth_relational::facade::identity::{EntityId, RelationId};
 use super::freshness::WorthQueryPrincipalFreshnessEvidence;
 use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
 
+pub(in crate::domain_computation) fn validate_freshness_at_snapshot<
+    Schema,
+    Principal,
+    PrincipalIdentity,
+>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
+    layout: &super::WorthQueryPrimaryPrincipalBindingLayout,
+    expected_identity: &worth_foundational::facade::AspectValue,
+) -> Result<(), super::WorthQueryPrincipalResolutionDenial> {
+    super::freshness::validate_freshness_fields_at_snapshot(
+        execution,
+        runtime,
+        snapshot,
+        principal.mapping_entity_id(),
+        principal.target_relation_id(),
+        principal.principal_entity_id(),
+        principal.binding(),
+        principal.freshness(),
+        layout,
+        expected_identity,
+    )
+}
+
 mod command_pin;
 pub use command_pin::WorthQueryCommandPrincipalPin;
 

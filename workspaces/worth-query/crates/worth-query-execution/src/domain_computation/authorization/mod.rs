@@ -1,20 +1,19 @@
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 mod admission;
 pub(in crate::domain_computation) use admission::BorrowedReadOperationAdmission;
-pub(in crate::domain_computation) mod admitted_request;
 pub(crate) mod application_commit_authorization;
 pub(crate) mod application_disclosure;
-mod home_incarnation;
+pub(crate) use worth_query_execution_lineage::facade::domain_computation::authorization::{
+    admitted_request, bridge_binding, capability_binding_lowering,
+    capability_lowering, capability_registry, denial, home_incarnation, lowering,
+    operation_scope_binding,
+};
 pub(in crate::domain_computation) use home_incarnation::refuse_stale_home_authority;
 mod authorization_revalidation;
-mod bridge_binding;
 mod bridge_observation;
-mod capability_binding_lowering;
 mod capability_decision_fact;
 pub(crate) mod capability_elevation_projection;
-pub(crate) mod capability_lowering;
 pub(crate) mod capability_observation;
-pub(crate) mod capability_registry;
 mod capability_revalidation;
 mod capability_revocation_progression;
 pub(crate) mod decision_facts;
@@ -24,15 +23,12 @@ pub(in crate::domain_computation) use decision_facts::{
 };
 mod delegation_admission;
 mod delegation_progression;
-mod denial;
 mod elevation_progression;
 mod graph_work_session;
 pub(in crate::domain_computation) use graph_work_session::start_selected_operation_graph_work_admitted;
 pub(in crate::domain_computation) use graph_work_session::SelectedOperationGraphWorkStop;
 pub(crate) mod installed_policy;
-mod lowering;
 pub(crate) mod operation_progression;
-pub(crate) mod operation_scope_binding;
 pub(in crate::domain_computation) use operation_scope_binding::WorthQueryDecisionScopeWitness;
 pub(crate) mod retained_capability_request;
 pub(in crate::domain_computation) use retained_capability_request::WorkflowApprovalRequestDecodingDenial;

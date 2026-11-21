@@ -126,7 +126,7 @@ impl<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>> WorthQueryManag
             .as_mut()
             .is_some_and(|state| !state.finish(disposition))
         {
-            return Err(Denial::new(
+            return Err(crate::domain_computation::primary_graph::application_query::managed_index::denial::managed_index_denial(
                 ReceiverCause::Refused(Refusal::TerminalReleaseMismatch),
                 None,
             ));

@@ -1,0 +1,379 @@
+pub mod home_retirement;
+pub mod output_availability_candidate;
+pub mod retention;
+pub use output_availability_candidate::{
+    ObservedOutputCandidate, ObservedOutputPosture,
+};
+pub mod admission_denial;
+pub mod aggregate;
+pub mod aggregate_read;
+pub mod component;
+pub mod graph_member;
+pub mod logical_projection;
+pub use component::WorthQueryInvariantProjectionComponent;
+pub mod consumed_output;
+pub mod entity_resident;
+#[path = "invariant_projection/field_projection.rs"]
+pub mod field_projection;
+pub mod fragment_identity;
+pub mod identity_encoding;
+pub mod pending_output_read;
+pub use pending_output_read::RequestedOutputRead;
+pub mod inventory;
+pub mod lineage;
+pub mod orbit;
+pub use orbit::WorthQueryInvariantProjectionOrbit;
+pub mod locked_reader;
+pub mod native_read;
+pub mod operation_projection_denial;
+pub mod operation_reader;
+pub use operation_reader::native_index_decision_cause;
+pub use operation_reader::BorrowedOperationProjection;
+pub use operation_reader::{
+    WorthQueryInvariantDerivedMemberRelation, WorthQueryInvariantDerivedRelation,
+    WorthQueryInvariantDerivedWalk, WorthQueryInvariantDerivedWalkStep,
+    WorthQueryInvariantGraphComponent, WorthQueryInvariantGraphMember,
+    WorthQueryObservedOutputAvailability, WorthQueryOutputAvailabilityDenial,
+    WorthQueryOutputAvailabilityState,
+};
+pub mod read_basis;
+pub mod realized_scope;
+pub mod relation_field;
+pub mod relation_identity;
+pub use relation_identity::WorthQueryInvariantRelation;
+pub mod traversal;
+pub mod walk;
+pub mod work;
+pub use consumed_output::EvidenceView;
+pub use walk::{
+    WorthQueryInvariantProjectionWalk, WorthQueryInvariantProjectionWalkIter,
+    WorthQueryInvariantProjectionWalkStep,
+};
+
+use std::cmp::Ordering;
+use std::collections::BTreeMap;
+use std::marker::PhantomData;
+use std::sync::Arc;
+
+use worth_query_installation::facade::{
+    ApplicationReadableScalarValueBinding, ApplicationSchema, ApplicationSchemaBindingIdentity,
+};
+use worth_relational::facade::identity::{EntityId, KindId, VersionId};
+
+use super::schema_layout::WorthQueryPrimaryGraphLayout;
+use super::{
+    WorthQueryInstalledEntityResolutionContext, WorthQueryPrimaryGraphIntegrationHandle,
+};
+use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
+
+pub use super::read_observation::WorthQueryInvariantProjectionWork;
+pub use super::value_decode::WorthQueryValueDecodeDenial;
+pub use admission_denial::{
+    WorthQueryInvariantProjectionDenial, WorthQueryInvariantProjectionDenialKind,
+};
+pub use aggregate::{
+    WorthQueryInvariantAggregate, WorthQueryInvariantAggregateDenial,
+    WorthQueryInvariantAggregateDenialKind,
+};
+pub use consumed_output::SelectedPendingConsumedOutput;
+pub use consumed_output::VerificationCapacityStop;
+pub use consumed_output::{
+    ConsumedOutputEvidence, ConsumedOutputVerification, ConsumedOutputVerificationStop,
+    PublicationRecoveryStop,
+};
+pub use field_projection::WorthQueryRetainedSnapshotRead;
+pub use locked_reader::{
+    WorthQueryApplicationInvariantProjectionReader, WorthQueryCompletedInvariantProjection,
+    WorthQueryInvariantProjectionTraversalDenial, WorthQueryInvariantProjectionTraversalDenialKind,
+};
+pub use operation_projection_denial::{
+    WorthQueryOperationProjectionDenial, WorthQueryOperationProjectionDenialKind,
+};
+pub use operation_reader::WorthQueryPriorOutputRead;
+pub use operation_reader::{
+    AppliedOperationProjection, CallSequenceDenial, CallShape, CallShapeTransition, CallVisit,
+    ComputationCallCharge, ComputationCallSequence, DecisionReads, ExpectedFactKeys,
+    ObservedComputationInputs, PreparedCurrentInputs,
+};
+pub use operation_reader::{
+    WorthQueryApplicationOperationInvariantProjectionReader,
+    WorthQueryApplicationOperationInvariantProjectionSnapshot,
+    WorthQueryCompletedOperationInvariantProjection, WorthQueryCurrentOutputDenial,
+    WorthQueryCurrentOutputDenialKind, WorthQueryCurrentOutputSelection,
+    WorthQueryInspectedOperationInvariantProjection, WorthQueryInvariantDecisionPlanDenial,
+    WorthQueryInvariantDecisionPlanDenialKind, WorthQueryPreparedEntitySelection,
+    WorthQueryPriorOutputFamilyMember,
+};
+pub use realized_scope::WorthQueryRealizedProjectionScope;
+
+static NEXT_INVARIANT_PROJECTION_AUTHORITY: std::sync::atomic::AtomicU64 =
+    std::sync::atomic::AtomicU64::new(1);
+
+/// Installation-minted authority for domain invariant projection.
+///
+/// The application composition root may retain this while it owns the
+/// move-only primary-graph bootstrap. Ordinary consumers cannot construct it
+/// from runtime identities or application admissions.
+pub struct WorthQueryApplicationInvariantProjectionAuthority<Schema> {
+    installed_operations: Arc<worth_query_installation::facade::InstalledOperationCatalog>,
+    graph: WorthQueryPrimaryGraphIntegrationHandle,
+    layout: Arc<WorthQueryPrimaryGraphLayout>,
+    runtime_authority: WorthQueryRuntimeAuthorityIdentity,
+    binding_identity: ApplicationSchemaBindingIdentity,
+    entity_resolution: WorthQueryInstalledEntityResolutionContext,
+    authority_identity: u64,
+    value_bindings:
+        worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog,
+    program_activation: Option<super::program_occurrence::WorthQueryProgramActivationCell>,
+    _schema: PhantomData<fn() -> Schema>,
+}
+
+/// A retained read of the main branch at one version, kept after an invariant
+/// projection completes.
+///
+/// `version` names the version read and `field` reads further values at it.
+/// Dropping the snapshot releases it.
+pub struct WorthQueryApplicationInvariantProjectionSnapshot<Schema> {
+    graph: WorthQueryPrimaryGraphIntegrationHandle,
+    value_bindings:
+        worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog,
+    layout: Arc<WorthQueryPrimaryGraphLayout>,
+    basis: Option<worth_relational::facade::branch::AdmittedRelationalBranchBasis>,
+    snapshot: Option<worth_relational::facade::snapshots::SnapshotHandle>,
+    runtime_authority: WorthQueryRuntimeAuthorityIdentity,
+    binding_identity: ApplicationSchemaBindingIdentity,
+    authority_identity: u64,
+    realized_scope: WorthQueryRealizedProjectionScope,
+    consumed_outputs:
+        BTreeMap<Arc<super::output_lineage::RecordedSettlementIdentity>, ConsumedOutputEvidence>,
+    dependent_source_facts:
+        Option<super::application_attempt::retained_decision_facts::RetainedSourceFacts>,
+    _schema: PhantomData<fn() -> Schema>,
+}
+
+/// An entity observed by an invariant projection, typed by its entity kind.
+///
+/// It is valid only with readers from the same projection authority; any other
+/// reader refuses it as foreign.
+pub use entity_identity::WorthQueryInvariantEntityIdentity;
+pub mod entity_identity;
+
+/// An exact projected entity admitted for the later application effect phase.
+/// It is minted only by the operation-typed invariant reader after validating
+/// the entity against that reader's authority.
+pub struct WorthQueryInvariantMutationTarget<Schema, Entity> {
+    pub entity_id: EntityId,
+    pub entity: Arc<str>,
+    pub runtime_authority:
+        WorthQueryRuntimeAuthorityIdentity,
+    pub binding_identity:
+        ApplicationSchemaBindingIdentity,
+    pub admission_identity:
+        crate::domain_computation::authorization::WorthQueryOperationAdmissionIdentity,
+    pub phase:
+        Option<worth_relational::facade::runtime::RelationalAppliedCandidateReadQualification>,
+    _marker: PhantomData<fn() -> (Schema, Entity)>,
+}
+
+impl<Schema> WorthQueryApplicationInvariantProjectionAuthority<Schema>
+where
+    Schema: ApplicationSchema,
+{
+    pub fn belongs_to_installation(
+        &self,
+        runtime_authority: WorthQueryRuntimeAuthorityIdentity,
+        binding_identity: &ApplicationSchemaBindingIdentity,
+    ) -> bool {
+        self.runtime_authority == runtime_authority && &self.binding_identity == binding_identity
+    }
+
+    pub fn active_snapshot_count(
+        &self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> usize {
+        self.graph.with_runtime(request_execution, |runtime| {
+            runtime.retention().active_snapshot_count()
+        })
+    }
+
+    pub fn snapshot(
+        &self,
+        phase: &super::WorthQueryAdvancementPhase<'_>,
+    ) -> Result<
+        WorthQueryApplicationInvariantProjectionSnapshot<Schema>,
+        WorthQueryInvariantProjectionDenial,
+    > {
+        let request = phase
+            .request_for_source(self.graph.relational_runtime_instance_id())
+            .map_err(|_| {
+                WorthQueryInvariantProjectionDenial::from_kind(
+                    WorthQueryInvariantProjectionDenialKind::ForeignPhase,
+                )
+            })?;
+        let execution = &request;
+        let (basis, snapshot) = self.graph.with_runtime(execution, |runtime| {
+            let identity = runtime.main_branch_identity();
+            let (_, basis) = runtime
+                .observe_branch(&identity)
+                .map_err(admission_denial::from_branch_basis_denial)?;
+            let snapshot = runtime
+                .snapshots()
+                .snapshot_for_observation(&basis.observation())
+                .map_err(admission_denial::from_snapshot_admission_denial)?;
+            Ok((basis, snapshot))
+        })?;
+        Ok(WorthQueryApplicationInvariantProjectionSnapshot {
+            graph: self.graph.clone(),
+            value_bindings: self.value_bindings.clone(),
+            layout: Arc::clone(&self.layout),
+            basis: Some(basis),
+            snapshot: Some(snapshot),
+            runtime_authority: self.runtime_authority,
+            binding_identity: self.binding_identity.clone(),
+            authority_identity: self.authority_identity,
+            realized_scope: WorthQueryRealizedProjectionScope::default(),
+            consumed_outputs: BTreeMap::new(),
+            dependent_source_facts: None,
+            _schema: PhantomData,
+        })
+    }
+}
+
+impl<Schema> WorthQueryApplicationInvariantProjectionSnapshot<Schema>
+where
+    Schema: ApplicationSchema,
+{
+    pub fn version(&self) -> VersionId {
+        self.snapshot().version_id()
+    }
+
+    pub fn belongs_to(
+        &self,
+        runtime_authority: WorthQueryRuntimeAuthorityIdentity,
+        binding_identity: &ApplicationSchemaBindingIdentity,
+    ) -> bool {
+        self.runtime_authority == runtime_authority && &self.binding_identity == binding_identity
+    }
+
+    pub fn into_lease(
+        mut self,
+        product: crate::basis::WorthQueryProductBranchLease,
+    ) -> super::application_attempt::snapshot_lease::WorthQueryApplicationSnapshotLease {
+        let basis = self
+            .basis
+            .take()
+            .expect("projection snapshot retains its owner-admitted basis");
+        let snapshot = self
+            .snapshot
+            .take()
+            .expect("projection snapshot remains live until consumed");
+        super::application_attempt::snapshot_lease::WorthQueryApplicationSnapshotLease::from_existing(
+            self.graph.clone(),
+            Arc::clone(&self.layout),
+            basis,
+            snapshot,
+            product,
+        )
+    }
+
+    pub fn into_lease_and_realized_scope(
+        mut self,
+        product: crate::basis::WorthQueryProductBranchLease,
+    ) -> (
+        super::application_attempt::snapshot_lease::WorthQueryApplicationSnapshotLease,
+        WorthQueryRealizedProjectionScope,
+        Option<super::application_attempt::retained_decision_facts::RetainedSourceFacts>,
+        Vec<ConsumedOutputEvidence>,
+    ) {
+        let realized_scope = std::mem::take(&mut self.realized_scope);
+        let dependent_source_facts = self.dependent_source_facts.take();
+        let consumed_outputs = std::mem::take(&mut self.consumed_outputs)
+            .into_values()
+            .collect();
+        (
+            self.into_lease(product),
+            realized_scope,
+            dependent_source_facts,
+            consumed_outputs,
+        )
+    }
+
+    fn snapshot(&self) -> &worth_relational::facade::snapshots::SnapshotHandle {
+        self.snapshot
+            .as_ref()
+            .expect("projection snapshot remains live until consumed")
+    }
+}
+
+impl<Schema, Entity> WorthQueryInvariantEntityIdentity<Schema, Entity> {
+    pub const fn entity_id(&self) -> EntityId {
+        self.entity_id
+    }
+
+    pub fn entity_name(&self) -> &str {
+        &self.entity
+    }
+}
+
+impl<Schema, Entity> PartialEq for WorthQueryInvariantEntityIdentity<Schema, Entity> {
+    fn eq(&self, other: &Self) -> bool {
+        self.authority_identity == other.authority_identity
+            && self.entity_id == other.entity_id
+            && self.kind == other.kind
+            && self.entity == other.entity
+    }
+}
+
+impl<Schema, Entity> Eq for WorthQueryInvariantEntityIdentity<Schema, Entity> {}
+
+impl<Schema, Entity> PartialOrd for WorthQueryInvariantEntityIdentity<Schema, Entity> {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl<Schema, Entity> Ord for WorthQueryInvariantEntityIdentity<Schema, Entity> {
+    fn cmp(&self, other: &Self) -> Ordering {
+        (
+            self.authority_identity,
+            self.entity_id,
+            self.kind,
+            self.entity.as_ref(),
+        )
+            .cmp(&(
+                other.authority_identity,
+                other.entity_id,
+                other.kind,
+                other.entity.as_ref(),
+            ))
+    }
+}
+
+/// An entity identity encodes exactly what its equality compares: the
+/// installation's projection authority, the entity, its kind and its entity
+/// name. Two identities from one installation encode alike exactly when they
+/// are equal; an identity issued by another installation never matches.
+impl<Schema, Entity> serde::Serialize for WorthQueryInvariantEntityIdentity<Schema, Entity> {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        use serde::ser::SerializeStruct;
+        let mut identity = serializer.serialize_struct("WorthQueryInvariantEntityIdentity", 4)?;
+        identity.serialize_field(
+            "authority_identity",
+            &identity_encoding::ProjectionAuthorityEncoding(self.authority_identity),
+        )?;
+        identity.serialize_field("entity_id", &self.entity_id)?;
+        identity.serialize_field("kind", &self.kind)?;
+        identity.serialize_field("entity", self.entity.as_ref())?;
+        identity.end()
+    }
+}
+
+impl<Schema> Drop for WorthQueryApplicationInvariantProjectionSnapshot<Schema> {
+    fn drop(&mut self) {
+        if let Some(snapshot) = self.snapshot.take() {
+            self.graph.release_query_snapshot(&snapshot);
+        }
+    }
+}
+
+mod court_doors_for_test;

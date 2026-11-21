@@ -1,0 +1,97 @@
+use worth_foundational::facade::{
+    prepare_aspect_value_identity_basis, CanonicalAspectValueIdentityBasis,
+};
+
+use super::WorthQueryApplicationObservedFact;
+
+/// Storage identity for retained observations. Descriptive legacy locators
+/// alone do not distinguish separate predicates against the same index.
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
+pub struct WorthQueryApplicationFactStorageKey {
+    locator: String,
+    predicate: Option<(CanonicalAspectValueIdentityBasis, usize)>,
+}
+
+impl WorthQueryApplicationObservedFact {
+    pub fn dependency_locator_byte_bound(
+        &self,
+    ) -> Option<u64> {
+        if let Self::DerivedSource { observation } = self {
+            let key = observation.key();
+            return u64::try_from(key.relation().len())
+                .ok()?
+                .checked_add(key.identity().schema.0.len() as u64)?
+                .checked_add(key.identity().name.len() as u64)?
+                .checked_add(512);
+        }
+        if let Self::StructuralWalk { observation } = self {
+            // Decimal components of one initialized native ID fit within128bytes;
+            // count the bound without an uncontrolled preliminary root scan.
+            return u64::try_from(observation.key().roots().len())
+                .ok()?
+                .checked_mul(128)?
+                .checked_add(observation.key().relation().len() as u64)?
+                .checked_add(512);
+        }
+        struct Count(usize);
+        impl std::fmt::Write for Count {
+            fn write_str(&mut self, text: &str) -> std::fmt::Result {
+                self.0 = self.0.checked_add(text.len()).ok_or(std::fmt::Error)?;
+                Ok(())
+            }
+        }
+        let mut count = Count(0);
+        self.write_dependency_locator(&mut count).ok()?;
+        let base = u64::try_from(count.0).ok()?;
+        match self {
+            Self::IndexedEntitySelection { value, .. } => base
+                .checked_add(
+                    (value
+                        .owned_allocation_capacity_bytes()
+                        .max(value.semantic_byte_width()) as u64)
+                        .checked_mul(16)?,
+                )?
+                .checked_add(512),
+            _ => base.checked_add(128),
+        }
+    }
+
+    /// Exact predicate-aware key for provider ports that carry string locators.
+    /// The descriptive locator and canonical dependency encoding stay unchanged.
+    pub fn dependency_locator_identity(&self) -> String {
+        match self {
+            Self::IndexedEntitySelection {
+                value,
+                candidate_limit,
+                ..
+            } => {
+                let predicate = prepare_aspect_value_identity_basis(value);
+                format!(
+                    "{}:predicate#{}:{}:limit#{}",
+                    self.locator_identity(),
+                    predicate.as_str().len(),
+                    predicate.as_str(),
+                    candidate_limit
+                )
+            }
+            _ => self.locator_identity(),
+        }
+    }
+
+    pub fn dependency_key(
+        &self,
+    ) -> WorthQueryApplicationFactStorageKey {
+        let predicate = match self {
+            Self::IndexedEntitySelection {
+                value,
+                candidate_limit,
+                ..
+            } => Some((prepare_aspect_value_identity_basis(value), *candidate_limit)),
+            _ => None,
+        };
+        WorthQueryApplicationFactStorageKey {
+            locator: self.locator_identity(),
+            predicate,
+        }
+    }
+}

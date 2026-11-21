@@ -15,21 +15,7 @@ use crate::domain_computation::application_aftermath::{
 };
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
-/// Why the Home's dispatch journal did not record a physical attempt. In every
-/// case the external contact never began.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryDurableDispatchRecordDenial {
-    /// An earlier attempt for this effect still awaits its recorded observation.
-    AttemptAwaitingObservation,
-    /// The invoking request stopped before the record's fate was known.
-    RequestStopped,
-    /// The record's physical fate is unknown until the Home reopens.
-    PublicationUnresolved,
-    /// The record was proven unwritten; a later attempt records afresh.
-    PublicationNoEffect,
-    /// The Home journal refused the record or is no longer available.
-    JournalRefused,
-}
+pub use worth_query_execution_lineage::facade::primary_graph::application_attempt::provider_execution::external_dispatch::durable_attempt::WorthQueryDurableDispatchRecordDenial;
 
 /// One permitted external contact. Its attempt is already durable, or the
 /// runtime is memory-only and its custody is process-local. Exactly one

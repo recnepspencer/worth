@@ -228,6 +228,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                             crate::domain_computation::primary_graph::handler::ConditionalDefinitionAdmission::new(
                                 self, admission.graph_work().mutation_product(),
                             ),
+                            source_query,
                         );
                         on_contact();
                         handler_contacted = true;
@@ -240,6 +241,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                             None => handler.prepare_decision(input, &mut decision_reader),
                         }
                     };
+        let source_query_port = source_query.map(|access| {
+            access as &dyn worth_query_execution_lineage::facade::ports::SourceQueryReaderPort
+        });
         let projected = match applied {
             None => self
                 .mutation_projection
@@ -248,7 +252,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     &admission,
                     projection,
                     allocation_control.policy(),
-                    source_query,
+                    source_query_port,
                     Some(&context_use),
                 )
                 .map(|projected| {
@@ -266,7 +270,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     &admission,
                     before,
                     candidate,
-                    source_query,
+                    source_query_port,
                     projection,
                     allocation_control.policy(),
                 )

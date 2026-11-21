@@ -197,6 +197,9 @@ impl WorthQueryPrimaryGraphProvider {
             .try_lock()
             .map_err(|_| Denial::Busy(Owner::ReceiptBases))?
             .preflight_home_retirement(dispatch_custody)?;
-        self.graph.source_owner.preflight_home_retirement(request)
+        self.graph
+            .source_owner
+            .preflight_home_retirement(request)
+            .map_err(Into::into)
     }
 }

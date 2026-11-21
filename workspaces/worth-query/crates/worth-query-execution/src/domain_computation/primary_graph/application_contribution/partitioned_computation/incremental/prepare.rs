@@ -26,7 +26,46 @@ use super::retained::RetainedCall;
 use super::{enter, IncrementalRun, Reader, COMPARATOR};
 use crate::domain_computation::primary_graph::application_attempt::ComputationRead;
 
-impl<Key, Item, Reduced> IncrementalRun<Key, Item, Reduced>
+use super::prepare_ranges::IncrementalRunPrepareRangesExt;
+use super::prepare_rekeys::IncrementalRunPrepareRekeysExt;
+
+pub(in super::super) trait IncrementalRunPrepareExt<Key, Item, Reduced>
+where
+    Key: ApplicationComputationPartition,
+    Item: ApplicationComputationPartition,
+{
+    fn prepare<Schema, Feature, Computation, Owner>(
+        self,
+        owner: &Owner,
+        reader: &mut Reader<'_, '_, Schema, Owner::Operation>,
+        source_query: Option<
+            &crate::domain_computation::primary_graph::application_query::SourceQueryReaderAccess<
+                '_,
+                Schema,
+            >,
+        >,
+        execution: &QueryRequestExecution<'_>,
+        input: &InputValue<Schema, Feature, Computation>,
+        preparation_work: PreparationWork,
+    ) -> Result<
+        Option<PreparedIncremental<Key, Item, Reduced, Owner::Gathered>>,
+        Denial<Schema, Feature, Computation, Owner>,
+    >
+    where
+        Schema: ApplicationSchema,
+        Feature: ApplicationFeature<Schema>,
+        Computation: ApplicationManagedComputation<Schema, Feature, Partition = Key>,
+        Owner: WorthQueryPartitionedComputationOwner<
+            Schema,
+            Feature,
+            Computation,
+            Item = Item,
+            PartitionResult = Reduced,
+        >;
+}
+
+impl<Key, Item, Reduced> IncrementalRunPrepareExt<Key, Item, Reduced>
+    for IncrementalRun<Key, Item, Reduced>
 where
     Key: ApplicationComputationPartition,
     Item: ApplicationComputationPartition,
@@ -53,10 +92,16 @@ where
     /// depends on which items kept their routes, so the reader is taken back
     /// to the run's start and the caller makes the run in full, which names
     /// the collision as a fresh build does.
-    pub(in super::super) fn prepare<Schema, Feature, Computation, Owner>(
+    fn prepare<Schema, Feature, Computation, Owner>(
         self,
         owner: &Owner,
         reader: &mut Reader<'_, '_, Schema, Owner::Operation>,
+        source_query: Option<
+            &crate::domain_computation::primary_graph::application_query::SourceQueryReaderAccess<
+                '_,
+                Schema,
+            >,
+        >,
         execution: &QueryRequestExecution<'_>,
         input: &InputValue<Schema, Feature, Computation>,
         mut preparation_work: PreparationWork,
@@ -76,14 +121,26 @@ where
             PartitionResult = Reduced,
         >,
     {
-        if let Some(prepared) =
-            self.prepare_rekeys(owner, reader, execution, input, preparation_work)?
-        {
+        if let Some(prepared) = self.prepare_rekeys(
+            owner,
+            reader,
+            source_query,
+            execution,
+            input,
+            preparation_work,
+        )? {
             return Ok(Some(prepared));
         }
         if self.can_prepare_ranges(reader) {
             return self
-                .prepare_ranges(owner, reader, execution, input, preparation_work)
+                .prepare_ranges(
+                    owner,
+                    reader,
+                    source_query,
+                    execution,
+                    input,
+                    preparation_work,
+                )
                 .map(Some);
         }
         let resource = WorthQueryPartitionedComputationDenial::Resource;
@@ -118,7 +175,7 @@ where
             )
         } else {
             let (plan, charge) = reader.measured(ComputationRead::Membership, |reader| {
-                owner.partitions(&mut WorthQueryComputationReader::lend(reader), input)
+                owner.partitions(&mut WorthQueryComputationReader::lend(reader, source_query), input)
             });
             let PlanShape::Keyed(entries) = plan?.shape;
             let items = planned_items(entries)?;
@@ -165,7 +222,7 @@ where
                 continue;
             }
             let (key, charge) = reader.measured(read, |reader| {
-                owner.partition_key(&mut WorthQueryComputationReader::lend(reader), input, value)
+                owner.partition_key(&mut WorthQueryComputationReader::lend(reader, source_query), input, value)
             });
             let key = key?;
             let before = preparation_work;
@@ -278,7 +335,7 @@ where
                 .map_err(WorthQueryPartitionedComputationDenial::from_kernel_stop)?;
             let (gathered, charge) = reader.measured(read, |reader| {
                 owner.gather(
-                    &mut WorthQueryComputationReader::lend(reader),
+                    &mut WorthQueryComputationReader::lend(reader, source_query),
                     input,
                     WorthQueryComputationPartitionMembers::new(identity, &key, &members, &items),
                 )

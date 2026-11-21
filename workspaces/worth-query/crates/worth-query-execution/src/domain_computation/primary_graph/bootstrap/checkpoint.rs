@@ -15,17 +15,16 @@ use super::super::{
 use super::super::{WorthQueryApplicationInvariantFactories, WorthQueryPrimaryGraphBootstrap};
 use super::WorthQueryPrimaryGraphPublication;
 
-impl DecodedApplicationCheckpoint {
-    pub(super) fn recover_publication(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        graph: &super::prepared_native::PreparedNativeGraph,
-    ) -> Result<WorthQueryPrimaryGraphPublication, WorthQueryPrimaryGraphInstallationDenial> {
-        let envelope = graph.with_runtime(execution, |runtime| {
-            runtime
-                .replay()
-                .canonical_commit_envelope(execution, self.bootstrap_commit_id)
-        });
+pub(super) fn recover_publication(
+    checkpoint: &DecodedApplicationCheckpoint,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    graph: &super::prepared_native::PreparedNativeGraph,
+) -> Result<WorthQueryPrimaryGraphPublication, WorthQueryPrimaryGraphInstallationDenial> {
+    let envelope = graph.with_runtime(execution, |runtime| {
+        runtime
+            .replay()
+            .canonical_commit_envelope(execution, checkpoint.bootstrap_commit_id)
+    });
         let envelope = envelope
             .map_err(super::request_read_denial::read)?
             .ok_or_else(|| checkpoint_denial("checkpoint omitted its claimed bootstrap commit"))?;
@@ -62,9 +61,8 @@ impl DecodedApplicationCheckpoint {
             application_equality_index_count: equality_index_ids.len(),
             policy_entity_count,
             policy_relation_count,
-            bootstrap_commit_id: self.bootstrap_commit_id,
+            bootstrap_commit_id: checkpoint.bootstrap_commit_id,
         })
-    }
 }
 
 fn publication_row_counts(

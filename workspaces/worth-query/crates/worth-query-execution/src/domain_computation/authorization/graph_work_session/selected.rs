@@ -1,5 +1,6 @@
 //! Exact selected mutation graph work on one carried request admission.
 
+use crate::domain_computation::primary_graph::SnapshotLeaseRuntimeExt;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_admission::integration::admit_prepared_application_operation_graph_work;

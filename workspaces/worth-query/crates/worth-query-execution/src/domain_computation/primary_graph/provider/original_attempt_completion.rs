@@ -9,15 +9,7 @@ use std::sync::{Arc, Mutex, OnceLock};
 
 // Erase the owned Native graph here so consumers never repeat its auto-trait
 // traversal through provider-attempt state. The concrete owner remains sealed.
-pub(in crate::domain_computation::primary_graph) trait OriginalCompletionSlot:
-    Send + Sync
-{
-    fn complete(&self, completed: Completed);
-    fn take(&self) -> Option<Completed>;
-    fn has_completion(&self, session: &WorthQueryProviderSessionTerminalBinding) -> bool;
-    fn retain_cleanup(&self, original: Pending);
-    fn original_cleanup(&self) -> &Pending;
-}
+pub(in crate::domain_computation::primary_graph) use worth_query_execution_lineage::facade::primary_graph::provider::original_attempt_completion::OriginalCompletionSlot;
 struct PendingOriginalSlot {
     completion: Mutex<Option<Completed>>,
     cleanup: OnceLock<Pending>,

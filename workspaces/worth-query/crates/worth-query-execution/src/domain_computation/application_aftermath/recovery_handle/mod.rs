@@ -1,7 +1,7 @@
 //! Recovery handle module (Gate 8.3).
 
 mod binding;
-mod denial;
+pub use worth_query_execution_lineage::facade::domain_computation::application_aftermath::recovery_handle::denial;
 mod handle;
 pub(crate) mod identity;
 mod mint;

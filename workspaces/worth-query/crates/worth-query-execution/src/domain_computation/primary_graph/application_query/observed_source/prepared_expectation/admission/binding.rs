@@ -1,4 +1,5 @@
 //! Source binding consumes the validation owner's unique admission loan.
+use crate::domain_computation::primary_graph::SourceFactExpansionControlExt;
 use super::*;
 impl<Schema: worth_query_installation::facade::ApplicationSchema, Operation, Input, Scope>
     CheckedMutableSourceAdmission<'_, Schema, Operation, Input, Scope>

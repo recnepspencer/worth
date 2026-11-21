@@ -3,7 +3,7 @@
 mod availability;
 mod before_world;
 mod durable;
-mod durable_custody;
+pub(in crate::domain_computation::primary_graph) mod durable_custody;
 mod memory;
 mod native_work;
 mod preparation_reservation_control;
@@ -120,7 +120,7 @@ pub(super) fn commit(
                 worth_query_execution_runtime::facade::ports::OpaqueProductPublicationOutcome::new(
                     crate::domain_computation::WorthQueryProductPreparationRefused::new(
                         crate::domain_computation::WorthQueryProductPreparationRefusal::CurrentReadDependency(
-                            worth_runtime_world::facade::CurrentProductReadDependencyDenial::DurabilityUnsupported), query),
+                            worth_runtime_world::facade::CurrentProductReadDependencyDenial::DurabilityUnsupported), Box::new(query)),
                     false))),
         },
         Err(cause) => Err(durable::refused_before_open(query, cause)),

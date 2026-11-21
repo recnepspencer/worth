@@ -91,6 +91,7 @@ mod pending;
 mod pending_factory;
 pub(crate) mod scope_ownership;
 pub(crate) mod semantic_edition;
+pub(in crate::domain_computation::primary_graph) mod semantic_edition_ext;
 
 use operation_binding_uniqueness::duplicate_operation_binding;
 pub(in crate::domain_computation::primary_graph) use pending::PendingProducerRegistry;

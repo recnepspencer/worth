@@ -1,4 +1,6 @@
-mod scope_freshness;
+pub(crate) use worth_query_execution_lineage::facade::primary_graph::application_query::{
+    denial, retained_read, scope_freshness, source_observation_stop,
+};
 pub use scope_freshness::{WorthQueryScopeFreshnessCheck, WorthQueryScopeFreshnessDiagnostic};
 mod access_context;
 mod access_receipt;
@@ -24,7 +26,6 @@ pub use batch::{
 mod continuation;
 mod control_validation;
 pub(crate) mod controls;
-mod denial;
 mod document_history;
 pub(in crate::domain_computation::primary_graph) use document_history::CompletedMetadataRead;
 pub(in crate::domain_computation::primary_graph) use document_history::HistoryOutputControlPlan;
@@ -102,7 +103,6 @@ pub use read_execution::{
 };
 mod readiness;
 pub(crate) mod resource_lifecycle;
-mod retained_read;
 pub(crate) mod runtime_support;
 pub use access_context::WorthQueryApplicationQueryAccessContext;
 pub use access_receipt::{
@@ -203,3 +203,5 @@ pub(in crate::domain_computation::primary_graph::application_query) use read_exe
 pub(crate) mod inline_type_budget;
 
 pub(in crate::domain_computation::primary_graph) use observed_source::retained_parameters::WorthQueryRetainedObservedParameters;
+
+mod retained_read_runtime;

@@ -1,5 +1,6 @@
 //! Release a cold original only after the actual World disposition commits.
 use super::*;
+use crate::domain_computation::primary_graph::provider::unpublished_idempotency::UnpublishedIdempotencyDispositionExt as _;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_runtime_world::facade::WorldRecoveredReleaseOutcome as Outcome;

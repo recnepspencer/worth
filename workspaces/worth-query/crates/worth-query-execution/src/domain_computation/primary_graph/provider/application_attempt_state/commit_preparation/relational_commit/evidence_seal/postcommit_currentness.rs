@@ -11,89 +11,16 @@ use crate::domain_computation::primary_graph::fact_verification_observation;
 
 mod applied_support;
 pub(in crate::domain_computation::primary_graph::provider) mod coupled_deletions;
-mod diagnostic;
+pub use worth_query_execution_lineage::facade::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::{
+    diagnostic, failure, FactlessCurrentness, FailedRebase, OwnEffect, OwnEffectOnReads,
+    PreparedRebaseDenial, RebaseVerificationFailure, RebaseVerificationReason, RebasedSourceFacts,
+};
+
 mod executed_adoption;
-pub use diagnostic::RebaseVerificationReason;
 pub(crate) mod adjacency;
 mod predecessor_output;
 mod resolution;
 pub(crate) mod retirement;
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub enum RebasedSourceFacts {
-    Exact(FactPayload),
-    /// Exact selected native rebase, paired with the unchanged owner capacity rule.
-    Cached {
-        posting_continuation: Option<crate::domain_computation::primary_graph::output_lineage::invalidation::PostingContinuation>,
-        facts: FactPayload,
-        payload_bytes: u64,
-        ordinals: Arc<worth_execution::ExecutionArray<Option<usize>>>,
-        superseded_count: usize,
-    },
-    /// Every fact is exact, and the committed effect moved the facts at these
-    /// ordinals past what was read: a source query's read past its revision,
-    /// or a field an owner call of the producer's partitioned computation
-    /// read before the effect replaced it.
-    SupersededByOwnEffect {
-        facts: FactPayload,
-        ordinals: Arc<[usize]>,
-    },
-    /// The rebase failed. It fails as a whole, so the commit retains none of
-    /// its facts: one left as its handler read it has no native revision,
-    /// and no verifier compares it. One thing is carried out instead: what
-    /// the committed effect did to the facts its source query read.
-    VerificationRequired {
-        reason: RebaseVerificationFailure,
-        own_effect: OwnEffectOnReads,
-    },
-}
-
-/// What a commit's own effect did to the facts its source query read, where
-/// its rebase failed. Only the rebase's walk builds one.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct OwnEffectOnReads(OwnEffect);
-
-/// The walk's answer, ordered as answers join: one moved read decides it, and
-/// one the walk asked about and could not compare leaves it undecidable.
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub enum OwnEffect {
-    /// No read the walk asked about moved. It asks about a producer
-    /// commit's source reads, and the facts an owner call read that the
-    /// effect replaced are moved before it asks: every other fact is
-    /// observed again at the committed snapshot, and a non-producer's source
-    /// reads are not its question.
-    Unmoved,
-    /// The comparison of a read the walk asked about could not answer.
-    Undecidable,
-    /// A read moved, or the walk's meter stopped before it could ask.
-    Moved,
-}
-
-/// What a commit that kept no fact answers at an observation.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum FactlessCurrentness {
-    /// Its own publication is selected and its effect moved none of its reads.
-    Current,
-    /// A later publication is selected, its effect moved one of its reads, or
-    /// its rebase's meter stopped before asking about one.
-    Superseded,
-    /// Its own publication is selected, and the comparison of a read its
-    /// rebase asked about could not answer. No observation answers it, and a
-    /// recompute's own commit would meet the same comparison, so it is not
-    /// superseded.
-    Undecidable,
-}
-
-/// A rebase that failed: why, and what the commit's own effect did to its
-/// reads. No caller holds the one without the other.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct FailedRebase {
-    pub(in crate::domain_computation::primary_graph) reason: RebaseVerificationFailure,
-    pub(in crate::domain_computation::primary_graph) own_effect: OwnEffectOnReads,
-}
-
-pub(crate) mod failure;
-pub(in crate::domain_computation::primary_graph) use failure::RebaseVerificationFailure;
 
 mod full_preparation;
 use full_preparation::FullSourceFactRebase;
@@ -107,17 +34,16 @@ pub struct PreparedSourceFactRebase {
     predecessor: Option<worth_relational::facade::mvcc::RelationalRequiredOutputPublication>,
 }
 
-impl OwnEffectOnReads {
-    /// The walk before it has asked about any read: none has moved.
-    const NONE_ASKED: Self = Self(OwnEffect::Unmoved);
+pub(super) trait OwnEffectOnReadsUnansweredExt {
+    fn with_unanswered(
+        self,
+        unanswered: &[WorthQueryApplicationObservedFact],
+        producer_output: bool,
+        effect: OwnEffect,
+    ) -> Self;
+}
 
-    fn join(self, effect: OwnEffect) -> Self {
-        Self(self.0.max(effect))
-    }
-
-    /// The answer once the walk leaves `unanswered` without an answer: each
-    /// read it would have asked about joins as `effect`, and one it never
-    /// asks about stays out of the answer.
+impl OwnEffectOnReadsUnansweredExt for OwnEffectOnReads {
     fn with_unanswered(
         self,
         unanswered: &[WorthQueryApplicationObservedFact],
@@ -134,73 +60,6 @@ impl OwnEffectOnReads {
         } else {
             self
         }
-    }
-
-    /// The commit's answer where `selected` says whether its own publication
-    /// is the one selected.
-    pub const fn at_own_publication(self, selected: bool) -> FactlessCurrentness {
-        match (selected, self.0) {
-            (true, OwnEffect::Unmoved) => FactlessCurrentness::Current,
-            (true, OwnEffect::Undecidable) => FactlessCurrentness::Undecidable,
-            (true, OwnEffect::Moved) | (false, _) => FactlessCurrentness::Superseded,
-        }
-    }
-}
-
-impl RebasedSourceFacts {
-    pub(super) fn posting_continuation(
-        &self,
-    ) -> Option<
-        crate::domain_computation::primary_graph::output_lineage::invalidation::PostingContinuation,
-    > {
-        match self {
-            Self::Cached {
-                posting_continuation,
-                ..
-            } => posting_continuation.clone(),
-            _ => None,
-        }
-    }
-    pub(super) fn payload_bytes(&self) -> Option<u64> {
-        match self {
-            Self::Cached { payload_bytes, .. } => Some(*payload_bytes),
-            _ => None,
-        }
-    }
-    /// The facts the commit retains, or the rebase that failed and left it
-    /// none.
-    pub(super) fn retained(&self) -> Result<FactPayload, FailedRebase> {
-        match self {
-            Self::Exact(facts)
-            | Self::Cached { facts, .. }
-            | Self::SupersededByOwnEffect { facts, .. } => Ok(facts.clone()),
-            Self::VerificationRequired { reason, own_effect } => Err(FailedRebase {
-                reason: reason.clone(),
-                own_effect: *own_effect,
-            }),
-        }
-    }
-
-    pub(super) fn retain_exact(&self) -> Option<FactPayload> {
-        self.retained().ok()
-    }
-
-    pub(super) fn superseded_by_own_effect(&self) -> impl Iterator<Item = usize> + '_ {
-        let (full, selected): (Option<&[usize]>, Option<&[Option<usize>]>) = match self {
-            Self::Cached {
-                ordinals,
-                superseded_count,
-                ..
-            } => (None, (*superseded_count > 0).then(|| ordinals.elements())),
-            Self::SupersededByOwnEffect { ordinals, .. } => (Some(ordinals.as_ref()), None),
-            Self::Exact(_) | Self::VerificationRequired { .. } => (None, None),
-        };
-        full.into_iter().flatten().copied().chain(
-            selected
-                .into_iter()
-                .flatten()
-                .filter_map(|ordinal| *ordinal),
-        )
     }
 }
 
@@ -282,25 +141,3 @@ pub fn rebase(
 }
 mod rebase_walk;
 
-/// Exact physical source refusal stays distinct from legacy temporary Vec refusal.
-#[derive(Debug)]
-pub enum PreparedRebaseDenial {
-    Admission(CompanionPreflightStop),
-    Retention(crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial),
-    Temporary(std::collections::TryReserveError),
-}
-impl From<crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial> for PreparedRebaseDenial {
-    fn from(denial: crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial) -> Self { Self::Retention(denial) }
-}
-impl From<worth_execution::ExecutionAllocationDenial> for PreparedRebaseDenial {
-    fn from(denial: worth_execution::ExecutionAllocationDenial) -> Self {
-        Self::Retention(denial.into())
-    }
-}
-impl From<std::collections::TryReserveError> for PreparedRebaseDenial {
-    fn from(denial: std::collections::TryReserveError) -> Self {
-        Self::Temporary(denial)
-    }
-}
-
-mod court_doors_for_test;

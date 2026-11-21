@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::InstalledProducerEditionExt;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 pub(in crate::domain_computation::primary_graph::application_contribution) mod contact_observation;
 mod current_control;

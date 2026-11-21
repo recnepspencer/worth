@@ -1,4 +1,5 @@
 //! Current control custody is lent only within the freshly admitted advancement.
+use crate::domain_computation::primary_graph::ReadObservationRuntimeExt;
 use super::super::authority_lifetime::{HistoryAuthorityLifetime, OwnedHistoryAuthorityLifetime};
 use super::*;
 use crate::basis::{WorthQueryProductBranchReadIdentity, WorthQueryProductObservationLease};

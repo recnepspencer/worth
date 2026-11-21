@@ -14,7 +14,7 @@ pub(super) mod canonical;
 mod dependencies;
 pub(super) mod identity;
 mod publication;
-mod published_subject;
+use worth_query_execution_lineage::facade::domain_computation::primary_graph::application_attempt::signed_creation::published_subject;
 mod sealing;
 mod subject_binding;
 pub(super) use publication::publish;

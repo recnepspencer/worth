@@ -1,4 +1,5 @@
 //! Correlate declared relation material with the actor's actual applied lifecycle.
+use crate::domain_computation::primary_graph::RetainedPreImageExt;
 use super::*;
 mod observation;
 use crate::domain_computation::application_aftermath::{

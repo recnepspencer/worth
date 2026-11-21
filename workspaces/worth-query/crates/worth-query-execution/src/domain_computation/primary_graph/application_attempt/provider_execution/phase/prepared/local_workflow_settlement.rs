@@ -1,6 +1,7 @@
 //! Join a locally performed mutation and its Query-owned settlement before
 //! either effect is lowered into the Relational candidate.
 
+use crate::domain_computation::primary_graph::PrimaryGraphHandleWorkflowExt;
 use super::WorthQueryProviderAttemptPreparation;
 use crate::domain_computation::primary_graph::application_attempt::{
     workflow_transition_program::{receipt_identity_from_outcome, transition_entity_in_receipt},
@@ -68,9 +69,13 @@ impl WorthQueryProviderAttemptPreparation {
             admission.operation_authority_identity_bytes(),
         );
         self.workflow_origin = Some(
-            crate::domain_computation::primary_graph::workflow::operation_output::WorkflowOperationOrigin::from_settlement(
-                &binding.settlement_basis, &binding.workflow_layout, binding.authority_fact_range.clone(), receipt_identity,
-            ),
+            crate::domain_computation::primary_graph::workflow::operation_output::WorkflowOperationOrigin {
+                instance: binding.settlement_basis.instance(),
+                transition: binding.settlement_basis.identity().to_owned(),
+                operation_receipt_identity: receipt_identity,
+                layout: binding.workflow_layout.clone(),
+                authority_fact_range: binding.authority_fact_range.clone(),
+            },
         );
         let mut settlement_effects = Vec::new();
         if external {

@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::WorthQueryAdvancementDenialCommitExt as _;
 use super::*;
 use crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerInvocation;
 impl<Schema: ApplicationSchema, Operation, Input, Scope>

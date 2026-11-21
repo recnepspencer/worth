@@ -134,8 +134,11 @@ impl PreparedPrimaryGraphInstallation {
             layout,
             native,
             product_world_resources.invalidation_resources(),
-            managed_views,
-        );
+            managed_views as Arc<dyn worth_query_execution_lineage::facade::ports::ManagedDerivedViewPort>,
+        )
+        .with_workflow_retention(Arc::new(
+            crate::domain_computation::primary_graph::WorkflowRetentionStore::new(),
+        ));
         graph.application_publication = application_publication;
         Ok(self
             .meaning

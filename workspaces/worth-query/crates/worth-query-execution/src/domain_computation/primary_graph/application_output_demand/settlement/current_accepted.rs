@@ -1,7 +1,25 @@
 use super::*;
+use crate::domain_computation::primary_graph::{
+    OriginalSettledProducerObservationExt, ReadObservationRuntimeExt,
+};
 
-impl WorthQueryOutputDemandSettlement {
-    pub(in crate::domain_computation::primary_graph) fn from_current_accepted<Schema>(
+pub(in crate::domain_computation::primary_graph) trait OutputDemandSettlementCurrentExt:
+    Sized
+{
+    fn from_current_accepted<Schema>(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        bound: BoundCurrentAcceptedOutput<'_>,
+        producer_identity: &str,
+        output_family_identity: &str,
+        producer_contacts_in_this_demand: usize,
+    ) -> Result<Arc<Self>, WorthQueryOutputDemandDenial>
+    where
+        Schema: worth_query_installation::facade::ApplicationSchema;
+}
+
+impl OutputDemandSettlementCurrentExt for WorthQueryOutputDemandSettlement {
+    fn from_current_accepted<Schema>(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         bound: BoundCurrentAcceptedOutput<'_>,

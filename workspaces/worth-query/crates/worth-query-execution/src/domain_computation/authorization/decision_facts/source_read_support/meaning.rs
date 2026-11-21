@@ -269,13 +269,4 @@ impl SourceReadSupport {
     }
 }
 
-pub(in crate::domain_computation) enum SourceAuthorizationLocus<'a> {
-    Entity(EntityId),
-    Relation(worth_relational::facade::identity::RelationId),
-    Adjacency(
-        EntityId,
-        worth_relational::facade::identity::KindId,
-        Direction,
-    ),
-    Field(EntityId, &'a worth_foundational::facade::AspectFieldLocator),
-}
+pub(in crate::domain_computation) use worth_query_execution_lineage::facade::ports::SourceAuthorizationLocus;

@@ -11,7 +11,7 @@ use worth_query_installation::facade::ApplicationSchema;
 pub(crate) mod demand;
 pub(crate) mod synchronous_outputs;
 pub(in crate::domain_computation::primary_graph) use demand::VerifiedAppliedParent;
-mod denial_value;
+use worth_query_execution_lineage::facade::domain_computation::primary_graph::application_contribution::producer::denial_value;
 pub(in crate::domain_computation::primary_graph) use demand::MatchedRequiredPredecessors;
 pub(in crate::domain_computation::primary_graph) use demand::{CurrentBasis, CurrentProof};
 pub use demand::{
@@ -34,7 +34,7 @@ pub(crate) mod invocation;
 pub(in crate::domain_computation::primary_graph) use execution::prepared_plan::OwnerPlan;
 use execution::{InstalledProducerExecutor, TypedInstalledProducer};
 pub(in crate::domain_computation::primary_graph) use invocation::ProducerInvocationAuthority;
-pub(crate) mod output_equivalence_contract;
+pub(crate) use worth_query_execution_lineage::facade::domain_computation::primary_graph::application_contribution::producer::output_equivalence_contract;
 pub(crate) mod output_evaluation;
 pub use output_equivalence_contract::WorthQueryProducerOutputEquivalence;
 pub use output_evaluation::ProducerOutputEvaluation;
@@ -47,27 +47,22 @@ pub use observation_reads::{
     WorthQueryProducerObservationReadContract, WorthQueryProducerObservationReadDenial,
     WorthQueryProducerObservationReadOperation,
 };
-mod input_reuse_contract;
+use worth_query_execution_lineage::facade::domain_computation::primary_graph::application_contribution::producer::input_reuse_contract;
 pub use input_reuse_contract::{
     WorthQueryDecisionContextDependencies, WorthQueryProducerInputReuseContract,
 };
 
-#[derive(Clone, Eq, PartialEq)]
-pub enum WorthQueryProducerCommitAuthority {
-    Ordinary,
-    ProgramOutput,
-    SelectedProgram {
-        identity: worth_query_declaration::facade::application_program::ApplicationProgramIdentity,
-        revision: worth_query_declaration::facade::application_program::ApplicationProgramRevision,
-    },
-}
+pub use worth_query_execution_lineage::facade::primary_graph::application_contribution::{
+    WorthQueryProducerCommitAuthority, WorthQueryProducerInvariantRequirement,
+};
 mod readiness;
+mod source_qualification_runtime;
 pub(in crate::domain_computation::primary_graph) use readiness::{
     evaluate_output_readiness, install_output_readiness_routes, PendingOutputReadiness,
     TypedPendingOutputReadiness, WorthQueryInstalledOutputReadinessRoutes,
 };
 pub(crate) mod scheduling;
-mod source_qualification;
+use worth_query_execution_lineage::facade::domain_computation::primary_graph::application_contribution::producer::source_qualification;
 pub(in crate::domain_computation::primary_graph) use scheduling::{
     schedule_output_producer, schedule_output_producer_on_selected,
     WorthQueryInstalledOutputProducerRoutes,
@@ -102,46 +97,6 @@ where
     fn assessment_posture(
         source: &<<Self::Source as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value,
     ) -> WorthQueryWorkflowAssessmentPosture;
-}
-
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub struct WorthQueryProducerInvariantRequirement {
-    identifier: &'static str,
-    major: u16,
-    minor: u16,
-    execution_point: ApplicationInvariantExecutionPoint,
-}
-
-impl WorthQueryProducerInvariantRequirement {
-    pub const fn new(
-        identifier: &'static str,
-        major: u16,
-        minor: u16,
-        execution_point: ApplicationInvariantExecutionPoint,
-    ) -> Self {
-        Self {
-            identifier,
-            major,
-            minor,
-            execution_point,
-        }
-    }
-
-    pub const fn identifier(self) -> &'static str {
-        self.identifier
-    }
-
-    pub const fn major(self) -> u16 {
-        self.major
-    }
-
-    pub const fn minor(self) -> u16 {
-        self.minor
-    }
-
-    pub const fn execution_point(self) -> ApplicationInvariantExecutionPoint {
-        self.execution_point
-    }
 }
 
 pub trait WorthQueryApplicationProducerProvider<Schema, Binding>: Send + Sync + 'static

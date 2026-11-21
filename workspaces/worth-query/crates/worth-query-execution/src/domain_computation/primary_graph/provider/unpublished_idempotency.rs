@@ -12,7 +12,7 @@ mod handle_slots;
 mod managed_recovery;
 pub(super) mod recovered;
 pub(in crate::domain_computation::primary_graph::provider) use before_world::BeforeWorldQueryReservation;
-mod preparation;
+pub(super) mod preparation;
 mod release;
 pub(crate) mod reservation;
 pub(in crate::domain_computation::primary_graph::provider) use managed_recovery::{
@@ -60,9 +60,64 @@ pub(super) struct WorthQueryUnpublishedIdempotencyStore {
     )>,
 }
 
-#[derive(Clone)]
-pub(in crate::domain_computation) struct WorthQueryUnpublishedIdempotencyDisposition {
-    store: Arc<Mutex<WorthQueryUnpublishedIdempotencyStore>>,
+pub(in crate::domain_computation) use worth_query_execution_lineage::facade::primary_graph::provider::unpublished_idempotency::WorthQueryUnpublishedIdempotencyDisposition;
+
+use super::unpublished_idempotency_port::UnpublishedIdempotencyStorePort;
+
+pub(in crate::domain_computation) trait UnpublishedIdempotencyDispositionExt {
+    fn reserve_release(
+        &self,
+        handle: &ProductUnpublishedRecoveryHandle,
+    ) -> Result<Option<WorthQueryUnpublishedReleaseReservation>, ()>;
+
+    fn preparation_stage(
+        &self,
+        handle: &ProductUnpublishedRecoveryHandle,
+    ) -> Option<crate::domain_computation::WorthQueryProductPreparationStage>;
+
+    fn finish_recovered_release(
+        &self,
+        handle: &ProductUnpublishedRecoveryHandle,
+        original: worth_runtime_world::facade::WorldReleasedOriginal,
+    );
+}
+
+fn store_from_disposition(
+    disposition: &WorthQueryUnpublishedIdempotencyDisposition,
+) -> &Arc<Mutex<WorthQueryUnpublishedIdempotencyStore>> {
+    &disposition
+        .port()
+        .as_any()
+        .downcast_ref::<UnpublishedIdempotencyStorePort>()
+        .expect("WorthQueryUnpublishedIdempotencyDisposition is constructed by primary provider")
+        .0
+}
+
+impl UnpublishedIdempotencyDispositionExt for WorthQueryUnpublishedIdempotencyDisposition {
+    fn reserve_release(
+        &self,
+        handle: &ProductUnpublishedRecoveryHandle,
+    ) -> Result<Option<WorthQueryUnpublishedReleaseReservation>, ()> {
+        WorthQueryUnpublishedReleaseReservation::begin(
+            Arc::clone(store_from_disposition(self)),
+            handle,
+        )
+    }
+
+    fn preparation_stage(
+        &self,
+        handle: &ProductUnpublishedRecoveryHandle,
+    ) -> Option<crate::domain_computation::WorthQueryProductPreparationStage> {
+        preparation::preparation_stage(store_from_disposition(self), handle)
+    }
+
+    fn finish_recovered_release(
+        &self,
+        handle: &ProductUnpublishedRecoveryHandle,
+        original: worth_runtime_world::facade::WorldReleasedOriginal,
+    ) {
+        recovered::finish_recovered_release(store_from_disposition(self), handle, original);
+    }
 }
 
 impl WorthQueryUnpublishedIdempotencyStore {
@@ -248,19 +303,6 @@ impl WorthQueryUnpublishedIdempotencyStore {
     }
 }
 
-impl WorthQueryUnpublishedIdempotencyDisposition {
-    pub(super) fn new(store: Arc<Mutex<WorthQueryUnpublishedIdempotencyStore>>) -> Self {
-        Self { store }
-    }
-
-    pub(in crate::domain_computation) fn reserve_release(
-        &self,
-        handle: &ProductUnpublishedRecoveryHandle,
-    ) -> Result<Option<WorthQueryUnpublishedReleaseReservation>, ()> {
-        WorthQueryUnpublishedReleaseReservation::begin(Arc::clone(&self.store), handle)
-    }
-}
-
 impl super::WorthQueryPrimaryGraphProvider {
     pub(in crate::domain_computation::primary_graph::provider) fn begin_managed_unpublished_recovery(
         &self,
@@ -299,7 +341,9 @@ impl super::WorthQueryPrimaryGraphProvider {
     pub(in crate::domain_computation) fn unpublished_idempotency_disposition(
         &self,
     ) -> WorthQueryUnpublishedIdempotencyDisposition {
-        WorthQueryUnpublishedIdempotencyDisposition::new(Arc::clone(&self.unpublished_idempotency))
+        WorthQueryUnpublishedIdempotencyDisposition::from_port(Arc::new(
+            UnpublishedIdempotencyStorePort(Arc::clone(&self.unpublished_idempotency)),
+        ))
     }
 
     pub(super) fn resolve_unpublished_application_idempotency(

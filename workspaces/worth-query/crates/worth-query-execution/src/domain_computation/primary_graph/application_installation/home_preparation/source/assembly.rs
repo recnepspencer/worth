@@ -35,7 +35,10 @@ pub(in crate::domain_computation::primary_graph::application_installation::home_
         state.installed.binding_identity(),
         Arc::new(schema.layout),
         owner,
-    );
+    )
+    .with_workflow_retention(Arc::new(
+        crate::domain_computation::primary_graph::WorkflowRetentionStore::new(),
+    ));
     graph.application_publication = Some(Arc::new(
         super::super::super::super::root::application_publication::ApplicationPublication::installed(
             &schema.receipt,

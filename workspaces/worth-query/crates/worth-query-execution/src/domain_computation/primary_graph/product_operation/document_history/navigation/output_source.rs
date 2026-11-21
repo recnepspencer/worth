@@ -1,4 +1,5 @@
 //! The original root claim consumes the same disclosed source whose model is checked.
+use crate::domain_computation::primary_graph::ReadObservationRuntimeExt;
 use super::*;
 use crate::domain_computation::primary_graph::{
     application_installation::{

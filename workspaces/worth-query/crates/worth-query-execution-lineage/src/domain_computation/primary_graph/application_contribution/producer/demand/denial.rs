@@ -1,0 +1,394 @@
+pub mod settlement_provenance;
+pub use settlement_provenance::WorthQueryOutputSettlementProvenanceDenial;
+pub mod cleanup_custody;
+pub mod diagnostic_copy;
+pub mod discovery_connection;
+pub mod domain_failure;
+pub mod invariant_refusal;
+pub mod kind;
+pub mod output_comparison;
+pub mod producer_value;
+pub mod publication_stale;
+pub mod retirement_refusal;
+pub use kind::{WorthQueryOutputDemandDenialKind, WorthQueryOutputDemandRecoveryPosture};
+pub use publication_stale::ProducerPublicationStale;
+/// A refusal to select, admit, or advance an output demand, with the subject it
+/// names (usually the output family or producer).
+///
+/// Match on [`kind`](Self::kind) and check
+/// [`recovery_posture`](Self::recovery_posture) before retrying; the subject is
+/// for diagnostics.
+#[derive(Debug)]
+#[must_use = "a producer refusal can own native cleanup; retain or transfer it"]
+pub struct WorthQueryOutputDemandDenial {
+    pub kind: Box<WorthQueryOutputDemandDenialKind>,
+    evidence: Option<Box<DemandDenialEvidence>>,
+    cleanup: Option<cleanup_custody::DemandCleanupCustody>,
+    pub subject: std::borrow::Cow<'static, str>,
+    domain: Option<Box<producer_value::ProducerDomainDenial>>,
+    pub readmission_failure: Option<&'static str>,
+    pub recovery_posture:
+        WorthQueryOutputDemandRecoveryPosture,
+}
+
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
+struct DemandDenialEvidence {
+    recovered_publication: Option<crate::domain_computation::primary_graph::provider::WorthQueryRecoveredApplicationCommitReceipt>,
+    managed_source_query: Option<std::sync::Arc<crate::domain_computation::primary_graph::application_query::managed_index::WorthQueryManagedIndexDenial>>,
+    managed_index: Option<crate::domain_computation::primary_graph::application_query::managed_index::WorthQueryManagedIndexWorkDenial>,
+    output_comparison: Option<worth_runtime_bridge::facade::BridgeOutputComparisonDenial>,
+    custom_invariant: Option<crate::domain_computation::WorthQueryCustomInvariantDenial>,
+    producer_requirement: Option<
+        crate::domain_computation::primary_graph::WorthQueryGeneratedOutputInvariantAdmissionDenial,
+    >,
+    publication_stale: Option<ProducerPublicationStale>,
+    publication_companion_stop: Option<worth_relational::facade::mvcc::CompanionPreflightStop>,
+    producer_admission_stop: Option<worth_relational::facade::mvcc::CompanionPreflightStop>,
+    commit_denial_kind:
+        Option<crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialKind>,
+    commit_execution: Option<(
+        crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage,
+        Result<
+            crate::domain_computation::WorthQueryProviderSessionDenialKind,
+            crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+        >,
+    )>,
+    requested_output:
+        Option<crate::domain_computation::primary_graph::invariant_projection::RequestedOutputRead>,
+    capacity_stop: Option<
+        crate::domain_computation::primary_graph::invariant_projection::VerificationCapacityStop,
+    >,
+    retirement: Option<std::sync::Arc<worth_relational::facade::publication::PublicationError>>,
+}
+
+impl WorthQueryOutputDemandDenial {
+    /// The producer was already published. Its original settlement is durable
+    /// data; this observation cannot stand in for a live output-delivery proof.
+    pub fn recovered_publication(&self) -> Option<&crate::domain_computation::primary_graph::provider::WorthQueryRecoveredApplicationCommitReceipt>{
+        self.evidence.as_ref()?.recovered_publication.as_ref()
+    }
+    pub fn with_recovered_publication(
+        mut self,
+        receipt: crate::domain_computation::primary_graph::provider::WorthQueryRecoveredApplicationCommitReceipt,
+    ) -> Self {
+        self.evidence_mut().recovered_publication = Some(receipt);
+        self
+    }
+
+    pub fn with_managed_cleanup(
+        mut self,
+        cleanup: Box<
+            crate::domain_computation::primary_graph::WorthQueryApplicationCleanupRequired,
+        >,
+    ) -> Self {
+        self.cleanup = Some(cleanup_custody::DemandCleanupCustody::new(cleanup));
+        self
+    }
+    /// Transfers the unique native cleanup and business evidence. Diagnostic clones own none.
+    pub fn take_managed_cleanup(
+        &mut self,
+    ) -> Option<Box<crate::domain_computation::primary_graph::WorthQueryApplicationCleanupRequired>>
+    {
+        match self.cleanup.take()?.into_required() {
+            Ok(required) => Some(required),
+            Err(custody) => {
+                self.cleanup = Some(custody);
+                None
+            }
+        }
+    }
+    pub fn managed_cleanup_failure(
+        &mut self,
+    ) -> Option<&crate::domain_computation::WorthQueryMutationCleanupFailure> {
+        self.cleanup.as_mut().and_then(|custody| custody.failure())
+    }
+    pub fn release_managed_cleanup(
+        &mut self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    ) -> Result<
+        Option<
+            crate::domain_computation::primary_graph::WorthQueryApplicationManagedCleanupReceipt,
+        >,
+        Self,
+    > {
+        match self.cleanup.as_mut().map(|custody| custody.release(phase)) {
+            Some(Err(denial)) => Err(denial),
+            Some(Ok(receipt)) => Ok(receipt),
+            None => Ok(None),
+        }
+    }
+
+    pub fn close_read_cleanup_with(
+        &mut self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        close_recovery: &mut dyn FnMut(
+            crate::domain_computation::WorthQueryProductUnpublishedRecovery,
+        ) -> Result<
+            crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanupReceipt,
+            crate::domain_computation::WorthQueryProductUnpublishedRecoveryReleaseFailure,
+        >,
+    ) -> Result<(), super::WorthQueryOutputReadCloseDenial> {
+        if let Some(cleanup) = self.cleanup.as_mut() {
+            cleanup.close_read(phase, close_recovery)?;
+        }
+        Ok(())
+    }
+
+    pub fn with_uncommitted(
+        mut self,
+        outcome: crate::domain_computation::primary_graph::WorthQueryApplicationUncommitted,
+    ) -> Self {
+        self.cleanup = Some(cleanup_custody::DemandCleanupCustody::from_outcome(outcome));
+        self
+    }
+    pub fn has_read_cleanup(&self) -> bool {
+        self.cleanup.is_some()
+    }
+    pub fn with_read_cleanup(
+        mut self,
+        cleanup: super::WorthQueryOutputReadCleanup,
+    ) -> Self {
+        self.cleanup = Some(cleanup.custody);
+        self
+    }
+    /// Transfers actual native producer outcome/cleanup custody; diagnostic clones own none.
+    pub fn take_read_cleanup(&mut self) -> Option<super::WorthQueryOutputReadCleanup> {
+        self.cleanup
+            .take()
+            .map(super::WorthQueryOutputReadCleanup::from_custody)
+    }
+
+    fn evidence_mut(&mut self) -> &mut DemandDenialEvidence {
+        self.evidence.get_or_insert_with(Default::default)
+    }
+
+    pub fn with_requested_output(
+        mut self,
+        requested: crate::domain_computation::primary_graph::invariant_projection::RequestedOutputRead,
+    ) -> Self {
+        self.evidence_mut().requested_output = Some(requested);
+        self
+    }
+
+    pub fn take_requested_output(
+        &mut self,
+    ) -> Option<crate::domain_computation::primary_graph::invariant_projection::RequestedOutputRead>
+    {
+        self.evidence
+            .as_mut()
+            .and_then(|evidence| evidence.requested_output.take())
+    }
+    /// The bounded resource that refused verification or its meter, with
+    /// that owner's typed amounts. The denial kind and posture are unchanged.
+    pub fn with_capacity_stop(
+        mut self,
+        stop: Option<
+            crate::domain_computation::primary_graph::invariant_projection::VerificationCapacityStop,
+        >,
+    ) -> Self {
+        if let Some(stop) = stop {
+            self.evidence_mut().capacity_stop = Some(stop);
+        }
+        self
+    }
+
+    pub fn kind(&self) -> WorthQueryOutputDemandDenialKind {
+        self.kind.as_ref().clone()
+    }
+
+    /// Original capacity evidence from output verification or producer
+    /// preparation/readmission. It may overlap `producer_admission_stop`;
+    /// presence alone does not prove a precommit check ran. The original meter
+    /// quote, scratch-size overflow or allocator refusal remains distinct.
+    /// Diagnostic data grants no admission, currentness, retry or cleanup.
+    pub fn output_verification_capacity_stop(
+        &self,
+    ) -> Option<crate::domain_computation::primary_graph::VerificationCapacityStop> {
+        self.evidence
+            .as_ref()
+            .and_then(|evidence| evidence.capacity_stop)
+    }
+
+    /// The original publication-companion resource stop from a producer commit.
+    /// Its typed amounts are unchanged; an overflow carries no invented quote.
+    /// Other denial paths return `None`. This is diagnostic data, not cleanup or
+    /// permission to retry, and it does not change the denial kind or posture.
+    pub const fn publication_companion_stop(
+        &self,
+    ) -> Option<worth_relational::facade::mvcc::CompanionPreflightStop> {
+        match &self.evidence {
+            Some(evidence) => evidence.publication_companion_stop,
+            None => None,
+        }
+    }
+
+    pub fn with_publication_companion_stop(
+        mut self,
+        stop: worth_relational::facade::mvcc::CompanionPreflightStop,
+    ) -> Self {
+        self.evidence_mut().publication_companion_stop = Some(stop);
+        self
+    }
+
+    /// The original native stop during producer preparation or readmission.
+    /// Unlike `publication_companion_stop`, this can describe topology, source,
+    /// position or registration rather than resource exhaustion. It grants no
+    /// retry or cleanup authority. `None` does not identify another cause.
+    pub const fn producer_admission_stop(
+        &self,
+    ) -> Option<worth_relational::facade::mvcc::CompanionPreflightStop> {
+        match &self.evidence {
+            Some(evidence) => evidence.producer_admission_stop,
+            None => None,
+        }
+    }
+
+    pub fn with_producer_admission_stop(
+        mut self,
+        stop: Option<worth_relational::facade::mvcc::CompanionPreflightStop>,
+    ) -> Self {
+        if let Some(stop) = stop {
+            self.evidence_mut().producer_admission_stop = Some(stop);
+        }
+        self
+    }
+
+    /// The original pre-effect commit refusal, when this demand ran a producer.
+    pub const fn commit_denial_kind(
+        &self,
+    ) -> Option<crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialKind>
+    {
+        match &self.evidence {
+            Some(evidence) => evidence.commit_denial_kind,
+            None => None,
+        }
+    }
+
+    pub fn with_commit_denial_kind(
+        mut self,
+        kind: crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialKind,
+    ) -> Self {
+        self.evidence_mut().commit_denial_kind = Some(kind);
+        self
+    }
+
+    /// The original typed execution cause and its publication-refusal stage.
+    pub fn commit_execution_denial(
+        &self,
+    ) -> Option<(
+        crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage,
+        Result<
+            crate::domain_computation::WorthQueryProviderSessionDenialKind,
+            crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+        >,
+    )> {
+        self.evidence
+            .as_ref()
+            .and_then(|evidence| evidence.commit_execution)
+    }
+
+    pub fn with_commit_execution_denial(
+        mut self,
+        evidence: Option<(
+            crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage,
+            Result<
+                crate::domain_computation::WorthQueryProviderSessionDenialKind,
+                crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+            >,
+        )>,
+    ) -> Self {
+        if let Some(evidence) = evidence {
+            self.evidence_mut().commit_execution = Some(evidence);
+        }
+        self
+    }
+
+    pub fn subject(&self) -> &str {
+        &self.subject
+    }
+
+    /// Why an exact failed native read could not join retained required work.
+    /// Diagnostic only; this does not change the denial kind or retry posture.
+    pub const fn readmission_failure(&self) -> Option<&'static str> {
+        self.readmission_failure
+    }
+
+    pub const fn recovery_posture(&self) -> WorthQueryOutputDemandRecoveryPosture {
+        self.recovery_posture
+    }
+
+    pub fn new(
+        kind: WorthQueryOutputDemandDenialKind,
+        subject: impl Into<std::borrow::Cow<'static, str>>,
+    ) -> Self {
+        let recovery_posture = kind.default_recovery_posture();
+        Self {
+            kind: Box::new(kind),
+            evidence: None,
+            cleanup: None,
+            domain: None,
+            readmission_failure: None,
+            subject: subject.into(),
+            recovery_posture,
+        }
+    }
+
+    pub fn product_selection(
+        denial: crate::basis::WorthQueryProductBranchAdmissionDenial,
+        subject: impl Into<std::borrow::Cow<'static, str>>,
+    ) -> Self {
+        use crate::basis::WorthQueryProductBranchAdmissionDenial as Branch;
+        use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
+        let kind = match denial {
+            Branch::Stopped(Err(Control::Cancelled)) => WorthQueryOutputDemandDenialKind::Cancelled,
+            Branch::Stopped(Err(Control::TimedOut)) => WorthQueryOutputDemandDenialKind::TimedOut,
+            Branch::Stopped(Ok(cause)) => WorthQueryOutputDemandDenialKind::SourceQueryExecution(
+                crate::domain_computation::primary_graph::WorthQueryApplicationOneShotDenialKind::ExecutionRequest(cause)),
+            Branch::Refused(refused) => WorthQueryOutputDemandDenialKind::ProductSelection(refused),
+        };
+        Self::new(kind, subject)
+    }
+
+    pub fn with_recovery_posture(
+        mut self,
+        recovery_posture: WorthQueryOutputDemandRecoveryPosture,
+    ) -> Self {
+        self.recovery_posture = recovery_posture;
+        self
+    }
+}
+
+impl WorthQueryOutputDemandDenial {
+    /// A typed refusal before the caller pass enters its request.
+    pub fn close_read_cleanup<R: crate::ports::WorthQueryReadCleanupRuntime>(
+        &mut self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        runtime: &R,
+    ) -> Result<(), super::WorthQueryOutputReadCloseDenial> {
+        if let Some(cleanup) = self.cleanup.as_mut() {
+            cleanup.close_read(phase, &mut |recovery| {
+                runtime.close_product_publication_recovery_in_advancement(phase, recovery)
+            })?;
+        }
+        Ok(())
+    }
+
+    pub fn request_admission(
+        cause: crate::domain_computation::primary_graph::WorthQueryAdvancementDenial,
+    ) -> Self {
+        Self::new(
+            WorthQueryOutputDemandDenialKind::ExecutionRequest(cause),
+            "request admission",
+        )
+    }
+}
+
+pub mod charged_bytes;
+pub mod managed_index;
+
+pub mod managed_source_query;
+
+mod court_doors_for_test;
+#[cfg(test)]
+#[path = "denial_inline_type_budget.rs"]
+pub mod inline_type_budget;

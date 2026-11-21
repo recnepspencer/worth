@@ -1,5 +1,6 @@
 //! Exact selected Product checks for a fresh required-output continuation.
 
+use crate::domain_computation::primary_graph::ReadObservationRuntimeExt;
 use super::*;
 use crate::domain_computation::primary_graph::product_operation::SharedSelectedProductOperation;
 use crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation;

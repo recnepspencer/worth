@@ -1,7 +1,7 @@
 //! Named responsibilities for committing one prepared provider session.
 
 mod evidence;
-pub(crate) mod outbox_commit;
+pub(crate) use worth_query_execution_lineage::facade::domain_computation::primary_graph::provider::session_commit::outbox_commit;
 pub(crate) mod receipt_basis_retention;
 
 pub(in crate::domain_computation::primary_graph) use super::application_attempt_state::{

@@ -14,7 +14,7 @@ mod handle;
 pub(in crate::domain_computation::primary_graph) mod invariant_read;
 pub(crate) mod invocation;
 
-pub(in crate::domain_computation::primary_graph::application_query) mod applied_read;
+pub(in crate::domain_computation::primary_graph) mod applied_read;
 mod maintained_read;
 pub(in crate::domain_computation::primary_graph) mod realized_footprint;
 pub use invariant_read::WorthQueryManagedIndexInvariantDenial;

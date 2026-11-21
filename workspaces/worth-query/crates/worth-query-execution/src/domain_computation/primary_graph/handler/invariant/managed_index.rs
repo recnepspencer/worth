@@ -31,6 +31,10 @@ impl<S: ApplicationSchema, Binding: ApplicationMutationBinding<S>>
         self.checkpoint().map_err(HandlerExecutionDenial::new)?;
         self.context_use
             .set(self.context_use.get().source_query_permission());
-        self.reader.index_query::<B>(intent)
+        crate::domain_computation::primary_graph::invariant_projection::operation_reader::managed_index::index_query::<S, Binding::Operation, B>(
+            self.reader,
+            self.source_query,
+            intent,
+        )
     }
 }

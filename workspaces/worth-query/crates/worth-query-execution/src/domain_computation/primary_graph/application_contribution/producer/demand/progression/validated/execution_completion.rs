@@ -52,7 +52,7 @@ pub(super) fn finish(
         Ok((execution::ProducerExecutionOutcome::Unpublished(mut owner), ready_backing)) => {
             owner.retain_original_publication(original_publication);
             let checkpoint = WorthQueryOutputCheckpoint::PublicationPending {
-                owner,
+                owner: Box::new(owner),
                 ready_backing,
             };
             if let Err((denial, checkpoint)) = selected_execution_finish.publish(checkpoint) {

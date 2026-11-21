@@ -1,0 +1,130 @@
+//! Exact product-branch coordination for application commit progression.
+use std::collections::BTreeMap;
+use std::sync::Arc;
+use std::sync::Mutex;
+use std::sync::MutexGuard;
+use std::sync::TryLockError;
+use std::sync::Weak;
+use worth_runtime_world::facade::ProductBranchIncarnation;
+use worth_runtime_world::facade::ProductBranchObservation;
+pub mod contention;
+pub mod correction;
+pub use contention::WorthQueryApplicationBranchCommitContentionForTest;
+pub use correction::WorthQueryCorrectionCommitLane;
+pub struct WorthQueryApplicationBranchCommitCoordinator {
+    pub corrections: correction::CorrectionCommitLanes,
+    contention: Arc<contention::ContentionControl>,
+    lanes: Mutex<BTreeMap<ProductBranchIncarnation, Weak<WorthQueryApplicationBranchCommitLane>>>,
+}
+pub struct WorthQueryApplicationBranchCommitLane {
+    contention: Arc<contention::ContentionControl>,
+    occurrence: ProductBranchIncarnation,
+    transition: Mutex<()>,
+}
+pub struct WorthQueryApplicationBranchCommitCoordination<'lane> {
+    occurrence: ProductBranchIncarnation,
+    _guard: MutexGuard<'lane, ()>,
+}
+impl WorthQueryApplicationBranchCommitCoordinator {
+    pub fn new() -> Self {
+        Self {
+            corrections: correction::CorrectionCommitLanes::default(),
+            contention: Arc::default(),
+            lanes: Mutex::new(BTreeMap::new()),
+        }
+    }
+    pub fn observe_contention_for_test(
+        &self,
+    ) -> WorthQueryApplicationBranchCommitContentionForTest {
+        self.contention.arm()
+    }
+    pub fn lane_for(
+        &self,
+        observation: &ProductBranchObservation,
+    ) -> Arc<WorthQueryApplicationBranchCommitLane> {
+        self.lane_for_occurrence(observation.lifecycle_incarnation())
+    }
+    pub fn lane_for_occurrence(
+        &self,
+        occurrence: ProductBranchIncarnation,
+    ) -> Arc<WorthQueryApplicationBranchCommitLane> {
+        let mut lanes = self
+            .lanes
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if let Some(lane) = lanes.get(&occurrence).and_then(Weak::upgrade) {
+            return lane;
+        }
+        let lane = Arc::new(WorthQueryApplicationBranchCommitLane {
+            contention: Arc::clone(&self.contention),
+            occurrence,
+            transition: Mutex::new(()),
+        });
+        lanes.insert(occurrence, Arc::downgrade(&lane));
+        lane
+    }
+    pub fn retire(&self, occurrence: ProductBranchIncarnation) {
+        self.lanes
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .remove(&occurrence);
+    }
+    fn entry_count(&self) -> usize {
+        self.lanes
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .len()
+    }
+}
+impl WorthQueryApplicationBranchCommitLane {
+    /// A reader already borrowing Native must never wait for an earlier lane.
+    pub fn try_enter(&self) -> Option<WorthQueryApplicationBranchCommitCoordination<'_>> {
+        let guard = match self.transition.try_lock() {
+            Ok(guard) => guard,
+            Err(TryLockError::Poisoned(error)) => error.into_inner(),
+            Err(TryLockError::WouldBlock) => {
+                return None;
+            }
+        };
+        Some(WorthQueryApplicationBranchCommitCoordination {
+            occurrence: self.occurrence,
+            _guard: guard,
+        })
+    }
+
+    pub fn enter(&self) -> WorthQueryApplicationBranchCommitCoordination<'_> {
+        // Ordinary entry is the same blocking mutex. The receiver's armed
+        // certification recorder only reports an actual native contention.
+        let guard = if self.contention.armed() {
+            match self.transition.try_lock() {
+                Ok(guard) => guard,
+                Err(TryLockError::Poisoned(error)) => error.into_inner(),
+                Err(TryLockError::WouldBlock) => {
+                    self.contention.observe(self.occurrence);
+                    self.transition
+                        .lock()
+                        .unwrap_or_else(std::sync::PoisonError::into_inner)
+                }
+            }
+        } else {
+            self.transition
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+        };
+        WorthQueryApplicationBranchCommitCoordination {
+            occurrence: self.occurrence,
+            _guard: guard,
+        }
+    }
+}
+
+impl WorthQueryApplicationBranchCommitCoordination<'_> {
+    pub fn admits(
+        &self,
+        observation: &ProductBranchObservation,
+    ) -> bool {
+        self.occurrence == observation.lifecycle_incarnation()
+    }
+}
+
+mod court_doors_for_test;

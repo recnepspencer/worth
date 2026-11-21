@@ -1,0 +1,355 @@
+use super::super::super::WorthQueryInvariantProjectionDenial;
+use crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalKind as ResolutionRefusal;
+use std::marker::PhantomData;
+use std::sync::Arc;
+use worth_relational::facade::transactions::RelationalExecutionDenialCause as NativeReadStop;
+
+use worth_query_installation::facade::{
+    ApplicationOperationDecisionReadTarget, ApplicationScalarValueBinding, ApplicationSchema,
+};
+use worth_relational::facade::indexes::{
+    BoundedEntityFieldLookupDenialKind, BoundedEntityFieldLookupRequest,
+};
+
+use super::WorthQueryApplicationOperationInvariantProjectionReader;
+use crate::domain_computation::primary_graph::{
+    application_attempt::WorthQueryApplicationObservedFact, HandlerExecutionDenial,
+    WorthQueryEntityResolutionDenial, WorthQueryEntityResolutionDenialKind,
+    WorthQueryInvariantEntityIdentity,
+};
+
+impl<Schema: ApplicationSchema, Operation>
+    WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, Operation>
+{
+    /// Shared unique-selection admission for decision and readonly input owners.
+    pub fn resolve_optional_decision_entity<
+        Entity,
+        Aspect,
+        Field,
+        Value,
+    >(
+        &mut self,
+        field: Field,
+        value: Value,
+    ) -> Result<Option<WorthQueryInvariantEntityIdentity<Schema, Entity>>, HandlerExecutionDenial>
+    where
+        Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+            Aspect = Aspect,
+            Value = Value,
+        >,
+        Field::Binding: worth_query_installation::facade::ApplicationReadableScalarValueBinding,
+    {
+        let mut matches = self
+            .decision_select_entities(field, value, 2)
+            .map_err(|denial| resolution_denial(denial, field.field()))?;
+        if matches.len() > 1 {
+            return Err(selection_denial(
+                WorthQueryEntityResolutionDenialKind::Refused(ResolutionRefusal::AmbiguousEntity),
+                field.field(),
+            ));
+        }
+        let identity = matches.pop();
+        if let Some(ref identity) = identity {
+            self.require_decision_field(identity, field)
+                .map_err(HandlerExecutionDenial::new)?;
+        }
+        Ok(identity)
+    }
+
+    /// Select the complete equality result, retaining presence and absence for
+    /// commit comparison. Overflow denies rather than returning a truncated set.
+    pub fn decision_select_entities<Entity, Aspect, Field, Value>(
+        &mut self,
+
+        field: Field,
+        value: Value,
+        candidate_limit: usize,
+    ) -> Result<Vec<WorthQueryInvariantEntityIdentity<Schema, Entity>>, HandlerExecutionDenial>
+    where
+        Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+            Aspect = Aspect,
+            Value = Value,
+        >,
+    {
+        self.decision_select_with_value(
+            SelectionField {
+                entity: field.entity(),
+                aspect: field.aspect(),
+                field: field.field(),
+            },
+            || {
+                Field::Binding::encode(&value).map_err(|_| {
+                    selection_denial(
+                        WorthQueryEntityResolutionDenialKind::Refused(
+                            ResolutionRefusal::ValueEncodingRejected,
+                        ),
+                        field.field(),
+                    )
+                })
+            },
+            candidate_limit,
+        )
+    }
+
+    /// Private compiled-body entry; installation admitted the identity codec.
+    pub fn body_select_identity(
+        &mut self,
+        field: &worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus,
+        value: worth_foundational::facade::AspectValue,
+    ) -> Result<Vec<WorthQueryInvariantEntityIdentity<Schema, ()>>, HandlerExecutionDenial> {
+        self.decision_select_with_value(
+            SelectionField {
+                entity: field.entity(),
+                aspect: field.aspect(),
+                field: field.field(),
+            },
+            || Ok(value),
+            2,
+        )
+    }
+
+    fn decision_select_with_value<Entity>(
+        &mut self,
+        field: SelectionField<'_>,
+        encode: impl FnOnce() -> Result<worth_foundational::facade::AspectValue, HandlerExecutionDenial>,
+        candidate_limit: usize,
+    ) -> Result<Vec<WorthQueryInvariantEntityIdentity<Schema, Entity>>, HandlerExecutionDenial>
+    {
+        let execution = self.reader.execution;
+        self.admit_decision_target(&ApplicationOperationDecisionReadTarget::Field {
+            entity: field.entity().to_owned(),
+            aspect: field.aspect().to_owned(),
+            field: field.field().to_owned(),
+        })
+        .map_err(HandlerExecutionDenial::new)?;
+        self.require_selection_budget(candidate_limit, field.field())?;
+        // Preserve the typed resolver's admission/work gate before supplier encoding.
+        let value = encode()?;
+        let layout = self
+            .reader
+            .layout
+            .equality_field(field.entity(), field.aspect(), field.field())
+            .ok_or_else(|| {
+                selection_denial(
+                    WorthQueryEntityResolutionDenialKind::Refused(
+                        ResolutionRefusal::FieldNotInstalled,
+                    ),
+                    field.field(),
+                )
+            })?;
+        let index_id = layout.equality_index_id.ok_or_else(|| {
+            selection_denial(
+                WorthQueryEntityResolutionDenialKind::Refused(
+                    ResolutionRefusal::EqualityIndexUnavailable,
+                ),
+                field.field(),
+            )
+        })?;
+        let request = BoundedEntityFieldLookupRequest::new(
+            self.reader.snapshot.clone(),
+            index_id,
+            layout.entity_kind,
+            layout.locator.clone(),
+            value.clone(),
+            candidate_limit,
+        )
+        .map_err(|_| {
+            selection_denial(
+                WorthQueryEntityResolutionDenialKind::Refused(
+                    ResolutionRefusal::InvalidCandidateLimit,
+                ),
+                field.field(),
+            )
+        })?;
+        let outcome = self
+            .reader
+            .native
+            .select_entities(request, execution)
+            .map_err(|denial| {
+                let examined = denial.examined_entry_count();
+                let admitted = self.reader.work_budget.consume(1 + examined);
+                if admitted {
+                    self.reader.work.record_lookup(examined);
+                }
+                let kind = match denial.kind() {
+                    BoundedEntityFieldLookupDenialKind::Execution(cause) => {
+                        self.reader.native_read_stop.get_or_insert(cause);
+                        return HandlerExecutionDenial::new(
+                            WorthQueryInvariantProjectionDenial::execution_request_stopped(
+                                cause, None,
+                            ),
+                        );
+                    }
+                    BoundedEntityFieldLookupDenialKind::CorruptIndexEntries
+                    | BoundedEntityFieldLookupDenialKind::StorageParityMismatch => {
+                        WorthQueryEntityResolutionDenialKind::Refused(
+                            ResolutionRefusal::CorruptIdentityIndex,
+                        )
+                    }
+                    BoundedEntityFieldLookupDenialKind::InvalidCandidateLimit
+                    | BoundedEntityFieldLookupDenialKind::SnapshotUnavailable
+                    | BoundedEntityFieldLookupDenialKind::IndexNotInstalled
+                    | BoundedEntityFieldLookupDenialKind::WrongIndexKind
+                    | BoundedEntityFieldLookupDenialKind::ExactGenerationUnavailable => {
+                        WorthQueryEntityResolutionDenialKind::Refused(
+                            ResolutionRefusal::EqualityIndexUnavailable,
+                        )
+                    }
+                };
+                if !admitted {
+                    return selection_denial(
+                        WorthQueryEntityResolutionDenialKind::Stopped(
+                            NativeReadStop::WorkExhausted,
+                        ),
+                        field.field(),
+                    );
+                }
+                selection_denial(kind, field.field())
+            })?;
+        if !self
+            .reader
+            .work_budget
+            .consume(1 + outcome.examined_entry_count())
+        {
+            return Err(selection_denial(
+                WorthQueryEntityResolutionDenialKind::Stopped(NativeReadStop::WorkExhausted),
+                field.field(),
+            ));
+        }
+        self.reader
+            .work
+            .record_lookup(outcome.examined_entry_count());
+        if outcome.overflowed() {
+            return Err(selection_denial(
+                WorthQueryEntityResolutionDenialKind::Refused(
+                    ResolutionRefusal::CandidateLimitExceeded {
+                        maximum: candidate_limit,
+                    },
+                ),
+                field.field(),
+            ));
+        }
+        self.retain_named_entity_selection(
+            field.entity(),
+            layout.entity_kind,
+            layout.locator.clone(),
+            value,
+            candidate_limit,
+            outcome,
+        )
+    }
+
+    pub fn retain_named_entity_selection<Entity>(
+        &mut self,
+        entity: &str,
+        kind: worth_relational::facade::identity::KindId,
+        locator: worth_foundational::facade::AspectFieldLocator,
+        value: worth_foundational::facade::AspectValue,
+        candidate_limit: usize,
+        outcome: super::super::super::read_basis::ProjectionEntitySelection,
+    ) -> Result<Vec<WorthQueryInvariantEntityIdentity<Schema, Entity>>, HandlerExecutionDenial>
+    {
+        let index_id = outcome.retain_definition().index_id;
+        let mut identities = Vec::with_capacity(outcome.candidate_entity_ids().len());
+        for entity_id in outcome.candidate_entity_ids() {
+            self.reader.realized_scope.record(*entity_id);
+            identities.push(WorthQueryInvariantEntityIdentity {
+                entity_id: *entity_id,
+                kind,
+                entity: Arc::from(entity),
+                authority_identity: self.reader.authority_identity,
+                phase: self
+                    .reader
+                    .native
+                    .candidate_identity()
+                    .map(|id| id.qualification()),
+                _marker: PhantomData,
+            });
+        }
+        let fact = WorthQueryApplicationObservedFact::IndexedEntitySelection {
+            index_id,
+            definition: outcome.retain_definition(),
+            entity_kind: kind,
+            locator,
+            value,
+            candidate_limit,
+            candidates: outcome.into_candidate_entity_ids(),
+        };
+        self.reader
+            .dependent_source_facts
+            .capture(fact, self.reader.retention_control)
+            .map_err(HandlerExecutionDenial::new)?;
+        Ok(identities)
+    }
+
+    pub fn require_selection_budget(
+        &mut self,
+        limit: usize,
+        subject: &str,
+    ) -> Result<(), HandlerExecutionDenial> {
+        if limit == 0 || limit == usize::MAX {
+            return Err(selection_denial(
+                WorthQueryEntityResolutionDenialKind::Refused(
+                    ResolutionRefusal::InvalidCandidateLimit,
+                ),
+                subject,
+            ));
+        }
+        if !self.reader.work_budget.can_afford(1 + limit) {
+            return Err(selection_denial(
+                WorthQueryEntityResolutionDenialKind::Stopped(NativeReadStop::WorkExhausted),
+                subject,
+            ));
+        }
+        Ok(())
+    }
+}
+
+struct SelectionField<'a> {
+    entity: &'a str,
+    aspect: &'a str,
+    field: &'a str,
+}
+impl SelectionField<'_> {
+    fn entity(&self) -> &str {
+        self.entity
+    }
+    fn aspect(&self) -> &str {
+        self.aspect
+    }
+    fn field(&self) -> &str {
+        self.field
+    }
+}
+
+pub fn selection_denial(
+    kind: WorthQueryEntityResolutionDenialKind,
+    subject: &str,
+) -> HandlerExecutionDenial {
+    HandlerExecutionDenial::new(WorthQueryEntityResolutionDenial::new(kind, subject))
+}
+
+pub fn resolution_denial(
+    denial: HandlerExecutionDenial,
+    subject: &str,
+) -> HandlerExecutionDenial {
+    match denial.downcast::<WorthQueryEntityResolutionDenial>() {
+        Ok(denial)
+            if matches!(
+                denial.kind(),
+                WorthQueryEntityResolutionDenialKind::Refused(
+                    ResolutionRefusal::CandidateLimitExceeded { .. }
+                )
+            ) =>
+        {
+            HandlerExecutionDenial::new(WorthQueryEntityResolutionDenial::new(
+                WorthQueryEntityResolutionDenialKind::Refused(ResolutionRefusal::AmbiguousEntity),
+                subject,
+            ))
+        }
+        Ok(denial) => HandlerExecutionDenial::new(denial),
+        Err(denial) => denial,
+    }
+}

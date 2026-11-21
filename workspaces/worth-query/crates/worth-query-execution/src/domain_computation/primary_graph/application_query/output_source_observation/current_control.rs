@@ -1,4 +1,5 @@
 //! Current authorization and retry ownership for a producer's nested source reads.
+use crate::domain_computation::primary_graph::application_contribution::producer::demand::denial::history_source::OutputDemandDenialHistoryExt;
 use super::*;
 use crate::domain_computation::primary_graph::{
     product_operation::document_history::{HistoryBorrowedReadStop, HistoryProducerInvocation},
@@ -12,71 +13,6 @@ pub(super) struct HistorySourceQueryControl<'a, S> {
     pub(super) current: &'a SharedSelectedProductOperation<'a, S>,
     pub(super) invocation: HistoryProducerInvocation<'a>,
     lane: Arc<WorthQueryApplicationBranchCommitLane>,
-}
-
-impl SourceQueryObservationStop {
-    /// Authorized model-result outcomes retain the handler's existing semantics.
-    pub(super) fn is_control_refusal(&self) -> bool {
-        use crate::domain_computation::primary_graph::WorthQueryApplicationOneShotDenialKind as Read;
-        use crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenialKind as Admission;
-        use SourceQueryObservationStop as Stop;
-        match self {
-            Stop::CurrentControl(_)
-            | Stop::ManagedIndex(_)
-            | Stop::Principal(_)
-            | Stop::Scope(_)
-            | Stop::Basis(_) => true,
-            Stop::Admission(stop) | Stop::Preparation { cause: stop, .. } => matches!(
-                stop.kind(),
-                Admission::Authorization(_)
-                    | Admission::StalePrincipal
-                    | Admission::StaleScope
-                    | Admission::HistoricalSourceNotLive { .. }
-                    | Admission::HistoricalSourceKindMismatch { .. }
-                    | Admission::HistoricalSourceOutsideDomain { .. }
-                    | Admission::HistoricalSourceOwnershipUnavailable { .. }
-                    | Admission::ForeignPrincipal
-                    | Admission::ForeignScope
-                    | Admission::StaleBasis
-                    | Admission::Cancelled
-                    | Admission::DeadlineExceeded
-                    | Admission::ExecutionRequest(_)
-                    | Admission::ActiveSnapshotCapacityExhausted { .. }
-                    | Admission::SnapshotIdentityExhausted
-                    | Admission::RetentionCapacityExhausted
-                    | Admission::RetentionIdentityExhausted
-                    | Admission::ReadmissionPreparationMemoryExhausted
-                    | Admission::WorkLimitExceeded
-                    | Admission::CanonicalWorkDenied
-                    | Admission::GraphWorkAdmissionUnavailable
-                    | Admission::DisclosureGovernanceRequired
-                    | Admission::DisclosureAuthorizationMismatch
-                    | Admission::InternalComputationDenied
-            ),
-            Stop::Read(WorthQueryAdmittedOneShotStop::Execution(stop)) => matches!(
-                stop.kind(),
-                Read::Authorization(_)
-                    | Read::StalePrincipal
-                    | Read::StaleScope
-                    | Read::Cancelled
-                    | Read::DeadlineExceeded
-                    | Read::ExecutionRequest(_)
-                    | Read::ActiveSnapshotCapacityExhausted { .. }
-                    | Read::SnapshotIdentityExhausted
-                    | Read::RetentionCapacityExhausted
-                    | Read::RetentionIdentityExhausted
-                    | Read::WorkLimitExceeded
-                    | Read::ResultBufferLimitExceeded
-                    | Read::SourceIdentityExhausted
-                    | Read::SourceObservationAllocation { .. }
-            ),
-            Stop::Read(_) => true,
-            Stop::SourceFacts(stop) => {
-                stop.execution_denial().is_some() || stop.retention_interruption().is_some()
-            }
-            Stop::Missing | Stop::Ambiguous | Stop::ForeignClosure | Stop::Installation(_) => false,
-        }
-    }
 }
 
 impl<'a, S: ApplicationSchema> SourceQueryReaderAccess<'a, S> {
@@ -208,5 +144,3 @@ impl<'a, S: ApplicationSchema> SourceQueryReaderAccess<'a, S> {
         })
     }
 }
-
-mod court_doors_for_test;

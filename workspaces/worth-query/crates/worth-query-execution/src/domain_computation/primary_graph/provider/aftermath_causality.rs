@@ -1,5 +1,6 @@
 //! Relational persistence and owner reads for Query aftermath causal facts.
 
+use crate::domain_computation::application_aftermath::CommittedAftermathCausalityExt;
 use std::collections::BTreeMap;
 
 use worth_foundational::facade::{AspectValue, InternedString};

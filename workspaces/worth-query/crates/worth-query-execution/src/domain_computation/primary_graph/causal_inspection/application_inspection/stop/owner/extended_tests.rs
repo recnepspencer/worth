@@ -107,12 +107,24 @@ fn inspection_preserves_original_capture_state_cause() {
     }
 }
 
-impl WorthQueryApplicationDisclosureContractDenial {
-    pub(in crate::domain_computation) fn assert_inspection_contract_cause(self) {
+trait DisclosureContractCauseExt {
+    fn assert_inspection_contract_cause(self);
+}
+
+impl DisclosureContractCauseExt for WorthQueryApplicationDisclosureContractDenial {
+    fn assert_inspection_contract_cause(self) {
         let expected = self.clone();
         let denied = denial(InspectionAdmissionDenial::DiagnosticContract(captured(crate::domain_computation::authorization::application_disclosure::DiagnosticContractDenial::Contract(self))));
         assert!(
             matches!(denied.owner_refusal(), Some(Refusal::DiagnosticContract(actual)) if *actual == expected)
         );
     }
+}
+
+#[test]
+fn diagnostic_contract_denial_survives_public_inspection() {
+    crate::domain_computation::authorization::application_disclosure::contract::denial(
+        "declared diagnostic field contract",
+    )
+    .assert_inspection_contract_cause();
 }

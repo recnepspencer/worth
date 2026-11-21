@@ -4,7 +4,10 @@ use crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact 
 use worth_foundational::facade::{
     AspectValue, CanonicalFieldPath, ContractValidatedAspectValueView, FieldKey,
 };
-use worth_relational::facade::runtime::RelationalFieldPresence;
+use worth_relational::facade::{
+    identity::{EntityId, KindId},
+    runtime::{RelationalFieldPresence, RelationalFieldRevision},
+};
 use WorthQueryProducerEvaluationIneligibility as Refusal;
 
 pub(super) struct ObservedOutput {

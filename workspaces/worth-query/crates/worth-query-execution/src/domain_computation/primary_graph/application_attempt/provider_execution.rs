@@ -13,7 +13,7 @@ pub(crate) mod phase;
 pub(crate) mod program_occurrence_gate;
 pub(super) use program_occurrence_gate::resolve_occurrence_program;
 mod provider_denial;
-mod recovery_evidence;
+use worth_query_execution_lineage::facade::domain_computation::primary_graph::application_attempt::provider_execution::recovery_evidence;
 pub(in crate::domain_computation::primary_graph::application_attempt) use recovery_evidence::unknown_commit_recovery_evidence;
 pub(crate) mod resource_request;
 pub(in crate::domain_computation) use application_attempt_affinity::WorthQueryApplicationAttemptAffinity;

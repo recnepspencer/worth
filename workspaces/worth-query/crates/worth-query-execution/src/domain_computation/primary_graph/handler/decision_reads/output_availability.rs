@@ -42,8 +42,12 @@ where
                 ),
             )
         })?;
-        self.reader
-            .output_availability(producer, demand)
-            .map_err(HandlerExecutionDenial::new)
+        crate::domain_computation::primary_graph::invariant_projection::operation_reader::output_availability::output_availability(
+            self.reader,
+            self.source_query,
+            producer,
+            demand,
+        )
+        .map_err(HandlerExecutionDenial::new)
     }
 }

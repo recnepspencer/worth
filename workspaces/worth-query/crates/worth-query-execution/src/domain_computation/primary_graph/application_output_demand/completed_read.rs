@@ -1,4 +1,5 @@
 //! Retrospective complete-tree qualification with genuine read-origin provenance.
+use crate::domain_computation::primary_graph::ReadObservationRuntimeExt;
 use super::{WorthQueryOutputDemandSettlement, WorthQueryOutputSettlementPosture};
 use crate::domain_computation::primary_graph::{
     WorthQueryAdvancementPhase, WorthQueryApplicationReadObservation, WorthQueryOutputDemandDenial,

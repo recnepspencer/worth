@@ -1,3 +1,7 @@
+pub(crate) use worth_query_execution_lineage::facade::primary_graph::application_output_demand::{
+    fulfilled_root, original_endpoint, publication, readiness_delivery, recovered_outputs,
+    registry as lineage_registry, settlement as lineage_settlement, source_evidence, source_replay,
+};
 pub(in crate::domain_computation::primary_graph) use registry::ConsumerCustody;
 pub(in crate::domain_computation::primary_graph) use registry::LivePublicationHead;
 pub(in crate::domain_computation::primary_graph) use registry::PublicationHeadSelection;
@@ -5,7 +9,6 @@ pub(in crate::domain_computation::primary_graph) use registry::RunningSelectedEx
 mod completed_outputs;
 mod completed_read;
 mod completed_set;
-pub(in crate::domain_computation::primary_graph) mod original_endpoint;
 mod original_outputs;
 pub(in crate::domain_computation::primary_graph) use original_outputs::{
     qualify_output_collection, OriginalOutputTree,
@@ -14,9 +17,7 @@ pub use original_outputs::{
     WorthQueryCompletedOriginalReadOutputs, WorthQueryOriginalReadOutputDenial,
 };
 mod currentness;
-mod source_replay;
 pub use source_replay::WorthQueryOutputSourceReplay;
-mod publication;
 pub use completed_outputs::WorthQueryCompletedRequiredOutputs;
 pub use completed_read::WorthQueryCompletedReadOutputs;
 pub(in crate::domain_computation::primary_graph) use currentness::CurrentOwnedRouteDenial;
@@ -24,14 +25,44 @@ pub use publication::WorthQueryRecoveredProducerPublication;
 pub(in crate::domain_computation::primary_graph) use publication::{
     OutputPublicationView, RecoveredProducerOutputFacts,
 };
-mod fulfilled_root;
 pub use fulfilled_root::WorthQueryFulfilledRequiredRoot;
-mod readiness_delivery;
-pub(crate) mod recovered_outputs;
-pub(crate) mod registry;
+pub(crate) mod registry {
+    pub use worth_query_execution_lineage::facade::primary_graph::application_output_demand::registry::*;
+    pub(crate) mod required_work_runtime;
+}
 pub(in crate::domain_computation::primary_graph) use registry::AdmittedRequiredWave;
 pub(in crate::domain_computation::primary_graph) use registry::PreparedRequiredInputs;
-pub(crate) mod settlement;
+pub(crate) mod settlement {
+    use super::readiness_delivery::WorthQueryOutputReadinessDeliveryEvidence;
+    use producer_identity::SettlementProducerIdentity;
+    use receipt_custody::SettlementReceiptCustody;
+    use std::sync::Arc;
+    use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
+    use crate::basis::WorthQueryProductObservationLease;
+    use super::registry::WorthQueryAcceptedOutputAuthority;
+    use crate::domain_computation::primary_graph::output_lineage::BoundCurrentAcceptedOutput;
+    use crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt;
+    use crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence;
+    use crate::domain_computation::primary_graph::WorthQueryApplicationOutputProjectionDenial;
+    use crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation;
+    use crate::domain_computation::primary_graph::WorthQueryApplicationTypedOutputCorrespondence;
+    use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
+    use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
+    use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
+    use crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation;
+    
+    pub use worth_query_execution_lineage::facade::primary_graph::application_output_demand::settlement::*;
+    pub(crate) mod current_accepted;
+    mod current_commit;
+    pub(crate) mod reused;
+    pub(crate) mod runtime;
+    mod runtime_selection;
+    pub(in crate::domain_computation::primary_graph) use current_accepted::OutputDemandSettlementCurrentExt;
+    pub(in crate::domain_computation::primary_graph) use reused::OutputDemandSettlementReusedExt;
+    pub(in crate::domain_computation::primary_graph) use runtime::{
+        OriginalSettledProducerObservationExt, OutputDemandSettlementRuntimeExt,
+    };
+}
 pub(in crate::domain_computation::primary_graph) use settlement::OriginalProducingPublication;
 
 pub use readiness_delivery::WorthQueryOutputReadinessDeliveryEvidence;
@@ -96,7 +127,6 @@ pub use registry::WorthQueryDiscoveredRetentionReservationForTest;
 #[cfg(test)]
 #[path = "mod_inline_type_budget.rs"]
 pub(crate) mod inline_type_budget;
-mod source_evidence;
 pub use source_evidence::WorthQueryOutputSourceEvidence;
 
 pub(in crate::domain_computation::primary_graph) mod discovery_recipe;

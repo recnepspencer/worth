@@ -34,8 +34,12 @@ where
         Producer: ApplicationEntityMarkerIdentity<Schema> + OperationReads<Operation> + 'static,
         <Demand::OutputFamily as WorthQueryProducerOutputFamily<Schema>>::Entity: OperationReads<Operation>,
 {
-        self.reader
-            .output_availability(producer, demand)
-            .map_err(|stop| WorthQueryComputationReadDenial::OutputAvailability(Box::new(stop)))
+        crate::domain_computation::primary_graph::invariant_projection::operation_reader::output_availability::output_availability(
+            self.reader,
+            self.source_query,
+            producer,
+            demand,
+        )
+        .map_err(|stop| WorthQueryComputationReadDenial::OutputAvailability(Box::new(stop)))
     }
 }

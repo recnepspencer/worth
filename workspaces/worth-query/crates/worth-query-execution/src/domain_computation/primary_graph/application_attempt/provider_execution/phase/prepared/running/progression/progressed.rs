@@ -69,9 +69,9 @@ fn finish_application_commit_with_delivery<Schema: ApplicationSchema>(
             let mut retained = original_completion.cleanup_envelope().fill(
                 evidence,
                 failure,
-                application.runtime.product_runtime.clone(),
+                application.runtime.product_runtime.0.clone(),
                 original,
-                application.runtime.bridge.conditional_operations(),
+                Box::new(application.runtime.bridge.conditional_operations()),
             );
             if let Some(support) = application.installed_program_support() {
                 retained.retain_for_home(execution, support.obligation_history());

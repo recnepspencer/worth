@@ -1,12 +1,36 @@
 //! Durable retirement reservation and acknowledged terminal posture.
 use super::*;
 use crate::domain_computation::primary_graph::application_installation::WorthQueryProgramSupportRetirementFailure as Failure;
-use journal::*;
+use super::journal::*;
 use worth_execution::ExecutionRequest;
 use worth_foundational::facade::CanonicalDigestId;
 
-impl QueryObligationHistory {
-    pub(in crate::domain_computation::primary_graph) fn begin_retirement_in_request(
+pub(in crate::domain_computation::primary_graph) trait QueryObligationHistoryDurableRetirementExt {
+    fn begin_retirement_in_request(
+        &self,
+        request: &ExecutionRequest<'_, '_>,
+        revision: &ApplicationProgramRevision,
+    ) -> Result<WorthQueryProgramSupportRetirementAttempt, Failure>;
+
+    fn acknowledge_retirement(
+        &self,
+        request: &ExecutionRequest<'_, '_>,
+        revision: &ApplicationProgramRevision,
+        retired: bool,
+    ) -> Result<(), Failure>;
+}
+
+fn clear_retirement_claim(history: &QueryObligationHistory, revision: &ApplicationProgramRevision) {
+    history
+        .state()
+        .entries
+        .get_mut(revision)
+        .expect("actual retiring entry")
+        .retirement_claimed = false;
+}
+
+impl QueryObligationHistoryDurableRetirementExt for QueryObligationHistory {
+    fn begin_retirement_in_request(
         &self,
         request: &ExecutionRequest<'_, '_>,
         revision: &ApplicationProgramRevision,
@@ -60,7 +84,7 @@ impl QueryObligationHistory {
             }
         };
         if let Err(cause) = publication {
-            self.clear_retirement_claim(revision);
+            clear_retirement_claim(self, revision);
             return Err(Failure::Durability(cause));
         }
         Ok(WorthQueryProgramSupportRetirementAttempt {
@@ -69,14 +93,7 @@ impl QueryObligationHistory {
             finished: false,
         })
     }
-    fn clear_retirement_claim(&self, revision: &ApplicationProgramRevision) {
-        self.state()
-            .entries
-            .get_mut(revision)
-            .expect("actual retiring entry")
-            .retirement_claimed = false;
-    }
-    pub(in crate::domain_computation::primary_graph) fn acknowledge_retirement(
+    fn acknowledge_retirement(
         &self,
         request: &ExecutionRequest<'_, '_>,
         revision: &ApplicationProgramRevision,
@@ -101,7 +118,7 @@ impl QueryObligationHistory {
                 request,
             )
         })();
-        self.clear_retirement_claim(revision);
+        clear_retirement_claim(self, revision);
         result.map_err(Failure::Durability)
     }
 }

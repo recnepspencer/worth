@@ -7,18 +7,7 @@ use worth_relational::facade::history::{CommitId, RelationalCommitReceipt};
 mod borrowed;
 pub(super) use borrowed::matches_reverse;
 
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct WorthQueryCanonicalCorrectionFact {
-    pub role: WorthQueryAftermathCausalRole,
-    pub parent: RelationalCommitReceipt,
-    pub child: RelationalCommitReceipt,
-    pub record: RecordRef,
-    pub source: WorthQueryCorrectionSourceCoordinates,
-    pub root: WorthQueryCorrectionSourceCoordinates,
-    pub selected: Option<WorthQueryCorrectionSourceCoordinates>,
-    pub active: Option<WorthQueryCorrectionSourceCoordinates>,
-    pub prior: Option<WorthQueryCorrectionSourceCoordinates>,
-}
+pub use worth_query_execution_lineage::facade::primary_graph::provider::aftermath_causality::WorthQueryCanonicalCorrectionFact;
 
 pub(in crate::domain_computation::primary_graph) fn read(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,

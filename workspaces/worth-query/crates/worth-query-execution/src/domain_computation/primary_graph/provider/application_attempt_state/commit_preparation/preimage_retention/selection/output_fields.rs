@@ -1,4 +1,5 @@
 //! Capture selected original field truth on one authenticated output.
+use crate::domain_computation::primary_graph::RetainedPreImageExt;
 use super::*;
 use crate::domain_computation::application_aftermath::retained_preimage::{
     RetainedOutputFields, RetainedPreImageAbsence, RetainedPreImageAbsenceKind,

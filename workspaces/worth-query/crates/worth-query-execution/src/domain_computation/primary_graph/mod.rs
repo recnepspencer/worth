@@ -1,18 +1,22 @@
-mod content;
-mod home_original_progression;
+pub(crate) use worth_query_execution_lineage::facade::primary_graph::{
+    aggregate_identity, aggregate_observation, aggregate_projection,
+    component_selection, content, denial, derived_source, entity_key, entity_resolution_denial, fact_verification_observation, fragment_view, freshness,
+    home_original_progression, index_currency, index_refresh, initial_schema_denial,
+    merge_unique_values, observations, output_lineage, read_observation, resolution_denial, root, root_path_selection,
+    source_facts, source_read_equivalence, source_read_verification, structural_walk,
+};
 pub(in crate::domain_computation) use content::retention_checkpoint;
 pub use content::{
     AdmittedContent, ContentReadDenial, ContentWriteDenial, RelationalContentDenial,
     RelationalContentRejection,
 };
 mod access_strategy;
+pub(crate) mod entity_resolution;
+pub(crate) mod invariant_projection;
+pub(crate) mod output_reuse;
+pub(crate) mod source_disclosure;
 mod facade;
 pub use facade::*;
-mod aggregate_identity;
-#[cfg(test)]
-mod aggregate_identity_layout_tests;
-pub(crate) mod aggregate_observation;
-pub(crate) mod aggregate_projection;
 pub(crate) use worth_query_execution_foundation::facade::primary_graph::{
     admitted_capture, application_branch, exact_basis_access, index_maintenance_budget,
     output_binding_identity, output_family_identity, principal_key, projection_read_origin,
@@ -51,13 +55,7 @@ pub(crate) mod bootstrap_publication;
 pub(crate) mod conditional_operation;
 pub(crate) use conditional_operation::classify_bridge_signal;
 pub use conditional_operation::conditional_intent_read_is_active_for_test;
-mod denial;
-pub(crate) mod entity_key;
-pub(crate) mod entity_resolution;
-mod entity_resolution_denial;
 mod expression;
-mod fragment_view;
-pub(crate) mod freshness;
 mod granular_invalidation;
 pub(crate) mod handler;
 #[doc(hidden)]
@@ -66,31 +64,16 @@ pub use fragment_view::{
     CandidateEntity, FragmentDenial, ObservedEntity, ObservedTarget, Reading, View, Writing,
 };
 pub(in crate::domain_computation) use handler::DecisionContextUse;
-pub(crate) mod index_currency;
-pub(crate) mod index_refresh;
-mod initial_schema_denial;
 mod invariant_installation;
-pub(crate) mod invariant_projection;
 pub(crate) mod live_delivery;
 pub(crate) mod managed_bridge;
-pub(crate) mod merge_unique_values;
-mod read_observation;
-pub(crate) mod source_facts;
 pub(in crate::domain_computation) use source_facts::{
     validate_source_principal_facts, SourceFactsAllocation,
 };
-pub(crate) mod derived_source;
-mod source_read_equivalence;
-pub(crate) mod source_read_verification;
-pub(crate) mod structural_walk;
 pub(crate) use managed_bridge::build_primary_graph_product_bridge;
-pub(crate) mod fact_verification_observation;
-mod observations;
 mod operation_body;
 mod ordinary_read;
-pub(crate) mod output_lineage;
 pub(in crate::domain_computation) use output_lineage::SourceInvalidationOwner;
-pub(crate) mod output_reuse;
 mod principal_currentness_capture;
 pub(in crate::domain_computation) use principal_currentness_capture::capture_principal_currentness_admitted;
 pub(in crate::domain_computation) use principal_currentness_capture::PrincipalCurrentnessCaptureStop;
@@ -150,11 +133,7 @@ pub(in crate::domain_computation) use provider::PrimaryDecisionReadSetComparison
 pub(in crate::domain_computation) use provider::QueryPreparingApplicationCommit;
 pub(in crate::domain_computation) use provider::RegisteredPrimaryRead;
 pub use retained_correction::WorthQueryCorrectionRetentionDenial;
-pub(crate) mod component_selection;
 pub(crate) mod resolution;
-pub(crate) mod resolution_denial;
-pub(crate) mod root;
-mod root_path_selection;
 pub(crate) use worth_query_execution_layout::facade::schema_layout;
 mod typed_bootstrap;
 pub(crate) mod workflow;
@@ -210,7 +189,7 @@ pub(in crate::domain_computation) use entity_resolution::WorthQueryInstalledEnti
 pub(in crate::domain_computation) use entity_resolution::WorthQueryResolvedEntity;
 pub(in crate::domain_computation) use entity_resolution::WorthQueryIssuedSelectedScope;
 pub(in crate::domain_computation) use resolution::WorthQueryIssuedSelectedPrincipal;
-pub(in crate::domain_computation) use freshness::validate_freshness_at_snapshot;
+pub(in crate::domain_computation) use authenticated_principal::validate_freshness_at_snapshot;
 pub(in crate::domain_computation) use freshness::WorthQueryDurablePrincipalCurrentness;
 pub(in crate::domain_computation) use freshness::WorthQueryPrincipalFreshnessEvidence;
 
@@ -233,6 +212,23 @@ pub use application_contribution::with_bootstrap_advancement_from_request;
 
 pub use application_contribution::WorthQueryBootstrapAdvancementPhase;
 
+mod lineage_ports;
+mod application_checkpoint_runtime;
+pub(in crate::domain_computation::primary_graph) use application_output_demand::settlement::{
+    OriginalSettledProducerObservationExt, OutputDemandSettlementCurrentExt,
+    OutputDemandSettlementReusedExt, OutputDemandSettlementRuntimeExt,
+};
+pub(crate) use lineage_ports::RetainedPreImageExt;
+pub(in crate::domain_computation) use lineage_ports::{
+    SnapshotLeaseRuntimeExt, SourceReadAuthorizationRuntimeExt,
+};
+pub(in crate::domain_computation::primary_graph) use application_contribution::producer::registry::semantic_edition_ext::InstalledProducerEditionExt;
+pub(in crate::domain_computation::primary_graph) use lineage_ports::{
+    downcast_managed_views, downcast_managed_views_arc, CommitAuthorityBindingExt,
+    PrimaryGraphHandleWorkflowExt, ReadObservationRuntimeExt,
+    SourceFactExpansionControlExt, WorkflowRetentionStore,
+};
+
 pub use observations::principal_target_reads_on_this_thread_for_test;
 
 pub use application_runtime::WorthQueryOperationInputCaptureDenial;
@@ -241,7 +237,6 @@ pub(in crate::domain_computation) mod selected_read_indexes;
 pub(crate) mod causal_inspection;
 mod record_reservations;
 
-pub(crate) mod source_disclosure;
 pub(in crate::domain_computation) use provider::QueryDurablePreparationGuard;
 
 pub use derived_source::DerivedSourceObservation;
@@ -253,3 +248,5 @@ pub use application_output_demand::WorthQueryOutputDiscoveryRecipe;
 
 mod original_operation;
 pub use original_operation::{WorthQueryOriginalOperationDenial, WorthQueryOriginalOperationOwner};
+
+pub(crate) use worth_query_execution_lineage::facade::primary_graph::application_attempt::compare_and_commit::commit_outcome::denial::advancement::WorthQueryAdvancementDenialCommitExt;

@@ -28,7 +28,7 @@ impl ResolvedConsumedPredecessor {
     }
 }
 
-pub(crate) mod matched_predecessors;
+pub(crate) use worth_query_execution_lineage::facade::domain_computation::primary_graph::application_contribution::producer::demand::progression::required_wave::resolved::matched_predecessors;
 pub(in crate::domain_computation::primary_graph) use matched_predecessors::MatchedRequiredPredecessors;
 pub(in crate::domain_computation::primary_graph) use matched_predecessors::ReboundConsumedOutput;
 

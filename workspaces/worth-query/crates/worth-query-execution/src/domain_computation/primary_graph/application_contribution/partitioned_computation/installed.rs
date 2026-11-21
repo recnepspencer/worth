@@ -14,6 +14,7 @@ use worth_query_installation::facade::ApplicationSchema;
 use super::super::request_execution::QueryRequestExecution;
 use super::super::WorthQueryManagedComputationResourceDenial;
 use super::compute::{Denial, PreparedRun, WorthQueryPreparedPartitionedComputation};
+use super::incremental::prepare::IncrementalRunPrepareExt;
 use super::incremental::{
     self, Begun, ComputationInstallation, FullRecording, Suppression,
     WorthQueryPartitionedComputationFullCause,
@@ -119,7 +120,8 @@ where
         Binding: ApplicationMutationBinding<Schema, Operation = Owner::Operation>,
     {
         let execution = reader.execution();
-        self.prepare_through(reader.operation_reader(), execution, input)
+        let source_query = reader.source_query;
+        self.prepare_through_with_source(reader.operation_reader(), source_query, execution, input)
     }
 
     pub(in crate::domain_computation::primary_graph) fn prepare_through(
@@ -129,6 +131,29 @@ where
             '_,
             Schema,
             Owner::Operation,
+        >,
+        execution: &QueryRequestExecution<'_>,
+        input: &InputValue<Schema, Feature, Computation>,
+    ) -> Result<
+        WorthQueryPreparedPartitionedComputation<Schema, Feature, Computation, Owner>,
+        Denial<Schema, Feature, Computation, Owner>,
+    > {
+        self.prepare_through_with_source(reader, None, execution, input)
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn prepare_through_with_source(
+        &self,
+        reader: &mut WorthQueryApplicationOperationInvariantProjectionReader<
+            '_,
+            '_,
+            Schema,
+            Owner::Operation,
+        >,
+        source_query: Option<
+            &crate::domain_computation::primary_graph::application_query::SourceQueryReaderAccess<
+                '_,
+                Schema,
+            >,
         >,
         execution: &QueryRequestExecution<'_>,
         input: &InputValue<Schema, Feature, Computation>,
@@ -167,7 +192,8 @@ where
         let deposit = reader.computation_deposit();
         let (basis, cause) = match begun {
             Begun::Incremental(run) => {
-                let prepared = run.prepare(owner, reader, execution, input, preparation_work)?;
+                let prepared =
+                    run.prepare(owner, reader, source_query, execution, input, preparation_work)?;
                 if let Some(prepared) = prepared {
                     return Ok(WorthQueryPreparedPartitionedComputation {
                         installed: self.clone(),
@@ -190,7 +216,10 @@ where
         incremental::observe_full_preparation(cause);
         let mut recording = basis.map(FullRecording::new);
         let (plan, membership) = reader.measured(ComputationRead::Membership, |reader| {
-            owner.partitions(&mut WorthQueryComputationReader::lend(reader), input)
+            owner.partitions(
+                &mut WorthQueryComputationReader::lend(reader, source_query),
+                input,
+            )
         });
         let PlanShape::Keyed(entries) = plan?.shape;
         let items = planned_items(entries)?;
@@ -209,7 +238,11 @@ where
         let mut keys = BTreeMap::new();
         for (item, value) in items.iter() {
             let (key, charge) = reader.measured(ComputationRead::ItemKey(*item), |reader| {
-                owner.partition_key(&mut WorthQueryComputationReader::lend(reader), input, value)
+                owner.partition_key(
+                    &mut WorthQueryComputationReader::lend(reader, source_query),
+                    input,
+                    value,
+                )
             });
             let key = key?;
             let before = preparation_work;
@@ -233,7 +266,7 @@ where
             let (gathered, charge) =
                 reader.measured(ComputationRead::Partition(identity), |reader| {
                     owner.gather(
-                        &mut WorthQueryComputationReader::lend(reader),
+                        &mut WorthQueryComputationReader::lend(reader, source_query),
                         input,
                         WorthQueryComputationPartitionMembers::new(
                             identity, &key, &members, &items,

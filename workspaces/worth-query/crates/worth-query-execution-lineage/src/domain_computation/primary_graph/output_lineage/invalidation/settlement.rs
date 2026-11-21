@@ -1,0 +1,283 @@
+use std::sync::Arc;
+
+use im::OrdSet;
+use worth_relational::facade::mvcc::CompanionBranchImage;
+use worth_relational::facade::mvcc::CompanionPreflightStop;
+use worth_relational::facade::runtime::PositionedRelationalSnapshot;
+
+use crate::domain_computation::primary_graph::application_output_demand::RequiredWorkMembership;
+
+use super::super::RecordedSettlementIdentity;
+
+use super::delivery;
+use super::fact_key::FactPostingKey;
+
+use super::logical_marking::WorthQueryNativeMarkingWork;
+use super::mark_state::FullVerificationReason;
+use super::mark_state::MarkState;
+use super::mark_state::OutputFactCoverage;
+use super::mark_state::SettlementMarks;
+use super::output_facts::RegisteredOutputFacts;
+use super::source_alignment::BranchMarkRoot;
+use super::source_alignment::EqualOutputCurrentness;
+use super::source_alignment::SnapshotAlignedMarkState;
+
+pub mod posting_bindings;
+pub mod posting_continuation;
+pub mod posting_projection;
+pub mod posting_removal;
+pub mod postings;
+pub use posting_bindings::install_physical;
+pub use posting_bindings::PostingBindings;
+pub use posting_continuation::PostingContinuation;
+pub use posting_continuation::PostingRebaseBasis;
+pub use posting_projection::PostingComputationStorage;
+pub use posting_projection::PostingProjection;
+pub use posting_removal::remove_physical;
+pub use posting_removal::remove_physical_key;
+pub use postings::PreparedPostingOrdinals;
+
+pub enum SettlementReadAlignment {
+    Current,
+    Retained,
+}
+
+pub struct SettlementRegistration {
+    pub computation:
+        Option<super::ComputationRegistration>,
+    pub work_membership:
+        Option<Arc<RequiredWorkMembership>>,
+    pub identity: Arc<RecordedSettlementIdentity>,
+    pub facts: super::super::RetainedSourceFacts,
+    pub output_facts: Option<RegisteredOutputFacts>,
+    pub read_basis: PositionedRelationalSnapshot,
+    /// Fact ordinals the registrant already knows are not current at
+    /// `read_basis`: no delivery after that basis would ever mark them.
+    pub stale_at_read_basis: OrdSet<usize>,
+    pub requirement: Option<FullVerificationReason>,
+    pub upstream:
+        OrdSet<Arc<RecordedSettlementIdentity>>,
+}
+
+/// Install exact consumed facts into the selected live reverse index. The
+/// original facts remain in one Arc; posting buckets retain ordinal references.
+pub fn insert(
+    state: &mut MarkState,
+    registration: SettlementRegistration,
+    image: &CompanionBranchImage<BranchMarkRoot>,
+    alignment: SettlementReadAlignment,
+    output_coverage: OutputFactCoverage,
+) -> Result<(), CompanionPreflightStop> {
+    let SettlementRegistration {
+        computation,
+        work_membership,
+        identity,
+        mut facts,
+        output_facts,
+        read_basis,
+        stale_at_read_basis,
+        requirement,
+        upstream,
+    } = registration;
+    let identity = &identity;
+    let mut verification_requirement = requirement;
+    let posting_continuation = facts.take_posting_continuation();
+    let projection = posting_continuation
+        .as_ref()
+        .map(|continuation| {
+            continuation.checked_projection(state, &facts, output_facts.as_ref(), &read_basis)
+        })
+        .transpose()?
+        .flatten();
+    // The continuation is checked before removal. Both edits remain in this
+    // unpublished candidate image; an admission stop publishes neither.
+    let projection = match projection {
+        Some(projection) => projection,
+        None => {
+            let prepared = postings::PreparedPostingOrdinals::prepare(
+                facts.postconditions(),
+                output_facts.as_ref().map(|set| set.facts.as_ref()),
+                &mut verification_requirement,
+            )?;
+            let id = state.reserve_posting_projection()?;
+            prepared.into_projection(
+                id,
+                facts.len(),
+                output_facts.as_ref().map_or(0, |set| set.facts.len()),
+                verification_requirement,
+            )
+        }
+    };
+    remove(state, identity)?;
+    posting_bindings::bind(state, &projection, identity)?;
+    // These source sets were already prepared before this edit's marker. They
+    // now survive in the row; original facts/basis retain their separate ticket.
+
+    let computation_frontier = computation.map(|_| stale_at_read_basis.clone());
+
+    let mut row = SettlementMarks {
+        computation_frontier,
+        work_membership,
+
+        posting_projection: projection,
+        consumed_upstream: upstream,
+        facts,
+        output_facts,
+        output_coverage,
+        read_basis: Arc::new(read_basis),
+        delivery_epoch: state.delivery_epoch,
+        dirty_ordinals: stale_at_read_basis,
+        pending_upstream: OrdSet::new(),
+        verification_requirement,
+        superseded: false,
+    };
+    let replayed_stale = matches!(alignment, SettlementReadAlignment::Retained)
+        && replay(&mut row, image.payload())?;
+    let aligned = SnapshotAlignedMarkState::observe_registration_image(image, &row.read_basis);
+    for upstream in &row.consumed_upstream {
+        let mut targets = state.downstream.get(upstream).cloned().unwrap_or_default();
+
+        if !targets.contains(identity) {
+            targets.insert(Arc::clone(identity));
+
+            state.downstream.insert(Arc::clone(upstream), targets);
+            state.downstream_edge_count = state
+                .downstream_edge_count
+                .checked_add(1)
+                .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
+        }
+
+        let unresolved = state.settlements.get(upstream).is_none_or(|upstream| {
+            upstream.delivery_epoch != state.delivery_epoch
+                || upstream.verification_requirement.is_some()
+                || !upstream.dirty_ordinals.is_empty()
+                || !upstream.pending_upstream.is_empty()
+        });
+        // Certification has already discharged this exact predecessor.
+        // A late registrant consumes that consequence instead of making
+        // the dirty old row pending again; no output comparison occurs here.
+        let resolved_by_successor = unresolved
+            && matches!(
+                aligned.equal_output_currentness(upstream)?,
+                EqualOutputCurrentness::CanonicallyEqualClean(_)
+            );
+        if unresolved && !resolved_by_successor {
+            row.pending_upstream.insert(Arc::clone(upstream));
+        }
+    }
+    state.computation_dirty_ordinal_count = state
+        .computation_dirty_ordinal_count
+        .checked_add(row.computation_frontier.as_ref().map_or(0, OrdSet::len))
+        .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
+    state.dirty_ordinal_count = state
+        .dirty_ordinal_count
+        .checked_add(row.dirty_ordinals.len())
+        .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
+    state.pending_edge_count = state
+        .pending_edge_count
+        .checked_add(row.pending_upstream.len())
+        .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
+
+    // Dirty, pending, epoch-stale or verification-required rows are not clean.
+    let not_clean = replayed_stale
+        || row.delivery_epoch != state.delivery_epoch
+        || row.verification_requirement.is_some()
+        || !row.dirty_ordinals.is_empty()
+        || !row.pending_upstream.is_empty();
+    state
+        .settlements
+        .insert(Arc::clone(identity), Arc::new(row));
+    if not_clean {
+        // Consumers registered against the earlier row must not stay clean
+        // behind a replacement that is not itself clean.
+        delivery::propagate(
+            state,
+            OrdSet::unit(Arc::clone(identity)),
+            &mut WorthQueryNativeMarkingWork::default(),
+        )?;
+    }
+    Ok(())
+}
+
+/// Replays retained deliveries after the read basis and reports whether the
+/// row is no longer current.
+fn replay(
+    row: &mut SettlementMarks,
+    root: &BranchMarkRoot,
+) -> Result<bool, CompanionPreflightStop> {
+    let Some(basis) = root.past.get(&row.read_basis.position()).filter(|basis| {
+        basis.root_id == row.read_basis.root_id() && basis.commit_id == row.read_basis.commit_id()
+    }) else {
+        // The caller omits replay only when its basis is the live cell image.
+        row.verification_requirement = Some(FullVerificationReason::RetainedDeliveryGap);
+        return Ok(true);
+    };
+    row.delivery_epoch = basis.state.delivery_epoch;
+    for (_, historical) in root.past.range(row.read_basis.position()..) {
+        let delivery = &historical.next_delivery;
+        let Some(keys) = &delivery.keys else {
+            row.verification_requirement = Some(FullVerificationReason::DeclaredChangeUnavailable);
+            continue;
+        };
+        for key in keys.iter() {
+            let Some(ordinals) = row.posting_projection.ordinals.get(key) else {
+                continue;
+            };
+            for ordinal in ordinals {
+                row.dirty_ordinals.insert(*ordinal);
+                if let Some(frontier) = &mut row.computation_frontier {
+                    frontier.insert(*ordinal);
+                }
+            }
+        }
+    }
+    Ok(!row.dirty_ordinals.is_empty() || row.verification_requirement.is_some())
+}
+
+pub fn remove(
+    state: &mut MarkState,
+    identity: &Arc<RecordedSettlementIdentity>,
+) -> Result<(), CompanionPreflightStop> {
+    let Some(row) = state.settlements.get(identity).cloned() else {
+        return Ok(());
+    };
+    posting_removal::remove(state, identity, &row.posting_projection)?;
+    for upstream in &row.consumed_upstream {
+        let Some(mut targets) = state.downstream.get(upstream).cloned() else {
+            continue;
+        };
+
+        if targets.remove(identity).is_some() {
+            debit(&mut state.downstream_edge_count, 1)?;
+        }
+        if targets.is_empty() {
+            state.downstream.remove(upstream);
+        } else {
+            state.downstream.insert(Arc::clone(upstream), targets);
+        }
+    }
+    debit(
+        &mut state.computation_dirty_ordinal_count,
+        row.computation_frontier.as_ref().map_or(0, OrdSet::len),
+    )?;
+    debit(&mut state.dirty_ordinal_count, row.dirty_ordinals.len())?;
+    debit(&mut state.pending_edge_count, row.pending_upstream.len())?;
+
+    state.settlements.remove(identity);
+    Ok(())
+}
+
+/// Counters fall only by what an installed row added; underflow is a broken
+/// index, reported rather than wrapped.
+fn debit<N>(counter: &mut N, amount: N) -> Result<(), CompanionPreflightStop>
+where
+    N: Copy + std::ops::Sub<Output = N> + PartialOrd,
+{
+    if amount > *counter {
+        return Err(CompanionPreflightStop::PreparationMemoryCounterOverflow);
+    }
+    *counter = *counter - amount;
+    Ok(())
+}
+
+mod court_doors_for_test;

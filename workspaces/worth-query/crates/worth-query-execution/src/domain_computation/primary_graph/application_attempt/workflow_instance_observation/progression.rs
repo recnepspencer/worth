@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::PrimaryGraphHandleWorkflowExt;
 use worth_relational::facade::identity::{EntityId, VersionId};
 use worth_relational::facade::runtime::{
     AdjacencyStructuralRevisionDenial, RelationalAdjacencyDirection,

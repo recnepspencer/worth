@@ -304,6 +304,10 @@ impl WorthQueryApplicationAttemptAffinity {
         &self.provider_session
     }
 
+    pub(in crate::domain_computation::primary_graph) fn runtime_authority_u64(&self) -> u64 {
+        self.basis.runtime.as_u64()
+    }
+
     pub(in crate::domain_computation::primary_graph) const fn installed_binding(
         &self,
     ) -> &worth_query_installation::facade::ApplicationSchemaBindingIdentity {

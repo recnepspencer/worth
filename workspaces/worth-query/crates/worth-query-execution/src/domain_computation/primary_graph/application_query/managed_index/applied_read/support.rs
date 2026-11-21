@@ -1,4 +1,5 @@
 //! Retain actual applied READ, acquisition and provider custody after projection.
+use crate::domain_computation::primary_graph::application_attempt::fact::source_read_authorization::applied::SourceReadAuthorizationAppliedExt;
 mod publication;
 use super::*;
 use crate::domain_computation::primary_graph::application_attempt::{
@@ -9,7 +10,7 @@ use worth_relational::facade::{
     snapshots::SnapshotHandle,
 };
 
-pub(in crate::domain_computation::primary_graph::application_query) struct AppliedManagedSourceSupport
+pub(in crate::domain_computation::primary_graph) struct AppliedManagedSourceSupport
 {
     source: Arc<WorthQueryAppliedSourceRead>,
     association: WorthQueryInstalledManagedIndexParent,
@@ -77,7 +78,7 @@ impl AppliedManagedSourceSupport {
     ) -> [u8; 32] {
         self.acquisition.commitment()
     }
-    pub(in crate::domain_computation::primary_graph::application_query) fn published(
+    pub(in crate::domain_computation::primary_graph) fn published(
         &self,
     ) -> Option<
         &Arc<crate::domain_computation::primary_graph::application_attempt::ManagedSourceRead>,

@@ -28,6 +28,7 @@ worth-query-execution-foundation = { path = "../worth-query-execution-foundation
 worth-query-execution-layout = { path = "../worth-query-execution-layout" }
 worth-query-execution-obligations = { path = "../worth-query-execution-obligations" }
 worth-query-execution-runtime = { path = "../worth-query-execution-runtime" }
+worth-query-execution-lineage = { path = "../worth-query-execution-lineage" }
 worth-query-installation = { path = "../worth-query-installation" }
 
 [dev-dependencies]

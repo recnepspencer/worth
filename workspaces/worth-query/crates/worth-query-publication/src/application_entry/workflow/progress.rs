@@ -1,3 +1,4 @@
+use worth_query_execution::publication_boundary::WorthQueryAdvancementDenialCommitExt as _;
 use worth_query_declaration::facade::{
     application_capability::ApplicationCapabilityRequest,
     application_operation::{

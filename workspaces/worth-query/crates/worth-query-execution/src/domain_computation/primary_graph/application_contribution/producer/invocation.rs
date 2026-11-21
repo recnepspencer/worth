@@ -1,4 +1,5 @@
 //! Per-call liveness is distinct from persistent installed producer provenance.
+use crate::domain_computation::primary_graph::application_contribution::producer::demand::denial::history_source::OutputDemandDenialHistoryExt;
 use super::WorthQueryProducerCommitAuthority;
 use crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerInvocation;
 use crate::domain_computation::primary_graph::{

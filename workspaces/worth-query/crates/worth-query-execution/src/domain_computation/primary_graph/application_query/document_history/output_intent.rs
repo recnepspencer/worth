@@ -95,7 +95,11 @@ impl WorthQueryHistoryOutputIntent {
         source: &crate::domain_computation::primary_graph::WorthQueryObservedSource<Q>,
         observation: &worth_runtime_world::facade::ProductBranchObservation,
     ) -> bool {
-        self.backing.scope.matches_source(source)
+        self.backing.scope.matches_source_identity(
+            source.model_root,
+            source.runtime_authority,
+            &source.schema_binding,
+        )
             && matches!(&source.selection,
             crate::domain_computation::primary_graph::WorthQueryApplicationBasisSelectionIdentity::Product(product)
                 if product.matches_observation(observation))

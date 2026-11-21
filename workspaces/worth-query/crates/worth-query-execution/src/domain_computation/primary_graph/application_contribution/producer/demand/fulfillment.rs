@@ -1,4 +1,5 @@
 //! Lend only the real settled required demand's private interest to its owner.
+use crate::domain_computation::primary_graph::OutputDemandSettlementRuntimeExt;
 use super::*;
 use crate::domain_computation::primary_graph::{
     WorthQueryFulfilledRequiredRoot, WorthQueryOutputDemandDenial,

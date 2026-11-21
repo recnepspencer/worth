@@ -1,4 +1,5 @@
 //! Mandatory fresh-commit gate shared by ordinary, advanced and platform effect paths.
+use crate::domain_computation::primary_graph::WorthQueryAdvancementDenialCommitExt as _;
 use super::super::{
     WorthQueryApplicationCommitDenial as Denial, WorthQueryApplicationCommitOutcome as Outcome,
     WorthQueryApplicationIdempotencyBinding, WorthQueryApplicationRealizedEffect as Effect,

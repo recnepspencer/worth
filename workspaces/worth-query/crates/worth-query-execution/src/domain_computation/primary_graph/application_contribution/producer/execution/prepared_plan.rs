@@ -136,6 +136,23 @@ impl<'owner, Value: 'owner, Stop: 'owner> OwnerPlan<'owner, Value, Stop> {
     }
 }
 
+impl<Value, Stop>
+    crate::domain_computation::primary_graph::application_output_demand::registry::required_work::wave_admission::PreparedWavePlan
+    for OwnerPlan<'_, Value, Stop>
+{
+    fn prepared_inputs(
+        &self,
+    ) -> Option<
+        &crate::domain_computation::primary_graph::application_output_demand::PreparedRequiredInputs,
+    > {
+        self.inputs.as_ref()
+    }
+
+    fn has_compute(&self) -> bool {
+        !self.requests.is_empty()
+    }
+}
+
 #[cfg(test)]
 mod completion_custody;
 

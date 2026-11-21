@@ -23,9 +23,9 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
     ) -> Result<WorthQueryManagedIndex<S, I>, Denial> {
         let execution = phase
             .execution_request_for(&self.runtime.product_runtime)
-            .map_err(|_| Denial::new(ReceiverCause::Refused(Refusal::ForeignPhase), None))?;
+            .map_err(|_| crate::domain_computation::primary_graph::application_query::managed_index::denial::managed_index_denial(ReceiverCause::Refused(Refusal::ForeignPhase), None))?;
         let allocation = SourceFactsAllocation::open(&execution)
-            .map_err(|cause| Denial::new(ReceiverCause::Execution(cause), None))?;
+            .map_err(|cause| crate::domain_computation::primary_graph::application_query::managed_index::denial::managed_index_denial(ReceiverCause::Execution(cause), None))?;
         let result = (|| {
             let context = context::prepare(&execution, self, binding, &mut plan, &allocation)?;
             let adapter = self
@@ -44,7 +44,9 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
                 .runtime
                 .primary_graph()
                 .ok_or(ReceiverCause::Refused(Refusal::ForeignContext))?;
-            let registry = graph.managed_derived_views();
+            let registry = crate::domain_computation::primary_graph::downcast_managed_views_arc(
+                graph.managed_derived_views(),
+            );
             let (id, state) = registry
                 .register_index(&execution, candidate)
                 .map_err(|cause| {
@@ -75,7 +77,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
                 registry: Arc::downgrade(&registry),
             })
         })();
-        result.map_err(|cause| Denial::new(cause, Some(allocation)))
+        result.map_err(|cause| crate::domain_computation::primary_graph::application_query::managed_index::denial::managed_index_denial(cause, Some(allocation)))
     }
 
     /// Explicitly rebuilds from the currently admitted complete Source.
@@ -94,9 +96,9 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
     ) -> Result<(), Denial> {
         let execution = phase
             .execution_request_for(&self.runtime.product_runtime)
-            .map_err(|_| Denial::new(ReceiverCause::Refused(Refusal::ForeignPhase), None))?;
+            .map_err(|_| crate::domain_computation::primary_graph::application_query::managed_index::denial::managed_index_denial(ReceiverCause::Refused(Refusal::ForeignPhase), None))?;
         let allocation = SourceFactsAllocation::open(&execution)
-            .map_err(|cause| Denial::new(ReceiverCause::Execution(cause), None))?;
+            .map_err(|cause| crate::domain_computation::primary_graph::application_query::managed_index::denial::managed_index_denial(ReceiverCause::Execution(cause), None))?;
         let result = (|| {
             let context = context::prepare(&execution, self, binding, &mut plan, &allocation)?;
             let adapter = self
@@ -129,6 +131,6 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             )
             .map_err(ReceiverCause::Provider)
         })();
-        result.map_err(|cause| Denial::new(cause, Some(allocation)))
+        result.map_err(|cause| crate::domain_computation::primary_graph::application_query::managed_index::denial::managed_index_denial(cause, Some(allocation)))
     }
 }

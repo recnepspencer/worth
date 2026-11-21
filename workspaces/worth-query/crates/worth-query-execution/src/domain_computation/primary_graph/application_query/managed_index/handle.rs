@@ -47,7 +47,7 @@ impl<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>> WorthQueryManag
     #[inline(never)]
     fn evict_on_execution_stack(&self) -> Result<(), WorthQueryManagedIndexDenial> {
         self.state.evict().map_err(|cause| {
-            WorthQueryManagedIndexDenial::new(
+            super::denial::managed_index_denial(
                 ReceiverCause::Provider(ProviderExecutionDenial::Lifecycle(cause)),
                 None,
             )

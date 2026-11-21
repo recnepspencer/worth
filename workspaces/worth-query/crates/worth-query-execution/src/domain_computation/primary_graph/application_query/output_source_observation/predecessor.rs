@@ -1,4 +1,5 @@
 //! C operation permission precedes selecting the genuine predecessor's old truth.
+use crate::domain_computation::primary_graph::SourceReadAuthorizationRuntimeExt;
 use super::*;
 pub(super) use crate::domain_computation::primary_graph::application_contribution::producer::observation_reads::WorthQueryProducerObservationReadDenial as Denial;
 use worth_query_declaration::facade::application_schema::{ApplicationOperationMarkerIdentity, ApplicationOperationRef};
@@ -145,6 +146,88 @@ impl<S: ApplicationSchema> SourceQueryReaderAccess<'_, S> {
             .expect("selection requires declared predecessor reads")
             .state
             .record(read);
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn authorize_observation_view(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        native: &RelationalRuntime,
+        installed_view: worth_query_installation::facade::InstalledOperationView<'_>,
+    ) -> Result<
+        Arc<crate::domain_computation::primary_graph::application_attempt::SourceReadAuthorization>,
+        Denial,
+    > {
+        self.observation_control(execution, native)?;
+        let current = self
+            .history
+            .as_ref()
+            .map_or(self.shared, |control| control.current)
+            .selected();
+        let authorization = self
+            .read_authorization
+            .as_ref()
+            .ok_or(Denial::UndeclaredObservationRead)?
+            .observe(
+                execution,
+                native,
+                current.application_basis().snapshot_handle().clone(),
+                installed_view,
+            )
+            .map_err(Denial::Authorization)?;
+        crate::domain_computation::primary_graph::application_attempt::SourceReadAuthorization::retain_operation(
+            execution,
+            installed_view,
+            self.read_authorization.as_ref().expect("admitted read"),
+            authorization,
+            &self.application.runtime.authorization,
+        )
+        .map_err(|stop| {
+            Denial::Control(Box::new(SourceQueryObservationStop::Read(
+                WorthQueryAdmittedOneShotStop::Admission(stop),
+            )))
+        })
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn select_predecessor_input(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        native: &RelationalRuntime,
+        scope: worth_relational::facade::identity::EntityId,
+        partition: [u8; 32],
+    ) -> Result<(RelationalRequiredOutputPublication, RelationalPredecessorInput), Denial> {
+        let access = self
+            .predecessor
+            .as_ref()
+            .ok_or(Denial::UndeclaredObservationRead)?;
+        access.select(
+            execution,
+            self.application,
+            native,
+            self.shared.selected().product().relational_basis(),
+            scope,
+            partition,
+        )
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn observation_components_any(
+        &self,
+    ) -> (
+        &dyn std::any::Any,
+        &dyn std::any::Any,
+        &dyn std::any::Any,
+        Option<&dyn std::any::Any>,
+        Option<&dyn std::any::Any>,
+    )
+    where
+        S: 'static,
+    {
+        (
+            self.application.installed_schema(),
+            &self.application.mutation_projection,
+            self.application.runtime.installed_packages(),
+            self.predecessor.as_ref().map(|a| a as &dyn std::any::Any),
+            self.original.as_ref().map(|a| a as &dyn std::any::Any),
+        )
     }
 }
 

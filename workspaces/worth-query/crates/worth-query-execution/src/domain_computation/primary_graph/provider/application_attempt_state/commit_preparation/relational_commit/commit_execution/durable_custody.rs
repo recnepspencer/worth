@@ -75,7 +75,7 @@ pub(in crate::domain_computation) struct QueryPreparingApplicationCommit {
 
 /// The original Query state and World stage share one already-reserved slot.
 /// An external checkout guard owns the reservation, store and entry Arcs.
-pub(in crate::domain_computation::primary_graph::provider) struct RetainedQueryDurablePreparation {
+pub(in crate::domain_computation::primary_graph) struct RetainedQueryDurablePreparation {
     pub(super) query: QueryPreparingApplicationCommit,
     pub(super) stage: crate::domain_computation::WorthQueryProductPreparationStage,
     pub(super) world: QueryDurableWorldCustody,
@@ -156,6 +156,10 @@ impl std::fmt::Debug for RetainedQueryDurablePreparation {
 }
 
 impl RetainedQueryDurablePreparation {
+    pub(in crate::domain_computation::primary_graph) fn is_unprepared(&self) -> bool {
+        self.query.is_unprepared()
+    }
+
     pub(in crate::domain_computation::primary_graph::provider) fn stage(
         &self,
     ) -> crate::domain_computation::WorthQueryProductPreparationStage {

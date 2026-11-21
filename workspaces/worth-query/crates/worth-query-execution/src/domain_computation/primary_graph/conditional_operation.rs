@@ -1,7 +1,7 @@
 mod read_observation;
 mod retained_managed_cleanup;
 pub use read_observation::conditional_intent_read_is_active_for_test;
-mod reentry_failure;
+use worth_query_execution_lineage::facade::domain_computation::primary_graph::conditional_operation::reentry_failure;
 pub use reentry_failure::WorthQueryConditionalReentryFailure;
 mod authoritative_delivery_failure;
 pub use authoritative_delivery_failure::WorthQueryConditionalAuthoritativeDeliveryFailure;

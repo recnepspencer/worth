@@ -1,22 +1,22 @@
-//! External-effect causality: postures, correlation, outbox, classification.
-//!
-//! CDC is intentionally not the delivery substrate (R8.8). Dispatch work is
-//! derived from Query-owned outbox records co-committed with the mutation.
+//! External-effect causality: re-exports pure postures, correlation, outbox, and
+//! dispatch types from `worth-query-execution-lineage` and retains runtime dispatch
+//! admission and inbound custody in `worth-query-execution`.
 
+pub(crate) use worth_query_execution_lineage::facade::domain_computation::application_aftermath::external_effect::{
+    correlation, identity, outbox, posture, transport,
+};
 pub(crate) mod causal_event;
 pub(crate) mod classification;
-pub(crate) mod correlation;
-pub(crate) mod dispatch;
-mod identity;
+pub(crate) mod proven_no_effect;
+pub(crate) mod dispatch {
+    pub use worth_query_execution_lineage::facade::domain_computation::application_aftermath::external_effect::dispatch::*;
+    pub use super::dispatch_execution::dispatch_external_effect;
+}
 mod identity_derivation;
 pub(crate) mod inbound;
 mod observation;
 mod recorded_completion;
 pub(in crate::domain_computation) use recorded_completion::RecordedCompletionCausality;
-pub(crate) mod outbox;
-mod posture;
-mod proven_no_effect;
-mod transport;
 
 pub use causal_event::ExternalEffectPosture;
 pub(crate) mod dispatch_admission;
@@ -25,7 +25,6 @@ pub use correlation::{
     derive_external_effect_correlation_identity, ExternalEffectCorrelationBasis,
     ExternalEffectCorrelationIdentity,
 };
-pub(in crate::domain_computation) use dispatch::dispatch_external_effect;
 pub use dispatch::{
     WorthQueryExternalDispatchCausalRelation, WorthQueryExternalDispatchPosture,
     WorthQueryExternalDispatchPostureKind, WorthQueryExternalEffectCausalLadder,
@@ -55,3 +54,7 @@ pub use transport::{
     WorthQueryExternalDispatchRequest, WorthQueryExternalEffectTransport,
     WorthQueryExternalTransportOutcome,
 };
+
+#[path = "dispatch/execution.rs"]
+mod dispatch_execution;
+pub(in crate::domain_computation) use dispatch_execution::dispatch_external_effect;

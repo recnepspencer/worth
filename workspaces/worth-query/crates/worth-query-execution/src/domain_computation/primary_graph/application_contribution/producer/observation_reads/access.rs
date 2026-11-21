@@ -17,44 +17,6 @@ use worth_relational::facade::{
     runtime::RelationalRuntime,
 };
 
-/// It stores no retained old basis. Only an observation's synchronous loan pins it.
-#[derive(Default)]
-pub(in crate::domain_computation::primary_graph) struct ProducerPredecessorReadState {
-    selected: Mutex<Option<RelationalRequiredOutputPublication>>,
-    historical: Mutex<Vec<WorthQueryHistoricalProducerRead>>,
-}
-impl ProducerPredecessorReadState {
-    pub(in crate::domain_computation::primary_graph) fn record(
-        &self,
-        read: WorthQueryHistoricalProducerRead,
-    ) {
-        self.historical
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .push(read);
-    }
-    pub(in crate::domain_computation::primary_graph) fn take_historical(
-        &self,
-    ) -> Option<Arc<[WorthQueryHistoricalProducerRead]>> {
-        let mut reads = self
-            .historical
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        if reads.is_empty() {
-            return None;
-        }
-        Some(std::mem::take(&mut *reads).into())
-    }
-    pub(in crate::domain_computation::primary_graph) fn selected(
-        &self,
-    ) -> Option<RelationalRequiredOutputPublication> {
-        self.selected
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .clone()
-    }
-}
-
 /// Current admission supplies authority separately. This carries only declared
 /// operation membership and the running producer's authentic route coordinates.
 pub(in crate::domain_computation::primary_graph) struct ProducerPredecessorReadAccess {

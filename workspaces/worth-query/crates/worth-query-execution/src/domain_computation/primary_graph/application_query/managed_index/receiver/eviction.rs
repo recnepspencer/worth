@@ -20,9 +20,9 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
     ) -> Result<(), Denial> {
         let execution = phase
             .execution_request_for(&self.runtime.product_runtime)
-            .map_err(|_| Denial::new(ReceiverCause::Refused(Refusal::ForeignPhase), None))?;
+            .map_err(|_| crate::domain_computation::primary_graph::application_query::managed_index::denial::managed_index_denial(ReceiverCause::Refused(Refusal::ForeignPhase), None))?;
         let allocation = SourceFactsAllocation::open(&execution)
-            .map_err(|cause| Denial::new(ReceiverCause::Execution(cause), None))?;
+            .map_err(|cause| crate::domain_computation::primary_graph::application_query::managed_index::denial::managed_index_denial(ReceiverCause::Execution(cause), None))?;
         let result = (|| {
             let context = context::prepare(&execution, self, binding, &mut plan, &allocation)?;
             let adapter = self
@@ -68,7 +68,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             drop(retired);
             Ok(())
         })();
-        result.map_err(|cause| Denial::new(cause, Some(allocation)))
+        result.map_err(|cause| crate::domain_computation::primary_graph::application_query::managed_index::denial::managed_index_denial(cause, Some(allocation)))
     }
 }
 fn lifecycle(cause: WorthQueryManagedIndexLifecycleDenial) -> ReceiverCause {

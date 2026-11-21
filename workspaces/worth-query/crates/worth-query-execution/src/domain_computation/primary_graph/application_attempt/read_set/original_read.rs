@@ -46,27 +46,27 @@ impl CompletedOriginalRead {
         ))
     }
 
-    pub(in crate::domain_computation::primary_graph) fn matches_body(
+    pub fn matches_body(
         &self,
         body: &FactPayload,
         projection: &Arc<CompletedFactProjection>,
     ) -> bool {
         self.body.same_backing(body) && Arc::ptr_eq(&self.projection, projection)
     }
-    pub(in crate::domain_computation::primary_graph) fn belongs_to_admission(
+    pub fn belongs_to_admission(
         &self,
         admission: crate::domain_computation::authorization::WorthQueryOperationAdmissionIdentity,
     ) -> bool {
         self.admission == admission
     }
-    pub(in crate::domain_computation::primary_graph) fn belongs_to_graph_work(
+    pub fn belongs_to_graph_work(
         &self,
         graph_work: crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
     ) -> bool {
         self.graph_work == graph_work
     }
 
-    pub(in crate::domain_computation::primary_graph) fn matches_applied_source(
+    pub fn matches_applied_source(
         &self,
         candidate: &worth_relational::facade::runtime::RelationalPinnedRead<
             worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
@@ -78,7 +78,7 @@ impl CompletedOriginalRead {
             == Some(candidate.candidate_identity().qualification()))
     }
 
-    pub(in crate::domain_computation::primary_graph) fn matches_source(
+    pub fn matches_source(
         &self,
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,

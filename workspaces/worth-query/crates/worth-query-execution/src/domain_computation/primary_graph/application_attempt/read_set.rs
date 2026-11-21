@@ -18,13 +18,13 @@ use crate::domain_computation::primary_graph::{
     WorthQueryInstalledEntityResolutionContext, WorthQueryPrimaryGraphApplicationRuntime,
     WorthQueryPrincipalResolutionMode,
 };
-mod fact_routes;
+use worth_query_execution_lineage::facade::domain_computation::primary_graph::application_attempt::read_set::fact_routes;
 pub(in crate::domain_computation::primary_graph) use fact_routes::FactRoutes;
-pub(crate) mod application_projection;
+pub(crate) use worth_query_execution_lineage::facade::domain_computation::primary_graph::application_attempt::read_set::application_projection;
 pub(in crate::domain_computation) use application_projection::CompletedFactProjection;
 pub(crate) mod original_read;
 pub(in crate::domain_computation) use original_read::CompletedOriginalRead;
-pub(crate) mod admitted_arrays;
+pub(crate) use worth_query_execution_lineage::facade::domain_computation::primary_graph::application_attempt::read_set::admitted_arrays;
 mod completed_facts;
 pub(in crate::domain_computation::primary_graph::application_attempt) use completed_facts::admit_completed_facts;
 mod authority_facts;
@@ -32,7 +32,7 @@ mod binding_proof;
 mod complete_read_set_core;
 mod completion;
 mod completion_brand;
-pub(crate) mod computation_routing;
+pub(crate) use worth_query_execution_lineage::facade::domain_computation::primary_graph::application_attempt::read_set::computation_routing;
 mod mutation_read_attempt_core;
 mod native_completion;
 mod value_decode;
@@ -43,20 +43,20 @@ pub(in crate::domain_computation::primary_graph) use computation_routing::{
 };
 pub(in crate::domain_computation::primary_graph) mod request_liveness;
 mod retained_facts;
-pub(crate) mod scope_bindings;
+pub(crate) use worth_query_execution_lineage::facade::domain_computation::primary_graph::application_attempt::read_set::scope_bindings;
 pub(in crate::domain_computation::primary_graph::application_attempt) use admitted_arrays::admit_array;
 pub(in crate::domain_computation::primary_graph) use scope_bindings::{
     CompletedReadScopes, InstalledScopePosition,
 };
-pub(crate) mod decision_reuse;
-pub(crate) mod fact_observation;
+pub(crate) use worth_query_execution_lineage::facade::domain_computation::primary_graph::application_attempt::read_set::decision_reuse;
+pub(crate) use worth_query_execution_lineage::facade::domain_computation::primary_graph::application_attempt::read_set::fact_observation;
 pub(in crate::domain_computation::primary_graph) use decision_reuse::{
     CompletedDecisionReuseProof, PreparedDecisionReuseContext,
 };
 pub(in crate::domain_computation::primary_graph) use fact_observation::{
     observe_admitted_applied_fact, observe_admitted_fact,
 };
-pub(crate) mod handler_fact_boundary;
+pub(crate) use worth_query_execution_lineage::facade::domain_computation::primary_graph::application_attempt::read_set::handler_fact_boundary;
 pub(in crate::domain_computation) use handler_fact_boundary::CompletedHandlerFactBoundary;
 pub(crate) mod aggregate;
 mod captured_input_support;
@@ -178,7 +178,7 @@ mod admission;
 mod entity_resolution;
 mod workflow_actor;
 
-mod denial;
+use worth_query_execution_lineage::facade::domain_computation::primary_graph::application_attempt::read_set::denial;
 pub use denial::denial;
 
 mod court_doors_for_test;

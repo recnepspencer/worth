@@ -15,38 +15,7 @@ mod operation_body;
 mod predecessor;
 mod predecode_admission;
 
-/// Why a mutation handler stopped before finishing.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum HandlerInterruption {
-    /// The request was cancelled.
-    Cancelled,
-    /// The request reached its deadline.
-    DeadlineExceeded,
-}
-
-impl std::fmt::Display for HandlerInterruption {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        formatter.write_str(match self {
-            Self::Cancelled => "the request was cancelled",
-            Self::DeadlineExceeded => "the request reached its deadline",
-        })
-    }
-}
-
-impl std::error::Error for HandlerInterruption {}
-
-impl From<worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption>
-    for HandlerInterruption
-{
-    fn from(
-        interruption: worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption,
-    ) -> Self {
-        match interruption {
-            worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption::Cancelled => Self::Cancelled,
-            worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption::DeadlineExceeded => Self::DeadlineExceeded,
-        }
-    }
-}
+pub use worth_query_execution_lineage::facade::primary_graph::handler::HandlerInterruption;
 
 /// Exact admitted decision projection and its already-resolved operation scope.
 pub struct DecisionReader<'borrow, 'reader, 'runtime, Schema, Binding>
@@ -71,6 +40,12 @@ where
     pub(super) context_use: &'borrow Cell<DecisionContextUse>,
     pub(super) conditional_definitions: super::ConditionalDefinitionAdmission<'borrow, Schema>,
     interruption: &'borrow Cell<Option<HandlerInterruption>>,
+    pub(in crate::domain_computation::primary_graph) source_query: Option<
+        &'borrow crate::domain_computation::primary_graph::application_query::SourceQueryReaderAccess<
+            'borrow,
+            Schema,
+        >,
+    >,
 }
 
 impl<'borrow, 'reader, 'runtime, Schema, Binding>
@@ -98,6 +73,12 @@ where
         context_use: &'borrow Cell<DecisionContextUse>,
         interruption: &'borrow Cell<Option<HandlerInterruption>>,
         conditional_definitions: super::ConditionalDefinitionAdmission<'borrow, Schema>,
+        source_query: Option<
+            &'borrow crate::domain_computation::primary_graph::application_query::SourceQueryReaderAccess<
+                'borrow,
+                Schema,
+            >,
+        >,
     ) -> Self {
         Self {
             reader,
@@ -109,6 +90,7 @@ where
             context_use,
             interruption,
             conditional_definitions,
+            source_query,
         }
     }
 

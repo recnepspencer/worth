@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::application_attempt::effect_program::EffectEntityBorrowedExt;
 use worth_query_installation::facade::ApplicationOperationProgramTarget;
 use worth_query_installation::facade::ApplicationRelationRef;
 use worth_query_installation::facade::OperationLinks;

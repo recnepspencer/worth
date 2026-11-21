@@ -1,10 +1,18 @@
 //! Actual acknowledged material expiry authorizes one terminal support release.
 use super::*;
 use crate::domain_computation::primary_graph::retained_correction::MaterialPublication;
-use journal::*;
+use super::journal::*;
 use worth_foundational::facade::ProgramSupportObligationKind;
-impl QueryObligationHistory {
-    pub(in crate::domain_computation::primary_graph) fn dispose_expired_interpretations(
+pub(in crate::domain_computation::primary_graph) trait QueryObligationHistoryOriginalExpiryExt {
+    fn dispose_expired_interpretations(
+        &self,
+        material: &MaterialPublication<'_>,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<(), crate::domain_computation::primary_graph::WorthQueryCorrectionRetentionDenial>;
+}
+
+impl QueryObligationHistoryOriginalExpiryExt for QueryObligationHistory {
+    fn dispose_expired_interpretations(
         &self,
         material: &MaterialPublication<'_>,
         request: &worth_execution::ExecutionRequest<'_, '_>,

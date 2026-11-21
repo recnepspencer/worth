@@ -126,16 +126,16 @@ impl WorthQueryProductRetentionFollower for WorthQueryPrimaryGraphProvider {
         &self,
         identity: &worth_relational::facade::branch::RelationalBranchIdentity,
     ) -> bool {
-        self.graph
-            .managed_derived_views()
+        let views = self.graph.managed_derived_views();
+        crate::domain_computation::primary_graph::downcast_managed_views(views.as_ref())
             .manages_native_sources(identity)
     }
     fn native_branch_deleted(
         &self,
         deleted: &worth_relational::facade::branch::DeletedRelationalBranch,
     ) {
-        self.graph
-            .managed_derived_views()
+        let views = self.graph.managed_derived_views();
+        crate::domain_computation::primary_graph::downcast_managed_views(views.as_ref())
             .retire_source_branch(deleted);
     }
 }

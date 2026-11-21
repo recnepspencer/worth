@@ -18,7 +18,7 @@ pub(super) fn refused_before_open(
 ) -> Stop {
     Stop::ProductPreparationRefused(
         worth_query_execution_runtime::facade::ports::OpaqueProductPublicationOutcome::new(
-            Refused::new(Refusal::World(cause), query),
+            Refused::new(Refusal::World(cause), Box::new(query)),
             false,
         ),
     )

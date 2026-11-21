@@ -1,7 +1,6 @@
 //! Original source disclosure meaning; fresh use must independently authorize it.
-pub(crate) mod inspection;
+pub(crate) use worth_query_execution_lineage::facade::primary_graph::source_disclosure::{inspection, original};
 pub(crate) mod inspection_capture;
-pub(crate) mod original;
 mod parameter_capture;
 
 pub(in crate::domain_computation) use inspection::OriginalSourceInspectionDisclosure;

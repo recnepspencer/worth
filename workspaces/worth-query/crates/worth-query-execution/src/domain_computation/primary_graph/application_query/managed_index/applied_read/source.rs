@@ -1,4 +1,5 @@
 //! Independently admit Source READ before borrowing an exact Native applied image.
+use crate::domain_computation::primary_graph::application_attempt::fact::source_read_authorization::applied::SourceReadAuthorizationAppliedExt;
 use super::super::{source::occurrences::PersistentSourceRows, source_image::SourceBinding};
 use super::*;
 use crate::domain_computation::primary_graph::application_query::{

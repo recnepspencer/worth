@@ -1,0 +1,74 @@
+use crate::equality_type_id::EqualityTypeId as TypeId;
+use std::sync::Arc;
+
+use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
+
+use super::{
+    latest_output_matching, SemanticSource, WorthQueryApplicationOutputLineage,
+    WorthQueryExactRecordedOutput,
+};
+
+impl WorthQueryApplicationOutputLineage {
+    pub fn qualified_output<Binding: 'static>(
+        &self,
+        runtime_authority: u64,
+        schema: &ApplicationSchemaBindingIdentity,
+        scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+        occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
+        generation: u64,
+        runtime_identity: crate::domain_computation::primary_graph::application_query::WorthQueryRuntimeSourceIdentity,
+        checkpoint_identity: crate::domain_computation::primary_graph::application_query::WorthQueryCheckpointSourceIdentity,
+    ) -> Option<WorthQueryExactRecordedOutput> {
+        let source = SemanticSource {
+            runtime_authority,
+            schema: schema.clone(),
+            scope,
+            output_binding: self.binding_identity(TypeId::of::<Binding>())?,
+        };
+        let history = self.by_source.get(&source)?.get(&occurrence)?;
+        let recorded = latest_output_matching(history, generation, |recorded| {
+            recorded.source_identity.is_some_and(|identity| {
+                identity.matches_current(runtime_identity, checkpoint_identity)
+            })
+        })?;
+        if !self.implementation_is_current(recorded) {
+            return None;
+        }
+        Some(WorthQueryExactRecordedOutput {
+            producing_implementation: recorded.producing_implementation,
+            correspondence: Arc::clone(&recorded.correspondence),
+            source_identity: recorded.source_identity?,
+            source_partition_identity: recorded.source_partition_identity?,
+            producer_dependency_identity: recorded.producer_dependency_identity,
+            idempotency_key_identity: recorded.idempotency_key_identity,
+            runtime_authority: source.runtime_authority,
+            schema: source.schema.clone(),
+            scope: source.scope,
+            observed_source_facts: recorded
+                .observed_source_facts()
+                .filter(|facts| !facts.is_empty())?,
+        })
+    }
+
+    pub fn has_output_at_or_before<
+        Binding: 'static,
+    >(
+        &self,
+        occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
+        generation: u64,
+    ) -> bool {
+        let Some(output_binding) = self.binding_identity(TypeId::of::<Binding>()) else {
+            return false;
+        };
+        self.by_source.iter().any(|(source, versions)| {
+            output_binding == source.output_binding
+                && versions.get(&occurrence).is_some_and(|history| {
+                    history
+                        .range(..=generation)
+                        .any(|(_, records)| records.iter().any(|cell| cell.get().is_some()))
+                })
+        })
+    }
+}
+
+mod court_doors_for_test;

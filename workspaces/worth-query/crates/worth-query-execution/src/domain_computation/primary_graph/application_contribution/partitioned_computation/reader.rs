@@ -47,6 +47,12 @@ pub struct WorthQueryComputationReader<'call, 'reader, 'runtime, Schema, Operati
         Schema,
         Operation,
     >,
+    source_query: Option<
+        &'call crate::domain_computation::primary_graph::application_query::SourceQueryReaderAccess<
+            'call,
+            Schema,
+        >,
+    >,
 }
 
 impl<'call, 'reader, 'runtime, Schema, Operation>
@@ -61,8 +67,17 @@ where
             Schema,
             Operation,
         >,
+        source_query: Option<
+            &'call crate::domain_computation::primary_graph::application_query::SourceQueryReaderAccess<
+                'call,
+                Schema,
+            >,
+        >,
     ) -> Self {
-        Self { reader }
+        Self {
+            reader,
+            source_query,
+        }
     }
 
     /// Reads a field's value.
@@ -119,39 +134,6 @@ where
     }
 }
 
-/// Why a read through the lent reader was refused.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub enum WorthQueryComputationReadDenial {
-    OutputAvailability(Box<crate::domain_computation::primary_graph::invariant_projection::WorthQueryOutputAvailabilityDenial>),
-    /// The retained computation's fact comparison stopped under its request.
-    RetainedFact(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind),
-    Field(WorthQueryInvariantDecisionPlanDenial),
-    Relations(WorthQueryInvariantProjectionTraversalDenial),
-}
-
-/// Why an owner call that reads the input has no answer.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub enum WorthQueryComputationInputDenial<Stopped> {
-    /// The owner refused what it read.
-    Owner(Stopped),
-    /// A read was refused.
-    Read(WorthQueryComputationReadDenial),
-}
-
-impl<Stopped> From<WorthQueryComputationReadDenial> for WorthQueryComputationInputDenial<Stopped> {
-    fn from(denial: WorthQueryComputationReadDenial) -> Self {
-        Self::Read(denial)
-    }
-}
-
-impl worth_execution::ChargedBytes for WorthQueryComputationReadDenial {
-    fn additional_charged_bytes(&self) -> u64 {
-        match self {
-            Self::OutputAvailability(stop) => (std::mem::size_of_val(stop.as_ref()) as u64)
-                .saturating_add(stop.additional_charged_bytes()),
-            Self::RetainedFact(_) => 0,
-            Self::Field(denial) => denial.additional_charged_bytes(),
-            Self::Relations(denial) => denial.additional_charged_bytes(),
-        }
-    }
-}
+pub use worth_query_execution_lineage::facade::primary_graph::application_contribution::partitioned_computation::denial::{
+    WorthQueryComputationInputDenial, WorthQueryComputationReadDenial,
+};

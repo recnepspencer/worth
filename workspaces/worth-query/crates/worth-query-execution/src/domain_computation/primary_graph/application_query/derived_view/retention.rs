@@ -16,7 +16,7 @@ use super::dependency::ViewDependency;
 use super::publication::DependencyIndex;
 use super::registry::ManagedDerivedViewRegistry;
 
-mod denial;
+use worth_query_execution_lineage::facade::domain_computation::primary_graph::application_query::derived_view::retention::denial;
 mod member_token;
 mod publication;
 mod reconcile;

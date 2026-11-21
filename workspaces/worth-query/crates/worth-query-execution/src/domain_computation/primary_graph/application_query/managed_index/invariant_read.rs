@@ -2,63 +2,25 @@
 mod projection;
 use super::{
     invocation::decoded_provider, source::service::ManagedSourceRoot,
-    WorthQueryManagedIndexProbeValue, WorthQueryManagedIndexWorkDenial,
+    WorthQueryManagedIndexProbeValue,
 };
 use crate::domain_computation::primary_graph::application_query::{
     disclosure::WorthQueryApplicationQueryGovernance, WorthQueryApplicationProjection,
-    WorthQueryApplicationProjectionDenial, WorthQueryApplicationProjectionRow,
+    WorthQueryApplicationProjectionRow,
 };
 use worth_query_declaration::facade::{
     application_query::{ApplicationManagedIndexBinding, ApplicationQueryBinding},
     application_schema::{
-        ApplicationScalarValueBinding, ApplicationSchema, ApplicationStructuredValueBinding,
+        ApplicationScalarValueBinding, ApplicationSchema,
     },
 };
 use worth_relational::facade::runtime::{
     ManagedIndexSourcePreparationDenial as NativeDenial, ManagedIndexSourceRead,
 };
 
-pub type ManagedSourceValue<S, I> = <<<I as ApplicationManagedIndexBinding<S>>::SourceBinding as ApplicationQueryBinding<S>>::ResultBinding as ApplicationStructuredValueBinding>::Value;
-#[derive(Clone, Copy)]
-pub(in crate::domain_computation::primary_graph) enum ReadPosture {
-    Committed,
-    Proposed,
-}
-
-#[derive(Debug)]
-/// An invariant index read failed at its Native loan, probe, provider or projection boundary.
-pub enum WorthQueryManagedIndexInvariantDenial {
-    Native(NativeDenial),
-    Probe(worth_query_declaration::facade::application_schema::ApplicationValueEncodeDenial),
-    Provider(WorthQueryManagedIndexWorkDenial),
-    Projection(WorthQueryApplicationProjectionDenial),
-}
-impl From<NativeDenial> for WorthQueryManagedIndexInvariantDenial {
-    fn from(cause: NativeDenial) -> Self {
-        Self::Native(cause)
-    }
-}
-impl std::fmt::Display for WorthQueryManagedIndexInvariantDenial {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(formatter, "{self:?}")
-    }
-}
-impl std::error::Error for WorthQueryManagedIndexInvariantDenial {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        match self {
-            Self::Provider(cause) => Some(cause),
-            Self::Native(NativeDenial::Provider(cause)) => Some(cause),
-            _ => None,
-        }
-    }
-}
-impl WorthQueryManagedIndexInvariantDenial {
-    /// No material was available for this particular read posture. This is
-    /// diagnostic only; an unavailable Source never means empty membership.
-    pub fn source_unavailable(&self) -> bool {
-        matches!(self, Self::Native(cause) if cause.source_unavailable())
-    }
-}
+pub use worth_query_execution_lineage::facade::primary_graph::application_query::managed_index::invariant_read::{
+    ManagedSourceValue, ReadPosture, WorthQueryManagedIndexInvariantDenial,
+};
 
 pub(in crate::domain_computation::primary_graph) fn query<S, I>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,

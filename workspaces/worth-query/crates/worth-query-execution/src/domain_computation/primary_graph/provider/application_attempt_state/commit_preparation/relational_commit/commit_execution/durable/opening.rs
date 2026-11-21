@@ -12,7 +12,7 @@ pub(super) fn prepare(
     else {
         return Err(Stop::ProductPreparationRefused(
             worth_query_execution_runtime::facade::ports::OpaqueProductPublicationOutcome::new(
-                Refused::new(Refusal::RequestClockMismatch, query),
+                Refused::new(Refusal::RequestClockMismatch, Box::new(query)),
                 false,
             ),
         ));
@@ -23,7 +23,7 @@ pub(super) fn prepare(
             Err(()) => {
                 return Err(Stop::ProductPreparationRefused(
                     worth_query_execution_runtime::facade::ports::OpaqueProductPublicationOutcome::new(
-                        Refused::new(Refusal::QueryPreparationReservationRefused, query),
+                        Refused::new(Refusal::QueryPreparationReservationRefused, Box::new(query)),
                         false,
                     ),
                 ))
@@ -41,7 +41,7 @@ pub(super) fn prepare(
                             crate::domain_computation::primary_graph::live_delivery::WorthQueryLiveAdmissionDenial::Execution(cause) => Refusal::QuerySuccessorObservationRequest(cause),
                             crate::domain_computation::primary_graph::live_delivery::WorthQueryLiveAdmissionDenial::Unavailable(detail) => Refusal::QuerySuccessorObservation(detail),
                         },
-                        before.refuse(),
+                        Box::new(before.refuse()),
                     ),
                     false,
                 ),

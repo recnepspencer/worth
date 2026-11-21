@@ -13,10 +13,51 @@ use worth_query_declaration::facade::application_program::{
     ApplicationComputationPartition, ApplicationFeature, ApplicationManagedComputation,
 };
 use worth_query_installation::facade::ApplicationSchema;
-impl<Key: ApplicationComputationPartition, Item: ApplicationComputationPartition, Reduced>
-    IncrementalRun<Key, Item, Reduced>
+pub(super) trait IncrementalRunPrepareRangesExt<
+    Key: ApplicationComputationPartition,
+    Item: ApplicationComputationPartition,
+    Reduced,
+>
 {
-    pub(super) fn can_prepare_ranges<Schema, Operation>(
+    fn can_prepare_ranges<Schema, Operation>(
+        &self,
+        reader: &Reader<'_, '_, Schema, Operation>,
+    ) -> bool;
+
+    fn prepare_ranges<Schema, Feature, Computation, Owner>(
+        self,
+        owner: &Owner,
+        reader: &mut Reader<'_, '_, Schema, Owner::Operation>,
+        source_query: Option<
+            &crate::domain_computation::primary_graph::application_query::SourceQueryReaderAccess<
+                '_,
+                Schema,
+            >,
+        >,
+        execution: &QueryRequestExecution<'_>,
+        input: &InputValue<Schema, Feature, Computation>,
+        remaining: PreparationWork,
+    ) -> Result<
+        PreparedIncremental<Key, Item, Reduced, Owner::Gathered>,
+        Denial<Schema, Feature, Computation, Owner>,
+    >
+    where
+        Schema: ApplicationSchema,
+        Feature: ApplicationFeature<Schema>,
+        Computation: ApplicationManagedComputation<Schema, Feature, Partition = Key>,
+        Owner: WorthQueryPartitionedComputationOwner<
+            Schema,
+            Feature,
+            Computation,
+            Item = Item,
+            PartitionResult = Reduced,
+        >;
+}
+
+impl<Key: ApplicationComputationPartition, Item: ApplicationComputationPartition, Reduced>
+    IncrementalRunPrepareRangesExt<Key, Item, Reduced> for IncrementalRun<Key, Item, Reduced>
+{
+    fn can_prepare_ranges<Schema, Operation>(
         &self,
         reader: &Reader<'_, '_, Schema, Operation>,
     ) -> bool {
@@ -49,10 +90,16 @@ impl<Key: ApplicationComputationPartition, Item: ApplicationComputationPartition
             )
             .is_some_and(|summary| reader.can_carry_call_range(&COMPARATOR, &summary))
     }
-    pub(super) fn prepare_ranges<Schema, Feature, Computation, Owner>(
+    fn prepare_ranges<Schema, Feature, Computation, Owner>(
         self,
         owner: &Owner,
         reader: &mut Reader<'_, '_, Schema, Owner::Operation>,
+        source_query: Option<
+            &crate::domain_computation::primary_graph::application_query::SourceQueryReaderAccess<
+                '_,
+                Schema,
+            >,
+        >,
         execution: &QueryRequestExecution<'_>,
         input: &InputValue<Schema, Feature, Computation>,
         mut remaining: PreparationWork,
@@ -144,7 +191,7 @@ impl<Key: ApplicationComputationPartition, Item: ApplicationComputationPartition
                     let partition=retained.partitions.get(&id).expect("the sealed shape names an actual partition");
                     let members=retained.routing.members(id).collect::<Arc<[_]>>();
                     execution.checkpoint().map_err(WorthQueryPartitionedComputationDenial::from_kernel_stop)?;
-                    let (gathered,charge)=reader.measured(read,|reader|owner.gather(&mut WorthQueryComputationReader::lend(reader),input,WorthQueryComputationPartitionMembers::new(id,&partition.key,&members,&retained.items)));
+                    let (gathered,charge)=reader.measured(read,|reader|owner.gather(&mut WorthQueryComputationReader::lend(reader, source_query),input,WorthQueryComputationPartitionMembers::new(id,&partition.key,&members,&retained.items)));
                     let gathered=gathered.map_err(|denial|WorthQueryPartitionedComputationDenial::gathering(id,denial))?;
                     prepared.gathered(id,Arc::clone(&partition.key),members,gathered,charge)?;
                     Ok(true)

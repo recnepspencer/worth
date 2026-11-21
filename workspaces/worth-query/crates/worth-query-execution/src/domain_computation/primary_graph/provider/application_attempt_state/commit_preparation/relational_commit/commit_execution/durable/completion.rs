@@ -99,7 +99,7 @@ fn pending(
     );
     Stop::ProductPreparationPending(
         worth_query_execution_runtime::facade::ports::OpaqueProductPublicationOutcome::new(
-            pending.retaining_preparation(guard),
+            pending.retaining_preparation(Box::new(guard)),
             true,
         ),
     )

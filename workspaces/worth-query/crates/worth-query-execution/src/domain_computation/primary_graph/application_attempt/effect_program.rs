@@ -5,6 +5,7 @@ mod case_transition;
 mod conditional_definition;
 mod content;
 mod core;
+use core::EffectEntityBorrowedExt;
 mod effect_growth;
 mod emission;
 mod entity_creation;

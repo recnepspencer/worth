@@ -5,6 +5,7 @@
 //! effect is prepared, so a handle onto a rostered peer program cannot commit
 //! on an occurrence that never activated it.
 
+use crate::domain_computation::primary_graph::WorthQueryAdvancementDenialCommitExt as _;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use crate::equality_type_id::EqualityTypeId as TypeId;
 

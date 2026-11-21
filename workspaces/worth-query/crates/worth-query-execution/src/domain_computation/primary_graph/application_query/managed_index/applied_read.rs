@@ -2,7 +2,7 @@
 mod parent;
 mod projection;
 mod source;
-mod support;
+pub(in crate::domain_computation::primary_graph) mod support;
 use super::{
     adapter::InstalledIndexProvider,
     execution::{purpose, ProviderExecutionDenial as Denial},

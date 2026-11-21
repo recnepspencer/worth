@@ -1,0 +1,303 @@
+//! Exact accepted-publication lookup. The reader's newer product coordinate
+//! never substitutes for the coordinate carried by the accepted authority.
+
+use std::sync::Arc;
+
+use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
+use worth_relational::facade::mvcc::CompanionPreflightStop;
+
+use crate::domain_computation::primary_graph::application_output_demand::ReadyCompletion;
+use crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputAuthority;
+
+use super::input_cutoff::RetainedInputCutoffCandidate;
+use super::invalidation::FullVerificationReason;
+use super::ProductCoordinate;
+use super::RecordedSourceIdentity;
+use super::SemanticSource;
+use super::WorthQueryApplicationOutputLineage;
+
+pub mod current_accepted;
+pub use current_accepted::BoundCurrentAcceptedOutput;
+pub use current_accepted::CurrentAcceptedResult;
+pub use current_accepted::CurrentAcceptedStop;
+
+/// What ends an exact accepted-row lookup, before any effect. Each one denies
+/// the request; a reason only leaves the row uncertified.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum RequiredSettlementStop {
+    Admission(CompanionPreflightStop),
+    /// The accepted authority belongs to another runtime or schema.
+    Foreign,
+}
+
+/// The lookup's two early ends, which `resolve_required_settlement` keeps
+/// apart.
+enum Unresolved {
+    Stop(RequiredSettlementStop),
+    Reason(FullVerificationReason),
+}
+
+impl From<CompanionPreflightStop> for Unresolved {
+    fn from(stop: CompanionPreflightStop) -> Self {
+        Self::Stop(RequiredSettlementStop::Admission(stop))
+    }
+}
+
+impl From<FullVerificationReason> for Unresolved {
+    fn from(reason: FullVerificationReason) -> Self {
+        Self::Reason(reason)
+    }
+}
+
+/// Only exact accepted authority resolution can mint this candidate. A prior
+/// partition lookup cannot substitute a newer row or certify current demand.
+#[derive(Clone)]
+pub struct AcceptedCurrentCandidate {
+    selected: RetainedInputCutoffCandidate,
+    ready: ReadyCompletion,
+}
+
+impl AcceptedCurrentCandidate {
+    /// The actor mark is keyed by this exact retained recorded row. Its
+    /// identity remains pinned by the accepted candidate during the read.
+    pub fn recorded_identity(
+        &self,
+    ) -> &super::RecordedSettlementIdentity {
+        self.selected.settlement_identity().as_ref()
+    }
+
+    /// A candidate can certify only the exact Ready cell that selected it.
+    pub fn matches_ready_admitted(
+        &self,
+        ready: &ReadyCompletion,
+    ) -> Result<bool, worth_relational::facade::mvcc::CompanionPreflightStop> {
+        Ok(self.ready.same_cell(ready))
+    }
+}
+
+impl WorthQueryApplicationOutputLineage {
+    /// The exact accepted row for `completion`. A stop is the outer error. A
+    /// reason is the inner one: without a candidate, Ready takes Fresh, where
+    /// this advance's record refuses a published member without evidence of change.
+    #[allow(clippy::type_complexity)]
+    pub fn resolve_required_settlement(
+        &self,
+        runtime_authority: u64,
+        schema: &ApplicationSchemaBindingIdentity,
+        completion: &ReadyCompletion,
+    ) -> Result<
+        Result<Option<AcceptedCurrentCandidate>, FullVerificationReason>,
+        RequiredSettlementStop,
+    > {
+        match self.exact_required_settlement(runtime_authority, schema, completion) {
+            Ok(candidate) => Ok(Ok(candidate)),
+            Err(Unresolved::Reason(reason)) => Ok(Err(reason)),
+            Err(Unresolved::Stop(stop)) => Err(stop),
+        }
+    }
+
+    fn exact_required_settlement(
+        &self,
+        runtime_authority: u64,
+        schema: &ApplicationSchemaBindingIdentity,
+        completion: &ReadyCompletion,
+    ) -> Result<Option<AcceptedCurrentCandidate>, Unresolved> {
+        let authority = &completion.authority;
+        let (correspondence, scope, coordinate, source_identity, partition, dependency, key, pin) =
+            match authority {
+                WorthQueryAcceptedOutputAuthority::Committed(receipt) => {
+                    if receipt.principal_scope().runtime_authority() != runtime_authority
+                        || receipt.principal_scope().binding_identity() != schema
+                    {
+                        return Err(Unresolved::Stop(RequiredSettlementStop::Foreign));
+                    }
+                    let publication = receipt.committed_product_publication();
+                    let idempotency = receipt.idempotency_binding();
+                    let Some(source) = idempotency.source_identity() else {
+                        return Err(FullVerificationReason::NativeRevisionUnavailable.into());
+                    };
+                    let Some(partition) = idempotency.source_partition_identity() else {
+                        return Err(FullVerificationReason::UnsupportedFact.into());
+                    };
+                    (
+                        receipt.output_correspondence(),
+                        receipt.principal_scope().scope(),
+                        ProductCoordinate {
+                            occurrence: publication.product_incarnation(),
+                            generation: publication.product_generation().get(),
+                        },
+                        RecordedSourceIdentity::Runtime(
+                            super::super::application_query::WorthQueryRuntimeSourceIdentity::new(
+                                source,
+                            ),
+                        ),
+                        partition,
+                        idempotency.producer_dependency_identity(),
+                        *idempotency.key_identity(),
+                        receipt.exact_output_settlement(),
+                    )
+                }
+                WorthQueryAcceptedOutputAuthority::Recovered(publication) => {
+                    let receipt = publication.view();
+                    if receipt.principal_scope().runtime_authority() != runtime_authority
+                        || receipt.principal_scope().binding_identity() != schema
+                    {
+                        return Err(Unresolved::Stop(RequiredSettlementStop::Foreign));
+                    }
+                    let publication = receipt.committed_product_publication();
+                    let idempotency = receipt.idempotency_binding();
+                    let Some(source) = idempotency.source_identity() else {
+                        return Err(FullVerificationReason::NativeRevisionUnavailable.into());
+                    };
+                    let Some(partition) = idempotency.source_partition_identity() else {
+                        return Err(FullVerificationReason::UnsupportedFact.into());
+                    };
+                    (
+                        receipt.output_correspondence(),
+                        receipt.principal_scope().scope(),
+                        ProductCoordinate {
+                            occurrence: publication.product_incarnation(),
+                            generation: publication.product_generation().get(),
+                        },
+                        RecordedSourceIdentity::Runtime(
+                            super::super::application_query::WorthQueryRuntimeSourceIdentity::new(
+                                source,
+                            ),
+                        ),
+                        partition,
+                        idempotency.producer_dependency_identity(),
+                        *idempotency.key_identity(),
+                        receipt.exact_output_settlement(),
+                    )
+                }
+                WorthQueryAcceptedOutputAuthority::Stable(stable) => (
+                    stable.output_correspondence().as_ref(),
+                    stable.exact_settlement().source().scope,
+                    ProductCoordinate {
+                        occurrence: stable.observation().lifecycle_incarnation(),
+                        generation: stable.observation().reference_generation().get(),
+                    },
+                    stable
+                        .source_identity()
+                        .ok_or(FullVerificationReason::NativeRevisionUnavailable)?,
+                    stable
+                        .source_partition_identity()
+                        .ok_or(FullVerificationReason::NativeRevisionUnavailable)?,
+                    stable.producer_dependency_identity(),
+                    stable.idempotency_key_identity(),
+                    Some(stable.exact_settlement()),
+                ),
+                WorthQueryAcceptedOutputAuthority::Restored(restored) => {
+                    use crate::domain_computation::primary_graph::application_output_demand::RestoredOutputOrigin;
+                    let (coordinate, source, dependency, pin) = match &restored.origin {
+                        RestoredOutputOrigin::Checkpoint(checkpoint) => (
+                            ProductCoordinate {
+                                occurrence: restored.observation.lifecycle_incarnation(),
+                                generation: restored.observation.reference_generation().get(),
+                            },
+                            RecordedSourceIdentity::Checkpoint(restored.source_identity),
+                            checkpoint.producer_dependency,
+                            None,
+                        ),
+                        RestoredOutputOrigin::HistoricalSelection(origin) => (
+                            origin.settlement().coordinate(),
+                            origin
+                                .source_identity()
+                                .ok_or(FullVerificationReason::NativeRevisionUnavailable)?,
+                            origin.dependency(),
+                            Some(origin.settlement()),
+                        ),
+                    };
+                    (
+                        restored.correspondence.as_ref(),
+                        restored.source_scope,
+                        coordinate,
+                        source,
+                        restored.origin.partition(),
+                        dependency,
+                        restored.origin.key(),
+                        pin,
+                    )
+                }
+            };
+        let Some(output_binding) = correspondence.binding_type() else {
+            return Ok(None);
+        };
+        let source = SemanticSource {
+            runtime_authority,
+            schema: schema.clone(),
+            scope,
+            output_binding: pin
+                .map(|identity| identity.source().output_binding.clone())
+                .or_else(|| self.binding_identity(output_binding))
+                .ok_or(FullVerificationReason::NativeRevisionUnavailable)?,
+        };
+        let pin = match (pin, authority) {
+            (Some(pin), _) => pin,
+            // A restored authority carries no settlement pin. Its recorded row
+            // is the one restoration placed at this exact partition address.
+            (None, WorthQueryAcceptedOutputAuthority::Restored(_)) => self
+                .partition_index
+                .at_generation(
+                    &source,
+                    coordinate.occurrence,
+                    coordinate.generation,
+                    partition,
+                )
+                .and_then(|slot| {
+                    self.by_source
+                        .get(&source)?
+                        .get(&coordinate.occurrence)?
+                        .get(&coordinate.generation)?
+                        .get(slot)?
+                        .get()
+                })
+                .map(|recorded| &recorded.settlement_identity)
+                .ok_or(FullVerificationReason::CheckpointRestore)?,
+            (None, _) => return Err(FullVerificationReason::NativeRevisionUnavailable.into()),
+        };
+        if pin.source() != &source || pin.coordinate() != coordinate {
+            return Err(FullVerificationReason::NativeRevisionUnavailable.into());
+        }
+        // The accepted coordinate chooses one row at each index level. Each
+        // ordered descent is paid before the corresponding selected read.
+
+        let Some(occurrences) = self.by_source.get(&source) else {
+            return Err(FullVerificationReason::NativeRevisionUnavailable.into());
+        };
+
+        let Some(history) = occurrences.get(&coordinate.occurrence) else {
+            return Err(FullVerificationReason::NativeRevisionUnavailable.into());
+        };
+
+        let Some(records) = history.get(&coordinate.generation) else {
+            return Err(FullVerificationReason::NativeRevisionUnavailable.into());
+        };
+
+        let Some(cell) = records.get(pin.slot()) else {
+            return Err(FullVerificationReason::NativeRevisionUnavailable.into());
+        };
+        let Some(recorded) = cell.get() else {
+            return Err(FullVerificationReason::NativeRevisionUnavailable.into());
+        };
+        if !self.implementation_is_current(recorded) {
+            return Ok(None);
+        }
+        if !Arc::ptr_eq(&recorded.settlement_identity, pin)
+            || !std::ptr::eq(recorded.correspondence.as_ref(), correspondence)
+            || recorded.source_partition_identity != Some(partition)
+            || recorded.source_identity != Some(source_identity)
+            || recorded.producer_dependency_identity != dependency
+            || recorded.idempotency_key_identity != key
+            || recorded.correspondence.binding_type() != Some(output_binding)
+        {
+            return Err(FullVerificationReason::NativeRevisionUnavailable.into());
+        }
+        Ok(Some(AcceptedCurrentCandidate {
+            selected: RetainedInputCutoffCandidate::from_exact_cell(Arc::clone(cell)),
+            ready: completion.clone(),
+        }))
+    }
+}
+
+mod court_doors_for_test;

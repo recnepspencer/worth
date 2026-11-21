@@ -9,7 +9,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     /// This changes no canonical truth, rule proof or ordinary Query view.
     pub fn discard_rule_readable_collections(&self) {
         if let Some(graph) = self.runtime.primary_graph() {
-            graph.managed_derived_views().discard_native_counts();
+            let views = graph.managed_derived_views();
+            crate::domain_computation::primary_graph::downcast_managed_views(views.as_ref())
+                .discard_native_counts();
         }
     }
 
@@ -20,7 +22,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         &self,
     ) -> Vec<WorthQueryRuleReadableCollectionLifecycleForTest> {
         self.runtime.primary_graph().map_or_else(Vec::new, |graph| {
-            graph.managed_derived_views().native_count_lifecycle()
+            let views = graph.managed_derived_views();
+            crate::domain_computation::primary_graph::downcast_managed_views(views.as_ref())
+                .native_count_lifecycle()
         })
     }
 }

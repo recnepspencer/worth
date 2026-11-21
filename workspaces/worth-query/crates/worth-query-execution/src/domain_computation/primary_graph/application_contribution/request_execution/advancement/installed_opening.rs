@@ -32,9 +32,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     worth_execution::CancellationToken::new(),
                     None,
                     false,
-                    |phase| body(WorthQueryAdvancementPhase(phase)),
+                    |phase| body(phase),
                 )
-                .map_err(Into::into)
         })
     }
 
@@ -90,10 +89,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             worth_execution::ExecutionAllocationPolicy::SystemAllocation => self
                 .runtime
                 .product_runtime
-                .with_request_advancement_retaining(request, retain_returned_outcome, |phase| {
-                    body(WorthQueryAdvancementPhase(phase))
-                })
-                .map_err(Into::into),
+                .with_request_advancement_retaining(request, retain_returned_outcome, body),
             worth_execution::ExecutionAllocationPolicy::Execution(_) => self
                 .runtime
                 .product_runtime
@@ -102,9 +98,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     request.cancellation().execution_token(),
                     request.deadline(),
                     retain_returned_outcome,
-                    |phase| body(WorthQueryAdvancementPhase(phase)),
-                )
-                .map_err(Into::into),
+                    body,
+                ),
         }
     }
 
@@ -129,9 +124,6 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     ) -> Result<R, WorthQueryAdvancementDenial> {
         self.runtime
             .product_runtime
-            .with_request_advancement_retaining(request, false, |phase| {
-                body(WorthQueryAdvancementPhase(phase))
-            })
-            .map_err(Into::into)
+            .with_request_advancement_retaining(request, false, body)
     }
 }

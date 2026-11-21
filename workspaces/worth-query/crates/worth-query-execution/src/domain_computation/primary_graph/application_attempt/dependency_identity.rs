@@ -1,15 +1,35 @@
 use super::WorthQueryApplicationEffectProgram;
 
-mod canonical_encoding;
-mod content_rule;
-pub(crate) mod content_tree;
+use worth_query_execution_lineage::facade::domain_computation::primary_graph::application_attempt::dependency_identity::canonical_encoding;
+use worth_query_execution_lineage::facade::domain_computation::primary_graph::application_attempt::dependency_identity::content_rule;
+pub(crate) use worth_query_execution_lineage::facade::domain_computation::primary_graph::application_attempt::dependency_identity::content_tree;
 pub(crate) mod output_postcondition;
 mod producing_implementation;
 
 use super::retained_decision_facts::StorageControl;
 use super::retained_decision_facts::StoreDenial;
-pub(super) use canonical_encoding::authentication_observation_identity;
 use canonical_encoding::lineage_identity;
+
+pub(super) fn authentication_observation_identity(
+    operation: [u8; 32],
+    facts: &(impl crate::domain_computation::primary_graph::application_checkpoint::facts::FactSequence + ?Sized),
+    request: &worth_execution::ExecutionRequest<'_, '_>,
+    context: &mut worth_execution::MapKernelContext<'_, '_>,
+) -> Result<
+    ([u8; 32], worth_query_installation::facade::WorthQueryCanonicalWorkEvidence),
+    super::signed_creation::WorthQuerySignedCreationPreparationDenial,
+> {
+    let (rule, entries) = canonical_encoding::observation_identity_basis(operation, facts, || {
+        super::signed_creation::identity::check_interruption(context)
+    })?;
+    super::signed_creation::canonical::derive(
+        entries,
+        canonical_encoding::DOMAIN,
+        rule,
+        request,
+        context,
+    )
+}
 pub(in crate::domain_computation::primary_graph) use content_tree::CompletedFactRoutes;
 pub(in crate::domain_computation::primary_graph) use content_tree::FactContent;
 use output_postcondition::complete_content_currentness_facts;
@@ -223,5 +243,3 @@ impl<Schema, Operation, Input, Scope>
     }
 }
 
-#[cfg(test)]
-mod tests;

@@ -1,0 +1,289 @@
+//! Stable retained prior truth for recorded correction (R8.2 / Resolution A).
+//!
+//! Query retains the exact pre-image slice demanded by the installed inverse
+//! from the decision read-set already observed at admission. Undo consumes this
+//! carrier — it must never live-re-read the graph and call the result original.
+
+use worth_foundational::facade::{AspectFieldLocator, AspectValue, CanonicalFieldPath, FieldKey};
+use worth_query_installation::facade::InstalledPreImageLocus;
+use worth_relational::facade::identity::KindId;
+use worth_relational::facade::transactions::RecordRef;
+pub mod presence;
+pub use presence::{
+    RetainedOutputFields, RetainedPreImageAbsence, RetainedPreImageAbsenceKind,
+};
+
+/// One retained field pre-image bound into the strengthened commit receipt.
+#[derive(Clone, Eq, PartialEq)]
+pub struct WorthQueryRetainedPreImageField {
+    locus: InstalledPreImageLocus,
+    value: AspectValue,
+    encoded_bytes: usize,
+    target_record: RecordRef,
+    entity_kind: KindId,
+    locator: AspectFieldLocator,
+}
+
+impl WorthQueryRetainedPreImageField {
+    pub const fn from_parts(
+        locus: InstalledPreImageLocus,
+        value: AspectValue,
+        encoded_bytes: usize,
+        target_record: RecordRef,
+        entity_kind: KindId,
+        locator: AspectFieldLocator,
+    ) -> Self {
+        Self {
+            locus,
+            value,
+            encoded_bytes,
+            target_record,
+            entity_kind,
+            locator,
+        }
+    }
+
+    pub const fn locus(&self) -> &InstalledPreImageLocus {
+        &self.locus
+    }
+
+    pub const fn value(&self) -> &AspectValue {
+        &self.value
+    }
+
+    pub const fn encoded_bytes(&self) -> usize {
+        self.encoded_bytes
+    }
+
+    /// Exact record from which this historical value was observed.
+    pub const fn target_record(&self) -> &RecordRef {
+        &self.target_record
+    }
+
+    pub const fn entity_kind(&self) -> KindId {
+        self.entity_kind
+    }
+
+    pub const fn locator(&self) -> &AspectFieldLocator {
+        &self.locator
+    }
+}
+
+/// Exact pre-image slice retained for a recorded inverse (R8.2).
+#[derive(Clone)]
+pub struct WorthQueryRetainedPreImage {
+    fields: Vec<WorthQueryRetainedPreImageField>,
+    absences: Vec<RetainedPreImageAbsence>,
+    output_fields: Option<RetainedOutputFields>,
+    relations: Option<std::sync::Arc<super::retained_relations::RetainedRelations>>,
+    total_encoded_bytes: usize,
+    content: worth_relational::facade::content::RelationalContentAttachments,
+    _private: (),
+}
+
+impl std::fmt::Debug for WorthQueryRetainedPreImage {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("WorthQueryRetainedPreImage")
+            .finish_non_exhaustive()
+    }
+}
+
+impl std::fmt::Debug for WorthQueryRetainedPreImageField {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("WorthQueryRetainedPreImageField")
+            .finish_non_exhaustive()
+    }
+}
+
+impl WorthQueryRetainedPreImage {
+    pub fn relation_loci(
+        &self,
+    ) -> &[worth_query_installation::facade::InstalledPreImageRelationLocus] {
+        self.relations
+            .as_ref()
+            .map_or(&[], |relations| relations.loci())
+    }
+    pub fn relations(&self) -> &[super::WorthQueryRetainedPreImageRelation] {
+        self.relations
+            .as_ref()
+            .map_or(&[], |relations| relations.rows())
+    }
+    pub fn with_retained_relations(
+        mut self,
+        relations: std::sync::Arc<super::retained_relations::RetainedRelations>,
+        bytes: usize,
+    ) -> Self {
+        self.relations = Some(relations);
+        self.total_encoded_bytes = bytes;
+        self
+    }
+    pub fn retain_content(
+        &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        basis: &worth_relational::facade::branch::AdmittedRelationalBranchBasis,
+        maximum: usize,
+    ) -> Result<(), WorthQueryPreImageRetentionDenial> {
+        use WorthQueryPreImageRetentionDenial as Denial;
+        let mut content =
+            worth_relational::facade::content::RelationalContentAttachments::default();
+        let mut total = self.total_encoded_bytes;
+        for field in &mut self.fields {
+            crate::domain_computation::primary_graph::retention_checkpoint(execution)
+                .map_err(Denial::Content)?;
+            let AspectValue::ContentRef(identity) = field.value() else {
+                continue;
+            };
+            let RecordRef::Entity(row) = field.target_record() else {
+                return Err(Denial::Content(worth_relational::facade::content::RelationalContentDenial::EncodingInconsistency));
+            };
+            let frame = basis
+                .retain_field_content(
+                    execution,
+                    *row,
+                    field.entity_kind(),
+                    field.locator(),
+                    *identity,
+                )
+                .map_err(Denial::Content)?;
+            field.encoded_bytes = field
+                .encoded_bytes
+                .checked_add(frame.bytes().len())
+                .ok_or(Denial::ExceedsByteBound)?;
+            total = total
+                .checked_add(frame.bytes().len())
+                .ok_or(Denial::ExceedsByteBound)?;
+            if total > maximum {
+                return Err(Denial::ExceedsByteBound);
+            }
+            content.attach(execution, &frame).map_err(Denial::Content)?;
+        }
+        self.content = content;
+        self.total_encoded_bytes = total;
+        Ok(())
+    }
+    pub fn content(
+        &self,
+    ) -> &worth_relational::facade::content::RelationalContentAttachments {
+        &self.content
+    }
+
+    pub fn fields(&self) -> &[WorthQueryRetainedPreImageField] {
+        &self.fields
+    }
+
+    pub fn absences(&self) -> &[RetainedPreImageAbsence] {
+        &self.absences
+    }
+
+    pub fn output_fields(&self) -> Option<&RetainedOutputFields> {
+        self.output_fields.as_ref()
+    }
+
+    pub fn original_field_state(
+        &self,
+        target: worth_relational::facade::identity::EntityId,
+        entity: &str,
+        locator: &AspectFieldLocator,
+    ) -> worth_query_declaration::facade::application_aftermath::ApplicationCorrectionFieldPreImage<'_>{
+        use worth_query_declaration::facade::application_aftermath::ApplicationCorrectionFieldPreImage as State;
+        let record = RecordRef::Entity(target);
+        if let Some(field) = self.fields.iter().find(|field| {
+            field.target_record() == &record
+                && field.locus().entity() == entity
+                && field.locator() == locator
+        }) {
+            return State::Value(field.value());
+        }
+        self.absences
+            .iter()
+            .find(|field| {
+                field.target == record
+                    && field.locus.entity() == entity
+                    && &field.locator == locator
+            })
+            .map_or(State::Uncaptured, |field| match field.kind {
+                RetainedPreImageAbsenceKind::Field => State::AbsentField,
+                RetainedPreImageAbsenceKind::Aspect => State::AbsentAspect,
+            })
+    }
+
+    pub const fn total_encoded_bytes(&self) -> usize {
+        self.total_encoded_bytes
+    }
+
+    pub fn field(
+        &self,
+        locus: &InstalledPreImageLocus,
+    ) -> Option<&WorthQueryRetainedPreImageField> {
+        self.fields.iter().find(|field| field.locus() == locus)
+    }
+
+    pub fn field_for<
+        F: worth_query_declaration::facade::application_schema::fragment::RecordSelection,
+    >(
+        &self,
+        field: F,
+    ) -> Option<&WorthQueryRetainedPreImageField> {
+        self.fields.iter().find(|retained| {
+            retained.locus().entity() == field.entity()
+                && retained.locus().aspect() == field.aspect()
+                && retained.locus().field() == field.field()
+        })
+    }
+
+    /// One exact target when every demanded field came from the same record.
+    pub fn target_record(&self) -> Option<&RecordRef> {
+        let first = self.fields.first()?.target_record();
+        self.fields
+            .iter()
+            .all(|field| field.target_record() == first)
+            .then_some(first)
+    }
+
+    pub fn from_parts(
+        fields: Vec<WorthQueryRetainedPreImageField>,
+        absences: Vec<RetainedPreImageAbsence>,
+        output_fields: Option<RetainedOutputFields>,
+        total_encoded_bytes: usize,
+    ) -> Self {
+        Self {
+            fields,
+            absences,
+            output_fields,
+            relations: None,
+            content: worth_relational::facade::content::RelationalContentAttachments::default(),
+            _private: (),
+            total_encoded_bytes,
+        }
+    }
+}
+
+pub use worth_query_execution_contracts::facade::WorthQueryPreImageRetentionDenial;
+
+/// The demanded field slot an observed path names, if any (Q8.26-C3).
+///
+/// A demand names a single field slot and has no vocabulary for a nested path,
+/// so only an exactly-one-segment path names a demanded field. Reducing a longer
+/// path to its first segment — as this did before slice 10 — lets a nested
+/// `Account.Status` observation satisfy a demand for `Status` and bind the wrong
+/// value as the prior truth.
+pub fn demanded_field_slot(path: &CanonicalFieldPath) -> Option<&FieldKey> {
+    match path.fields() {
+        [field] => Some(field),
+        _ => None,
+    }
+}
+
+// Custody is not a second semantic value. Restoring it runs Native's controlled
+// admission; ordinary receipt equality must not traverse its retained bytes.
+impl PartialEq for WorthQueryRetainedPreImage {
+    fn eq(&self, other: &Self) -> bool {
+        self.fields == other.fields
+            && self.absences == other.absences
+            && self.output_fields == other.output_fields
+            && self.total_encoded_bytes == other.total_encoded_bytes
+    }
+}
+impl Eq for WorthQueryRetainedPreImage {}

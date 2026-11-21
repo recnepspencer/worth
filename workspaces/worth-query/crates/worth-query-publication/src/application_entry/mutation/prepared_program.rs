@@ -1,4 +1,5 @@
 //! A program-gated candidate retained between preparation and publication.
+use worth_query_execution::publication_boundary::WorthQueryAdvancementDenialCommitExt as _;
 use worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase as AdvancementPhase;
 
 use worth_query_declaration::facade::application_operation::{

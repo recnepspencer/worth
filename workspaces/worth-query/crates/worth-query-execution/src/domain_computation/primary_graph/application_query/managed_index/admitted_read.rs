@@ -197,9 +197,9 @@ where
         >,
     ResultValue<S, B>: WorthQueryApplicationProjection<S, B::Query>,
 {
-    use super::denial::{ReceiverCause, WorthQueryManagedIndexDenial};
+    use super::denial::{managed_index_denial, ReceiverCause};
     let allocation = SourceFactsAllocation::open(execution).map_err(|cause| {
-        WorthQueryManagedIndexDenial::new(ReceiverCause::Execution(cause), None)
+        managed_index_denial(ReceiverCause::Execution(cause), None)
     })?;
     let result =
         access.with_plan::<B, _, Denial>(execution, intent, context, native, |plan, native| {
@@ -219,7 +219,7 @@ where
             Ok((completed.read.into_rows(), dependency))
         });
     result.map_err(|cause| {
-        WorthQueryManagedIndexDenial::new(ReceiverCause::Provider(cause), Some(allocation))
+        managed_index_denial(ReceiverCause::Provider(cause), Some(allocation))
     })
 }
 
@@ -235,14 +235,14 @@ where
     B: ApplicationQueryBinding<S>,
     ResultValue<S, B>: WorthQueryApplicationProjection<S, B::Query>,
 {
-    use super::denial::{ReceiverCause, WorthQueryManagedIndexDenial};
+    use super::denial::{managed_index_denial, ReceiverCause};
     let storage_stop =
         |cause: worth_relational::facade::transactions::RelationalExecutionDenialCause| {
             SourceQueryObservationStop::Read(crate::domain_computation::primary_graph::application_query::WorthQueryAdmittedOneShotStop::Admission(worth_relational::facade::mvcc::CompanionPreflightStop::Execution(cause)))
         };
     let allocation = SourceFactsAllocation::open(execution).map_err(storage_stop)?;
     read::<S, B>(execution, access, plan, native, &allocation).map_err(|cause| {
-        match WorthQueryManagedIndexDenial::new(ReceiverCause::Provider(cause), Some(allocation))
+        match managed_index_denial(ReceiverCause::Provider(cause), Some(allocation))
             .retain(execution)
         {
             Ok(cause) => SourceQueryObservationStop::ManagedIndex(cause),

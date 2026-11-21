@@ -49,7 +49,10 @@ pub(super) fn select(
             source: DeclaredManagedIndexSelection {
                 access: Arc::clone(rows.association().access_contract()),
                 dependencies: Arc::clone(rows.dependencies()),
-                coverage: rows.coverage.clone(),
+                coverage: rows
+                    .coverage
+                    .clone()
+                    .map(|coverage| coverage as Arc<dyn std::any::Any + Send + Sync>),
             },
         },
         capture_result_set,

@@ -53,7 +53,7 @@ impl AdmittedRichProjection<'_> {
                 None=>OriginalQueryDetail::NotRetained,
                 Some(projection)=>OriginalQueryDetail::Provided(
                     crate::domain_computation::primary_graph::application_query::materialize_original_projection(
-                        execution,memory,projection,self.diagnostic).map_err(InspectionAdmissionDenial::Rich)?),
+                        execution,memory,projection,&self.diagnostic).map_err(InspectionAdmissionDenial::Rich)?),
             }
         };
         Ok(PreparedRichMaterialization {

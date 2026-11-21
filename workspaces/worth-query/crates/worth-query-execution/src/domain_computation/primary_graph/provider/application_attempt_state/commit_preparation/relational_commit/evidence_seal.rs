@@ -14,30 +14,7 @@ use crate::domain_computation::primary_graph::provider::{
     },
 };
 
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct WorthQueryPrimaryGraphCommitEvidence {
-    workflow_origin: Option<crate::domain_computation::primary_graph::workflow::operation_output::WorkflowOperationOrigin>,
-    provider_session_binding:
-        crate::domain_computation::provider_session::WorthQueryProviderSessionTerminalBinding,
-    idempotency:
-        crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding,
-    commit: worth_relational::facade::history::RelationalCommitReceipt,
-    mutation_work: WorthQueryPrimaryMutationWorkEvidence,
-    retained_preimage:
-        Option<crate::domain_computation::application_aftermath::WorthQueryRetainedPreImage>,
-    original_authority: std::sync::Arc<
-        crate::domain_computation::primary_graph::WorthQueryApplicationCommitAuthorityBinding,
-    >,
-    committed_dispatch_outbox: WorthQueryCommittedDispatchOutboxResolution,
-    committed_changes: crate::domain_computation::primary_graph::WorthQueryApplicationCommittedChanges,
-    output_correspondence: std::sync::Arc<
-        crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence,
-    >,
-    operation_scope: crate::domain_computation::authorization::WorthQueryOperationScopeBinding,
-    observed_source_facts: postcommit_currentness::RebasedSourceFacts,
-    performed_input_facts: Option<crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload>,
-    performed_output_fields: Option<Result<crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload, crate::domain_computation::primary_graph::application_attempt::OutputFieldCaptureFailure>>,
-}
+pub use worth_query_execution_lineage::facade::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::WorthQueryPrimaryGraphCommitEvidence;
 
 pub(in crate::domain_computation::primary_graph) struct WorthQueryMutationWorkCommitSeal {
     counters: WorthQueryPrimaryMutationWorkCounters,
@@ -66,13 +43,14 @@ pub(super) fn seal_on_runtime(
 ) -> WorthQueryPrimaryGraphCommitEvidence {
     let prepared_touched_records = committed.take_prepared_touched_records();
     let touched_records = prepared_touched_records.verify_performed(committed.changed_records());
-    let mutation_work =
-        WorthQueryPrimaryMutationWorkEvidence::from_commit_seal(WorthQueryMutationWorkCommitSeal {
+    let mutation_work = crate::domain_computation::primary_graph::provider::mutation_work::mutation_work_from_commit_seal(
+        WorthQueryMutationWorkCommitSeal {
             counters: committed.work(),
             index_maintenance_work: committed.index_maintenance_work(),
             touched_records,
             preimage: committed.preimage_retention_work(),
-        });
+        },
+    );
     let committed_dispatch_outbox = WorthQueryCommittedDispatchOutboxResolution::from_commit(
         committed.attempt().dispatch_outbox(),
         committed.committed(),
@@ -157,155 +135,7 @@ impl WorthQueryMutationWorkCommitSeal {
     }
 }
 
-impl WorthQueryPrimaryGraphCommitEvidence {
-    pub(in crate::domain_computation::primary_graph) fn performed_output_fields(&self)
-    -> Option<&Result<crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload, crate::domain_computation::primary_graph::application_attempt::OutputFieldCaptureFailure>>{
-        self.performed_output_fields.as_ref()
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn performed_input_facts(
-        &self,
-    ) -> Option<&crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload>
-    {
-        self.performed_input_facts.as_ref()
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn workflow_origin(
-        &self,
-    ) -> Option<&crate::domain_computation::primary_graph::workflow::operation_output::WorkflowOperationOrigin>{
-        self.workflow_origin.as_ref()
-    }
-    pub(in crate::domain_computation::primary_graph) fn retain_original_authority(
-        &self,
-    ) -> std::sync::Arc<
-        crate::domain_computation::primary_graph::WorthQueryApplicationCommitAuthorityBinding,
-    > {
-        std::sync::Arc::clone(&self.original_authority)
-    }
-
-    /// Original admitted meaning co-retained with the performed occurrence.
-    /// This is historical evidence; current authority is admitted separately.
-    pub(in crate::domain_computation::primary_graph) fn original_authority(
-        &self,
-    ) -> &crate::domain_computation::primary_graph::WorthQueryApplicationCommitAuthorityBinding
-    {
-        &self.original_authority
-    }
-
-    pub(in crate::domain_computation::primary_graph) const fn provider_session_binding(
-        &self,
-    ) -> &crate::domain_computation::provider_session::WorthQueryProviderSessionTerminalBinding
-    {
-        &self.provider_session_binding
-    }
-
-    pub(in crate::domain_computation::primary_graph) const fn idempotency(
-        &self,
-    ) -> crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding
-{
-        self.idempotency
-    }
-
-    pub(in crate::domain_computation::primary_graph) const fn commit_reference(
-        &self,
-    ) -> &worth_relational::facade::history::RelationalCommitReceipt {
-        &self.commit
-    }
-
-    pub(in crate::domain_computation::primary_graph) const fn mutation_work(
-        &self,
-    ) -> &WorthQueryPrimaryMutationWorkEvidence {
-        &self.mutation_work
-    }
-
-    pub(in crate::domain_computation::primary_graph) const fn retained_preimage(
-        &self,
-    ) -> Option<&crate::domain_computation::application_aftermath::WorthQueryRetainedPreImage> {
-        self.retained_preimage.as_ref()
-    }
-
-    pub(in crate::domain_computation::primary_graph) const fn committed_dispatch_outbox(
-        &self,
-    ) -> &WorthQueryCommittedDispatchOutboxResolution {
-        &self.committed_dispatch_outbox
-    }
-
-    pub(in crate::domain_computation::primary_graph) const fn committed_changes(
-        &self,
-    ) -> &crate::domain_computation::primary_graph::WorthQueryApplicationCommittedChanges {
-        &self.committed_changes
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn output_correspondence(
-        &self,
-    ) -> &crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence {
-        self.output_correspondence.as_ref()
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn retain_output_correspondence(
-        &self,
-    ) -> std::sync::Arc<
-        crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence,
-    > {
-        std::sync::Arc::clone(&self.output_correspondence)
-    }
-
-    pub(in crate::domain_computation::primary_graph) const fn operation_scope(
-        &self,
-    ) -> &crate::domain_computation::authorization::WorthQueryOperationScopeBinding {
-        &self.operation_scope
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn source_request_stop(
-        &self,
-    ) -> Option<worth_relational::facade::transactions::RelationalExecutionDenialCause> {
-        match self.observed_source_facts.retained() {
-            Err(FailedRebase { reason, .. }) => match reason.into_reason() {
-                RebaseVerificationReason::Execution(cause) => Some(cause),
-                RebaseVerificationReason::ManagedIndex(_)
-                | RebaseVerificationReason::NativeRevisionUnavailable
-                | RebaseVerificationReason::NativeFactRevisionUnavailable
-                | RebaseVerificationReason::IndexedSelectionDenied(_)
-                | RebaseVerificationReason::IndexedSelectionFactDenied(_)
-                | RebaseVerificationReason::UnsupportedDecisionFact
-                | RebaseVerificationReason::NativePayloadStorage { .. }
-                | RebaseVerificationReason::AdmissionDenied(_) => None,
-            },
-            Ok(_) => None,
-        }
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn posting_continuation(
-        &self,
-    ) -> Option<
-        crate::domain_computation::primary_graph::output_lineage::invalidation::PostingContinuation,
-    > {
-        self.observed_source_facts.posting_continuation()
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn source_payload_bytes(&self) -> Option<u64> {
-        self.observed_source_facts.payload_bytes()
-    }
-
-    /// The facts this commit retains, each one a verifier can compare, or
-    /// the rebase that failed and left it none.
-    pub(in crate::domain_computation::primary_graph) fn rebased_source_facts(
-        &self,
-    ) -> Result<
-        crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
-        FailedRebase,
-    > {
-        self.observed_source_facts.retained()
-    }
-
-    /// Ordinals of the retained source facts the committed effect itself moved.
-    pub fn source_facts_superseded_by_own_effect(&self) -> impl Iterator<Item = usize> + '_ {
-        self.observed_source_facts.superseded_by_own_effect()
-    }
-}
-
 pub(in crate::domain_computation::primary_graph) use postcommit_currentness::{
     PreparedRebaseDenial, PreparedSourceFactRebase,
 };
 
-mod court_doors_for_test;

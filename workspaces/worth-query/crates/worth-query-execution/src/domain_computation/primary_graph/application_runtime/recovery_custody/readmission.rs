@@ -95,7 +95,10 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             {
                 return Err(Denial::new(Kind::CorrelationMismatch));
             }
-            Some(crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxBinding::from_observed_original(&observed))
+            Some(crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxBinding::from_record_and_ref(
+                observed.record().clone(),
+                observed.record_ref().clone(),
+            ))
         } else {
             None
         };

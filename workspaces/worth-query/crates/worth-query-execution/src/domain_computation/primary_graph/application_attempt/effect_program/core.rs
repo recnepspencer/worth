@@ -32,26 +32,17 @@ pub(super) struct Target<'a> {
     pub created_effect: Option<usize>,
     pub program: &'a Arc<()>,
 }
-impl<S, E> WorthQueryApplicationEffectEntity<S, E> {
+pub(super) trait EffectEntityBorrowedExt {
+    fn borrowed(&self) -> Target<'_>;
+}
+impl<S, E> EffectEntityBorrowedExt for WorthQueryApplicationEffectEntity<S, E> {
     #[inline(always)]
-    pub(super) fn borrowed(&self) -> Target<'_> {
+    fn borrowed(&self) -> Target<'_> {
         Target {
             reference: &self.reference,
             entity: &self.entity,
             created_effect: self.created_effect,
             program: &self.program,
-        }
-    }
-}
-impl WorthQueryApplicationEffectEntity<(), ()> {
-    #[inline(always)]
-    pub(super) fn into_typed<S, E>(self) -> WorthQueryApplicationEffectEntity<S, E> {
-        WorthQueryApplicationEffectEntity {
-            reference: self.reference,
-            entity: self.entity,
-            created_effect: self.created_effect,
-            program: self.program,
-            _marker: std::marker::PhantomData,
         }
     }
 }
@@ -211,10 +202,10 @@ pub(super) fn require_field_observation(
     }
 }
 
-impl crate::domain_computation::primary_graph::fragment_view::ErasedCandidate {
-    pub(in crate::domain_computation::primary_graph::application_attempt::effect_program) fn borrowed(
-        &self,
-    ) -> Target<'_> {
+impl EffectEntityBorrowedExt
+    for crate::domain_computation::primary_graph::fragment_view::ErasedCandidate
+{
+    fn borrowed(&self) -> Target<'_> {
         Target {
             reference: &self.reference,
             entity: &self.entity,

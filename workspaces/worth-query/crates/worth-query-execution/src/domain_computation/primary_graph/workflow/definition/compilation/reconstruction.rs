@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::PrimaryGraphHandleWorkflowExt;
 mod scalar_observation;
 use scalar_observation::{
     observed_bool, observed_optional_text, observed_optional_u64, observed_text, observed_u64,

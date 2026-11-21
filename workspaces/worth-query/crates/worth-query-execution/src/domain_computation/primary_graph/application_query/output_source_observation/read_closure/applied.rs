@@ -1,4 +1,5 @@
 //! A successful applied query read stays unpositioned until its actual publication.
+use crate::domain_computation::primary_graph::application_attempt::fact::source_read_authorization::applied_query::SourceReadAuthorizationAppliedQueryExt;
 use super::*;
 use crate::domain_computation::primary_graph::{
     application_attempt::{SourceReadAuthorization, WorthQueryApplicationAttemptDenial as Denial},

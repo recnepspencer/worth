@@ -1,4 +1,5 @@
 //! Original SDK qualification preserves typed root/model provenance through adoption.
+use crate::domain_computation::primary_graph::ReadObservationRuntimeExt;
 mod denial;
 pub use denial::WorthQueryHistoryOutputQualificationDenial;
 mod forest;

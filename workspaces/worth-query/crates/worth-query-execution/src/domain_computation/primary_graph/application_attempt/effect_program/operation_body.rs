@@ -1,4 +1,5 @@
 //! Installed body effects use native target, footprint and authority checks.
+use crate::domain_computation::primary_graph::application_attempt::effect_program::EffectEntityBorrowedExt;
 use super::denial;
 use super::ApplicationOperationProgramTarget;
 use super::WorthQueryApplicationAttemptDenial;

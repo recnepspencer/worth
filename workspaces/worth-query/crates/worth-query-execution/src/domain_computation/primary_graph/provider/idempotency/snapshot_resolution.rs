@@ -12,7 +12,7 @@ use crate::domain_computation::primary_graph::application_attempt::WorthQueryApp
 use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider;
 use crate::domain_computation::primary_graph::schema_layout::WorthQueryProviderIdempotencyLayout;
 pub(in crate::domain_computation::primary_graph::provider) mod original_binding;
-mod original_receipt;
+use worth_query_execution_lineage::facade::domain_computation::primary_graph::provider::idempotency::snapshot_resolution::original_receipt;
 pub(in crate::domain_computation::primary_graph::provider) use original_receipt::RecordedOriginalBinding;
 mod key_observation;
 pub(in crate::domain_computation::primary_graph::provider) mod source_denial;

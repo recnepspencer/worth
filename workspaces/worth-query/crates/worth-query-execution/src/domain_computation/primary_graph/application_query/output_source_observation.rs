@@ -66,36 +66,9 @@ pub(in crate::domain_computation::primary_graph) struct SourceQueryReaderAccess<
     refused: std::cell::RefCell<Option<SourceQueryObservationStop>>,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub enum SourceQueryObservationStop {
-    CurrentControl(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial),
-    ManagedIndex(Arc<super::managed_index::WorthQueryManagedIndexDenial>),
-    Installation(worth_query_installation::facade::WorthQueryApplicationQueryInstallationDenial),
-    Principal(crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenial),
-    Scope(crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenial),
-    Admission(WorthQueryApplicationQueryAdmissionDenial),
-    Preparation { phase: SourceQueryPreparationPhase, cause: WorthQueryApplicationQueryAdmissionDenial },
-    Read(WorthQueryAdmittedOneShotStop),
-    Basis(crate::domain_computation::primary_graph::product_operation::SelectedQueryBasisRetentionStop),
-    Missing,
-    Ambiguous,
-    ForeignClosure,
-    SourceFacts(WorthQuerySourceExpectationDenial),
-}
-
-impl From<WorthQuerySourceExpectationDenial> for SourceQueryObservationStop {
-    fn from(cause: WorthQuerySourceExpectationDenial) -> Self {
-        Self::SourceFacts(cause)
-    }
-}
-
-/// Diagnostic location on the original read; it grants no admission or state.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum SourceQueryPreparationPhase {
-    Parameters,
-    Permission,
-    Session,
-}
+pub use worth_query_execution_lineage::facade::primary_graph::application_query::source_observation_stop::{
+    SourceQueryObservationStop, SourceQueryPreparationPhase,
+};
 
 pub(in crate::domain_computation::primary_graph) struct ObservedQuerySource<Query, Value> {
     pub(in crate::domain_computation::primary_graph) value: Value,

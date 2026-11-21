@@ -1,4 +1,5 @@
 //! Retention at the exact records an authored correction anchors.
+use crate::domain_computation::primary_graph::RetainedPreImageExt;
 use super::*;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact;
 

@@ -20,7 +20,7 @@ pub(super) fn require_settled_origin_and_custody(
 ) -> Result<(), WorthQueryApplicationAttemptDenial> {
     let settled = operation_settlement(execution, runtime, snapshot, origin, origin.transition())?;
     match settled {
-        Some(receipt) if receipt == origin.operation_receipt_identity() => {}
+        Some(receipt) if &receipt == origin.operation_receipt_identity() => {}
         None if custody == Some(origin.transition()) => return Err(pending()),
         _ => {
             return Err(unavailable(

@@ -2,8 +2,12 @@
 use super::{WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind as Kind};
 use crate::domain_computation::primary_graph::WorthQueryHistoryNavigationDenial as Cause;
 
-impl WorthQueryOutputDemandDenial {
-    pub(in crate::domain_computation::primary_graph) fn history_source(cause: Cause) -> Self {
+pub(in crate::domain_computation::primary_graph) trait OutputDemandDenialHistoryExt {
+    fn history_source(cause: Cause) -> Self;
+}
+
+impl OutputDemandDenialHistoryExt for WorthQueryOutputDemandDenial {
+    fn history_source(cause: Cause) -> Self {
         let kind = match cause {
             Cause::Authorization(stop) => Kind::of_request_authorization(stop.kind()),
             Cause::Stopped(stop) => Kind::ExecutionRequest(stop),

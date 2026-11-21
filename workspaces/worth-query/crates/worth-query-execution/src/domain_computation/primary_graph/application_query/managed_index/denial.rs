@@ -33,26 +33,12 @@ impl From<crate::basis::WorthQueryProductBranchAdmissionDenial> for ReceiverCaus
     }
 }
 
-/// A failed managed-index operation with its exact owned cause and material custody.
-pub struct WorthQueryManagedIndexDenial {
-    cause: ReceiverCause,
-    // Owned diagnostic backing drops before the actual original grant.
-    _allocation: Option<Arc<SourceFactsAllocation>>,
-}
-impl WorthQueryManagedIndexDenial {
-    pub(super) fn new(
-        cause: ReceiverCause,
-        allocation: Option<Arc<SourceFactsAllocation>>,
-    ) -> Self {
-        Self {
-            cause,
-            _allocation: allocation,
-        }
-    }
-    /// Borrows the original typed cause; no session or root authority is exposed.
-    pub fn cause(&self) -> WorthQueryManagedIndexDenialCause<'_> {
+pub use worth_query_execution_lineage::facade::primary_graph::application_query::managed_index::denial::WorthQueryManagedIndexDenial;
+
+impl worth_query_execution_lineage::facade::ports::ManagedIndexCausePort for ReceiverCause {
+    fn cause(&self) -> WorthQueryManagedIndexDenialCause<'_> {
         use WorthQueryManagedIndexDenialCause as Cause;
-        match &self.cause {
+        match self {
             ReceiverCause::Provider(cause) => causes::provider(cause),
             ReceiverCause::Execution(cause) => Cause::Execution(cause),
             ReceiverCause::Read(cause) => Cause::QueryRead(cause),
@@ -73,40 +59,12 @@ impl WorthQueryManagedIndexDenial {
         }
     }
 }
-impl std::fmt::Debug for WorthQueryManagedIndexDenial {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_tuple("ManagedIndexDenial")
-            .field(&self.cause())
-            .finish()
-    }
-}
-impl std::fmt::Display for WorthQueryManagedIndexDenial {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "managed index refused: {:?}", self.cause())
-    }
-}
-impl std::error::Error for WorthQueryManagedIndexDenial {}
 
-impl PartialEq for WorthQueryManagedIndexDenial {
-    fn eq(&self, other: &Self) -> bool {
-        self.cause() == other.cause()
-    }
-}
-impl Eq for WorthQueryManagedIndexDenial {}
-
-impl WorthQueryManagedIndexDenial {
-    pub(in crate::domain_computation::primary_graph) fn retain(
-        mut self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<Arc<Self>, ExecutionCause> {
-        let allocation = match &self._allocation {
-            Some(value) => Arc::clone(value),
-            None => SourceFactsAllocation::open(execution)?,
-        };
-        crate::domain_computation::primary_graph::application_query::one_shot::outcome::material::MaterialCompletion::new(execution, &allocation).arc::<Self>()?;
-        self._allocation = Some(allocation);
-        Ok(Arc::new(self))
-    }
+pub(super) fn managed_index_denial(
+    cause: ReceiverCause,
+    allocation: Option<Arc<SourceFactsAllocation>>,
+) -> WorthQueryManagedIndexDenial {
+    WorthQueryManagedIndexDenial::from_cause(Box::new(cause), allocation)
 }
 
 #[cfg(test)]
@@ -157,7 +115,7 @@ mod tests {
                 Posture::Terminal,
             ),
         ] {
-            let cause = Arc::new(WorthQueryManagedIndexDenial::new(
+            let cause = Arc::new(managed_index_denial(
                 ReceiverCause::Provider(ProviderExecutionDenial::SourceVerification(
                     Attempt::output_observation(stop),
                 )),
@@ -180,7 +138,7 @@ mod tests {
     fn current_control_keeps_its_original_kind_and_retryability_in_output_demand() {
         let original =
             WorthQueryOutputDemandDenial::new(Kind::CurrentControlBusy, "current control");
-        let cause = Arc::new(WorthQueryManagedIndexDenial::new(
+        let cause = Arc::new(managed_index_denial(
             ReceiverCause::Provider(ProviderExecutionDenial::SourceRead(
                 SourceQueryObservationStop::CurrentControl(original.clone()),
             )),

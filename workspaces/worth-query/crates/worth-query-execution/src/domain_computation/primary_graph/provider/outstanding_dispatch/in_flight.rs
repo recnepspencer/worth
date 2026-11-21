@@ -6,15 +6,7 @@ use super::{decrement, OutstandingDispatchOwner};
 use crate::domain_computation::application_aftermath::ExternalEffectCorrelationIdentity;
 use crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxObservation;
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryOutstandingInFlightDenial {
-    Missing,
-    PendingPublication,
-    OriginalMismatch,
-    /// World already performed this effect's terminal completion.
-    TerminalReached,
-    CapacityExhausted,
-}
+pub use worth_query_execution_lineage::facade::primary_graph::provider::outstanding_dispatch::WorthQueryOutstandingInFlightDenial;
 
 /// Move-only claim that keeps the original dispatch's finite capacity charge
 /// while a physical send or its Completed recovery custody may still act.

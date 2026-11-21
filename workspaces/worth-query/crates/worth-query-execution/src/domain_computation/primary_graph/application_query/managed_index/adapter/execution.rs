@@ -154,8 +154,8 @@ where
             .runtime
             .primary_graph()
             .ok_or(Denial::ForeignAssociation)?;
-        let state = graph
-            .managed_derived_views()
+        let views = graph.managed_derived_views();
+        let state = crate::domain_computation::primary_graph::downcast_managed_views(views.as_ref())
             .find_index(execution, &candidate)
             .map_err(Denial::Lifecycle)?;
         // Only the same configured allocation can match this candidate. The

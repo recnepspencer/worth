@@ -99,8 +99,14 @@ pub(super) fn prepare_members(
         managed_source::bind(execution, provider, before, &owned.attempt, candidate)
             .map_err(Denial::ManagedSource)?;
         prepared.witness = if producer {
-            crate::domain_computation::primary_graph::output_lineage::PreparedNativeOutputWitness::prepare(&owned.attempt, &provider.graph.layout)
-                .map_err(Denial::OutputWitness)?
+            crate::domain_computation::primary_graph::output_lineage::PreparedNativeOutputWitness::prepare_roles(
+                owned
+                    .attempt
+                    .native_publication_roles()
+                    .map(|(role, posture, entity_name, _)| (role, posture, entity_name)),
+                &provider.graph.layout,
+            )
+            .map_err(Denial::OutputWitness)?
         } else {
             None
         };

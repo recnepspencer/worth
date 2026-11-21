@@ -1,6 +1,7 @@
 //! The published host paired with the initial program that governed its
 //! installation, and with every other program it rostered.
 
+use crate::domain_computation::primary_graph::query_obligations::history::durable_retirement::QueryObligationHistoryDurableRetirementExt;
 use crate::basis::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
 use crate::equality_type_id::EqualityTypeId as TypeId;
 

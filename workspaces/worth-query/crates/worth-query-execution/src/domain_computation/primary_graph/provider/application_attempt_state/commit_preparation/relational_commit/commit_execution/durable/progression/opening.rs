@@ -1,4 +1,5 @@
 //! Advance the exact retained World open before any Native preparation.
+use crate::domain_computation::primary_graph::CommitAuthorityBindingExt;
 use super::*;
 
 #[inline(never)]

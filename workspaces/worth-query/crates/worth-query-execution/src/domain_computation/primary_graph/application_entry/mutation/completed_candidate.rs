@@ -26,7 +26,7 @@ where
     Schema: ApplicationSchema,
     Binding: ApplicationMutationBinding<Schema>,
 {
-    pub(in crate::domain_computation::primary_graph) fn new(
+    pub fn new(
         program: WorthQueryApplicationEffectProgram<
             Schema,
             Binding::Operation,
@@ -42,19 +42,19 @@ where
         }
     }
 
-    pub(in crate::domain_computation::primary_graph) fn record_planning_context(
+    pub fn record_planning_context(
         &mut self,
         context: crate::domain_computation::primary_graph::DecisionContextUse,
     ) {
         self.planning_context = context.supports_candidate_planning();
     }
-    pub(in crate::domain_computation::primary_graph) fn candidate_footprint(&self, execution: &worth_execution::ExecutionRequest<'_, '_>) -> Result<Option<crate::domain_computation::primary_graph::application_attempt::effect_program::candidate_planning::CandidateFootprint>, crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial>{
+    pub fn candidate_footprint(&self, execution: &worth_execution::ExecutionRequest<'_, '_>) -> Result<Option<crate::domain_computation::primary_graph::application_attempt::effect_program::candidate_planning::CandidateFootprint>, crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial>{
         if !self.planning_context {
             return Ok(None);
         }
         self.program.candidate_footprint(execution)
     }
-    pub(in crate::domain_computation::primary_graph) fn require_planned_support(
+    pub fn require_planned_support(
         &mut self,
         application: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

@@ -8,8 +8,9 @@ mod pins;
 mod prepared_commands;
 mod readmission;
 mod recovery_pins;
-mod retention_denial;
-pub use retention_denial::WorthQueryCorrectionRetentionDenial;
+pub use worth_query_execution_lineage::facade::primary_graph::retained_correction::{
+    retention_denial, WorthQueryCorrectionRetentionDenial,
+};
 pub(super) mod record;
 use crate::domain_computation::application_aftermath::correction_material::{
     QueryCorrectionMaterialDenial as Denial, QueryCorrectionMaterialFrame, QueryCorrectionsMedium,

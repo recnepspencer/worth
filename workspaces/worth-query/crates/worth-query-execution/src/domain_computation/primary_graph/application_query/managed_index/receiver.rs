@@ -71,9 +71,9 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
     {
         let execution = phase
             .execution_request_for(&self.runtime.product_runtime)
-            .map_err(|_| Denial::new(ReceiverCause::Refused(Refusal::ForeignPhase), None))?;
+            .map_err(|_| crate::domain_computation::primary_graph::application_query::managed_index::denial::managed_index_denial(ReceiverCause::Refused(Refusal::ForeignPhase), None))?;
         if !std::ptr::eq(binding.query(), plan.query) {
-            return Err(Denial::new(
+            return Err(crate::domain_computation::primary_graph::application_query::managed_index::denial::managed_index_denial(
                 ReceiverCause::Refused(Refusal::ForeignBinding),
                 None,
             ));
@@ -81,12 +81,12 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         if plan.query.read_graph().managed_index_selection().is_none() {
             return self
                 .execute_application_query_one_shot_with_request(&execution, plan)
-                .map_err(|cause| Denial::new(ReceiverCause::Read(cause), None));
+                .map_err(|cause| crate::domain_computation::primary_graph::application_query::managed_index::denial::managed_index_denial(ReceiverCause::Read(cause), None));
         }
         let allocation = SourceFactsAllocation::open(&execution)
-            .map_err(|cause| Denial::new(ReceiverCause::Execution(cause), None))?;
+            .map_err(|cause| crate::domain_computation::primary_graph::application_query::managed_index::denial::managed_index_denial(ReceiverCause::Execution(cause), None))?;
         self.execute_managed_parent(&execution, binding, external, plan, &allocation)
-            .map_err(|cause| Denial::new(cause, Some(allocation)))
+            .map_err(|cause| crate::domain_computation::primary_graph::application_query::managed_index::denial::managed_index_denial(cause, Some(allocation)))
     }
 
     fn execute_managed_parent<B>(

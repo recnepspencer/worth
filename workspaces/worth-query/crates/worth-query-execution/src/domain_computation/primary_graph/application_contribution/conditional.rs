@@ -28,13 +28,13 @@ pub use producer_access::WorthQueryApplicationConditionalProducerAccess;
 mod dependency;
 mod target_coverage;
 pub(super) use dependency::validate_required_producer;
-pub(crate) mod output_readiness_contract;
+pub(crate) use worth_query_execution_lineage::facade::domain_computation::primary_graph::application_contribution::conditional::output_readiness_contract;
 pub use output_readiness_contract::{
     WorthQueryOutputReadinessContract, WorthQueryOutputReadinessContractBuilder,
     WorthQueryOutputReadinessContractDenial, WorthQueryReadinessFieldUse,
 };
 
-mod package_contract;
+use worth_query_execution_lineage::facade::domain_computation::primary_graph::application_contribution::conditional::package_contract;
 pub use package_contract::WorthQueryApplicationConditionalPackageContract;
 
 pub trait WorthQueryApplicationConditionalBinding<Schema>: Sized + 'static

@@ -1,5 +1,6 @@
 //! Clean certification for a required cue on the wave's one selected Product.
 
+use crate::domain_computation::primary_graph::OutputDemandSettlementCurrentExt;
 use super::super::ProducerInvocationAuthority;
 use super::*;
 use crate::domain_computation::primary_graph::application_contribution::producer::demand::MatchedRequiredPredecessors;

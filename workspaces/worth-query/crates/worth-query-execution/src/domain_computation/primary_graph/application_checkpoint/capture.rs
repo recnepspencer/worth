@@ -5,7 +5,7 @@ use super::{
 };
 
 pub(crate) mod native_priors;
-pub(in crate::domain_computation::primary_graph) mod output_facts;
+pub(in crate::domain_computation::primary_graph) use worth_query_execution_lineage::facade::domain_computation::primary_graph::application_checkpoint::capture::output_facts;
 
 pub fn merge_accepted_outputs(
     mut current: Vec<

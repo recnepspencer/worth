@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::application_attempt::effect_program::EffectEntityBorrowedExt;
 use worth_query_installation::facade::ApplicationEntityRef;
 use worth_query_installation::facade::OperationCreates;
 

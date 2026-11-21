@@ -1,0 +1,125 @@
+use super::super::WorthQueryInvariantEntityIdentity;
+
+pub mod certified_correspondence;
+pub use certified_correspondence::CertifiedOutputCorrespondence;
+pub mod resolution;
+
+/// Which current entity a producer's output family holds for a producer.
+pub enum WorthQueryCurrentOutputSelection<Schema, Entity> {
+    /// Exactly one current entity is the output.
+    Unique(WorthQueryInvariantEntityIdentity<Schema, Entity>),
+    /// No current entity is the output.
+    Missing,
+    /// More than one current entity is the output.
+    Ambiguous(Vec<WorthQueryInvariantEntityIdentity<Schema, Entity>>),
+    /// The producer is no longer live, so none of its outputs are current.
+    ObsoleteSource,
+}
+
+/// Why the current output for a producer could not be selected.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum WorthQueryCurrentOutputDenialKind {
+    ManagedIndexSourceDenied,
+    ExecutionRequest(worth_relational::facade::transactions::RelationalExecutionDenialCause),
+    /// The projection has no selected product, or the output family is not
+    /// installed for this operation's binding.
+    FamilyUnavailable,
+    SourceQueryAuthorization(
+        crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind,
+    ),
+    /// No recorded output is current: each was produced from source state that
+    /// has since changed. A change to the producer itself reports
+    /// `OutputUnavailable` instead.
+    StaleSource,
+    /// A recorded output entity is not of the family's entity kind.
+    EntityMismatch,
+    /// A recorded output entity is no longer live, the producer changed after
+    /// its outputs were recorded, a recorded source fact could not be read,
+    /// or distinct publication heads compete at the same native position.
+    OutputUnavailable,
+    /// A consumed upstream output is pending source-aligned revalidation.
+    PendingUpstream,
+    /// Source marking changed while a verified dirty mark was being cleared.
+    /// The exact companion edit stop is retained for retry policy.
+    CurrentnessRaced(worth_relational::facade::mvcc::CompanionCellEditStop),
+    /// The operation does not declare the family's entity or the producer as
+    /// a decision read.
+    UndeclaredDecisionTarget,
+    /// The producer identity came from a different projection authority.
+    ForeignIdentity,
+    /// The selection exceeded the projection's work budget.
+    WorkBudgetExceeded,
+    /// The read could not retain its evidence within the installed capacity.
+    RetentionCapacityExhausted,
+    /// The request was cancelled or ran out of time while a recorded
+    /// output's consumed evidence was verified.
+    Interrupted(worth_relational::facade::mvcc::RelationalOperationInterruption),
+}
+
+/// Refusal to select a producer's current output.
+///
+/// [`Self::kind`] says why and [`Self::subject`] names the family, the
+/// producer entity, or the output role read.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct WorthQueryCurrentOutputDenial {
+    managed_index:
+        Option<crate::domain_computation::primary_graph::WorthQueryManagedIndexWorkDenial>,
+    kind: WorthQueryCurrentOutputDenialKind,
+    subject: String,
+    pub requested_output:
+        Option<super::super::RequestedOutputRead>,
+}
+
+impl WorthQueryCurrentOutputDenial {
+    pub const fn kind(&self) -> WorthQueryCurrentOutputDenialKind {
+        self.kind
+    }
+
+    pub fn subject(&self) -> &str {
+        &self.subject
+    }
+
+    pub fn new(
+        kind: WorthQueryCurrentOutputDenialKind,
+        subject: impl Into<String>,
+    ) -> Self {
+        Self {
+            managed_index: None,
+            kind,
+            subject: subject.into(),
+            requested_output: None,
+        }
+    }
+}
+
+impl std::fmt::Display for WorthQueryCurrentOutputDenial {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            formatter,
+            "current output denied: {:?} ({})",
+            self.kind, self.subject
+        )
+    }
+}
+
+impl std::error::Error for WorthQueryCurrentOutputDenial {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        self.managed_index_denial()
+            .map(|cause| cause as &dyn std::error::Error)
+    }
+}
+pub mod managed_index;
+
+impl worth_execution::ChargedBytes for WorthQueryCurrentOutputDenial {
+    fn additional_charged_bytes(&self) -> u64 {
+        if self.requested_output.is_some() {
+            u64::MAX
+        } else {
+            (self.subject.capacity() as u64).saturating_add(
+                self.managed_index
+                    .as_ref()
+                    .map_or(0, worth_execution::ChargedBytes::additional_charged_bytes),
+            )
+        }
+    }
+}

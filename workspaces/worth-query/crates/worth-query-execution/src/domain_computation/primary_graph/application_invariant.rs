@@ -1,35 +1,29 @@
 //! Domain algorithms for installed application invariants.
 //!
-//! Installation derives execution identity, applicability, access, and work limits
-//! from the schema. Rules receive only the owner's bounded candidate views.
+//! Pure verdict, error, refusal, and access-denial types come from
+//! `worth-query-execution-lineage`. Typed views, scope planning, and
+//! `WorthQueryApplicationInvariantRule` live here.
 
 use std::panic::{RefUnwindSafe, UnwindSafe};
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
 
+pub use worth_query_execution_lineage::facade::primary_graph::application_invariant::{
+    access_denial, hook_error, refusal, WorthQueryApplicationInvariantError,
+    WorthQueryApplicationInvariantVerdict, WorthQueryEmptyInvariantRefusal,
+    WorthQueryInvariantAccessDenial, WorthQueryInvariantAccessDenialKind,
+    WorthQueryInvariantRefusalDecodeDenial,
+};
 pub use worth_relational::facade::runtime::CustomInvariantInterruption;
+
 pub(super) mod content_fields;
-mod hook_error;
-pub use hook_error::WorthQueryApplicationInvariantError;
-
-pub(crate) mod refusal;
-pub use refusal::{WorthQueryEmptyInvariantRefusal, WorthQueryInvariantRefusalDecodeDenial};
-
-/// A domain violation is distinct from failure to evaluate and interruption.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub enum WorthQueryApplicationInvariantVerdict<Refusal> {
-    Pass,
-    Violation(Refusal),
-}
-
-mod access_denial;
 mod prepared_scope;
 mod program_selection;
 mod read_observation;
 mod registration;
 mod typed_binding;
 mod typed_view;
+
 pub use super::aggregate_identity::WorthQueryAggregateIdentity;
-pub use access_denial::{WorthQueryInvariantAccessDenial, WorthQueryInvariantAccessDenialKind};
 pub(super) use program_selection::WorthQueryProgramRuleSelection;
 pub(super) use registration::ErasedApplicationInvariantRule;
 pub use typed_binding::{
@@ -72,19 +66,10 @@ where
         planner: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, Schema>,
     ) -> Result<Self::Scope, WorthQueryApplicationInvariantError<Self::Refusal>>;
 
-    /// Declare `true` only when both checked hooks below are implemented.
-    /// They must use the supplied caller budget for their bounded work and memory.
-    /// A declaration does not authorize unchecked work, a replacement request,
-    /// or a fallback to the ordinary hooks when that budget refuses.
     fn supports_checked_preparation(&self) -> bool {
         false
     }
 
-    /// Prepare under the supplied budget, returning `Some` for a checked rule.
-    /// Checkpoint on entry and before each unit of work; claim scratch or result
-    /// bytes before growing or retaining your own storage. Stop immediately when
-    /// any claim or checkpoint refuses. The owner retains the typed cause;
-    /// neither `None`, ordinary preparation nor a new budget is a fallback.
     fn prepare_scope_checked(
         &self,
         _planner: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, Schema>,
@@ -93,11 +78,6 @@ where
         None
     }
 
-    /// Evaluate under the same caller budget, returning `Some` for a checked rule.
-    /// Checkpoint on entry and before each candidate or computation; claim memory
-    /// before growing your own retained storage. A refusal ends evaluation: do
-    /// not continue, report success, call the ordinary hook or mint a request.
-    /// Return an error to exit; the owner's recorded typed stop takes precedence.
     fn evaluate_checked(
         &self,
         _context: &WorthQueryApplicationInvariantContext<'_, '_, Schema>,

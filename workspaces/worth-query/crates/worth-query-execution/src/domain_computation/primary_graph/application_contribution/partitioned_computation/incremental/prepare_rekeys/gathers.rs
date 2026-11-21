@@ -12,6 +12,12 @@ use worth_foundational::facade::PartitionIdentity;
 pub(super) fn prepare<S, F, C, O, K, I, R>(
     owner: &O,
     reader: &mut Reader<'_, '_, S, O::Operation>,
+    source_query: Option<
+        &crate::domain_computation::primary_graph::application_query::SourceQueryReaderAccess<
+            '_,
+            S,
+        >,
+    >,
     execution: &QueryRequestExecution<'_>,
     input: &InputValue<S, F, C>,
     retained: &RetainedPartitions<K, I, R>,
@@ -38,6 +44,7 @@ where
         carry_or_gather(
             owner,
             reader,
+            source_query,
             execution,
             input,
             retained,
@@ -52,6 +59,7 @@ where
             gather(
                 owner,
                 reader,
+                source_query,
                 execution,
                 input,
                 retained,
@@ -66,6 +74,7 @@ where
     carry_or_gather(
         owner,
         reader,
+        source_query,
         execution,
         input,
         retained,
@@ -80,6 +89,12 @@ where
 fn carry_or_gather<S, F, C, O, K, I, R>(
     owner: &O,
     reader: &mut Reader<'_, '_, S, O::Operation>,
+    source_query: Option<
+        &crate::domain_computation::primary_graph::application_query::SourceQueryReaderAccess<
+            '_,
+            S,
+        >,
+    >,
     execution: &QueryRequestExecution<'_>,
     input: &InputValue<S, F, C>,
     retained: &RetainedPartitions<K, I, R>,
@@ -121,7 +136,16 @@ where
         }
         CallVisit::Leaf(_, ComputationRead::Partition(id), _, _) => {
             gather(
-                owner, reader, execution, input, retained, routing, id, prepared, fresh_keys,
+                owner,
+                reader,
+                source_query,
+                execution,
+                input,
+                retained,
+                routing,
+                id,
+                prepared,
+                fresh_keys,
             )?;
             Ok(true)
         }
@@ -131,6 +155,12 @@ where
 fn gather<S, F, C, O, K, I, R>(
     owner: &O,
     reader: &mut Reader<'_, '_, S, O::Operation>,
+    source_query: Option<
+        &crate::domain_computation::primary_graph::application_query::SourceQueryReaderAccess<
+            '_,
+            S,
+        >,
+    >,
     execution: &QueryRequestExecution<'_>,
     input: &InputValue<S, F, C>,
     retained: &RetainedPartitions<K, I, R>,
@@ -158,7 +188,7 @@ where
     execution.checkpoint().map_err(D::from_kernel_stop)?;
     let (gathered, charge) = reader.measured(ComputationRead::Partition(id), |reader| {
         owner.gather(
-            &mut WorthQueryComputationReader::lend(reader),
+            &mut WorthQueryComputationReader::lend(reader, source_query),
             input,
             WorthQueryComputationPartitionMembers::new(id, &key, &members, &retained.items),
         )

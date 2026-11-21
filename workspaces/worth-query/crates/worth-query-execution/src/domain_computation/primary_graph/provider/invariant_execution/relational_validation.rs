@@ -46,7 +46,12 @@ impl WorthQueryPrimaryGraphProvider {
         let allocation_control = RequestAllocationControl::new(request, allocation_policy);
         // The caller owns this before Native can snapshot any predicate posting.
         // Native only borrows the factory and retains bundled weak receipts.
-        let factory = if self.graph.managed_derived_views().has_predicate_routing() {
+        let views = self.graph.managed_derived_views();
+        let factory = if crate::domain_computation::primary_graph::downcast_managed_views(
+            views.as_ref(),
+        )
+        .has_predicate_routing()
+        {
             let fence = self.live_delivery.begin_predicate_preparation(execution, product.observation())
                 .map_err(|denial| match denial {
                     crate::domain_computation::primary_graph::live_delivery::WorthQueryLiveAdmissionDenial::Execution(cause) => context_execution_failure(cause),

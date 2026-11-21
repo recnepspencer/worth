@@ -1,6 +1,6 @@
 //! Required publication after the authoritative commit has succeeded.
 
-pub(crate) mod committed_application;
+pub(crate) use worth_query_execution_lineage::facade::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::commit_execution::publication::committed_application;
 mod provider_result;
 
 pub(in crate::domain_computation::primary_graph) use committed_application::WorthQueryPrimaryGraphCommittedApplication;
@@ -159,7 +159,15 @@ fn prepare_pending(
         evidence,
         product_publication,
     };
-    let mut application = WorthQueryPrimaryGraphCommittedApplication::from_publication(seal);
+    let mut application = WorthQueryPrimaryGraphCommittedApplication::from_publication_parts(
+        seal.runtime_instance_id,
+        seal.changed_record_count,
+        seal.emitted_effect_count,
+        seal.outcome_identity,
+        seal.basis_descriptor,
+        seal.evidence,
+        seal.product_publication,
+    );
     if let Some(members) = group_evidence {
         application.retain_coupled_members(members);
     }

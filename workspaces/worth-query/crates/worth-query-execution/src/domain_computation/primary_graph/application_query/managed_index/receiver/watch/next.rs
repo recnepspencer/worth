@@ -21,9 +21,9 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
     {
         let execution = phase
             .execution_request_for(&self.runtime.product_runtime)
-            .map_err(|_| Denial::new(ReceiverCause::Refused(Refusal::ForeignPhase), None))?;
+            .map_err(|_| crate::domain_computation::primary_graph::application_query::managed_index::denial::managed_index_denial(ReceiverCause::Refused(Refusal::ForeignPhase), None))?;
         let allocation = SourceFactsAllocation::open(&execution)
-            .map_err(|cause| Denial::new(ReceiverCause::Execution(cause), None))?;
+            .map_err(|cause| crate::domain_computation::primary_graph::application_query::managed_index::denial::managed_index_denial(ReceiverCause::Execution(cause), None))?;
         let outcome = (|| {
             let context = context::prepare(&execution, self, binding, &mut plan, &allocation)?;
             if !plan.query.lanes().live_enabled()
@@ -192,6 +192,6 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
                 },
             ))
         })();
-        outcome.map_err(|cause| Denial::new(cause, Some(allocation)))
+        outcome.map_err(|cause| crate::domain_computation::primary_graph::application_query::managed_index::denial::managed_index_denial(cause, Some(allocation)))
     }
 }

@@ -1,12 +1,13 @@
 //! External effects, recovery custody, and canonical recorded correction causality.
 
-mod correction;
+pub(crate) use worth_query_execution_lineage::facade::domain_computation::application_aftermath::{
+    correction, correction_coordinates, retained_preimage, retained_relations,
+};
 pub(in crate::domain_computation) use correction::OriginalCorrectionDisclosure;
 pub(crate) use worth_query_execution_obligations::facade::aftermath::correction_material;
 pub(crate) mod commit_causality;
 pub(crate) use commit_causality::ApplicationCommitCausality;
 pub(crate) mod causal_fact;
-mod correction_coordinates;
 pub use correction_coordinates::WorthQueryCorrectionSourceCoordinates;
 pub use worth_query_execution_obligations::facade::aftermath::derivation_failure;
 pub mod dispatch_journal;
@@ -14,8 +15,6 @@ pub mod external_effect;
 pub mod recovery_handle;
 use worth_query_execution_obligations::facade::aftermath::recovery_posture;
 pub mod recovery_progression;
-pub mod retained_preimage;
-mod retained_relations;
 pub use retained_relations::{
     WorthQueryRelationPreImageDenial, WorthQueryRelationPreImageFailure,
     WorthQueryRetainedPreImageRelation,
@@ -28,6 +27,7 @@ pub use causal_fact::{
     WorthQueryAftermathCausalRole, WorthQueryCommittedAftermathCausality,
     WorthQueryCorrectionLineageBinding, WorthQueryRecordedCorrectionSource,
 };
+pub(crate) use causal_fact::CommittedAftermathCausalityExt;
 pub(in crate::domain_computation) use external_effect::dispatch_external_effect;
 
 pub use external_effect::WorthQueryInboundCleanupReport;
@@ -89,5 +89,3 @@ pub use retained_preimage::{
 #[cfg(test)]
 #[path = "mod_inline_type_budget.rs"]
 pub(crate) mod inline_type_budget;
-#[cfg(test)]
-mod retained_preimage_tests;

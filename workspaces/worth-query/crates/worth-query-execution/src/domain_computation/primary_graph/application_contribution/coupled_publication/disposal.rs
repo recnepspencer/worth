@@ -1,4 +1,5 @@
 //! Abandoned real writers retain every refused cleanup until the caller owns it.
+use crate::domain_computation::primary_graph::WorthQueryAdvancementDenialCommitExt as _;
 use super::*;
 use crate::domain_computation::primary_graph::{
     application_attempt::WorthQueryProviderProgressionOutcome as Progression,

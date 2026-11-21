@@ -1,4 +1,6 @@
 //! Retention joins the actual current material receiver and original support owner.
+use crate::domain_computation::primary_graph::query_obligations::history::journal_readmission::QueryObligationHistoryJournalReadmissionExt;
+use crate::domain_computation::primary_graph::query_obligations::history::original_expiry::QueryObligationHistoryOriginalExpiryExt;
 use super::*;
 use crate::domain_computation::primary_graph::query_obligations::QueryObligationsMedium;
 use crate::domain_computation::primary_graph::{

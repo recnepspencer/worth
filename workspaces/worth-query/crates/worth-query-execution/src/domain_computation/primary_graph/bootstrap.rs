@@ -42,7 +42,7 @@ pub(super) mod prepared_native;
 mod program_activation_recovery;
 pub(in crate::domain_computation::primary_graph) use program_activation_recovery::read_activation;
 mod program_activation_seeding;
-mod publication;
+pub(crate) use worth_query_execution_lineage::facade::primary_graph::bootstrap::publication;
 mod publication_target;
 mod seed_batches;
 pub(super) mod unique_seed_values;

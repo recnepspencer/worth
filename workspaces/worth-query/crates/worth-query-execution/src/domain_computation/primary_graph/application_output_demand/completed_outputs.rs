@@ -1,4 +1,5 @@
 //! One genuine retained basis qualified against the completed original output set.
+use crate::domain_computation::primary_graph::ReadObservationRuntimeExt;
 use super::{
     WorthQueryFulfilledRequiredRoot, WorthQueryOutputDemandSettlement,
     WorthQueryOutputSettlementPosture,

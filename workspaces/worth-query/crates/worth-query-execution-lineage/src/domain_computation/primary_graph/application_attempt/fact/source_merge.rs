@@ -1,0 +1,330 @@
+use super::WorthQueryApplicationObservedFact as Fact;
+
+impl Fact {
+    /// Equal adjacency truth may have been read under different work allowances.
+    /// Keep the stronger comparison allowance without weakening the exact native
+    /// edge inventory. This merge allocates nothing and preserves all fact roles.
+    pub fn merge_equal_observation(
+        &mut self,
+        duplicate: &Self,
+    ) -> bool {
+        match (self, duplicate) {
+            (
+                Fact::Adjacency {
+                    relation_kind: first_kind,
+                    anchor: first_anchor,
+                    direction: first_direction,
+                    maximum_work_units: first_work,
+                    relations: first_edges,
+                },
+                Fact::Adjacency {
+                    relation_kind: second_kind,
+                    anchor: second_anchor,
+                    direction: second_direction,
+                    maximum_work_units: second_work,
+                    relations: second_edges,
+                },
+            ) if first_kind == second_kind
+                && first_anchor == second_anchor
+                && first_direction == second_direction
+                && first_edges == second_edges =>
+            {
+                *first_work = (*first_work).max(*second_work);
+                true
+            }
+            (existing, duplicate) => existing == duplicate,
+        }
+    }
+    /// Combines observations of the same dependency at one native revision.
+    /// Adjacency endpoints and comparison limits describe each read boundary;
+    /// they may differ even when both reads observed the same structural truth.
+    pub fn merge_same_source_fact(
+        &mut self,
+        duplicate: Self,
+        control: super::super::retained_decision_facts::StorageControl<'_, '_>,
+    ) -> Result<bool, super::super::retained_decision_facts::StoreDenial> {
+        if self.dependency_key() != duplicate.dependency_key() {
+            return Ok(false);
+        }
+        self.merge_after_equal_source_key(duplicate, control)
+    }
+    /// Private retained-store callback. The caller has compared the complete
+    /// admitted typed key; native revision equality remains checked below.
+    pub fn merge_after_equal_source_key(
+        &mut self,
+        duplicate: Self,
+        control: super::super::retained_decision_facts::StorageControl<'_, '_>,
+    ) -> Result<bool, super::super::retained_decision_facts::StoreDenial> {
+        match (self, duplicate) {
+            (
+                Fact::SourceReadAuthorization { observation: first },
+                Fact::SourceReadAuthorization {
+                    observation: second,
+                },
+            ) => {
+                control.check_live()?;
+                if std::sync::Arc::ptr_eq(first, &second) {
+                    return Ok(true);
+                }
+                let Some(execution) = control.execution() else {
+                    return Ok(false);
+                };
+                let equal = first.same_truth(&second, &mut |units| {
+                    crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation::request_work(&execution, units)
+                        .map_err(super::super::retained_decision_facts::StoreDenial::ExecutionRequest)
+                })?;
+                control.check_live()?;
+                Ok(equal)
+            }
+            (
+                Fact::ManagedIndexSource { observation: first },
+                Fact::ManagedIndexSource {
+                    observation: second,
+                },
+            ) => {
+                control.check_live()?;
+                if std::sync::Arc::ptr_eq(first, &second) {
+                    return Ok(true);
+                }
+                let Some(execution) = control.execution() else {
+                    return Ok(false);
+                };
+                let equal = first.same_truth(&second, &mut |units| {
+                    crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation::request_work(&execution, units)
+                        .map_err(super::super::retained_decision_facts::StoreDenial::ExecutionRequest)
+                }, &mut |bytes| execution.reserve_retained_memory(bytes)
+                    .map_err(super::super::retained_decision_facts::StoreDenial::ExecutionRequest),
+                    &mut comparison_fault,
+                    &mut |left, right| left.same_content(&execution, right).map_err(super::super::retained_decision_facts::StoreDenial::Content))?;
+                control.check_live()?;
+                Ok(equal)
+            }
+
+            (
+                Fact::ComponentSelection { observation: first },
+                Fact::ComponentSelection {
+                    observation: second,
+                },
+            ) => {
+                control.check_live()?;
+                if std::sync::Arc::ptr_eq(first, &second) {
+                    Ok(true)
+                } else {
+                    first.same_truth_with_poll(&second, || control.check_live())
+                }
+            }
+            (
+                Fact::Aggregate { observation: first },
+                Fact::Aggregate {
+                    observation: second,
+                },
+            ) => {
+                control.check_live()?;
+                if std::sync::Arc::ptr_eq(first, &second) {
+                    Ok(true)
+                } else {
+                    first.same_truth_with_poll(&second, || control.check_live())
+                }
+            }
+            (
+                Fact::DerivedSource { observation: first },
+                Fact::DerivedSource {
+                    observation: second,
+                },
+            ) => {
+                control.check_live()?;
+                let equal = if std::sync::Arc::ptr_eq(first, &second) {
+                    true
+                } else {
+                    first.same_truth_with_poll(&second, || control.check_live())?
+                };
+                control.check_live()?;
+                Ok(equal)
+            }
+            (
+                Fact::StructuralWalk { observation: first },
+                Fact::StructuralWalk {
+                    observation: second,
+                },
+            ) => {
+                control.check_live()?;
+                if std::sync::Arc::ptr_eq(first, &second) {
+                    Ok(true)
+                } else {
+                    first.same_truth_with_poll(&second, || control.check_live())
+                }
+            }
+            (
+                Fact::SourceAdjacencyRevision {
+                    native_revision: first_revision,
+                    comparison_work_limit: first_limit,
+                    endpoints: first_endpoints,
+                    ..
+                },
+                Fact::SourceAdjacencyRevision {
+                    native_revision: second_revision,
+                    comparison_work_limit: second_limit,
+                    endpoints: second_endpoints,
+                    ..
+                },
+            ) if *first_revision == second_revision => {
+                let union = first_endpoints.union(&second_endpoints, control)?;
+                // No body change until the complete replacement is admitted.
+                *first_limit = (*first_limit).max(second_limit);
+                *first_endpoints = union;
+                Ok(true)
+            }
+            (existing, duplicate) => Ok(existing.merge_equal_observation(&duplicate)),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use worth_relational::facade::{
+        identity::{EntityId, KindId, PartitionId, VersionId},
+        runtime::RelationalAdjacencyDirection,
+    };
+
+    use super::Fact;
+
+    fn endpoint(slot: u64) -> EntityId {
+        EntityId::new(PartitionId::main(), slot, 1)
+    }
+
+    fn adjacency(revision: u64, work: usize, endpoints: Vec<EntityId>) -> Fact {
+        Fact::SourceAdjacencyRevision {
+            relation_kind: KindId::new(120),
+            anchor: endpoint(1),
+            direction: RelationalAdjacencyDirection::Outgoing,
+            native_revision: Some(VersionId(revision)),
+            comparison_work_limit: work,
+            endpoints: crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints::from_observed(&endpoints, worth_execution::ExecutionAllocationPolicy::SystemAllocation, None).unwrap(),
+        }
+    }
+
+    #[test]
+    fn same_revision_source_adjacency_unions_coverage_and_comparison_allowance() {
+        let first = adjacency(4, 2, vec![endpoint(3), endpoint(2)]);
+        let second = adjacency(4, 7, vec![endpoint(4), endpoint(3)]);
+        let expected = adjacency(4, 7, vec![endpoint(2), endpoint(3), endpoint(4)]);
+        let key = first.dependency_key();
+        let mut forward = first.clone();
+        assert!(forward
+            .merge_same_source_fact(
+                second.clone(),
+                crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)
+            )
+            .unwrap());
+        assert_eq!(forward, expected);
+        assert_eq!(forward.dependency_key(), key);
+        let mut reverse = second;
+        assert!(reverse
+            .merge_same_source_fact(
+                first,
+                crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)
+            )
+            .unwrap());
+        assert_eq!(reverse, expected);
+        assert!(forward
+            .merge_same_source_fact(
+                expected.clone(),
+                crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)
+            )
+            .unwrap());
+        assert_eq!(forward, expected);
+    }
+
+    #[test]
+    fn changed_revision_or_native_locator_denies_without_mutating_source_fact() {
+        let original = adjacency(4, 2, vec![endpoint(2)]);
+        let mut observed = original.clone();
+        assert!(!observed
+            .merge_same_source_fact(
+                adjacency(5, 7, vec![endpoint(3)]),
+                crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)
+            )
+            .unwrap());
+        assert_eq!(observed, original);
+        let mut foreign = adjacency(4, 7, vec![endpoint(3)]);
+        if let Fact::SourceAdjacencyRevision { anchor, .. } = &mut foreign {
+            *anchor = endpoint(5);
+        }
+        assert!(!observed
+            .merge_same_source_fact(
+                foreign,
+                crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)
+            )
+            .unwrap());
+        assert_eq!(observed, original);
+        let mut entity = Fact::SourceEntity {
+            entity_id: endpoint(1),
+        };
+        assert!(entity
+            .merge_same_source_fact(
+                entity.clone(),
+                crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)
+            )
+            .unwrap());
+        assert!(!entity
+            .merge_same_source_fact(
+                Fact::SourceEntity {
+                    entity_id: endpoint(2)
+                },
+                crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)
+            )
+            .unwrap());
+        assert_eq!(
+            entity,
+            Fact::SourceEntity {
+                entity_id: endpoint(1)
+            }
+        );
+    }
+
+    #[test]
+    fn repeated_source_facts_retain_one_body_and_conflicting_truth_poison_completion() {
+        use super::super::super::retained_decision_facts::{
+            AuthoringSourceFacts, StorageControl, StoreDenial,
+        };
+        let control = StorageControl::new(
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            None,
+        );
+        let original = adjacency(4, 7, vec![endpoint(2)]);
+        let mut equal = AuthoringSourceFacts::new(control).unwrap();
+        equal.capture(original.clone(), control).unwrap();
+        equal.capture(original.clone(), control).unwrap();
+        let retained = equal.finish(control).unwrap();
+        assert_eq!(
+            retained.into_values().collect::<Vec<_>>(),
+            vec![original.clone()]
+        );
+
+        let changed = adjacency(5, 7, vec![endpoint(2)]);
+        assert_eq!(original.dependency_key(), changed.dependency_key());
+        let mut conflicting = AuthoringSourceFacts::new(control).unwrap();
+        conflicting.capture(original, control).unwrap();
+        assert_eq!(
+            conflicting.capture(changed, control),
+            Err(StoreDenial::ConflictingBody)
+        );
+        assert!(matches!(
+            conflicting.finish(control),
+            Err(StoreDenial::ConflictingBody)
+        ));
+    }
+}
+
+fn comparison_fault(
+    cause: crate::domain_computation::primary_graph::application_query::ProjectionContentComparisonFault,
+) -> super::super::retained_decision_facts::StoreDenial {
+    use super::super::retained_decision_facts::StoreDenial;
+    use crate::domain_computation::primary_graph::application_query::ProjectionContentComparisonFault as Fault;
+    match cause {
+        Fault::ContentInconsistency => StoreDenial::ContentInconsistency,
+        Fault::CapacityOverflow => StoreDenial::Representability,
+        Fault::AllocationFailed => StoreDenial::PhysicalAllocation,
+    }
+}
+mod court_doors_for_test;

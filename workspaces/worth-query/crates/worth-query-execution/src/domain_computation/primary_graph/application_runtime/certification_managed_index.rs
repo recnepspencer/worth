@@ -25,10 +25,12 @@ impl<S: ApplicationSchema> WorthQueryCertificationManagedIndexRuntimeExt
         Vec<WorthQueryCertificationManagedIndexPages>,
         WorthQueryCertificationManagedIndexPagesDenial,
     > {
-        self.runtime
+        let views = self
+            .runtime
             .primary_provider
             .graph
-            .managed_derived_views()
+            .managed_derived_views();
+        crate::domain_computation::primary_graph::downcast_managed_views(views.as_ref())
             .inspect_source_pages()
     }
 }

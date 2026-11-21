@@ -61,7 +61,54 @@ fn image(execution:&worth_execution::ExecutionRequest<'_, '_>,provider:&WorthQue
     let stop = consumed_output::verification_stop;
     provider.graph.with_runtime(execution,|runtime|{
  let selected=runtime.read_truth().positioned_snapshot(before).map_err(|_|stop(VerificationStop::Unavailable))?;
- provider.graph.source_owner.invalidation_owner.source_publication_validation_image_for_test(observations, &selected)
+ source_publication_validation_image_for_test(&provider.graph.source_owner.invalidation_owner, observations, &selected)
  .map_err(|cause|stop(crate::domain_computation::primary_graph::invariant_projection::consumed_output::map_admission_stop(cause)))
  })
+}
+
+fn source_publication_validation_image_for_test(
+    owner: &crate::domain_computation::primary_graph::SourceInvalidationOwner,
+    observations: &[Arc<ObservedSourcePublication>],
+    selected: &worth_relational::facade::runtime::PositionedRelationalSnapshot,
+) -> Result<
+    crate::domain_computation::primary_graph::application_runtime::WorthQuerySourcePublicationImageForTest,
+    worth_relational::facade::mvcc::CompanionPreflightStop,
+> {
+    use crate::domain_computation::primary_graph::application_runtime::{
+        WorthQuerySourcePublicationHeadForTest as Head,
+        WorthQuerySourcePublicationImageForTest as View,
+    };
+    use worth_relational::facade::mvcc::CompanionPreflightStop;
+    let cell = owner
+        .cell_for_read(selected)?
+        .ok_or(CompanionPreflightStop::SelectedSourceMismatch)?;
+    let image = cell.read_image();
+    let mut outer_publications = Vec::with_capacity(observations.len());
+    for observed in observations {
+        let state = image
+            .payload()
+            .current
+            .source_publications
+            .get(&observed.address)
+            .ok_or(CompanionPreflightStop::SelectedSourceMismatch)?;
+        let mut heads = Vec::with_capacity(state.heads.len());
+        for head in state.heads.iter() {
+            let (occurrence, generation, slot) = head.identity.address();
+            heads.push(Head {
+                binding: head.key.source.output_binding.as_str().to_owned(),
+                partition: head.key.partition,
+                occurrence,
+                generation,
+                slot,
+            });
+        }
+        outer_publications.push(heads);
+    }
+    Ok(View {
+        root_id: image.root_id(),
+        native_commit: image.commit_id().map(|id| id.0),
+        native_position: image.position().map(|position| position.0),
+        topology_generation: image.topology_generation(),
+        outer_publications,
+    })
 }

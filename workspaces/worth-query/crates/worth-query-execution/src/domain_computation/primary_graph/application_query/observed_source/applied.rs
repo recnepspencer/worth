@@ -1,5 +1,8 @@
 //! Candidate source meaning is retained without issuing a Current observation.
+use crate::domain_computation::primary_graph::application_attempt::fact::source_read_authorization::applied_query::SourceReadAuthorizationAppliedQueryExt;
+use std::marker::PhantomData;
 use super::*;
+use worth_relational::facade::identity::EntityId;
 use crate::domain_computation::primary_graph::{
     application_query::read_execution::{applied_source, read_plan::ReadPlan, ReadInterruption},
     source_read_equivalence::SourceReadEquivalence,
@@ -31,83 +34,21 @@ pub(in crate::domain_computation::primary_graph) struct AppliedQuerySource<Query
     pub(in crate::domain_computation::primary_graph) closure: std::sync::Arc<super::super::SourceQueryReadClosure>,
     marker: PhantomData<fn() -> Query>,
 }
-/// The actual candidate source survives preparation until its whole publication
-/// is validated and the real successor can issue a committed source epoch.
-#[derive(Clone)]
-pub(in crate::domain_computation::primary_graph) struct AppliedSourcePublication {
-    managed: Option<
-        std::sync::Arc<super::super::managed_index::applied_read::AppliedManagedSourceSupport>,
-    >,
-    meaning: std::sync::Arc<source_identity::WorthQueryObservedSourceMeaning>,
-    closure: std::sync::Arc<super::super::SourceQueryReadClosure>,
-    /// The lifecycle the performing producer was qualified under.
-    lifecycle: crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerLifecyclePosture,
-}
-
-impl AppliedSourcePublication {
-    pub(in crate::domain_computation::primary_graph) fn lifecycle(
+impl<Query, Value> AppliedQuerySource<Query, Value> {
+    pub(in crate::domain_computation::primary_graph) fn retain_selected_membership(
         &self,
-    ) -> crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerLifecyclePosture{
-        self.lifecycle
-    }
-    /// Publication can make two previously distinct interned meanings equal.
-    /// Compare the carried acquisition rather than depending on which older
-    /// committed meaning the interner encounters first.
-    pub(in crate::domain_computation::primary_graph) fn matches_published_source<Query>(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        source: &WorthQueryObservedSource<Query>,
-    ) -> Result<bool, Cause> {
-        let Some(current_source) = source.invocation_managed_source.as_deref() else {
-            return Ok(false);
-        };
-        if !self.meaning.same_coordinate(&source.source_meaning)
-            || !self
-                .managed
-                .as_ref()
-                .is_some_and(|managed| managed.published().is_some())
-        {
-            return Ok(false);
+    ) -> Option<super::WorthQueryObservedSourceSelection> {
+        if self.managed.is_some() {
+            return None;
         }
-        let left = self.meaning.footprint();
-        let right = source.source_meaning.footprint();
-        source_identity::admit_footprint_comparison(left, right, &mut |units| {
-            let units = u64::try_from(units).map_err(|_| Cause::WorkCounterOverflow)?;
-            crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation::work(
-                execution, units,
-            )
-        })?;
-        super::comparison::equal_published_source(
-            left,
-            right,
-            current_source,
-            &mut SourceReadEquivalence::default(),
-            execution,
-            &|| Ok(()),
+        super::WorthQueryObservedSourceSelection::complete(
+            self.runtime_authority,
+            self.schema_binding.clone(),
+            std::sync::Arc::clone(&self.meaning),
+            None,
         )
     }
 
-    pub(in crate::domain_computation::primary_graph) fn seal_published(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        runtime: &worth_relational::facade::runtime::RelationalRuntime,
-        after: &worth_relational::facade::snapshots::SnapshotHandle,
-    ) -> Result<(), worth_relational::facade::runtime::ManagedIndexSourcePreparationDenial> {
-        if let Some(managed) = &self.managed {
-            managed.seal_published(execution, runtime, after)?;
-        }
-        self.closure.seal_applied_publication(runtime, after)?;
-        Ok(())
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn root(&self) -> EntityId {
-        self.meaning.footprint().root
-    }
-    pub(in crate::domain_computation::primary_graph) fn checkpoint_identity(&self) -> [u8; 32] {
-        self.meaning.checkpoint_identity().bytes()
-    }
-}
-impl<Query, Value> AppliedQuerySource<Query, Value> {
     pub(in crate::domain_computation::primary_graph) fn has_complete_output_dependencies(
         &self,
     ) -> bool {
@@ -119,9 +60,9 @@ impl<Query, Value> AppliedQuerySource<Query, Value> {
         lifecycle: crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerLifecyclePosture,
     ) -> AppliedSourcePublication {
         AppliedSourcePublication {
-            managed: self.managed,
+            managed: self.managed.map(|m| m as std::sync::Arc<dyn worth_query_execution_lineage::facade::ports::AppliedManagedSourcePort>),
             meaning: self.meaning,
-            closure: self.closure,
+            closure: self.closure as std::sync::Arc<dyn worth_query_execution_lineage::facade::ports::SourceReadClosurePort>,
             lifecycle,
         }
     }

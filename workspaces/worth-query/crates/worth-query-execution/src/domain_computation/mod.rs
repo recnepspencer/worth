@@ -4,6 +4,13 @@ pub(crate) use worth_query_execution_foundation::facade::domain_computation::{
     evidence_material,
 };
 pub(crate) mod execution_observation;
+pub(crate) mod product_publication {
+    pub use worth_query_execution_lineage::facade::domain_computation::product_publication::*;
+    mod discovery;
+    mod owner_close;
+    mod preparation_readmission;
+    mod recovered_release;
+}
 pub(crate) use worth_query_execution_contracts::facade::runtime_time;
 pub(crate) use worth_query_execution_diagnostics::facade::evidence_identity;
 pub(crate) use worth_query_execution_runtime::facade::{
@@ -13,9 +20,9 @@ pub(crate) use worth_query_execution_runtime::facade::{
 
 pub(crate) mod authorization;
 pub(crate) mod execution_runtime;
+pub(crate) mod lineage_ports;
 pub(crate) mod managed_run;
 pub(crate) mod primary_graph;
-mod product_publication;
 pub use product_publication::{
     WorthQueryProductPreparationPending, WorthQueryProductPreparationRefusal,
     WorthQueryProductPreparationRefused, WorthQueryProductPreparationStage,

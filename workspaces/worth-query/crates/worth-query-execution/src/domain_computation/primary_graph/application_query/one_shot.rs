@@ -16,7 +16,8 @@ mod batch;
 pub use batch::WorthQueryApplicationBatchReadDenial;
 pub use batch::WorthQueryApplicationBatchResult;
 
-pub(crate) mod denial;
+pub(crate) use worth_query_execution_lineage::facade::domain_computation::primary_graph::application_query::one_shot::denial;
+mod expression_context;
 pub(super) mod outcome;
 pub(super) mod plan_admission;
 use plan_admission::admit_request;
@@ -61,16 +62,7 @@ pub struct WorthQueryApplicationOneShotResult<Query, QueryResult> {
     receipt: WorthQueryApplicationQueryAccessReceipt,
 }
 
-/// The admitted read keeps its original semantic denial and accounts for
-/// newly performed Query execution work on either outcome.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub enum WorthQueryAdmittedOneShotStop {
-    Admission(CompanionPreflightStop),
-
-    WorkCounterOverflow,
-    WorkAccountingMismatch,
-    Execution(WorthQueryApplicationOneShotDenial),
-}
+pub use worth_query_execution_lineage::facade::primary_graph::application_query::one_shot::WorthQueryAdmittedOneShotStop;
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where

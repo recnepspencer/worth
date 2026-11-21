@@ -171,6 +171,21 @@ impl BoundStableObservedSourceFacts {
                 })
     }
 
+    pub(in crate::domain_computation) fn matches_admission_identity_and_product(
+        &self,
+        admission_identity: WorthQueryOperationAdmissionIdentity,
+        mutation_product: Option<&crate::basis::WorthQueryProductBranchLease>,
+    ) -> bool {
+        self.admission_identity == admission_identity
+            && mutation_product.is_some_and(|product| {
+                self.selected_product
+                    .matches_observation(product.observation())
+                    && self
+                        .observed_product
+                        .matches_observation(product.observation())
+            })
+    }
+
     pub(in crate::domain_computation::primary_graph) const fn bound_source(
         &self,
     ) -> WorthQueryBoundSourceExpectation {

@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::PrimaryGraphHandleWorkflowExt;
 mod ended_admission;
 pub(in crate::domain_computation::primary_graph) mod history_projection;
 mod read_dependencies;

@@ -1,9 +1,10 @@
 //! Cold Query obligation admission before Home service.
+use super::journal::*;
 use super::*;
 use crate::domain_computation::primary_graph::retained_correction::{
     MaterialPublication, WorthQueryCorrectionRetentionDenial,
 };
-use journal::*;
+use std::collections::BTreeMap;
 use worth_execution::ExecutionRequest;
 use worth_foundational::facade::{
     CanonicalDigestId, ProgramSupportObligationIdentity, ProgramSupportObligationKind,
@@ -11,8 +12,29 @@ use worth_foundational::facade::{
 use worth_query_execution_obligations::facade::ledger_inspect;
 use worth_runtime_world::facade::WorldProgramActivationHistory;
 
-impl QueryObligationHistory {
-    pub(in crate::domain_computation::primary_graph) fn bind_live_receivers(
+pub(in crate::domain_computation::primary_graph) trait QueryObligationHistoryJournalReadmissionExt {
+    fn bind_live_receivers(
+        self: &Arc<Self>,
+        provider: &crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider,
+        execution: &crate::domain_computation::WorthQueryExecutionRuntime,
+    ) -> Result<(), QueryObligationDenial>;
+
+    fn readmit_journal(
+        &self,
+        medium: Arc<dyn QueryObligationsMedium>,
+        originals: &WorldProgramActivationHistory,
+        material: &MaterialPublication<'_>,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<worth_proof::AdmittedHomeQueryObligations, WorthQueryCorrectionRetentionDenial>;
+
+    fn admit_current_prefix(
+        &self,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<worth_proof::AdmittedHomeQueryObligations, QueryObligationDenial>;
+}
+
+impl QueryObligationHistoryJournalReadmissionExt for QueryObligationHistory {
+    fn bind_live_receivers(
         self: &Arc<Self>,
         provider: &crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider,
         execution: &crate::domain_computation::WorthQueryExecutionRuntime,
@@ -26,7 +48,7 @@ impl QueryObligationHistory {
         )
     }
 
-    pub(in crate::domain_computation::primary_graph) fn readmit_journal(
+    fn readmit_journal(
         &self,
         medium: Arc<dyn QueryObligationsMedium>,
         originals: &WorldProgramActivationHistory,
@@ -62,7 +84,7 @@ impl QueryObligationHistory {
             }
             // Joined originals retain their durable counts. Adoption's owning
             // consumer remains a separate admission requirement.
-            self.join_original_interpretations(&ledger, originals, material)?;
+            join_original_interpretations(self, &ledger, originals, material)?;
             let mut state = self.state();
             if state.entries.values().any(|entry| {
                 entry.retained_interpretations != 0
@@ -106,7 +128,7 @@ impl QueryObligationHistory {
         let released = {
             let state = self.state();
             let ledger = &state.journal.as_ref().expect("admitted journal").ledger;
-            Self::join_original_interpretations_with_roster(
+            join_original_interpretations_with_roster(
                 ledger,
                 &state.entries,
                 originals,
@@ -177,7 +199,7 @@ impl QueryObligationHistory {
     }
     /// Finish cold cleanup's acknowledged records before the Home service
     /// witness escapes. This is the same publisher and admitted ledger.
-    pub(in crate::domain_computation::primary_graph) fn admit_current_prefix(
+    fn admit_current_prefix(
         &self,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<worth_proof::AdmittedHomeQueryObligations, QueryObligationDenial> {
@@ -199,20 +221,23 @@ impl QueryObligationHistory {
             ledger.payload_digest(),
         ))
     }
-    fn join_original_interpretations(
-        &self,
-        ledger: &QueryObligationLedger,
-        originals: &WorldProgramActivationHistory,
-        material: &MaterialPublication<'_>,
-    ) -> Result<Vec<ProgramSupportObligationIdentity>, QueryObligationDenial> {
-        Self::join_original_interpretations_with_roster(
-            ledger,
-            &self.state().entries,
-            originals,
-            material,
-        )
-    }
-    fn join_original_interpretations_with_roster(
+}
+
+fn join_original_interpretations(
+    history: &QueryObligationHistory,
+    ledger: &QueryObligationLedger,
+    originals: &WorldProgramActivationHistory,
+    material: &MaterialPublication<'_>,
+) -> Result<Vec<ProgramSupportObligationIdentity>, QueryObligationDenial> {
+    join_original_interpretations_with_roster(
+        ledger,
+        &history.state().entries,
+        originals,
+        material,
+    )
+}
+
+fn join_original_interpretations_with_roster(
         ledger: &QueryObligationLedger,
         entries: &BTreeMap<ApplicationProgramRevision, SupportEntryState>,
         originals: &WorldProgramActivationHistory,
@@ -318,4 +343,3 @@ impl QueryObligationHistory {
         }
         Ok(terminal.into_iter().collect())
     }
-}

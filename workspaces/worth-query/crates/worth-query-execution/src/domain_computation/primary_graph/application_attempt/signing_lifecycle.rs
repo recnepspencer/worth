@@ -1,4 +1,5 @@
 //! Native source-edit consequence progression, sharing one publication with its cause.
+use crate::domain_computation::primary_graph::WorthQueryAdvancementDenialCommitExt as _;
 use super::snapshot_lease::WorthQueryApplicationSnapshotLease as Lease;
 use super::{
     WorthQueryApplicationCommitDenial as Denial, WorthQueryApplicationCommitDenialKind as Kind,

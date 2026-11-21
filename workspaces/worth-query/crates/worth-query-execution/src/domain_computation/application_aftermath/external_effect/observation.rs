@@ -94,7 +94,7 @@ fn completed_observation(
     let (observation, canonical_work) = observed;
     let projection = observation.posture().clone();
     ClassifiedDispatchObservation {
-        posture: WorthQueryExternalDispatchPosture::completed(observation),
+        posture: WorthQueryExternalDispatchPosture::completed(projection.clone()),
         observation: Some(projection),
         canonical_work,
     }
@@ -109,7 +109,7 @@ fn acknowledged_observation(
     let (observation, canonical_work) = observed;
     let projection = observation.posture().clone();
     ClassifiedDispatchObservation {
-        posture: WorthQueryExternalDispatchPosture::acknowledged(observation),
+        posture: WorthQueryExternalDispatchPosture::acknowledged(projection.clone()),
         observation: Some(projection),
         canonical_work,
     }

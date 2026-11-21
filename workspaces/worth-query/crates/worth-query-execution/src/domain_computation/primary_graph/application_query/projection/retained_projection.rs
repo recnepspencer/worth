@@ -1,8 +1,11 @@
 //! Opt-in custody of the original completed Native disclosed projection.
 //! No body, DTO, authority, snapshot or comparison result is synthesized.
+
 use std::sync::Arc;
 use worth_execution::{ChargedBytes, ExecutionRequest, ExecutionRequestArrayBuilder};
 use worth_query_installation::facade::WorthQueryInstalledGraphReadContract;
+
+pub use worth_query_execution_lineage::facade::primary_graph::application_query::projection::retained_projection::*;
 
 use super::super::{
     disclosure::WorthQueryApplicationQueryGovernance,
@@ -12,11 +15,6 @@ use super::super::{
     },
     read_execution::RawOneShotRows,
 };
-pub(crate) mod body;
-mod comparison;
-pub(in crate::domain_computation::primary_graph) use body::OriginalProjection;
-pub(in crate::domain_computation::primary_graph) use comparison::compare_original_projections;
-pub(in crate::domain_computation::primary_graph::application_query) mod storage;
 
 pub fn retain(
     execution: &ExecutionRequest<'_, '_>,
@@ -87,13 +85,3 @@ pub fn retain(
             )
         })
 }
-
-mod materialization;
-pub(in crate::domain_computation::primary_graph) use materialization::materialize_original_projection;
-pub use materialization::{
-    WorthQueryMaterializedFieldValue, WorthQueryMaterializedQueryField,
-    WorthQueryMaterializedQueryProjection, WorthQueryMaterializedQueryRelation,
-    WorthQueryMaterializedQueryRow, WorthQueryProjectionMaterializationRefusal,
-};
-
-pub use comparison::ProjectionComparisonDenial;

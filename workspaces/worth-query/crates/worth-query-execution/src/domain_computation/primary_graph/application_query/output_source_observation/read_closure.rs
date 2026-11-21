@@ -1,5 +1,6 @@
 //! Original Query session and authorization custody through publication.
 
+use crate::domain_computation::primary_graph::application_attempt::fact::source_read_authorization::applied_query::SourceReadAuthorizationAppliedQueryExt;
 use super::*;
 use crate::domain_computation::authorization::{
     SourceReadSupport, WorthQueryRetainedAuthorizationDecisionFacts,
@@ -75,6 +76,19 @@ impl SourceQueryReadClosure {
         receipt.query_identity() == &source.query_identity
             && receipt.parameter_binding_identity() == &source.parameter_binding_identity
             && receipt.basis_identity().selection() == &source.selection
+            && support.belongs_to_session(receipt.read_completion().session_identity())
+    }
+
+    pub(in crate::domain_computation) fn admits_source_identity(
+        &self,
+        _runtime_authority: u64,
+        _schema_binding: &worth_query_installation::facade::ApplicationSchemaBindingIdentity,
+        selection: &crate::domain_computation::primary_graph::application_query::WorthQueryApplicationBasisSelectionIdentity,
+    ) -> bool {
+        let SourceQueryReadAuthority::Committed { receipt, support } = &self.authority else {
+            return false;
+        };
+        receipt.basis_identity().selection() == selection
             && support.belongs_to_session(receipt.read_completion().session_identity())
     }
 

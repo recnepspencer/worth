@@ -153,12 +153,13 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         minimum_age_ticks: u64,
     ) -> Result<crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanup, WorthQueryProductUnpublishedRecoveryReleaseFailure>{
         let handle = recovery.record_handle().clone();
-        let provider_release = match self
-            .runtime
-            .primary_provider
-            .unpublished_idempotency_disposition()
-            .reserve_release(&handle)
-        {
+        let provider_release = match crate::domain_computation::primary_graph::provider::unpublished_idempotency::UnpublishedIdempotencyDispositionExt::reserve_release(
+            &self
+                .runtime
+                .primary_provider
+                .unpublished_idempotency_disposition(),
+            &handle,
+        ) {
             Ok(reservation) => reservation,
             Err(()) => {
                 return Err(recovery_failure(

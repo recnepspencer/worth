@@ -1,10 +1,39 @@
 //! Successful admitted query READ support; no completion or positioned receipt is issued.
 use super::*;
+use sha2::{Digest, Sha256};
 use crate::domain_computation::provider_session::WorthQuerySessionGraphReadProof;
 use worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity;
 
-impl SourceReadAuthorization {
-    pub(in crate::domain_computation::primary_graph) fn retain_applied_query(
+pub(in crate::domain_computation::primary_graph) trait SourceReadAuthorizationAppliedQueryExt:
+    Sized
+{
+    #[allow(clippy::too_many_arguments)]
+    fn retain_applied_query(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        proof: &WorthQuerySessionGraphReadProof,
+        binding: WorthQueryInstalledApplicationQueryBindingObservation,
+        source: [u8; 32],
+        principal: EntityId,
+        scope: EntityId,
+        candidate: &RelationalAppliedCandidateReadIdentity,
+        authorization: WorthQueryRetainedAuthorizationDecisionFacts,
+        registry: &Arc<WorthQueryInstalledAuthorizationRegistry>,
+        allocation: &Arc<SourceFactsAllocation>,
+    ) -> Result<Arc<Self>, CompanionPreflightStop>;
+
+    fn principal_facts(
+        &self,
+    ) -> &[crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact];
+
+    fn admits_applied_query(
+        &self,
+        proof: &WorthQuerySessionGraphReadProof,
+        candidate: &RelationalAppliedCandidateReadIdentity,
+    ) -> bool;
+}
+
+impl SourceReadAuthorizationAppliedQueryExt for SourceReadAuthorization {
+    fn retain_applied_query(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         proof: &WorthQuerySessionGraphReadProof,
         binding: WorthQueryInstalledApplicationQueryBindingObservation,
@@ -51,19 +80,19 @@ impl SourceReadAuthorization {
             },
             binding: Some(binding),
             session: proof.session_identity(),
-            support,
+            support: Box::new(support),
             identity,
             applied: Some(candidate.clone()),
         }))
     }
 
-    pub(in crate::domain_computation::primary_graph) fn principal_facts(
+    fn principal_facts(
         &self,
     ) -> &[crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact] {
         self.support.principal_facts()
     }
 
-    pub(in crate::domain_computation::primary_graph) fn admits_applied_query(
+    fn admits_applied_query(
         &self,
         proof: &WorthQuerySessionGraphReadProof,
         candidate: &RelationalAppliedCandidateReadIdentity,

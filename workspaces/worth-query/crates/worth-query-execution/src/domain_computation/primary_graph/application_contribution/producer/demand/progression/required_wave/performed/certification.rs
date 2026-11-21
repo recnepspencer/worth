@@ -2,7 +2,7 @@
 use super::super::*;
 use super::PerformedMembers;
 use crate::domain_computation::primary_graph::application_contribution::producer::ProducerInvocationAuthority;
-pub(crate) mod current_basis;
+pub(crate) use worth_query_execution_lineage::facade::domain_computation::primary_graph::application_contribution::producer::demand::progression::required_wave::performed::certification::current_basis;
 pub(in crate::domain_computation::primary_graph) use current_basis::CurrentBasis;
 
 impl PerformedMembers {

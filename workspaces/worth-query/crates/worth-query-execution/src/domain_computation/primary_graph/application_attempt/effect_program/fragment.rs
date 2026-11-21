@@ -61,15 +61,6 @@ impl<S: worth_query_installation::facade::ApplicationSchema>
     }
 }
 
-impl<S, E> EffectEntity<S, E> {
-    pub fn for_fragment(&self) -> CandidateEntity<E> {
-        CandidateEntity {
-            erased: erase(self),
-            marker: PhantomData,
-        }
-    }
-}
-
 impl<S, O, I, Scope> WritePort for Builder<S, O, I, Scope> {
     fn case_record(
         &mut self,

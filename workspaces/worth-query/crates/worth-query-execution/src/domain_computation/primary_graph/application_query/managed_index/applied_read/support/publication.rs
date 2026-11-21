@@ -5,7 +5,7 @@ use worth_relational::facade::runtime::{
     ManagedIndexSourceObservation, ManagedIndexSourcePreparationDenial as Stop,
 };
 impl AppliedManagedSourceSupport {
-    pub(in crate::domain_computation::primary_graph::application_query) fn seal_published(
+    pub(in crate::domain_computation::primary_graph) fn seal_published(
         &self,
         execution: &ExecutionRequest<'_, '_>,
         runtime: &RelationalRuntime,

@@ -40,6 +40,7 @@ pub(super) fn prepare(
     candidate: &PreparedRelationalCommitCandidate,
 ) -> Option<PreparedViewPublication> {
     let registry = provider.graph.managed_derived_views();
+    let registry = crate::domain_computation::primary_graph::downcast_managed_views(registry.as_ref());
     if !registry.has_live_views() {
         return None;
     }

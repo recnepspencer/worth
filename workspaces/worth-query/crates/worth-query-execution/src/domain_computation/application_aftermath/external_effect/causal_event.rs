@@ -14,55 +14,9 @@ use super::{ExternalEffectPostureKind, WorthQueryDispatchOutboxRecord};
 use crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxObservation;
 use crate::domain_computation::runtime_time::WorthQueryRuntimeClock;
 
-/// Read-only projection of one causal stage. Only the typed transitions in this module can seal it.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct ExternalEffectPosture {
-    kind: ExternalEffectPostureKind,
-    identity: ExternalEffectPostureIdentity,
-    predecessor: Option<ExternalEffectCausalLink>,
-}
-
-impl ExternalEffectPosture {
-    fn root(kind: ExternalEffectPostureKind, identity: ExternalEffectPostureIdentity) -> Self {
-        Self {
-            kind,
-            identity,
-            predecessor: None,
-        }
-    }
-
-    fn successor(
-        kind: ExternalEffectPostureKind,
-        identity: ExternalEffectPostureIdentity,
-        predecessor: &Self,
-    ) -> Self {
-        Self {
-            kind,
-            identity,
-            predecessor: Some(ExternalEffectCausalLink::to(predecessor.identity())),
-        }
-    }
-
-    pub const fn kind(&self) -> ExternalEffectPostureKind {
-        self.kind
-    }
-
-    pub const fn identity(&self) -> &ExternalEffectPostureIdentity {
-        &self.identity
-    }
-
-    pub const fn predecessor(&self) -> Option<&ExternalEffectCausalLink> {
-        self.predecessor.as_ref()
-    }
-}
-
-/// Private identity-minting capability used only by the exact stage transitions below.
-pub(super) struct CausalConstructionAuthority {
-    _private: (),
-}
-
-const CAUSAL_CONSTRUCTION: CausalConstructionAuthority =
-    CausalConstructionAuthority { _private: () };
+pub use worth_query_execution_lineage::facade::application_aftermath::external_effect::causal_event::{
+    CausalConstructionAuthority, ExternalEffectPosture, CAUSAL_CONSTRUCTION,
+};
 
 struct ProviderCommitEvent {
     runtime: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
@@ -120,7 +74,7 @@ fn admit_co_committed_emission(
     let provider = provider_commit_identity(runtime, &committed)?;
     let provider_commit = ProviderCommitEvent {
         runtime,
-        posture: ExternalEffectPosture::root(
+        posture: ExternalEffectPosture::initial(
             ExternalEffectPostureKind::ProviderCommit,
             ExternalEffectPostureIdentity::from_digest(&CAUSAL_CONSTRUCTION, provider.digest),
         ),

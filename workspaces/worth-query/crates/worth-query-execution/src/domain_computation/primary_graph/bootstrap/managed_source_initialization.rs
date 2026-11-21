@@ -39,8 +39,11 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphBootstrap<S> {
         }
         let execution = phase.execution_request();
         let program = self.graph.layout.managed_source(I::NAME)
-            .filter(|program| self.graph.integration_handle().managed_derived_views()
-                .admits_initialization_binding(program, crate::equality_type_id::EqualityTypeId::of::<(S, I)>().into_external()))
+            .filter(|program| {
+                let views = self.graph.integration_handle().managed_derived_views();
+                crate::domain_computation::primary_graph::downcast_managed_views(views.as_ref())
+                    .admits_initialization_binding(program, crate::equality_type_id::EqualityTypeId::of::<(S, I)>().into_external())
+            })
             .ok_or_else(|| primary_graph_denial(WorthQueryPrimaryGraphInstallationDenialKind::ManagedIndexProviderMeaningMismatch, I::NAME))?
             .clone();
         let next = SelectedSources::with_program(

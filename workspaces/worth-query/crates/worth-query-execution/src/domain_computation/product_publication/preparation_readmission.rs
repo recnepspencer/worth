@@ -1,5 +1,6 @@
 //! Live Query preparation readmission never guesses a Native or World result.
 use super::WorthQueryProductPreparationPending;
+use crate::domain_computation::primary_graph::provider::unpublished_idempotency::UnpublishedIdempotencyDispositionExt as _;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_runtime_world::facade::{ProductUnpublishedRecoveryHandle, RuntimeWorldRecoveryDenial};

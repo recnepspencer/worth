@@ -18,7 +18,7 @@ mod applied_output;
 pub(in crate::domain_computation::primary_graph) use applied_output::AppliedOutputParticipants;
 mod commit_completion;
 mod coupled_extraction;
-mod coupled_preparation;
+pub(in crate::domain_computation::primary_graph) mod coupled_preparation;
 mod coupled_settlement;
 pub(in crate::domain_computation::primary_graph) use coupled_preparation::{
     AppliedParticipantOutputs, CoupledApplicationMember, CoupledApplicationMemberKind,

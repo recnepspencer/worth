@@ -7,13 +7,7 @@ use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRe
 mod result;
 pub use result::WorthQueryApplicationBatchResult;
 
-/// A batch read preserves the ordinary execution cause and distinguishes an
-/// aggregate admission refusal. It carries no partially completed result.
-#[derive(Debug)]
-pub enum WorthQueryApplicationBatchReadDenial {
-    Resource(WorthQueryApplicationQueryBatchResourceDenial),
-    Execution(WorthQueryApplicationOneShotDenial),
-}
+pub use worth_query_execution_lineage::facade::primary_graph::application_query::one_shot::WorthQueryApplicationBatchReadDenial;
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     /// Executes an ordinary installed plan under one shared read/custody loan.

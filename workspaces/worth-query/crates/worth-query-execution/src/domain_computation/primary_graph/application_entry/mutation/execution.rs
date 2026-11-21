@@ -6,7 +6,8 @@ use worth_query_installation::facade::ApplicationSchema;
 
 mod candidate;
 mod completion;
-mod decision_query;
+use worth_query_execution_lineage::facade::domain_computation::primary_graph::application_entry::mutation::execution::decision_query;
+mod decision_query_runtime;
 pub(super) use decision_query::native_decision_cause;
 mod input_capture;
 mod preparation;
@@ -24,59 +25,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryOperationProjectionDenial, WorthQueryPrimaryGraphApplicationRuntime,
 };
 
-/// Refusal to run a mutation handler for an admitted operation.
-///
-/// No candidate was produced and nothing was committed. A domain denial,
-/// cancellation, or deadline from the handler is not here: it arrives inside
-/// the `Ok` `HandlerResult`.
-#[derive(Debug)]
-pub enum MutationHandlerExecutionDenial {
-    DurableBindingAdmission(worth_query_installation::facade::WorthQueryApplicationOperationInstallationDenial),
-    DurableStateAdmission(crate::domain_computation::execution_runtime::product_world::WorthQueryDurableStateAdmissionDenial),
-    /// Another installed runtime lent the phase; no handler or read ran.
-    ForeignAdvancementPhase(
-        crate::domain_computation::primary_graph::WorthQueryForeignAdvancementPhase,
-    ),
-    /// The projection that feeds the handler's decision could not be read.
-    Projection(WorthQueryOperationProjectionDenial),
-    /// The read attempt, resource reservation, or candidate program failed.
-    Attempt(WorthQueryApplicationAttemptDenial),
-    /// The handler returned `ExecutionDenied`.
-    Handler(HandlerExecutionDenial),
-    /// The binding is a workflow control step the workflow kernel records
-    /// itself; no handler serves it, so this lane refuses it before any read.
-    WorkflowControl,
-    /// The admission governed a different input than the one the request
-    /// carries, so no handler ran on it.
-    InputNotAdmitted,
-    /// This runtime installed no handler for the binding, so no handler ran.
-    HandlerNotInstalled,
-}
-
-impl std::fmt::Display for MutationHandlerExecutionDenial {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::DurableBindingAdmission(cause) => cause.fmt(formatter),
-            Self::DurableStateAdmission(cause) => cause.fmt(formatter),
-            Self::ForeignAdvancementPhase(_) => {
-                formatter.write_str("the phase belongs to another installed runtime")
-            }
-            Self::Projection(denial) => denial.fmt(formatter),
-            Self::Attempt(denial) => denial.fmt(formatter),
-            Self::Handler(denial) => denial.fmt(formatter),
-            Self::WorkflowControl => formatter.write_str(
-                "the workflow kernel records this control binding; no mutation handler serves it",
-            ),
-            Self::InputNotAdmitted => formatter
-                .write_str("the admission governed a different input than the request carries"),
-            Self::HandlerNotInstalled => {
-                formatter.write_str("this runtime installed no handler for the mutation binding")
-            }
-        }
-    }
-}
-
-impl std::error::Error for MutationHandlerExecutionDenial {}
+pub use worth_query_execution_lineage::facade::primary_graph::application_entry::mutation::execution::MutationHandlerExecutionDenial;
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where

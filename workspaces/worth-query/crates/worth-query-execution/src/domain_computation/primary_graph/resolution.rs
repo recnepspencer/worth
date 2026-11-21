@@ -18,8 +18,8 @@ use worth_relational::facade::snapshots::SnapshotHandle;
 use crate::domain_computation::execution_runtime::WorthQueryExecutionRuntime;
 use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
 
+use super::authenticated_principal::validate_freshness_at_snapshot;
 use super::authenticated_principal::WorthQueryResolvedPrincipalEvidence;
-use super::freshness::validate_freshness_at_snapshot;
 use super::freshness::WorthQueryPrincipalFreshnessEvidence;
 use super::observations::observe_mapping;
 use super::observations::resolve_principal_target;
@@ -33,15 +33,7 @@ use super::WorthQueryAuthenticatedPrincipal;
 use super::WorthQueryPrincipalResolutionDenial;
 use super::WorthQueryPrincipalResolutionDenialKind;
 
-/// How strictly identity lookups are verified while resolving a principal or
-/// entity.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryPrincipalResolutionMode {
-    /// Trust the identity index.
-    Ordinary,
-    /// Also verify each index lookup against stored records.
-    Certification,
-}
+pub use worth_query_execution_lineage::facade::primary_graph::resolution::WorthQueryPrincipalResolutionMode;
 
 struct WorthQueryPrincipalSnapshotResolution<'a> {
     binding: &'a str,

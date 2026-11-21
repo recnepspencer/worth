@@ -1,9 +1,9 @@
-mod verification_denial;
-pub(in crate::domain_computation::primary_graph) use verification_denial::verification_denial;
+pub use worth_query_execution_lineage::facade::primary_graph::output_reuse::verification_denial as verification_denial_mod;
+pub(in crate::domain_computation::primary_graph) use verification_denial_mod::verification_denial;
 mod dependency;
-mod restored_facts;
-pub(crate) mod selection;
-mod verification_extent;
+pub use worth_query_execution_lineage::facade::primary_graph::output_reuse::restored_facts;
+pub(crate) use worth_query_execution_lineage::facade::primary_graph::output_reuse::selection;
+pub use worth_query_execution_lineage::facade::primary_graph::output_reuse::verification_extent;
 pub(super) use restored_facts::{evidence_answer, evidence_unavailable, restored_facts_hold};
 pub(in crate::domain_computation::primary_graph) use verification_extent::RetainedFactVerification;
 

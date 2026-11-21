@@ -128,7 +128,9 @@ where
             observation.selected_commit().clone(),
             limits,
         ));
-        let registry = graph.managed_derived_views();
+        let registry = crate::domain_computation::primary_graph::downcast_managed_views_arc(
+            graph.managed_derived_views(),
+        );
         let erased: Arc<dyn RegisteredDerivedView> = state.clone();
         let id = registry
             .register(&erased)

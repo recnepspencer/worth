@@ -171,9 +171,14 @@ pub(super) fn prepare_candidate_support(
     .map_err(Denial::Correspondence)?;
     // Canonical correspondence is admitted before preparing its output witness.
     query.prepared_output_witness =
-        crate::domain_computation::primary_graph::output_lineage::PreparedNativeOutputWitness::prepare(
-            &query.attempt, &provider.graph.layout,
-        ).map_err(Denial::OutputWitness)?;
+        crate::domain_computation::primary_graph::output_lineage::PreparedNativeOutputWitness::prepare_roles(
+            query
+                .attempt
+                .native_publication_roles()
+                .map(|(role, posture, entity_name, _)| (role, posture, entity_name)),
+            &provider.graph.layout,
+        )
+        .map_err(Denial::OutputWitness)?;
     query.prepared_touched_records = Some(
         touched_records::PreparedTouchedRecords::prepare_retained(candidate, allocation_policy)
             .map_err(Denial::TouchedRecords)?,

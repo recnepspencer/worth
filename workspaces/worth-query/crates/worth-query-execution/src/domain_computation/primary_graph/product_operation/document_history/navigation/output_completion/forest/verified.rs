@@ -1,4 +1,5 @@
 //! A complete discovered tree can retain a verified root without minting a settlement.
+use crate::domain_computation::primary_graph::OutputDemandSettlementRuntimeExt;
 use super::*;
 use crate::domain_computation::primary_graph::WorthQueryVerifiedHistoryParent;
 

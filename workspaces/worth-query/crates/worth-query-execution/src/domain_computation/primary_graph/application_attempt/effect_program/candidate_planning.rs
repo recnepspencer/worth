@@ -222,7 +222,7 @@ impl<S, O, I, E> WorthQueryApplicationEffectProgram<S, O, I, E> {
         unseen: &crate::domain_computation::primary_graph::application_contribution::authored_edit::UnseenAuthoredEnvelope<'_>,
         binding: crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding,
     ) -> bool {
-        unseen.admits(binding.bind_admission(&self.read_set.admission))
+        unseen.admits(binding.bind_admission(&*self.read_set.admission))
             && self
                 .read_set
                 .admission

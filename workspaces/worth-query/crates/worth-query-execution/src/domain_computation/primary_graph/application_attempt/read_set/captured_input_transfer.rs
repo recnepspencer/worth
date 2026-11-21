@@ -1,4 +1,5 @@
 //! Consume completed capture custody without rebinding its original admission.
+use crate::domain_computation::primary_graph::SourceReadAuthorizationRuntimeExt;
 use super::*;
 use crate::domain_computation::authorization::WorthQueryInstalledAuthorizationRegistry;
 

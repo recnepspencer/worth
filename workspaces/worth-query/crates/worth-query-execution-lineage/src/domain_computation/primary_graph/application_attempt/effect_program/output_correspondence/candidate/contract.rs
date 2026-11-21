@@ -1,0 +1,108 @@
+use std::collections::BTreeMap;
+
+use worth_query_declaration::facade::application_operation::{
+    ApplicationMutationOutputContract, ApplicationMutationOutputPostureSet,
+    ApplicationMutationOutputRoleCardinality, ApplicationMutationOutputRoleFamilyDescriptor,
+};
+use worth_query_installation::facade::ApplicationSchema;
+
+use super::{denial, WorthQueryApplicationOutputCorrespondenceCandidate};
+use crate::domain_computation::primary_graph::{
+    WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
+    WorthQueryApplicationOutputPosture,
+};
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ExpectedOutputBinding {
+    pub posture: WorthQueryApplicationOutputPosture,
+    pub entity_name: &'static str,
+    pub cardinality: ApplicationMutationOutputRoleCardinality,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ExpectedOutputFamily {
+    pub prefix: String,
+    pub postures: ApplicationMutationOutputPostureSet,
+    pub entity_name: &'static str,
+    pub minimum: usize,
+}
+
+impl WorthQueryApplicationOutputCorrespondenceCandidate {
+    pub fn prepare_contract<Schema, Contract>(
+        &self,
+    ) -> Result<
+        (
+            BTreeMap<String, ExpectedOutputBinding>,
+            Vec<ExpectedOutputFamily>,
+        ),
+        WorthQueryApplicationAttemptDenial,
+    >
+    where
+        Schema: ApplicationSchema,
+        Contract: ApplicationMutationOutputContract<Schema>,
+    {
+        let mut prepared = BTreeMap::new();
+        let mut families = Vec::new();
+
+        for descriptor in Contract::ROLES {
+            super::validate_role_name(descriptor.name())?;
+            if self.expected_roles.contains_key(descriptor.name())
+                || prepared
+                    .insert(
+                        descriptor.name().to_owned(),
+                        ExpectedOutputBinding {
+                            posture: descriptor.posture(),
+                            entity_name: descriptor.entity(),
+                            cardinality: descriptor.cardinality(),
+                        },
+                    )
+                    .is_some()
+            {
+                return Err(denial(
+                    WorthQueryApplicationAttemptDenialKind::DuplicateOutputRole,
+                    descriptor.name(),
+                ));
+            }
+        }
+        for family in Contract::ROLE_FAMILIES {
+            validate_family(family, prepared.keys(), &families)?;
+
+            families.push(ExpectedOutputFamily {
+                prefix: family.prefix().to_owned(),
+                postures: family.postures(),
+                entity_name: family.entity(),
+                minimum: family.minimum(),
+            });
+        }
+        Ok((prepared, families))
+    }
+}
+
+fn validate_family<'a>(
+    family: &ApplicationMutationOutputRoleFamilyDescriptor,
+    exact_roles: impl Iterator<Item = &'a String>,
+    families: &[ExpectedOutputFamily],
+) -> Result<(), WorthQueryApplicationAttemptDenial> {
+    let prefix = family.prefix();
+    if !valid_family_prefix(prefix)
+        || family.postures().is_empty()
+        || exact_roles.into_iter().any(|role| role.starts_with(prefix))
+        || families.iter().any(|existing| {
+            existing.prefix.starts_with(prefix) || prefix.starts_with(&existing.prefix)
+        })
+    {
+        return Err(denial(
+            WorthQueryApplicationAttemptDenialKind::InvalidOutputRole,
+            prefix,
+        ));
+    }
+    Ok(())
+}
+
+fn valid_family_prefix(prefix: &str) -> bool {
+    prefix.ends_with('.')
+        && prefix.len() > 1
+        && super::validate_role_name(prefix).is_ok()
+        && !prefix.starts_with('.')
+        && !prefix.contains("..")
+}

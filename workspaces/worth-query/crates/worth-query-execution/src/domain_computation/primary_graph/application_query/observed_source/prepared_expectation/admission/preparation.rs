@@ -1,4 +1,5 @@
 //! Source facts can be prepared only from the validation owner's shared loan.
+use crate::domain_computation::primary_graph::SourceFactExpansionControlExt;
 use super::*;
 impl<Schema: worth_query_installation::facade::ApplicationSchema, Operation, Input, Scope>
     CheckedSourceAdmission<'_, Schema, Operation, Input, Scope>

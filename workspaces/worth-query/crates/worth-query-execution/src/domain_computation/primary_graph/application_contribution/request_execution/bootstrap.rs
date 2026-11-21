@@ -1,27 +1,26 @@
-//! Bootstrap advancement phase wrapper carrying primary-graph capture policy admission.
+//! Primary-graph capture policy admission extension on `WorthQueryBootstrapAdvancementPhase`.
 
-use std::ops::Deref;
+use worth_query_execution_runtime::facade::request_execution::WorthQueryBootstrapAdvancementPhase;
 
-use worth_execution::ExecutionRequest;
-use worth_query_execution_runtime::facade::request_execution as rt_req;
+pub(in crate::domain_computation::primary_graph) trait BootstrapCapturePolicyExt {
+    fn funded_capture_policy(
+        &self,
+    ) -> Result<
+        worth_execution::ExecutionAllocationPolicy<'_, '_>,
+        crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenial,
+    >;
 
-use super::WorthQueryAdvancementDenial;
-
-#[repr(transparent)]
-pub struct WorthQueryBootstrapAdvancementPhase<'scope>(
-    pub(crate) rt_req::WorthQueryBootstrapAdvancementPhase<'scope>,
-);
-
-impl<'scope> Deref for WorthQueryBootstrapAdvancementPhase<'scope> {
-    type Target = rt_req::WorthQueryBootstrapAdvancementPhase<'scope>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
+    fn admit_capture_policy<'policy, 'authority>(
+        &self,
+        capture: worth_execution::ExecutionAllocationPolicy<'policy, 'authority>,
+    ) -> Result<
+        worth_execution::ExecutionAllocationPolicy<'policy, 'authority>,
+        crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenial,
+    >;
 }
 
-impl WorthQueryBootstrapAdvancementPhase<'_> {
-    pub(in crate::domain_computation::primary_graph) fn funded_capture_policy(
+impl BootstrapCapturePolicyExt for WorthQueryBootstrapAdvancementPhase<'_> {
+    fn funded_capture_policy(
         &self,
     ) -> Result<
         worth_execution::ExecutionAllocationPolicy<'_, '_>,
@@ -31,7 +30,7 @@ impl WorthQueryBootstrapAdvancementPhase<'_> {
             WorthQueryPrimaryGraphInstallationDenial as D,
             WorthQueryPrimaryGraphInstallationDenialKind as K,
         };
-        let request = self.0.execution_request();
+        let request = self.execution_request();
         if !request.is_leased() {
             return Err(D::new(
                 K::ExecutionDenied {
@@ -43,10 +42,7 @@ impl WorthQueryBootstrapAdvancementPhase<'_> {
         Ok(request.allocation_policy())
     }
 
-    pub(in crate::domain_computation::primary_graph) fn admit_capture_policy<
-        'policy,
-        'authority,
-    >(
+    fn admit_capture_policy<'policy, 'authority>(
         &self,
         capture: worth_execution::ExecutionAllocationPolicy<'policy, 'authority>,
     ) -> Result<
@@ -85,24 +81,4 @@ impl WorthQueryBootstrapAdvancementPhase<'_> {
             )),
         }
     }
-}
-
-pub fn with_bootstrap_advancement<R>(
-    policy: worth_foundational::ExecutionRequestPolicy,
-    body: impl for<'scope> FnOnce(WorthQueryBootstrapAdvancementPhase<'scope>) -> R,
-) -> Result<R, WorthQueryAdvancementDenial> {
-    rt_req::with_bootstrap_advancement(policy, |phase| {
-        body(WorthQueryBootstrapAdvancementPhase(phase))
-    })
-    .map_err(Into::into)
-}
-
-pub fn with_bootstrap_advancement_from_request<R>(
-    request: ExecutionRequest<'_, '_>,
-    body: impl for<'scope> FnOnce(WorthQueryBootstrapAdvancementPhase<'scope>) -> R,
-) -> Result<R, WorthQueryAdvancementDenial> {
-    rt_req::with_bootstrap_advancement_from_request(request, |phase| {
-        body(WorthQueryBootstrapAdvancementPhase(phase))
-    })
-    .map_err(Into::into)
 }

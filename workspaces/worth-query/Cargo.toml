@@ -17,6 +17,7 @@ members = [
     "crates/worth-query-execution-layout",
     "crates/worth-query-execution-obligations",
     "crates/worth-query-execution-runtime",
+    "crates/worth-query-execution-lineage",
     "crates/worth-query-execution",
     "crates/worth-query-publication",
 ]
@@ -47,6 +48,7 @@ worth-query-execution-foundation = { path = "crates/worth-query-execution-founda
 worth-query-execution-layout = { path = "crates/worth-query-execution-layout" }
 worth-query-execution-obligations = { path = "crates/worth-query-execution-obligations" }
 worth-query-execution-runtime = { path = "crates/worth-query-execution-runtime" }
+worth-query-execution-lineage = { path = "crates/worth-query-execution-lineage" }
 worth-query-execution = { path = "crates/worth-query-execution" }
 worth-query-publication = { path = "crates/worth-query-publication" }
 

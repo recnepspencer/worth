@@ -1,5 +1,6 @@
 //! Commit-owner selection of retained prior truth.
 
+use crate::domain_computation::primary_graph::RetainedPreImageExt;
 use std::collections::BTreeSet;
 
 use worth_foundational::facade::{AspectFieldLocator, AspectValue};

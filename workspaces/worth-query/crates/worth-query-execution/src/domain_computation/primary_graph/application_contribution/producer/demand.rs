@@ -15,10 +15,10 @@ type FamilySourceQuery<Schema, Family> =
 
 pub(in crate::domain_computation::primary_graph) use progression::CurrentBasis;
 pub(in crate::domain_computation::primary_graph) use progression::CurrentProof;
-pub(crate) mod bridge_denial;
+pub(crate) use worth_query_execution_lineage::facade::domain_computation::primary_graph::application_contribution::producer::demand::bridge_denial;
 pub(crate) mod checkpoint_delivery;
-mod denial_diagnostic;
-mod denial_posture;
+use worth_query_execution_lineage::facade::domain_computation::primary_graph::application_contribution::producer::demand::denial_diagnostic;
+use worth_query_execution_lineage::facade::domain_computation::primary_graph::application_contribution::producer::demand::denial_posture;
 pub(super) mod disclosure;
 mod durable;
 mod fulfillment;
@@ -43,11 +43,12 @@ pub(in crate::domain_computation::primary_graph) use required_continuations::Req
 use required_provenance::DemandProgressionProvenance;
 pub(in crate::domain_computation::primary_graph) use selection::VerifiedAppliedParent;
 
-mod denial;
+pub(in crate::domain_computation::primary_graph) mod denial;
 pub(in crate::domain_computation::primary_graph) use denial::ProducerPublicationStale;
 mod managed_cleanup;
 mod publication_observation;
-mod read_close;
+mod read_close_runtime;
+use worth_query_execution_lineage::facade::domain_computation::primary_graph::application_contribution::producer::demand::read_close;
 pub use denial::WorthQueryOutputDemandDenial;
 pub use denial::WorthQueryOutputDemandDenialKind;
 pub use denial::{
@@ -268,7 +269,7 @@ where
     }
 }
 
-mod bridge_execution_denial;
+use worth_query_execution_lineage::facade::domain_computation::primary_graph::application_contribution::producer::demand::bridge_execution_denial;
 
 mod own_effect_assertions;
 mod own_effect_observation;

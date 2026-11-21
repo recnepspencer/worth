@@ -1,6 +1,6 @@
 //! Compare-and-commit receipt and outcome surface.
-mod cleanup_receipt;
-mod cleanup_required;
+use worth_query_execution_lineage::facade::domain_computation::primary_graph::application_attempt::compare_and_commit::cleanup_receipt;
+use worth_query_execution_lineage::facade::domain_computation::primary_graph::application_attempt::compare_and_commit::cleanup_required;
 pub use cleanup_receipt::{
     WorthQueryApplicationManagedCleanupReceipt, WorthQueryCleanupDispatchDenial,
     WorthQueryCleanupDispatchPosture,
@@ -9,10 +9,10 @@ pub use cleanup_required::{
     WorthQueryApplicationCleanupRequired, WorthQueryApplicationManagedCleanup,
 };
 
-mod commit_deferred;
-pub(crate) mod commit_outcome;
+use worth_query_execution_lineage::facade::domain_computation::primary_graph::application_attempt::compare_and_commit::commit_deferred;
+pub(crate) use worth_query_execution_lineage::facade::domain_computation::primary_graph::application_attempt::compare_and_commit::commit_outcome;
 mod commit_receipt;
-mod committed_publication;
+use worth_query_execution_lineage::facade::domain_computation::primary_graph::application_attempt::compare_and_commit::committed_publication;
 
 pub use commit_deferred::{
     WorthQueryApplicationCommitDeferred, WorthQueryApplicationCommitDeferredKind,

@@ -1,0 +1,183 @@
+//! Metered composition of an original handler prefix and a fresh source suffix.
+
+use std::sync::Arc;
+
+use super::PreparedStableLineageAddress;
+use super::PreparedStableLineagePublication;
+use super::StableFactSpans;
+use crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl;
+use crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload;
+use crate::domain_computation::primary_graph::output_lineage::RecordedOutput;
+use crate::domain_computation::primary_graph::output_lineage::RecordedOutputMutable;
+use crate::domain_computation::primary_graph::output_lineage::RecordedSourceIdentity;
+use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
+use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind as Kind;
+use crate::ports::{AdmittedOperationPort, StableObservedSourceFactsPort};
+
+impl<'lane, 'selected> PreparedStableLineageAddress<'lane, 'selected> {
+    /// All allocation and retained custody is admitted before copying the
+    /// fresh suffix facts or consuming the exact source binding. Shared
+    /// handler facts are never flattened or deep-copied.
+    pub fn prepare_record<F: StableObservedSourceFactsPort>(
+        mut self,
+        fresh: F,
+        operation: &dyn AdmittedOperationPort,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<PreparedStableLineagePublication<'lane, 'selected>, WorthQueryOutputDemandDenial>
+    {
+        if !fresh.matches_operation_port(operation) {
+            return Err(denial(Kind::ForeignSource));
+        }
+        let control = StorageControl::new(
+            execution.allocation_policy(),
+            Some(operation.publication_request()),
+        );
+        control.check_live().map_err(super::storage_denial)?;
+        let fresh_key = self
+            .input_cutoff
+            .as_mut()
+            .expect("cutoff publication retains its proof")
+            .fresh_key
+            .take()
+            .ok_or_else(|| denial(Kind::IncompleteDependencyCoverage))?;
+        let mut verified = self
+            .input_cutoff
+            .take()
+            .expect("cutoff record preparation retains its own verified proof");
+        let candidate = &verified.candidate;
+        let origin = candidate
+            .originating_recorded()
+            .ok_or_else(|| denial(Kind::IncompleteDependencyCoverage))?;
+        let selected_row = candidate.recorded();
+        let prefix_count = candidate
+            .completed_handler_fact_count()
+            .ok_or_else(|| denial(Kind::IncompleteDependencyCoverage))?;
+        let prefix = verified
+            .verified_facts
+            .checked_slice(0..prefix_count)
+            .ok_or_else(|| denial(Kind::IncompleteDependencyCoverage))?;
+        let witness_facts = candidate
+            .native_output_witness()
+            .ok_or_else(|| denial(Kind::IncompleteDependencyCoverage))?
+            .prepare_fact_projection()
+            .map_err(|stop| {
+                crate::domain_computation::primary_graph::output_reuse::retained_fact_denial(
+                    crate::domain_computation::primary_graph::output_reuse::preflight_stop(stop),
+                    "stable output witness projection",
+                )
+            })?
+            .ok_or_else(|| denial(Kind::IncompleteDependencyCoverage))?;
+        let witness_count = witness_facts.count();
+        if fresh.partition_identity() != self.partition {
+            return Err(denial(Kind::ForeignSource));
+        }
+        prefix_count
+            .checked_add(witness_count)
+            .and_then(|count| count.checked_add(fresh.source_facts().len()))
+            .ok_or_else(|| denial(Kind::WorkBudgetExceeded))?;
+        // Only genuinely new suffix facts are copied. The verified handler
+        // prefix keeps its native/decoded backing and all existing grants.
+
+        let suffix = FactPayload::copy_funded(fresh.source_facts(), control)
+            .map_err(super::storage_denial)?;
+        let witness = witness_facts
+            .retain_payload(control)
+            .map_err(super::storage_denial)?;
+        let facts = prefix
+            .append_completed(witness, control)
+            .and_then(|body| body.append_completed(suffix, control))
+            .map_err(super::storage_denial)?;
+        let spans = StableFactSpans::new(facts.clone(), prefix_count, witness_count)
+            .ok_or_else(|| denial(Kind::IncompleteDependencyCoverage))?;
+        // This is the installed aggregate retention policy's complete cached
+        // descriptor, not an allocation quote for a new copy of shared facts.
+
+        let (recorded_source_identity, partition_identity) = fresh
+            .finish_stable_port(operation)
+            .map_err(|_| denial(Kind::ForeignSource))?;
+        let performed_origin = origin_cell(candidate);
+        let recorded = RecordedOutput {
+            original_ready_key: origin.original_ready_key.clone(),
+            coupled_completion: None,
+            producing_implementation: origin.producing_implementation,
+            required_publication: origin.required_publication.clone(),
+            native_prior_checkpoint: None,
+            computation_source: selected_row.computation_source,
+            performed_origin: Some(performed_origin),
+            historical_selection: None,
+            consumed_outputs: verified
+                .verified_consumed
+                .take()
+                .unwrap_or_else(|| Arc::clone(&selected_row.consumed_outputs)),
+            completed_handler_facts: selected_row
+                .computation_source
+                .is_executed_adoption()
+                .then(|| {
+                    selected_row
+                        .completed_handler_facts
+                        .as_ref()
+                        .map(|facts| facts.continued_by_republication())
+                })
+                .flatten(),
+            completed_decision_reuse: selected_row
+                .computation_source
+                .is_executed_adoption()
+                .then(|| {
+                    selected_row
+                        .completed_decision_reuse
+                        .as_ref()
+                        .map(|proof| proof.continued_by_republication())
+                })
+                .flatten(),
+            prepared_input_reuse_key: Some(fresh_key),
+            native_output_witness: selected_row
+                .computation_source
+                .is_executed_adoption()
+                .then(|| selected_row.native_output_witness_cell().map(Arc::clone))
+                .flatten()
+                .map(std::sync::OnceLock::from)
+                .unwrap_or_default(),
+            settlement_identity: Arc::clone(&self.identity),
+            correspondence: Arc::clone(&origin.correspondence),
+            source_identity: Some(RecordedSourceIdentity::Runtime(
+                recorded_source_identity,
+            )),
+            source_partition_identity: Some(partition_identity),
+            producer_dependency_identity: origin.producer_dependency_identity,
+            idempotency_key_identity: origin.idempotency_key_identity,
+            mutable: std::sync::Mutex::new(
+                RecordedOutputMutable::new(
+                    None,
+                    Some(selected_row.computation_source.retain_facts(facts.clone())),
+                    selected_row
+                        .mutable
+                        .lock()
+                        .unwrap_or_else(std::sync::PoisonError::into_inner)
+                        .computation
+                        .shared(),
+                )
+                .with_stable_fact_spans(spans),
+            ),
+        };
+        Ok(PreparedStableLineagePublication {
+            address: self,
+            recorded,
+            facts,
+        })
+    }
+}
+
+fn origin_cell(
+    candidate: &super::super::RetainedInputCutoffCandidate,
+) -> Arc<std::sync::OnceLock<RecordedOutput>> {
+    candidate
+        .recorded()
+        .performed_origin
+        .as_ref()
+        .map(Arc::clone)
+        .unwrap_or_else(|| Arc::clone(&candidate.cell))
+}
+
+fn denial(kind: Kind) -> WorthQueryOutputDemandDenial {
+    WorthQueryOutputDemandDenial::new(kind, "stable output fact preparation")
+}

@@ -90,7 +90,11 @@ impl<Schema, Operation, Input, Scope>
                                     .map(|kind| kind.code())
                             && expected.preconditions.as_ref()
                                 == self.read_set.admission.mutation_preconditions().identity()
-                            && idempotency.matches_captured_workflow_contract(expected)
+                            && idempotency.matches_captured_workflow_contract_fields(
+                                expected.key,
+                                expected.source,
+                                expected.input,
+                            )
                     })
                     && proof.workflow_execution_requirements
                         == Binding::workflow_execution_requirements()

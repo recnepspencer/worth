@@ -1,4 +1,5 @@
 //! One ordinary source execution, retained only after its genuine terminal.
+use crate::domain_computation::primary_graph::SourceReadAuthorizationRuntimeExt;
 use super::source_image::{SourceImage, SourcePlan};
 use crate::domain_computation::primary_graph::{
     application_query::{

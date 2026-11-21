@@ -3,39 +3,9 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationOperationInvariantProjectionReader, WorthQueryInvariantEntityIdentity,
 };
 
-/// Which step of a temporal operation invoker failed.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryTemporalInvocationFailureKind {
-    /// The invoker's `project` step rejected the read.
-    ProjectionRejected,
-    /// The invoker's `apply` step rejected the operation.
-    InvocationRejected,
-}
-
-/// Failure an application's temporal operation invoker returns from `project`
-/// or `apply`.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct WorthQueryTemporalInvocationFailure {
-    kind: WorthQueryTemporalInvocationFailureKind,
-    detail: String,
-}
-
-impl WorthQueryTemporalInvocationFailure {
-    pub fn new(kind: WorthQueryTemporalInvocationFailureKind, detail: impl Into<String>) -> Self {
-        Self {
-            kind,
-            detail: detail.into(),
-        }
-    }
-
-    pub fn kind(&self) -> WorthQueryTemporalInvocationFailureKind {
-        self.kind
-    }
-
-    pub fn detail(&self) -> &str {
-        &self.detail
-    }
-}
+pub use worth_query_execution_lineage::facade::primary_graph::conditional_operation::operation_invocation::{
+    WorthQueryTemporalInvocationFailure, WorthQueryTemporalInvocationFailureKind,
+};
 
 /// Application behavior invoked only after Query has freshly admitted the
 /// exact installed operation. The invoker describes decision reads and domain

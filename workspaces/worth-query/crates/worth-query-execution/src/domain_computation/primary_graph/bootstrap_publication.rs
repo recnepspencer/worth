@@ -42,10 +42,13 @@ pub(super) fn commit_bootstrap_rows(
                 .admit_branch_basis(&main_identity)
                 .map_err(map_bootstrap_basis_denial)?;
             if initialization.is_some() {
-                initialization_guard = Some(graph.integration_handle().managed_derived_views()
-                    .begin_source_initialization(execution, &options, &mut initialization)
-                    .map_err(|cause| primary_graph_denial(WorthQueryPrimaryGraphInstallationDenialKind::RelationalCommitRejected,
-                        format!("initial Source session: {cause:?}")).with_managed_source_cause(cause))?);
+                let views = graph.integration_handle().managed_derived_views();
+                initialization_guard = Some(
+                    crate::domain_computation::primary_graph::downcast_managed_views_arc(views)
+                        .begin_source_initialization(execution, &options, &mut initialization)
+                        .map_err(|cause| primary_graph_denial(WorthQueryPrimaryGraphInstallationDenialKind::RelationalCommitRejected,
+                            format!("initial Source session: {cause:?}")).with_managed_source_cause(cause))?,
+                );
             }
             let mut transaction = runtime
                 .begin_branch_transaction(

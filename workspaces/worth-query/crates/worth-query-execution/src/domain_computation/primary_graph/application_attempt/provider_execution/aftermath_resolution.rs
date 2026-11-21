@@ -1,5 +1,6 @@
 //! Exact recovery of a co-committed aftermath causal fact.
 
+use crate::domain_computation::application_aftermath::CommittedAftermathCausalityExt;
 use crate::domain_computation::application_aftermath::{
     WorthQueryCommittedAftermathCausality, WorthQueryPendingAftermathCausality,
 };

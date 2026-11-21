@@ -1,0 +1,42 @@
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct WorthQueryRuntimeSourceIdentity([u8; 32]);
+
+impl WorthQueryRuntimeSourceIdentity {
+    pub const fn new(identity: [u8; 32]) -> Self {
+        Self(identity)
+    }
+
+    pub const fn bytes(self) -> [u8; 32] {
+        self.0
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct WorthQueryCheckpointSourceIdentity([u8; 32]);
+
+impl WorthQueryCheckpointSourceIdentity {
+    pub const fn new(identity: [u8; 32]) -> Self {
+        Self(identity)
+    }
+
+    pub const fn bytes(self) -> [u8; 32] {
+        self.0
+    }
+}
+
+impl<Query> super::super::WorthQueryObservedSource<Query> {
+    /// Runtime-local source commitment retained from the immutable basis.
+    /// Branch occurrence remains part of ordinary output lineage; checkpoint
+    /// recovery uses the separate portable checkpoint identity.
+    pub fn idempotency_identity(&self) -> WorthQueryRuntimeSourceIdentity {
+        self.source_meaning.runtime_idempotency_identity()
+    }
+
+    pub fn checkpoint_identity(
+        &self,
+    ) -> WorthQueryCheckpointSourceIdentity {
+        self.source_meaning.checkpoint_identity()
+    }
+}
+
+mod court_doors_for_test;

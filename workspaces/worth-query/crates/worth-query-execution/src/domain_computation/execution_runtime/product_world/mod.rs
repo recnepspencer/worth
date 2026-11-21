@@ -57,11 +57,7 @@ impl WorthQueryProductRuntime {
             crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'scope>,
         ) -> R,
     ) -> Result<R, crate::domain_computation::primary_graph::WorthQueryAdvancementDenial> {
-        self.0
-            .with_advancement(|phase| {
-                body(crate::domain_computation::primary_graph::WorthQueryAdvancementPhase(phase))
-            })
-            .map_err(Into::into)
+        self.0.with_advancement(body)
     }
 
     pub fn with_request_advancement<R>(
@@ -71,11 +67,7 @@ impl WorthQueryProductRuntime {
             crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'scope>,
         ) -> R,
     ) -> Result<R, crate::domain_computation::primary_graph::WorthQueryAdvancementDenial> {
-        self.0
-            .with_request_advancement(request, |phase| {
-                body(crate::domain_computation::primary_graph::WorthQueryAdvancementPhase(phase))
-            })
-            .map_err(Into::into)
+        self.0.with_request_advancement(request, body)
     }
 
     pub(crate) fn install(

@@ -16,13 +16,46 @@ use worth_query_declaration::facade::application_program::{
     ApplicationComputationPartition, ApplicationFeature, ApplicationManagedComputation,
 };
 use worth_query_installation::facade::ApplicationSchema;
-impl<K: ApplicationComputationPartition, I: ApplicationComputationPartition, R>
-    IncrementalRun<K, I, R>
+pub(super) trait IncrementalRunPrepareRekeysExt<
+    K: ApplicationComputationPartition,
+    I: ApplicationComputationPartition,
+    R,
+>
 {
-    pub(super) fn prepare_rekeys<S, F, C, O>(
+    fn prepare_rekeys<S, F, C, O>(
         &self,
         owner: &O,
         reader: &mut Reader<'_, '_, S, O::Operation>,
+        source_query: Option<
+            &crate::domain_computation::primary_graph::application_query::SourceQueryReaderAccess<
+                '_,
+                S,
+            >,
+        >,
+        execution: &QueryRequestExecution<'_>,
+        input: &InputValue<S, F, C>,
+        remaining: PreparationWork,
+    ) -> Result<Option<PreparedIncremental<K, I, R, O::Gathered>>, Denial<S, F, C, O>>
+    where
+        S: ApplicationSchema,
+        F: ApplicationFeature<S>,
+        C: ApplicationManagedComputation<S, F, Partition = K>,
+        O: WorthQueryPartitionedComputationOwner<S, F, C, Item = I, PartitionResult = R>;
+}
+
+impl<K: ApplicationComputationPartition, I: ApplicationComputationPartition, R>
+    IncrementalRunPrepareRekeysExt<K, I, R> for IncrementalRun<K, I, R>
+{
+    fn prepare_rekeys<S, F, C, O>(
+        &self,
+        owner: &O,
+        reader: &mut Reader<'_, '_, S, O::Operation>,
+        source_query: Option<
+            &crate::domain_computation::primary_graph::application_query::SourceQueryReaderAccess<
+                '_,
+                S,
+            >,
+        >,
         execution: &QueryRequestExecution<'_>,
         input: &InputValue<S, F, C>,
         mut remaining: PreparationWork,
@@ -114,7 +147,7 @@ impl<K: ApplicationComputationPartition, I: ApplicationComputationPartition, R>
                     };
                     let (key, charge) = reader.measured(read, |reader| {
                         owner.partition_key(
-                            &mut WorthQueryComputationReader::lend(reader),
+                            &mut WorthQueryComputationReader::lend(reader, source_query),
                             input,
                             &retained.items[&item],
                         )
@@ -210,6 +243,7 @@ impl<K: ApplicationComputationPartition, I: ApplicationComputationPartition, R>
         gathers::prepare(
             owner,
             reader,
+            source_query,
             execution,
             input,
             retained,

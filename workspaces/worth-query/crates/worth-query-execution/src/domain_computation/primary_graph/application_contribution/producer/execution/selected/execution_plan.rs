@@ -1,4 +1,5 @@
 //! Lower the selected producer execution into its owner-held plan.
+use crate::domain_computation::primary_graph::InstalledProducerEditionExt;
 use super::*;
 pub(super) fn prepare_selected_execution<'owner, Schema, Binding>(
     this: &TypedInstalledProducer<Schema, Binding>,

@@ -107,7 +107,7 @@ fn provider_stop(
     cause: Denial,
     allocation: &Arc<SourceFactsAllocation>,
 ) -> Stop {
-    match super::super::denial::WorthQueryManagedIndexDenial::new(
+    match super::super::denial::managed_index_denial(
         super::super::denial::ReceiverCause::Provider(cause),
         Some(allocation.clone()),
     )

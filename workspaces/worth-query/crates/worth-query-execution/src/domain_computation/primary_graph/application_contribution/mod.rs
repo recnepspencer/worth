@@ -2,9 +2,10 @@ pub(crate) mod authored_edit;
 mod composition;
 pub(in crate::domain_computation::primary_graph) use composition::PreparedApplicationRuntimeContributions;
 mod derived_relation;
-pub(crate) mod native_field_contract;
+pub(crate) use worth_query_execution_lineage::facade::primary_graph::application_contribution::{
+    computation, execution_denial, native_field_contract,
+};
 pub use derived_relation::WorthQueryDerivedRelationCountOwner;
-pub(crate) mod computation;
 pub(crate) mod conditional;
 mod contracts;
 mod feature;
@@ -14,7 +15,6 @@ pub use feature::{
     WorthQueryRequiredFeatureContract, WorthQueryRequiredFeaturePair,
 };
 mod coupled_publication;
-pub(in crate::domain_computation) mod execution_denial;
 pub(crate) mod partitioned_computation;
 pub(crate) mod producer;
 pub(in crate::domain_computation::primary_graph) use coupled_publication::CoupledApplicationAssembly;

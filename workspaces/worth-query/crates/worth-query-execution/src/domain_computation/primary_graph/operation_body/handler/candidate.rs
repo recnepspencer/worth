@@ -92,14 +92,18 @@ where
                 return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause));
             }
         }
-        match retirement::apply(decision.retirements, &self.body, writer) {
+        match super::super::runtime_assessment::apply_retirements(
+            decision.retirements,
+            &self.body,
+            writer,
+        ) {
             HandlerResult::Completed(()) => {}
             HandlerResult::DomainDenied(cause) => return HandlerResult::DomainDenied(cause),
             HandlerResult::ExecutionDenied(cause) => return HandlerResult::ExecutionDenied(cause),
             HandlerResult::Cancelled => return HandlerResult::Cancelled,
             HandlerResult::DeadlineExceeded => return HandlerResult::DeadlineExceeded,
         }
-        if let Err(cause) = path_value::apply(
+        if let Err(cause) = super::super::runtime_assessment::apply_path_writes(
             decision.path_writes,
             &self.body,
             decision.values.as_ref(),

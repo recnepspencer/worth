@@ -12,83 +12,17 @@ use crate::domain_computation::primary_graph::{
     output_reuse::{retained_fact_denial, RetainedFactStop},
     WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind, WorthQueryPrimaryGraphLayout,
 };
-
 use std::sync::Arc;
-use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
-use worth_relational::facade::{
-    branch::RelationalBranchBasisDescriptor,
-    identity::{EntityId, KindId},
-    runtime::RelationalFieldRevision,
-};
+use worth_execution::ExecutionRequest;
 use worth_runtime_bridge::facade::{
     BridgeConditionalDecisionEvidence, BridgeConditionalExecutionRequest,
-    BridgeExactOutputComparison, BridgeInstalledConditionalLowering,
+    BridgeInstalledConditionalLowering,
 };
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryProducerEvaluationIneligibility {
-    OutputRoleUnavailable,
-    BeforeFieldUnavailable,
-    ConflictingBeforeField,
-    NativeAfterUnavailable,
-    ConflictingNativeAfter,
-    NativeAfterAbsent,
-    ReadinessPublicationMismatch,
-    ReadinessFieldMismatch,
-}
-pub struct ProducerOutputEvaluation {
-    field: Arc<InstalledProducerOutputEquivalence>,
-    role: Arc<str>,
-    pub(in crate::domain_computation::primary_graph) state: ProducerOutputEvaluationState,
-    _memory: Option<ExecutionMemoryReservation>,
-}
-pub(in crate::domain_computation::primary_graph) enum ProducerOutputEvaluationState {
-    Ineligible(WorthQueryProducerEvaluationIneligibility),
-    CaptureUnavailable(
-        #[allow(
-            dead_code,
-            reason = "The typed diagnostic or custody payload stays owned through return and Drop; this owner does not inspect it"
-        )]
-        crate::domain_computation::primary_graph::application_attempt::OutputFieldCaptureFailure,
-    ),
-    Compared(ComparedProducerOutput),
-}
-pub(in crate::domain_computation::primary_graph) struct ComparedProducerOutput {
-    scope: Arc<InstalledProducerOutputEquivalence>,
-    pub(in crate::domain_computation::primary_graph) role: usize,
-    pub(in crate::domain_computation::primary_graph) entity: EntityId,
-    pub(in crate::domain_computation::primary_graph) kind: KindId,
-    pub(in crate::domain_computation::primary_graph) revision: RelationalFieldRevision,
-    pub(in crate::domain_computation::primary_graph) performed_basis:
-        RelationalBranchBasisDescriptor,
-    pub(in crate::domain_computation::primary_graph) comparison: BridgeExactOutputComparison,
-}
-impl ComparedProducerOutput {
-    pub(in crate::domain_computation::primary_graph) fn field(
-        &self,
-    ) -> &worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus {
-        &self.scope.field.binding.locus
-    }
-    pub(in crate::domain_computation::primary_graph) fn contract_revision(
-        &self,
-    ) -> worth_foundational::facade::AspectContractRevision {
-        self.scope.field.aspect.revision()
-    }
-    pub(in crate::domain_computation::primary_graph) fn field_meaning(&self) -> [u8; 32] {
-        self.scope.meaning
-    }
-}
-
-impl ProducerOutputEvaluation {
-    pub(in crate::domain_computation::primary_graph) fn field(
-        &self,
-    ) -> &worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus {
-        &self.field.field.binding.locus
-    }
-    pub(in crate::domain_computation::primary_graph) fn role(&self) -> &str {
-        &self.role
-    }
-}
+pub use worth_query_execution_lineage::facade::primary_graph::application_contribution::producer::output_evaluation::{
+    ComparedProducerOutput, ProducerOutputEvaluation, ProducerOutputEvaluationState,
+    WorthQueryProducerEvaluationIneligibility,
+};
 
 /// One installed comparison owns its exact field/role meaning and lowering.
 pub struct InstalledOutputComparison {
@@ -195,25 +129,25 @@ impl InstalledOutputComparison {
                             observed.after,
                         )
                         .map_err(WorthQueryOutputDemandDenial::output_comparison)?;
-                    ProducerOutputEvaluationState::Compared(ComparedProducerOutput {
-                        scope: Arc::clone(&self.field),
-                        role: observed.role,
-                        entity: observed.entity,
-                        kind: observed.kind,
-                        revision: observed.revision,
-                        performed_basis: basis.receipt.basis_descriptor().clone(),
+                    ProducerOutputEvaluationState::Compared(ComparedProducerOutput::new(
+                        Arc::clone(&self.field),
+                        observed.role,
+                        observed.entity,
+                        observed.kind,
+                        observed.revision,
+                        basis.receipt.basis_descriptor().clone(),
                         comparison,
-                    })
+                    ))
                 }
             }
         };
         // No fallible stage remains between a completed comparison and its memo.
-        let completed = Arc::new(ProducerOutputEvaluation {
-            field: Arc::clone(&self.field),
-            role: Arc::clone(&self.role),
+        let completed = Arc::new(ProducerOutputEvaluation::new(
+            Arc::clone(&self.field),
+            Arc::clone(&self.role),
             state,
-            _memory: memory,
-        });
+            memory,
+        ));
         ready.retain_output_evaluation(Arc::clone(&completed));
         let compared_now = matches!(completed.state, ProducerOutputEvaluationState::Compared(_));
         Ok(OutputEvaluationVisit {

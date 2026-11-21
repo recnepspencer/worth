@@ -9,11 +9,7 @@ pub struct SharedSelectedProductOperation<'runtime, Schema> {
     selected: WorthQuerySelectedProductOperation<'runtime, Schema>,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub enum SelectedQueryBasisRetentionStop {
-    Basis,
-    Admission(CompanionPreflightStop),
-}
+pub use worth_query_execution_lineage::facade::primary_graph::product_operation::SelectedQueryBasisRetentionStop;
 
 impl<'runtime, Schema> WorthQuerySelectedProductOperation<'runtime, Schema> {
     /// This phase preserves the issued snapshot and its program interpretation;

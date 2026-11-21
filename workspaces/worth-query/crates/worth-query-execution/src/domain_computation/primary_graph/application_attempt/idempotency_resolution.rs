@@ -1,8 +1,7 @@
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_query_installation::facade::ApplicationSchema;
 
-#[path = "idempotency_resolution/denial.rs"]
-mod denial;
+use worth_query_execution_lineage::facade::domain_computation::primary_graph::application_attempt::idempotency_resolution::denial;
 #[path = "idempotency_resolution/external_settlement.rs"]
 mod external_settlement;
 mod outcome;

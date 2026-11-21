@@ -1,5 +1,7 @@
 //! Source DATA records the exact old basis; fresh query admission recreates proof.
+use crate::domain_computation::primary_graph::ReadObservationRuntimeExt;
 use super::*;
+use worth_relational::facade::identity::EntityId;
 use crate::basis::WorthQueryProductBranch;
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationQueryAccessContext, WorthQueryApplicationReadObservation,
@@ -26,44 +28,42 @@ pub enum WorthQueryReadmittedOriginalSource<Q> {
     Row(WorthQueryObservedSource<Q>),
     ResultSet(WorthQueryObservedResultSet<Q>),
 }
-impl<Q> WorthQueryObservedSource<Q> {
-    pub fn capture_original_operation_source(
-        &self,
-        result_set: bool,
-        _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
-    ) -> Result<WorthQueryOriginalSourceData, D> {
-        let commit = self
-            .selected_product_commit()
-            .ok_or(D::OwnershipMaterialUnavailable)?;
-        let locator = self.scope_selector.locator();
-        let fields = locator
-            .field_path()
-            .fields()
-            .iter()
-            .map(|field| field.as_str())
-            .collect::<Vec<_>>();
-        Ok(WorthQueryOriginalSourceData {
-            owner: commit
-                .owner_identity()
-                .durable()
-                .ok_or(D::OwnershipMaterialUnavailable)?,
-            commit: commit.ordinal(),
-            branch: self.branch.0.as_str().to_owned(),
-            query: *self.query_identity.as_bytes(),
-            root: self.model_root,
-            parameters: rmp_serde::to_vec(self.parameters.bindings())
-                .map_err(|_| D::OwnershipMaterialUnavailable)?,
-            scope: rmp_serde::to_vec(&(
-                locator.aspect().aspect_key().as_str(),
-                fields,
-                self.scope_selector.value(),
-                self.scope_selector.subject(),
-            ))
+pub fn capture_original_operation_source<Q>(
+    source: &WorthQueryObservedSource<Q>,
+    result_set: bool,
+    _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
+) -> Result<WorthQueryOriginalSourceData, D> {
+    let commit = source
+        .selected_product_commit()
+        .ok_or(D::OwnershipMaterialUnavailable)?;
+    let locator = source.scope_selector.locator();
+    let fields = locator
+        .field_path()
+        .fields()
+        .iter()
+        .map(|field| field.as_str())
+        .collect::<Vec<_>>();
+    Ok(WorthQueryOriginalSourceData {
+        owner: commit
+            .owner_identity()
+            .durable()
+            .ok_or(D::OwnershipMaterialUnavailable)?,
+        commit: commit.ordinal(),
+        branch: source.branch.0.as_str().to_owned(),
+        query: *source.query_identity.as_bytes(),
+        root: source.model_root,
+        parameters: rmp_serde::to_vec(source.parameters.bindings())
             .map_err(|_| D::OwnershipMaterialUnavailable)?,
-            commitment: self.idempotency_identity().bytes(),
-            result_set,
-        })
-    }
+        scope: rmp_serde::to_vec(&(
+            locator.aspect().aspect_key().as_str(),
+            fields,
+            source.scope_selector.value(),
+            source.scope_selector.subject(),
+        ))
+        .map_err(|_| D::OwnershipMaterialUnavailable)?,
+        commitment: source.idempotency_identity().bytes(),
+        result_set,
+    })
 }
 impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S> {
     pub fn readmit_original_operation_source<B>(

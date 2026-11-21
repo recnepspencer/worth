@@ -1,0 +1,181 @@
+//! A required row whose certification or refresh stopped for every principal.
+//!
+//! A dependent's consumed edge names the row it read, and only the wave that
+//! refreshes that row can resolve the edge. When the row's producer or program
+//! itself cannot refresh it, no later advance by any caller resolves the edge:
+//! its dependents fail with the recorded stop instead of reporting Pending
+//! forever. Only such intrinsic stops are recorded on the shared row. A stop
+//! that belongs to the request that met it (its principal, scope, deadline,
+//! cancellation or budgets) or to a moment (a stale publication, deferred
+//! scheduling, exhausted publication capacity) stays with that advance. The
+//! newest row of the occurrence decides: its own stopped state, or the recorded
+//! stop, which its successful certification or refresh clears. An exact
+//! recovery refused at a Ready row records that row's supersession as any
+//! caller's would be; the Ready row answers its dependents ahead of the
+//! record, and an ordinary demand's refresh clears it.
+
+use super::DemandState;
+use super::WorthQueryOutputAdvancement;
+use super::WorthQueryOutputDemandKey;
+use super::WorthQueryOutputDemandRegistry;
+
+use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
+use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
+use crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture;
+
+pub mod source_query;
+
+impl WorthQueryOutputDemandRegistry {
+    /// Record `stop` on the row whose required certification or refresh it
+    /// ended, when the row fails the same way for any principal.
+    pub fn record_required_stop(
+        &self,
+        key: &WorthQueryOutputDemandKey,
+        stop: &WorthQueryOutputDemandDenial,
+    ) {
+        if !fails_row(stop) {
+            return;
+        }
+        self.set_required_stop(key, Some(stop.kind()));
+    }
+
+    /// The row certified Current or refreshed: no recorded stop survives it.
+    pub fn clear_required_stop(
+        &self,
+        key: &WorthQueryOutputDemandKey,
+    ) {
+        self.set_required_stop(key, None);
+    }
+
+    fn set_required_stop(
+        &self,
+        key: &WorthQueryOutputDemandKey,
+        stop: Option<WorthQueryOutputDemandDenialKind>,
+    ) {
+        let mut state = self
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if let Some(mut record) = state.records.get_mut(key) {
+            record.required_stop = stop;
+        };
+    }
+}
+
+/// Whether `stop` fails the shared row for every caller: it is terminal and
+/// intrinsic to the row. Any other stop leaves the row for a later claim.
+pub fn fails_row(stop: &WorthQueryOutputDemandDenial) -> bool {
+    stop.recovery_posture() == WorthQueryOutputDemandRecoveryPosture::Terminal
+        && intrinsic_to_row(stop.kind())
+}
+
+/// Stops the same for every principal and every request. Only the kinds named
+/// as the caller's own (its interruption, budgets, principal, scope,
+/// authorization or selected basis) or the moment's (a later advance can
+/// succeed) stay with the advance that met them; every other kind is the row's.
+pub fn intrinsic_to_row(kind: WorthQueryOutputDemandDenialKind) -> bool {
+    use WorthQueryOutputDemandDenialKind as Kind;
+    match kind {
+        Kind::AuthoredStageRefused { .. } | Kind::ConflictingIntent { .. } => true,
+        Kind::WorldRecovery(_) | Kind::RecoveryPublication(_) | Kind::PublicationReceipt(_) => {
+            false
+        }
+        Kind::ProductDelivery(_) => true,
+        Kind::CorrespondenceDelivery(cause) => {
+            WorthQueryOutputDemandDenial::new(Kind::CorrespondenceDelivery(cause), "")
+                .recovery_posture()
+                == WorthQueryOutputDemandRecoveryPosture::Terminal
+        }
+        Kind::ExecutionRequest(_) | Kind::ObligationPublication(_) => false,
+        Kind::BridgeConditional(kind) => {
+            WorthQueryOutputDemandDenial::new(Kind::BridgeConditional(kind), "").recovery_posture()
+                == WorthQueryOutputDemandRecoveryPosture::Terminal
+        }
+        Kind::Cancelled
+        | Kind::ManagedIndexSourceDenied
+        | Kind::TimedOut
+        | Kind::ProducerRouteRoundBudgetExceeded { .. }
+        | Kind::ProducerAttemptRoundBudgetExceeded { .. }
+        | Kind::WorkBudgetExceeded
+        | Kind::RetentionBudgetExceeded
+        | Kind::SourcePrincipal(_)
+        | Kind::SourceScope(_)
+        | Kind::RequestAuthorization(_) => false,
+        Kind::SourceQueryAdmission(kind) => source_query::admission_is_row(kind),
+        Kind::SourceQueryExecution(kind) => source_query::execution_is_row(kind),
+        Kind::PublicationStale
+        | Kind::SchedulingDeferred
+        | Kind::PublicationCapacityExceeded
+        | Kind::CurrentControlBusy => false,
+        // A proposed cohort's frontier does not permanently fail a shared row.
+        Kind::CyclicRequiredOutputOccurrences { .. }
+        | Kind::RequiredOutputParentUnavailable { .. } => false,
+        Kind::ProductSelection(denial) => !denial.is_transient(),
+        Kind::DurableStateAdmission(_)
+        | Kind::UnobservedWrite(_)
+        | Kind::SourceQueryInstallation(_)
+        | Kind::ManagedSourceExpansionUnsupported
+        | Kind::ForeignSource
+        | Kind::MissingApplicableProducer
+        | Kind::AmbiguousApplicableProducer
+        | Kind::ManagedCleanupRequired(_)
+        | Kind::ProducerUnavailable
+        | Kind::ProducerDomainDenied
+        | Kind::DiscoveryConnection(_)
+        | Kind::SchedulingRejected
+        | Kind::NoEffect
+        | Kind::Superseded
+        | Kind::ForeignDemand
+        | Kind::RequiredSuccessorStateUnavailable
+        | Kind::ForeignSettlement
+        | Kind::RetainedVerificationFactUnavailable(_)
+        | Kind::SettlementProvenance(_)
+        | Kind::IncompleteDependencyCoverage
+        | Kind::CurrentPublication(_)
+        | Kind::RetainedBasisUnavailable
+        | Kind::Closed
+        | Kind::ObservationRead(_)
+        | Kind::DuplicatePerformedSource => true,
+    }
+}
+
+/// The newest row of `key`'s refresh lineage: `key` itself until a refresh of
+/// its occurrence replaced it. An edge that read `key` waits on that row.
+pub fn lineage_head(
+    records: &super::record_map::DemandRecords,
+    key: &WorthQueryOutputDemandKey,
+) -> Result<Option<WorthQueryOutputDemandKey>, WorthQueryOutputDemandDenial> {
+    let Some(record) = records.get(key) else {
+        return Ok(None);
+    };
+    if !super::refreshed_rejoin::superseded(record) {
+        return Ok(Some(key.clone()));
+    }
+    // One pass over the rows compares each key's occurrence once.
+    let prepaid = records;
+    Ok(Some(crate::domain_computation::primary_graph::application_output_demand::registry::refreshed_rejoin::newest_refresh(prepaid, key).unwrap_or_else(|| key.clone())))
+}
+
+/// Why the head row of a refresh lineage can never become Ready: the row
+/// itself, or its refresh, met a stop intrinsic to it. Any other stop
+/// belonged to the advance that met it.
+pub fn head_stop(
+    records: &super::record_map::DemandRecords,
+    key: &WorthQueryOutputDemandKey,
+) -> Option<WorthQueryOutputDemandDenial> {
+    let record = records.get(key)?;
+    let stopped = match &record.state {
+        DemandState::Failed(denial) => Some(denial),
+        DemandState::Output(output) => match output.advancement() {
+            WorthQueryOutputAdvancement::Stopped { denial, .. } => Some(denial),
+            _ => None,
+        },
+        _ => None,
+    };
+    if let Some(denial) = stopped.filter(|denial| fails_row(denial)) {
+        return Some(denial.clone());
+    }
+    record.required_stop.as_ref().map(|kind| {
+        WorthQueryOutputDemandDenial::new(kind.clone(), "the required upstream refresh stopped")
+    })
+}

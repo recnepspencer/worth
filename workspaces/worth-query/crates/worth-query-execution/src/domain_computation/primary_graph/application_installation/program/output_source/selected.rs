@@ -6,6 +6,7 @@
 //! selection. The occurrence gate still decides: a successor the occurrence
 //! no longer runs is refused before any effect.
 
+use crate::domain_computation::primary_graph::WorthQueryAdvancementDenialCommitExt as _;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use crate::equality_type_id::EqualityTypeId as TypeId;
 

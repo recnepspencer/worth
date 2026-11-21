@@ -1,4 +1,5 @@
 //! The ordinary installed handler prepares one writer on Native's applied image.
+use crate::domain_computation::primary_graph::InstalledProducerEditionExt;
 use super::*;
 use crate::domain_computation::primary_graph::{
     application_attempt::prepare_coupled_application, application_query::AppliedQuerySource,

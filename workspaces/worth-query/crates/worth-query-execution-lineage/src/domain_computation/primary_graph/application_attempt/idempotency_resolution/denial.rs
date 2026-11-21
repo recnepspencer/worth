@@ -1,0 +1,177 @@
+//! Why an idempotency key could not be resolved.
+
+use crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial as Provider;
+use crate::domain_computation::primary_graph::{
+    WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
+};
+
+/// Why an idempotency key could not be resolved. The resolution is a read, so
+/// nothing took effect.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum WorthQueryApplicationIdempotencyResolutionDenialKind {
+    /// The original owner effect was released; this retry did not execute.
+    OriginalEffectReleased,
+    /// The same subject is being prepared before an authentic World handle exists.
+    PreparationBusy,
+    /// Execution refused to finish the pending publication used by this read.
+    ExecutionDenied(
+        Result<
+            crate::domain_computation::WorthQueryProviderSessionDenialKind,
+            crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+        >,
+    ),
+    /// The admission's current authority no longer holds, or inspecting the key was
+    /// not authorized, for the named reason. The authorization denial has the
+    /// contributing causes.
+    Authorization(WorthQueryOperationAuthorizationDenialKind),
+    /// The admission belongs to another runtime or schema binding, or has no product
+    /// to resolve against.
+    ForeignAdmission,
+    /// The provider holds its maximum number of active snapshots.
+    ActiveSnapshotCapacityExhausted { maximum_active_snapshots: usize },
+    /// The provider has no retention capacity for the read.
+    RetentionCapacityExhausted,
+    /// The provider has run out of retention identities.
+    RetentionIdentityExhausted,
+    /// The provider has run out of snapshot identities.
+    SnapshotIdentityExhausted,
+    /// The provider could not answer, the product was unpublished, or the
+    /// recorded receipt could not be projected.
+    ProviderUnavailable,
+    /// The key's recorded intent was written by an earlier encoding whose
+    /// operation part cannot be checked against this request. Neither the same
+    /// intent nor drift is proven.
+    RecordedIntentUnverifiable,
+}
+
+/// A refusal to resolve an idempotency key. Nothing took effect.
+///
+/// Match on [`kind`](Self::kind); [`authorization`](Self::authorization) is set
+/// only for an authorization refusal.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct WorthQueryApplicationIdempotencyResolutionDenial {
+    kind: WorthQueryApplicationIdempotencyResolutionDenialKind,
+    // Authorization detail is present only on that refusal. Keep its owned
+    // causes out of every downstream error's stack representation.
+    authorization: Option<Box<WorthQueryOperationAuthorizationDenial>>,
+    native_key_lookup: Option<(
+        worth_relational::facade::indexes::DerivedIndexId,
+        worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind,
+    )>,
+}
+
+impl WorthQueryApplicationIdempotencyResolutionDenial {
+    pub const fn original_effect_released() -> Self {
+        Self {
+            kind: WorthQueryApplicationIdempotencyResolutionDenialKind::OriginalEffectReleased,
+            authorization: None,
+            native_key_lookup: None,
+        }
+    }
+
+    pub const fn kind(&self) -> WorthQueryApplicationIdempotencyResolutionDenialKind {
+        self.kind
+    }
+
+    pub const fn authorization(&self) -> Option<&WorthQueryOperationAuthorizationDenial> {
+        match &self.authorization {
+            Some(denial) => Some(denial),
+            None => None,
+        }
+    }
+
+    pub fn from_authorization(
+        denial: WorthQueryOperationAuthorizationDenial,
+    ) -> Self {
+        Self {
+            kind: WorthQueryApplicationIdempotencyResolutionDenialKind::Authorization(
+                denial.kind(),
+            ),
+            authorization: Some(Box::new(denial)),
+            native_key_lookup: None,
+        }
+    }
+
+    pub const fn foreign_admission() -> Self {
+        Self {
+            kind: WorthQueryApplicationIdempotencyResolutionDenialKind::ForeignAdmission,
+            authorization: None,
+            native_key_lookup: None,
+        }
+    }
+
+    pub const fn provider_unavailable() -> Self {
+        Self {
+            kind: WorthQueryApplicationIdempotencyResolutionDenialKind::ProviderUnavailable,
+            authorization: None,
+            native_key_lookup: None,
+        }
+    }
+
+    /// The exact Native index refusal, when the provider could not locate the key.
+    pub const fn native_key_lookup(
+        &self,
+    ) -> Option<(
+        worth_relational::facade::indexes::DerivedIndexId,
+        worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind,
+    )> {
+        self.native_key_lookup
+    }
+
+    pub fn from_provider(denial: Provider) -> Self {
+        let native_key_lookup = match denial {
+            Provider::NativeKeyLookup { index, cause } => Some((index, cause)),
+            Provider::ForeignAffinity
+            | Provider::PreparationBusy
+            | Provider::ActiveSnapshotCapacityExhausted { .. }
+            | Provider::RetentionCapacityExhausted
+            | Provider::RetentionIdentityExhausted
+            | Provider::SnapshotIdentityExhausted
+            | Provider::RecordedIntentUnverifiable
+            | Provider::ExecutionDenied(_)
+            | Provider::Unavailable => None,
+        };
+        let kind = match denial {
+            Provider::ForeignAffinity => WorthQueryApplicationIdempotencyResolutionDenialKind::ForeignAdmission,
+            Provider::ExecutionDenied(kind) => WorthQueryApplicationIdempotencyResolutionDenialKind::ExecutionDenied(kind),
+            Provider::ActiveSnapshotCapacityExhausted {
+                maximum_active_snapshots,
+            } => WorthQueryApplicationIdempotencyResolutionDenialKind::ActiveSnapshotCapacityExhausted {
+                maximum_active_snapshots,
+            },
+            Provider::RetentionCapacityExhausted => {
+                WorthQueryApplicationIdempotencyResolutionDenialKind::RetentionCapacityExhausted
+            }
+            Provider::RetentionIdentityExhausted => {
+                WorthQueryApplicationIdempotencyResolutionDenialKind::RetentionIdentityExhausted
+            }
+            Provider::SnapshotIdentityExhausted => {
+                WorthQueryApplicationIdempotencyResolutionDenialKind::SnapshotIdentityExhausted
+            }
+            Provider::PreparationBusy => WorthQueryApplicationIdempotencyResolutionDenialKind::PreparationBusy,
+            Provider::NativeKeyLookup { .. } | Provider::Unavailable => {
+                WorthQueryApplicationIdempotencyResolutionDenialKind::ProviderUnavailable
+            }
+            Provider::RecordedIntentUnverifiable => {
+                WorthQueryApplicationIdempotencyResolutionDenialKind::RecordedIntentUnverifiable
+            }
+        };
+        Self {
+            kind,
+            authorization: None,
+            native_key_lookup,
+        }
+    }
+}
+
+impl std::fmt::Display for WorthQueryApplicationIdempotencyResolutionDenial {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            formatter,
+            "application idempotency resolution denied: {:?}",
+            self.kind
+        )
+    }
+}
+
+impl std::error::Error for WorthQueryApplicationIdempotencyResolutionDenial {}

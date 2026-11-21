@@ -30,7 +30,10 @@ pub(in super::super) fn select_applied(
             source: DeclaredManagedIndexSelection {
                 access: Arc::clone(rows.association.access_contract()),
                 dependencies: Arc::clone(rows.dependencies),
-                coverage: rows.coverage.cloned(),
+                coverage: rows
+                    .coverage
+                    .cloned()
+                    .map(|coverage| coverage as Arc<dyn std::any::Any + Send + Sync>),
             },
         },
         true,

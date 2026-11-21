@@ -1,4 +1,5 @@
 //! Installed admission authority at typed effect-program re-entry.
+use crate::domain_computation::primary_graph::WorthQueryAdvancementDenialCommitExt as _;
 use super::*;
 use crate::domain_computation::authorization::{
     BrandTag, WorthQueryAdmittedOperation, WorthQueryOperationAuthorizationDenial,

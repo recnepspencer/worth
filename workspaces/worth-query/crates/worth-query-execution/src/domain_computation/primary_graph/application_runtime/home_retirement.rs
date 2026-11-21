@@ -197,6 +197,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .primary_graph()
             .expect("an installed application owns its original primary graph")
             .preflight_home_retirement(request)
+            .map_err(Into::into)
     }
 
     fn preflight_supplied_home_owners(&mut self) -> Result<(), WorthQueryHomeRetirementDenial> {

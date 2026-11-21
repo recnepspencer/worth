@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::PrimaryGraphHandleWorkflowExt;
 use super::*;
 
 impl ObservedWorkflowInstance {

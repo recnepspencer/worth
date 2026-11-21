@@ -100,59 +100,6 @@ pub(in crate::domain_computation::primary_graph::application_query) fn owner(
     }
 }
 
-impl ChargedBytes for Denial {
-    fn additional_charged_bytes(&self) -> u64 {
-        match self {
-            Self::ReadDenied {
-                root: _root,
-                denial,
-            } => denial.additional_charged_bytes(),
-            Self::PolicyMemoryExhausted(_)
-            | Self::ProcessMemoryExhausted(_)
-            | Self::DeclaredMemoryExhausted(_) => 0,
-            Self::WorkExhausted { root: _root } => 0,
-            Self::DuplicateRoot { root: _root }
-            | Self::KernelPanic { root: _root }
-            | Self::ResultCapacityExceeded { root: _root } => 0,
-            Self::BatchResource { root: _, denial: _ }
-            | Self::MissingPreparedResultCapacity
-            | Self::InvalidLimits
-            | Self::ViewCapacityExceeded
-            | Self::EntryCapacityExceeded
-            | Self::RetainedBytesExceeded
-            | Self::ForeignApplication
-            | Self::ForeignInstallation
-            | Self::ForeignQuery
-            | Self::AuthorizationRequired
-            | Self::ForeignBranch
-            | Self::StaleSource
-            | Self::IncompleteDependencies
-            | Self::ColdReconstructionRequired
-            | Self::MembershipReconciliationRequired
-            | Self::EntryRefreshRequired
-            | Self::QueryExecutionDenied
-            | Self::ViewRevisionExhausted
-            | Self::Disposed
-            | Self::WorkerLimitExceedsParent
-            | Self::MemoryLimitExceedsParent
-            | Self::WorkLimitExceedsParent
-            | Self::ChargedBytesOverflow
-            | Self::CapacityOverflow
-            | Self::AllocationUnavailable
-            | Self::OwnerResultCapacityExceeded
-            | Self::UnrelatedNestedLease
-            | Self::NoActiveExecutionScope
-            | Self::EquivalenceContractUnavailable
-            | Self::Cancelled
-            | Self::DeadlineElapsed
-            | Self::WorkCounterOverflow
-            | Self::AccountingUnavailable
-            | Self::NestedStopped
-            | Self::OwnerPanic => 0,
-        }
-    }
-}
-
 pub fn session(
     cause: crate::domain_computation::provider_session::WorthQueryManagedGraphReadDenial,
     root: EntityId,

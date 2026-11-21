@@ -17,7 +17,9 @@ where
 {
     checkpoint: Option<Checkpoint>,
     finish: Option<Finish>,
-    retired_owner: Option<PendingProducerPublication>,
+    retired_owner: Option<
+        Box<dyn worth_query_execution_lineage::facade::ports::PendingProducerPublicationPort>,
+    >,
     observation: Option<worth_runtime_world::facade::ProductBranchObservation>,
     retired_carrier: Option<WorthQueryRecoveredProgramOutputSource>,
 }
@@ -39,6 +41,9 @@ where
             unreachable!("the publication loan holds its original pending checkpoint")
         };
         owner
+            .as_any_mut()
+            .downcast_mut::<PendingProducerPublication>()
+            .expect("the publication loan holds a PendingProducerPublication")
     }
     fn performed(&mut self, performed: RecoveredProducerPublication) {
         let Some(Checkpoint::PublicationPending {
@@ -129,7 +134,7 @@ impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S>
         principal: &WorthQueryAuthenticatedExternalPrincipal<S>,
         request: &WorthQueryRequestScope,
         invocation: &ProducerInvocationAuthority<'_>,
-        owner: PendingProducerPublication,
+        owner: Box<dyn worth_query_execution_lineage::facade::ports::PendingProducerPublicationPort>,
         ready_backing: crate::domain_computation::primary_graph::application_output_demand::PreparedReadyBacking,
         finish: impl FnOnce(Checkpoint) -> Result<(), WorthQueryOutputDemandDenial>,
     ) -> Result<bool, WorthQueryOutputDemandDenial> {

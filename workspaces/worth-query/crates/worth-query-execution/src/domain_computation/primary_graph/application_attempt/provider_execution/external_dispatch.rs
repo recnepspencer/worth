@@ -14,7 +14,7 @@ use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 
 mod cleanup_dispatch;
 mod committed;
-pub(crate) mod denial;
+pub(crate) use worth_query_execution_lineage::facade::domain_computation::primary_graph::application_attempt::provider_execution::external_dispatch::denial;
 pub(in crate::domain_computation) mod durable_attempt;
 enum OriginalDispatchObservation<'a> {
     Starting,

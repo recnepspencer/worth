@@ -9,7 +9,7 @@ use crate::domain_computation::primary_graph::{
 /// An output source must carry an installed meaning and an owner-tracked
 /// complete selection. The latter includes negative and absent reads even
 /// when the query returned exactly one positive row.
-pub(in crate::domain_computation::primary_graph) fn require_installed_output_dependencies<Query>(
+pub fn require_installed_output_dependencies<Query>(
     contract: WorthQueryInstalledOutputDependencyContract<'_>,
     source: &WorthQueryObservedSource<Query>,
 ) -> Result<(), WorthQueryOutputDemandDenial> {

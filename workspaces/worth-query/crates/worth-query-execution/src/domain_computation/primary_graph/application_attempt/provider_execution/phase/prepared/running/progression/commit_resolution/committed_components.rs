@@ -59,7 +59,7 @@ pub(super) fn seal_committed_outcome(
 ) -> WorthQueryProviderProgressionOutcome {
     let permit = WorthQueryFreshCommitReceiptPermit::mint(context.provider_session);
     let Some(receipt) = WorthQueryPendingApplicationCommitReceipt::from_projection(
-        permit,
+        permit.into_provider_session(),
         resolved.projection,
         certify_provider_recomparison(context.preconditions),
         context.canonical_work,

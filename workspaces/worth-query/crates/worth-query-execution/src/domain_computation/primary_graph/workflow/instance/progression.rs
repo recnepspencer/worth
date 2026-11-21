@@ -9,7 +9,7 @@ mod collection;
 pub(crate) mod locator;
 mod navigation;
 mod replay;
-mod retention;
+pub(in crate::domain_computation::primary_graph) mod retention;
 
 mod update;
 use crate::domain_computation::primary_graph::application_attempt::{

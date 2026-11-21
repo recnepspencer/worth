@@ -49,37 +49,7 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryProviderGuardedW
     Indeterminate(WorthQueryProviderIdempotencyResolutionDenial),
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryProviderIdempotencyResolutionDenial {
-    ForeignAffinity,
-    PreparationBusy,
-    ActiveSnapshotCapacityExhausted {
-        maximum_active_snapshots: usize,
-    },
-    RetentionCapacityExhausted,
-    RetentionIdentityExhausted,
-    SnapshotIdentityExhausted,
-    /// The key's first-encoding record matches every durable part of this
-    /// intent but names its operation by a seal no later runtime can confirm.
-    RecordedIntentUnverifiable,
-    ExecutionDenied(
-        Result<
-            crate::domain_computation::WorthQueryProviderSessionDenialKind,
-            crate::domain_computation::WorthQueryProviderSessionControlStopKind,
-        >,
-    ),
-    NativeKeyLookup {
-        index: worth_relational::facade::indexes::DerivedIndexId,
-        cause: worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind,
-    },
-    Unavailable,
-}
-
-impl From<&'static str> for WorthQueryProviderIdempotencyResolutionDenial {
-    fn from(_: &'static str) -> Self {
-        Self::Unavailable
-    }
-}
+pub use worth_query_execution_lineage::facade::primary_graph::provider::idempotency::WorthQueryProviderIdempotencyResolutionDenial;
 
 impl WorthQueryPrimaryGraphProvider {
     pub(in crate::domain_computation::primary_graph) fn resolve_guarded_workflow_operation_custody(

@@ -1,3 +1,4 @@
+use super::expression_context::retain_expression_context;
 use super::{
     admit_request, denial, validate_authentication_lifetime, validate_basis_lifetime,
     WorthQueryApplicationOneShotDenial, WorthQueryApplicationOneShotDenialKind,
@@ -117,7 +118,7 @@ where
         );
     let expression_context = if plan.retain_expression_context {
         Some(std::sync::Arc::new(
-            super::super::observed_source::RetainedExpressionContext::retain(
+            retain_expression_context(
                 plan.query.read_graph(),
                 plan.query.expression_context_schema(),
                 &kernel.raw,

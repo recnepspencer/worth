@@ -1,7 +1,26 @@
 //! Authorization from the actual applied Source READ, never a positioned terminal.
 use super::*;
-impl SourceReadAuthorization {
-    pub(in crate::domain_computation::primary_graph) fn validates_applied_terminal(
+use sha2::{Digest, Sha256};
+pub(in crate::domain_computation::primary_graph) trait SourceReadAuthorizationAppliedExt: Sized {
+    fn validates_applied_terminal(
+        &self,
+        terminal: &crate::domain_computation::provider_session::WorthQueryAppliedSourceRead,
+    ) -> bool;
+
+    #[allow(clippy::too_many_arguments)]
+    fn complete_applied(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        terminal: &crate::domain_computation::provider_session::WorthQueryAppliedSourceRead,
+        binding: WorthQueryInstalledApplicationQueryBindingObservation,
+        source: [u8; 32],
+        authorization: WorthQueryRetainedAuthorizationDecisionFacts,
+        registry: &Arc<WorthQueryInstalledAuthorizationRegistry>,
+        allocation: &Arc<SourceFactsAllocation>,
+    ) -> Result<Option<Arc<Self>>, CompanionPreflightStop>;
+}
+
+impl SourceReadAuthorizationAppliedExt for SourceReadAuthorization {
+    fn validates_applied_terminal(
         &self,
         terminal: &crate::domain_computation::provider_session::WorthQueryAppliedSourceRead,
     ) -> bool {
@@ -16,7 +35,7 @@ impl SourceReadAuthorization {
     }
 
     /// Only the genuine applied READ terminal retains this independent authority.
-    pub(in crate::domain_computation::primary_graph) fn complete_applied(
+    fn complete_applied(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         terminal: &crate::domain_computation::provider_session::WorthQueryAppliedSourceRead,
         binding: WorthQueryInstalledApplicationQueryBindingObservation,
@@ -59,7 +78,7 @@ impl SourceReadAuthorization {
             },
             binding: Some(binding),
             session: terminal.session_identity(),
-            support,
+            support: Box::new(support),
             identity,
             applied: Some(terminal.candidate().clone()),
         })))

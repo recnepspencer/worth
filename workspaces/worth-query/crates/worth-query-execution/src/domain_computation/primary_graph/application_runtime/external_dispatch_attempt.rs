@@ -7,19 +7,7 @@ use crate::domain_computation::application_aftermath::external_effect::WorthQuer
 use crate::domain_computation::application_aftermath::WorthQueryDispatchOutboxRecord;
 use crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxObservation;
 
-/// Why this application runtime could not admit a physical dispatch attempt.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryExternalDispatchAdmissionDenial {
-    ForeignRelationalRuntime,
-    ForeignProductWorld,
-    PublicationCommitMismatch,
-    MissingInboundOperationSlot,
-    AlreadyCompleted,
-    CompletedTransportRetained,
-    TerminalIndexUnavailable,
-    AttemptIdentityExhausted,
-    DurableAttemptRecordRequired,
-}
+pub use worth_query_execution_lineage::facade::primary_graph::application_runtime::WorthQueryExternalDispatchAdmissionDenial;
 
 /// The one terminal effect owner refused a new physical attempt.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

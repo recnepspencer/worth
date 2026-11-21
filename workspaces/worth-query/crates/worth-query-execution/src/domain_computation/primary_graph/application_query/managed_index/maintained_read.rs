@@ -1,4 +1,5 @@
 //! Fresh public Source READ precedes the existing managed-provider purpose.
+use crate::domain_computation::primary_graph::SourceReadAuthorizationRuntimeExt;
 use super::{
     adapter::InstalledIndexProvider,
     execution::{purpose, ProviderExecutionDenial as Denial},

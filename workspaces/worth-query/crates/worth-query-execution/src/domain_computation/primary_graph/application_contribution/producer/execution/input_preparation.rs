@@ -1,4 +1,5 @@
 //! Pure producer input reads complete under their actual before admission and D pin.
+use crate::domain_computation::primary_graph::InstalledProducerEditionExt;
 use super::*;
 use crate::domain_computation::primary_graph::{
     application_query::AppliedQuerySource, MutationHandlerExecutionDenial,

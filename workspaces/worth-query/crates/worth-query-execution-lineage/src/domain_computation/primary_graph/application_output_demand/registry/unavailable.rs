@@ -1,0 +1,107 @@
+//! Close only an authentic, cleanup-free, prepublication domain refusal.
+use super::*;
+use crate::domain_computation::primary_graph::output_lineage::invalidation::SourceInvalidationOwner;
+use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind as Kind;
+use crate::domain_computation::primary_graph::WorthQueryPreparedRequiredOutputSource;
+
+impl WorthQueryOutputDemandRegistry {
+    pub fn finish_unavailable_source(
+        &self,
+        prepared: &WorthQueryPreparedRequiredOutputSource,
+        interest: &WorthQueryOutputDemandInterest,
+        owner: &SourceInvalidationOwner,
+        history: Option<&crate::domain_computation::primary_graph::query_obligations::history::QueryObligationHistory>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenial> {
+        if !Arc::ptr_eq(&self.state, &interest.owner.state)
+            || !Arc::ptr_eq(&self.state, &prepared.owner.state)
+        {
+            return Err(refusal(Kind::ForeignDemand));
+        }
+        // Terminal rows can still own queued prerequisite/settlement cleanup.
+        // Only the existing admitted cleanup owner may discharge those claims.
+        self.drain_terminal_cleanup_admitted(owner)?;
+        let mut state = self
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+
+        let record = state
+            .records
+            .get(&interest.key)
+            .ok_or_else(|| refusal(Kind::Closed))?;
+        let DemandState::Failed(denial) = &record.state else {
+            return Err(refusal(Kind::SchedulingDeferred));
+        };
+
+        if denial.kind() != Kind::ProducerDomainDenied
+            || denial.recovery_posture() != crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Terminal
+            || record.product_occurrence != prepared.product_occurrence
+            || !record.source_commits.contains(&prepared.source_commit)
+            || record.interests != 1 || record.required_interests != 1
+            || record.framework_required_count != 0 || record.prepared_prerequisite_claims != 0
+            || record.pending_cleanup_queued || record.held_successor.is_some()
+            || record.successor_of.is_some() || record.performed_source.is_some()
+            || !record.performed_obligations.is_empty() || !record.prerequisites.is_empty()
+            || record.checkpoint_prerequisites.is_some() || !record.settlements.is_empty() {
+            return Err(refusal(Kind::SchedulingDeferred));
+        }
+        let result = denial.clone();
+        let durable = record.readmission_source.clone();
+        let custody = state
+            .source_custody
+            .get_mut(&prepared.source_commit)
+            .ok_or_else(|| refusal(Kind::RetainedBasisUnavailable))?;
+        if custody.retired.is_some()
+            || custody.completed
+            || custody.token_count != 1
+            || custody.occurrence != prepared.product_occurrence
+            || !matches!(
+                custody.root_kind,
+                source_custody::PreparedOutputRootKind::Required(_)
+            )
+            || custody.bound_sources.as_ref().is_none_or(|sources| {
+                sources.len() != 1
+                    || sources[0].identity != interest.key.source
+                    || !custody.consumed_sources.contains(&sources[0].identity)
+            })
+        {
+            return Err(refusal(Kind::ForeignSource));
+        }
+        if let Some(history) = history {
+            if let Some(readmission) = durable {
+                readmission.complete_durable();
+            }
+            history
+                .flush_output_discharges(execution)
+                .map_err(|cause| refusal(Kind::ObligationPublication(cause)))?;
+        }
+        if let (Some(history), Some(owner)) =
+            (history, prepared.source_commit.owner_identity().durable())
+        {
+            history
+                .discharge_output_source(
+                    execution,
+                    worth_foundational::facade::DurableCompositeCommitIdentity::from_recorded(
+                        owner,
+                        prepared.source_commit.ordinal(),
+                    ),
+                )
+                .map_err(|cause| refusal(Kind::ObligationPublication(cause)))?;
+        }
+        // This is terminal unavailability, never a Ready output. No change,
+        // candidate, receipt or output authority is synthesized here.
+        custody.completed = true;
+        let source = custody.source.take();
+        let discovery = custody.discovery.take();
+        drop(state);
+        drop((source, discovery));
+        Ok(result)
+    }
+}
+fn refusal(kind: Kind) -> WorthQueryOutputDemandDenial {
+    WorthQueryOutputDemandDenial::new(
+        kind,
+        "required output has no cleanup-free terminal domain refusal",
+    )
+}
