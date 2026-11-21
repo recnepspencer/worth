@@ -51,7 +51,7 @@ impl<'runtime> DurabilityAuthority<'runtime> {
         // One capture is one stage: every write, hash and copy charges its meter
         // cumulatively, so the request's work ceiling bounds the whole capture.
         let mut answer = None;
-        let handoff = execution.run_native_with_checkpoint(|stage| {
+        let handoff = execution.run_single_stage(|stage| {
             let mut control =
                 crate::durability::log::native_checkpoint_codec::CheckpointEncodingControl::Original {
                     execution: *execution,

@@ -92,7 +92,12 @@ fn close_checkpoint_exhaustion_reports_failure_and_preserves_journal_reopen() {
         .unwrap_or_else(|refused| opening_failed("tiny Host close", &refused));
     match closed.outcome() {
         Close::Closed { checkpoint, .. } => {
-            assert!(checkpoint.is_err(), "failed upkeep remains reported")
+            // The Home's one-unit maintenance allowance stops capture with its
+            // typed work stop; close still completes.
+            assert!(
+                checkpoint_funding::stopped_on_work_ceiling(checkpoint.as_ref().err()),
+                "failed upkeep reports its typed work stop: {checkpoint:?}"
+            )
         }
         Close::CloseRefused { .. } => {
             panic!("checkpoint exhaustion cannot refuse otherwise lawful close")

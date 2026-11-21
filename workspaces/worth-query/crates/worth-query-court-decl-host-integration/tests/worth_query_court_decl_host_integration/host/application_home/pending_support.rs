@@ -27,7 +27,7 @@ pub(crate) fn open(
 pub(crate) fn scope() -> (WorthQueryCancellationSource, WorthQueryRequestScope) {
     let cancellation = WorthQueryCancellationSource::new();
     let scope = WorthQueryRequestScope::new(
-        Some(Instant::now() + Duration::from_secs(60)),
+        None,
         cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     (cancellation, scope)
 }

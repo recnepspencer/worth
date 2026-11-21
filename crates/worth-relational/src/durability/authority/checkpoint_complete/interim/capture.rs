@@ -111,7 +111,7 @@ fn capture_inner(
     let manifest = draft.seal_for_request(request)?;
     drop(branches);
     let members = CapturedCheckpointMembers::capture(
-        &mut request.clone(),
+        request,
         member_map.len(),
         member_map.values().cloned(),
     )?;

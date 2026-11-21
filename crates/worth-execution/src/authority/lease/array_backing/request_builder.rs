@@ -16,8 +16,6 @@ pub struct ExecutionRequestArrayBuilder<'request, 'authority, T> {
     request: ExecutionRequest<'request, 'authority>,
     building: BuildingFixedBacking<T>,
     writes: super::super::fixed_backing::WriteCadence,
-    // Allocated inside the caller's active stage: sealing opens no scope.
-    staged: bool,
 }
 
 impl<'request, 'authority, T> ExecutionRequestArrayBuilder<'request, 'authority, T> {
@@ -58,37 +56,6 @@ impl<'request, 'authority, T> ExecutionRequestArrayBuilder<'request, 'authority,
             request,
             building,
             writes: super::super::fixed_backing::WriteCadence::new::<T>(),
-            staged: false,
-        })
-    }
-
-    /// Allocate inside the caller's active stage of the genuine `request`.
-    /// The payload is admitted once on that stage's memory lineage, before
-    /// allocation; no scope opens. Writes still consult the original request.
-    pub fn allocate_in_stage(
-        request: ExecutionRequest<'request, 'authority>,
-        context: &mut crate::MapKernelContext<'_, '_>,
-        element_count: usize,
-    ) -> Result<Self, ExecutionRequestArrayDenial> {
-        use ExecutionRequestArrayDenial as Denial;
-        context
-            .poll()
-            .map_err(|cause| Denial::Request(WorkCeilingDenial::Stopped(cause)))?;
-        let quote =
-            BuildingFixedBacking::<T>::payload_quote(element_count).map_err(Denial::Allocation)?;
-        let reservation = request
-            .reserve_retained_memory_in_stage(context, quote)
-            .map_err(Denial::Request)?;
-        let status = request
-            .allocation_policy()
-            .status(Some(quote))
-            .map_err(Denial::Allocation)?;
-        Ok(Self {
-            request,
-            building: BuildingFixedBacking::allocate_reserved(element_count, reservation, status)
-                .map_err(Denial::Allocation)?,
-            writes: super::super::fixed_backing::WriteCadence::new::<T>(),
-            staged: true,
         })
     }
 
@@ -165,18 +132,7 @@ impl<'request, 'authority, T> ExecutionRequestArrayBuilder<'request, 'authority,
             request,
             building,
             writes: _,
-            staged,
         } = self;
-        if staged {
-            // The caller's active stage already meters this allocation.
-            request
-                .consult()
-                .map_err(ExecutionRequestArrayDenial::Request)?;
-            return building
-                .seal()
-                .map(ExecutionArray::from_owned)
-                .map_err(ExecutionRequestArrayDenial::Allocation);
-        }
         let (array, _) = request
             .run_native(|_| building.seal().map(ExecutionArray::from_owned))
             .map_err(ExecutionRequestArrayDenial::Request)?;
@@ -205,7 +161,6 @@ impl ExecutionRequestArrayBuilder<'_, '_, u8> {
             request,
             building,
             writes: _,
-            staged: _,
         } = self;
         request.consult().map_err(Denial::Request)?;
         // Sealing only moves the already admitted exact backing. Its new Arc

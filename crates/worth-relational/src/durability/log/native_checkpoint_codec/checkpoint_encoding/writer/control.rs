@@ -26,26 +26,7 @@ pub(crate) enum CheckpointEncodingControl<'stage, 'scope, 'lease, 'request, 'aut
     Policy(ExecutionAllocationPolicy<'request, 'authority>),
 }
 
-impl<'scope, 'lease, 'request, 'authority>
-    CheckpointEncodingControl<'_, 'scope, 'lease, 'request, 'authority>
-{
-    /// The capture's own stage as a meter for shared capture helpers.
-    pub(crate) fn stage_meter(
-        &mut self,
-    ) -> Option<
-        crate::durability::capture_meter::StageMeter<'_, 'scope, 'lease, 'request, 'authority>,
-    > {
-        match self {
-            Self::Original { execution, stage } => {
-                Some(crate::durability::capture_meter::StageMeter {
-                    execution: *execution,
-                    stage,
-                })
-            }
-            #[cfg(test)]
-            Self::Policy(_) => None,
-        }
-    }
+impl CheckpointEncodingControl<'_, '_, '_, '_, '_> {
     pub(crate) fn checkpoint(&mut self, work: u64) -> Result<(), Denial> {
         match self {
             Self::Original { stage, .. } => {

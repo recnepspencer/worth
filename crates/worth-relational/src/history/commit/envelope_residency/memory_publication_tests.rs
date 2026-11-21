@@ -331,6 +331,10 @@ fn memory_frame_quota_and_cancel_refuse_before_position_or_head() {
 // The prior concrete layouts, preserving actual field types and variant order.
 enum OldBacking {
     Memory(Arc<CanonicalCommitEnvelope>),
+    #[expect(
+        dead_code,
+        reason = "never built here; it gives the prior layout its actual size"
+    )]
     Journal {
         entry: Arc<RelationalCommitIndexEntry>,
         source: Arc<dyn RelationalDurableColdSource>,

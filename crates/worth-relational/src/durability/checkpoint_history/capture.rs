@@ -1,21 +1,21 @@
 //! Freeze complete original canonical bytes into singleton members.
 use super::inventory::{CanonicalCheckpointMember, CanonicalCheckpointMembers};
-use crate::durability::capture_meter::CaptureMeter;
 use crate::durability::{
     data::*,
     log::native_checkpoint_codec::CapturedManifest,
     medium::{RelationalDurableOwnedReadRefusal as Refusal, RelationalDurableReadProtection},
 };
-pub(crate) fn capture<'request, 'authority: 'request>(
+use worth_execution::ExecutionRequest;
+pub(crate) fn capture(
     captured: &mut CapturedManifest,
-    meter: &mut impl CaptureMeter<'request, 'authority>,
+    request: &ExecutionRequest<'_, '_>,
 ) -> Result<(), RelationalNativeCheckpointCaptureDenial> {
-    let request = &meter.request();
     let count = captured.manifest.commits.len();
-    let memory = CanonicalCheckpointMembers::reserve(count, meter)
+    let memory = CanonicalCheckpointMembers::reserve(count, request)
         .map_err(RelationalNativeCheckpointCaptureDenial::Request)?;
     let mut rows = Vec::with_capacity(count);
-    let mut payloads = meter.array(count).map_err(array_capture_stop)?;
+    let mut payloads = worth_execution::ExecutionRequestArrayBuilder::allocate(*request, count)
+        .map_err(array_capture_stop)?;
     // A prior standalone Inline directory has no journal prefix. Select the
     // actual Journal issuer from its cells, independently of selected members.
     let source = captured
@@ -35,8 +35,7 @@ pub(crate) fn capture<'request, 'authority: 'request>(
             ))
         })?;
     for (ordinal, entry) in captured.manifest.commits.iter().enumerate() {
-        meter
-            .boundary()
+        crate::execution::check_request(request)
             .map_err(RelationalNativeCheckpointCaptureDenial::Request)?;
         if entry.position.0 != ordinal as u64 + 1 {
             return Err(corrupt("original canonical prefix is incomplete").into());
@@ -55,8 +54,11 @@ pub(crate) fn capture<'request, 'authority: 'request>(
             return Err(corrupt("original canonical artifact differs from captured index").into());
         }
         let bytes = artifact.into_bytes();
-        let member = meter
-            .locator(bytes.bytes())
+        let member =
+            crate::durability::log::native_checkpoint_codec::member_frame::locator_for_request(
+                request,
+                bytes.bytes(),
+            )
             .map_err(RelationalNativeCheckpointCaptureDenial::Request)?;
         rows.push(CanonicalCheckpointMember {
             position: entry.position,
@@ -70,14 +72,19 @@ pub(crate) fn capture<'request, 'authority: 'request>(
             .map_err(array_capture_stop)?;
     }
     captured.manifest.canonical_members = CanonicalCheckpointMembers::from_reserved(rows, memory);
-    super::inventory::validate(&captured.manifest, meter).map_err(capture_stop)?;
+    super::inventory::validate(&captured.manifest, request).map_err(capture_stop)?;
     captured.canonical_payloads = Some(payloads.seal().map_err(array_capture_stop)?);
-    captured.canonical_publication =
-        Some(super::publication::CanonicalCheckpointPublication::capture(
-            &captured.manifest,
-            &captured.envelope_cells,
-            meter,
-        )?);
+    // A capture without commits has no canonical placement to publish, so it
+    // retains no publication, as its empty member inventory retains nothing.
+    captured.canonical_publication = (count > 0)
+        .then(|| {
+            super::publication::CanonicalCheckpointPublication::capture(
+                &captured.manifest,
+                &captured.envelope_cells,
+                request,
+            )
+        })
+        .transpose()?;
     Ok(())
 }
 fn corrupt(detail: &str) -> DurabilityError {

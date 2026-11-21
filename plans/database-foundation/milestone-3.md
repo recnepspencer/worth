@@ -1941,7 +1941,9 @@ The following original claims move under Delivery tracks; mixed courts retain th
   `crates/worth-relational/src/content/schema/retention_tests.rs`,
   `crates/worth-relational/src/storage/substrate/digest_index/funding_tests.rs`,
   `crates/worth-relational/src/storage/substrate/record_arena/values/tests/historical_selection_funding.rs`,
-  `crates/worth-relational/src/storage/substrate/record_arena/values/tests/optional_output_funding.rs`.
+  `crates/worth-relational/src/storage/substrate/record_arena/values/tests/optional_output_funding.rs`;
+  and, under the same ruling, the Query handler-key custody split
+  `workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/invariant_projection/operation_reader/decision_reads/expected_keys/historical_retention_tests.rs`.
 - **C2 source-unit claim closures**: `controlled_field_lowering_refuses_before_copy_and_preserves_typed_causes` (its finite lowerer/readmitter phase-admission block) and `controlled_field_lowering_releases_scratch_before_retaining_small_patch` (all private exact/backing/peak assertions), `restore from 73ce80ebfc:crates/worth-relational/src/authority/mutation/intents/field_authoring_candidate/tests.rs`; restore the same-SHA `tests/storage_footprint.rs` and `tests/fixture.rs`. Original winner, typed cancellation/zero-memory refusal, scalar/struct content and portable wire-copy assertions remain in their semantic unit courts.
 - **C2** `cleared_entity_and_relation_extras_keep_only_their_fixed_original_bills`: `restore from 73ce80ebfc:crates/worth-relational/src/storage/substrate/record_arena/values/tests/optional_output_funding.rs`, with its same-SHA parent fixtures. This is the exact private EntityExtra/RelationExtra bill and last-drop campaign. The independent optional reconstruction semantics remain in their own unit court with a lawful optional contract.
 
