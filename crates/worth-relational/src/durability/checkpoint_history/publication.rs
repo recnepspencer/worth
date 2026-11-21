@@ -9,8 +9,7 @@ use crate::history::{
 };
 use std::{alloc::Layout, sync::Arc};
 use worth_execution::{
-    ExecutionArray, ExecutionMemoryReservation, ExecutionRequest, ExecutionRequestArrayBuilder,
-    MapKernelContext,
+    ExecutionArray, ExecutionMemoryReservation, ExecutionRequest, MapKernelContext,
 };
 #[derive(Debug)]
 struct CapturedCell {
@@ -25,14 +24,15 @@ struct Backing {
 #[derive(Clone, Debug)]
 pub(crate) struct CanonicalCheckpointPublication(Arc<Backing>);
 impl CanonicalCheckpointPublication {
-    pub(crate) fn capture(
+    pub(crate) fn capture<'request, 'authority: 'request>(
         manifest: &RelationalCheckpointManifestDraft,
         cells: &worth_execution::ExecutionOrderedMap<
             crate::publication::patch::data::PatchStreamPosition,
             Arc<RelationalCommitEnvelopeResidency>,
         >,
-        request: &ExecutionRequest<'_, '_>,
+        meter: &mut impl crate::durability::capture_meter::CaptureMeter<'request, 'authority>,
     ) -> Result<Self, Capture> {
+        let request = &meter.request();
         let bytes = Layout::new::<(usize, usize)>()
             .extend(Layout::new::<Backing>())
             .map_err(|_| {
@@ -41,10 +41,9 @@ impl CanonicalCheckpointPublication {
             .0
             .pad_to_align()
             .size();
-        let memory = request
-            .reserve_retained_memory(bytes as u64)
-            .map_err(|cause| Capture::Request(cause.into()))?;
-        let mut rows = ExecutionRequestArrayBuilder::allocate(*request, manifest.commits.len())
+        let memory = meter.reserve(bytes as u64).map_err(Capture::Request)?;
+        let mut rows = meter
+            .array(manifest.commits.len())
             .map_err(super::capture::array_capture_stop)?;
         for original in &manifest.commits {
             let cell = cells.get(&original.position).ok_or_else(|| {

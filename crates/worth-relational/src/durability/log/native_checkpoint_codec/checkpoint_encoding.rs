@@ -54,7 +54,7 @@ pub(crate) fn encode_checkpoint_members(
     let memory =
         crate::durability::checkpoint_history::inventory::CanonicalCheckpointMembers::reserve(
             checkpoint.envelopes.len(),
-            execution,
+            &mut execution.clone(),
         )
         .map_err(RelationalNativeCheckpointCaptureDenial::Request)?;
     let mut rows = Vec::with_capacity(checkpoint.envelopes.len());
@@ -170,14 +170,20 @@ pub(crate) fn encode_captured(
     let count = ordinary_members
         .checked_add(canonical.as_ref().map_or(0, |rows| rows.len()))
         .ok_or_else(|| writer::frame_mismatch("captured member list overflow"))?;
-    let members = crate::durability::data::CapturedCheckpointMembers::capture(
-        execution,
-        count,
-        captured
-            .members
-            .into_values()
-            .chain(canonical.into_iter().flat_map(IntoIterator::into_iter)),
-    )?;
+    let entries = captured
+        .members
+        .into_values()
+        .chain(canonical.into_iter().flat_map(IntoIterator::into_iter));
+    let members = match control.stage_meter() {
+        Some(mut stage) => {
+            crate::durability::data::CapturedCheckpointMembers::capture(&mut stage, count, entries)?
+        }
+        None => crate::durability::data::CapturedCheckpointMembers::capture(
+            &mut execution.clone(),
+            count,
+            entries,
+        )?,
+    };
     let borrowed_count = if embedded { count } else { 0 };
     let borrowed_bytes = std::alloc::Layout::array::<(
         crate::durability::medium::RelationalDurableMemberLocator,
@@ -185,9 +191,7 @@ pub(crate) fn encode_captured(
     )>(borrowed_count)
     .map_err(|_| writer::frame_mismatch("borrowed member table size overflow"))?
     .size();
-    let _wire_memory = execution
-        .reserve_retained_memory(borrowed_bytes as u64)
-        .map_err(|cause| RelationalNativeCheckpointCaptureDenial::Request(cause.into()))?;
+    let _wire_memory = control.reserve_read(borrowed_bytes as u64)?;
     let mut inline = Vec::with_capacity(borrowed_count);
     if embedded {
         for member in members.entries() {

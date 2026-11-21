@@ -52,20 +52,21 @@ impl CanonicalCheckpointMembers {
         )
         .ok()
     }
-    pub(crate) fn reserve(
+    pub(crate) fn reserve<'request, 'authority: 'request>(
         count: usize,
-        request: &ExecutionRequest<'_, '_>,
+        meter: &mut impl crate::durability::capture_meter::CaptureMeter<'request, 'authority>,
     ) -> Result<Option<ExecutionMemoryReservation>, crate::execution::RelationalExecutionDenialCause>
     {
         if count == 0 {
-            request
+            meter
+                .request()
                 .check_live()
                 .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
             return Ok(None);
         }
         let size = Self::allocation_bytes(count)
             .ok_or(crate::execution::RelationalExecutionDenialCause::MemoryOverflow)?;
-        request.reserve_retained_memory(size).map_err(Into::into)
+        meter.reserve(size)
     }
     pub(crate) fn from_reserved(
         entries: Vec<CanonicalCheckpointMember>,
@@ -138,9 +139,9 @@ impl<'de> Deserialize<'de> for CanonicalCheckpointMembers {
     }
 }
 
-pub(crate) fn validate(
+pub(crate) fn validate<'request, 'authority: 'request>(
     manifest: &crate::durability::data::RelationalCheckpointManifestDraft,
-    request: &ExecutionRequest<'_, '_>,
+    meter: &mut impl crate::durability::capture_meter::CaptureMeter<'request, 'authority>,
 ) -> Result<(), crate::durability::data::RelationalRecoveryStop> {
     use crate::durability::data::{DurabilityError, RecoveryFailureClass, RelationalRecoveryStop};
     let malformed = || {
@@ -155,14 +156,12 @@ pub(crate) fn validate(
     }
     let scratch = std::alloc::Layout::array::<RelationalDurableMemberLocator>(rows.len())
         .map_err(|_| malformed())?;
-    let _memory = request
-        .reserve_retained_memory(scratch.size() as u64)
-        .map_err(|cause| RelationalRecoveryStop::Request(cause.into()))?;
+    let _memory = meter
+        .reserve(scratch.size() as u64)
+        .map_err(RelationalRecoveryStop::Request)?;
     let mut members = Vec::with_capacity(rows.len());
     for (ordinal, (row, entry)) in rows.iter().zip(&manifest.commits).enumerate() {
-        request
-            .consult()
-            .map_err(|cause| RelationalRecoveryStop::Request(cause.into()))?;
+        meter.boundary().map_err(RelationalRecoveryStop::Request)?;
         if row.position != entry.position
             || row.position.0 != ordinal as u64 + 1
             || row.member.length < 66
@@ -250,7 +249,8 @@ pub(crate) fn prepare_decode(
             "canonical member inventory is required",
         )
     })?;
-    CanonicalCheckpointMembers::reserve(count, request).map_err(RelationalRecoveryStop::Request)
+    CanonicalCheckpointMembers::reserve(count, &mut request.clone())
+        .map_err(RelationalRecoveryStop::Request)
 }
 
 #[cfg(test)]

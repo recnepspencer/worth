@@ -129,7 +129,10 @@ fn generations(image: &CompleteRelationalNativeCheckpoint) -> Vec<Vec<u8>> {
             RelationalCheckpointMember::Carried { .. } => None,
         })
         .expect("the actual Complete contains its derived-index member");
-    let state = crate::messagepack_value_spans::sequence(payload)[0];
+    // The member is (full-cache slot, checkpoint payload, format). The Complete
+    // writer keeps the full-cache slot empty and carries generations in the
+    // checkpoint payload (checkpoint_complete/metadata/indexes.rs).
+    let state = crate::messagepack_value_spans::sequence(payload)[1];
     let generations = crate::messagepack_value_spans::field(state, "generations");
     crate::messagepack_value_spans::sequence(generations)
         .into_iter()

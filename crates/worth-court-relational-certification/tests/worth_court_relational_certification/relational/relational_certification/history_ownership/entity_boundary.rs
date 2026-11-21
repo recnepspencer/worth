@@ -124,6 +124,21 @@ fn entity_boundary_refuses_wrong_model_kind_and_original_request_limits() {
         .runtime
         .observe_branch(&graph.runtime.main_branch_identity())
         .unwrap();
+    // Cold regions this boundary reads stay resident and funded by the request
+    // that materialized them; warm them first so the meter sees only the
+    // boundary's own backing.
+    drop(
+        graph
+            .runtime
+            .prepare_owned_model_entity_boundary(
+                execution,
+                &basis,
+                &basis,
+                &ownership(),
+                graph.model,
+            )
+            .unwrap(),
+    );
     let memory = SerialMemoryBudget::new(None);
     let metered = SerialRequest::from_memory(memory.clone(), CancellationToken::new(), None);
     let boundary = graph

@@ -21,6 +21,20 @@ fn graph_relation_preparation_retains_its_funding_and_cannot_reset_the_entity_me
             .unwrap(),
         Some(graph.model)
     );
+    // Warm the relation material too, so the meter sees only result backing.
+    drop(
+        graph
+            .runtime
+            .prepare_owned_model_graph_selection(
+                execution,
+                &basis,
+                &basis,
+                &ownership(),
+                &ownership(),
+                graph.model,
+            )
+            .unwrap(),
+    );
     let memory = SerialMemoryBudget::new(None);
     let metered = SerialRequest::from_memory(memory.clone(), CancellationToken::new(), None);
     let request = &ExecutionRequest::serial(&metered);
