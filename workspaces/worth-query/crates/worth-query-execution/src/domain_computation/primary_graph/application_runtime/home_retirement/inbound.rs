@@ -28,6 +28,6 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 .retain_canonical_inbound_terminal(terminal, protection)
                 .map_err(|_| Denial::Busy(Owner::PublicationReceipts))?;
         }
-        custody.preflight_home_retirement(request)
+        custody.preflight_home_retirement(request).map_err(Into::into)
     }
 }

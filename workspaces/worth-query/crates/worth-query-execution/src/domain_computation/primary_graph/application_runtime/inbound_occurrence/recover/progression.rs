@@ -1,5 +1,6 @@
 //! Named progression across the exact retained recovery states.
 use super::*;
+use crate::domain_computation::primary_graph::application_runtime::inbound_publication::recovered::RecordedCompletionContinuationAdvanceExt as _;
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub(super) fn continue_inbound_recovery_state(
         &self,

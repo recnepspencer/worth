@@ -15,28 +15,11 @@ use crate::domain_computation::primary_graph::workflow::proposal::derive_workflo
 use crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
-#[must_use = "prepared workflow proposal owns a live application attempt"]
-pub struct PreparedWorkflowProposal<Schema, Operation, Input, Scope> {
-    pub(super) program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
-    pub(super) program_revision: ApplicationProgramRevision,
-    pub(super) transition_identity_locator: AspectFieldLocator,
-    pub(super) proposal_identity_locator: AspectFieldLocator,
-    pub(super) proposal_node_path_locator: AspectFieldLocator,
-    pub(super) proposal_context_identity: [u8; 32],
-    pub(super) instance: PublishedWorkflowInstanceRef,
-    pub(super) operation: String,
-    pub(super) input_type: String,
-    pub(super) input_identity: [u8; 32],
-    pub(super) source_identity: Option<[u8; 32]>,
-    pub(super) captured_identity: Option<[u8; 32]>,
-    pub(super) progress_update: Option<
-        crate::domain_computation::primary_graph::workflow::instance::PreparedWorkflowProgressUpdate,
-    >,
-}
+pub use worth_query_execution_attempt::facade::domain_computation::primary_graph::application_attempt::workflow_proposal_program::PreparedWorkflowProposal;
 
-mod reference;
+pub(crate) use worth_query_execution_attempt::facade::domain_computation::primary_graph::application_attempt::workflow_proposal_program::publication::reference;
 pub use reference::PublishedWorkflowProposalRef;
-mod read_only;
+pub(crate) use worth_query_execution_attempt::facade::domain_computation::primary_graph::application_attempt::workflow_proposal_program::publication::read_only;
 pub(in crate::domain_computation::primary_graph) use read_only::observe as observe_read_only_proposal;
 /// A workflow proposal that landed: the proposal, the transition it opened, its commit
 /// receipt from this actual publication.
@@ -254,7 +237,7 @@ fn project(
     else {
         return WorkflowProposalOutcome::ProjectionDenied(receipt);
     };
-    let published = PublishedWorkflowProposalRef {
+    let published = PublishedWorkflowProposalRef::from_attempt_parts(worth_query_execution_attempt::facade::ports::WorthQueryAttemptCrateSeal::new(), worth_query_execution_attempt::facade::domain_computation::primary_graph::application_attempt::workflow_proposal_program::publication::reference::PublishedWorkflowProposalRefAttemptParts {
         branch: receipt.product_branch(),
         entity: proposal,
         instance: context.instance.entity_id(),
@@ -265,7 +248,7 @@ fn project(
         input_identity: context.input_identity,
         source_identity: context.source_identity,
         node_path: node_path.into(),
-    };
+    });
     WorkflowProposalOutcome::Published(PerformedWorkflowProposal {
         proposal: published,
         transition,
@@ -334,11 +317,3 @@ fn unique_created_text_pair(
     Some(candidate.clone())
 }
 
-impl<Schema, Operation, Input, Scope> PreparedWorkflowProposal<Schema, Operation, Input, Scope> {
-    /// Controls retained as facts; each host call obtains fresh execution admission.
-    pub fn request_scope(
-        &self,
-    ) -> &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope {
-        self.program.request_scope()
-    }
-}

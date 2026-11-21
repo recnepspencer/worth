@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::application_attempt::effect_program::candidate_planning::EffectProgramCandidatePlanningExt as _;
 use super::*;
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {

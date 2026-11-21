@@ -8,7 +8,7 @@ use crate::domain_computation::authorization::{
     WorthQueryOperationAuthorizationDenial, WorthQueryRetainedCapabilityAuthorization,
 };
 
-mod admitted_access;
+pub(crate) mod admitted_access;
 mod currentness;
 pub(crate) mod request_resolution;
 

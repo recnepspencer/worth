@@ -1,4 +1,5 @@
 //! Confirm a prepared result without reacquiring an already borrowed Native owner.
+use crate::domain_computation::primary_graph::product_operation::current_read::CurrentReadControlRuntimeExt as _;
 use super::*;
 use crate::domain_computation::primary_graph::product_operation::document_history::{
     authority_lifetime::HistoryAuthorityTryStop,

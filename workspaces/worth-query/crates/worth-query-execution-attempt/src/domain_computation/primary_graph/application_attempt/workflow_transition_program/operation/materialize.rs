@@ -1,0 +1,279 @@
+use super::*;
+use super::evidence::WorkflowOperationEvidence;
+
+impl<Schema, Operation, Input, Scope>
+    WorthQueryCompleteApplicationReadSet<
+        Schema,
+        Operation,
+        Input,
+        Scope,
+        WorthQueryProjectedApplicationMutation,
+    >
+where
+    Schema: ApplicationSchema,
+    Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
+{
+    #[allow(clippy::too_many_arguments)]
+    pub fn materialize_operation_requirement(
+        mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        layout: &crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout,
+        compiled: &CompiledWorkflowDefinition,
+        instance: crate::domain_computation::primary_graph::PublishedWorkflowInstanceRef,
+        selected: crate::domain_computation::primary_graph::workflow::instance::SelectedWorkflowTransition,
+        live_membership: worth_relational::facade::identity::RelationId,
+        retire_live_membership: bool,
+        mut facts: Vec<WorthQueryApplicationObservedFact>,
+        mut authority_facts: Vec<WorthQueryApplicationObservedFact>,
+        progress: &WorkflowInstanceProgress,
+        operation: crate::domain_computation::primary_graph::workflow::instance::SelectedWorkflowOperation,
+        allowance: crate::domain_computation::primary_graph::application_attempt::WorkflowStepAllowance,
+    ) -> Result<
+        PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
+        WorthQueryApplicationAttemptDenial,
+    > {
+        let handoff_start = facts.len();
+        let captured_profile = compiled
+            .captured_operation_input_sources(selected.node())
+            .next()
+            .is_some();
+        let mut sources = compiled
+            .operation_input_sources(selected.node())
+            .chain(compiled.captured_operation_input_sources(selected.node()));
+        let source = sources
+            .next()
+            .ok_or_else(|| mismatch(selected.node_path()))?;
+        if sources.next().is_some() {
+            return Err(mismatch(selected.node_path()));
+        }
+        let CompiledWorkflowNodeKind::Operation {
+            operation: source_operation,
+            input_type: source_input_type,
+            ..
+        } = source.kind()
+        else {
+            return Err(mismatch(selected.node_path()));
+        };
+        if !captured_profile && source_input_type != &operation.input_type {
+            return Err(mismatch(selected.node_path()));
+        }
+        let source_transition = progress
+            .latest_transition(source.entity())
+            .ok_or_else(|| mismatch(selected.node_path()))?;
+        let source_settlement = self.lease.handle().with_runtime(execution, |runtime| {
+            observe_retained_transition(
+                execution,
+                runtime,
+                self.lease.snapshot(),
+                layout,
+                source_transition,
+                &mut facts,
+            )
+        })?;
+        let source_identity = progress
+            .latest_transition_identity(source.entity())
+            .ok_or_else(|| mismatch(selected.node_path()))?;
+        if source_settlement.occurrence() != source_transition.settlement().occurrence() {
+            return Err(mismatch(selected.node_path()));
+        }
+        check_request_live(self.admission.publication_request(), selected.node_path())?;
+        let input_request = self.admission.publication_request();
+        let mut input_observation = self.lease.handle().with_runtime(execution, |runtime| {
+            observe_workflow_operation_input(
+                execution,
+                runtime,
+                self.lease.snapshot(),
+                layout,
+                source_transition.entity(),
+                source_identity,
+                source_operation,
+                source_input_type,
+                source.path(),
+                input_request,
+            )
+        })?;
+        let captured_contract = if captured_profile {
+            if input_observation.captured_identity.is_none() {
+                return Err(mismatch(selected.node_path()));
+            }
+            let support = progress
+                .captured_input_support(source_transition)
+                .ok_or_else(|| mismatch("captured workflow input support is unavailable"))?;
+            let expected = support
+                .target(
+                    &input_observation.proposal_identity,
+                    input_observation
+                        .captured_identity
+                        .expect("checked captured profile"),
+                    input_observation
+                        .captured_count
+                        .ok_or_else(|| mismatch("captured input count is unavailable"))?,
+                    selected.node_path(),
+                )
+                .ok_or_else(|| mismatch("captured workflow input support changed"))?;
+            let contract = self.lease.handle().with_runtime(execution, |runtime| {
+                crate::domain_computation::primary_graph::workflow::proposal::observe_captured_workflow_input(
+                    execution, runtime, self.lease.snapshot(), layout, input_observation.proposal,
+                    &input_observation.proposal_identity, selected.node_path(), self.admission.scope_entity_id(),
+                    &mut input_observation.facts,
+                )
+            })?;
+            if &contract != expected
+                || Some(contract.binding.as_str()) != operation.binding.as_deref()
+                || contract.input_type != operation.input_type
+            {
+                return Err(mismatch(selected.node_path()));
+            }
+            Some(contract)
+        } else {
+            None
+        };
+        let input_identity = captured_contract
+            .as_ref()
+            .map_or(input_observation.input_identity, |c| c.input);
+        facts.append(&mut input_observation.facts);
+        // An external operation records its custody on the instance; the
+        // reading it replaces travels with the operation's authority. This
+        // advance cannot see the operation's own external posture, so the
+        // reading is pinned for every operation; only an external commit
+        // ever writes the field, so a local operation is never staled by it.
+        let (_, custody) = self.lease.handle().with_runtime(execution, |runtime| {
+            instance_binding::owner_custody(
+                execution,
+                runtime,
+                self.lease.snapshot(),
+                layout,
+                instance.entity_id(),
+            )
+        })?;
+        facts.push(custody);
+        check_request_live(
+            self.admission.publication_request(),
+            self.admission.operation(),
+        )?;
+        let evidence = self.resolve_operation_evidence(
+            execution, compiled, layout, &instance, &selected, progress, &operation, &mut facts,
+        )?;
+        check_request_live(
+            self.admission.publication_request(),
+            self.admission.operation(),
+        )?;
+        let parent_instance = self.lease.handle().with_runtime(execution, |runtime| {
+            crate::domain_computation::primary_graph::application_attempt::workflow_instance_observation::original_parent(
+                execution,
+                runtime,
+                self.lease.snapshot(),
+                layout,
+                source_transition.entity(),
+                &mut facts,
+            )
+        })?;
+        let original_approval = compiled
+            .approval_authority_sources(selected.node())
+            .next()
+            .and_then(|source| progress.latest_transition(source.entity()));
+        let approval_parent = original_approval
+            .map(|approval| {
+                self.lease.handle().with_runtime(execution, |runtime| {
+                    crate::domain_computation::primary_graph::application_attempt::workflow_instance_observation::original_parent(
+                        execution,
+                        runtime,
+                        self.lease.snapshot(),
+                        layout,
+                        approval.entity(),
+                        &mut facts,
+                    )
+                })
+            })
+            .transpose()?;
+        let original_sources = super::super::actor_context::OriginalActorSources {
+            proposal_input_identity: input_observation.input_identity,
+            parent_instance,
+            proposal: input_observation.proposal,
+            proposal_identity: input_observation.proposal_identity,
+            transition: source_transition,
+            transition_identity: source_identity.to_owned(),
+            approval_parent,
+            approval: original_approval,
+        };
+        authority_facts.extend_from_slice(&facts[handoff_start..]);
+        self.append_completed_facts(
+            facts,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )?;
+        let subject = self.admission.scope_entity_id();
+        let branch = self.lease.product().product_branch();
+        let binding = operation
+            .binding
+            .clone()
+            .ok_or_else(|| mismatch(selected.node_path()))?;
+        let runtime_authority = self.admission.runtime_authority().as_u64();
+        let session_identity = self.admission.graph_work_session_identity();
+        let observation = crate::basis::WorthQueryProductBranchReadIdentity::from_observation(
+            self.lease.product().observation(),
+        );
+        let handle = self.lease.handle().clone();
+        let graph_layout = std::sync::Arc::clone(&self.lease.layout);
+        let deadline = self.workflow_deadline;
+        let admitted =
+            crate::domain_computation::primary_graph::workflow::instance::admit_workflow_transition(
+                self,
+                selected,
+                instance.entity_id(),
+                subject,
+                live_membership,
+                retire_live_membership,
+                allowance,
+            );
+        let authority = match evidence {
+            WorkflowOperationEvidence::Satisfied(approval_authority) => Some(
+                WorkflowOperationAuthority::new(
+                    operation.operation.clone(),
+                    binding,
+                    *admitted.identity_bytes(),
+                    input_identity,
+                    runtime_authority,
+                    session_identity,
+                    observation,
+                    authority_facts,
+                    admitted.operation_settlement_basis(),
+                    layout.clone(),
+                    approval_authority,
+                    operation.workflow_execution_requirements.clone(),
+                    handle,
+                    graph_layout,
+                )
+                .with_deadline(deadline),
+            ),
+            WorkflowOperationEvidence::Unavailable => None,
+        };
+        let authority = authority.map(|mut authority| {
+            authority.captured_input = captured_contract.clone();
+            authority
+        });
+        let mut required = RequiredWorkflowOperation::from_selected(
+            branch,
+            runtime_authority,
+            *compiled.program_revision(),
+            instance.clone(),
+            Some(original_sources),
+            admitted.node_path().to_owned(),
+            admitted.identity().to_owned(),
+            *admitted.identity_bytes(),
+            admitted.occurrence(),
+            operation,
+            input_identity,
+            authority,
+        );
+        required.captured_input = captured_contract;
+        Ok(PreparedWorkflowAdvance::AwaitingOperation(
+            PreparedWorkflowOperation {
+                admitted,
+                required,
+                layout: layout.clone(),
+                program_revision: *compiled.program_revision(),
+                replays: Default::default(),
+            },
+        ))
+    }
+}

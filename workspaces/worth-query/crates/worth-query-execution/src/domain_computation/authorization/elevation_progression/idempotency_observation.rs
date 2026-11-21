@@ -1,4 +1,5 @@
 //! Fresh lifecycle disclosure may observe a key without minting a stage owner.
+use crate::domain_computation::authorization::operation_admission::capability_admission::preparation::observation::admitted_access::AdmittedCapabilityAccessRuntimeExt as _;
 use super::operation_role::installed_lifecycle_owner;
 use crate::domain_computation::authorization::{
     operation_progression::{

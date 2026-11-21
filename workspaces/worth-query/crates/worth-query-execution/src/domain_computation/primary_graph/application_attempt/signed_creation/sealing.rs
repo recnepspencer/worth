@@ -21,29 +21,8 @@ use worth_query_declaration::facade::{
 
 pub type BodyCandidate<Schema, Binding> = WorthQueryApplicationEffectProgram<Schema, <Binding as ApplicationMutationBinding<Schema>>::Operation, <Binding as ApplicationMutationBinding<Schema>>::Input, <<Binding as ApplicationMutationBinding<Schema>>::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Scope>;
 
-#[derive(Debug)]
 /// Why the native owner could not seal a signed creation at its retained occurrence.
-pub enum WorthQuerySignedCreationPreparationDenial {
-    Execution(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial),
-    Commit(WorthQueryApplicationCommitDenial),
-    LifecycleObservation(Box<super::super::WorthQueryApplicationCommitOutcome>),
-    Attempt(WorthQueryApplicationAttemptDenial),
-    Authentication(WorthQueryAuthenticationEventDenial),
-    OwnerUnavailable,
-    CandidateMismatch,
-    RepresentationCapacity,
-    Canonicalization,
-    CanonicalBasis(worth_foundational::facade::CanonicalBasisConstructionDenial),
-    CanonicalDigest(worth_foundational::facade::CanonicalDigestDerivationDenial),
-    CanonicalAccountingOverflow,
-    CanonicalAllocationUnavailable,
-}
-impl std::fmt::Display for WorthQuerySignedCreationPreparationDenial {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "signed creation preparation denied: {self:?}")
-    }
-}
-impl std::error::Error for WorthQuerySignedCreationPreparationDenial {}
+pub use worth_query_execution_attempt::facade::domain_computation::primary_graph::application_attempt::signed_creation::WorthQuerySignedCreationPreparationDenial;
 type Denial = WorthQuerySignedCreationPreparationDenial;
 
 pub(in crate::domain_computation::primary_graph) fn seal<

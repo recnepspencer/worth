@@ -11,28 +11,6 @@ use crate::domain_computation::primary_graph::{
 };
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 
-impl<Schema, Operation, Input, Scope>
-    WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>
-{
-    #[inline]
-    pub(in crate::domain_computation::primary_graph) fn validate_current_authority(
-        &self,
-    ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
-        self.read_set.admission.validate_current_authority()
-    }
-    #[inline]
-    pub(in crate::domain_computation::primary_graph) fn validate_installed_entry(
-        &self,
-        runtime: &WorthQueryApplicationRuntimeCore,
-        binding: &ApplicationSchemaBindingIdentity,
-    ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
-        self.read_set.admission.validate_installed_entry(
-            runtime.authority_identity(),
-            binding,
-            &runtime.installed_operations,
-        )
-    }
-}
 
 /// Opaque entry refusal. Its causes cannot contain a landed receipt or cleanup
 /// outcome; only real entry validation and advancement construct this value.
@@ -152,4 +130,28 @@ fn current_authority_outcome(
     )
 }
 
-mod court_doors_for_test;
+
+pub(in crate::domain_computation::primary_graph) trait EffectProgramInstalledEntryExt {
+    fn validate_installed_entry(
+        &self,
+        runtime: &WorthQueryApplicationRuntimeCore,
+        binding: &ApplicationSchemaBindingIdentity,
+    ) -> Result<(), WorthQueryOperationAuthorizationDenial>;
+}
+
+impl<Schema, Operation, Input, Scope> EffectProgramInstalledEntryExt
+    for WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>
+{
+    #[inline]
+    fn validate_installed_entry(
+        &self,
+        runtime: &WorthQueryApplicationRuntimeCore,
+        binding: &ApplicationSchemaBindingIdentity,
+    ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
+        self.read_set.admission.validate_installed_entry(
+            runtime.authority_identity(),
+            binding,
+            runtime.installed_operations(),
+        )
+    }
+}

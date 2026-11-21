@@ -1,7 +1,8 @@
 //! Unit-only layout evidence; constructs no runtime, proof or authority.
 
 pub(crate) fn collect(census: &mut crate::inline_type_sizes::Census) {
-    super::application_attempt::inline_type_budget::collect(census);
+    super::application_attempt::idempotency_resolution::inline_type_budget::collect(census);
+    super::application_attempt::provider_execution::phase::inline_type_budget::collect(census);
     super::application_contribution::inline_type_budget::collect(census);
     super::application_entry::inline_type_budget::collect(census);
     super::application_installation::inline_type_budget::collect(census);

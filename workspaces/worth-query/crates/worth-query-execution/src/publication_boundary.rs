@@ -25,11 +25,17 @@ pub struct WorthQueryProgramPublicationAccess {
     _private: (),
 }
 
+impl worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccessPort
+    for WorthQueryProgramPublicationAccess
+{
+}
+
 pub fn program_publication_access() -> WorthQueryProgramPublicationAccess {
     WorthQueryProgramPublicationAccess { _private: () }
 }
 
 pub use worth_query_execution_lineage::facade::primary_graph::application_attempt::compare_and_commit::commit_outcome::denial::advancement::WorthQueryAdvancementDenialCommitExt;
+pub use crate::domain_computation::primary_graph::application_contribution::producer::synchronous_outputs::capture::EffectProgramSynchronousOutputsExt;
 
 pub mod original_read_outputs {
     pub use crate::domain_computation::primary_graph::application_query::observed_source::capture_original_operation_source;

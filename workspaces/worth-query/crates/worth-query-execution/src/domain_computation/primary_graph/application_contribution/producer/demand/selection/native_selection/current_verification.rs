@@ -100,7 +100,7 @@ where
     Ok::<_, WorthQueryOutputDemandDenial>(current)
 }
 
-mod applied;
+pub(crate) mod applied;
 pub(in crate::domain_computation::primary_graph) use applied::VerifiedAppliedParent;
 fn source_identity_matches(
     candidate: &WorthQueryRetainedOutputCandidate,

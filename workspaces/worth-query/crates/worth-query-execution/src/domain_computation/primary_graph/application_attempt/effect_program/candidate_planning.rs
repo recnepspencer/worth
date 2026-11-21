@@ -1,4 +1,7 @@
 //! Conservative support of one finished existing-record scalar candidate.
+use crate::domain_computation::primary_graph::application_attempt::effect_program::installed_reentry::EffectProgramInstalledEntryExt as _;
+use std::sync::Arc;
+use worth_foundational::facade::AspectFieldLocator;
 use super::*;
 use crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload;
 use crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact as Fact;
@@ -216,8 +219,37 @@ fn copy_scalar_writes(
     }
     Ok(Some(writes))
 }
-impl<S, O, I, E> WorthQueryApplicationEffectProgram<S, O, I, E> {
-    pub(in crate::domain_computation::primary_graph) fn is_admitted_envelope_prefix(
+pub(in crate::domain_computation::primary_graph) trait EffectProgramCandidatePlanningExt<S, O, I, E>: Sized
+
+{
+    fn is_admitted_envelope_prefix(
+        &self,
+        unseen: &crate::domain_computation::primary_graph::application_contribution::authored_edit::UnseenAuthoredEnvelope<'_>,
+        binding: crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding,
+    ) -> bool;
+    fn candidate_footprint(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Option<CandidateFootprint>, WorthQueryApplicationAttemptDenial>;
+    fn require_planned_support(
+        &mut self,
+        application: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<S>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        applied: Option<
+            &worth_relational::facade::runtime::RelationalPinnedRead<
+                worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
+            >,
+        >,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial>
+    where
+        S: ApplicationSchema,
+;
+}
+
+impl<S, O, I, E> EffectProgramCandidatePlanningExt<S, O, I, E> for WorthQueryApplicationEffectProgram<S, O, I, E>
+
+{
+    fn is_admitted_envelope_prefix(
         &self,
         unseen: &crate::domain_computation::primary_graph::application_contribution::authored_edit::UnseenAuthoredEnvelope<'_>,
         binding: crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding,
@@ -230,7 +262,7 @@ impl<S, O, I, E> WorthQueryApplicationEffectProgram<S, O, I, E> {
                 .mutation_product()
                 .is_some_and(|product| unseen.coordination.admits(product.observation()))
     }
-    pub(in crate::domain_computation::primary_graph) fn candidate_footprint(
+    fn candidate_footprint(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Option<CandidateFootprint>, WorthQueryApplicationAttemptDenial> {
@@ -278,7 +310,7 @@ impl<S, O, I, E> WorthQueryApplicationEffectProgram<S, O, I, E> {
         }))))
     }
 
-    pub(in crate::domain_computation::primary_graph) fn require_planned_support(
+    fn require_planned_support(
         &mut self,
         application: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<S>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

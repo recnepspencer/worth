@@ -1,0 +1,267 @@
+use worth_foundational::facade::AspectValue;
+use worth_relational::facade::identity::EntityId;
+
+use super::{
+    WorthQueryApplicationCommitDenial, WorthQueryApplicationCommitOutcome,
+    WorthQueryApplicationCommitReceipt, WorthQueryApplicationStaleAttempt,
+    WorthQueryApprovedElevation,
+};
+use crate::domain_computation::authorization::WorthQueryElevationCloseBinding;
+
+/// Why an approved elevation was closed.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum WorthQueryElevationClosureKind {
+    /// The elevation was revoked before it expired.
+    Revoked,
+    /// The elevation reached its expiry.
+    Expired,
+}
+
+/// Move-only obligation produced only after the approved elevation is closed.
+///
+/// ```compile_fail
+/// use worth_query_execution::facade::primary_graph::WorthQueryMandatoryReview;
+///
+/// fn mandatory_review_cannot_be_copied(review: WorthQueryMandatoryReview) {
+///     let _copied = review.clone();
+/// }
+/// ```
+#[derive(Debug)]
+pub struct WorthQueryMandatoryReview {
+    binding: WorthQueryElevationCloseBinding,
+    close_commit: WorthQueryApplicationCommitReceipt,
+}
+
+impl WorthQueryMandatoryReview {
+    pub const fn closure_kind(&self) -> WorthQueryElevationClosureKind {
+        self.binding.closure_kind()
+    }
+
+    pub const fn closed_at(&self) -> &AspectValue {
+        self.binding.closed_at()
+    }
+
+    pub const fn closer(&self) -> EntityId {
+        self.binding.closer()
+    }
+
+    pub fn publication_source(&self) -> super::WorthQueryApplicationCommitPublicationSource {
+        self.close_commit.publication_source()
+    }
+
+    /// The canonical work of the close commit, by phase. A replay reports the
+    /// admission work of its own request.
+    pub const fn canonical_work(
+        &self,
+    ) -> worth_query_installation::facade::WorthQueryCanonicalWorkPhases {
+        self.close_commit.canonical_work()
+    }
+
+    pub const fn requester(&self) -> EntityId {
+        self.binding.approved().requester()
+    }
+
+    pub const fn approver(&self) -> EntityId {
+        self.binding.approved().approver()
+    }
+
+    pub const fn resource(&self) -> EntityId {
+        self.binding.approved().resource()
+    }
+
+    pub const fn grant(&self) -> EntityId {
+        self.binding.approved().grant()
+    }
+
+    pub const fn elevation(&self) -> EntityId {
+        self.binding.approved().elevation()
+    }
+
+    pub const fn review(&self) -> EntityId {
+        self.binding.approved().review()
+    }
+
+    pub fn action(&self) -> &AspectValue {
+        self.binding.approved().action()
+    }
+
+    pub fn purpose(&self) -> &AspectValue {
+        self.binding.approved().purpose()
+    }
+
+    pub fn field(&self) -> Option<&AspectValue> {
+        self.binding.approved().field()
+    }
+
+    pub fn magnitude(&self) -> Option<&AspectValue> {
+        self.binding.approved().magnitude()
+    }
+
+    pub fn cardinality(&self) -> u32 {
+        self.binding.approved().cardinality()
+    }
+
+    pub const fn reason(&self) -> &AspectValue {
+        self.binding.approved().reason()
+    }
+
+    pub const fn issued_at(&self) -> &AspectValue {
+        self.binding.approved().issued_at()
+    }
+
+    pub const fn expires_at(&self) -> &AspectValue {
+        self.binding.approved().expires_at()
+    }
+
+    pub const fn approved(&self) -> &WorthQueryApprovedElevation {
+        self.binding.approved()
+    }
+
+    pub fn belongs_to_lifecycle(
+        &self,
+        runtime_authority: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
+        branch: &worth_relational::facade::history::BranchId,
+        capability_identity: [u8; 32],
+        capability_authority_identity: &str,
+    ) -> bool {
+        self.binding.approved().belongs_to_lifecycle(
+            runtime_authority,
+            branch,
+            capability_identity,
+            capability_authority_identity,
+        ) && self.close_commit.terminal().branch() == branch
+            && self.close_commit.provider_runtime_instance_id()
+                == self
+                    .binding
+                    .approved()
+                    .approval_commit_receipt()
+                    .provider_runtime_instance_id()
+    }
+}
+
+/// Every way committing an elevation close can end.
+///
+/// This mirrors the application commit outcome. `Closed`
+/// carry the move-only mandatory-review obligation. Most variants that did not
+/// land hand the consumed approved elevation back, so it can be committed
+/// again.
+#[derive(Debug)]
+pub enum WorthQueryElevationCloseOutcome {
+    /// Immutable original meaning plus the exact predecessor supplied by this call.
+    RecoveredCommitted {
+        receipt: crate::domain_computation::primary_graph::provider::WorthQueryRecoveredApplicationCommitReceipt,
+        approved: WorthQueryApprovedElevation,
+    },
+    CleanupRequired(Box<super::WorthQueryApplicationCleanupRequired>),
+    /// The product branch moved after the basis. Nothing was committed.
+    ProductStale(
+        crate::domain_computation::WorthQueryProductStaleApplication,
+        WorthQueryApprovedElevation,
+    ),
+    /// Some owners moved, but the product head did not. Recover publication.
+    ProductUnpublished(crate::domain_computation::WorthQueryProductUnpublishedApplication),
+    ProductPreparationPending(crate::domain_computation::WorthQueryProductPreparationPending),
+    ProductPreparationRefused(crate::domain_computation::WorthQueryProductPreparationRefused),
+
+    /// Nothing was written; the cause says why.
+    NoEffect(
+        super::WorthQueryApplicationNoEffect,
+        WorthQueryApprovedElevation,
+    ),
+    /// This attempt committed the close.
+    Closed(WorthQueryMandatoryReview),
+    /// The basis was stale at compare. Nothing was committed; re-read and retry.
+    Stale(
+        WorthQueryApplicationStaleAttempt,
+        WorthQueryApprovedElevation,
+    ),
+    /// The attempt was cancelled before it landed.
+    Cancelled(WorthQueryApprovedElevation),
+    /// The attempt reached its deadline before it landed.
+    TimedOut,
+    /// The commit was refused before publication.
+    Denied(
+        WorthQueryApplicationCommitDenial,
+        WorthQueryApprovedElevation,
+    ),
+    /// The commit's answer was lost, and a re-read found it never landed.
+    Aborted(WorthQueryApprovedElevation),
+    /// A capacity or lifetime limit stopped the attempt. Retry later.
+    Deferred(super::WorthQueryApplicationCommitDeferred),
+    /// Whether the commit landed is unresolved. Do not retry blindly.
+    Indeterminate,
+}
+
+pub fn closed_outcome(
+    outcome: WorthQueryApplicationCommitOutcome,
+    binding: WorthQueryElevationCloseBinding,
+) -> WorthQueryElevationCloseOutcome {
+    match outcome {
+        WorthQueryApplicationCommitOutcome::OutputAdopted(_) => {
+            WorthQueryElevationCloseOutcome::Denied(
+                WorthQueryApplicationCommitDenial::provider_rejected_with_detail(
+                    super::WorthQueryApplicationCommitDenialStage::ProviderCommit,
+                    "producer output adoption cannot fulfill this authored transition",
+                ),
+                binding.into_approved(),
+            )
+        }
+
+        WorthQueryApplicationCommitOutcome::RecoveredCommitted(receipt) => {
+            WorthQueryElevationCloseOutcome::RecoveredCommitted {
+                receipt,
+                approved: binding.into_approved(),
+            }
+        }
+        WorthQueryApplicationCommitOutcome::Committed(commit) => {
+            WorthQueryElevationCloseOutcome::Closed(closed(binding, commit))
+        }
+        WorthQueryApplicationCommitOutcome::Stale(stale) => {
+            WorthQueryElevationCloseOutcome::Stale(stale, binding.into_approved())
+        }
+        WorthQueryApplicationCommitOutcome::ProductStale(stale) => {
+            WorthQueryElevationCloseOutcome::ProductStale(stale, binding.into_approved())
+        }
+        WorthQueryApplicationCommitOutcome::Cancelled => {
+            WorthQueryElevationCloseOutcome::Cancelled(binding.into_approved())
+        }
+        WorthQueryApplicationCommitOutcome::TimedOut => WorthQueryElevationCloseOutcome::TimedOut,
+        WorthQueryApplicationCommitOutcome::Denied(denial) => {
+            WorthQueryElevationCloseOutcome::Denied(denial, binding.into_approved())
+        }
+        WorthQueryApplicationCommitOutcome::Aborted => {
+            WorthQueryElevationCloseOutcome::Aborted(binding.into_approved())
+        }
+        WorthQueryApplicationCommitOutcome::Deferred(deferred) => {
+            WorthQueryElevationCloseOutcome::Deferred(deferred)
+        }
+        WorthQueryApplicationCommitOutcome::ProductUnpublished(unpublished) => {
+            WorthQueryElevationCloseOutcome::ProductUnpublished(unpublished)
+        }
+        WorthQueryApplicationCommitOutcome::ProductPreparationPending(owner) => {
+            WorthQueryElevationCloseOutcome::ProductPreparationPending(owner)
+        }
+        WorthQueryApplicationCommitOutcome::ProductPreparationRefused(owner) => {
+            WorthQueryElevationCloseOutcome::ProductPreparationRefused(owner)
+        }
+        WorthQueryApplicationCommitOutcome::NoEffect(no_effect) => {
+            WorthQueryElevationCloseOutcome::NoEffect(no_effect, binding.into_approved())
+        }
+        WorthQueryApplicationCommitOutcome::CleanupRequired(cleanup) => {
+            WorthQueryElevationCloseOutcome::CleanupRequired(cleanup)
+        }
+        WorthQueryApplicationCommitOutcome::Indeterminate(_) => {
+            WorthQueryElevationCloseOutcome::Indeterminate
+        }
+    }
+}
+
+fn closed(
+    binding: WorthQueryElevationCloseBinding,
+    close_commit: WorthQueryApplicationCommitReceipt,
+) -> WorthQueryMandatoryReview {
+    WorthQueryMandatoryReview {
+        binding,
+        close_commit,
+    }
+}

@@ -1,6 +1,6 @@
 //! Sole producer source/lifecycle selection on the original native borrow.
 use super::*;
-mod current_verification;
+pub(crate) mod current_verification;
 pub(in crate::domain_computation::primary_graph) use current_verification::VerifiedAppliedParent;
 
 impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<Schema> {

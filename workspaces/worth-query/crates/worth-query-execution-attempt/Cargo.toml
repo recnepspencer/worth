@@ -1,0 +1,40 @@
+[package]
+name = "worth-query-execution-attempt"
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+license.workspace = true
+description = "Installed Query execution primary-graph application attempts, provider custody, authorization, workflow semantics, aftermath, and live delivery."
+publish = false
+
+[dependencies]
+im = "=15.1.0"
+rmp-serde = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+worth-execution = { path = "../../../../crates/worth-execution" }
+worth-foundational = { path = "../../../../crates/worth-foundational" }
+worth-proof = { path = "../../../../crates/worth-proof" }
+worth-relational = { path = "../../../../crates/worth-relational" }
+worth-runtime-bridge = { path = "../../../../crates/worth-runtime-bridge" }
+worth-runtime-world = { path = "../../../../crates/worth-runtime-world" }
+worth-signal = { path = "../../../../crates/worth-signal" }
+worth-query-admission = { path = "../worth-query-admission" }
+worth-query-declaration = { path = "../worth-query-declaration" }
+worth-query-execution-contracts = { path = "../worth-query-execution-contracts" }
+worth-query-execution-diagnostics = { path = "../worth-query-execution-diagnostics" }
+worth-query-execution-foundation = { path = "../worth-query-execution-foundation" }
+worth-query-execution-layout = { path = "../worth-query-execution-layout" }
+worth-query-execution-lineage = { path = "../worth-query-execution-lineage" }
+worth-query-execution-obligations = { path = "../worth-query-execution-obligations" }
+worth-query-execution-runtime = { path = "../worth-query-execution-runtime" }
+worth-query-installation = { path = "../worth-query-installation" }
+
+[dev-dependencies]
+worth-query-testkit-decl = { path = "../worth-query-testkit-decl" }
+worth-query-testkit-installation = { path = "../worth-query-testkit-installation" }
+worth-testkit-relational = { path = "../../../../crates/worth-testkit-relational" }
+
+[lints]
+workspace = true

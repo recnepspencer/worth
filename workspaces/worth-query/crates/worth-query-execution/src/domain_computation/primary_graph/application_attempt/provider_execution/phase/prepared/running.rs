@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::application_attempt::provider_execution::application_attempt_affinity::ApplicationAttemptBasisCaptureExt as _;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementDenialCommitExt as _;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use worth_query_admission::facade::basis::basis_lifecycle;
@@ -242,7 +243,7 @@ where
     .map_err(|detail| denied_with_detail(DenialStage::InvariantExecution, detail))
 }
 
-mod court_doors_for_test;
+pub(crate) mod court_doors_for_test;
 pub use completion_storage::WorthQueryManagedPhaseStorageForTest;
 #[cfg(test)]
 #[path = "running_inline_type_budget.rs"]

@@ -59,6 +59,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let record = self
             .installed_program_support()
             .and_then(|support| support.native_program(revision))
+            .map(|record| crate::domain_computation::primary_graph::attempt_ports::downcast_supported_program(record.as_ref()))
             .ok_or(WorthQuerySelectedProgramOwnerDenial::InstalledOwnerUnavailable)?;
         Ok(WorthQuerySelectedProgramOwner {
             runtime: self,

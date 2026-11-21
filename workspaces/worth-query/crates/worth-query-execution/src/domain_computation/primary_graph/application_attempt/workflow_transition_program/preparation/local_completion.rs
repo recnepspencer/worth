@@ -1,4 +1,5 @@
 //! The original local effect's binding-selected admission owns completion, not Advance.
+use crate::domain_computation::primary_graph::application_attempt::workflow_transition_program::operation::settlement::PreparedWorkflowOperationSettlementExt as _;
 use super::super::{local_actions::VerifiedLocalActionCompletion, WorkflowLocalActionKind};
 use super::*;
 use crate::domain_computation::primary_graph::{

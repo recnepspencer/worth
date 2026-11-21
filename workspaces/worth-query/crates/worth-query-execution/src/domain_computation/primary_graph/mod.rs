@@ -65,13 +65,13 @@ pub use fragment_view::{
 };
 pub(in crate::domain_computation) use handler::DecisionContextUse;
 mod invariant_installation;
-pub(crate) mod live_delivery;
-pub(crate) mod managed_bridge;
+pub(crate) use worth_query_execution_attempt::facade::domain_computation::primary_graph::live_delivery;
+pub(crate) use worth_query_execution_attempt::facade::domain_computation::primary_graph::managed_bridge;
 pub(in crate::domain_computation) use source_facts::{
     validate_source_principal_facts, SourceFactsAllocation,
 };
 pub(crate) use managed_bridge::build_primary_graph_product_bridge;
-mod operation_body;
+pub(crate) mod operation_body;
 mod ordinary_read;
 pub(in crate::domain_computation) use output_lineage::SourceInvalidationOwner;
 mod principal_currentness_capture;
@@ -122,11 +122,11 @@ pub(in crate::domain_computation) use product_operation::SharedSelectedProductOp
 pub use product_operation::WorthQueryHistoryOutputControlDenial;
 pub use product_operation::WorthQueryHistoryOutputReadDenial;
 pub use product_operation::WorthQueryHistoryRootOutputRead;
-pub(crate) mod program_occurrence;
+pub(crate) use worth_query_execution_attempt::facade::domain_computation::primary_graph::program_occurrence;
 pub(crate) mod query_obligations;
 pub(in crate::domain_computation) use program_occurrence::OriginalProgramMeaning;
 pub(crate) mod provider;
-pub(crate) mod retained_correction;
+pub(crate) use worth_query_execution_attempt::facade::domain_computation::primary_graph::retained_correction;
 pub(in crate::domain_computation) use application_attempt::retained_decision_facts::StorageControl;
 pub(in crate::domain_computation::primary_graph) use provider::OutstandingDispatchInFlightLease;
 pub(in crate::domain_computation) use provider::PrimaryDecisionReadSetComparison;
@@ -212,6 +212,7 @@ pub use application_contribution::with_bootstrap_advancement_from_request;
 
 pub use application_contribution::WorthQueryBootstrapAdvancementPhase;
 
+pub(crate) mod attempt_ports;
 mod lineage_ports;
 mod application_checkpoint_runtime;
 pub(in crate::domain_computation::primary_graph) use application_output_demand::settlement::{
@@ -250,3 +251,10 @@ mod original_operation;
 pub use original_operation::{WorthQueryOriginalOperationDenial, WorthQueryOriginalOperationOwner};
 
 pub(crate) use worth_query_execution_lineage::facade::primary_graph::application_attempt::compare_and_commit::commit_outcome::denial::advancement::WorthQueryAdvancementDenialCommitExt;
+
+pub use application_runtime::WorthQueryHomeRetirementDenial;
+
+pub use application_attempt::{
+    WorthQueryApplicationIdempotencyResolution, WorthQueryApplicationIdempotencyResolutionDenial,
+    WorthQueryGuardedWorkflowOperationCustody,
+};

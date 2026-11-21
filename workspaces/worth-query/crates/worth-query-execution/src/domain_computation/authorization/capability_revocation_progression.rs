@@ -1,5 +1,8 @@
 //! Command/target binding for one exact capability revocation.
 
+pub use worth_query_execution_attempt::facade::domain_computation::authorization::capability_revocation_progression::*;
+
+
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_foundational::facade::{AspectFieldLocator, AspectValue, CanonicalDigestWorkBudget};
 use worth_query_declaration::facade::{
@@ -25,58 +28,6 @@ use super::{
     WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
 };
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
-
-pub(in crate::domain_computation) struct WorthQueryCapabilityRevocationBinding {
-    proposal_identity: [u8; 32],
-    required_field_touch: WorthQueryOperationFieldTouchScope,
-    target_kind: KindId,
-    target_entity: String,
-    resource: EntityId,
-    resource_relation: KindId,
-    identity: AspectFieldLocator,
-    identity_value: AspectValue,
-    status: AspectFieldLocator,
-    active: AspectValue,
-    revoked: AspectValue,
-}
-
-impl WorthQueryCapabilityRevocationBinding {
-    pub(in crate::domain_computation) const fn proposal_identity(&self) -> &[u8; 32] {
-        &self.proposal_identity
-    }
-    pub(in crate::domain_computation) const fn required_field_touch(
-        &self,
-    ) -> &WorthQueryOperationFieldTouchScope {
-        &self.required_field_touch
-    }
-    pub(in crate::domain_computation) const fn target_kind(&self) -> KindId {
-        self.target_kind
-    }
-    pub(in crate::domain_computation) fn target_entity(&self) -> &str {
-        &self.target_entity
-    }
-    pub(in crate::domain_computation) const fn resource(&self) -> EntityId {
-        self.resource
-    }
-    pub(in crate::domain_computation) const fn resource_relation(&self) -> KindId {
-        self.resource_relation
-    }
-    pub(in crate::domain_computation) const fn identity(&self) -> &AspectFieldLocator {
-        &self.identity
-    }
-    pub(in crate::domain_computation) const fn identity_value(&self) -> &AspectValue {
-        &self.identity_value
-    }
-    pub(in crate::domain_computation) const fn status(&self) -> &AspectFieldLocator {
-        &self.status
-    }
-    pub(in crate::domain_computation) const fn active(&self) -> &AspectValue {
-        &self.active
-    }
-    pub(in crate::domain_computation) const fn revoked(&self) -> &AspectValue {
-        &self.revoked
-    }
-}
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where

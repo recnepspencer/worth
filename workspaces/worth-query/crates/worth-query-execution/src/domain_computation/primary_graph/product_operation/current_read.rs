@@ -1,71 +1,22 @@
-//! Read-only current-product control, independent of navigation and publication.
-use crate::basis::WorthQueryProductObservationLease;
-use crate::domain_computation::authorization::{
-    admitted_request::AdmittedRequestCurrentness, WorthQueryAdmissionLapse,
-    WorthQueryOperationScopeEntityBinding,
-};
-use crate::domain_computation::primary_graph::{
-    provider::WorthQueryApplicationBranchCommitLane, WorthQueryAdvancementDenial,
-    WorthQueryPrimaryGraphApplicationRuntime,
-};
+//! Runtime current-product read confirmation.
+use crate::domain_computation::authorization::WorthQueryAdmissionLapse;
+pub use worth_query_execution_attempt::facade::domain_computation::primary_graph::product_operation::current_read::*;
+use crate::domain_computation::primary_graph::{provider::WorthQueryApplicationBranchCommitLane, WorthQueryPrimaryGraphApplicationRuntime};
 use worth_execution::ExecutionRequest;
-use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_installation::facade::ApplicationSchema;
-use worth_relational::facade::{branch::RelationalBranchBasisDenial, runtime::RelationalRuntime};
-use worth_runtime_world::facade::{RuntimeWorldBranchAdmissionDenial, RuntimeWorldServiceDenial};
+use worth_relational::facade::runtime::RelationalRuntime;
 pub(super) mod head;
 
-#[derive(Debug)]
-pub(in crate::domain_computation) enum CurrentReadDenial {
-    HeadDiverged,
-    NativeBasis(RelationalBranchBasisDenial),
-    HeadAdmission(RuntimeWorldServiceDenial<RuntimeWorldBranchAdmissionDenial>),
-    Stopped(WorthQueryAdvancementDenial),
-    Authorization(WorthQueryAdmissionLapse),
-    Busy,
+pub(in crate::domain_computation::primary_graph) trait CurrentReadControlRuntimeExt {
+    fn confirm_in_execution<S: ApplicationSchema, T>(&self, execution: &ExecutionRequest<'_, '_>, runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>, value: T) -> Result<T, CurrentReadDenial>;
+    fn confirm_in_execution_preserving<S: ApplicationSchema, T>(&self, execution: &ExecutionRequest<'_, '_>, runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>, value: T) -> Result<T, (T, CurrentReadDenial)>;
+    fn confirm_in_borrowed<S: ApplicationSchema, T>(&self, execution: &ExecutionRequest<'_, '_>, runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>, lane: &WorthQueryApplicationBranchCommitLane, native: &RelationalRuntime, value: T) -> Result<T, CurrentReadDenial>;
+    fn confirm_in_coordinated<S: ApplicationSchema, T>(&self, execution: &ExecutionRequest<'_, '_>, runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>, coordination: &crate::domain_computation::primary_graph::provider::WorthQueryApplicationBranchCommitCoordination<'_>, native: &RelationalRuntime, value: T) -> Result<T, CurrentReadDenial>;
+    fn confirm_in_borrowed_preserving<S: ApplicationSchema, T>(&self, execution: &ExecutionRequest<'_, '_>, runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>, lane: &WorthQueryApplicationBranchCommitLane, native: &RelationalRuntime, value: T) -> Result<T, (T, CurrentReadDenial)>;
 }
 
-/// Borrows genuine admission; it grants neither a historical basis nor a write.
-#[derive(Clone, Copy)]
-pub(in crate::domain_computation) struct CurrentReadControl<'a> {
-    current: &'a WorthQueryProductObservationLease,
-    request: &'a AdmittedRequestCurrentness,
-    principal: &'a WorthQueryOperationScopeEntityBinding,
-}
-impl<'a> CurrentReadControl<'a> {
-    pub(in crate::domain_computation::primary_graph) fn new(
-        current: &'a WorthQueryProductObservationLease,
-        request: &'a AdmittedRequestCurrentness,
-        principal: &'a WorthQueryOperationScopeEntityBinding,
-    ) -> Self {
-        Self {
-            current,
-            request,
-            principal,
-        }
-    }
-    pub(in crate::domain_computation) fn current(&self) -> &WorthQueryProductObservationLease {
-        self.current
-    }
-    pub(in crate::domain_computation) fn admits_request(
-        &self,
-        request: &WorthQueryRequestScope,
-    ) -> bool {
-        self.request.same_request(request)
-    }
-    pub(in crate::domain_computation) fn admits_principal(
-        &self,
-        principal: &WorthQueryOperationScopeEntityBinding,
-    ) -> bool {
-        self.principal == principal
-    }
-    pub(in crate::domain_computation) fn request_lapse(&self) -> Option<WorthQueryAdmissionLapse> {
-        self.request.lapse()
-    }
-    pub(super) fn admitted_request(&self) -> &AdmittedRequestCurrentness {
-        self.request
-    }
-    pub(in crate::domain_computation::primary_graph) fn confirm_in_execution<
+impl<'a> CurrentReadControlRuntimeExt for CurrentReadControl<'a> {
+    fn confirm_in_execution<
         S: ApplicationSchema,
         T,
     >(
@@ -77,7 +28,7 @@ impl<'a> CurrentReadControl<'a> {
         self.confirm_in_execution_preserving(execution, runtime, value)
             .map_err(|(_, cause)| cause)
     }
-    pub(in crate::domain_computation::primary_graph) fn confirm_in_execution_preserving<
+    fn confirm_in_execution_preserving<
         S: ApplicationSchema,
         T,
     >(
@@ -95,7 +46,7 @@ impl<'a> CurrentReadControl<'a> {
         ))
     }
     /// Native is already borrowed. Never block on an earlier commit lane.
-    pub(in crate::domain_computation::primary_graph) fn confirm_in_borrowed<
+    fn confirm_in_borrowed<
         S: ApplicationSchema,
         T,
     >(
@@ -111,7 +62,7 @@ impl<'a> CurrentReadControl<'a> {
     }
     /// The edit assembler already holds this occurrence's genuine lane. Do not
     /// re-enter it, and do not acquire Native from inside this borrowed check.
-    pub(in crate::domain_computation::primary_graph) fn confirm_in_coordinated<
+    fn confirm_in_coordinated<
         S: ApplicationSchema,
         T,
     >(
@@ -133,7 +84,7 @@ impl<'a> CurrentReadControl<'a> {
         ))
         .map_err(|(_, cause)| cause)
     }
-    pub(in crate::domain_computation::primary_graph) fn confirm_in_borrowed_preserving<
+    fn confirm_in_borrowed_preserving<
         S: ApplicationSchema,
         T,
     >(

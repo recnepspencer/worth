@@ -174,10 +174,34 @@ impl CapturedSynchronousOutputs {
         Ok(order)
     }
 }
-impl<S: ApplicationSchema, O, I, Scope>
-    crate::domain_computation::primary_graph::WorthQueryApplicationEffectProgram<S, O, I, Scope>
+pub trait EffectProgramSynchronousOutputsExt<S: ApplicationSchema, O, I, Scope>: Sized
+
 {
-    pub fn with_synchronous_required_outputs<C, E>(
+    fn with_synchronous_required_outputs<C, E>(
+        self,
+        _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        demand: C::Demand,
+        position: worth_query_declaration::facade::application_program::ApplicationConnectionDeclaration,
+        order: &worth_query_declaration::facade::application_program::ApplicationProgramConnectionOrder,
+    ) -> Self
+    where
+        C: WorthQueryApplicationRequiredOutputConnection<S>,
+        C::Demand: Clone + Send,
+        E: SynchronousOutputEdges<S, C::Demand> + 'static,
+        SourceInput<S, C::Demand>: ApplicationQueryIntent<S, Binding = Source<S, C::Demand>>,
+        <Source<S, C::Demand> as ApplicationQueryBinding<S>>::ScopeBinding:
+            ApplicationQueryScopeResolution<
+                S,
+                <Source<S, C::Demand> as ApplicationQueryBinding<S>>::PrincipalIdentity,
+            >,
+;
+}
+
+impl<S: ApplicationSchema, O, I, Scope> EffectProgramSynchronousOutputsExt<S, O, I, Scope> for crate::domain_computation::primary_graph::WorthQueryApplicationEffectProgram<S, O, I, Scope>
+
+{
+    fn with_synchronous_required_outputs<C, E>(
         mut self,
         _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -197,7 +221,7 @@ impl<S: ApplicationSchema, O, I, Scope>
             >,
     {
         self.synchronous_outputs
-            .push(CapturedSynchronousOutputs::capture(
+            .push(worth_query_execution_attempt::facade::ports::OpaqueSynchronousOutputs::new(CapturedSynchronousOutputs::capture(
                 execution,
                 C::IDENTITY,
                 std::mem::size_of::<Tree<C::Demand, Static<E>>>()
@@ -213,7 +237,7 @@ impl<S: ApplicationSchema, O, I, Scope>
                     });
                     Box::new(root::Root::Fixed(tree))
                 },
-            ));
+            )));
         self
     }
 }

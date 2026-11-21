@@ -4,8 +4,53 @@ use crate::domain_computation::primary_graph::{
     WorthQueryCommittedDispatchOutboxObservation, WorthQueryPrimaryGraphApplicationRuntime,
 };
 
-impl QueryInboundJournalAdmission<'_> {
-    pub(in crate::domain_computation) fn record_transport_binding<
+pub(in crate::domain_computation) trait QueryInboundJournalAdmissionTransportExt: Sized
+
+{
+    fn record_acceptance<
+        Schema: worth_query_installation::facade::ApplicationSchema,
+    >(
+        &self,
+        authenticated: &crate::domain_computation::primary_graph::WorthQueryAuthenticatedInboundOccurrence<'_, Schema>,
+        owner: &WorthQueryCommittedDispatchOutboxObservation,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<(), QueryDispatchJournalDenial>;
+    fn record_transport_binding<
+        Schema: worth_query_installation::facade::ApplicationSchema,
+    >(
+        &self,
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        owner: &WorthQueryCommittedDispatchOutboxObservation,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<QueryTransportBinding, QueryDispatchJournalDenial>;
+}
+
+impl QueryInboundJournalAdmissionTransportExt for QueryInboundJournalAdmission<'_>
+
+{
+    fn record_acceptance<
+        Schema: worth_query_installation::facade::ApplicationSchema,
+    >(
+        &self,
+        authenticated: &crate::domain_computation::primary_graph::WorthQueryAuthenticatedInboundOccurrence<'_, Schema>,
+        owner: &WorthQueryCommittedDispatchOutboxObservation,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<(), QueryDispatchJournalDenial> {
+        let accepted = authenticated.accepted_message_record(self.journal, owner)?;
+        if let Some(existing) = self.message(
+            &crate::domain_computation::application_aftermath::dispatch_journal::QueryInboundMessageKey::from_claims(
+                &accepted.claims,
+            ),
+        ) {
+            return if existing.accepted == accepted {
+                Ok(())
+            } else {
+                Err(QueryDispatchJournalDenial::MalformedFrame)
+            };
+        }
+        self.publish(QueryInboundRecord::Accepted(accepted), request)
+    }
+    fn record_transport_binding<
         Schema: worth_query_installation::facade::ApplicationSchema,
     >(
         &self,
@@ -36,8 +81,24 @@ impl QueryInboundJournalAdmission<'_> {
     }
 }
 
-impl WorthQueryDispatchJournal {
-    pub(in crate::domain_computation) fn recorded_transport_binding(
+pub(in crate::domain_computation) trait WorthQueryDispatchJournalTransportExt: Sized
+
+{
+    fn recorded_transport_binding(
+        &self,
+        owner: &WorthQueryCommittedDispatchOutboxObservation,
+    ) -> Result<Option<QueryTransportBinding>, QueryDispatchJournalDenial>;
+    fn recorded_transport_completion(
+        &self,
+        runtime: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
+        owner: &WorthQueryCommittedDispatchOutboxObservation,
+    ) -> Result<crate::domain_computation::application_aftermath::external_effect::RecordedCompletionCausality, QueryDispatchJournalDenial>;
+}
+
+impl WorthQueryDispatchJournalTransportExt for WorthQueryDispatchJournal
+
+{
+    fn recorded_transport_binding(
         &self,
         owner: &WorthQueryCommittedDispatchOutboxObservation,
     ) -> Result<Option<QueryTransportBinding>, QueryDispatchJournalDenial> {
@@ -58,7 +119,7 @@ impl WorthQueryDispatchJournal {
     }
     /// Read recorded completion DATA for this exact admitted original. This
     /// cannot create a live dispatch, causal phase, receipt or delivery.
-    pub(in crate::domain_computation) fn recorded_transport_completion(
+    fn recorded_transport_completion(
         &self,
         runtime: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
         owner: &WorthQueryCommittedDispatchOutboxObservation,

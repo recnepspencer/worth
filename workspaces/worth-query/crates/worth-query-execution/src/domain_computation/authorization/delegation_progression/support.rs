@@ -1,5 +1,6 @@
 //! Delegation progression consumes one access-bound exact support observation.
 
+use crate::domain_computation::authorization::operation_admission::capability_admission::preparation::observation::admitted_access::AdmittedCapabilityAccessRuntimeExt as _;
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_query_declaration::facade::application_capability::{
     ApplicationCapabilityDelegationRequest, ApplicationCapabilityRequest,

@@ -4,8 +4,21 @@ use worth_runtime_world::facade::{
     WorldRecoveredContinuationDenial, WorldRecoveredReleaseOutcome as Outcome,
 };
 
-impl RecordedCompletionContinuation {
-    pub(super) fn release_stale<Schema: worth_query_installation::facade::ApplicationSchema>(
+pub(super) trait RecordedCompletionContinuationReleaseExt: Sized
+
+{
+    fn release_stale<Schema: worth_query_installation::facade::ApplicationSchema>(
+        &mut self,
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        retirements: &mut OwnerCleanupRetirements,
+    ) -> Result<RecordedCompletionProgress, WorthQueryRecordedCompletionDenial>;
+}
+
+impl RecordedCompletionContinuationReleaseExt for RecordedCompletionContinuation
+
+{
+    fn release_stale<Schema: worth_query_installation::facade::ApplicationSchema>(
         &mut self,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

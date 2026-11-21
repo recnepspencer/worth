@@ -79,8 +79,44 @@ where
     }
 }
 
-impl<Schema, Principal, PrincipalIdentity, Scope>
-    WorthQueryConventionalAuthorizationObservation<'_, Schema, Principal, PrincipalIdentity, Scope>
+pub(in crate::domain_computation::authorization) trait ConventionalAuthorizationObservationRuntimeExt<Schema, Principal, PrincipalIdentity, Scope>: Sized
+where
+    Schema: ApplicationSchema,
+{
+    fn validate_all(
+        self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    ) -> Result<Vec<WorthQueryAuthorizationDecisionFact>, WorthQueryOperationAuthorizationDenial>
+;
+    fn observe_one(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        requirement: &worth_query_installation::facade::WorthQueryInstalledAbilityRequirement,
+    ) -> Result<WorthQueryAuthorizationDecisionFact, WorthQueryOperationAuthorizationDenial>;
+    fn validate_scope(
+        &self,
+        requirement: &worth_query_installation::facade::WorthQueryInstalledAbilityRequirement,
+    ) -> Result<(), WorthQueryOperationAuthorizationDenial>;
+    fn validate_installation(
+        &self,
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        installed: &WorthQueryInstalledAuthorizationPolicy,
+        requirement: &worth_query_installation::facade::WorthQueryInstalledAbilityRequirement,
+    ) -> Result<(), WorthQueryOperationAuthorizationDenial>;
+    fn observe_relational(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        installed: &WorthQueryInstalledAuthorizationPolicy,
+        requirement: &worth_query_installation::facade::WorthQueryInstalledAbilityRequirement,
+    ) -> Result<
+        worth_relational::facade::authorization::RelationalAuthorizationObservationEvidence,
+        WorthQueryOperationAuthorizationDenial,
+    >;
+}
+
+impl<Schema, Principal, PrincipalIdentity, Scope> ConventionalAuthorizationObservationRuntimeExt<Schema, Principal, PrincipalIdentity, Scope> for WorthQueryConventionalAuthorizationObservation<'_, Schema, Principal, PrincipalIdentity, Scope>
 where
     Schema: ApplicationSchema,
 {

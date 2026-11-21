@@ -1,5 +1,6 @@
 //! Capability-access progression into installed operation authority.
 
+use crate::domain_computation::authorization::operation_admission::capability_admission::preparation::observation::admitted_access::AdmittedCapabilityAccessRuntimeExt as _;
 use crate::domain_computation::authorization::graph_work_session::start_capability_operation_graph_work;
 use crate::domain_computation::authorization::operation_progression::WorthQueryCapabilityOperationProgression;
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;

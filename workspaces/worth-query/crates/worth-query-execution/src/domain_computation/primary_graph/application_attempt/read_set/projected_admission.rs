@@ -155,7 +155,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .with_execution(*execution),
         )?;
         let layout = Arc::clone(&lease.layout);
-        Ok(WorthQueryApplicationReadAttempt {
+        Ok(WorthQueryApplicationReadAttempt::from_attempt_parts(worth_query_execution_attempt::facade::ports::WorthQueryAttemptCrateSeal::new(), worth_query_execution_attempt::facade::domain_computation::primary_graph::application_attempt::read_set::WorthQueryApplicationReadAttemptAttemptParts {
             execution: *execution,
             value_decode: super::super::super::value_decode::ValueDecodeState::new(
                 self.installed_schema.value_bindings().clone(),
@@ -173,6 +173,6 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             consumed_outputs,
             native_completion: None,
             _phase: PhantomData,
-        })
+        }))
     }
 }

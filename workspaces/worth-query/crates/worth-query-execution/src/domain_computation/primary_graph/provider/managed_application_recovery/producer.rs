@@ -1,13 +1,5 @@
-//! Original producer recovery uses the same retained native attempt owner.
+pub use worth_query_execution_attempt::facade::domain_computation::primary_graph::provider::managed_application_recovery::producer::*;
 use super::*;
-use crate::domain_computation::primary_graph::application_installation::WorthQueryRecoveredProgramOutputSource;
-
-pub(in crate::domain_computation::primary_graph) struct ProducerRecoveryCustody {
-    pub(in crate::domain_computation::primary_graph) facts: std::sync::Arc<crate::domain_computation::primary_graph::application_output_demand::RecoveredProducerOutputFacts>,
-    pub(in crate::domain_computation::primary_graph) carrier: Option<WorthQueryRecoveredProgramOutputSource>,
-    pub(in crate::domain_computation::primary_graph) binding: WorthQueryApplicationIdempotencyBinding,
-    pub(in crate::domain_computation::primary_graph) cleanup: Option<WorthQueryProductUnpublishedRecovery>,
-}
 
 impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
     pub(in crate::domain_computation::primary_graph) fn recover_original_producer_publication<

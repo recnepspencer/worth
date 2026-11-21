@@ -11,12 +11,30 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationEffectProgram, WorthQueryPrimaryGraphApplicationRuntime,
 };
 
-impl<Schema, Operation, Input, Scope> PreparedWorkflowCondition<Schema, Operation, Input, Scope>
+pub(crate) trait PreparedWorkflowConditionRuntimeExt<Schema, Operation, Input, Scope>: Sized
 where
     Schema: ApplicationSchema,
     Operation: 'static,
 {
-    pub(super) fn settle(
+    fn settle(
+        self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        sources: WorthQueryWorkflowConditionSources<Schema>,
+    ) -> Result<
+        PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
+        WorthQueryApplicationAttemptDenial,
+    >;
+}
+
+impl<Schema, Operation, Input, Scope>
+    PreparedWorkflowConditionRuntimeExt<Schema, Operation, Input, Scope>
+    for PreparedWorkflowCondition<Schema, Operation, Input, Scope>
+where
+    Schema: ApplicationSchema,
+    Operation: 'static,
+{
+    fn settle(
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,

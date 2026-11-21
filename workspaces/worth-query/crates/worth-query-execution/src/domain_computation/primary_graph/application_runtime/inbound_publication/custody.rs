@@ -8,7 +8,6 @@ use worth_query_admission::facade::authenticated_principal::WorthQueryRequestSco
 use worth_query_installation::facade::ApplicationSchema;
 mod home_retirement;
 mod maintenance;
-mod publication_retry;
 mod readmission;
 mod recovery;
 mod resume;

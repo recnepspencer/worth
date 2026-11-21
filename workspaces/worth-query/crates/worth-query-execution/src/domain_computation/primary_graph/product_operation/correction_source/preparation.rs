@@ -355,6 +355,21 @@ impl WorthQueryPreparedCorrectionSource {
         self.required_root == root
     }
 
+    pub(crate) fn matches_admission_basis(
+        &self,
+        runtime: WorthQueryRuntimeAuthorityIdentity,
+        principal: &crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+        scope: &crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+        target: Option<&WorthQueryProductBranchReadIdentity>,
+    ) -> bool {
+        self.runtime == runtime
+            && *principal
+                == crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(self.actor)
+            && *scope
+                == crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(self.scope)
+            && target.is_some_and(|identity| *identity == self.target)
+    }
+
     pub(crate) fn matches_admission<Schema, Operation, Input, Scope>(
         &self,
         admission: &crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,

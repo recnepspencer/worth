@@ -170,7 +170,7 @@ where
                         let request = authority.admission().retain_admitted_request();
                         prepared.commit_using(|_provider, session| {
                             authority.provider().commit_prepared_application_in_history(
-                                session, history.bind_producer_request(&request), control.policy(),
+                                session, worth_query_execution_attempt::facade::domain_computation::primary_graph::product_operation::document_history::HistoryProducerCutover::new(&history.bind_producer_request(&request)), control.policy(),
                             )
                         })
                     }

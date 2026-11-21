@@ -1,3 +1,6 @@
+use crate::domain_computation::authorization::operation_admission::capability_admission::preparation::observation::admitted_access::AdmittedCapabilityAccessRuntimeExt as _;
+pub use worth_query_execution_attempt::facade::domain_computation::authorization::elevation_progression::mandatory_review::*;
+
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_query_declaration::facade::application_capability::ApplicationCapabilityRequest;
 use worth_query_declaration::facade::application_schema::{
@@ -25,46 +28,9 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrimaryGraphApplicationRuntime,
 };
 
-mod binding;
+pub(crate) use worth_query_execution_attempt::facade::domain_computation::authorization::elevation_progression::mandatory_review::binding;
 pub(in crate::domain_computation) use binding::WorthQueryMandatoryReviewBinding;
 
-#[derive(Debug)]
-pub(in crate::domain_computation) struct WorthQueryMandatoryReviewDraft {
-    elevation: EntityId,
-    review: EntityId,
-    reviewer: EntityId,
-    reviewed_at: AspectValue,
-    reviewed_at_field: AspectFieldLocator,
-    terminal_status: AspectValue,
-    completed_status: AspectValue,
-    review_entity: String,
-    review_status_field: AspectFieldLocator,
-    approver_relation: KindId,
-    reviewer_relation: KindId,
-    required_decision_reads: Vec<ApplicationOperationDecisionReadTarget>,
-    required_program_targets: Vec<ApplicationOperationProgramTarget>,
-    lifecycle_effect: Option<worth_query_declaration::lifecycle_effect_derivation_authority::DerivedApplicationCapabilityLifecycleEffect>,
-}
-
-/// Refusal to authorize a mandatory review step.
-///
-/// The review was not admitted. [`Self::denial`] says why, and
-/// [`Self::into_mandatory_review`] returns the pending review unchanged.
-#[derive(Debug)]
-pub struct WorthQueryMandatoryReviewAuthorizationDenial {
-    denial: WorthQueryOperationAuthorizationDenial,
-    mandatory: WorthQueryMandatoryReview,
-}
-
-impl WorthQueryMandatoryReviewAuthorizationDenial {
-    pub const fn denial(&self) -> &WorthQueryOperationAuthorizationDenial {
-        &self.denial
-    }
-
-    pub fn into_mandatory_review(self) -> WorthQueryMandatoryReview {
-        self.mandatory
-    }
-}
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
@@ -243,7 +209,13 @@ fn review_denial(
     mandatory: WorthQueryMandatoryReview,
     denial: WorthQueryOperationAuthorizationDenial,
 ) -> WorthQueryMandatoryReviewAuthorizationDenial {
-    WorthQueryMandatoryReviewAuthorizationDenial { denial, mandatory }
+    WorthQueryMandatoryReviewAuthorizationDenial::from_attempt_parts(
+        worth_query_execution_attempt::facade::ports::WorthQueryAttemptCrateSeal::new(),
+        worth_query_execution_attempt::facade::domain_computation::authorization::elevation_progression::mandatory_review::WorthQueryMandatoryReviewAuthorizationDenialAttemptParts {
+            denial,
+            mandatory,
+        },
+    )
 }
 
 fn review_rejected(subject: impl Into<String>) -> WorthQueryOperationAuthorizationDenial {

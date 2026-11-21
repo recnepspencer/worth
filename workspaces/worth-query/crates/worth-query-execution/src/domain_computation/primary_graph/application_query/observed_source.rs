@@ -29,7 +29,7 @@ pub use result_set::WorthQueryObservedResultSet;
 mod applied;
 pub(in crate::domain_computation::primary_graph) use applied::AppliedQuerySource;
 
-mod applied_support;
+pub(crate) mod applied_support;
 pub(in crate::domain_computation::primary_graph) use applied_support::AppliedQuerySupport;
 
 mod original_operation;

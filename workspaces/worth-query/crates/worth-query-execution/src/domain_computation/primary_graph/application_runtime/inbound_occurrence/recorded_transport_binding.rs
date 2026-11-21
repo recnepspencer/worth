@@ -1,4 +1,5 @@
 //! Preserve the original selected transport audience across fresh verifier configuration.
+use crate::domain_computation::application_aftermath::dispatch_journal::custody::transport::QueryInboundJournalAdmissionTransportExt as _;
 use super::transport_binding::WorthQueryTransportCompletionBindingDenial;
 use super::*;
 use crate::domain_computation::application_aftermath::dispatch_journal::{

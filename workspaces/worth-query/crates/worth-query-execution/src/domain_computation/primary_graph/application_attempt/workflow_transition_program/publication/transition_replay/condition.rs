@@ -1,7 +1,29 @@
 use super::*;
 
-impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation, Input, Scope> {
-    pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) fn resolve_condition_replay(
+pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) trait PreparedWorkflowAdvanceConditionReplayExt<Schema, Operation, Input, Scope>: Sized
+
+{
+    fn resolve_condition_replay(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        required: &RequiredWorkflowCondition,
+        sources: &crate::domain_computation::primary_graph::WorthQueryWorkflowConditionSources<
+            Schema,
+        >,
+        idempotency: WorthQueryApplicationIdempotencyBinding,
+    ) -> Result<Option<WorkflowProgressOutcome>, WorthQueryApplicationIdempotencyResolutionDenial>
+    where
+        Schema: ApplicationSchema,
+        Operation: 'static,
+        Input: Clone + Send + Sync + 'static,
+;
+}
+
+impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvanceConditionReplayExt<Schema, Operation, Input, Scope> for PreparedWorkflowAdvance<Schema, Operation, Input, Scope>
+
+{
+    fn resolve_condition_replay(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,

@@ -1,7 +1,7 @@
 #[path = "operation/actor_origin.rs"]
-mod actor_origin;
+pub(crate) use worth_query_execution_attempt::facade::domain_computation::primary_graph::application_attempt::workflow_transition_program::publication::operation::actor_origin;
 #[path = "operation/approval_denial.rs"]
-mod approval_denial;
+pub(crate) use worth_query_execution_attempt::facade::domain_computation::primary_graph::application_attempt::workflow_transition_program::publication::operation::approval_denial;
 use crate::domain_computation::primary_graph::application_attempt::check_request_live;
 use std::sync::{Arc, Mutex};
 use worth_query_declaration::facade::application_program::ApplicationProgramRevision;

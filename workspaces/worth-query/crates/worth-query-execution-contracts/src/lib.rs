@@ -30,6 +30,7 @@ mod product_branch_denial;
 mod product_stale;
 mod projection_denial;
 mod provider_session_denial_kind;
+mod publication_access;
 mod read_observation;
 mod relational_execution_denial;
 mod runtime_time;

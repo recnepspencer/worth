@@ -5,7 +5,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryElevationApprovalProgram, WorthQueryElevationCloseProgram,
     WorthQueryElevationRequestProgram, WorthQueryMandatoryReviewProgram,
 };
-mod carrier;
+pub(crate) mod carrier;
 
 /// The exact program whose installed seal and current authority were readmitted.
 /// Entry callers can neither construct nor extract its owned program.
@@ -104,22 +104,22 @@ impl<'a, Schema: ApplicationSchema, Program: CommitCarrier<Schema>>
         })
     }
 }
-mod application_commit;
-mod conditional_operation;
-mod output_source;
+pub(crate) mod application_commit;
+pub(crate) mod conditional_operation;
+pub(crate) mod output_source;
 
-mod forwarding;
-mod managed_start;
+pub(crate) mod forwarding;
+pub(crate) mod managed_start;
 pub(crate) mod preparation;
-mod progression;
+pub(crate) mod progression;
 pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) use preparation::prepare_application_commit;
 
-mod capability_revocation;
-mod delegation_activation;
-mod elevation_approval;
-mod elevation_close;
-mod elevation_request;
-mod mandatory_review;
+pub(crate) mod capability_revocation;
+pub(crate) mod delegation_activation;
+pub(crate) mod elevation_approval;
+pub(crate) mod elevation_close;
+pub(crate) mod elevation_request;
+pub(crate) mod mandatory_review;
 
 mod court_doors_for_test;
 

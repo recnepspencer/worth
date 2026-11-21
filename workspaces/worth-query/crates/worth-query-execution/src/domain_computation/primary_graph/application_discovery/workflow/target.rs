@@ -1,4 +1,5 @@
 //! Exact-data locator shared by original-intent discovery and indexed enumeration.
+use crate::domain_computation::primary_graph::application_discovery::workflow::view::WorthQueryWorkflowReadBasisRuntimeExt as _;
 use crate::domain_computation::primary_graph::ReadObservationRuntimeExt;
 use super::admission::admit;
 use super::admission::WorthQueryWorkflowReadDenial as Denial;

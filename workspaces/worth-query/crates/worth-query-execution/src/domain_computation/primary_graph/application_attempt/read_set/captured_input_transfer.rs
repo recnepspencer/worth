@@ -3,13 +3,23 @@ use crate::domain_computation::primary_graph::SourceReadAuthorizationRuntimeExt;
 use super::*;
 use crate::domain_computation::authorization::WorthQueryInstalledAuthorizationRegistry;
 
-impl<S, O, I, E>
-    WorthQueryCompleteApplicationReadSet<S, O, I, E, WorthQueryProjectedApplicationMutation>
+pub(in crate::domain_computation::primary_graph) trait ReadSetCapturedInputTransferExt: Sized {
+    fn append_captured_inputs(
+        &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        captured: Self,
+        registry: &Arc<WorthQueryInstalledAuthorizationRegistry>,
+        policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial>;
+}
+
+impl<S, O, I, E> ReadSetCapturedInputTransferExt
+    for WorthQueryCompleteApplicationReadSet<S, O, I, E, WorthQueryProjectedApplicationMutation>
 {
     /// The producer owner separately checks its exact typed input, edition and
     /// component before any numerical contact. This owner checks read authority
     /// and native support, then retains the old completed body as Source facts.
-    pub(in crate::domain_computation::primary_graph) fn append_captured_inputs(
+    fn append_captured_inputs(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         captured: Self,

@@ -1,12 +1,53 @@
 //! Settlement consumes a validated performed receipt, never a proposed input.
 use super::*;
 
-impl<Schema, Operation, Input, Scope> PreparedWorkflowOperation<Schema, Operation, Input, Scope>
+pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) trait PreparedWorkflowOperationSettlementExt<Schema, Operation, Input, Scope>: Sized
 where
     Schema: ApplicationSchema,
     Operation: 'static,
 {
-    pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) fn settle<
+    fn settle<
+        Binding,
+    >(
+        self,
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        receipt: &WorthQueryApplicationCommitReceipt,
+    ) -> Result<
+        PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
+        WorthQueryApplicationAttemptDenial,
+    >
+    where
+        Binding: ApplicationMutationBinding<Schema>,
+;
+    fn settle_recovered<
+        Binding,
+    >(
+        self,
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        receipt: &WorthQueryApplicationCommitReceipt,
+        recovery: &crate::domain_computation::application_aftermath::WorthQueryRecoverySafeRetryAdmission,
+    ) -> Result<
+        PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
+        WorthQueryApplicationAttemptDenial,
+    >
+    where
+        Binding: ApplicationMutationBinding<Schema>,
+;
+    fn settle_validated(
+        self,
+        performed: ValidatedWorkflowOperationReceipt<'_>,
+    ) -> Result<
+        PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
+        WorthQueryApplicationAttemptDenial,
+    >;
+}
+
+impl<Schema, Operation, Input, Scope> PreparedWorkflowOperationSettlementExt<Schema, Operation, Input, Scope> for PreparedWorkflowOperation<Schema, Operation, Input, Scope>
+where
+    Schema: ApplicationSchema,
+    Operation: 'static,
+{
+    fn settle<
         Binding,
     >(
         self,
@@ -30,7 +71,7 @@ where
         self.settle_validated(performed)
     }
 
-    pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) fn settle_recovered<
+    fn settle_recovered<
         Binding,
     >(
         self,

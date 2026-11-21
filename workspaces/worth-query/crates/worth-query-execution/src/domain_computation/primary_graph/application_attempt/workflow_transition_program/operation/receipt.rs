@@ -1,3 +1,4 @@
+pub use worth_query_execution_attempt::facade::domain_computation::primary_graph::application_attempt::workflow_transition_program::operation::receipt::*;
 use sha2::{Digest, Sha256};
 use worth_query_declaration::facade::application_schema::{
     ApplicationOperationRef, ApplicationStructuredValueBinding,
@@ -5,33 +6,6 @@ use worth_query_declaration::facade::application_schema::{
 
 use super::*;
 
-pub(in crate::domain_computation::primary_graph) struct ValidatedWorkflowOperationReceipt<'receipt>
-{
-    receipt: &'receipt WorthQueryApplicationCommitReceipt,
-    identity: [u8; 32],
-}
-impl ValidatedWorkflowOperationReceipt<'_> {
-    pub(super) fn outputs(
-        &self,
-    ) -> &crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence {
-        self.receipt.output_correspondence()
-    }
-    pub(in crate::domain_computation::primary_graph) fn principal(
-        &self,
-    ) -> worth_relational::facade::identity::EntityId {
-        let principal = self.receipt.principal_scope().principal();
-        worth_relational::facade::identity::EntityId::new(
-            worth_relational::facade::identity::PartitionId::new(principal.partition_id()),
-            principal.local_slot(),
-            principal.generation(),
-        )
-    }
-    pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) fn identity(
-        &self,
-    ) -> [u8; 32] {
-        self.identity
-    }
-}
 
 pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) fn validate_operation_receipt<
     'receipt,
@@ -102,12 +76,6 @@ where
     Ok(ValidatedWorkflowOperationReceipt { receipt, identity })
 }
 
-pub fn operation_receipt_requires_recovery(receipt: &WorthQueryApplicationCommitReceipt) -> bool {
-    receipt.dispatch_outbox().is_some()
-        && !receipt
-            .external_dispatch()
-            .is_some_and(|dispatch| dispatch.is_external_completion())
-}
 
 pub fn validate_operation_receipt_custody(
     node_path: &str,
@@ -132,15 +100,3 @@ pub fn receipt_identity(receipt: &WorthQueryApplicationCommitReceipt) -> Option<
     ))
 }
 
-pub fn receipt_identity_from_outcome(
-    runtime_authority: u64,
-    outcome_identity: u64,
-    installed_operation: &[u8; 32],
-) -> [u8; 32] {
-    let mut digest = Sha256::new();
-    digest.update(b"worth-query.workflow-operation-receipt.v1");
-    digest.update(runtime_authority.to_le_bytes());
-    digest.update(outcome_identity.to_le_bytes());
-    digest.update(installed_operation);
-    digest.finalize().into()
-}

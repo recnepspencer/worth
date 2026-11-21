@@ -13,15 +13,7 @@ use super::super::PublishedWorkflowInstanceRef;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 #[must_use = "prepared workflow instance cancellation owns a live application attempt"]
-pub struct PreparedWorkflowInstanceCancellation<Schema, Operation, Input, Scope> {
-    pub(super) program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
-    pub(super) program_revision: ApplicationProgramRevision,
-    pub(super) instance: PublishedWorkflowInstanceRef,
-    pub(super) cancellation_identity: String,
-    pub(super) intent_identity: [u8; 32],
-    pub(super) cancellation_identity_locator: AspectFieldLocator,
-    pub(super) performed: Vec<String>,
-}
+pub use worth_query_execution_attempt::facade::domain_computation::primary_graph::application_attempt::workflow_instance_program::cancellation::PreparedWorkflowInstanceCancellation;
 
 /// A canceled instance and the effects it performed before it ended, which
 /// cancellation never reverses.
@@ -142,13 +134,3 @@ where
     }
 }
 
-impl<Schema, Operation, Input, Scope>
-    PreparedWorkflowInstanceCancellation<Schema, Operation, Input, Scope>
-{
-    /// Controls retained as facts; each host call obtains fresh execution admission.
-    pub fn request_scope(
-        &self,
-    ) -> &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope {
-        self.program.request_scope()
-    }
-}

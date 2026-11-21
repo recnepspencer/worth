@@ -5,6 +5,8 @@
 //! handle it admitted, so neither cross-runtime nor same-runtime substitution
 //! can open a transition.
 
+pub use worth_query_execution_attempt::facade::domain_computation::application_aftermath::recovery_progression::authority::*;
+
 use worth_proof::{
     Artifact, AssumptionBasis, CurrentValidity, FreshnessScopedBasis, NoProofs, PhaseMarker,
 };
@@ -19,125 +21,9 @@ use super::super::recovery_handle::{
     WorthQueryRecoveryHandleDenial, WorthQueryRecoveryHandleDenialKind,
 };
 use super::disclose::WorthQueryRecoveryDisclosureAdmission;
-use super::expiry::deny_if_expired;
+use worth_query_execution_attempt::facade::domain_computation::application_aftermath::recovery_progression::expiry::deny_if_expired;
 
-#[derive(Debug)]
-struct WorthQueryCurrentRecoveryAuthorityPhase;
-impl PhaseMarker for WorthQueryCurrentRecoveryAuthorityPhase {}
 
-worth_proof::authority_marker!(WorthQueryRecoveryCurrentAuthorityMint);
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-struct WorthQueryRecoveryAuthorityBasis {
-    home_owner: worth_runtime_world::facade::RuntimeWorldOwnerIdentity,
-    runtime: WorthQueryRuntimeAuthorityIdentity,
-    handle: WorthQueryRecoveryHandleAuthorityIdentity,
-}
-
-type WorthQueryCurrentRecoveryAuthority = Artifact<
-    WorthQueryCurrentRecoveryAuthorityPhase,
-    (),
-    NoProofs,
-    FreshnessScopedBasis<CurrentValidity, AssumptionBasis<WorthQueryRecoveryAuthorityBasis>>,
->;
-
-/// Proof that current capability, operation, and binding truth matched.
-///
-/// Only the owning runtime can mint this proof. The carried basis identifies
-/// that runtime without exposing a caller-constructible identity lane.
-#[derive(Debug)]
-pub struct WorthQueryRecoveryEffectAuthority {
-    current: WorthQueryCurrentRecoveryAuthority,
-}
-
-impl WorthQueryRecoveryEffectAuthority {
-    pub(crate) fn mint(
-        runtime_authority: WorthQueryRuntimeAuthorityIdentity,
-        handle_authority: WorthQueryRecoveryHandleAuthorityIdentity,
-        home_owner: worth_runtime_world::facade::RuntimeWorldOwnerIdentity,
-    ) -> Self {
-        Self {
-            current: Artifact::with_current_basis(
-                (),
-                WorthQueryRecoveryAuthorityBasis {
-                    runtime: runtime_authority,
-                    home_owner,
-                    handle: handle_authority,
-                },
-                WorthQueryRecoveryCurrentAuthorityMint::witness(),
-            ),
-        }
-    }
-
-    pub(crate) fn ensure_for(
-        &self,
-        handle: &WorthQueryRecoveryHandle,
-    ) -> Result<(), WorthQueryRecoveryHandleDenial> {
-        ensure_authority_owns_handle(*self.current.strong_basis().value(), handle)?;
-        handle.ensure_live()?;
-        deny_if_expired(handle, handle.registry_clock())
-    }
-
-    /// Finalize an already performed dispatch without resampling expiry after I/O.
-    pub(crate) fn ensure_performed_for(
-        &self,
-        handle: &WorthQueryRecoveryHandle,
-    ) -> Result<(), WorthQueryRecoveryHandleDenial> {
-        ensure_authority_owns_handle(*self.current.strong_basis().value(), handle)?;
-        handle.ensure_live()
-    }
-}
-
-/// Proof that disclosure admission and binding truth matched for inspection.
-#[derive(Debug)]
-pub struct WorthQueryRecoveryInspectAuthority {
-    current: WorthQueryCurrentRecoveryAuthority,
-}
-
-impl WorthQueryRecoveryInspectAuthority {
-    pub(crate) fn mint(
-        runtime_authority: WorthQueryRuntimeAuthorityIdentity,
-        handle_authority: WorthQueryRecoveryHandleAuthorityIdentity,
-        home_owner: worth_runtime_world::facade::RuntimeWorldOwnerIdentity,
-    ) -> Self {
-        Self {
-            current: Artifact::with_current_basis(
-                (),
-                WorthQueryRecoveryAuthorityBasis {
-                    runtime: runtime_authority,
-                    home_owner,
-                    handle: handle_authority,
-                },
-                WorthQueryRecoveryCurrentAuthorityMint::witness(),
-            ),
-        }
-    }
-
-    pub(crate) fn ensure_for(
-        &self,
-        handle: &WorthQueryRecoveryHandle,
-    ) -> Result<(), WorthQueryRecoveryHandleDenial> {
-        ensure_authority_owns_handle(*self.current.strong_basis().value(), handle)?;
-        handle.ensure_live()?;
-        deny_if_expired(handle, handle.registry_clock())
-    }
-}
-
-/// Re-establish that effect authority belongs to this exact live handle.
-pub fn require_fresh_effect_authority(
-    handle: &WorthQueryRecoveryHandle,
-    authority: &WorthQueryRecoveryEffectAuthority,
-) -> Result<(), WorthQueryRecoveryHandleDenial> {
-    authority.ensure_for(handle)
-}
-
-/// Inspection requires disclosure-backed authority for this exact live handle.
-pub fn require_inspect_disclosure(
-    handle: &WorthQueryRecoveryHandle,
-    authority: &WorthQueryRecoveryInspectAuthority,
-) -> Result<(), WorthQueryRecoveryHandleDenial> {
-    authority.ensure_for(handle)
-}
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
@@ -215,55 +101,6 @@ where
     }
 }
 
-fn ensure_authority_owns_handle(
-    basis: WorthQueryRecoveryAuthorityBasis,
-    handle: &WorthQueryRecoveryHandle,
-) -> Result<(), WorthQueryRecoveryHandleDenial> {
-    handle
-        .home_owner()
-        .admit_incarnation(basis.home_owner)
-        .map_err(|cause| {
-            WorthQueryRecoveryHandleDenial::new(match cause {
-                worth_proof::HomeIncarnationDenial::StaleIncarnation => {
-                    WorthQueryRecoveryHandleDenialKind::StaleIncarnation
-                }
-                worth_proof::HomeIncarnationDenial::ForeignHome => {
-                    WorthQueryRecoveryHandleDenialKind::FreshAuthorityDenied
-                }
-            })
-        })?;
-    if handle.runtime_authority() != basis.runtime || handle.authority_identity() != basis.handle {
-        return Err(WorthQueryRecoveryHandleDenial::new(
-            WorthQueryRecoveryHandleDenialKind::FreshAuthorityDenied,
-        ));
-    }
-    Ok(())
-}
-
-/// Admission-time ownership: the material presented to *obtain* authority must
-/// come from this runtime.
-///
-/// Deliberately a different cause from [`ensure_authority_owns_handle`], which
-/// runs at proof *use*. `ForeignRuntime` means "this handle or this admission
-/// was never ours"; `FreshAuthorityDenied` means "this authority is ours but is
-/// not the authority for this handle". Collapsing them would let a caller learn
-/// only that something was refused (Q8.20-C4).
-///
-/// Takes the two identities rather than the runtime so the distinction is
-/// testable without standing up a published runtime — the caller still reads
-/// the owner identity from the runtime it is a method on, never from an
-/// argument.
-pub fn ensure_same_runtime(
-    owner: WorthQueryRuntimeAuthorityIdentity,
-    presented: WorthQueryRuntimeAuthorityIdentity,
-) -> Result<(), WorthQueryRecoveryHandleDenial> {
-    if presented != owner {
-        return Err(WorthQueryRecoveryHandleDenial::new(
-            WorthQueryRecoveryHandleDenialKind::ForeignRuntime,
-        ));
-    }
-    Ok(())
-}
 
 fn admission_authorization_denial(
     denial: crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial,
@@ -272,5 +109,3 @@ fn admission_authorization_denial(
         denial.kind(),
     ))
 }
-
-mod court_doors_for_test;

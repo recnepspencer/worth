@@ -226,7 +226,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         }
         let installed = application
             .installed_program_support()
-            .and_then(|support| support.native_program(owner.owned_revision()))
+            .and_then(|support| support.native_program(owner.owned_revision()).map(|r| crate::domain_computation::primary_graph::attempt_ports::downcast_supported_program(r.as_ref())))
             .ok_or(Denial::RequiresSemanticCorrection(
                 Eligibility::ProgramUnavailable,
             ))?;

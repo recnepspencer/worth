@@ -1,30 +1,10 @@
-//! Dispatching a co-committed external effect after the commit is durable.
-//!
-//! Dispatch runs strictly after the mutation transaction has committed, so the
-//! outbox record it reads is already recoverable truth. A host that installed
-//! no transport, or an operation that declared no external effect, pays nothing
-//! and observes nothing here.
-//!
-//! Safe-retry re-dispatch (Gate 8.7) shares this module so
-//! [`dispatch_external_effect`] remains the single classification site (R8.67).
-
-#![deny(private_interfaces)]
-
-use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
-
+pub use worth_query_execution_attempt::facade::domain_computation::primary_graph::application_attempt::provider_execution::external_dispatch::*;
 mod cleanup_dispatch;
 mod committed;
-pub(crate) use worth_query_execution_lineage::facade::domain_computation::primary_graph::application_attempt::provider_execution::external_dispatch::denial;
-pub(in crate::domain_computation) mod durable_attempt;
-enum OriginalDispatchObservation<'a> {
-    Starting,
-    Observed(&'a WorthQueryExternalEffectDispatch),
-}
-
+pub mod durable_attempt;
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use std::sync::Arc;
-
 use worth_query_installation::facade::{ApplicationSchema, InstalledAftermathRecoveryContract};
-
 use super::super::WorthQueryApplicationCommitOutcome;
 use crate::domain_computation::application_aftermath::{
     require_fresh_effect_authority, WorthQueryExternalEffectDispatch,
@@ -36,49 +16,6 @@ use crate::domain_computation::authorization::{
 };
 use crate::domain_computation::primary_graph::application_runtime::WorthQueryTerminalEffectRefusal;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
-pub use denial::{
-    WorthQueryExternalDispatchAttemptDenial, WorthQueryExternalDispatchPreparationDenial,
-    WorthQueryExternalRedispatchDenial, WorthQueryExternalTransportInstallationDenial,
-};
-pub use durable_attempt::WorthQueryDurableDispatchRecordDenial;
-
-/// Owner-sealed material for one re-dispatch that actually crossed the
-/// runtime's committed-observation dispatch operation.
-///
-/// The fields and constructor stay private to this module. Other crate
-/// siblings may pass the seal to the recovery evidence owner, but cannot mint
-/// one from a free handle identity and dispatch.
-pub(crate) struct WorthQueryPerformedExternalRedispatchSeal {
-    handle: crate::domain_computation::application_aftermath::recovery_handle::WorthQueryRecoveryHandleAuthorityIdentity,
-    dispatch: WorthQueryExternalEffectDispatch,
-}
-
-struct WorthQueryExternalRedispatchMint;
-
-impl WorthQueryExternalRedispatchMint {
-    const fn witness() -> Self {
-        Self
-    }
-}
-
-impl WorthQueryPerformedExternalRedispatchSeal {
-    fn new(
-        _mint: WorthQueryExternalRedispatchMint,
-        handle: crate::domain_computation::application_aftermath::recovery_handle::WorthQueryRecoveryHandleAuthorityIdentity,
-        dispatch: WorthQueryExternalEffectDispatch,
-    ) -> Self {
-        Self { handle, dispatch }
-    }
-
-    pub(crate) fn into_parts(
-        self,
-    ) -> (
-        crate::domain_computation::application_aftermath::recovery_handle::WorthQueryRecoveryHandleAuthorityIdentity,
-        WorthQueryExternalEffectDispatch,
-    ){
-        (self.handle, self.dispatch)
-    }
-}
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where

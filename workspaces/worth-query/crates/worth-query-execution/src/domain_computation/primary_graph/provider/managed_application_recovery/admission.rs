@@ -204,7 +204,7 @@ Err(PublicationDenial::Stopped(stop)) => {
                     );
                     Ok((
                         WorthQueryManagedApplicationRecoveryOutcome::Performed(
-                            WorthQueryManagedApplicationRecoveryPerformed {
+                            WorthQueryManagedApplicationRecoveryPerformed::from_attempt_parts(worth_query_execution_attempt::facade::ports::WorthQueryAttemptCrateSeal::new(), worth_query_execution_attempt::facade::domain_computation::primary_graph::provider::managed_application_recovery::performed::WorthQueryManagedApplicationRecoveryPerformedAttemptParts {
                                 original_owner,
                                 original_world_commit,
                                 original_native_commit,
@@ -215,7 +215,7 @@ Err(PublicationDenial::Stopped(stop)) => {
                                 publication_failure,
                                 prior_cleanup_failure,
                                 pending_cleanup,
-                            },
+                            }),
                         ),
                         source,
                     ))

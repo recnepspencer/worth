@@ -170,22 +170,21 @@ where
         order: &ApplicationProgramConnectionOrder,
     ) -> WorthQueryApplicationEffectProgram<S, O, I, Scope> {
         let recording = runtime.runtime.product_runtime.owner.owner_identity().durable().map(|_| crate::domain_computation::primary_graph::application_output_demand::discovery_recipe::capture::<S,Discovery<S,C>>(runtime,execution,recipe.as_ref().clone()));
-        program
-            .synchronous_outputs
-            .push(capture_discovered::<S, Discovered<C, E, Recipe<S, C>>>(
-                execution,
-                Binding::<S, C>::IDENTITY,
-                || Discovered {
-                    recipe,
-                    order: order.clone(),
-                    marker: PhantomData,
-                },
-            ));
-        if let Some(CapturedSynchronousOutputs::Prepared { source_recipe, .. }) =
-            program.synchronous_outputs.last_mut()
-        {
+        let mut captured = capture_discovered::<S, Discovered<C, E, Recipe<S, C>>>(
+            execution,
+            Binding::<S, C>::IDENTITY,
+            || Discovered {
+                recipe,
+                order: order.clone(),
+                marker: PhantomData,
+            },
+        );
+        if let CapturedSynchronousOutputs::Prepared { source_recipe, .. } = &mut captured {
             *source_recipe = recording;
         }
+        program
+            .synchronous_outputs
+            .push(worth_query_execution_attempt::facade::ports::OpaqueSynchronousOutputs::new(captured));
         program
     }
 

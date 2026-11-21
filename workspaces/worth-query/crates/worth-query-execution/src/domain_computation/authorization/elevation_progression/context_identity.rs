@@ -1,3 +1,4 @@
+use crate::domain_computation::authorization::operation_admission::capability_admission::preparation::observation::admitted_access::AdmittedCapabilityAccessRuntimeExt as _;
 use worth_foundational::facade::AspectValue;
 use worth_query_declaration::facade::application_capability::ApplicationCapabilityRequest;
 use worth_query_installation::facade::ApplicationSchema;

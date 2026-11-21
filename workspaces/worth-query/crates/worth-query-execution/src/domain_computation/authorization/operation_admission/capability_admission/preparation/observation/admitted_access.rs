@@ -25,7 +25,7 @@ mod exact_observation;
 mod issuance;
 pub(in super::super) use issuance::admit_observed_capability;
 mod inspection;
-mod operation_progression;
+pub(crate) mod operation_progression;
 
 pub(in crate::domain_computation::authorization) use exact_observation::{
     WorthQueryDelegationResolvedRequest, WorthQueryExactCapabilityObservationContext,
@@ -154,53 +154,40 @@ pub(in crate::domain_computation::authorization) use exact_observation::{
 ///     );
 /// }
 /// ```
-pub struct WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>
-where
-    Input: ApplicationCapabilityRequest<Schema, Capability>,
-{
-    authentication: Arc<dyn std::any::Any + Send + Sync>,
-    runtime_authority:
-        crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
-    home_owner: worth_runtime_world::facade::RuntimeWorldOwnerIdentity,
-    binding_identity: ApplicationSchemaBindingIdentity,
-    capability: Arc<str>,
-    capability_type: Arc<str>,
-    operation: Arc<str>,
-    principal_entity_id: worth_relational::facade::identity::EntityId,
-    input: worth_query_declaration::facade::application_operation::ApplicationSharedInput<Input>,
-    governed_input_identity: Option<[u8; 32]>,
-    projection: ApplicationCapabilityRequestProjection<
-        Schema,
-        <Input as ApplicationCapabilityRequest<Schema, Capability>>::Scope,
-        <Input as ApplicationCapabilityRequest<Schema, Capability>>::Context,
-    >,
-    resolved: WorthQueryResolvedCapabilityRequest<
-        Schema,
-        <Input as ApplicationCapabilityRequest<Schema, Capability>>::Scope,
-    >,
-    authentication_valid_until: Instant,
-    request_scope: WorthQueryRequestScope,
-    canonical_work: WorthQueryCanonicalWorkEvidence,
-    authorization: WorthQueryRetainedCapabilityAuthorization,
-    operation_admission_identity: super::super::super::super::WorthQueryOperationAdmissionIdentity,
-    graph_work_session:
-        crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
-    graph_work_managed_run:
-        crate::domain_computation::provider_session::WorthQueryGraphWorkManagedRunIdentity,
-    graph_work_branch: worth_relational::facade::history::BranchId,
-    graph_work_capability: Option<[u8; 32]>,
-    graph_work_decision_facts: usize,
-    product: crate::basis::WorthQueryProductBranch,
-    security_basis: worth_relational::facade::branch::RelationalBranchBasisAdmissionIdentity,
-    _marker: PhantomData<fn() -> (Capability, Operation)>,
-}
+pub use worth_query_execution_attempt::facade::domain_computation::authorization::WorthQueryAdmittedApplicationCapabilityAccess;
 
-impl<Schema, Capability, Operation, Input>
-    WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>
-where
+
+pub(in crate::domain_computation) trait AdmittedCapabilityAccessRuntimeExt<
+    Schema,
+    Capability,
+    Operation,
+    Input,
+> where
     Input: ApplicationCapabilityRequest<Schema, Capability>,
 {
-    pub(in crate::domain_computation::authorization) fn validate_operation_authority(
+    fn refuse_stale_incarnation(
+        &self,
+        receiver: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    ) -> Result<(), crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial>
+    where
+        Schema: ApplicationSchema;
+
+    fn read_product(
+        &self,
+        receiver: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    ) -> Option<crate::basis::WorthQueryProductBranchLease>
+    where
+        Schema: ApplicationSchema;
+
+    fn validate_workflow_read_authority(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    ) -> Result<(), crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial>
+    where
+        Schema: ApplicationSchema;
+
+    fn validate_operation_authority(
         &self,
         runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         operation: &worth_query_installation::facade::WorthQueryInstalledApplicationOperation<
@@ -212,17 +199,9 @@ where
     ) -> Result<(), crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial>
     where
         Schema: ApplicationSchema,
-        Operation: ApplicationOperationMarkerIdentity<Schema>,
-    {
-        operation_progression::validate_capability_operation_authority(
-            runtime,
-            self,
-            operation,
-            progression,
-        )
-    }
+        Operation: ApplicationOperationMarkerIdentity<Schema>;
 
-    pub(in crate::domain_computation::authorization) fn bind_operation_preconditions(
+    fn bind_operation_preconditions(
         &self,
         runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         operation: &worth_query_installation::facade::WorthQueryInstalledApplicationOperation<
@@ -242,17 +221,9 @@ where
         crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial,
     >
     where
-        Schema: ApplicationSchema,
-    {
-        operation_progression::bind_capability_operation_preconditions(
-            runtime,
-            self,
-            operation,
-            preconditions,
-        )
-    }
+        Schema: ApplicationSchema;
 
-    pub(in crate::domain_computation::authorization) fn transition_operation(
+    fn transition_operation(
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
@@ -272,36 +243,9 @@ where
         crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial,
     >
     where
-        Schema: ApplicationSchema,
-    {
-        operation_progression::transition_capability_operation(
-            execution,
-            runtime,
-            self,
-            operation,
-            preconditions,
-        )
-    }
+        Schema: ApplicationSchema;
 
-    pub(in crate::domain_computation::authorization) fn capability_input(&self) -> &Input {
-        self.input.as_ref()
-    }
-
-    /// Reports the derivations that encoded this request's key, and its input
-    /// when the carrier left that to the request, in the admission phase. Only
-    /// Publication's capability workflow entries report them, once for each
-    /// admission that can reach a receipt.
-    pub fn record_request_identity_work(
-        &mut self,
-        _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
-        work: ApplicationCanonicalWork,
-    ) {
-        self.canonical_work = self
-            .canonical_work
-            .combine(WorthQueryCanonicalWorkEvidence::streamed_identities(work));
-    }
-
-    pub(in crate::domain_computation::authorization) fn with_exact_observation<Output>(
+    fn with_exact_observation<Output>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
@@ -313,32 +257,7 @@ where
         crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial,
     >
     where
-        Schema: ApplicationSchema,
-    {
-        exact_observation::with_exact_observation(execution, self, runtime, observe)
-    }
-
-    pub(in crate::domain_computation::authorization) fn retain_observed_support(
-        &mut self,
-        supporting: WorthQueryRetainedCapabilitySupport,
-    ) -> Result<(), ()> {
-        self.authorization.retain_supporting(supporting)?;
-        self.graph_work_decision_facts = self.graph_work_decision_facts.saturating_add(1);
-        Ok(())
-    }
-
-    pub(in crate::domain_computation::authorization) fn resolved_context_entity(
-        &self,
-        slot: &worth_query_declaration::facade::application_capability::ApplicationCapabilityContextEntitySlotBinding,
-    ) -> Option<worth_relational::facade::identity::EntityId> {
-        self.resolved.context_entity(slot)
-    }
-
-    pub(super) fn resource_entity_kind(&self) -> worth_relational::facade::identity::KindId {
-        self.resolved.resource_entity_kind()
-    }
-
-    pub(super) fn resource_entity_name(&self) -> &str {
-        self.resolved.resource_entity_name()
-    }
+        Schema: ApplicationSchema;
 }
+
+mod runtime_ext;

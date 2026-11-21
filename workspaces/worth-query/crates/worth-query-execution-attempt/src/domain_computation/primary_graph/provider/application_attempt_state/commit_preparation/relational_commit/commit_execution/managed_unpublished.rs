@@ -1,0 +1,201 @@
+use super::managed_views;
+use super::WorthQueryPreImageRetentionWork;
+use super::WorthQueryPrimaryGraphApplicationAttempt;
+use super::WorthQueryPrimaryMutationWorkCounters;
+
+/// All Query evidence whose owner effects crossed World's partial boundary.
+/// The provider's exact unpublished entry owns this until a fresh World
+/// successor performs or the recovery is explicitly retired.
+pub struct ManagedUnpublishedAttempt {
+    pub(super) _completion: Option<super::super::super::super::commit_completion::WorthQueryApplicationAttemptCompletion>,
+    pub(super) publication_mode: ManagedUnpublishedPublicationMode,
+    pub(super) members: Vec<crate::domain_computation::primary_graph::provider::CoupledApplicationMember>,
+    pub(super) group_emissions: Option<crate::domain_computation::primary_graph::application_attempt::WorthQueryAdmittedApplicationEmissionBatch>,
+    pub(super) group_evidence: Option<super::coupled::CoupledEvidenceSlots>,
+    pub(super) prepared_group_publications: Option<worth_relational::facade::mvcc::RelationalPreparedOutputPublications>,
+    pub(super) attempt: WorthQueryPrimaryGraphApplicationAttempt,
+    pub(super) work: WorthQueryPrimaryMutationWorkCounters,
+    pub(super) predicate: Option<crate::domain_computation::primary_graph::application_query::derived_view::PredicatePreparationOwner>,
+    pub(super) index_maintenance_work: worth_relational::facade::indexes::DerivedIndexMaintenanceWork,
+    pub(super) retained_preimage:
+        Option<crate::domain_computation::application_aftermath::WorthQueryRetainedPreImage>,
+    pub(super) preimage_retention_work: WorthQueryPreImageRetentionWork,
+    pub(super) before: super::precommit_snapshot::WorthQueryPrecommitSnapshot,
+    pub(super) managed_views: Option<managed_views::PreparedViewPublication>,
+    pub(super) source_fact_rebase: Option<super::super::PreparedSourceFactRebase>,
+    pub(super) required_prerequisites:
+        Option<crate::domain_computation::primary_graph::PreparedPrerequisiteClaims>,
+    pub(super) prepared_lineage_slot:
+        Option<crate::domain_computation::primary_graph::output_lineage::PreparedOutputLineageSlot>,
+    pub(super) prepared_output_witness:
+        Option<crate::domain_computation::primary_graph::output_lineage::PreparedNativeOutputWitness>,
+    pub(super) prepared_touched_records: super::PreparedTouchedRecords,
+    pub(super) lineage_metadata:
+        Option<crate::domain_computation::primary_graph::output_lineage::PreparedLineageRecoveryMetadata>,
+
+    pub(super) reserved_terminal:
+        crate::domain_computation::execution_runtime::product_world::WorthQueryReservedProductPublicationReceipt,
+}
+
+#[derive(Clone, Copy, Eq, PartialEq)]
+pub(super) enum ManagedUnpublishedPublicationMode {
+    Ordinary,
+    ConditionalDefinition,
+}
+
+impl ManagedUnpublishedAttempt {
+    pub fn ordinary_adoption_supported(
+        &self,
+    ) -> bool {
+        self.publication_mode == ManagedUnpublishedPublicationMode::Ordinary
+    }
+
+    pub fn conditional_definition_identity(
+        &self,
+    ) -> Option<[u8; 32]> {
+        if self.ordinary_adoption_supported() {
+            None
+        } else {
+            self.attempt.idempotency().conditional_definition_identity()
+        }
+    }
+    pub fn matches_fresh_binding(
+        &self,
+        idempotency: crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding,
+        scope: &crate::domain_computation::authorization::WorthQueryOperationScopeBinding,
+        product: &worth_runtime_world::facade::ProductBranchObservation,
+    ) -> bool {
+        self.attempt.idempotency() == idempotency
+            && self.attempt.affinity().operation_scope() == scope
+            && self.attempt.affinity().product_publication().observation() == product
+    }
+
+    pub fn prepare_fresh_terminal(
+        &mut self,
+        successor: worth_runtime_world::facade::ProductUnpublishedRecoveryHandle,
+    ) -> Result<(), worth_relational::facade::mvcc::CompanionPreflightStop> {
+        if self.reserved_terminal.matches_recovery_handle(&successor) {
+            return Ok(());
+        }
+        self.reserved_terminal.rebind_unfilled(successor);
+        Ok(())
+    }
+
+    pub fn prepare_fresh_slot(
+        &mut self,
+        provider: &crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider,
+        planned: &worth_runtime_world::facade::PlannedProductReferenceSuccessor,
+    ) -> Result<(), crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial> {
+        super::coupled::prepare_lineage(provider, &mut self.members, planned)?;
+        let Some(binding) = self.attempt.output_binding_type() else {
+            assert!(self.required_prerequisites.is_none());
+            return Ok(());
+        };
+        let scope = self.attempt.affinity().operation_scope();
+        let partition = self.attempt.idempotency().source_partition_identity();
+        if let Some(existing) = self.prepared_lineage_slot.as_ref()
+            && existing.matches_planned_successor(scope, binding, partition, planned)?
+        {
+            assert!(self.lineage_metadata.is_none());
+            assert!(self.required_prerequisites.as_ref().is_none_or(|required| {
+                required.retains_reserved_identity(existing.identity())
+            }));
+            return Ok(());
+        }
+        let mut slot =
+            crate::domain_computation::primary_graph::output_lineage::prepare_output_lineage_slot(
+                &provider.graph.output_lineage,
+                scope,
+                binding,
+                partition,
+                planned,
+            )?;
+        if let Some(required) = self.required_prerequisites.as_mut() {
+            let (producer, source) = required.native_prior_checkpoint_input();
+            slot.retain_native_prior_checkpoint(producer, source)?;
+            required.replace_reserved_identity_for_recovery(slot.identity())?;
+        }
+        if let Some(prior) = self.prepared_lineage_slot.take() {
+            assert!(self.lineage_metadata.is_none());
+            self.lineage_metadata = Some(prior.into_recovery_metadata());
+        }
+        if let Some(metadata) = self.lineage_metadata.take() {
+            slot.retain_recovery_metadata(metadata);
+        }
+        self.prepared_lineage_slot = Some(slot);
+        Ok(())
+    }
+
+    pub fn complete(
+        self,
+        performed: worth_runtime_world::facade::PerformedCompositePublication,
+        conditional_definition_generation: Option<u64>,
+    ) -> super::WorthQueryCommittedApplicationSession {
+        self.complete_with_custody(
+            performed,
+            conditional_definition_generation,
+            super::PublishedSnapshotCustody::SettledReleased,
+        )
+    }
+
+    pub(super) fn complete_live(
+        self,
+        performed: worth_runtime_world::facade::PerformedCompositePublication,
+        conditional_definition_generation: Option<u64>,
+    ) -> super::WorthQueryCommittedApplicationSession {
+        self.complete_with_custody(
+            performed,
+            conditional_definition_generation,
+            super::PublishedSnapshotCustody::LiveOwned,
+        )
+    }
+
+    fn complete_with_custody(
+        self,
+        performed: worth_runtime_world::facade::PerformedCompositePublication,
+        conditional_definition_generation: Option<u64>,
+        snapshot_custody: super::PublishedSnapshotCustody,
+    ) -> super::WorthQueryCommittedApplicationSession {
+        let product_publication = self
+            .reserved_terminal
+            .fill(performed.consume(), conditional_definition_generation);
+        let next_basis = product_publication
+            .publication()
+            .commit()
+            .basis()
+            .relational_basis()
+            .clone();
+        let committed = product_publication
+            .publication()
+            .component_results()
+            .retain_relational_commit_result()
+            .expect("settled World adoption retains the original Relational result");
+        super::WorthQueryCommittedApplicationSession {
+            attempt: self.attempt,
+            members: self.members,
+            prepared_group_publications: self.prepared_group_publications,
+            group_evidence: self.group_evidence,
+            group_emissions: self.group_emissions,
+            own_publication: None,
+            own_records: None,
+            work: self.work,
+            predicate: self.predicate,
+            index_maintenance_work: self.index_maintenance_work,
+            retained_preimage: self.retained_preimage,
+            preimage_retention_work: self.preimage_retention_work,
+            before: self.before.into_publication(),
+            next_basis,
+            committed,
+            published_snapshot_custody: snapshot_custody,
+            prepared_touched_records: Some(self.prepared_touched_records),
+            product_publication,
+            managed_views: self.managed_views,
+            source_fact_rebase: self.source_fact_rebase,
+
+            required_prerequisites: self.required_prerequisites,
+            prepared_lineage_slot: self.prepared_lineage_slot,
+            prepared_output_witness: self.prepared_output_witness,
+            coupled_deletions: Default::default(),
+        }
+    }
+}

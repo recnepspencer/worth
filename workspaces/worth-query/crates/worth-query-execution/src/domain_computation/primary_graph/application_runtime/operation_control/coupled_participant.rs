@@ -26,44 +26,6 @@ impl WorthQueryCoupledParticipantCorruptionForTest {
         self.arm.load(Ordering::Acquire) == 0
     }
 }
-impl WorthQueryApplicationAttemptOperationControl {
-    pub(in crate::domain_computation::primary_graph) fn take_coupled_participant_corruption(
-        &self,
-        prepared_writers: usize,
-    ) -> u8 {
-        match self.coupled_participant_fault.load(Ordering::Acquire) {
-            5 if prepared_writers < 2 => return 0,
-            // Taken after the commit, by the first writer whose witness is sealed.
-            WITHHELD_OUTPUT_WITNESS | BREAK_WITHOUT_SUBJECT => return 0,
-            _ => {}
-        }
-        self.coupled_participant_fault.swap(0, Ordering::AcqRel)
-    }
-    /// True once, for the next coupled assembly after the fault is armed.
-    pub(in crate::domain_computation::primary_graph) fn take_break_without_subject(&self) -> bool {
-        self.coupled_participant_fault
-            .compare_exchange(
-                BREAK_WITHOUT_SUBJECT,
-                0,
-                Ordering::AcqRel,
-                Ordering::Acquire,
-            )
-            .is_ok()
-    }
-    /// True once, for the first coupled writer sealed after the fault is armed.
-    pub(in crate::domain_computation::primary_graph) fn take_withheld_output_witness(
-        &self,
-    ) -> bool {
-        self.coupled_participant_fault
-            .compare_exchange(
-                WITHHELD_OUTPUT_WITNESS,
-                0,
-                Ordering::AcqRel,
-                Ordering::Acquire,
-            )
-            .is_ok()
-    }
-}
 impl<S> WorthQueryPrimaryGraphApplicationRuntime<S> {
     #[doc(hidden)]
     pub fn supply_private_membership_deletion_for_test(

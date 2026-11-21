@@ -27,7 +27,7 @@ pub(in crate::domain_computation::primary_graph) use entry_custody::{
     CurrentCommitProgram, ReadmittedCommitProgram,
 };
 pub(crate) mod currentness;
-mod domain_value_write;
+pub(crate) mod domain_value_write;
 pub(crate) mod local_workflow_settlement;
 pub(crate) mod native_reference_invariants;
 use currentness::{
@@ -247,7 +247,7 @@ where
     })
 }
 
-mod provider_attempt;
+pub(crate) mod provider_attempt;
 use provider_attempt::prepare_application_provider_attempt;
 
 fn take_commit_authorization<Schema, Operation, Input, Scope>(
@@ -290,7 +290,7 @@ pub(in crate::domain_computation::primary_graph) use running::progression::coupl
     InspectedAuthoredApplication, InspectedCoupledWriter,
 };
 
-mod court_doors_for_test;
+pub(crate) mod court_doors_for_test;
 pub use running::WorthQueryManagedPhaseStorageForTest;
 #[cfg(test)]
 #[path = "prepared_inline_type_budget.rs"]

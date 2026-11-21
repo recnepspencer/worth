@@ -1,4 +1,5 @@
 //! Deliver an already prepared result through the original C and lifetime owners.
+use crate::domain_computation::primary_graph::product_operation::current_read::CurrentReadControlRuntimeExt as _;
 use super::*;
 
 impl HistoryProducerInvocation<'_> {

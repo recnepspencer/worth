@@ -1,0 +1,204 @@
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
+use worth_foundational::facade::{AspectValue, InternedString};
+use worth_query_declaration::facade::application_program::{
+    ApplicationProgramRevision, ApplicationWorkflowDefinitionContentIdentity,
+};
+use worth_query_installation::facade::ApplicationSchema;
+
+use super::super::{
+    WorthQueryApplicationEffectProgram, WorthQueryApplicationIdempotencyBinding,
+    WorthQueryApplicationUncommitted,
+};
+
+/// Opaque, live application-attempt publication program.
+///
+/// Construction consumes an admitted projected read set and an owner-bound
+/// definition contract. Callers cannot provide lineage IDs, current-pointer
+/// relation IDs, effects, or branch affinity.
+///
+/// ```compile_fail,E0451
+/// use worth_query_execution::publication_boundary::workflow_definition_publication::PreparedWorkflowDefinitionPublication;
+///
+/// fn cannot_forge<Schema, Operation, Input, Scope>()
+///     -> PreparedWorkflowDefinitionPublication<Schema, Operation, Input, Scope>
+/// {
+///     PreparedWorkflowDefinitionPublication {
+///         program: unsafe { std::mem::zeroed() },
+///         program_revision: unsafe { std::mem::zeroed() },
+///         content_identity: unsafe { std::mem::zeroed() },
+///         content_identity_locator: unsafe { std::mem::zeroed() },
+///         workflow_intent_identity: [0; 32],
+///     }
+/// }
+/// ```
+#[must_use = "prepared workflow definition publication owns a live application attempt"]
+pub struct PreparedWorkflowDefinitionPublication<Schema, Operation, Input, Scope> {
+    pub(super) program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
+    pub(super) program_revision: ApplicationProgramRevision,
+    pub(super) content_identity: ApplicationWorkflowDefinitionContentIdentity,
+    pub(super) content_identity_locator: worth_foundational::facade::AspectFieldLocator,
+    pub(super) workflow_intent_identity: [u8; 32],
+}
+
+impl<Schema, Operation, Input, Scope>
+    PreparedWorkflowDefinitionPublication<Schema, Operation, Input, Scope>
+{
+    pub fn content_identity(&self) -> &ApplicationWorkflowDefinitionContentIdentity {
+        &self.content_identity
+    }
+
+    pub fn into_parts(
+        self,
+    ) -> (
+        WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
+        ApplicationProgramRevision,
+        ApplicationWorkflowDefinitionContentIdentity,
+        worth_foundational::facade::AspectFieldLocator,
+        [u8; 32],
+    ) {
+        (
+            self.program,
+            self.program_revision,
+            self.content_identity,
+            self.content_identity_locator,
+            self.workflow_intent_identity,
+        )
+    }
+}
+
+/// Opaque identity of one definition revision proven by an application commit.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct PublishedWorkflowDefinitionRef {
+    branch: crate::basis::WorthQueryProductBranch,
+    entity_id: worth_relational::facade::identity::EntityId,
+    content_identity: ApplicationWorkflowDefinitionContentIdentity,
+}
+
+/// The exact branch-current state an author observed before requesting a
+/// definition publication. A revision never overwrites a newer predecessor.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum WorkflowDefinitionExpectedPredecessor {
+    Absent,
+    Published(PublishedWorkflowDefinitionRef),
+}
+
+impl WorkflowDefinitionExpectedPredecessor {
+    pub(super) fn belongs_to_branch(&self, branch: crate::basis::WorthQueryProductBranch) -> bool {
+        match self {
+            Self::Absent => true,
+            Self::Published(predecessor) => predecessor.branch == branch,
+        }
+    }
+
+    pub(super) fn definition_entity(&self) -> Option<worth_relational::facade::identity::EntityId> {
+        match self {
+            Self::Absent => None,
+            Self::Published(predecessor) => Some(predecessor.entity_id),
+        }
+    }
+}
+
+impl PublishedWorkflowDefinitionRef {
+    pub fn retained(
+        branch: crate::basis::WorthQueryProductBranch,
+        entity_id: worth_relational::facade::identity::EntityId,
+        content_identity: ApplicationWorkflowDefinitionContentIdentity,
+    ) -> Self {
+        Self {
+            branch,
+            entity_id,
+            content_identity,
+        }
+    }
+
+    pub const fn branch(&self) -> crate::basis::WorthQueryProductBranch {
+        self.branch
+    }
+
+    /// The same definition as `branch` holds it. A fork copies definitions
+    /// under their own identity, so this is the canonical name for the copy
+    /// in requests on the fork, including fork continuation targets.
+    /// It grants nothing: `branch`'s own truth decides every start, successor
+    /// and retirement, and a definition `branch` does not hold current, such
+    /// as one on a branch it was never forked from, is refused or stale there.
+    #[must_use]
+    pub fn held_on(&self, branch: crate::basis::WorthQueryProductBranch) -> Self {
+        Self {
+            branch,
+            ..self.clone()
+        }
+    }
+
+    pub const fn entity_id(&self) -> worth_relational::facade::identity::EntityId {
+        self.entity_id
+    }
+
+    pub const fn content_identity(&self) -> &ApplicationWorkflowDefinitionContentIdentity {
+        &self.content_identity
+    }
+}
+
+/// A workflow definition publication that landed: the published definition, its commit
+/// receipt from this actual publication.
+#[derive(Debug)]
+pub struct PerformedWorkflowDefinitionPublication {
+    definition: PublishedWorkflowDefinitionRef,
+    receipt: super::super::WorthQueryApplicationCommitReceipt,
+}
+
+impl PerformedWorkflowDefinitionPublication {
+    pub const fn definition(&self) -> &PublishedWorkflowDefinitionRef {
+        &self.definition
+    }
+
+    pub const fn receipt(&self) -> &super::super::WorthQueryApplicationCommitReceipt {
+        &self.receipt
+    }
+}
+
+/// What executing a workflow definition publication produced. `ProjectionDenied` means the
+/// commit landed but its receipt did not record exactly one created definition with the
+/// published content identity, so no reference was projected.
+#[derive(Debug)]
+pub enum WorkflowDefinitionPublicationOutcome {
+    RecoveredCommitted(crate::domain_computation::primary_graph::provider::WorthQueryRecoveredApplicationCommitReceipt),
+    Published(PerformedWorkflowDefinitionPublication),
+    /// The commit did not land. A fresh landed commit is the
+    /// performed variant.
+    Application(WorthQueryApplicationUncommitted),
+    ProjectionDenied(super::super::WorthQueryApplicationCommitReceipt),
+}
+
+pub fn project_published(
+    receipt: super::super::WorthQueryApplicationCommitReceipt,
+    content_identity: ApplicationWorkflowDefinitionContentIdentity,
+    locator: &worth_foundational::facade::AspectFieldLocator,
+) -> WorkflowDefinitionPublicationOutcome {
+    let expected = AspectValue::String(InternedString::Raw(content_identity.to_string()));
+    let candidates = receipt
+        .committed_changes()
+        .created_entities_with_field_value(locator, &expected);
+    let [entity_id] = candidates.as_slice() else {
+        return WorkflowDefinitionPublicationOutcome::ProjectionDenied(receipt);
+    };
+    let definition = PublishedWorkflowDefinitionRef {
+        branch: receipt.product_branch(),
+        entity_id: *entity_id,
+        content_identity,
+    };
+    WorkflowDefinitionPublicationOutcome::Published(PerformedWorkflowDefinitionPublication {
+        definition,
+        receipt,
+    })
+}
+
+impl<Schema, Operation, Input, Scope>
+    PreparedWorkflowDefinitionPublication<Schema, Operation, Input, Scope>
+{
+    /// Controls retained as facts; each host call obtains fresh execution admission.
+    pub fn request_scope(
+        &self,
+    ) -> &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope {
+        self.program.request_scope()
+    }
+}

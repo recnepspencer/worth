@@ -68,3 +68,38 @@ impl WorthQueryCurrentCapabilityObservation<'_> {
         self.sample
     }
 }
+
+impl
+    worth_query_execution_attempt::facade::domain_computation::authorization::delegation_admission::source_seal::SealedCapabilityObservationSource
+    for WorthQueryCurrentCapabilityObservation<'_>
+{
+    fn session_identity(
+        &self,
+    ) -> crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity {
+        self.session_identity()
+    }
+    fn relational(&self) -> &worth_relational::facade::runtime::RelationalRuntime {
+        self.relational()
+    }
+    fn snapshot(&self) -> &worth_relational::facade::snapshots::SnapshotHandle {
+        self.snapshot()
+    }
+    fn bridge(&self) -> &worth_runtime_bridge::facade::BridgeAuthorizationRuntime {
+        self.bridge()
+    }
+    fn installed(
+        &self,
+    ) -> &crate::domain_computation::authorization::capability_registry::WorthQueryInstalledCapabilityPlan
+    {
+        self.installed()
+    }
+    fn request(
+        &self,
+    ) -> &crate::domain_computation::authorization::retained_capability_request::WorthQueryRetainedCapabilityRequest
+    {
+        self.request()
+    }
+    fn sample(&self) -> &worth_query_execution_contracts::facade::runtime_time::WorthQueryRuntimeTimeSample {
+        self.sample()
+    }
+}

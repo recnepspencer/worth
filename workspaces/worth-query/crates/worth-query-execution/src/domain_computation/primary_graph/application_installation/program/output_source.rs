@@ -183,13 +183,20 @@ where
         let branch = program.product_branch();
         let selected_program = presented.rendering().clone();
         let correction = match &causality {
-            crate::domain_computation::application_aftermath::ApplicationCommitCausality::RecordedCorrection(source) => Some(recovery::UnpublishedCorrectionCommand::new(source.intent(), &idempotency)),
+            crate::domain_computation::application_aftermath::ApplicationCommitCausality::RecordedCorrection(source) => Some(recovery::UnpublishedCorrectionCommand::new(
+                crate::domain_computation::primary_graph::attempt_ports::correction_source::downcast_prepared_correction_source(source.as_ref()).intent(),
+                &idempotency,
+            )),
             _ => None,
         };
         let idempotency = correction
             .as_ref()
             .map_or(idempotency, |command| command.bind(idempotency));
-        let discovery_recipe = match program.synchronous_outputs.iter().find_map(|root| root.source_recipe()) {
+        let discovery_recipe = match program.synchronous_outputs.iter().find_map(|root| {
+            root.downcast_ref::<crate::domain_computation::primary_graph::application_contribution::producer::synchronous_outputs::CapturedSynchronousOutputs>()
+                .expect("synchronous outputs slot always holds CapturedSynchronousOutputs")
+                .source_recipe()
+        }) {
             Some(Ok(value)) => Some(value.clone()),
             None => None,
             Some(Err(_)) => return Ok((crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome::Denied(crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::required_output_preparation_missing(Source::IDENTITY)),None,None)),

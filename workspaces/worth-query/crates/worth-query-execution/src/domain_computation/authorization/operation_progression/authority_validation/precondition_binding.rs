@@ -1,5 +1,6 @@
 //! Operation-precondition binding phase owner.
 
+use crate::domain_computation::authorization::operation_admission::capability_admission::preparation::observation::admitted_access::AdmittedCapabilityAccessRuntimeExt as _;
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_query_declaration::facade::{
     application_capability::ApplicationCapabilityRequest,
@@ -33,7 +34,7 @@ pub(in crate::domain_computation::authorization) use transition::{
     WorthQueryResolvedCapabilityRequest,
 };
 
-pub(in crate::domain_computation::authorization::operation_progression) struct PreconditionBoundConventionalOperation<
+pub(in crate::domain_computation::authorization) struct PreconditionBoundConventionalOperation<
     'a,
     Schema,
     Principal,
@@ -42,7 +43,7 @@ pub(in crate::domain_computation::authorization::operation_progression) struct P
     Input,
     Scope,
 > {
-    validated: ValidatedConventionalOperation<
+    pub(in crate::domain_computation::authorization) validated: ValidatedConventionalOperation<
         'a,
         Schema,
         Principal,
@@ -51,7 +52,7 @@ pub(in crate::domain_computation::authorization::operation_progression) struct P
         Input,
         Scope,
     >,
-    preconditions: WorthQueryBoundMutationPreconditions,
+    pub(in crate::domain_computation::authorization) preconditions: WorthQueryBoundMutationPreconditions,
 }
 
 pub(in crate::domain_computation::authorization::operation_progression) fn bind_conventional_preconditions<

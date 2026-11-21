@@ -49,9 +49,7 @@ impl<S: ApplicationSchema> CoupledApplicationAssembly<'_, '_, '_, S> {
                 &self.root_session,
                 parent.source(),
                 self.applied_position(),
-                crate::domain_computation::primary_graph::provider::CandidateReadSupport::Parent(
-                    parent,
-                ),
+                crate::domain_computation::primary_graph::provider::CandidateReadSupport::Parent(Box::new(parent)),
             )
             .map_err(execution::denial::candidate_support_denied)?;
         Ok(applied)

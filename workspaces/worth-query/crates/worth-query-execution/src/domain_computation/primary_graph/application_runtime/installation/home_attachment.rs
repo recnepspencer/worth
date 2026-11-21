@@ -58,6 +58,11 @@ pub(in crate::domain_computation::primary_graph) fn prepare_home_application_ser
         bootstrap.resource_support.clone(),
         installed.installed_view().retain_operation_catalog(),
     );
+    provider.install_managed_views_execution(
+        crate::domain_computation::primary_graph::lineage_ports::downcast_managed_views_arc(
+            std::sync::Arc::clone(&provider.graph.managed_derived_views),
+        ),
+    );
     provider
         .graph
         .output_lineage

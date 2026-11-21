@@ -16,33 +16,7 @@ pub(super) struct Round {
     pub(super) descriptor: Arc<Descriptor>,
     collected: Mutex<Option<Collected>>,
 }
-pub(in crate::domain_computation::primary_graph) struct PreparedPredicateNotices {
-    slots: ExecutionArray<(WatchSlot, PredicateNoticeDisposition)>,
-    _allocation: Arc<SourceFactsAllocation>,
-}
-#[derive(Clone, Copy, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum PredicateNoticeDisposition {
-    Refresh,
-    Unavailable,
-}
-impl PreparedPredicateNotices {
-    pub(in crate::domain_computation::primary_graph) fn disposition(
-        &self,
-        execution: &ExecutionRequest<'_, '_>,
-        slot: WatchSlot,
-    ) -> Result<Option<PredicateNoticeDisposition>, Cause> {
-        let slots = self.slots.elements();
-        let count = slots
-            .len()
-            .checked_add(1)
-            .ok_or(Cause::WorkCounterOverflow)?;
-        SourceFactsAllocation::work(execution, u64::from(usize::BITS - count.leading_zeros()))?;
-        Ok(slots
-            .binary_search_by_key(&slot, |(slot, _)| *slot)
-            .ok()
-            .map(|index| slots[index].1))
-    }
-}
+pub(in crate::domain_computation::primary_graph) use worth_query_execution_attempt::facade::ports::PreparedPredicateNotices;
 impl Round {
     pub(super) fn new(
         execution: &ExecutionRequest<'_, '_>,
@@ -124,10 +98,7 @@ impl Round {
         allocation
             .claim_arc::<PreparedPredicateNotices>(execution)
             .map_err(storage)?;
-        Ok(Arc::new(PreparedPredicateNotices {
-            slots,
-            _allocation: allocation,
-        }))
+        Ok(Arc::new(PreparedPredicateNotices::new(slots, allocation)))
     }
 }
 fn array_denial(

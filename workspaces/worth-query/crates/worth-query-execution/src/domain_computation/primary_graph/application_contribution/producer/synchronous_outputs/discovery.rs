@@ -34,7 +34,7 @@ impl<S: ApplicationSchema> SynchronousOutputAssembly<'_, '_, '_, '_, S> {
             &parent.pin,
             parent.source(),
             intent,
-            CandidateReadSupport::Query,
+            |s| CandidateReadSupport::Query(Box::new(s)),
         )
     }
     pub(super) fn discover_outgoing<B>(
@@ -54,7 +54,7 @@ impl<S: ApplicationSchema> SynchronousOutputAssembly<'_, '_, '_, '_, S> {
             &parent.pin,
             parent.source(),
             intent,
-            CandidateReadSupport::Outgoing,
+            |s| CandidateReadSupport::Outgoing(Box::new(s)),
         )
     }
     pub(super) fn discover_authored<B>(
@@ -74,7 +74,7 @@ impl<S: ApplicationSchema> SynchronousOutputAssembly<'_, '_, '_, '_, S> {
             &source.pin,
             source.source,
             intent,
-            CandidateReadSupport::Query,
+            |s| CandidateReadSupport::Query(Box::new(s)),
         )
     }
     pub(super) fn discover_as_at<B, V>(

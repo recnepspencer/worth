@@ -10,11 +10,7 @@ use crate::domain_computation::primary_graph::application_query::managed_index::
 use std::{cmp::Ordering, collections::BTreeMap};
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 
-/// Issued by the registration owner; equal probes retain distinct exact slots.
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub(in crate::domain_computation::primary_graph) struct WatchSlot(
-    pub(in crate::domain_computation::primary_graph::application_query) u64,
-);
+pub(in crate::domain_computation::primary_graph) use worth_query_execution_attempt::facade::ports::WatchSlot;
 
 pub(super) struct Record<P, R, S> {
     pub(super) probe: P,

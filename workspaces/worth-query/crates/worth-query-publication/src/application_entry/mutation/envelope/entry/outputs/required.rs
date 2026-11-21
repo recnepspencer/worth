@@ -1,5 +1,6 @@
 //! A real required graph retains its typed demand and selected source owner.
 use super::*;
+use worth_query_execution::publication_boundary::EffectProgramSynchronousOutputsExt as _;
 
 impl<S, B, C, E> EditStageOutputs<S, B> for ApplicationOutputGraph<C, E>
 where

@@ -11,7 +11,7 @@ use worth_relational::facade::{
     mvcc::RelationalAuthoredCoupledCandidate,
     runtime::{RelationalAppliedCandidateReadIdentity, RelationalPinnedRead},
 };
-mod capture;
+pub(crate) mod capture;
 pub(in crate::domain_computation::primary_graph) enum CapturedSynchronousOutputs {
     Prepared {
         root: Box<dyn std::any::Any + Send>,
@@ -38,7 +38,6 @@ mod discovery;
 mod edges;
 mod input_preparation;
 mod occurrences;
-pub(in crate::domain_computation::primary_graph::application_contribution) mod rounds;
 pub(in crate::domain_computation::primary_graph::application_contribution) mod source;
 mod wave;
 pub use input_preparation::PrerequisiteInputs;
@@ -217,4 +216,9 @@ impl CapturedSynchronousOutputs {
             Self::Refused(_) => None,
         }
     }
+}
+
+pub(in crate::domain_computation::primary_graph::application_contribution) mod rounds {
+    pub use worth_query_execution_attempt::facade::domain_computation::primary_graph::application_contribution::producer::synchronous_outputs::rounds::*;
+    pub(in crate::domain_computation::primary_graph::application_contribution) mod limits;
 }

@@ -10,7 +10,7 @@ use crate::domain_computation::primary_graph::{
     live_delivery::WorthQueryLivePredicatePreparation,
     source_facts::SourceFactsAllocation,
 };
-pub(in crate::domain_computation::primary_graph) use round::{
+pub(in crate::domain_computation::primary_graph) use worth_query_execution_attempt::facade::ports::{
     PredicateNoticeDisposition, PreparedPredicateNotices,
 };
 use std::sync::{Arc, Mutex};
@@ -52,10 +52,7 @@ pub(in crate::domain_computation::primary_graph) struct PredicatePreparationOwne
     notices: Arc<PreparedPredicateNotices>,
     _fence: WorthQueryLivePredicatePreparation,
 }
-pub(in crate::domain_computation::primary_graph) enum PreparedPredicatePublication {
-    Matched(Arc<PreparedPredicateNotices>),
-    Untracked,
-}
+pub(in crate::domain_computation::primary_graph) use worth_query_execution_attempt::facade::ports::PreparedPredicatePublication;
 impl PredicatePreparationOwner {
     pub(in crate::domain_computation::primary_graph) fn publication_for(
         &self,

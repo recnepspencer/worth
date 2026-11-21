@@ -14,16 +14,29 @@ pub struct WorthQueryDelegationActivationProgram<Schema, Operation, Input, Scope
     program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
 }
 
-impl<Schema, Operation, Input, Scope>
-    WorthQueryCompleteApplicationReadSet<
+pub(in crate::domain_computation::primary_graph) trait ReadSetDelegationActivationExt<Schema, Operation, Input, Scope>: Sized
+
+{
+    fn materialize_capability_delegation_program(
+        self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+    ) -> Result<
+        WorthQueryDelegationActivationProgram<Schema, Operation, Input, Scope>,
+        WorthQueryApplicationAttemptDenial,
+    >;
+}
+
+impl<Schema, Operation, Input, Scope> ReadSetDelegationActivationExt<Schema, Operation, Input, Scope> for WorthQueryCompleteApplicationReadSet<
         Schema,
         Operation,
         Input,
         Scope,
         WorthQueryProjectedApplicationMutation,
     >
+
 {
-    pub fn materialize_capability_delegation_program(
+    fn materialize_capability_delegation_program(
         mut self,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,

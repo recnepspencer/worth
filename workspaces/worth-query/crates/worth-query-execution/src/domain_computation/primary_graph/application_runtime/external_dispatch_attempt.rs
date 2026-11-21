@@ -28,17 +28,7 @@ impl From<WorthQueryTerminalEffectRefusal> for WorthQueryExternalDispatchAdmissi
 }
 
 /// Opaque, move-only ordinal minted only while the runtime admits an attempt.
-pub(in crate::domain_computation) struct WorthQueryExternalDispatchAttemptOrdinal(u64);
-
-impl WorthQueryExternalDispatchAttemptOrdinal {
-    fn mint(value: u64) -> Self {
-        Self(value)
-    }
-
-    pub(in crate::domain_computation) const fn value(&self) -> u64 {
-        self.0
-    }
-}
+pub(in crate::domain_computation) use worth_query_execution_attempt::facade::domain_computation::primary_graph::application_runtime::external_dispatch_attempt_ordinal::WorthQueryExternalDispatchAttemptOrdinal;
 
 /// Validated source, before journal custody has admitted a physical attempt.
 pub(in crate::domain_computation) struct WorthQueryPreparedExternalDispatchAttempt {

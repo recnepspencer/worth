@@ -1,0 +1,171 @@
+//! Paid current native field projections; no command facts or actor policy.
+use super::*;
+use crate::domain_computation::primary_graph::application_discovery::WorthQueryWorkflowReadDenial as Denial;
+use worth_foundational::facade::{AspectFieldLocator, InternedString};
+use worth_relational::facade::{
+    identity::KindId,
+    runtime::{RelationalPinnedRead, RelationalRuntime},
+    snapshots::SnapshotHandle,
+};
+pub struct ReadFields<'a, 'e, 'r> {
+    pub runtime: &'a RelationalRuntime,
+    pub execution:
+        &'a worth_execution::ExecutionRequest<'e, 'r>,
+    pin: RelationalPinnedRead,
+}
+impl<'a, 'e, 'r> ReadFields<'a, 'e, 'r> {
+    pub fn new(
+        runtime: &'a RelationalRuntime,
+        execution: &'a worth_execution::ExecutionRequest<'e, 'r>,
+        snapshot: &SnapshotHandle,
+    ) -> Result<Self, Denial> {
+        Ok(Self {
+            runtime,
+            execution,
+            pin: runtime
+                .read_truth()
+                .pin_read_capability(snapshot, &[], execution)
+                .map_err(Denial::PinnedRead)?,
+        })
+    }
+    pub fn snapshot(&self) -> &SnapshotHandle {
+        self.pin.snapshot()
+    }
+    pub fn u64(
+        &self,
+        entity: EntityId,
+        kind: KindId,
+        field: &AspectFieldLocator,
+    ) -> Result<u64, Denial> {
+        super::super::observe_field_value_borrowed(
+            self.runtime,
+            self.execution,
+            self.snapshot(),
+            entity,
+            kind,
+            field,
+            |v| match v {
+                Some(AspectValue::UInt64(v)) => Some(*v),
+                _ => None,
+            },
+        )
+        .map_err(Denial::Relational)?
+        .flatten()
+        .ok_or(Denial::Corrupt)
+    }
+    pub fn optional_text(
+        &self,
+        entity: EntityId,
+        kind: KindId,
+        field: &AspectFieldLocator,
+    ) -> Result<Option<worth_execution::ExecutionImmutableBytes>, Denial> {
+        super::super::observe_field_value_borrowed(
+            self.runtime,
+            self.execution,
+            self.snapshot(),
+            entity,
+            kind,
+            field,
+            |v| {
+                let encode = |text: &str| {
+                    // The existing native read quotes comparison/read work before this projection.
+                    let mut bytes = worth_execution::ExecutionByteBuffer::allocate(
+                        text.len(),
+                        self.execution.allocation_policy(),
+                    )
+                    .map_err(Denial::Allocation)?;
+                    bytes
+                        .extend_from_slice(text.as_bytes())
+                        .map_err(Denial::Allocation)?;
+                    bytes.seal().map(Some).map_err(Denial::Allocation)
+                };
+                match v {
+                    None => Ok(None),
+                    Some(AspectValue::String(InternedString::Stored(text))) => {
+                        encode(text.as_str())
+                    }
+                    Some(AspectValue::String(InternedString::Raw(text))) => encode(text.as_str()),
+                    Some(AspectValue::String(InternedString::Symbol(symbol))) => self
+                        .pin
+                        .with_symbol_text(
+                            self.execution,
+                            worth_relational::facade::symbols::Symbol(symbol.0),
+                            |text| encode(text.ok_or(Denial::Corrupt)?.as_str()),
+                        )
+                        .map_err(Denial::Relational)?,
+                    _ => Err(Denial::Corrupt),
+                }
+            },
+        )
+        .map_err(Denial::Relational)?
+        .ok_or(Denial::Corrupt)?
+    }
+    pub fn text(
+        &self,
+        entity: EntityId,
+        kind: KindId,
+        field: &AspectFieldLocator,
+    ) -> Result<worth_execution::ExecutionImmutableBytes, Denial> {
+        self.optional_text(entity, kind, field)?
+            .ok_or(Denial::Corrupt)
+    }
+    pub fn one(
+        &self,
+        kind: worth_relational::facade::identity::KindId,
+        anchor: EntityId,
+    ) -> Result<Option<EntityId>, Denial> {
+        let rows = observe_adjacency(
+            self.runtime,
+            self.execution,
+            self.snapshot(),
+            kind,
+            anchor,
+            WorthQueryApplicationAdjacencyDirection::Outgoing,
+            2,
+        )
+        .map_err(Denial::Execution)?
+        .ok_or(Denial::BasisUnavailable)?;
+        match rows.as_slice() {
+            [] => Ok(None),
+            [one] => Ok(Some(one.to)),
+            _ => Err(Denial::Corrupt),
+        }
+    }
+    pub fn incoming_one(
+        &self,
+        kind: KindId,
+        anchor: EntityId,
+    ) -> Result<EntityId, Denial> {
+        let rows = observe_adjacency(
+            self.runtime,
+            self.execution,
+            self.snapshot(),
+            kind,
+            anchor,
+            WorthQueryApplicationAdjacencyDirection::Incoming,
+            2,
+        )
+        .map_err(Denial::Execution)?
+        .ok_or(Denial::BasisUnavailable)?;
+        match rows.as_slice() {
+            [one] => Ok(one.from),
+            _ => Err(Denial::Corrupt),
+        }
+    }
+    pub fn protocol(
+        &self,
+        entity: EntityId,
+        kind: KindId,
+        field: &AspectFieldLocator,
+    ) -> Result<(), Denial> {
+        if self.u64(entity,kind,field)?!=crate::domain_computation::primary_graph::workflow::schema::version::WORKFLOW_FACT_PROTOCOL_VERSION {return Err(Denial::Corrupt);}
+        Ok(())
+    }
+}
+pub fn identity(
+    value: &[u8],
+) -> Result<[u8; 32], Denial> {
+    let text = std::str::from_utf8(value).map_err(|_| Denial::Corrupt)?;
+    crate::domain_computation::primary_graph::workflow::proposal::decode_identity(text)
+        .ok_or(Denial::Corrupt)
+}

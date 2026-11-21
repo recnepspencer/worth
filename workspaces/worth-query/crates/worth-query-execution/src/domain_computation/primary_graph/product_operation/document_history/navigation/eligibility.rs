@@ -111,7 +111,7 @@ pub(super) fn require<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
     }
     let supported = application
         .installed_program_support()
-        .and_then(|support| support.native_program(current_program.revision()))
+        .and_then(|support| support.native_program(current_program.revision()).map(|r| crate::domain_computation::primary_graph::attempt_ports::downcast_supported_program(r.as_ref())))
         .ok_or_else(|| correction(Eligibility::ProgramUnavailable))?;
     let access = ApplicationHistoryAccessBinding::<S, H>::descriptor();
     let expected_output = if let Some(profile) = outputs {

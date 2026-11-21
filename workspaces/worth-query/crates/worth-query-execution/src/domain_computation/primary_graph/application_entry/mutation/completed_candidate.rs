@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::application_attempt::effect_program::candidate_planning::EffectProgramCandidatePlanningExt as _;
 use worth_query_declaration::facade::application_operation::{
     ApplicationMutationBinding, ApplicationMutationScopeBinding,
 };

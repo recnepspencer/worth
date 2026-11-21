@@ -7,7 +7,7 @@ use crate::domain_computation::primary_graph::product_operation::{
     SharedSelectedProductOperation, WorthQuerySelectedProductOperation,
 };
 
-pub(in crate::domain_computation) trait SnapshotLeaseRuntimeExt: Sized {
+pub(crate) trait SnapshotLeaseRuntimeExt: Sized {
     fn from_shared_selected<Schema: worth_query_installation::facade::ApplicationSchema>(
         shared: &SharedSelectedProductOperation<'_, Schema>,
     ) -> Result<Self, CompanionPreflightStop>;

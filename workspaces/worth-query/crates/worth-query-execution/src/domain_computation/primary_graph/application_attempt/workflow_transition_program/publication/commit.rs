@@ -1,3 +1,5 @@
+use crate::domain_computation::primary_graph::application_attempt::workflow_transition_program::publication::transition_replay::PreparedWorkflowAdvanceTransitionReplayExt as _;
+use crate::domain_computation::primary_graph::WorthQueryApplicationUncommitted;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementDenialCommitExt as _;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use worth_foundational::facade::{AspectValue, InternedString};
@@ -132,7 +134,11 @@ where
                         worth_query_admission::facade::authentication_event::WorthQueryAuthenticationEventDenial::WrongOwner,
                     );
                 }
-                if let Err(denial) = authentication.readmit(&program) {
+                if let Err(denial) = authentication.readmit_with(|intent, principal| {
+                    crate::domain_computation::primary_graph::application_attempt::signed_creation::WorthQuerySignedCreationAdapter::validate_shared_authentication(
+                        &program, intent, principal,
+                    )
+                }) {
                     return WorkflowProgressOutcome::AuthenticationDenied(denial);
                 }
             }
@@ -231,7 +237,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt::workflow_t
             let [evidence] = candidates.as_slice() else {
                 return WorkflowProgressOutcome::ProjectionDenied(receipt);
             };
-            Some(PerformedWorkflowAssessmentEvidence {
+            Some(PerformedWorkflowAssessmentEvidence::from_attempt_parts(worth_query_execution_attempt::facade::ports::WorthQueryAttemptCrateSeal::new(), worth_query_execution_attempt::facade::domain_computation::primary_graph::application_attempt::workflow_transition_program::publication::assessment_evidence::PerformedWorkflowAssessmentEvidenceAttemptParts {
                 evidence: *evidence,
                 identity: assessment.identity,
                 producer: assessment.producer,
@@ -247,7 +253,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt::workflow_t
                 passing: assessment.passing,
                 publication_identity: assessment.publication_identity,
                 output_content_identity: assessment.output_content_identity,
-            })
+            }))
         }
         None => None,
     };
@@ -263,7 +269,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt::workflow_t
         }
         None => None,
     };
-    WorkflowProgressOutcome::Completed(PerformedWorkflowTransition {
+    WorkflowProgressOutcome::Completed(PerformedWorkflowTransition::from_attempt_parts(worth_query_execution_attempt::facade::ports::WorthQueryAttemptCrateSeal::new(), worth_query_execution_attempt::facade::domain_computation::primary_graph::application_attempt::workflow_transition_program::publication::performed::PerformedWorkflowTransitionAttemptParts {
         transition,
         node_path,
         terminal,
@@ -272,7 +278,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt::workflow_t
         assessment_evidence,
         approval,
         operation_receipt_identity,
-    })
+    }))
 }
 
 #[path = "commit/approval_projection.rs"]

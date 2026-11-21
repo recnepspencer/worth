@@ -18,20 +18,38 @@ use crate::domain_computation::primary_graph::{
 };
 
 #[path = "assessment/evidence_budget.rs"]
-pub(crate) mod evidence_budget;
+pub(crate) use worth_query_execution_attempt::facade::domain_computation::primary_graph::application_attempt::workflow_transition_program::assessment::evidence_budget;
 #[path = "assessment/identity.rs"]
-mod identity;
+pub(crate) use worth_query_execution_attempt::facade::domain_computation::primary_graph::application_attempt::workflow_transition_program::assessment::identity;
 #[path = "assessment/replay.rs"]
-mod replay;
+pub(crate) mod replay;
 
 use identity::{decode_hex_identity, evidence_meaning};
 
-impl<Schema, Operation, Input, Scope> PreparedWorkflowAssessment<Schema, Operation, Input, Scope>
+pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) trait PreparedWorkflowAssessmentRuntimeExt<Schema, Operation, Input, Scope>: Sized
 where
     Schema: ApplicationSchema,
     Operation: 'static,
 {
-    pub(super) fn settle<Query>(
+    fn settle<Query>(
+        self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        settlement: &WorthQueryOutputDemandSettlement,
+        source: &WorthQueryObservedSource<Query>,
+        posture: WorthQueryWorkflowAssessmentPosture,
+    ) -> Result<
+        PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
+        WorthQueryApplicationAttemptDenial,
+    >;
+}
+
+impl<Schema, Operation, Input, Scope> PreparedWorkflowAssessmentRuntimeExt<Schema, Operation, Input, Scope> for PreparedWorkflowAssessment<Schema, Operation, Input, Scope>
+where
+    Schema: ApplicationSchema,
+    Operation: 'static,
+{
+    fn settle<Query>(
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,

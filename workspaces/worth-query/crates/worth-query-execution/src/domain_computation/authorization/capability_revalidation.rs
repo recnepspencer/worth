@@ -1,8 +1,9 @@
 //! Current capability re-admission at privileged transitions.
 mod active_currentness;
-mod denial;
+use worth_query_execution_attempt::facade::domain_computation::authorization::capability_revalidation::denial as denial_mod;
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
-use denial::{denial, inconsistent_refresh};
+use denial_mod::{denial, inconsistent_refresh};
+use worth_query_execution_attempt::facade::domain_computation::authorization::capability_revalidation::WorthQueryCapabilityRefresh;
 mod installed_basis;
 mod prepared_read;
 
@@ -16,15 +17,9 @@ use super::{
 };
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
-mod observation;
+pub(crate) use worth_query_execution_attempt::facade::domain_computation::authorization::capability_revalidation::observation;
 pub(in crate::domain_computation::authorization) use observation::WorthQueryCapabilityRevalidationObservation;
 
-struct WorthQueryCapabilityRefresh<'refresh> {
-    session: crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
-    product: &'refresh crate::basis::WorthQueryProductObservationLease,
-    installed: &'refresh super::capability_registry::WorthQueryInstalledCapabilityPlan,
-    sample: super::WorthQueryRuntimeTimeSample,
-}
 
 enum WorthQueryCapabilityRefreshTime<'sample> {
     Fresh,

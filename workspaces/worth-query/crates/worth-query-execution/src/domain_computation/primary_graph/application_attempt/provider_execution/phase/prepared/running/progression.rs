@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::application_attempt::provider_execution::application_attempt_affinity::ApplicationAttemptBasisCaptureExt as _;
 use self::session_admission::admit_provider_session;
 use super::WorthQueryRunningApplicationCommit;
 use crate::domain_computation::primary_graph::application_attempt::provider_execution::outcome::WorthQueryProviderProgressionOutcome;
@@ -12,11 +13,11 @@ use crate::domain_computation::primary_graph::provider::{
 };
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 
-mod authorized;
-mod commit_resolution;
+pub(crate) mod authorized;
+pub(crate) mod commit_resolution;
 pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) mod coupled;
-mod fresh;
-mod invariant;
+pub(crate) mod fresh;
+pub(crate) mod invariant;
 pub(crate) mod mutation_cleanup;
 pub(crate) mod progressed;
 pub(crate) mod registered;

@@ -32,11 +32,7 @@ pub enum AuthoredEnvelopeResolution<'a> {
 }
 
 /// Resolution-only admission must not resume another pending publication.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum AuthoredEnvelopeResolutionPurpose {
-    Execute,
-    ResolveOnly,
-}
+pub(in crate::domain_computation::primary_graph) use worth_query_execution_attempt::facade::domain_computation::primary_graph::application_contribution::authored_edit::AuthoredEnvelopeResolutionPurpose;
 
 /// The callback cannot retain a coordination grant after the owning lane closes.
 pub fn with_resolved_edit_envelope<S: ApplicationSchema, R>(

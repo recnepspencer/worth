@@ -1,0 +1,242 @@
+//! Exact-basis Query completion candidate for a retained authenticated occurrence.
+
+use std::collections::BTreeMap;
+
+use worth_foundational::facade::{AspectValue, InternedString};
+use worth_relational::facade::{
+    branch::AdmittedRelationalBranchBasis,
+    mvcc::{
+        PreparedRelationalCommitCandidate, RelationalTransactionIntent, ValidatedRelationalProposal,
+    },
+    transactions::{CreateIntent, EntitySpec, MutationIntent, RecordRef, WorkerIntentBatch},
+};
+
+use super::WorthQueryPrimaryGraphProvider;
+use crate::domain_computation::application_aftermath::WorthQueryAcceptedInboundOccurrence;
+
+pub mod history_read;
+pub mod original_source;
+pub mod preparation_denial;
+pub mod read;
+pub mod recovered;
+pub mod source_read;
+pub mod transport;
+pub use read::WorthQueryInboundCompletionReadDenial;
+pub use read::{
+    WorthQueryCanonicalCompletionRow, WorthQueryCompletionProvenance,
+};
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum WorthQueryInboundCompletionPreparationDenial {
+    ExecutionDenied {
+        stage: crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage,
+        kind: crate::domain_computation::WorthQueryProviderSessionDenialKind,
+    },
+    ExecutionControlStopped {
+        stage: crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage,
+        kind: crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+    },
+    OriginalOutboxNotAnEntity,
+    ForeignOrStaleBasis,
+    AllocationDenied {
+        stage: crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage,
+        kind: worth_execution::ExecutionAllocationDenialClass,
+        requested_payload_bytes: Option<u64>,
+    },
+    StagingUnavailable,
+    StagingAllocationDenied {
+        kind: worth_execution::ExecutionAllocationDenialClass,
+        requested_payload_bytes: Option<u64>,
+    },
+    StagingCardinalityOverflow,
+    StagingInputDirectoryAllocationDenied {
+        requested_batches: usize,
+    },
+    ValidationUnavailable,
+    PreparationUnavailable,
+    SnapshotUnavailable,
+    InstalledBindingMismatch,
+    DispatchOwnerMismatch,
+}
+
+impl WorthQueryPrimaryGraphProvider {
+    /// Prepares one Relational mutation at the exact World-admitted basis.
+    /// The completion marker and occurrence consumption facts share one entity
+    /// in the candidate World will publish; this does not independently commit.
+    pub fn validate_inbound_completion_proposal(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        basis: &AdmittedRelationalBranchBasis,
+        accepted: &WorthQueryAcceptedInboundOccurrence,
+    ) -> Result<ValidatedRelationalProposal, WorthQueryInboundCompletionPreparationDenial> {
+        use WorthQueryInboundCompletionPreparationDenial as Denial;
+        let RecordRef::Entity(original_entity) = accepted.owner().record_ref() else {
+            return Err(Denial::OriginalOutboxNotAnEntity);
+        };
+        let claims = accepted.claims();
+        let record = accepted.owner().record();
+        let layout = self.graph.layout.provider_inbound_completion();
+        let correlation = hex(record.correlation().digest().bytes());
+        let fields = BTreeMap::from([
+            (layout.correlation.clone(), string(correlation.clone())),
+            (
+                layout.family.clone(),
+                string(record.correlation_family().as_str()),
+            ),
+            (layout.operation.clone(), string(accepted.operation())),
+            (layout.audience.clone(), string(&claims.audience)),
+            (layout.source.clone(), string(&claims.source_identity)),
+            (
+                layout.expires_at.clone(),
+                AspectValue::UInt64(claims.expires_at_unix_seconds),
+            ),
+            (
+                layout.key_epoch.clone(),
+                AspectValue::UInt64(claims.key_epoch),
+            ),
+            (
+                layout.message.clone(),
+                string(hex(&claims.message_identity)),
+            ),
+            (
+                layout.protocol.clone(),
+                string(claims.protocol_identity.as_str()),
+            ),
+            (
+                layout.version.clone(),
+                AspectValue::UInt64(u64::from(claims.protocol_version.get())),
+            ),
+            (
+                layout.meaning_digest.clone(),
+                string(hex(accepted.signed_meaning_digest())),
+            ),
+            (layout.payload.clone(), string(hex(&claims.payload))),
+            (
+                layout.original_commit.clone(),
+                AspectValue::UInt64(accepted.owner().commit_reference().commit_id.0),
+            ),
+            (
+                layout.original_branch.clone(),
+                string(&accepted.owner().commit_reference().branch_id.0),
+            ),
+            (
+                layout.original_entity.clone(),
+                string(format!(
+                    "{}:{}:{}",
+                    original_entity.partition_id.0,
+                    original_entity.local_slot.0,
+                    original_entity.generation.0
+                )),
+            ),
+            (
+                layout.original_incarnation.clone(),
+                AspectValue::UInt64(
+                    accepted
+                        .owner()
+                        .committed_product_publication()
+                        .product_incarnation()
+                        .ordinal(),
+                ),
+            ),
+            (layout.terminal.clone(), string("consumed-completed")),
+            (
+                layout.provenance_kind.clone(),
+                string("authenticated-inbound"),
+            ),
+            (layout.transport_attempt.clone(), string("")),
+            (layout.transport_observation.clone(), string("")),
+        ]);
+        self.validate_completion_fields(execution, basis, *original_entity, &correlation, fields)
+    }
+
+    pub fn prepare_completion_proposal(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        proposal: ValidatedRelationalProposal,
+    ) -> Result<PreparedRelationalCommitCandidate, WorthQueryInboundCompletionPreparationDenial>
+    {
+        self.graph.with_runtime(execution, |runtime| {
+            runtime
+                .prepare_validated_proposal(execution, proposal)
+                .map_err(|error| preparation_denial::preparation_denial(&error))
+        })
+    }
+
+    pub fn prepare_opened_completion_proposal(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        open: worth_runtime_world::facade::WorldOpenedPublicationAttempt,
+        proposal: ValidatedRelationalProposal,
+    ) -> Result<
+        worth_runtime_world::facade::WorldPreparedPublicationWithoutSignal,
+        worth_runtime_world::facade::WorldNativePreparationRefusal,
+    > {
+        self.graph.with_runtime(execution, |runtime| {
+            // The actual opened phase follows validated completion source meaning.
+            // The receiver-owned control may stop this real request before Native.
+            self.application_attempt_operation_control
+                .after_source_publication_validation();
+            open.prepare_native(runtime, execution, proposal)
+        })
+    }
+
+    fn validate_completion_fields(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        basis: &AdmittedRelationalBranchBasis,
+        original_entity: worth_relational::facade::identity::EntityId,
+        correlation: &str,
+        fields: BTreeMap<worth_foundational::facade::AspectFieldLocator, AspectValue>,
+    ) -> Result<ValidatedRelationalProposal, WorthQueryInboundCompletionPreparationDenial> {
+        use WorthQueryInboundCompletionPreparationDenial as Denial;
+        let layout = self.graph.layout.provider_inbound_completion();
+        let intent = MutationIntent::Create(CreateIntent::Entity(EntitySpec {
+            partition_id: original_entity.partition_id,
+            kind_id: layout.kind,
+            client_key: worth_relational::facade::symbols::ClientKey::raw(format!(
+                "worth-query-inbound-completion:{correlation}"
+            )),
+            fields: worth_relational::facade::transactions::AspectFieldPatch::from(fields),
+        }));
+        self.graph.with_runtime(execution, |runtime| {
+            let before = crate::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot(runtime, basis)
+                .map_err(|_| Denial::SnapshotUnavailable)?;
+            let result = (|| {
+                let mut transaction = runtime
+                    .begin_branch_transaction(basis, RelationalTransactionIntent::ordinary())
+                    .map_err(|_| Denial::ForeignOrStaleBasis)?;
+                transaction
+                    .push_batch(
+                        WorkerIntentBatch::new("inbound-external-effect-completion").push(intent),
+                     worth_execution::ExecutionAllocationPolicy::SystemAllocation)
+                    .map_err(|denial| match denial {
+                        worth_relational::facade::mvcc::RelationalTransactionStagingDenial::AllocationDenied(allocation) => Denial::StagingAllocationDenied {
+                            kind: allocation.classify(),
+                            requested_payload_bytes: allocation.requested_payload_bytes(),
+                        },
+                        worth_relational::facade::mvcc::RelationalTransactionStagingDenial::CardinalityOverflow => Denial::StagingCardinalityOverflow,
+                        worth_relational::facade::mvcc::RelationalTransactionStagingDenial::InputDirectoryAllocationDenied { requested_batches } => Denial::StagingInputDirectoryAllocationDenied { requested_batches },
+                        worth_relational::facade::mvcc::RelationalTransactionStagingDenial::SymbolIdentityExhausted
+                        | worth_relational::facade::mvcc::RelationalTransactionStagingDenial::SavepointCapacityExhausted { .. }
+                        | worth_relational::facade::mvcc::RelationalTransactionStagingDenial::SavepointIdentityExhausted
+                        | worth_relational::facade::mvcc::RelationalTransactionStagingDenial::MaterializationAuthorityRequired
+                        | worth_relational::facade::mvcc::RelationalTransactionStagingDenial::MaterializationModeMismatch => Denial::StagingUnavailable,
+                    })?;
+                let validated = transaction
+                    .validate(execution, runtime)
+                    .map_err(|error| preparation_denial::validation_denial(&error))?;
+                Ok(validated)
+            })();
+            crate::relational_snapshot_release::release_query_snapshot(runtime, &before);
+            result
+        })
+    }
+}
+
+fn string(value: impl Into<String>) -> AspectValue {
+    AspectValue::String(InternedString::from(value.into()))
+}
+
+fn hex(bytes: &[u8]) -> String {
+    bytes.iter().map(|byte| format!("{byte:02x}")).collect()
+}

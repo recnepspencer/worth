@@ -98,6 +98,14 @@ pub struct CapturedAuthoredEditStage<S> {
         worth_query_installation::facade::WorthQueryOperationReadTouchOverlapIndex,
     pub(in crate::domain_computation::primary_graph::application_contribution) ordered: bool,
 }
+
+impl<S: 'static> From<CapturedAuthoredEditStage<S>>
+    for worth_query_execution_attempt::facade::ports::OpaqueAuthoredEditStage
+{
+    fn from(stage: CapturedAuthoredEditStage<S>) -> Self {
+        Self::new(stage)
+    }
+}
 impl<S> Clone for CapturedAuthoredEditStage<S> {
     fn clone(&self) -> Self {
         Self {

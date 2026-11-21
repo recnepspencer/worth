@@ -1,5 +1,6 @@
 //! Runtime-, schema-, plan-, session-, and snapshot-bound capability observation.
 
+use crate::domain_computation::authorization::operation_admission::capability_admission::preparation::observation::admitted_access::AdmittedCapabilityAccessRuntimeExt as _;
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_foundational::facade::AspectValue;
 use worth_query_declaration::facade::application_capability::{
@@ -247,4 +248,39 @@ fn denial(subject: impl Into<String>) -> WorthQueryOperationAuthorizationDenial 
         ),
         subject,
     )
+}
+
+impl<Schema>
+    worth_query_execution_attempt::facade::domain_computation::authorization::delegation_admission::source_seal::SealedCapabilityObservationSource
+    for WorthQueryExactCapabilityObservationContext<'_, Schema>
+{
+    fn session_identity(
+        &self,
+    ) -> crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity {
+        self.session_identity()
+    }
+    fn relational(&self) -> &worth_relational::facade::runtime::RelationalRuntime {
+        self.relational()
+    }
+    fn snapshot(&self) -> &worth_relational::facade::snapshots::SnapshotHandle {
+        self.snapshot()
+    }
+    fn bridge(&self) -> &worth_runtime_bridge::facade::BridgeAuthorizationRuntime {
+        self.bridge()
+    }
+    fn installed(
+        &self,
+    ) -> &crate::domain_computation::authorization::capability_registry::WorthQueryInstalledCapabilityPlan
+    {
+        self.installed()
+    }
+    fn request(
+        &self,
+    ) -> &crate::domain_computation::authorization::retained_capability_request::WorthQueryRetainedCapabilityRequest
+    {
+        self.request()
+    }
+    fn sample(&self) -> &worth_query_execution_contracts::facade::runtime_time::WorthQueryRuntimeTimeSample {
+        self.sample()
+    }
 }

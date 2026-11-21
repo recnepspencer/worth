@@ -1,4 +1,5 @@
 //! Durability cutover after authentication and exact original-owner admission.
+use crate::domain_computation::application_aftermath::dispatch_journal::custody::transport::QueryInboundJournalAdmissionTransportExt as _;
 use super::super::home_custody::recorded_admission_denial;
 use super::phases::WorthQueryAuthenticatedInboundOccurrence;
 use super::*;

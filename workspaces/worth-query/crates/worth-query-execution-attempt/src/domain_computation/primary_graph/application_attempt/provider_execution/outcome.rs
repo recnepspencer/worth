@@ -1,0 +1,136 @@
+use super::super::{
+    WorthQueryApplicationCommitDenial, WorthQueryApplicationCommitDenialStage,
+    WorthQueryApplicationCommitOutcome, WorthQueryApplicationNoEffect,
+    WorthQueryApplicationStaleAttempt, WorthQueryPendingApplicationCommitReceipt,
+};
+use crate::domain_computation::provider_session::WorthQueryMutationGraphWorkCompletion;
+
+pub enum WorthQueryProviderProgressionOutcome {
+    CoupledFailure(super::super::WorthQueryApplicationUncommitted),
+    ProductStale(crate::domain_computation::WorthQueryProductStaleApplication),
+    ProductUnpublished(crate::domain_computation::WorthQueryProductUnpublishedApplication),
+    ProductPreparationPending(crate::domain_computation::WorthQueryProductPreparationPending),
+    ProductPreparationRefused(crate::domain_computation::WorthQueryProductPreparationRefused),
+
+    NoEffect(WorthQueryApplicationNoEffect),
+    OutputAdopted(crate::domain_computation::primary_graph::output_lineage::executed_adoption::PendingExecutedOutputAdoption),
+    Committed(WorthQueryPendingApplicationCommitReceipt),
+    RecoveredCommitted(crate::domain_computation::primary_graph::provider::WorthQueryRecoveredApplicationCommitReceipt),
+    Stale(WorthQueryApplicationStaleAttempt),
+    Cancelled,
+    TimedOut,
+    Denied(WorthQueryApplicationCommitDenial),
+    Aborted,
+    Deferred(super::super::WorthQueryApplicationCommitDeferred),
+    Indeterminate(super::super::WorthQueryApplicationUnresolvedCommitEvidence),
+}
+
+impl WorthQueryProviderProgressionOutcome {
+    pub fn finish(
+        self,
+        completion: WorthQueryMutationGraphWorkCompletion,
+    ) -> Option<WorthQueryApplicationCommitOutcome> {
+        Some(match self {
+            Self::CoupledFailure(outcome) => outcome.into(),
+            Self::ProductStale(stale) => WorthQueryApplicationCommitOutcome::ProductStale(stale),
+            Self::ProductUnpublished(unpublished) => {
+                WorthQueryApplicationCommitOutcome::ProductUnpublished(unpublished)
+            }
+            Self::ProductPreparationPending(owner) => {
+                WorthQueryApplicationCommitOutcome::ProductPreparationPending(owner)
+            }
+            Self::ProductPreparationRefused(owner) => {
+                WorthQueryApplicationCommitOutcome::ProductPreparationRefused(owner)
+            }
+            Self::OutputAdopted(adoption) => {
+                return adoption
+                    .complete(completion)
+                    .map(WorthQueryApplicationCommitOutcome::OutputAdopted)
+            }
+            Self::NoEffect(no_effect) => WorthQueryApplicationCommitOutcome::NoEffect(no_effect),
+            Self::Committed(receipt) => {
+                WorthQueryApplicationCommitOutcome::Committed(receipt.complete(completion)?)
+            }
+            Self::RecoveredCommitted(receipt) => {
+                WorthQueryApplicationCommitOutcome::RecoveredCommitted(receipt)
+            }
+            Self::Stale(stale) => WorthQueryApplicationCommitOutcome::Stale(stale),
+            Self::Cancelled => WorthQueryApplicationCommitOutcome::Cancelled,
+            Self::TimedOut => WorthQueryApplicationCommitOutcome::TimedOut,
+            Self::Denied(denial) => WorthQueryApplicationCommitOutcome::Denied(denial),
+            Self::Aborted => WorthQueryApplicationCommitOutcome::Aborted,
+            Self::Deferred(deferred) => WorthQueryApplicationCommitOutcome::Deferred(deferred),
+            Self::Indeterminate(evidence) => {
+                WorthQueryApplicationCommitOutcome::Indeterminate(evidence)
+            }
+        })
+    }
+    /// Move unpublished business evidence without issuing graph-work completion.
+    pub fn into_uncommitted(
+        self,
+    ) -> Result<super::super::WorthQueryApplicationUncommitted, Self> {
+        use super::super::WorthQueryApplicationUncommitted as Uncommitted;
+        Ok(match self {
+            Self::CoupledFailure(outcome) => outcome,
+            Self::ProductStale(stale) => Uncommitted::ProductStale(stale),
+            Self::ProductUnpublished(value) => Uncommitted::ProductUnpublished(value),
+            Self::NoEffect(value) => Uncommitted::NoEffect(value),
+            Self::ProductPreparationPending(value) => Uncommitted::ProductPreparationPending(value),
+            Self::ProductPreparationRefused(value) => Uncommitted::ProductPreparationRefused(value),
+            Self::Stale(value) => Uncommitted::Stale(value),
+            Self::Cancelled => Uncommitted::Cancelled,
+            Self::TimedOut => Uncommitted::TimedOut,
+            Self::Denied(value) => Uncommitted::Denied(value),
+            Self::Aborted => Uncommitted::Aborted,
+            Self::Deferred(value) => Uncommitted::Deferred(value),
+            Self::Indeterminate(value) => Uncommitted::Indeterminate(value),
+            published @ (Self::OutputAdopted(_)
+            | Self::Committed(_)
+            | Self::RecoveredCommitted(_)) => return Err(published),
+        })
+    }
+}
+
+pub fn progression_denied(
+    stage: WorthQueryApplicationCommitDenialStage,
+) -> WorthQueryProviderProgressionOutcome {
+    WorthQueryProviderProgressionOutcome::Denied(
+        WorthQueryApplicationCommitDenial::provider_rejected(stage),
+    )
+}
+
+pub fn progression_from_authorization_denial(
+    denial: crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial,
+    stage: WorthQueryApplicationCommitDenialStage,
+) -> WorthQueryProviderProgressionOutcome {
+    use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind as Kind;
+    match denial.kind() {
+        Kind::Stopped(Err(
+            crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled,
+        )) => WorthQueryProviderProgressionOutcome::Cancelled,
+        Kind::Stopped(Err(
+            crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut,
+        )) => WorthQueryProviderProgressionOutcome::TimedOut,
+        _ => WorthQueryProviderProgressionOutcome::Denied(
+            WorthQueryApplicationCommitDenial::request_authority_denied(stage, &denial),
+        ),
+    }
+}
+
+pub fn commit_outcome_from_authorization_denial(
+    denial: crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial,
+    stage: WorthQueryApplicationCommitDenialStage,
+) -> WorthQueryApplicationCommitOutcome {
+    use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind as Kind;
+    match denial.kind() {
+        Kind::Stopped(Err(
+            crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled,
+        )) => WorthQueryApplicationCommitOutcome::Cancelled,
+        Kind::Stopped(Err(
+            crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut,
+        )) => WorthQueryApplicationCommitOutcome::TimedOut,
+        _ => WorthQueryApplicationCommitOutcome::Denied(
+            WorthQueryApplicationCommitDenial::request_authority_denied(stage, &denial),
+        ),
+    }
+}

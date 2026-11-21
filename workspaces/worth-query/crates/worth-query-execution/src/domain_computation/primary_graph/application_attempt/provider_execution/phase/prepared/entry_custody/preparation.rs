@@ -60,9 +60,10 @@ where
     let mut coupled_outputs = aftermath_causality
         .as_ref()
         .and_then(|causality| {
-            causality
-                .prepared_correction()
-                .capture_coupled_outputs(execution)
+            crate::domain_computation::primary_graph::attempt_ports::correction_source::downcast_prepared_correction_source(
+                causality.prepared_correction(),
+            )
+            .capture_coupled_outputs(execution)
         })
         .unwrap_or_else(|| {
             mutation_proof
@@ -205,7 +206,12 @@ where
         &content_attachments,
         aftermath_causality
             .as_ref()
-            .map(|causality| causality.prepared_correction().content()),
+            .map(|causality| {
+                crate::domain_computation::primary_graph::attempt_ports::correction_source::downcast_prepared_correction_source(
+                    causality.prepared_correction(),
+                )
+                .content()
+            }),
     ) {
         Ok(attachments) => attachments,
         Err(denial) => return terminal(WorthQueryApplicationCommitOutcome::Denied(denial)),

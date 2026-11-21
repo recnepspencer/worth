@@ -653,6 +653,7 @@ internal_packages = [
   "worth-query-execution-obligations",
   "worth-query-execution-runtime",
   "worth-query-execution-lineage",
+  "worth-query-execution-attempt",
   "worth-query-execution",
   "worth-query-publication",
 ]

@@ -1,3 +1,6 @@
+use crate::domain_computation::primary_graph::application_attempt::workflow_transition_program::assessment::replay::PreparedWorkflowAdvanceAssessmentReplayExt as _;
+use crate::domain_computation::primary_graph::application_attempt::workflow_transition_program::publication::transition_replay::PreparedWorkflowAdvanceTransitionReplayExt as _;
+use crate::domain_computation::primary_graph::application_attempt::workflow_transition_program::publication::transition_replay::condition::PreparedWorkflowAdvanceConditionReplayExt as _;
 use super::*;
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 

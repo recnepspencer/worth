@@ -1,0 +1,344 @@
+use worth_relational::facade::identity::EntityId;
+
+use super::{
+    WorthQueryApplicationCommitDenial, WorthQueryApplicationCommitOutcome,
+    WorthQueryApplicationCommitReceipt, WorthQueryApplicationStaleAttempt,
+    WorthQueryRequestedElevation,
+};
+use crate::domain_computation::authorization::{
+    WorthQueryAuthorizationDecisionFact, WorthQueryElevationApprovalBinding,
+    WorthQueryElevationRequestBinding, WorthQueryRetainedCapabilityRequest,
+};
+
+/// Move-only authority proving that Query committed the exact approval.
+///
+/// ```compile_fail
+/// use worth_query_execution::facade::primary_graph::WorthQueryApprovedElevation;
+///
+/// fn approved_elevation_cannot_be_copied(receipt: WorthQueryApprovedElevation) {
+///     let _copied = receipt.clone();
+/// }
+/// ```
+#[derive(Debug)]
+pub struct WorthQueryApprovedElevation {
+    binding: WorthQueryElevationApprovalBinding,
+    approval_commit: WorthQueryApplicationCommitReceipt,
+}
+
+impl WorthQueryApprovedElevation {
+    pub const fn approval_commit_receipt(
+        &self,
+    ) -> &WorthQueryApplicationCommitReceipt {
+        &self.approval_commit
+    }
+
+    pub fn publication_source(&self) -> super::WorthQueryApplicationCommitPublicationSource {
+        self.approval_commit.publication_source()
+    }
+
+    /// The canonical work of the approval commit, by phase. A replay reports
+    /// the admission work of its own request.
+    pub const fn approval_canonical_work(
+        &self,
+    ) -> worth_query_installation::facade::WorthQueryCanonicalWorkPhases {
+        self.approval_commit.canonical_work()
+    }
+
+    pub const fn approval_changed_record_count(&self) -> usize {
+        self.approval_commit.changed_record_count()
+    }
+
+    pub const fn approval_emitted_effect_count(&self) -> usize {
+        self.approval_commit.emitted_effect_count()
+    }
+
+    pub const fn approval_product_publication(
+        &self,
+    ) -> &super::WorthQueryCommittedProductPublication {
+        self.approval_commit.committed_product_publication()
+    }
+
+    pub fn approval_retained_preimage(
+        &self,
+    ) -> Option<&crate::domain_computation::application_aftermath::WorthQueryRetainedPreImage> {
+        self.approval_commit.retained_preimage()
+    }
+
+    pub fn request_retained_preimage(
+        &self,
+    ) -> Option<&crate::domain_computation::application_aftermath::WorthQueryRetainedPreImage> {
+        self.binding.request_commit().retained_preimage()
+    }
+
+    pub fn approval_mutation_work(
+        &self,
+    ) -> Option<&crate::domain_computation::primary_graph::WorthQueryPrimaryMutationWorkEvidence>
+    {
+        self.approval_commit.mutation_work()
+    }
+
+    pub fn request_mutation_work(
+        &self,
+    ) -> Option<&crate::domain_computation::primary_graph::WorthQueryPrimaryMutationWorkEvidence>
+    {
+        self.binding.request_commit().mutation_work()
+    }
+
+    pub fn commits_share_branch(&self) -> bool {
+        self.binding.request_commit().terminal().branch()
+            == self.approval_commit.terminal().branch()
+    }
+
+    pub const fn requester(&self) -> EntityId {
+        self.binding.requested().requester()
+    }
+
+    pub const fn approver(&self) -> EntityId {
+        self.binding.approver()
+    }
+
+    pub const fn resource(&self) -> EntityId {
+        self.binding.requested().resource()
+    }
+
+    pub const fn grant(&self) -> EntityId {
+        self.binding.requested().grant()
+    }
+
+    pub const fn elevation(&self) -> EntityId {
+        self.binding.elevation()
+    }
+
+    pub const fn review(&self) -> EntityId {
+        self.binding.review()
+    }
+
+    pub fn action(&self) -> &worth_foundational::facade::AspectValue {
+        self.binding.requested().upper_bound().action()
+    }
+
+    pub fn purpose(&self) -> &worth_foundational::facade::AspectValue {
+        self.binding.requested().upper_bound().purpose()
+    }
+
+    pub fn field(&self) -> Option<&worth_foundational::facade::AspectValue> {
+        self.binding.requested().upper_bound().field()
+    }
+
+    pub fn magnitude(&self) -> Option<&worth_foundational::facade::AspectValue> {
+        self.binding.requested().upper_bound().magnitude()
+    }
+
+    pub fn cardinality(&self) -> u32 {
+        self.binding.requested().upper_bound().cardinality()
+    }
+
+    pub const fn reason(&self) -> &worth_foundational::facade::AspectValue {
+        self.binding.requested().reason()
+    }
+
+    pub const fn issued_at(&self) -> &worth_foundational::facade::AspectValue {
+        self.binding.requested().issued_at()
+    }
+
+    pub const fn expires_at(&self) -> &worth_foundational::facade::AspectValue {
+        self.binding.requested().expires_at()
+    }
+
+    pub fn belongs_to_lifecycle(
+        &self,
+        runtime_authority: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
+        branch: &worth_relational::facade::history::BranchId,
+        capability_identity: [u8; 32],
+        capability_authority_identity: &str,
+    ) -> bool {
+        *self.binding.requested().runtime_authority() == runtime_authority
+            && self.binding.requested().branch() == branch
+            && self.binding.requested().capability_identity() == capability_identity
+            && self.binding.requested().capability_authority_identity()
+                == capability_authority_identity
+            && self.binding.request_commit().terminal().branch() == branch
+            && self.approval_commit.terminal().branch() == branch
+            && self.binding.request_commit().provider_runtime_instance_id()
+                == self.approval_commit.provider_runtime_instance_id()
+    }
+
+    pub const fn request_binding(
+        &self,
+    ) -> &WorthQueryElevationRequestBinding {
+        self.binding.requested()
+    }
+
+    pub fn support_remains_current_in(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        runtime: &worth_relational::facade::runtime::RelationalRuntime,
+        snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+        bridge: &worth_runtime_bridge::facade::BridgeAuthorizationRuntime,
+    ) -> Result<bool, worth_relational::facade::transactions::RelationalExecutionDenialCause> {
+        self.binding
+            .requested()
+            .supporting()
+            .decision()
+            .remains_current_in(execution, runtime, snapshot, bridge)
+    }
+
+    pub fn support_decision(
+        &self,
+    ) -> &WorthQueryAuthorizationDecisionFact {
+        self.binding.requested().supporting().decision()
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn admits_active_use(
+        &self,
+        runtime_authority: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
+        branch: &worth_relational::facade::history::BranchId,
+        capability_identity: [u8; 32],
+        capability_authority_identity: &str,
+        request: &WorthQueryRetainedCapabilityRequest,
+        elevation: EntityId,
+        grant: EntityId,
+    ) -> bool {
+        self.belongs_to_lifecycle(
+            runtime_authority,
+            branch,
+            capability_identity,
+            capability_authority_identity,
+        ) && self.binding.requested().upper_bound().capability_identity() == capability_identity
+            && self.binding.elevation() == elevation
+            && self
+                .binding
+                .requested()
+                .upper_bound()
+                .matches_active_request(request, elevation, grant)
+    }
+}
+
+/// Every way committing an elevation approval can end.
+///
+/// This mirrors the application commit outcome. `Approved` carries the move-only approved-elevation authority. Most
+/// variants that did not land hand the consumed requested elevation back, so it
+/// can be committed again.
+#[derive(Debug)]
+pub enum WorthQueryElevationApprovalOutcome {
+    /// Immutable original meaning plus the exact predecessor supplied by this call.
+    RecoveredCommitted {
+        receipt: crate::domain_computation::primary_graph::provider::WorthQueryRecoveredApplicationCommitReceipt,
+        requested: WorthQueryRequestedElevation,
+    },
+    CleanupRequired(Box<super::WorthQueryApplicationCleanupRequired>),
+    /// The product branch moved after the basis. Nothing was committed.
+    ProductStale(
+        crate::domain_computation::WorthQueryProductStaleApplication,
+        WorthQueryRequestedElevation,
+    ),
+    /// Some owners moved, but the product head did not. Recover publication.
+    ProductUnpublished(crate::domain_computation::WorthQueryProductUnpublishedApplication),
+    ProductPreparationPending(crate::domain_computation::WorthQueryProductPreparationPending),
+    ProductPreparationRefused(crate::domain_computation::WorthQueryProductPreparationRefused),
+
+    /// Nothing was written; the cause says why.
+    NoEffect(
+        super::WorthQueryApplicationNoEffect,
+        WorthQueryRequestedElevation,
+    ),
+    /// This attempt committed the approval.
+    Approved(WorthQueryApprovedElevation),
+    /// The basis was stale at compare. Nothing was committed; re-read and retry.
+    Stale(
+        WorthQueryApplicationStaleAttempt,
+        WorthQueryRequestedElevation,
+    ),
+    /// The attempt was cancelled before it landed.
+    Cancelled(WorthQueryRequestedElevation),
+    /// The attempt reached its deadline before it landed.
+    TimedOut,
+    /// The commit was refused before publication.
+    Denied(
+        WorthQueryApplicationCommitDenial,
+        WorthQueryRequestedElevation,
+    ),
+    /// The commit's answer was lost, and a re-read found it never landed.
+    Aborted(WorthQueryRequestedElevation),
+    /// A capacity or lifetime limit stopped the attempt. Retry later.
+    Deferred(super::WorthQueryApplicationCommitDeferred),
+    /// Whether the commit landed is unresolved. Do not retry blindly.
+    Indeterminate,
+}
+
+pub fn approved_outcome(
+    outcome: WorthQueryApplicationCommitOutcome,
+    binding: WorthQueryElevationApprovalBinding,
+) -> WorthQueryElevationApprovalOutcome {
+    match outcome {
+        WorthQueryApplicationCommitOutcome::OutputAdopted(_) => {
+            WorthQueryElevationApprovalOutcome::Denied(
+                WorthQueryApplicationCommitDenial::provider_rejected_with_detail(
+                    super::WorthQueryApplicationCommitDenialStage::ProviderCommit,
+                    "producer output adoption cannot fulfill this authored transition",
+                ),
+                binding.into_requested(),
+            )
+        }
+
+        WorthQueryApplicationCommitOutcome::RecoveredCommitted(receipt) => {
+            WorthQueryElevationApprovalOutcome::RecoveredCommitted {
+                receipt,
+                requested: binding.into_requested(),
+            }
+        }
+        WorthQueryApplicationCommitOutcome::Committed(commit) => {
+            WorthQueryElevationApprovalOutcome::Approved(approved(binding, commit))
+        }
+        WorthQueryApplicationCommitOutcome::Stale(stale) => {
+            WorthQueryElevationApprovalOutcome::Stale(stale, binding.into_requested())
+        }
+        WorthQueryApplicationCommitOutcome::ProductStale(stale) => {
+            WorthQueryElevationApprovalOutcome::ProductStale(stale, binding.into_requested())
+        }
+        WorthQueryApplicationCommitOutcome::Cancelled => {
+            WorthQueryElevationApprovalOutcome::Cancelled(binding.into_requested())
+        }
+        WorthQueryApplicationCommitOutcome::TimedOut => {
+            WorthQueryElevationApprovalOutcome::TimedOut
+        }
+        WorthQueryApplicationCommitOutcome::Denied(denial) => {
+            WorthQueryElevationApprovalOutcome::Denied(denial, binding.into_requested())
+        }
+        WorthQueryApplicationCommitOutcome::Aborted => {
+            WorthQueryElevationApprovalOutcome::Aborted(binding.into_requested())
+        }
+        WorthQueryApplicationCommitOutcome::Deferred(deferred) => {
+            WorthQueryElevationApprovalOutcome::Deferred(deferred)
+        }
+        WorthQueryApplicationCommitOutcome::ProductUnpublished(unpublished) => {
+            WorthQueryElevationApprovalOutcome::ProductUnpublished(unpublished)
+        }
+        WorthQueryApplicationCommitOutcome::ProductPreparationPending(owner) => {
+            WorthQueryElevationApprovalOutcome::ProductPreparationPending(owner)
+        }
+        WorthQueryApplicationCommitOutcome::ProductPreparationRefused(owner) => {
+            WorthQueryElevationApprovalOutcome::ProductPreparationRefused(owner)
+        }
+        WorthQueryApplicationCommitOutcome::NoEffect(no_effect) => {
+            WorthQueryElevationApprovalOutcome::NoEffect(no_effect, binding.into_requested())
+        }
+        WorthQueryApplicationCommitOutcome::CleanupRequired(cleanup) => {
+            WorthQueryElevationApprovalOutcome::CleanupRequired(cleanup)
+        }
+        WorthQueryApplicationCommitOutcome::Indeterminate(_) => {
+            WorthQueryElevationApprovalOutcome::Indeterminate
+        }
+    }
+}
+
+fn approved(
+    binding: WorthQueryElevationApprovalBinding,
+    approval_commit: WorthQueryApplicationCommitReceipt,
+) -> WorthQueryApprovedElevation {
+    WorthQueryApprovedElevation {
+        binding,
+        approval_commit,
+    }
+}

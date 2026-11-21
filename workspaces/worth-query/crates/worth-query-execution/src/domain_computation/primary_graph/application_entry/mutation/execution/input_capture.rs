@@ -1,5 +1,6 @@
 //! Input data and original read custody live through the actual handler plan.
 use super::*;
+use crate::domain_computation::primary_graph::application_attempt::read_set::captured_input_transfer::ReadSetCapturedInputTransferExt as _;
 use crate::domain_computation::primary_graph::{
     application_contribution::QueryMemoryReservation, DecisionReader, OperationHandler,
     WorthQueryCompleteApplicationReadSet, WorthQueryDecisionPlan,

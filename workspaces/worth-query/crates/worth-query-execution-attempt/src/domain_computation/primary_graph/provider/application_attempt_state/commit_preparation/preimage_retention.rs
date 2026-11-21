@@ -1,0 +1,337 @@
+//! Fail-closed retention from the admitted decision read-set.
+
+pub mod authored_anchors;
+pub mod failure_context;
+use failure_context::FieldRetentionFailure;
+pub mod owned_relations;
+pub mod relations;
+pub mod selection;
+pub use relations::WorthQueryRetainedRelationPreImageSeal;
+
+pub use selection::WorthQueryRetainedPreImageSeal;
+
+use crate::domain_computation::application_aftermath::{
+    WorthQueryPreImageRetentionDenial, WorthQueryRetainedPreImage,
+};
+use crate::domain_computation::{
+    WorthQueryProviderSessionFailure, WorthQueryProviderSessionProtocolStage,
+};
+
+use super::super::WorthQueryPrimaryGraphApplicationAttempt;
+use crate::domain_computation::primary_graph::provider::session_commit::provider_failure;
+
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub struct WorthQueryPreImageRetentionWork {
+    validated_intents_examined: usize,
+    mutation_targets_materialized: usize,
+    decision_facts_examined: usize,
+    candidates_materialized: usize,
+    demanded_loci_examined: usize,
+}
+
+pub(super) struct WorthQueryPreparedPreImageRetention {
+    retained: Option<WorthQueryRetainedPreImage>,
+    work: WorthQueryPreImageRetentionWork,
+}
+
+impl WorthQueryPreparedPreImageRetention {
+    pub(super) fn into_parts(
+        self,
+    ) -> (
+        Option<WorthQueryRetainedPreImage>,
+        WorthQueryPreImageRetentionWork,
+    ) {
+        (self.retained, self.work)
+    }
+}
+
+pub(super) fn retain_attempt_preimage(
+    attempt: &WorthQueryPrimaryGraphApplicationAttempt,
+    member: Option<&super::super::CoupledApplicationMemberKind>,
+    candidate: &worth_relational::facade::mvcc::ValidatedRelationalProposal,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    layout: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
+    policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+) -> Result<WorthQueryPreparedPreImageRetention, WorthQueryProviderSessionFailure> {
+    if let Some(source) = attempt
+        .aftermath_causality()
+        .map(|causality| causality.prepared_correction())
+    {
+        source.validate_relation_inverse(candidate, execution, layout)?;
+    }
+    let original_capture = attempt
+        .recorded_reverse()
+        .map(|source| source.changed_field_capture())
+        .transpose()
+        .map_err(|()| {
+            retention_failure(FieldRetentionFailure::missing(
+                "original-changed-field-capture",
+                None,
+                None,
+            ))
+        })?
+        .flatten();
+    let Some(demand) = original_capture
+        .as_ref()
+        .map(|(demand, _)| demand)
+        .or_else(|| attempt.preimage_demand())
+    else {
+        return Ok(WorthQueryPreparedPreImageRetention {
+            retained: None,
+            work: WorthQueryPreImageRetentionWork::default(),
+        });
+    };
+    let footprint = candidate.mutation_footprint(Some(demand));
+    let footprint_work = footprint.work();
+    let footprint = footprint
+        .into_projected()
+        .ok_or_else(|| retention_failure(WorthQueryPreImageRetentionDenial::EmptyDemand))?;
+    let candidates = attempt.facts().preimage_candidates(demand, &footprint, policy)
+        .map_err(|cause| match cause {
+            crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial::Allocation(denial) =>
+                WorthQueryProviderSessionFailure::allocation_denied(denial, "authored preimage retention"),
+            _ => provider_failure(WorthQueryProviderSessionProtocolStage::Commit,
+                "preimage projection capacity exhausted"),
+        })?;
+    let examined = candidates.examined();
+    let (selected, route) = if let Some(output) = demand.output_fields() {
+        use worth_relational::facade::transactions::EntityReference;
+        let target = if let Some((_, target)) = &original_capture {
+            *target
+        } else {
+            let mut roles =
+                attempt
+                    .native_publication_roles()
+                    .filter_map(|(name, posture, entity, target)| match target {
+                        EntityReference::Existing(id)
+                            if name == output.role()
+                                && posture == output.capture().posture()
+                                && entity == output.entity() =>
+                        {
+                            Some(*id)
+                        }
+                        _ => None,
+                    });
+            let target = roles.next().ok_or_else(|| {
+                retention_failure(FieldRetentionFailure::missing_output(
+                    output.role(),
+                    output.entity(),
+                ))
+            })?;
+            if roles.next().is_some() {
+                return Err(retention_failure(
+                    WorthQueryPreImageRetentionDenial::AmbiguousDemandedField,
+                ));
+            }
+            target
+        };
+        use worth_query_declaration::facade::application_aftermath::PreImageOutputFieldCapture as Capture;
+        if output.capture() == Capture::CompleteRetired {
+            validate_retired_target(attempt, output, target).map_err(retention_failure)?;
+        }
+        // Installation admits member loci beside a changed-field output only
+        // under live-owner families, whose members are captured by record.
+        let members = if output.capture() == Capture::ChangedPreserved {
+            authored_anchors::select(attempt)?
+        } else {
+            None
+        };
+        match members {
+            Some(members) => (
+                selection::retain_output_fields_with_members(
+                    demand,
+                    candidates.iter(),
+                    &footprint,
+                    target,
+                    layout,
+                    &members,
+                ),
+                "output-fields-with-members",
+            ),
+            None => (
+                selection::retain_output_fields(
+                    demand,
+                    candidates.iter(),
+                    &footprint,
+                    target,
+                    layout,
+                ),
+                "output-fields",
+            ),
+        }
+    } else if let Some(selection) = authored_anchors::select(attempt)? {
+        (
+            selection::retain_from_authored_anchors(
+                demand,
+                candidates.iter(),
+                &footprint,
+                &selection.anchors,
+                selection.own_changes,
+            ),
+            "authored-anchors",
+        )
+    } else {
+        (
+            selection::retain_from_attempt_with_context(demand, candidates.iter(), &footprint),
+            "strict-mutated-fields",
+        )
+    };
+    let (mut retained, candidates_materialized) = selected
+        .map_err(|failure| {
+            retention_failure(failure.with_attempt(
+                attempt,
+                member,
+                route,
+                original_capture.is_some(),
+            ))
+        })?
+        .into_parts();
+    if !demand.relations().is_empty() {
+        retained = relations::retain(
+            attempt,
+            execution,
+            layout,
+            demand,
+            candidate,
+            candidates.as_slice(),
+            retained,
+        )?;
+    }
+    if demand.output_fields().is_some()
+        && retained.fields().is_empty()
+        && retained.absences().is_empty()
+        && retained.relations().is_empty()
+    {
+        return Err(retention_failure(
+            WorthQueryPreImageRetentionDenial::NoMutatedRecord,
+        ));
+    }
+    retained
+        .retain_content(
+            execution,
+            attempt
+                .affinity()
+                .product_publication()
+                .observation()
+                .basis()
+                .relational_basis(),
+            demand.maximum_encoded_bytes(),
+        )
+        .map_err(retention_failure)?;
+    Ok(WorthQueryPreparedPreImageRetention {
+        retained: Some(retained),
+        work: WorthQueryPreImageRetentionWork {
+            validated_intents_examined: footprint_work.validated_intents_examined(),
+            mutation_targets_materialized: footprint_work.mutation_targets_materialized(),
+            decision_facts_examined: examined,
+            candidates_materialized,
+            demanded_loci_examined: demand.loci().len() + demand.relations().len(),
+        },
+    })
+}
+
+impl WorthQueryPreImageRetentionWork {
+    pub const fn validated_intents_examined(
+        self,
+    ) -> usize {
+        self.validated_intents_examined
+    }
+
+    pub const fn mutation_targets_materialized(
+        self,
+    ) -> usize {
+        self.mutation_targets_materialized
+    }
+
+    pub const fn decision_facts_examined(
+        self,
+    ) -> usize {
+        self.decision_facts_examined
+    }
+
+    pub const fn candidates_materialized(
+        self,
+    ) -> usize {
+        self.candidates_materialized
+    }
+
+    pub const fn demanded_loci_examined(
+        self,
+    ) -> usize {
+        self.demanded_loci_examined
+    }
+}
+
+fn retention_failure(
+    failure: impl Into<FieldRetentionFailure>,
+) -> WorthQueryProviderSessionFailure {
+    let FieldRetentionFailure { denial, detail } = failure.into();
+    let semantic =
+        |detail| provider_failure(WorthQueryProviderSessionProtocolStage::Commit, detail);
+    let failure = match denial {
+        WorthQueryPreImageRetentionDenial::Content(cause) => {
+            let stop = crate::domain_computation::primary_graph::provider::relational_execution_denial::relational_execution_kind(
+                cause.into_execution_cause(), None);
+            WorthQueryProviderSessionFailure::checked_read_stopped(
+                stop,
+                WorthQueryProviderSessionProtocolStage::Commit,
+                "preimage content admission stopped before the Native transaction",
+            )
+        }
+        WorthQueryPreImageRetentionDenial::MissingDemandedField => semantic(
+            detail
+                .as_deref()
+                .unwrap_or("recorded inverse demands an unobserved exact mutated field"),
+        ),
+        WorthQueryPreImageRetentionDenial::ExceedsByteBound => {
+            semantic("retained pre-image exceeds the installed demand byte bound")
+        }
+        WorthQueryPreImageRetentionDenial::EmptyDemand => {
+            semantic("installed recorded inverse declares an empty pre-image demand")
+        }
+        WorthQueryPreImageRetentionDenial::AmbiguousDemandedField => semantic(
+            "recorded inverse has several admitted observations for one exact mutated field",
+        ),
+        WorthQueryPreImageRetentionDenial::NoMutatedRecord => {
+            semantic("recorded inverse has no existing mutated field to retain")
+        }
+    };
+    failure.with_preimage_retention_denial(denial)
+}
+
+#[cfg(test)]
+mod tests;
+
+/// Forward declarations and a recorded reverse use different authored role directions.
+fn validate_retired_target(
+    attempt: &WorthQueryPrimaryGraphApplicationAttempt,
+    output: &worth_query_declaration::facade::application_aftermath::PortablePreImageFieldOutput,
+    target: worth_relational::facade::identity::EntityId,
+) -> Result<(), FieldRetentionFailure> {
+    use worth_query_declaration::facade::application_operation::ApplicationMutationOutputPosture as Posture;
+    let valid = if let Some(reverse) = attempt.recorded_reverse() {
+        reverse.authored_retirement_anchor() == Some(target)
+            && reverse.authored_declaration().is_some_and(|identity| {
+                let parts = identity.parts();
+                parts.source_posture == Posture::Create && parts.inverse_role == output.role()
+            })
+    } else {
+        attempt
+            .authored_correction_identity()
+            .is_some_and(|identity| {
+                let parts = identity.parts();
+                parts.source_posture == Posture::Retire && parts.source_role == output.role()
+            })
+    };
+    if valid {
+        Ok(())
+    } else {
+        Err(FieldRetentionFailure::missing(
+            "retired-output-authored-identity",
+            Some(&worth_relational::facade::transactions::RecordRef::Entity(
+                target,
+            )),
+            None,
+        ))
+    }
+}

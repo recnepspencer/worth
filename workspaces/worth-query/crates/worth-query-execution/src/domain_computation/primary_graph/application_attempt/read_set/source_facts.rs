@@ -1,62 +1,7 @@
-use super::super::retained_decision_facts::{
-    AuthoringSourceFacts, RetainedSourceFacts, StorageControl, StoreDenial,
-};
-use super::{denial, WorthQueryApplicationSnapshotLease};
-use crate::domain_computation::primary_graph::{
-    WorthQueryAdmittedApplicationOperation, WorthQueryApplicationAttemptDenial,
-    WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationObservedFact,
-};
-
-pub(crate) mod storage;
-pub(super) use storage::SourceFacts;
-
-pub(super) fn validate_source_facts<Schema, Operation, Input, Scope>(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    admission: &mut WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
-    lease: &WorthQueryApplicationSnapshotLease,
-) -> Result<Vec<WorthQueryApplicationObservedFact>, WorthQueryApplicationAttemptDenial> {
-    compare_source_facts(execution, admission, lease)?;
-    Ok(admission.take_source_facts())
-}
-
-fn compare_source_facts<Schema, Operation, Input, Scope>(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
-    lease: &WorthQueryApplicationSnapshotLease,
-) -> Result<(), WorthQueryApplicationAttemptDenial> {
-    if let Some(expected) = lease.applied_source_qualification() {
-        // Source expansion was sealed from this exact immutable Native image.
-        // Its qualification is separate from the before authorization lease.
-        return if lease.applied_qualification() == Some(expected) {
-            Ok(())
-        } else {
-            Err(denial(
-                WorthQueryApplicationAttemptDenialKind::SourceChanged,
-                admission.operation(),
-            ))
-        };
-    }
-    for fact in admission.source_facts() {
-        super::super::super::fact_verification_observation::source_admission();
-        if let Some(stop) = admission.publication_request().interruption() {
-            return Err(
-                StoreDenial::RequestInterruption(stop).into_attempt_denial(admission.operation())
-            );
-        }
-        let fresh = lease.handle().with_runtime(execution, |runtime| {
-            fact.remains_equal_in(runtime, execution, lease.snapshot())
-        })?;
-        if !fresh {
-            let kind = if matches!(fact, WorthQueryApplicationObservedFact::SourceEntity { .. }) {
-                WorthQueryApplicationAttemptDenialKind::SourceRetired
-            } else {
-                WorthQueryApplicationAttemptDenialKind::SourceChanged
-            };
-            return Err(denial(kind, admission.operation()));
-        }
-    }
-    Ok(())
-}
+pub use worth_query_execution_attempt::facade::domain_computation::primary_graph::application_attempt::read_set::source_facts::*;
+use super::*;
+use crate::domain_computation::primary_graph::StorageControl;
+use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 impl<Schema: worth_query_installation::facade::ApplicationSchema>
     crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>

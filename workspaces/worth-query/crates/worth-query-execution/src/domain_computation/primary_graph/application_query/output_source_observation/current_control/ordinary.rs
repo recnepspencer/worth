@@ -1,4 +1,5 @@
 //! An ordinary producer lends its admitted C control without navigation lifetimes.
+use crate::domain_computation::primary_graph::product_operation::current_read::CurrentReadControlRuntimeExt as _;
 use super::*;
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial;
 use crate::domain_computation::primary_graph::product_operation::current_read::{

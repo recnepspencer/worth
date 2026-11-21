@@ -116,6 +116,11 @@ pub(super) fn install_bridge<S: ApplicationSchema>(
         resource_support,
         installed_schema.installed_view().retain_operation_catalog(),
     );
+    primary_provider.install_managed_views_execution(
+        crate::domain_computation::primary_graph::lineage_ports::downcast_managed_views_arc(
+            std::sync::Arc::clone(&primary_provider.graph.managed_derived_views),
+        ),
+    );
     primary_provider
         .graph
         .output_lineage

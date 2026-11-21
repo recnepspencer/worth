@@ -1,0 +1,308 @@
+use std::sync::Arc;
+
+use worth_relational::facade::authorization::{
+    RelationalAuthorizationObservationCounters, RelationalAuthorizationObservationEvidence,
+    RelationalAuthorizationObservationFreshness,
+};
+use worth_runtime_bridge::facade::{
+    BridgeAuthorizationDecisionEvidence, BridgeAuthorizationRuntime,
+};
+
+pub mod delegation;
+pub mod durable_dependencies;
+pub mod lineage_view;
+pub use delegation::WorthQueryDelegationDecisionFact;
+pub use delegation::WorthQueryDurableCapabilityLineage;
+pub use durable_dependencies::WorthQueryDurableAuthorizationDependencies;
+pub mod admitted_currentness;
+pub mod delegation_activation;
+pub mod source_support;
+pub use delegation_activation::WorthQueryDelegationActivationDecisionFact;
+
+#[derive(Clone)]
+pub struct WorthQueryAuthorizationDecisionFact {
+    session_identity:
+        crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
+    relational: Arc<RelationalAuthorizationObservationEvidence>,
+    bridge: Arc<BridgeAuthorizationDecisionEvidence>,
+    native_dependencies: Option<worth_relational::facade::authorization::RelationalAuthorizationDependencyWire>,
+    recorded_actor: Option<Arc<crate::domain_computation::primary_graph::application_attempt::workflow_transition_program::WorkflowRecordedActorObservation>>,
+    delegation: Option<Arc<WorthQueryDelegationDecisionFact>>,
+    delegation_activation: Option<Arc<WorthQueryDelegationActivationDecisionFact>>,
+    preparatory_relational_work: RelationalAuthorizationObservationCounters,
+}
+
+impl WorthQueryAuthorizationDecisionFact {
+    pub fn from_capability_observation(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        _permit: crate::domain_computation::authorization::capability_observation::WorthQueryAuthorizationDecisionPermit,
+        session_identity: crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
+        runtime: &worth_relational::facade::runtime::RelationalRuntime,
+        relational: RelationalAuthorizationObservationEvidence,
+        bridge: BridgeAuthorizationDecisionEvidence,
+        recorded_actor: Option<Arc<crate::domain_computation::primary_graph::application_attempt::workflow_transition_program::WorkflowRecordedActorObservation>>,
+    ) -> Result<
+        Self,
+        crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial,
+    > {
+        let dependencies = durable_dependencies::capture(execution, runtime, &relational)?;
+        let mut decision = Self::mint(session_identity, relational, bridge);
+        decision.native_dependencies = Some(dependencies);
+        decision.recorded_actor = recorded_actor;
+        Ok(decision)
+    }
+
+    pub fn from_conventional_observation(
+        _permit: crate::domain_computation::authorization::admission::WorthQueryConventionalAuthorizationDecisionPermit,
+        session_identity: crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
+        relational: RelationalAuthorizationObservationEvidence,
+        bridge: BridgeAuthorizationDecisionEvidence,
+    ) -> Self {
+        Self::mint(session_identity, relational, bridge)
+    }
+
+    fn mint(
+        session_identity: crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
+        relational: RelationalAuthorizationObservationEvidence,
+        bridge: BridgeAuthorizationDecisionEvidence,
+    ) -> Self {
+        Self {
+            session_identity,
+            relational: Arc::new(relational),
+            bridge: Arc::new(bridge),
+            native_dependencies: None,
+            recorded_actor: None,
+            delegation: None,
+            delegation_activation: None,
+            preparatory_relational_work: RelationalAuthorizationObservationCounters::default(),
+        }
+    }
+
+    pub fn with_preparatory_relational_work(
+        mut self,
+        work: RelationalAuthorizationObservationCounters,
+    ) -> Self {
+        add_counters(&mut self.preparatory_relational_work, work);
+        self
+    }
+
+    pub fn with_delegation(
+        mut self,
+        delegation: WorthQueryDelegationDecisionFact,
+    ) -> Self {
+        debug_assert!(delegation.belongs_to_session(self.session_identity));
+        self.delegation = Some(Arc::new(delegation));
+        self
+    }
+
+    pub fn attach_delegation_activation(
+        &mut self,
+        activation: WorthQueryDelegationActivationDecisionFact,
+    ) -> Result<(), ()> {
+        if self.delegation_activation.is_some()
+            || !activation.belongs_to_session(self.session_identity)
+        {
+            return Err(());
+        }
+        self.delegation_activation = Some(Arc::new(activation));
+        Ok(())
+    }
+
+    pub fn retain_delegation_activation_from(
+        &mut self,
+        prior: &Self,
+    ) -> Result<(), ()> {
+        if self.delegation_activation.is_some() {
+            return Err(());
+        }
+        if let Some(activation) = &prior.delegation_activation {
+            self.delegation_activation = Some(Arc::new(
+                activation.retained_for_session(self.session_identity),
+            ));
+        }
+        Ok(())
+    }
+
+    pub const fn session_identity(
+        &self,
+    ) -> crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity {
+        self.session_identity
+    }
+
+    pub fn primary_identity(&self) -> [u8; 32] {
+        self.recorded_actor
+            .as_deref()
+            .map_or(*self.relational.observation_identity().bytes(), |actor| {
+                actor.combined_identity(self.relational.observation_identity().bytes())
+            })
+    }
+
+    pub fn relational_counters(
+        &self,
+    ) -> RelationalAuthorizationObservationCounters {
+        let mut counters = self.preparatory_relational_work;
+        add_counters(&mut counters, self.relational.counters());
+        if let Some(delegation) = &self.delegation {
+            delegation.add_relational_counters(&mut counters);
+        }
+        if let Some(activation) = &self.delegation_activation {
+            activation.add_relational_counters(&mut counters);
+        }
+        counters
+    }
+
+    pub fn signal_dependency_count(&self) -> usize {
+        bridge_dependency_count(&self.bridge)
+            + self
+                .delegation
+                .as_ref()
+                .map_or(0, |delegation| delegation.signal_dependency_count())
+            + self
+                .delegation_activation
+                .as_ref()
+                .map_or(0, |activation| activation.signal_dependency_count())
+    }
+
+    pub fn bridge_is_retained(
+        &self,
+        bridge: &BridgeAuthorizationRuntime,
+    ) -> bool {
+        bridge.retains(&self.bridge)
+            && bridge_matches(
+                &self.relational,
+                &self.bridge,
+                self.recorded_actor.as_deref(),
+            )
+            && self
+                .delegation
+                .as_ref()
+                .is_none_or(|delegation| delegation.bridge_is_retained(bridge))
+            && self
+                .delegation_activation
+                .as_ref()
+                .is_none_or(|activation| activation.bridge_is_retained(bridge))
+    }
+
+    pub fn remains_current_in(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        runtime: &worth_relational::facade::runtime::RelationalRuntime,
+        snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+        bridge: &BridgeAuthorizationRuntime,
+    ) -> Result<bool, worth_relational::facade::transactions::RelationalExecutionDenialCause> {
+        let _scope = crate::domain_computation::primary_graph::application_attempt::consult_observation::ReadConsultScopeForTest::enter_for_test(crate::domain_computation::primary_graph::application_attempt::consult_observation::Door::Approval);
+        if !self.bridge_is_retained(bridge)
+            || !observation_is_current(execution, runtime, snapshot, &self.relational)?
+        {
+            return Ok(false);
+        }
+        if let Some(recorded) = &self.recorded_actor
+            && !recorded.remains_current(execution, runtime, snapshot)?
+        {
+            return Ok(false);
+        }
+        if let Some(delegation) = &self.delegation
+            && !delegation.remains_current_in(execution, runtime, snapshot, bridge)?
+        {
+            return Ok(false);
+        }
+        if let Some(activation) = &self.delegation_activation
+            && !activation.remains_current_in(execution, runtime, snapshot, bridge)?
+        {
+            return Ok(false);
+        }
+        Ok(true)
+    }
+
+    pub fn remains_equal_in(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        runtime: &worth_relational::facade::runtime::RelationalRuntime,
+        snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    ) -> Result<bool, worth_relational::facade::transactions::RelationalExecutionDenialCause> {
+        if !bridge_matches(
+            &self.relational,
+            &self.bridge,
+            self.recorded_actor.as_deref(),
+        ) || !observation_is_current(execution, runtime, snapshot, &self.relational)?
+        {
+            return Ok(false);
+        }
+        if let Some(recorded) = &self.recorded_actor
+            && !recorded.remains_current(execution, runtime, snapshot)?
+        {
+            return Ok(false);
+        }
+        if let Some(delegation) = &self.delegation
+            && !delegation.remains_equal_in(execution, runtime, snapshot)?
+        {
+            return Ok(false);
+        }
+        if let Some(activation) = &self.delegation_activation
+            && !activation.remains_equal_in(execution, runtime, snapshot)?
+        {
+            return Ok(false);
+        }
+        Ok(true)
+    }
+
+    pub fn has_same_lineage(
+        &self,
+        other: &Self,
+    ) -> bool {
+        match (&self.delegation, &other.delegation) {
+            (Some(left), Some(right)) => left.has_same_lineage(right),
+            (None, None) => true,
+            (Some(_), None) | (None, Some(_)) => false,
+        }
+    }
+}
+
+pub(super) fn observation_is_current(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    observation: &RelationalAuthorizationObservationEvidence,
+) -> Result<bool, worth_relational::facade::transactions::RelationalExecutionDenialCause> {
+    match runtime.compare_authorization_observation(observation, snapshot.clone(), execution) {
+        RelationalAuthorizationObservationFreshness::ExecutionStopped(cause) => Err(cause),
+        RelationalAuthorizationObservationFreshness::Fresh => Ok(true),
+        RelationalAuthorizationObservationFreshness::Stale => Ok(false),
+    }
+}
+
+fn bridge_matches(
+    relational: &RelationalAuthorizationObservationEvidence,
+    bridge: &BridgeAuthorizationDecisionEvidence,
+    recorded: Option<&crate::domain_computation::primary_graph::application_attempt::workflow_transition_program::WorkflowRecordedActorObservation>,
+) -> bool {
+    let identity = recorded.map_or(*relational.observation_identity().bytes(), |recorded| {
+        recorded.combined_identity(relational.observation_identity().bytes())
+    });
+    bridge.is_allowed() && bridge.dependency_identity() == &identity
+}
+
+fn bridge_dependency_count(evidence: &BridgeAuthorizationDecisionEvidence) -> usize {
+    let counters = evidence.counters();
+    counters.entities_depended_on
+        + counters.relations_depended_on
+        + counters.adjacency_lists_depended_on
+        + counters.fields_depended_on
+}
+
+pub fn add_counters(
+    total: &mut RelationalAuthorizationObservationCounters,
+    counters: RelationalAuthorizationObservationCounters,
+) {
+    total.paths_evaluated += counters.paths_evaluated;
+    total.adjacency_lists_read += counters.adjacency_lists_read;
+    total.adjacency_edges_inspected += counters.adjacency_edges_inspected;
+    total.relation_records_inspected += counters.relation_records_inspected;
+    total.entity_records_inspected += counters.entity_records_inspected;
+    total.predicate_fields_inspected += counters.predicate_fields_inspected;
+    total.relation_join_index_lookups += counters.relation_join_index_lookups;
+    total.relation_join_candidates_inspected += counters.relation_join_candidates_inspected;
+    total.maximum_frontier_width = total
+        .maximum_frontier_width
+        .max(counters.maximum_frontier_width);
+}

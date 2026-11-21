@@ -10,15 +10,52 @@ use crate::domain_computation::primary_graph::{
 use worth_query_installation::facade::ApplicationSchema;
 
 #[path = "transition_replay/condition.rs"]
-mod condition;
+pub(crate) mod condition;
 #[path = "transition_replay/descriptor_retention.rs"]
-mod descriptor_retention;
-#[path = "transition_replay/prepared_outcomes.rs"]
-mod prepared_outcomes;
+pub(crate) use worth_query_execution_attempt::facade::domain_computation::primary_graph::application_attempt::workflow_transition_program::publication::transition_replay::descriptor_retention;
 pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) use descriptor_retention::PreparedWorkflowTransitionReplays;
 
-impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation, Input, Scope> {
-    pub(super) fn resolve_transition_replay(
+pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) trait PreparedWorkflowAdvanceTransitionReplayExt<Schema, Operation, Input, Scope>: Sized
+
+{
+    fn resolve_transition_replay(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        idempotency: WorthQueryApplicationIdempotencyBinding,
+    ) -> Result<Option<WorkflowProgressOutcome>, WorthQueryApplicationIdempotencyResolutionDenial>
+    where
+        Schema: ApplicationSchema,
+        Operation: 'static,
+        Input: Clone + Send + Sync + 'static,
+;
+    fn resolve_operation_replay<
+        Binding,
+    >(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        required: &RequiredWorkflowOperation,
+        receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
+        idempotency: WorthQueryApplicationIdempotencyBinding,
+        recovery: Option<
+            &crate::domain_computation::application_aftermath::WorthQueryRecoverySafeRetryAdmission,
+        >,
+    ) -> Result<Option<WorkflowProgressOutcome>, WorthQueryApplicationIdempotencyResolutionDenial>
+    where
+        Schema: ApplicationSchema,
+        Operation: 'static,
+        Input: Clone + Send + Sync + 'static,
+        Binding: worth_query_declaration::facade::application_operation::ApplicationMutationBinding<
+            Schema,
+        >,
+;
+}
+
+impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvanceTransitionReplayExt<Schema, Operation, Input, Scope> for PreparedWorkflowAdvance<Schema, Operation, Input, Scope>
+
+{
+    fn resolve_transition_replay(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
@@ -150,7 +187,7 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
 
     /// Projects exact prior operation settlement; an unseen confirmation key is sufficient
     /// only for installed local effects whose original receipt created that transition.
-    pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) fn resolve_operation_replay<
+    fn resolve_operation_replay<
         Binding,
     >(
         &self,

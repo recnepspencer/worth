@@ -1,3 +1,4 @@
+use worth_query_execution_attempt::facade::domain_computation::primary_graph::application_attempt::read_set::source_facts::SourceFacts;
 use super::*;
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
@@ -46,7 +47,7 @@ where
             })?;
         let source_facts =
             SourceFacts::Admitted(validate_source_facts(execution, &mut admission, &lease)?);
-        Ok(WorthQueryApplicationReadAttempt {
+        Ok(WorthQueryApplicationReadAttempt::from_attempt_parts(worth_query_execution_attempt::facade::ports::WorthQueryAttemptCrateSeal::new(), worth_query_execution_attempt::facade::domain_computation::primary_graph::application_attempt::read_set::WorthQueryApplicationReadAttemptAttemptParts {
             execution: *execution,
             value_decode: super::super::super::value_decode::ValueDecodeState::new(self.installed_schema.value_bindings().clone()),
             admission,
@@ -63,7 +64,7 @@ where
             consumed_outputs: Vec::new(),
             native_completion: None,
             _phase: PhantomData,
-        })
+        }))
     }
 
     /// Consumes a projection lease typed for this exact admitted operation.
@@ -205,7 +206,7 @@ where
             .with_execution(*execution),
         )?;
         let layout = Arc::clone(&lease.layout);
-        Ok(WorthQueryApplicationReadAttempt {
+        Ok(WorthQueryApplicationReadAttempt::from_attempt_parts(worth_query_execution_attempt::facade::ports::WorthQueryAttemptCrateSeal::new(), worth_query_execution_attempt::facade::domain_computation::primary_graph::application_attempt::read_set::WorthQueryApplicationReadAttemptAttemptParts {
             execution: *execution,
             value_decode: super::super::super::value_decode::ValueDecodeState::new(
                 self.installed_schema.value_bindings().clone(),
@@ -223,6 +224,6 @@ where
             consumed_outputs,
             native_completion: None,
             _phase: PhantomData,
-        })
+        }))
     }
 }

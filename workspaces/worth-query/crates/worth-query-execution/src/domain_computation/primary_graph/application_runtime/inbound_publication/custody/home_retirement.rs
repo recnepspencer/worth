@@ -8,18 +8,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryOperationHomeRetirementProgress as Progress,
 };
 
-#[derive(Default)]
-pub(in crate::domain_computation::primary_graph) struct InstalledTransportCloseCustody {
-    correlations: BTreeSet<ExternalEffectCorrelationIdentity>,
-}
-impl InstalledTransportCloseCustody {
-    pub(in crate::domain_computation::primary_graph) fn covers(
-        &self,
-        correlation: &ExternalEffectCorrelationIdentity,
-    ) -> bool {
-        self.correlations.contains(correlation)
-    }
-}
+pub(in crate::domain_computation::primary_graph) use worth_query_execution_attempt::facade::domain_computation::primary_graph::application_runtime::InstalledTransportCloseCustody;
 
 impl InstalledTransportCompletionCustody {
     pub(in crate::domain_computation::primary_graph::application_runtime) fn preflight_home_retirement(
@@ -50,7 +39,7 @@ impl InstalledTransportCompletionCustody {
             {
                 return Err(Denial::Busy(Owner::PublicationReceipts));
             }
-            coverage.correlations.insert(*correlation);
+            coverage.insert(*correlation);
         }
         for performed in self.finished.values_mut() {
             // finish() is reached only after retaining the actual canonical

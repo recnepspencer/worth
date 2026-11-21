@@ -104,11 +104,11 @@ where
         use crate::domain_computation::primary_graph::product_operation::program_adoption::authorization::admit_program;
         support
             .adoption_admissions
-            .insert(*installed.revision(), admit_program::<Schema, Program>);
+            .insert(*installed.revision(), Box::new(admit_program::<Schema, Program> as crate::domain_computation::primary_graph::product_operation::program_adoption::authorization::ProgramAdoptionAdmission<Schema>));
         for record in &supported {
             support
                 .adoption_admissions
-                .insert(*record.revision(), record.adoption_admission::<Schema>());
+                .insert(*record.revision(), Box::new(record.adoption_admission::<Schema>()));
         }
     }
     if !runtime.runtime.product_runtime.is_directory_home() {
@@ -170,6 +170,7 @@ where
         .complete_native_installation(
             std::iter::once(std::sync::Arc::clone(&initial))
                 .chain(supported.iter().cloned())
+                .map(|record| record as std::sync::Arc<dyn worth_query_execution_attempt::facade::ports::SupportedProgramRecordPort>)
                 .collect(),
         );
     Ok(WorthQueryProgramApplicationRuntime {

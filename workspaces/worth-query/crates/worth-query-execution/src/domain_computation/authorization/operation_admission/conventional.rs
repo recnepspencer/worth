@@ -66,9 +66,9 @@ struct ObservedConventionalAdmission<
     authorization: WorthQueryRetainedAuthorizationDecisionFacts,
 }
 
-pub(super) fn transition<Schema, Principal, PrincipalIdentity, Operation, Input, Scope>(
+pub(in crate::domain_computation::authorization) fn transition<Schema, Principal, PrincipalIdentity, Operation, Input, Scope>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    bound: super::super::super::PreconditionBoundConventionalOperation<
+    bound: crate::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::PreconditionBoundConventionalOperation<
         '_,
         Schema,
         Principal,
@@ -99,7 +99,7 @@ fn prepare_identity_and_graph_work<
     Scope,
 >(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    bound: super::super::super::PreconditionBoundConventionalOperation<
+    bound: crate::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::PreconditionBoundConventionalOperation<
         'bound,
         Schema,
         Principal,
@@ -123,11 +123,11 @@ fn prepare_identity_and_graph_work<
 where
     Schema: ApplicationSchema,
 {
-    let super::super::super::PreconditionBoundConventionalOperation {
+    let crate::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::PreconditionBoundConventionalOperation {
         validated,
         preconditions,
     } = bound;
-    let super::super::super::super::ValidatedConventionalOperation {
+    let crate::domain_computation::authorization::operation_progression::authority_validation::ValidatedConventionalOperation {
         runtime,
         product,
         principal,

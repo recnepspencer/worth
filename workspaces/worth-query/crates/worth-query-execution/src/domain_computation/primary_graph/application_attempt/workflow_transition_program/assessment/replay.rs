@@ -9,12 +9,37 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrimaryGraphApplicationRuntime, WorthQueryWorkflowAssessmentPosture,
 };
 
-impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation, Input, Scope>
+pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) trait PreparedWorkflowAdvanceAssessmentReplayExt<Schema, Operation, Input, Scope>: Sized
 where
     Schema: ApplicationSchema,
     Operation: 'static,
 {
-    pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) fn requested_instance(
+    fn requested_instance(
+        &self,
+    ) -> worth_relational::facade::identity::EntityId;
+    fn resolve_assessment_replay<
+        Query,
+    >(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        required: &RequiredWorkflowAssessment,
+        settlement: &WorthQueryOutputDemandSettlement,
+        source: &WorthQueryObservedSource<Query>,
+        posture: WorthQueryWorkflowAssessmentPosture,
+        idempotency: WorthQueryApplicationIdempotencyBinding,
+    ) -> Result<Option<WorkflowProgressOutcome>, WorthQueryApplicationIdempotencyResolutionDenial>
+    where
+        Input: Clone + Send + Sync + 'static,
+;
+}
+
+impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvanceAssessmentReplayExt<Schema, Operation, Input, Scope> for PreparedWorkflowAdvance<Schema, Operation, Input, Scope>
+where
+    Schema: ApplicationSchema,
+    Operation: 'static,
+{
+    fn requested_instance(
         &self,
     ) -> worth_relational::facade::identity::EntityId {
         match self {
@@ -29,7 +54,7 @@ where
         }
     }
 
-    pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) fn resolve_assessment_replay<
+    fn resolve_assessment_replay<
         Query,
     >(
         &self,

@@ -1,10 +1,20 @@
 //! Issue a succession slot only from exact fresh capability and native completed-chain facts.
+pub struct WorthQueryWorkflowSuccessionAdapter;
+
+impl WorthQueryWorkflowSuccessionAdapter {
+    pub const fn bind_idempotency(
+        idempotency: crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding,
+        identity: &[u8; 32],
+    ) -> crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding {
+        idempotency.bind_workflow_instance(identity)
+    }
+}
+
 use super::super::WorkflowInstancePreparationDenial;
 use super::{
     mismatch, ApplicationMutationBinding, ApplicationSchema, ApplicationWorkflowSpec,
     RequiredWorkflowSuccession, TypeId, WorkflowSuccessionAuthority,
     WorkflowSuccessionAuthoritySlot, WorthQueryApplicationOutputRole,
-    WorthQueryWorkflowSuccessionAdapter,
 };
 use crate::domain_computation::primary_graph::{
     WorthQueryAdmittedApplicationOperation, WorthQueryAdvancementPhase,
@@ -83,14 +93,14 @@ impl WorthQueryWorkflowSuccessionAdapter {
         .map_err(|()| denied("succession intent identity unavailable"))?;
         let branch = read.lease.product().product_branch();
         let scope = read.admission.operation_scope_binding().clone();
-        let authority = WorkflowSuccessionAuthority {
+        let authority = WorkflowSuccessionAuthority::from_attempt_parts(worth_query_execution_attempt::facade::ports::WorthQueryAttemptCrateSeal::new(), worth_query_execution_attempt::facade::domain_computation::primary_graph::application_attempt::workflow_instance_program::succession::WorkflowSuccessionAuthorityAttemptParts {
             branch, scope: scope.clone(), predecessor: predecessor.entity_id(), binding: Binding::IDENTITY, role: Role::NAME,
             input_identity: *identities.input_identity(), key_identity: *identities.key_identity(), identity, instance_identity: instance_identity.clone(),
             capability, facts: read.facts.iter().cloned().collect(), compiled: compiled.clone(), carry, refusal: read.new_commit_refusal,
             subject: super::super::super::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate::succession_subject::<Schema, Binding, Role>,
             output_match,
-        };
-        Ok(RequiredWorkflowSuccession {
+        });
+        Ok(RequiredWorkflowSuccession::from_attempt_parts(worth_query_execution_attempt::facade::ports::WorthQueryAttemptCrateSeal::new(), worth_query_execution_attempt::facade::domain_computation::primary_graph::application_attempt::workflow_instance_program::succession::RequiredWorkflowSuccessionAttemptParts {
             branch,
             binding_type: TypeId::of::<Binding>(),
             role_type: TypeId::of::<Role>(),
@@ -103,10 +113,10 @@ impl WorthQueryWorkflowSuccessionAdapter {
             scope,
             compiled,
             identity_locator: read.lease.layout.workflow().instance.identity.clone(),
-            authority: Arc::new(WorkflowSuccessionAuthoritySlot {
+            authority: Arc::new(WorkflowSuccessionAuthoritySlot::from_attempt_parts(worth_query_execution_attempt::facade::ports::WorthQueryAttemptCrateSeal::new(), worth_query_execution_attempt::facade::domain_computation::primary_graph::application_attempt::workflow_instance_program::succession::WorkflowSuccessionAuthoritySlotAttemptParts {
                 authority: Mutex::new(Some(authority)),
-            }),
+            })),
             subject_in_receipt: super::publication::subject_in_receipt::<Schema, Binding, Role>,
-        })
+        }))
     }
 }

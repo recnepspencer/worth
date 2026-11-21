@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 use worth_query_execution_lineage::facade::ports::{
     AppliedManagedSourcePort, ManagedDerivedViewPort, PendingProducerPublicationPort,
-    PreparingCommitPort, SourceReadClosurePort,
+    SourceReadClosurePort,
 };
 use worth_query_execution_lineage::facade::primary_graph::application_attempt::{
     ManagedSourceRead, WorthQuerySourceCurrentnessFailure,
@@ -15,9 +15,6 @@ use crate::domain_computation::primary_graph::application_contribution::producer
 use crate::domain_computation::primary_graph::application_query::derived_view::registry::ManagedDerivedViewRegistry;
 use crate::domain_computation::primary_graph::application_query::managed_index::applied_read::support::AppliedManagedSourceSupport;
 use crate::domain_computation::primary_graph::application_query::output_source_observation::SourceQueryReadClosure;
-use crate::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::commit_execution::durable_custody::{
-    QueryPreparingApplicationCommit, RetainedQueryDurablePreparation,
-};
 
 pub(in crate::domain_computation::primary_graph) fn downcast_managed_views(
     port: &dyn ManagedDerivedViewPort,
@@ -33,18 +30,6 @@ pub(in crate::domain_computation::primary_graph) fn downcast_managed_views_arc(
     port.into_any_arc()
         .downcast::<ManagedDerivedViewRegistry>()
         .expect("primary graph carries ManagedDerivedViewRegistry")
-}
-
-impl PreparingCommitPort for RetainedQueryDurablePreparation {
-    fn is_unprepared(&self) -> bool {
-        RetainedQueryDurablePreparation::is_unprepared(self)
-    }
-}
-
-impl PreparingCommitPort for QueryPreparingApplicationCommit {
-    fn is_unprepared(&self) -> bool {
-        self.is_unprepared()
-    }
 }
 
 impl ManagedDerivedViewPort for ManagedDerivedViewRegistry {

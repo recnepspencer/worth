@@ -81,11 +81,7 @@ pub(super) type ProducerSourceQuery<Schema, Binding> =
 pub(super) type ProducerSourceValue<Schema, Binding> =
     <<<<Binding as WorthQueryApplicationProducerBinding<Schema>>::OutputFamily as WorthQueryProducerOutputFamily<Schema>>::Source as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value;
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryWorkflowAssessmentPosture {
-    Passing,
-    Failing,
-}
+pub use worth_query_execution_attempt::facade::domain_computation::primary_graph::application_contribution::producer::WorthQueryWorkflowAssessmentPosture;
 
 /// Assessment meaning owned by the installed output-family contract rather
 /// than selected by a workflow caller.

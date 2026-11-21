@@ -1,0 +1,271 @@
+use crate::domain_computation::primary_graph::WorthQueryAdvancementDenialCommitExt as _;
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
+use worth_foundational::facade::{AspectValue, InternedString};
+use worth_query_declaration::facade::application_program::{
+    ApplicationProgramRevision, ApplicationWorkflowDefinitionContentIdentity,
+};
+use worth_query_installation::facade::ApplicationSchema;
+
+use super::super::{
+    WorthQueryApplicationEffectProgram, WorthQueryApplicationIdempotencyBinding,
+    WorthQueryApplicationUncommitted,
+};
+
+#[must_use = "prepared workflow instance start owns a live application attempt"]
+pub struct PreparedWorkflowInstanceStart<Schema, Operation, Input, Scope> {
+    pub(super) program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
+    pub(super) program_revision: ApplicationProgramRevision,
+    pub(super) definition: worth_relational::facade::identity::EntityId,
+    pub(super) definition_content_identity: ApplicationWorkflowDefinitionContentIdentity,
+    pub(super) discovery_intent: super::WorthQueryWorkflowInstanceDiscoveryIntent<Schema>,
+    pub(super) instance_identity_locator: worth_foundational::facade::AspectFieldLocator,
+    pub(super) start_path: String,
+    pub(super) supersession: Option<super::supersession::WorkflowStartSupersession>,
+}
+
+/// A reference to a started workflow instance: its branch, the branch it was started on,
+/// its entity, the definition content identity and program revision it runs, and its start
+/// node path.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct PublishedWorkflowInstanceRef {
+    branch: crate::basis::WorthQueryProductBranch,
+    /// The branch the instance was started on, whose occurrence its facts
+    /// record. Only a fork's copy is read on another branch.
+    started_on: crate::basis::WorthQueryProductBranch,
+    entity_id: worth_relational::facade::identity::EntityId,
+    definition_content_identity: ApplicationWorkflowDefinitionContentIdentity,
+    definition: worth_relational::facade::identity::EntityId,
+    program_revision: ApplicationProgramRevision,
+    start_path: String,
+}
+
+impl PublishedWorkflowInstanceRef {
+    /// Native governed reader validates occurrence/definition/current admission separately.
+    /// The original native intent supplies the immutable start revision.
+    pub fn observed_current(
+        branch: crate::basis::WorthQueryProductBranch,
+        entity_id: worth_relational::facade::identity::EntityId,
+        definition: worth_relational::facade::identity::EntityId,
+        definition_content_identity: ApplicationWorkflowDefinitionContentIdentity,
+        program_revision: ApplicationProgramRevision,
+        start_path: String,
+    ) -> Self {
+        Self {
+            branch,
+            started_on: branch,
+            entity_id,
+            definition,
+            definition_content_identity,
+            program_revision,
+            start_path,
+        }
+    }
+
+    pub const fn branch(&self) -> crate::basis::WorthQueryProductBranch {
+        self.branch
+    }
+
+    pub const fn entity_id(&self) -> worth_relational::facade::identity::EntityId {
+        self.entity_id
+    }
+
+    /// The occurrence the instance's own facts record.
+    pub const fn started_occurrence(&self) -> u64 {
+        self.started_on.occurrence_ordinal()
+    }
+
+    /// The same instance as `fork` copied it: read on the fork, still
+    /// recording the branch it was started on.
+    pub fn copied_onto(
+        &self,
+        fork: crate::basis::WorthQueryProductBranch,
+    ) -> Self {
+        Self {
+            branch: fork,
+            ..self.clone()
+        }
+    }
+
+    pub const fn definition_entity_id(&self) -> worth_relational::facade::identity::EntityId {
+        self.definition
+    }
+
+    /// The revision the instance started under. Program adoption may carry
+    /// the instance to a later revision; advancing reads the revision from
+    /// instance truth and never from this reference.
+    pub const fn program_revision(&self) -> &ApplicationProgramRevision {
+        &self.program_revision
+    }
+
+    pub const fn definition_content_identity(
+        &self,
+    ) -> &ApplicationWorkflowDefinitionContentIdentity {
+        &self.definition_content_identity
+    }
+
+    pub fn start_node_path(&self) -> &str {
+        &self.start_path
+    }
+}
+
+/// A real workflow instance start and its owner-issued commit receipt.
+#[derive(Debug)]
+pub struct PerformedWorkflowInstanceStart {
+    instance: PublishedWorkflowInstanceRef,
+    receipt: super::super::WorthQueryApplicationCommitReceipt,
+}
+
+impl PerformedWorkflowInstanceStart {
+    pub const fn instance(&self) -> &PublishedWorkflowInstanceRef {
+        &self.instance
+    }
+
+    pub const fn receipt(&self) -> &super::super::WorthQueryApplicationCommitReceipt {
+        &self.receipt
+    }
+}
+
+/// What executing a workflow instance start produced. `ProjectionDenied` means the commit
+/// landed but its receipt did not record exactly one started instance.
+#[derive(Debug)]
+pub enum WorkflowInstanceStartOutcome {
+    RecoveredCommitted(crate::domain_computation::primary_graph::provider::WorthQueryRecoveredApplicationCommitReceipt),
+    Started(PerformedWorkflowInstanceStart),
+    /// The branch holds another definition current. Nothing was written.
+    Superseded(super::supersession::SupersededWorkflowDefinitionStart),
+    /// The definition's lineage is retired. Nothing was written.
+    Retired(super::supersession::RetiredWorkflowDefinitionStart),
+    /// The commit did not land. A fresh landed commit is the
+    /// performed variant.
+    Application(WorthQueryApplicationUncommitted),
+    ProjectionDenied(super::super::WorthQueryApplicationCommitReceipt),
+}
+
+pub fn project(
+    receipt: super::super::WorthQueryApplicationCommitReceipt,
+    definition_content_identity: ApplicationWorkflowDefinitionContentIdentity,
+    definition: worth_relational::facade::identity::EntityId,
+    program_revision: ApplicationProgramRevision,
+    instance_identity: &str,
+    instance_identity_locator: worth_foundational::facade::AspectFieldLocator,
+    start_path: String,
+) -> WorkflowInstanceStartOutcome {
+    match project_instance(
+        &receipt,
+        &definition_content_identity,
+        definition,
+        program_revision,
+        instance_identity,
+        &instance_identity_locator,
+        &start_path,
+    ) {
+        Some(instance) => WorkflowInstanceStartOutcome::Started(PerformedWorkflowInstanceStart {
+            instance,
+            receipt,
+        }),
+        None => WorkflowInstanceStartOutcome::ProjectionDenied(receipt),
+    }
+}
+
+pub(super) fn project_instance(
+    receipt: &super::super::WorthQueryApplicationCommitReceipt,
+    definition_content_identity: &ApplicationWorkflowDefinitionContentIdentity,
+    definition: worth_relational::facade::identity::EntityId,
+    program_revision: ApplicationProgramRevision,
+    instance_identity: &str,
+    instance_identity_locator: &worth_foundational::facade::AspectFieldLocator,
+    start_path: &str,
+) -> Option<PublishedWorkflowInstanceRef> {
+    let expected = AspectValue::String(InternedString::Raw(instance_identity.to_owned()));
+    let locator = &instance_identity_locator;
+    let candidates = receipt
+        .committed_changes()
+        .entity_changes()
+        .filter(|(_, change)| {
+            *change == worth_relational::facade::publication::RecordStructuralChange::Created
+        })
+        .filter_map(|(entity, _)| {
+            (receipt
+                .committed_changes()
+                .committed_field_values(entity, &[locator])
+                == Some(vec![expected.clone()]))
+            .then_some(entity)
+        })
+        .collect::<Vec<_>>();
+    let [entity_id] = candidates.as_slice() else {
+        return None;
+    };
+    Some(PublishedWorkflowInstanceRef {
+        branch: receipt.product_branch(),
+        started_on: receipt.product_branch(),
+        entity_id: *entity_id,
+        definition_content_identity: definition_content_identity.clone(),
+        definition,
+        program_revision,
+        start_path: start_path.to_owned(),
+    })
+}
+
+impl<Schema, Operation, Input, Scope>
+    PreparedWorkflowInstanceStart<Schema, Operation, Input, Scope>
+{
+    /// Owns original creation intent without retaining this attempt or granting a read.
+    pub fn discovery_intent(&self) -> super::WorthQueryWorkflowInstanceDiscoveryIntent<Schema> {
+        self.discovery_intent.clone()
+    }
+
+    /// Controls retained as facts; each host call obtains fresh execution admission.
+    pub fn request_scope(
+        &self,
+    ) -> &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope {
+        self.program.request_scope()
+    }
+}
+
+#[doc(hidden)]
+pub struct PreparedWorkflowInstanceStartAttemptParts<Schema, Operation, Input, Scope> {
+    pub program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
+    pub program_revision: ApplicationProgramRevision,
+    pub definition: worth_relational::facade::identity::EntityId,
+    pub definition_content_identity: ApplicationWorkflowDefinitionContentIdentity,
+    pub discovery_intent: super::WorthQueryWorkflowInstanceDiscoveryIntent<Schema>,
+    pub instance_identity_locator: worth_foundational::facade::AspectFieldLocator,
+    pub start_path: String,
+    pub supersession: Option<super::supersession::WorkflowStartSupersession>,
+}
+
+impl<Schema, Operation, Input, Scope> PreparedWorkflowInstanceStart<Schema, Operation, Input, Scope> {
+    #[doc(hidden)]
+    pub fn from_attempt_parts(
+        _seal: crate::ports::WorthQueryAttemptCrateSeal,
+        parts: PreparedWorkflowInstanceStartAttemptParts<Schema, Operation, Input, Scope>,
+    ) -> Self {
+        Self {
+            program: parts.program,
+            program_revision: parts.program_revision,
+            definition: parts.definition,
+            definition_content_identity: parts.definition_content_identity,
+            discovery_intent: parts.discovery_intent,
+            instance_identity_locator: parts.instance_identity_locator,
+            start_path: parts.start_path,
+            supersession: parts.supersession,
+        }
+    }
+
+    #[doc(hidden)]
+    pub fn into_attempt_parts(
+        self,
+        _seal: crate::ports::WorthQueryAttemptCrateSeal,
+    ) -> PreparedWorkflowInstanceStartAttemptParts<Schema, Operation, Input, Scope> {
+        PreparedWorkflowInstanceStartAttemptParts {
+            program: self.program,
+            program_revision: self.program_revision,
+            definition: self.definition,
+            definition_content_identity: self.definition_content_identity,
+            discovery_intent: self.discovery_intent,
+            instance_identity_locator: self.instance_identity_locator,
+            start_path: self.start_path,
+            supersession: self.supersession,
+        }
+    }
+}

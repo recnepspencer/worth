@@ -29,24 +29,7 @@ impl WorthQuerySelectedProgramInspection {
 }
 
 /// Why the program carried by a selected product could not be inspected.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQuerySelectedProgramInspectionDenial {
-    /// The caller's read request stopped.
-    ReadExecution(
-        Result<
-            crate::domain_computation::WorthQueryProviderSessionDenialKind,
-            crate::domain_computation::WorthQueryProviderSessionControlStopKind,
-        >,
-    ),
-    /// The runtime has no installed program support.
-    ProgramSupportUnavailable,
-    /// No program activation is published.
-    ProgramActivationUnavailable,
-    /// The product's program activation record could not be read.
-    ProgramActivationUnreadable,
-    /// The product's program revision is not on the installed roster.
-    ProgramActivationUnrostered,
-}
+pub use worth_query_execution_attempt::facade::domain_computation::primary_graph::product_activation_types::WorthQuerySelectedProgramInspectionDenial;
 
 pub(in crate::domain_computation::primary_graph) fn inspect_selected_program<
     Schema: ApplicationSchema,

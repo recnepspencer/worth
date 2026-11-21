@@ -35,11 +35,7 @@ mod local_actions;
 mod local_completion;
 mod observation;
 /// Which authored local action the binding requests; never a destination or authority.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorkflowLocalActionKind {
-    Return,
-    Terminate,
-}
+pub use worth_query_execution_attempt::facade::domain_computation::primary_graph::application_attempt::workflow_transition_program::local_actions::WorkflowLocalActionKind;
 
 /// Why a workflow transition could not bind to the branch's program: the installed spec
 /// belongs to another schema, the adopted program could not be inspected, the branch runs
@@ -287,7 +283,7 @@ where
         read_set
             .materialize_workflow_approval::<Capability, Spec>(
                 execution,
-                workflow,
+                &workflow,
                 installed,
                 instance,
                 required,

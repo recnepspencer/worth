@@ -1,8 +1,19 @@
+pub struct WorthQueryWorkflowBirthAdapter;
+
+impl WorthQueryWorkflowBirthAdapter {
+    pub const fn bind_idempotency(
+        idempotency: crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding,
+        identity: &[u8; 32],
+    ) -> crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding {
+        idempotency.bind_workflow_instance(identity)
+    }
+}
+
 use super::super::{PublishedWorkflowDefinitionRef, WorkflowInstancePreparationDenial};
 use super::{
     mismatch, ApplicationMutationBinding, ApplicationSchema, ApplicationWorkflowSpec, Arc, Mutex,
     RequiredWorkflowBirth, TypeId, WorkflowBirthAuthority, WorkflowBirthAuthoritySlot,
-    WorthQueryApplicationOutputRole, WorthQueryWorkflowBirthAdapter,
+    WorthQueryApplicationOutputRole,
 };
 use crate::domain_computation::primary_graph::{
     WorthQueryAdmittedApplicationOperation, WorthQueryAdvancementPhase,
@@ -77,15 +88,15 @@ impl WorthQueryWorkflowBirthAdapter {
         .map_err(|()| denied("birth intent identity is unavailable"))?;
         let branch = read.lease.product().product_branch();
         let scope = read.admission.operation_scope_binding().clone();
-        let authority = WorkflowBirthAuthority {
+        let authority = WorkflowBirthAuthority::from_attempt_parts(worth_query_execution_attempt::facade::ports::WorthQueryAttemptCrateSeal::new(), worth_query_execution_attempt::facade::domain_computation::primary_graph::application_attempt::workflow_instance_program::birth::WorkflowBirthAuthorityAttemptParts {
             branch, scope: scope.clone(), binding: Binding::IDENTITY, role: Role::NAME,
             input_identity: *identities.input_identity(), key_identity: *identities.key_identity(), identity,
             instance_identity: instance_identity.clone(), capability,
             facts: read.facts.iter().cloned().collect(), compiled: compiled.clone(), carry,
             refusal: read.new_commit_refusal,
             subject: super::super::super::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate::birth_subject::<Schema, Binding, Role>,
-        };
-        Ok(RequiredWorkflowBirth {
+        });
+        Ok(RequiredWorkflowBirth::from_attempt_parts(worth_query_execution_attempt::facade::ports::WorthQueryAttemptCrateSeal::new(), worth_query_execution_attempt::facade::domain_computation::primary_graph::application_attempt::workflow_instance_program::birth::RequiredWorkflowBirthAttemptParts {
             branch,
             binding_type: TypeId::of::<Binding>(),
             role_type: TypeId::of::<Role>(),
@@ -98,10 +109,10 @@ impl WorthQueryWorkflowBirthAdapter {
             scope,
             compiled,
             identity_locator: read.lease.layout.workflow().instance.identity.clone(),
-            authority: Arc::new(WorkflowBirthAuthoritySlot {
+            authority: Arc::new(WorkflowBirthAuthoritySlot::from_attempt_parts(worth_query_execution_attempt::facade::ports::WorthQueryAttemptCrateSeal::new(), worth_query_execution_attempt::facade::domain_computation::primary_graph::application_attempt::workflow_instance_program::birth::WorkflowBirthAuthoritySlotAttemptParts {
                 authority: Mutex::new(Some(authority)),
-            }),
+            })),
             subject_in_receipt: super::publication::subject_in_receipt::<Schema, Binding, Role>,
-        })
+        }))
     }
 }

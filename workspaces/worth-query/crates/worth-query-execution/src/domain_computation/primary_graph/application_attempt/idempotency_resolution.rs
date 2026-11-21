@@ -22,35 +22,7 @@ use crate::domain_computation::primary_graph::{
 /// What an idempotency key already means on the current product branch, read
 /// through `resolve_admitted_application_idempotency` without committing
 /// anything.
-#[derive(Debug)]
-pub enum WorthQueryApplicationIdempotencyResolution {
-    ReleasedOriginal(crate::domain_computation::primary_graph::WorthQueryReleasedApplicationEffect),
-    ProductUnpublished(crate::domain_computation::WorthQueryProductUnpublishedApplication),
-    ProductPreparationPending(crate::domain_computation::WorthQueryProductPreparationPending),
-    /// No commit is recorded under this key.
-    Unseen,
-    RecoveredCommitted(crate::domain_computation::primary_graph::provider::WorthQueryRecoveredApplicationCommitReceipt),
-    /// The key was already used for a different intent.
-    IntentDrift,
-}
-
-/// Owner custody for one admitted guarded workflow mutation. Only `Committed`
-/// carries authority to settle the workflow's operation transition.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub enum WorthQueryGuardedWorkflowOperationCustody {
-    ReleasedOriginal(crate::domain_computation::primary_graph::WorthQueryReleasedApplicationEffect),
-    Unseen,
-    Committed(WorthQueryApplicationCommitReceipt),
-    RecoveredCommitted(crate::domain_computation::primary_graph::provider::WorthQueryRecoveredApplicationCommitReceipt),
-    /// The original dispatch has a matching World-performed terminal at its
-    /// external-effect owner. Acceptance still rechecks that owner at commit.
-    ExternallySettled(WorthQueryApplicationCommitReceipt),
-    DispatchPending(WorthQueryApplicationCommitReceipt),
-    IntentDrift,
-    PublicationPending,
-    ProductUnpublished(worth_runtime_world::facade::ProductUnpublishedRecoveryHandle),
-    Indeterminate(WorthQueryApplicationIdempotencyResolutionDenial),
-}
+pub use worth_query_execution_attempt::facade::domain_computation::primary_graph::application_attempt::idempotency_resolution_types::{WorthQueryApplicationIdempotencyResolution, WorthQueryGuardedWorkflowOperationCustody};
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where

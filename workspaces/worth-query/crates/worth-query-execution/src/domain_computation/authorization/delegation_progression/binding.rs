@@ -18,34 +18,11 @@ use crate::domain_computation::authorization::{
 };
 
 mod activation_material;
-mod program;
+pub(crate) use worth_query_execution_attempt::facade::domain_computation::authorization::delegation_progression::binding::program;
 use activation_material::collect_activation_material;
 pub(in crate::domain_computation) use program::WorthQueryDelegationActivationEffect;
 
-pub(in crate::domain_computation) struct WorthQueryDelegationActivationBinding {
-    proposal_identity: [u8; 32],
-    required_program_targets: Vec<ApplicationOperationProgramTarget>,
-    child_kind: KindId,
-    child_key: String,
-    fields: BTreeMap<AspectFieldLocator, AspectValue>,
-    parent_relation: KindId,
-    grantor_relation: KindId,
-    grantee_relation: KindId,
-    resource_relation: KindId,
-    related_relation: Option<KindId>,
-    parent: EntityId,
-    grantor: EntityId,
-    grantee: EntityId,
-    resource: EntityId,
-    related: Option<EntityId>,
-    activation_context: Vec<(KindId, EntityId)>,
-}
-
-impl WorthQueryDelegationActivationBinding {
-    pub(in crate::domain_computation) const fn proposal_identity(&self) -> &[u8; 32] {
-        &self.proposal_identity
-    }
-}
+pub(in crate::domain_computation) use worth_query_execution_attempt::facade::domain_computation::authorization::delegation_progression::binding::WorthQueryDelegationActivationBinding;
 
 pub(super) struct WorthQueryPreparedDelegationActivation {
     binding: WorthQueryDelegationActivationBinding,

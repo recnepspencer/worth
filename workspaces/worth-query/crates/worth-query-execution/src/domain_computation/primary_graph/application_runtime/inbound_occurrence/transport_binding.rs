@@ -1,5 +1,7 @@
 //! Exact installed route for completion observed on the outbound transport.
 
+pub use worth_query_execution_attempt::facade::domain_computation::primary_graph::application_runtime::inbound_occurrence::transport_binding::*;
+
 use worth_query_installation::facade::{ApplicationSchema, InstalledInboundOccurrenceContract};
 
 use super::super::WorthQueryPrimaryGraphApplicationRuntime;
@@ -8,39 +10,6 @@ use crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxO
 
 /// Runtime-sealed operation and verifier audience for one installed outbox.
 /// An external dispatch result cannot supply either field.
-pub struct WorthQueryInstalledTransportCompletionBinding {
-    pub(super) operation: String,
-    pub(super) audience: String,
-    pub(super) contract: InstalledInboundOccurrenceContract,
-    pub(super) runtime: WorthQueryRuntimeAuthorityIdentity,
-}
-
-impl WorthQueryInstalledTransportCompletionBinding {
-    pub(in crate::domain_computation) fn operation(&self) -> &str {
-        &self.operation
-    }
-
-    pub(in crate::domain_computation) fn audience(&self) -> &str {
-        &self.audience
-    }
-
-    pub(in crate::domain_computation) fn contract(&self) -> &InstalledInboundOccurrenceContract {
-        &self.contract
-    }
-
-    pub(in crate::domain_computation) fn runtime(&self) -> WorthQueryRuntimeAuthorityIdentity {
-        self.runtime
-    }
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryTransportCompletionBindingDenial {
-    OutboxWithoutInboundContract,
-    OutboxContractMismatch,
-    OutboxOperationUnbound,
-    VerifierMissing,
-    RecordedBindingUnavailable,
-}
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where

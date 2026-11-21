@@ -1,5 +1,5 @@
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
-mod cleanup_failure;
+pub(crate) mod cleanup_failure;
 use worth_query_installation::facade::ApplicationSchema;
 
 use crate::domain_computation::primary_graph::application_attempt::provider_execution::{

@@ -1,4 +1,6 @@
 //! One native approval and its declared attestation share one authenticated candidate.
+use crate::domain_computation::primary_graph::application_attempt::workflow_transition_program::publication::transition_replay::PreparedWorkflowAdvanceTransitionReplayExt as _;
+use crate::domain_computation::primary_graph::application_attempt::{signed_creation, WorthQueryApplicationEffectProgram};
 use super::*;
 use crate::domain_computation::primary_graph::{
     MutationHandlerExecutionDenial, WorthQueryAdvancementPhase, WorthQueryOperationBodyDecision,
@@ -49,7 +51,7 @@ impl std::fmt::Display for WorkflowApprovalBodyDenial {
 }
 impl std::error::Error for WorkflowApprovalBodyDenial {}
 
-impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation, Input, Scope>
+pub(in crate::domain_computation::primary_graph::application_attempt) trait PreparedWorkflowAdvanceBodyExt<Schema, Operation, Input, Scope>: Sized
 where
     Schema: ApplicationSchema,
     Operation: 'static,
@@ -58,7 +60,38 @@ where
         Schema,
     >,
 {
-    pub(in crate::domain_computation::primary_graph) fn prepare_body<Binding>(
+    fn prepare_body<Binding>(
+        self,
+        access: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        identities: &ApplicationMutationIdentities<'_, Schema, Binding>,
+        principal_identity: &Binding::PrincipalIdentity,
+        idempotency: super::super::super::WorthQueryApplicationIdempotencyBinding,
+    ) -> Result<WorkflowApprovalBodyPreparation<Self>, WorkflowApprovalBodyDenial>
+    where
+        Binding: ApplicationMutationBinding<
+            Schema,
+            Operation = Operation,
+            Input = Input,
+            Result = (),
+            Denial = WorthQueryOperationBodyDenial,
+            Decision = WorthQueryOperationBodyDecision<Schema, Scope>,
+        >,
+        Binding::ScopeBinding: ApplicationMutationScopeBinding<Schema, Scope = Scope>,
+;
+}
+
+impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvanceBodyExt<Schema, Operation, Input, Scope> for PreparedWorkflowAdvance<Schema, Operation, Input, Scope>
+where
+    Schema: ApplicationSchema,
+    Operation: 'static,
+    Input: Clone + Send + Sync + 'static,
+    Scope: worth_query_declaration::facade::application_schema::ApplicationEntityMarkerIdentity<
+        Schema,
+    >,
+{
+    fn prepare_body<Binding>(
         self,
         access: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         phase: &WorthQueryAdvancementPhase<'_>,

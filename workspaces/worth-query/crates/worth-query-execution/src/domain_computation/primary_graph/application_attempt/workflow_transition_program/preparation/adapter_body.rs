@@ -1,4 +1,5 @@
 //! Publication enters composed signing only with the actual prepared native approval.
+use crate::domain_computation::primary_graph::application_attempt::workflow_transition_program::publication::body::PreparedWorkflowAdvanceBodyExt as _;
 use super::*;
 use crate::domain_computation::primary_graph::operation_body::{
     WorthQueryOperationBodyDecision, WorthQueryOperationBodyDenial,

@@ -263,7 +263,7 @@ pub(super) fn request_denial(
     primary_graph_denial(kind, "bootstrap request admission")
 }
 
-pub(super) mod request_read_denial;
+pub(super) use worth_query_execution_attempt::facade::domain_computation::primary_graph::bootstrap::request_read_denial;
 
 mod court_doors_for_test;
 

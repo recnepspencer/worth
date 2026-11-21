@@ -11,7 +11,7 @@ use super::{
 };
 use crate::domain_computation::primary_graph::{
     application_attempt::workflow_instance_observation::{
-        instance_binding, observe_retained_transition,
+        instance_binding, settlement::observe_retained_transition,
     },
     workflow::instance::WorkflowInstanceProgress,
     workflow::{
@@ -24,10 +24,10 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrimaryGraphApplicationRuntime, WorthQueryProjectedApplicationMutation,
 };
 
-mod authority_binding;
-mod evidence;
-mod local_settlement;
-mod settlement;
+pub(crate) use worth_query_execution_attempt::facade::domain_computation::primary_graph::application_attempt::workflow_transition_program::operation::authority_binding;
+pub(crate) use worth_query_execution_attempt::facade::domain_computation::primary_graph::application_attempt::workflow_transition_program::operation::evidence;
+pub(crate) use worth_query_execution_attempt::facade::domain_computation::primary_graph::application_attempt::workflow_transition_program::operation::local_settlement;
+pub(crate) mod settlement;
 use evidence::WorkflowOperationEvidence;
 
 pub(crate) mod receipt;
@@ -36,8 +36,32 @@ pub(in crate::domain_computation::primary_graph::application_attempt) use receip
 pub(super) use receipt::validate_operation_receipt;
 pub(in crate::domain_computation::primary_graph) use receipt::ValidatedWorkflowOperationReceipt;
 
-impl<Schema, Operation, Input, Scope>
-    WorthQueryCompleteApplicationReadSet<
+pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) trait ReadSetWorkflowOperationExt<Schema, Operation, Input, Scope>: Sized
+where
+    Schema: ApplicationSchema,
+    Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
+{
+    fn materialize_operation_requirement(
+        self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        layout: &crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout,
+        compiled: &CompiledWorkflowDefinition,
+        instance: super::super::PublishedWorkflowInstanceRef,
+        selected: crate::domain_computation::primary_graph::workflow::instance::SelectedWorkflowTransition,
+        live_membership: worth_relational::facade::identity::RelationId,
+        retire_live_membership: bool,
+        facts: Vec<WorthQueryApplicationObservedFact>,
+        authority_facts: Vec<WorthQueryApplicationObservedFact>,
+        progress: &WorkflowInstanceProgress,
+        operation: crate::domain_computation::primary_graph::workflow::instance::SelectedWorkflowOperation,
+        allowance: crate::domain_computation::primary_graph::application_attempt::WorkflowStepAllowance,
+    ) -> Result<
+        PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
+        WorthQueryApplicationAttemptDenial,
+    >;
+}
+
+impl<Schema, Operation, Input, Scope> ReadSetWorkflowOperationExt<Schema, Operation, Input, Scope> for WorthQueryCompleteApplicationReadSet<
         Schema,
         Operation,
         Input,
@@ -49,7 +73,7 @@ where
     Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
 {
     #[allow(clippy::too_many_arguments)]
-    pub(super) fn materialize_operation_requirement(
+    fn materialize_operation_requirement(
         mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         layout: &crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout,

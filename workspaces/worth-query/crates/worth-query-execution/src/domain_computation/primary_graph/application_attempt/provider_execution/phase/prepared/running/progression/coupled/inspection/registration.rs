@@ -1,5 +1,6 @@
 //! One nominal mutation admission retains its real registered session through inspection.
 use super::*;
+use crate::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::registered::RegisteredProviderAttemptRuntimeExt as _;
 pub(super) struct InspectedRegistration<'run> {
     pub(super) custody: CoupledWriterCustody,
     pub(super) inspection: crate::domain_computation::WorthQueryProposedStateInspection<'run>,

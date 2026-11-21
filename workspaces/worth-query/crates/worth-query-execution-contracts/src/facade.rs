@@ -39,6 +39,7 @@ pub use crate::product_branch_denial::*;
 pub use crate::product_stale::*;
 pub use crate::projection_denial::*;
 pub use crate::provider_session_denial_kind::*;
+pub use crate::publication_access::*;
 pub use crate::read_observation::*;
 pub use crate::relational_execution_denial::relational_execution_kind;
 pub use crate::source_facts_allocation::*;

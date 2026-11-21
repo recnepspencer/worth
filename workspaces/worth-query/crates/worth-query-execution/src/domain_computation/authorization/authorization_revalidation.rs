@@ -1,5 +1,5 @@
-mod currentness;
-mod observation;
+pub(crate) use worth_query_execution_attempt::facade::domain_computation::authorization::authorization_revalidation::currentness;
+pub(crate) use worth_query_execution_attempt::facade::domain_computation::authorization::authorization_revalidation::observation;
 mod retained_authorization;
 mod supporting_capability;
 mod workflow_approval;
@@ -19,17 +19,9 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrimaryGraphApplicationRuntime,
 };
 use currentness::*;
+use worth_query_execution_attempt::facade::domain_computation::authorization::authorization_revalidation::RevalidationObservationAxes;
 pub(in crate::domain_computation::authorization) use observation::WorthQueryAuthorizationRevalidationObservation;
 
-struct RevalidationObservationAxes<'observation> {
-    session: crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
-    relational: &'observation worth_relational::facade::runtime::RelationalRuntime,
-    snapshot: &'observation worth_relational::facade::snapshots::SnapshotHandle,
-    bridge: &'observation worth_runtime_bridge::facade::BridgeAuthorizationRuntime,
-    installed: &'observation super::capability_registry::WorthQueryInstalledCapabilityPlan,
-    request: &'observation super::WorthQueryRetainedCapabilityRequest,
-    sample: &'observation super::WorthQueryRuntimeTimeSample,
-}
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
@@ -163,7 +155,7 @@ where
         ))
     }
 
-    pub(in crate::domain_computation::authorization) fn authorize_application_commit<
+    pub(in crate::domain_computation) fn authorize_application_commit<
         'serialization,
         'admission,
         Operation,

@@ -1,4 +1,8 @@
 //! Original Query custody survives every admission or retirement refusal.
+
+#[path = "home_retirement_denial.rs"]
+mod home_retirement_denial;
+pub use home_retirement_denial::WorthQueryHomeRetirementDenial;
 use super::WorthQueryPrimaryGraphApplicationRuntime;
 use crate::domain_computation::primary_graph::{
     handler::HandlerRetirementCursor, WorthQueryOperationHomeRetirementDenial,
@@ -12,37 +16,6 @@ pub(in crate::domain_computation::primary_graph) use participation::PrimaryGraph
 
 pub use worth_query_execution_contracts::facade::WorthQueryHomeRetirementOwner;
 
-#[derive(Debug)]
-pub enum WorthQueryHomeRetirementDenial {
-    RecoveryCustody(crate::domain_computation::application_aftermath::WorthQueryRecoveryHandleDenial),
-    CorrectionRetention(super::super::WorthQueryCorrectionRetentionDenial),
-    ManagedCleanup(super::super::query_obligations::QueryObligationDenial),
-    Resource(super::super::application_resource::WorthQueryResourceActionDenial),
-    ConditionalClock(worth_runtime_bridge::facade::BridgeManagedTemporalDenialKind),
-    ConditionalBinding(worth_runtime_bridge::facade::BridgeConditionalDenialKind),
-    CorrectionMaterial(crate::facade::correction_material::QueryCorrectionMaterialDenial),
-    Busy(WorthQueryHomeRetirementOwner),
-    Unsupported(WorthQueryHomeRetirementOwner),
-    Handler {
-        binding: &'static str,
-        cause: WorthQueryOperationHomeRetirementDenial,
-    },
-    NativeAlias(
-        worth_relational::facade::change_source::RelationalRuntimeHandleAliasRetirementDenial,
-    ),
-    NativeObservation(
-        worth_relational::facade::change_source::RelationalRetainedObservationRetirementDenial,
-    ),
-    BridgeBasis(worth_runtime_bridge::facade::RelationalBridgeBasisRetirementDenial),
-    CanonicalSubscription(worth_relational::facade::mvcc::PublicationCompanionRetirementDenial),
-    Bridge(worth_runtime_bridge::facade::BridgeHomeRetirementDenial),
-    Publication(worth_runtime_world::facade::ConsumedPublicationRetirementDenial),
-    /// The dispatch journal still holds an executing attempt or an unsettled record.
-    DispatchCustody(
-        crate::domain_computation::application_aftermath::dispatch_journal::QueryDispatchJournalDenial,
-    ),
-    Execution(worth_execution::WorkCeilingDenial),
-}
 
 /// Keeps the original runtime and handler cursor, never a replacement service.
 pub(in crate::domain_computation::primary_graph) struct RetiringPrimaryGraphRuntime<Schema> {

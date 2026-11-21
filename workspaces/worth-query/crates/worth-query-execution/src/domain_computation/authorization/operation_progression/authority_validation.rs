@@ -1,5 +1,6 @@
 //! Exact operation-authority validation phase owner.
 
+use crate::domain_computation::authorization::operation_admission::capability_admission::preparation::observation::admitted_access::AdmittedCapabilityAccessRuntimeExt as _;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_declaration::facade::application_capability::ApplicationCapabilityRequest;
 use worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity;
@@ -15,7 +16,7 @@ use crate::domain_computation::primary_graph::{
 
 use super::WorthQueryCapabilityOperationProgression;
 
-pub(crate) mod precondition_binding;
+pub mod precondition_binding;
 pub use precondition_binding::WorthQueryAdmittedApplicationCapabilityAccess;
 pub use precondition_binding::WorthQueryAdmittedApplicationOperation;
 pub(in crate::domain_computation) use precondition_binding::WorthQueryOperationAdmissionIdentity;
@@ -37,7 +38,7 @@ pub(in crate::domain_computation::authorization) use precondition_binding::{
     WorthQueryResolvedCapabilityRequest,
 };
 
-pub(in crate::domain_computation::authorization::operation_progression) struct ValidatedConventionalOperation<
+pub(in crate::domain_computation::authorization) struct ValidatedConventionalOperation<
     'a,
     Schema,
     Principal,
@@ -46,12 +47,12 @@ pub(in crate::domain_computation::authorization::operation_progression) struct V
     Input,
     Scope,
 > {
-    runtime: &'a WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-    product: &'a crate::basis::WorthQueryProductBranchLease,
-    principal: &'a WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
-    scope: &'a WorthQueryApplicationEntityIdentity<Schema, Scope>,
-    operation: &'a WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
-    request: &'a WorthQueryRequestScope,
+    pub(in crate::domain_computation::authorization) runtime: &'a WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    pub(in crate::domain_computation::authorization) product: &'a crate::basis::WorthQueryProductBranchLease,
+    pub(in crate::domain_computation::authorization) principal: &'a WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
+    pub(in crate::domain_computation::authorization) scope: &'a WorthQueryApplicationEntityIdentity<Schema, Scope>,
+    pub(in crate::domain_computation::authorization) operation: &'a WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
+    pub(in crate::domain_computation::authorization) request: &'a WorthQueryRequestScope,
 }
 
 pub(super) fn validate_conventional_operation<

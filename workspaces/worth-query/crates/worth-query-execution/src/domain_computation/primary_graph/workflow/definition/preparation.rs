@@ -14,80 +14,16 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationAttemptDenial, WorthQueryOperationProjectionDenial,
 };
 
-/// Owner-bound definition contract for one exact selected branch occurrence.
-///
-/// This is deliberately not the public prepared publication. It only carries
-/// the selected-program and branch affinity needed by the application-attempt
-/// owner to prepare the real governed mutation.
-pub(in crate::domain_computation::primary_graph) struct BoundWorkflowDefinitionContract<
-    Schema,
-    Spec,
-> where
-    Schema: ApplicationSchema,
-    Spec: ApplicationWorkflowSpec<Schema = Schema>,
-{
-    pub(in crate::domain_computation::primary_graph) contract:
-        WorthQueryInstalledWorkflowDefinitionContract<Schema, Spec>,
-    branch: WorthQueryProductBranch,
-    occurrence: WorthQueryProductBranchReadIdentity,
-}
-
-impl<Schema, Spec> BoundWorkflowDefinitionContract<Schema, Spec>
-where
-    Schema: ApplicationSchema,
-    Spec: ApplicationWorkflowSpec<Schema = Schema>,
-{
-    pub(in crate::domain_computation::primary_graph) fn belongs_to_branch(
-        &self,
-        branch: WorthQueryProductBranch,
-    ) -> bool {
-        self.branch == branch
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn belongs_to_occurrence(
-        &self,
-        occurrence: &crate::basis::WorthQueryProductBranchLease,
-    ) -> bool {
-        self.occurrence
-            == WorthQueryProductBranchReadIdentity::from_observation(occurrence.observation())
-    }
-}
+pub(in crate::domain_computation::primary_graph) use worth_query_execution_attempt::facade::domain_computation::primary_graph::workflow::definition::preparation::BoundWorkflowDefinitionContract;
 
 /// Why a workflow definition request could not bind to the branch's program: the installed
 /// spec belongs to another schema, the adopted program could not be inspected, or the
 /// branch runs another program revision.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorkflowDefinitionBindingDenial {
-    ForeignSchema,
-    SelectedProgramUnavailable,
-    ProgramRevisionChanged,
-}
+pub use worth_query_execution_attempt::facade::domain_computation::primary_graph::workflow::definition::preparation::{WorkflowDefinitionBindingDenial, WorkflowDefinitionPreparationDenial};
 
 /// Why a workflow definition publication or retirement did not prepare.
-#[derive(Debug)]
-pub enum WorkflowDefinitionPreparationDenial {
-    DurableStateAdmission(crate::domain_computation::execution_runtime::product_world::WorthQueryDurableStateAdmissionDenial),
-    ProductSelection(crate::basis::WorthQueryProductBranchAdmissionDenial),
-    Binding(WorkflowDefinitionBindingDenial),
-    Projection(WorthQueryOperationProjectionDenial),
-    Attempt(WorthQueryApplicationAttemptDenial),
-}
 
-impl std::fmt::Display for WorkflowDefinitionPreparationDenial {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::DurableStateAdmission(denial) => denial.fmt(formatter),
-            Self::ProductSelection(denial) => {
-                write!(formatter, "workflow product selection: {denial:?}")
-            }
-            Self::Binding(denial) => write!(formatter, "workflow definition binding: {denial:?}"),
-            Self::Projection(denial) => denial.fmt(formatter),
-            Self::Attempt(denial) => denial.fmt(formatter),
-        }
-    }
-}
 
-impl std::error::Error for WorkflowDefinitionPreparationDenial {}
 
 impl<Schema> WorthQuerySelectedProductOperation<'_, Schema>
 where

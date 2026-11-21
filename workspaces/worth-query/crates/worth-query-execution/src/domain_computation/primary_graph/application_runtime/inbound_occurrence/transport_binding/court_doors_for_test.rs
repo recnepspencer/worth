@@ -17,9 +17,3 @@ where
     }
 }
 
-impl WorthQueryInstalledTransportCompletionBinding {
-    #[doc(hidden)]
-    pub fn runtime_for_test(&self) -> WorthQueryRuntimeAuthorityIdentity {
-        Self::runtime(self)
-    }
-}

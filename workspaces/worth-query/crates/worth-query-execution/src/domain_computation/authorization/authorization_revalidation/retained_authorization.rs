@@ -1,5 +1,6 @@
 //! Exact readmission of retained conventional and capability authorization.
 
+use crate::domain_computation::authorization::operation_admission::capability_admission::preparation::observation::admitted_access::AdmittedCapabilityAccessRuntimeExt as _;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::currentness::{

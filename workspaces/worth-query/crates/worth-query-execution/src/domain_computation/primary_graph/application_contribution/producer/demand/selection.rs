@@ -20,7 +20,7 @@ enum SelectionPurpose {
 }
 
 mod native_restoration;
-mod native_selection;
+pub(crate) mod native_selection;
 pub(in crate::domain_computation::primary_graph) use native_selection::VerifiedAppliedParent;
 mod recovered_candidates;
 mod restored_reuse;

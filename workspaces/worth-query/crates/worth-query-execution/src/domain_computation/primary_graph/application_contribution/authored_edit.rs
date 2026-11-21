@@ -27,7 +27,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution) use d
     managed_reads, ProducerDependencyScopes,
 };
 pub use envelope::{
-    with_resolved_edit_envelope, AuthoredEnvelopeResolution, AuthoredEnvelopeResolutionPurpose,
+    with_resolved_edit_envelope, AuthoredEnvelopeResolution, 
     UnseenAuthoredEnvelope,
 };
 mod results;
@@ -83,3 +83,5 @@ pub fn stage_admission_refusal<S: ApplicationSchema, B: ApplicationMutationBindi
         detail,
     )
 }
+
+pub use worth_query_execution_attempt::facade::domain_computation::primary_graph::application_contribution::authored_edit::AuthoredEnvelopeResolutionPurpose;

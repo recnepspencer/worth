@@ -186,8 +186,20 @@ where
     }
 }
 
-impl WorthQueryObservedConventionalOperation {
-    pub(super) fn retain_for(
+pub(in crate::domain_computation::authorization) trait ObservedConventionalOperationRuntimeExt: Sized
+
+{
+    fn retain_for(
+        self,
+        operation: worth_query_installation::facade::InstalledOperationView<'_>,
+    ) -> Result<WorthQueryRetainedAuthorizationDecisionFacts, WorthQueryOperationAuthorizationDenial>
+;
+}
+
+impl ObservedConventionalOperationRuntimeExt for WorthQueryObservedConventionalOperation
+
+{
+    fn retain_for(
         self,
         operation: worth_query_installation::facade::InstalledOperationView<'_>,
     ) -> Result<WorthQueryRetainedAuthorizationDecisionFacts, WorthQueryOperationAuthorizationDenial>
