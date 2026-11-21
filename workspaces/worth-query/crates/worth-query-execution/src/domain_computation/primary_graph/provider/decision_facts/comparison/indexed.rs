@@ -62,7 +62,9 @@ impl PreparedSelections {
         else {
             // A record the successor's own chain wrote exclusively is read as
             // it was before the chain (§1.5), so it compares there.
-            let applied = crate::domain_computation::primary_graph::application_attempt::fact::touch_key::fact_record(fact)
+            let applied = crate::domain_computation::primary_graph::application_attempt::fact::touch_key::overlay_served(fact)
+                .then(|| crate::domain_computation::primary_graph::application_attempt::fact::touch_key::fact_record(fact))
+                .flatten()
                 .and_then(|record| own_outputs.and_then(|own| own.head_for(record)))
                 .or(applied);
             return fact

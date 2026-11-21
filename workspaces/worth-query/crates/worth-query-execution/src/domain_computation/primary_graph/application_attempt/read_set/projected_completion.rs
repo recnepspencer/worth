@@ -333,10 +333,9 @@ fn observe_scoped_dependency<Schema, Operation, Input, Scope>(
         ));
     }
     lease.handle().with_runtime(execution, |runtime| {
+        // Only a field read is served by a successor's own-output view.
         match lease.applied_projection_of(match key {
-            WorthQueryApplicationFactKey::Entity { entity_id, .. }
-            | WorthQueryApplicationFactKey::AspectPresence { entity_id, .. }
-            | WorthQueryApplicationFactKey::Field { entity_id, .. } => Some(*entity_id),
+            WorthQueryApplicationFactKey::Field { entity_id, .. } => Some(*entity_id),
             _ => None,
         }) {
             Some(pin) => {

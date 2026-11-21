@@ -106,6 +106,17 @@ pub(in crate::domain_computation::primary_graph) fn fact_record(
     }
 }
 
+/// Whether a successor round's own-output view serves `fact` (§1.5): a field
+/// read of one record, which it reads at the chain head's pre-pin when the
+/// chain wrote that record. Every other single-record fact (presence,
+/// entity, source revisions) is read at the current image.
+pub(in crate::domain_computation::primary_graph) fn overlay_served(fact: &Fact) -> bool {
+    matches!(
+        fact,
+        Fact::Field { .. } | Fact::AbsentField { .. } | Fact::OptionalAspectAbsent { .. }
+    )
+}
+
 /// Whether a certified touch could change what `fact` read. Field reads and
 /// indexed selections compare the field path; every other fact compares
 /// its keys, and a conservative fact always could.

@@ -67,15 +67,18 @@ impl super::super::WorthQueryPrimaryGraphProvider {
                     };
                     let observed = std::ops::Deref::deref(&fact);
                     let record = touch_key::fact_record(observed);
-                    if record.is_some_and(|record| own.covers(record)) {
+                    let covered = record.is_some_and(|record| own.covers(record));
+                    // The own-output view served this read at the head pre-pin.
+                    if covered && touch_key::overlay_served(observed) {
                         continue;
                     }
                     // Native's exclusive set holds every entity the chain wrote
                     // (`IntervenedOutput` otherwise), so an entity-local touch
                     // only ever changed a covered record: a read of another
                     // single record, or a selection the overlay merged, cannot
-                    // see it.
-                    let overlaid = record.is_some()
+                    // see it. A read of a covered record the view did not serve
+                    // is judged by the touch and the head/current comparison.
+                    let overlaid = (record.is_some() && !covered)
                         || matches!(observed, ObservedFact::IndexedEntitySelection { .. });
                     let touched = prior.iter().any(|touch| {
                         !(overlaid && entity_local(touch)) && touch_key::touch_changes(touch, observed)
