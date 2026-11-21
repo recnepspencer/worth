@@ -76,6 +76,15 @@ pub use crate::runtime::CompleteRelationalCheckpointPreparation;
 pub use crate::runtime::RelationalCanonicalPositionAdmissionDenial;
 pub use crate::transactions::data::RecoveredRelationalSemanticResult;
 
+#[doc(hidden)]
+pub use crate::durability::authority::{
+    CapturedRelationalCheckpointBasisForTest, RelationalRetentionGateTrialForTest,
+};
+#[doc(hidden)]
+pub use crate::history::retention::{
+    RelationalExternalRetentionTerminalCounts, RelationalRetentionCensusForTest,
+    RelationalRetentionGateForTest,
+};
 pub use crate::durability::authority::{
     RefusedRelationalPublicationReadmission, RelationalRecordedSuccessorRefusal,
     RelationalRecoveredPublicationAdmissionCause, RelationalRecoveredPublicationCustody,

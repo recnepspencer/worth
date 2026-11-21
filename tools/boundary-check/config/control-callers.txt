@@ -83,6 +83,7 @@
 # Original-request storage and symbol custody are exercised in owned courts.
 # Original-request metadata compilation observes actual checks and only cancels.
 # Equivalent receiver-pair replacement on the actual unshared Native owner only.
+# C2 ruling 2026-11-21: exact certification callers of the Native capture/finalize split and recovered-retirement gate doors.
 crates/worth-execution/ crates/worth-court-execution/tests/worth_court_execution/execution/interruption_view/stop_settlement.rs
 crates/worth-execution/ crates/worth-court-execution/tests/worth_court_execution/process/serial/execution/work_ceiling/scope_observation.rs
 crates/worth-execution/ crates/worth-court-execution/tests/worth_court_execution/process/serial/execution/work_ceiling/single_stage.rs
@@ -138,6 +139,8 @@ crates/worth-relational/ workspaces/worth-query/crates/worth-query-certification
 crates/worth-relational/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/parallel_history/matrix/applied_current_output.rs
 crates/worth-relational/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/parallel_history/matrix/runtime/source_affinity.rs
 crates/worth-relational/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/content/identity_conflict.rs
+crates/worth-relational/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/checkpoint_transition_compaction.rs
+crates/worth-relational/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/recorded_original_checkpoint_journeys.rs
 crates/worth-relational/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/cost/relational/source_initial_inputs.rs
 crates/worth-relational/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/process/commit_phase_backing.rs
 crates/worth-relational/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/process/symbol_publication.rs

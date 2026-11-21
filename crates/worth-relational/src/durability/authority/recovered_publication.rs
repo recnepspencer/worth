@@ -5,6 +5,9 @@ use crate::history::retention::RelationalBranchRetentionLease;
 
 mod admission;
 mod retirement;
+mod retirement_gate_doors_for_test;
+#[doc(hidden)]
+pub use retirement_gate_doors_for_test::RelationalRetentionGateTrialForTest;
 pub use retirement::{
     RelationalRecoveredPublicationRetirement, RetiredRelationalRecoveredPublication,
 };

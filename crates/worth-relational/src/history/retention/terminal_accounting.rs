@@ -23,10 +23,11 @@ impl RelationalExternalRetentionTerminalAccounting {
     }
 }
 
+/// Explicit and dropped external retention releases, as counted.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
-pub(crate) struct RelationalExternalRetentionTerminalCounts {
-    pub(crate) explicit_releases: u64,
-    pub(crate) dropped_releases: u64,
+pub struct RelationalExternalRetentionTerminalCounts {
+    pub explicit_releases: u64,
+    pub dropped_releases: u64,
 }
 
 impl RelationalExternalRetentionTerminalCounts {

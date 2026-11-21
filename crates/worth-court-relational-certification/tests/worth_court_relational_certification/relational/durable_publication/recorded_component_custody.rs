@@ -5,10 +5,8 @@
 //! Fixture adaptations: the same-SHA `original` fixture is the testkit's
 //! `original` over `TestDurableMedium`; the private directory decode is the
 //! owner's `inspect_component_roster`. The other C2 portions of that file are
-//! restored in place in `recorded_original_checkpoint_journeys.rs`.
-//! `recorded_original_retirement_preserves_both_leases_across_busy_and_stop`
-//! needs a boundary ruling (see the C2 capture progress note): its fixture
-//! holds the owner's private external cut and lane gate.
+//! restored in place in `recorded_original_checkpoint_journeys.rs`, with
+//! `recorded_original_retirement_preserves_both_leases_across_busy_and_stop`.
 use super::*;
 use std::sync::Arc;
 use worth_relational::facade::durability::RelationalDurableColdSource;
