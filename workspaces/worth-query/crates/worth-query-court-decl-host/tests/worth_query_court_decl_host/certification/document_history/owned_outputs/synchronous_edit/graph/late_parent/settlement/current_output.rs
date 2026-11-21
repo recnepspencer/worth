@@ -182,8 +182,9 @@ fn a_current_output_consumer_settles_to_a_replacement_appended_after_it() {
 /// round derives 3 + min(9, 5) = 8 again. Recorded evidence has no
 /// settlement transition, so the consumer reopens and reads the
 /// replacement; the edit commits saturated:a = 8, sc:c = 8. A later edit
-/// that changes nothing (`c = 4` again) runs no producer: the consumer's
-/// committed lineage names the replacement, not the retired parent output.
+/// `a = 4` derives saturated:a = 4 + min(9, 5) = 9 and sc:c = 9: the
+/// consumer's committed lineage names the replacement, not the retired
+/// parent output.
 #[test]
 fn a_recorded_current_output_consumer_reopens_and_publishes_against_the_replacement() {
     let _execution = WorthQueryExecutionObservation::install_on_this_thread();
@@ -202,17 +203,18 @@ fn a_recorded_current_output_consumer_reopens_and_publishes_against_the_replacem
     assert!(matches!(outcome, Outcome::Committed(_)), "{outcome:?}; {events:#?}");
     assert_eq!(first_output(&request, "saturated:a"), 8);
     assert_eq!(first_output(&request, "sc:c"), 8);
+    let later = edit_stages(&host, &request, "current-later", &[("a", 4)]);
+    let later_events = _execution.wave_events_for_test();
+    assert!(matches!(later, Outcome::Committed(_)), "{later:?}");
+    assert_eq!(first_output(&request, "saturated:a"), 9);
+    assert_eq!(
+        first_output(&request, "sc:c"),
+        9,
+        "the consumer's lineage follows the parent's current output: {later_events:#?}"
+    );
     assert!(
         !events.iter().any(|event| event.starts_with("settle consumer")),
         "Recorded evidence never settles: {events:#?}"
-    );
-    let contacts = host.producer_contacts_on_this_thread_for_test();
-    let healthy = edit_stages(&host, &request, "current-healthy", &[("c", 4)]);
-    assert!(matches!(healthy, Outcome::Committed(_)), "{healthy:?}");
-    assert_eq!(
-        host.producer_contacts_on_this_thread_for_test() - contacts,
-        0,
-        "every output is current after the reopened consumer's publication"
     );
 }
 
