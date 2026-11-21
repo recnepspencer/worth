@@ -3,6 +3,7 @@ use super::*;
 use journal::*;
 use worth_execution::ExecutionRequest;
 use worth_foundational::facade::DurableCompositePublicationAttemptIdentity;
+use worth_query_execution_obligations::facade::ledger_inspect;
 impl QueryObligationHistory {
     pub(in crate::domain_computation::primary_graph) fn retain_branch_adoption(
         &self,
@@ -14,12 +15,11 @@ impl QueryObligationHistory {
         };
         let driver = self.lock_publication()?;
         driver.finish_pending(medium.as_ref(), request)?;
-        if let Some(prior) = self
-            .state()
-            .journal
-            .as_ref()
-            .and_then(|journal| journal.ledger.adoption.branches.get(&row.attempt))
-        {
+        if let Some(prior) = self.state().journal.as_ref().and_then(|journal| {
+            ledger_inspect::adoption(&journal.ledger)
+                .branches
+                .get(&row.attempt)
+        }) {
             return if prior == &row {
                 Ok(())
             } else {
@@ -43,8 +43,12 @@ impl QueryObligationHistory {
         let driver = self.lock_publication()?;
         driver.finish_pending(medium.as_ref(), request)?;
         if !self.state().journal.as_ref().is_some_and(|journal| {
-            journal.ledger.adoption.branches.contains_key(&attempt)
-                && !journal.ledger.adoption.completed.contains(&attempt)
+            ledger_inspect::adoption(&journal.ledger)
+                .branches
+                .contains_key(&attempt)
+                && !ledger_inspect::adoption(&journal.ledger)
+                    .completed
+                    .contains(&attempt)
         }) {
             return Ok(());
         }
@@ -87,8 +91,13 @@ impl QueryObligationHistory {
             .journal
             .as_ref()
             .ok_or(QueryObligationDenial::SupportUnavailable)?;
-        if journal.ledger.adoption.branches.get(&row.attempt) != Some(row)
-            || journal.ledger.adoption.completed.contains(&row.attempt)
+        if ledger_inspect::adoption(&journal.ledger)
+            .branches
+            .get(&row.attempt)
+            != Some(row)
+            || ledger_inspect::adoption(&journal.ledger)
+                .completed
+                .contains(&row.attempt)
         {
             return Err(QueryObligationDenial::UnknownObligation);
         }
@@ -136,11 +145,11 @@ impl QueryObligationHistory {
         let attempt =
             DurableCompositePublicationAttemptIdentity::from_recorded(owner, actual.ordinal());
         let state = self.state();
-        let Some(row) = state
-            .journal
-            .as_ref()
-            .and_then(|journal| journal.ledger.adoption.branches.get(&attempt))
-        else {
+        let Some(row) = state.journal.as_ref().and_then(|journal| {
+            ledger_inspect::adoption(&journal.ledger)
+                .branches
+                .get(&attempt)
+        }) else {
             return Ok(false);
         };
         let expected = effects.expected_head();
@@ -169,11 +178,11 @@ impl QueryObligationHistory {
         let attempt =
             DurableCompositePublicationAttemptIdentity::from_recorded(owner, actual.ordinal());
         let state = self.state();
-        let Some(row) = state
-            .journal
-            .as_ref()
-            .and_then(|journal| journal.ledger.adoption.branches.get(&attempt))
-        else {
+        let Some(row) = state.journal.as_ref().and_then(|journal| {
+            ledger_inspect::adoption(&journal.ledger)
+                .branches
+                .get(&attempt)
+        }) else {
             return Ok(false);
         };
         if original.product_branch().name().as_str() != row.branch
@@ -191,7 +200,7 @@ impl QueryObligationHistory {
         attempt: DurableCompositePublicationAttemptIdentity,
     ) -> Option<QueryBranchAdoptionObligation> {
         let state = self.state();
-        let fold = &state.journal.as_ref()?.ledger.adoption;
+        let fold = ledger_inspect::adoption(&state.journal.as_ref()?.ledger);
         (!fold.completed.contains(&attempt))
             .then(|| fold.branches.get(&attempt).cloned())
             .flatten()

@@ -193,8 +193,9 @@ fn role(
     kind: worth_relational::facade::identity::KindId,
     facts: &mut Vec<WorthQueryApplicationObservedFact>,
 ) -> Result<Actor, Denial> {
-    let actor = locators
-        .observe(
+    let actor =
+        crate::domain_computation::primary_graph::workflow::actor::record::observe_actor_fields(
+            locators,
             fields.runtime,
             fields.execution,
             fields.snapshot(),

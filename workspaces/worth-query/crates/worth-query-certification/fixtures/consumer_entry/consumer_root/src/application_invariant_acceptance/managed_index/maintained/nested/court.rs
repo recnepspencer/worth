@@ -119,6 +119,7 @@ mod influence;
 mod observed_rows;
 mod optional_aspect;
 mod retirement;
+mod self_referential;
 
 #[test]
 fn reverse_root_branch_and_its_nested_siblings_use_actual_parent_routes_and_inverse_scope_routing()

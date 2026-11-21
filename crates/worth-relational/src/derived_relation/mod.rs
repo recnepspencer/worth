@@ -12,7 +12,7 @@ mod ordered_events;
 mod pinned;
 mod proof;
 mod source;
-mod source_buffer;
+pub(crate) mod source_buffer;
 pub(crate) mod support;
 pub use pinned::{
     PinnedDerivedRelationDenial, PinnedDerivedRelationRead, PinnedDerivedRelationScope,

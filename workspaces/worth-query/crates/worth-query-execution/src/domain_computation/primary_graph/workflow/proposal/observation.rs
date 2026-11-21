@@ -161,11 +161,16 @@ pub(in crate::domain_computation::primary_graph) fn observe_workflow_operation_i
         &mut facts,
         observation_request,
     )?;
-    let proposer = layout
-        .proposal
-        .proposer
-        .observe(runtime, execution, snapshot, proposal, kind, &mut facts)?
-        .ok_or_else(|| denial("current proposal lacks proposer"))?;
+    let proposer = super::super::actor::record::observe_actor_fields(
+        &layout.proposal.proposer,
+        runtime,
+        execution,
+        snapshot,
+        proposal,
+        kind,
+        &mut facts,
+    )?
+    .ok_or_else(|| denial("current proposal lacks proposer"))?;
     let expected = super::derive_captured_workflow_proposal(
         transition_identity,
         &operation,
@@ -261,11 +266,15 @@ pub(in crate::domain_computation::primary_graph) fn observe_workflow_proposal(
     {
         return Err(denial("workflow proposal captured inventory changed"));
     }
-    if layout
-        .proposal
-        .proposer
-        .observe(runtime, execution, snapshot, proposal, kind, &mut facts)?
-        != Some(expected.proposer)
+    if super::super::actor::record::observe_actor_fields(
+        &layout.proposal.proposer,
+        runtime,
+        execution,
+        snapshot,
+        proposal,
+        kind,
+        &mut facts,
+    )? != Some(expected.proposer)
     {
         return Err(denial(
             "current proposal proposer differs from original intent",

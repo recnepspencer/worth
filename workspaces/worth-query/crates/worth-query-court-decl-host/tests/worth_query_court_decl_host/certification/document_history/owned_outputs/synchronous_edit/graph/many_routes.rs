@@ -14,7 +14,7 @@ const ROUTES: u64 = 3;
 fn source_key(ordinal: u64) -> String {
     format!("k{ordinal}")
 }
-pub(super) fn install(worker: bool) -> Host {
+pub(in super::super::super) fn install(worker: bool) -> Host {
     let limits = if worker {
         world::worker_limits()
     } else {
@@ -23,7 +23,11 @@ pub(super) fn install(worker: bool) -> Host {
     world::install_program_with_value::<program::Program>(limits, 2)
 }
 /// Each seeded source is a real authored model with its own committed producers.
-pub(super) fn seed(host: &Host, request: &family::Request<'_, '_, '_>, count: u64) {
+pub(in super::super::super) fn seed(
+    host: &Host,
+    request: &family::Request<'_, '_, '_>,
+    count: u64,
+) {
     for ordinal in 0..count {
         let seeded = request
             .advanced()
@@ -44,7 +48,7 @@ pub(super) fn seed(host: &Host, request: &family::Request<'_, '_, '_>, count: u6
         );
     }
 }
-pub(super) fn fan_out(
+pub(in super::super::super) fn fan_out(
     host: &Host,
     request: &family::Request<'_, '_, '_>,
     routes: u64,

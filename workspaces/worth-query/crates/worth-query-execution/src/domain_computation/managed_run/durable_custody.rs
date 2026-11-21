@@ -8,6 +8,39 @@ use std::{
 };
 use worth_foundational::facade::ManagedRunObligationIdentity;
 
+pub(in crate::domain_computation::managed_run) fn observe_managed_execution_release(
+    release: &crate::domain_computation::WorthQueryProviderExecutionReleaseEvidence,
+) -> crate::domain_computation::primary_graph::query_obligations::QueryManagedExecutionRelease {
+    crate::domain_computation::primary_graph::query_obligations::QueryManagedExecutionRelease {
+        disposal: release.disposal(),
+        destructor: release.destructor(),
+    }
+}
+
+pub(in crate::domain_computation::managed_run) fn observe_managed_run_resources(
+    native_released: bool,
+    work: &crate::domain_computation::WorthQueryManagedProviderWorkEvidence,
+) -> crate::domain_computation::primary_graph::query_obligations::QueryManagedRunResources {
+    let releases = work.provider_execution_release();
+    let provider_execution = releases
+        .recovery_evidence()
+        .map(observe_managed_execution_release)
+        .or_else(|| {
+            (releases.release_count() != 0).then_some(
+                crate::domain_computation::primary_graph::query_obligations::QueryManagedExecutionRelease {
+                    disposal: crate::domain_computation::WorthQueryProviderExecutionDisposalDisposition::Completed,
+                    destructor: crate::domain_computation::WorthQueryProviderExecutionDestructorDisposition::Completed,
+                },
+            )
+        });
+    crate::domain_computation::primary_graph::query_obligations::QueryManagedRunResources {
+        native_released: native_released && work.provider_retained_bytes() == 0,
+        checkpoint: None,
+        provider_execution,
+        restored_execution: None,
+    }
+}
+
 #[derive(Default)]
 pub(in crate::domain_computation) struct ManagedRunCustodyRegistry {
     history: OnceLock<Arc<QueryObligationHistory>>,

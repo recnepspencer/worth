@@ -264,4 +264,126 @@ mod courts {
             assert_eq!(super::super::super::courts::native_head(&host), before);
         }
     }
+
+    fn self_cycle_host(
+        ready_parents: usize,
+    ) -> WorthQueryProgramApplicationRuntime<Schema, Program> {
+        let schema = Schema::declaration().unwrap();
+        in_memory_program(
+            ApplicationProgramAuthoring::<Schema, Program>::begin()
+                .with_schema(&schema)
+                .validated_program()
+                .unwrap(),
+            schema,
+            (world::Configuration {
+                envelope_records: true,
+                ..Default::default()
+            },),
+            ApplicationBuildIdentity::parse("91830000-0000-0000-0000-000000005356").unwrap(),
+            host_limits(
+                worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system(),
+            ),
+            move |_, graph, installed| {
+                world::seed(graph, installed, 1, None)?;
+                fixture::seed(graph)?;
+                let mut models = vec![("self:root".to_owned(), 1u64)];
+                let mut edges = vec![("self:root", "previous".to_owned(), "self:root".to_owned())];
+                for p in 0..ready_parents {
+                    let parent = format!("self:p{p}");
+                    models.push((parent.clone(), (p + 2) as u64));
+                    edges.push(("self:root", format!("parent-{p}"), parent));
+                }
+                for (key, value) in models {
+                    graph.bind_entity(
+                        WorthQueryApplicationEntitySeed::new(
+                            Model::reference(),
+                            WorthQueryApplicationEntityKey::new(&key).unwrap(),
+                        )
+                        .field(ModelKey::at("ModelKey"), key)
+                        .field(ModelValue::at("ModelValue"), value),
+                    )?;
+                }
+                for (child, role, parent) in edges {
+                    let descriptor = format!("{child}:{role}");
+                    graph.bind_entity(
+                        WorthQueryApplicationEntitySeed::new(
+                            Member::reference(),
+                            WorthQueryApplicationEntityKey::new(&descriptor).unwrap(),
+                        )
+                        .field(MemberKey::at("MemberKey"), descriptor.clone())
+                        .field(MemberValue::at("MemberValue"), 0),
+                    )?;
+                    graph.bind_relation(WorthQueryApplicationRelationSeed::new(
+                        ModelMember::reference(),
+                        format!("owns:{descriptor}"),
+                        WorthQueryApplicationEntityKey::new(child).unwrap(),
+                        WorthQueryApplicationEntityKey::new(&descriptor).unwrap(),
+                    ))?;
+                    graph.bind_relation(WorthQueryApplicationRelationSeed::new(
+                        UpstreamOf::reference(),
+                        format!("uses:{descriptor}"),
+                        WorthQueryApplicationEntityKey::new(&descriptor).unwrap(),
+                        WorthQueryApplicationEntityKey::new(&parent).unwrap(),
+                    ))?;
+                }
+                Ok(())
+            },
+        )
+        .unwrap()
+    }
+
+    #[test]
+    fn self_prerequisite_with_ready_parents_refuses_cyclic_without_running_self() {
+        let _execution = worth_query_host::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
+        // self:root -> {self:root, self:p0} (1 ready parent) and {self:root, self:p0, self:p1} (2).
+        for ready_parents in [1usize, 2usize] {
+            let host = self_cycle_host(ready_parents);
+            let scope = request_scope();
+            let principal = authenticate_operator(host.installed_schema(), &scope);
+            let request = host.request(&principal, &scope);
+            let mut edit = request
+                .edit_envelope()
+                .idempotency(format!("refuse-self:{ready_parents}"))
+                .runtime_stages(&host)
+                .ordered_authored()
+                .unwrap();
+            edit.push_stage::<Tree, _>(fixture::model::Intent {
+                key: "self:root".into(),
+                value: 3,
+                key_derived_target: false,
+            })
+            .unwrap();
+            let before = super::super::super::courts::native_head(&host);
+            let ((outcome, contacts), writes) = observe_maintenance_work(16, || {
+                let before = host.producer_contacts_on_this_thread_for_test();
+                let outcome = edit
+                    .execute_performed(ExecutionAllocationPolicy::SystemAllocation)
+                    .unwrap();
+                (
+                    outcome,
+                    host.producer_contacts_on_this_thread_for_test() - before,
+                )
+            });
+            let Outcome::Uncommitted(WorthQueryApplicationUncommitted::Denied(cause)) = outcome
+            else {
+                panic!("ready_parents={ready_parents}: expected cyclic refusal, got {outcome:?}")
+            };
+            let refusal = cause
+                .coupled_producer_denial()
+                .expect("public output owner preserves the actual refusal");
+            assert!(
+                matches!(
+                    refusal.kind(),
+                    WorthQueryOutputDemandDenialKind::CyclicRequiredOutputOccurrences { .. }
+                ),
+                "ready_parents={ready_parents}: {refusal:?}"
+            );
+            assert_eq!(
+                contacts, ready_parents as u64,
+                "ready_parents={ready_parents}: only the {ready_parents} ready parent(s) may prepare; self-cyclic task must not run"
+            );
+            assert_eq!(writes.published_rows.len() + writes.omitted_publications, 0);
+            assert_eq!(super::super::super::courts::native_head(&host), before);
+        }
+    }
 }

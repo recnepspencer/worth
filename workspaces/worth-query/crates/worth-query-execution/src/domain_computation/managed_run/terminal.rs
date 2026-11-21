@@ -1,27 +1,7 @@
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryManagedRunTerminalKind {
-    Completed,
-    Cancelled,
-    TimedOut,
-    Exhausted,
-    Degraded,
-    Failed,
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryManagedRunCleanupDisposition {
-    CleanupComplete,
-    CleanupPending,
-    RecoveryRequired,
-}
-
-/// The native managed-run owner that refused cleanup; the typed failure retains its exact terminal custody.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryManagedRunCleanupFailureKind {
-    ProviderMemoryRetained,
-    QueueRelease(worth_runtime_bridge::facade::BridgeManagedQueueFailureKind),
-    BridgeFinalization(worth_runtime_bridge::facade::BridgeExecutionBasisFinalizationFailureKind),
-}
+pub use worth_query_execution_foundation::facade::domain_computation::managed_run_vocabulary::{
+    WorthQueryManagedRunCleanupDisposition, WorthQueryManagedRunCleanupFailureKind,
+    WorthQueryManagedRunTerminalKind,
+};
 
 pub(in crate::domain_computation::managed_run) fn bridge_terminal_disposition(
     terminal: WorthQueryManagedRunTerminalKind,

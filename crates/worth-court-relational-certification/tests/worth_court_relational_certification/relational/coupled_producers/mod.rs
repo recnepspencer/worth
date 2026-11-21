@@ -209,3 +209,5 @@ mod stage_record_conflict;
 mod cold_candidate_pin;
 
 mod retry_custody;
+
+mod succession;

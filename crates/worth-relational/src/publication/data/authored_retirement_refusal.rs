@@ -11,6 +11,27 @@ pub enum CoupledFreshWriter {
     Producer(usize),
 }
 
+/// Why one route's later producing round cannot publish under a single-input
+/// origin yet (public #119 multi-input provenance). The refusal's affected
+/// record names the route source or the exact record where known.
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub enum CoupledProvenancePostponement {
+    /// A verified continuation round would change the candidate.
+    ContinuedRoundEffect,
+    /// The successor does not re-patch a field, or re-create a record, the
+    /// chain's earlier round wrote.
+    UncoveredWrite,
+    /// The successor deletes a record its own chain created.
+    FreshDelete,
+    /// The successor read a record the chain's earlier round wrote (Query).
+    PriorEffectRead,
+    /// The successor has an effect a fold cannot lower in place: a deletion,
+    /// a relation change, a new record or content.
+    StructuralEffect,
+    /// Another writer changed a record of the chain after its earlier round.
+    IntervenedOutput,
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum AuthoredRetirementRefusal {
     OrdinaryMetadataWrite,
@@ -41,6 +62,7 @@ pub enum AuthoredRetirementRefusal {
     /// Only the new atomic continuation entry refuses; existing successor delivery stays available.
     CoupledContinuationProvenancePostponed {
         issue: u16,
+        reason: CoupledProvenancePostponement,
     },
     MissingMember,
     MissingOwnedMember,

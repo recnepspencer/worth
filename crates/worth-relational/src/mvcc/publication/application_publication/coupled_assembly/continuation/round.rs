@@ -17,6 +17,20 @@ use std::sync::Arc;
 /// Publishing a second producing round needs multi-input provenance (public #119).
 const PROVENANCE_ISSUE: u16 = 119;
 
+/// The one #119 postponement refusal, for a continued round or a successor fold.
+pub(in crate::mvcc::publication::application_publication::coupled_assembly) fn postponed(
+    reason: crate::publication::data::CoupledProvenancePostponement,
+    subject: crate::identity::data::EntityId,
+) -> TransactionCommitError {
+    part::reject(
+        Cause::CoupledContinuationProvenancePostponed {
+            issue: PROVENANCE_ISSUE,
+            reason,
+        },
+        subject,
+    )
+}
+
 /// Only these commands can leave a record structurally as it was. Creation,
 /// deletion, replacement and endpoint changes are effects by their application.
 pub(super) fn patches_in_place(intent: &MutationIntent) -> bool {
@@ -49,10 +63,8 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             .expect("admitted producer route")
             .source_scope;
         if !self.round_preserves_application(execution, index, content, batches)? {
-            return Err(part::reject(
-                Cause::CoupledContinuationProvenancePostponed {
-                    issue: PROVENANCE_ISSUE,
-                },
+            return Err(postponed(
+                crate::publication::data::CoupledProvenancePostponement::ContinuedRoundEffect,
                 source,
             )
             .into());

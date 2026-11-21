@@ -1,30 +1,4 @@
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryArtifactDenialKind {
-    ArtifactContractNotInstalled,
-    ProducerRoleNotInstalled,
-    ConsumerRoleNotInstalled,
-    ProviderFamilyMismatch,
-    EmptySemanticProjection,
-    InvalidProductionEvidence,
-    ForeignRuntime,
-    StaleInstallationGeneration,
-    OperationMismatch,
-    RunMismatch,
-    StageMismatch,
-    BasisMismatch,
-    ArtifactContractMismatch,
-    PayloadOwnerMismatch,
-    StageExecutionMismatch,
-    ActiveWorkflowRun,
-    ProductionClosed,
-    MovementForbidden,
-    BorrowForbidden,
-    LeaseForbidden,
-    StaleLifecycleGeneration,
-    ActiveBorrow,
-    ActiveLease,
-    AlreadyDisposed,
-}
+pub use worth_query_execution_foundation::facade::domain_computation::managed_run_vocabulary::WorthQueryArtifactDenialKind;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryArtifactDenial {

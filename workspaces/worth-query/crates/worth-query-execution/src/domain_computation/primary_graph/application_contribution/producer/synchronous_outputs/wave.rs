@@ -1,51 +1,62 @@
 //! Every prepared parent precedes discovery and preparation of the next wave.
 use super::*;
+use worth_execution::{ExecutionMemoryReservation, ExecutionOrderedMap};
+use worth_relational::facade::identity::EntityId;
 mod continuations;
 mod inputs;
+mod observation;
 mod occurrences;
 mod outgoing;
 mod prerequisites;
-struct Scheduled<S: ApplicationSchema> {
-    root: bool,
-    key: Option<super::occurrences::OccurrenceKey>,
-    component: Option<std::any::TypeId>,
-    identified: bool,
-    closed: bool,
-    inputs: Option<PreparedCoupledInputs>,
-    prerequisite_queued: bool,
-    next_prerequisite: Option<usize>,
-    done: bool,
-    alias: Option<usize>,
-    continuation_done: bool,
-    prerequisites: Vec<usize>,
-    _prerequisite_memory: Option<worth_execution::ExecutionMemoryReservation>,
-    subject: &'static str,
-    rank: usize,
-    /// The demand that owes this task, carried to everything it enqueues.
-    owed: super::super::super::coupled_publication::OwedDemand,
-    tree: Box<dyn capture::RequiredTree<S>>,
-    parent: Option<AppliedOutputParent>,
-    _memory: Option<worth_execution::ExecutionMemoryReservation>,
+mod state;
+use state::{capacity_denied, map_insert, map_remove, push_funded, Scheduled, TaskState};
+
+/// Every wave charge goes through here, so its observed units are the
+/// wave's whole share of the request's work accounting.
+fn checkpoint(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    subject: &str,
+    work: u64,
+) -> Result<(), SynchronousOutputFailure> {
+    observation::charged(work);
+    super::checkpoint(execution, subject, work)
 }
-impl<S: ApplicationSchema> Scheduled<S> {
-    fn clear_input_capture(&mut self) {
-        self.closed = false;
-        self.inputs = None;
-        self.prerequisites = Vec::new();
-        self._prerequisite_memory = None;
-    }
-}
+
+type OccurrenceBucketKey = (&'static str, EntityId, [u8; 32]);
+
 pub struct SynchronousOutputWave<S: ApplicationSchema> {
     tasks: Vec<Scheduled<S>>,
-    storage: Option<worth_execution::ExecutionMemoryReservation>,
+    storage: Option<ExecutionMemoryReservation>,
+    unidentified_from: usize,
+    by_key: ExecutionOrderedMap<OccurrenceBucketKey, usize>,
+    pending_close: ExecutionOrderedMap<usize, ()>,
+    ready_queue: ExecutionOrderedMap<(usize, usize), ()>,
+    captured_active: ExecutionOrderedMap<usize, ()>,
+    ready_alias_continuations: ExecutionOrderedMap<usize, ()>,
+    done_components: ExecutionOrderedMap<usize, ()>,
+    needed_undone_count: usize,
+    needed_dirty: bool,
+    last_allowed: Option<Option<Vec<String>>>,
 }
+
 impl<S: ApplicationSchema> SynchronousOutputWave<S> {
     pub(in crate::domain_computation::primary_graph::application_contribution) fn new() -> Self {
         Self {
             tasks: Vec::new(),
             storage: None,
+            unidentified_from: 0,
+            by_key: ExecutionOrderedMap::default(),
+            pending_close: ExecutionOrderedMap::default(),
+            ready_queue: ExecutionOrderedMap::default(),
+            captured_active: ExecutionOrderedMap::default(),
+            ready_alias_continuations: ExecutionOrderedMap::default(),
+            done_components: ExecutionOrderedMap::default(),
+            needed_undone_count: 0,
+            needed_dirty: true,
+            last_allowed: None,
         }
     }
+
     pub(super) fn push(
         &mut self,
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
@@ -54,17 +65,10 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
         tree_bytes: usize,
         tree: impl FnOnce() -> Box<dyn capture::RequiredTree<S>>,
     ) -> Result<(), SynchronousOutputFailure> {
-        context.checkpoint(subject)?;
-        let capacity = || {
-            SynchronousOutputFailure(
-                super::super::WorthQueryOutputDemandDenial::new(
-                    super::super::WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
-                    subject,
-                )
-                .into(),
-            )
-        };
-        let bytes = u64::try_from(tree_bytes).ok().ok_or_else(capacity)?;
+        checkpoint(context.execution, subject, 1)?;
+        let bytes = u64::try_from(tree_bytes)
+            .ok()
+            .ok_or_else(|| capacity_denied(subject))?;
         let memory = context.execution.allocation_policy().reserve_memory(bytes)
             .map_err(|cause| SynchronousOutputFailure(CoupledSourceReadStop::capture(
                 crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::allocation_denied(subject, cause))))?;
@@ -92,27 +96,30 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
         let continuation_done = !tree.has_static_continuation();
         self.tasks.push(Scheduled {
             root: true,
+            needed: false,
             key: None,
+            next_bucket: None,
             component: None,
-            identified: false,
-            closed: false,
-            inputs: None,
+            state: TaskState::Pending,
+            close_epoch: 0,
             prerequisite_queued: false,
             next_prerequisite: None,
-            done: false,
-            alias: None,
             continuation_done,
+            waiting_aliases_head: None,
+            next_waiting_alias: None,
             prerequisites: Vec::new(),
             _prerequisite_memory: None,
+            dependents: Vec::new(),
+            _dependents_memory: None,
             subject,
             rank,
             owed: context.owner.owing(),
             tree,
-            parent: None,
             _memory: memory,
         });
         Ok(())
     }
+
     /// The parent outputs this task's derivation consumes: its admitted strict
     /// prerequisite suppliers' actual outputs. Discovery that selected the
     /// task is not consumption evidence; it is retained as discovery support.
@@ -121,14 +128,16 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
         i: usize,
     ) -> Vec<crate::domain_computation::primary_graph::provider::ParentRead> {
         let task = &self.tasks[i];
-        let suppliers = task.prerequisites.iter().filter_map(|supplier| {
-            self.tasks[self.canonical(*supplier)]
-                .parent
-                .as_ref()
-                .and_then(|parent| parent.read)
-        });
-        suppliers.collect()
+        task.prerequisites
+            .iter()
+            .filter_map(|supplier| {
+                self.tasks[self.canonical(*supplier)]
+                    .parent()
+                    .and_then(|parent| parent.read)
+            })
+            .collect()
     }
+
     fn reserve_slot(
         &mut self,
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
@@ -137,34 +146,25 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
         if self.tasks.len() < self.tasks.capacity() {
             return Ok(());
         }
-        let capacity = || {
-            SynchronousOutputFailure(
-                super::super::WorthQueryOutputDemandDenial::new(
-                    super::super::WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
-                    subject,
-                )
-                .into(),
-            )
-        };
         let next = self
             .tasks
             .capacity()
             .checked_mul(2)
-            .ok_or_else(capacity)?
+            .ok_or_else(|| capacity_denied(subject))?
             .max(1);
         let bytes = next
-            .checked_mul(std::mem::size_of::<Scheduled<S>>())
+            .checked_mul(size_of::<Scheduled<S>>())
             .and_then(|bytes| u64::try_from(bytes).ok())
-            .ok_or_else(capacity)?;
+            .ok_or_else(|| capacity_denied(subject))?;
         let memory = context.execution.allocation_policy().reserve_memory(bytes)
             .map_err(|cause| SynchronousOutputFailure(CoupledSourceReadStop::capture(
                 crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::allocation_denied(subject, cause))))?;
         let mut replacement = Vec::new();
         replacement
             .try_reserve_exact(next)
-            .map_err(|_| capacity())?;
+            .map_err(|_| capacity_denied(subject))?;
         if replacement.capacity() != next {
-            return Err(capacity());
+            return Err(capacity_denied(subject));
         }
         checkpoint(context.execution, subject, bytes)?;
         replacement.append(&mut self.tasks);
@@ -172,107 +172,217 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
         self.storage = memory;
         Ok(())
     }
+
     pub(in crate::domain_computation::primary_graph::application_contribution) fn drive(
         &mut self,
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
         candidate: &mut RelationalAuthoredCoupledCandidate<'_>,
         allowed: Option<&[String]>,
     ) -> Result<(), SynchronousOutputFailure> {
+        let mut batch_id = 0usize;
         loop {
             self.close_frontier(context, candidate, allowed)?;
             if self.discover_alias_continuations(context, candidate)? {
                 continue;
             }
-            let _planning_memory = self.quote_frontier(context, allowed.map_or(0, |v| v.len()))?;
-            let needed = self.needed(allowed);
-            let rank = self
-                .tasks
-                .iter()
-                .enumerate()
-                .filter(|(i, t)| needed[*i] && !t.done && self.ready(*i))
-                .map(|(_, t)| t.rank)
-                .min();
-            let Some(rank) = rank else {
-                self.refresh_outgoing(context, candidate, allowed)?;
-                let needed = self.needed(allowed);
-                if self
-                    .tasks
-                    .iter()
-                    .enumerate()
-                    .any(|(i, t)| needed[i] && !t.done && self.ready(i))
-                {
+            let Some((rank, ready, _ready_memory)) = self.collect_rank_batch(context)? else {
+                if self.handle_quiescence(context, candidate, allowed)? {
                     continue;
-                }
-                if self
-                    .tasks
-                    .iter()
-                    .enumerate()
-                    .any(|(i, t)| needed[i] && !t.done)
-                {
-                    return Err(self.blocked_frontier(&needed));
                 }
                 break;
             };
-            let mut ready = Vec::new();
-            ready.try_reserve_exact(self.tasks.len()).map_err(|_| {
-                SynchronousOutputFailure(CoupledSourceReadStop::from(
-                    super::super::WorthQueryOutputDemandDenial::new(
-                        super::super::WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
-                        "required occurrence frontier",
-                    ),
-                ))
-            })?;
-            for (i, t) in self.tasks.iter().enumerate() {
-                if needed[i] && !t.done && t.rank == rank && self.ready(i) {
-                    ready.push(i);
-                }
+            observation::record(|| format!("batch id={batch_id} rank={rank} ready={ready:?}"));
+            batch_id += 1;
+            let completed = self.run_batch(context, candidate, allowed, &ready)?;
+            self.discover_completed(context, candidate, ready, completed)?;
+        }
+        Ok(())
+    }
+
+    fn collect_rank_batch(
+        &self,
+        context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+    ) -> Result<
+        Option<(usize, Vec<usize>, Option<ExecutionMemoryReservation>)>,
+        SynchronousOutputFailure,
+    > {
+        let subject = "required occurrence frontier";
+        checkpoint(
+            context.execution,
+            subject,
+            self.ready_queue.len().max(1).ilog2() as u64 + 1,
+        )?;
+        let Some((&(rank, _), ())) = self.ready_queue.entry_at(0) else {
+            return Ok(None);
+        };
+        let mut ready = Vec::new();
+        let mut memory = None;
+        for (&(r, i), ()) in self.ready_queue.iter() {
+            if r != rank {
+                break;
             }
-            let mut completed = 0;
-            for i in &ready {
-                // Earlier real suppliers can change a still-unconsumed child's
-                // desired parents. Reclose before computing any orphaned row.
-                if self.refresh_input_captures(context, candidate, allowed)? {
+            push_funded(&mut ready, &mut memory, i, context.execution, subject)?;
+        }
+        Ok(Some((rank, ready, memory)))
+    }
+
+    fn handle_quiescence(
+        &mut self,
+        context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        candidate: &RelationalAuthoredCoupledCandidate<'_>,
+        allowed: Option<&[String]>,
+    ) -> Result<bool, SynchronousOutputFailure> {
+        observation::record(|| "quiescence".to_owned());
+        self.refresh_outgoing(context, candidate, allowed)?;
+        if !self.ready_queue.is_empty() {
+            return Ok(true);
+        }
+        if self.needed_undone_count > 0 {
+            observation::record(|| "blocked".to_owned());
+            return Err(self.blocked_frontier());
+        }
+        Ok(false)
+    }
+
+    fn run_batch(
+        &mut self,
+        context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        candidate: &mut RelationalAuthoredCoupledCandidate<'_>,
+        allowed: Option<&[String]>,
+        ready: &[usize],
+    ) -> Result<usize, SynchronousOutputFailure> {
+        let mut completed = 0;
+        for &i in ready {
+            // Earlier real suppliers can change a still-unconsumed child's
+            // desired parents. Reclose before computing any orphaned row.
+            if self.refresh_input_captures(context, candidate, allowed)? {
+                observation::record(|| format!("break input-captures before={i}"));
+                break;
+            }
+            context.owner.consume(self.consumed_reads(i));
+            let inputs = self.tasks[i].take_inputs();
+            let subject = self.tasks[i].subject;
+            let component = self.tasks[i].component;
+            checkpoint(context.execution, subject, 1)?;
+            context.owner.owe(&self.tasks[i].owed);
+            let prepared = self.tasks[i]
+                .tree
+                .prepare(context, candidate, inputs, component);
+            context.owner.consume(Vec::new());
+            observation::record_prepare(i, &self.tasks[i], &prepared);
+            match prepared? {
+                PlannedOutput::Prepared(parent) => {
+                    self.complete_task(context, i, parent)?;
+                    completed += 1;
+                }
+                PlannedOutput::Recapture => {
+                    observation::record(|| format!("break recapture at={i}"));
+                    self.clear_input_capture(context, i)?;
                     break;
                 }
-                context.owner.consume(self.consumed_reads(*i));
-                let task = &mut self.tasks[*i];
-                context.checkpoint(task.subject)?;
-                context.owner.owe(&task.owed);
-                let prepared =
-                    task.tree
-                        .prepare(context, candidate, task.inputs.take(), task.component);
-                context.owner.consume(Vec::new());
-                match prepared? {
-                    PlannedOutput::Prepared(parent) => {
-                        task.parent = parent;
-                        task.done = true;
-                        completed += 1;
-                    }
-                    PlannedOutput::Recapture => {
-                        task.clear_input_capture();
-                        break;
+            }
+            self.retain_parent_inputs(context, candidate, i)?;
+        }
+        Ok(completed)
+    }
+
+    fn complete_task(
+        &mut self,
+        context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        i: usize,
+        parent: Option<AppliedOutputParent>,
+    ) -> Result<(), SynchronousOutputFailure> {
+        let subject = self.tasks[i].subject;
+        let rank = self.tasks[i].rank;
+        let component = self.tasks[i].component;
+        let has_parent = parent.is_some();
+        map_remove(
+            &mut self.ready_queue,
+            &(rank, i),
+            context.execution,
+            subject,
+        )?;
+        if self.captured_active.contains_key(&i) {
+            map_remove(&mut self.captured_active, &i, context.execution, subject)?;
+        }
+        if self.tasks[i].needed {
+            self.needed_undone_count -= 1;
+        }
+        self.tasks[i].state = TaskState::Done { parent };
+        if component.is_some() {
+            map_insert(
+                &mut self.done_components,
+                &i,
+                &(),
+                context.execution,
+                subject,
+            )?;
+        }
+        let mut alias = self.tasks[i].waiting_aliases_head.take();
+        while let Some(a) = alias {
+            alias = self.tasks[a].next_waiting_alias.take();
+            map_insert(
+                &mut self.ready_alias_continuations,
+                &a,
+                &(),
+                context.execution,
+                self.tasks[a].subject,
+            )?;
+        }
+        let dependents = std::mem::take(&mut self.tasks[i].dependents);
+        self.tasks[i]._dependents_memory = None;
+        if has_parent {
+            for (child, epoch) in dependents {
+                checkpoint(context.execution, self.tasks[child].subject, 1)?;
+                if self.tasks[child].close_epoch != epoch {
+                    continue;
+                }
+                if let TaskState::Closed { waiting, .. } = &mut self.tasks[child].state {
+                    *waiting -= 1;
+                    if *waiting == 0 && self.tasks[child].needed {
+                        let key = (self.tasks[child].rank, child);
+                        map_insert(
+                            &mut self.ready_queue,
+                            &key,
+                            &(),
+                            context.execution,
+                            self.tasks[child].subject,
+                        )?;
                     }
                 }
-                self.retain_parent_inputs(context, candidate, *i)?;
             }
-            let pin = candidate
-                .pin_source(context.execution)
-                .map_err(CoupledSourceReadStop::from)?;
-            let mut next = Self::new();
-            for i in ready.into_iter().take(completed) {
-                let task = &mut self.tasks[i];
-                if let Some(parent) = &mut task.parent {
-                    parent.pin = pin.clone();
-                    // A discovered child is owed by the stage that owed its parent.
-                    context.owner.owe(&task.owed);
-                    task.tree.discover(context, candidate, parent, &mut next)?;
-                }
-                task.continuation_done = true;
+        }
+        Ok(())
+    }
+
+    fn discover_completed(
+        &mut self,
+        context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        candidate: &RelationalAuthoredCoupledCandidate<'_>,
+        ready: Vec<usize>,
+        completed: usize,
+    ) -> Result<(), SynchronousOutputFailure> {
+        let pin = candidate
+            .pin_source(context.execution)
+            .map_err(CoupledSourceReadStop::from)?;
+        let mut next = Self::new();
+        for i in ready.into_iter().take(completed) {
+            let owed = self.tasks[i].owed.clone();
+            let task = &mut self.tasks[i];
+            if let TaskState::Done {
+                parent: Some(parent),
+            } = &mut task.state
+            {
+                parent.pin = pin.clone();
+                // A discovered child is owed by the stage that owed its parent.
+                context.owner.owe(&owed);
+                task.tree.discover(context, candidate, parent, &mut next)?;
             }
-            for task in next.tasks {
-                self.reserve_slot(context, task.subject)?;
-                self.tasks.push(task);
-            }
+            task.continuation_done = true;
+        }
+        for task in next.tasks {
+            self.reserve_slot(context, task.subject)?;
+            self.tasks.push(task);
         }
         Ok(())
     }

@@ -338,7 +338,7 @@
       "private_subject": "Private portable native-contract and operation-contract compilation: scalar whole-mask versus struct exact field, and exact compiled operation projection scope."
     },
     {
-      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/admitted_capture/retained_stage/tests.rs",
+      "source": "workspaces/worth-query/crates/worth-query-execution-foundation/src/domain_computation/primary_graph/admitted_capture/retained_stage/tests.rs",
       "test": "domain_computation::primary_graph::admitted_capture::retained_stage::tests::original_retained_capture_preserves_live_backing_through_success_and_refusal",
       "constructors": [
         "worth_execution::ExecutionRequest::serial",
