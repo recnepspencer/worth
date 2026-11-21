@@ -12,7 +12,7 @@ mod failure;
 mod healthy;
 mod independent;
 mod late_parent;
-mod many_routes;
+pub(in super::super) mod many_routes;
 mod middle_input;
 mod partition;
 mod permission;

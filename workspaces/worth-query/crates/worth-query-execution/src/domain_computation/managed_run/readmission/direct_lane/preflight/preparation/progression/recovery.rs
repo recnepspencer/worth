@@ -97,14 +97,7 @@ impl WorthQueryDirectProviderRecoveryState {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryDirectReadmissionRecoveryKind {
-    BridgeCleanupFailed,
-    ProviderRestorePanicked,
-    ProviderRestoreRejectedAfterExecutionAdmission,
-    RestoredExecutionReleaseRecoveryRequired,
-    CheckpointReleasePanicked,
-}
+pub use worth_query_execution_foundation::facade::domain_computation::managed_run_vocabulary::WorthQueryDirectReadmissionRecoveryKind;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryDirectReadmissionRecoveryPosture {

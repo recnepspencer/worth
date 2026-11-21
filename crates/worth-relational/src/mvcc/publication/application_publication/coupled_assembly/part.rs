@@ -83,6 +83,8 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             .expect("admitted writer")
             .source_scope;
         let index = self.parts.len();
+        let first_batch = self.transaction.batches().len();
+        let first_fragment = self.mutation.outcome.effect.publication.patch_fragments.len();
         let applied = self.apply_suffix(
             execution,
             SuffixWriter::Producer {
@@ -96,6 +98,17 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         )?;
         let ordinary_ids = publication
             .resolve_ordinary_roles(execution, &self.mutation.outcome.created_entities)?;
+        let publication_effect = &self.mutation.outcome.effect.publication;
+        let chain = super::succession::Chain {
+            batches: first_batch..self.transaction.batches().len(),
+            fragments: (first_fragment..publication_effect.patch_fragments.len())
+                .map(|position| (position, applied.read.clone()))
+                .collect(),
+            superseded: Vec::new(),
+            local_keys: applied.local_keys,
+            created: applied.created,
+            records_end: publication_effect.changed_records.len(),
+        };
         self.parts.push(CoupledPublicationPart {
             inputs: None,
             ordinary_ids,
@@ -103,6 +116,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             publication,
             commands: applied.plan,
             records: applied.records,
+            chain,
         });
         let latest = self.parts.last().expect("the actual part just appended");
         self.advance_pin(

@@ -49,7 +49,9 @@ impl WorthQueryInvariantProjectionDenial {
         cause: super::WorthQueryValueDecodeDenial,
         work: Option<super::WorthQueryInvariantProjectionWork>,
     ) -> Self {
-        if let Some(worth_execution::WorkCeilingDenial::Stopped(stop)) = cause.request_cause() {
+        if let Some(worth_execution::WorkCeilingDenial::Stopped(stop)) =
+            crate::domain_computation::primary_graph::value_decode::decode_request_cause(cause)
+        {
             return Self::execution_request_stopped(stop.into(), work);
         }
         Self {

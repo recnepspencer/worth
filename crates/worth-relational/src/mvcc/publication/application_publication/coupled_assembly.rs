@@ -40,6 +40,7 @@ mod producer_posture;
 mod stage;
 pub use producer_posture::RelationalCoupledProducerPosture;
 mod scoped_preparation;
+mod succession;
 mod writer_custody;
 pub(crate) use completion::CoupledAppliedCandidate;
 pub use completion::RelationalCoupledAuthoredPublication;
@@ -126,6 +127,9 @@ pub struct RelationalAuthoredCoupledCandidate<'a> {
     fresh_records: net_plan::CreatorCustody,
     authored_writes: authored_writes::AuthoredWrites,
     read: std::cell::RefCell<Option<RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>>>,
+    /// Successor rounds folded into earlier parts; each is still one applied
+    /// part in the pin, local-key and continuation sequence.
+    successor_rounds: usize,
 }
 
 pub(crate) struct CoupledPublicationPart {
@@ -136,6 +140,10 @@ pub(crate) struct CoupledPublicationPart {
     pub(crate) publication: RelationalCoupledProducerPosture,
     pub(crate) commands: crate::mvcc::OwnedNormalizedPlan,
     pub(crate) records: Vec<crate::transactions::data::RecordRef>,
+    /// This route's chain in the candidate: its transaction batches, its patch
+    /// fragments, the local-key coordinates its head chose, and the end of the
+    /// changed-record log when its latest round applied.
+    pub(crate) chain: succession::Chain,
 }
 
 /// One later authored stage applied over the candidate pin under the authored
@@ -154,7 +162,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
     /// Every applied part, authored stage or producer, in apply order. Pins,
     /// local keys and successor reads are numbered over this one sequence.
     pub(crate) fn applied_parts(&self) -> usize {
-        self.parts.len() + self.stages.len()
+        self.parts.len() + self.stages.len() + self.successor_rounds
     }
 
     /// The full-generation source admitted by Native for this authored prefix.

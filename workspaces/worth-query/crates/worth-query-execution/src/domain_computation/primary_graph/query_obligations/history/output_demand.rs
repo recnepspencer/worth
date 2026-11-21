@@ -4,6 +4,7 @@ use journal::*;
 use std::num::NonZeroU64;
 use worth_execution::ExecutionRequest;
 use worth_foundational::facade::DurableCompositeCommitIdentity;
+use worth_query_execution_obligations::facade::ledger_inspect;
 
 pub(in crate::domain_computation::primary_graph) struct OutputDemandRetention {
     pub position: NonZeroU64,
@@ -18,18 +19,11 @@ impl QueryObligationHistory {
         let Some(journal) = state.journal.as_ref() else {
             return Vec::new();
         };
-        journal
-            .ledger
-            .output
+        let output = ledger_inspect::output(&journal.ledger);
+        output
             .demands
             .values()
-            .filter(|row| {
-                !journal
-                    .ledger
-                    .output
-                    .completed
-                    .contains(&row.acquire_position)
-            })
+            .filter(|row| !output.completed.contains(&row.acquire_position))
             .flat_map(|row| {
                 row.checkpoint_prerequisites
                     .iter()
@@ -81,20 +75,23 @@ impl QueryObligationHistory {
         row.acquire_position = position;
         let prior = {
             let state = self.state();
-            state
-                .journal
-                .as_ref()
-                .and_then(|journal| journal.ledger.output.subjects.get(&row.subject()).copied())
+            state.journal.as_ref().and_then(|journal| {
+                ledger_inspect::output(&journal.ledger)
+                    .subjects
+                    .get(&ledger_inspect::output_demand_subject(&row))
+                    .copied()
+            })
         };
         if let Some(prior) = prior {
-            let existing = self
-                .state()
-                .journal
-                .as_ref()
-                .expect("admitted journal")
-                .ledger
-                .output
-                .demands[&prior]
+            let existing = ledger_inspect::output(
+                &self
+                    .state()
+                    .journal
+                    .as_ref()
+                    .expect("admitted journal")
+                    .ledger,
+            )
+            .demands[&prior]
                 .clone();
             let mut sources = existing.performed_sources;
             sources.extend(row.performed_sources);
@@ -143,26 +140,24 @@ impl QueryObligationHistory {
         self.state()
             .journal
             .as_ref()
-            .is_some_and(|journal| !journal.ledger.output.subjects.is_empty())
+            .is_some_and(|journal| !ledger_inspect::output(&journal.ledger).subjects.is_empty())
     }
     pub(in crate::domain_computation::primary_graph) fn matching_output_demand(
         &self,
         row: &QueryOutputDemandObligation,
     ) -> Option<QueryOutputDemandObligation> {
         let state = self.state();
-        let output = &state.journal.as_ref()?.ledger.output;
-        let position = output.subjects.get(&row.subject())?;
+        let output = ledger_inspect::output(&state.journal.as_ref()?.ledger);
+        let position = output
+            .subjects
+            .get(&ledger_inspect::output_demand_subject(row))?;
         output.demands.get(position).cloned()
     }
     pub(in crate::domain_computation::primary_graph) fn output_demand(
         &self,
         position: NonZeroU64,
     ) -> Option<QueryOutputDemandObligation> {
-        self.state()
-            .journal
-            .as_ref()?
-            .ledger
-            .output
+        ledger_inspect::output(&self.state().journal.as_ref()?.ledger)
             .demands
             .get(&position)
             .cloned()
@@ -172,8 +167,8 @@ impl QueryObligationHistory {
         position: NonZeroU64,
     ) -> bool {
         self.state().journal.as_ref().is_some_and(|journal| {
-            journal.ledger.output.demands.contains_key(&position)
-                && !journal.ledger.output.completed.contains(&position)
+            let output = ledger_inspect::output(&journal.ledger);
+            output.demands.contains_key(&position) && !output.completed.contains(&position)
         })
     }
     pub(in crate::domain_computation::primary_graph) fn link_output_demand(
@@ -194,7 +189,11 @@ impl QueryObligationHistory {
             state
                 .journal
                 .as_ref()
-                .and_then(|journal| journal.ledger.output.demands.get(&position))
+                .and_then(|journal| {
+                    ledger_inspect::output(&journal.ledger)
+                        .demands
+                        .get(&position)
+                })
                 .cloned()
                 .ok_or(QueryObligationDenial::UnknownObligation)?
         };
@@ -235,12 +234,9 @@ impl QueryObligationHistory {
         let driver = self.lock_publication()?;
         driver.finish_pending(medium.as_ref(), request)?;
         if !self.state().journal.as_ref().is_some_and(|journal| {
-            journal
-                .ledger
-                .output
-                .demands
-                .contains_key(&acquire_position)
-                && !journal.ledger.output.completed.contains(&acquire_position)
+            let output = ledger_inspect::output(&journal.ledger);
+            output.demands.contains_key(&acquire_position)
+                && !output.completed.contains(&acquire_position)
         }) {
             return Ok(());
         }
@@ -277,11 +273,7 @@ impl QueryObligationHistory {
         &self,
         position: NonZeroU64,
     ) -> Option<Vec<u8>> {
-        self.state()
-            .journal
-            .as_ref()?
-            .ledger
-            .output
+        ledger_inspect::output(&self.state().journal.as_ref()?.ledger)
             .failures
             .get(&position)
             .cloned()

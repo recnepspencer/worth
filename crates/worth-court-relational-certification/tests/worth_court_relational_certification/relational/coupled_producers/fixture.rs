@@ -9,36 +9,73 @@ pub struct World {
     pub installed: RelationalInstalledApplicationPublicationAuthority,
     pub source: EntityId,
     pub carrier: EntityId,
+    /// Declares the Struct aspect `summary`; births then write its `title`.
+    pub summary: bool,
+    /// Declares only the Optional Struct aspect `summary` (no `LifecycleTransition`).
+    pub optional_struct_only: bool,
 }
 impl World {
     pub fn new(execution: &ExecutionRequest<'_, '_>, storage: bool, owns_source: bool) -> Self {
-        Self::with_status_field(execution, storage, owns_source, false, None)
+        Self::with_aspects(execution, storage, owns_source, false, false, false, None)
     }
     pub fn new_with_status(execution: &ExecutionRequest<'_, '_>) -> Self {
-        Self::with_status_field(execution, true, true, true, None)
+        Self::with_aspects(execution, true, true, true, false, false, None)
+    }
+    /// An owned-source world whose kind also declares the Struct aspect `summary`.
+    pub fn new_with_summary(execution: &ExecutionRequest<'_, '_>) -> Self {
+        let mut world = Self::with_aspects(execution, true, true, false, true, false, None);
+        world.summary = true;
+        world
+    }
+    /// An owned-source world without `LifecycleTransition`, declaring only the
+    /// Optional Struct aspect `summary`, matching Query-compiled fieldless kinds.
+    pub fn new_optional_struct_only(execution: &ExecutionRequest<'_, '_>) -> Self {
+        let mut world = Self::with_aspects(execution, true, true, false, true, true, None);
+        world.summary = true;
+        world.optional_struct_only = true;
+        world
     }
     pub fn with_invariant(
         execution: &ExecutionRequest<'_, '_>,
         rule: CustomInvariantRegistration,
     ) -> Self {
-        Self::with_status_field(execution, true, true, false, Some(rule))
+        Self::with_aspects(execution, true, true, false, false, false, Some(rule))
     }
-    fn with_status_field(
+    fn with_aspects(
         execution: &ExecutionRequest<'_, '_>,
         storage: bool,
         owns_source: bool,
         with_status: bool,
+        with_summary: bool,
+        optional_struct_only: bool,
         rule: Option<CustomInvariantRegistration>,
     ) -> Self {
-        let mut fixture = AspectSchemaFixture::with_default_declared_aspects(
-            worth_relational::facade::config::CascadeDeletePolicy::RetainDanglingForAudit,
-        );
+        let mut fixture = if optional_struct_only {
+            AspectSchemaFixture::default()
+        } else {
+            AspectSchemaFixture::with_default_declared_aspects(
+                worth_relational::facade::config::CascadeDeletePolicy::RetainDanglingForAudit,
+            )
+        };
         if with_status {
             let (binding, contract) =
                 worth_testkit_relational::aspect_storage::definition::entity_field_aspect(
                     aspect_key("status"),
                     field_key("status"),
                 );
+            fixture
+                .entity_aspects
+                .push(DeclaredAspectContractBinding { binding, contract });
+        }
+        if with_summary {
+            let (binding, contract) = if optional_struct_only {
+                optional_summary_struct_aspect()
+            } else {
+                worth_testkit_relational::aspect_storage::definition::entity_summary_struct_aspect(
+                    aspect_key("summary"),
+                    field_key("summary"),
+                )
+            };
             fixture
                 .entity_aspects
                 .push(DeclaredAspectContractBinding { binding, contract });
@@ -73,7 +110,11 @@ impl World {
         };
         let mut tx = begin_main_transaction(&runtime);
         tx.push_batch(
-            if with_status {
+            if optional_struct_only {
+                WorkerIntentBatch::new("optional-struct-sources")
+                    .push(optional_struct_create_intent("source", "source"))
+                    .push(optional_struct_create_intent("carrier", "carrier"))
+            } else if with_status {
                 WorkerIntentBatch::new("two-field-sources")
                     .push(create_with_status("source"))
                     .push(create_with_status("carrier"))
@@ -93,6 +134,8 @@ impl World {
             installed,
             source,
             carrier,
+            summary: false,
+            optional_struct_only: false,
         }
     }
     pub fn birth(
@@ -102,8 +145,12 @@ impl World {
         key: &str,
     ) -> RelationalRequiredOutputPublication {
         let mut tx = begin_main_transaction(&self.runtime);
-        tx.push_batch(create(key), execution.allocation_policy())
-            .unwrap();
+        let batch = if self.summary {
+            WorkerIntentBatch::new(key).push(summary_create_intent(key, "title-0"))
+        } else {
+            create(key)
+        };
+        tx.push_batch(batch, execution.allocation_policy()).unwrap();
         let proposal = tx
             .validate(execution, &self.runtime)
             .unwrap()
@@ -168,18 +215,7 @@ impl World {
             &self.basis(),
             self.source,
         )?;
-        let mut tx = begin_main_transaction(&self.runtime);
-        tx.push_batch(
-            update(self.source, "edited-source"),
-            execution.allocation_policy(),
-        )
-        .unwrap();
-        let tx = tx.bind_authored_coupled_producers(&self.installed, owners, None)?;
-        self.runtime
-            .preparation_port()
-            .prepare_authored_coupled_transaction(execution, tx, assembly)?
-            .expect("completed real assembly")
-            .validate(execution, &self.runtime)
+        self.prepare_with_owners(execution, owners, assembly)
     }
     /// Prepare an edit envelope: the authored prefix edits `source`, and
     /// Native admits `later` as the sources of the authored stages after it.
@@ -196,12 +232,30 @@ impl World {
             self.source,
             later,
         )?;
+        self.prepare_with_owners(execution, owners, assembly)
+    }
+    fn prepare_with_owners(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        owners: RelationalAuthoredCoupledOwners,
+        assembly: &dyn RelationalAuthoredCoupledProducerAssembly,
+    ) -> Result<ValidatedRelationalProposal, TransactionCommitError> {
         let mut tx = begin_main_transaction(&self.runtime);
-        tx.push_batch(
-            update(self.source, "edited-source"),
-            execution.allocation_policy(),
-        )
-        .unwrap();
+        let edit = if self.optional_struct_only {
+            WorkerIntentBatch::new("summary-source-edit").push(MutationIntent::Entity(
+                EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
+                    entity_id: self.source,
+                    fields: string_aspect_field_patch([(
+                        aspect_key("summary"),
+                        field_key("title"),
+                        "edited-source",
+                    )]),
+                }),
+            ))
+        } else {
+            update(self.source, "edited-source")
+        };
+        tx.push_batch(edit, execution.allocation_policy()).unwrap();
         let tx = tx.bind_authored_coupled_producers(&self.installed, owners, None)?;
         self.runtime
             .preparation_port()
@@ -245,6 +299,18 @@ pub fn create_intent(key: &str) -> MutationIntent {
         fields: string_aspect_field_patch([(aspect_key("name"), field_key("name"), key)]),
     }))
 }
+/// A create writing `name` and the Struct field `summary.title`.
+pub fn summary_create_intent(key: &str, title: &str) -> MutationIntent {
+    MutationIntent::Create(CreateIntent::Entity(EntitySpec {
+        partition_id: PartitionId::main(),
+        kind_id: KindId(1),
+        client_key: ClientKey::raw(key),
+        fields: string_aspect_field_patch([
+            (aspect_key("name"), field_key("name"), key),
+            (aspect_key("summary"), field_key("title"), title),
+        ]),
+    }))
+}
 pub fn create(key: &str) -> WorkerIntentBatch {
     WorkerIntentBatch::new(key).push(create_intent(key))
 }
@@ -273,6 +339,43 @@ pub fn created(key: &str) -> RequiredOutputRoleTarget {
         posture: RequiredOutputRolePosture::Create,
         target: EntityReference::Created(target(key)),
     }
+}
+
+fn optional_summary_struct_aspect() -> (
+    worth_foundational::facade::AspectBinding,
+    worth_foundational::facade::AspectContract,
+) {
+    use worth_foundational::facade::*;
+    let (binding, base) =
+        worth_testkit_relational::aspect_storage::definition::entity_summary_struct_aspect(
+            aspect_key("summary"),
+            field_key("summary"),
+        );
+    let AspectShape::Struct(shape) = base.shape().clone() else {
+        unreachable!("summary aspect is a struct");
+    };
+    let contract = aspects()
+        .contract()
+        .for_key(base.key().clone())
+        .identified_by(base.identity())
+        .at_revision(base.revision())
+        .struct_with(
+            shape,
+            base.masks().clone(),
+            AbsenceLaw::Optional,
+            base.equivalence(),
+            base.evolution(),
+        );
+    (binding, contract)
+}
+
+fn optional_struct_create_intent(key: &str, title: &str) -> MutationIntent {
+    MutationIntent::Create(CreateIntent::Entity(EntitySpec {
+        partition_id: PartitionId::main(),
+        kind_id: KindId(1),
+        client_key: ClientKey::raw(key),
+        fields: string_aspect_field_patch([(aspect_key("summary"), field_key("title"), title)]),
+    }))
 }
 
 fn create_with_status(key: &str) -> MutationIntent {

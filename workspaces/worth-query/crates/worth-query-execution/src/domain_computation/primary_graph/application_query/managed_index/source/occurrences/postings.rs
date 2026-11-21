@@ -15,6 +15,81 @@ impl OccurrencePostings {
             .flat_map(|entries| entries.keys())
     }
 
+    pub(super) fn entity_count(&self) -> usize {
+        self.entities.len()
+    }
+
+    pub(super) fn check_complete(
+        &self,
+        scope: &ManagedIndexSourceScope<'_>,
+        entries: &ExecutionOrderedMap<EntityId, Arc<Entry>>,
+        changed_keys: &BTreeSet<EntityId>,
+    ) -> Result<(), MaterialDenial> {
+        self.check_complete_inputs(
+            scope.changed_entities(),
+            scope.changed_occurrence_record_entities(),
+            entries,
+            changed_keys,
+            &scope.read_budget(),
+        )
+    }
+
+    pub(super) fn check_complete_inputs(
+        &self,
+        changed_rows: impl IntoIterator<Item = EntityId>,
+        changed_records: Option<&[EntityId]>,
+        entries: &ExecutionOrderedMap<EntityId, Arc<Entry>>,
+        changed_keys: &BTreeSet<EntityId>,
+        budget: &worth_relational::facade::runtime::CustomInvariantReadBudget<'_>,
+    ) -> Result<(), MaterialDenial> {
+        let Some(changed_records) = changed_records else {
+            return Err(ManagedIndexSourcePreparationDenial::RootUnavailable.into());
+        };
+        for row in changed_rows {
+            budget
+                .checkpoint(1)
+                .map_err(DerivedRelationReadDenial::Structural)?;
+            if entries.contains_key(&row) && !changed_keys.contains(&row) {
+                return Err(ManagedIndexSourcePreparationDenial::IncompletePreparation.into());
+            }
+        }
+        if changed_records.len() <= self.entities.len() {
+            for &entity in changed_records {
+                budget
+                    .checkpoint(1)
+                    .map_err(DerivedRelationReadDenial::Structural)?;
+                self.check_entity_dependents(entity, changed_keys, budget)?;
+            }
+        } else {
+            for &entity in self.entities.keys() {
+                budget
+                    .checkpoint(1)
+                    .map_err(DerivedRelationReadDenial::Structural)?;
+                if changed_records.binary_search(&entity).is_ok() {
+                    self.check_entity_dependents(entity, changed_keys, budget)?;
+                }
+            }
+        }
+        Ok(())
+    }
+
+    fn check_entity_dependents(
+        &self,
+        entity: EntityId,
+        changed_keys: &BTreeSet<EntityId>,
+        budget: &worth_relational::facade::runtime::CustomInvariantReadBudget<'_>,
+    ) -> Result<(), MaterialDenial> {
+        for key in self.entries_for_entity(entity) {
+            budget
+                .checkpoint(1)
+                .map_err(DerivedRelationReadDenial::Structural)?;
+            if !changed_keys.contains(key) {
+                return Err(ManagedIndexSourcePreparationDenial::IncompletePreparation.into());
+            }
+        }
+        Ok(())
+    }
+
     pub(super) fn insert_entry(
         &mut self,
         entry: EntityId,

@@ -216,10 +216,11 @@ fn visit_transition_facts_from_basis<Error>(
         super::super::state::WorkflowInstanceState::Completed
             | super::super::state::WorkflowInstanceState::Terminated
     ) {
-        layout
-            .instance
-            .ending_actor
-            .append(&admitted.advancer.ending_actor(), &mut instance_fields);
+        crate::domain_computation::primary_graph::workflow::actor::ending::append_ending_actor(
+            &layout.instance.ending_actor,
+            &admitted.advancer.ending_actor(),
+            &mut instance_fields,
+        );
     }
     emit(WorthQueryApplicationRealizedEffect::UpdateEntity {
         entity: "workflow-instance".to_owned(),

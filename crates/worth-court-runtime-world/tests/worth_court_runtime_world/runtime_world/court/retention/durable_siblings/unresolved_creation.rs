@@ -122,8 +122,7 @@ fn assert_fenced(f: &Fixture, request: &ExecutionRequest<'_, '_>, name: &str) {
         ),
         "{answer:?}"
     );
-    // Nor may a durable open move the recorded Signal source before the
-    // decision; a Relational-only open (a transition step, say) is admitted.
+    // Signal-carrying durable opens wait for the decision; Relational-only ones pass.
     let heads = f.recorder.heads();
     let port = f.world.publication_port();
     let token = RuntimeWorldCancellationSource::new().token();
@@ -154,6 +153,7 @@ fn assert_fenced(f: &Fixture, request: &ExecutionRequest<'_, '_>, name: &str) {
         None,
     );
     assert!(relational.is_ok(), "{:?}", relational.err());
+    // Dropped unadvanced: an unjournaled in-memory row, so callers end with `reopen`.
     drop(relational);
     assert_eq!(f.recorder.heads(), heads);
 }

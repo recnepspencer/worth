@@ -363,3 +363,5 @@ fn an_absent_supplier_does_not_force_its_prerequisite_at_an_authored_barrier() {
     assert_eq!(writes.published_rows.len() + writes.omitted_publications, 0);
     assert_eq!(native_head(&host), before);
 }
+
+mod sequential_availability;

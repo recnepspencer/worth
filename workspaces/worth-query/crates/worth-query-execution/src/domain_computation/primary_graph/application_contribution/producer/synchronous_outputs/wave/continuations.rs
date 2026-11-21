@@ -7,29 +7,25 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
         candidate: &RelationalAuthoredCoupledCandidate<'_>,
     ) -> Result<bool, SynchronousOutputFailure> {
-        if !self.tasks.iter().any(|task| {
-            !task.continuation_done && task.alias.is_some_and(|prior| self.tasks[prior].done)
-        }) {
+        if self.ready_alias_continuations.is_empty() {
             return Ok(false);
         }
+        let aliases = std::mem::take(&mut self.ready_alias_continuations);
         let mut next = Self::new();
         let pin = candidate
             .pin_source(context.execution)
             .map_err(CoupledSourceReadStop::from)?;
-        for i in 0..self.tasks.len() {
-            if self.tasks[i].alias.is_none() || self.tasks[i].continuation_done {
+        for (&i, ()) in aliases.iter() {
+            if self.tasks[i].continuation_done {
                 continue;
             }
             let canonical = self.canonical(i);
-            if !self.tasks[canonical].done {
-                continue;
-            }
-            context.checkpoint(self.tasks[i].subject)?;
+            checkpoint(context.execution, self.tasks[i].subject, 1)?;
             // Aliases always point to an earlier retained row. Its authentic
             // Parent supplies data; this row supplies its own static intent.
             let (earlier, remaining) = self.tasks.split_at_mut(i);
             let task = &mut remaining[0];
-            if let Some(parent) = &mut earlier[canonical].parent {
+            if let Some(parent) = earlier[canonical].parent_mut() {
                 parent.pin = pin.clone();
                 // This row's own static intent is owed by its own demand.
                 context.owner.owe(&task.owed);

@@ -309,7 +309,8 @@ pub mod publication {
         SubscriberStreamFailureClass,
     };
     pub use crate::publication::data::{
-        AuthoredRetirementRefusal, CoupledFreshWriter, PublicationArtifactSnapshot,
+        AuthoredRetirementRefusal, CoupledFreshWriter, CoupledProvenancePostponement,
+        PublicationArtifactSnapshot,
         PublicationDiagnosticsSnapshot, PublicationError, PublicationObservationSnapshot,
         PublicationSettlementRepairError,
     };

@@ -106,19 +106,21 @@ pub(super) fn approval_actor(
             facts,
         )?;
     }
-    let actor = WorkflowActorFields {
+    let actor_fields = WorkflowActorFields {
         partition: layout.approval.approver_partition.clone(),
         slot: layout.approval.approver_slot.clone(),
         generation: layout.approval.approver_generation.clone(),
-    }
-    .observe(
-        runtime,
-        execution,
-        snapshot,
-        entity,
-        layout.approval.entity_kind,
-        facts,
-    )?;
+    };
+    let actor =
+        crate::domain_computation::primary_graph::workflow::actor::record::observe_actor_fields(
+            &actor_fields,
+            runtime,
+            execution,
+            snapshot,
+            entity,
+            layout.approval.entity_kind,
+            facts,
+        )?;
     let actor = crate::domain_computation::primary_graph::workflow::actor::record::validate_actor_applicability(actor, true)?;
     Ok((actor, Some(entity)))
 }

@@ -3,6 +3,7 @@ use super::*;
 use journal::*;
 use worth_execution::ExecutionRequest;
 use worth_foundational::facade::OwnedAsyncObligationIdentity;
+use worth_query_execution_obligations::facade::ledger_inspect;
 /// Progress of the original live owner's logical disposal, not a release proof.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Default)]
 pub(in crate::domain_computation::primary_graph) enum ResourceDisposal {
@@ -65,20 +66,15 @@ impl QueryObligationHistory {
         &self,
         identity: OwnedAsyncObligationIdentity,
     ) -> bool {
-        self.state()
-            .journal
-            .as_ref()
-            .is_some_and(|journal| journal.ledger.resources.contains_key(&identity))
+        self.state().journal.as_ref().is_some_and(|journal| {
+            ledger_inspect::resources(&journal.ledger).contains_key(&identity)
+        })
     }
     pub(in crate::domain_computation::primary_graph) fn resource_obligation(
         &self,
         identity: OwnedAsyncObligationIdentity,
     ) -> Option<QueryResourceObligation> {
-        self.state()
-            .journal
-            .as_ref()?
-            .ledger
-            .resources
+        ledger_inspect::resources(&self.state().journal.as_ref()?.ledger)
             .get(&identity)
             .cloned()
     }
@@ -108,7 +104,7 @@ impl QueryObligationHistory {
             .state()
             .journal
             .as_ref()
-            .and_then(|journal| journal.ledger.resources.get(&identity))
+            .and_then(|journal| ledger_inspect::resources(&journal.ledger).get(&identity))
             .is_some_and(|row| row.handoff == handoff)
         {
             return Ok(());
@@ -161,9 +157,7 @@ impl QueryObligationHistory {
         self.settle_resource_publication(request)?;
         let state = self.state();
         if let Some(row) = state.journal.as_ref().and_then(|journal| {
-            journal
-                .ledger
-                .resources
+            ledger_inspect::resources(&journal.ledger)
                 .values()
                 .find(|row| row.handoff.release.is_none())
         }) {

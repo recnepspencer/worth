@@ -6,7 +6,26 @@ use crate::{
     publication::data::AuthoredRetirementRefusal as Cause,
 };
 
+/// A first entry: its posture, and a route no earlier part has entered.
 pub(super) fn admit(
+    candidate: &RelationalAuthoredCoupledCandidate<'_>,
+    execution: &ExecutionRequest<'_, '_>,
+    publication: &RelationalCoupledProducerPosture,
+) -> Result<Option<Arc<CanonicalRequiredOutputOrigin>>, TransactionCommitError> {
+    let prior = admit_posture(candidate, execution, publication)?;
+    let meaning = publication.producing_meaning().expect("admitted writer");
+    execution
+        .run_native_with_checkpoint(|context| {
+            part::require_unseen_route(context, &candidate.parts, meaning)
+        })
+        .map_err(custody::execution_stop)?
+        .0?;
+    Ok(prior)
+}
+
+/// The posture alone, against C: a successor round of an entered route passes
+/// exactly this and its chain proof instead of the unseen-route check.
+pub(super) fn admit_posture(
     candidate: &RelationalAuthoredCoupledCandidate<'_>,
     execution: &ExecutionRequest<'_, '_>,
     publication: &RelationalCoupledProducerPosture,
@@ -29,12 +48,6 @@ pub(super) fn admit(
     } = publication
     {
         ordinary::require(candidate, execution, admission, absence, meaning, roles)?;
-        execution
-            .run_native_with_checkpoint(|context| {
-                part::require_unseen_route(context, &candidate.parts, meaning)
-            })
-            .map_err(custody::execution_stop)?
-            .0?;
         return Ok(None);
     }
     let publication = publication.owned().expect("remaining owned participant");
@@ -152,11 +165,5 @@ pub(super) fn admit(
         }
         _ => unreachable!("only admitted producer variants have route meaning"),
     };
-    execution
-        .run_native_with_checkpoint(|context| {
-            part::require_unseen_route(context, &candidate.parts, meaning)
-        })
-        .map_err(custody::execution_stop)?
-        .0?;
     Ok(prior)
 }

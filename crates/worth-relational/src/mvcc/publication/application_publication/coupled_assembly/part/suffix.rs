@@ -13,6 +13,13 @@ pub(in crate::mvcc::publication::application_publication::coupled_assembly) enum
         roles: &'a mut [RequiredOutputRoleTarget],
         predecessor: Option<&'a CanonicalRequiredOutputOrigin>,
     },
+    /// A successor round of producer part `index`, already rescoped to the
+    /// coordinates its chain head chose.
+    Successor {
+        index: usize,
+        source: crate::identity::data::EntityId,
+        predecessor: Option<&'a CanonicalRequiredOutputOrigin>,
+    },
     /// The authored writer: one later stage editing an admitted stage source.
     Authored {
         source: crate::identity::data::EntityId,
@@ -29,6 +36,11 @@ pub(in crate::mvcc::publication::application_publication::coupled_assembly) stru
         Vec<RecordRef>,
     pub(in crate::mvcc::publication::application_publication::coupled_assembly) delta_state:
         WorkingState,
+    pub(in crate::mvcc::publication::application_publication::coupled_assembly) local_keys:
+        super::super::local_keys::LocalKeys,
+    /// The entities this suffix allocated.
+    pub(in crate::mvcc::publication::application_publication::coupled_assembly) created:
+        Vec<crate::identity::data::EntityId>,
 }
 
 impl RelationalAuthoredCoupledCandidate<'_> {
@@ -39,14 +51,15 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         content: &crate::content::RelationalContentAttachments,
         mut batches: Vec<WorkerIntentBatch>,
     ) -> Result<AppliedSuffix, RelationalCoupledAssemblyFailure> {
-        let (creator, source, custody) = match writer {
+        let successor = matches!(writer, SuffixWriter::Successor { .. });
+        let (creator, source, custody, local_keys) = match writer {
             SuffixWriter::Producer {
                 index,
                 source,
                 roles,
                 predecessor,
             } => {
-                super::super::local_keys::scope(
+                let keys = super::super::local_keys::scope(
                     execution,
                     self.applied_parts(),
                     &self.mutation.outcome.created_entities,
@@ -58,8 +71,19 @@ impl RelationalAuthoredCoupledCandidate<'_> {
                     crate::publication::data::CoupledFreshWriter::Producer(index),
                     source,
                     super::super::writer_custody::Writer::Producer(predecessor),
+                    keys,
                 )
             }
+            SuffixWriter::Successor {
+                index,
+                source,
+                predecessor,
+            } => (
+                crate::publication::data::CoupledFreshWriter::Producer(index),
+                source,
+                super::super::writer_custody::Writer::Producer(predecessor),
+                Default::default(),
+            ),
             SuffixWriter::Authored { source, roles } => {
                 super::super::local_keys::scope(
                     execution,
@@ -73,6 +97,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
                     crate::publication::data::CoupledFreshWriter::Authored,
                     source,
                     super::super::writer_custody::Writer::AuthoredPrefix,
+                    Default::default(),
                 )
             }
         };
@@ -110,8 +135,23 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             execution,
             &intents.plan().merged_intents,
         )?;
-        let intents =
+        let mut intents =
             intents.into_coupled_suffix(0, &self.mutation.outcome.created_entities, execution)?;
+        // A successor records its commands as authored (re-creates stay
+        // creates, so its touches match the one-round answer) but applies them
+        // lowered onto the chain's allocations.
+        let recorded = if successor {
+            let recorded =
+                crate::mvcc::OwnedNormalizedPlan::copy_for_request(intents.plan(), execution)?;
+            intents = intents.lower_coupled_recreates(
+                &self.mutation.outcome.created_entities,
+                self.prepared.schema_authority.aspect_plans(),
+                execution,
+            )?;
+            Some(recorded)
+        } else {
+            None
+        };
         let read = self.pin_source(execution)?;
         let root = read.resident_basis().root();
         let plan = self.transaction.build_merged_plan_for_state(
@@ -202,6 +242,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         self.fresh_records
             .retain(execution, creator, source, &outcome)?;
         let records = outcome.effect.publication.changed_records.clone();
+        let created = outcome.created_entities.allocated_identities().collect();
         self.mutation
             .outcome
             .created_entities
@@ -239,9 +280,11 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         );
         Ok(AppliedSuffix {
             read,
-            plan,
+            plan: recorded.unwrap_or(plan),
             records,
             delta_state,
+            local_keys,
+            created,
         })
     }
 

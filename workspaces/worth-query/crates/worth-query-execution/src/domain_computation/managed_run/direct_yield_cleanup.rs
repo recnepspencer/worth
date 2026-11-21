@@ -175,8 +175,10 @@ fn complete_cleanup(
     );
     if let Some(custody) = custody {
         let inspection = receipt.inspection();
-        let mut resources = crate::domain_computation::primary_graph::query_obligations::QueryManagedRunResources::observe(
-            inspection.resources_released(), inspection.provider_work());
+        let mut resources = super::durable_custody::observe_managed_run_resources(
+            inspection.resources_released(),
+            inspection.provider_work(),
+        );
         resources.checkpoint = checkpoint;
         custody.record(crate::domain_computation::primary_graph::query_obligations::QueryManagedRunPosture::YieldedCleanup {
             disposition: inspection.disposition(), resources,
