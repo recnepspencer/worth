@@ -42,6 +42,36 @@ pub(crate) struct Chain {
     pub(crate) created: Vec<EntityId>,
     /// The changed-record log's length when the latest round applied.
     pub(crate) records_end: usize,
+    /// Each round's span of the changed-record log, head first, ascending.
+    pub(crate) rounds: Vec<Range<usize>>,
+}
+
+impl Chain {
+    /// The first record in `own` that a member outside this chain changed
+    /// since the chain's head: every log entry from the head's span on,
+    /// outside the chain's own rounds (§1.5 fold condition 5).
+    pub(crate) fn intervened<'a>(
+        &self,
+        changed: &'a [RecordRef],
+        own: &BTreeSet<&RecordRef>,
+        charge: &mut impl FnMut(u64) -> Result<(), TransactionCommitError>,
+    ) -> Result<Option<&'a RecordRef>, TransactionCommitError> {
+        let start = self.rounds.first().map_or(changed.len(), |head| head.start);
+        let mut rounds = self.rounds.iter().peekable();
+        for (index, record) in changed.iter().enumerate().skip(start) {
+            charge(1)?;
+            while rounds.peek().is_some_and(|round| round.end <= index) {
+                rounds.next();
+            }
+            if rounds.peek().is_some_and(|round| round.contains(&index)) {
+                continue;
+            }
+            if own.contains(record) {
+                return Ok(Some(record));
+            }
+        }
+        Ok(None)
+    }
 }
 
 impl RelationalAuthoredCoupledCandidate<'_> {
@@ -103,6 +133,13 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             publication.roles_mut(),
         )?;
         self.prove_succession(execution, index, content, &publication, &batches)?;
+        let first_record = self
+            .mutation
+            .outcome
+            .effect
+            .publication
+            .changed_records
+            .len();
         let first_batch = self.transaction.batches().len();
         let first_fragment = self
             .mutation
@@ -163,6 +200,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         let prior = std::mem::replace(&mut part.chain.batches, first_batch..batches_end);
         part.chain.superseded.push(prior);
         part.chain.records_end = records_end;
+        part.chain.rounds.push(first_record..records_end);
         part.inputs = None;
         part.input = applied.read;
         part.publication = publication;
@@ -193,6 +231,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             return Err(continuation::postponed(Reason::StructuralEffect, source));
         }
         let bindings = &self.mutation.outcome.created_entities;
+        let symbols = self.mutation.candidate_symbols().interner();
         let changed = &self.mutation.outcome.effect.publication.changed_records;
         execution
             .run_native_with_checkpoint(|context| {
@@ -203,22 +242,22 @@ impl RelationalAuthoredCoupledCandidate<'_> {
                 if head.is_none() || head != roles(bindings, publication.roles(), &mut charge)? {
                     return Err(continuation::postponed(Reason::UncoveredWrite, source));
                 }
-                // Exclusive outputs: no later writer changed a record this chain changed.
+                // Exclusive outputs: no other writer changed a record this
+                // chain changed since its head.
                 let own = part.records.iter().collect::<BTreeSet<_>>();
-                for record in &changed[part.chain.records_end..] {
-                    charge(1)?;
-                    if own.contains(record) {
-                        return Err(continuation::postponed(
-                            Reason::IntervenedOutput,
-                            subject(record, source),
-                        ));
-                    }
+                if let Some(record) = part.chain.intervened(changed, &own, &mut charge)? {
+                    return Err(continuation::postponed(
+                        Reason::IntervenedOutput,
+                        subject(record, source),
+                    ));
                 }
                 let created = part.chain.created.iter().copied().collect::<BTreeSet<_>>();
                 // Identity: each head relation is re-created over the same endpoints.
                 let mut links = BTreeSet::new();
                 for intent in &part.commands.plan().merged_intents {
-                    if let Some(link) = relations::relink(bindings, intent, source, &mut charge)? {
+                    if let Some(link) =
+                        relations::relink(bindings, symbols, intent, source, &mut charge)?
+                    {
                         links.insert(link);
                     }
                 }
@@ -229,7 +268,9 @@ impl RelationalAuthoredCoupledCandidate<'_> {
                 let mut targets = BTreeSet::new();
                 for intent in batches.iter().flat_map(|batch| &batch.intents) {
                     charge(intent.owned_allocation_capacity_bytes().saturating_add(1))?;
-                    if let Some(link) = relations::relink(bindings, intent, source, &mut charge)? {
+                    if let Some(link) =
+                        relations::relink(bindings, symbols, intent, source, &mut charge)?
+                    {
                         if !links.contains(&link) || !relinked.insert(link) {
                             return Err(continuation::postponed(Reason::StructuralEffect, source));
                         }
@@ -275,7 +316,9 @@ impl RelationalAuthoredCoupledCandidate<'_> {
                 }
                 for intent in &part.commands.plan().merged_intents {
                     charge(intent.owned_allocation_capacity_bytes().saturating_add(1))?;
-                    if let Some(link) = relations::relink(bindings, intent, source, &mut charge)? {
+                    if let Some(link) =
+                        relations::relink(bindings, symbols, intent, source, &mut charge)?
+                    {
                         if !relinked.contains(&link) {
                             return Err(continuation::postponed(Reason::UncoveredWrite, source));
                         }

@@ -118,15 +118,14 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         execution
             .run_native_with_checkpoint(|context| {
                 let own = part.records.iter().collect::<BTreeSet<_>>();
-                for record in &changed[part.chain.records_end..] {
-                    checkpoint(context, 1).map_err(custody::execution_stop)?;
-                    if own.contains(record) {
-                        let subject = match record {
-                            RecordRef::Entity(entity) => *entity,
-                            RecordRef::Relation(_) => source,
-                        };
-                        return Err(continuation::postponed(Reason::IntervenedOutput, subject));
-                    }
+                let mut charge =
+                    |units| checkpoint(context, units).map_err(custody::execution_stop);
+                if let Some(record) = part.chain.intervened(changed, &own, &mut charge)? {
+                    let subject = match record {
+                        RecordRef::Entity(entity) => *entity,
+                        RecordRef::Relation(_) => source,
+                    };
+                    return Err(continuation::postponed(Reason::IntervenedOutput, subject));
                 }
                 Ok::<_, TransactionCommitError>(())
             })

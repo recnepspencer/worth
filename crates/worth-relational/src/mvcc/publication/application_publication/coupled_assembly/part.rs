@@ -83,6 +83,13 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             .expect("admitted writer")
             .source_scope;
         let index = self.parts.len();
+        let first_record = self
+            .mutation
+            .outcome
+            .effect
+            .publication
+            .changed_records
+            .len();
         let first_batch = self.transaction.batches().len();
         let first_fragment = self
             .mutation
@@ -116,6 +123,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             local_keys: applied.local_keys,
             created: applied.created,
             records_end: publication_effect.changed_records.len(),
+            rounds: vec![first_record..publication_effect.changed_records.len()],
         };
         self.parts.push(CoupledPublicationPart {
             inputs: None,
