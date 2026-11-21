@@ -31,6 +31,7 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
         family::convergent::contracts(contracts)?;
         family::decision_input::contracts(contracts)?;
         family::parity_input::contracts(contracts)?;
+        family::saturated_input::contracts(contracts)?;
         family::ordinary_input::contracts(contracts)?;
         family::diamond::contracts(contracts)?;
         family::predecessor_family::contracts(contracts)?;
@@ -83,6 +84,7 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
         family::convergent::install(setup)?;
         family::decision_input::install(setup)?;
         family::parity_input::install(setup)?;
+        family::saturated_input::install(setup)?;
         family::ordinary_input::install(setup)?;
         family::diamond::install(setup)?;
         family::predecessor_family::install(setup)?;
