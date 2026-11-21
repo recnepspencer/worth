@@ -179,42 +179,21 @@ impl NativeProjectionRead<'_> {
                 candidate,
                 own_outputs,
             } => {
-                let (mut result, mut work) = installed.resolve_applied_with_work(
-                    execution, before, candidate, entity, aspect, field, &expected,
-                );
                 // A record the successor's own chain wrote resolves as it was
                 // before the chain: a Birth's own output is absent again, and
                 // a key the chain moved away resolves to its record again.
-                if let Some(own) = own_outputs {
-                    let resolve_at_head = match &result {
-                        Ok(resolved) => own.covers(resolved.entity),
-                        Err(denial) => matches!(
-                            denial.kind(),
-                            super::super::WorthQueryEntityResolutionDenialKind::Refused(
-                                super::super::WorthQueryEntityResolutionRefusalKind::UnknownEntity
-                            )
-                        ),
-                    };
-                    if resolve_at_head {
-                        let (head_result, head_work) = installed.resolve_applied_with_work(
-                            execution,
-                            before,
-                            own.head(),
-                            entity,
-                            aspect,
-                            field,
-                            &expected,
-                        );
-                        work = work.saturating_add(head_work);
-                        if result.is_ok()
-                            || head_result
-                                .as_ref()
-                                .is_ok_and(|resolved| own.covers(resolved.entity))
-                        {
-                            result = head_result;
-                        }
-                    }
-                }
+                // Every other record resolves as it is now.
+                let covers = |entity| own_outputs.is_some_and(|own| own.covers(entity));
+                let (result, work) = installed.resolve_applied_merged_with_work(
+                    execution,
+                    before,
+                    candidate,
+                    own_outputs.map(|own| (own.head(), &covers as &dyn Fn(_) -> bool)),
+                    entity,
+                    aspect,
+                    field,
+                    &expected,
+                );
                 (
                     result.map(|value| ProjectionResolvedEntity {
                         entity: value.entity,

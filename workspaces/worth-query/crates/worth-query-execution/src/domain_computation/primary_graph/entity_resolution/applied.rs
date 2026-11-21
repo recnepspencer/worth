@@ -30,7 +30,37 @@ impl WorthQueryInstalledEntityResolutionContext {
         Result<ResolvedAppliedEntity, WorthQueryEntityResolutionDenial>,
         usize,
     ) {
-        let mut examined = 0;
+        self.resolve_applied_merged_with_work(
+            execution, before, applied, None, entity, aspect, field, expected,
+        )
+    }
+
+    /// Resolve at `applied`, or, for a successor round (PR C §1.5), over its
+    /// own-output view: `own` is the chain head's pre-pin and the records the
+    /// chain wrote exclusively. Those records match as they did at the head,
+    /// every other record as it does at `applied`; the merged candidates
+    /// decide the answer, so a foreign move or a second match is never hidden
+    /// behind one pin's unique result. A lookup that overflowed its limit at
+    /// either pin is ambiguous: the filtered set it hides is not known.
+    #[allow(clippy::too_many_arguments)]
+    pub(in crate::domain_computation::primary_graph) fn resolve_applied_merged_with_work(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        before: &RelationalPinnedRead,
+        applied: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
+        own: Option<(
+            &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
+            &dyn Fn(EntityId) -> bool,
+        )>,
+        entity: &str,
+        aspect: &str,
+        field: &str,
+        expected: &worth_foundational::facade::AspectValue,
+    ) -> (
+        Result<ResolvedAppliedEntity, WorthQueryEntityResolutionDenial>,
+        usize,
+    ) {
+        let mut examined = 0usize;
         let result = (|| {
             let refused =
                 |kind| entity_denial(WorthQueryEntityResolutionDenialKind::Refused(kind), field);
@@ -54,39 +84,73 @@ impl WorthQueryInstalledEntityResolutionContext {
                 .prepare_entity_field_lookup(index, layout.entity_kind, &layout.locator, execution)
                 .map_err(|stop| map_index_denial(stop.kind(), field))?;
             super::applied_lookup_control::trigger(self, field);
-            let selected = applied
-                .lookup_applied_entity_field(
-                    execution,
-                    &predecessor,
-                    expected,
-                    BoundedIndexParityMode::Production,
-                    2,
+            let mut lookup = |at: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>| {
+                let selected = at
+                    .lookup_applied_entity_field(
+                        execution,
+                        &predecessor,
+                        expected,
+                        BoundedIndexParityMode::Production,
+                        2,
+                    )
+                    .map_err(|stop| match stop {
+                        Stop::ForeignPredecessor
+                        | Stop::ExactBasisRequired
+                        | Stop::InvalidCandidateLimit => {
+                            refused(ResolutionRefusal::ForeignResolutionTruth)
+                        }
+                        Stop::PredecessorIndex(cause) => {
+                            examined = examined.saturating_add(cause.examined_entry_count());
+                            map_index_denial(cause.kind(), field)
+                        }
+                        Stop::Execution(cause) => entity_denial(
+                            WorthQueryEntityResolutionDenialKind::Stopped(cause),
+                            field,
+                        ),
+                    })?;
+                examined = examined.saturating_add(selected.examined_entry_count());
+                Ok(selected)
+            };
+            let selected = lookup(applied)?;
+            let resolved = |id| ResolvedAppliedEntity {
+                entity: id,
+                kind: layout.entity_kind,
+                candidate: selected.qualification(),
+            };
+            let Some((head, covers)) = own else {
+                return match selected.selection() {
+                    AppliedEntityFieldMatch::Absent => {
+                        Err(refused(ResolutionRefusal::UnknownEntity))
+                    }
+                    AppliedEntityFieldMatch::Ambiguous => {
+                        Err(refused(ResolutionRefusal::AmbiguousEntity))
+                    }
+                    AppliedEntityFieldMatch::Unique(id) => Ok(resolved(id)),
+                };
+            };
+            let at_head = lookup(head)?;
+            if selected.overflowed() || at_head.overflowed() {
+                return Err(refused(ResolutionRefusal::AmbiguousEntity));
+            }
+            let mut merged = selected
+                .candidate_entity_ids()
+                .iter()
+                .copied()
+                .filter(|id| !covers(*id))
+                .chain(
+                    at_head
+                        .candidate_entity_ids()
+                        .iter()
+                        .copied()
+                        .filter(|id| covers(*id)),
                 )
-                .map_err(|stop| match stop {
-                    Stop::ForeignPredecessor
-                    | Stop::ExactBasisRequired
-                    | Stop::InvalidCandidateLimit => {
-                        refused(ResolutionRefusal::ForeignResolutionTruth)
-                    }
-                    Stop::PredecessorIndex(cause) => {
-                        examined = cause.examined_entry_count();
-                        map_index_denial(cause.kind(), field)
-                    }
-                    Stop::Execution(cause) => {
-                        entity_denial(WorthQueryEntityResolutionDenialKind::Stopped(cause), field)
-                    }
-                })?;
-            examined = selected.examined_entry_count();
-            match selected.selection() {
-                AppliedEntityFieldMatch::Absent => Err(refused(ResolutionRefusal::UnknownEntity)),
-                AppliedEntityFieldMatch::Ambiguous => {
-                    Err(refused(ResolutionRefusal::AmbiguousEntity))
-                }
-                AppliedEntityFieldMatch::Unique(id) => Ok(ResolvedAppliedEntity {
-                    entity: id,
-                    kind: layout.entity_kind,
-                    candidate: selected.qualification(),
-                }),
+                .collect::<Vec<_>>();
+            merged.sort_unstable();
+            merged.dedup();
+            match merged.as_slice() {
+                [] => Err(refused(ResolutionRefusal::UnknownEntity)),
+                [id] => Ok(resolved(*id)),
+                _ => Err(refused(ResolutionRefusal::AmbiguousEntity)),
             }
         })();
         (result, examined)
