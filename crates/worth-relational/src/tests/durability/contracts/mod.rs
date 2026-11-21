@@ -3,6 +3,7 @@ mod branch_transition;
 mod caller_association;
 mod canonical_commit_artifact;
 mod checkpoint_recovery;
+mod derived_index_checkpoint;
 mod descriptor_continuity;
 mod managed_field_text;
 mod native_checkpoint;
