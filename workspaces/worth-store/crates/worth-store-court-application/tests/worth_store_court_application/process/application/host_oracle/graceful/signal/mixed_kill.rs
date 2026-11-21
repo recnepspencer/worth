@@ -140,12 +140,17 @@ fn journey(cut: Cut, acting_owners: usize) {
     );
     assert_eq!(again.frontiers, recovered.after.frontiers);
     assert_eq!(again.recovered_rows, 0);
-    // C3.2 hold: the killed writer's managed run still refuses graceful close.
+    // The killed writer's managed run was cold-released before service.
     let closed_gracefully: bool = session.exchange(&Request::Close);
-    assert!(
-        !closed_gracefully,
-        "only the pending managed run refuses close"
+    assert!(closed_gracefully, "cold-released custody closes gracefully");
+    session.finish();
+    let (mut session, after_close) = start(&mut generation);
+    assert_eq!(
+        after_close, again,
+        "a graceful reopen serves the same state"
     );
+    let closed_gracefully: bool = session.exchange(&Request::Close);
+    assert!(closed_gracefully, "the reopened Home closes gracefully");
     session.finish();
 }
 
@@ -232,35 +237,15 @@ fn signal_mixed_kill_child() {
     }
 }
 
-/// Close gracefully, or end the one refusal C3.2 still owes: the killed
-/// writer's managed run. Returns whether the Home closed.
+/// Close gracefully: the killed writer's managed run was cold-released before
+/// service. Returns whether the Home closed.
 fn close(home: opening::Home, execution: &worth_execution::ExecutionRequest<'_, '_>) -> bool {
-    use worth_query_execution::facade::query_obligations::QueryObligationDenial;
-    use worth_query_host::facade::primary_graph::WorthQueryHomeRetirementDenial as Denial;
-    match home.close(execution) {
-        Ok(closed) => {
-            assert!(closed.is_closed());
-            closed.reclaim();
-            true
-        }
-        Err(refused) => {
-            assert!(
-                matches!(
-                    refused.query_denial(),
-                    Some(Denial::ManagedCleanup(
-                        QueryObligationDenial::ManagedRunPending { .. }
-                    ))
-                ),
-                "C3.2 managed-run release is the only refusal: {refused:?}"
-            );
-            drop(
-                refused
-                    .resume()
-                    .expect("refused close keeps the serving Home"),
-            );
-            false
-        }
-    }
+    let closed = home
+        .close(execution)
+        .unwrap_or_else(|refused| panic!("cold-released custody closes: {refused:?}"));
+    let is_closed = closed.is_closed();
+    closed.reclaim();
+    is_closed
 }
 
 /// Run the commit until the cut's real owner boundary, answer, and stay parked

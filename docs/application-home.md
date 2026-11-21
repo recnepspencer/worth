@@ -240,10 +240,18 @@ fixed owner order before the Home serves anything.
   `Some(&host::ApplicationHomePhysicalRefusal)`; its `kind()` is
   `host::ApplicationHomePhysicalRefusalKind::MutationOwnerContended` (another
   owner holds the Home) or `DiscardPending` (finish it with `discard_home`).
-- **Known hold:** if the process died while an operation held a managed run,
-  the reopened Home's graceful close refuses with
-  `ManagedCleanup(ManagedRunPending { .. })` until the cold release contract lands
-  (Milestone 3 cleanup C3).
+- **Process-local custody of the ended process:** a managed run, a managed
+  cleanup obligation or an application-resource request still outstanding when
+  the process died (or the Home was dropped without close) is cold-released
+  before service. The row keeps its original, recovery cause and recorded
+  posture; `cold_release` on `managed_run_obligations()`,
+  `managed_cleanup_obligations()` and `retained_state(..)` reports the terminal
+  (`Abandoned` for running work or a request without a result, otherwise
+  `ReleaseOutstanding`; never a completion). The released rows no longer refuse
+  graceful close; discharge them through `discharge_managed_run`,
+  `discharge_managed_cleanup` or `discharge_retained` as usual. No fresh
+  provider is contacted, and World still decides each business original.
+  Owner-held custody (a mandatory owned-async request) is never cold-released.
 
 Certification of crash recovery comes later in Milestone 3's cleanup track
 (C4–C5; see [Milestone 3 status](../plans/database-foundation/milestone-3.md#cleanup-track-status)).

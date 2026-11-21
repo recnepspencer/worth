@@ -79,12 +79,12 @@ fn authenticated_completion(check_new_effect_fence: bool) {
         usize::from(check_new_effect_fence),
         "completion does not repeat physical contact"
     );
-    end_recovered_home(home, &execution);
+    close_recovered_home(home, &execution);
     let (home, rail) = owners.open(execution, false, &[]);
     let route = Route::install(&home, "unpublished-callback-audience");
     assert_eq!(terminal(&home, &route, &effect), original);
     assert!(rail.contacts().is_empty());
-    end_recovered_home(home, &execution);
+    close_recovered_home(home, &execution);
 }
 
 #[test]
@@ -183,12 +183,12 @@ fn transport_completion(check_new_effect_fence: bool) {
         usize::from(check_new_effect_fence),
         "completion does not repeat physical contact"
     );
-    end_recovered_home(home, &execution);
+    close_recovered_home(home, &execution);
     let (home, rail) = owners.open(execution, false, &[]);
     let route = Route::install(&home, "unpublished-transport-audience");
     assert_eq!(terminal(&home, &route, &effect), original);
     assert!(rail.contacts().is_empty());
-    end_recovered_home(home, &execution);
+    close_recovered_home(home, &execution);
 }
 
 // Each maintenance pass advances retained journal work once. Keep the exact

@@ -54,6 +54,7 @@ fn resource_owner_data_keeps_original_input_ingress_and_refuses_unrecorded_relea
             identity,
             original: original.clone(),
             handoff: QueryResourceHandoff::default(),
+            cold_release: None,
         }),
     );
     let ingress = vec![

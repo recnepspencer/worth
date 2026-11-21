@@ -39,6 +39,7 @@ impl QueryObligationHistory {
                 posture: QueryManagedRunPosture::Active,
                 original: None,
                 recovery: None,
+                cold_release: None,
             }))?;
             identity
         };
@@ -168,7 +169,7 @@ impl QueryObligationHistory {
         if let Some(row) = self
             .managed_run_obligations()
             .iter()
-            .find(|row| !row.posture.resources_released())
+            .find(|row| !row.released())
         {
             return Err(QueryObligationDenial::ManagedRunPending {
                 identity: row.identity,

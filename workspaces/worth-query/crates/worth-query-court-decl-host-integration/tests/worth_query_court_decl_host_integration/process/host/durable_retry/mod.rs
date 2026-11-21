@@ -24,6 +24,7 @@ use worth_query_testkit_host::facade::host::{
 mod admission_interleaving;
 mod affinity;
 mod child_reexecution;
+mod cold_release;
 mod fate_reopening;
 mod receipt_fields;
 mod request_stops;

@@ -15,6 +15,7 @@ fn managed_cleanup_acknowledgment_survives_a_later_release_no_effect() {
             crate::domain_computation::WorthQueryManagedRunCleanupFailureKind::ProviderMemoryRetained),
         original: None,
         release: None,
+        cold_release: None,
     }), &mut generations).unwrap();
     ledger.readmit(frame).unwrap();
     let mut journal = QueryObligationJournalState::from_ledger(ledger);

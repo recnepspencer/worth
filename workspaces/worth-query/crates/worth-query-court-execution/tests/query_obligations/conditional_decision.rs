@@ -31,6 +31,7 @@ fn conditional_temporal_custody_keeps_keys_and_requires_logical_cleanup_discharg
             ),
             original: None,
             release: None,
+            cold_release: None,
         }),
     );
     for (ordinal, posture) in [

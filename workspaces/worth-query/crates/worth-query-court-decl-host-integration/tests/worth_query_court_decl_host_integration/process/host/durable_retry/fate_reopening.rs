@@ -7,13 +7,14 @@ use worth_query_host::facade::{
 };
 use worth_runtime_world::facade::WorldRecoveredContinuationOutcome;
 
-type Home = WorthQueryApplicationHome<fixture::schema::HomeIdentitySchema, fixture::HomeProgram>;
+pub(super) type Home =
+    WorthQueryApplicationHome<fixture::schema::HomeIdentitySchema, fixture::HomeProgram>;
 type Runtime =
     WorthQueryProgramApplicationRuntime<fixture::schema::HomeIdentitySchema, fixture::HomeProgram>;
 const NO_EFFECT: u64 = 0xface01;
 const RETAINED: u64 = 0xface02;
 
-fn open(fresh: bool, contacts: Arc<AtomicUsize>) -> Home {
+pub(super) fn open(fresh: bool, contacts: Arc<AtomicUsize>) -> Home {
     let lease = checkpoint_capture::lease(128 << 20);
     let execution = worth_execution::ExecutionRequest::leased(&lease);
     let build = ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID")).unwrap();
@@ -184,20 +185,10 @@ fn retained_reader() {
     };
     assert_eq!(contacts.load(Ordering::SeqCst), 0);
     assert_eq!(balance(home.runtime(), &live), 8);
-    assert!(
-        home.runtime()
-            .runtime()
-            .product_publication_recovery_page(None, std::num::NonZeroUsize::MIN)
-            .unwrap()
-            .rows()
-            .is_empty(),
-        "no World recovery custody remains; only C3's managed run refuses close"
-    );
-    pending_support::end_with_pending_managed_run(
-        home.close(&execution)
-            .err()
-            .expect("C3: the killed writer's managed run is still pending"),
-    );
+    pending_support::assert_recovered_runs_cold_released(home.runtime().runtime());
+    home.close(&execution)
+        .unwrap_or_else(|refused| panic!("cold-released custody closes: {refused:?}"))
+        .reclaim();
     let home = open(false, contacts.clone());
     let (_, live) = scope();
     match set(home.runtime(), &live, RETAINED, 8).unwrap() {
@@ -209,4 +200,7 @@ fn retained_reader() {
     }
     assert_eq!(contacts.load(Ordering::SeqCst), 0);
     assert_eq!(balance(home.runtime(), &live), 8);
+    home.close(&execution)
+        .unwrap_or_else(|refused| panic!("reopened custody closes: {refused:?}"))
+        .reclaim();
 }

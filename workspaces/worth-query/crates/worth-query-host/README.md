@@ -79,10 +79,11 @@ request (a changed plan refuses `TransitionPlanDrift`). Only an unobserved
 dispatch attempt and damage-shaped Signal or fork tails retain the D18
 `UncleanRecoveryUnsupported` refusal (C5); `unclean_recovery_unsupported()`
 reports each of them. Contended and discard-pending opens are matched by
-`physical_refusal()` and `ApplicationHomePhysicalRefusalKind`. Outstanding
-resource cleanup after process loss belongs to C3: until then a reopened Home
-whose prior process died holding a managed run refuses graceful close with
-`ManagedCleanup(ManagedRunPending { .. })`. C2 owns durable-history/branch cleanup, and C4 owns
+`physical_refusal()` and `ApplicationHomePhysicalRefusalKind`. Managed runs,
+managed cleanup and application-resource requests outstanding at process loss
+are cold-released before service (original kept, `cold_release` reported, never
+a completion), so graceful close succeeds and the ordinary discharge doors
+remove them. C2 owns durable-history/branch cleanup, and C4 owns
 the adversarial oracle; C5 owns retirement and final certification. **Crash recovery is not yet certified.**
 
 Correction contracts still refuse unsupported relation pre-images, compensation,

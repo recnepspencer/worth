@@ -146,6 +146,7 @@ pub(in crate::query_obligations) fn decode(
                 posture: QueryManagedRunPosture::Active,
                 original: None,
                 recovery: None,
+                cold_release: None,
             })
         }
         1 => QueryManagedRunRecord::Handoff {

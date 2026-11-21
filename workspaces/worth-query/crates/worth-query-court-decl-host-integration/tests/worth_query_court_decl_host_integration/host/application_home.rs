@@ -1,8 +1,8 @@
 //! Real directory startup/read/owning close, extended by the ordinary commit seam.
 mod changed_build;
 mod correction_material;
-mod managed_cleanup;
-mod managed_runs;
+pub(crate) mod managed_cleanup;
+pub(crate) mod managed_runs;
 mod original_fixed;
 mod program_support;
 mod temporal;
@@ -236,6 +236,8 @@ fn directory_post_native_unwind_retains_original_key_without_handler_replay() {
 
 mod dispatch_custody;
 pub(crate) mod reopening;
+
+mod recovered_custody;
 
 mod close_admission;
 mod handler_retirement;

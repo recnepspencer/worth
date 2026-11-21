@@ -168,6 +168,7 @@ impl QueryObligationHistory {
                     failure: failure.kind(),
                     original,
                     release: None,
+                    cold_release: None,
                 },
             ))?;
             identity
@@ -290,7 +291,7 @@ impl QueryObligationHistory {
         if let Some(row) = self
             .managed_cleanup_obligations()
             .into_iter()
-            .find(|row| row.release.is_none())
+            .find(|row| !row.released())
         {
             return Err(QueryObligationDenial::CleanupReleaseUnrecorded {
                 identity: row.identity,

@@ -32,6 +32,7 @@ impl QueryObligationHistory {
         use QueryObligationDenial as Denial;
         material.admit_obligation_scope(medium.as_ref())?;
         let driver = self.lock_publication()?;
+        let mut cold_releases = Vec::new();
         let medium = if let Some(installed) = self.medium.get() {
             installed
                 .authority()
@@ -44,17 +45,21 @@ impl QueryObligationHistory {
                 })?;
             Arc::clone(installed)
         } else {
-            let mut ledger = QueryObligationLedger::empty(medium.home());
+            let mut fold = QueryColdObligationFold::new(medium.home());
             while let Some(bytes) = medium.read_frame(
                 request,
-                ledger
+                fold.ledger()
                     .position()
                     .checked_add(1)
                     .ok_or(Denial::IdentityExhausted)?,
             )? {
                 request.consult().map_err(Denial::Execution)?;
-                ledger.readmit(QueryObligationFrame::readmit(&bytes)?)?;
+                fold.readmit(QueryObligationFrame::readmit(&bytes)?)?;
             }
+            // D7 fenced the incarnation that retained every folded row, so its
+            // process-local resources are gone. Release them before service.
+            let (ledger, ended) = fold.finish();
+            cold_releases = ended.into_cold_releases(&ledger)?;
             // Joined originals retain their durable counts. Adoption's owning
             // consumer remains a separate admission requirement.
             self.join_original_interpretations(&ledger, originals, material)?;
@@ -73,6 +78,9 @@ impl QueryObligationHistory {
             medium
         };
         driver.finish_pending(medium.as_ref(), request)?;
+        for release in cold_releases {
+            driver.publish(medium.as_ref(), release, request)?;
+        }
         // The exclusive Home open has admitted the complete protected World
         // prefix. A pre-effect acquire with no World open has no owner effect;
         // terminal original fates no longer carry adoption custody.

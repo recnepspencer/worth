@@ -29,6 +29,10 @@ pub(super) fn drive(behavior: &str, writer: impl FnOnce(), reader: impl FnOnce()
 pub(super) fn location() -> std::path::PathBuf {
     std::env::var_os(LOCATION).unwrap().into()
 }
+/// The writer's expectation file, read back by the fresh reader process.
+pub(super) fn expected() -> std::path::PathBuf {
+    std::env::var_os(EXPECTED).unwrap().into()
+}
 pub(super) fn wait_for_kill() {
     println!("{READY}");
     std::io::stdout().flush().unwrap();

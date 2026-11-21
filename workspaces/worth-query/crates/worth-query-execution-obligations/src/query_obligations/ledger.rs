@@ -7,6 +7,9 @@ pub struct QueryObligationLedger {
     digest: [u8; 32],
     payload_digest: [u8; 32],
     publication_generation: u64,
+    /// Set only by the cold fold that ends an incarnation: the last position
+    /// that incarnation retained. Never durable.
+    pub(super) cold_fence: Option<u64>,
     pub(super) cleanup: managed_cleanup::fold::ManagedCleanupFold,
     pub(super) conditional: BTreeMap<[u8; 32], QueryConditionalDecision>,
     pub(super) runs: BTreeMap<
@@ -34,6 +37,7 @@ impl QueryObligationLedger {
             digest: [0; 32],
             payload_digest: [0; 32],
             publication_generation: 0,
+            cold_fence: None,
             cleanup: managed_cleanup::fold::ManagedCleanupFold::default(),
             conditional: BTreeMap::new(),
             runs: BTreeMap::new(),
@@ -117,6 +121,7 @@ impl QueryObligationLedger {
                 return self.adoption.mentions(record, revision)
             }
             QueryObligationRecord::AcceptedOutput(_)
+            | QueryObligationRecord::ColdRelease(_)
             | QueryObligationRecord::Resource(_)
             | QueryObligationRecord::OwnedAsync(_)
             | QueryObligationRecord::ManagedRun(_)
@@ -185,6 +190,12 @@ impl QueryObligationLedger {
         record: QueryObligationRecord,
         generations: &mut QueryObligationPublicationGenerations,
     ) -> Result<QueryObligationFrame, QueryObligationDenial> {
+        // A live ledger publishes a cold release only from its own fold's witness.
+        if let QueryObligationRecord::ColdRelease(release) = &record
+            && self.cold_fence != Some(release.fence())
+        {
+            return Err(QueryObligationDenial::IncarnationNotEnded);
+        }
         self.validate(
             &record,
             self.position
@@ -220,6 +231,7 @@ impl QueryObligationLedger {
         self.validate(&frame.record, frame.position)?;
         let payload_digest = frame.payload_digest();
         match frame.record {
+            QueryObligationRecord::ColdRelease(release) => self.apply_cold_release(release),
             QueryObligationRecord::OriginalOperation(record) => {
                 self.apply_original_operation(record)
             }
@@ -257,6 +269,9 @@ impl QueryObligationLedger {
         position: u64,
     ) -> Result<(), QueryObligationDenial> {
         match record {
+            QueryObligationRecord::ColdRelease(release) => {
+                self.validate_cold_release(release, position)
+            }
             QueryObligationRecord::OriginalOperation(record) => {
                 self.validate_original_operation(record, position)
             }

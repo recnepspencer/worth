@@ -30,124 +30,7 @@ fn abandoned_managed_direct_work_preserves_failed_terminal_after_directory_reope
     .unwrap()
     .unwrap_or_else(|cause| panic!("managed Home: {cause:?}"));
     let (_, scope) = pending_support::scope();
-    // Use this Home's actual installed operation, principal, selected product,
-    // invariant projection, resource admission and lower managed owners. Stop
-    // before World admits an attempt: no future original may be fabricated.
-    let running = {
-        let app = home.runtime().runtime();
-        let external =
-            identity::inspection_authentication::authenticate(app.installed_schema(), &scope);
-        app.with_host_advancement(|phase| {
-            let selected = app.on_branch(app.current_world()).select(&phase).unwrap();
-            let binding = app
-                .installed_schema()
-                .principal_binding(IdentityBinding::reference())
-                .unwrap();
-            let principal = selected
-                .resolve_authenticated_principal(
-                    &phase,
-                    &binding,
-                    &external,
-                    &scope,
-                    WorthQueryPrincipalResolutionMode::Ordinary,
-                )
-                .unwrap();
-            let account = selected
-                .resolve_entity(
-                    &phase,
-                    FieldSelection::<HomeRecords, Account, AccountIdentity, String>::at(
-                        "AccountNumber",
-                    ),
-                    "account-001".to_owned(),
-                    &scope,
-                    WorthQueryPrincipalResolutionMode::Ordinary,
-                )
-                .unwrap();
-            let operation = app
-                .installed_schema()
-                .installed_operation(SetBalance::reference())
-                .unwrap();
-            let admission = selected
-                .authorize_operation(
-                    &phase,
-                    &principal,
-                    &account,
-                    &operation,
-                    TypedMutationPreconditions::new(),
-                    &scope,
-                )
-                .unwrap();
-            let idempotency = WorthQueryApplicationIdempotencyBinding::for_host_commit::<
-                HomeIdentitySchema,
-                SetBalance,
-                _,
-                _,
-            >(&"abandoned-managed-work", &29_u64)
-            .unwrap()
-            .bind_admission_for_test(&admission);
-            let (_, projection, _) = app
-                .mutation_projection_for_test()
-                .project_admitted_operation(
-                    &phase,
-                    &admission,
-                    |reader, projected| {
-                        reader
-                            .require_decision_field(
-                                projected,
-                                FieldSelection::<HomeRecords, Account, AccountIdentity, u64>::at(
-                                    "Balance",
-                                ),
-                            )
-                            .unwrap();
-                    },
-                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-                )
-                .unwrap()
-                .into_parts();
-            let mut effects = app
-                .begin_projected_application_read_attempt(
-                    &phase,
-                    admission,
-                    projection,
-                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-                )
-                .unwrap()
-                .complete_projected_dependencies(
-                    &phase,
-                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-                )
-                .unwrap()
-                .begin_effect_program();
-            let target = effects.existing_entity(&account).unwrap();
-            effects
-                .write_field(
-                    &target,
-                    FieldSelection::<HomeRecords, Account, AccountIdentity, u64>::at("Balance"),
-                    29,
-                )
-                .unwrap();
-            let program = effects.finish().unwrap();
-            let entry = app
-                .validate_commit_program_in_advancement_for_test(&phase, program)
-                .unwrap_or_else(|cause| panic!("real program: {cause:?}"));
-            let prepared = prepare_application_commit(
-                &phase.borrowed_request_for_test(),
-                WorthQueryApplicationCommitPreparationRequest::new_for_test(
-                    entry,
-                    idempotency,
-                    None,
-                    None,
-                ),
-            );
-            let WorthQueryApplicationCommitPreparation::Ready(prepared) = prepared else {
-                panic!("real managed preparation");
-            };
-            start_managed_application_commit(&phase, app, prepared)
-                .unwrap_or_else(|cause| panic!("real managed start: {cause:?}"))
-                .running_into_for_test()
-        })
-        .unwrap()
-    };
+    let running = start_running_managed_work(&home, &scope);
     let attempt = running.identity().to_owned();
     let logical = running.logical_run_identity().to_owned();
     let retained = home.runtime().runtime().managed_run_obligations();
@@ -221,4 +104,129 @@ fn abandoned_managed_direct_work_preserves_failed_terminal_after_directory_reope
     home.close(&execution)
         .unwrap_or_else(|cause| panic!("discharged managed work: {cause:?}"))
         .reclaim();
+}
+
+type Home =
+    worth_query_host::facade::WorthQueryApplicationHome<HomeIdentitySchema, fixture::HomeProgram>;
+
+/// Actual managed direct work on a Home's installed operation.
+pub(crate) fn start_running_managed_work(
+    home: &Home,
+    scope: &worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope,
+) -> worth_query_execution::facade::domain_computation::WorthQueryRunningDirectRun {
+    // Use this Home's actual installed operation, principal, selected product,
+    // invariant projection, resource admission and lower managed owners. Stop
+    // before World admits an attempt: no future original may be fabricated.
+    let app = home.runtime().runtime();
+    let external = identity::inspection_authentication::authenticate(app.installed_schema(), scope);
+    app.with_host_advancement(|phase| {
+        let selected = app.on_branch(app.current_world()).select(&phase).unwrap();
+        let binding = app
+            .installed_schema()
+            .principal_binding(IdentityBinding::reference())
+            .unwrap();
+        let principal = selected
+            .resolve_authenticated_principal(
+                &phase,
+                &binding,
+                &external,
+                scope,
+                WorthQueryPrincipalResolutionMode::Ordinary,
+            )
+            .unwrap();
+        let account = selected
+            .resolve_entity(
+                &phase,
+                FieldSelection::<HomeRecords, Account, AccountIdentity, String>::at(
+                    "AccountNumber",
+                ),
+                "account-001".to_owned(),
+                scope,
+                WorthQueryPrincipalResolutionMode::Ordinary,
+            )
+            .unwrap();
+        let operation = app
+            .installed_schema()
+            .installed_operation(SetBalance::reference())
+            .unwrap();
+        let admission = selected
+            .authorize_operation(
+                &phase,
+                &principal,
+                &account,
+                &operation,
+                TypedMutationPreconditions::new(),
+                scope,
+            )
+            .unwrap();
+        let idempotency = WorthQueryApplicationIdempotencyBinding::for_host_commit::<
+            HomeIdentitySchema,
+            SetBalance,
+            _,
+            _,
+        >(&"abandoned-managed-work", &29_u64)
+        .unwrap()
+        .bind_admission_for_test(&admission);
+        let (_, projection, _) = app
+            .mutation_projection_for_test()
+            .project_admitted_operation(
+                &phase,
+                &admission,
+                |reader, projected| {
+                    reader
+                        .require_decision_field(
+                            projected,
+                            FieldSelection::<HomeRecords, Account, AccountIdentity, u64>::at(
+                                "Balance",
+                            ),
+                        )
+                        .unwrap();
+                },
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
+            .unwrap()
+            .into_parts();
+        let mut effects = app
+            .begin_projected_application_read_attempt(
+                &phase,
+                admission,
+                projection,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
+            .unwrap()
+            .complete_projected_dependencies(
+                &phase,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
+            .unwrap()
+            .begin_effect_program();
+        let target = effects.existing_entity(&account).unwrap();
+        effects
+            .write_field(
+                &target,
+                FieldSelection::<HomeRecords, Account, AccountIdentity, u64>::at("Balance"),
+                29,
+            )
+            .unwrap();
+        let program = effects.finish().unwrap();
+        let entry = app
+            .validate_commit_program_in_advancement_for_test(&phase, program)
+            .unwrap_or_else(|cause| panic!("real program: {cause:?}"));
+        let prepared = prepare_application_commit(
+            &phase.borrowed_request_for_test(),
+            WorthQueryApplicationCommitPreparationRequest::new_for_test(
+                entry,
+                idempotency,
+                None,
+                None,
+            ),
+        );
+        let WorthQueryApplicationCommitPreparation::Ready(prepared) = prepared else {
+            panic!("real managed preparation");
+        };
+        start_managed_application_commit(&phase, app, prepared)
+            .unwrap_or_else(|cause| panic!("real managed start: {cause:?}"))
+            .running_into_for_test()
+    })
+    .unwrap()
 }

@@ -1,8 +1,8 @@
 //! Primary Graph application contracts.
 pub use crate::domain_computation::primary_graph::query_obligations::{
-    QueryConditionalDecision, QueryConditionalPosture, QueryManagedExecutionRelease,
-    QueryManagedRunObligation, QueryManagedRunPosture, QueryManagedRunRecovery,
-    QueryManagedRunResources,
+    QueryColdReleaseTerminal, QueryConditionalDecision, QueryConditionalPosture,
+    QueryManagedExecutionRelease, QueryManagedRunObligation, QueryManagedRunPosture,
+    QueryManagedRunRecovery, QueryManagedRunResources,
 };
 pub use crate::domain_computation::primary_graph::WorthQueryOriginalOperationDenial;
 mod correction;

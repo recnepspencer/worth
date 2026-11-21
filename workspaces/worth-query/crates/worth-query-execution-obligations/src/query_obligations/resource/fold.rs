@@ -21,6 +21,7 @@ impl QueryObligationLedger {
                     return Err(D::DuplicateObligation);
                 }
                 if row.handoff != QueryResourceHandoff::default()
+                    || row.cold_release.is_some()
                     || row.original.declaration.retention
                         != worth_runtime_bridge::facade::BridgeOwnedAsyncRetention::ProcessLocal
                     || row.original.declaration.managed_queue_capacity.is_none()
@@ -30,7 +31,9 @@ impl QueryObligationLedger {
             }
             QueryResourceRecord::Handoff { identity, handoff } => {
                 let row = self.resources.get(identity).ok_or(D::UnknownObligation)?;
-                if row.handoff.release.is_some() && &row.handoff != handoff {
+                if row.cold_release.is_some()
+                    || (row.handoff.release.is_some() && &row.handoff != handoff)
+                {
                     return Err(D::ObligationSubjectMismatch);
                 }
                 if row.handoff.original_request.is_some()
@@ -51,7 +54,7 @@ impl QueryObligationLedger {
             }
             QueryResourceRecord::Discharge { identity } => {
                 let row = self.resources.get(identity).ok_or(D::UnknownObligation)?;
-                if row.handoff.release.is_none() {
+                if !row.released() {
                     return Err(D::OwnedAsyncPending {
                         identity: *identity,
                     });
