@@ -113,11 +113,12 @@ impl PreparedSelections {
                 )
             };
             let current = lookup(candidate).and_then(|current| {
+                let plain = (
+                    current.overflowed(),
+                    current.candidate_entity_ids().to_vec(),
+                );
                 let Some(own) = own_outputs else {
-                    return Ok((
-                        current.overflowed(),
-                        current.candidate_entity_ids().to_vec(),
-                    ));
+                    return Ok(plain);
                 };
                 // Own records match as before the chain, the rest as now.
                 let head = lookup(own.head())?;

@@ -332,9 +332,13 @@ fn observe_scoped_dependency<Schema, Operation, Input, Scope>(
             admission.operation(),
         ));
     }
-    lease
-        .handle()
-        .with_runtime(execution, |runtime| match lease.applied_projection() {
+    lease.handle().with_runtime(execution, |runtime| {
+        match lease.applied_projection_of(match key {
+            WorthQueryApplicationFactKey::Entity { entity_id, .. }
+            | WorthQueryApplicationFactKey::AspectPresence { entity_id, .. }
+            | WorthQueryApplicationFactKey::Field { entity_id, .. } => Some(*entity_id),
+            _ => None,
+        }) {
             Some(pin) => {
                 super::fact_observation::observe_applied_fact(execution, &lease.layout, key, pin)
             }
@@ -345,7 +349,8 @@ fn observe_scoped_dependency<Schema, Operation, Input, Scope>(
                 &lease.layout,
                 key,
             ),
-        })
+        }
+    })
 }
 
 impl<Schema, Operation, Input, Scope>

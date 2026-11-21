@@ -96,6 +96,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution) trait
         source: ErasedAppliedProducerSource,
         edition: super::super::InstalledProducerEdition,
         component: std::any::TypeId,
+        own_outputs: Option<&crate::domain_computation::primary_graph::invariant_projection::read_basis::OwnOutputOverlay>,
     ) -> Result<Box<dyn CapturedProducerInputRead>, ProducerExecutionStop>;
 }
 impl<Schema, Binding> InstalledCoupledProducerExecutor<Schema>
@@ -250,6 +251,7 @@ where
         source: ErasedAppliedProducerSource,
         edition: super::super::InstalledProducerEdition,
         component: std::any::TypeId,
+        own_outputs: Option<&crate::domain_computation::primary_graph::invariant_projection::read_basis::OwnOutputOverlay>,
     ) -> Result<Box<dyn CapturedProducerInputRead>, ProducerExecutionStop> {
         let owner = self.input_capture.ok_or_else(|| {
             denial(
@@ -258,8 +260,18 @@ where
             )
         })?;
         (owner.admit)(
-            self, phase, runtime, principal, request, before, before_pin, candidate, source,
-            edition, component,
+            self,
+            phase,
+            runtime,
+            principal,
+            request,
+            before,
+            before_pin,
+            candidate,
+            source,
+            edition,
+            component,
+            own_outputs,
         )
     }
 }

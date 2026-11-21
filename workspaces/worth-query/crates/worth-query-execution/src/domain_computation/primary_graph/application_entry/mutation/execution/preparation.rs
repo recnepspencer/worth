@@ -279,6 +279,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                         super::projection::PreparedMutationProjection::Applied {
                             decision,
                             pin: candidate.clone(),
+                            own_outputs: own_outputs.cloned(),
                         },
                         work,
                     )

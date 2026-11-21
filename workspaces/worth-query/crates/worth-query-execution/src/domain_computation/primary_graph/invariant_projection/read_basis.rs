@@ -77,6 +77,13 @@ impl NativeProjectionRead<'_> {
             Self::Committed(_) => None,
         }
     }
+    /// A successor round's own-output view, when this read serves one.
+    pub(super) fn own_outputs(&self) -> Option<&crate::domain_computation::primary_graph::invariant_projection::read_basis::OwnOutputOverlay>{
+        match self {
+            Self::Applied { own_outputs, .. } => *own_outputs,
+            Self::Committed(_) => None,
+        }
+    }
     pub(super) fn committed_runtime(&self) -> Option<&RelationalRuntime> {
         match self {
             Self::Committed(runtime) => Some(runtime),

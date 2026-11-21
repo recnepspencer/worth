@@ -52,6 +52,15 @@ impl<S: ApplicationSchema> CoupledApplicationAssembly<'_, '_, '_, S> {
         };
         let producer =
             registry.declared_coupled_producer(demand, source.profile, source.lifecycle)?;
+        // A reopened route's capture reads its own chain's records as before
+        // the chain (§1.5), like the round it captures for.
+        let chain = self.continued_chain(
+            execution,
+            candidate,
+            demand.family,
+            source.scope,
+            &source.partition,
+        )?;
         let principal = self.principal.ok_or_else(|| {
             WorthQueryOutputDemandDenial::new(
                 WorthQueryOutputDemandDenialKind::ForeignSource,
@@ -69,6 +78,7 @@ impl<S: ApplicationSchema> CoupledApplicationAssembly<'_, '_, '_, S> {
             source,
             producer.edition,
             component,
+            chain.as_ref().map(|chain| &chain.own),
         )?;
         Ok(Some(PreparedCoupledInputs::Captured(inputs)))
     }

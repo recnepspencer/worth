@@ -131,17 +131,23 @@ pub(super) fn repartition(
             let mut partitions = std::collections::BTreeMap::new();
             for intent in head {
                 if let MutationIntent::Create(CreateIntent::Entity(spec)) = intent {
-                    let text = spec.client_key.resolve_with_interner(symbols).ok_or_else(|| {
-                        crate::mvcc::origin_denial(
-                            "coupled local key has no actual Native symbol meaning",
-                        )
-                    })?;
+                    let text = spec
+                        .client_key
+                        .resolve_with_interner(symbols)
+                        .ok_or_else(|| {
+                            crate::mvcc::origin_denial(
+                                "coupled local key has no actual Native symbol meaning",
+                            )
+                        })?;
                     checkpoint(context, text.len() as u64 + 1).map_err(custody::execution_stop)?;
                     partitions.insert(text.to_owned(), spec.partition_id);
                 }
             }
-            let head_partition =
-                |key: &ClientKey| key.as_raw_str().and_then(|text| partitions.get(text)).copied();
+            let head_partition = |key: &ClientKey| {
+                key.as_raw_str()
+                    .and_then(|text| partitions.get(text))
+                    .copied()
+            };
             let mut repartition = |reference: &mut EntityReference| {
                 if let EntityReference::Created(created) = reference
                     && let Some(partition) = head_partition(&created.client_key)

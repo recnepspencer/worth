@@ -282,24 +282,23 @@ where
     } else {
         assembly.read_parent_owner(execution, demand.family, root, &partition)?
     };
-    let (predecessor, required_writer, unlisted) =
-        match owner {
-            Some(worth_relational::facade::mvcc::RelationalDeclaredCoupledOwner::Retiring) => {
-                return Ok(CoupledSourceRead::Retiring)
-            }
-            Some(worth_relational::facade::mvcc::RelationalDeclaredCoupledOwner::Restored(
-                input,
-            )) => return Ok(CoupledSourceRead::Restored { scope: root, input }),
-            Some(worth_relational::facade::mvcc::RelationalDeclaredCoupledOwner::Surviving(
+    let (predecessor, required_writer, unlisted) = match owner {
+        Some(worth_relational::facade::mvcc::RelationalDeclaredCoupledOwner::Retiring) => {
+            return Ok(CoupledSourceRead::Retiring)
+        }
+        Some(worth_relational::facade::mvcc::RelationalDeclaredCoupledOwner::Restored(input)) => {
+            return Ok(CoupledSourceRead::Restored { scope: root, input })
+        }
+        Some(worth_relational::facade::mvcc::RelationalDeclaredCoupledOwner::Surviving(owner)) => {
+            (Some(owner.clone()), false, false)
+        }
+        Some(
+            worth_relational::facade::mvcc::RelationalDeclaredCoupledOwner::RequiredSurviving(
                 owner,
-            )) => (Some(owner.clone()), false, false),
-            Some(
-                worth_relational::facade::mvcc::RelationalDeclaredCoupledOwner::RequiredSurviving(
-                    owner,
-                ),
-            ) => (Some(owner.clone()), true, false),
-            None => (None, false, true),
-        };
+            ),
+        ) => (Some(owner.clone()), true, false),
+        None => (None, false, true),
+    };
     let reader = crate::domain_computation::primary_graph::application_query::SourceQueryReaderAccess::ordinary(runtime, &shared, external, request);
     let source = runtime
         .project_applied_source_plan::<SourceBinding<Schema, Binding>, SourceValue<Schema, Binding>>(

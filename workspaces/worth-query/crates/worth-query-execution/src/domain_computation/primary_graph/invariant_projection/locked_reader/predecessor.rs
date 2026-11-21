@@ -11,6 +11,7 @@ impl<S: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthority<S> 
         native: &worth_relational::facade::runtime::RelationalRuntime,
         input: &worth_relational::facade::mvcc::RelationalPredecessorInput,
         maximum_work: Option<usize>,
+        own_outputs: Option<&crate::domain_computation::primary_graph::invariant_projection::read_basis::OwnOutputOverlay>,
         projection: impl FnOnce(&mut WorthQueryApplicationInvariantProjectionReader<'_, S>) -> T,
         retention: StorageControl<'_, '_>,
     ) -> Result<CompletedProjectionRead<T>, WorthQueryInvariantProjectionDenial> {
@@ -31,7 +32,7 @@ impl<S: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthority<S> 
             }).transpose()?;
             let access = match (before.as_ref(), input.applied_read()) {
                 (Some(before), Some(candidate)) => {
-                    NativeReadAccess::Applied(before, candidate, None)
+                    NativeReadAccess::Applied(before, candidate, own_outputs)
                 }
                 _ => NativeReadAccess::Borrowed(native),
             };
