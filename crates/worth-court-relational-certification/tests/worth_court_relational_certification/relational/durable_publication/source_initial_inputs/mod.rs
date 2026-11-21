@@ -88,6 +88,5 @@ fn complete_source_recovery_restores_original_inputs_for_another_complete_captur
 }
 
 mod fresh_admission;
-mod fresh_custody;
 
 mod fresh_schema;
