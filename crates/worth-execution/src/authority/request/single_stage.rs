@@ -140,7 +140,3 @@ pub(super) fn run_measured_joined<R: ChargedBytes, E: ChargedBytes>(
         .expect("measured settlement only releases bytes");
     outcome
 }
-
-#[cfg(test)]
-#[path = "single_stage_tests.rs"]
-mod tests;

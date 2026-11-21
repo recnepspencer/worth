@@ -329,15 +329,7 @@ impl CapturedCheckpointBasis {
             )
             .map_err(|cause| corrupt(format!("captured history dependencies: {cause:?}")))?;
         captured.validate_lineage_events()?;
-        match control.stage_meter() {
-            Some(mut stage) => {
-                crate::durability::checkpoint_history::capture::capture(&mut captured, &mut stage)?
-            }
-            None => crate::durability::checkpoint_history::capture::capture(
-                &mut captured,
-                &mut execution.clone(),
-            )?,
-        }
+        crate::durability::checkpoint_history::capture::capture(&mut captured, execution)?;
         Ok(captured)
     }
 }

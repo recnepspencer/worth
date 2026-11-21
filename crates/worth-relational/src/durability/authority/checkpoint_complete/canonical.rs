@@ -59,8 +59,8 @@ impl CanonicalOutput {
             request,
         )
         .map_err(Denial::Request)?;
-        let memory = CanonicalCheckpointMembers::reserve(count, &mut request.clone())
-            .map_err(Denial::Request)?;
+        let memory =
+            CanonicalCheckpointMembers::reserve(count, request).map_err(Denial::Request)?;
         let mut rows = Vec::with_capacity(count);
         let mut cells = ExecutionOrderedMap::default();
         let mut inline_bytes = 0usize;
@@ -133,9 +133,9 @@ impl CanonicalOutput {
         manifest: &RelationalCheckpointManifestDraft,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<CanonicalCheckpointPublication, Denial> {
-        crate::durability::checkpoint_history::inventory::validate(manifest, &mut request.clone())
+        crate::durability::checkpoint_history::inventory::validate(manifest, request)
             .map_err(crate::durability::checkpoint_history::capture::capture_stop)?;
-        CanonicalCheckpointPublication::capture(manifest, &self.cells, &mut request.clone())
+        CanonicalCheckpointPublication::capture(manifest, &self.cells, request)
     }
 }
 fn map_stop(cause: worth_execution::ExecutionOrderedMapDenial) -> Denial {

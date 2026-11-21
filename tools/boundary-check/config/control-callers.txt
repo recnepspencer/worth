@@ -85,6 +85,7 @@
 # Equivalent receiver-pair replacement on the actual unshared Native owner only.
 crates/worth-execution/ crates/worth-court-execution/tests/worth_court_execution/execution/interruption_view/stop_settlement.rs
 crates/worth-execution/ crates/worth-court-execution/tests/worth_court_execution/process/serial/execution/work_ceiling/scope_observation.rs
+crates/worth-execution/ crates/worth-court-execution/tests/worth_court_execution/process/serial/execution/work_ceiling/single_stage.rs
 crates/worth-execution/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/cost/relational/checkpoint_stage.rs
 crates/worth-execution/ crates/worth-court-runtime-world/tests/worth_court_runtime_world/runtime_world/court/recovery/released_source.rs
 crates/worth-execution/ crates/worth-relational/src/tests/transactions/core/snapshot_and_retention/request_owned.rs

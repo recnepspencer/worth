@@ -1,4 +1,5 @@
-use crate::{
+//! A request's declared single stage: its own narrowing-free nested stages join it.
+use worth_execution::{
     CancellationSource, ChargedBytes, ExecutionMemoryReservation, ExecutionRequest,
     ExecutionScopeSetupCountsForTest as Setup, ExecutionScopeSetupObservationForTest,
     ExecutionWorkCeiling, MapKernelStop, SerialRequest, WorkCeilingDenial,
