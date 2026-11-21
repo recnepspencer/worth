@@ -5,6 +5,17 @@ use worth_execution::{
     WorkCeilingDenial,
 };
 
+fn relational_head(
+    fixture: &crate::branch::reference_test_fixture::RealReferenceFixture,
+) -> worth_relational::facade::branch::RelationalBranchBasisDescriptor {
+    let rt = fixture.relational_runtime();
+    rt.observe_branch(&rt.main_branch_identity())
+        .unwrap()
+        .1
+        .descriptor()
+        .clone()
+}
+
 #[test]
 fn carried_request_cancellation_refuses_a_prepared_relational_publication() {
     let host_request = crate::test_execution_policy::serial_request();
@@ -176,6 +187,7 @@ fn memory_original_admission_one_unit_short_stops_before_owner_effects() {
     assert!(original_work > 0);
 
     let (fixture, owner, expected) = setup();
+    let before_native = relational_head(&fixture);
     let prepared = prepare_relational(
         execution,
         &fixture,
@@ -183,11 +195,8 @@ fn memory_original_admission_one_unit_short_stops_before_owner_effects() {
         &expected,
         "original-short-stop",
     );
-    let serial = SerialRequest::from_memory(
-        SerialMemoryBudget::from_policy(&owner.state.execution.request_policy()),
-        CancellationToken::new(),
-        None,
-    );
+    let memory = SerialMemoryBudget::from_policy(&owner.state.execution.request_policy());
+    let serial = SerialRequest::from_memory(memory.clone(), CancellationToken::new(), None);
     let request = ExecutionRequest::serial(&serial);
     let outcome = request
         .run(
@@ -206,4 +215,158 @@ fn memory_original_admission_one_unit_short_stops_before_owner_effects() {
         ))
     );
     assert!(owner.recovery_handles().is_empty());
+    assert_eq!(memory.charged_memory_bytes(), 0);
+    assert_eq!(relational_head(&fixture), before_native);
+}
+
+#[test]
+fn world_cancellation_and_deadline_after_first_gate_stop_before_native_effect() {
+    use crate::lifecycle::{
+        RuntimeWorldClock, RuntimeWorldClockSource, RuntimeWorldInstant,
+        RuntimeWorldOwnerExecutionService, RuntimeWorldPreparationService,
+    };
+    use crate::publication::{CompositePublicationIntent, RuntimeWorldCancellationSource};
+    use std::sync::{
+        atomic::{AtomicBool, AtomicUsize, Ordering},
+        Arc,
+    };
+    use worth_relational::facade::mvcc::RelationalTransactionIntent;
+
+    struct StepClock(Arc<AtomicBool>, AtomicUsize);
+    impl RuntimeWorldClockSource for StepClock {
+        fn now(&self) -> RuntimeWorldInstant {
+            if !self.0.load(Ordering::Acquire) {
+                return RuntimeWorldInstant::from_ticks(0);
+            }
+            // Armed call 0 is admit_owner_execution; armed call 1 is
+            // recheck_pre_effect_cutoff immediately after original admission.
+            if self.1.fetch_add(1, Ordering::AcqRel) == 0 {
+                RuntimeWorldInstant::from_ticks(0)
+            } else {
+                RuntimeWorldInstant::from_ticks(10)
+            }
+        }
+    }
+    let armed = Arc::new(AtomicBool::new(false));
+    let (fixture, owner, expected) = super::setup_with_clock(RuntimeWorldClock::from_source(
+        StepClock(Arc::clone(&armed), AtomicUsize::new(0)),
+    ));
+    let before_native = relational_head(&fixture);
+    let host = crate::test_execution_policy::serial_request();
+    let setup_exec = ExecutionRequest::serial(&host);
+    let cancel = RuntimeWorldCancellationSource::new();
+    let prepared = RuntimeWorldPreparationService::prepare_publication(
+        owner.as_ref(),
+        expected.clone(),
+        CompositePublicationIntent::without_signal(RelationalTransactionIntent::ordinary())
+            .with_prepared_relational_candidate(
+                fixture.prepare_relational_owner_candidate(&setup_exec, "deadline-after-admission"),
+            ),
+        &cancel.token(),
+        Some(RuntimeWorldInstant::from_ticks(5)),
+    )
+    .unwrap();
+    armed.store(true, Ordering::Release);
+    let mem = SerialMemoryBudget::from_policy(&owner.state.execution.request_policy());
+    let req = SerialRequest::from_memory(mem.clone(), CancellationToken::new(), None);
+    let outcome = RuntimeWorldOwnerExecutionService::execute_without_signal(
+        owner.as_ref(),
+        ExecutionRequest::serial(&req),
+        prepared,
+        &cancel.token(),
+    );
+    assert!(matches!(
+        outcome,
+        OwnerExecutionOutcome::NoEffect(refused) if refused.cause() == NoEffectCause::DeadlineBeforeEffect
+    ));
+    assert!(owner.recovery_handles().is_empty());
+    assert_eq!(mem.charged_memory_bytes(), 0);
+    assert_eq!(relational_head(&fixture), before_native);
+
+    struct CancelOnArmedNow(Arc<AtomicBool>, Arc<RuntimeWorldCancellationSource>);
+    impl RuntimeWorldClockSource for CancelOnArmedNow {
+        fn now(&self) -> RuntimeWorldInstant {
+            // Fires during admit_owner_execution's deadline check (after its
+            // cancellation check already passed), before recheck_pre_effect_cutoff.
+            if self.0.load(Ordering::Acquire) {
+                self.1.cancel();
+            }
+            RuntimeWorldInstant::from_ticks(0)
+        }
+    }
+    let armed = Arc::new(AtomicBool::new(false));
+    let cancel = Arc::new(RuntimeWorldCancellationSource::new());
+    let (fixture, owner, expected) = super::setup_with_clock(RuntimeWorldClock::from_source(
+        CancelOnArmedNow(Arc::clone(&armed), Arc::clone(&cancel)),
+    ));
+    let before_native = relational_head(&fixture);
+    let prepared = RuntimeWorldPreparationService::prepare_publication(
+        owner.as_ref(),
+        expected,
+        CompositePublicationIntent::without_signal(RelationalTransactionIntent::ordinary())
+            .with_prepared_relational_candidate(
+                fixture.prepare_relational_owner_candidate(&setup_exec, "cancel-after-admission"),
+            ),
+        &cancel.token(),
+        Some(RuntimeWorldInstant::from_ticks(5)),
+    )
+    .unwrap();
+    armed.store(true, Ordering::Release);
+    let mem = SerialMemoryBudget::from_policy(&owner.state.execution.request_policy());
+    let req = SerialRequest::from_memory(mem.clone(), CancellationToken::new(), None);
+    let outcome = RuntimeWorldOwnerExecutionService::execute_without_signal(
+        owner.as_ref(),
+        ExecutionRequest::serial(&req),
+        prepared,
+        &cancel.token(),
+    );
+    assert!(matches!(
+        outcome,
+        OwnerExecutionOutcome::NoEffect(refused) if refused.cause() == NoEffectCause::CancelledBeforeEffect
+    ));
+    assert!(owner.recovery_handles().is_empty());
+    assert_eq!(mem.charged_memory_bytes(), 0);
+    assert_eq!(relational_head(&fixture), before_native);
+}
+
+#[test]
+fn post_admission_no_effect_refunds_registry_growth_and_leaves_no_phantom_slot() {
+    use crate::lifecycle::RuntimeWorldOwnerExecutionService;
+    use crate::publication::RuntimeWorldCancellationSource;
+    use worth_execution::ExecutionWorkCeiling;
+
+    let (fixture, owner, expected) = setup();
+    let setup_host = crate::test_execution_policy::serial_request();
+    let setup_exec = ExecutionRequest::serial(&setup_host);
+    let prepared = prepare_relational(&setup_exec, &fixture, &owner, &expected, "declined-cutover");
+    let memory = SerialMemoryBudget::from_policy(&owner.state.execution.request_policy());
+    let serial = SerialRequest::from_memory(memory.clone(), CancellationToken::new(), None);
+    let request = ExecutionRequest::serial(&serial);
+    let cancel = RuntimeWorldCancellationSource::new();
+    let outcome = RuntimeWorldOwnerExecutionService::execute_without_signal_with_cutover(
+        owner.as_ref(),
+        request,
+        prepared,
+        &cancel.token(),
+        Some(&mut |_cutover| ()),
+    );
+    assert!(matches!(
+        outcome,
+        OwnerExecutionOutcome::NoEffect(refused)
+            if matches!(refused.cause(), NoEffectCause::CurrentReadDependency(_))
+    ));
+    assert_eq!(
+        memory.charged_memory_bytes(),
+        0,
+        "declined post-admission attempt must refund provisional registry growth"
+    );
+    // Zero-work checkpoint snapshot proves records.slots.len() == 0 (no phantom slot).
+    let (snapshot, report) = request
+        .run(ExecutionWorkCeiling::new(Some(0)), |_| {
+            owner.state.history.snapshot_memory_originals(&request)
+        })
+        .unwrap();
+    assert_eq!(snapshot.unwrap().len(), 0);
+    assert_eq!(report.charged_work(), 0);
+    assert!(owner.state.history.reserve_memory_readmission().is_ok());
 }

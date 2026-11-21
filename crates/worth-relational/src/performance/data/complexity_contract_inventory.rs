@@ -390,7 +390,6 @@ pub const COMPLEXITY_CONTRACTS: &[ComplexityContract] = &[
         budget_summary: "Prepared merge execution must distinguish execution attempts from successfully published merge commits, and successful merge commit deltas must report admitted record width and emitted mutation width explicitly.",
         status: ComplexityStatus::Verified,
         proof_tests: &[
-            "tests::history::milestone_7c_phase_e::execution_counters_diagnostics::execute_prepared_merge_reports_execution_counters_and_structural_summary",
             "tests::complexity::contracts::merge_budgets::complexity_budget_merge_execution_reports_admitted_records_and_emitted_mutations",
         ],
     },

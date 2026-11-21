@@ -166,10 +166,15 @@ impl PreparedRelationalCommitCandidate {
             .map(|payload| payload.expected_basis.clone())
     }
 
-    /// The basis this candidate moves and its successor's parent count.
+    /// The basis this candidate moves, its successor's parent count, and the
+    /// exact prepared canonical envelope witness it will issue.
     pub(crate) fn with_successor_shape<R>(
         &self,
-        read: impl FnOnce(&crate::branch::RelationalBranchBasisDescriptor, usize) -> R,
+        read: impl FnOnce(
+            &crate::branch::RelationalBranchBasisDescriptor,
+            usize,
+            std::sync::Weak<crate::history::data::CanonicalCommitEnvelope>,
+        ) -> R,
     ) -> Option<R> {
         let payload = self
             ._payload
@@ -179,6 +184,7 @@ impl PreparedRelationalCommitCandidate {
         Some(read(
             &payload.expected_basis,
             payload.execution.successor_parent_count(),
+            std::sync::Arc::downgrade(payload.execution.canonical_envelope()),
         ))
     }
 

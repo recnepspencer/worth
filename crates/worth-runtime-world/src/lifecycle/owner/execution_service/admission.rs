@@ -64,6 +64,28 @@ where
         Ok(())
     }
 
+    /// Final pre-effect cutoff rechecked immediately before the first component
+    /// effect after fallible original admission completes.
+    pub(super) fn recheck_pre_effect_cutoff(
+        &self,
+        attempt: &ReservedCompositePublicationAttempt,
+        cancellation: &RuntimeWorldCancellationToken,
+    ) -> Result<(), NoEffectCause> {
+        if cancellation
+            .check(RuntimeWorldCancellationBoundary::BeforeFirstOwnerEffect)
+            .is_err()
+        {
+            return Err(NoEffectCause::CancelledBeforeEffect);
+        }
+        if self.deadline_expired(attempt.deadline()) {
+            return Err(NoEffectCause::DeadlineBeforeEffect);
+        }
+        if !self.current_product_head_is(attempt.expected_head()) {
+            return Err(NoEffectCause::StaleExpectedProductHead);
+        }
+        Ok(())
+    }
+
     /// The gate between a settled Relational effect and the Signal advance.
     /// Every denial here stops before the Signal owner is contacted.
     pub(super) fn pre_advance_signal_gate(

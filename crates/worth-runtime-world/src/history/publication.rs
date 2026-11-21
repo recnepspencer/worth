@@ -151,6 +151,16 @@ impl CanonicalPublicationEnvelope {
     pub(crate) fn has_memory_original(&self) -> bool {
         self.memory_original.get().is_some()
     }
+    /// Release any unsealed pre-effect memory-original admission so retained
+    /// or abandoned attempts never hold unusable funding or registry capacity.
+    pub(crate) fn discard_admitted_memory_original(&self) {
+        let admitted = self
+            .admitted_original
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .take();
+        drop(admitted);
+    }
 
     pub(crate) fn commit_identity(&self) -> &CompositeCommitIdentity {
         &self.commit_identity

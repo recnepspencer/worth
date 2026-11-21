@@ -79,6 +79,19 @@ impl ObservedRelationalMemoryComponent {
         }
     }
 }
+fn map_interim_admission_refusal(
+    cause: crate::durability::checkpoint_admission::RelationalCheckpointAdmissionRefusal,
+) -> Refusal {
+    match cause {
+        crate::durability::checkpoint_admission::RelationalCheckpointAdmissionRefusal::Request(
+            stop,
+        ) => Refusal::Request(stop),
+        other => Refusal::Source(
+            crate::durability::data::RelationalRecoveryStop::AdmissionImage(other),
+        ),
+    }
+}
+
 impl RelationalRuntime {
     pub(crate) fn observe_memory_component(
         &self,
@@ -107,11 +120,7 @@ impl RelationalRuntime {
                 .durability
                 .checkpoint_selection()
                 .admitted_commit(&entry)
-                .map_err(|cause| {
-                    Refusal::Source(
-                        crate::durability::data::RelationalRecoveryStop::AdmissionImage(cause),
-                    )
-                })?
+                .map_err(map_interim_admission_refusal)?
                 .ok_or(Refusal::CanonicalMismatch { commit_id })?;
             let interim = match row.scope() {
                 worth_foundational::facade::CheckpointAdmissionScope::Interim { .. } => true,
@@ -137,11 +146,7 @@ impl RelationalRuntime {
                 description,
                 Some(row),
             )
-            .map_err(|cause| {
-                Refusal::Source(
-                    crate::durability::data::RelationalRecoveryStop::AdmissionImage(cause),
-                )
-            });
+            .map_err(map_interim_admission_refusal);
         }
         let bytes = successor::live_bytes(descriptor, successor::parent_count(descriptor))?;
         let funding = successor::fund_and_charge(execution, bytes)?;

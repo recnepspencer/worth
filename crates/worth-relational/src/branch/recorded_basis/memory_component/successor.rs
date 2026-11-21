@@ -4,10 +4,13 @@ use super::*;
 /// The exact retained memory and copy work of the Live component a prepared
 /// candidate's successor will have, admitted on the request before the
 /// publication that issues that successor. Observing the issued successor
-/// through it consults and charges nothing further.
+/// through it consults and charges nothing further, and only the exact
+/// successor issued by that candidate can redeem it.
 #[derive(Debug)]
 pub struct AdmittedRelationalMemoryComponent {
     owner: Weak<RelationalRuntimeState>,
+    branch_id: crate::history::data::BranchId,
+    expected_envelope: Weak<CanonicalCommitEnvelope>,
     bytes: usize,
     funding: Option<worth_execution::ExecutionMemoryReservation>,
 }
@@ -61,30 +64,45 @@ pub(super) fn fund_and_charge(
 
 impl RelationalRuntime {
     /// Admit the Live component of the successor `candidate` will publish.
-    /// The candidate's receipt fixes the successor's branch and parents, so
-    /// this charges exactly what observing that successor would.
+    /// The candidate's receipt fixes the successor's branch, parents, and
+    /// canonical envelope witness, so this charges exactly what observing that
+    /// successor would and binds redemption to that exact successor.
     pub(crate) fn admit_successor_memory_component(
         &self,
         execution: &ExecutionRequest<'_, '_>,
         candidate: &crate::mvcc::PreparedRelationalCommitCandidate,
     ) -> Result<AdmittedRelationalMemoryComponent, Refusal> {
         crate::execution::check_request(execution).map_err(Refusal::Request)?;
-        let bytes = candidate
-            .with_successor_shape(live_bytes)
+        if candidate.runtime_instance_id() != self.runtime_instance_id()
+            || !candidate.belongs_to_publication_owner(&self.publication_binding())
+        {
+            return Err(Refusal::Basis(
+                crate::branch::RelationalBranchBasisDenial::ForeignRuntime {
+                    expected_runtime_instance_id: self.runtime_instance_id(),
+                    actual_runtime_instance_id: candidate.runtime_instance_id(),
+                },
+            ));
+        }
+        let (branch_id, bytes, expected_envelope) = candidate
+            .with_successor_shape(|descriptor, parents, envelope| {
+                live_bytes(descriptor, parents)
+                    .map(|bytes| (descriptor.branch_id().clone(), bytes, envelope))
+            })
             .ok_or(Refusal::Basis(
                 crate::branch::RelationalBranchBasisDenial::WrongImmutableTarget,
             ))??;
         let funding = fund_and_charge(execution, bytes)?;
         Ok(AdmittedRelationalMemoryComponent {
             owner: self.state_binding(),
+            branch_id,
+            expected_envelope,
             bytes,
             funding,
         })
     }
 
     /// Observe the issued successor on its admitted funding and work. A
-    /// successor whose copy differs from its admission is refused, never
-    /// charged again.
+    /// foreign or substituted successor is refused, never charged again.
     pub(crate) fn observe_admitted_memory_component(
         &self,
         admitted: AdmittedRelationalMemoryComponent,
@@ -101,6 +119,17 @@ impl RelationalRuntime {
         )
         .map_err(Refusal::Basis)?;
         let descriptor = basis.descriptor();
+        let matches_candidate = descriptor.branch_id() == &admitted.branch_id
+            && basis
+                .inner
+                .root
+                .canonical_envelope()
+                .is_some_and(|env| Weak::ptr_eq(&admitted.expected_envelope, &Arc::downgrade(env)));
+        if !matches_candidate {
+            return Err(Refusal::Basis(
+                crate::branch::RelationalBranchBasisDenial::WrongImmutableTarget,
+            ));
+        }
         if live_bytes(descriptor, parent_count(descriptor))? != admitted.bytes {
             return Err(Refusal::PayloadEncoding {
                 detail: "issued successor differs from its admitted component".into(),

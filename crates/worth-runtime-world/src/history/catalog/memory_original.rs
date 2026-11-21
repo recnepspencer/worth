@@ -8,8 +8,6 @@ mod readmission;
 #[derive(Debug)]
 enum Slot {
     Vacant(Option<usize>),
-    /// Held by one admitted original, before its owner effect.
-    Reserved,
     Original(Arc<MemoryPublicationRecord>),
 }
 #[derive(Debug, Default)]
@@ -17,6 +15,8 @@ struct Records {
     receiver: ReceiverAdmission,
     slots: Vec<Slot>,
     vacant: Option<usize>,
+    free_count: usize,
+    pending_reservations: usize,
     _capacity_funding: Option<worth_execution::ExecutionMemoryReservation>,
 }
 #[derive(Debug, Default)]
@@ -38,13 +38,18 @@ pub(crate) struct MemoryOriginalRegistration {
     slot: usize,
     record: Arc<MemoryPublicationRecord>,
 }
-/// One registry slot an admitted original holds from before its owner effect.
-/// A registry holding a slot admits no readmission, so filling it cannot be
-/// refused; dropping it unfilled returns the slot.
+#[derive(Debug)]
+struct ProvisionalGrowth {
+    backing: Vec<Slot>,
+    funding: Option<worth_execution::ExecutionMemoryReservation>,
+}
+/// One provisional registry reservation held before owner effects. Any growth
+/// stays provisional until a sealed original is accepted; dropping it unfilled
+/// refunds its backing and leaves the registry unchanged.
 #[derive(Debug)]
 pub(crate) struct MemoryOriginalSlot {
     registry: Weak<Registry>,
-    slot: usize,
+    growth: Option<ProvisionalGrowth>,
     filled: bool,
 }
 impl MemoryOriginalSlot {
@@ -52,17 +57,58 @@ impl MemoryOriginalSlot {
         mut self,
         record: Arc<MemoryPublicationRecord>,
     ) -> MemoryOriginalRegistration {
-        if let Some(registry) = self.registry.upgrade() {
+        self.filled = true;
+        let growth = self.growth.take();
+        let mut unused_growth = None;
+        let slot = if let Some(registry) = self.registry.upgrade() {
             let mut records = registry
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner);
-            assert!(matches!(records.slots[self.slot], Slot::Reserved));
-            records.slots[self.slot] = Slot::Original(Arc::clone(&record));
-        }
-        self.filled = true;
+            records.pending_reservations = records
+                .pending_reservations
+                .checked_sub(1)
+                .expect("filled reservation was counted");
+            let used_after = (records.slots.len() - records.free_count) + 1;
+            let needs_larger_backing =
+                used_after + records.pending_reservations > records.slots.capacity();
+            let must_grow_now = records.vacant.is_none()
+                && records.slots.len() == records.slots.capacity();
+            if let Some(mut growth) = growth {
+                if growth.backing.capacity() > records.slots.capacity()
+                    && (must_grow_now || needs_larger_backing)
+                {
+                    growth.backing.append(&mut records.slots);
+                    records.slots = growth.backing;
+                    records._capacity_funding = growth.funding;
+                } else {
+                    unused_growth = Some(growth);
+                }
+            }
+            if let Some(slot) = records.vacant {
+                let Slot::Vacant(next) = records.slots[slot] else {
+                    unreachable!("free slot is vacant")
+                };
+                records.vacant = next;
+                records.free_count -= 1;
+                records.slots[slot] = Slot::Original(Arc::clone(&record));
+                slot
+            } else {
+                assert!(
+                    records.slots.len() < records.slots.capacity(),
+                    "provisional reservation guarantees capacity at seal"
+                );
+                let slot = records.slots.len();
+                records.slots.push(Slot::Original(Arc::clone(&record)));
+                slot
+            }
+        } else {
+            unused_growth = growth;
+            0
+        };
+        drop(unused_growth);
         MemoryOriginalRegistration {
             registry: self.registry.clone(),
-            slot: self.slot,
+            slot,
             record,
         }
     }
@@ -72,14 +118,15 @@ impl Drop for MemoryOriginalSlot {
         if self.filled {
             return;
         }
+        drop(self.growth.take());
         if let Some(registry) = self.registry.upgrade() {
             let mut records = registry
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner);
-            assert!(matches!(records.slots[self.slot], Slot::Reserved));
-            let vacant = records.vacant;
-            records.slots[self.slot] = Slot::Vacant(vacant);
-            records.vacant = Some(self.slot);
+            records.pending_reservations = records
+                .pending_reservations
+                .checked_sub(1)
+                .expect("dropped reservation was counted");
         }
     }
 }
@@ -105,7 +152,7 @@ impl Drop for MemoryOriginalRegistration {
                 .unwrap_or_else(std::sync::PoisonError::into_inner);
             let matches = match &records.slots[self.slot] {
                 Slot::Original(record) => Arc::ptr_eq(record, &self.record),
-                Slot::Vacant(_) | Slot::Reserved => false,
+                Slot::Vacant(_) => false,
             };
             assert!(
                 matches,
@@ -114,6 +161,7 @@ impl Drop for MemoryOriginalRegistration {
             let vacant = records.vacant;
             let removed = std::mem::replace(&mut records.slots[self.slot], Slot::Vacant(vacant));
             records.vacant = Some(self.slot);
+            records.free_count += 1;
             drop(records);
             drop(removed);
         }
@@ -145,7 +193,7 @@ impl CompositeHistoryCatalog {
             .iter()
             .filter(|slot| match slot {
                 Slot::Original(record) => record.committed.load(Ordering::Acquire),
-                Slot::Vacant(_) | Slot::Reserved => false,
+                Slot::Vacant(_) => false,
             })
             .count();
         let mut builder =
@@ -157,7 +205,7 @@ impl CompositeHistoryCatalog {
                 Slot::Original(record) if record.committed.load(Ordering::Acquire) => {
                     builder.push(record.clone()).map_err(Stop::Backing)?
                 }
-                Slot::Original(_) | Slot::Vacant(_) | Slot::Reserved => {}
+                Slot::Original(_) | Slot::Vacant(_) => {}
             }
         }
         builder.seal().map_err(Stop::Backing)
@@ -185,14 +233,15 @@ impl CompositeHistoryCatalog {
                         return Ok(false);
                     }
                 }
-                Slot::Original(_) | Slot::Vacant(_) | Slot::Reserved => {}
+                Slot::Original(_) | Slot::Vacant(_) => {}
             }
         }
         Ok(originals.next().is_none())
     }
 
-    /// Reserve one original slot, growing the registry on this request
-    /// before any owner effect. Filling it later charges nothing.
+    /// Reserve one provisional original slot, funding any needed registry
+    /// growth on this request without altering the registry until a sealed
+    /// original is accepted.
     pub(crate) fn reserve_memory_original(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -217,13 +266,20 @@ impl CompositeHistoryCatalog {
                 worth_relational::facade::branch::RelationalBranchBasisDenial::OwnerUnavailable,
             ));
         }
-        if records.vacant.is_none() && records.slots.len() == records.slots.capacity() {
+        let used = records.slots.len() - records.free_count;
+        let next_pending = records
+            .pending_reservations
+            .checked_add(1)
+            .ok_or_else(malformed)?;
+        let needed = used.checked_add(next_pending).ok_or_else(malformed)?;
+        let growth = if needed > records.slots.capacity() {
             let capacity = records
                 .slots
                 .capacity()
                 .checked_mul(2)
                 .and_then(|n| n.checked_add(1))
-                .ok_or_else(malformed)?;
+                .ok_or_else(malformed)?
+                .max(needed);
             let bytes = capacity
                 .checked_mul(std::mem::size_of::<Slot>())
                 .ok_or_else(malformed)?;
@@ -244,31 +300,23 @@ impl CompositeHistoryCatalog {
                 (Err(cause), _) => return Err(Refusal::Request(cause.into())),
                 (Ok(_), None) => unreachable!("registry growth charged before allocation"),
             }
-            let mut slots = Vec::new();
-            slots.try_reserve_exact(capacity).map_err(|_| malformed())?;
+            let mut backing = Vec::new();
+            backing
+                .try_reserve_exact(capacity)
+                .map_err(|_| malformed())?;
             // Vec reports the requested element capacity; refuse a wider backing
             // before retaining it against this request's exact capacity quote.
-            if slots.capacity() != capacity {
+            if backing.capacity() != capacity {
                 return Err(malformed());
             }
-            slots.append(&mut records.slots);
-            records.slots = slots;
-            records._capacity_funding = funding;
-        }
-        let slot = if let Some(slot) = records.vacant {
-            let Slot::Vacant(next) = records.slots[slot] else {
-                unreachable!("free slot is vacant")
-            };
-            records.vacant = next;
-            records.slots[slot] = Slot::Reserved;
-            slot
+            Some(ProvisionalGrowth { backing, funding })
         } else {
-            records.slots.push(Slot::Reserved);
-            records.slots.len() - 1
+            None
         };
+        records.pending_reservations = next_pending;
         Ok(MemoryOriginalSlot {
             registry: Arc::downgrade(&self.originals.0),
-            slot,
+            growth,
             filled: false,
         })
     }

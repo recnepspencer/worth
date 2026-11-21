@@ -243,6 +243,9 @@ where
         if let Err(cause) = self.admit_memory_original(&execution, &attempt) {
             return self.no_effect(attempt, cause);
         }
+        if let Err(cause) = self.recheck_pre_effect_cutoff(&attempt, cancellation) {
+            return self.no_effect(attempt, cause);
+        }
 
         let retained_signal = attempt
             .plan()
