@@ -158,6 +158,23 @@ impl<'run, S: ApplicationSchema> CoupledApplicationAssembly<'_, 'run, '_, S> {
         index: usize,
         successor: CoupledWriter<'run, S>,
     ) {
+        // Final support keeps every superseded round in its timeline (R4).
+        let provider = &self.application.runtime.primary_provider;
+        let history = {
+            let writers = self.writers.borrow();
+            let superseded = &writers[index];
+            match superseded.stage.as_ref() {
+                Some(CoupledWriterStage::Inspected(writer)) => provider.superseded_history(
+                    writer.session(),
+                    superseded.position,
+                    superseded.owed.position(),
+                ),
+                _ => unreachable!("a superseded round is an inspected writer"),
+            }
+        };
+        if let Some(CoupledWriterStage::Inspected(writer)) = successor.stage.as_ref() {
+            provider.retain_superseded_rounds(writer.session(), history);
+        }
         let superseded = std::mem::replace(&mut self.writers.borrow_mut()[index], successor);
         self.successors.set(self.successors.get() + 1);
         let outcome = match superseded.stage {

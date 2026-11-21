@@ -19,11 +19,12 @@ pub(super) fn superseded_window<'s>(
         crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
     >,
 ) -> Result<(), CoupledSupportPreparationDenial> {
-    let end = members
+    // Every round in the window counts, a chain's superseded rounds included.
+    let rounds = super::changed::rounds(members);
+    let end = rounds
         .iter()
-        .filter(|member| member.position > position && member.position < invalidator)
-        .filter_map(|member| member.owned.as_ref())
-        .filter_map(|owned| owned.attempt.coupled_after_own())
+        .filter(|round| round.position > position && round.position < invalidator)
+        .map(|round| round.pin)
         .last()
         .unwrap_or(support.pin());
     match compare(support.pin(), end) {

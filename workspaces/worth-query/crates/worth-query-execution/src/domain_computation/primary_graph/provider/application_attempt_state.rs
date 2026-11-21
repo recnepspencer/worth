@@ -24,7 +24,7 @@ mod successor_independence;
 mod writer_qualification;
 pub(in crate::domain_computation::primary_graph) use coupled_preparation::{
     AppliedParticipantOutputs, CoupledApplicationMember, CoupledApplicationMemberKind,
-    CoupledAttemptPreparation, CoupledProducerPreparation,
+    CoupledAttemptPreparation, CoupledProducerPreparation, SupersededRound,
 };
 pub(crate) mod commit_preparation;
 pub(in crate::domain_computation::primary_graph::provider) mod coupled_publication;

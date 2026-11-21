@@ -72,6 +72,17 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
             }
         }
     }
+    pub(in crate::domain_computation::primary_graph) fn retain_superseded_rounds(
+        &mut self,
+        rounds: Vec<crate::domain_computation::primary_graph::provider::SupersededRound>,
+    ) {
+        match self.coupled_preparation.as_mut() {
+            Some(CoupledAttemptPreparation::Producer(preparation)) => {
+                preparation.superseded_rounds = rounds;
+            }
+            _ => unreachable!("a successor round is a producer writer"),
+        }
+    }
     pub(in crate::domain_computation::primary_graph) fn retain_coupled_preparation(
         &mut self,
         preparation: crate::domain_computation::primary_graph::provider::CoupledProducerPreparation,

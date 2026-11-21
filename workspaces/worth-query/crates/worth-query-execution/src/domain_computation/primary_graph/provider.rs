@@ -17,6 +17,7 @@ pub(in crate::domain_computation::primary_graph) use application_attempt_state::
     AppliedOutputParticipants, AppliedParticipantOutputs, CandidateReadSupport,
     CoupledApplicationMember, CoupledApplicationMemberKind, CoupledAttemptPreparation,
     CoupledProducerPreparation, ParentRead, RetainedCandidateRead, RetainedReadRequalification,
+    SupersededRound,
 };
 pub use application_attempt_state::{
     FactlessCurrentness, OwnEffectOnReads, RebaseVerificationReason,
