@@ -45,9 +45,15 @@ fn automatic_checkpoint_exhaustion_keeps_business_results_and_explicit_capture_u
         assert!(observed.pending.is_none());
     }
     let stopping = explicit_caller(0);
-    assert!(home
-        .checkpoint(&worth_execution::ExecutionRequest::leased(&stopping))
-        .is_err());
+    let refused = home.checkpoint(&worth_execution::ExecutionRequest::leased(&stopping));
+    assert!(
+        matches!(
+            &refused,
+            Err(worth_query_host::facade::WorthQueryApplicationHomeCheckpointDenial::Directory(denial))
+                if denial.control_stop() == Some(worth_execution::MapKernelStop::WorkCeiling)
+        ),
+        "an unfunded explicit capture stops on its own work ceiling: {refused:?}"
+    );
     let caller = explicit_caller(64 << 20);
     let execution = worth_execution::ExecutionRequest::leased(&caller);
     let selected = home.checkpoint(&execution).unwrap();

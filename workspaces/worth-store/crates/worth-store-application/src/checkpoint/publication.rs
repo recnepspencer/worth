@@ -47,6 +47,51 @@ pub enum ApplicationHomeCheckpointDenial {
     PhysicalCheckpointOutcome(worth_store::physical_runtime::PhysicalCheckpointOutcome),
 }
 
+impl ApplicationHomeCheckpointDenial {
+    /// The original request's typed control stop behind this refusal, whichever
+    /// layer reported it: the capture request, the World medium or readmission,
+    /// the Native section or its payload.
+    pub fn control_stop(&self) -> Option<worth_execution::MapKernelStop> {
+        use worth_execution::{ExecutionRequestArrayDenial as Array, MapKernelStop as Stop};
+        use worth_relational::facade::durability::RelationalNativeCheckpointCaptureDenial as Capture;
+        use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
+        use worth_runtime_world::facade::{
+            WorldDurableMediumDenial as World, WorldReadmissionDenial as Readmission,
+        };
+        use worth_store_relational::RelationalSectionCheckpointDenial as Section;
+        let stopped = |work: &WorkCeilingDenial| match work {
+            WorkCeilingDenial::Stopped(stop) => Some(*stop),
+            _ => None,
+        };
+        match self {
+            Self::Execution(work)
+            | Self::Native(Section::Execution(work))
+            | Self::Payload(Array::Request(work))
+            | Self::World(World::Request(work)) => stopped(work),
+            Self::WorldReadmission(readmission) => {
+                let mut readmission = readmission;
+                loop {
+                    match readmission {
+                        Readmission::Medium(World::Request(work)) => break stopped(work),
+                        Readmission::NativeCustody { cause, .. } => readmission = cause.as_ref(),
+                        _ => break None,
+                    }
+                }
+            }
+            Self::Native(Section::Capture(Capture::Request(cause))) => match cause {
+                Cause::Cancelled => Some(Stop::Cancelled),
+                Cause::DeadlineElapsed => Some(Stop::DeadlineElapsed),
+                Cause::WorkCounterOverflow => Some(Stop::WorkCounterOverflow),
+                Cause::AccountingUnavailable => Some(Stop::AccountingUnavailable),
+                Cause::WorkExhausted => Some(Stop::WorkCeiling),
+                Cause::NestedStopped => Some(Stop::NestedStopped),
+                _ => None,
+            },
+            _ => None,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub struct ApplicationHomeCheckpoint {
     pub covered: PatchStreamPosition,
