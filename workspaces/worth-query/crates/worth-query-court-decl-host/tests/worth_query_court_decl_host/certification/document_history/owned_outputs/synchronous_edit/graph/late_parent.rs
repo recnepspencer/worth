@@ -5,6 +5,7 @@ mod program;
 #[macro_use]
 mod staged;
 mod alias;
+mod cross_write;
 mod outgoing;
 mod prerequisite;
 mod selection;

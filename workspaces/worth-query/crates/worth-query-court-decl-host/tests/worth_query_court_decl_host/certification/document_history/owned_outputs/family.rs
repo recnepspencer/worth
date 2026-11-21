@@ -393,3 +393,6 @@ pub mod ordinary_input;
 pub mod convergent;
 pub mod parity_input;
 pub mod saturated_input;
+pub mod cross_converge;
+pub mod cross_oscillate;
+pub mod cross_reader;
