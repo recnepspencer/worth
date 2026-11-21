@@ -327,6 +327,13 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             meaning: meaning.clone(),
         };
         let chain = chain.map(|chain| chain.index);
+        // Only an owned route can derive its chain's next round (Native
+        // `next_producer_round`); an ordinary participant's changed reads
+        // stay with final qualification, never reopening it.
+        let owned = matches!(
+            publication,
+            worth_relational::facade::mvcc::RelationalCoupledProducerPosture::Publication(_)
+        );
         let index = self.append_round(
             execution,
             candidate,
@@ -345,7 +352,9 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
                 meaning: meaning.clone(),
             },
         )?;
-        self.register_part(execution, index, produces)?;
+        if owned {
+            self.register_part(execution, index, produces)?;
+        }
         let entities = candidate
             .appended_output_entities(execution, &producer.declaration.identity, &meaning)?
             .expect("Native appended this participant");
