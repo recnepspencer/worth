@@ -2,7 +2,7 @@
 //! the supplier owes are reopened together after that writer changes their read.
 use super::super::super::super::synchronous_edit::envelope_fixture as fixture;
 use super::super::*;
-use super::install;
+use super::{install, scheduling_measures};
 use worth_query_host::facade::runtime::ExecutionAllocationPolicy;
 
 type Host = WorthQueryProgramApplicationRuntime<Schema, supplier::Program>;
@@ -12,8 +12,7 @@ type Host = WorthQueryProgramApplicationRuntime<Schema, supplier::Program>;
 fn changed_edit(host: &Host) -> (bool, u64, u64) {
     let observation = WorthQueryExecutionObservation::install_on_this_thread();
     let outcome = retention::edit_supplier(host, "wide-changed", 5);
-    let visited = observation.retained_reads_visited_for_test();
-    let units = observation.wave_charged_units_for_test();
+    let (units, visited) = scheduling_measures(&observation);
     let committed = matches!(
         outcome,
         worth_query_host::facade::application_entry::WorthQueryEditEnvelopeOutcome::Committed(_)
