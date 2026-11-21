@@ -4,6 +4,7 @@ use worth_query_admission::facade::authenticated_principal::WorthQueryAuthentica
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_declaration::facade::authentication::WorthQueryExternalPrincipalIdentityBinding;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 use worth_query_installation::facade::ApplicationIdentityScalarValueBinding;
 use worth_query_installation::facade::ApplicationScalarValueBinding;
 use worth_query_installation::facade::ApplicationSchema;
@@ -73,7 +74,7 @@ fn principal_graph_binding<'a>(
         )
     })?;
     let layout = graph
-        .layout
+        .layout_ref()
         .principal_binding(binding)
         .cloned()
         .ok_or_else(|| {
@@ -106,12 +107,17 @@ fn principal_graph_binding_admitted<'a>(
         )
     })?;
 
-    let layout = graph.layout.principal_binding(binding).ok_or_else(|| {
-        resolution_denial(
-            WorthQueryPrincipalResolutionDenialKind::Refused(PrincipalRefusal::BindingNotInstalled),
-            binding,
-        )
-    })?;
+    let layout = graph
+        .layout_ref()
+        .principal_binding(binding)
+        .ok_or_else(|| {
+            resolution_denial(
+                WorthQueryPrincipalResolutionDenialKind::Refused(
+                    PrincipalRefusal::BindingNotInstalled,
+                ),
+                binding,
+            )
+        })?;
     Ok((graph, layout))
 }
 

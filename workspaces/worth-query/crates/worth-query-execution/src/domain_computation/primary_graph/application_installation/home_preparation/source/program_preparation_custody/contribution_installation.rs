@@ -1,5 +1,6 @@
 //! Contributor installation keeps every advanced original in its refusal owner.
 use super::*;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 impl<S: ApplicationSchemaComposition, P> HomeProgramInstallationCustody<S, P> {
     pub(in crate::domain_computation::primary_graph::application_installation::home_preparation::source) fn install_contributions(
         &mut self,
@@ -30,7 +31,8 @@ impl<S: ApplicationSchemaComposition, P> HomeProgramInstallationCustody<S, P> {
             }
         }
         let producers = self.producers.as_ref().expect("same sealed producer batch");
-        crate::domain_computation::primary_graph::application_installation::source_scope_ownership::seal(&bootstrap.graph.layout,&mut bootstrap.graph.application_publication,producers).map_err(D::PrimaryGraph)?;
+        let layout = bootstrap.graph.retain_layout();
+        crate::domain_computation::primary_graph::application_installation::source_scope_ownership::seal(&layout, bootstrap.graph.application_publication_mut(), producers).map_err(D::PrimaryGraph)?;
         let RuntimeMeaning {
             runtime,
             authority,

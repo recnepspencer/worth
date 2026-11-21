@@ -65,11 +65,11 @@ impl WorthQueryRunningWorkflowRun {
         self.affinity.evidence()
     }
 
-    pub fn counters(&self) -> &WorthQueryManagedRunCounters {
+    pub(crate) fn counters(&self) -> &WorthQueryManagedRunCounters {
         &self.counters
     }
 
-    pub fn provider_session_description(&self) -> &str {
+    pub(crate) fn provider_session_description(&self) -> &str {
         self.affinity.provider_session_description()
     }
 
@@ -81,7 +81,7 @@ impl WorthQueryRunningWorkflowRun {
         self.affinity.installation_is_current()
     }
 
-    pub fn yield_is_installed(&self) -> bool {
+    pub(crate) fn yield_is_installed(&self) -> bool {
         self.affinity
             .operation_resources()
             .envelope()
@@ -89,11 +89,11 @@ impl WorthQueryRunningWorkflowRun {
             .is_some()
     }
 
-    pub fn artifact_registry_evidence(&self) -> WorthQueryWorkflowArtifactRegistryEvidence {
+    pub(crate) fn artifact_registry_evidence(&self) -> WorthQueryWorkflowArtifactRegistryEvidence {
         self.artifacts.registry().evidence()
     }
 
-    pub fn stage_artifact_context(
+    pub(crate) fn stage_artifact_context(
         &self,
         stage_identity: &str,
     ) -> Result<
@@ -112,7 +112,7 @@ impl WorthQueryRunningWorkflowRun {
         })
     }
 
-    pub fn stage_graph_support_matches(
+    pub(crate) fn stage_graph_support_matches(
         &self,
         stage_identity: &str,
         role: &str,
@@ -135,15 +135,15 @@ impl WorthQueryRunningWorkflowRun {
         )
     }
 
-    pub fn bridge_basis_identity_projection(&self) -> &str {
+    pub(crate) fn bridge_basis_identity_projection(&self) -> &str {
         self.bridge_basis.identity().as_str()
     }
 
-    pub fn bridge_request_identity_projection(&self) -> &str {
+    pub(crate) fn bridge_request_identity_projection(&self) -> &str {
         self.bridge_basis.request().digest()
     }
 
-    pub fn request_bridge_cancellation(
+    pub(crate) fn request_bridge_cancellation(
         &self,
         reason: worth_runtime_bridge::facade::BridgeManagedExecutionCancellationReason,
     ) -> Result<
@@ -162,7 +162,7 @@ impl WorthQueryRunningWorkflowRun {
         self.bridge_basis.admit_ready_timeout()
     }
 
-    pub fn reject_bridge_execution(
+    pub(crate) fn reject_bridge_execution(
         &self,
         reason: worth_runtime_bridge::facade::BridgeManagedExecutionRejectionReason,
     ) -> Result<
@@ -233,7 +233,7 @@ impl WorthQueryRunningWorkflowRun {
         Ok(call)
     }
 
-    pub fn execution_snapshot_reference(&self) -> String {
+    pub(crate) fn execution_snapshot_reference(&self) -> String {
         let parts = self
             .bridge_basis
             .observation()

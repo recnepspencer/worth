@@ -30,7 +30,7 @@ where
     QueryResult: WorthQueryApplicationProjection<Schema, Query>,
     Binding: ApplicationQueryLiveCauseBinding<Schema, Query, Scope, Target>,
 {
-    pub fn project_front(
+    pub(crate) fn project_front(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,

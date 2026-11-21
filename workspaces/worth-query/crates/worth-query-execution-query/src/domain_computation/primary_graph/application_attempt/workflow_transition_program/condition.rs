@@ -3,6 +3,7 @@ use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort
 use worth_query_execution_attempt::facade::ports::{
     CompleteReadSetInternalPort as _, EffectProgramInternalPort as _,
 };
+use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 
@@ -82,7 +83,7 @@ where
                         &selected_product,
                         operand.query,
                         expected_query_identity,
-                        &graph.layout,
+                        graph.layout_ref(),
                         Some(self.admitted.read_set().admission().publication_request()),
                         execution,
                     )

@@ -1,5 +1,7 @@
 //! Exact-snapshot currentness observation for one prepared capability admission.
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use worth_query_execution_attempt::facade::ports::AuthenticatedPrincipalInternalPort as _;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 mod approval_currentness;
 use approval_currentness::{
     validate_approval_lifecycle, validate_approval_support, validate_approved_use,

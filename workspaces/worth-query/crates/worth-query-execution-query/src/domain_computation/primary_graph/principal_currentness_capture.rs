@@ -1,5 +1,6 @@
 //! Retain principal currentness from the installed layout under one admission.
 
+use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::WorthQueryAuthenticatedPrincipal;
@@ -34,7 +35,7 @@ where
     let graph = runtime.runtime.primary_graph().ok_or(Stop::MissingGraph)?;
 
     let layout = graph
-        .layout
+        .layout_ref()
         .principal_binding(binding)
         .ok_or(Stop::MissingBinding)?;
 

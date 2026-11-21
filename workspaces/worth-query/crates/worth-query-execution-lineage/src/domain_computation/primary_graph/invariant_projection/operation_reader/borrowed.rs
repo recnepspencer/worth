@@ -24,7 +24,7 @@ pub struct BorrowedOperationProjection<Schema, Operation> {
 }
 
 impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthority<Schema> {
-    pub fn project_existing_operation<A, Output>(
+    pub(crate) fn project_existing_operation<A, Output>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         admission: &A,
@@ -53,7 +53,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthorit
         self.project_existing_operation_port(execution, admission, lease, projection, allocation)
     }
 
-    pub fn project_existing_operation_port<Operation, Scope, Output>(
+    pub(crate) fn project_existing_operation_port<Operation, Scope, Output>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         admission: &dyn AdmittedOperationPort,

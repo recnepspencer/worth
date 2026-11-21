@@ -6,6 +6,7 @@ use crate::domain_computation::primary_graph::application_query::{
     WorthQueryApplicationProjection,
 };
 use worth_query_declaration::facade::application_query::ApplicationQueryBinding;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 use worth_relational::facade::{
     mvcc::RelationalAuthoredCoupledCandidate,
     runtime::{RelationalAppliedCandidateReadIdentity, RelationalPinnedRead},
@@ -46,7 +47,7 @@ where
         .primary_graph()
         .ok_or(Denial::ForeignAssociation)?;
     let program = graph
-        .layout
+        .layout_ref()
         .managed_source(&association.definition().parts().name)
         .ok_or(Denial::ForeignAssociation)?;
     let loan = assembly

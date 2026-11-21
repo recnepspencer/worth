@@ -1,6 +1,7 @@
 use worth_foundational::facade::CanonicalDigestId;
 use worth_query_admission::facade::application_query::WorthQueryApplicationParameterCanonicalArtifact;
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 use worth_query_installation::facade::WorthQueryInstalledApplicationQuery;
 use worth_relational::facade::{
     identity::EntityId,
@@ -52,7 +53,7 @@ where
         )
     })?;
     let installed_index = graph
-        .layout
+        .layout_ref()
         .continuation_ordering_index_id(contract)
         .ok_or_else(|| {
             denial(

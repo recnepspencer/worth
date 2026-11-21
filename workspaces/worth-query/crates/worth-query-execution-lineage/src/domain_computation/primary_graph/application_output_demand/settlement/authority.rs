@@ -20,7 +20,7 @@ impl WorthQueryOutputDemandSettlement {
         original.require_settlement(execution, self)
     }
 
-    pub fn matches_authority(&self, authority: &WorthQueryAcceptedOutputAuthority) -> bool {
+    pub(crate) fn matches_authority(&self, authority: &WorthQueryAcceptedOutputAuthority) -> bool {
         match authority {
             WorthQueryAcceptedOutputAuthority::Committed(receipt) => self
                 .application_commit_receipt()

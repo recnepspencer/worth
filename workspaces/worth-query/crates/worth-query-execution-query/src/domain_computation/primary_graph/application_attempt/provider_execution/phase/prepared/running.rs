@@ -150,7 +150,7 @@ where
         .start();
     let Some(mutation_run) = admission.graph_work().bind_mutation_run(&running) else {
         let _ = running
-            .terminate_for_convergence(WorthQueryManagedRunTerminalKind::Failed)
+            .terminal(WorthQueryManagedRunTerminalKind::Failed)
             .cleanup();
         return Err(denied(DenialStage::ManagedRunAdmission));
     };

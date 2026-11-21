@@ -5,6 +5,7 @@ use super::super::{
 };
 use super::*;
 use worth_query_declaration::facade::application_query::ApplicationManagedIndexBinding;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
     /// Makes the current maintained material cold under this Parent admission.
@@ -47,7 +48,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
                 .runtime
                 .primary_graph()
                 .ok_or(ReceiverCause::Refused(Refusal::ForeignContext))?;
-            let Some(program) = graph.layout.managed_source(I::NAME) else {
+            let Some(program) = graph.layout_ref().managed_source(I::NAME) else {
                 return index.state.evict().map_err(lifecycle);
             };
             let (epoch, next) = index.state.admit_eviction().map_err(lifecycle)?;

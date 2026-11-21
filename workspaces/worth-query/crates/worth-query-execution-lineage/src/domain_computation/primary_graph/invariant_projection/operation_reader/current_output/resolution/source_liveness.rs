@@ -13,7 +13,7 @@ impl<'reader, 'runtime, Schema, Operation>
 where
     Schema: ApplicationSchema,
 {
-    pub fn current_source_is_live<Producer>(
+    pub(crate) fn current_source_is_live<Producer>(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         producer: &WorthQueryInvariantEntityIdentity<Schema, Producer>,

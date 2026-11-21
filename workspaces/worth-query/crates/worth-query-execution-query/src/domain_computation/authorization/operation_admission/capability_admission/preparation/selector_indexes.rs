@@ -6,6 +6,7 @@ use crate::domain_computation::authorization::{
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession;
 use worth_query_declaration::facade::application_capability::ApplicationCapabilityRequestProjection;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::indexes::DerivedIndexBuildRequest;

@@ -4,6 +4,7 @@ use worth_query_declaration::facade::{
     },
     application_schema::{ApplicationSchemaComposition, ApplicationSchemaDeclaration},
 };
+use worth_query_execution_lineage::facade::ports::ApplicationInvariantProjectionAuthorityInternalPort as _;
 
 use crate::domain_computation::primary_graph::WorthQueryApplicationContributionTuple;
 

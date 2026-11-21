@@ -45,7 +45,7 @@ impl<'correspondence, Contract: 'static>
 {
     /// The view of `correspondence`, which the caller has checked was
     /// committed under `Contract`.
-    pub const fn new(
+    pub(crate) const fn new(
         correspondence: &'correspondence WorthQueryApplicationOutputCorrespondence,
     ) -> Self {
         Self {
@@ -146,7 +146,7 @@ pub struct WorthQueryApplicationTypedClosureEvidence<'a, Contract> {
     _contract: PhantomData<fn() -> Contract>,
 }
 impl<'a, Contract: 'static> WorthQueryApplicationTypedClosureEvidence<'a, Contract> {
-    pub fn new(correspondence: &'a WorthQueryApplicationOutputCorrespondence) -> Self {
+    pub(crate) fn new(correspondence: &'a WorthQueryApplicationOutputCorrespondence) -> Self {
         Self {
             correspondence,
             _contract: PhantomData,

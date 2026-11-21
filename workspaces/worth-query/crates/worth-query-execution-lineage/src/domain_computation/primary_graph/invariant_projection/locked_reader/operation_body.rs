@@ -14,7 +14,7 @@ use worth_foundational::facade::{AspectFieldLocator, AspectValue};
 impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'_, Schema> {
     /// Same canonical equivalence owner as native signing consequences. Both present
     /// values are funded before encoding; absence is observed by the ordinary reader.
-    pub fn body_scalar_equivalent<Entity>(
+    pub(crate) fn body_scalar_equivalent<Entity>(
         &mut self,
         identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
         locator: &AspectFieldLocator,
@@ -50,7 +50,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
             })
             .map_err(HandlerExecutionDenial::new)?
     }
-    pub fn body_scalar_matches<Entity>(
+    pub(crate) fn body_scalar_matches<Entity>(
         &mut self,
         identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
         locator: &AspectFieldLocator,
@@ -77,7 +77,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
         Ok(output.expect("a completed physical read invoked its observer"))
     }
 
-    pub fn body_scalar_capture<Entity>(
+    pub(crate) fn body_scalar_capture<Entity>(
         &mut self,
         identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
         locator: &AspectFieldLocator,

@@ -71,7 +71,7 @@ fn refused_home_world_attachment_retains_nonempty_provider_instances() {
         fixture::seed_principal(&mut bootstrap, &state.installed);
         let bridge = super::super::super::super::managed_bridge::install_application_bridge(
             &state.installed,
-            &bootstrap.graph.layout,
+            bootstrap.graph.layout_ref(),
             bootstrap
                 .graph
                 .integration_handle()

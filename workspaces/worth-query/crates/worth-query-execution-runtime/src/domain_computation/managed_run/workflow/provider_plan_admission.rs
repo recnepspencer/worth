@@ -33,21 +33,21 @@ impl WorthQueryRunningWorkflowRun {
         )
     }
 
-    pub fn provider_plan_operation(
+    pub(crate) fn provider_plan_operation(
         &self,
         _owner: &WorthQueryWorkflowProviderPlanPermit,
     ) -> &WorthQueryExecutionBoundOperationAuthority {
         self.affinity.provider_plan_operation(_owner)
     }
 
-    pub fn provider_plan_session(
+    pub(crate) fn provider_plan_session(
         &self,
         _owner: &WorthQueryWorkflowProviderPlanPermit,
     ) -> &WorthQueryExecutionProviderSession {
         self.affinity.provider_plan_session(_owner)
     }
 
-    pub fn provider_plan_stage_resources(
+    pub(crate) fn provider_plan_stage_resources(
         &self,
         stage_identity: &str,
         _owner: &WorthQueryWorkflowProviderPlanPermit,
@@ -59,7 +59,7 @@ impl WorthQueryRunningWorkflowRun {
             .managed_stage_resources_and_evidence(stage_identity)
     }
 
-    pub fn provider_plan_bridge_basis(
+    pub(crate) fn provider_plan_bridge_basis(
         &self,
         _owner: &WorthQueryWorkflowProviderPlanPermit,
     ) -> &BridgeBoundExecutionBasis {

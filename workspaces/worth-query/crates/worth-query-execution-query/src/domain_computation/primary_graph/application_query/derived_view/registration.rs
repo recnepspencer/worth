@@ -1,5 +1,6 @@
 use std::sync::Arc;
 use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductRuntimeBranchLifecycleInternalPort as _;
 
@@ -274,7 +275,7 @@ where
             .ok_or(Denial::ForeignApplication)?;
         let facts = source
             .retained_checkpoint_facts(
-                &graph.layout,
+                graph.layout_ref(),
                 None,
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation,
             )

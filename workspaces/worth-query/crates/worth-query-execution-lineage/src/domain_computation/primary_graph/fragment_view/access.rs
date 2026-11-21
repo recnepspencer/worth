@@ -9,10 +9,10 @@ use worth_query_declaration::facade::application_schema::fragment::{
 };
 
 pub struct Reading<'a> {
-    pub port: &'a mut dyn ReadPort,
+    pub(crate) port: &'a mut dyn ReadPort,
 }
 pub struct Writing<'a> {
-    pub port: &'a mut dyn WritePort,
+    pub(crate) port: &'a mut dyn WritePort,
 }
 
 pub trait ReadPort {

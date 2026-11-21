@@ -26,7 +26,7 @@ use worth_relational::facade::identity::EntityId;
 impl<'a, S: ApplicationSchema, FQ, FP, FR, SQ, SP, SR, A, I, C>
     WorthQueryDerivedPairReadPlans<'a, S, FQ, FP, FR, SQ, SP, SR, A, I, C>
 {
-    pub fn admit(
+    pub(crate) fn admit(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         application: &WorthQueryPrimaryGraphApplicationRuntime<S>,
@@ -102,7 +102,7 @@ impl<'a, S: ApplicationSchema, FQ, FP, FR, SQ, SP, SR, A, I, C>
         }
     }
 
-    pub fn worker(
+    pub(crate) fn worker(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
 
@@ -110,7 +110,7 @@ impl<'a, S: ApplicationSchema, FQ, FP, FR, SQ, SP, SR, A, I, C>
     ) -> Result<PreparedPair<'_>, Denial> {
         self.worker_with_pins(execution, root, &mut Default::default())
     }
-    pub fn worker_with_pins(
+    pub(crate) fn worker_with_pins(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
 
@@ -194,7 +194,7 @@ impl<'a, S: ApplicationSchema, FQ, FP, FR, SQ, SP, SR, A, I, C>
         })
     }
 
-    pub fn retained_input_bound(&self) -> Result<u64, Denial> {
+    pub(crate) fn retained_input_bound(&self) -> Result<u64, Denial> {
         let parameters = self
             .first
             .parameters

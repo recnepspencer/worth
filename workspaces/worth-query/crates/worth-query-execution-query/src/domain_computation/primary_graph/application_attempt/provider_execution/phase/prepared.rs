@@ -270,7 +270,7 @@ fn bind_commit_idempotency<Schema, Operation, Input, Scope>(
         .bind_admission(admission)
         .bind_conditional_definition(
             conditional_definition.map(
-                crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition::identity,
+                worth_query_execution_attempt::facade::ports::AdmittedApplicationConditionalDefinitionInternalPort::identity,
             ),
         )
 }

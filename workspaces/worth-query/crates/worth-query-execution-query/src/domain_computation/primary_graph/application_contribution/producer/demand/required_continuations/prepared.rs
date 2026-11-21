@@ -39,7 +39,10 @@ where
 
     /// Bind the actual issued mode to the newly admitted demand before the
     /// registry replacement, scheduling, or producer effect can run.
-    pub fn bind_admitted(&mut self, demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>) {
+    pub(crate) fn bind_admitted(
+        &mut self,
+        demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
+    ) {
         assert!(demand.progression_provenance.required().is_none());
         let mut provenance = self
             .successor

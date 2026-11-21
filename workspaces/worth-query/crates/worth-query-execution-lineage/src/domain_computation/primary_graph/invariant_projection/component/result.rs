@@ -42,7 +42,7 @@ impl<Schema, Set, Entity> WorthQueryInvariantProjectionComponent<Schema, Set, En
             _entity: PhantomData,
         }
     }
-    pub fn with_selection(
+    pub(crate) fn with_selection(
         mut self,
         selection: Arc<
             crate::domain_computation::primary_graph::component_selection::ComponentSelection,

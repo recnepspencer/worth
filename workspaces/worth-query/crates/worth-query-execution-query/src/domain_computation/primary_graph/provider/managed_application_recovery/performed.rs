@@ -75,7 +75,7 @@ impl WorthQueryManagedApplicationRecoveryPerformed {
         self.take_original_cleanup()
     }
 
-    pub fn take_original_cleanup(&mut self) -> Option<WorthQueryProductUnpublishedRecovery> {
+    pub(crate) fn take_original_cleanup(&mut self) -> Option<WorthQueryProductUnpublishedRecovery> {
         self.pending_cleanup.take()
     }
 
@@ -86,7 +86,7 @@ impl WorthQueryManagedApplicationRecoveryPerformed {
         self.take_original_cleanup_failure()
     }
 
-    pub fn take_original_cleanup_failure(
+    pub(crate) fn take_original_cleanup_failure(
         &mut self,
     ) -> Option<WorthQueryProductUnpublishedRecoveryReleaseFailure> {
         self.prior_cleanup_failure.take()

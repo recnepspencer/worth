@@ -325,7 +325,7 @@ impl WorthQueryAdmittedApplicationQueryControls<'_> {
     pub fn is_current_product_one_shot(&self) -> bool {
         self.current_product_one_shot
     }
-    pub fn original_settled_producer_for(
+    pub(crate) fn original_settled_producer_for(
         &self,
         actual: &worth_runtime_world::facade::ProductBranchObservation,
     ) -> Option<Arc<OriginalSettledProducerObservation>> {

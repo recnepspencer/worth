@@ -8,7 +8,7 @@ use worth_relational::facade::{
 };
 
 impl WorthQueryApplicationCheckpoint {
-    pub fn capture_native_transition(
+    pub(crate) fn capture_native_transition(
         runtime: &mut RelationalRuntime,
         recovered: &mut RecoveredRelationalRuntimeAuthority,
         original: &WorthQueryInterimCheckpointOrigin,

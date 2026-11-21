@@ -179,7 +179,7 @@ where
         })
     }
 
-    pub fn project_operation_on_product<Operation, Output>(
+    pub(crate) fn project_operation_on_product<Operation, Output>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         product: &crate::basis::WorthQueryProductBranchLease,
@@ -208,7 +208,7 @@ where
         })
     }
 
-    pub fn project_admitted_operation_port<Operation, Scope, Output>(
+    pub(crate) fn project_admitted_operation_port<Operation, Scope, Output>(
         &self,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         admission: &dyn AdmittedOperationPort,
@@ -250,7 +250,7 @@ where
         )
     }
 
-    pub fn project_admitted_operation_with_request_port<Operation, Scope, Output>(
+    pub(crate) fn project_admitted_operation_with_request_port<Operation, Scope, Output>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         admission: &dyn AdmittedOperationPort,

@@ -4,6 +4,7 @@
 //! scope, disclosure and selected-basis admission still runs at its owner.
 
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraph;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 use worth_relational::facade::runtime::RelationalRuntime;
 
 pub enum ApplicationQueryNativeAccess<'a> {

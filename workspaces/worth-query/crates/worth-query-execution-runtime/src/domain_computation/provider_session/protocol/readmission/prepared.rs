@@ -73,7 +73,7 @@ impl WorthQueryProviderSessionGrant {
 }
 
 impl<'run> WorthQueryPreparedProviderSession<'run> {
-    pub fn prepare_readmitted(
+    pub(crate) fn prepare_readmitted(
         affinity: WorthQueryProviderSessionAffinity<'run>,
         counters: WorthQueryProviderSessionProtocolCounters,
     ) -> Result<Self, WorthQueryProviderSessionFailure> {

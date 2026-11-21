@@ -38,7 +38,7 @@ where
 {
     /// Ordinary Fresh has no occurrence input-preparation payload. Healthy
     /// output verification happens before Fresh and remains a genuine read.
-    pub fn refuse_uncaptured_production(&self) -> Result<(), super::ProducerExecutionStop> {
+    pub(crate) fn refuse_uncaptured_production(&self) -> Result<(), super::ProducerExecutionStop> {
         if self.input_capture.is_some() {
             return Err(super::denial(
                 super::WorthQueryOutputDemandDenialKind::ForeignDemand,

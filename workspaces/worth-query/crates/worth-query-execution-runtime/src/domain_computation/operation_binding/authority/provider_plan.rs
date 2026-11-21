@@ -9,7 +9,7 @@ use crate::domain_computation::provider_session::{
 };
 
 impl WorthQueryExecutionBoundOperationAuthority {
-    pub fn admits_provider_plan_graph(
+    pub(crate) fn admits_provider_plan_graph(
         &self,
         stage_identity: Option<&str>,
         graph: &WorthQueryInstalledGraphParticipationAuthority,
@@ -28,7 +28,7 @@ impl WorthQueryExecutionBoundOperationAuthority {
         }
     }
 
-    pub fn admits_provider_plan_resources(
+    pub(crate) fn admits_provider_plan_resources(
         &self,
         stage_identity: Option<&str>,
         resources: &WorthQueryAdmittedExecutionResourcePlan,
@@ -52,7 +52,7 @@ impl WorthQueryExecutionBoundOperationAuthority {
         }
     }
 
-    pub fn provider_plan_contract(
+    pub(crate) fn provider_plan_contract(
         &self,
         execution: WorthQueryValidatedProviderPlan<'_>,
     ) -> Option<WorthQueryProviderExecutionPlanContract> {

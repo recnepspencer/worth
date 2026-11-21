@@ -62,7 +62,7 @@ impl<Schema: ApplicationSchema, Operation>
     }
 
     /// Only body observers pass IDs from their sealed native endpoint collections.
-    pub fn body_observed_selection(
+    pub(crate) fn body_observed_selection(
         &self,
         entity_id: worth_relational::facade::identity::EntityId,
         terminal: &str,

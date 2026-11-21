@@ -3,7 +3,7 @@ use super::*;
 impl<'borrow, 'runtime, Schema>
     WorthQueryApplicationInvariantScopePlanner<'borrow, 'runtime, Schema>
 {
-    pub fn refusal_budget(
+    pub(crate) fn refusal_budget(
         &self,
     ) -> &dyn worth_relational::facade::runtime::CustomInvariantLeaseBudget {
         self.lower.refusal_budget()
@@ -28,7 +28,7 @@ impl<'borrow, 'runtime, Schema>
         })
     }
 
-    pub fn freeze_admission(
+    pub(crate) fn freeze_admission(
         &self,
     ) -> Result<std::sync::Arc<ApplicationInvariantAdmission>, WorthQueryInvariantAccessDenial>
     {

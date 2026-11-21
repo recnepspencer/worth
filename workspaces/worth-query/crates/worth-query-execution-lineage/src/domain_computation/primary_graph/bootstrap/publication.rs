@@ -4,13 +4,13 @@ use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 /// declared identity indexes into one execution runtime.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryPrimaryGraphPublication {
-    pub binding_identity: ApplicationSchemaBindingIdentity,
-    pub principal_binding_count: usize,
-    pub identity_index_count: usize,
-    pub application_equality_index_count: usize,
-    pub policy_entity_count: usize,
-    pub policy_relation_count: usize,
-    pub bootstrap_commit_id: worth_relational::facade::history::CommitId,
+    pub(crate) binding_identity: ApplicationSchemaBindingIdentity,
+    pub(crate) principal_binding_count: usize,
+    pub(crate) identity_index_count: usize,
+    pub(crate) application_equality_index_count: usize,
+    pub(crate) policy_entity_count: usize,
+    pub(crate) policy_relation_count: usize,
+    pub(crate) bootstrap_commit_id: worth_relational::facade::history::CommitId,
 }
 
 impl WorthQueryPrimaryGraphPublication {
@@ -44,3 +44,39 @@ impl WorthQueryPrimaryGraphPublication {
 }
 
 mod court_doors_for_test;
+
+/// Crate-boundary internal port for `WorthQueryPrimaryGraphPublication`
+/// construction. Never exported on `worth-query-execution::facade` or Host.
+pub trait PrimaryGraphPublicationInternalPort: Sized {
+    fn from_parts(
+        binding_identity: ApplicationSchemaBindingIdentity,
+        principal_binding_count: usize,
+        identity_index_count: usize,
+        application_equality_index_count: usize,
+        policy_entity_count: usize,
+        policy_relation_count: usize,
+        bootstrap_commit_id: worth_relational::facade::history::CommitId,
+    ) -> Self;
+}
+
+impl PrimaryGraphPublicationInternalPort for WorthQueryPrimaryGraphPublication {
+    fn from_parts(
+        binding_identity: ApplicationSchemaBindingIdentity,
+        principal_binding_count: usize,
+        identity_index_count: usize,
+        application_equality_index_count: usize,
+        policy_entity_count: usize,
+        policy_relation_count: usize,
+        bootstrap_commit_id: worth_relational::facade::history::CommitId,
+    ) -> Self {
+        Self {
+            binding_identity,
+            principal_binding_count,
+            identity_index_count,
+            application_equality_index_count,
+            policy_entity_count,
+            policy_relation_count,
+            bootstrap_commit_id,
+        }
+    }
+}

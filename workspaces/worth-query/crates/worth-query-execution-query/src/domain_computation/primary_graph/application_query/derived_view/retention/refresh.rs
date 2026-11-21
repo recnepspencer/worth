@@ -13,7 +13,7 @@ where
     Key: Clone + Ord,
     Value: WorthQueryManagedDerivedValue,
 {
-    pub fn requires_entry_refresh(
+    pub(crate) fn requires_entry_refresh(
         &self,
         key: &Key,
         commit: &CompositeCommitIdentity,
@@ -30,7 +30,7 @@ where
         }
     }
 
-    pub fn refresh_entry(
+    pub(crate) fn refresh_entry(
         &self,
         key: &Key,
         value: Value,

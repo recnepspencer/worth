@@ -203,12 +203,12 @@ impl WorthQueryRunningWorkflowRun {
         &self.relational_basis
     }
 
-    pub fn execution_owner_identity(
+    pub(crate) fn execution_owner_identity(
         &self,
     ) -> Option<worth_runtime_world::facade::RuntimeWorldOwnerIdentity> {
         self.relational_basis.owner_identity()
     }
-    pub fn execution_source_instance_id(&self) -> u64 {
+    pub(crate) fn execution_source_instance_id(&self) -> u64 {
         self.relational_basis.identity().runtime_instance_id()
     }
 
@@ -216,7 +216,7 @@ impl WorthQueryRunningWorkflowRun {
         self.terminal(WorthQueryManagedRunTerminalKind::Failed)
     }
 
-    pub fn owner_restore_readmission(
+    pub(crate) fn owner_restore_readmission(
         affinity: WorthQueryWorkflowRunAffinity,
         bridge_basis: BridgeBoundExecutionBasis,
         relational_basis: WorthQueryManagedRelationalObservation,
@@ -255,7 +255,7 @@ impl WorthQueryRunningWorkflowRun {
         WorthQueryWorkflowRunTerminal::from_running(self, kind)
     }
 
-    pub fn terminate_for_convergence(
+    pub(crate) fn terminate_for_convergence(
         self,
         kind: WorthQueryManagedRunTerminalKind,
     ) -> WorthQueryWorkflowRunTerminal {

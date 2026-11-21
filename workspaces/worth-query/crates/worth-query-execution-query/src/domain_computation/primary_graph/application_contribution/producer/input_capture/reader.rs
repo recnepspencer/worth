@@ -110,7 +110,7 @@ where
         self.scope
     }
 
-    pub fn context_use(
+    pub(crate) fn context_use(
         &self,
     ) -> crate::domain_computation::primary_graph::handler::DecisionContextUse {
         self.context_use.get()

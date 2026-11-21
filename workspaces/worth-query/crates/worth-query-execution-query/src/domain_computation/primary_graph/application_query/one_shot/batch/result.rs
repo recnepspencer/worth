@@ -18,7 +18,7 @@ impl<Q, R> WorthQueryApplicationBatchResult<Q, R> {
     pub fn into_result(self) -> WorthQueryApplicationOneShotResult<Q, R> {
         self.result
     }
-    pub fn into_result_for(
+    pub(crate) fn into_result_for(
         self,
         batch: &WorthQueryApplicationQueryBatchAdmission,
     ) -> Option<WorthQueryApplicationOneShotResult<Q, R>> {

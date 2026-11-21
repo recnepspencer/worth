@@ -3,7 +3,7 @@ use super::*;
 
 impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthority<Schema> {
     #[allow(clippy::too_many_arguments)]
-    pub fn from_installation_parts(
+    pub(crate) fn from_installation_parts(
         installed_operations: Arc<worth_query_installation::facade::InstalledOperationCatalog>,
         value_bindings: worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog,
         graph: WorthQueryPrimaryGraphIntegrationHandle,
@@ -32,7 +32,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthorit
 
     /// Retain existing composition-root authority without minting it from a
     /// runtime identity. Each reader still gets a distinct selector namespace.
-    pub fn retain_for_installation(&self) -> Self {
+    pub(crate) fn retain_for_installation(&self) -> Self {
         Self {
             installed_operations: Arc::clone(&self.installed_operations),
             graph: self.graph.clone(),

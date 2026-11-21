@@ -5,6 +5,9 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
+use worth_query_execution_lineage::facade::ports::{
+    ComputationPartitionMembersInternalPort as _, ComputationPartitionPlanInternalPort as _,
+};
 
 use worth_execution::PartitionItemId;
 use worth_query_declaration::facade::application_program::{
@@ -180,7 +183,7 @@ where
                     input,
                 )
             });
-            let PlanShape::Keyed(entries) = plan?.shape;
+            let PlanShape::Keyed(entries) = plan?.into_shape();
             let items = planned_items(entries)?;
             let before = preparation_work;
             let digests = item_digests(&items, execution, &mut preparation_work)?;
@@ -344,7 +347,9 @@ where
                 owner.gather(
                     &mut WorthQueryComputationReader::lend(reader, source_query),
                     input,
-                    WorthQueryComputationPartitionMembers::new(identity, &key, &members, &items),
+                    WorthQueryComputationPartitionMembers::from_parts(
+                        identity, &key, &members, &items,
+                    ),
                 )
             });
             let gathered = gathered.map_err(|denial| {

@@ -4,7 +4,7 @@ use crate::domain_computation::primary_graph::application_attempt::SourcePublica
 impl<Schema: ApplicationSchema, Operation>
     WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, Operation>
 {
-    pub fn read_applied_absence<Family: WorthQueryProducerOutputFamily<Schema>>(
+    pub(crate) fn read_applied_absence<Family: WorthQueryProducerOutputFamily<Schema>>(
         &mut self,
         scope: worth_relational::facade::identity::EntityId,
     ) -> Result<bool, WorthQueryCurrentOutputDenial> {

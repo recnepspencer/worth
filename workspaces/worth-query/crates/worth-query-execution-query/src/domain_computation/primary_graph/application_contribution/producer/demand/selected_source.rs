@@ -7,7 +7,7 @@ where
     Schema: ApplicationSchema,
     Family: WorthQueryProducerOutputFamily<Schema>,
 {
-    pub fn matches_observed_source_admitted(
+    pub(crate) fn matches_observed_source_admitted(
         &self,
         source: &WorthQueryObservedSource<FamilySourceQuery<Schema, Family>>,
     ) -> Result<bool, WorthQueryOutputDemandDenial> {

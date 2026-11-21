@@ -10,6 +10,7 @@ use worth_query_declaration::facade::application_program::{
     ApplicationOutputGraphShape, ApplicationProgramDefinition,
 };
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
+use worth_query_execution_lineage::facade::ports::PreparedRequiredOutputSourceInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
 impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program>
@@ -48,7 +49,7 @@ where
                 "required root is not installed",
             ));
         }
-        if prepared.runtime_authority
+        if prepared.runtime_authority()
             != self
                 .backing
                 .runtime()
@@ -56,9 +57,9 @@ where
                 .runtime
                 .authority_identity()
                 .as_u64()
-            || &prepared.source_commit != receipt.source_commit()
-            || &prepared.source_commit != observation.selected_commit()
-            || prepared.product_occurrence != observation.branch_incarnation()
+            || prepared.source_commit() != receipt.source_commit()
+            || prepared.source_commit() != observation.selected_commit()
+            || prepared.product_occurrence() != observation.branch_incarnation()
             || branch.occurrence() != observation.branch_incarnation()
         {
             return Err(WorthQueryOutputDemandDenial::new(

@@ -1,7 +1,7 @@
 //! Exact installed producer edition comparison is independent of checkpoint decoding.
 use super::*;
 impl<Schema: ApplicationSchema> WorthQueryInstalledApplicationProducerRegistry<Schema> {
-    pub fn implementation_matches(
+    pub(crate) fn implementation_matches(
         &self,
         producer: &str,
         original: worth_relational::facade::mvcc::RequiredOutputProducingImplementation,

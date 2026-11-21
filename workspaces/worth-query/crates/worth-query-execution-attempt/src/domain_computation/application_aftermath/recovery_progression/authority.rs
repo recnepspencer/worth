@@ -73,7 +73,7 @@ impl WorthQueryRecoveryEffectAuthority {
     }
 
     /// Finalize an already performed dispatch without resampling expiry after I/O.
-    pub fn ensure_performed_for(
+    pub(crate) fn ensure_performed_for(
         &self,
         handle: &WorthQueryRecoveryHandle,
     ) -> Result<(), WorthQueryRecoveryHandleDenial> {

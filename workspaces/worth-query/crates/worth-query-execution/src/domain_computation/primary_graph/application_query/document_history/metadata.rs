@@ -11,6 +11,7 @@ use worth_query_declaration::facade::{
     application_capability::{ApplicationCapabilityRef, ApplicationCapabilityRequest},
     application_schema::{ApplicationOperationMarkerIdentity, ApplicationOperationRef},
 };
+use worth_query_execution_attempt::facade::ports::AuthenticatedPrincipalInternalPort as _;
 use worth_query_execution_query::facade::ports::AdmittedQueryPlanInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 

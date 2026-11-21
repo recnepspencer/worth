@@ -1,6 +1,7 @@
 use super::*;
 use crate::domain_computation::primary_graph::ReadObservationRuntimeExt;
 use crate::equality_type_id::EqualityTypeId as TypeId;
+use worth_query_execution_lineage::facade::ports::PreparedRequiredOutputSourceInternalPort as _;
 use worth_query_execution_runtime::facade::ports::PerformedRelationalProductChangeInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
@@ -11,19 +12,19 @@ pub fn validate_prepared_source_carrier<Query>(
     prepared: &crate::domain_computation::primary_graph::WorthQueryPreparedRequiredOutputSource,
     observed: &crate::domain_computation::primary_graph::WorthQueryObservedSource<Query>,
 ) -> Result<(), WorthQueryOutputDemandDenial> {
-    if prepared.runtime_authority != runtime_authority {
+    if prepared.runtime_authority() != runtime_authority {
         return Err(denial(
             WorthQueryOutputDemandDenialKind::ForeignSource,
             "prepared output source belongs to another Query runtime",
         ));
     }
-    if observed.selected_product_commit() != Some(&prepared.source_commit) {
+    if observed.selected_product_commit() != Some(&prepared.source_commit()) {
         return Err(denial(
             WorthQueryOutputDemandDenialKind::ForeignSource,
             "prepared output source belongs to another product commit",
         ));
     }
-    if observed.selected_product_occurrence() != Some(prepared.product_occurrence) {
+    if observed.selected_product_occurrence() != Some(prepared.product_occurrence()) {
         return Err(denial(
             WorthQueryOutputDemandDenialKind::ForeignSource,
             "prepared output source belongs to another product occurrence",
@@ -86,12 +87,12 @@ where
             self.installed_program_support().map(|support| (support.lifecycle(), execution)),
         )?;
         Ok((
-            crate::domain_computation::primary_graph::WorthQueryPreparedRequiredOutputSource {
-                runtime_authority: self.runtime.authority_identity().as_u64(),
+            crate::domain_computation::primary_graph::WorthQueryPreparedRequiredOutputSource::from_parts(
+                self.runtime.authority_identity().as_u64(),
                 source_commit,
                 product_occurrence,
-                owner: self.runtime.output_demands.clone(),
-            },
+                self.runtime.output_demands.clone(),
+            ),
             retained,
         ))
     }
@@ -145,12 +146,12 @@ where
             crate::basis::WorthQueryProductObservationLease::from_observation(observation),
         );
         let prepared =
-            crate::domain_computation::primary_graph::WorthQueryPreparedRequiredOutputSource {
-                runtime_authority: self.runtime.authority_identity().as_u64(),
-                source_commit: receipt.source_commit().clone(),
-                product_occurrence: receipt.product_branch().occurrence(),
-                owner: self.runtime.output_demands.clone(),
-            };
+            crate::domain_computation::primary_graph::WorthQueryPreparedRequiredOutputSource::from_parts(
+                self.runtime.authority_identity().as_u64(),
+                receipt.source_commit().clone(),
+                receipt.product_branch().occurrence(),
+                self.runtime.output_demands.clone(),
+            );
         Ok((discovery, retained, prepared))
     }
 
@@ -180,7 +181,7 @@ where
         )?;
         self.publish_output_source_bindings(phase, prepared, &[observed])?;
         self.runtime.output_demands.bind_prepared_output_source(
-            &prepared.source_commit,
+            &prepared.source_commit(),
             crate::domain_computation::primary_graph::application_output_demand::BoundOutputSource {
                 scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(observed.source_root()),
                 identity: observed.output_source_epoch().ok_or_else(|| {
@@ -238,17 +239,17 @@ where
         self.publish_output_source_bindings(phase, prepared, &observed)?;
         self.runtime
             .output_demands
-            .ensure_discovered_sources_bound(&prepared.source_commit, &identities)
+            .ensure_discovered_sources_bound(&prepared.source_commit(), &identities)
     }
 
     pub fn discard_prepared_required_output_source(
         &self,
         prepared: crate::domain_computation::primary_graph::WorthQueryPreparedRequiredOutputSource,
     ) {
-        if prepared.runtime_authority == self.runtime.authority_identity().as_u64() {
+        if prepared.runtime_authority() == self.runtime.authority_identity().as_u64() {
             self.runtime
                 .output_demands
-                .discard_prepared_source(&prepared.source_commit);
+                .discard_prepared_source(&prepared.source_commit());
         }
     }
 }

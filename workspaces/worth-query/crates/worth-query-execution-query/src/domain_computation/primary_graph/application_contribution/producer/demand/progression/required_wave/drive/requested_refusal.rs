@@ -45,7 +45,10 @@ pub fn resolve<Schema: ApplicationSchema + 'static>(
         }
         PendingUpstream::Held(head) => Ok(RequestedRefusal::Held(head)),
         PendingUpstream::Unavailable(reason) => {
-            stop.readmission_failure = Some(reason.diagnostic());
+            worth_query_execution_lineage::facade::ports::OutputDemandDenialInternalPort::set_readmission_failure(
+                stop,
+                reason.diagnostic(),
+            );
             Ok(RequestedRefusal::Unavailable)
         }
     }

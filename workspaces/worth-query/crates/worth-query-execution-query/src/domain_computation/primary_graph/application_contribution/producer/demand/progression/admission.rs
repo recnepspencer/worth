@@ -1,3 +1,4 @@
+use worth_query_execution_lineage::facade::ports::PreparedRequiredOutputSourceInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 
@@ -195,8 +196,8 @@ where
             prepared,
             &observed_source,
         )?;
-        if retained_program_basis.selected_commit() != &prepared.source_commit
-            || retained_program_basis.branch_incarnation() != prepared.product_occurrence
+        if retained_program_basis.selected_commit() != prepared.source_commit()
+            || retained_program_basis.branch_incarnation() != prepared.product_occurrence()
         {
             return Err(denial(
                 WorthQueryOutputDemandDenialKind::ForeignSource,
@@ -209,7 +210,7 @@ where
             None,
             profile_kind,
             limits,
-            Some(prepared.source_commit.clone()),
+            Some(prepared.source_commit().clone()),
             crate::domain_computation::primary_graph::application_output_demand::DemandAdmissionKind::Required,
             None,
             None,

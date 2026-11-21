@@ -119,7 +119,7 @@ impl std::ops::DerefMut for PrimaryGraphSourceCustody {
 }
 
 impl WorthQueryPrimaryGraph {
-    pub fn advance_home_retirement(
+    pub(crate) fn advance_home_retirement(
         &mut self,
         request: &worth_execution::ExecutionRequest<'_, '_>,
         native: &RelationalRuntime,
@@ -130,7 +130,7 @@ impl WorthQueryPrimaryGraph {
         self.source_owner.advance_retirement(request, native)
     }
 
-    pub fn preflight_home_retirement(
+    pub(crate) fn preflight_home_retirement(
         &self,
         request: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<(), WorthQueryHomeRetirementDenial> {

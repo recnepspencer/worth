@@ -26,7 +26,7 @@ where
 {
     /// O(source identity + installed identity width), no payload clone or allocation.
     /// Only the actual admitted demand selects the seal's installed edition.
-    pub fn prepare_disclosed_input(
+    pub(crate) fn prepare_disclosed_input(
         &self,
         disclosure: ValidatedOutputDisclosure<
             FamilySourceQuery<Schema, Family>,

@@ -259,11 +259,14 @@ pub fn handler_execution_failed(
         .downcast::<crate::domain_computation::primary_graph::WorthQueryCurrentOutputDenial>()
     {
         Ok(mut read) => {
-            let requested = read.requested_output.take();
+            let requested = worth_query_execution_lineage::facade::ports::CurrentOutputDenialInternalPort::take_requested_output(&mut read);
             let mut denial = failed(subject, &read);
             if let Some(requested) = requested {
-                denial = denial.with_requested_output(requested);
-                denial.recovery_posture = crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable;
+                denial = denial
+                    .with_requested_output(requested)
+                    .with_recovery_posture(
+                        crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable,
+                    );
             }
             denial
         }

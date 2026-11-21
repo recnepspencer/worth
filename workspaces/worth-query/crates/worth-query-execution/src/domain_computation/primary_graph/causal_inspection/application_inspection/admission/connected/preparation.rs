@@ -13,6 +13,7 @@ use crate::domain_computation::{
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryBinding, ApplicationQueryScopeBinding,
 };
+use worth_query_execution_attempt::facade::ports::AuthenticatedPrincipalInternalPort as _;
 use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryInstalledApplicationQueryBinding,
 };

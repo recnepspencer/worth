@@ -1,6 +1,7 @@
 use std::collections::BTreeSet;
 use std::marker::PhantomData;
 use std::sync::Arc;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 
 use worth_query_installation::facade::{
     ApplicationIdentityScalarValueBinding, ApplicationSchema, WorthQueryExternalPrincipalIdentity,
@@ -177,7 +178,7 @@ where
         }
         let layout = self
             .graph
-            .layout
+            .layout_ref()
             .principal_binding(installed_binding.binding())
             .cloned()
             .ok_or_else(|| {

@@ -53,7 +53,10 @@ impl WorthQueryWorkflowArtifactAuthority {
         Arc::clone(&self.registry)
     }
 
-    pub fn belongs_to_binding(&self, binding: &WorthQueryExecutionBoundOperationAuthority) -> bool {
+    pub(crate) fn belongs_to_binding(
+        &self,
+        binding: &WorthQueryExecutionBoundOperationAuthority,
+    ) -> bool {
         std::ptr::eq(self.binding.as_ref(), binding)
     }
 
@@ -66,7 +69,7 @@ impl WorthQueryWorkflowArtifactAuthority {
         self.mint_production_authority(stage_identity, generation)
     }
 
-    pub fn production_authority_for_readmission(
+    pub(crate) fn production_authority_for_readmission(
         &self,
         stage_identity: &str,
         pending: &WorthQueryArtifactProductionGenerationPending,

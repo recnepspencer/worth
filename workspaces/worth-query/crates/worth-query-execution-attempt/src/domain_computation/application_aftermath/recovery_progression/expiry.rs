@@ -75,7 +75,7 @@ impl WorthQueryRecoveryExpiryDecision {
         self.scoped.basis().observed_at().value()
     }
 
-    pub fn handle_authority(&self) -> WorthQueryRecoveryHandleAuthorityIdentity {
+    pub(crate) fn handle_authority(&self) -> WorthQueryRecoveryHandleAuthorityIdentity {
         self.scoped.basis().basis().handle
     }
 }

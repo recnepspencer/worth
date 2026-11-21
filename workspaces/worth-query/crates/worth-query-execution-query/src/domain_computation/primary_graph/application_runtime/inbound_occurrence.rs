@@ -86,7 +86,7 @@ pub struct WorthQueryInboundVerifierHandle {
 }
 
 impl WorthQueryInboundVerifierHandle {
-    pub fn operation(&self) -> &str {
+    pub(crate) fn operation(&self) -> &str {
         &self.operation
     }
 }

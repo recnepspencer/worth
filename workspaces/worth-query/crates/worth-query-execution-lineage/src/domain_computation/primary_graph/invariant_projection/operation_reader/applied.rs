@@ -29,7 +29,7 @@ pub struct AppliedOperationProjection<Schema, Operation> {
 
 impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthority<Schema> {
     #[allow(clippy::too_many_arguments)]
-    pub fn project_applied_operation<A, Output>(
+    pub(crate) fn project_applied_operation<A, Output>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         admission: &A,
@@ -69,7 +69,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthorit
     }
 
     #[allow(clippy::too_many_arguments)]
-    pub fn project_applied_operation_port<Operation, Scope, Output>(
+    pub(crate) fn project_applied_operation_port<Operation, Scope, Output>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         admission: &dyn AdmittedOperationPort,

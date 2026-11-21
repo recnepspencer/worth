@@ -11,7 +11,7 @@ impl<Schema: ApplicationSchema, Operation, Input, Scope>
     >
 {
     #[inline(never)]
-    pub fn prepare_managed_application_commit(
+    pub(crate) fn prepare_managed_application_commit(
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         idempotency: WorthQueryApplicationIdempotencyBinding,

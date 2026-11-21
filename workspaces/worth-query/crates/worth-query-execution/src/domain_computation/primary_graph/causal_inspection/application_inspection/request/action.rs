@@ -14,6 +14,7 @@ use crate::domain_computation::{
         application_query::FreshQueryPermissionStop, WorthQueryApplicationBasisSelectionIdentity,
     },
 };
+use worth_query_execution_attempt::facade::ports::AuthenticatedPrincipalInternalPort as _;
 use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
 use worth_query_execution_query::facade::ports::ApplicationQueryObservationInternalPort as _;
 use worth_query_installation::facade::WorthQueryInstalledApplicationQueryBinding;

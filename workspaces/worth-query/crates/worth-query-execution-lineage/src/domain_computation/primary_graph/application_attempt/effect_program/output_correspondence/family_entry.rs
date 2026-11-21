@@ -6,10 +6,10 @@ use super::WorthQueryApplicationOutputPosture;
 
 /// One typed member of a declared output-role family, as a commit bound it.
 pub struct WorthQueryApplicationOutputFamilyEntry<'correspondence, Entity> {
-    pub role: &'correspondence str,
-    pub posture: WorthQueryApplicationOutputPosture,
-    pub entity_id: EntityId,
-    pub _marker: PhantomData<fn() -> Entity>,
+    pub(crate) role: &'correspondence str,
+    pub(crate) posture: WorthQueryApplicationOutputPosture,
+    pub(crate) entity_id: EntityId,
+    pub(crate) _marker: PhantomData<fn() -> Entity>,
 }
 
 impl<Entity> Copy for WorthQueryApplicationOutputFamilyEntry<'_, Entity> {}
@@ -52,5 +52,32 @@ impl<Entity> WorthQueryApplicationOutputFamilyEntry<'_, Entity> {
 
     pub const fn entity_id(&self) -> EntityId {
         self.entity_id
+    }
+}
+
+/// Crate-boundary internal port for `WorthQueryApplicationOutputFamilyEntry`.
+/// Never exported on `worth-query-execution::facade` or Host.
+pub trait ApplicationOutputFamilyEntryInternalPort<'correspondence, Entity>: Sized {
+    fn from_parts(
+        role: &'correspondence str,
+        posture: WorthQueryApplicationOutputPosture,
+        entity_id: EntityId,
+    ) -> Self;
+}
+
+impl<'correspondence, Entity> ApplicationOutputFamilyEntryInternalPort<'correspondence, Entity>
+    for WorthQueryApplicationOutputFamilyEntry<'correspondence, Entity>
+{
+    fn from_parts(
+        role: &'correspondence str,
+        posture: WorthQueryApplicationOutputPosture,
+        entity_id: EntityId,
+    ) -> Self {
+        Self {
+            role,
+            posture,
+            entity_id,
+            _marker: PhantomData,
+        }
     }
 }

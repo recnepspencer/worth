@@ -13,6 +13,7 @@ use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRe
 use crate::domain_computation::primary_graph::WorthQueryApplicationQueryAccessContext;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
+use worth_query_execution_attempt::facade::ports::AuthenticatedPrincipalInternalPort as _;
 use worth_relational::facade::authorization::RelationalAuthorizationObservationPlan;
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>

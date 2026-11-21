@@ -5,7 +5,7 @@ use crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorresp
 impl WorthQueryApplicationCommittedChanges {
     /// This detects mutation of a declared full-GEN output, not field creation.
     /// The diagnostic join must still prove the exact field's Native revision.
-    pub fn affects_output_records(
+    pub(crate) fn affects_output_records(
         &self,
         context: &mut worth_execution::MapKernelContext<'_, '_>,
         outputs: &WorthQueryApplicationOutputCorrespondence,

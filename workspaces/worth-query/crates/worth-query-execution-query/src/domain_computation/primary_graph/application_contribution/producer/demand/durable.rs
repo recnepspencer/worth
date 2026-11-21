@@ -73,7 +73,7 @@ impl<S: ApplicationSchema, F: WorthQueryProducerOutputFamily<S>>
         })
     }
 
-    pub fn adopt_recorded_membership(
+    pub(crate) fn adopt_recorded_membership(
         &self,
         runtime: &dyn crate::ports::ApplicationRuntimeRef<S>,
         row: &QueryOutputDemandObligation,

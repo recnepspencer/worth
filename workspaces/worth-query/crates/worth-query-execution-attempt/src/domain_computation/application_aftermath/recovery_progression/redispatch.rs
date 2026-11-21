@@ -39,7 +39,7 @@ impl WorthQueryPerformedExternalRedispatch {
         }
     }
 
-    pub fn handle_authority(&self) -> WorthQueryRecoveryHandleAuthorityIdentity {
+    pub(crate) fn handle_authority(&self) -> WorthQueryRecoveryHandleAuthorityIdentity {
         self.performed.outcome().handle
     }
 
@@ -47,7 +47,7 @@ impl WorthQueryPerformedExternalRedispatch {
         &self.performed.outcome().dispatch
     }
 
-    pub fn into_dispatch(self) -> WorthQueryExternalEffectDispatch {
+    pub(crate) fn into_dispatch(self) -> WorthQueryExternalEffectDispatch {
         self.performed.into_outcome().dispatch
     }
 }

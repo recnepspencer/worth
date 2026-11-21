@@ -253,7 +253,7 @@ impl<Schema, Operation>
     ) {
         self.decision_facts.computation.begin_native(native);
     }
-    pub fn enter_native_carried(
+    pub(crate) fn enter_native_carried(
         &mut self,
         _: &crate::domain_computation::primary_graph::application_contribution::Comparator,
         read: ComputationRead,
@@ -279,7 +279,7 @@ impl<Schema, Operation>
     /// producer operation can also be invoked without a producer admission.
     /// Ordinary readers get NoProducerPrior. Once a producer prior was taken,
     /// later invocations get NoPriorHanded.
-    pub fn take_computation_prior(
+    pub(crate) fn take_computation_prior(
         &mut self,
     ) -> Result<ComputationPrior, ComputationPriorUnavailable> {
         match &mut self.decision_facts.prior {

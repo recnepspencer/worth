@@ -72,14 +72,14 @@ where
         Ok(relations)
     }
 
-    pub fn admit_adjacency_list(
+    pub(crate) fn admit_adjacency_list(
         &mut self,
         relation: &str,
     ) -> Result<(), WorthQueryInvariantProjectionTraversalDenial> {
         self.native_read().admit_adjacency_list(relation)
     }
 
-    pub fn adjacency_limit_denial(
+    pub(crate) fn adjacency_limit_denial(
         &mut self,
         limit: worth_relational::facade::runtime::AdjacencyTruthReadLimitExceeded,
         relation: &str,

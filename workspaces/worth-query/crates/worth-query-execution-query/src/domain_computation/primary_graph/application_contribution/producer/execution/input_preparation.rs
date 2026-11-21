@@ -11,6 +11,8 @@ use worth_query_declaration::facade::application_operation::{
 };
 use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
 use worth_query_execution_attempt::facade::ports::CompleteReadSetProjectedInternalPort as _;
+use worth_query_execution_attempt::facade::ports::ProjectedReadSetInternalPort as _;
+use worth_query_execution_lineage::facade::ports::ApplicationInvariantProjectionExecutionInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_relational::facade::runtime::{
@@ -99,7 +101,7 @@ impl<S: ApplicationSchema, B: WorthQueryApplicationProducerBinding<S>> CapturedP
 impl<S: ApplicationSchema, B: WorthQueryApplicationProducerBinding<S>>
     PreparedProducerInputs<S, B>
 {
-    pub fn into_mutation_inputs(
+    pub(crate) fn into_mutation_inputs(
         self,
         installed: &TypedInstalledProducer<S, B>,
         identities: &worth_query_declaration::facade::application_operation::ApplicationMutationIdentities<'_, S, Operation<S, B>>,

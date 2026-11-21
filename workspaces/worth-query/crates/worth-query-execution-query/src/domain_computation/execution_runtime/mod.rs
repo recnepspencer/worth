@@ -1,4 +1,5 @@
 use std::ops::{Deref, DerefMut};
+use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 use worth_query_execution_runtime::facade::execution_runtime as rt;
 use worth_query_execution_runtime::facade::ports::ExecutionRuntimeInternalPort as _;
 use worth_query_installation::facade::{

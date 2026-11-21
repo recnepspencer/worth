@@ -331,3 +331,62 @@
 //!     let _ = WorthQueryPrimaryGraphApplicationRuntime::<S>::preflight_home_retirement;
 //! }
 //! ```
+//!
+//! Checkpoints, interim origins, prepared required output sources, and primary
+//! graphs keep internal backing fields private through Host:
+//!
+//! ```compile_fail,E0616
+//! use worth_query_host::facade::primary_graph::WorthQueryApplicationCheckpoint;
+//! fn read_checkpoint_origin(checkpoint: &WorthQueryApplicationCheckpoint) {
+//!     let _ = &checkpoint.origin;
+//! }
+//! ```
+//!
+//! ```compile_fail,E0616
+//! use worth_query_host::facade::primary_graph::WorthQueryPrimaryGraph;
+//! fn read_graph_layout(graph: &WorthQueryPrimaryGraph) {
+//!     let _ = &graph.layout;
+//! }
+//! ```
+//!
+//! ```compile_fail,E0624
+//! use worth_query_host::facade::primary_graph::WorthQueryApplicationCheckpoint;
+//! fn mint_checkpoint() {
+//!     let _ = WorthQueryApplicationCheckpoint::from_admitted_parts;
+//! }
+//! ```
+//!
+//! ```compile_fail,E0624
+//! use worth_query_host::facade::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition;
+//! fn decompose_conditional(def: WorthQueryAdmittedApplicationConditionalDefinition) {
+//!     let _ = def.into_parts();
+//! }
+//! ```
+//!
+//! ```compile_fail,E0624
+//! use worth_query_host::facade::primary_graph::WorthQueryPrimaryGraph;
+//! fn grab_integration_handle(graph: &WorthQueryPrimaryGraph) {
+//!     let _ = graph.integration_handle();
+//! }
+//! ```
+//!
+//! ```compile_fail,E0624
+//! use worth_query_host::facade::primary_graph::WorthQueryPrimaryGraph;
+//! fn borrow_raw_runtime(graph: &WorthQueryPrimaryGraph) {
+//!     let _ = WorthQueryPrimaryGraph::with_runtime::<()>;
+//! }
+//! ```
+//!
+//! ```compile_fail,E0624
+//! use worth_query_host::facade::primary_graph::WorthQueryApplicationInvariantProjectionAuthority;
+//! fn mint_invariant_authority<S: worth_query_host::facade::installation::ApplicationSchema>() {
+//!     let _ = WorthQueryApplicationInvariantProjectionAuthority::<S>::from_installation_parts;
+//! }
+//! ```
+//!
+//! ```compile_fail,E0624
+//! use worth_query_host::facade::primary_graph::WorthQueryAuthenticatedPrincipal;
+//! fn extract_auth<S: 'static, P, I>(principal: &WorthQueryAuthenticatedPrincipal<S, P, I>) {
+//!     let _ = principal.retain_authentication();
+//! }
+//! ```

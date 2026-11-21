@@ -1,4 +1,5 @@
 use std::collections::BTreeMap;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 
 use worth_query_declaration::facade::authentication::{
     WorthQueryExternalPrincipalIdentityBinding, WorthQueryPrincipalMappingStatusBinding,

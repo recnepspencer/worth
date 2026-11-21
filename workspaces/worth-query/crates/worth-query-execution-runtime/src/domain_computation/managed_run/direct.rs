@@ -49,7 +49,7 @@ impl WorthQueryAdmittedDirectRun {
         &self.counters
     }
 
-    pub fn belongs_to_operation(
+    pub(crate) fn belongs_to_operation(
         &self,
         operation: &WorthQueryExecutionBoundOperationAuthority,
     ) -> bool {
@@ -92,12 +92,12 @@ impl WorthQueryRunningDirectRun {
         phase.request_for_managed(&self.relational_basis)
     }
 
-    pub fn execution_owner_identity(
+    pub(crate) fn execution_owner_identity(
         &self,
     ) -> Option<worth_runtime_world::facade::RuntimeWorldOwnerIdentity> {
         self.relational_basis.owner_identity()
     }
-    pub fn execution_source_instance_id(&self) -> u64 {
+    pub(crate) fn execution_source_instance_id(&self) -> u64 {
         self.relational_basis.identity().runtime_instance_id()
     }
 
@@ -135,14 +135,14 @@ impl WorthQueryRunningDirectRun {
         self.terminal(WorthQueryManagedRunTerminalKind::Failed)
     }
 
-    pub fn graph_work_affinity(
+    pub(crate) fn graph_work_affinity(
         &self,
     ) -> Option<crate::domain_computation::operation_binding::WorthQueryApplicationGraphWorkAffinity>
     {
         self.affinity.graph_work_affinity()
     }
 
-    pub fn mutation_resource_release_expectation(&self) -> (&str, &str, usize) {
+    pub(crate) fn mutation_resource_release_expectation(&self) -> (&str, &str, usize) {
         let (resource_plan, reservation_count) = self.affinity.resource_release_expectation();
         (
             self.affinity.provider_session_description(),
@@ -197,7 +197,7 @@ impl WorthQueryRunningDirectRun {
             .bind_graph_provider_call(graph_authority, request)
     }
 
-    pub fn execution_snapshot_reference(&self) -> String {
+    pub(crate) fn execution_snapshot_reference(&self) -> String {
         let parts = self
             .bridge_basis
             .observation()
@@ -276,7 +276,7 @@ impl WorthQueryRunningDirectRun {
         }
     }
 
-    pub fn terminate_for_convergence(
+    pub(crate) fn terminate_for_convergence(
         self,
         kind: WorthQueryManagedRunTerminalKind,
     ) -> WorthQueryDirectRunTerminal {

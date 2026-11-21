@@ -189,7 +189,7 @@ impl WorthQueryGraphProviderAnchor {
         self.convergence_provider.as_ref().map(Arc::clone)
     }
 
-    pub fn supports_session_protocol(&self) -> bool {
+    pub(crate) fn supports_session_protocol(&self) -> bool {
         self.session_lifecycle.is_some()
     }
 
@@ -285,7 +285,7 @@ impl WorthQueryGraphProviderAnchor {
         )
     }
 
-    pub fn readmit_session(
+    pub(crate) fn readmit_session(
         &self,
         plan: &WorthQueryProviderExecutionPlanView<'_>,
         admission: WorthQueryProviderSessionTokenAdmission,
@@ -296,7 +296,7 @@ impl WorthQueryGraphProviderAnchor {
             .readmit(plan, admission)
     }
 
-    pub fn prepare_session(
+    pub(crate) fn prepare_session(
         &self,
         session: &WorthQueryProviderSessionView<'_>,
     ) -> Result<(), WorthQueryProviderSessionFailure> {
@@ -316,7 +316,7 @@ impl WorthQueryGraphProviderAnchor {
             .prepare_staged(session)
     }
 
-    pub fn commit_session(
+    pub(crate) fn commit_session(
         &self,
         session: &WorthQueryProviderSessionView<'_>,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
@@ -332,7 +332,7 @@ impl WorthQueryGraphProviderAnchor {
         lifecycle.commit(session, allocation_policy)
     }
 
-    pub fn abort_session(
+    pub(crate) fn abort_session(
         &self,
         session: &WorthQueryProviderSessionView<'_>,
     ) -> Result<

@@ -11,6 +11,8 @@ use crate::domain_computation::primary_graph::{
 use worth_query_declaration::facade::application_schema::{
     ApplicationOperationMarkerIdentity, ApplicationOperationRef, ApplicationStructuredValueBinding,
 };
+use worth_query_execution_lineage::facade::ports::ApplicationInvariantProjectionAuthorityInternalPort as _;
+use worth_query_execution_lineage::facade::ports::ApplicationInvariantProjectionExecutionInternalPort as _;
 use worth_query_execution_lineage::facade::ports::InvariantProjectionReaderInternalPort as _;
 use worth_query_execution_lineage::facade::ports::OperationInvariantProjectionReaderInternalPort as _;
 use worth_query_installation::facade::{

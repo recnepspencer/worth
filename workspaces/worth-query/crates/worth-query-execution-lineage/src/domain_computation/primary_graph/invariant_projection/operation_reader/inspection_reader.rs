@@ -1,7 +1,7 @@
 //! A read-only operation envelope never receives an admission or a mutation root.
 use super::*;
 impl<S: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthority<S> {
-    pub fn inspect_reader<O, T>(
+    pub(crate) fn inspect_reader<O, T>(
         &self,
         reader: &mut WorthQueryApplicationInvariantProjectionReader<'_, S>,
         contracts: Option<Arc<WorthQueryCompiledApplicationOperationContracts>>,

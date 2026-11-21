@@ -2,6 +2,8 @@
 use super::super::DecisionReader;
 use super::*;
 use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
+use worth_query_execution_attempt::facade::ports::ProjectedReadSetInternalPort as _;
+use worth_query_execution_lineage::facade::ports::ApplicationInvariantProjectionExecutionInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {

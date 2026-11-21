@@ -65,7 +65,10 @@ where
             }
         }
         PendingUpstream::Unavailable(reason) => {
-            stop.readmission_failure = Some(reason.diagnostic());
+            worth_query_execution_lineage::facade::ports::OutputDemandDenialInternalPort::set_readmission_failure(
+                stop,
+                reason.diagnostic(),
+            );
             return Ok(None);
         }
     };

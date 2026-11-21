@@ -136,7 +136,7 @@ impl WorthQueryRequestedElevation {
         self.binding.apply_current_support(current, access, subject)
     }
 
-    pub fn into_approval_parts(
+    pub(crate) fn into_approval_parts(
         self,
         _permit: WorthQueryElevationApprovalBindingPermit,
     ) -> (
@@ -146,7 +146,7 @@ impl WorthQueryRequestedElevation {
         (self.binding, self.commit)
     }
 
-    pub const fn restore_after_approval(
+    pub(crate) const fn restore_after_approval(
         binding: WorthQueryElevationRequestBinding,
         commit: WorthQueryApplicationCommitReceipt,
         _permit: WorthQueryElevationApprovalBindingPermit,

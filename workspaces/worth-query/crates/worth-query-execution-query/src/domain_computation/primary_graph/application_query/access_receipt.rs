@@ -121,7 +121,7 @@ pub struct WorthQueryApplicationQueryReceiptBasis {
 }
 
 impl WorthQueryApplicationQueryAccessReceipt {
-    pub fn from_non_live_kernel(
+    pub(crate) fn from_non_live_kernel(
         identity: WorthQueryApplicationQueryReceiptIdentity,
         basis: WorthQueryApplicationQueryReceiptBasis,
         read_completion: crate::domain_computation::provider_session::WorthQueryGraphReadCompletion,

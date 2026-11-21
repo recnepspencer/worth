@@ -7,6 +7,7 @@ use worth_query_declaration::facade::{
     },
     application_schema::ApplicationScalarValueBinding,
 };
+use worth_query_execution_attempt::facade::ports::AuthenticatedPrincipalInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 impl WorthQueryPreparedCorrectionSource {

@@ -3,7 +3,7 @@ use super::*;
 use crate::domain_computation::primary_graph::{TestHostRequest, WorthQueryAdvancementPhase};
 
 impl WorthQueryRunningDirectRun {
-    pub fn fixture_phase<'scope>(
+    pub(crate) fn fixture_phase<'scope>(
         &self,
         host: &TestHostRequest<'scope>,
     ) -> WorthQueryAdvancementPhase<'scope> {
@@ -30,7 +30,7 @@ impl WorthQueryPausedDirectGraphExecution {
 }
 
 impl WorthQueryRunningWorkflowRun {
-    pub fn fixture_phase<'scope>(
+    pub(crate) fn fixture_phase<'scope>(
         &self,
         host: &TestHostRequest<'scope>,
     ) -> WorthQueryAdvancementPhase<'scope> {

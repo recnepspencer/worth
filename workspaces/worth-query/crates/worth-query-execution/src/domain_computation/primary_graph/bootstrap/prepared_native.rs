@@ -1,5 +1,6 @@
 //! Exclusive installation custody ends before the operational source is shared.
 use super::*;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 use worth_relational::facade::runtime::RelationalInitialSchemaInstallationReceipt;
 
@@ -140,7 +141,7 @@ impl PreparedPrimaryGraphInstallation {
         .with_workflow_retention(Arc::new(
             crate::domain_computation::primary_graph::WorkflowRetentionStore::new(),
         ));
-        graph.application_publication = application_publication;
+        graph.set_application_publication(application_publication);
         Ok(self
             .meaning
             .into_bootstrap(runtime, installed, graph, product_world_resources))

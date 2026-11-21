@@ -148,7 +148,7 @@ where
         )
     }
 
-    pub fn project_with_work_limit<Output>(
+    pub(crate) fn project_with_work_limit<Output>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         maximum_work: Option<usize>,

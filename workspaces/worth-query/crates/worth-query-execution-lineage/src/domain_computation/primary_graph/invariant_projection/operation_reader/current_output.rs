@@ -66,7 +66,7 @@ pub struct WorthQueryCurrentOutputDenial {
         Option<crate::domain_computation::primary_graph::WorthQueryManagedIndexWorkDenial>,
     kind: WorthQueryCurrentOutputDenialKind,
     subject: String,
-    pub requested_output: Option<super::super::RequestedOutputRead>,
+    pub(crate) requested_output: Option<super::super::RequestedOutputRead>,
 }
 
 impl WorthQueryCurrentOutputDenial {
@@ -85,6 +85,23 @@ impl WorthQueryCurrentOutputDenial {
             subject: subject.into(),
             requested_output: None,
         }
+    }
+}
+
+/// Crate-boundary internal port for `WorthQueryCurrentOutputDenial` metadata.
+/// Never exported on `worth-query-execution::facade` or Host.
+pub trait CurrentOutputDenialInternalPort {
+    fn requested_output_ref(&self) -> Option<&super::super::RequestedOutputRead>;
+    fn take_requested_output(&mut self) -> Option<super::super::RequestedOutputRead>;
+}
+
+impl CurrentOutputDenialInternalPort for WorthQueryCurrentOutputDenial {
+    fn requested_output_ref(&self) -> Option<&super::super::RequestedOutputRead> {
+        self.requested_output.as_ref()
+    }
+
+    fn take_requested_output(&mut self) -> Option<super::super::RequestedOutputRead> {
+        self.requested_output.take()
     }
 }
 

@@ -70,11 +70,11 @@ impl WorthQueryAdmittedApplicationConditionalDefinition {
             && &self.expected_product == product
     }
 
-    pub const fn identity(&self) -> &[u8; 32] {
+    pub(crate) const fn identity(&self) -> &[u8; 32] {
         &self.identity
     }
 
-    pub fn into_parts(self) -> WorthQueryApplicationConditionalDefinitionParts {
+    pub(crate) fn into_parts(self) -> WorthQueryApplicationConditionalDefinitionParts {
         WorthQueryApplicationConditionalDefinitionParts {
             expected_product: self.expected_product,
             predecessor: self.predecessor,

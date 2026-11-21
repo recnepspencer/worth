@@ -4,7 +4,7 @@ use super::*;
 impl<Schema: ApplicationSchema, Operation>
     WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, Operation>
 {
-    pub fn collection_field_values<Entity>(
+    pub(crate) fn collection_field_values<Entity>(
         &mut self,
         root: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
         source: &Source,

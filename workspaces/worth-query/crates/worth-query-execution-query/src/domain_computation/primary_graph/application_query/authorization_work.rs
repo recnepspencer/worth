@@ -21,12 +21,12 @@ pub struct WorthQueryApplicationAuthorizationWorkEvidence {
 }
 
 impl WorthQueryApplicationAuthorizationWorkEvidence {
-    pub fn with_admission_security_product_resolution(mut self) -> Self {
+    pub(crate) fn with_admission_security_product_resolution(mut self) -> Self {
         self.admission_security_product_resolutions += 1;
         self
     }
 
-    pub fn with_execution_security_product_resolution(mut self) -> Self {
+    pub(crate) fn with_execution_security_product_resolution(mut self) -> Self {
         self.execution_security_product_resolutions += 1;
         self
     }
@@ -38,7 +38,7 @@ impl WorthQueryApplicationAuthorizationWorkEvidence {
     pub const fn execution_security_product_resolutions(self) -> usize {
         self.execution_security_product_resolutions
     }
-    pub fn from_dependencies(dependencies: &[WorthQueryAuthorizationDecisionFact]) -> Self {
+    pub(crate) fn from_dependencies(dependencies: &[WorthQueryAuthorizationDecisionFact]) -> Self {
         dependencies.iter().fold(
             Self {
                 requirement_count: dependencies.len(),
@@ -76,7 +76,7 @@ impl WorthQueryApplicationAuthorizationWorkEvidence {
         )
     }
 
-    pub fn with_capability_authorization(
+    pub(crate) fn with_capability_authorization(
         mut self,
         authorization: Option<&WorthQueryRetainedCapabilityAuthorization>,
         canonical_work: WorthQueryCanonicalWorkEvidence,

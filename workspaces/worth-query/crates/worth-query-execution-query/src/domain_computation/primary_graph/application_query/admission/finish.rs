@@ -8,6 +8,8 @@ use worth_query_admission::integration::{
     WorthQueryReviewedApplicationQueryGraphWork,
 };
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
+use worth_query_execution_attempt::facade::ports::AuthenticatedPrincipalInternalPort as _;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 use worth_query_installation::facade::{
     WorthQueryCanonicalWorkPhases, WorthQueryInstalledApplicationQuery,
     WorthQueryInstalledGraphObligationSetIdentity,
@@ -213,12 +215,13 @@ where
             admit_application_query_graph_work(reviewed.work, &self.graph_work_resource_support())
                 .map_err(|denial| graph_work_denial(format!("{}: {denial:?}", query.name())))?;
         validate_one_shot_shape(query)?;
-        let disclosure = compile_disclosure_contract(query, &graph.layout).map_err(|denial| {
-            WorthQueryApplicationQueryAdmissionDenial::new(
-                WorthQueryApplicationQueryAdmissionDenialKind::DisclosureContractInvalid,
-                denial.subject(),
-            )
-        })?;
+        let disclosure =
+            compile_disclosure_contract(query, graph.layout_ref()).map_err(|denial| {
+                WorthQueryApplicationQueryAdmissionDenial::new(
+                    WorthQueryApplicationQueryAdmissionDenialKind::DisclosureContractInvalid,
+                    denial.subject(),
+                )
+            })?;
         let continuation_index_id = continuation_index_id(query, controls, graph)?;
         Ok(PreparedApplicationQueryGraphWork {
             plan,
@@ -250,7 +253,7 @@ where
             )
         })?;
         let inventory = primary_graph_support_inventory(query.read_graph(),
-            &graph.layout,
+            graph.layout_ref(),
             query.continuation(),
             query.live(),
             &requirements,
@@ -339,7 +342,7 @@ where
     }
     query
         .continuation()
-        .and_then(|contract| graph.layout.continuation_ordering_index_id(contract))
+        .and_then(|contract| graph.layout_ref().continuation_ordering_index_id(contract))
         .ok_or_else(|| {
             denial(
                 WorthQueryApplicationQueryAdmissionDenialKind::RuntimeSupportUnavailable,

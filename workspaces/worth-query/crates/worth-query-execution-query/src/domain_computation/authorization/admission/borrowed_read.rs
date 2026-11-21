@@ -15,6 +15,7 @@ use crate::domain_computation::{
     provider_session::WorthQueryGraphWorkSessionIdentity,
 };
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
+use worth_query_execution_attempt::facade::ports::AuthenticatedPrincipalInternalPort as _;
 use worth_query_installation::facade::{ApplicationSchema, InstalledOperationView};
 use worth_relational::facade::{runtime::RelationalRuntime, snapshots::SnapshotHandle};
 

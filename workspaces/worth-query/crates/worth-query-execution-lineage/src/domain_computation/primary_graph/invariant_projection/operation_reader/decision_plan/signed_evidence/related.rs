@@ -13,7 +13,7 @@ use worth_foundational::expression_api::ExpressionValue;
 impl<Schema: ApplicationSchema, Operation>
     WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, Operation>
 {
-    pub fn related_signed_evidence_operand<Entity>(
+    pub(crate) fn related_signed_evidence_operand<Entity>(
         &mut self,
         root: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
         source: &Operand,

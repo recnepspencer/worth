@@ -54,7 +54,7 @@ use super::{
 impl WorthQueryApplicationIdempotencyBinding {
     /// Every intent slot, without the encoding's version; `intent_text` is
     /// what a key records.
-    pub fn intent_slots(self) -> String {
+    pub(crate) fn intent_slots(self) -> String {
         let mut encoded = encode_identity(self.intent_identity);
         append_identity_slot(&mut encoded, "source", self.source_identity);
         append_identity_slot(&mut encoded, "operation", self.operation_identity);

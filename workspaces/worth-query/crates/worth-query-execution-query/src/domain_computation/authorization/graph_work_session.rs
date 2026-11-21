@@ -4,6 +4,7 @@ use worth_query_admission::integration::{
     admit_application_operation_graph_work, admit_application_operation_read_graph_work,
     select_installed_graph_obligations,
 };
+use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryInstalledApplicationOperation,
     WorthQueryInstalledApplicationOperationGraphAuthority,

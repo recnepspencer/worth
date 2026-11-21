@@ -47,7 +47,7 @@ struct DescriptiveProductPublication {
 impl WorthQueryCommittedProductPublication {
     /// Issued only while detaching an actual completed group member's delivery.
     /// The endpoint is descriptive and retains no World or owner resources.
-    pub fn co_committed_member(&self) -> Self {
+    pub(crate) fn co_committed_member(&self) -> Self {
         let endpoint = self
             .observed_product_identity()
             .expect("actual group member still holds its performed World publication");
@@ -177,7 +177,7 @@ impl WorthQueryCommittedProductPublication {
         }
     }
 
-    pub fn take_fresh_product_change(
+    pub(crate) fn take_fresh_product_change(
         &self,
     ) -> Option<
         crate::domain_computation::execution_runtime::product_world::WorthQueryPerformedRelationalProductChange,

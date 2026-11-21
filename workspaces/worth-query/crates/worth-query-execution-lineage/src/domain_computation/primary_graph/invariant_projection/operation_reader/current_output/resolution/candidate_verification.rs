@@ -29,7 +29,7 @@ where
     /// A restored output no demand has verified carries no witness yet. Its
     /// reader compares the checkpoint facts and the output in full, and the
     /// lineage row keeps the witness that comparison built.
-    pub fn verify_current_candidate(
+    pub(crate) fn verify_current_candidate(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         candidate: &WorthQueryCurrentOutputCandidate,
@@ -112,7 +112,7 @@ where
             denial
         })
     }
-    pub fn retain_requested_output(
+    pub(crate) fn retain_requested_output(
         &mut self,
         candidate: &WorthQueryCurrentOutputCandidate,
         selected: &PositionedRelationalSnapshot,

@@ -1,5 +1,6 @@
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 pub mod home_retirement;
+pub(crate) mod internal_port;
 pub mod output_availability_candidate;
 pub mod retention;
 pub use output_availability_candidate::{ObservedOutputCandidate, ObservedOutputPosture};
@@ -174,7 +175,7 @@ impl<Schema> WorthQueryApplicationInvariantProjectionAuthority<Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub fn belongs_to_installation(
+    pub(crate) fn belongs_to_installation(
         &self,
         runtime_authority: WorthQueryRuntimeAuthorityIdentity,
         binding_identity: &ApplicationSchemaBindingIdentity,
@@ -182,7 +183,7 @@ where
         self.runtime_authority == runtime_authority && &self.binding_identity == binding_identity
     }
 
-    pub fn active_snapshot_count(
+    pub(crate) fn active_snapshot_count(
         &self,
         request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> usize {
@@ -242,7 +243,7 @@ where
         self.snapshot().version_id()
     }
 
-    pub fn belongs_to(
+    pub(crate) fn belongs_to(
         &self,
         runtime_authority: WorthQueryRuntimeAuthorityIdentity,
         binding_identity: &ApplicationSchemaBindingIdentity,
@@ -250,7 +251,7 @@ where
         self.runtime_authority == runtime_authority && &self.binding_identity == binding_identity
     }
 
-    pub fn into_lease(
+    pub(crate) fn into_lease(
         mut self,
         product: crate::basis::WorthQueryProductBranchLease,
     ) -> super::application_attempt::snapshot_lease::WorthQueryApplicationSnapshotLease {
@@ -271,7 +272,7 @@ where
         )
     }
 
-    pub fn into_lease_and_realized_scope(
+    pub(crate) fn into_lease_and_realized_scope(
         mut self,
         product: crate::basis::WorthQueryProductBranchLease,
     ) -> (

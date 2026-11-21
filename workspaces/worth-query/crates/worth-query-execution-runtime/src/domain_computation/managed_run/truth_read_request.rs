@@ -76,7 +76,7 @@ impl WorthQueryManagedTruthReadRequest {
         )
     }
 
-    pub fn matches_operation_product(
+    pub(crate) fn matches_operation_product(
         &self,
         operation: &crate::domain_computation::WorthQueryExecutionBoundOperationAuthority,
     ) -> bool {

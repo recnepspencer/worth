@@ -19,7 +19,7 @@ impl<'r, S: ApplicationSchema, O>
     WorthQueryApplicationOperationInvariantProjectionReader<'_, 'r, S, O>
 {
     #[inline(always)]
-    pub fn native_decision(&mut self) -> NativeDecision<'_> {
+    pub(crate) fn native_decision(&mut self) -> NativeDecision<'_> {
         NativeDecision {
             layout: self.reader.layout,
             bindings: self.reader.value_bindings,

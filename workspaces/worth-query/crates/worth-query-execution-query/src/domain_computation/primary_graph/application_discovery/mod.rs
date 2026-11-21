@@ -12,7 +12,7 @@ pub struct WorthQueryWorkflowTransitionActors {
 }
 
 impl WorthQueryWorkflowTransitionActors {
-    pub fn observed(
+    pub(crate) fn observed(
         advancer: WorthQueryWorkflowRecordedActor,
         executor: Option<WorthQueryWorkflowRecordedActor>,
     ) -> Self {

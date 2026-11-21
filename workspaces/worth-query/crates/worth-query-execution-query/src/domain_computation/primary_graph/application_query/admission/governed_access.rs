@@ -1,6 +1,7 @@
 use worth_query_declaration::facade::{
     application_capability::ApplicationCapabilityRequest, application_schema::ApplicationSchema,
 };
+use worth_query_execution_attempt::facade::ports::AuthenticatedPrincipalInternalPort as _;
 use worth_query_installation::facade::WorthQueryInstalledApplicationQuery;
 
 use super::super::{

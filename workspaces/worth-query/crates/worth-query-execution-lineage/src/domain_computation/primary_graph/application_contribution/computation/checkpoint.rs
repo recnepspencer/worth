@@ -9,7 +9,7 @@ use super::{
 /// The request a managed computation runs for: its cancellation, its
 /// deadline and how its patterns are placed.
 pub struct WorthQueryManagedComputationExecution<'request> {
-    pub request: &'request QueryRequestExecution<'request>,
+    pub(crate) request: &'request QueryRequestExecution<'request>,
 }
 
 impl<'request> WorthQueryManagedComputationExecution<'request> {
@@ -24,10 +24,11 @@ impl<'request> WorthQueryManagedComputationExecution<'request> {
 }
 
 pub struct WorthQueryManagedComputationCheckpoint<'request> {
-    pub charge: Option<&'request mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>>,
-    pub poll: &'request mut dyn FnMut() -> Result<(), worth_execution::MapKernelStop>,
-    pub refused: Option<WorthQueryManagedComputationCheckpointDenial>,
-    pub native: Option<&'request worth_execution::ExecutionResourceLease<'request>>,
+    pub(crate) charge:
+        Option<&'request mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>>,
+    pub(crate) poll: &'request mut dyn FnMut() -> Result<(), worth_execution::MapKernelStop>,
+    pub(crate) refused: Option<WorthQueryManagedComputationCheckpointDenial>,
+    pub(crate) native: Option<&'request worth_execution::ExecutionResourceLease<'request>>,
 }
 
 impl<'request> WorthQueryManagedComputationCheckpoint<'request> {
@@ -44,7 +45,7 @@ impl<'request> WorthQueryManagedComputationCheckpoint<'request> {
         crate::domain_computation::execution_observation::owned_control_scope::current_id();
         self.native
     }
-    pub fn for_partition(
+    pub(crate) fn for_partition(
         charge: Option<&'request mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>>,
         poll: &'request mut dyn FnMut() -> Result<(), worth_execution::MapKernelStop>,
     ) -> Self {
@@ -91,3 +92,59 @@ impl<'request> WorthQueryManagedComputationCheckpoint<'request> {
 }
 
 mod court_doors_for_test;
+
+/// Crate-boundary internal port for `WorthQueryManagedComputationExecution`.
+/// Never exported on `worth-query-execution::facade` or Host.
+pub trait ManagedComputationExecutionInternalPort<'request>: Sized {
+    fn from_request(request: &'request QueryRequestExecution<'request>) -> Self;
+    fn request_ref(&self) -> &'request QueryRequestExecution<'request>;
+}
+
+impl<'request> ManagedComputationExecutionInternalPort<'request>
+    for WorthQueryManagedComputationExecution<'request>
+{
+    fn from_request(request: &'request QueryRequestExecution<'request>) -> Self {
+        Self::new(request)
+    }
+
+    fn request_ref(&self) -> &'request QueryRequestExecution<'request> {
+        self.request
+    }
+}
+
+/// Crate-boundary internal port for `WorthQueryManagedComputationCheckpoint`.
+/// Never exported on `worth-query-execution::facade` or Host.
+pub trait ManagedComputationCheckpointInternalPort<'request>: Sized {
+    fn for_partition(
+        charge: Option<&'request mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>>,
+        poll: &'request mut dyn FnMut() -> Result<(), worth_execution::MapKernelStop>,
+    ) -> Self;
+    fn with_native_lease(
+        self,
+        lease: Option<&'request worth_execution::ExecutionResourceLease<'request>>,
+    ) -> Self;
+    fn native_lease(&self) -> Option<&'request worth_execution::ExecutionResourceLease<'request>>;
+}
+
+impl<'request> ManagedComputationCheckpointInternalPort<'request>
+    for WorthQueryManagedComputationCheckpoint<'request>
+{
+    fn for_partition(
+        charge: Option<&'request mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>>,
+        poll: &'request mut dyn FnMut() -> Result<(), worth_execution::MapKernelStop>,
+    ) -> Self {
+        Self::for_partition(charge, poll)
+    }
+
+    fn with_native_lease(
+        mut self,
+        lease: Option<&'request worth_execution::ExecutionResourceLease<'request>>,
+    ) -> Self {
+        self.native = lease;
+        self
+    }
+
+    fn native_lease(&self) -> Option<&'request worth_execution::ExecutionResourceLease<'request>> {
+        self.native
+    }
+}

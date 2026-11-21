@@ -8,6 +8,7 @@ use crate::domain_computation::primary_graph::invariant_projection::{
 };
 use std::collections::{BTreeMap, BTreeSet};
 use worth_foundational::facade::PartitionIdentity;
+use worth_query_execution_lineage::facade::ports::ComputationPartitionMembersInternalPort as _;
 
 pub fn prepare<S, F, C, O, K, I, R>(
     owner: &O,
@@ -190,7 +191,7 @@ where
         owner.gather(
             &mut WorthQueryComputationReader::lend(reader, source_query),
             input,
-            WorthQueryComputationPartitionMembers::new(id, &key, &members, &retained.items),
+            WorthQueryComputationPartitionMembers::from_parts(id, &key, &members, &retained.items),
         )
     });
     let gathered = gathered.map_err(|reason| D::gathering(id, reason))?;

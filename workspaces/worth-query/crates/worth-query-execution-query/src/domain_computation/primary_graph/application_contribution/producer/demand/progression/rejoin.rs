@@ -17,7 +17,7 @@ where
     /// did not contact the producer for it. A successor a dependent keeps
     /// for an output it consumed follows the same way, so the row another
     /// advance superseded is released.
-    pub fn rejoin_refreshed_output(
+    pub(crate) fn rejoin_refreshed_output(
         &mut self,
         registry: &crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandRegistry,
     ) -> Result<(), WorthQueryOutputDemandDenial> {

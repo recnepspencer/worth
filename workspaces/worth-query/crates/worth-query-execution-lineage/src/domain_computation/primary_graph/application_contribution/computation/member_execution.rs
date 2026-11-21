@@ -14,7 +14,7 @@ pub struct WorthQueryMemberExecution<'member> {
     charge: Option<&'member mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>>,
 }
 impl<'member> WorthQueryMemberExecution<'member> {
-    pub fn for_kernel(
+    pub(crate) fn for_kernel(
         execution: &'member MemberRequestExecution<'member>,
         poll: &'member mut dyn FnMut() -> Result<(), worth_execution::MapKernelStop>,
         charge: Option<&'member mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>>,
@@ -28,7 +28,7 @@ impl<'member> WorthQueryMemberExecution<'member> {
         }
     }
 
-    pub fn into_checkpoint(self) -> super::WorthQueryManagedComputationCheckpoint<'member> {
+    pub(crate) fn into_checkpoint(self) -> super::WorthQueryManagedComputationCheckpoint<'member> {
         super::WorthQueryManagedComputationCheckpoint {
             charge: self.charge,
             poll: self.poll,

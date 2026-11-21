@@ -53,7 +53,7 @@ impl WorthQueryApplicationIdempotencyBinding {
     }
     /// Read descriptive operation meaning only from the current durable grammar.
     /// A first-encoding installation seal cannot qualify installed meaning.
-    pub fn recorded_operation_definition(
+    pub(crate) fn recorded_operation_definition(
         recorded: &str,
     ) -> Result<Option<worth_foundational::facade::CanonicalDigestId>, &'static str> {
         validate(recorded)?;

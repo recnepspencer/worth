@@ -22,6 +22,7 @@ use worth_query_admission::facade::authenticated_principal::{
 use worth_query_declaration::facade::{
     application_query::ApplicationManagedIndexBinding, application_schema::ApplicationSchema,
 };
+use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 
 #[allow(clippy::too_many_arguments)]
 pub fn rebuild<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>>(

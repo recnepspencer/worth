@@ -1,6 +1,7 @@
 use super::*;
 use crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalKind as ResolutionRefusal;
 use worth_query_declaration::facade::application_schema::fragment::RecordSelection;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 
 impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     pub fn resolve_retained_query_scope<Field: RecordSelection>(
@@ -66,7 +67,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             )
         })?;
         let installed = graph
-            .layout
+            .layout_ref()
             .equality_field(field.entity(), locus.aspect(), field.field())
             .ok_or_else(|| {
                 entity_denial(
@@ -129,7 +130,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         })?;
 
         let installed_field = graph
-            .layout
+            .layout_ref()
             .equality_field(field.entity(), locus.aspect(), field.field())
             .ok_or_else(|| {
                 entity_denial(

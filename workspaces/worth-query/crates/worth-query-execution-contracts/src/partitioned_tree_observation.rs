@@ -85,7 +85,7 @@ pub struct WorthQueryPartitionedTreeAccounting {
 }
 
 impl WorthQueryPartitionedTreeMetrics {
-    pub fn from_accounted(accounting: WorthQueryPartitionedTreeAccounting) -> Self {
+    pub(crate) fn from_accounted(accounting: WorthQueryPartitionedTreeAccounting) -> Self {
         Self {
             accounting: Some(accounting),
         }

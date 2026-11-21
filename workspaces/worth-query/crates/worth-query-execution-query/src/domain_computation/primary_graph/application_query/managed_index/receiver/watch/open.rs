@@ -2,6 +2,7 @@
 use super::*;
 use crate::domain_computation::primary_graph::application_query::derived_view::PredicateWorld;
 use crate::domain_computation::primary_graph::live_delivery::WorthQueryLiveAdmissionDenial;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
@@ -53,7 +54,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
                 .primary_graph()
                 .ok_or(ReceiverCause::Refused(Refusal::ForeignGraph))?;
             let program = graph
-                .layout
+                .layout_ref()
                 .managed_source(I::NAME)
                 .ok_or(ReceiverCause::Refused(Refusal::UnsupportedMode))?;
             let registry = crate::domain_computation::primary_graph::downcast_managed_views_arc(

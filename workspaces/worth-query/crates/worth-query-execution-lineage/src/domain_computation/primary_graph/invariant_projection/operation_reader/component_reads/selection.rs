@@ -9,7 +9,7 @@ use crate::domain_computation::primary_graph::{
 impl<Schema: ApplicationSchema, Operation: ApplicationOperationMarkerIdentity<Schema>>
     WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, Operation>
 {
-    pub fn collect_component_selection<Entity>(
+    pub(crate) fn collect_component_selection<Entity>(
         &mut self,
         scope: &WorthQueryOperationComponentReadScope,
         layout: &ComponentSetLayout,

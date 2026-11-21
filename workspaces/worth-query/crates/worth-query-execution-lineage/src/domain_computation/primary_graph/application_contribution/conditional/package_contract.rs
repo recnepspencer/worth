@@ -6,8 +6,8 @@ pub struct WorthQueryApplicationConditionalPackageContract {
     domain_operation: WorthQueryPortableDomainOperationDefinition,
     operation_binding: WorthQueryPortableApplicationConditionalOperationBinding,
     target: WorthQueryConditionalNodeLocation,
-    pub fields: Vec<super::super::native_field_contract::FieldExpectation>,
-    pub delivery_fields: std::collections::BTreeSet<
+    pub(crate) fields: Vec<super::super::native_field_contract::FieldExpectation>,
+    pub(crate) delivery_fields: std::collections::BTreeSet<
         worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus,
     >,
 }
@@ -67,3 +67,47 @@ impl WorthQueryApplicationConditionalPackageContract {
 }
 
 mod court_doors_for_test;
+
+/// Crate-boundary internal port for
+/// `WorthQueryApplicationConditionalPackageContract` field expectations.
+/// Never exported on `worth-query-execution::facade` or Host.
+pub trait ConditionalPackageContractInternalPort {
+    fn fields_ref(&self) -> &[super::super::native_field_contract::FieldExpectation];
+    fn fields_mut(&mut self) -> &mut Vec<super::super::native_field_contract::FieldExpectation>;
+    fn delivery_fields_ref(
+        &self,
+    ) -> &std::collections::BTreeSet<
+        worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus,
+    >;
+    fn delivery_fields_mut(
+        &mut self,
+    ) -> &mut std::collections::BTreeSet<
+        worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus,
+    >;
+}
+
+impl ConditionalPackageContractInternalPort for WorthQueryApplicationConditionalPackageContract {
+    fn fields_ref(&self) -> &[super::super::native_field_contract::FieldExpectation] {
+        &self.fields
+    }
+
+    fn fields_mut(&mut self) -> &mut Vec<super::super::native_field_contract::FieldExpectation> {
+        &mut self.fields
+    }
+
+    fn delivery_fields_ref(
+        &self,
+    ) -> &std::collections::BTreeSet<
+        worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus,
+    > {
+        &self.delivery_fields
+    }
+
+    fn delivery_fields_mut(
+        &mut self,
+    ) -> &mut std::collections::BTreeSet<
+        worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus,
+    > {
+        &mut self.delivery_fields
+    }
+}

@@ -3,6 +3,7 @@ use super::*;
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryParameterSet, ApplicationQueryScopeResolutionMode,
 };
+use worth_query_execution_attempt::facade::ports::AuthenticatedPrincipalInternalPort as _;
 
 impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
     pub fn with_same_scope_plan<B, R, E>(

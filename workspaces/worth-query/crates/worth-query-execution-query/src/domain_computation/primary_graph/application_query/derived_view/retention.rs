@@ -250,7 +250,7 @@ where
         retained.membership_dirty = false;
     }
 
-    pub fn rebase_cold(&self, commit: CompositeCommitIdentity) {
+    pub(crate) fn rebase_cold(&self, commit: CompositeCommitIdentity) {
         let mut retained = self
             .retained
             .lock()

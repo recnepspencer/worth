@@ -31,7 +31,7 @@ impl<Schema: ApplicationSchema, Operation: ApplicationOperationMarkerIdentity<Sc
             Shape::Adjacency { reverse: false },
         )
     }
-    pub fn read_derived_key<Relation: OperationReads<Operation>, From, To>(
+    pub(crate) fn read_derived_key<Relation: OperationReads<Operation>, From, To>(
         &mut self,
         relation: ApplicationDerivedRelationRef<Schema, Relation, From, To>,
         root: NativeMemberKey,
@@ -164,7 +164,7 @@ impl<Schema: ApplicationSchema, Operation: ApplicationOperationMarkerIdentity<Sc
         Ok(native)
     }
 
-    pub fn fail_derived<Entity>(
+    pub(crate) fn fail_derived<Entity>(
         &mut self,
         root: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
         entity: &str,

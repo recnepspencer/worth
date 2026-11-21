@@ -54,15 +54,15 @@ pub(super) fn recover_publication(
             .chain(equality_index_ids.iter())
             .copied(),
     )?;
-    Ok(WorthQueryPrimaryGraphPublication {
-        binding_identity: graph.binding_identity().clone(),
+    Ok(<WorthQueryPrimaryGraphPublication as worth_query_execution_lineage::facade::ports::PrimaryGraphPublicationInternalPort>::from_parts(
+        graph.binding_identity().clone(),
         principal_binding_count,
-        identity_index_count: principal_index_ids.len(),
-        application_equality_index_count: equality_index_ids.len(),
+        principal_index_ids.len(),
+        equality_index_ids.len(),
         policy_entity_count,
         policy_relation_count,
-        bootstrap_commit_id: checkpoint.bootstrap_commit_id,
-    })
+        checkpoint.bootstrap_commit_id,
+    ))
 }
 
 fn publication_row_counts(

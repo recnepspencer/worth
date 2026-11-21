@@ -31,7 +31,7 @@ pub enum NativeReadAccess<'a> {
 }
 
 impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthority<Schema> {
-    pub fn project_borrowed<Output>(
+    pub(crate) fn project_borrowed<Output>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         lease: &WorthQueryApplicationSnapshotLease,
@@ -54,7 +54,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthorit
         )
     }
 
-    pub fn read_snapshot<Output>(
+    pub(crate) fn read_snapshot<Output>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         work_budget: WorthQueryInvariantProjectionWorkBudget,
@@ -76,7 +76,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthorit
         )
     }
 
-    pub fn read_native<Output>(
+    pub(crate) fn read_native<Output>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         work_budget: WorthQueryInvariantProjectionWorkBudget,
@@ -107,7 +107,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthorit
             retention_control,
         )
     }
-    pub fn read_native_with_access<Output>(
+    pub(crate) fn read_native_with_access<Output>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         work_budget: WorthQueryInvariantProjectionWorkBudget,

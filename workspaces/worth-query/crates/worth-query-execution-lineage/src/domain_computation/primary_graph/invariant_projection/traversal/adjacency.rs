@@ -7,7 +7,7 @@ use worth_relational::facade::{
 };
 
 impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'_, Schema> {
-    pub fn read_adjacency(
+    pub(crate) fn read_adjacency(
         &mut self,
         subject: &str,
         member: EntityId,

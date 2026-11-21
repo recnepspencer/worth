@@ -47,7 +47,7 @@ where
     QueryResult: WorthQueryApplicationProjection<Schema, Query>,
     Binding: ApplicationQueryLiveCauseBinding<Schema, Query, Scope, Target>,
 {
-    pub fn admit_delivery_progress(
+    pub(crate) fn admit_delivery_progress(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,

@@ -37,24 +37,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationIdempotencyResolution, WorthQueryAuthenticatedPrincipal,
 };
 
-pub trait AuthenticatedPrincipalInternalPort<Schema, Principal, PrincipalIdentity>: Sized {
-    fn mint(
-        external: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
-        evidence: WorthQueryResolvedPrincipalEvidence<PrincipalIdentity>,
-    ) -> Self;
-}
-
-impl<Schema, Principal, PrincipalIdentity>
-    AuthenticatedPrincipalInternalPort<Schema, Principal, PrincipalIdentity>
-    for WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>
-{
-    fn mint(
-        external: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
-        evidence: WorthQueryResolvedPrincipalEvidence<PrincipalIdentity>,
-    ) -> Self {
-        Self::mint(external, evidence)
-    }
-}
+pub use crate::domain_computation::primary_graph::authenticated_principal::AuthenticatedPrincipalInternalPort;
 
 pub trait InboundReceiptInternalPort: Sized {
     fn from_accepted(
@@ -277,6 +260,12 @@ pub trait AdmittedApplicationConditionalDefinitionInternalPort: Sized {
             crate::domain_computation::execution_runtime::product_world::activation::WorthQueryProductActivationRegistry,
         >,
     ) -> Self;
+
+    fn identity(&self) -> &[u8; 32];
+
+    fn into_parts(
+        self,
+    ) -> crate::domain_computation::primary_graph::product_operation::conditional_definition::WorthQueryApplicationConditionalDefinitionParts;
 }
 
 impl AdmittedApplicationConditionalDefinitionInternalPort
@@ -304,6 +293,17 @@ impl AdmittedApplicationConditionalDefinitionInternalPort
             bridge,
             activations,
         )
+    }
+
+    fn identity(&self) -> &[u8; 32] {
+        Self::identity(self)
+    }
+
+    fn into_parts(
+        self,
+    ) -> crate::domain_computation::primary_graph::product_operation::conditional_definition::WorthQueryApplicationConditionalDefinitionParts
+{
+        Self::into_parts(self)
     }
 }
 

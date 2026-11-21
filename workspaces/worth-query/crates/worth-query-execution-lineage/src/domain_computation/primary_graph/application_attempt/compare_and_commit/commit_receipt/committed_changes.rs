@@ -25,7 +25,7 @@ pub struct WorthQueryApplicationCommittedChanges {
 }
 
 impl WorthQueryApplicationCommittedChanges {
-    pub fn matches_recorded_semantic_result(
+    pub(crate) fn matches_recorded_semantic_result(
         &self,
         recorded: &worth_relational::facade::durability::RecoveredRelationalSemanticResult,
     ) -> bool {

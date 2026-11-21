@@ -146,7 +146,7 @@ impl<Schema, Operation>
             self.reader.snapshot,
         )
     }
-    pub fn computation_snapshot(
+    pub(crate) fn computation_snapshot(
         &self,
         _: &Comparator,
     ) -> worth_relational::facade::snapshots::SnapshotHandle {
@@ -155,7 +155,7 @@ impl<Schema, Operation>
 
     /// The immutable installed backing which also issued this reader's decode
     /// session. Identity alone grants no source, snapshot or session custody.
-    pub fn computation_value_bindings(
+    pub(crate) fn computation_value_bindings(
         &self,
         _: &Comparator,
     ) -> worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog {
@@ -190,7 +190,7 @@ impl<Schema, Operation>
 
     /// Enters a fact a carried call read as an ordinary admitted read of that
     /// call, so seal observes it again.
-    pub fn enter_carried(
+    pub(crate) fn enter_carried(
         &mut self,
         _: &Comparator,
         key: WorthQueryApplicationFactKey,

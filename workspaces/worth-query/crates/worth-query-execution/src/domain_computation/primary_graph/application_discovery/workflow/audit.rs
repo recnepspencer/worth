@@ -2,6 +2,7 @@
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial as Denial;
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind as Kind;
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as Refusal;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 use worth_query_execution_query::facade::ports::AdmittedCapabilityAccessInspectionPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;

@@ -11,7 +11,7 @@ pub struct WorthQueryGranularInvalidationObservation {
 }
 
 impl WorthQueryGranularInvalidationObservation {
-    pub fn from_deliveries(
+    pub(crate) fn from_deliveries(
         deliveries: &[worth_runtime_bridge::facade::BridgeGranularInvalidationDelivery],
     ) -> Self {
         let mut bridge = WorthQueryBridgeGranularDeliveryCounters::default();

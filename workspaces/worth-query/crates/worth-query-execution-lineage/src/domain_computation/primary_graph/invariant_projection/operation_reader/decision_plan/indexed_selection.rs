@@ -236,7 +236,7 @@ impl<Schema: ApplicationSchema, Operation>
         )
     }
 
-    pub fn retain_named_entity_selection<Entity>(
+    pub(crate) fn retain_named_entity_selection<Entity>(
         &mut self,
         entity: &str,
         kind: worth_relational::facade::identity::KindId,
@@ -279,7 +279,7 @@ impl<Schema: ApplicationSchema, Operation>
         Ok(identities)
     }
 
-    pub fn require_selection_budget(
+    pub(crate) fn require_selection_budget(
         &mut self,
         limit: usize,
         subject: &str,

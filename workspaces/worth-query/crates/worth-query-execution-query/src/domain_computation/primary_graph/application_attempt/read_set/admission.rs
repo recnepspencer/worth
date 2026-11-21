@@ -3,6 +3,7 @@ use worth_query_execution_attempt::facade::ports::{
     AdmittedOperationExecutionPort as _, ApplicationReadAttemptAdmissionPort as _,
     WorthQueryReadAttemptRuntimeContext,
 };
+use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 
@@ -13,7 +14,7 @@ where
     pub(super) fn read_attempt_runtime_context(&self) -> WorthQueryReadAttemptRuntimeContext<'_> {
         let primary_graph = self.runtime.primary_graph().map(|graph| {
             (
-                Arc::clone(&graph.layout),
+                Arc::clone(graph.layout_ref()),
                 graph.retain_entity_resolution_context(),
             )
         });

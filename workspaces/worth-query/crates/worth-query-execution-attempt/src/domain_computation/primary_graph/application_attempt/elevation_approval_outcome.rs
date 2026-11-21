@@ -20,7 +20,7 @@ pub struct WorthQueryApprovedElevation {
 }
 
 impl WorthQueryApprovedElevation {
-    pub const fn approval_commit_receipt(&self) -> &WorthQueryApplicationCommitReceipt {
+    pub(crate) const fn approval_commit_receipt(&self) -> &WorthQueryApplicationCommitReceipt {
         &self.approval_commit
     }
 

@@ -28,7 +28,7 @@ pub enum WorthQueryApplicationAuthorizationExplanationCause {
 }
 
 impl WorthQueryApplicationAuthorizationExplanationCause {
-    pub const fn from_denial_kind(
+    pub(crate) const fn from_denial_kind(
         kind: WorthQueryOperationAuthorizationDenialKind,
     ) -> Option<Self> {
         use WorthQueryOperationAuthorizationDenialKind as Denial;

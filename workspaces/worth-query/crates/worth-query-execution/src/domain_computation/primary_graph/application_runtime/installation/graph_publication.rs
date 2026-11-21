@@ -3,6 +3,7 @@ use super::*;
 use crate::domain_computation::primary_graph::bootstrap::{
     BootstrapPublicationReservation, BootstrapPublicationStorage,
 };
+use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 pub(super) struct PublishedNativeGraph {
     runtime: WorthQueryExecutionRuntime,
     resource_support: crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphResourceSupport,
@@ -24,7 +25,7 @@ pub(super) fn publish_native<S: ApplicationSchema>(
     WorthQueryPrimaryGraphInstallationDenial,
 > {
     let storage = BootstrapPublicationReservation::prepare(&phase.execution_request())?;
-    let bridge_layout = std::sync::Arc::clone(&bootstrap.graph.layout);
+    let bridge_layout = std::sync::Arc::clone(bootstrap.graph.layout_ref());
     let product_world_resources = bootstrap.product_world_resources.clone();
     let recovered_relational_authority = bootstrap.take_recovered_relational_authority();
     let checkpoint_restore_work = bootstrap.recovered_checkpoint_restore_work();

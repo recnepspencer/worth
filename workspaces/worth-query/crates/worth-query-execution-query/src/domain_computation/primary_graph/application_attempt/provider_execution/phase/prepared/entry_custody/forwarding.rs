@@ -13,7 +13,7 @@ impl<Schema: ApplicationSchema, Operation, Input, Scope>
         WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
     >
 {
-    pub fn compare_and_commit_application_with_output_observation(
+    pub(crate) fn compare_and_commit_application_with_output_observation(
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
 
@@ -34,7 +34,7 @@ impl<Schema: ApplicationSchema, Operation, Input, Scope>
             allocation_policy,
         )
     }
-    pub fn compare_and_commit_application_with_causality(
+    pub(crate) fn compare_and_commit_application_with_causality(
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
@@ -58,7 +58,7 @@ impl<Schema: ApplicationSchema, Operation, Input, Scope>
         )
     }
     #[allow(clippy::too_many_arguments)]
-    pub fn compare_and_commit_application_with_causality_under_coordination(
+    pub(crate) fn compare_and_commit_application_with_causality_under_coordination(
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
@@ -112,7 +112,7 @@ impl<Schema: ApplicationSchema, Operation, Input, Scope>
             outer_application,
         )
     }
-    pub fn compare_and_commit_application_inner(
+    pub(crate) fn compare_and_commit_application_inner(
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
 
@@ -129,7 +129,7 @@ impl<Schema: ApplicationSchema, Operation, Input, Scope>
             allocation_policy,
         )
     }
-    pub fn compare_and_commit_application_inner_with_currentness(
+    pub(crate) fn compare_and_commit_application_inner_with_currentness(
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
 

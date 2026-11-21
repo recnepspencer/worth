@@ -168,7 +168,7 @@ impl WorthQueryExternalEffectDispatch {
         }
     }
 
-    pub const fn live_runtime(
+    pub(crate) const fn live_runtime(
         &self,
     ) -> crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity {
         self.live_runtime

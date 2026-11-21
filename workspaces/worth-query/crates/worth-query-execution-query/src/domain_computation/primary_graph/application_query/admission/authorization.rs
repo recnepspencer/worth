@@ -16,6 +16,7 @@ use crate::domain_computation::primary_graph::{
 use crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession;
 use worth_query_admission::facade::application_query::WorthQueryAdmittedApplicationQueryParameters;
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
+use worth_query_execution_attempt::facade::ports::AuthenticatedPrincipalInternalPort as _;
 use worth_query_installation::facade::WorthQueryInstalledApplicationQuery;
 pub struct AdmittedApplicationQueryAuthorities {
     pub authorization: WorthQueryRetainedAuthorizationDecisionFacts,

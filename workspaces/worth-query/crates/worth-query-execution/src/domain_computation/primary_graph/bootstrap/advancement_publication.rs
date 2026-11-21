@@ -1,4 +1,5 @@
 use super::*;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 use worth_query_execution_query::facade::ports::QueryExecutionRuntimeInternalPort as _;
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphBootstrap<Schema> {
@@ -61,14 +62,14 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphBootstrap<Schema> {
         let relation_count = self.committed_relation_count + self.typed_rows.relation_rows.len();
         let principal_identity_index_count = self
             .graph
-            .layout
+            .layout_ref()
             .principal_bindings()
             .map(|(_, binding)| binding.index_id)
             .collect::<BTreeSet<_>>()
             .len();
         let application_equality_index_count = self
             .graph
-            .layout
+            .layout_ref()
             .equality_index_ids()
             .collect::<BTreeSet<_>>()
             .len();
@@ -97,15 +98,15 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphBootstrap<Schema> {
         self.last_seed_commit_id = Some(commit_id);
         build_identity_indexes(execution, &self.graph, commit_id, &index_ids)?;
         let binding_identity = self.graph.binding_identity().clone();
-        let publication = WorthQueryPrimaryGraphPublication {
+        let publication = <WorthQueryPrimaryGraphPublication as worth_query_execution_lineage::facade::ports::PrimaryGraphPublicationInternalPort>::from_parts(
             binding_identity,
-            principal_binding_count: row_count,
-            identity_index_count: principal_identity_index_count,
+            row_count,
+            principal_identity_index_count,
             application_equality_index_count,
-            policy_entity_count: entity_count,
-            policy_relation_count: relation_count,
-            bootstrap_commit_id: commit_id,
-        };
+            entity_count,
+            relation_count,
+            commit_id,
+        );
         self.seed_batch_failed = false;
         Ok(publication)
     }

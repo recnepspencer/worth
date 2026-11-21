@@ -10,6 +10,7 @@ pub mod domain_computation {
 pub mod ports {
     pub use crate::domain_computation::execution_runtime::product_world::QueryProductRuntimeInternalPort;
     pub use crate::domain_computation::execution_runtime::QueryExecutionRuntimeInternalPort;
+    pub use crate::domain_computation::primary_graph::application_contribution::partitioned_computation::installed::collection::InstalledPartitionedComputationInternalPort;
     pub use crate::domain_computation::primary_graph::application_query::batch::planning::BatchAdmissionInternalPort;
     pub use crate::domain_computation::primary_graph::causal_inspection::application_observation::declared_query::ApplicationQueryObservationInternalPort;
     pub use crate::domain_computation::primary_graph::conditional_operation::installation::clock_handle::ConditionalClockHandleInternalPort;

@@ -12,6 +12,7 @@ use worth_foundational::facade::AspectValue;
 use worth_query_declaration::facade::application_schema::fragment::AspectDefinition;
 use worth_query_declaration::facade::application_schema::fragment::RecordFieldDefinition;
 use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
+use worth_query_execution_lineage::facade::ports::FragmentWritingViewInternalPort as _;
 
 impl<S: worth_query_installation::facade::ApplicationSchema>
     crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<S>
@@ -53,7 +54,7 @@ impl<S: worth_query_installation::facade::ApplicationSchema>
             .fragment(marker)
             .ok_or(FragmentDenial::NotInstalled { fragment: F::NAME })?;
         Ok(
-            crate::domain_computation::primary_graph::fragment_view::View::writing(
+            crate::domain_computation::primary_graph::fragment_view::View::from_writing(
                 definition, candidate,
             ),
         )

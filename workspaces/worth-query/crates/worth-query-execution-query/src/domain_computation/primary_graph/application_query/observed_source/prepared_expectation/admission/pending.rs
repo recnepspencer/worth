@@ -1,6 +1,7 @@
 //! Pending materialization requires the same validation-owned unique loan.
 use super::*;
 use crate::domain_computation::primary_graph::SourceFactExpansionControlExt;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 impl<Schema: worth_query_installation::facade::ApplicationSchema, Operation, Input, Scope>
     CheckedMutableSourceAdmission<'_, Schema, Operation, Input, Scope>
@@ -60,7 +61,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema, Operation, Inp
             pending.expected_query_identifier,
         )?;
         let facts = pending.source.validated_facts(
-            &graph.layout,
+            graph.layout_ref(),
             pending.expected_query_identifier,
             control,
         )?;

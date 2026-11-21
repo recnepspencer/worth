@@ -1,5 +1,6 @@
 //! Index currency for the exact installed read that producer readmission will execute.
 
+use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 use worth_query_installation::facade::WorthQueryInstalledApplicationQuery;
 use worth_relational::facade::branch::AdmittedRelationalBranchBasis;
 use worth_relational::facade::indexes::DerivedIndexId;
@@ -172,7 +173,7 @@ fn selected_field_id(
     (entity, aspect, field): (&str, &str, &str),
 ) -> Result<DerivedIndexId, WorthQueryApplicationQueryAdmissionDenial> {
     graph
-        .layout
+        .layout_ref()
         .equality_field(entity, aspect, field)
         .and_then(|layout| layout.equality_index_id)
         .ok_or_else(|| denial(field))

@@ -1,4 +1,6 @@
 //! Candidate source meaning is retained without issuing a Current observation.
+use worth_query_execution_attempt::facade::ports::AuthenticatedPrincipalInternalPort as _;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 use crate::domain_computation::primary_graph::application_attempt::fact::source_read_authorization::applied_query::SourceReadAuthorizationAppliedQueryExt;
 use std::marker::PhantomData;
@@ -207,7 +209,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .ok_or(super::super::SourceQueryObservationStop::ForeignClosure)?;
         let facts = fact_conversion::applied_facts(
             meaning.footprint(),
-            &graph.layout,
+            graph.layout_ref(),
             query_name,
             fact_conversion::SourceFactExpansionControl::in_request(*execution, Some(request)),
         )?;

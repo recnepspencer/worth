@@ -122,7 +122,7 @@ impl WorthQueryArtifactProductionAuthority {
         WorthQueryMoveOnlyArtifactHandle::register(admission, guarded.prepare(), None)
     }
 
-    pub fn register_tracked<R: WorthQueryArtifactProviderResource>(
+    pub(crate) fn register_tracked<R: WorthQueryArtifactProviderResource>(
         expected: &Arc<Self>,
         admission: WorthQueryArtifactProductionAdmission,
         resource: R,

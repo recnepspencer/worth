@@ -6,6 +6,7 @@ use crate::equality_type_id::EqualityTypeId;
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryBinding, ApplicationQueryParameterSet,
 };
+use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_relational::facade::runtime::RelationalPinnedRead;
 mod created;
@@ -294,7 +295,7 @@ where
         predecessor
     } else {
         let graph = runtime.runtime.primary_graph().ok_or_else(foreign)?;
-        let publisher = graph.application_publication.as_ref().ok_or_else(foreign)?;
+        let publisher = graph.application_publication_ref().ok_or_else(foreign)?;
         let meaning = worth_relational::facade::mvcc::RequiredOutputPublicationMeaning {
             implementation:
                 worth_relational::facade::mvcc::RequiredOutputProducingImplementation::new(

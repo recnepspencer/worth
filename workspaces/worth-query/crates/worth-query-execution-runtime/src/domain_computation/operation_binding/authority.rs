@@ -86,7 +86,9 @@ impl WorthQueryExecutionBoundOperationAuthority {
         self.runtime_authority
     }
 
-    pub const fn graph_work_affinity(&self) -> Option<WorthQueryApplicationGraphWorkAffinity> {
+    pub(crate) const fn graph_work_affinity(
+        &self,
+    ) -> Option<WorthQueryApplicationGraphWorkAffinity> {
         self.graph_work_affinity
     }
 
@@ -139,7 +141,7 @@ impl WorthQueryExecutionBoundOperationAuthority {
         self.commit_posture
     }
 
-    pub fn retain_installed_domain_authority(
+    pub(crate) fn retain_installed_domain_authority(
         &self,
     ) -> Arc<WorthQueryInstalledDomainExecutionAuthority> {
         Arc::clone(&self.installed_domain)
@@ -171,11 +173,14 @@ impl WorthQueryExecutionBoundOperationAuthority {
         self.runtime_authority == runtime.authority_identity()
     }
 
-    pub fn belongs_to_current_installation(&self, runtime: &WorthQueryExecutionRuntime) -> bool {
+    pub(crate) fn belongs_to_current_installation(
+        &self,
+        runtime: &WorthQueryExecutionRuntime,
+    ) -> bool {
         self.belongs_to(runtime) && self.installed_domain.is_current_installation_generation()
     }
 
-    pub fn admits_convergence_contract(
+    pub(crate) fn admits_convergence_contract(
         &self,
         contract: &worth_query_admission::facade::domain_computation::WorthQueryAdmittedConvergenceContract,
     ) -> bool {
@@ -218,11 +223,14 @@ impl WorthQueryExecutionBoundOperationAuthority {
         self.installed_domain.is_current_installation_generation()
     }
 
-    pub fn is_workflow_operation(&self) -> bool {
+    pub(crate) fn is_workflow_operation(&self) -> bool {
         self.workflow_stage_resources.is_some()
     }
 
-    pub fn admits_direct_plan(&self, plan: &WorthQueryAdmittedExecutionResourcePlan) -> bool {
+    pub(crate) fn admits_direct_plan(
+        &self,
+        plan: &WorthQueryAdmittedExecutionResourcePlan,
+    ) -> bool {
         self.workflow_stage_resources.is_none()
             && self.admits_operation_plan(plan)
             && self
@@ -235,7 +243,10 @@ impl WorthQueryExecutionBoundOperationAuthority {
             && plan.support_snapshot().parallel_admission().is_none()
     }
 
-    pub fn admits_workflow_plan(&self, plan: &WorthQueryAdmittedWorkflowResourcePlan) -> bool {
+    pub(crate) fn admits_workflow_plan(
+        &self,
+        plan: &WorthQueryAdmittedWorkflowResourcePlan,
+    ) -> bool {
         let Some(expected_stages) = &self.workflow_stage_resources else {
             return false;
         };
@@ -264,7 +275,7 @@ impl WorthQueryExecutionBoundOperationAuthority {
             })
     }
 
-    pub fn admits_convergence_graph(
+    pub(crate) fn admits_convergence_graph(
         &self,
         contract: &worth_query_admission::facade::domain_computation::WorthQueryAdmittedConvergenceContract,
         graph: &worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority,
@@ -289,7 +300,7 @@ impl WorthQueryExecutionBoundOperationAuthority {
             && plan.contract_identity() == self.operation_resource_contract_identity.as_ref()
     }
 
-    pub fn admits_graph_call(
+    pub(crate) fn admits_graph_call(
         &self,
         stage_identity: Option<&str>,
         authority: &WorthQueryInstalledGraphParticipationAuthority,
@@ -309,7 +320,7 @@ impl WorthQueryExecutionBoundOperationAuthority {
         }
     }
 
-    pub fn admits_commit_call(
+    pub(crate) fn admits_commit_call(
         &self,
         stage_identity: Option<&str>,
         authorities: &[&WorthQueryInstalledGraphParticipationAuthority],
@@ -329,7 +340,7 @@ impl WorthQueryExecutionBoundOperationAuthority {
         &self.canonical_query_digest
     }
 
-    pub fn operation_evidence_contract(
+    pub(crate) fn operation_evidence_contract(
         &self,
     ) -> Option<&Arc<worth_query_installation::facade::WorthQueryInstalledArtifactContractAuthority>>
     {
@@ -356,7 +367,7 @@ impl WorthQueryExecutionBoundOperationAuthority {
             .evidence()
     }
 
-    pub fn workflow_stage_artifact_contracts(
+    pub(crate) fn workflow_stage_artifact_contracts(
         &self,
         stage_identity: &str,
     ) -> Option<&WorthQueryInstalledWorkflowArtifactContracts> {
@@ -366,7 +377,11 @@ impl WorthQueryExecutionBoundOperationAuthority {
             .map(|stage| &stage.artifact_contracts)
     }
 
-    pub fn admits_workflow_edge(&self, predecessor_stage: &str, consumer_stage: &str) -> bool {
+    pub(crate) fn admits_workflow_edge(
+        &self,
+        predecessor_stage: &str,
+        consumer_stage: &str,
+    ) -> bool {
         self.workflow_stage_resources
             .as_ref()
             .and_then(|stages| stages.get(consumer_stage))

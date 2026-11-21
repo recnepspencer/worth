@@ -162,7 +162,7 @@ where
                     };
                     let mut poll = || context.borrow_mut().poll();
                     let accounted = context.borrow().has_accounting();
-                    let checkpoint = WorthQueryManagedComputationCheckpoint::for_partition(
+                    let checkpoint = <WorthQueryManagedComputationCheckpoint<'_> as worth_query_execution_lineage::facade::ports::ManagedComputationCheckpointInternalPort<'_>>::for_partition(
                         accounted.then_some(
                             &mut charge
                                 as &mut dyn FnMut(
@@ -176,7 +176,7 @@ where
                     let mut checkpoint = checkpoint;
                     let computed = checkpoint.poll().map_err(Into::into).and_then(|()| {
                         owner.compute_partition(
-                            WorthQueryComputationPartitionView::new(partition),
+                            <WorthQueryComputationPartitionView<'_, _, _> as worth_query_execution_lineage::facade::ports::ComputationPartitionViewInternalPort<'_, _, _>>::from_gathered(partition),
                             &mut checkpoint,
                         )
                     });
@@ -211,8 +211,9 @@ where
                 recording,
                 cause,
             } => {
-                let dispatch = execution
-                    .request
+                let dispatch = worth_query_execution_lineage::facade::ports::ManagedComputationExecutionInternalPort::request_ref(
+                    execution,
+                )
                     .dispatch()
                     .map_err(WorthQueryPartitionedComputationDenial::Resource)?;
                 let kernel = |partition: &Gathered<Schema, Feature, Computation, Owner>,
@@ -225,8 +226,8 @@ where
                             compute_ceiling,
                             &map,
                             (kernel, diagnostic_kernel),
-                            (reducer.identity)(),
-                            reducer.combine,
+                            (reducer.identity())(),
+                            reducer.combine(),
                             cause,
                         )
                         .map_err(WorthQueryPartitionedComputationDenial::from_retained_reduce)?;
@@ -256,7 +257,9 @@ where
                     Ok(recording) => recording.complete(
                         partition_results,
                         tree,
-                        execution.request,
+                        worth_query_execution_lineage::facade::ports::ManagedComputationExecutionInternalPort::request_ref(
+                            execution,
+                        ),
                         cause,
                         report,
                     )?,
@@ -277,7 +280,9 @@ where
                     computed_work,
                     completed,
                 } = prepared.compute(
-                    execution.request,
+                    worth_query_execution_lineage::facade::ports::ManagedComputationExecutionInternalPort::request_ref(
+                        execution,
+                    ),
                     kernel,
                     self.kernel_observation_for_test.as_ref(),
                     &reducer,

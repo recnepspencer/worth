@@ -17,7 +17,7 @@ where
     FamilySourceQuery<Schema, Family>: 'static,
     WorthQueryAdmittedOutputDemand<Schema, Family>: Send,
 {
-    pub fn assert_required_admission(
+    pub(crate) fn assert_required_admission(
         &self,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         phase: &WorthQueryAdvancementPhase<'_>,

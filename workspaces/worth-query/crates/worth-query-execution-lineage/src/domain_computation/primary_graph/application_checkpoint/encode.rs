@@ -20,7 +20,7 @@ impl WorthQueryApplicationCheckpoint {
     > {
         Self::encode_frame(native, &[], &[], publication, accepted_outputs, policy)
     }
-    pub fn encode_frame(
+    pub(crate) fn encode_frame(
         native: worth_relational::facade::durability::RelationalNativeCheckpoint,
         native_image: &[u8],
         world_originals: &[u8],

@@ -1,6 +1,7 @@
 //! Construction phases for one published application runtime.
 
 use crate::equality_type_id::EqualityTypeId as TypeId;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 mod assembly;
 pub(in crate::domain_computation::primary_graph) mod home_attachment;
 mod input;
@@ -103,14 +104,17 @@ fn compile_authorization<Schema>(
 where
     Schema: ApplicationSchema,
 {
-    WorthQueryInstalledAuthorizationRegistry::compile(installed_schema, &bootstrap.graph.layout)
-        .map_err(|denial| {
-            WorthQueryPrimaryGraphInstallationDenial::new(
-                WorthQueryPrimaryGraphInstallationDenialKind::AuthorizationPolicyRejected,
-                denial.to_string(),
-            )
-            .with_authorization_cause(denial)
-        })
+    WorthQueryInstalledAuthorizationRegistry::compile(
+        installed_schema,
+        bootstrap.graph.layout_ref(),
+    )
+    .map_err(|denial| {
+        WorthQueryPrimaryGraphInstallationDenial::new(
+            WorthQueryPrimaryGraphInstallationDenialKind::AuthorizationPolicyRejected,
+            denial.to_string(),
+        )
+        .with_authorization_cause(denial)
+    })
 }
 fn publish_application_graph<Schema>(
     phase: &super::super::WorthQueryBootstrapAdvancementPhase<'_>,

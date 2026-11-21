@@ -124,7 +124,7 @@ impl<Schema, Set, Entity> WorthQueryApplicationInvariantComponents<Schema, Set, 
             WorthQueryApplicationInvariantComponent::new(native.clone(), self.context.clone())
         })
     }
-    pub fn from_prepared(
+    pub(crate) fn from_prepared(
         native: worth_relational::facade::runtime::AggregateCensusRead,
         context: ComponentContext<Schema, Entity>,
     ) -> Self {

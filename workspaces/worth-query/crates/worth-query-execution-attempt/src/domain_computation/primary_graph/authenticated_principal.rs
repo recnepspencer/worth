@@ -113,7 +113,7 @@ impl<Schema, Principal, PrincipalIdentity>
         }
     }
 
-    pub fn retain_authentication(&self) -> std::sync::Arc<dyn std::any::Any + Send + Sync>
+    pub(crate) fn retain_authentication(&self) -> std::sync::Arc<dyn std::any::Any + Send + Sync>
     where
         Schema: 'static,
     {
@@ -168,24 +168,80 @@ impl<Schema, Principal, PrincipalIdentity>
         self.examined_candidate_count
     }
 
-    pub const fn principal_entity_id(&self) -> EntityId {
+    pub(crate) const fn principal_entity_id(&self) -> EntityId {
         self.application_principal.entity_id
     }
 
-    pub const fn runtime_authority(&self) -> WorthQueryRuntimeAuthorityIdentity {
+    pub(crate) const fn runtime_authority(&self) -> WorthQueryRuntimeAuthorityIdentity {
         self.application_principal.runtime_authority
     }
 
-    pub const fn mapping_entity_id(&self) -> EntityId {
+    pub(crate) const fn mapping_entity_id(&self) -> EntityId {
         self.mapping_entity_id
     }
 
-    pub const fn target_relation_id(&self) -> RelationId {
+    pub(crate) const fn target_relation_id(&self) -> RelationId {
         self.target_relation_id
     }
 
-    pub const fn freshness(&self) -> &WorthQueryPrincipalFreshnessEvidence {
+    pub(crate) const fn freshness(&self) -> &WorthQueryPrincipalFreshnessEvidence {
         &self.freshness
+    }
+}
+
+/// Crate-boundary internal port for `WorthQueryAuthenticatedPrincipal`.
+/// Never exported on `worth-query-execution::facade` or Host.
+pub trait AuthenticatedPrincipalInternalPort<Schema, Principal, PrincipalIdentity>: Sized {
+    fn mint(
+        external: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
+        evidence: WorthQueryResolvedPrincipalEvidence<PrincipalIdentity>,
+    ) -> Self;
+    fn retain_authentication(&self) -> std::sync::Arc<dyn std::any::Any + Send + Sync>
+    where
+        Schema: 'static;
+    fn principal_entity_id(&self) -> EntityId;
+    fn runtime_authority(&self) -> WorthQueryRuntimeAuthorityIdentity;
+    fn mapping_entity_id(&self) -> EntityId;
+    fn target_relation_id(&self) -> RelationId;
+    fn freshness(&self) -> &WorthQueryPrincipalFreshnessEvidence;
+}
+
+impl<Schema, Principal, PrincipalIdentity>
+    AuthenticatedPrincipalInternalPort<Schema, Principal, PrincipalIdentity>
+    for WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>
+{
+    fn mint(
+        external: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
+        evidence: WorthQueryResolvedPrincipalEvidence<PrincipalIdentity>,
+    ) -> Self {
+        Self::mint(external, evidence)
+    }
+
+    fn retain_authentication(&self) -> std::sync::Arc<dyn std::any::Any + Send + Sync>
+    where
+        Schema: 'static,
+    {
+        Self::retain_authentication(self)
+    }
+
+    fn principal_entity_id(&self) -> EntityId {
+        Self::principal_entity_id(self)
+    }
+
+    fn runtime_authority(&self) -> WorthQueryRuntimeAuthorityIdentity {
+        Self::runtime_authority(self)
+    }
+
+    fn mapping_entity_id(&self) -> EntityId {
+        Self::mapping_entity_id(self)
+    }
+
+    fn target_relation_id(&self) -> RelationId {
+        Self::target_relation_id(self)
+    }
+
+    fn freshness(&self) -> &WorthQueryPrincipalFreshnessEvidence {
+        Self::freshness(self)
     }
 }
 

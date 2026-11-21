@@ -26,6 +26,7 @@ use worth_query_admission::facade::authenticated_principal::WorthQueryRequestSco
 use worth_query_declaration::facade::{
     application_query::ApplicationManagedIndexBinding, application_schema::ApplicationSchema,
 };
+use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 use worth_query_installation::facade::WorthQueryInstalledManagedIndexParent;
 
 pub trait ErasedIndexExecutor<S>: Send + Sync {
@@ -117,7 +118,7 @@ where
             .primary_graph()
             .ok_or(Denial::ForeignAssociation)?;
         if graph
-            .layout
+            .layout_ref()
             .managed_source(&adapter.installed().definition().parts().name)
             .is_some()
         {

@@ -12,9 +12,9 @@ use worth_runtime_world::facade::{CapturedWorldInterimAdmission, CapturedWorldIn
 
 #[derive(Debug, Clone)]
 pub struct WorthQueryInterimCheckpointOrigin {
-    pub source_application: worth_foundational::CanonicalDigestId,
-    pub native: CapturedNativeInterimOrigin,
-    pub world: CapturedWorldInterimOrigin,
+    pub(crate) source_application: worth_foundational::CanonicalDigestId,
+    pub(crate) native: CapturedNativeInterimOrigin,
+    pub(crate) world: CapturedWorldInterimOrigin,
 }
 impl WorthQueryApplicationCheckpoint {
     /// Retain the actual issuing owners' immutable transport proof separately
@@ -33,7 +33,7 @@ impl WorthQueryApplicationCheckpoint {
             .map_err(CheckpointDecodeDenial::into_installation_denial)?;
         Ok(self)
     }
-    pub fn preflight_interim(
+    pub(crate) fn preflight_interim(
         &self,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<(), CheckpointDecodeDenial> {
@@ -81,7 +81,7 @@ impl WorthQueryApplicationCheckpoint {
             (Err(cause), _) => Err(CheckpointDecodeDenial::execution(cause)),
         }
     }
-    pub fn encode_captured(
+    pub(crate) fn encode_captured(
         native: worth_relational::facade::durability::RelationalNativeCheckpoint,
         mut admission: CapturedNativeInterimAdmission,
         world: CapturedWorldInterimAdmission,

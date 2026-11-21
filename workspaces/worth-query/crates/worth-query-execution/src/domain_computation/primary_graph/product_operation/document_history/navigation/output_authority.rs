@@ -16,6 +16,7 @@ use worth_query_declaration::facade::application_history::{
     ApplicationHistoryBinding, ApplicationHistoryModel, ApplicationHistoryNavigationBinding,
 };
 use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
+use worth_query_execution_attempt::facade::ports::AuthenticatedPrincipalInternalPort as _;
 use worth_query_execution_lineage::facade::ports::ReadObservationInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 use worth_query_installation::facade::{

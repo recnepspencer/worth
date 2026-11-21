@@ -20,7 +20,7 @@ pub struct ObservedRequirementItems {
 }
 
 impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'_, Schema> {
-    pub fn body_related_items<Entity>(
+    pub(crate) fn body_related_items<Entity>(
         &mut self,
         identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
         source: &Source,

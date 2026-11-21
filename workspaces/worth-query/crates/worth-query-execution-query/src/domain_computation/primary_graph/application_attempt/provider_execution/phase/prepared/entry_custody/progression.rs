@@ -11,7 +11,7 @@ impl<Schema: ApplicationSchema, Operation, Input, Scope>
         WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
     >
 {
-    pub fn compare_and_commit_application_inner_with_currentness_and_aftermath(
+    pub(crate) fn compare_and_commit_application_inner_with_currentness_and_aftermath(
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
 
@@ -36,7 +36,7 @@ impl<Schema: ApplicationSchema, Operation, Input, Scope>
         )
     }
     #[allow(clippy::too_many_arguments)]
-    pub fn compare_and_commit_application_inner_under_coordination(
+    pub(crate) fn compare_and_commit_application_inner_under_coordination(
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
 

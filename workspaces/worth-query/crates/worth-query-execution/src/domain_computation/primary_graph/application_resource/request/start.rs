@@ -14,6 +14,7 @@ use worth_query_declaration::facade::{
     application_query::ApplicationQueryScopeResolution,
     application_resource::ApplicationResourceInput,
 };
+use worth_query_execution_attempt::facade::ports::AuthenticatedPrincipalInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_installation::facade::WorthQueryResourceAccessPurpose;
 

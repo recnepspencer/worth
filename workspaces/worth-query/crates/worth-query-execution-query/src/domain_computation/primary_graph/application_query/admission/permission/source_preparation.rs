@@ -1,5 +1,6 @@
 //! One permission owner for fresh source intent and retained-source readmission.
 use super::*;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 
@@ -132,12 +133,13 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 query.name(),
             )
         })?;
-        let disclosure = compile_disclosure_contract(query, &graph.layout).map_err(|stop| {
-            denial(
-                WorthQueryApplicationQueryAdmissionDenialKind::DisclosureContractInvalid,
-                stop.subject(),
-            )
-        })?;
+        let disclosure =
+            compile_disclosure_contract(query, graph.layout_ref()).map_err(|stop| {
+                denial(
+                    WorthQueryApplicationQueryAdmissionDenialKind::DisclosureContractInvalid,
+                    stop.subject(),
+                )
+            })?;
 
         let session = WorthQueryPreparedProductReadSessionIdentity::reserve().map_err(|_| {
             denial(

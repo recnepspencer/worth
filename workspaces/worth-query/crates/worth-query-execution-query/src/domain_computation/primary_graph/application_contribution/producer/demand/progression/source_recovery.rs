@@ -1,5 +1,6 @@
 use crate::domain_computation::primary_graph::ReadObservationRuntimeExt;
 use crate::equality_type_id::EqualityTypeId as TypeId;
+use worth_query_execution_lineage::facade::ports::PreparedRequiredOutputSourceInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
@@ -89,12 +90,12 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         );
         Some((
             retained,
-            WorthQueryPreparedRequiredOutputSource {
-                runtime_authority: self.runtime.authority_identity().as_u64(),
-                source_commit: receipt.source_commit().clone(),
-                product_occurrence: receipt.product_branch().occurrence(),
-                owner: self.runtime.output_demands.clone(),
-            },
+            WorthQueryPreparedRequiredOutputSource::from_parts(
+                self.runtime.authority_identity().as_u64(),
+                receipt.source_commit().clone(),
+                receipt.product_branch().occurrence(),
+                self.runtime.output_demands.clone(),
+            ),
         ))
     }
 
@@ -121,7 +122,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         )?;
         self.publish_output_source_bindings(phase, prepared, &[observed])?;
         self.runtime.output_demands.ensure_prepared_output_source_bound(
-            &prepared.source_commit,
+            &prepared.source_commit(),
             crate::domain_computation::primary_graph::application_output_demand::BoundOutputSource {
                 scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(observed.source_root()),
                 identity: observed.output_source_epoch().ok_or_else(|| {
@@ -157,7 +158,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
             prepared,
             retained_observed,
         )?;
-        if current_observed.selected_product_occurrence() != Some(prepared.product_occurrence) {
+        if current_observed.selected_product_occurrence() != Some(prepared.product_occurrence()) {
             return Err(WorthQueryOutputDemandDenial::new(
                 WorthQueryOutputDemandDenialKind::ForeignSource,
                 "current recovery query belongs to another product occurrence",
@@ -166,7 +167,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         self.runtime
             .output_demands
             .validate_prepared_recovery_currentness(
-                &prepared.source_commit,
+                &prepared.source_commit(),
                 retained_observed.output_source_epoch().ok_or_else(|| {
                     WorthQueryOutputDemandDenial::new(
                         WorthQueryOutputDemandDenialKind::ForeignSource,
@@ -199,7 +200,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         prepared: &WorthQueryPreparedRequiredOutputSource,
         sources: &[&crate::domain_computation::primary_graph::WorthQueryObservedSource<Q>],
     ) -> Result<(), WorthQueryOutputDemandDenial> {
-        let Some(owner) = prepared.source_commit.owner_identity().durable() else {
+        let Some(owner) = prepared.source_commit().owner_identity().durable() else {
             return Ok(());
         };
         let request = phase
@@ -244,7 +245,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
                 &request,
                 worth_foundational::facade::DurableCompositeCommitIdentity::from_recorded(
                     owner,
-                    prepared.source_commit.ordinal(),
+                    prepared.source_commit().ordinal(),
                 ),
                 bindings,
             )

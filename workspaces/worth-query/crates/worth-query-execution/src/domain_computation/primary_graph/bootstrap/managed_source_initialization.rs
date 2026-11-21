@@ -4,6 +4,7 @@ use super::super::application_query::managed_index::{
 };
 use super::*;
 use worth_query_declaration::facade::application_query::ApplicationManagedIndexBinding;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 impl<S: ApplicationSchema> WorthQueryPrimaryGraphBootstrap<S> {
     /// Admit initial construction for this installed index's newly created scopes
     /// in the next seed-batch attempt. An empty attempt consumes selection and
@@ -38,7 +39,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphBootstrap<S> {
             ));
         }
         let execution = phase.execution_request();
-        let program = self.graph.layout.managed_source(I::NAME)
+        let program = self.graph.layout_ref().managed_source(I::NAME)
             .filter(|program| {
                 let views = self.graph.integration_handle().managed_derived_views();
                 crate::domain_computation::primary_graph::downcast_managed_views(views.as_ref())

@@ -5,6 +5,7 @@ use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInt
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_declaration::facade::application_query::ApplicationQueryParameterSet;
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
+use worth_query_execution_attempt::facade::ports::AuthenticatedPrincipalInternalPort as _;
 use worth_query_installation::facade::WorthQueryInstalledApplicationQuery;
 
 use super::control_validation::validate_controls;

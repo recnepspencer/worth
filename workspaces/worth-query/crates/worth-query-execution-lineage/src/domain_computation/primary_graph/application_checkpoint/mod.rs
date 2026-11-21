@@ -8,6 +8,7 @@ pub mod encode;
 pub mod facts;
 pub mod header;
 pub mod interim_transport;
+pub(crate) mod internal_port;
 pub mod metadata_funding;
 pub mod producer_computation;
 pub mod section_bytes;
@@ -19,8 +20,8 @@ pub use worth_execution::ExecutionAllocationPolicy as WorthQueryCheckpointCaptur
 
 #[derive(Clone, Debug)]
 pub struct WorthQueryApplicationCheckpoint {
-    pub bytes: worth_execution::ExecutionImmutableBytes,
-    pub origin: Option<WorthQueryInterimCheckpointOrigin>,
+    pub(crate) bytes: worth_execution::ExecutionImmutableBytes,
+    pub(crate) origin: Option<WorthQueryInterimCheckpointOrigin>,
 }
 
 impl PartialEq for WorthQueryApplicationCheckpoint {
@@ -49,7 +50,7 @@ impl WorthQueryApplicationCheckpoint {
         }
     }
 
-    pub fn from_admitted_parts(
+    pub(crate) fn from_admitted_parts(
         bytes: worth_execution::ExecutionImmutableBytes,
         origin: Option<WorthQueryInterimCheckpointOrigin>,
     ) -> Self {
@@ -77,7 +78,7 @@ impl WorthQueryApplicationCheckpoint {
         Self::from_untrusted_bytes(bytes.into_boxed_slice())
     }
 
-    pub fn decode_with_execution(
+    pub(crate) fn decode_with_execution(
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<DecodedApplicationCheckpoint, CheckpointDecodeDenial> {
@@ -101,7 +102,7 @@ impl WorthQueryApplicationCheckpoint {
         result
     }
 
-    pub fn decode(self) -> Result<DecodedApplicationCheckpoint, CheckpointDecodeDenial> {
+    pub(crate) fn decode(self) -> Result<DecodedApplicationCheckpoint, CheckpointDecodeDenial> {
         let host = worth_execution::SerialRequest::from_memory(
             worth_execution::SerialMemoryBudget::new(None),
             worth_execution::CancellationToken::new(),

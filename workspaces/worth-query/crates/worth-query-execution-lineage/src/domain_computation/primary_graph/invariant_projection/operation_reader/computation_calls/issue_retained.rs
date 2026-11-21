@@ -14,7 +14,7 @@ impl<Schema, Operation>
 {
     /// O(body size) fresh Native observation and issuance for structural facts;
     /// other facts retain the ordinary comparator observation path.
-    pub fn issue_retained(
+    pub(crate) fn issue_retained(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         comparator: &Comparator,

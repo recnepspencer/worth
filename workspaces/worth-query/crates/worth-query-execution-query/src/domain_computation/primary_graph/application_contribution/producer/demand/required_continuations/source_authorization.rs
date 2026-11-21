@@ -10,7 +10,7 @@ where
         WorthQueryApplicationProjection<Schema, FamilySourceQuery<Schema, Family>> + 'static,
     FamilySourceQuery<Schema, Family>: 'static,
 {
-    pub fn authorize_source_in_current_invocation(
+    pub(crate) fn authorize_source_in_current_invocation(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,

@@ -20,7 +20,7 @@ use worth_query_declaration::facade::application_schema::{
 impl<Schema: ApplicationSchema, Operation>
     WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, Operation>
 {
-    pub fn signed_evidence_operand<Entity>(
+    pub(crate) fn signed_evidence_operand<Entity>(
         &mut self,
         identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
         source: &Source,

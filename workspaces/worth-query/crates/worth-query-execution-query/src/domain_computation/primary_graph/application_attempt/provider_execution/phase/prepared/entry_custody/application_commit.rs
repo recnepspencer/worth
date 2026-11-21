@@ -26,7 +26,7 @@ impl<Schema: ApplicationSchema, Operation, Input, Scope>
             allocation_policy,
         )
     }
-    pub fn compare_and_commit_application_in_advancement_with_history(
+    pub(crate) fn compare_and_commit_application_in_advancement_with_history(
         self,
         idempotency: WorthQueryApplicationIdempotencyBinding,
         history: Option<HistoryProducerInvocation<'_>>,

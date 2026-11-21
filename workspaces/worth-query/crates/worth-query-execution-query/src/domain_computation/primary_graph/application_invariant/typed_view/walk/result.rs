@@ -91,7 +91,7 @@ impl<Schema, Relation, Entity> WorthQueryApplicationInvariantWalk<Schema, Relati
             })
     }
 
-    pub fn contains_id(&self, entity: EntityId) -> bool {
+    pub(crate) fn contains_id(&self, entity: EntityId) -> bool {
         self.native.steps().iter().any(|step| step.entity == entity)
     }
 

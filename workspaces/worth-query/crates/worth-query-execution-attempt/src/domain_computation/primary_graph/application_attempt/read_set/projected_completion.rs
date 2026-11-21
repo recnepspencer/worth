@@ -50,7 +50,7 @@ impl<Schema, Operation, Input, Scope>
         self.complete_projected_dependencies_with_request(execution, allocation_policy)
     }
 
-    pub fn complete_projected_dependencies_with_request(
+    pub(crate) fn complete_projected_dependencies_with_request(
         mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         allocation_policy: ExecutionAllocationPolicy<'_, '_>,

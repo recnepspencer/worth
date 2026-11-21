@@ -1,5 +1,6 @@
 pub mod application_publication;
 pub mod home_retirement;
+pub(crate) mod internal_port;
 pub mod runtime_access;
 pub mod snapshot_release;
 
@@ -22,12 +23,13 @@ use index_installation::primary_index_inventory;
 /// Query integration code receives a separate hidden handle so product
 /// consumers cannot bypass installed Query authority.
 pub struct WorthQueryPrimaryGraph {
-    pub application_publication: Option<Arc<application_publication::ApplicationPublication>>,
+    pub(crate) application_publication:
+        Option<Arc<application_publication::ApplicationPublication>>,
     runtime_authority:
         crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
     relational_runtime_instance_id: u64,
     binding_identity: ApplicationSchemaBindingIdentity,
-    pub layout: Arc<WorthQueryPrimaryGraphLayout>,
+    pub(crate) layout: Arc<WorthQueryPrimaryGraphLayout>,
     source_owner: home_retirement::PrimaryGraphSourceCustody,
     aggregate_projections: Arc<Mutex<super::aggregate_projection::WorthQueryAggregateProjections>>,
     output_lineage: Arc<Mutex<super::output_lineage::WorthQueryApplicationOutputLineage>>,
@@ -37,7 +39,7 @@ pub struct WorthQueryPrimaryGraph {
 }
 
 impl WorthQueryPrimaryGraph {
-    pub fn from_installed_native(
+    pub(crate) fn from_installed_native(
         runtime_authority: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
         binding_identity: ApplicationSchemaBindingIdentity,
         layout: Arc<WorthQueryPrimaryGraphLayout>,
@@ -60,7 +62,7 @@ impl WorthQueryPrimaryGraph {
         Self::from_installed_source(runtime_authority, binding_identity, layout, source_owner)
     }
 
-    pub fn from_installed_source(
+    pub(crate) fn from_installed_source(
         runtime_authority: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
         binding_identity: ApplicationSchemaBindingIdentity,
         layout: Arc<WorthQueryPrimaryGraphLayout>,
@@ -92,7 +94,7 @@ impl WorthQueryPrimaryGraph {
         }
     }
 
-    pub fn with_workflow_retention(
+    pub(crate) fn with_workflow_retention(
         mut self,
         workflow_retention: Arc<dyn crate::ports::WorkflowRetentionPort>,
     ) -> Self {
@@ -100,7 +102,10 @@ impl WorthQueryPrimaryGraph {
         self
     }
 
-    pub fn bind_truth_partition(&mut self, role: worth_foundational::facade::TruthPartitionRole) {
+    pub(crate) fn bind_truth_partition(
+        &mut self,
+        role: worth_foundational::facade::TruthPartitionRole,
+    ) {
         self.source_owner
             .bind_truth_partition(
                 "primary",
@@ -115,29 +120,29 @@ impl WorthQueryPrimaryGraph {
         &self.binding_identity
     }
 
-    pub const fn runtime_authority(
+    pub(crate) const fn runtime_authority(
         &self,
     ) -> crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity {
         self.runtime_authority
     }
 
-    pub const fn relational_runtime_instance_id(&self) -> u64 {
+    pub(crate) const fn relational_runtime_instance_id(&self) -> u64 {
         self.relational_runtime_instance_id
     }
 
-    pub fn layout(&self) -> &WorthQueryPrimaryGraphLayout {
+    pub(crate) fn layout(&self) -> &WorthQueryPrimaryGraphLayout {
         &self.layout
     }
 
-    pub fn retain_layout(&self) -> Arc<WorthQueryPrimaryGraphLayout> {
+    pub(crate) fn retain_layout(&self) -> Arc<WorthQueryPrimaryGraphLayout> {
         Arc::clone(&self.layout)
     }
 
-    pub fn managed_derived_views(&self) -> Arc<dyn crate::ports::ManagedDerivedViewPort> {
+    pub(crate) fn managed_derived_views(&self) -> Arc<dyn crate::ports::ManagedDerivedViewPort> {
         Arc::clone(&self.managed_derived_views)
     }
 
-    pub fn integration_handle(&self) -> WorthQueryPrimaryGraphIntegrationHandle {
+    pub(crate) fn integration_handle(&self) -> WorthQueryPrimaryGraphIntegrationHandle {
         let primary_index_ids = primary_index_inventory(&self.layout);
         WorthQueryPrimaryGraphIntegrationHandle {
             application_publication: self.application_publication.clone(),
@@ -152,7 +157,7 @@ impl WorthQueryPrimaryGraph {
         }
     }
 
-    pub fn product_read_session_port(
+    pub(crate) fn product_read_session_port(
         &self,
     ) -> crate::domain_computation::provider_session::WorthQueryGraphReadOwnerPort {
         crate::domain_computation::provider_session::WorthQueryGraphReadOwnerPort::new(

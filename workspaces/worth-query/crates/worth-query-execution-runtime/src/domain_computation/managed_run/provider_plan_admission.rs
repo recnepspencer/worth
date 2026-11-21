@@ -23,15 +23,15 @@ impl WorthQueryRunningDirectRun {
         WorthQueryAdmittedProviderExecutionPlan::coupled_direct(execution, self, graph_authority)
     }
 
-    pub fn provider_plan_operation(&self) -> &WorthQueryExecutionBoundOperationAuthority {
+    pub(crate) fn provider_plan_operation(&self) -> &WorthQueryExecutionBoundOperationAuthority {
         self.affinity.provider_plan_operation()
     }
 
-    pub fn provider_plan_session(&self) -> &WorthQueryExecutionProviderSession {
+    pub(crate) fn provider_plan_session(&self) -> &WorthQueryExecutionProviderSession {
         self.affinity.provider_plan_session()
     }
 
-    pub fn provider_plan_resources(
+    pub(crate) fn provider_plan_resources(
         &self,
     ) -> (
         &worth_query_admission::facade::resource_admission::WorthQueryAdmittedExecutionResourcePlan,
@@ -40,7 +40,7 @@ impl WorthQueryRunningDirectRun {
         self.affinity.provider_plan_resources()
     }
 
-    pub fn provider_plan_bridge_basis(&self) -> &BridgeBoundExecutionBasis {
+    pub(crate) fn provider_plan_bridge_basis(&self) -> &BridgeBoundExecutionBasis {
         &self.bridge_basis
     }
 }

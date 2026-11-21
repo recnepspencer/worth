@@ -1,4 +1,5 @@
 //! Independently admit Source READ before borrowing an exact Native applied image.
+use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 use crate::domain_computation::primary_graph::application_attempt::fact::source_read_authorization::applied::SourceReadAuthorizationAppliedExt;
 use super::super::{source::occurrences::PersistentSourceRows, source_image::SourceBinding};
 use super::*;
@@ -33,7 +34,7 @@ pub fn acquire<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>>(
         .primary_graph()
         .ok_or(Denial::ForeignAssociation)?;
     let program = graph
-        .layout
+        .layout_ref()
         .managed_source(&adapter.installed().definition().parts().name)
         .ok_or(Denial::ForeignAssociation)?;
     if program != loan.program() || selector.subject() != loan.scope() {

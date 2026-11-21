@@ -1,5 +1,6 @@
 //! Readonly contacts and warm current-fact readmission probes.
 use super::*;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S> {
@@ -134,8 +135,7 @@ impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S>
                 .into_parts();
             let graph = self.runtime.primary_graph().expect("actual Query graph");
             let installed = &graph
-                .application_publication
-                .as_ref()
+                .application_publication_ref()
                 .expect("actual installed Query producer")
                 .native;
             Ok(graph

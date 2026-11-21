@@ -157,7 +157,7 @@ where
     // Ordinary producer selection retains its established installation/read
     // class. Required Fresh supplies its request meter, so each reached
     // installed predicate and the chosen identity copy are paid before use.
-    pub fn select_entry<Family>(
+    pub(crate) fn select_entry<Family>(
         &self,
 
         accepts: impl FnMut(&Arc<InstalledProducerProvider<Schema>>) -> bool,
@@ -206,7 +206,7 @@ where
             })
     }
 
-    pub fn family_output_bindings<Family>(&self) -> Vec<TypeId>
+    pub(crate) fn family_output_bindings<Family>(&self) -> Vec<TypeId>
     where
         Family: WorthQueryProducerOutputFamily<Schema>,
     {
@@ -220,7 +220,7 @@ where
             .collect()
     }
 
-    pub fn family_output_role<Family>(
+    pub(crate) fn family_output_role<Family>(
         &self,
         output_binding: TypeId,
     ) -> Result<&str, WorthQueryOutputDemandDenial>
@@ -247,7 +247,7 @@ where
         Ok(&role.declaration.output_role)
     }
 
-    pub fn select_exact<Family>(
+    pub(crate) fn select_exact<Family>(
         &self,
         output_binding: TypeId,
     ) -> Result<

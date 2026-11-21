@@ -20,7 +20,7 @@ impl WorthQueryRunningWorkflowRun {
             .release_or_retain_queue_occupancy(&mut self.bridge_basis, occupancy)
     }
 
-    pub fn begin_provider_step_call(&mut self) {
+    pub(crate) fn begin_provider_step_call(&mut self) {
         self.affinity.provider_work_mut().begin_step_call();
     }
 
@@ -28,7 +28,7 @@ impl WorthQueryRunningWorkflowRun {
         self.affinity.provider_work_mut().complete_step_call();
     }
 
-    pub fn interrupt_provider_step_call(&mut self) {
+    pub(crate) fn interrupt_provider_step_call(&mut self) {
         self.affinity.provider_work_mut().interrupt_step_call();
     }
 
@@ -70,7 +70,7 @@ impl WorthQueryRunningWorkflowRun {
             .record_safe_point(observation);
     }
 
-    pub fn enqueue_provider_output(
+    pub(crate) fn enqueue_provider_output(
         &mut self,
         width: u64,
     ) -> Result<BridgeManagedQueueAdmission, BridgeManagedQueueFailure> {
@@ -89,7 +89,7 @@ impl WorthQueryRunningWorkflowRun {
             .release_projection_bytes(retained_bytes)
     }
 
-    pub fn transfer_projection_to_output(
+    pub(crate) fn transfer_projection_to_output(
         &mut self,
         projection_bytes: usize,
         additional_bytes: usize,
@@ -99,7 +99,7 @@ impl WorthQueryRunningWorkflowRun {
             .transfer_projection_to_output(projection_bytes, additional_bytes)
     }
 
-    pub fn transfer_output_to_receipt(
+    pub(crate) fn transfer_output_to_receipt(
         &mut self,
         envelope_bytes: usize,
         total_output_bytes: usize,
@@ -124,7 +124,7 @@ impl WorthQueryRunningWorkflowRun {
             .record_provider_execution_release(evidence);
     }
 
-    pub fn observe_active_provider_memory(
+    pub(crate) fn observe_active_provider_memory(
         &mut self,
         memory: WorthQueryGraphProviderMemorySnapshot,
     ) {

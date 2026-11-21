@@ -44,8 +44,8 @@ pub use plan::{
 /// a result that depends on it, such as a floating-point sum, is the same bits
 /// on every run and at every worker count.
 pub struct WorthQueryDeterministicReducer<Reduced> {
-    pub identity: fn() -> Reduced,
-    pub combine: fn(&Reduced, &Reduced) -> Reduced,
+    pub(crate) identity: fn() -> Reduced,
+    pub(crate) combine: fn(&Reduced, &Reduced) -> Reduced,
 }
 
 impl<Reduced> WorthQueryDeterministicReducer<Reduced> {

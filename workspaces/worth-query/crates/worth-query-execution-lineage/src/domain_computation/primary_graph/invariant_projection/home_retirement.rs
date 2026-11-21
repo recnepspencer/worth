@@ -7,13 +7,13 @@ use worth_execution::ExecutionRequest;
 use worth_relational::facade::runtime::RelationalRuntime;
 
 impl<Schema> WorthQueryApplicationInvariantProjectionAuthority<Schema> {
-    pub fn preflight_home_retirement(
+    pub(crate) fn preflight_home_retirement(
         &self,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<(), WorthQueryHomeRetirementDenial> {
         self.graph.preflight_home_retirement(request)
     }
-    pub fn advance_home_retirement(
+    pub(crate) fn advance_home_retirement(
         &mut self,
         request: &ExecutionRequest<'_, '_>,
         native: &RelationalRuntime,

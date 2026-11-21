@@ -207,7 +207,7 @@ impl<'row, Schema, Query> WorthQueryApplicationProjectionRow<'row, Schema, Query
         })
     }
 
-    pub fn disclosed_relation<Slot, Relation, From, To, Direction, Cardinality>(
+    pub(crate) fn disclosed_relation<Slot, Relation, From, To, Direction, Cardinality>(
         &self,
         selector: &ApplicationQueryResultRelationRef<
             Query,

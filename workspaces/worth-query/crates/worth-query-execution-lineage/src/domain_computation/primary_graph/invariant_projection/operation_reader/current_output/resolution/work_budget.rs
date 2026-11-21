@@ -6,7 +6,7 @@ impl<'reader, 'runtime, Schema, Operation>
 where
     Schema: ApplicationSchema,
 {
-    pub fn require_current_output_budget(
+    pub(crate) fn require_current_output_budget(
         &mut self,
         required: usize,
         subject: &str,
@@ -22,7 +22,7 @@ where
                 )
             })
     }
-    pub fn charge_current_output_work(
+    pub(crate) fn charge_current_output_work(
         &mut self,
         actual: usize,
         subject: &str,
@@ -34,7 +34,7 @@ where
             .ok_or_else(|| self.current_output_work_exhausted(subject))
     }
 
-    pub fn current_output_work_exhausted(
+    pub(crate) fn current_output_work_exhausted(
         &mut self,
         subject: &str,
     ) -> WorthQueryCurrentOutputDenial {

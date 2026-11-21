@@ -12,6 +12,7 @@ use worth_foundational::facade::{
 use worth_query_declaration::facade::authentication::{
     WorthQueryExternalPrincipalIdentityBinding, WorthQueryPrincipalMappingStatusBinding,
 };
+use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 use worth_query_installation::facade::{ApplicationScalarValueBinding, ApplicationSchema};
 use worth_relational::facade::identity::KindId;
 
@@ -38,7 +39,7 @@ where
         writes: impl IntoIterator<Item = (KindId, &'row AspectFieldLocator, &'row AspectValue)>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
         admit_values(
-            &self.graph.layout,
+            self.graph.layout_ref(),
             self.recovered_relational_authority.is_some(),
             &mut self.typed_rows.unique_seed_values,
             writes,

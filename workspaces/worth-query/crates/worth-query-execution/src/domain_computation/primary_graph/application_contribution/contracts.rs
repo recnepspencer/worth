@@ -29,7 +29,7 @@ impl<'schema, Schema> WorthQueryApplicationContributionContracts<'schema, Schema
 where
     Schema: ApplicationSchema,
 {
-    pub fn for_contribution(
+    pub(crate) fn for_contribution(
         owner: &str,
         declaration: &'schema worth_query_declaration::facade::application_schema::ErasedApplicationSchemaDeclaration,
     ) -> Self {
@@ -119,7 +119,7 @@ where
         Ok(self)
     }
 
-    pub fn append_to(
+    pub(crate) fn append_to(
         self,
         destination: &mut WorthQueryApplicationContractCatalog<Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
@@ -283,7 +283,7 @@ where
         Ok(())
     }
 
-    pub fn seal_readiness(
+    pub(crate) fn seal_readiness(
         &self,
         installed: &worth_query_installation::facade::WorthQueryInstalledApplicationSchema<Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
@@ -293,7 +293,7 @@ where
         Ok(())
     }
 
-    pub fn compose_package(
+    pub(crate) fn compose_package(
         &self,
         mut package: WorthQueryPortableDomainPackage,
     ) -> WorthQueryPortableDomainPackage {

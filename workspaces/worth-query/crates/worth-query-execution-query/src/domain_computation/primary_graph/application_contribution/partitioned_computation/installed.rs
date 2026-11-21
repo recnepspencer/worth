@@ -3,6 +3,9 @@
 use std::collections::BTreeMap;
 use std::marker::PhantomData;
 use std::sync::Arc;
+use worth_query_execution_lineage::facade::ports::{
+    ComputationPartitionMembersInternalPort as _, ComputationPartitionPlanInternalPort as _,
+};
 
 use worth_execution::ExecutionMap;
 use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;
@@ -33,7 +36,7 @@ use crate::domain_computation::primary_graph::{
 };
 
 mod certification;
-mod collection;
+pub(crate) mod collection;
 
 pub struct WorthQueryInstalledPartitionedComputation<Schema, Feature, Computation, Owner>
 where
@@ -124,7 +127,7 @@ where
         self.prepare_through_with_source(reader.operation_reader(), source_query, execution, input)
     }
 
-    pub fn prepare_through(
+    pub(crate) fn prepare_through(
         &self,
         reader: &mut WorthQueryApplicationOperationInvariantProjectionReader<
             '_,
@@ -141,7 +144,7 @@ where
         self.prepare_through_with_source(reader, None, execution, input)
     }
 
-    pub fn prepare_through_with_source(
+    pub(crate) fn prepare_through_with_source(
         &self,
         reader: &mut WorthQueryApplicationOperationInvariantProjectionReader<
             '_,
@@ -227,7 +230,7 @@ where
                 input,
             )
         });
-        let PlanShape::Keyed(entries) = plan?.shape;
+        let PlanShape::Keyed(entries) = plan?.into_shape();
         let items = planned_items(entries)?;
         if self.retention == ComputationRetention::ProducerOperation {
             let before = preparation_work;
@@ -274,7 +277,7 @@ where
                     owner.gather(
                         &mut WorthQueryComputationReader::lend(reader, source_query),
                         input,
-                        WorthQueryComputationPartitionMembers::new(
+                        WorthQueryComputationPartitionMembers::from_parts(
                             identity, &key, &members, &items,
                         ),
                     )

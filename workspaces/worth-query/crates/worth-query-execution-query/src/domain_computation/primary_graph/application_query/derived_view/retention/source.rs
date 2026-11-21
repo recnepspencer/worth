@@ -48,7 +48,7 @@ impl<Key: Clone + Ord, Value: WorthQueryManagedDerivedValue> ManagedDerivedViewS
             State::Warm
         }
     }
-    pub fn native_count(
+    pub(crate) fn native_count(
         runtime_authority: u64,
         binding: ApplicationSchemaBindingIdentity,
         definition: DerivedRelationHandle,

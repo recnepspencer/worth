@@ -1,3 +1,4 @@
+use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 pub mod freshness_denial;
 use super::super::{
     WorthQueryApplicationAuthorizationWorkEvidence, WorthQueryApplicationQueryAccessContext,
@@ -55,7 +56,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         })?;
         let principal = access.principal();
         let principal_layout = graph
-            .layout
+            .layout_ref()
             .principal_binding(principal.binding())
             .cloned()
             .ok_or_else(|| {

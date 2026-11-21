@@ -1,6 +1,7 @@
 //! Retained truth and the current document READ have distinct custody and checks.
 use super::*;
 use crate::domain_computation::primary_graph::{WorthQueryHistoryNodeId, WorthQueryHistoryPreview};
+use worth_query_execution_attempt::facade::ports::AuthenticatedPrincipalInternalPort as _;
 use worth_query_execution_query::facade::ports::AdmittedQueryPlanInternalPort as _;
 use worth_query_execution_query::facade::ports::HistoryPreviewInternalPort as _;
 

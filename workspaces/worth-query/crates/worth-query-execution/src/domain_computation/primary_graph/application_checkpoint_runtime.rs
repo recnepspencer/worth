@@ -1,5 +1,6 @@
 //! Runtime restoration of an interim checkpoint registry on an installed application.
 
+use worth_query_execution_lineage::facade::ports::{ApplicationCheckpointInternalPort as _, InterimCheckpointOriginInternalPort as _};
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductRuntimeBranchLifecycleInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
@@ -32,7 +33,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static>
             .with_runtime(request, |runtime| {
                 runtime
                     .durability_authority()
-                    .admit_interim_receiver(&origin.native, request)
+                    .admit_interim_receiver(origin.native(), request)
             })
             .map_err(|cause| native_refusal(cause).into_installation_denial())?;
         let product = &self.inner.runtime.product_runtime;
@@ -54,14 +55,14 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static>
             request,
             lease.observation(),
             &receiver,
-            &origin.native,
-            &origin.world,
+            origin.native(),
+            origin.world(),
             continuation,
             // The continuation joins the authenticated source to the actual
             // acknowledged successor. Ordinary restore still requires the
             // current publication's exact application identity.
             if continuation.is_some() {
-                origin.source_application
+                *origin.source_application()
             } else {
                 application_binding(self.publication())
             },

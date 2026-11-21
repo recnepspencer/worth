@@ -8,6 +8,7 @@ use crate::domain_computation::primary_graph::application_attempt::WorthQueryApp
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryWorkflowInstanceDiscoveryIntent;
 use crate::domain_computation::primary_graph::index_currency::ensure_selected_field_indexes_admitted;
 use crate::domain_computation::primary_graph::index_currency::SelectedFieldIndexAdmissionStop;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 use worth_query_execution_query::facade::ports::AdmittedCapabilityAccessInspectionPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;

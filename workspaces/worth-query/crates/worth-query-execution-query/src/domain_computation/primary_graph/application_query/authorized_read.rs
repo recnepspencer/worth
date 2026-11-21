@@ -9,6 +9,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrincipalResolutionMode,
 };
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
+use worth_query_execution_attempt::facade::ports::AuthenticatedPrincipalInternalPort as _;
 
 mod freshness_denial;
 use freshness_denial::freshness_denial;

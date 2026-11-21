@@ -4,6 +4,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationObservedFact as Fact,
     WorthQueryPrimaryGraphApplicationRuntime,
 };
+use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 use worth_relational::facade::{
     runtime::{RelationalAppliedCandidateReadIdentity, RelationalPinnedRead, RelationalRuntime},
     snapshots::SnapshotHandle,
@@ -40,7 +41,7 @@ impl<Q, V> AppliedQuerySource<Q, V> {
         }
         let facts = fact_conversion::applied_facts(
             self.meaning.footprint(),
-            &graph.layout,
+            graph.layout_ref(),
             query,
             fact_conversion::SourceFactExpansionControl::in_request(*execution, Some(request)),
         )?;

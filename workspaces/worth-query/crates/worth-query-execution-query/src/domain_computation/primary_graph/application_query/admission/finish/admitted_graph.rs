@@ -2,6 +2,7 @@
 use super::*;
 use crate::domain_computation::primary_graph::application_query::execution_shape::PreparedOneShotShape;
 use crate::domain_computation::primary_graph::application_query::WorthQueryAdmittedApplicationQueryControls;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     #[allow(clippy::too_many_arguments)]
     pub fn prepare_application_query_graph_work_admitted<Query, Parameters, QueryResult, Scope>(
@@ -28,7 +29,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 query.name(),
             )
         })?;
-        let inventory = primary_graph_support_inventory(query.read_graph(), &graph.layout, query.continuation(), query.live(), &requirements)
+        let inventory = primary_graph_support_inventory(query.read_graph(), graph.layout_ref(), query.continuation(), query.live(), &requirements)
             .map_err(|_| denial(WorthQueryApplicationQueryAdmissionDenialKind::ReadmissionPreparationMemoryExhausted, query.name()))?;
         let obligations = query.retain_graph_obligations_for_admission();
         let obligation_identity = obligations.identity().clone();

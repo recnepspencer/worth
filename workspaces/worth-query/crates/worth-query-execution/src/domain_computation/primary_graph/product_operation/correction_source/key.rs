@@ -4,6 +4,7 @@ use worth_query_declaration::facade::{
     application_aftermath::ApplicationInverseBinding,
     application_operation::{application_value_identity, ApplicationValueIdentityDomain},
 };
+use worth_query_execution_attempt::facade::ports::AuthenticatedPrincipalInternalPort as _;
 
 pub use worth_query_execution_query::facade::domain_computation::primary_graph::product_operation::correction_source::WorthQueryCorrectionCommandKey;
 

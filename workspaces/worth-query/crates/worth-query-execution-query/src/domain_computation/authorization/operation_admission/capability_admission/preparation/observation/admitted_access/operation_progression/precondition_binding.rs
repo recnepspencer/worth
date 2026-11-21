@@ -3,6 +3,7 @@ use worth_query_declaration::facade::{
     application_capability::ApplicationCapabilityRequest,
     application_schema::TypedMutationPreconditions,
 };
+use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryInstalledApplicationOperation,
 };

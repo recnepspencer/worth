@@ -1,6 +1,7 @@
 //! Graph continuation of the exact permission prepared before a Clean probe.
 
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
+use worth_query_execution_attempt::facade::ports::AuthenticatedPrincipalInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 
 use super::*;

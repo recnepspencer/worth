@@ -12,6 +12,7 @@ use crate::domain_computation::primary_graph::invariant_projection::CallVisit;
 use worth_query_declaration::facade::application_program::{
     ApplicationComputationPartition, ApplicationFeature, ApplicationManagedComputation,
 };
+use worth_query_execution_lineage::facade::ports::ComputationPartitionMembersInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 pub trait IncrementalRunPrepareRangesExt<
     Key: ApplicationComputationPartition,
@@ -191,7 +192,7 @@ impl<Key: ApplicationComputationPartition, Item: ApplicationComputationPartition
                     let partition=retained.partitions.get(&id).expect("the sealed shape names an actual partition");
                     let members=retained.routing.members(id).collect::<Arc<[_]>>();
                     execution.checkpoint().map_err(WorthQueryPartitionedComputationDenial::from_kernel_stop)?;
-                    let (gathered,charge)=reader.measured(read,|reader|owner.gather(&mut WorthQueryComputationReader::lend(reader, source_query),input,WorthQueryComputationPartitionMembers::new(id,&partition.key,&members,&retained.items)));
+                    let (gathered,charge)=reader.measured(read,|reader|owner.gather(&mut WorthQueryComputationReader::lend(reader, source_query),input,WorthQueryComputationPartitionMembers::from_parts(id,&partition.key,&members,&retained.items)));
                     let gathered=gathered.map_err(|denial|WorthQueryPartitionedComputationDenial::gathering(id,denial))?;
                     prepared.gathered(id,Arc::clone(&partition.key),members,gathered,charge)?;
                     Ok(true)

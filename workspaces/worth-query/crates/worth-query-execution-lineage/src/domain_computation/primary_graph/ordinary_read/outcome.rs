@@ -5,7 +5,7 @@ use super::super::WorthQueryInvariantProjectionWork;
 pub struct WorthQueryOrdinaryReadVersion(u64);
 
 impl WorthQueryOrdinaryReadVersion {
-    pub const fn from_provider_version(version: u64) -> Self {
+    pub(crate) const fn from_provider_version(version: u64) -> Self {
         Self(version)
     }
 

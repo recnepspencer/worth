@@ -21,13 +21,13 @@ pub use publication_stale::ProducerPublicationStale;
 #[derive(Debug)]
 #[must_use = "a producer refusal can own native cleanup; retain or transfer it"]
 pub struct WorthQueryOutputDemandDenial {
-    pub kind: Box<WorthQueryOutputDemandDenialKind>,
+    pub(crate) kind: Box<WorthQueryOutputDemandDenialKind>,
     evidence: Option<Box<DemandDenialEvidence>>,
     cleanup: Option<cleanup_custody::DemandCleanupCustody>,
-    pub subject: std::borrow::Cow<'static, str>,
+    pub(crate) subject: std::borrow::Cow<'static, str>,
     domain: Option<Box<producer_value::ProducerDomainDenial>>,
-    pub readmission_failure: Option<&'static str>,
-    pub recovery_posture: WorthQueryOutputDemandRecoveryPosture,
+    pub(crate) readmission_failure: Option<&'static str>,
+    pub(crate) recovery_posture: WorthQueryOutputDemandRecoveryPosture,
 }
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
@@ -380,6 +380,7 @@ impl WorthQueryOutputDemandDenial {
 }
 
 pub mod charged_bytes;
+pub mod internal_port;
 pub mod managed_index;
 
 pub mod managed_source_query;

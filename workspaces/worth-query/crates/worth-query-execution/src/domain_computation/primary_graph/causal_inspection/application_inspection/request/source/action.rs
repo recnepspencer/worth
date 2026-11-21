@@ -8,6 +8,7 @@ use crate::domain_computation::{
     authorization::application_disclosure::WorthQueryPendingApplicationQueryGovernance,
     primary_graph::application_query::FreshQueryPermissionStop,
 };
+use worth_query_execution_attempt::facade::ports::AuthenticatedPrincipalInternalPort as _;
 use worth_query_installation::facade::WorthQueryInstalledApplicationQueryBinding;
 use worth_relational::facade::identity::EntityId;
 enum SourceMaterialization {

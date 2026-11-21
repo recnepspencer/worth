@@ -40,7 +40,7 @@ impl<Value> ManagedDerivedViewState<WorthQueryManagedDerivedViewKey, Value>
 where
     Value: WorthQueryManagedDerivedValue,
 {
-    pub fn plan_membership_reconciliation<Member: WorthQueryManagedDerivedMemberToken>(
+    pub(crate) fn plan_membership_reconciliation<Member: WorthQueryManagedDerivedMemberToken>(
         &self,
         membership_key: &WorthQueryManagedDerivedViewKey,
         members: &BTreeMap<EntityId, Member>,
@@ -115,7 +115,7 @@ where
         })
     }
 
-    pub fn reconcile_membership(
+    pub(crate) fn reconcile_membership(
         &self,
         plan: MembershipReconciliationPlan,
         membership: BTreeSet<ViewDependency>,

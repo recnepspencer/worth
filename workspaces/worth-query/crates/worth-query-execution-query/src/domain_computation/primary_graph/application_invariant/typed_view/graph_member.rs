@@ -59,7 +59,7 @@ impl<S, M> WorthQueryApplicationInvariantGraphMember<S, M> {
             Body::Projected(member) => member.key().clone(),
         }
     }
-    pub fn projected_observation(&self) -> Option<&ObservedProjectedMember> {
+    pub(crate) fn projected_observation(&self) -> Option<&ObservedProjectedMember> {
         match &self.body {
             Body::Projected(member) => Some(member),
             Body::Entity(_) => None,

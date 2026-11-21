@@ -16,7 +16,7 @@ pub struct ProjectionExecution<Output> {
     pub stopped: Option<worth_relational::facade::transactions::RelationalExecutionDenialCause>,
 }
 impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthority<Schema> {
-    pub fn execute_reader<Output>(
+    pub(crate) fn execute_reader<Output>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         native: NativeProjectionRead<'_>,

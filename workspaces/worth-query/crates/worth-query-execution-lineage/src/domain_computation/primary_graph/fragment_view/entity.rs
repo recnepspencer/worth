@@ -16,14 +16,70 @@ pub struct ErasedCandidate {
 }
 
 pub struct ObservedEntity<E> {
-    pub erased: ErasedObserved,
-    pub marker: PhantomData<fn() -> E>,
+    pub(crate) erased: ErasedObserved,
+    pub(crate) marker: PhantomData<fn() -> E>,
 }
 pub struct CandidateEntity<E> {
-    pub erased: ErasedCandidate,
-    pub marker: PhantomData<fn() -> E>,
+    pub(crate) erased: ErasedCandidate,
+    pub(crate) marker: PhantomData<fn() -> E>,
 }
 pub struct ObservedTarget<E> {
-    pub erased: WorthQueryInvariantMutationTarget<(), ()>,
-    pub marker: PhantomData<fn() -> E>,
+    pub(crate) erased: WorthQueryInvariantMutationTarget<(), ()>,
+    pub(crate) marker: PhantomData<fn() -> E>,
+}
+
+/// Crate-boundary internal ports for fragment-view entity handles.
+/// Never exported on `worth-query-execution::facade` or Host.
+pub trait FragmentObservedEntityInternalPort<E>: Sized {
+    fn from_erased(erased: ErasedObserved) -> Self;
+    fn erased_ref(&self) -> &ErasedObserved;
+}
+
+impl<E> FragmentObservedEntityInternalPort<E> for ObservedEntity<E> {
+    fn from_erased(erased: ErasedObserved) -> Self {
+        Self {
+            erased,
+            marker: PhantomData,
+        }
+    }
+
+    fn erased_ref(&self) -> &ErasedObserved {
+        &self.erased
+    }
+}
+
+pub trait FragmentCandidateEntityInternalPort<E>: Sized {
+    fn from_erased(erased: ErasedCandidate) -> Self;
+    fn erased_ref(&self) -> &ErasedCandidate;
+}
+
+impl<E> FragmentCandidateEntityInternalPort<E> for CandidateEntity<E> {
+    fn from_erased(erased: ErasedCandidate) -> Self {
+        Self {
+            erased,
+            marker: PhantomData,
+        }
+    }
+
+    fn erased_ref(&self) -> &ErasedCandidate {
+        &self.erased
+    }
+}
+
+pub trait FragmentObservedTargetInternalPort<E>: Sized {
+    fn from_erased(erased: WorthQueryInvariantMutationTarget<(), ()>) -> Self;
+    fn erased_ref(&self) -> &WorthQueryInvariantMutationTarget<(), ()>;
+}
+
+impl<E> FragmentObservedTargetInternalPort<E> for ObservedTarget<E> {
+    fn from_erased(erased: WorthQueryInvariantMutationTarget<(), ()>) -> Self {
+        Self {
+            erased,
+            marker: PhantomData,
+        }
+    }
+
+    fn erased_ref(&self) -> &WorthQueryInvariantMutationTarget<(), ()> {
+        &self.erased
+    }
 }

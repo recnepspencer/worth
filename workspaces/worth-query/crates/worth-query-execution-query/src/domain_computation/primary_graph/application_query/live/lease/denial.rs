@@ -46,7 +46,7 @@ where
     QueryResult: WorthQueryApplicationProjection<Schema, Query>,
     Binding: ApplicationQueryLiveCauseBinding<Schema, Query, Scope, Target>,
 {
-    pub fn handle_projection_denial(
+    pub(crate) fn handle_projection_denial(
         &mut self,
         kind: WorthQueryApplicationProjectionDenialKind,
     ) -> WorthQueryApplicationLiveOutcome<Query, QueryResult> {
@@ -66,7 +66,7 @@ where
         }
     }
 
-    pub fn handle_admission_denial(
+    pub(crate) fn handle_admission_denial(
         &mut self,
         denial: WorthQueryApplicationQueryAdmissionDenial,
     ) -> WorthQueryApplicationLiveOutcome<Query, QueryResult> {
@@ -140,7 +140,7 @@ where
         }
     }
 
-    pub fn handle_read_denial(
+    pub(crate) fn handle_read_denial(
         &mut self,
         denial: WorthQueryAuthorizedApplicationReadDenial,
     ) -> WorthQueryApplicationLiveOutcome<Query, QueryResult> {
@@ -239,7 +239,7 @@ where
         }
     }
 
-    pub fn execution_denied_outcome(
+    pub(crate) fn execution_denied_outcome(
         &mut self,
         kind: crate::domain_computation::WorthQueryProviderSessionDenialKind,
     ) -> WorthQueryApplicationLiveOutcome<Query, QueryResult> {
@@ -247,19 +247,21 @@ where
         WorthQueryApplicationLiveOutcome::ExecutionRequest(kind)
     }
 
-    pub fn cancelled_outcome(&mut self) -> WorthQueryApplicationLiveOutcome<Query, QueryResult> {
+    pub(crate) fn cancelled_outcome(
+        &mut self,
+    ) -> WorthQueryApplicationLiveOutcome<Query, QueryResult> {
         self.terminate_stopped_read();
         WorthQueryApplicationLiveOutcome::Cancelled
     }
 
-    pub fn deadline_exceeded_outcome(
+    pub(crate) fn deadline_exceeded_outcome(
         &mut self,
     ) -> WorthQueryApplicationLiveOutcome<Query, QueryResult> {
         self.terminate_stopped_read();
         WorthQueryApplicationLiveOutcome::DeadlineExceeded
     }
 
-    pub fn terminate_stopped_read(&mut self) {
+    pub(crate) fn terminate_stopped_read(&mut self) {
         if !self.terminate(BridgeExecutionBasisTerminalDisposition::Cancelled) {
             self.termination_failed = true;
         }

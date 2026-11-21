@@ -34,7 +34,7 @@ impl WorthQueryRecoveryDisclosureAdmission {
         }
     }
 
-    pub fn ensure_for_runtime(
+    pub(crate) fn ensure_for_runtime(
         &self,
         runtime_authority: WorthQueryRuntimeAuthorityIdentity,
         receiver: worth_runtime_world::facade::RuntimeWorldOwnerIdentity,

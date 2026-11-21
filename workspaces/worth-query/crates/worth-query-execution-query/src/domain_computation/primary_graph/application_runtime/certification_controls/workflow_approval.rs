@@ -1,6 +1,7 @@
 //! Native fault probe for already-issued approval custody.
 
 use std::collections::BTreeMap;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 

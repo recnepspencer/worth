@@ -16,7 +16,7 @@ use worth_relational::facade::{
 impl<Schema: ApplicationSchema, Operation: ApplicationOperationMarkerIdentity<Schema>>
     WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, Operation>
 {
-    pub fn select_component_paths(
+    pub(crate) fn select_component_paths(
         &mut self,
         scope: &WorthQueryOperationComponentReadScope,
         start: EntityId,
@@ -68,7 +68,7 @@ impl<Schema: ApplicationSchema, Operation: ApplicationOperationMarkerIdentity<Sc
         self.reader.work = self.reader.work.combined(reads);
         result.map_err(|denial| self.component_path_denial(denial, subject))
     }
-    pub fn component_source_denial(
+    pub(crate) fn component_source_denial(
         &mut self,
         cause: SourceFactReadDenial,
         subject: &str,

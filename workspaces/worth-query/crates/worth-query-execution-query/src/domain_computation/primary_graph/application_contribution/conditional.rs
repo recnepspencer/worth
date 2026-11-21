@@ -98,7 +98,7 @@ impl<Schema> WorthQueryInstalledApplicationConditionalRegistry<Schema> {
             .map(|entry| Arc::clone(&entry.value))
     }
 
-    pub fn entry_value_by_type(
+    pub(crate) fn entry_value_by_type(
         &self,
         binding_type: TypeId,
         installed_type: TypeId,

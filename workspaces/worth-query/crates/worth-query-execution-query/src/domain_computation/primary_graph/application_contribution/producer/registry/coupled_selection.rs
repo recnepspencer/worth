@@ -2,7 +2,7 @@
 use super::*;
 use crate::domain_computation::primary_graph::application_attempt::coupled_outputs::DeclaredCoupledOutputDemand;
 impl<Schema: ApplicationSchema> WorthQueryInstalledApplicationProducerRegistry<Schema> {
-    pub fn declared_coupled_source(
+    pub(crate) fn declared_coupled_source(
         &self,
         demand: &DeclaredCoupledOutputDemand,
     ) -> Result<&Arc<InstalledProducerProvider<Schema>>, WorthQueryOutputDemandDenial> {
@@ -19,7 +19,7 @@ impl<Schema: ApplicationSchema> WorthQueryInstalledApplicationProducerRegistry<S
                 )
             })
     }
-    pub fn declared_coupled_producer(
+    pub(crate) fn declared_coupled_producer(
         &self,
         demand: &DeclaredCoupledOutputDemand,
         profile: &str,
@@ -40,7 +40,7 @@ impl<Schema: ApplicationSchema> WorthQueryInstalledApplicationProducerRegistry<S
 }
 
 impl<S: ApplicationSchema> WorthQueryInstalledApplicationProducerRegistry<S> {
-    pub fn declared_dependency_scopes(
+    pub(crate) fn declared_dependency_scopes(
         &self,
         application: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<S>,
         families: &[std::any::TypeId],

@@ -280,7 +280,7 @@ where
     S: worth_query_installation::facade::ApplicationSchema,
     F: WorthQueryProducerOutputFamily<S>,
 {
-    pub fn into_durable_interest(
+    pub(crate) fn into_durable_interest(
         mut self,
     ) -> Option<super::super::super::application_output_demand::WorthQueryOutputDemandInterest>
     {

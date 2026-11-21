@@ -8,7 +8,7 @@ use std::sync::Arc;
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
 
 impl WorthQueryApplicationQueryAccessReceipt {
-    pub fn into_managed_source_terminal(
+    pub(crate) fn into_managed_source_terminal(
         self,
         context: crate::domain_computation::provider_session::WorthQueryQuerySourceContext,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

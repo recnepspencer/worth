@@ -1,4 +1,5 @@
 use super::*;
+use worth_query_execution_attempt::facade::ports::AuthenticatedPrincipalInternalPort as _;
 use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
 
 /// The exact prepared Query permission after its issued World head was

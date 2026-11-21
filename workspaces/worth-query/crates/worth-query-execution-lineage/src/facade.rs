@@ -11,6 +11,35 @@ pub use crate::domain_computation::{application_aftermath, authorization, primar
 pub use worth_query_execution_obligations::facade::aftermath::correction_material;
 pub mod ports {
     pub use crate::domain_computation::primary_graph::application_attempt::compare_and_commit::committed_publication::readmitted::CommittedProductPublicationInternalPort;
+    pub use crate::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::family_entry::ApplicationOutputFamilyEntryInternalPort;
+    pub use crate::domain_computation::primary_graph::application_checkpoint::internal_port::{
+        ApplicationCheckpointInternalPort, InterimCheckpointOriginInternalPort,
+    };
+    pub use crate::domain_computation::primary_graph::application_contribution::computation::checkpoint::{
+        ManagedComputationCheckpointInternalPort, ManagedComputationExecutionInternalPort,
+    };
+    pub use crate::domain_computation::primary_graph::application_contribution::conditional::package_contract::ConditionalPackageContractInternalPort;
+    pub use crate::domain_computation::primary_graph::application_contribution::partitioned_computation::plan::{
+        ComputationPartitionMembersInternalPort, ComputationPartitionPlanInternalPort,
+        ComputationPartitionViewInternalPort,
+    };
+    pub use crate::domain_computation::primary_graph::application_contribution::producer::demand::denial::internal_port::OutputDemandDenialInternalPort;
+    pub use crate::domain_computation::primary_graph::application_program::PreparedRequiredOutputSourceInternalPort;
+    pub use crate::domain_computation::primary_graph::bootstrap::publication::PrimaryGraphPublicationInternalPort;
+    pub use crate::domain_computation::primary_graph::fragment_view::entity::{
+        FragmentCandidateEntityInternalPort, FragmentObservedEntityInternalPort,
+        FragmentObservedTargetInternalPort,
+    };
+    pub use crate::domain_computation::primary_graph::fragment_view::{
+        FragmentReadingViewInternalPort, FragmentWritingViewInternalPort,
+    };
+    pub use crate::domain_computation::primary_graph::invariant_projection::internal_port::{
+        ApplicationInvariantProjectionAuthorityInternalPort,
+        ApplicationInvariantProjectionExecutionInternalPort,
+        ApplicationInvariantProjectionSnapshotInternalPort,
+    };
+    pub use crate::domain_computation::primary_graph::invariant_projection::operation_reader::current_output::CurrentOutputDenialInternalPort;
+    pub use crate::domain_computation::primary_graph::root::internal_port::PrimaryGraphInternalPort;
     pub use crate::ports::*;
 }
 pub mod test_read_stops {

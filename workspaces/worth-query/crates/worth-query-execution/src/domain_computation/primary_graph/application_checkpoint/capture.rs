@@ -3,6 +3,9 @@ use super::{
     facts, WorthQueryApplicationCheckpoint, WorthQueryApplicationCheckpointSectionBytes,
     WorthQueryCheckpointCaptureDenial, WorthQueryCheckpointCapturePolicy,
 };
+use worth_query_execution_lineage::facade::ports::{
+    ApplicationCheckpointInternalPort as _, InterimCheckpointOriginInternalPort as _,
+};
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductRuntimeBranchLifecycleInternalPort as _;

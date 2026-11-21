@@ -8,6 +8,9 @@ use crate::domain_computation::primary_graph::{
     handler::HandlerRetirementCursor, WorthQueryOperationHomeRetirementProgress as Progress,
 };
 use worth_execution::ExecutionRequest;
+use worth_query_execution_lineage::facade::ports::{
+    ApplicationInvariantProjectionAuthorityInternalPort as _, PrimaryGraphInternalPort as _,
+};
 use worth_query_execution_query::facade::ports::QueryExecutionRuntimeInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;

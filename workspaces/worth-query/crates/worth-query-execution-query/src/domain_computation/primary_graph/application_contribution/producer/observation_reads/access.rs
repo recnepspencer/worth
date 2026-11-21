@@ -7,6 +7,7 @@ use crate::domain_computation::primary_graph::{
     RequiredOutputDemandContext, WorthQueryPrimaryGraphApplicationRuntime,
 };
 use std::sync::Arc;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 use worth_relational::facade::{
     branch::AdmittedRelationalBranchBasis,
     identity::EntityId,
@@ -115,8 +116,7 @@ impl ProducerPredecessorReadAccess {
             .primary_graph()
             .ok_or(Denial::PredecessorMismatch)?;
         let publisher = graph
-            .application_publication
-            .as_ref()
+            .application_publication_ref()
             .ok_or(Denial::PredecessorBasisUnavailable)?;
         let meaning = RequiredOutputPublicationMeaning {
             implementation: self.implementation,

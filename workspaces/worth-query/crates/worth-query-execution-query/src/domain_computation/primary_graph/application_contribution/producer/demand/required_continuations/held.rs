@@ -276,7 +276,7 @@ where
 {
     /// Advance the typed demand from its frozen source under the commit
     /// authority that issued it.
-    pub fn run_again(
+    pub(crate) fn run_again(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,

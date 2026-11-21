@@ -32,7 +32,7 @@ pub struct PreparedSourceFactMaterialization<'source, 'request, 'authority> {
 struct ValidatedSourceField<'source>(&'source WorthQueryObservedFieldRevision);
 
 impl<Query> WorthQueryObservedSource<Query> {
-    pub fn require_supported_fact_expansion(
+    pub(crate) fn require_supported_fact_expansion(
         &self,
         subject: &str,
     ) -> Result<(), WorthQuerySourceExpectationDenial> {

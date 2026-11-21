@@ -3,7 +3,7 @@ use super::borrowed_snapshot::{CompletedProjectionRead, NativeReadAccess};
 use super::*;
 use crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl;
 impl<S: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthority<S> {
-    pub fn project_borrowed_input<T>(
+    pub(crate) fn project_borrowed_input<T>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         native: &worth_relational::facade::runtime::RelationalRuntime,

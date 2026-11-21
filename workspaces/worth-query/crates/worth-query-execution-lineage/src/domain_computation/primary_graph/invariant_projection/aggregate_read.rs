@@ -12,7 +12,7 @@ use worth_relational::facade::runtime::{
     PinnedAggregateReadDenial, PinnedAggregateReadDenialKind, RelationalPinnedReadAdmissionDenial,
 };
 impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'_, Schema> {
-    pub fn read_aggregate_identity(
+    pub(crate) fn read_aggregate_identity(
         &mut self,
         entity_kind: worth_relational::facade::identity::KindId,
         selection: AggregateSelection,
@@ -50,7 +50,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
         self.finish_aggregate_read(result, selection, subject)
     }
 
-    pub fn read_member_aggregate_identity(
+    pub(crate) fn read_member_aggregate_identity(
         &mut self,
         pin: &worth_relational::facade::runtime::RelationalPinnedRead<()>,
         member_kind: worth_relational::facade::identity::KindId,

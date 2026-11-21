@@ -6,6 +6,7 @@ use super::super::{
 };
 use super::*;
 use worth_query_declaration::facade::application_query::ApplicationManagedIndexBinding;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 
 impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
@@ -53,7 +54,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
                 .map_err(|cause| {
                     ReceiverCause::Provider(ProviderExecutionDenial::Lifecycle(cause))
                 })?;
-            if let Some(program) = graph.layout.managed_source(I::NAME) {
+            if let Some(program) = graph.layout_ref().managed_source(I::NAME) {
                 // Parent admission allows registration/status. Content is still
                 // read only after the Source's separate fresh READ in execute.
                 let observation = graph

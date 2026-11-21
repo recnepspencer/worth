@@ -9,7 +9,7 @@ where
         WorthQueryApplicationProjection<Schema, FamilySourceQuery<Schema, Family>> + 'static,
     FamilySourceQuery<Schema, Family>: 'static,
 {
-    pub fn advance_original_checkpoint(
+    pub(crate) fn advance_original_checkpoint(
         &mut self,
 
         phase: &WorthQueryAdvancementPhase<'_>,

@@ -361,6 +361,7 @@ mod effect_program_builder_port;
 mod effect_program_methods_port;
 pub mod effect_program_port;
 mod history_and_output_source_port;
+mod projected_read_set_port;
 pub mod read_attempt_admission;
 mod recovery_handle_binding_port;
 pub mod runtime_ports;
@@ -377,6 +378,7 @@ pub use {
         EffectProgramBuilderInternalPort, EffectProgramInternalPort, EffectProgramParts,
     },
     history_and_output_source_port::*,
+    projected_read_set_port::*,
     read_attempt_admission::{
         ApplicationReadAttemptAdmissionPort, WorthQueryReadAttemptRuntimeContext,
     },

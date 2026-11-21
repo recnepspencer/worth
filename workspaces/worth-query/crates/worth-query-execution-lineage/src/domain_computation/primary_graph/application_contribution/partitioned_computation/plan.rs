@@ -9,7 +9,7 @@ use worth_foundational::facade::PartitionIdentity;
 
 /// The items an input holds.
 pub struct WorthQueryComputationPartitionPlan<Item> {
-    pub shape: PlanShape<Item>,
+    pub(crate) shape: PlanShape<Item>,
 }
 
 /// The partitioner a plan names. Keyed grouping is the only one today.
@@ -50,7 +50,7 @@ pub struct WorthQueryComputationPartitionMembers<'gather, Key, Item> {
 }
 
 impl<'gather, Key, Item> WorthQueryComputationPartitionMembers<'gather, Key, Item> {
-    pub const fn new(
+    pub(crate) const fn new(
         identity: PartitionIdentity,
         key: &'gather Key,
         members: &'gather [PartitionItemId],
@@ -89,7 +89,7 @@ pub struct WorthQueryComputationPartitionView<'run, Key, Gathered> {
 }
 
 impl<'run, Key, Gathered> WorthQueryComputationPartitionView<'run, Key, Gathered> {
-    pub const fn new(partition: &'run GatheredComputationPartition<Key, Gathered>) -> Self {
+    pub(crate) const fn new(partition: &'run GatheredComputationPartition<Key, Gathered>) -> Self {
         Self { partition }
     }
 
@@ -121,4 +121,50 @@ pub struct GatheredComputationPartition<Key, Gathered> {
     pub key: Arc<Key>,
     pub items: Arc<[PartitionItemId]>,
     pub gathered: Gathered,
+}
+
+/// Crate-boundary internal port for partitioned computation plans and views.
+/// Never exported on `worth-query-execution::facade` or Host.
+pub trait ComputationPartitionPlanInternalPort<Item> {
+    fn into_shape(self) -> PlanShape<Item>;
+}
+
+impl<Item> ComputationPartitionPlanInternalPort<Item> for WorthQueryComputationPartitionPlan<Item> {
+    fn into_shape(self) -> PlanShape<Item> {
+        self.shape
+    }
+}
+
+pub trait ComputationPartitionMembersInternalPort<'gather, Key, Item>: Sized {
+    fn from_parts(
+        identity: PartitionIdentity,
+        key: &'gather Key,
+        members: &'gather [PartitionItemId],
+        items: &'gather BTreeMap<PartitionItemId, Item>,
+    ) -> Self;
+}
+
+impl<'gather, Key, Item> ComputationPartitionMembersInternalPort<'gather, Key, Item>
+    for WorthQueryComputationPartitionMembers<'gather, Key, Item>
+{
+    fn from_parts(
+        identity: PartitionIdentity,
+        key: &'gather Key,
+        members: &'gather [PartitionItemId],
+        items: &'gather BTreeMap<PartitionItemId, Item>,
+    ) -> Self {
+        Self::new(identity, key, members, items)
+    }
+}
+
+pub trait ComputationPartitionViewInternalPort<'run, Key, Gathered>: Sized {
+    fn from_gathered(partition: &'run GatheredComputationPartition<Key, Gathered>) -> Self;
+}
+
+impl<'run, Key, Gathered> ComputationPartitionViewInternalPort<'run, Key, Gathered>
+    for WorthQueryComputationPartitionView<'run, Key, Gathered>
+{
+    fn from_gathered(partition: &'run GatheredComputationPartition<Key, Gathered>) -> Self {
+        Self::new(partition)
+    }
 }

@@ -1,6 +1,7 @@
 //! Disposal and sealed lifecycle inspection of framework-owned recipe projections.
 pub use super::super::application_query::derived_view::WorthQueryRuleReadableCollectionLifecycleForTest;
 use super::WorthQueryPrimaryGraphApplicationRuntime;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {

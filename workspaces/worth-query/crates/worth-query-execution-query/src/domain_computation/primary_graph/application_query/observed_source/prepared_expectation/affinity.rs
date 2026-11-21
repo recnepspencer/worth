@@ -1,5 +1,6 @@
 use super::*;
 use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
 impl<Schema>
@@ -119,7 +120,7 @@ where
             return Err(parameters_denial());
         }
         Ok(CheckedSourceAffinity {
-            layout: &graph.layout,
+            layout: graph.layout_ref(),
             selected_product,
             expected_query_identifier,
         })

@@ -1,5 +1,6 @@
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use std::collections::BTreeMap;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 
 use worth_foundational::facade::{AspectFieldLocator, AspectValue};
 use worth_query_declaration::facade::application_capability::ApplicationCapabilityDelegationRequestProjection;
