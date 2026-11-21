@@ -5,6 +5,7 @@ use crate::domain_computation::application_aftermath::{
     WorthQueryRecordedCorrectionSource,
 };
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
 pub(super) fn source_locator<Schema>(
     source: &WorthQuerySelectedCorrectionSource<'_, Schema>,

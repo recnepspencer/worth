@@ -2,6 +2,7 @@
 use super::*;
 use crate::domain_computation::provider_session::WorthQueryManagedIndexSelectionProof;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use WorthQueryManagedIndexLifecycle as Status;
 use WorthQueryManagedIndexLifecycleDenial as Denial;
 

@@ -5,6 +5,7 @@ use crate::domain_computation::primary_graph::program_occurrence::WorthQueryProg
 use crate::domain_computation::primary_graph::retained_correction::record::{
     PreparedCorrectionSnapshot, RecordedCorrectionTarget, RecordedLocation, RecordedScope,
 };
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
 pub(super) fn prepare<S, B>(
     target: &WorthQuerySelectedProductOperation<'_, S>,

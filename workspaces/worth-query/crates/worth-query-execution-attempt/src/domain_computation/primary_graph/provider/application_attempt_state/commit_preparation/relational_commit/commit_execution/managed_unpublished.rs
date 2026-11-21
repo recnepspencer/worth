@@ -2,6 +2,7 @@ use super::managed_views;
 use super::WorthQueryPreImageRetentionWork;
 use super::WorthQueryPrimaryGraphApplicationAttempt;
 use super::WorthQueryPrimaryMutationWorkCounters;
+use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 
 /// All Query evidence whose owner effects crossed World's partial boundary.
 /// The provider's exact unpublished entry owns this until a fresh World

@@ -1,7 +1,5 @@
 use crate::basis::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
-use worth_query_declaration::facade::application_program::{
-    ApplicationProgramIdentity, ApplicationProgramRevision,
-};
+use worth_query_execution_runtime::facade::ports::SelectedProgramInspectionInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::branch::AdmittedRelationalBranchBasis;
 use worth_relational::facade::runtime::{ProjectionAspectRequirement, ProjectionAspectScope};
@@ -12,21 +10,7 @@ use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationR
 /// The rostered program actually carried by one selected product occurrence.
 /// This is descriptive operator evidence; it grants no mutation or adoption
 /// authority.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct WorthQuerySelectedProgramInspection {
-    identity: ApplicationProgramIdentity,
-    revision: ApplicationProgramRevision,
-}
-
-impl WorthQuerySelectedProgramInspection {
-    pub fn identity(&self) -> &ApplicationProgramIdentity {
-        &self.identity
-    }
-
-    pub const fn revision(&self) -> &ApplicationProgramRevision {
-        &self.revision
-    }
-}
+pub use worth_query_execution_runtime::facade::execution_runtime::product_world::WorthQuerySelectedProgramInspection;
 
 /// Why the program carried by a selected product could not be inspected.
 pub use worth_query_execution_attempt::facade::domain_computation::primary_graph::product_activation_types::WorthQuerySelectedProgramInspectionDenial;
@@ -85,10 +69,10 @@ pub fn inspect_selected_program<Schema: ApplicationSchema>(
     let entry = support
         .rostered_for_rendering(&rendering)
         .ok_or(WorthQuerySelectedProgramInspectionDenial::ProgramActivationUnrostered)?;
-    Ok(WorthQuerySelectedProgramInspection {
-        identity: entry.identity().clone(),
-        revision: *entry.revision(),
-    })
+    Ok(WorthQuerySelectedProgramInspection::from_rostered(
+        entry.identity().clone(),
+        *entry.revision(),
+    ))
 }
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {

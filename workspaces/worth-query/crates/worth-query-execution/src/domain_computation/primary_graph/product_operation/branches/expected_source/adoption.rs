@@ -2,6 +2,10 @@
 use super::*;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeBranchLifecycleInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 use worth_runtime_world::facade::{ProductBranchCurrentnessFailure, ProductBranchObservation};
 
 pub use worth_query_execution_query::facade::domain_computation::primary_graph::product_operation::document_history::WorthQueryExpectedProductBranchAdoptionDenial;
@@ -189,7 +193,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryExpectedProductBranch<'runti
             .inner
             .runtime
             .product_runtime
-            .owner
+            .owner_ref()
             .observation_port();
         match world.while_product_branches_current(
             expected,

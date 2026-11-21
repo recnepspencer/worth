@@ -1,6 +1,7 @@
 use super::super::{WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind};
 use super::WorthQueryApplicationEffectProgramBuilder;
 use crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
 impl<Schema, Operation, Input, Scope>
     WorthQueryApplicationEffectProgramBuilder<Schema, Operation, Input, Scope>

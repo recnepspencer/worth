@@ -1,5 +1,6 @@
 //! Retain the real staged protocol until the root's one World transition settles it.
 use super::*;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 pub struct CommitPreparedCoupledWriter<'run> {
     pub custody: CoupledWriterCustody,
     pub prepared:

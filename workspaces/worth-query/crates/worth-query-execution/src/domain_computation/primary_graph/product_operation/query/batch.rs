@@ -7,6 +7,8 @@ use worth_query_execution_query::facade::ports::AdmittedQueryPlanInternalPort as
 use worth_query_execution_query::facade::ports::BatchAdmissionInternalPort as _;
 use worth_query_execution_query::facade::ports::ProductQueryControlsInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeBranchLifecycleInternalPort as _;
 
 /// Refusal of independently scoped ordinary batch admission: either the
 /// original authorization/planning cause or the shared custody allowance.

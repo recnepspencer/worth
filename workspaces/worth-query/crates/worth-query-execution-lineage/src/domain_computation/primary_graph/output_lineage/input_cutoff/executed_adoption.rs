@@ -12,6 +12,7 @@ use crate::domain_computation::primary_graph::{
 };
 use crate::ports::ApplicationAttemptPort;
 use std::sync::{Arc, Mutex, OnceLock};
+use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 
 pub fn select(
     owner: &Arc<Mutex<WorthQueryApplicationOutputLineage>>,

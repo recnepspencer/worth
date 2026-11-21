@@ -8,6 +8,7 @@ use std::sync::Arc;
 use worth_foundational::facade::{CanonicalDigestId, DurableCompositeCommitIdentity};
 use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
 impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
     pub fn prepare_demand_recording<Q: 'static>(

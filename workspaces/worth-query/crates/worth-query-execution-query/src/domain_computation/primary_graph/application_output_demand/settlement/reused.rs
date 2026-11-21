@@ -6,6 +6,9 @@ use crate::domain_computation::primary_graph::{
 use worth_query_execution_lineage::facade::ports::{
     OutputDemandSettlementInternalPort as _, OutputDemandSettlementParts,
 };
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeBranchLifecycleInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 
 pub trait OutputDemandSettlementReusedExt: Sized {
     fn from_restoration<Schema>(
@@ -47,7 +50,7 @@ impl OutputDemandSettlementReusedExt for WorthQueryOutputDemandSettlement {
             runtime
                 .runtime
                 .product_runtime
-                .recovered_root_authority
+                .recovered_root_authority_ref()
                 .as_ref()
                 .filter(|authority| authority.product_branch() == &restored.observation)
                 .ok_or_else(|| {

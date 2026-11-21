@@ -85,7 +85,7 @@ impl WorthQueryPendingProductBranchClose {
 }
 
 impl WorthQueryProductRuntime {
-    pub fn begin_product_branch_close(
+    pub(crate) fn begin_product_branch_close(
         &self,
         branch: WorthQueryProductBranch,
         scope: WorthQueryProductBranchCloseScope,

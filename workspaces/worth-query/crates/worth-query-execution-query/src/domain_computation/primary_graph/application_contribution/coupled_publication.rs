@@ -5,6 +5,7 @@ use super::producer::{
     WorthQueryOutputDemandDenialKind,
 };
 use worth_query_execution_lineage::facade::ports::CleanupRequiredInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 mod applied_outputs;
 mod authored_stages;

@@ -1,5 +1,6 @@
 //! Stable publication occurs only when the canonical owner cursor applies it.
 use super::*;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 
 pub fn publish<Schema, Binding, OperationType, Input, Scope>(
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
@@ -43,7 +44,7 @@ where
             _ => denial(WorthQueryOutputDemandDenialKind::PublicationStale, "producer input cutoff source changed during preparation"),
         })?;
     let displaced = publication.displaced_settlement();
-    let published = publication.publish(&operation.retain_admitted_request(), operation.operation(), observation, &runtime.runtime.product_runtime.owner.observation_port(), registration, execution).map_err(|stop| match stop {
+    let published = publication.publish(&operation.retain_admitted_request(), operation.operation(), observation, &runtime.runtime.product_runtime.owner_ref().observation_port(), registration, execution).map_err(|stop| match stop {
         crate::domain_computation::primary_graph::output_lineage::StablePublicationStop::Demand(stop) => ProducerExecutionStop::ExecutionStopped(stop),
         crate::domain_computation::primary_graph::output_lineage::StablePublicationStop::RequestAuthority(stop) => super::denial::request_authority_denied(Binding::IDENTITY, stop),
     })?;

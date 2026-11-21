@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex, OnceLock};
+use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 
 use super::ManagedUnpublishedAttempt;
 use super::{WorthQueryProductIdempotencyAffinity, WorthQueryProviderIdempotencyResolution};

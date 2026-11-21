@@ -9,6 +9,7 @@ use crate::domain_computation::primary_graph::{
 use std::sync::Arc;
 use worth_foundational::facade::CanonicalDigestId;
 use worth_query_execution_query::facade::ports::HistoryPreviewInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 use worth_query_installation::facade::{
     WorthQueryInstalledApplicationQueryBindingObservation,
     WorthQueryInstalledApplicationQueryIdentity,

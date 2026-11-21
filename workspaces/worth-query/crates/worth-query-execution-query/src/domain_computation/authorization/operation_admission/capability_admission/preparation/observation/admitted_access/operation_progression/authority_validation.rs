@@ -1,4 +1,5 @@
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 
 use worth_query_declaration::facade::application_capability::ApplicationCapabilityRequest;
 use worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity;
@@ -28,7 +29,7 @@ where
     runtime
         .runtime
         .product_runtime
-        .owner
+        .owner_ref()
         .owner_identity()
         .admit_incarnation(access.home_owner)
         .map_err(|cause| {

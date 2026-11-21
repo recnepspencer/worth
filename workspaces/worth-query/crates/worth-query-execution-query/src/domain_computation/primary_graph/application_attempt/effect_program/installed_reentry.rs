@@ -14,6 +14,7 @@ use worth_query_execution_attempt::facade::ports::{
     CompleteReadSetInternalPort as _, EffectProgramInternalPort as _,
 };
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 
 /// Opaque entry refusal. Its causes cannot contain a landed receipt or cleanup
@@ -65,7 +66,7 @@ impl WorthQueryApplicationRuntimeCore {
         tag: &BrandTag,
         binding: &ApplicationSchemaBindingIdentity,
     ) -> Result<(), WorthQueryCommitEntryRefusal> {
-        core.refuse_stale_home_authority(self.product_runtime.owner.owner_identity())
+        core.refuse_stale_home_authority(self.product_runtime.owner_ref().owner_identity())
             .map_err(WorthQueryCommitEntryRefusal::authorization)?;
         self.validate_commit_phase(phase)?;
         self.validate_commit_installation(core, tag, binding)
@@ -78,7 +79,7 @@ impl WorthQueryApplicationRuntimeCore {
         phase: &WorthQueryAdvancementPhase<'_>,
         core: &WorthQueryAdmittedOperation,
     ) -> Result<(), WorthQueryCommitEntryRefusal> {
-        core.refuse_stale_home_authority(self.product_runtime.owner.owner_identity())
+        core.refuse_stale_home_authority(self.product_runtime.owner_ref().owner_identity())
             .map_err(WorthQueryCommitEntryRefusal::authorization)?;
         self.validate_commit_phase(Some(phase))?;
         core.validate_current_authority()

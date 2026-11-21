@@ -4,6 +4,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrimaryGraphInstallationDenialKind,
 };
 use worth_execution::ExecutionRequest;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 mod source;
 pub(in crate::domain_computation::primary_graph) use source::BranchActivationSource;
 use worth_query_installation::facade::ApplicationSchema;
@@ -51,7 +52,7 @@ pub(in crate::domain_computation::primary_graph) fn verify<Schema: ApplicationSc
         .activation()
         .published()
         .ok_or(Denial::SupportUnavailable)?;
-    let owner = &application.inner.runtime.product_runtime.owner;
+    let owner = &application.inner.runtime.product_runtime.owner_ref();
     let observation = owner.observation_port();
     let inventory = observation
         .observe_installed_product_branches(execution)

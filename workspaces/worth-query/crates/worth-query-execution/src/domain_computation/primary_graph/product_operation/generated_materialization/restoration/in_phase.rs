@@ -1,6 +1,8 @@
 //! Admit and execute one restoration inside its original application phase.
 use super::*;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub(super) fn restore_generated_output_in_phase<Producer>(
         &self,
@@ -65,7 +67,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .inner
             .runtime
             .product_runtime
-            .activations
+            .activations_ref()
             .gate(suspended.publication.observation().branch_identity())
         {
             Ok(gate) => gate,

@@ -1,5 +1,6 @@
 //! The actual Native correction supplies prior custody for a recreated owning scope.
 use super::*;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub fn record_native_restored_output_prior<Family>(
         &self,

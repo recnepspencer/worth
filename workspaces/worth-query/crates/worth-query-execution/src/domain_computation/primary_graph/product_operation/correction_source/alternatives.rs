@@ -1,5 +1,7 @@
 //! Bounded lineage projection carries complete active-reversal resolution into selection.
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 mod selection;
 
 use super::*;
@@ -244,7 +246,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
                     .inner
                     .runtime
                     .product_runtime
-                    .owner
+                    .owner_ref()
                     .observation_port(),
                 self.product().observation(),
                 &expected_fact.source,
@@ -346,7 +348,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
             .inner
             .runtime
             .product_runtime
-            .owner
+            .owner_ref()
             .observation_port()
             .select_retained_product_branch_ancestor(
                 &execution,

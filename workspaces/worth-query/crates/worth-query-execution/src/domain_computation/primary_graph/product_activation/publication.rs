@@ -8,6 +8,8 @@ use crate::domain_computation::execution_runtime::product_world::{
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use std::sync::Arc;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 
 use worth_runtime_bridge::facade::{
     BridgeConditionalDenial, BridgeInstalledConditionalLowering,
@@ -65,14 +67,14 @@ where
             .inner
             .runtime
             .product_runtime
-            .activations
+            .activations_ref()
             .gate(identity)?;
         gate.publish(|| {
             let owner=self.inner.runtime.bridge.conditional();
             if let crate::domain_computation::primary_graph::managed_bridge::conditional_execution::ConditionalExecutionOwner::Authored(bridge)=&owner {
                 return authored::publish(self,phase,product,bridge,predecessor,request,cancellation);
             }
-            let publication = self.inner.runtime.product_runtime.owner.publication_port();
+            let publication = self.inner.runtime.product_runtime.owner_ref().publication_port();
             let prepared_world = match prepare_conditional_publication(&publication, product.observation().clone(), CompositePublicationIntent::with_signal(None), cancellation, None) {
                 Ok(prepared) => prepared,
                 Err(PublicationDenial::ClockMismatch) => return Err(WorthQueryProductConditionalPublicationDenial::ExecutionRequest(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock))),

@@ -6,7 +6,7 @@ use crate::basis::{
 };
 
 impl WorthQueryProductRuntime {
-    pub fn admit_owner_incarnation(
+    pub(crate) fn admit_owner_incarnation(
         &self,
         presented: worth_runtime_world::facade::RuntimeWorldOwnerIdentity,
     ) -> Result<(), Denial> {

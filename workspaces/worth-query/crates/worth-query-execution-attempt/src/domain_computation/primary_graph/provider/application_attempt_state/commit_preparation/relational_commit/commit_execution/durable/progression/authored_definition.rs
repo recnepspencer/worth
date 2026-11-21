@@ -2,6 +2,7 @@
 use super::*;
 use crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding;
 use crate::domain_computation::primary_graph::managed_bridge::conditional_owner::ConditionalOwner;
+use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 use worth_runtime_world::facade::{
     WorldDurablePublicationOutcome, WorldPreparedPublicationWithSignal,
 };

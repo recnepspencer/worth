@@ -9,6 +9,7 @@ use crate::domain_computation::primary_graph::{
 };
 use worth_execution::ExecutionRequest;
 use worth_query_execution_query::facade::ports::QueryExecutionRuntimeInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 mod inbound;
 pub(in crate::domain_computation::primary_graph) use worth_query_execution_query::facade::domain_computation::primary_graph::application_runtime::home_retirement::participation;
@@ -38,7 +39,7 @@ enum QueryRetirementStage {
 }
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    pub fn preflight_home_retirement(
+    pub(in crate::domain_computation::primary_graph) fn preflight_home_retirement(
         &mut self,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<(), WorthQueryHomeRetirementDenial> {
@@ -116,7 +117,12 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 .primary_provider
                 .protect_dispatch_originals_for_close(
                     request,
-                    &self.inner.runtime.product_runtime.owner.inspection_port(),
+                    &self
+                        .inner
+                        .runtime
+                        .product_runtime
+                        .owner_ref()
+                        .inspection_port(),
                 )?;
         }
         let transport = self
@@ -149,7 +155,13 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .runtime
             .granular_invalidation
             .preflight_home_retirement(request)?;
-        if let Some(maintenance) = self.inner.runtime.product_runtime.home_maintenance.as_mut() {
+        if let Some(maintenance) = self
+            .inner
+            .runtime
+            .product_runtime
+            .home_maintenance_slot_mut()
+            .as_mut()
+        {
             let adapter = std::sync::Arc::get_mut(maintenance)
                 .ok_or(WorthQueryHomeRetirementDenial::Busy(
                     WorthQueryHomeRetirementOwner::HomeMaintenance,
@@ -224,38 +236,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 }
 
 impl<Schema: ApplicationSchema> RetiringPrimaryGraphRuntime<Schema> {
-    pub fn home_maintenance_mut(&mut self)
-    -> Option<&mut std::sync::Arc<dyn crate::domain_computation::execution_runtime::product_world::WorthQueryHomeMaintenance>>{
-        self.runtime
-            .inner.runtime
-            .product_runtime
-            .home_maintenance
-            .as_mut()
-            .and_then(std::sync::Arc::get_mut)
-            .and_then(|adapter| {
-                adapter
-                    .as_any_mut()
-                    .downcast_mut::<crate::domain_computation::execution_runtime::product_world::HomeMaintenanceAdapter>()
-            })
-            .map(crate::domain_computation::execution_runtime::product_world::HomeMaintenanceAdapter::inner_mut)
-    }
-    pub fn take_home_maintenance(&mut self)
-    -> Option<std::sync::Arc<dyn crate::domain_computation::execution_runtime::product_world::WorthQueryHomeMaintenance>>{
-        let taken = self
-            .runtime
-            .inner
-            .runtime
-            .product_runtime
-            .home_maintenance
-            .take()?;
-        let inner = taken
-            .as_any()
-            .downcast_ref::<crate::domain_computation::execution_runtime::product_world::HomeMaintenanceAdapter>()
-            .map(|adapter| std::sync::Arc::clone(&adapter.0));
-        drop(taken);
-        inner
-    }
-    pub fn advance(
+    pub(in crate::domain_computation::primary_graph) fn advance(
         &mut self,
         request: &ExecutionRequest<'_, '_>,
         native: &worth_relational::facade::runtime::RelationalRuntime,
@@ -266,7 +247,7 @@ impl<Schema: ApplicationSchema> RetiringPrimaryGraphRuntime<Schema> {
             .inner
             .runtime
             .product_runtime
-            .home_maintenance
+            .home_maintenance_slot_ref()
             .is_some()
         {
             return Err(WorthQueryHomeRetirementDenial::Unsupported(
@@ -337,13 +318,14 @@ impl<Schema: ApplicationSchema> RetiringPrimaryGraphRuntime<Schema> {
                     .inner
                     .runtime
                     .product_runtime
-                    .source
+                    .source_slot_mut()
                     .take()
                     .expect("same original product source");
                 match source.try_retire_alias_for_request(request, native) {
                     Ok(retired) => self.retired_product_source = Some(retired),
                     Err((source, cause)) => {
-                        self.runtime.inner.runtime.product_runtime.source = Some(source);
+                        *self.runtime.inner.runtime.product_runtime.source_slot_mut() =
+                            Some(source);
                         return Err(WorthQueryHomeRetirementDenial::NativeAlias(cause));
                     }
                 }
@@ -392,5 +374,7 @@ impl<Schema: ApplicationSchema> RetiringPrimaryGraphRuntime<Schema> {
     }
 }
 
+#[path = "home_retirement/maintenance.rs"]
+mod maintenance;
 #[path = "home_retirement/stage_order.rs"]
 mod stage_order;

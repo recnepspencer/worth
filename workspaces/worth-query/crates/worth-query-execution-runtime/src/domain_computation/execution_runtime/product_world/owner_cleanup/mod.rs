@@ -271,7 +271,7 @@ impl WorthQueryProductBranchOwnerCleanupRecord {
 }
 
 impl WorthQueryProductRuntime {
-    pub fn reserve_owner_cleanup_for_workspace_retirement(
+    pub(crate) fn reserve_owner_cleanup_for_workspace_retirement(
         &self,
     ) -> Result<
         WorthQueryProductBranchOwnerCleanupReservation,
@@ -281,7 +281,7 @@ impl WorthQueryProductRuntime {
             .reserve(CleanupScope::WorkspaceRetirement)
     }
 
-    pub fn reserve_owner_cleanup_for_application_retirement(
+    pub(crate) fn reserve_owner_cleanup_for_application_retirement(
         &self,
         occurrence: WorthQueryRetiredProductOccurrence,
     ) -> Result<
@@ -292,7 +292,7 @@ impl WorthQueryProductRuntime {
             .reserve(CleanupScope::ApplicationRetirement(occurrence))
     }
 
-    pub fn reserve_owner_cleanup_for_creation(
+    pub(crate) fn reserve_owner_cleanup_for_creation(
         &self,
     ) -> Result<
         WorthQueryProductBranchOwnerCleanupReservation,
@@ -301,7 +301,7 @@ impl WorthQueryProductRuntime {
         self.owner_cleanup.reserve(CleanupScope::Creation)
     }
 
-    pub fn reserve_owner_cleanup_for_application(
+    pub(crate) fn reserve_owner_cleanup_for_application(
         &self,
     ) -> Result<
         WorthQueryProductBranchOwnerCleanupReservation,
@@ -310,7 +310,7 @@ impl WorthQueryProductRuntime {
         self.owner_cleanup.reserve(CleanupScope::Application)
     }
 
-    pub fn pending_owner_cleanup(&self) -> Vec<WorthQueryProductBranchOwnerCleanup> {
+    pub(crate) fn pending_owner_cleanup(&self) -> Vec<WorthQueryProductBranchOwnerCleanup> {
         self.owner_cleanup
             .pending_identities()
             .into_iter()
@@ -318,7 +318,9 @@ impl WorthQueryProductRuntime {
             .collect()
     }
 
-    pub fn pending_workspace_owner_cleanup(&self) -> Vec<WorthQueryProductBranchOwnerCleanup> {
+    pub(crate) fn pending_workspace_owner_cleanup(
+        &self,
+    ) -> Vec<WorthQueryProductBranchOwnerCleanup> {
         self.owner_cleanup
             .pending_workspace_identities()
             .into_iter()
@@ -326,14 +328,14 @@ impl WorthQueryProductRuntime {
             .collect()
     }
 
-    pub fn pending_application_retired_product_occurrences(
+    pub(crate) fn pending_application_retired_product_occurrences(
         &self,
     ) -> Vec<WorthQueryRetiredProductOccurrence> {
         self.owner_cleanup
             .pending_application_retired_product_occurrences()
     }
 
-    pub fn replace_owner_cleanup_after_install_hook(&self, hook: Option<Box<dyn Fn()>>) {
+    pub(crate) fn replace_owner_cleanup_after_install_hook(&self, hook: Option<Box<dyn Fn()>>) {
         self.owner_cleanup.replace_after_install_hook(hook);
     }
 
@@ -343,6 +345,7 @@ impl WorthQueryProductRuntime {
     }
 }
 
+pub(crate) mod internal_port;
 fn describe_work(work: &OwnerRetirementWork) -> WorthQueryProductBranchOwnerCleanupWork {
     match work {
         OwnerRetirementWork::RelationalBranchRetirement { target, .. } => {

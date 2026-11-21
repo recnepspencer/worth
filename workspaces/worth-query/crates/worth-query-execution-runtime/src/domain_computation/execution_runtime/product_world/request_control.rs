@@ -129,7 +129,7 @@ impl Wake for PublicationCancellation {
 }
 
 impl WorthQueryProductPublicationBinding {
-    pub fn prepare_settled_relational_adoption_with(
+    pub(crate) fn prepare_settled_relational_adoption_with(
         &self,
         request: &WorthQueryRequestScope,
         prepare: impl FnOnce(
@@ -154,7 +154,7 @@ impl WorthQueryProductPublicationBinding {
         })
     }
 
-    pub fn request_control(
+    pub(crate) fn request_control(
         &self,
         request: &WorthQueryRequestScope,
     ) -> Option<WorthQueryProductPublicationRequestControl> {
@@ -185,7 +185,7 @@ impl WorthQueryProductPublicationBinding {
         })
     }
 
-    pub fn prepare_relational_candidate(
+    pub(crate) fn prepare_relational_candidate(
         &self,
         candidate: worth_relational::facade::mvcc::PreparedRelationalCommitCandidate,
         request: &WorthQueryRequestScope,
@@ -199,7 +199,7 @@ impl WorthQueryProductPublicationBinding {
         )
     }
 
-    pub fn prepare_relational_candidate_with_current_read(
+    pub(crate) fn prepare_relational_candidate_with_current_read(
         &self,
         candidate: worth_relational::facade::mvcc::PreparedRelationalCommitCandidate,
         request: &WorthQueryRequestScope,

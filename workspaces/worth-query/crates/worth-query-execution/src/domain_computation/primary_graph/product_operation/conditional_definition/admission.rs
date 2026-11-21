@@ -1,4 +1,5 @@
 //! One definition successor issuer for selected entries and admitted handlers.
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use crate::domain_computation::primary_graph::product_operation::conditional_definition::application_change::WorthQueryAdmittedApplicationConditionalDefinitionRuntimeExt as _;
 use super::*;
 use crate::basis::WorthQueryProductBranchLease;

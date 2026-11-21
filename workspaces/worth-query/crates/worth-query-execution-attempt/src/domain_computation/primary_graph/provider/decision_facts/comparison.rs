@@ -1,5 +1,6 @@
 //! One registered product's exact observer for a single receipt comparison.
 use std::sync::Arc;
+use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 use worth_relational::facade::snapshots::SnapshotHandle;
 
 use super::{provider_rejected, snapshot_read_set_failure, WorthQueryPrimaryGraphProvider};

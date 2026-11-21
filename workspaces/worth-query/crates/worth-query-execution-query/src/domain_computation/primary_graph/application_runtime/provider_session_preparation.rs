@@ -6,6 +6,7 @@ use crate::domain_computation::{
     WorthQueryProviderSessionGrant, WorthQueryProviderSessionReceiver,
 };
 use std::sync::Arc;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     /// The receiving runtime supplies its actual provider and Home witness.
@@ -34,5 +35,8 @@ fn session_receiver_facts(
         .primary_graph_authority()
         .retain_provider_anchor::<WorthQueryGraphProviderAnchor>()
         .expect("a published primary graph retains its original provider");
-    (runtime.product_runtime.owner.owner_identity(), provider)
+    (
+        runtime.product_runtime.owner_ref().owner_identity(),
+        provider,
+    )
 }

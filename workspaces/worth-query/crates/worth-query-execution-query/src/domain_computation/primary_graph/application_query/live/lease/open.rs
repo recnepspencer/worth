@@ -1,4 +1,5 @@
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 mod initial_read;
 use initial_read::execute_live_initial_read;
 use std::marker::PhantomData;

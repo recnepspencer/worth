@@ -1,5 +1,6 @@
 //! C issues authority; only the exact unpublished candidate proves source presence.
 use super::*;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_relational::facade::runtime::{
     RelationalAppliedCandidateReadIdentity, RelationalPinnedRead,
 };

@@ -4,6 +4,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrimaryGraphApplicationRuntime,
 };
 use worth_execution::ExecutionRequest;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
     pub fn readmit_output_observation(
@@ -12,7 +13,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         commit: worth_foundational::facade::DurableCompositeCommitIdentity,
         branch: &str,
     ) -> Result<worth_runtime_world::facade::ProductBranchObservation, Denial> {
-        let world = self.runtime.product_runtime.owner.observation_port();
+        let world = self.runtime.product_runtime.owner_ref().observation_port();
         let branches = world
             .observe_installed_product_branches(execution)
             .map_err(|_| unavailable())?;

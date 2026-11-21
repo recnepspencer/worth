@@ -60,7 +60,7 @@ impl WorthQueryPreparedConditionalRecovery {
 }
 
 impl WorthQueryProductPublicationBinding {
-    pub fn prepare_conditional_definition_adoption(
+    pub(crate) fn prepare_conditional_definition_adoption(
         &self,
         handle: &ProductUnpublishedRecoveryHandle,
         bridge: &BridgeSealedRuntimeAssembly,

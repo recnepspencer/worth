@@ -12,6 +12,7 @@ use super::*;
 use crate::domain_computation::authorization::WorthQueryAdmittedApplicationOperation;
 use crate::domain_computation::primary_graph::WorthQueryWorkflowDispositions;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 use worth_query_installation::facade::WorthQueryProgramAdoptionRequirements;
 pub(in crate::domain_computation::primary_graph) enum AdoptionEffect<'a> {
     Read,
@@ -67,7 +68,7 @@ impl AdoptionEffect<'_> {
                         .inner
                         .runtime
                         .product_runtime
-                        .activations
+                        .activations_ref()
                         .gate(selected.product().branch_identity())
                         .map_err(|denial| {
                             WorthQueryBranchAdoptionPreparationDenial::ProductActivation(

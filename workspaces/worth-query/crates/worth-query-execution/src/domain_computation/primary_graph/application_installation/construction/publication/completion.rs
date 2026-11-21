@@ -1,5 +1,6 @@
 //! Finalize lineage and recovery only after service publication has returned.
 use super::*;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 #[inline(never)]
 pub(super) fn complete<S: ApplicationSchemaComposition>(
     phase: &crate::domain_computation::primary_graph::WorthQueryBootstrapAdvancementPhase<'_>,
@@ -37,7 +38,7 @@ pub(super) fn complete<S: ApplicationSchemaComposition>(
             .inner
             .runtime
             .product_runtime
-            .activations
+            .activations_ref()
             .require_program_coordination();
         application.inner.program_support = Some(
             crate::domain_computation::primary_graph::program_occurrence::WorthQueryInstalledProgramSupport::installed(

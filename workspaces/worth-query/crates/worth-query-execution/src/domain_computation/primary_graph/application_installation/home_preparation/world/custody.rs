@@ -3,6 +3,7 @@ use super::*;
 use crate::domain_computation::primary_graph::provider::aftermath_causality::readmission as corrections;
 use crate::domain_computation::primary_graph::query_obligations::history::journal_readmission::QueryObligationHistoryJournalReadmissionExt;
 use worth_proof::CustodyReadmitted;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 
 #[derive(Debug)]
 pub enum QueryHomeCustodyReadmissionDenial {
@@ -62,7 +63,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
             .inner
             .runtime
             .product_runtime
-            .owner
+            .owner_ref()
             .owner_identity();
         if owner.durable().map(|owner| owner.home()) != Some(obligations.home()) {
             return Err(QueryHomeCustodyReadmissionRefused {
@@ -103,7 +104,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
             .inner
             .runtime
             .product_runtime
-            .owner
+            .owner_ref()
             .inspection_port()
             .observe_program_activation_history(execution)
         {

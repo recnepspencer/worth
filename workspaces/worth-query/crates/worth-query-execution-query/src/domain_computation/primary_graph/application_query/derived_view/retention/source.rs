@@ -1,6 +1,7 @@
 //! Purpose identity is independent of the shared retained-image lifecycle.
 use super::*;
 use worth_query_declaration::facade::application_schema::ApplicationRuleReadableCollectionAssociation;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_relational::facade::schema::DerivedRelationHandle;
 
 /// Read-only lifecycle of one framework-owned projection. This contains no

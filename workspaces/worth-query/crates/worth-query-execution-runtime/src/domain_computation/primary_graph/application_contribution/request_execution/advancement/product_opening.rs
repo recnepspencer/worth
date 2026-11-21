@@ -37,7 +37,7 @@ impl crate::domain_computation::execution_runtime::product_world::WorthQueryProd
     }
 
     /// Runs a scoped call with explicit retention of the returned outcome.
-    pub fn with_request_advancement_retaining<R>(
+    pub(crate) fn with_request_advancement_retaining<R>(
         &self,
         request: &WorthQueryRequestScope,
         retain_returned_outcome: bool,
@@ -53,7 +53,7 @@ impl crate::domain_computation::execution_runtime::product_world::WorthQueryProd
     }
 
     /// Runs a call funded by the caller's explicit allocation policy.
-    pub fn with_funded_product_advancement<R>(
+    pub(crate) fn with_funded_product_advancement<R>(
         &self,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
         cancellation: worth_execution::CancellationToken,

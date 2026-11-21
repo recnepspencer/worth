@@ -1,5 +1,6 @@
 use super::*;
 use worth_query_declaration::facade::application_schema::fragment::RecordSelection;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
 /// An installed scope resolved on the selected Product's exact native root.
 /// The selected operation is borrowed until the scoped Query read completes.

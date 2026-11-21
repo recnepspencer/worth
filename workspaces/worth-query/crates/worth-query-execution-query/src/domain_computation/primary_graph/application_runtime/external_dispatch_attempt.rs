@@ -1,6 +1,7 @@
 //! Runtime-owned admission for one physical post-commit dispatch attempt.
 
 use std::sync::Arc;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 
 use super::WorthQueryPrimaryGraphApplicationRuntime;
 use crate::domain_computation::application_aftermath::external_effect::WorthQueryAdmittedExternalDispatchAttempt;
@@ -109,7 +110,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
             .committed_product_publication()
             .product_branch()
             .owner_identity()
-            != self.runtime.product_runtime.owner.owner_identity()
+            != self.runtime.product_runtime.owner_ref().owner_identity()
         {
             return Err(WorthQueryExternalDispatchAdmissionDenial::ForeignProductWorld);
         }
@@ -135,7 +136,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
         let ordinal = if self
             .runtime
             .product_runtime
-            .owner
+            .owner_ref()
             .owner_identity()
             .durable()
             .is_some()

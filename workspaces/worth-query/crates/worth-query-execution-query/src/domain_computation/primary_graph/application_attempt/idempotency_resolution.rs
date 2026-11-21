@@ -3,6 +3,9 @@ use worth_query_execution_attempt::facade::ports::AdmittedIdempotencyReadInterna
 use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
 use worth_query_execution_lineage::facade::ports::CommitReceiptInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 
 pub use worth_query_execution_lineage::facade::domain_computation::primary_graph::application_attempt::idempotency_resolution::denial;
@@ -50,7 +53,7 @@ where
             return Err(WorthQueryApplicationIdempotencyResolutionDenial::foreign_admission());
         }
         admission
-            .refuse_stale_home_authority(self.runtime.product_runtime.owner.owner_identity())
+            .refuse_stale_home_authority(self.runtime.product_runtime.owner_ref().owner_identity())
             .map_err(WorthQueryApplicationIdempotencyResolutionDenial::from_authorization)?;
         if !admission.belongs_to(
             self.runtime.authority_identity(),
@@ -224,7 +227,7 @@ where
         Input: Clone + Send + Sync + 'static,
     {
         admission
-            .refuse_stale_home_authority(self.runtime.product_runtime.owner.owner_identity())
+            .refuse_stale_home_authority(self.runtime.product_runtime.owner_ref().owner_identity())
             .map_err(WorthQueryApplicationIdempotencyResolutionDenial::from_authorization)?;
         if !admission.belongs_to(
             self.runtime.authority_identity(),

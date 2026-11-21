@@ -1,12 +1,13 @@
 //! A carried effect program is checked before current-owner policy or I/O.
 use super::*;
 use worth_query_execution_attempt::facade::ports::EffectProgramMethodsInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub fn require_program_incarnation<Operation, Input, Scope>(
         &self,
         program: &WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
     ) -> Result<(), WorthQueryApplicationCommitOutcome> {
-        program.refuse_stale_home_authority(self.runtime.product_runtime.owner.owner_identity())
+        program.refuse_stale_home_authority(self.runtime.product_runtime.owner_ref().owner_identity())
             .map_err(|denial| WorthQueryApplicationCommitOutcome::Denied(
                 WorthQueryApplicationCommitDenial::request_authority_denied(
                     crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage::BasisAdmission,

@@ -20,7 +20,11 @@ use worth_query_admission::facade::authenticated_principal::WorthQueryRequestSco
 use worth_query_execution_lineage::facade::ports::ReadObservationInternalPort as _;
 use worth_query_execution_query::facade::ports::HistoryPreviewInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort;
+use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeBranchLifecycleInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 
 pub(super) fn publication_denial(
@@ -164,7 +168,7 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
                 .inner
                 .runtime
                 .product_runtime
-                .owner
+                .owner_ref()
                 .recovery_port(),
             self.application
                 .inner

@@ -1,5 +1,8 @@
 //! Runtime restoration of an interim checkpoint registry on an installed application.
 
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeBranchLifecycleInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 use worth_execution::ExecutionRequest;
 use worth_query_execution_lineage::facade::primary_graph::application_checkpoint::interim_transport::{
     application_binding, native_refusal, world_refusal, WorthQueryInterimCheckpointOrigin,
@@ -34,7 +37,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static>
             .map_err(|cause| native_refusal(cause).into_installation_denial())?;
         let product = &self.inner.runtime.product_runtime;
         let lease = product
-            .admit_product_occurrence(product.default_occurrence)
+            .admit_product_occurrence(product.default_occurrence())
             .map_err(|cause| {
                 Denial::new(
                     Kind::InterimCheckpointReceiverMismatch,

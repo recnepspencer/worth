@@ -1,5 +1,6 @@
 //! A Native current roster addresses the same lineage/currentness verifier.
 use super::*;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_relational::facade::{
     branch::RelationalModelOwnershipDenial, identity::EntityId, runtime::RelationalRuntime,
 };

@@ -1,5 +1,6 @@
 //! One queued native delivery retains decode custody through its final ACK.
 use super::*;
+use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 
 impl<
         Schema,

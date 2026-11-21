@@ -3,6 +3,7 @@ use super::*;
 use crate::domain_computation::{
     WorthQueryProviderSessionCommitStop as Stop, WorthQueryProviderTerminalDescription,
 };
+use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 impl super::super::WorthQueryPrimaryGraphProvider {
     pub fn complete_coupled_session(
         &self,

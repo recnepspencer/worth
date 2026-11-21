@@ -1,5 +1,53 @@
 //! The already observed branch programme is carried with this exact publication basis.
 use super::*;
+use worth_query_declaration::facade::application_program::{
+    ApplicationProgramIdentity, ApplicationProgramRevision,
+};
+
+/// The rostered program actually carried by one selected product occurrence.
+/// This is descriptive operator evidence; it grants no mutation or adoption
+/// authority.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct WorthQuerySelectedProgramInspection {
+    identity: ApplicationProgramIdentity,
+    revision: ApplicationProgramRevision,
+}
+
+impl WorthQuerySelectedProgramInspection {
+    pub(crate) fn from_rostered(
+        identity: ApplicationProgramIdentity,
+        revision: ApplicationProgramRevision,
+    ) -> Self {
+        Self { identity, revision }
+    }
+
+    pub fn identity(&self) -> &ApplicationProgramIdentity {
+        &self.identity
+    }
+
+    pub const fn revision(&self) -> &ApplicationProgramRevision {
+        &self.revision
+    }
+}
+
+/// Crate-boundary port for constructing a rostered selected-program inspection
+/// inside the Query crate. Never exported on `worth-query-execution::facade` or Host.
+pub trait SelectedProgramInspectionInternalPort: Sized {
+    fn from_rostered(
+        identity: ApplicationProgramIdentity,
+        revision: ApplicationProgramRevision,
+    ) -> Self;
+}
+
+impl SelectedProgramInspectionInternalPort for WorthQuerySelectedProgramInspection {
+    fn from_rostered(
+        identity: ApplicationProgramIdentity,
+        revision: ApplicationProgramRevision,
+    ) -> Self {
+        Self::from_rostered(identity, revision)
+    }
+}
+
 pub enum SelectedProgramSourceRetentionDenial {
     Head(worth_runtime_world::facade::WorldDurableMediumDenial),
     ConflictingObservation,
@@ -31,14 +79,15 @@ impl BranchProgramSourceCache {
     }
 }
 impl WorthQueryProductPublicationBinding {
-    pub fn retain_selected_program_source_revision(
+    pub(crate) fn retain_selected_program_source(
         &mut self,
-        revision: [u8; 32],
+        selected: &WorthQuerySelectedProgramInspection,
     ) -> Result<(), SelectedProgramSourceRetentionDenial> {
         let slot = match &mut self.program_source {
             BranchProgramSourceCache::MemoryOnly => return Ok(()),
             BranchProgramSourceCache::Directory { selected, .. } => selected,
         };
+        let revision = *selected.revision().as_bytes();
         let commitment = worth_runtime_world::facade::world_branch_program_source_commitment(
             &self.observation,
             revision,
@@ -62,7 +111,7 @@ impl WorthQueryProductPublicationBinding {
             Some(_) => Err(SelectedProgramSourceRetentionDenial::ConflictingObservation),
         }
     }
-    pub fn admitted_program_source(
+    pub(crate) fn admitted_program_source(
         &self,
     ) -> Result<
         worth_proof::AdmittedBranchProgramSource,

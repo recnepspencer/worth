@@ -6,6 +6,7 @@ use crate::equality_type_id::EqualityTypeId;
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryBinding, ApplicationQueryParameterSet,
 };
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_relational::facade::runtime::RelationalPinnedRead;
 mod created;
 mod removed;

@@ -1,5 +1,6 @@
 //! The single authoritative Relational commit transition.
 
+use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 pub mod availability;
 pub mod before_world;
 pub mod durable;

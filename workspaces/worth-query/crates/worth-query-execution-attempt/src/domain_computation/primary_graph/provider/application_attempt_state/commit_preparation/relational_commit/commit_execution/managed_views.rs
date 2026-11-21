@@ -1,5 +1,6 @@
 //! Optional managed-view work is admitted against the sealed candidate before World effect.
 
+use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 use worth_relational::facade::{
     branch::AdmittedRelationalBranchBasis,
     history::CommitId,

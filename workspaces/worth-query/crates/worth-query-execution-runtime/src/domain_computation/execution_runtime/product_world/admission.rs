@@ -5,7 +5,7 @@ use super::WorthQueryProductRuntime;
 use crate::basis::{WorthQueryProductBranchAdmissionDenial, WorthQueryProductBranchLease};
 
 impl WorthQueryProductRuntime {
-    pub fn readmit_product_reference(
+    pub(crate) fn readmit_product_reference(
         &self,
         description: &worth_runtime_world::facade::ProductBranchReferenceDescription,
     ) -> Result<WorthQueryProductBranchLease, WorthQueryProductBranchAdmissionDenial> {
@@ -41,7 +41,7 @@ impl WorthQueryProductRuntime {
         gate.with_admission(|| self.lease_from_observation(observation))
     }
 
-    pub fn admit_product_occurrence(
+    pub(crate) fn admit_product_occurrence(
         &self,
         occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
     ) -> Result<WorthQueryProductBranchLease, WorthQueryProductBranchAdmissionDenial> {
@@ -62,7 +62,7 @@ impl WorthQueryProductRuntime {
 
     /// Admit the original occurrence's lifecycle without treating its retained
     /// data as current. The observed live head is not replacement source truth.
-    pub fn require_live_product_occurrence(
+    pub(crate) fn require_live_product_occurrence(
         &self,
         occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
     ) -> Result<(), WorthQueryProductBranchAdmissionDenial> {
@@ -81,7 +81,7 @@ impl WorthQueryProductRuntime {
         self.admit_product_occurrence(branch.occurrence())
     }
 
-    pub fn admit_product_branch(
+    pub(crate) fn admit_product_branch(
         &self,
         identity: &worth_runtime_world::facade::ProductBranchIdentity,
     ) -> Result<WorthQueryProductBranchLease, WorthQueryProductBranchAdmissionDenial> {
@@ -90,7 +90,7 @@ impl WorthQueryProductRuntime {
         })
     }
 
-    pub fn lease_from_observation(
+    pub(crate) fn lease_from_observation(
         &self,
         observation: worth_runtime_world::facade::ProductBranchObservation,
     ) -> Result<WorthQueryProductBranchLease, WorthQueryProductBranchAdmissionDenial> {
@@ -110,7 +110,7 @@ impl WorthQueryProductRuntime {
 
     /// Resolve through World once while the selected executable package is stable.
     /// The caller composes only the custody needed by its own entry purpose.
-    pub fn with_product_observation<Output>(
+    pub(crate) fn with_product_observation<Output>(
         &self,
         identity: &worth_runtime_world::facade::ProductBranchIdentity,
         admit: impl FnOnce(

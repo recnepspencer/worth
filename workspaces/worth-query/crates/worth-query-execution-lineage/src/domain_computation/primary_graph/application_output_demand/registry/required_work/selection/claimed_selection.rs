@@ -1,5 +1,6 @@
 //! Claim now, select only at the owner's inspection of the current basis.
 use super::*;
+use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 impl WorthQueryOutputDemandRegistry {
     /// Claim one required row for the already admitted Product and its exact
     /// native branch. A foreign-cell hint stays queued; a later hint for this

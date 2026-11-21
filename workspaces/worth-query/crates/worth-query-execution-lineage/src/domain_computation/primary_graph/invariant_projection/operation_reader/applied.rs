@@ -3,6 +3,7 @@ use super::*;
 use crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::{
     RetainedSourceFacts, StorageControl,
 };
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_relational::facade::runtime::{
     RelationalAppliedCandidateReadIdentity, RelationalAppliedCandidateReadQualification,
     RelationalPinnedRead,

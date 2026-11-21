@@ -1,6 +1,7 @@
 //! Descriptive operated-source coordinates resolve only through canonical native history.
 use super::*;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
 /// A changed observation invalidates traversal only within the same branch occurrence.
 pub(super) fn require_current_target(

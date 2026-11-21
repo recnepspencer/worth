@@ -5,6 +5,8 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationQueryAdmissionDenial, WorthQueryApplicationQueryAdmissionDenialKind,
     WorthQueryPrimaryGraphApplicationRuntime,
 };
+use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 
 pub fn admit<Schema>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -44,7 +46,11 @@ pub fn admit_selected_permission_basis_with_native_access<Schema>(
     native: &mut super::super::ApplicationQueryNativeAccess<'_>,
 ) -> Result<WorthQueryApplicationQueryBasisCustody, WorthQueryApplicationQueryAdmissionDenial> {
     if product.observation().owner_identity()
-        != application.runtime.product_runtime.owner.owner_identity()
+        != application
+            .runtime
+            .product_runtime
+            .owner_ref()
+            .owner_identity()
     {
         return Err(admission_denial(
             WorthQueryApplicationQueryAdmissionDenialKind::ForeignBasis,
@@ -86,7 +92,11 @@ pub fn admit_retained<Schema: worth_query_installation::facade::ApplicationSchem
     product: WorthQueryProductObservationLease,
 ) -> Result<WorthQueryApplicationQueryBasisCustody, WorthQueryApplicationQueryAdmissionDenial> {
     if product.observation().owner_identity()
-        != application.runtime.product_runtime.owner.owner_identity()
+        != application
+            .runtime
+            .product_runtime
+            .owner_ref()
+            .owner_identity()
     {
         return Err(admission_denial(
             WorthQueryApplicationQueryAdmissionDenialKind::ForeignBasis,

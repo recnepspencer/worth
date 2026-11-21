@@ -1,5 +1,6 @@
 use super::WorthQueryPrimaryGraphProvider;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryAdmittedApplicationEmissionBatch;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
 impl WorthQueryPrimaryGraphProvider {
     pub fn observe_application_commit_causality(

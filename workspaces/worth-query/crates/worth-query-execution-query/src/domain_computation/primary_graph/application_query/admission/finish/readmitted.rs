@@ -1,6 +1,7 @@
 use worth_query_admission::facade::application_query::WorthQueryAdmittedApplicationQueryParameters;
 use worth_query_admission::facade::application_query::WorthQueryApplicationQueryLane;
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
+use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 use worth_query_installation::facade::WorthQueryInstalledApplicationQuery;
 
 use super::super::super::basis::admit_application_query_permission_basis;

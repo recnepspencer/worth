@@ -5,6 +5,7 @@ use crate::domain_computation::application_aftermath::WorthQueryDispatchOutboxRe
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptAffinity;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitOutcomeIdentity;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding;
+use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 
 use crate::domain_computation::primary_graph::provider::dispatch_outbox::WorthQueryDispatchOutboxBasis;
 use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider;

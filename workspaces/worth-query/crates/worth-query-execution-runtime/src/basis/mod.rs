@@ -1,4 +1,4 @@
-mod product_branch;
+pub(crate) mod product_branch;
 
 pub use product_branch::{
     WorthQueryExpectedProductBasisDescription, WorthQueryProductBranch,

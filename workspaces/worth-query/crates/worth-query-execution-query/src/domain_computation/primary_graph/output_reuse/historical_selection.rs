@@ -8,6 +8,7 @@ use crate::domain_computation::primary_graph::output_lineage::{
     ComparableSourceFacts, HistoricalSelectionCoordinate, SealedNativeOutputWitness,
 };
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
 /// A borrowed view of one authentic retained row, used by selection and final
 /// endpoint verification. It grants no acceptance or producer authority.

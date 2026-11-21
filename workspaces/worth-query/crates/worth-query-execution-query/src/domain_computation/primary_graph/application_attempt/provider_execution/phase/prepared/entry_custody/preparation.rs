@@ -1,5 +1,6 @@
 use super::*;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
 pub fn prepare_application_commit<Schema, Operation, Input, Scope>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,

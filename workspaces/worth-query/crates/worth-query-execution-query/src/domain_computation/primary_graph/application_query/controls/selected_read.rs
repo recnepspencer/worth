@@ -7,6 +7,7 @@ use super::WorthQueryApplicationQueryLane;
 use super::WorthQueryRequestScope;
 use crate::basis::WorthQueryProductObservationLease;
 use crate::domain_computation::primary_graph::application_query::resource_lifecycle::WorthQueryApplicationBasisLease;
+use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 
 impl<'request, Schema> WorthQueryApplicationQueryControls<'request, Schema> {

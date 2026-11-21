@@ -1,5 +1,7 @@
 use super::super::{occurrence::ResourceLifecycle, value_capture};
 use super::*;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeBranchLifecycleInternalPort as _;
 
 fn finish_previous_provider<Schema, Binding>(
     execution: &ExecutionRequest<'_, '_>,

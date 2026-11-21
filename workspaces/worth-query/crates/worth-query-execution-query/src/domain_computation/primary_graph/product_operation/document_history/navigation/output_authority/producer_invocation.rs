@@ -2,6 +2,7 @@
 use super::*;
 use crate::domain_computation::primary_graph::product_operation::current_read::CurrentReadControl;
 use std::time::Instant;
+use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 use worth_runtime_world::facade::{PreparedWorldRelationalCutover, ProductBranchObservation};
 mod borrowed_read;
 mod read_confirmation;

@@ -51,7 +51,7 @@ impl std::fmt::Display for WorthQueryDurableStateAdmissionDenial {
 impl std::error::Error for WorthQueryDurableStateAdmissionDenial {}
 
 impl WorthQueryProductRuntime {
-    pub fn is_directory_home(&self) -> bool {
+    pub(crate) fn is_directory_home(&self) -> bool {
         self.owner.owner_identity().durable().is_some()
     }
 }

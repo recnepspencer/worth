@@ -1,6 +1,7 @@
 //! Exact registered preparation transfers once into its publication owner.
 use super::*;
 use crate::domain_computation::primary_graph::provider::CoupledAttemptPreparation;
+use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 impl WorthQueryPrimaryGraphApplicationAttempt {
     pub fn replace_authored_prefix_after_own(
         &mut self,

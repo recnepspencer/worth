@@ -3,6 +3,7 @@ use super::*;
 use crate::domain_computation::application_aftermath::dispatch_journal::{
     QueryDispatchJournalDenial as Denial, QueryDispatchMedium,
 };
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 
 impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Program: 'static>
     ReadmittedHomeQueryService<Schema, Program>
@@ -26,13 +27,13 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
                     .inner
                     .runtime
                     .product_runtime
-                    .owner
+                    .owner_ref()
                     .observation_port(),
                 &application
                     .inner
                     .runtime
                     .product_runtime
-                    .owner
+                    .owner_ref()
                     .inspection_port(),
             )
             .map_err(Denial::DispatchOutbox)?
@@ -56,7 +57,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
             .inner
             .runtime
             .product_runtime
-            .owner
+            .owner_ref()
             .owner_identity();
         if owner.durable().map(|owner| owner.home()) != Some(dispatch.home()) {
             return Err(Denial::ForeignHome);

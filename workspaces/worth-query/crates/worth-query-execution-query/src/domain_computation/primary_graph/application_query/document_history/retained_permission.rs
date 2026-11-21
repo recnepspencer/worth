@@ -9,6 +9,8 @@ use crate::domain_computation::primary_graph::{
 };
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 
 pub enum HistoryRetainedPermissionStop {
     Current(WorthQueryHistoryNavigationDenial),

@@ -5,6 +5,8 @@ use crate::domain_computation::primary_graph::{
     product_operation::document_history::HistoryProducerInvocation,
     WorthQueryPrimaryGraphApplicationRuntime, WorthQueryPrincipalResolutionMode,
 };
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 
 impl<'a, S: ApplicationSchema, P, I, E> SelectedIssuedAccessRoot<'a, S, P, I, E> {
     pub fn from_historical_source(

@@ -1,5 +1,6 @@
 //! Correction lookup shares the ordinary original-row and World receipt owner.
 use super::*;
+use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 pub fn observe(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     provider: &WorthQueryPrimaryGraphProvider,

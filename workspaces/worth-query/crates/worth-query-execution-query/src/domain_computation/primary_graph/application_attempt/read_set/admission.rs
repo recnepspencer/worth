@@ -4,6 +4,7 @@ use worth_query_execution_attempt::facade::ports::{
     WorthQueryReadAttemptRuntimeContext,
 };
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
@@ -17,7 +18,7 @@ where
             )
         });
         WorthQueryReadAttemptRuntimeContext {
-            world_owner: self.runtime.product_runtime.owner.owner_identity(),
+            world_owner: self.runtime.product_runtime.owner_ref().owner_identity(),
             runtime_authority: self.runtime.authority_identity(),
             binding_identity: self.installed_schema.binding_identity(),
             installed_operations: &self.runtime.installed_operations,

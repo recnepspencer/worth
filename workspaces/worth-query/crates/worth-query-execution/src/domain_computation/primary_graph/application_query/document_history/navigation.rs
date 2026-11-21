@@ -1,6 +1,8 @@
 //! Complete current READ/metadata before admitting the independent NAV operation.
 use super::*;
 use worth_query_execution_query::facade::ports::AdmittedQueryPlanInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 mod forest;
 mod output_driver;
 mod outputs;

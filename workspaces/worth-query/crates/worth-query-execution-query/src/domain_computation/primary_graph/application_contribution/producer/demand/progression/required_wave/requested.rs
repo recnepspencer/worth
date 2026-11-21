@@ -9,6 +9,7 @@ use super::super::WorthQueryProducerOutputFamily;
 use super::drive::drive_required_wave;
 use super::queued::QueuedRequiredRoots;
 use super::*;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
 #[allow(clippy::too_many_arguments)]
 pub fn advance_requested_output<Schema, Family>(

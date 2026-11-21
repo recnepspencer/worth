@@ -3,6 +3,7 @@ use super::*;
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationEntityIdentity, WorthQuerySelectedProductOperation,
 };
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_relational::facade::runtime::{
     RelationalAppliedCandidateReadIdentity, RelationalPinnedRead,
 };

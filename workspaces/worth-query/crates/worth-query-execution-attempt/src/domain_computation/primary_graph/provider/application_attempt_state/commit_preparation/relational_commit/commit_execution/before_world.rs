@@ -6,6 +6,7 @@ use super::WorthQueryPrimaryGraphProvider;
 use crate::domain_computation::primary_graph::provider::{
     BeforeWorldQueryReservation, QueryDurablePreparationGuard,
 };
+use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 pub(super) struct BeforeWorldPreparation {
     query: Option<QueryPreparingApplicationCommit>,
     reservation: Option<BeforeWorldQueryReservation>,

@@ -8,6 +8,7 @@ use crate::domain_computation::primary_graph::{
 use worth_query_declaration::facade::application_history::ApplicationHistoryBinding;
 use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
 use worth_query_execution_query::facade::ports::HistoryPreviewInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 
 impl<'runtime, S: ApplicationSchema> WorthQueryDocumentHistoryNavigation<'runtime, S> {

@@ -1,6 +1,7 @@
 //! Only the completed disclosed query can bind a prepared native subject selection.
 use std::{marker::PhantomData, sync::Arc};
 use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 
 use worth_foundational::facade::CanonicalDigestId;
 use worth_query_declaration::facade::{

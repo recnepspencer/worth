@@ -16,6 +16,8 @@ use worth_foundational::facade::{
     CanonicalDigestId, DurableCompositeCommitIdentity, DurableCompositePublicationAttemptIdentity,
 };
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::mvcc::ValidatedRelationalProposal;
 use worth_runtime_world::facade::*;

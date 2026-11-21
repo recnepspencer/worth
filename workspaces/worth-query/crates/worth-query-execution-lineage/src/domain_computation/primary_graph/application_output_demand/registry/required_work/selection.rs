@@ -1,3 +1,4 @@
+use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 pub mod claimed_selection;
 pub mod declared_predecessors;
 use super::super::DemandState;

@@ -1,6 +1,7 @@
 //! The actual Relational validation, under the admitted request control.
 use super::*;
 use crate::domain_computation::primary_graph::request_allocation_control::RequestAllocationControl;
+use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 
 impl WorthQueryPrimaryGraphProvider {
     pub(super) fn validate_relational_candidate(

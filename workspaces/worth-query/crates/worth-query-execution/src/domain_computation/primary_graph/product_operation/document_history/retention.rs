@@ -8,6 +8,9 @@ use worth_query_declaration::facade::application_history::{
     ApplicationHistoryModel, ApplicationHistoryRecentSteps, ApplicationHistoryRetentionBinding,
 };
 use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 
 #[derive(Clone, Copy, Debug)]
 pub struct WorthQueryHistoryRetentionStatus {

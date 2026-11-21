@@ -1,6 +1,7 @@
 //! Read proposed sources and retain actual writers before final group validation.
 use super::*;
 use crate::domain_computation::primary_graph::application_attempt::coupled_outputs::DeclaredCoupledOutputDemand;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 enum PendingOutputDemand<'a> {
     Prefix(&'a DeclaredCoupledOutputDemand),
     Stage(DeclaredCoupledOutputDemand, usize),

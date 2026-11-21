@@ -6,6 +6,7 @@
 //! instance started on another branch. It ends only that copy, on the fork;
 //! the instance on its own branch is untouched.
 use crate::domain_computation::primary_graph::application_attempt::check_request_live;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
 pub mod lineage;
 

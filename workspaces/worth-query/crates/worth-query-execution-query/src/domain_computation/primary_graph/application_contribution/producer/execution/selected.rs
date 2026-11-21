@@ -12,6 +12,7 @@ use crate::domain_computation::primary_graph::application_output_demand::Selecte
 use crate::domain_computation::primary_graph::output_lineage::AcceptedCurrentCandidate;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_relational::facade::runtime::PositionedRelationalSnapshot;
 mod execution_plan;
 

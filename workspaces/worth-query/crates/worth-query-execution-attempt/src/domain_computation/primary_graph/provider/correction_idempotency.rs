@@ -1,6 +1,7 @@
 //! Private, read-only selection of retained correction evidence by the actual native key.
 use super::*;
 use crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding;
+use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 
 pub enum CorrectionIdempotencyObservation {
     Unseen,

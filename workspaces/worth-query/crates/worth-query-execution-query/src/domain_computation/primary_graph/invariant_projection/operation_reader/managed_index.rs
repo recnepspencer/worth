@@ -1,5 +1,6 @@
 //! Ordinary declared index queries inside an admitted decision reader.
 
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_execution_lineage::facade::ports::InvariantProjectionReaderInternalPort as _;
 use worth_query_execution_lineage::facade::ports::OperationInvariantProjectionReaderInternalPort as _;
 use super::*;

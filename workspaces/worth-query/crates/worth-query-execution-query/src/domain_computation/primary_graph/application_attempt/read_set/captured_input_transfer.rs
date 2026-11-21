@@ -7,6 +7,7 @@ use worth_query_execution_attempt::facade::ports::CompleteReadSetProjectedIntern
 use worth_query_execution_attempt::facade::ports::{
     CompleteReadSetInternalPort as _, EffectProgramInternalPort as _,
 };
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
 pub trait ReadSetCapturedInputTransferExt: Sized {
     fn append_captured_inputs(

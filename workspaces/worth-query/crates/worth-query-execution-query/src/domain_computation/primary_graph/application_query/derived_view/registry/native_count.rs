@@ -8,6 +8,7 @@ use crate::basis::WorthQueryProductBranchLease;
 use worth_query_declaration::facade::application_schema::{
     ApplicationRuleReadableCollectionAssociation, ApplicationSchemaBindingIdentity,
 };
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_relational::facade::{
     identity::EntityId, runtime::DerivedRelationData, schema::DerivedRelationHandle,
 };

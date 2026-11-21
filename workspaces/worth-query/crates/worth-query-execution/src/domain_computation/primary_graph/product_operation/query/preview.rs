@@ -7,6 +7,8 @@ use crate::domain_computation::primary_graph::product_operation::document_histor
 use worth_query_declaration::facade::application_capability::ApplicationCapabilityRequest;
 use worth_query_execution_query::facade::ports::ProductQueryControlsInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeBranchLifecycleInternalPort as _;
 
 impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'runtime, Schema> {
     pub fn admit_document_preview_application_query<Q, P, R, A, I, E>(

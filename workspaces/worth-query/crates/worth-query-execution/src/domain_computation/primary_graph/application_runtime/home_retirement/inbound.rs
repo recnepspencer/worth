@@ -1,5 +1,6 @@
 //! The runtime protects actual terminal sources before custody demotes receipt observations.
 use super::*;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub(crate) fn preflight_inbound_home_retirement(
         &self,
@@ -13,7 +14,12 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .inbound_custody
             .try_lock()
             .map_err(|_| Denial::Busy(Owner::PublicationReceipts))?;
-        let inspection = self.inner.runtime.product_runtime.owner.inspection_port();
+        let inspection = self
+            .inner
+            .runtime
+            .product_runtime
+            .owner_ref()
+            .inspection_port();
         for terminal in custody.terminal_sources_for_home_retirement() {
             request.consult().map_err(Denial::Execution)?;
             if !terminal.settle_fresh_delivery() {

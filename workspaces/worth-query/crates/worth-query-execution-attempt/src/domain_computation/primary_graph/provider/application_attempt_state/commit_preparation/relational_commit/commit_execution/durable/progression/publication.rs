@@ -1,5 +1,6 @@
 //! Publish or retain the original World outcome after all preparation frames return.
 use super::*;
+use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 
 #[inline(never)]
 pub(super) fn advance(

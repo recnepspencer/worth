@@ -8,6 +8,10 @@ use crate::domain_computation::primary_graph::application_contribution::advancem
 use crate::domain_computation::primary_graph::provider::WorthQueryInboundCompletionPreparationDenial as Preparation;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeBranchLifecycleInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 use worth_relational::facade::mvcc::ValidatedRelationalProposal;
 
 use std::sync::Arc;
@@ -56,7 +60,7 @@ where
             return Outcome::Denied(evidence, Denial::ForeignRelationalRuntime);
         }
         if original.product_branch().owner_identity()
-            != self.runtime.product_runtime.owner.owner_identity()
+            != self.runtime.product_runtime.owner_ref().owner_identity()
         {
             return Outcome::Denied(evidence, Denial::ForeignProductWorld);
         }

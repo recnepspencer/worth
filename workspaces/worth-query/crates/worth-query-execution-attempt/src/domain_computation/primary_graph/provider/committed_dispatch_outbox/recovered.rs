@@ -2,6 +2,7 @@
 use super::*;
 use crate::domain_computation::application_aftermath::ExternalEffectCorrelationIdentity;
 use std::collections::BTreeMap;
+use worth_query_execution_lineage::facade::ports::CommittedProductPublicationInternalPort as _;
 use worth_relational::facade::{
     durability::{RelationalAssociatedEffectRefusal, RelationalAssociatedEffectSubject},
     identity::EntityId,

@@ -2,6 +2,8 @@
 use super::CurrentReadDenial as Denial;
 use crate::basis::WorthQueryProductObservationLease;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
+use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_runtime_world::facade::ProductBranchCurrentnessFailure;
 
@@ -128,7 +130,11 @@ fn confirm_in_native_with_effect<S: ApplicationSchema, Value>(
     {
         return Err((value, Denial::NativeBasis(denial)));
     }
-    let world = runtime.runtime.product_runtime.owner.observation_port();
+    let world = runtime
+        .runtime
+        .product_runtime
+        .owner_ref()
+        .observation_port();
     match world.while_product_branch_current(product.observation(), value, |mut value, _current| {
         if let Err(stop) = execution.check_live() {
             return Err((value, stopped(stop)));

@@ -7,6 +7,7 @@ use crate::domain_computation::authorization::WorthQueryAdmittedApplicationCapab
 use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use worth_query_declaration::facade::application_capability::ApplicationCapabilityRequest;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::super::recovery_handle::{
@@ -79,7 +80,7 @@ where
         Input: ApplicationCapabilityRequest<Schema, Capability>,
     {
         let authority = access
-            .runtime_authority_for(self.runtime.product_runtime.owner.owner_identity())
+            .runtime_authority_for(self.runtime.product_runtime.owner_ref().owner_identity())
             .map_err(|cause| {
                 WorthQueryRecoveryHandleDenial::new(match cause {
                     worth_proof::HomeIncarnationDenial::StaleIncarnation => {
@@ -99,7 +100,7 @@ where
         }
         Ok(WorthQueryRecoveryDisclosureAdmission::mint(
             self.runtime.authority_identity(),
-            self.runtime.product_runtime.owner.owner_identity(),
+            self.runtime.product_runtime.owner_ref().owner_identity(),
         ))
     }
 }

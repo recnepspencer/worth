@@ -3,7 +3,7 @@ use super::*;
 use worth_runtime_world::facade::*;
 
 impl WorthQueryProductRuntime {
-    pub fn attach_home_world_ports(
+    pub(crate) fn attach_home_world_ports(
         relational: WorthQueryProductRelationalInstallation,
         bridge: &worth_runtime_bridge::facade::BridgeReadmittedAuthoredAssembly,
         resources: WorthQueryProductWorldResources,

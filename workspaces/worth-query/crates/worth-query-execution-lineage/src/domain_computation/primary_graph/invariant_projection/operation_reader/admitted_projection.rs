@@ -2,6 +2,7 @@
 use super::admitted::SourceAccess;
 use super::*;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
 impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthority<Schema> {
     pub fn project_admitted_operation<A, Output>(

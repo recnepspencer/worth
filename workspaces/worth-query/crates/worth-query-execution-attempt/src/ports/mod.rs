@@ -329,26 +329,8 @@ pub trait HistoryProducerCutoverPort {
     ) -> Result<(), ()>;
 }
 
-/// Opaque upper-layer `CapturedSynchronousOutputs`.
-pub struct OpaqueSynchronousOutputs(pub Box<dyn Any + Send>);
-
-impl OpaqueSynchronousOutputs {
-    pub fn new<T: Any + Send>(value: T) -> Self {
-        Self(Box::new(value))
-    }
-
-    pub fn downcast_mut<T: Any>(&mut self) -> Option<&mut T> {
-        self.0.downcast_mut::<T>()
-    }
-
-    pub fn downcast_ref<T: Any>(&self) -> Option<&T> {
-        self.0.downcast_ref::<T>()
-    }
-
-    pub fn downcast<T: Any>(self) -> Result<Box<T>, Self> {
-        self.0.downcast::<T>().map_err(Self)
-    }
-}
+mod opaque_synchronous_outputs;
+pub use opaque_synchronous_outputs::OpaqueSynchronousOutputs;
 
 /// Upper-layer workflow vocabulary read port used by `approval_decision`.
 pub trait WorkflowVocabularyPort<Schema, Spec>
@@ -370,30 +352,35 @@ where
 }
 
 pub mod admitted_operation_port;
-pub use admitted_operation_port::AdmittedOperationExecutionPort;
 pub mod authenticated_and_recovery_port;
+pub mod commit_and_retirement;
 mod complete_read_set_methods_port;
+pub mod complete_read_set_port;
 mod complete_read_set_workflow_impl;
 mod effect_program_builder_port;
 mod effect_program_methods_port;
+pub mod effect_program_port;
 mod history_and_output_source_port;
+pub mod read_attempt_admission;
+mod recovery_handle_binding_port;
+pub mod runtime_ports;
 mod specialized_program_port;
 pub use {
-    authenticated_and_recovery_port::*, complete_read_set_methods_port::*,
-    effect_program_builder_port::*, effect_program_methods_port::*,
-    history_and_output_source_port::*, specialized_program_port::*,
+    admitted_operation_port::AdmittedOperationExecutionPort,
+    authenticated_and_recovery_port::*,
+    commit_and_retirement::{CommitAuthorizationRuntimePort, WorkflowDefinitionRetirementPort},
+    complete_read_set_methods_port::*,
+    complete_read_set_port::{CompleteReadSetInternalPort, CompleteReadSetParts},
+    effect_program_builder_port::*,
+    effect_program_methods_port::*,
+    effect_program_port::{
+        EffectProgramBuilderInternalPort, EffectProgramInternalPort, EffectProgramParts,
+    },
+    history_and_output_source_port::*,
+    read_attempt_admission::{
+        ApplicationReadAttemptAdmissionPort, WorthQueryReadAttemptRuntimeContext,
+    },
+    recovery_handle_binding_port::*,
+    runtime_ports::*,
+    specialized_program_port::*,
 };
-pub mod commit_and_retirement;
-pub use commit_and_retirement::{CommitAuthorizationRuntimePort, WorkflowDefinitionRetirementPort};
-pub mod complete_read_set_port;
-pub use complete_read_set_port::{CompleteReadSetInternalPort, CompleteReadSetParts};
-pub mod effect_program_port;
-pub use effect_program_port::{
-    EffectProgramBuilderInternalPort, EffectProgramInternalPort, EffectProgramParts,
-};
-pub mod read_attempt_admission;
-pub use read_attempt_admission::{
-    ApplicationReadAttemptAdmissionPort, WorthQueryReadAttemptRuntimeContext,
-};
-pub mod runtime_ports;
-pub use runtime_ports::*;

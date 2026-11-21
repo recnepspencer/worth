@@ -1,3 +1,4 @@
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 pub use worth_query_execution_attempt::facade::domain_computation::primary_graph::application_attempt::provider_execution::external_dispatch::durable_attempt::*;
 
 use worth_query_installation::facade::ApplicationSchema;
@@ -26,7 +27,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         } else if self
             .runtime
             .product_runtime
-            .owner
+            .owner_ref()
             .owner_identity()
             .durable()
             .is_some()

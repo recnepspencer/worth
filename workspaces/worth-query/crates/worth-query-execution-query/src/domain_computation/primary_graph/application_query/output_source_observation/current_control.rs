@@ -1,4 +1,6 @@
 //! Current authorization and retry ownership for a producer's nested source reads.
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 use crate::domain_computation::primary_graph::application_contribution::producer::demand::denial::history_source::OutputDemandDenialHistoryExt;
 use super::*;
 use crate::domain_computation::primary_graph::{

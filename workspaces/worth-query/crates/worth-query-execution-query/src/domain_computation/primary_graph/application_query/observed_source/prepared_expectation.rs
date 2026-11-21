@@ -1,5 +1,6 @@
 use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
 use worth_query_execution_lineage::facade::ports::BoundSourceExpectationInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 mod admission;
 mod affinity;
 mod applied;

@@ -1,4 +1,5 @@
 //! Candidate source meaning is retained without issuing a Current observation.
+use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 use crate::domain_computation::primary_graph::application_attempt::fact::source_read_authorization::applied_query::SourceReadAuthorizationAppliedQueryExt;
 use std::marker::PhantomData;
 use super::*;

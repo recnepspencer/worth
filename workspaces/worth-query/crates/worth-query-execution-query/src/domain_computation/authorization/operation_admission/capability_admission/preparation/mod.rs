@@ -1,4 +1,5 @@
 //! Static capability admission and graph-work preparation.
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 mod selector_indexes;
 
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;

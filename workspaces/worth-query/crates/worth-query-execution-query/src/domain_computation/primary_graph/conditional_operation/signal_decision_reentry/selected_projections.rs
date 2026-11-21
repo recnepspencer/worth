@@ -1,3 +1,4 @@
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 use worth_runtime_bridge::facade::BridgeIdentityEvidence;
 

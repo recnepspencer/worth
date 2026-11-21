@@ -168,6 +168,8 @@ pub trait RecoveryHandleInternalPort: Sized {
         receiver: RuntimeWorldOwnerIdentity,
     ) -> Result<(), WorthQueryRecoveryHandleDenial>;
 
+    fn home_owner(&self) -> RuntimeWorldOwnerIdentity;
+
     fn runtime_authority(&self) -> WorthQueryRuntimeAuthorityIdentity;
 
     fn registry_clock(&self) -> &crate::domain_computation::runtime_time::WorthQueryRuntimeClock;
@@ -202,6 +204,10 @@ impl RecoveryHandleInternalPort for WorthQueryRecoveryHandle {
         receiver: RuntimeWorldOwnerIdentity,
     ) -> Result<(), WorthQueryRecoveryHandleDenial> {
         Self::admit_home_owner(self, receiver)
+    }
+
+    fn home_owner(&self) -> RuntimeWorldOwnerIdentity {
+        Self::home_owner(self)
     }
 
     fn runtime_authority(&self) -> WorthQueryRuntimeAuthorityIdentity {
@@ -328,39 +334,5 @@ impl WorkflowDispositionsInternalPort for WorthQueryWorkflowDispositions {
         (),
     > {
         Self::resolve(self, inventory, branch)
-    }
-}
-
-pub trait RecoveryHandleBindingInternalPort: Sized {
-    fn from_receipt(
-        receipt: &WorthQueryApplicationCommitReceipt,
-        expires_at_unix_ms: Option<u64>,
-    ) -> Result<Self, WorthQueryRecoveryHandleDenial>;
-
-    fn from_pending_original(
-        original: &crate::domain_computation::primary_graph::application_attempt::WorthQueryPendingApplicationCommitReceipt,
-        dispatch: Option<
-            &crate::domain_computation::application_aftermath::WorthQueryExternalEffectDispatch,
-        >,
-        expires_at_unix_ms: Option<u64>,
-    ) -> Result<Self, WorthQueryRecoveryHandleDenial>;
-}
-
-impl RecoveryHandleBindingInternalPort for WorthQueryRecoveryHandleBinding {
-    fn from_receipt(
-        receipt: &WorthQueryApplicationCommitReceipt,
-        expires_at_unix_ms: Option<u64>,
-    ) -> Result<Self, WorthQueryRecoveryHandleDenial> {
-        Self::from_receipt(receipt, expires_at_unix_ms)
-    }
-
-    fn from_pending_original(
-        original: &crate::domain_computation::primary_graph::application_attempt::WorthQueryPendingApplicationCommitReceipt,
-        dispatch: Option<
-            &crate::domain_computation::application_aftermath::WorthQueryExternalEffectDispatch,
-        >,
-        expires_at_unix_ms: Option<u64>,
-    ) -> Result<Self, WorthQueryRecoveryHandleDenial> {
-        Self::from_pending_original(original, dispatch, expires_at_unix_ms)
     }
 }

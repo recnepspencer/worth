@@ -6,6 +6,9 @@ pub mod basis {
 
 pub mod ports {
     pub use crate::advancement_phase_internal_port::AdvancementPhaseInternalPort;
+    pub use crate::basis::product_branch::observation::internal_port::{
+        ProductBranchLeaseInternalPort, ProductObservationLeaseInternalPort,
+    };
     pub use crate::commit_touches::{
         CommitTouchEntities, CommitTouchInterest, TouchedCommit, TouchedCommits,
     };
@@ -13,6 +16,11 @@ pub mod ports {
         continue_original, continue_original_with_cleanup, release_original,
         ContinuedOriginalOutcome,
     };
+    pub use crate::domain_computation::execution_runtime::product_world::owner_cleanup::internal_port::ProductRuntimeOwnerCleanupInternalPort;
+    pub use crate::domain_computation::execution_runtime::product_world::publication_binding::internal_port::ProductPublicationBindingInternalPort;
+    pub use crate::domain_computation::execution_runtime::product_world::publication_binding::SelectedProgramInspectionInternalPort;
+    pub use crate::domain_computation::execution_runtime::product_world::runtime::branch_lifecycle_internal_port::ProductRuntimeBranchLifecycleInternalPort;
+    pub use crate::domain_computation::execution_runtime::product_world::runtime::internal_port::ProductRuntimeInternalPort;
     pub use crate::domain_computation::managed_run::recovery_registry::RecoveryHandleRegistryInternalPort;
     pub use crate::execution_runtime_internal_port::ExecutionRuntimeInternalPort;
     pub use crate::managed_run_custody_port::ExecutionRuntimeManagedRunCustodyPort;
@@ -20,7 +28,7 @@ pub mod ports {
     pub use crate::product_world_internal_port::{
         PerformedRelationalProductChangeInternalPort, ProductBranchCloseReceiptInternalPort,
         ProductBranchInternalPort, ProductBranchOwnerCleanupInternalPort,
-        ProductObservationLeaseInternalPort, ProductWorldClockInternalPort,
+        ProductWorldClockInternalPort,
     };
 }
 

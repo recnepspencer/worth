@@ -17,6 +17,7 @@ pub mod installation {
 
 pub mod signal_decision_reentry {
     use super::super::primary_truth_branch_identity;
+    use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
     use worth_runtime_bridge::facade::{TruthBranchIdentity, TruthSnapshotIdentity};
 
     pub mod admitted;

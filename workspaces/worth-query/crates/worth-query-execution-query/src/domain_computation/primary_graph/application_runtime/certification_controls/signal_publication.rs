@@ -4,6 +4,10 @@ use crate::basis::WorthQueryProductBranch;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeBranchLifecycleInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_runtime_world::facade::{
     CompositePublicationIntent, ConsumedCompositePublication, RuntimeWorldPublicationOutcome,
@@ -29,7 +33,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let control = binding
             .request_control(request)
             .expect("the contender uses its installed clock");
-        let publication = self.runtime.product_runtime.owner.publication_port();
+        let publication = self.runtime.product_runtime.owner_ref().publication_port();
         let prepared = publication
             .prepare_with_signal(
                 selected.observation().clone(),

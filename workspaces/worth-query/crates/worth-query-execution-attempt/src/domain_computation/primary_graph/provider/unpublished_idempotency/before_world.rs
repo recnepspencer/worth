@@ -1,5 +1,6 @@
 //! Real subject/index admission before any World open can exist.
 use super::*;
+use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 
 pub struct BeforeWorldQueryReservation {
     store: Arc<Mutex<WorthQueryUnpublishedIdempotencyStore>>,

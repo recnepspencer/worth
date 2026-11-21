@@ -1,5 +1,6 @@
 //! Cold canonical completion-source readmission before Home service.
 use super::*;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub fn readmit_inbound_terminal_sources(
         &self,
@@ -17,7 +18,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .primary_provider
             .readmit_inbound_completion_sources(
                 execution,
-                &self.runtime.product_runtime.owner.observation_port(),
+                &self.runtime.product_runtime.owner_ref().observation_port(),
                 unpublished_native,
             )
             .map_err(super::super::rebuild::completion_read_denial)?;

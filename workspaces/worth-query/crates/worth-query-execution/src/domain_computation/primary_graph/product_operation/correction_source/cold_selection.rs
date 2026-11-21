@@ -7,6 +7,8 @@ use crate::domain_computation::application_aftermath::{
 };
 use crate::domain_computation::primary_graph::retained_correction::RetainedCorrectionMaterial;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 use worth_runtime_world::facade::WorldProgramActivationHistory;
 
 impl<'runtime, S: ApplicationSchema> WorthQuerySelectedProductOperation<'runtime, S> {
@@ -25,7 +27,7 @@ impl<'runtime, S: ApplicationSchema> WorthQuerySelectedProductOperation<'runtime
         let execution = phase
             .execution_request_for(&application.inner.runtime.product_runtime)
             .map_err(|_| D::ForeignPhase)?;
-        let owner = &application.inner.runtime.product_runtime.owner;
+        let owner = &application.inner.runtime.product_runtime.owner_ref();
         if owner
             .owner_identity()
             .durable()
@@ -169,7 +171,7 @@ pub(super) fn read_lineage<S: ApplicationSchema>(
         .inner
         .runtime
         .product_runtime
-        .owner
+        .owner_ref()
         .observation_port();
     let resolve = |coordinate: &WorthQueryCorrectionSourceCoordinates| {
         exact_original::resolve(

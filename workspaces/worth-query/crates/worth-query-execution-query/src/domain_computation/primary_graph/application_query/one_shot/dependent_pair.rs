@@ -11,6 +11,7 @@ use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationR
 use worth_execution::{ExecutionRequest, ExecutionResourceLease, MapKernelContext};
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_installation::facade::WorthQueryInstalledApplicationQueryIdentity;
 use worth_relational::facade::identity::EntityId;
 

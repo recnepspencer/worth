@@ -4,6 +4,7 @@ use crate::domain_computation::primary_graph::application_attempt::{
     retained_decision_facts::{RetainedSourceFacts, StorageControl},
     snapshot_lease::WorthQueryApplicationSnapshotLease,
 };
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
 pub struct CompletedProjectionRead<Output> {
     pub output: Output,

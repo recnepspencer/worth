@@ -1,7 +1,7 @@
 //! A recorded binding consumes admitted original sources and fresh operation meaning.
 use super::*;
 impl WorthQueryRecoveryHandleBinding {
-    pub fn from_readmitted<
+    pub(crate) fn from_readmitted<
         Schema: worth_query_installation::facade::ApplicationSchema,
         Operation,
         Input,

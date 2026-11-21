@@ -1,4 +1,6 @@
 //! Actual Native/provider progression writes custody before each fallible handoff.
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeBranchLifecycleInternalPort as _;
 mod advance;
 pub(super) mod close;
 mod completion;

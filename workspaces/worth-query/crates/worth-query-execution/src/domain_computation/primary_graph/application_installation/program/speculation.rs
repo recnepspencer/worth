@@ -1,6 +1,7 @@
 use crate::basis::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
 use worth_query_declaration::facade::application_program::ApplicationProgramDefinition;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_runtime_bridge::facade::{
     BridgePreviewResidueClass, BridgePreviewRetainedArtifactSchema,

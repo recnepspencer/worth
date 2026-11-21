@@ -2,6 +2,7 @@ use super::*;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementDenialCommitExt as _;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use worth_query_execution_attempt::facade::ports::EffectProgramMethodsInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 
 /// One owner of a rostered program on one published host.
 pub trait WorthQueryProgramOwner<Schema>: sealed::WorthQueryProgramOwnership {
@@ -130,7 +131,7 @@ pub trait WorthQueryProgramOwner<Schema>: sealed::WorthQueryProgramOwnership {
                 .inner
                 .runtime
                 .product_runtime
-                .owner
+                .owner_ref()
                 .owner_identity(),
         ) {
             return WorthQueryApplicationCommitOutcome::Denied(cause);

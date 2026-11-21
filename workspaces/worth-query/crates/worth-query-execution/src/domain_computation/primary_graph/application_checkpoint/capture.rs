@@ -4,6 +4,9 @@ use super::{
     WorthQueryCheckpointCaptureDenial, WorthQueryCheckpointCapturePolicy,
 };
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeBranchLifecycleInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 
 pub(crate) mod native_priors;
 pub(in crate::domain_computation::primary_graph) use worth_query_execution_lineage::facade::domain_computation::primary_graph::application_checkpoint::capture::output_facts;
@@ -87,7 +90,7 @@ where
         WorthQueryCheckpointCaptureDenial,
     > {
         policy.check_live()?;
-        let occurrence = self.inner.runtime.product_runtime.default_occurrence;
+        let occurrence = self.inner.runtime.product_runtime.default_occurrence();
         let lane = self
             .inner
             .runtime

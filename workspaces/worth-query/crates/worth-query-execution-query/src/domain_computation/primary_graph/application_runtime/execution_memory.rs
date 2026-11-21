@@ -1,6 +1,7 @@
 //! Host lease requests borrow the one execution authority installed in World.
 use super::WorthQueryPrimaryGraphApplicationRuntime;
 use worth_execution::{ExecutionResourceLease, LeaseDenial, LeaseRequest};
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 
 /// Refusal to admit explicit execution resources through this application's World.
@@ -37,7 +38,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     ) -> Result<ExecutionResourceLease<'_>, WorthQueryExecutionLeaseDenial> {
         self.runtime
             .product_runtime
-            .owner
+            .owner_ref()
             .execution_authority()
             .ok_or(WorthQueryExecutionLeaseDenial::Unavailable)?
             .request_lease(request)

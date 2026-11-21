@@ -2,6 +2,7 @@
 use super::*;
 use worth_query_execution_lineage::facade::ports::ReadObservationInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 #[derive(PartialEq, Eq)]
 pub(super) enum TreeVerification {
     CurrentLeaf,

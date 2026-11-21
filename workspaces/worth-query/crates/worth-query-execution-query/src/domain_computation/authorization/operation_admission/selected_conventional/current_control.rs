@@ -1,5 +1,7 @@
 //! Current installed principal/scope authorize a distinct mutation selection.
 use super::*;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 
 #[allow(clippy::too_many_arguments)]
 pub fn authorize_current_control_mutation_on_selected<Schema, Binding, Scope>(

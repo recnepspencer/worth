@@ -17,6 +17,7 @@ use worth_query_declaration::facade::application_query::{
     ApplicationQueryBinding, ApplicationQueryInspectionMetadataFacet as Facet,
     ApplicationQueryScopeBinding,
 };
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryInstalledApplicationQueryBinding,
 };

@@ -224,7 +224,7 @@ impl WorthQueryRecoveryHandleRegistry {
     }
 
     /// Register an unclaimed slot for owner-level lifecycle fixtures.
-    pub fn register_axis_probe(&self) -> WorthQueryRecoveryRegistrySlot {
+    pub(crate) fn register_axis_probe(&self) -> WorthQueryRecoveryRegistrySlot {
         let mut state = self.state.lock().expect("recovery registry lock");
         let slot = WorthQueryRecoveryRegistrySlot(state.next_slot);
         state.next_slot = state.next_slot.saturating_add(1);
@@ -359,6 +359,8 @@ pub trait RecoveryHandleRegistryInternalPort {
         slot: WorthQueryRecoveryRegistrySlot,
         terminal: RecoveryClaimDisposition,
     ) -> bool;
+
+    fn register_axis_probe(&self) -> WorthQueryRecoveryRegistrySlot;
 }
 
 impl RecoveryHandleRegistryInternalPort for WorthQueryRecoveryHandleRegistry {
@@ -368,5 +370,9 @@ impl RecoveryHandleRegistryInternalPort for WorthQueryRecoveryHandleRegistry {
         terminal: RecoveryClaimDisposition,
     ) -> bool {
         Self::mark_terminal(self, slot, terminal)
+    }
+
+    fn register_axis_probe(&self) -> WorthQueryRecoveryRegistrySlot {
+        Self::register_axis_probe(self)
     }
 }

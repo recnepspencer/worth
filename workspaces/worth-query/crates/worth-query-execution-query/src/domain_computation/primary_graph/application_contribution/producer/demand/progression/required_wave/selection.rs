@@ -1,4 +1,5 @@
 use super::*;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
 /// A caller's Ready or an exactly requested upstream Ready anchors the wave.
 /// `shared` and `positioned` retain its admitted Product/native proof basis.

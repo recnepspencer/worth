@@ -3,6 +3,8 @@ use crate::domain_computation::primary_graph as graph;
 use graph::application_attempt::provider_compare_denial::provider_session_execution_denied;
 use graph::provider::WorthQueryProviderIdempotencyResolutionDenial as IdempotencyDenial;
 use graph::WorthQueryApplicationCommitDenialStage as ExecutionDenialStage;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 
 pub fn resolve_retained_idempotency<Schema, Operation, Input, Scope>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,

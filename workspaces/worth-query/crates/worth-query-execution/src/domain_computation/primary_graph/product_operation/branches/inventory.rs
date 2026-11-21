@@ -39,8 +39,9 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationProductBranches<'_, Schema>
         let execution = phase
             .execution_request_for(runtime)
             .map_err(WorthQueryProductBranchInventoryDenial::ForeignPhase)?;
+        use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
         let observed = runtime
-            .owner
+            .owner_ref()
             .observation_port()
             .observe_installed_product_branches(&execution)
             .map_err(WorthQueryProductBranchInventoryDenial::World)?;

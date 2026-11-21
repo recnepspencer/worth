@@ -15,6 +15,7 @@ use std::{
 use worth_query_declaration::facade::{
     application_query::ApplicationManagedIndexBinding, application_schema::ApplicationSchema,
 };
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_installation::facade::WorthQueryInstalledManagedIndexParent;
 use worth_relational::facade::{identity::EntityId, transactions::RelationalExecutionDenialCause};
 use worth_runtime_world::facade::{CompositeCommitIdentity, ProductBranchIncarnation};

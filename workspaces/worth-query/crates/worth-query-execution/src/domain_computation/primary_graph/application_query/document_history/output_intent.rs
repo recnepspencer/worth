@@ -1,6 +1,7 @@
 //! Complete source intent captured from a real plan, without its grant or session.
 use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
 use worth_query_execution_query::facade::ports::AdmittedQueryPlanInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 mod owned_scope;
 mod recording;
 mod source_read;

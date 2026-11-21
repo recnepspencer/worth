@@ -2,6 +2,7 @@ use super::super::resource_lifecycle::{
     WorthQueryApplicationBasisIdentity, WorthQueryApplicationBasisLease,
     WorthQueryApplicationBasisReleaseReceipt,
 };
+use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 
 /// The basis admitted by the query pipeline owns the exact selected World
 /// occurrence and its matching application component lease.

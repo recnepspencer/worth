@@ -5,6 +5,7 @@ use crate::domain_computation::primary_graph::{
     live_delivery::WorthQueryLivePredicatePoll,
 };
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
 impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
     pub fn next_application_managed_index_watch<B, I>(

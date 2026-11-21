@@ -1,5 +1,6 @@
 //! Closed passive observations of the actual installed owners for the Host court.
 use super::WorthQueryPrimaryGraphApplicationRuntime;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::{
     runtime::{EntityReadRecord, RelationReadRecord},
@@ -89,7 +90,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         let head = self
             .runtime
             .product_runtime
-            .owner
+            .owner_ref()
             .observation_port()
             .observe_root_product_branch()
             .expect("the inspected World remains available");
@@ -101,14 +102,14 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         let head = self
             .runtime
             .product_runtime
-            .owner
+            .owner_ref()
             .observation_port()
             .observe_root_product_branch()
             .expect("the inspected World remains available");
         let history = self
             .runtime
             .product_runtime
-            .owner
+            .owner_ref()
             .inspection_port()
             .trace_ancestry(
                 head.selected_commit().clone(),

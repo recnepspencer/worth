@@ -5,6 +5,7 @@ use crate::{
 };
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::{identity::EntityId, transactions::TransactionCommitError};
 impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S> {

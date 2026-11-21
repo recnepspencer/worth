@@ -10,6 +10,7 @@ pub mod domain_computation {
 pub use crate::domain_computation::{application_aftermath, authorization, primary_graph};
 pub use worth_query_execution_obligations::facade::aftermath::correction_material;
 pub mod ports {
+    pub use crate::domain_computation::primary_graph::application_attempt::compare_and_commit::committed_publication::readmitted::CommittedProductPublicationInternalPort;
     pub use crate::ports::*;
 }
 pub mod test_read_stops {

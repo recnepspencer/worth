@@ -2,6 +2,7 @@ use std::num::NonZeroUsize;
 use worth_query_declaration::facade::{
     application_query::ApplicationHistoryQueryBinding, application_schema::ApplicationSchema,
 };
+use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 use worth_query_installation::facade::WorthQueryInstalledApplicationHistoryQuery;
 use worth_relational::facade::history::{
     RelationalRecordHistorySelectionLimits, RelationalRecordHistorySubject,

@@ -1,5 +1,6 @@
 //! Extend one candidate with the exact Native inverse before complete-state validation.
 use super::*;
+use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 use worth_relational::facade::mvcc::RequiredOutputPublication;
 
 impl WorthQueryPrimaryGraphProvider {

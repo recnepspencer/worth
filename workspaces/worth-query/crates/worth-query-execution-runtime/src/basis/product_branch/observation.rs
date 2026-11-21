@@ -25,7 +25,7 @@ impl WorthQueryProductObservationLease {
         }
     }
 
-    pub fn suspended_security(
+    pub(crate) fn suspended_security(
         observation: worth_runtime_world::facade::ProductBranchObservation,
         current_security_guard: worth_runtime_world::facade::ProductBranchObservation,
     ) -> Self {
@@ -35,24 +35,26 @@ impl WorthQueryProductObservationLease {
         }
     }
 
-    pub fn retained_clone(&self) -> Self {
+    pub(crate) fn retained_clone(&self) -> Self {
         Self {
             observation: self.observation.clone(),
             current_security_guard: self.current_security_guard.clone(),
         }
     }
 
-    pub const fn observation(&self) -> &worth_runtime_world::facade::ProductBranchObservation {
+    pub(crate) const fn observation(
+        &self,
+    ) -> &worth_runtime_world::facade::ProductBranchObservation {
         &self.observation
     }
 
-    pub const fn current_security_guard(
+    pub(crate) const fn current_security_guard(
         &self,
     ) -> Option<&worth_runtime_world::facade::ProductBranchObservation> {
         self.current_security_guard.as_ref()
     }
 
-    pub fn relational_basis(
+    pub(crate) fn relational_basis(
         &self,
     ) -> &worth_relational::facade::branch::AdmittedRelationalBranchBasis {
         self.observation.basis().relational_basis()
@@ -74,12 +76,12 @@ impl WorthQueryProductObservationLease {
 }
 
 impl WorthQueryProductBranchLease {
-    pub fn retain_selected_program_source_revision(
+    pub(crate) fn retain_selected_program_source(
         &mut self,
-        revision: [u8; 32],
+        selected: &crate::domain_computation::execution_runtime::product_world::WorthQuerySelectedProgramInspection,
     ) -> Result<(), super::WorthQueryProductBranchAdmissionDenial> {
         self.publication
-            .retain_selected_program_source_revision(revision)
+            .retain_selected_program_source(selected)
             .map_err(|_| {
                 super::WorthQueryProductBranchAdmissionDenial::Refused(
                     super::WorthQueryProductBranchAdmissionRefusalKind::ObservationRejected,
@@ -87,18 +89,18 @@ impl WorthQueryProductBranchLease {
             })
     }
 
-    pub fn read_lease(&self) -> WorthQueryProductObservationLease {
+    pub(crate) fn read_lease(&self) -> WorthQueryProductObservationLease {
         self.read.retained_clone()
     }
 
-    pub fn into_read_lease(self) -> WorthQueryProductObservationLease {
+    pub(crate) fn into_read_lease(self) -> WorthQueryProductObservationLease {
         self.read
     }
 
-    pub const fn read_lease_ref(&self) -> &WorthQueryProductObservationLease {
+    pub(crate) const fn read_lease_ref(&self) -> &WorthQueryProductObservationLease {
         &self.read
     }
-    pub fn retained_clone(&self) -> Self {
+    pub(crate) fn retained_clone(&self) -> Self {
         Self {
             publication: self.publication.clone(),
             read: self.read.retained_clone(),
@@ -107,7 +109,7 @@ impl WorthQueryProductBranchLease {
     }
 
     /// Only a retained clone shares this exact admitted mutation source owner.
-    pub fn shares_retained_mutation_source(&self, other: &Self) -> bool {
+    pub(crate) fn shares_retained_mutation_source(&self, other: &Self) -> bool {
         std::sync::Arc::ptr_eq(&self.bridge_source, &other.bridge_source)
     }
 
@@ -128,11 +130,11 @@ impl WorthQueryProductBranchLease {
         }
     }
 
-    pub fn observation(&self) -> &worth_runtime_world::facade::ProductBranchObservation {
+    pub(crate) fn observation(&self) -> &worth_runtime_world::facade::ProductBranchObservation {
         self.read.observation()
     }
 
-    pub fn relational_basis(
+    pub(crate) fn relational_basis(
         &self,
     ) -> &worth_relational::facade::branch::AdmittedRelationalBranchBasis {
         self.observation().basis().relational_basis()
@@ -171,23 +173,23 @@ impl WorthQueryProductBranchLease {
         self.bridge_source.snapshot_identity()
     }
 
-    pub fn bridge_source(
+    pub(crate) fn bridge_source(
         &self,
     ) -> std::sync::Arc<worth_runtime_bridge::facade::RelationalBridgeObservationLease> {
         std::sync::Arc::clone(&self.bridge_source)
     }
 
-    pub fn bridge_source_observation(
+    pub(crate) fn bridge_source_observation(
         &self,
     ) -> &worth_runtime_bridge::facade::RelationalBridgeObservationLease {
         &self.bridge_source
     }
 
-    pub fn signal_basis(&self) -> &worth_signal::facade::branch::AdmittedSignalBranchBasis {
+    pub(crate) fn signal_basis(&self) -> &worth_signal::facade::branch::AdmittedSignalBranchBasis {
         self.observation().basis().signal_basis()
     }
 
-    pub fn publication_binding(
+    pub(crate) fn publication_binding(
         &self,
     ) -> crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding{
         self.publication.clone()
@@ -195,3 +197,4 @@ impl WorthQueryProductBranchLease {
 }
 
 mod court_doors_for_test;
+pub(crate) mod internal_port;

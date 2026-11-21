@@ -62,7 +62,7 @@ impl WorthQueryRecoveryHandle {
         }
     }
 
-    pub fn home_owner(&self) -> worth_runtime_world::facade::RuntimeWorldOwnerIdentity {
+    pub(crate) fn home_owner(&self) -> worth_runtime_world::facade::RuntimeWorldOwnerIdentity {
         self.binding
             .committed_product_publication()
             .composite_commit()
@@ -231,12 +231,12 @@ impl WorthQueryRecoveryHandle {
     }
 
     /// Named fixture handle for resolve binding proofs. Not production.
-    pub fn axis_probe(binding: WorthQueryRecoveryHandleBinding) -> Self {
+    pub(crate) fn axis_probe(binding: WorthQueryRecoveryHandleBinding) -> Self {
         let registry = Arc::new(WorthQueryRecoveryHandleRegistry::new());
         Self::axis_probe_in_registry(binding, registry)
     }
 
-    pub fn axis_probe_in_registry(
+    pub(crate) fn axis_probe_in_registry(
         binding: WorthQueryRecoveryHandleBinding,
         registry: Arc<WorthQueryRecoveryHandleRegistry>,
     ) -> Self {

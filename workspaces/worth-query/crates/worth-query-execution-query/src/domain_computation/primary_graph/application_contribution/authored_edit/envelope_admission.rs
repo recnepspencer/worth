@@ -3,6 +3,7 @@ use super::capture::TypedStage;
 use super::envelope::{Denial, Resolution};
 use super::*;
 use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 impl<S: ApplicationSchema, B: ApplicationMutationBinding<S>> TypedStage<S, B>
 where
     B::Input: Clone + Send + Sync,

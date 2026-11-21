@@ -284,7 +284,7 @@ impl WorthQueryRecoveryHandleBinding {
             .map(crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxBinding::record)
     }
 
-    pub fn committed_dispatch_outbox(
+    pub(crate) fn committed_dispatch_outbox(
         &self,
     ) -> Option<&crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxBinding>
     {
@@ -311,11 +311,11 @@ impl WorthQueryRecoveryHandleBinding {
         self.installed_aftermath.operation_slot()
     }
 
-    pub const fn installed_aftermath(&self) -> &WorthQueryInstalledAftermathContract {
+    pub(crate) const fn installed_aftermath(&self) -> &WorthQueryInstalledAftermathContract {
         &self.installed_aftermath
     }
 
-    pub fn governed_input_identity(&self) -> Option<[u8; 32]> {
+    pub(crate) fn governed_input_identity(&self) -> Option<[u8; 32]> {
         match &self.input_custody {
             RecoveryInputCustody::Performed {
                 retained_governed_input,
@@ -329,7 +329,7 @@ impl WorthQueryRecoveryHandleBinding {
         }
     }
 
-    pub fn readmit_expiry(&mut self, expires_at_unix_ms: u64) {
+    pub(crate) fn readmit_expiry(&mut self, expires_at_unix_ms: u64) {
         self.expires_at_unix_ms = Some(expires_at_unix_ms);
     }
 

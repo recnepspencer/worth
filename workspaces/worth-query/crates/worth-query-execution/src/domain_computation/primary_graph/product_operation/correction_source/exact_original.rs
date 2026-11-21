@@ -3,6 +3,8 @@ use super::*;
 use crate::domain_computation::application_aftermath::WorthQueryCorrectionSourceCoordinates;
 use worth_execution::ExecutionRequest;
 use worth_foundational::facade::WorldOwnerCoordinate;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 use worth_runtime_world::facade::{
     CompositeCommitIdentity, ProductBranchObservation, RuntimeWorldObservationPort,
 };
@@ -71,7 +73,12 @@ pub(super) fn performed<S: ApplicationSchema>(
     WorthQueryCorrectionSelectionDenial,
 > {
     use WorthQueryCorrectionSelectionDenial as D;
-    let owner = &target.application().inner.runtime.product_runtime.owner;
+    let owner = &target
+        .application()
+        .inner
+        .runtime
+        .product_runtime
+        .owner_ref();
     let originals = owner
         .inspection_port()
         .observe_program_activation_history(&execution)

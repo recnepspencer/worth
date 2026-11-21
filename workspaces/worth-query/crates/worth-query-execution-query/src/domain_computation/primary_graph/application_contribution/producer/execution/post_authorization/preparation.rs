@@ -4,6 +4,8 @@ use crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome
 use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
 use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 #[allow(clippy::too_many_arguments)]
 pub fn prepare_authorized<'owner, Schema, Binding>(
     phase: &'owner WorthQueryAdvancementPhase<'owner>,
@@ -331,7 +333,7 @@ where
                     .map_err(|cause| denial(WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "original producer publication"))?;
                 // Refresh only the same actual branch occurrence for output-owner
                 // selection. The handler's original source/dependency binding stays intact.
-                let current = runtime.runtime.product_runtime.owner.observation_port()
+                let current = runtime.runtime.product_runtime.owner_ref().observation_port()
                     .observe_product_branch_occurrence(selected.product().observation().lifecycle_incarnation())
                     .map_err(|_| denial(WorthQueryOutputDemandDenialKind::PublicationStale, "original producer occurrence unavailable")
                         .with_recovered_publication(receipt.clone())

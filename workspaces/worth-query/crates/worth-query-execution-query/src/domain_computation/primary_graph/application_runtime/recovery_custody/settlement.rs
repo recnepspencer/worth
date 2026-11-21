@@ -1,6 +1,7 @@
 //! Same original terminal publication precedes release of its mandatory material.
 use super::*;
 use worth_execution::ExecutionRequest;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub fn settle_recovery_custody(
         &self,
@@ -56,7 +57,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let actual_owner = self
             .runtime
             .product_runtime
-            .owner
+            .owner_ref()
             .owner_identity()
             .durable()
             .ok_or_else(|| Denial::new(Kind::ForeignRuntime))?;

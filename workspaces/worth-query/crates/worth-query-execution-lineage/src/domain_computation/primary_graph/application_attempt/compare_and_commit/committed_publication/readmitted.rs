@@ -6,7 +6,7 @@ use worth_runtime_world::facade::{
 };
 
 impl WorthQueryCommittedProductPublication {
-    pub fn from_readmitted(
+    pub(crate) fn from_readmitted(
         original: &WorldReadmittedPublication,
         commit: &CompositeRuntimeWorldCommit,
     ) -> Result<Self, Denial> {
@@ -39,5 +39,23 @@ impl WorthQueryCommittedProductPublication {
                 conditional_definition_generation: None,
             })),
         })
+    }
+}
+
+/// Crate-boundary port for readmitting a committed product publication.
+/// Never exported on `worth-query-execution::facade` or Host.
+pub trait CommittedProductPublicationInternalPort: Sized {
+    fn from_readmitted(
+        original: &WorldReadmittedPublication,
+        commit: &CompositeRuntimeWorldCommit,
+    ) -> Result<Self, Denial>;
+}
+
+impl CommittedProductPublicationInternalPort for WorthQueryCommittedProductPublication {
+    fn from_readmitted(
+        original: &WorldReadmittedPublication,
+        commit: &CompositeRuntimeWorldCommit,
+    ) -> Result<Self, Denial> {
+        Self::from_readmitted(original, commit)
     }
 }

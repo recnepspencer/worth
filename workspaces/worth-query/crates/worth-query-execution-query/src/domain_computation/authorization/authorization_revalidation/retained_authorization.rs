@@ -1,5 +1,6 @@
 //! Exact readmission of retained conventional and capability authorization.
 
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
 use crate::domain_computation::authorization::operation_admission::capability_admission::preparation::observation::admitted_access::AdmittedCapabilityAccessRuntimeExt as _;
 use worth_query_installation::facade::ApplicationSchema;
@@ -32,8 +33,9 @@ where
             Scope,
         >,
     ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
-        admission
-            .refuse_stale_home_authority(self.runtime.product_runtime.owner.owner_identity())?;
+        admission.refuse_stale_home_authority(
+            self.runtime.product_runtime.owner_ref().owner_identity(),
+        )?;
         let authorization = admission
             .authorization()
             .ok_or_else(inconsistent_authorization)?;
@@ -129,7 +131,7 @@ where
             >,
     {
         access.refuse_stale_incarnation(self)?;
-        let authority = access.runtime_authority_for(self.runtime.product_runtime.owner.owner_identity())
+        let authority = access.runtime_authority_for(self.runtime.product_runtime.owner_ref().owner_identity())
             .map_err(|cause| match cause {
                 worth_proof::HomeIncarnationDenial::ForeignHome => inconsistent_authorization(),
                 worth_proof::HomeIncarnationDenial::StaleIncarnation =>

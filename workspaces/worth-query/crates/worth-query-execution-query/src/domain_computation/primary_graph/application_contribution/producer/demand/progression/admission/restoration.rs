@@ -1,4 +1,6 @@
 use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 mod verification_denial;
 use crate::equality_type_id::EqualityTypeId as TypeId;
 use worth_query_installation::facade::ApplicationSchema;
@@ -49,7 +51,7 @@ where
             .or_else(|| {
                 self.runtime
                     .product_runtime
-                    .recovered_root_authority
+                    .recovered_root_authority_ref()
                     .as_ref()
                     .map(|authority| authority.product_branch())
             })
@@ -130,7 +132,7 @@ where
         let current_head = self
             .runtime
             .product_runtime
-            .owner
+            .owner_ref()
             .observation_port()
             .while_product_branch_current(selected_observation, (), |(), _head| true);
         match current_head {

@@ -1,4 +1,5 @@
 //! Whole-envelope inspection stays governed by every real nominal admission.
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use super::*;
 use crate::domain_computation::primary_graph::application_attempt::idempotency::envelope_candidates::EnvelopeCandidates;
 use crate::domain_computation::primary_graph::provider::WorthQueryApplicationBranchCommitCoordination;

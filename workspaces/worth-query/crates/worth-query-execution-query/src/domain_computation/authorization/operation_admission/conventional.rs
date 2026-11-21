@@ -3,6 +3,8 @@
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use std::sync::Arc;
 use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 
 use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryCanonicalWorkEvidence, WorthQueryCanonicalWorkPhases,
@@ -280,7 +282,7 @@ fn construct_admitted_operation<
             .runtime
             .runtime
             .product_runtime
-            .owner
+            .owner_ref()
             .owner_identity(),
         WorthQueryAdmittedOperationData {
             runtime_authority,

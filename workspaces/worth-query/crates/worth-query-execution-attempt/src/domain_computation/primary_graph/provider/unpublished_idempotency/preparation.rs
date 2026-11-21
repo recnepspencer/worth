@@ -1,5 +1,6 @@
 //! Exact preparation observation and consuming World abandonment handoff.
 use super::*;
+use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 
 pub fn abandon_preparing_world(
     store: &Arc<Mutex<WorthQueryUnpublishedIdempotencyStore>>,

@@ -1,6 +1,7 @@
 //! Current principal and capability decision facts at the retained native basis.
 use super::*;
 use crate::domain_computation::primary_graph::WorthQueryApplicationRuntimeCore;
+use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 
 impl WorthQueryApplicationRuntimeCore {
     pub fn validate_active_capability_currentness(

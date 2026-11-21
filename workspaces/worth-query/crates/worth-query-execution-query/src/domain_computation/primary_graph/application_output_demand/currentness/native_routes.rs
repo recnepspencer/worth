@@ -1,5 +1,6 @@
 //! One currentness owner verifies both sealed current routes and selected historical routes.
 use super::*;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     pub fn selected_route_is_current(
         &self,

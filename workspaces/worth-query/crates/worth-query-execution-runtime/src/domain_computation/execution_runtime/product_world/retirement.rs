@@ -8,7 +8,7 @@ use crate::basis::WorthQueryProductBranchLease;
 impl WorthQueryProductRuntime {
     /// Returns all component retirement work described by World. Query removes
     /// only coordination for the exact successfully retired occurrence.
-    pub fn retire_product_branch(
+    pub(crate) fn retire_product_branch(
         &self,
         observed: &WorthQueryProductBranchLease,
     ) -> Result<

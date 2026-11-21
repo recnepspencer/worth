@@ -6,6 +6,9 @@ use crate::domain_computation::primary_graph::OriginalSettledProducerObservation
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeBranchLifecycleInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_runtime_world::facade::ProductBranchIdentity;
 
@@ -101,7 +104,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         ) -> Result<(), Stop>,
     ) -> Result<WorthQuerySelectedProductOperation<'_, Schema>, Stop> {
         if product.observation().owner_identity()
-            != self.runtime.product_runtime.owner.owner_identity()
+            != self.runtime.product_runtime.owner_ref().owner_identity()
         {
             return Err(WorthQueryProductBranchAdmissionDenial::Refused(
                 AdmissionRefusal::ForeignOwner,
@@ -118,7 +121,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         )?;
         if let Ok(selected) = &selected_program {
             product
-                .retain_selected_program_source_revision(*selected.revision().as_bytes())
+                .retain_selected_program_source(selected)
                 .map_err(|_| {
                     WorthQueryProductBranchAdmissionDenial::Refused(
                         AdmissionRefusal::ObservationRejected,
@@ -144,7 +147,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         WorthQueryProductBranchAdmissionDenial,
     > {
         if product.observation().owner_identity()
-            != self.runtime.product_runtime.owner.owner_identity()
+            != self.runtime.product_runtime.owner_ref().owner_identity()
         {
             return Err(WorthQueryProductBranchAdmissionDenial::Refused(
                 AdmissionRefusal::ForeignOwner,
@@ -159,7 +162,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         );
         if let Ok(selected) = &selected_program {
             product
-                .retain_selected_program_source_revision(*selected.revision().as_bytes())
+                .retain_selected_program_source(selected)
                 .map_err(|_| {
                     WorthQueryProductBranchAdmissionDenial::Refused(
                         AdmissionRefusal::ObservationRejected,

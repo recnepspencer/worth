@@ -7,6 +7,7 @@ use crate::domain_computation::application_aftermath::dispatch_journal::{
     WorthQueryDispatchJournal,
 };
 use crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxObservation;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub fn original_transport_binding_record(
@@ -27,7 +28,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 .committed_product_publication()
                 .product_branch()
                 .owner_identity()
-                != self.runtime.product_runtime.owner.owner_identity()
+                != self.runtime.product_runtime.owner_ref().owner_identity()
         {
             return Err(JournalDenial::ForeignHome);
         }

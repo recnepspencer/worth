@@ -1,5 +1,6 @@
 //! Reserve Query and admit its actual World open before progression frames exist.
 use super::*;
+use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 #[inline(never)]
 pub(super) fn prepare(
     execution: worth_execution::ExecutionRequest<'_, '_>,

@@ -3,6 +3,8 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationQueryAdmissionDenialKind, WorthQueryIssuedSelectedPrincipal,
     WorthQueryIssuedSelectedScope, WorthQuerySelectedProductOperation,
 };
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 mod applied_source;
 mod historical_source;

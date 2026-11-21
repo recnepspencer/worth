@@ -115,7 +115,7 @@ impl WorthQueryPreparedCombinedProductPublication {
 }
 
 impl WorthQueryProductPublicationBinding {
-    pub fn prepare_combined_candidate(
+    pub(crate) fn prepare_combined_candidate(
         &self,
         candidate: worth_relational::facade::mvcc::PreparedRelationalCommitCandidate,
         request: &WorthQueryRequestScope,

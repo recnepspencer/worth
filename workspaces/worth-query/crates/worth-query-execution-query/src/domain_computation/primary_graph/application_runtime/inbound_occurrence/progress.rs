@@ -1,6 +1,7 @@
 //! Owner-controlled continuation from one retained accepted occurrence.
 
 use std::sync::Arc;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_installation::facade::ApplicationSchema;
@@ -147,7 +148,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             let world_protection = self
                 .runtime
                 .product_runtime
-                .owner
+                .owner_ref()
                 .inspection_port()
                 .protect_performed_publication(
                     terminal.publication().publication().commit().identity(),

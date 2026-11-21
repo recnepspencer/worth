@@ -1,5 +1,6 @@
 //! Observer of actual producer handler entry, independent of demand initiator.
 use std::{cell::RefCell, collections::BTreeMap};
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_relational::facade::identity::EntityId;
 thread_local! { static ENTRIES: RefCell<BTreeMap<(u64, EntityId), u64>> = const { RefCell::new(BTreeMap::new()) }; }
 thread_local! {

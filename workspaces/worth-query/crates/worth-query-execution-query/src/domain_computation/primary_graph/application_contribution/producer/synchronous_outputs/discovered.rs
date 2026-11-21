@@ -19,6 +19,7 @@ use worth_query_declaration::facade::{
 use worth_query_execution_attempt::facade::ports::{
     CompleteReadSetInternalPort as _, EffectProgramInternalPort as _,
 };
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 type Binding<S, C> = <C as ApplicationConnectionShape<S>>::Binding;
 type Recipe<S, C> =
     <Binding<S, C> as WorthQueryApplicationDiscoveredOutputConnection<S>>::Discovery;
@@ -174,7 +175,7 @@ where
     ) -> WorthQueryApplicationEffectProgram<S, O, I, Scope> {
         let runtime = runtime.runtime_inner();
 
-        let recording = runtime.runtime.product_runtime.owner.owner_identity().durable().map(|_| crate::domain_computation::primary_graph::application_output_demand::discovery_recipe::capture::<S,Discovery<S,C>>(runtime,execution,recipe.as_ref().clone()));
+        let recording = runtime.runtime.product_runtime.owner_ref().owner_identity().durable().map(|_| crate::domain_computation::primary_graph::application_output_demand::discovery_recipe::capture::<S,Discovery<S,C>>(runtime,execution,recipe.as_ref().clone()));
         let mut captured = capture_discovered::<S, Discovered<C, E, Recipe<S, C>>>(
             execution,
             Binding::<S, C>::IDENTITY,

@@ -1,5 +1,6 @@
 //! Borrow the producer's actual C computation record under this request.
 use super::*;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
 /// A retained partitioned run takes the record at the address it will replace.
 /// This is independent of whole-output input cutoff. Producers without a

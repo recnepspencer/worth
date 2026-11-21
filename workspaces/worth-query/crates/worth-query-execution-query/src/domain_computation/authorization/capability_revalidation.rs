@@ -1,5 +1,6 @@
 //! Current capability re-admission at privileged transitions.
 use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 mod active_currentness;
 use worth_query_execution_attempt::facade::domain_computation::authorization::capability_revalidation::denial as denial_mod;
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;

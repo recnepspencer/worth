@@ -3,6 +3,8 @@ use super::*;
 use crate::domain_computation::primary_graph::provider::unpublished_idempotency::UnpublishedIdempotencyDispositionExt as _;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use worth_query_execution_runtime::facade::ports::ProductBranchOwnerCleanupInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeOwnerCleanupInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_runtime_world::facade::WorldRecoveredReleaseOutcome as Outcome;
 
@@ -11,7 +13,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         &self, execution: &worth_execution::ExecutionRequest<'_, '_>, recovery: WorthQueryProductUnpublishedRecovery,
     ) -> Result<crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanup, WorthQueryProductUnpublishedRecoveryReleaseFailure>{
         let handle = recovery.record_handle().clone();
-        let port = self.runtime.product_runtime.owner.recovery_port();
+        let port = self.runtime.product_runtime.owner_ref().recovery_port();
         let effects = match port.inspect_recovered_effects(&handle) {
             Ok(effects) => effects,
             Err(cause) => return Err(recovery::recovery_failure(recovery, cause.into())),

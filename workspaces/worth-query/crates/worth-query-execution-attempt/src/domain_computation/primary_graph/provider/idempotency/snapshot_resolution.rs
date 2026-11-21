@@ -1,4 +1,5 @@
 use worth_foundational::facade::{AspectValue, InternedString};
+use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 use worth_relational::facade::indexes::{BoundedEntityFieldLookupRequest, BoundedIndexParityMode};
 use worth_relational::facade::runtime::{ProjectionAspectRequirement, ProjectionAspectScope};
 use worth_relational::facade::storage::RecordLifecycleState;

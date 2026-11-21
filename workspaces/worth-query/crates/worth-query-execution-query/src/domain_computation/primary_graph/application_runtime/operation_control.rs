@@ -2,6 +2,8 @@
 
 use super::WorthQueryPrimaryGraphApplicationRuntime;
 use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeOwnerCleanupInternalPort as _;
 
 pub use worth_query_execution_attempt::facade::domain_computation::primary_graph::application_runtime::operation_control::attempt_registration;
 pub mod coupled_participant;
@@ -101,7 +103,7 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         self.runtime
             .product_runtime
             .operation_control_for_test()
-            .pause_product_currentness_for_test(self.runtime.product_runtime.default_occurrence)
+            .pause_product_currentness_for_test(self.runtime.product_runtime.default_occurrence())
     }
 
     /// Arms the existing World currentness latch for one opaque Query selector.
@@ -149,7 +151,7 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     ) -> worth_runtime_world::facade::RuntimeWorldRetentionSnapshot {
         self.runtime
             .product_runtime
-            .owner
+            .owner_ref()
             .inspection_port()
             .retention_snapshot()
             .expect("the installed World remains inspectable")
@@ -162,7 +164,7 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     ) -> worth_runtime_world::facade::RuntimeWorldHistorySnapshot {
         self.runtime
             .product_runtime
-            .owner
+            .owner_ref()
             .inspection_port()
             .history_snapshot()
             .expect("the installed World remains inspectable")
@@ -177,7 +179,7 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         let available = self
             .runtime
             .product_runtime
-            .owner_cleanup
+            .owner_cleanup_ref()
             .available_capacity_for_test()
             .expect("exhaustion control requires an explicitly finite cleanup policy");
         let mut held = Vec::with_capacity(available);
@@ -206,7 +208,7 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub fn indexed_product_branch_count_for_test(&self) -> usize {
         self.runtime
             .product_runtime
-            .activations
+            .activations_ref()
             .installed_branch_count_for_test()
     }
 
@@ -221,7 +223,7 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         let barrier = self
             .runtime
             .product_runtime
-            .activations
+            .activations_ref()
             .begin_program_retirement(revision)
             .expect("certification starts the barrier without an in-flight fork");
         let output = work();
@@ -241,7 +243,7 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         let reservation = self
             .runtime
             .product_runtime
-            .activations
+            .activations_ref()
             .reserve_for_source_program(Some(revision))
             .expect("certification reserves an active program fork");
         let output = work();

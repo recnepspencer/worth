@@ -5,6 +5,7 @@ use crate::domain_computation::application_aftermath::{
     WorthQueryRecoveryHandle, WorthQueryRecoveryTransitionDenial,
 };
 use crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation;
+use worth_query_execution_attempt::facade::ports::RecoveryHandleBindingInternalPort as _;
 use worth_query_execution_attempt::facade::ports::RecoveryHandleInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 

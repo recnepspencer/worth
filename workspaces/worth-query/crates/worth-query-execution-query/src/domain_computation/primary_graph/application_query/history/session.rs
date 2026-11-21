@@ -3,6 +3,7 @@ use std::sync::Arc;
 use worth_query_declaration::facade::{
     application_query::ApplicationHistoryQueryBinding, application_schema::ApplicationSchema,
 };
+use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 
 use super::{
     cursor::HistoryPosition, storage, transition, HistoryMetadataAdmission, SubjectPlan,

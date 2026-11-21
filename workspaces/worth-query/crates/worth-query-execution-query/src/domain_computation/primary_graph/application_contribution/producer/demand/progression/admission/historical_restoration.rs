@@ -7,6 +7,7 @@ use crate::domain_computation::primary_graph::{
 };
 use crate::equality_type_id::EqualityTypeId;
 use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
 impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub fn readmit_historical_output<Family: WorthQueryProducerOutputFamily<Schema>>(

@@ -2,6 +2,7 @@
 
 use super::super::WorthQueryPrimaryGraphApplicationDecisionFact;
 use crate::domain_computation::WorthQueryProposedFact;
+use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 
 pub struct WorthQueryObservedApplicationFactBasis
 {

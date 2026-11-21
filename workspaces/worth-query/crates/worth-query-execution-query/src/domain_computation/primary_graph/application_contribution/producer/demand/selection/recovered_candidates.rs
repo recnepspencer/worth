@@ -1,5 +1,6 @@
 //! Register exact checkpoint candidates without asserting current output truth.
 use crate::domain_computation::primary_graph::admitted_capture::checkpoint;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 
 use super::*;
 use crate::equality_type_id::EqualityTypeId as TypeId;
@@ -47,7 +48,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
             if let (Some(authority), Some(_)) = (
                 self.runtime
                     .product_runtime
-                    .recovered_root_authority
+                    .recovered_root_authority_ref()
                     .as_ref(),
                 checkpoint.producer_facts.as_deref(),
             ) {

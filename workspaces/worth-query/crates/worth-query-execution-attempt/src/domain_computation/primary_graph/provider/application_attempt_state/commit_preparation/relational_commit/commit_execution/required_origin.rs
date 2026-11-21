@@ -1,5 +1,6 @@
 //! Bind complete installed-family publication at the actual precommit image.
 use super::*;
+use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 pub mod authored_retirement;
 use crate::domain_computation::primary_graph::PreparedPrerequisiteClaims;
 use worth_relational::facade::mvcc::CompanionPreflightStop;

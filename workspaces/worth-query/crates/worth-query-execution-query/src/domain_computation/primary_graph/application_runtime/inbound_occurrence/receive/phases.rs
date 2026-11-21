@@ -4,6 +4,7 @@ use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use worth_query_execution_attempt::facade::ports::InboundAdmissionDenialInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 
 use worth_foundational::facade::AspectValue;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
@@ -276,7 +277,12 @@ impl<Schema: ApplicationSchema> WorthQueryAuthenticatedInboundOccurrence<'_, Sch
                 .committed_product_publication()
                 .product_branch()
                 .owner_identity()
-                != self.runtime.runtime.product_runtime.owner.owner_identity()
+                != self
+                    .runtime
+                    .runtime
+                    .product_runtime
+                    .owner_ref()
+                    .owner_identity()
         {
             return Err(QueryDispatchJournalDenial::ForeignHome);
         }

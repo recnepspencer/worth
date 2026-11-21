@@ -3,6 +3,7 @@ use crate::domain_computation::primary_graph::provider::{
     inbound_terminal_index::InboundTerminalSource, WorthQueryCanonicalInboundCompletion,
 };
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 use worth_runtime_world::facade::WorldRecoveredContinuationOutcome;
 mod release;
 use crate::domain_computation::execution_runtime::product_world::{
@@ -70,7 +71,7 @@ fn advance_original<Schema: worth_query_installation::facade::ApplicationSchema>
         OriginalCompletionState::Unpublished | OriginalCompletionState::Published(_) => {}
     }
     if matches!(continuation.state, OriginalCompletionState::Unpublished) {
-        let recovery = runtime.runtime.product_runtime.owner.recovery_port();
+        let recovery = runtime.runtime.product_runtime.owner_ref().recovery_port();
         let effects = recovery
             .inspect_recovered_effects(&continuation.handle)
             .map_err(Denial::World)?;
@@ -105,7 +106,11 @@ fn advance_original<Schema: worth_query_installation::facade::ApplicationSchema>
         .completion_source_from_subject(
             execution,
             &continuation.subject,
-            &runtime.runtime.product_runtime.owner.observation_port(),
+            &runtime
+                .runtime
+                .product_runtime
+                .owner_ref()
+                .observation_port(),
         )
         .map_err(Denial::Source)?;
     let OriginalCompletionState::Published(commit) = &continuation.state else {

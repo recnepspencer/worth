@@ -48,7 +48,7 @@ impl WorthQueryProductRuntime {
         Ok(())
     }
 
-    pub fn admit_directory_original_shape(
+    pub(crate) fn admit_directory_original_shape(
         &self,
         contracts: &worth_query_installation::facade::WorthQueryCompiledApplicationOperationContracts,
         correction: Option<&InstalledCorrectionBinding>,
@@ -60,7 +60,7 @@ impl WorthQueryProductRuntime {
         )
     }
 
-    pub fn admit_directory_correction_shape(
+    pub(crate) fn admit_directory_correction_shape(
         &self,
         aftermath: Option<&WorthQueryInstalledAftermathContract>,
         correction: Option<&InstalledCorrectionBinding>,

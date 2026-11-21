@@ -274,3 +274,60 @@
 //!     let _ = &approval.decision;
 //! }
 //! ```
+//!
+//! Host callers cannot reach raw World ports through the product runtime or a selected lease:
+//!
+//! ```compile_fail,E0616
+//! use worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
+//! fn touch_world_owner<S: worth_query_host::facade::installation::ApplicationSchema>(
+//!     runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+//! ) {
+//!     let _ = &runtime.product_runtime().owner;
+//! }
+//! ```
+//!
+//! ```compile_fail,E0624
+//! use worth_query_host::facade::product::WorthQuerySelectedProductOperation;
+//! fn read_publication_binding<S>(selected: &WorthQuerySelectedProductOperation<'_, S>) {
+//!     let _ = selected.product().publication_binding();
+//! }
+//! ```
+//!
+//! ```compile_fail,E0624
+//! use worth_query_host::facade::primary_graph::WorthQuerySelectedProgramInspection;
+//! use worth_query_host::facade::product::WorthQuerySelectedProductOperation;
+//! fn retain_program_source<S>(
+//!     lease: &mut worth_query_host::facade::product::WorthQueryProductBranchLease,
+//!     selected: &WorthQuerySelectedProgramInspection,
+//! ) {
+//!     let _ = lease.retain_selected_program_source(selected);
+//! }
+//! ```
+//!
+//! Host callers cannot mint recovery fixtures, mutate binding expiry, or call
+//! Home retirement preflight directly:
+//!
+//! ```compile_fail,E0624
+//! use worth_query_host::facade::primary_graph::{
+//!     WorthQueryRecoveryHandle, WorthQueryRecoveryHandleBinding,
+//! };
+//! fn mint_fixture_handle(binding: WorthQueryRecoveryHandleBinding) {
+//!     let _ = WorthQueryRecoveryHandle::axis_probe(binding);
+//! }
+//! ```
+//!
+//! ```compile_fail,E0624
+//! use worth_query_host::facade::primary_graph::WorthQueryRecoveryHandleBinding;
+//! fn mutate_expiry(binding: &mut WorthQueryRecoveryHandleBinding) {
+//!     binding.readmit_expiry(0);
+//! }
+//! ```
+//!
+//! ```compile_fail,E0624
+//! use worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
+//! fn call_preflight<S: worth_query_host::facade::installation::ApplicationSchema>(
+//!     runtime: &mut WorthQueryPrimaryGraphApplicationRuntime<S>,
+//! ) {
+//!     let _ = WorthQueryPrimaryGraphApplicationRuntime::<S>::preflight_home_retirement;
+//! }
+//! ```

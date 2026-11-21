@@ -1,4 +1,5 @@
 //! One cold correction gate serves Home custody and the guarded transition lens.
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 use worth_execution::ExecutionRequest;
 use worth_relational::facade::runtime::RelationalRuntime;
 use worth_query_execution_attempt::facade::domain_computation::primary_graph::provider::aftermath_causality::readmission::{readmit_branch, readmit_latest, QueryHomeCorrectionLineageDenial as Denial};
@@ -11,7 +12,7 @@ pub fn verify<Schema: ApplicationSchema>(
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     execution: &ExecutionRequest<'_, '_>,
 ) -> Result<(), Denial> {
-    let owner = &application.runtime.product_runtime.owner;
+    let owner = &application.runtime.product_runtime.owner_ref();
     let graph = &application.runtime.primary_provider.graph;
     graph.with_runtime(execution, |native| {
         verify_with_material(

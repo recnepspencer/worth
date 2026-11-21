@@ -2,6 +2,7 @@
 use super::*;
 use crate::domain_computation::execution_runtime::product_world::OwnerCleanupRetirements;
 use crate::domain_computation::primary_graph::application_runtime::inbound_publication::recovered::RecordedCompletionContinuationAdvanceExt as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     /// Continue one retained observation. A World-performed result stays in
     /// custody until the exact World protection and provider seal both succeed.
@@ -256,7 +257,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let protection = match self
             .runtime
             .product_runtime
-            .owner
+            .owner_ref()
             .inspection_port()
             .protect_performed_publication(identity)
         {

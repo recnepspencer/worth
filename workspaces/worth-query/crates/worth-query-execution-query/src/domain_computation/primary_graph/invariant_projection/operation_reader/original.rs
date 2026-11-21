@@ -13,6 +13,7 @@ use worth_query_declaration::facade::application_schema::{
 };
 use worth_query_execution_lineage::facade::ports::InvariantProjectionReaderInternalPort as _;
 use worth_query_execution_lineage::facade::ports::OperationInvariantProjectionReaderInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_installation::facade::{
     WorthQueryInstalledApplicationSchema, WorthQueryInstalledPackageIndex,
 };

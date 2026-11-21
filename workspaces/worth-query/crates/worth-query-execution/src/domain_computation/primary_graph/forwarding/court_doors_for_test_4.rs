@@ -1,5 +1,6 @@
 //! Thin forwarding shims for `court_doors_for_test` methods onto `worth-query-execution-query`.
 
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 #[allow(unused_imports, dead_code)]
 mod domain_computation_primary_graph_application_runtime_inbound_occurrence_cleanup_court_doors_for_test_doors {
     use crate::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime;
@@ -222,13 +223,19 @@ mod domain_computation_primary_graph_application_runtime_inbound_publication_cus
 mod domain_computation_primary_graph_provider_history_retirement_doors {
     use crate::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime;
     use crate::domain_computation::primary_graph::product_operation::context::WorthQuerySelectedProductOperation;
+    use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
     impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         #[doc(hidden)]
         pub fn history_retained_for_test(
             &self,
             request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         ) -> (usize, usize, usize, usize) {
-            let world = self.inner.runtime.product_runtime.owner.inspection_port();
+            let world = self
+                .inner
+                .runtime
+                .product_runtime
+                .owner_ref()
+                .inspection_port();
             let history = world
                 .history_snapshot()
                 .expect("an installed product World is available");

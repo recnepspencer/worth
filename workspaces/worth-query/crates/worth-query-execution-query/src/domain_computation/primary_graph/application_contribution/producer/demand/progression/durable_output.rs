@@ -5,6 +5,7 @@ use crate::domain_computation::primary_graph::application_output_demand::{
     AcceptedCheckpointFactSource as Source, WorthQueryOutputDemandKey,
 };
 use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S> {
     pub fn retain_accepted_output(
         &self,

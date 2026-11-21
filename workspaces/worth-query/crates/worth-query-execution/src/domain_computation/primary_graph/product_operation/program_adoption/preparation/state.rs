@@ -1,6 +1,9 @@
 use crate::domain_computation::execution_runtime::product_world::publication_denial::WorthQueryProductPublicationDenial as PublicationDenial;
 use crate::domain_computation::primary_graph::application_contribution::advancement_denial;
 use std::collections::{BTreeMap, BTreeSet};
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 
 use worth_query_declaration::facade::application_program::ApplicationProgramRevision;
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryProgramAdoptionRequirements};
@@ -275,7 +278,7 @@ pub(super) fn prepare<Schema: ApplicationSchema, Operation, Input, Scope>(
             .inner
             .runtime
             .product_runtime
-            .owner
+            .owner_ref()
             .owner_identity(),
         source,
         target: *target,

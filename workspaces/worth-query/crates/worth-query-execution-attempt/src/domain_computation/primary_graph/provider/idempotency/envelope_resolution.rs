@@ -1,4 +1,5 @@
 //! One owner resolution of all genuinely admitted prefix meanings.
+use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 use super::*;
 use crate::domain_computation::primary_graph::application_contribution::authored_edit::AuthoredEnvelopeResolutionPurpose;
 use crate::domain_computation::primary_graph::application_attempt::idempotency::envelope_candidates::EnvelopeCandidates;

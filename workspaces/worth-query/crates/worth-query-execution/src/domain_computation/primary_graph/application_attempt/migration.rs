@@ -1,3 +1,5 @@
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 use worth_query_execution_attempt::facade::ports::EffectProgramMethodsInternalPort as _;
 use crate::domain_computation::primary_graph::application_attempt::effect_program::installed_reentry::EffectProgramInstalledEntryExt as _;
 use worth_runtime_world::facade::ProductBranchObservation;
@@ -29,7 +31,7 @@ where
                 .inner
                 .runtime
                 .product_runtime
-                .owner
+                .owner_ref()
                 .owner_identity(),
         )
         .map_err(|cause| {

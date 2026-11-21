@@ -4,6 +4,9 @@
 use crate::basis::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
 use crate::domain_computation::primary_graph::query_obligations::history::durable_retirement::QueryObligationHistoryDurableRetirementExt;
 use crate::equality_type_id::EqualityTypeId as TypeId;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeBranchLifecycleInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 
 use worth_query_declaration::facade::application_program::{
     ApplicationOutputGraphShape, ApplicationProgramDefinition,
@@ -197,7 +200,7 @@ impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program> {
                 .inner
                 .runtime
                 .product_runtime
-                .activations
+                .activations_ref()
                 .begin_program_retirement(revision)
             {
                 Ok(barrier) => barrier,
@@ -213,7 +216,7 @@ impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program> {
                 .inner
                 .runtime
                 .product_runtime
-                .activations
+                .activations_ref()
                 .live_occurrences()
             {
                 Ok(occurrences) => occurrences,

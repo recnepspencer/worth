@@ -1,5 +1,7 @@
 use crate::domain_computation::execution_runtime::product_world::ProductPublicationBindingPrimaryExt;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
+use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_runtime_world::facade::{
     PlannedProductReferenceSuccessor, ProductUnpublishedRecoveryHandle,
@@ -74,7 +76,7 @@ pub fn publish<Schema: ApplicationSchema>(
     let gate = runtime
         .runtime
         .product_runtime
-        .activations
+        .activations_ref()
         .gate(binding.observation().branch_identity())
         .map_err(|_| Denial::ProductUnavailable)?;
     let _publication = gate

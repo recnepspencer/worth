@@ -11,6 +11,7 @@ use crate::domain_computation::primary_graph::{
     WorthQuerySelectedProductOperation,
 };
 use worth_query_declaration::facade::branch::WorthQueryProductBranchComponents;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
 mod adoption;
 pub(in crate::domain_computation::primary_graph) use adoption::ProductBranchAdoptionRelease;

@@ -16,6 +16,7 @@ use crate::domain_computation::primary_graph::WorthQueryObservedSource;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_runtime_bridge::facade::BridgeConditionalDenial;
 
 const OUTPUT_SCHEDULE_DOMAIN: &[u8] = b"worth-query:output-schedule:v1";

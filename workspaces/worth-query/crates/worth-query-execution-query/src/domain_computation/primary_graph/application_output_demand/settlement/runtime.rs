@@ -5,6 +5,7 @@ use worth_query_execution_lineage::facade::ports::{
     CommitAuthorityBindingInternalPort as _, CommitReceiptInternalPort as _,
     OutputDemandSettlementInternalPort as _, OutputDemandSettlementParts,
 };
+use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 
 use super::current_commit::reacquire_current_committed_output;
 use super::*;

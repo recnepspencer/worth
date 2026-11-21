@@ -7,6 +7,7 @@ use worth_query_execution_attempt::facade::ports::CompleteReadSetWorkflowInterna
 use worth_query_execution_attempt::facade::ports::{
     CompleteReadSetInternalPort as _, EffectProgramInternalPort as _,
 };
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
 impl<S: ApplicationSchema> WorthQuerySelectedProductOperation<'_, S> {
     pub fn prepare_transition_observation<O, I, Scope, Spec>(

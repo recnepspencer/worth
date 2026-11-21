@@ -3,6 +3,7 @@ use super::durable_custody::{
     QueryCandidatePreparationDenial as Denial, QueryNativeCustody, QueryPreparingApplicationCommit,
 };
 use super::*;
+use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 
 pub(super) fn prepare_before_native(
     execution: &worth_execution::ExecutionRequest<'_, '_>,

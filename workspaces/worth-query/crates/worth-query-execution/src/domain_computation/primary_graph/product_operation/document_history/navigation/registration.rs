@@ -10,6 +10,7 @@ use crate::domain_computation::primary_graph::{
 use std::{collections::BTreeMap, sync::Mutex};
 use worth_query_declaration::facade::application_history::ApplicationHistoryBinding;
 use worth_query_execution_query::facade::ports::HistoryPreviewInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledDocumentHistory};
 
 pub(in crate::domain_computation::primary_graph::product_operation::document_history) struct NavigationJournal<

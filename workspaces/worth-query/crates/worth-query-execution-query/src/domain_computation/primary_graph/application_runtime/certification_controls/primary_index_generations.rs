@@ -1,6 +1,7 @@
 //! Eviction of rebuildable primary index projections for real read-stop proofs.
 use super::*;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     #[doc(hidden)]
     pub fn release_primary_index_generations_for_test(

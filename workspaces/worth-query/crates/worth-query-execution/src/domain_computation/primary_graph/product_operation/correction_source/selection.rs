@@ -5,6 +5,8 @@ use worth_query_execution_lineage::facade::ports::{
     CommitAuthorityBindingInternalPort as _, RetainedGovernedInputInternalPort as _,
 };
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 
 impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'runtime, Schema> {
     pub fn select_correction_source(
@@ -24,7 +26,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
             .inner
             .runtime
             .product_runtime
-            .owner
+            .owner_ref()
             .owner_identity();
         let prior = receipt
             .committed_product_publication()
@@ -46,7 +48,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
             .inner
             .runtime
             .product_runtime
-            .owner
+            .owner_ref()
             .owner_identity()
             .durable()
             .is_some()
@@ -128,7 +130,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
             .inner
             .runtime
             .product_runtime
-            .owner
+            .owner_ref()
             .owner_identity()
             .durable()
             .is_some()
@@ -199,7 +201,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
             .inner
             .runtime
             .product_runtime
-            .owner
+            .owner_ref()
             .observation_port()
             .select_retained_product_branch_ancestor(
                 &execution,

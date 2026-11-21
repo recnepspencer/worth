@@ -3,7 +3,7 @@
 
 use std::sync::Arc;
 
-use crate::basis::{WorthQueryProductBranch, WorthQueryProductObservationLease};
+use crate::basis::WorthQueryProductBranch;
 use crate::domain_computation::execution_runtime::product_world::{
     OwnerCleanupRetirements, WorthQueryPerformedRelationalProductChange,
     WorthQueryProductBranchCloseReceipt, WorthQueryProductBranchOwnerCleanup,
@@ -107,18 +107,5 @@ impl ProductBranchOwnerCleanupInternalPort for WorthQueryProductBranchOwnerClean
         worth_signal::facade::branch::SignalBranchBasisObservationDenial,
     > {
         Self::pending_signal_bases(self)
-    }
-}
-
-pub trait ProductObservationLeaseInternalPort: Sized {
-    fn from_observation(observation: worth_runtime_world::facade::ProductBranchObservation)
-        -> Self;
-}
-
-impl ProductObservationLeaseInternalPort for WorthQueryProductObservationLease {
-    fn from_observation(
-        observation: worth_runtime_world::facade::ProductBranchObservation,
-    ) -> Self {
-        Self::new(observation)
     }
 }

@@ -1,5 +1,6 @@
 //! Shared-selection constructor and origin retention on `WorthQueryApplicationSnapshotLease`.
 
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 
 use crate::domain_computation::primary_graph::application_attempt::snapshot_lease::WorthQueryApplicationSnapshotLease;

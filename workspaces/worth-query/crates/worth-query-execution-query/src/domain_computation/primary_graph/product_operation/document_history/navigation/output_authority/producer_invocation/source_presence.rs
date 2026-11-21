@@ -6,6 +6,7 @@ use crate::domain_computation::primary_graph::{
 };
 use worth_query_execution_lineage::facade::ports::ReadObservationInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
 impl HistoryProducerInvocation<'_> {
     pub(in crate::domain_computation::primary_graph) fn family(&self) -> &'static str {

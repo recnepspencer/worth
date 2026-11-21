@@ -3,7 +3,7 @@ mod creation;
 mod creation_recovery;
 mod expected_description;
 mod lifecycle;
-mod observation;
+pub(crate) mod observation;
 mod read_identity;
 mod read_position;
 mod selection;

@@ -11,6 +11,7 @@ use crate::equality_type_id::EqualityTypeId as TypeId;
 use worth_query_declaration::facade::application_program::{
     ApplicationProgramDefinition, ApplicationProgramOutputsShape, ValidatedApplicationProgram,
 };
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 use worth_query_installation::facade::{
     install_rostered_application_program, WorthQueryInstalledApplicationProgram,
     WorthQueryInstalledApplicationSchema, WorthQueryProgramSupportAdmission,

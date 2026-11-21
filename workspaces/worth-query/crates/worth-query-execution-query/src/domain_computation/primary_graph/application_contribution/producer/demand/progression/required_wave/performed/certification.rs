@@ -1,4 +1,5 @@
 //! Native certification issues the sole consuming key for a Current result.
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use super::super::*;
 use super::PerformedMembers;
 use crate::domain_computation::primary_graph::application_contribution::producer::ProducerInvocationAuthority;

@@ -2,6 +2,7 @@
 use super::dependent::{DiscoveryBinding, QueryRows};
 use super::*;
 use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 mod verification;
 use crate::domain_computation::primary_graph::application_query::output_source_observation::SourceQueryRequest;
 use crate::domain_computation::primary_graph::{

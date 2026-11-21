@@ -1,5 +1,6 @@
 //! Reacquire a committed output at the live product head or its retained lineage.
 use super::*;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
 pub fn reacquire_current_committed_output<Schema>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,

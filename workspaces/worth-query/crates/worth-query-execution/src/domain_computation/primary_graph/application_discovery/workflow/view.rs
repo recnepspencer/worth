@@ -3,6 +3,7 @@ use crate::domain_computation::primary_graph::application_attempt::workflow_inst
 use crate::domain_computation::primary_graph::application_attempt::PublishedWorkflowInstanceRef;
 use crate::domain_computation::primary_graph::ReadObservationRuntimeExt;
 use crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
 use worth_query_execution_attempt::facade::ports::WorkflowReadBasisInternalPort as _;
 

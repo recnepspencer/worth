@@ -14,6 +14,8 @@ use worth_query_declaration::facade::{
     application_schema::ApplicationOperationRef,
 };
 use worth_query_execution_query::facade::ports::AdmittedQueryPlanInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 
 type RetentionAdmission<S, H, N> = WorthQueryAdmittedApplicationOperation<
     S,

@@ -1,5 +1,6 @@
 //! Verify data at D while origin control remains at exact C.
 use super::*;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 pub fn holds<S: ApplicationSchema>(
     application: &WorthQueryPrimaryGraphApplicationRuntime<S>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,

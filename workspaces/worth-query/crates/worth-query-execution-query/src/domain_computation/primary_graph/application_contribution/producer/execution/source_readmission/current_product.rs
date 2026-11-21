@@ -1,3 +1,5 @@
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 use worth_runtime_world::facade::ProductBranchCurrentnessFailure;
 
 use super::*;
@@ -18,7 +20,7 @@ where
     let checked = runtime
         .runtime
         .product_runtime
-        .owner
+        .owner_ref()
         .observation_port()
         .while_product_branch_current(expected, (), |(), _head| true);
     match checked {

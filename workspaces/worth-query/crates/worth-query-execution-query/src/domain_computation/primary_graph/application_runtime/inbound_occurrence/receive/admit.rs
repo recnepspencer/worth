@@ -6,6 +6,7 @@ use super::phases::{
 };
 use super::WorthQueryInboundPermanentDenialKind as Permanent;
 use super::*;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
@@ -126,9 +127,9 @@ where
                 .authoritative_source_profile()
                 .runtime_instance_id()
             || publication.product_branch().owner_identity()
-                != self.runtime.product_runtime.owner.owner_identity()
+                != self.runtime.product_runtime.owner_ref().owner_identity()
             || publication.product_incarnation().owner_identity()
-                != self.runtime.product_runtime.owner.owner_identity()
+                != self.runtime.product_runtime.owner_ref().owner_identity()
             || owner.commit_reference() != publication.relational_commit()
         {
             return Err(Denial::ForeignOwner);

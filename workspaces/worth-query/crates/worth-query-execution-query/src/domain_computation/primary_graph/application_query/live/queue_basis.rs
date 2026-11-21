@@ -1,4 +1,5 @@
 use std::sync::atomic::{AtomicU64, Ordering};
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 
 use super::outcome::{
     WorthQueryApplicationLiveOpenDenial, WorthQueryApplicationLiveOpenDenialKind,

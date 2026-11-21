@@ -5,7 +5,10 @@ use crate::domain_computation::primary_graph::{
     WorthQueryAdmittedApplicationOperation, WorthQueryApplicationIdempotencyBinding,
     WorthQueryApplicationIdempotencyResolution, WorthQueryCommittedProductPublication,
 };
+use worth_query_execution_attempt::facade::ports::RecoveryHandleBindingInternalPort as _;
+use worth_query_execution_lineage::facade::ports::CommittedProductPublicationInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     /// Reissue capability for the original claim, never from a wire recovery token.
@@ -49,7 +52,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .durable()
             .ok_or_else(|| Denial::new(Kind::ForeignRuntime))?
             .selected_commit();
-        let owner = &self.runtime.product_runtime.owner;
+        let owner = &self.runtime.product_runtime.owner_ref();
         if owner.owner_identity().durable() != Some(durable.owner()) {
             return Err(Denial::new(Kind::ForeignRuntime));
         }

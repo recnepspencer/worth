@@ -1,5 +1,6 @@
 //! The principal and selected proof basis retained by fresh resolution.
 use super::*;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 /// Principal accepted by the installed decoder on this exact selected root.
 /// The selected operation remains borrowed for the whole scoped Query read.
 pub struct WorthQueryIssuedSelectedPrincipal<

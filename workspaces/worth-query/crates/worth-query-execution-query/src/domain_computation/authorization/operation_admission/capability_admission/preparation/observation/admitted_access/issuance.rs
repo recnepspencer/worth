@@ -1,5 +1,7 @@
 //! Issuance retains the grant facts; admission-only resource custody ends here.
 use super::*;
+use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 
 pub fn admit_observed_capability<
     'a,
@@ -53,7 +55,7 @@ where
             .runtime
             .runtime
             .product_runtime
-            .owner
+            .owner_ref()
             .owner_identity(),
         binding_identity: prepared.graph_work.binding().clone(),
         capability: prepared.capability.contract().name().into(),

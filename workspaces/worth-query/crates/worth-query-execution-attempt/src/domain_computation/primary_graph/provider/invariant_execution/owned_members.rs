@@ -1,5 +1,6 @@
 //! Native certifies the complete roster before ordinary relation laws judge deletion.
 use super::*;
+use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 impl WorthQueryPrimaryGraphProvider {
     pub(super) fn validate_owned_member_rosters(
         &self,

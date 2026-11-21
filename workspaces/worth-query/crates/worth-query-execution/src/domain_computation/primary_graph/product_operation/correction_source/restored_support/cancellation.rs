@@ -9,6 +9,8 @@ use crate::domain_computation::primary_graph::provider::{
 };
 use std::sync::Arc;
 use worth_execution::{ExecutionOrderedMap, ExecutionRequest};
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::history::{
     CommitId, RelationalAuthoredWriteOccurrence, RelationalCommitReceipt,
@@ -134,7 +136,7 @@ fn require_pair<Schema: ApplicationSchema>(
             .inner
             .runtime
             .product_runtime
-            .owner
+            .owner_ref()
             .observation_port()
             .select_retained_product_branch_ancestor(
                 &execution,

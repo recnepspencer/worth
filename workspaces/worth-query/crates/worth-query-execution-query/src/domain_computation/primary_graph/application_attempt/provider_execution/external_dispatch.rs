@@ -1,3 +1,5 @@
+use worth_query_execution_attempt::facade::ports::RecoveryHandleBindingInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_execution_attempt::facade::ports::RecoveryHandleInternalPort as _;
 use worth_query_execution_lineage::facade::ports::CommitReceiptInternalPort as _;
@@ -55,7 +57,7 @@ where
         authority: &WorthQueryRecoveryEffectAuthority,
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
     ) -> Result<WorthQueryPerformedExternalRedispatch, WorthQueryExternalRedispatchDenial> {
-        match self.runtime.product_runtime.owner.owner_identity().admit_incarnation(handle.home_owner()) {
+        match self.runtime.product_runtime.owner_ref().owner_identity().admit_incarnation(handle.home_owner()) {
             Err(worth_proof::HomeIncarnationDenial::StaleIncarnation) => return Err(WorthQueryExternalRedispatchDenial::FreshAuthority(crate::domain_computation::application_aftermath::WorthQueryRecoveryHandleDenialKind::StaleIncarnation)),
             Err(worth_proof::HomeIncarnationDenial::ForeignHome) | Ok(()) => {}
         }
@@ -84,9 +86,9 @@ where
             .validate_installed_operation(&self.runtime.installed_operations)
             .map_err(WorthQueryExternalRedispatchDenial::from_admission_authorization)?;
         handle
-            .admit_home_owner(self.runtime.product_runtime.owner.owner_identity())
+            .admit_home_owner(self.runtime.product_runtime.owner_ref().owner_identity())
             .map_err(|denial| WorthQueryExternalRedispatchDenial::FreshAuthority(denial.kind()))?;
-        admission.refuse_stale_home_authority(self.runtime.product_runtime.owner.owner_identity())
+        admission.refuse_stale_home_authority(self.runtime.product_runtime.owner_ref().owner_identity())
             .map_err(|_| WorthQueryExternalRedispatchDenial::FreshAuthority(crate::domain_computation::application_aftermath::WorthQueryRecoveryHandleDenialKind::StaleIncarnation))?;
         if let Some(lapse) = admission.current_authority_lapse() {
             return Err(match lapse {
@@ -121,8 +123,8 @@ where
             .committed_dispatch_outbox_for_binding(
                 execution,
                 handle.binding(),
-                &self.runtime.product_runtime.owner.observation_port(),
-                &self.runtime.product_runtime.owner.inspection_port(),
+                &self.runtime.product_runtime.owner_ref().observation_port(),
+                &self.runtime.product_runtime.owner_ref().inspection_port(),
             )
             .map_err(WorthQueryExternalRedispatchDenial::OwnerReadDenied)?;
         let Some(transport) = self.runtime.external_effect_transport.get() else {

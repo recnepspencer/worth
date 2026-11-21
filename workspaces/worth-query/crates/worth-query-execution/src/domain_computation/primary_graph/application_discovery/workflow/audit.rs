@@ -4,6 +4,7 @@ use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDe
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as Refusal;
 use worth_query_execution_query::facade::ports::AdmittedCapabilityAccessInspectionPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 /// Only evaluated permission outcomes may withhold audit. Technical causes remain errors.
 pub(super) fn permission_withheld(cause: &Denial) -> bool {
     !cause.causes().is_empty()
@@ -79,7 +80,7 @@ where
         .inner
         .runtime
         .product_runtime
-        .owner
+        .owner_ref()
         .owner_identity();
     let subject_runtime = subject
         .runtime_authority_for(receiver)

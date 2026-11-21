@@ -114,7 +114,7 @@ where
         schema_binding.schema_identity().render_hex(),
     );
     let granular_invalidation = crate::domain_computation::primary_graph::WorthQueryGranularInvalidationInstallation::new(schema_binding.clone(), graph.primary_provider.graph.clone(), crate::domain_computation::execution_runtime::product_world::WorthQueryProductSharedRoot::new(
-            product_runtime.0.clone(),
+            (*product_runtime).clone(),
             graph.bridge.conditional_operations(),
         ));
     let program_required_bindings = installed_schema

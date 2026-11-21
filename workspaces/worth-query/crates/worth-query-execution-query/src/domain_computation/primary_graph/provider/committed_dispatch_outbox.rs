@@ -2,6 +2,7 @@
 
 use crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 
 pub use worth_query_execution_attempt::facade::domain_computation::primary_graph::provider::committed_dispatch_outbox::correlation;
 pub use worth_query_execution_attempt::facade::domain_computation::primary_graph::provider::committed_dispatch_outbox::original_attempt;
@@ -36,8 +37,8 @@ where
             .committed_dispatch_outbox_for_correlation(
                 execution,
                 correlation,
-                &self.runtime.product_runtime.owner.observation_port(),
-                &self.runtime.product_runtime.owner.inspection_port(),
+                &self.runtime.product_runtime.owner_ref().observation_port(),
+                &self.runtime.product_runtime.owner_ref().inspection_port(),
             )
     }
 

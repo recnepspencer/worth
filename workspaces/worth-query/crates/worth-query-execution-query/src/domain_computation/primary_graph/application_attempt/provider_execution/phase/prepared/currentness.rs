@@ -1,6 +1,8 @@
 //! Current authority and product basis for a prepared application commit.
 
 use super::*;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeBranchLifecycleInternalPort as _;
 
 pub fn select_current_product<Schema: ApplicationSchema>(
     application: &dyn crate::ports::ApplicationRuntimeRef<Schema>,

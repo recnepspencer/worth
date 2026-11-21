@@ -2,6 +2,7 @@
 
 use std::sync::Arc;
 
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 use worth_relational::facade::runtime::RelationalRuntime;
 
 use super::WorthQueryPrimaryGraphProvider;
@@ -13,12 +14,14 @@ impl WorthQueryPrimaryGraphProvider {
     pub fn install_world_history(self: &Arc<Self>, product: &WorthQueryProductRuntime) {
         assert!(
             self.world_history
-                .set(product.owner.recovery_port())
+                .set(product.owner_ref().recovery_port())
                 .is_ok(),
             "one product World owns the provider's history"
         );
         let follower: std::sync::Weak<Self> = Arc::downgrade(self);
-        product.owner_cleanup.follow_product_retention(follower);
+        product
+            .owner_cleanup_ref()
+            .follow_product_retention(follower);
     }
 
     /// World retires changed history interiors that nothing protects,

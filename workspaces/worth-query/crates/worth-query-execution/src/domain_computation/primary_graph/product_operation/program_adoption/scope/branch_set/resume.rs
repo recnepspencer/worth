@@ -1,6 +1,7 @@
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_declaration::facade::application_program::ApplicationProgramRevision;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::{
@@ -109,7 +110,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             let execution = &phase_request;
             let mut adoption = retained.take().expect("one admitted resume");
 
-        if adoption.owner != self.inner.runtime.product_runtime.owner.owner_identity() {
+        if adoption.owner != self.inner.runtime.product_runtime.owner_ref().owner_identity() {
             return Err(resume_failure(WorthQueryBranchSetAdoptionResumeDenial::ForeignRuntime,adoption));
         }
         if coverage.branches() != adoption.remaining.as_ref() {

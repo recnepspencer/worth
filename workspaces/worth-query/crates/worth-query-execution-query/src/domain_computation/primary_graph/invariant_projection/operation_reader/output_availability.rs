@@ -1,5 +1,6 @@
 //! Non-driving observation of an installed required output, in this reader.
 
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_execution_lineage::facade::ports::InvariantProjectionReaderInternalPort as _;
 use worth_query_execution_lineage::facade::ports::OperationInvariantProjectionReaderInternalPort as _;
 use super::*;

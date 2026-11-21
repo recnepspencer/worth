@@ -4,6 +4,7 @@ use super::super::{
     WorthQueryResourceCleanupPosture,
 };
 use super::*;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
 pub(in crate::domain_computation::primary_graph::application_resource) fn drain_candidate<Schema>(
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,

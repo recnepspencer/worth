@@ -7,6 +7,8 @@ use super::*;
 use worth_query_declaration::facade::application_operation::{
     ApplicationMutationBinding, NoApplicationMutationSource,
 };
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
     super::super::super::WorthQueryDocumentHistory<'runtime, S, H>
 {

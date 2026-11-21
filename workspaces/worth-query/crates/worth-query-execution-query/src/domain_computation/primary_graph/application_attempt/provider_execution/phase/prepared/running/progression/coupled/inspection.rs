@@ -1,6 +1,7 @@
 //! A registered writer materializes its own real effect overlay.
 use super::*;
 use crate::domain_computation::primary_graph::WorthQueryApplicationProducerBinding;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 mod authored;
 mod authorization;
 mod preparation;

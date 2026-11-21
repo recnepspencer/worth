@@ -2,6 +2,7 @@
 use super::*;
 use crate::domain_computation::primary_graph::query_obligations::QueryObligationDenial;
 use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub fn readmit_stopped_branch_set_adoptions(
         &self,
@@ -23,7 +24,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .inner
             .runtime
             .product_runtime
-            .owner
+            .owner_ref()
             .observation_port()
             .observe_installed_product_branches(&execution)
             .map_err(Denial::Inventory)?;
@@ -66,7 +67,12 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 progress,
                 target,
                 total_selection_work_units: row.selection_work as usize,
-                owner: self.inner.runtime.product_runtime.owner.owner_identity(),
+                owner: self
+                    .inner
+                    .runtime
+                    .product_runtime
+                    .owner_ref()
+                    .owner_identity(),
                 durable: Some(row.attempt),
                 _support_custody: Vec::new(),
             });

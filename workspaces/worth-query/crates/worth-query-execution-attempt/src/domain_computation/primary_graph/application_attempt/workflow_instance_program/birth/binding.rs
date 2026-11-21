@@ -8,6 +8,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryAdvancementPhase, WorthQueryApplicationCommitDenial,
 };
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
 pub struct WorkflowBirthBindingProof {
     binding: &'static str,

@@ -2,6 +2,7 @@
 use super::*;
 use crate::domain_computation::application_aftermath::dispatch_journal::QueryDispatchRecordedObservation;
 use crate::domain_computation::primary_graph::InstalledTransportCompletion;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub fn readmit_dispatch_completion_custody(
@@ -13,8 +14,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .primary_provider
             .readmit_outstanding_dispatches(
                 execution,
-                &self.runtime.product_runtime.owner.observation_port(),
-                &self.runtime.product_runtime.owner.inspection_port(),
+                &self.runtime.product_runtime.owner_ref().observation_port(),
+                &self.runtime.product_runtime.owner_ref().inspection_port(),
             )
             .map_err(Denial::OwnerReadDenied)?;
         for owner in originals {

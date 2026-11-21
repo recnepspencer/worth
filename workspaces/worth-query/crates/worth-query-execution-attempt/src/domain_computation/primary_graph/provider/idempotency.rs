@@ -1,5 +1,6 @@
 use super::WorthQueryPrimaryGraphProvider;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding;
+use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 
 pub mod publication_appendix;
 pub(super) use publication_appendix::bind_receipt;

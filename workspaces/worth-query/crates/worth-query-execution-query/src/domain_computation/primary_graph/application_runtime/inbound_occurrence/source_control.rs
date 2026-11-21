@@ -3,7 +3,9 @@ use super::*;
 use crate::domain_computation::application_aftermath::dispatch_journal::QueryDispatchJournalDenial;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementDenial;
 use worth_foundational::facade::InboundSourceControl;
-use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::{
+    AdvancementPhaseInternalPort as _, ProductRuntimeInternalPort as _,
+};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryInboundSourceControlDenial {
@@ -47,7 +49,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 .execution_request_for(product)
                 .map_err(|cause| Denial::Execution(cause.into()))?;
             let journal = &self.runtime.dispatch_journal;
-            if product.owner.owner_identity().durable().is_some() && !journal.is_durable() {
+            if product.owner_ref().owner_identity().durable().is_some() && !journal.is_durable() {
                 return Err(Denial::Journal(
                     QueryDispatchJournalDenial::JournalUnavailable,
                 ));

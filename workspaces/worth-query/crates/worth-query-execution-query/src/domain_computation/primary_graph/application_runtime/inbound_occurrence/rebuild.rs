@@ -2,6 +2,7 @@
 
 use std::num::NonZeroUsize;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 
 use super::reconstruct::pair_world_history;
 use super::{WorthQueryInboundVerifierHandle, WorthQueryPrimaryGraphApplicationRuntime};
@@ -59,7 +60,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
         maximum_changed_records: NonZeroUsize,
         maximum_ancestry_commits: NonZeroUsize,
     ) -> Result<WorthQueryCanonicalInboundCompletion, Denial> {
-        let inspection = self.runtime.product_runtime.owner.inspection_port();
+        let inspection = self.runtime.product_runtime.owner_ref().inspection_port();
         let history = inspection
             .trace_ancestry(source.commit_identity().clone(), maximum_ancestry_commits)
             .map_err(|_| Denial::IndexUnavailable)?;
@@ -104,7 +105,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
                 &row,
                 &original,
                 source.incarnation(),
-                &self.runtime.product_runtime.owner.observation_port(),
+                &self.runtime.product_runtime.owner_ref().observation_port(),
                 maximum_changed_records,
             )
             .map_err(completion_read_denial)?;

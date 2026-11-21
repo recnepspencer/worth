@@ -1,5 +1,7 @@
 use super::*;
 use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeBranchLifecycleInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 
 impl<Schema, Capability, Operation, Input>
     AdmittedCapabilityAccessRuntimeExt<Schema, Capability, Operation, Input>
@@ -14,7 +16,7 @@ where
     where
         Schema: ApplicationSchema,
     {
-        match self.runtime_authority_for(receiver.runtime.product_runtime.owner.owner_identity()) {
+        match self.runtime_authority_for(receiver.runtime.product_runtime.owner_ref().owner_identity()) {
             Ok(_) | Err(worth_proof::HomeIncarnationDenial::ForeignHome) => Ok(()),
             Err(worth_proof::HomeIncarnationDenial::StaleIncarnation) => Err(
                 crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(
@@ -34,8 +36,14 @@ where
     where
         Schema: ApplicationSchema,
     {
-        self.runtime_authority_for(receiver.runtime.product_runtime.owner.owner_identity())
-            .ok()?;
+        self.runtime_authority_for(
+            receiver
+                .runtime
+                .product_runtime
+                .owner_ref()
+                .owner_identity(),
+        )
+        .ok()?;
         receiver
             .runtime
             .product_runtime

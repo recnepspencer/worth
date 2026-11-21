@@ -1,5 +1,6 @@
 //! Exact per-writer lineage and receipt settlement after the one World movement.
 use super::*;
+use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 pub(super) fn finish_writer(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     provider: &WorthQueryPrimaryGraphProvider,

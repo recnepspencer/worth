@@ -1,5 +1,6 @@
 use crate::domain_computation::execution_runtime::product_world::publication_denial::WorthQueryProductPublicationDenial as PublicationDenial;
 use crate::domain_computation::execution_runtime::product_world::publication_denial::WorthQueryProductPublicationOutcome as PublicationOutcome;
+use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 
 use super::failure;
 use super::publication_request_stop;

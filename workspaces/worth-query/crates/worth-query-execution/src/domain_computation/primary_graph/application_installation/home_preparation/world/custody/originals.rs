@@ -1,5 +1,6 @@
 //! Rejoin actual World originals with their owning Query operation family.
 use super::*;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Program: 'static>
     ReadmittedHomeQueryService<Schema, Program>
 {
@@ -9,7 +10,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
     ) -> Result<(), QueryHomeCustodyReadmissionDenial> {
         use QueryHomeCustodyReadmissionDenial as Denial;
         let application = self.runtime.runtime();
-        let owner = &application.inner.runtime.product_runtime.owner;
+        let owner = &application.inner.runtime.product_runtime.owner_ref();
         let snapshot = owner
             .inspection_port()
             .recovery_snapshot()

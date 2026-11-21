@@ -12,6 +12,7 @@ use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutp
 use crate::domain_computation::primary_graph::output_lineage::invalidation::SourceSettlementCurrentness;
 use crate::domain_computation::primary_graph::provider::FactlessCurrentness;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
 /// Check actual selected required work before the caller's ordinary Ready
 /// result can be accepted. The caller keeps the successors its own chain

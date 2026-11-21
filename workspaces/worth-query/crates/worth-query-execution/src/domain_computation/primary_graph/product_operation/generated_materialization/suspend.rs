@@ -6,6 +6,9 @@ use crate::domain_computation::execution_runtime::product_world::publication_den
 use crate::domain_computation::primary_graph::application_contribution::advancement_denial;
 use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 
 use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::sync::Arc;
@@ -135,7 +138,7 @@ where
             .inner
             .runtime
             .product_runtime
-            .activations
+            .activations_ref()
             .gate(product.branch_identity())
             .map_err(|_| {
                 WorthQueryGeneratedOutputSuspensionFailure::ProductActivationUnavailable

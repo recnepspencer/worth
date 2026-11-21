@@ -1,6 +1,7 @@
 //! Ordinary admitted Retire correspondence succeeds Native's complete selected publication.
 use super::*;
 use crate::domain_computation::primary_graph::WorthQueryApplicationOutputPosture as Posture;
+use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 use worth_relational::facade::mvcc::RequiredOutputRolePosture;
 
 pub(super) fn bind(

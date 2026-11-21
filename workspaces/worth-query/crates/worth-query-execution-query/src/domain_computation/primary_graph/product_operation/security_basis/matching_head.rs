@@ -1,5 +1,7 @@
 //! Reuse one already issued Query basis only while its World head is current.
 
+use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 use worth_runtime_world::facade::ProductBranchCurrentnessFailure;
 
 use super::*;
@@ -81,10 +83,10 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         // compare the initialized Product identity. Fund every reached
         // comparison, plus the fixed owner/runtime/live probes, up front.
 
-        let guard_matches = product
-            .current_security_guard()
-            .is_none_or(|guard| guard == expected);
-        if expected.owner_identity() != self.runtime.product_runtime.owner.owner_identity()
+        let guard_matches =
+            worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort::current_security_guard(product)
+                .is_none_or(|guard| guard == expected);
+        if expected.owner_identity() != self.runtime.product_runtime.owner_ref().owner_identity()
             || !guard_matches
         {
             return Ok(None);
@@ -108,7 +110,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let current = self
             .runtime
             .product_runtime
-            .owner
+            .owner_ref()
             .observation_port()
             .while_product_branch_current(expected, (), |(), _head| true);
         match current {

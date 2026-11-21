@@ -47,7 +47,7 @@ impl super::WorthQueryProductRuntime {
         clippy::disallowed_methods,
         reason = "Addresses serve live allocation lookup and custody; canonical order uses declared identity"
     )]
-    pub fn enter_named_read(&self, name: NamedRead) -> NamedReadRegion {
+    pub(crate) fn enter_named_read(&self, name: NamedRead) -> NamedReadRegion {
         let previous = self
             .named_read_probe
             .armed
@@ -66,7 +66,7 @@ impl super::WorthQueryProductRuntime {
         self.named_read_probe.armed.load(Ordering::Acquire)
             && CURRENT.get() == (Arc::as_ptr(&self.named_read_probe) as usize, name as u8)
     }
-    pub fn enter_authority_revalidation(&self) -> NamedReadRegion {
+    pub(crate) fn enter_authority_revalidation(&self) -> NamedReadRegion {
         self.enter_named_read(NamedRead::AuthorityRevalidation)
     }
     pub fn authority_revalidation_is_active_for_test(&self) -> bool {

@@ -1,5 +1,6 @@
 //! Consume the actual terminal custody only after owner progression has returned.
 use super::*;
+use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 #[inline(never)]
 pub(super) fn finish(
     provider: &WorthQueryPrimaryGraphProvider,

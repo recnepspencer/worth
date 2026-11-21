@@ -6,6 +6,9 @@ use crate::domain_computation::primary_graph::query_obligations::{
 };
 use worth_foundational::facade::{CanonicalDigestId, DurableCompositeCommitIdentity};
 use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 impl WorthQueryPreparedBranchSetAdoption {
     pub fn begin_resume<Schema: ApplicationSchema>(
         mut self,
@@ -99,7 +102,7 @@ impl WorthQueryPreparedBranchSetAdoption {
                     .inner
                     .runtime
                     .product_runtime
-                    .owner
+                    .owner_ref()
                     .owner_identity()
             {
                 return Err(Denial::ForeignRuntime);
@@ -148,7 +151,7 @@ impl WorthQueryPreparedBranchSetAdoption {
                 .inner
                 .runtime
                 .product_runtime
-                .owner
+                .owner_ref()
                 .owner_identity(),
             durable: attempt,
             _support_custody: custody,
@@ -253,7 +256,7 @@ impl WorthQueryStoppedBranchSetAdoption {
                         .inner
                         .runtime
                         .product_runtime
-                        .owner
+                        .owner_ref()
                         .owner_identity()
                 {
                     return Err(WorthQueryBranchSetAdoptionResumeDenial::ForeignRuntime);

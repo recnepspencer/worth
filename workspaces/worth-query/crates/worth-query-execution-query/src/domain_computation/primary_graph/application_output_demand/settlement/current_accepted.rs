@@ -6,6 +6,7 @@ use worth_query_execution_lineage::facade::ports::{
     CommitReceiptInternalPort as _, OutputDemandSettlementInternalPort as _,
     OutputDemandSettlementParts,
 };
+use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 
 pub trait OutputDemandSettlementCurrentExt: Sized {
     fn from_current_accepted<Schema>(

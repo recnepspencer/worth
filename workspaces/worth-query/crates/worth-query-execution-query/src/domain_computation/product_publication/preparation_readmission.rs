@@ -2,6 +2,7 @@
 use super::WorthQueryProductPreparationPending;
 use crate::domain_computation::primary_graph::provider::unpublished_idempotency::UnpublishedIdempotencyDispositionExt as _;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_runtime_world::facade::{ProductUnpublishedRecoveryHandle, RuntimeWorldRecoveryDenial};
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
@@ -13,7 +14,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         WorthQueryProductPreparationPending::new(
             stage,
             handle,
-            self.runtime.product_runtime.owner.recovery_port(),
+            self.runtime.product_runtime.owner_ref().recovery_port(),
             self.runtime
                 .primary_provider
                 .unpublished_idempotency_disposition(),
@@ -33,7 +34,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         Ok(WorthQueryProductPreparationPending::new(
             stage,
             handle.clone(),
-            self.runtime.product_runtime.owner.recovery_port(),
+            self.runtime.product_runtime.owner_ref().recovery_port(),
             disposition,
         ))
     }

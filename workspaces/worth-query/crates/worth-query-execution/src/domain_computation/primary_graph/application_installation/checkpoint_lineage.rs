@@ -4,6 +4,7 @@ use super::super::{
     application_query::WorthQueryCheckpointSourceIdentity, output_lineage::RecordedSourceIdentity,
     WorthQueryPrimaryGraphApplicationRuntime, WorthQueryPrimaryGraphInstallationDenial,
 };
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 
 pub(super) fn restore<Schema: ApplicationSchema>(
@@ -14,7 +15,7 @@ pub(super) fn restore<Schema: ApplicationSchema>(
         .inner
         .runtime
         .product_runtime
-        .recovered_root_authority
+        .recovered_root_authority_ref()
         .as_ref()
         .map(|authority| authority.product_branch());
     execution.consult().map_err(|cause| {
@@ -94,7 +95,7 @@ pub(in crate::domain_computation::primary_graph) fn readmit_journal<
         .inner
         .runtime
         .product_runtime
-        .owner
+        .owner_ref()
         .observation_port()
         .observe_installed_product_branches(execution)
         .map_err(|_| Denial::ObligationSubjectMismatch)?;

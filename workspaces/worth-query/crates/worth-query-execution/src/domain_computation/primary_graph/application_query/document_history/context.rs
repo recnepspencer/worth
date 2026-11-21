@@ -5,6 +5,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryHistoryContextRefreshDenial, WorthQueryHistoryContextRefreshLimits,
 };
 use worth_query_declaration::facade::application_history::ApplicationHistoryModelDomain;
+use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 
 impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
     pub fn refresh_document_history_context<H: ApplicationHistoryBinding<S>>(

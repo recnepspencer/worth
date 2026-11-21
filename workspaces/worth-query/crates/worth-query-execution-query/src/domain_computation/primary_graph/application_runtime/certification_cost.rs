@@ -2,6 +2,8 @@
 
 use std::sync::atomic::Ordering;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 
 use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::inspection::{
@@ -211,7 +213,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let snapshot = self
             .runtime
             .product_runtime
-            .owner
+            .owner_ref()
             .inspection_port()
             .retention_snapshot()
             .expect("the installed World remains inspectable");
@@ -230,7 +232,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let snapshot = self
             .runtime
             .product_runtime
-            .owner
+            .owner_ref()
             .inspection_port()
             .history_snapshot()
             .expect("the installed World remains inspectable");

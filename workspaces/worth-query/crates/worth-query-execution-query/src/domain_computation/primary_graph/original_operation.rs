@@ -2,6 +2,7 @@
 use super::{query_obligations::*, WorthQueryAdvancementDenial, WorthQueryAdvancementPhase};
 use worth_foundational::facade::ProgramSupportObligationIdentity;
 use worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccess;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 
 #[derive(Debug)]
@@ -32,7 +33,7 @@ impl WorthQueryOriginalOperationOwner {
     ) -> Self {
         Self {
             identity,
-            owner: runtime.runtime.product_runtime.owner.owner_identity(),
+            owner: runtime.runtime.product_runtime.owner_ref().owner_identity(),
         }
     }
 
@@ -82,7 +83,7 @@ impl<S: ApplicationSchema> super::WorthQueryPrimaryGraphApplicationRuntime<S> {
         use WorthQueryOriginalOperationDenial as D;
         self.runtime
             .product_runtime
-            .owner
+            .owner_ref()
             .owner_identity()
             .admit_incarnation(owner.owner)
             .map_err(|cause| match cause {

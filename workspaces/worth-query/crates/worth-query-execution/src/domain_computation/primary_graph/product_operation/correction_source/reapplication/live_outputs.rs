@@ -12,6 +12,7 @@ use worth_query_declaration::facade::{
     application_aftermath::{ApplicationCorrectionBinding, ApplicationInverseBinding},
     application_operation::{ApplicationMutationBinding, ApplicationMutationOutputContract},
 };
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::runtime::RelationalBorrowedRecordReadDenial as ReadDenial;
 

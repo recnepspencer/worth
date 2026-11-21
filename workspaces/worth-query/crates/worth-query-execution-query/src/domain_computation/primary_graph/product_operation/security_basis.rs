@@ -7,6 +7,9 @@ use crate::domain_computation::primary_graph::{
     },
     WorthQueryPrimaryGraphApplicationRuntime,
 };
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeBranchLifecycleInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_runtime_world::facade::ProductBranchObservation;
 
@@ -33,7 +36,7 @@ impl WorthQueryProductObservationSource for crate::basis::WorthQueryProductObser
     }
 
     fn current_security_guard(&self) -> Option<&ProductBranchObservation> {
-        self.current_security_guard()
+        worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort::current_security_guard(self)
     }
 }
 

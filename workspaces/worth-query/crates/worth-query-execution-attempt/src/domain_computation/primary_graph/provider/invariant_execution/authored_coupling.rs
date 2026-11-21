@@ -1,5 +1,6 @@
 //! A declaration supplies producers; canonical Native facts decide the trigger.
 use super::*;
+use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 use worth_relational::facade::mvcc::{
     RelationalAuthoredCoupledOwners, RelationalAuthoredCoupledProducerAssembly,
 };

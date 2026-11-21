@@ -5,6 +5,7 @@
 //! handle it admitted, so neither cross-runtime nor same-runtime substitution
 //! can open a transition.
 
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 use worth_query_execution_attempt::facade::ports::RecoveryHandleInternalPort as _;
 use worth_query_execution_attempt::facade::ports::RecoveryInspectAuthorityInternalPort as _;
 use worth_query_execution_attempt::facade::ports::RecoveryEffectAuthorityInternalPort as _;
@@ -33,9 +34,9 @@ where
         handle: &WorthQueryRecoveryHandle,
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
     ) -> Result<WorthQueryRecoveryEffectAuthority, WorthQueryRecoveryHandleDenial> {
-        handle.admit_home_owner(self.runtime.product_runtime.owner.owner_identity())?;
+        handle.admit_home_owner(self.runtime.product_runtime.owner_ref().owner_identity())?;
         admission
-            .refuse_stale_home_authority(self.runtime.product_runtime.owner.owner_identity())
+            .refuse_stale_home_authority(self.runtime.product_runtime.owner_ref().owner_identity())
             .map_err(|_| {
                 WorthQueryRecoveryHandleDenial::new(
                     WorthQueryRecoveryHandleDenialKind::StaleIncarnation,
@@ -57,7 +58,7 @@ where
         Ok(WorthQueryRecoveryEffectAuthority::mint(
             self.runtime.authority_identity(),
             handle.authority_identity(),
-            self.runtime.product_runtime.owner.owner_identity(),
+            self.runtime.product_runtime.owner_ref().owner_identity(),
         ))
     }
 
@@ -68,9 +69,9 @@ where
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
         disclosure: &WorthQueryRecoveryDisclosureAdmission,
     ) -> Result<WorthQueryRecoveryInspectAuthority, WorthQueryRecoveryHandleDenial> {
-        handle.admit_home_owner(self.runtime.product_runtime.owner.owner_identity())?;
+        handle.admit_home_owner(self.runtime.product_runtime.owner_ref().owner_identity())?;
         admission
-            .refuse_stale_home_authority(self.runtime.product_runtime.owner.owner_identity())
+            .refuse_stale_home_authority(self.runtime.product_runtime.owner_ref().owner_identity())
             .map_err(|_| {
                 WorthQueryRecoveryHandleDenial::new(
                     WorthQueryRecoveryHandleDenialKind::StaleIncarnation,
@@ -78,8 +79,10 @@ where
             })?;
         handle.ensure_live()?;
         let owner = self.runtime.authority_identity();
-        disclosure
-            .ensure_for_runtime(owner, self.runtime.product_runtime.owner.owner_identity())?;
+        disclosure.ensure_for_runtime(
+            owner,
+            self.runtime.product_runtime.owner_ref().owner_identity(),
+        )?;
         ensure_same_runtime(owner, handle.runtime_authority())?;
         ensure_same_runtime(owner, admission.runtime_authority())?;
         deny_if_expired(handle, &self.runtime.authorization_clock)?;
@@ -94,7 +97,7 @@ where
         Ok(WorthQueryRecoveryInspectAuthority::mint(
             self.runtime.authority_identity(),
             handle.authority_identity(),
-            self.runtime.product_runtime.owner.owner_identity(),
+            self.runtime.product_runtime.owner_ref().owner_identity(),
         ))
     }
 }

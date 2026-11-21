@@ -1,6 +1,7 @@
 //! Sole producer source/lifecycle selection on the original native borrow.
 use super::*;
 use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 pub mod current_verification;
 pub use current_verification::VerifiedAppliedParent;
 

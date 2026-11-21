@@ -8,6 +8,8 @@ use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationR
 use std::num::NonZeroUsize;
 use worth_query_execution_lineage::facade::ports::ProductUnpublishedRecoveryInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchOwnerCleanupInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeOwnerCleanupInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_runtime_world::facade::{
     ProductUnpublishedRecoveryHandle, RuntimeWorldRecoveryCursor, RuntimeWorldRecoveryDenial,
@@ -25,7 +27,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     {
         self.runtime
             .product_runtime
-            .owner
+            .owner_ref()
             .inspection_port()
             .recovery_page(after, maximum)
     }
@@ -35,7 +37,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         &self,
         handle: &ProductUnpublishedRecoveryHandle,
     ) -> Result<WorthQueryProductUnpublishedRecovery, RuntimeWorldRecoveryDenial> {
-        let recovery = self.runtime.product_runtime.owner.recovery_port();
+        let recovery = self.runtime.product_runtime.owner_ref().recovery_port();
         match recovery.inspect_effects(handle) {
             Ok(effects) => drop(effects),
             Err(RuntimeWorldRecoveryDenial::RecoveredCustodyRequired) => {
@@ -173,7 +175,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let effects = match self
             .runtime
             .product_runtime
-            .owner
+            .owner_ref()
             .recovery_port()
             .inspect_effects(&handle)
         {

@@ -11,6 +11,8 @@ use crate::domain_computation::primary_graph::product_operation::SharedSelectedP
 use crate::domain_computation::primary_graph::OutputDemandSettlementCurrentExt;
 use worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding;
 use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 use worth_query_installation::facade::WorthQueryInstalledApplicationQueryBinding;
 use worth_relational::facade::runtime::PositionedRelationalSnapshot;
 

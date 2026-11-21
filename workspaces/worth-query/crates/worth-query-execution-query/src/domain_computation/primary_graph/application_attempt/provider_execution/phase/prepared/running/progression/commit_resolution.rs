@@ -1,6 +1,8 @@
 //! Resolving one authorized compare-and-commit into a progression outcome.
 
 use crate::domain_computation::primary_graph::CommitAuthorityBindingExt;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 mod world_no_effect;
 
 use crate::domain_computation::application_aftermath::WorthQueryDispatchOutboxRecord;

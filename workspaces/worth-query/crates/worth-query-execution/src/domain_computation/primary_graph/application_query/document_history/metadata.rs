@@ -12,6 +12,7 @@ use worth_query_declaration::facade::{
     application_schema::{ApplicationOperationMarkerIdentity, ApplicationOperationRef},
 };
 use worth_query_execution_query::facade::ports::AdmittedQueryPlanInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 
 /// Only a completed ordinary READ with the independent metadata decision can
 /// create this final correspondence check. It stays within its original phase.

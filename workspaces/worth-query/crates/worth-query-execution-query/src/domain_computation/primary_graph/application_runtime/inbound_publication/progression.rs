@@ -9,6 +9,10 @@ use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeBranchLifecycleInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 use worth_relational::facade::mvcc::ValidatedRelationalProposal;
 
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
@@ -56,7 +60,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             return Outcome::Denied(Denial::ForeignRelationalRuntime);
         }
         if original.product_branch().owner_identity()
-            != self.runtime.product_runtime.owner.owner_identity()
+            != self.runtime.product_runtime.owner_ref().owner_identity()
         {
             return Outcome::Denied(Denial::ForeignProductWorld);
         }

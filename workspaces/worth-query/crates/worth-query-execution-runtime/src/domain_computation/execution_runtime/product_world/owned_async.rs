@@ -1,7 +1,7 @@
 use super::WorthQueryProductRuntime;
 
 impl WorthQueryProductRuntime {
-    pub fn admit_managed_owned_async_request(
+    pub(crate) fn admit_managed_owned_async_request(
         &self,
         bridge: &worth_runtime_bridge::facade::BridgeConditionalExecutionView<'_>,
         declaration: &worth_runtime_bridge::facade::LoweredBridgeAsyncSourceDeclaration,
@@ -20,7 +20,7 @@ impl WorthQueryProductRuntime {
             )
     }
 
-    pub fn advance_owned_async_source_clock(
+    pub(crate) fn advance_owned_async_source_clock(
         &self,
         bridge: &worth_runtime_bridge::facade::BridgeConditionalExecutionView<'_>,
         declaration: &worth_runtime_bridge::facade::LoweredBridgeAsyncSourceDeclaration,

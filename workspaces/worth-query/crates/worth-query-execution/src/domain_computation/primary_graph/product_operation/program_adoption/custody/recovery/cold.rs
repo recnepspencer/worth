@@ -2,6 +2,8 @@
 use super::*;
 use crate::domain_computation::primary_graph::home_original_progression::ContinuedOriginalOutcome as Original;
 use worth_query_execution_lineage::facade::ports::ProductUnpublishedRecoveryInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     pub(super) fn continue_recovered_adoption(
         &self,

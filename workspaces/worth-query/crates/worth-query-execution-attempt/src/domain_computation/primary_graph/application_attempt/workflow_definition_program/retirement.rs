@@ -4,6 +4,7 @@
 //! definition, its nodes, or instances pinned to it, so waiting work still
 //! completes under the retained revision.
 
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 pub mod outcome;
 use crate::domain_computation::primary_graph::application_attempt::check_request_live;
 pub use outcome::{

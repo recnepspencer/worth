@@ -44,23 +44,23 @@ impl WorthQueryProductPublicationBinding {
         }
     }
 
-    pub fn observation(&self) -> &ProductBranchObservation {
+    pub(crate) fn observation(&self) -> &ProductBranchObservation {
         &self.observation
     }
 
-    pub fn publication(&self) -> &RuntimeWorldPublicationPort<(), (), (), (), ()> {
+    pub(crate) fn publication(&self) -> &RuntimeWorldPublicationPort<(), (), (), (), ()> {
         &self.publication
     }
 
-    pub fn recovery(&self) -> RuntimeWorldRecoveryPort {
+    pub(crate) fn recovery(&self) -> RuntimeWorldRecoveryPort {
         self.recovery.clone()
     }
 
-    pub fn observation_port(&self) -> &RuntimeWorldObservationPort {
+    pub(crate) fn observation_port(&self) -> &RuntimeWorldObservationPort {
         &self.observation_port
     }
 
-    pub fn root_identity(&self) -> Arc<WorthQueryProductRootIdentity> {
+    pub(crate) fn root_identity(&self) -> Arc<WorthQueryProductRootIdentity> {
         Arc::clone(&self.root_identity)
     }
 
@@ -71,7 +71,7 @@ impl WorthQueryProductPublicationBinding {
         self.clock.admission_clock.same_clock(clock)
     }
 
-    pub fn deadline(
+    pub(crate) fn deadline(
         &self,
         deadline: worth_execution::MonotonicDeadline,
     ) -> Option<worth_runtime_world::facade::RuntimeWorldInstant> {
@@ -80,7 +80,7 @@ impl WorthQueryProductPublicationBinding {
 }
 
 impl super::WorthQueryProductRuntime {
-    pub fn publication_binding(
+    pub(crate) fn publication_binding(
         &self,
         observation: ProductBranchObservation,
     ) -> WorthQueryProductPublicationBinding {
@@ -98,5 +98,10 @@ impl super::WorthQueryProductRuntime {
 }
 
 mod court_doors_for_test;
+pub(crate) mod internal_port;
 mod selected_program;
 use selected_program::BranchProgramSourceCache;
+pub use selected_program::{
+    SelectedProgramInspectionInternalPort, SelectedProgramSourceRetentionDenial,
+    WorthQuerySelectedProgramInspection,
+};

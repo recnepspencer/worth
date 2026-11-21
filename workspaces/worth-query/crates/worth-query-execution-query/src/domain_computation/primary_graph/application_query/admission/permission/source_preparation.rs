@@ -1,5 +1,7 @@
 //! One permission owner for fresh source intent and retained-source readmission.
 use super::*;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     #[allow(clippy::too_many_arguments)]

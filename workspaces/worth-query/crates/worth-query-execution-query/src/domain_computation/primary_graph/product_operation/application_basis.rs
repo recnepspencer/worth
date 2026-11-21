@@ -4,6 +4,7 @@ use crate::domain_computation::primary_graph::{
     application_query::resource_lifecycle::WorthQueryApplicationBasisLease,
     WorthQueryPrimaryGraphApplicationRuntime,
 };
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 use worth_runtime_world::facade::ProductBranchObservation;
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
@@ -12,7 +13,8 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         observation: &ProductBranchObservation,
     ) -> Result<WorthQueryApplicationBasisLease, WorthQueryProductBranchAdmissionDenial> {
-        if observation.owner_identity() != self.runtime.product_runtime.owner.owner_identity() {
+        if observation.owner_identity() != self.runtime.product_runtime.owner_ref().owner_identity()
+        {
             return Err(WorthQueryProductBranchAdmissionDenial::Refused(
                 AdmissionRefusal::ForeignOwner,
             ));

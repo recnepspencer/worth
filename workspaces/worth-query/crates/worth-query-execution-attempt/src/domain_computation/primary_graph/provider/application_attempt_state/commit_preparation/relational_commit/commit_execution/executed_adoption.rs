@@ -6,6 +6,7 @@ use crate::domain_computation::primary_graph::{
     },
     provider::WorthQueryApplicationBranchCommitCoordination,
 };
+use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 use worth_relational::facade::mvcc::{
     PreparedRelationalCommitCandidate, RelationalCurrentOutputAdoption,
 };

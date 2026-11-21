@@ -1,6 +1,7 @@
 //! Selected queue tokens hold required roots for one advancement.
 //! Only a Current proof acknowledges a token; every unfinished token requeues.
 
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 mod acknowledgement;
 
 use worth_relational::facade::mvcc::CompanionPublicationCompletion;

@@ -1,6 +1,8 @@
 //! A stale original releases through World before publication becomes retryable.
 use super::*;
 use worth_query_execution_runtime::facade::ports::ProductBranchOwnerCleanupInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeOwnerCleanupInternalPort as _;
 use worth_runtime_world::facade::{
     WorldRecoveredContinuationDenial, WorldRecoveredReleaseOutcome as Outcome,
 };
@@ -24,7 +26,7 @@ impl RecordedCompletionContinuationReleaseExt for RecordedCompletionContinuation
         use WorthQueryRecordedCompletionDenial as Denial;
         match self.state.clone() {
             OriginalCompletionState::Releasing => {
-                let recovery = runtime.runtime.product_runtime.owner.recovery_port();
+                let recovery = runtime.runtime.product_runtime.owner_ref().recovery_port();
                 let effects = recovery
                     .inspect_recovered_effects(&self.handle)
                     .map_err(Denial::World)?;

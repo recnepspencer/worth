@@ -5,6 +5,7 @@ use crate::domain_computation::execution_runtime::product_world::publication_den
 };
 use crate::domain_computation::primary_graph::application_contribution::advancement_denial;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where

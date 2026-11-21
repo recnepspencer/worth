@@ -1,4 +1,5 @@
 //! A pending exact model capture leaves only after ordinary query completion.
+use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 mod context;
 mod metadata;
 pub(in crate::domain_computation::primary_graph) use metadata::CompletedMetadataRead;

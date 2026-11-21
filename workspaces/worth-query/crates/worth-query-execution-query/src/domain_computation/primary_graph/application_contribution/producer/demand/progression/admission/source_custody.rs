@@ -4,6 +4,7 @@ use crate::equality_type_id::EqualityTypeId as TypeId;
 use worth_query_execution_runtime::facade::ports::PerformedRelationalProductChangeInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 
 pub fn validate_prepared_source_carrier<Query>(
     runtime_authority: u64,

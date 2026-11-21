@@ -4,6 +4,7 @@ use super::*;
 use crate::domain_computation::primary_graph::product_operation::SharedSelectedProductOperation;
 use crate::domain_computation::primary_graph::ReadObservationRuntimeExt;
 use crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where

@@ -2,6 +2,10 @@
 use super::*;
 use crate::domain_computation::primary_graph::application_installation::WorthQueryRecoveredProgramOutputSource;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeBranchLifecycleInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub fn recover_admitted_unpublished_application_delivery<Operation, Input, Scope>(
         &self,
@@ -26,7 +30,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .map_err(|cause| Denial::ExecutionDenied(cause.into()))?;
         {
             admission
-                .refuse_stale_home_authority(self.runtime.product_runtime.owner.owner_identity())
+                .refuse_stale_home_authority(
+                    self.runtime.product_runtime.owner_ref().owner_identity(),
+                )
                 .map_err(Denial::Authorization)?;
             if !admission.belongs_to(
                 self.runtime.authority_identity(),

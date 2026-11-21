@@ -7,6 +7,7 @@ use crate::domain_computation::primary_graph::provider::{
     WorthQueryProductIdempotencyAffinity, WorthQueryProviderIdempotencyResolution,
 };
 use worth_query_execution_lineage::facade::ports::IdempotencyBindingInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 
 pub(super) fn refuse_duplicate_before_world_for_test(
     execution: worth_execution::ExecutionRequest<'_, '_>,

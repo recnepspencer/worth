@@ -27,7 +27,7 @@ pub mod relational_publication;
 pub mod request_control;
 pub mod resources;
 mod retirement;
-mod runtime;
+pub(crate) mod runtime;
 mod shared_root;
 mod signal_lifecycle;
 mod source_head;
@@ -47,7 +47,9 @@ pub use owner_cleanup::{
     WorthQueryProductBranchOwnerCleanupFailure, WorthQueryProductBranchOwnerCleanupReceipt,
     WorthQueryProductBranchOwnerCleanupWork,
 };
-pub use publication_binding::WorthQueryProductPublicationBinding;
+pub use publication_binding::{
+    WorthQueryProductPublicationBinding, WorthQuerySelectedProgramInspection,
+};
 pub use receipt::{
     WorthQueryCommitHistoryHold, WorthQueryProductPublicationReceipt,
     WorthQueryReservedProductPublicationReceipt,

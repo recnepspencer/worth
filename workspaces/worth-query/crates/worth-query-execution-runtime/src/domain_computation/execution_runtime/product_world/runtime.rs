@@ -22,26 +22,26 @@ pub struct WorthQueryProductRootIdentity {
 pub struct WorthQueryProductRuntime {
     pub(super) branch_program_source_owner:
         Option<Arc<worth_proof::InstalledBranchProgramSourceOwner>>,
-    pub home_maintenance: Option<Arc<dyn crate::ports::HomeMaintenanceAfterAdvancement>>,
+    pub(crate) home_maintenance: Option<Arc<dyn crate::ports::HomeMaintenanceAfterAdvancement>>,
     pub(super) named_read_probe: Arc<super::read_consult::NamedReadProbe>,
     pub(super) adoption_preparation: Arc<super::adoption_preparation::AdoptionPreparationControl>,
-    pub owner: super::world_ports::WorthQueryProductWorldPorts,
-    pub source: Option<RuntimeBridgeRelationalSource>,
-    pub activations: Arc<WorthQueryProductActivationRegistry>,
-    pub clock: WorthQueryProductWorldClock,
-    pub relational_lifecycle: RelationalBranchLifecyclePort,
-    pub signal_basis: worth_signal::facade::branch::SignalBranchBasisPort<(), (), ()>,
-    pub signal_lifecycle: super::signal_lifecycle::SignalLifecycleServices,
-    pub owner_cleanup: WorthQueryProductBranchOwnerCleanupRegistry,
-    pub default_branch: ProductBranchIdentity,
-    pub default_occurrence: ProductBranchIncarnation,
-    pub root_identity: Arc<WorthQueryProductRootIdentity>,
-    pub recovered_root_authority:
+    pub(crate) owner: super::world_ports::WorthQueryProductWorldPorts,
+    pub(crate) source: Option<RuntimeBridgeRelationalSource>,
+    pub(crate) activations: Arc<WorthQueryProductActivationRegistry>,
+    pub(crate) clock: WorthQueryProductWorldClock,
+    pub(crate) relational_lifecycle: RelationalBranchLifecyclePort,
+    pub(crate) signal_basis: worth_signal::facade::branch::SignalBranchBasisPort<(), (), ()>,
+    pub(crate) signal_lifecycle: super::signal_lifecycle::SignalLifecycleServices,
+    pub(crate) owner_cleanup: WorthQueryProductBranchOwnerCleanupRegistry,
+    pub(crate) default_branch: ProductBranchIdentity,
+    pub(crate) default_occurrence: ProductBranchIncarnation,
+    pub(crate) root_identity: Arc<WorthQueryProductRootIdentity>,
+    pub(crate) recovered_root_authority:
         Option<Arc<worth_runtime_world::facade::RecoveredRuntimeWorldRootAuthority>>,
 }
 
 impl WorthQueryProductRuntime {
-    pub fn source(&self) -> &RuntimeBridgeRelationalSource {
+    pub(crate) fn source(&self) -> &RuntimeBridgeRelationalSource {
         self.source
             .as_ref()
             .expect("only serving product exposes its source")
@@ -55,7 +55,7 @@ impl WorthQueryProductRuntime {
         query.managed_run_admission(bridge, self.source())
     }
 
-    pub fn from_parts(
+    pub(crate) fn from_parts(
         owner: super::world_ports::WorthQueryProductWorldPorts,
         source: RuntimeBridgeRelationalSource,
         activations: WorthQueryProductActivationRegistry,
@@ -109,11 +109,11 @@ impl WorthQueryProductRuntime {
         branch.occurrence().owner_identity() == self.owner.owner_identity()
     }
 
-    pub fn default_branch(&self) -> &ProductBranchIdentity {
+    pub(crate) fn default_branch(&self) -> &ProductBranchIdentity {
         &self.default_branch
     }
 
-    pub fn reserve_public_branch_ordinal(
+    pub(crate) fn reserve_public_branch_ordinal(
         &self,
     ) -> Result<
         u64,
@@ -124,11 +124,13 @@ impl WorthQueryProductRuntime {
         self.owner.branch_port().reserve_creation_name_ordinal()
     }
 
-    pub fn root_identity(&self) -> Arc<WorthQueryProductRootIdentity> {
+    pub(crate) fn root_identity(&self) -> Arc<WorthQueryProductRootIdentity> {
         Arc::clone(&self.root_identity)
     }
 }
 
+pub(crate) mod branch_lifecycle_internal_port;
+pub(crate) mod internal_port;
 mod operation_control;
 
 mod court_doors_for_test;

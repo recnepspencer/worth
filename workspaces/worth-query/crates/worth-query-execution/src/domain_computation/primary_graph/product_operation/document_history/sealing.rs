@@ -1,7 +1,7 @@
 //! Exact receipt capture and head adoption complete already allocated journal slots.
-use super::source_evidence::WorthQueryHistorySourceEvidence;
 use super::{
-    journal::RecordedNode, WorthQueryDocumentHistory, WorthQueryDocumentHistoryDenial as Denial,
+    journal::RecordedNode, source_evidence::WorthQueryHistorySourceEvidence,
+    WorthQueryDocumentHistory, WorthQueryDocumentHistoryDenial as Denial,
     WorthQueryDocumentHistoryOperation, WorthQueryDocumentHistoryReservation,
     WorthQueryHistoryStep,
 };
@@ -20,6 +20,7 @@ use worth_query_declaration::facade::{
     application_schema::ApplicationSchema,
 };
 use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_installation::facade::WorthQueryInstalledDocumentHistory;
 
 #[must_use = "retain the original reservation and actual candidate after refusal"]
@@ -387,14 +388,13 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             _ => None,
         };
         let node = RecordedNode { step, root_posture };
-        let returned = node.step.clone();
         Ok(PreparedBinding {
             discovery_recipes,
+            returned: node.step.clone(),
             node,
             source: retained.unwrap_or_else(|| selected.retain_application_read()),
             endpoint,
             exact,
-            returned,
         })
     }
 }

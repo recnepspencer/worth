@@ -12,7 +12,9 @@ use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use worth_foundational::facade::{
     DurableCompositeCommitIdentity, DurableCompositePublicationAttemptIdentity,
 };
+use worth_query_execution_attempt::facade::ports::RecoveryHandleBindingInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 mod completion;
 mod readmission;
@@ -41,7 +43,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let owner = publication.composite_commit().owner_identity();
         self.runtime
             .product_runtime
-            .owner
+            .owner_ref()
             .owner_identity()
             .admit_incarnation(owner)
             .map_err(|cause| {

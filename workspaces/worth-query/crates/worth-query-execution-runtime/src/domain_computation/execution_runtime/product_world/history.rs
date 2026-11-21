@@ -26,7 +26,7 @@ fn exact_history_denial(
 }
 
 impl WorthQueryProductRuntime {
-    pub fn open_exact_product_history(
+    pub(crate) fn open_exact_product_history(
         &self,
         execution: worth_execution::ExecutionRequest<'_, '_>,
         target: &WorthQueryProductObservationLease,
@@ -40,7 +40,7 @@ impl WorthQueryProductRuntime {
             .map_err(exact_history_denial)
     }
 
-    pub fn prepare_exact_product_history_page<'request, 'authority>(
+    pub(crate) fn prepare_exact_product_history_page<'request, 'authority>(
         &self,
         execution: worth_execution::ExecutionRequest<'request, 'authority>,
         cursor: &worth_runtime_world::facade::ProductExactHistoryCursor,
@@ -54,7 +54,7 @@ impl WorthQueryProductRuntime {
             .map_err(exact_history_denial)
     }
 
-    pub fn security_observation_for(
+    pub(crate) fn security_observation_for(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         current: &WorthQueryProductBranchLease,
@@ -86,7 +86,7 @@ impl WorthQueryProductRuntime {
         ))
     }
 
-    pub fn trace_product_history(
+    pub(crate) fn trace_product_history(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         branch: WorthQueryProductBranch,
@@ -106,7 +106,7 @@ impl WorthQueryProductRuntime {
         gate.with_admission(|| Ok(history))
     }
 
-    pub fn continue_product_history(
+    pub(crate) fn continue_product_history(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         previous: &ProductBranchHistoryTraversal,
@@ -126,7 +126,7 @@ impl WorthQueryProductRuntime {
         })
     }
 
-    pub fn admit_product_history_entry(
+    pub(crate) fn admit_product_history_entry(
         &self,
         history: &ProductBranchHistoryTraversal,
         index: usize,

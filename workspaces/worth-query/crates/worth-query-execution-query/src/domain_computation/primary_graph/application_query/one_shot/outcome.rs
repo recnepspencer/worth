@@ -20,6 +20,7 @@ use worth_query_execution_attempt::facade::ports::ObservedResultSetInternalPort 
 use worth_query_execution_lineage::facade::ports::{
     ObservedSourceInternalPort as _, ObservedSourceParts,
 };
+use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 mod ordinary;
 pub use ordinary::{
     complete_one_shot, complete_one_shot_with_projection, finalize_one_shot,

@@ -1,6 +1,9 @@
 //! Selected authored definitions open the same durable Signal-only World intent.
 use super::*;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 use worth_runtime_world::facade::WorldOpenAttemptOutcome;
 
 pub(super) fn publish<
@@ -33,7 +36,7 @@ pub(super) fn publish<
         .inner
         .runtime
         .product_runtime
-        .owner
+        .owner_ref()
         .publication_port();
     let mut pending = publication
         .prepare_query_publication_with_signal(

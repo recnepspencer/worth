@@ -7,6 +7,7 @@ use crate::domain_computation::primary_graph::{
 };
 use worth_query_declaration::facade::application_operation::ApplicationEncodedInput;
 use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeBranchLifecycleInternalPort as _;
 
 pub struct RecoveredProducerPublication {
     pub receipt: crate::domain_computation::primary_graph::WorthQueryRecoveredProducerPublication,

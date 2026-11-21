@@ -1,5 +1,7 @@
 use std::sync::Arc;
 use worth_query_execution_attempt::facade::ports::AdmittedApplicationConditionalDefinitionInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 
 use worth_runtime_bridge::facade::{
     BridgeInstalledConditionalLowering, BridgeOwnedConditionalInstallationRequest,
@@ -38,7 +40,7 @@ impl WorthQueryAdmittedApplicationConditionalDefinitionRuntimeExt
             predecessor,
             request,
             application.runtime.bridge.conditional_operations(),
-            Arc::clone(&application.runtime.product_runtime.activations),
+            Arc::clone(&application.runtime.product_runtime.activations_ref()),
         )
     }
 }

@@ -1,5 +1,6 @@
 //! Installed Native ownership, never source type equality, admits graph members.
 use super::*;
+use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
     pub(super) fn require_history_output_scope<H: ApplicationHistoryBinding<S>, E>(
         &self,

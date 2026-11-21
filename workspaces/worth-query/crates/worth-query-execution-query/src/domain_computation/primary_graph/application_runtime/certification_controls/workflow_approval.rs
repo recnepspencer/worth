@@ -2,6 +2,7 @@
 
 use std::collections::BTreeMap;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
 use worth_foundational::facade::{AspectValue, InternedString};
 use worth_query_installation::facade::ApplicationSchema;

@@ -1,5 +1,6 @@
 //! Directory admission retains the declared correction shape.
 use super::*;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 pub(super) fn admit<Schema: ApplicationSchema>(
     target: &WorthQuerySelectedProductOperation<'_, Schema>,
     source: &WorthQuerySelectedCorrectionSource<'_, Schema>,

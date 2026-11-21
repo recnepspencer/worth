@@ -5,6 +5,7 @@ use crate::domain_computation::{
     primary_graph::WorthQueryPrimaryGraphApplicationRuntime,
 };
 use worth_query_declaration::facade::application_capability::ApplicationCapabilityRequest;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 use worth_query_installation::facade::{ApplicationSchema, ApplicationSchemaBindingIdentity};
 use worth_relational::facade::identity::EntityId;
 
@@ -81,7 +82,7 @@ where
 {
     // Each caller first validates the capability's original request. Preserve
     // the existing order: affinity, receiving request, then retained projection.
-    let issuing_runtime = match capability.runtime_authority_for(runtime.runtime.product_runtime.owner.owner_identity()) {
+    let issuing_runtime = match capability.runtime_authority_for(runtime.runtime.product_runtime.owner_ref().owner_identity()) {
         Ok(authority) => Some(authority),
         Err(worth_proof::HomeIncarnationDenial::ForeignHome) => None,
         Err(worth_proof::HomeIncarnationDenial::StaleIncarnation) => return Err(incarnation_refusal(

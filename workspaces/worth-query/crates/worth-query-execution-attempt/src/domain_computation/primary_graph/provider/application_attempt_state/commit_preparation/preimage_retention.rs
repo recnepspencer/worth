@@ -1,5 +1,6 @@
 //! Fail-closed retention from the admitted decision read-set.
 
+use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 pub mod authored_anchors;
 pub mod failure_context;
 use failure_context::FieldRetentionFailure;

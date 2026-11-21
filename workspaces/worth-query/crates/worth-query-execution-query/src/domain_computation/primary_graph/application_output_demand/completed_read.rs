@@ -11,6 +11,7 @@ use crate::publication_boundary::discovery_currentness::{
 use std::sync::Arc;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccess;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_runtime_world::facade::CompositeCommitIdentity;
 
