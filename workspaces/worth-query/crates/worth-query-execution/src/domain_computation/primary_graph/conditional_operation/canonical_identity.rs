@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
 
 use worth_foundational::facade::{
     canonicalization, prepare_canonical_basis_sequence, CanonicalBasisDomain, CanonicalBasisEntry,
@@ -20,7 +20,7 @@ const IDENTITY_BUDGET: CanonicalDigestWorkBudget =
 #[derive(Clone)]
 pub(super) struct WorthQueryTemporalBindingIdentity {
     digest: CanonicalDigestId,
-    definition: CanonicalDigestId,
+    definition: Arc<TemporalOperationDefinition>,
     support_identity: Arc<str>,
     canonical_work: WorthQueryCanonicalWorkEvidence,
 }
@@ -28,14 +28,14 @@ pub(super) struct WorthQueryTemporalBindingIdentity {
 #[derive(Clone)]
 pub(super) struct WorthQueryTemporalRuntimeBindingIdentity {
     digest: CanonicalDigestId,
-    definition: CanonicalDigestId,
+    definition: Arc<TemporalOperationDefinition>,
     bridge_identity: Arc<str>,
     canonical_work: WorthQueryCanonicalWorkEvidence,
 }
 
 pub(super) struct TemporalBindingIdentityParts<'a> {
     pub node_authority: &'a str,
-    pub node_definition: (CanonicalDigestId, WorthQueryCanonicalWorkEvidence),
+    pub node_definition: CanonicalIdentityMaterial,
     pub clock: &'a str,
     pub source: &'a str,
     pub timeline: &'a str,
@@ -68,9 +68,41 @@ impl WorthQueryTemporalBindingIdentity {
     }
 }
 
+/// The portable operation definition a Home publication key binds.
+///
+/// Only Home-scoped admissions read it, so binding prepares its material
+/// without deriving it. The first Home admission derives it and carries that
+/// work; later admissions reuse the digest.
+pub(super) struct TemporalOperationDefinition {
+    node: CanonicalIdentityMaterial,
+    meaning: CanonicalIdentityMaterial,
+    derived: OnceLock<CanonicalDigestId>,
+}
+
+impl TemporalOperationDefinition {
+    pub(super) fn derive(
+        &self,
+    ) -> Result<(CanonicalDigestId, WorthQueryCanonicalWorkEvidence), CanonicalDigestDerivationDenial>
+    {
+        if let Some(definition) = self.derived.get() {
+            return Ok((*definition, WorthQueryCanonicalWorkEvidence::zero()));
+        }
+        let (node, node_work) = self.node.clone().derive()?;
+        let mut stable = CanonicalIdentityMaterial::new(DEFINITION_DOMAIN, DEFINITION_VERSION);
+        stable.digest("node-definition", node);
+        stable.entries.extend(self.meaning.entries.iter().cloned());
+        let (definition, work) = stable.derive()?;
+        let _ = self.derived.set(definition);
+        Ok((definition, work.combine(node_work)))
+    }
+}
+
+const DEFINITION_DOMAIN: &str = "worth-query.temporal-operation-definition";
+const DEFINITION_VERSION: &str = "worth-query-temporal-operation-definition-v1";
+
 impl WorthQueryTemporalRuntimeBindingIdentity {
-    pub(super) fn definition(&self) -> CanonicalDigestId {
-        self.definition
+    pub(super) fn definition(&self) -> &TemporalOperationDefinition {
+        &self.definition
     }
     pub(super) fn digest(&self) -> CanonicalDigestId {
         self.digest
@@ -95,21 +127,17 @@ pub(super) fn prepare_temporal_binding_identity(
     material.text("node-authority", parts.node_authority);
     append_temporal_meaning(&mut material, &parts);
     let (digest, work) = material.derive()?;
-    let mut stable = CanonicalIdentityMaterial::new(
-        "worth-query.temporal-operation-definition",
-        "worth-query-temporal-operation-definition-v1",
-    );
-    stable.digest("node-definition", parts.node_definition.0);
-    append_temporal_meaning(&mut stable, &parts);
-    let (definition, stable_work) = stable.derive()?;
+    let mut meaning = CanonicalIdentityMaterial::new(DEFINITION_DOMAIN, DEFINITION_VERSION);
+    append_temporal_meaning(&mut meaning, &parts);
     Ok(WorthQueryTemporalBindingIdentity {
         support_identity: Arc::from(format!("conditional:{}", digest.render_hex())),
         digest,
-        canonical_work: work
-            .combine(stable_work)
-            .combine(parts.node_definition.1)
-            .with_digest_text_materializations(1),
-        definition,
+        canonical_work: work.with_digest_text_materializations(1),
+        definition: Arc::new(TemporalOperationDefinition {
+            node: parts.node_definition,
+            meaning,
+            derived: OnceLock::new(),
+        }),
     })
 }
 
@@ -141,13 +169,14 @@ pub(super) fn prepare_temporal_runtime_binding_identity(
     material.text("branch", parts.branch);
     let (digest, work) = material.derive()?;
     Ok(WorthQueryTemporalRuntimeBindingIdentity {
-        definition: parts.binding.definition,
+        definition: Arc::clone(&parts.binding.definition),
         bridge_identity: Arc::from(format!("conditional-runtime:{}", digest.render_hex())),
         digest,
         canonical_work: work.with_digest_text_materializations(1),
     })
 }
 
+#[derive(Clone)]
 pub(super) struct CanonicalIdentityMaterial {
     domain: CanonicalBasisDomain,
     version: CanonicalizationRuleVersion,

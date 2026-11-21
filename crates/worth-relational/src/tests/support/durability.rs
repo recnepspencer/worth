@@ -32,3 +32,28 @@ pub(crate) fn create_branch_from_main(runtime: &RelationalRuntime, branch_name: 
         .unwrap();
     branch_id
 }
+
+/// The retained bill of a public immutable byte owner holding `bytes`,
+/// measured after its original controller scope is gone: payload plus control.
+pub(crate) fn retained_byte_owner_bill(bytes: &[u8]) -> u64 {
+    let budget = worth_execution::SerialMemoryBudget::new(Some(
+        (bytes.len() as u64).checked_add(64 * 1024).unwrap(),
+    ));
+    let host = worth_execution::SerialRequest::from_memory(
+        budget.clone(),
+        worth_execution::CancellationSource::new().token(),
+        None,
+    );
+    let request = worth_execution::ExecutionRequest::serial(&host);
+    let mut building =
+        worth_execution::ExecutionRequestArrayBuilder::<u8>::allocate(request, bytes.len())
+            .unwrap();
+    building.extend_from_slice(bytes).unwrap();
+    let owned = building.seal_immutable_bytes().unwrap();
+    assert_eq!(owned.charged_payload_bytes(), Some(bytes.len() as u64));
+    let total = budget.charged_memory_bytes();
+    assert!(total > bytes.len() as u64);
+    drop(owned);
+    assert_eq!(budget.charged_memory_bytes(), 0);
+    total
+}

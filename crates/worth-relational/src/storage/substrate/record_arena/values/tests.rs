@@ -299,7 +299,11 @@ fn funded_extra_refuses_copy_and_replacement_before_growth() {
     assert!(old.copy_for_request(&limited_request).is_err());
     assert_eq!(original.charged_memory_bytes(), old_bill);
     assert_eq!(limited.charged_memory_bytes(), 0);
-    let replacement_budget = SerialMemoryBudget::new(Some(4096));
+    // Aspect state is a persistent map whose declared bound carries one whole
+    // root node per tree for every holder; the replacement's own payload stays
+    // under 1 KiB above that fixed geometry.
+    let tree_nodes = CanonicalAspectStateMap::construction_storage_bytes(1).unwrap() as u64;
+    let replacement_budget = SerialMemoryBudget::new(Some(4096 + tree_nodes));
     let replacement_host = request(&replacement_budget);
     let replacement_request = ExecutionRequest::serial(&replacement_host);
     let replacement = EntityExtra::apply_payload(
@@ -312,7 +316,7 @@ fn funded_extra_refuses_copy_and_replacement_before_growth() {
         replacement_budget.charged_memory_bytes(),
         expected(&replacement)
     );
-    assert!(replacement_budget.charged_memory_bytes() < 1024);
+    assert!(replacement_budget.charged_memory_bytes() - tree_nodes < 1024);
     // An ordinary deep copy owns independent allocations and no old ticket.
     let independent = replacement.clone();
     drop(replacement);

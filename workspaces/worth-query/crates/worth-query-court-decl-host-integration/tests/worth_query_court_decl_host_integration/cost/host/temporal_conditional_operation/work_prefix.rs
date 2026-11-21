@@ -39,12 +39,39 @@ fn conditional_operation_work_stop_terminal_matches_its_typed_cause() {
     let (terminal, cause, charges) = run(64_000_000);
     assert_eq!((terminal, cause), (Terminal::Committed, None));
     assert!(!charges.is_empty(), "the real door charges work");
-    for required in charges
+    let prefixes = charges
         .into_iter()
         .filter(|n| *n > 0)
         .collect::<std::collections::BTreeSet<_>>()
-    {
-        let (terminal, cause, attempted) = run(required - 1);
+        .into_iter()
+        .collect::<Vec<_>>();
+    // Every prefix reruns in its own world. The observation, placement and
+    // consult probe are thread-local, so the reruns share nothing and run
+    // on all cores.
+    let next = std::sync::atomic::AtomicUsize::new(0);
+    let workers = std::thread::available_parallelism().map_or(1, |n| n.get());
+    let outcomes = std::thread::scope(|scope| {
+        let handles = (0..workers)
+            .map(|_| {
+                scope.spawn(|| {
+                    let mut done = Vec::new();
+                    loop {
+                        let index = next.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                        let Some(&required) = prefixes.get(index) else {
+                            break done;
+                        };
+                        done.push((required, run(required - 1)));
+                    }
+                })
+            })
+            .collect::<Vec<_>>();
+        handles
+            .into_iter()
+            .flat_map(|handle| handle.join().unwrap())
+            .collect::<Vec<_>>()
+    });
+    assert_eq!(outcomes.len(), prefixes.len());
+    for (required, (terminal, cause, attempted)) in outcomes {
         // No fitted charge ordinals: pin the terminal contract for each
         // typed cause, and use the dedicated read-ceiling proofs for exact
         // stage and cause values. This cannot prove per-charge attribution.

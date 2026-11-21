@@ -170,8 +170,8 @@ fn canonical_artifact_accounting_excludes_nested_diagnostic_perturbation() {
     );
     assert_eq!(
         allocation(RelationalCommitAuthoritativeAllocationKind::CanonicalPayload),
-        0,
-        "unpositioned scalar observations retain no byte allocation",
+        baseline_payload_bytes,
+        "the root owns exactly the encoded canonical payload; diagnostics add nothing",
     );
     assert_eq!(
         allocation(RelationalCommitAuthoritativeAllocationKind::EnvelopeObject),

@@ -26,8 +26,12 @@ fn memory_original_frame_survives_export_checkpoint_and_last_alias() {
         };
         bytes.clone()
     };
-    let bill = original.len() as u64;
-    assert_eq!(original.charged_payload_bytes(), Some(bill));
+    assert_eq!(
+        original.charged_payload_bytes(),
+        Some(original.len() as u64)
+    );
+    // The escaped frame is a public byte owner: its payload and its control.
+    let bill = retained_byte_owner_bill(original.bytes());
     let positioned = cell.demand_positioned(&execution, 1 << 30).unwrap();
     // Independent existing encoder is a fixture reference, outside the export claim.
     let reference = RelationalCanonicalCommitArtifact::from_positioned(
