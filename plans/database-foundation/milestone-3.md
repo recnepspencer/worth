@@ -183,13 +183,13 @@ C5 deletes the accessor along with D18.
 
 | C2 slice | State on the branch |
 |---|---|
-| C2.1 Frame and future size budget lane | Planned |
-| C2.2 Graceful close without the maintenance deadline | Planned |
-| C2.3 Automatic triggers and the cross-owner capture cut | Planned |
-| C2.4 Proportional reopen and request-funded cold materialization | Planned |
-| C2.5 Exact physical accounting and funded backing | Planned |
-| C2.6 Work budgets and exact work accounts | Planned |
-| C2.7 Growth campaigns | Planned |
+| C2.1 Frame and future size budget lane | Lane and census landed (`frame_budget.py`, PDB identity, demangler); frame reduction at the owners open |
+| C2.2 Graceful close without the maintenance deadline | Done; independent review APPROVE (`c2-review-c2.2-r4.md`) |
+| C2.3 Automatic triggers and the cross-owner capture cut | In progress: capture-side restorations landed; two entries restore through owner test doors (ruling below) |
+| C2.4 Proportional reopen and request-funded cold materialization | In progress: reopen growth and cold-locality courts green; cold-residency private suite open |
+| C2.5 Exact physical accounting and funded backing | In progress: Native funding courts green; sharing court, allocation visitor and shared-process campaign open |
+| C2.6 Work budgets and exact work accounts | In progress: temporal identity, work-prefix sweep, single-stage capture and work accounts green; parameter lease pre-effect stop and complexity declarations open |
+| C2.7 Growth campaigns | In progress: island and logical-rule installation campaigns green; restoration header and performance matrices open |
 | C2.8 Durable World history and branch retirement | Planned; starts after merging C3's progress |
 
 ### Track C items

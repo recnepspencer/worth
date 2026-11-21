@@ -25,7 +25,6 @@ worth-query-testkit-host = { path = "../worth-query-testkit-host" }
 worth-relational = { path = "../../../../crates/worth-relational" }
 worth-runtime-bridge = { path = "../../../../crates/worth-runtime-bridge" }
 worth-runtime-world = { path = "../../../../crates/worth-runtime-world" }
-worth-store-application = { path = "../../../worth-store/crates/worth-store-application" }
 
 [[test]]
 name = "worth_query_court_decl_host_integration"
