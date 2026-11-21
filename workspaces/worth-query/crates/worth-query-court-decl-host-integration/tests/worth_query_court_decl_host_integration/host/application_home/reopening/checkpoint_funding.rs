@@ -18,10 +18,7 @@ fn automatic_checkpoint_exhaustion_keeps_business_results_and_explicit_capture_u
             NonZeroU64::MIN,
             NonZeroU64::new(64 << 20).unwrap(),
         )
-        .with_maintenance_allowance(
-            NonZeroU64::MIN,
-            NonZeroU64::new(256 << 20).unwrap(),
-        ),
+        .with_maintenance_allowance(NonZeroU64::MIN, NonZeroU64::new(256 << 20).unwrap()),
     );
     let bootstrap = checkpoint_capture::lease(256 << 20);
     let opening = worth_execution::ExecutionRequest::leased(&bootstrap);
@@ -46,12 +43,14 @@ fn automatic_checkpoint_exhaustion_keeps_business_results_and_explicit_capture_u
     }
     let stopping = explicit_caller(0);
     let refused = home.checkpoint(&worth_execution::ExecutionRequest::leased(&stopping));
+    let refused_directory = match &refused {
+        Err(worth_query_host::facade::WorthQueryApplicationHomeCheckpointDenial::Directory(
+            denial,
+        )) => Some(denial),
+        _ => None,
+    };
     assert!(
-        matches!(
-            &refused,
-            Err(worth_query_host::facade::WorthQueryApplicationHomeCheckpointDenial::Directory(denial))
-                if denial.control_stop() == Some(worth_execution::MapKernelStop::WorkCeiling)
-        ),
+        stopped_on_work_ceiling(refused_directory),
         "an unfunded explicit capture stops on its own work ceiling: {refused:?}"
     );
     let caller = explicit_caller(64 << 20);
@@ -122,4 +121,22 @@ fn automatic_checkpoint_progresses_after_caller_cancellation_without_replacing_t
     assert_eq!(balance(home.runtime(), &live), 7);
     home.close(&opening)
         .unwrap_or_else(|refused| opening_failed("caller-stop funding close", &refused));
+}
+
+/// Capture's first consult under an exhausted ceiling is World readmission's
+/// medium request: the exact typed stop, not any refusal.
+pub(super) fn stopped_on_work_ceiling(
+    denial: Option<&worth_store_application::ApplicationHomeCheckpointDenial>,
+) -> bool {
+    use worth_execution::{MapKernelStop, WorkCeilingDenial};
+    use worth_runtime_world::facade::{WorldDurableMediumDenial, WorldReadmissionDenial};
+    use worth_store_application::ApplicationHomeCheckpointDenial;
+    matches!(
+        denial,
+        Some(ApplicationHomeCheckpointDenial::WorldReadmission(
+            WorldReadmissionDenial::Medium(WorldDurableMediumDenial::Request(
+                WorkCeilingDenial::Stopped(MapKernelStop::WorkCeiling)
+            ))
+        ))
+    )
 }

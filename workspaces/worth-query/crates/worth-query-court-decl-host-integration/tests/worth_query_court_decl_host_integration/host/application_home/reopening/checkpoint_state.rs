@@ -94,9 +94,8 @@ fn close_checkpoint_exhaustion_reports_failure_and_preserves_journal_reopen() {
         Close::Closed { checkpoint, .. } => {
             // The Home's one-unit maintenance allowance stops capture with its
             // typed work stop; close still completes.
-            assert_eq!(
-                checkpoint.as_ref().err().and_then(|denial| denial.control_stop()),
-                Some(worth_execution::MapKernelStop::WorkCeiling),
+            assert!(
+                checkpoint_funding::stopped_on_work_ceiling(checkpoint.as_ref().err()),
                 "failed upkeep reports its typed work stop: {checkpoint:?}"
             )
         }
