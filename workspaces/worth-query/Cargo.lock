@@ -1570,7 +1570,6 @@ dependencies = [
  "worth-relational",
  "worth-runtime-bridge",
  "worth-runtime-world",
- "worth-store-application",
 ]
 
 [[package]]

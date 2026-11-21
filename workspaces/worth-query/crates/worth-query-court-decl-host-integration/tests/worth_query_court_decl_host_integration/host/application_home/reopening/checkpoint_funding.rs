@@ -126,11 +126,11 @@ fn automatic_checkpoint_progresses_after_caller_cancellation_without_replacing_t
 /// Capture's first consult under an exhausted ceiling is World readmission's
 /// medium request: the exact typed stop, not any refusal.
 pub(super) fn stopped_on_work_ceiling(
-    denial: Option<&worth_store_application::ApplicationHomeCheckpointDenial>,
+    denial: Option<&worth_query_host::facade::ApplicationHomeCheckpointDenial>,
 ) -> bool {
     use worth_execution::{MapKernelStop, WorkCeilingDenial};
     use worth_runtime_world::facade::{WorldDurableMediumDenial, WorldReadmissionDenial};
-    use worth_store_application::ApplicationHomeCheckpointDenial;
+    use worth_query_host::facade::ApplicationHomeCheckpointDenial;
     matches!(
         denial,
         Some(ApplicationHomeCheckpointDenial::WorldReadmission(
