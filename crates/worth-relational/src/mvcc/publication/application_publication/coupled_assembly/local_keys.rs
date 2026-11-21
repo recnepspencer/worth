@@ -130,18 +130,22 @@ pub(super) fn repartition(
         .run_native_with_checkpoint(|context| {
             let mut partitions = std::collections::BTreeMap::new();
             for intent in head {
-                if let MutationIntent::Create(CreateIntent::Entity(spec)) = intent {
-                    let text = spec
-                        .client_key
-                        .resolve_with_interner(symbols)
-                        .ok_or_else(|| {
-                            crate::mvcc::origin_denial(
-                                "coupled local key has no actual Native symbol meaning",
-                            )
-                        })?;
-                    checkpoint(context, text.len() as u64 + 1).map_err(custody::execution_stop)?;
-                    partitions.insert(text.to_owned(), spec.partition_id);
-                }
+                let (key, partition) = match intent {
+                    MutationIntent::Create(CreateIntent::Entity(spec)) => {
+                        (&spec.client_key, spec.partition_id)
+                    }
+                    MutationIntent::Create(CreateIntent::Relation(spec)) => {
+                        (&spec.client_key, spec.partition_id)
+                    }
+                    _ => continue,
+                };
+                let text = key.resolve_with_interner(symbols).ok_or_else(|| {
+                    crate::mvcc::origin_denial(
+                        "coupled local key has no actual Native symbol meaning",
+                    )
+                })?;
+                checkpoint(context, text.len() as u64 + 1).map_err(custody::execution_stop)?;
+                partitions.insert(text.to_owned(), partition);
             }
             let head_partition = |key: &ClientKey| {
                 key.as_raw_str()
@@ -159,10 +163,19 @@ pub(super) fn repartition(
             for batch in batches {
                 for intent in &mut batch.intents {
                     checkpoint(context, 1).map_err(custody::execution_stop)?;
-                    if let MutationIntent::Create(CreateIntent::Entity(spec)) = intent
-                        && let Some(partition) = head_partition(&spec.client_key)
+                    let created = match intent {
+                        MutationIntent::Create(CreateIntent::Entity(spec)) => {
+                            Some((&spec.client_key, &mut spec.partition_id))
+                        }
+                        MutationIntent::Create(CreateIntent::Relation(spec)) => {
+                            Some((&spec.client_key, &mut spec.partition_id))
+                        }
+                        _ => None,
+                    };
+                    if let Some((key, partition)) = created
+                        && let Some(head) = head_partition(key)
                     {
-                        spec.partition_id = partition;
+                        *partition = head;
                     }
                     intent.visit_entity_references_mut(&mut repartition)?;
                 }
