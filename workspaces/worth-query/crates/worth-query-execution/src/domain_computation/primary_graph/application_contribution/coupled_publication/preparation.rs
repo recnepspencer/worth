@@ -311,7 +311,8 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             .clone();
         let source_scope = meaning.source_scope;
         let position = self.applied_position() + 1;
-        self.record_consumption(execution, &self.consuming())?;
+        let produces = self.next_read();
+        self.record_consumption(execution, &self.consuming(), produces)?;
         if let Some(chain) = &chain {
             self.require_independent(candidate, chain, writer.session())?;
         }
@@ -319,13 +320,15 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             position,
             owed: self.owing(),
             consumes: self.consuming(),
-            produces: self.next_read(),
+            produces,
             producer: std::sync::Arc::clone(producer),
             stage: Some(CoupledWriterStage::Inspected(writer)),
             meaning: meaning.clone(),
         };
         let index = match chain {
             Some(chain) => {
+                let superseded = self.writers.borrow()[chain.index].produces;
+                self.retire_part(superseded);
                 self.replace_writer(execution, chain.index, next);
                 let token = candidate.next_producer_round(execution, chain.index)?;
                 candidate.append_successor_publication(
@@ -353,8 +356,12 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
                         vec![batch],
                         fault,
                     )?,
-                    _ => candidate
-                        .append_publication(execution, publication, &content, vec![batch])?,
+                    _ => candidate.append_publication(
+                        execution,
+                        publication,
+                        &content,
+                        vec![batch],
+                    )?,
                 }
                 self.writers.borrow().len() - 1
             }
@@ -370,6 +377,7 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
                 meaning: meaning.clone(),
             },
         )?;
+        self.register_part(execution, index, produces)?;
         let entities = candidate
             .appended_output_entities(execution, &producer.declaration.identity, &meaning)?
             .expect("Native appended this participant");

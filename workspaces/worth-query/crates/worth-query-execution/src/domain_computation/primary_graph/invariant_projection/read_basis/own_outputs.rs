@@ -9,7 +9,7 @@ use worth_relational::facade::{
     runtime::{RelationalAppliedCandidateReadIdentity, RelationalPinnedRead},
 };
 
-pub(in crate::domain_computation::primary_graph) struct OwnOutputOverlay {
+pub struct OwnOutputOverlay {
     head: RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
     exclusive: Vec<EntityId>,
 }

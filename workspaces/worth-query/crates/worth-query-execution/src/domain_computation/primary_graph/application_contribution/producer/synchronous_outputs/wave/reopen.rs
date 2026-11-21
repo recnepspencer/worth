@@ -82,16 +82,37 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
         task.reopened = true;
         task.owed = crate::domain_computation::primary_graph::application_contribution::coupled_publication::OwedDemand::at(owed);
         self.reopen_aliases(context, candidate, i, invalidator)?;
-        // Readers that have not run yet close again and wait on it.
+        // Readers that have not run yet close again and wait on it; readers
+        // that already consumed it reopen with it (R3), at the same
+        // invalidator, and wait on its new derivation.
         let readers = std::mem::take(&mut self.tasks[i].readers);
+        let mut consumers = Vec::new();
         for &(reader, epoch) in &readers {
             checkpoint(context.execution, subject, 1)?;
-            if self.tasks[reader].close_epoch == epoch && !self.tasks[reader].is_done() {
+            if self.tasks[reader].close_epoch != epoch {
+                continue;
+            }
+            if !self.tasks[reader].is_done() {
                 self.clear_input_capture(context, reader)?;
+            } else if let Some(consumed) =
+                self.tasks[reader].parent().and_then(|parent| parent.read)
+            {
+                consumers.push((reader, consumed));
             }
         }
         self.tasks[i].readers = readers;
         self.needed_dirty = true;
+        for (reader, consumed) in consumers {
+            if !self.tasks[reader].is_done() {
+                continue;
+            }
+            context
+                .owner
+                .supersede_consumer(context.execution, consumed, invalidator)?;
+            let owed = self.tasks[reader].owed.position().max(owed);
+            observation::record(|| format!("reopen consumer task={reader} owed={owed}"));
+            self.reopen_task(context, candidate, reader, consumed, owed, invalidator)?;
+        }
         Ok(())
     }
 

@@ -227,6 +227,28 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
     ) -> &[RetainedCandidateRead] {
         &self.candidate_read_support.values
     }
+    /// The verified parent retained as `read` is reopened with a parent it
+    /// consumed: its window ends at that invalidator (R3).
+    pub(in crate::domain_computation::primary_graph) fn supersede_retained_parent(
+        &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        read: ParentRead,
+        invalidator: usize,
+    ) -> Result<(), Denial> {
+        let supports = &mut self.candidate_read_support;
+        charge_scan(
+            execution,
+            "retained parent reopen",
+            log_work(supports.by_read.len()),
+        )?;
+        if let Some(&slot) = supports.by_read.get(&read.0) {
+            let entry = &mut supports.values[slot];
+            if entry.window_end.is_none() {
+                entry.window_end = Some(invalidator);
+            }
+        }
+        Ok(())
+    }
     /// Compare the verified parent retained as `read` from its own image to
     /// `current`. A change base does not settle supersedes it at `invalidator`.
     #[allow(clippy::too_many_arguments)]

@@ -84,6 +84,19 @@ impl super::super::WorthQueryPrimaryGraphProvider {
             .query_support_root(root)?
             .supersede_owned_candidate_support(execution, owner, invalidator)
     }
+    pub(in crate::domain_computation::primary_graph) fn supersede_retained_parent(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        root: &WorthQueryProviderSessionTerminalBinding,
+        read: crate::domain_computation::primary_graph::provider::ParentRead,
+        invalidator: usize,
+    ) -> Result<(), Denial> {
+        self.attempts
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+            .query_support_root(root)?
+            .supersede_retained_parent(execution, read, invalidator)
+    }
     pub(in crate::domain_computation::primary_graph) fn reset_candidate_read_support(
         &self,
         root: &WorthQueryProviderSessionTerminalBinding,

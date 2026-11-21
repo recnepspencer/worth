@@ -66,8 +66,8 @@ pub(in crate::domain_computation::primary_graph) struct CoupledApplicationAssemb
     superseding: std::cell::Cell<bool>,
     /// The wave task whose discovery is now retaining support (its owner).
     discovering: std::cell::Cell<Option<usize>>,
-    /// Parent outputs some derivation consumed (R3), by read.
-    consumed: RefCell<worth_execution::ExecutionOrderedMap<usize, ()>>,
+    /// Parent outputs some derivation consumed (R3): (parent read, consumer read).
+    consumed: RefCell<worth_execution::ExecutionOrderedMap<(usize, usize), ()>>,
     /// Retentions superseded at their authenticated invalidator, to reopen.
     reopens: RefCell<Vec<qualification::Reopen>>,
     /// Successor rounds appended: their writers took their chain's slot.

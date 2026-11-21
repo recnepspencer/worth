@@ -95,7 +95,9 @@ impl NativeProjectionRead<'_> {
                 )
                 .map(ProjectionEntitySelection::committed)
                 .map_err(ProjectionSelectionStop::Committed),
-            Self::Applied { before, candidate } => {
+            Self::Applied {
+                before, candidate, ..
+            } => {
                 let prepared = before
                     .prepare_entity_field_lookup(
                         request.index_id(),

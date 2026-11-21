@@ -30,11 +30,15 @@ impl super::super::WorthQueryPrimaryGraphProvider {
                 | Fact::ApplicationObservedSource { fact, .. } => fact,
                 Fact::Principal(_) | Fact::Authorization { .. } => continue,
             };
+            let fact = std::ops::Deref::deref(&fact);
             let record = touch_key::fact_record(fact);
             if record.is_some_and(|record| own.covers(record)) {
                 continue;
             }
-            if prior.iter().any(|touch| touch_key::touch_changes(touch, fact)) {
+            if prior
+                .iter()
+                .any(|touch| touch_key::touch_changes(touch, fact))
+            {
                 return Some(record);
             }
         }
