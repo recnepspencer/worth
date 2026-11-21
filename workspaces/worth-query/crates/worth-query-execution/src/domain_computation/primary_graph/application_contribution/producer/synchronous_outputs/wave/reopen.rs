@@ -43,24 +43,30 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
                 unreachable!("only a retention a task claimed is superseded")
             };
             let owed = self.tasks[i].owed.position().max(reopen.invalidator_owed);
+            if !self.tasks[i].is_done() {
+                // An earlier reopen of this batch already reopened it with
+                // its parent (R3): it also owes this append's invalidation.
+                self.tasks[i].owed = crate::domain_computation::primary_graph::application_contribution::coupled_publication::OwedDemand::at(owed);
+                observation::record(|| format!("reopen task={i} owed={owed} (already reopened)"));
+                continue;
+            }
             observation::record(|| format!("reopen task={i} owed={owed}"));
-            self.reopen_task(context, candidate, i, reopen.read, owed, reopen.invalidator)?;
+            self.reopen_task(context, candidate, i, owed, reopen.invalidator)?;
         }
         Ok(reopened)
     }
 
-    #[allow(clippy::too_many_arguments)]
     fn reopen_task(
         &mut self,
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
         candidate: &RelationalAuthoredCoupledCandidate<'_>,
         i: usize,
-        read: crate::domain_computation::primary_graph::provider::ParentRead,
         owed: usize,
         invalidator: usize,
     ) -> Result<(), SynchronousOutputFailure> {
         let subject = self.tasks[i].subject;
-        map_remove(&mut self.by_read, &read.0, context.execution, subject)?;
+        // `by_read` keeps the task's read: a later reopen of the same read in
+        // this batch finds the task already reopened.
         if self.done_components.contains_key(&i) {
             map_remove(&mut self.done_components, &i, context.execution, subject)?;
         }
@@ -111,7 +117,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
                 .supersede_consumer(context.execution, consumed, invalidator)?;
             let owed = self.tasks[reader].owed.position().max(owed);
             observation::record(|| format!("reopen consumer task={reader} owed={owed}"));
-            self.reopen_task(context, candidate, reader, consumed, owed, invalidator)?;
+            self.reopen_task(context, candidate, reader, owed, invalidator)?;
         }
         Ok(())
     }
