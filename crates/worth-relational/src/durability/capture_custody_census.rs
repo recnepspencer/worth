@@ -99,6 +99,16 @@ impl RelationalRuntime {
             .transpose()
     }
 
+    /// Whether this runtime's attached durable read port is exactly `source`.
+    pub fn reads_durable_source(
+        &self,
+        source: &Arc<dyn crate::durability::medium::RelationalDurableColdSource>,
+    ) -> bool {
+        self.durability.cold_source().is_some_and(|attached| {
+            std::ptr::addr_eq(Arc::as_ptr(&attached), Arc::as_ptr(source))
+        })
+    }
+
     /// Observe the served checkpoint selection and acknowledged catalog frontier.
     pub fn observe_checkpoint_selection(&self) -> RelationalCheckpointSelectionCensus {
         let selection = self.durability.checkpoint_selection();

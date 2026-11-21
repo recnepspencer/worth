@@ -1,11 +1,12 @@
 //! Read-only custody witness of one admitted basis and its immutable root.
 //!
-//! A witness holds only weak identities. It never extends custody, never
-//! yields a basis or root, and grants no currentness or reclamation authority.
+//! A witness holds only weak identities plus copied descriptive schema facts.
+//! It never extends custody, never yields a basis or root, and grants no
+//! currentness or reclamation authority.
 //! Custody courts use it to observe whether the actual owners (leases, capture
 //! holds, acknowledgement progress) still retain that exact observation.
 use super::{AdmittedRelationalBranchBasis, AdmittedRelationalBranchBasisInner};
-use crate::branch::RelationalBranchRoot;
+use crate::branch::{RelationalBranchRoot, RelationalBranchRootSchemaAuthority};
 use std::sync::{Arc, Weak};
 
 /// Weak identity of one admitted basis observation and its root.
@@ -13,7 +14,9 @@ use std::sync::{Arc, Weak};
 pub struct RelationalBasisCustodyWitness {
     basis: Weak<AdmittedRelationalBranchBasisInner>,
     root: Weak<RelationalBranchRoot>,
+    schema_authority: Weak<RelationalBranchRootSchemaAuthority>,
     schema_authority_digest: [u8; 32],
+    schema_authority_snapshot: crate::schema::data::SchemaAuthoritySnapshot,
 }
 
 impl AdmittedRelationalBranchBasis {
@@ -22,7 +25,14 @@ impl AdmittedRelationalBranchBasis {
         RelationalBasisCustodyWitness {
             basis: Arc::downgrade(&self.inner),
             root: Arc::downgrade(&self.inner.root),
+            schema_authority: Arc::downgrade(&self.inner.root.retained_schema_authority()),
             schema_authority_digest: self.inner.root.schema_authority().authority_digest(),
+            schema_authority_snapshot: self
+                .inner
+                .root
+                .schema_authority()
+                .registry()
+                .authority_snapshot(),
         }
     }
 }
@@ -36,6 +46,21 @@ impl RelationalBasisCustodyWitness {
     /// Whether some owner still retains the witnessed immutable root.
     pub fn root_retained(&self) -> bool {
         self.root.strong_count() != 0
+    }
+
+    /// Whether both witnesses name the same immutable root allocation.
+    pub fn same_root(&self, other: &Self) -> bool {
+        Weak::ptr_eq(&self.root, &other.root)
+    }
+
+    /// Whether both witnesses name the same installed schema authority allocation.
+    pub fn same_schema_authority(&self, other: &Self) -> bool {
+        Weak::ptr_eq(&self.schema_authority, &other.schema_authority)
+    }
+
+    /// The witnessed root's installed schema registry authority snapshot.
+    pub fn schema_authority_snapshot(&self) -> &crate::schema::data::SchemaAuthoritySnapshot {
+        &self.schema_authority_snapshot
     }
 
     /// The witnessed root's installed schema authority digest.

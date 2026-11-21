@@ -2,7 +2,7 @@
 use super::*;
 use worth_relational::facade::{config::CrossContextPolicy, identity::KindId, schema::*};
 
-fn installation() -> RelationalSchemaRegistry {
+pub(super) fn installation() -> RelationalSchemaRegistry {
     let mut unused = worth_testkit_relational::durable_publication::schema()
         .relation_registration(KindId(2))
         .unwrap()
