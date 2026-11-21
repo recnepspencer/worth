@@ -83,13 +83,7 @@ impl<'run, S: ApplicationSchema> CoupledApplicationAssembly<'_, 'run, '_, S> {
     ) {
         use worth_relational::facade::transactions::{CreateIntent, MutationIntent};
         let provider = &self.application.runtime.primary_provider;
-        let head = {
-            let writers = self.writers.borrow();
-            let Some(CoupledWriterStage::Inspected(writer)) = writers[index].stage.as_ref() else {
-                unreachable!("an appended chain keeps its inspected writer")
-            };
-            provider.coupled_writer_original_key(writer.session())
-        };
+        let head = self.head_key(index);
         let own = provider.coupled_writer_original_key(successor);
         for intent in &mut batch.intents {
             if let MutationIntent::Create(CreateIntent::Entity(spec)) = intent
@@ -150,14 +144,32 @@ impl<'run, S: ApplicationSchema> CoupledApplicationAssembly<'_, 'run, '_, S> {
         Ok(index)
     }
 
+    /// The original idempotency key of chain `index`'s head: kept by each
+    /// successor, since the chain's current writer is its latest round.
+    fn head_key(&self, index: usize) -> String {
+        let writers = self.writers.borrow();
+        let writer = &writers[index];
+        if let Some(key) = &writer.head_key {
+            return key.clone();
+        }
+        let Some(CoupledWriterStage::Inspected(inspected)) = writer.stage.as_ref() else {
+            unreachable!("an appended chain keeps its inspected writer")
+        };
+        self.application
+            .runtime
+            .primary_provider
+            .coupled_writer_original_key(inspected.session())
+    }
+
     /// The successor writer takes its chain's slot: the superseded round's
     /// session is discarded, never published (Native folded it).
     fn replace_writer(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         index: usize,
-        successor: CoupledWriter<'run, S>,
+        mut successor: CoupledWriter<'run, S>,
     ) {
+        successor.head_key = Some(self.head_key(index));
         // Final support keeps every superseded round in its timeline (R4).
         let provider = &self.application.runtime.primary_provider;
         let history = {

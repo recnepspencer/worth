@@ -334,6 +334,7 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             producer: std::sync::Arc::clone(producer),
             stage: Some(CoupledWriterStage::Inspected(writer)),
             meaning: meaning.clone(),
+            head_key: None,
         };
         let chain = chain.map(|chain| chain.index);
         let index = self.append_round(

@@ -118,6 +118,9 @@ struct CoupledWriter<'run, S> {
     producer: std::sync::Arc<registry::InstalledProducerProvider<S>>,
     stage: Option<CoupledWriterStage<'run>>,
     meaning: worth_relational::facade::mvcc::RequiredOutputPublicationMeaning,
+    /// For a successor round: its chain head's original idempotency key,
+    /// which every later round re-creates in place (§1.5 Identity).
+    head_key: Option<String>,
 }
 enum CoupledWriterStage<'run> {
     Inspected(
