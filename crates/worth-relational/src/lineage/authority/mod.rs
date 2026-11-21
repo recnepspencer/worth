@@ -1,5 +1,11 @@
 mod commit_finalization;
 mod event_emission;
+mod name_minting;
+
+#[cfg(test)]
+mod name_minting_tests;
+
+pub use name_minting::{PersistentNameMintingAuthority, PERSISTENT_NAME_DOMAIN_TAG};
 
 use crate::runtime::RelationalRuntime;
 

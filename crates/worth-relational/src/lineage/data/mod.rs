@@ -3,6 +3,7 @@ mod events;
 mod graph;
 mod invariants;
 mod metrics;
+mod naming;
 mod resolution;
 
 pub use artifacts::{
@@ -19,6 +20,11 @@ pub use graph::{
 };
 pub use invariants::LineageInvariant;
 pub use metrics::LineageFinalizationCounters;
+pub use naming::{
+    InstalledPersistentNameScheme, InstalledPersistentNameSchemeRegistry, LineageNameDenial,
+    PersistentNameBirthParts, PersistentNameBirthRecord, PersistentNameBirthRequest,
+    PersistentNameHolder, PersistentNameIdentity, PersistentNameSubjectKind,
+};
 pub use resolution::{
     HistoricalLineageResolution, HistoricalLineageResolutionDigestBasis,
     HistoricalLineageResolutionMetrics, HistoricalResolutionBoundednessBasis,

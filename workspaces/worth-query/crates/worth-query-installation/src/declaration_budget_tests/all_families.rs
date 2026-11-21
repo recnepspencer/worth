@@ -25,10 +25,25 @@ pub(crate) fn declaration() -> ErasedApplicationSchemaDeclaration {
         })
         .expect("the complete fixture declares entities");
     let definition = ApplicationDecisionReadScopeMeaning::from_untrusted_parts(
-        vec![ApplicationOperationDecisionReadTarget::Entity { entity }],
+        vec![ApplicationOperationDecisionReadTarget::Entity {
+            entity: entity.clone(),
+        }],
         Vec::new(),
     )
     .unwrap();
+    members.push(ApplicationSchemaMember::ApplicationNameScheme {
+        definition: worth_query_declaration::facade::application_naming::ErasedApplicationNameScheme::from_untrusted_parts(
+            "worth.budget.entity.v1".into(),
+            worth_query_declaration::facade::application_naming::ApplicationNameSubjectKind::Entity,
+            entity,
+            vec!["authored".into()],
+            Vec::new(),
+            false,
+            None,
+            Vec::new(),
+            true,
+        ),
+    });
     members.push(ApplicationSchemaMember::Operation {
         operation: "SharedBudgetRead".into(),
         input_type: portable("worth.rust.unit"),

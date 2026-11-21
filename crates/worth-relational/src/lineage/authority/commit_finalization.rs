@@ -4,8 +4,10 @@ use crate::history::data::RelationalCommitReceipt;
 use crate::identity::data::{EntityId, KindId, LineageId, PartitionId, VersionId};
 use crate::lineage::authority::LineagePreparationAuthority;
 use crate::lineage::data::{
-    FinalizedLineageEventBatch, LineageDecisionKind, LineageDecisionLog, LineageEventKind,
-    LineageFinalizationArtifact, LineageNode, PreparedLineageFinalization,
+    FinalizedLineageEventBatch, InstalledPersistentNameSchemeRegistry, LineageDecisionKind,
+    LineageDecisionLog, LineageEventKind, LineageFinalizationArtifact, LineageNode,
+    PersistentNameBirthRecord, PersistentNameBirthRequest, PersistentNameHolder,
+    PersistentNameIdentity, PreparedLineageFinalization,
 };
 use crate::runtime::WorkingState;
 use crate::storage::overlay::CurrentPartitionAccess;
@@ -37,6 +39,7 @@ struct AssignedLineageEvent {
     sources: Vec<LineageId>,
     targets: Vec<LineageId>,
     node: Option<AssignedLineageNode>,
+    name_birth: Option<PersistentNameBirthRecord>,
 }
 
 struct AssignedLineageNode {
@@ -55,6 +58,42 @@ impl<'runtime> LineagePreparationAuthority<'runtime> {
         changed_records: &[RecordRef],
     ) -> Result<PreparedLineageFinalization, crate::transactions::data::TransactionCommitError>
     {
+        self.ensure_lineage_for_commit_with_births(
+            execution,
+            staged,
+            commit,
+            merged_plan,
+            changed_records,
+            &InstalledPersistentNameSchemeRegistry::new(),
+            &BTreeMap::new(),
+            &BTreeSet::new(),
+            &BTreeMap::new(),
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn ensure_lineage_for_commit_with_births(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        staged: &mut WorkingState,
+        commit: &RelationalCommitReceipt,
+        merged_plan: &[MutationIntent],
+        changed_records: &[RecordRef],
+        scheme_registry: &InstalledPersistentNameSchemeRegistry,
+        live_holders: &BTreeMap<PersistentNameIdentity, PersistentNameHolder>,
+        retired_in_commit: &BTreeSet<PersistentNameIdentity>,
+        named_births: &BTreeMap<EntityId, PersistentNameBirthRequest>,
+    ) -> Result<PreparedLineageFinalization, crate::transactions::data::TransactionCommitError>
+    {
+        // Validate and mint BEFORE reserving lineage IDs or mutating staged
+        // state so any refusal leaves zero partial rows.
+        let mut minted_births = super::name_minting::mint_entity_births(
+            scheme_registry,
+            live_holders,
+            retired_in_commit,
+            named_births,
+        )
+        .map_err(|denial| lineage_error(denial.to_string()))?;
         let plan =
             LineageFinalizationPlan::from_staged(staged, commit, merged_plan, changed_records);
         let lineage_width = u64::try_from(plan.required_lineage_ids)
@@ -68,7 +107,7 @@ impl<'runtime> LineagePreparationAuthority<'runtime> {
             .map_err(lineage_error)?;
         let lineage_end = lineage_start + lineage_width;
         let assigned = plan
-            .assign_lineage_ids(staged, lineage_start..lineage_end)
+            .assign_lineage_ids(staged, lineage_start..lineage_end, &mut minted_births)
             .map_err(lineage_error)?;
 
         let mut events = Vec::with_capacity(assigned.len());
@@ -96,6 +135,7 @@ impl<'runtime> LineagePreparationAuthority<'runtime> {
                 assigned.kind,
                 assigned.sources,
                 assigned.targets,
+                assigned.name_birth,
             );
             decisions.push(self.accepted_decision_record(assigned.decision_kind, &event));
             events.push(event);
@@ -196,6 +236,7 @@ impl LineageFinalizationPlan {
         self,
         staged: &WorkingState,
         mut reserved: std::ops::Range<u64>,
+        minted_births: &mut BTreeMap<EntityId, PersistentNameBirthRecord>,
     ) -> Result<Vec<AssignedLineageEvent>, String> {
         let mut created_lineages = BTreeMap::new();
         let mut assigned = Vec::with_capacity(self.drafts.len());
@@ -222,6 +263,7 @@ impl LineageFinalizationPlan {
                             lineage_id,
                             install_in_staged_state: existing_lineage_id.is_none(),
                         }),
+                        name_birth: minted_births.remove(&entity_id),
                     }
                 }
                 LineageEventDraft::Retire { lineage_id } => AssignedLineageEvent {
@@ -230,6 +272,7 @@ impl LineageFinalizationPlan {
                     sources: vec![lineage_id],
                     targets: Vec::new(),
                     node: None,
+                    name_birth: None,
                 },
                 LineageEventDraft::Replace {
                     source_lineage_id,
@@ -248,6 +291,7 @@ impl LineageFinalizationPlan {
                         sources: vec![source_lineage_id],
                         targets: vec![target_lineage_id],
                         node: None,
+                        name_birth: None,
                     }
                 }
             };

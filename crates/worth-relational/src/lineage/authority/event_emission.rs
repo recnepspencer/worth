@@ -29,6 +29,7 @@ impl<'runtime> LineagePreparationAuthority<'runtime> {
         kind: LineageEventKind,
         sources: Vec<LineageId>,
         targets: Vec<LineageId>,
+        name_birth: Option<crate::lineage::data::PersistentNameBirthRecord>,
     ) -> LineageEventRecord {
         LineageEventRecord {
             event_id,
@@ -37,6 +38,7 @@ impl<'runtime> LineagePreparationAuthority<'runtime> {
             kind,
             sources,
             targets,
+            name_birth,
         }
     }
 
