@@ -310,9 +310,8 @@ pub mod publication {
     };
     pub use crate::publication::data::{
         AuthoredRetirementRefusal, CoupledFreshWriter, CoupledProvenancePostponement,
-        PublicationArtifactSnapshot,
-        PublicationDiagnosticsSnapshot, PublicationError, PublicationObservationSnapshot,
-        PublicationSettlementRepairError,
+        PublicationArtifactSnapshot, PublicationDiagnosticsSnapshot, PublicationError,
+        PublicationObservationSnapshot, PublicationSettlementRepairError,
     };
     pub use crate::publication::patch::data::{
         PatchDetail, PatchFragmentBudget, PatchOrdering, PatchPublicationMode, PatchStreamBatch,

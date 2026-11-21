@@ -131,9 +131,15 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             .push_normalized_coupled_batches(execution, &runtime, batches)?;
         // Preserve master's original relation correspondence before prefix-created
         // endpoints are lowered, for either producer or authored-stage suffixes.
+        // A successor's relation creates are proved re-creates the head already
+        // applied; lowering drops them, so they have no original to complete.
         let originals = crate::transactions::data::CoupledOriginalRelationCreates::capture(
             execution,
-            &intents.plan().merged_intents,
+            if successor {
+                &[]
+            } else {
+                &intents.plan().merged_intents
+            },
         )?;
         let mut intents =
             intents.into_coupled_suffix(0, &self.mutation.outcome.created_entities, execution)?;
