@@ -43,6 +43,7 @@ pub(in crate::domain_computation) use decision_facts::PrimaryDecisionReadSetComp
 pub(in crate::domain_computation::primary_graph) mod dispatch_outbox;
 mod evidence_window;
 pub(crate) mod fault_port;
+pub use fault_port::WorthQueryCommitAnswerPauseForTest;
 mod graph_participation;
 mod history_retirement;
 mod home_retirement;

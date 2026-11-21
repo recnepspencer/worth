@@ -24,6 +24,15 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             .primary_provider
             .lose_next_commit_answer_for_test();
     }
+    /// Parks the next application commit after World resolved it and before
+    /// its answer is delivered to the caller.
+    pub fn pause_after_commit_before_answer_for_test(
+        &self,
+    ) -> crate::domain_computation::primary_graph::provider::WorthQueryCommitAnswerPauseForTest {
+        self.runtime
+            .primary_provider
+            .pause_after_commit_before_answer_for_test()
+    }
     pub fn reject_next_commit_before_transaction_for_test(
         &self,
     ) -> Result<WorthQueryPublicationFaultGuardForTest, WorthQueryPublicationFaultRegistrationDenial>

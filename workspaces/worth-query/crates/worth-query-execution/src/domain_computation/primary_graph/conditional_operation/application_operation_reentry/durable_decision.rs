@@ -17,8 +17,16 @@ pub(in crate::domain_computation::primary_graph::conditional_operation) fn flush
     request: &worth_execution::ExecutionRequest<'_, '_>,
     wake: &mut WorthQueryRetainedConditionalWake,
 ) -> Result<(), QueryObligationDenial> {
-    use super::super::signal_decision_reentry::WorthQueryRetainedConditionalDecision as Decision;
-    let Some((key, intent)) = wake.continuation_identity else {
+    use super::super::signal_decision_reentry::{
+        WorthQueryConditionalContinuationIdentity as Continuation,
+        WorthQueryRetainedConditionalDecision as Decision,
+    };
+    let Some(Continuation {
+        key,
+        intent,
+        product,
+    }) = wake.continuation_identity
+    else {
         return Ok(());
     };
     let Some(support) = runtime.installed_program_support() else {
@@ -26,6 +34,10 @@ pub(in crate::domain_computation::primary_graph::conditional_operation) fn flush
         return Ok(());
     };
     let history = support.lifecycle();
+    if !history.has_medium() {
+        return Ok(());
+    }
+    let already_indeterminate = history.is_indeterminate(&key);
     let posture = match &mut wake.decision {
         Decision::OperationCleanupRequired(_, cleanup) => {
             let identity = cleanup
@@ -35,18 +47,38 @@ pub(in crate::domain_computation::primary_graph::conditional_operation) fn flush
                 && history.settle_managed_cleanup_discharge(request, identity)?
             {
                 cleanup.acknowledge_logical_discharge();
-                wake.continuation_identity = None;
+                if !already_indeterminate {
+                    wake.continuation_identity = None;
+                }
+                return Ok(());
+            }
+            if already_indeterminate {
                 return Ok(());
             }
             Posture::CleanupRequired(identity)
         }
-        Decision::OperationRetryable(_, _) => Posture::Retryable,
-        Decision::OperationCommitRetryable(_, _) => Posture::CommitRetryable,
-        Decision::OperationProductStale(_, _) => Posture::ProductStale,
+        Decision::OperationRetryable(_, _) => {
+            if already_indeterminate {
+                return Ok(());
+            }
+            Posture::Retryable
+        }
+        Decision::OperationCommitRetryable(_, _) => {
+            if already_indeterminate {
+                return Ok(());
+            }
+            Posture::CommitRetryable
+        }
+        Decision::OperationProductStale(_, _) => {
+            if already_indeterminate {
+                return Ok(());
+            }
+            Posture::ProductStale
+        }
         Decision::OperationIndeterminate(_, _) => {
             Posture::Indeterminate(history.retained_indeterminate_original(&key))
         }
-        Decision::OperationCommitted(_) | Decision::OperationAlreadyCommitted(_) => {
+        Decision::OperationCommitted(_, _) | Decision::OperationAlreadyCommitted(_, _) => {
             history.record_conditional_decision(request, Record::Finish { key, intent })?;
             wake.continuation_identity = None;
             return Ok(());
@@ -65,11 +97,13 @@ pub(in crate::domain_computation::primary_graph::conditional_operation) fn flush
         | Decision::InterruptedDuringReentry
         | Decision::Failed(_) => return Ok(()),
     };
+    let product = product.ok_or(QueryObligationDenial::ForeignHome)?;
     history.record_conditional_decision(
         request,
         Record::Retain(QueryConditionalDecision {
             key,
             intent,
+            product,
             posture,
         }),
     )?;

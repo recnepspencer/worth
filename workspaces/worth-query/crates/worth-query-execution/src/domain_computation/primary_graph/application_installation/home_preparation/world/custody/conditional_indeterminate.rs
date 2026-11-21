@@ -4,8 +4,9 @@
 //! Exactly three states remain: a recovered unpublished original joins the
 //! row (a retry continues it); a published original finishes the row (a retry
 //! returns it); no committed open, or a released original, finishes the row
-//! as World's answer (a no-effect key may then execute fresh). Conditional
-//! operations run on the Home's root product branch, where keys resolve.
+//! as World's answer (a no-effect key may then execute fresh). Each row
+//! resolves against the exact durable product branch occurrence it recorded;
+//! an unresolved branch is refused rather than classified against root.
 use super::originals::original_binding_denial;
 use super::*;
 use crate::domain_computation::primary_graph::application_attempt::business_original;
@@ -43,14 +44,30 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
         if rows.is_empty() {
             return Ok(());
         }
-        let product = application
+        let installed = application
             .runtime
             .product_runtime
-            .admit_product_occurrence(application.current_world().occurrence())
-            .map_err(|_| Denial::OriginalBindingUnavailable)?
-            .publication_binding();
+            .owner
+            .observation_port()
+            .observe_installed_product_branches(execution)
+            .map_err(|_| Denial::OriginalBindingUnavailable)?;
         for (row, recorded) in rows {
             execution.consult().map_err(Denial::Execution)?;
+            let occurrence = installed
+                .branches()
+                .iter()
+                .find(|branch| {
+                    branch.owner_identity().durable() == Some(row.product.owner())
+                        && branch.lifecycle_incarnation().ordinal() == row.product.ordinal()
+                })
+                .ok_or(Denial::OriginalBindingUnavailable)?
+                .lifecycle_incarnation();
+            let product = application
+                .runtime
+                .product_runtime
+                .admit_product_occurrence(occurrence)
+                .map_err(|_| Denial::OriginalBindingUnavailable)?
+                .publication_binding();
             let record = match self.classify(execution, &product, &row, recorded)? {
                 Some(record) => record,
                 None => continue,
@@ -80,7 +97,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
             .map_err(original_binding_denial)?
         {
             // Published: the original occurrence answers every retry.
-            Fate::Published => Ok(Some(finish)),
+            Fate::Published(_) => Ok(Some(finish)),
             // No committed open (an empty one was released before this step):
             // proven no-effect, so the key may execute fresh.
             Fate::Absent => Ok(Some(finish)),

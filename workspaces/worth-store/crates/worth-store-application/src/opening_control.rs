@@ -32,11 +32,24 @@ pub struct ApplicationHomeOpeningArrival {
     pub edge: ApplicationHomeOpeningEdge,
 }
 
+/// Purely observational durable transition state reported by Store on open.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ApplicationHomeTransitionOpeningObservation {
+    Current,
+    Fresh,
+    UnopenedStep { step: u32 },
+    RecoveredOpenWithoutNative { step: u32 },
+    RecoveredWithNative { step: u32 },
+    StepsDurableBindingPending,
+}
+
 /// An inert observation can be defaulted; an armed observer is minted only by
 /// the Store certification constructor below. It returns no proof or authority.
 #[derive(Clone, Default)]
 pub struct ApplicationHomeOpeningObservation {
     observer: Option<Arc<dyn Fn(ApplicationHomeOpeningArrival) + Send + Sync>>,
+    transition_observer:
+        Option<Arc<dyn Fn(ApplicationHomeTransitionOpeningObservation) + Send + Sync>>,
     physical: Option<Arc<Mutex<Weak<worth_store::physical_runtime::ServingPhysicalRuntime>>>>,
 }
 impl ApplicationHomeOpeningObservation {
@@ -57,6 +70,14 @@ impl ApplicationHomeOpeningObservation {
             observer(ApplicationHomeOpeningArrival { stage, edge });
         }
     }
+    pub(crate) fn observe_transition_for_test(
+        &self,
+        state: ApplicationHomeTransitionOpeningObservation,
+    ) {
+        if let Some(observer) = &self.transition_observer {
+            observer(state);
+        }
+    }
 }
 
 /// No public ordinary constructor, clone, Default, or deserializer.
@@ -73,11 +94,20 @@ impl ApplicationHomeOpeningControlForTest {
         Self {
             observation: ApplicationHomeOpeningObservation {
                 observer: Some(Arc::new(observer)),
+                transition_observer: None,
                 physical: Some(Arc::new(Mutex::new(Weak::new()))),
             },
             media: None,
             recovery: None,
         }
+    }
+    #[cfg(feature = "certification-test-authority")]
+    pub fn with_transition_observer_for_test(
+        mut self,
+        observer: impl Fn(ApplicationHomeTransitionOpeningObservation) + Send + Sync + 'static,
+    ) -> Self {
+        self.observation.transition_observer = Some(Arc::new(observer));
+        self
     }
     #[cfg(feature = "certification-test-authority")]
     pub fn with_media_for_test(mut self, media: FilesystemMediaAdmission) -> Self {

@@ -84,6 +84,11 @@ fn finish_application_commit_with_delivery<Schema: ApplicationSchema>(
             "provider progression outcome could not complete commit receipt",
         ))
     });
+    // Park after World's commit resolved and before returning the answer.
+    application
+        .runtime
+        .primary_provider
+        .pause_before_commit_answer();
     // The resolved outcome (and any receipt) is dropped unread: World keeps
     // whatever it did, and only the answer is lost.
     let committed = if application

@@ -17,6 +17,9 @@ impl QueryObligationLedger {
     ) -> Result<(), QueryObligationDenial> {
         let (key, intent) = match record {
             QueryConditionalDecisionRecord::Retain(row) => {
+                if row.product.owner().home() != self.home() {
+                    return Err(QueryObligationDenial::ForeignHome);
+                }
                 if let QueryConditionalPosture::CleanupRequired(identity) = row.posture {
                     if identity.home() != self.home() {
                         return Err(QueryObligationDenial::ForeignHome);
@@ -31,9 +34,13 @@ impl QueryObligationLedger {
                 if let QueryConditionalPosture::Indeterminate(QueryConditionalOriginal::Recovered(
                     original,
                 )) = row.posture
-                    && original.owner().home() != self.home()
                 {
-                    return Err(QueryObligationDenial::ForeignHome);
+                    if original.owner().home() != self.home() {
+                        return Err(QueryObligationDenial::ForeignHome);
+                    }
+                    if original.owner() != row.product.owner() {
+                        return Err(QueryObligationDenial::ObligationSubjectMismatch);
+                    }
                 }
                 (&row.key, &row.intent)
             }
@@ -53,7 +60,8 @@ impl QueryObligationLedger {
         }
         if let (Some(known), QueryConditionalDecisionRecord::Retain(row)) =
             (self.conditional.get(key), record)
-            && joined_elsewhere(known.posture, row.posture)
+            && (known.product != row.product
+                || invalid_posture_transition(known.posture, row.posture))
         {
             return Err(QueryObligationDenial::ObligationSubjectMismatch);
         }
@@ -86,17 +94,23 @@ impl QueryObligationLedger {
     }
 }
 
-/// A row joined to its recovered World original stays joined to exactly that
-/// original until it is finished; no retain may unjoin or rejoin it.
-fn joined_elsewhere(known: QueryConditionalPosture, next: QueryConditionalPosture) -> bool {
+/// An indeterminate row never drops back to an ordinary retry posture before
+/// World resolves it; once joined to a recovered World original, it stays
+/// joined to exactly that original until finished.
+fn invalid_posture_transition(
+    known: QueryConditionalPosture,
+    next: QueryConditionalPosture,
+) -> bool {
     match known {
         QueryConditionalPosture::Indeterminate(QueryConditionalOriginal::Recovered(original)) => {
             next != QueryConditionalPosture::Indeterminate(QueryConditionalOriginal::Recovered(
                 original,
             ))
         }
-        QueryConditionalPosture::Indeterminate(QueryConditionalOriginal::Unclassified)
-        | QueryConditionalPosture::CleanupRequired(_)
+        QueryConditionalPosture::Indeterminate(QueryConditionalOriginal::Unclassified) => {
+            !matches!(next, QueryConditionalPosture::Indeterminate(_))
+        }
+        QueryConditionalPosture::CleanupRequired(_)
         | QueryConditionalPosture::Retryable
         | QueryConditionalPosture::CommitRetryable
         | QueryConditionalPosture::ProductStale => false,

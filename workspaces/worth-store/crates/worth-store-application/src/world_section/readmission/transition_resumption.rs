@@ -69,10 +69,22 @@ where
         )
         .map_err(Denial::Intent)?;
         let DurableHomeTransitionPrefix::Next { step, original } = prefix else {
+            context.opening_observation.observe_transition_for_test(
+                crate::ApplicationHomeTransitionOpeningObservation::StepsDurableBindingPending,
+            );
             return Ok(Resumption::StepsDurable);
         };
         match self.recovered_original(original)? {
             Some(claim) => {
+                context.opening_observation.observe_transition_for_test(
+                    if claim.native_receipt().is_some() {
+                        crate::ApplicationHomeTransitionOpeningObservation::RecoveredWithNative {
+                            step,
+                        }
+                    } else {
+                        crate::ApplicationHomeTransitionOpeningObservation::RecoveredOpenWithoutNative { step }
+                    },
+                );
                 let grant = transition::admit_readmitted_step(
                     context, owner, step, &claim, digest, steps, target, bodies, request,
                 )
@@ -80,6 +92,9 @@ where
                 Ok(Resumption::Recovered { step, grant, claim })
             }
             None => {
+                context.opening_observation.observe_transition_for_test(
+                    crate::ApplicationHomeTransitionOpeningObservation::UnopenedStep { step },
+                );
                 let grant = transition::admit_unopened_step(
                     context, owner, step, expected, digest, steps, target, bodies, request,
                 )

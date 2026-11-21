@@ -25,7 +25,10 @@ pub(super) fn complete_wake<Clock, Input>(
     identity: String,
     evidence: BridgeConditionalDecisionEvidence,
     counts: &mut WorthQueryTemporalReentryCounts,
-    committed: bool,
+    committed: Result<
+        Option<worth_foundational::facade::DurableCompositeCommitIdentity>,
+        Option<worth_foundational::facade::DurableCompositeCommitIdentity>,
+    >,
 ) {
     if let Err(detail) = retire_committed_wake(bridge, clock, wake) {
         wake.decision = WorthQueryRetainedConditionalDecision::OperationRetryable(evidence, detail);
@@ -33,12 +36,17 @@ pub(super) fn complete_wake<Clock, Input>(
         return;
     }
     candidates.remove(&identity);
-    if committed {
-        wake.decision = WorthQueryRetainedConditionalDecision::OperationCommitted(evidence);
-        counts.committed += 1;
-    } else {
-        wake.decision = WorthQueryRetainedConditionalDecision::OperationAlreadyCommitted(evidence);
-        counts.already_committed += 1;
+    match committed {
+        Ok(commit) => {
+            wake.decision =
+                WorthQueryRetainedConditionalDecision::OperationCommitted(evidence, commit);
+            counts.committed += 1;
+        }
+        Err(commit) => {
+            wake.decision =
+                WorthQueryRetainedConditionalDecision::OperationAlreadyCommitted(evidence, commit);
+            counts.already_committed += 1;
+        }
     }
 }
 
@@ -56,7 +64,7 @@ pub(super) fn retire_obsolete<Clock, Input>(
         Ok(()) => {
             candidates.remove(&identity);
             wake.decision =
-                WorthQueryRetainedConditionalDecision::OperationAlreadyCommitted(evidence);
+                WorthQueryRetainedConditionalDecision::OperationAlreadyCommitted(evidence, None);
         }
         Err(detail) => {
             wake.decision =
@@ -99,7 +107,12 @@ fn retire_committed_wake(
         .map_err(|denial| {
             super::super::WorthQueryConditionalReentryFailure::ManagedWake(denial.kind())
         })?;
-    if outcome == BridgeManagedTemporalIntentReconciliation::Retired {
+    if matches!(
+        outcome,
+        BridgeManagedTemporalIntentReconciliation::Retired
+            | BridgeManagedTemporalIntentReconciliation::TerminalNoop
+            | BridgeManagedTemporalIntentReconciliation::Stale
+    ) {
         Ok(())
     } else {
         Err(super::super::WorthQueryConditionalReentryFailure::WakeDidNotRetire(outcome))

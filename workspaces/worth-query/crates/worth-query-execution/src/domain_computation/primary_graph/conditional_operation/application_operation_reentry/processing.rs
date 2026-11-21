@@ -155,6 +155,10 @@ where
             &mut wake.decision,
             WorthQueryRetainedConditionalDecision::InterruptedDuringReentry,
         );
+        let was_indeterminate = matches!(
+            decision,
+            WorthQueryRetainedConditionalDecision::OperationIndeterminate(_, _)
+        );
         let evidence = match decision {
             WorthQueryRetainedConditionalDecision::Eligible(evidence)
             | WorthQueryRetainedConditionalDecision::OperationProductStale(evidence, _)
@@ -187,8 +191,8 @@ where
             )
             | WorthQueryRetainedConditionalDecision::OperationPreparationPending(_, _)
             | WorthQueryRetainedConditionalDecision::OperationPreparationRefused(_, _)
-            | WorthQueryRetainedConditionalDecision::OperationCommitted(_)
-            | WorthQueryRetainedConditionalDecision::OperationAlreadyCommitted(_)
+            | WorthQueryRetainedConditionalDecision::OperationCommitted(_, _)
+            | WorthQueryRetainedConditionalDecision::OperationAlreadyCommitted(_, _)
             | WorthQueryRetainedConditionalDecision::Failed(_)
             | WorthQueryRetainedConditionalDecision::InterruptedDuringReentry) => {
                 wake.decision = other;
@@ -196,18 +200,46 @@ where
             }
         };
         let identity = wake.due.intent_identity().as_str();
-        let Some(candidate) = candidates.get(identity) else {
-            wake.decision =
-                WorthQueryRetainedConditionalDecision::OperationAlreadyCommitted(evidence);
-            continue;
-        };
-        if !wake_matches_candidate(wake, candidate.candidate()) {
-            wake.decision =
-                WorthQueryRetainedConditionalDecision::OperationAlreadyCommitted(evidence);
+        let candidate_present = candidates
+            .get(identity)
+            .is_some_and(|candidate| wake_matches_candidate(wake, candidate.candidate()));
+        if !candidate_present {
+            let durable_indeterminate = wake.continuation_identity.filter(|cont| {
+                was_indeterminate
+                    || runtime
+                        .installed_program_support()
+                        .is_some_and(|support| support.lifecycle().is_indeterminate(&cont.key))
+            });
+            if let Some(cont) = durable_indeterminate {
+                let outcome = super::recovered_original::resolve_live_indeterminate_world_fate(
+                    request_execution,
+                    runtime,
+                    product,
+                    cont.key,
+                    cont.intent,
+                );
+                apply_reentry_outcome(
+                    bridge,
+                    clock,
+                    candidates,
+                    wake,
+                    identity.to_string(),
+                    evidence,
+                    outcome,
+                    &mut counts,
+                );
+                super::durable_decision::flush_record(runtime, request_execution, wake)?;
+            } else {
+                wake.decision =
+                    WorthQueryRetainedConditionalDecision::OperationAlreadyCommitted(
+                        evidence, None,
+                    );
+            }
             continue;
         }
+        let candidate = candidates.get(identity).expect("checked candidate above");
         wake.application_attempted = true;
-        let attempt = match reenter_temporal_operation(
+        let mut attempt = match reenter_temporal_operation(
             request_execution,
             phase,
             runtime,
@@ -224,6 +256,23 @@ where
                 return Err(cause);
             }
         };
+        if matches!(
+            attempt.outcome,
+            super::WorthQueryTemporalReentryOutcome::Obsolete
+        ) && let Some(cont) = attempt.continuation_identity.filter(|cont| {
+            was_indeterminate
+                || runtime
+                    .installed_program_support()
+                    .is_some_and(|support| support.lifecycle().is_indeterminate(&cont.key))
+        }) {
+            attempt.outcome = super::recovered_original::resolve_live_indeterminate_world_fate(
+                request_execution,
+                runtime,
+                product,
+                cont.key,
+                cont.intent,
+            );
+        }
         wake.continuation_identity = attempt.continuation_identity;
         wake.application_admission_canonical_work = attempt.admission_canonical_work;
         apply_reentry_outcome(

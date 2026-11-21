@@ -199,6 +199,71 @@ impl WorthQueryPrimaryGraphProvider {
             .ok_or(WorthQueryProviderIdempotencyResolutionDenial::Unavailable)?;
         basis.resolve(execution, self)
     }
+
+    /// Observe the selected product occurrence's current Relational basis and
+    /// run `read` against its prepared key index and exact-basis snapshot with
+    /// guaranteed snapshot release. Shared by ordinary envelope resolution and
+    /// conditional key classification.
+    pub(super) fn read_current_idempotency_at_basis<T>(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        runtime: &worth_relational::facade::runtime::RelationalRuntime,
+        layout: &crate::domain_computation::primary_graph::schema_layout::WorthQueryProviderIdempotencyLayout,
+        basis: &worth_relational::facade::branch::AdmittedRelationalBranchBasis,
+        read: impl FnOnce(
+            &worth_relational::facade::snapshots::SnapshotHandle,
+        ) -> Result<T, WorthQueryProviderIdempotencyResolutionDenial>,
+    ) -> Result<T, WorthQueryProviderIdempotencyResolutionDenial> {
+        self.graph
+            .carry_primary_index_basis_for_basis(execution, runtime, basis)
+            .map_err(idempotency_index_currency_denial)?;
+        if !crate::domain_computation::primary_graph::index_currency::selected_index_is_current(
+            execution,
+            runtime,
+            basis,
+            layout.key_index_id,
+        )
+        .map_err(snapshot_resolution::idempotency_read_stop)?
+        {
+            // A carried known-empty selection is not yet a concrete lookup
+            // generation. Admit only this key index through Native's ordinary
+            // field preparation; it never reconstructs a missing population.
+            runtime
+                .index_authority()
+                .ensure_field_index_for_basis(
+                    layout.key_index_id,
+                    basis,
+                    crate::domain_computation::primary_graph::index_maintenance_budget::ordinary_index_maintenance_budget(),
+                    execution,
+                )
+                .map_err(|denial| match denial.kind {
+                    worth_relational::facade::indexes::DerivedIndexMaintenanceDenialKind::Execution(
+                        cause,
+                    ) => snapshot_resolution::idempotency_read_stop(cause),
+                    _ => WorthQueryProviderIdempotencyResolutionDenial::Unavailable,
+                })?;
+        }
+        let snapshot =
+            crate::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot(
+                runtime, basis,
+            )
+            .map_err(|denial| idempotency_snapshot_denial(denial.into()))?;
+        let result = read(&snapshot);
+        crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
+        result
+    }
+}
+
+pub(super) fn observe_selected_idempotency_branch(
+    product: &crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding,
+) -> Result<
+    worth_runtime_world::facade::ProductBranchObservation,
+    WorthQueryProviderIdempotencyResolutionDenial,
+> {
+    product
+        .observation_port()
+        .observe_product_branch_occurrence(product.observation().lifecycle_incarnation())
+        .map_err(|_| WorthQueryProviderIdempotencyResolutionDenial::ForeignAffinity)
 }
 
 fn pending_publication_denial(

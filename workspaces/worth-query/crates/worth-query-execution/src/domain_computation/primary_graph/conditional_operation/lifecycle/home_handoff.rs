@@ -76,8 +76,8 @@ fn prepare_wake<Schema: worth_query_installation::facade::ApplicationSchema>(
         | Decision::Suppressed(_)
         | Decision::Deferred(_)
         | Decision::OperationBackpressured(_, _)
-        | Decision::OperationCommitted(_)
-        | Decision::OperationAlreadyCommitted(_) => Ok(()),
+        | Decision::OperationCommitted(_, _)
+        | Decision::OperationAlreadyCommitted(_, _) => Ok(()),
         Decision::OperationRetryable(_, _)
         | Decision::OperationCommitRetryable(_, _)
         | Decision::OperationProductStale(_, _)

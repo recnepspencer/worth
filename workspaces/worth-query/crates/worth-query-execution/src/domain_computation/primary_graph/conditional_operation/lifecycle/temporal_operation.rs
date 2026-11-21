@@ -374,4 +374,25 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> super::super::lifecycle_inventory::WorthQueryConditionalOperationLiveness {
         resource_observation::lifecycle_resources(self)
     }
+
+    fn temporal_original_key(
+        &self,
+        product: &crate::basis::WorthQueryProductBranchLease,
+        intent_identity: &str,
+        revision: u64,
+        host_idempotency: &str,
+        input_identity: &str,
+    ) -> Option<Result<([u8; 32], [u8; 32]), worth_foundational::facade::CanonicalDigestDerivationDenial>>
+    {
+        Some(
+            super::super::application_operation_reentry::temporal_idempotency::derive_for_product(
+                &self.runtime_canonical_identity,
+                product,
+                intent_identity,
+                revision,
+                host_idempotency,
+                input_identity,
+            ),
+        )
+    }
 }

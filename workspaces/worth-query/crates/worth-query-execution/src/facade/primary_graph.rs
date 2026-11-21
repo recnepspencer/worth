@@ -172,7 +172,7 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryConditionalClockObservationReceipt, WorthQueryConditionalDefinitionPublicationDenial,
     WorthQueryConditionalDefinitionPublicationOutcome, WorthQueryConditionalExecutionCause,
     WorthQueryConditionalExecutionProvenance, WorthQueryConditionalExecutionTerminal,
-    WorthQueryConditionalReentryFailure, WorthQueryConditionalRuntimeInspection,
+    WorthQueryConditionalOriginalResolution, WorthQueryConditionalReentryFailure, WorthQueryConditionalRuntimeInspection,
     WorthQueryConditionalRuntimeInstallationDenial,
     WorthQueryConditionalRuntimeInstallationDenialKind, WorthQueryConditionalRuntimeLifecycleProbe,
     WorthQueryConditionalRuntimeReinstallationReceipt, WorthQueryConditionalSignalDecision,

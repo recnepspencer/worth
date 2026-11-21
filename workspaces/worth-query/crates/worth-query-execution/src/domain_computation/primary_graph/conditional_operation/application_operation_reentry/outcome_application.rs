@@ -64,11 +64,25 @@ pub(super) fn apply_reentry_outcome<Clock, Input>(
                 WorthQueryRetainedConditionalDecision::OperationNoEffect(evidence, cause);
             counts.failed += 1;
         }
-        WorthQueryTemporalReentryOutcome::Committed => complete_wake(
-            bridge, clock, candidates, wake, identity, evidence, counts, true,
+        WorthQueryTemporalReentryOutcome::Committed(commit) => complete_wake(
+            bridge,
+            clock,
+            candidates,
+            wake,
+            identity,
+            evidence,
+            counts,
+            Ok(commit),
         ),
-        WorthQueryTemporalReentryOutcome::AlreadyCommitted => complete_wake(
-            bridge, clock, candidates, wake, identity, evidence, counts, false,
+        WorthQueryTemporalReentryOutcome::AlreadyCommitted(commit) => complete_wake(
+            bridge,
+            clock,
+            candidates,
+            wake,
+            identity,
+            evidence,
+            counts,
+            Err(commit),
         ),
         WorthQueryTemporalReentryOutcome::Obsolete => {
             retire_obsolete(bridge, clock, candidates, wake, identity, evidence, counts)

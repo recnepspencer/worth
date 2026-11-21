@@ -23,16 +23,19 @@ pub(crate) fn observe(
     home: &Home,
     request: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> primary_graph::WorthQueryConditionalClockObservationOutcome<temporal::CourtroomClock> {
+    observe_on_branch(home, home.runtime().current_world(), request)
+}
+
+pub(crate) fn observe_on_branch(
+    home: &Home,
+    branch: worth_query_host::facade::product::WorthQueryProductBranch,
+    request: &worth_execution::ExecutionRequest<'_, '_>,
+) -> primary_graph::WorthQueryConditionalClockObservationOutcome<temporal::CourtroomClock> {
     let application = home.runtime();
     let installed = application.conditional::<TemporalConditional>().unwrap();
     let installed = installed.as_ref().as_ref().unwrap();
     let selected = application
-        .with_host_advancement(|phase| {
-            application
-                .on_branch(application.current_world())
-                .select(&phase)
-                .unwrap()
-        })
+        .with_host_advancement(|phase| application.on_branch(branch).select(&phase).unwrap())
         .unwrap();
     let outcome = selected
         .conditional_clock(request, &installed.clock)
@@ -43,6 +46,36 @@ pub(crate) fn observe(
     }
     outcome
 }
+
+pub(crate) fn retry_original_key_on_branch(
+    home: &Home,
+    branch: worth_query_host::facade::product::WorthQueryProductBranch,
+    key: [u8; 32],
+    intent: [u8; 32],
+    request: &worth_execution::ExecutionRequest<'_, '_>,
+) -> primary_graph::WorthQueryConditionalOriginalResolution {
+    let app = home.runtime();
+    let installed = app.conditional::<TemporalConditional>().unwrap();
+    let clock = &installed.as_ref().as_ref().unwrap().clock;
+    let selected = app.with_host_advancement(|p| app.on_branch(branch).select(&p).unwrap()).unwrap();
+    selected.conditional_clock(request, clock).unwrap().retry_original_key(request, key, intent).unwrap()
+}
+
+pub(crate) fn retry_original_intent_on_branch(
+    home: &Home,
+    branch: worth_query_host::facade::product::WorthQueryProductBranch,
+    request: &worth_execution::ExecutionRequest<'_, '_>,
+) -> primary_graph::WorthQueryConditionalOriginalResolution {
+    let app = home.runtime();
+    let installed = app.conditional::<TemporalConditional>().unwrap();
+    let clock = &installed.as_ref().as_ref().unwrap().clock;
+    let idemp = temporal::domain::WorthQueryTemporalIntentIdempotencyRelation::declare(&(&"intent-1", 1_u64, &"payload")).unwrap();
+    let selected = app.with_host_advancement(|p| app.on_branch(branch).select(&p).unwrap()).unwrap();
+    selected.conditional_clock(request, clock).unwrap()
+        .retry_original_temporal_intent(request, "intent-1", 1, idemp.as_str(), "payload").unwrap()
+}
+
+mod indeterminate_live;
 
 #[test]
 fn conditional_temporal_custody_consumes_original_key_after_directory_reopen() {

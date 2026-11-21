@@ -192,6 +192,27 @@ impl super::super::WorthQueryPrimaryGraphProvider {
             }
         }))
     }
+    /// Whether a live unpublished entry exists for `(product, key)` whose
+    /// custody has not been released with an original effect.
+    pub(in crate::domain_computation::primary_graph::provider) fn has_live_unpublished_key(
+        &self,
+        product: &WorthQueryProductIdempotencyAffinity,
+        key: [u8; 32],
+    ) -> bool {
+        let store = self
+            .unpublished_idempotency
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
+        let binding = WorthQueryApplicationIdempotencyBinding::new(key, [0; 32]);
+        let lookup = WorthQueryUnpublishedIdempotencyKey::for_binding(product, &binding);
+        store.by_key.get(&lookup).is_some_and(|entry| {
+            entry
+                .lock()
+                .unwrap_or_else(|e| e.into_inner())
+                .released
+                .is_none()
+        })
+    }
     /// The recovered unpublished original a conditional retry must continue.
     /// An in-memory lookup: originals recovered at Home preparation only.
     pub(in crate::domain_computation::primary_graph) fn recovered_conditional_original(
@@ -205,7 +226,7 @@ impl super::super::WorthQueryPrimaryGraphProvider {
                 Some(handle)
             }
             Ok(Some(
-                super::super::WorthQueryConditionalKeyFate::Published
+                super::super::WorthQueryConditionalKeyFate::Published(_)
                 | super::super::WorthQueryConditionalKeyFate::Released
                 | super::super::WorthQueryConditionalKeyFate::Absent
                 | super::super::WorthQueryConditionalKeyFate::OtherIntent,

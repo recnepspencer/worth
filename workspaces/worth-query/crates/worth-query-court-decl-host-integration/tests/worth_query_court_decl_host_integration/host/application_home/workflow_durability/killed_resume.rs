@@ -4,9 +4,14 @@
 //! approval recorded, and reaches the reference terminal state; every step
 //! has exactly one effect.
 use super::*;
-use crate::process::host::durable_retry::child_reexecution::{drive_test, location, wait_for_kill};
+use crate::process::host::durable_retry::child_reexecution::{
+    drive_test, expected, location, wait_for_kill,
+};
 use worth_query_decl::facade::application_program::{
     ApplicationWorkflowDefinitionIdentity, ApplicationWorkflowDefinitionReadTarget,
+};
+use worth_query_execution::facade::query_obligations::{
+    QueryColdReleaseTerminal, QueryManagedRunPosture,
 };
 use worth_query_host::facade::WorthQueryApplicationHomeLocation as Location;
 
@@ -93,6 +98,25 @@ fn writer(cut: Cut) {
                     pause.wait_until_reached(std::time::Duration::from_secs(60)),
                     "the guarded operation's managed computation is running"
                 );
+                let active: Vec<_> = home
+                    .runtime()
+                    .runtime()
+                    .managed_run_obligations()
+                    .into_iter()
+                    .filter(|run| run.posture == QueryManagedRunPosture::Active)
+                    .collect();
+                let [parked] = active.as_slice() else {
+                    panic!("expected exactly one active managed run for the parked guarded operation: {active:?}");
+                };
+                std::fs::write(
+                    expected(),
+                    format!(
+                        "{}\n{}",
+                        parked.identity.acquire_position().get(),
+                        parked.logical_run
+                    ),
+                )
+                .unwrap();
                 wait_for_kill();
             });
         }
@@ -103,8 +127,34 @@ fn reader(cut: Cut) {
     let reference = resume::journey(Location::MemoryOnly, false);
     let (home, auth) = open(&Location::Directory(location()));
     if let Cut::MidStep = cut {
-        crate::host::application_home::pending_support::assert_recovered_runs_cold_released(
-            home.runtime().runtime(),
+        assert!(
+            home.runtime()
+                .runtime()
+                .product_publication_recovery_page(None, std::num::NonZeroUsize::MIN)
+                .unwrap()
+                .rows()
+                .is_empty(),
+            "no World recovery custody remains"
+        );
+        let recorded = std::fs::read_to_string(expected()).unwrap();
+        let mut lines = recorded.lines();
+        let expected_position: u64 = lines.next().unwrap().parse().unwrap();
+        let expected_logical_run = lines.next().unwrap();
+        let runs = home.runtime().runtime().managed_run_obligations();
+        let matched = runs
+            .iter()
+            .find(|run| run.identity.acquire_position().get() == expected_position)
+            .unwrap_or_else(|| {
+                panic!(
+                    "expected parked managed run at acquire_position {expected_position} in {runs:?}"
+                )
+            });
+        assert_eq!(matched.logical_run, expected_logical_run);
+        assert_eq!(matched.posture, QueryManagedRunPosture::Active);
+        assert_eq!(
+            matched.cold_release,
+            Some(QueryColdReleaseTerminal::Abandoned),
+            "R7: the active managed run at kill terminates as Abandoned independently of the workflow"
         );
     }
     let original = original_start(&home);

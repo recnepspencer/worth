@@ -7,10 +7,10 @@ mod invoker_isolation;
 mod outcome_application;
 mod processing;
 mod provider_commit_deferred;
-mod recovered_original;
+pub(super) mod recovered_original;
 mod reentry_counts;
 pub(crate) mod sealed_commit;
-mod temporal_idempotency;
+pub(super) mod temporal_idempotency;
 mod wake_retirement;
 pub(in crate::domain_computation::primary_graph::conditional_operation) use denial::WorthQueryTemporalReentryDenial;
 pub(in crate::domain_computation::primary_graph::conditional_operation) use invoker_isolation::isolate_invoker;
@@ -38,8 +38,8 @@ pub enum WorthQueryTemporalReentryOutcome {
     ProductStale(crate::domain_computation::WorthQueryProductStaleApplication),
     ProductUnpublished(crate::domain_computation::WorthQueryProductUnpublishedApplication),
     NoEffect(crate::domain_computation::primary_graph::WorthQueryApplicationNoEffectCause),
-    Committed,
-    AlreadyCommitted,
+    Committed(Option<worth_foundational::facade::DurableCompositeCommitIdentity>),
+    AlreadyCommitted(Option<worth_foundational::facade::DurableCompositeCommitIdentity>),
     Obsolete,
     RetryableFailure(super::WorthQueryConditionalReentryFailure),
     RetryableCommitFailure(
@@ -94,7 +94,8 @@ pub enum WorthQueryTemporalAdmissionTerminalFailure {
 
 pub(super) struct WorthQueryTemporalReentryAttempt {
     pub(super) outcome: WorthQueryTemporalReentryOutcome,
-    pub(super) continuation_identity: Option<([u8; 32], [u8; 32])>,
+    pub(super) continuation_identity:
+        Option<super::signal_decision_reentry::WorthQueryConditionalContinuationIdentity>,
     pub(super) admission_canonical_work:
         worth_query_installation::facade::WorthQueryCanonicalWorkEvidence,
 }
@@ -208,6 +209,12 @@ where
     Authorization: super::WorthQueryTemporalOperationAuthorization<Schema, Operation, Input, Scope>,
 {
     let selected = product.observation();
+    let durable_product = selected.owner_identity().durable().map(|owner| {
+        worth_foundational::facade::DurableProductBranchIncarnation::from_recorded(
+            owner,
+            selected.lifecycle_incarnation().ordinal(),
+        )
+    });
     let scope = match selected.owner_identity().durable() {
         Some(owner) => temporal_idempotency::TemporalIdempotencyScope::Home {
             owner,
@@ -231,10 +238,13 @@ where
                 })
             }
         };
-    let continuation_identity = Some((
-        *idempotency.binding().key_identity(),
-        *idempotency.binding().intent_identity(),
-    ));
+    let continuation_identity = Some(
+        super::signal_decision_reentry::WorthQueryConditionalContinuationIdentity {
+            key: *idempotency.binding().key_identity(),
+            intent: *idempotency.binding().intent_identity(),
+            product: durable_product,
+        },
+    );
     let admission_canonical_work = idempotency.canonical_work();
     let joined = match runtime.installed_program_support() {
         Some(support) => {
@@ -243,6 +253,7 @@ where
                 request_execution,
                 *idempotency.binding().key_identity(),
                 *idempotency.binding().intent_identity(),
+                durable_product,
             )? {
                 Admission::Ordinary => None,
                 Admission::JoinedOriginal(original) => Some(original),

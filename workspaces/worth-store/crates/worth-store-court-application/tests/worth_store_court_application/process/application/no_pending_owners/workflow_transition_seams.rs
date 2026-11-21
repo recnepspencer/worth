@@ -43,6 +43,7 @@ use worth_store::physical_runtime::certification::{MediaFaultDirective, MediaOpe
 use worth_store_application::{
     ApplicationHomeOpeningArrival, ApplicationHomeOpeningControlForTest,
     ApplicationHomeOpeningEdge, ApplicationHomeOpeningStage,
+    ApplicationHomeTransitionOpeningObservation as TransitionState,
 };
 
 const LOCATION: &str = "WORTH_WORKFLOW_TRANSITION_SEAM_HOME";
@@ -88,9 +89,7 @@ fn retain_workflow<P: ApplicationProgramDefinition<Schema>>(
         workflow_resources(),
     );
     let auth = install_certification_authentication(home.runtime().installed_schema());
-    let home = home
-        .retain_workflow_spec(workflow, auth.signing_owner())
-        .unwrap();
+    let home = home.retain_workflow_spec(workflow, auth.signing_owner()).unwrap();
     (home, auth)
 }
 
@@ -99,11 +98,7 @@ fn predecessor(location: &std::path::Path) -> Originals {
     let execution = worth_execution::ExecutionRequest::leased(&lease);
     let loc = Location::Directory(location.to_owned());
     let home = with_bootstrap_advancement_from_request(execution, |phase| {
-        Box::new(
-            home_transition::source_request(&loc)
-                .open_in_advancement(&phase)
-                .unwrap(),
-        )
+        Box::new(home_transition::source_request(&loc).open_in_advancement(&phase).unwrap())
     })
     .unwrap();
     let (home, auth) = retain_workflow::<SourceProgram>(*home);
@@ -119,6 +114,7 @@ fn predecessor(location: &std::path::Path) -> Originals {
 struct Terminal {
     installed_commits: usize,
     authored: usize,
+    initial_state: Option<TransitionState>,
 }
 
 fn check_dispositions_and_close(
@@ -134,31 +130,22 @@ fn check_dispositions_and_close(
         "seam {seam:?}: authored document retention transition applied"
     );
     let (home, auth) = retain_workflow::<TargetProgram>(home);
-    let input = || WorkflowReadInput {
-        document_identity: DOCUMENT_IDENTITY.to_owned(),
-    };
+    let input = || WorkflowReadInput { document_identity: DOCUMENT_IDENTITY.to_owned() };
     let runtime = home.runtime().runtime();
     let scope = request_scope();
     let reviewer = authenticate_reviewer(runtime.installed_schema(), &scope);
-    let basis = runtime
-        .request(&reviewer, &scope)
-        .retain_current_read()
-        .unwrap();
+    let basis = runtime.request(&reviewer, &scope).retain_current_read().unwrap();
     for (index, original) in originals.iter().enumerate() {
         match runtime
             .request(&reviewer, &scope)
             .at(&basis)
             .read_original_workflow::<GovernedDocumentWorkflow, SubjectRead, AuditRead>(
-                home.vocabulary(),
-                original,
-                input(),
-                input(),
+                home.vocabulary(), original, input(), input(),
             )
             .unwrap()
         {
             WorthQueryWorkflowInstanceRead::Historical { observation, .. } => assert_eq!(
-                observation.state(),
-                WorthQueryWorkflowObservedState::Cancelled,
+                observation.state(), WorthQueryWorkflowObservedState::Cancelled,
                 "seam {seam:?}: original instance {index} cancelled"
             ),
             _ => panic!("seam {seam:?}: original instance {index} must be historical cancelled"),
@@ -172,105 +159,114 @@ fn check_dispositions_and_close(
         .request(&operator, &scope)
         .at(&basis)
         .discover_workflow_definition::<GovernedDocumentWorkflow, MetadataRead>(
-            home.vocabulary(),
-            &target,
-            input(),
+            home.vocabulary(), &target, input(),
         )
         .unwrap();
     assert!(
-        matches!(
-            found.definition(),
-            WorthQueryWorkflowDefinitionDiscovery::Retired
-        ),
+        matches!(found.definition(), WorthQueryWorkflowDefinitionDiscovery::Retired),
         "seam {seam:?}: workflow definition retired"
     );
-    drop((basis, auth));
+    drop((found, basis, auth));
     home.close(execution)
         .unwrap_or_else(|cause| panic!("seam {seam:?}: target home closes: {cause:?}"))
         .reclaim();
+}
+
+fn open_resumed(
+    loc: &Location,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
+    authored: Arc<AtomicUsize>,
+    observed: Arc<std::sync::Mutex<Vec<TransitionState>>>,
+    seam: Seam,
+) -> WorthQueryApplicationHome<Schema, TargetProgram> {
+    let observe = worth_store_testkit_application_oracle::facade::host_interruption::opening::control(
+        |_| {},
+        None,
+        None,
+    )
+    .with_transition_observer_for_test(move |state| observed.lock().unwrap().push(state));
+    let request = home_transition::successor_request(loc)
+        .with_program_transition(
+            home_transition::source_request(loc),
+            home_transition::resources(),
+            move |source, target| {
+                authored.fetch_add(1, Ordering::SeqCst);
+                home_transition::plan(source, target)
+            },
+        )
+        .with_workflow_dispositions(Choices::retire_and_cancel_unperformed())
+        .with_opening_control_for_test(observe);
+    *with_bootstrap_advancement_from_request(execution, |phase| {
+        Box::new(request.open_in_advancement(&phase).unwrap_or_else(|cause| {
+            panic!("seam {seam:?}: workflow transition resumes: {cause:?}")
+        }))
+    })
+    .unwrap()
 }
 
 fn resumes_to_the_uninterrupted_end(
     location: &std::path::Path,
     originals: &Originals,
     seam: Seam,
+    recheck_plain_reopen: bool,
 ) -> Terminal {
     let lease = checkpoint_capture::lease(256 << 20);
     let execution = worth_execution::ExecutionRequest::leased(&lease);
     let loc = Location::Directory(location.to_owned());
     let authored = Arc::new(AtomicUsize::new(0));
-    let count = authored.clone();
-    let request = home_transition::successor_request(&loc)
-        .with_program_transition(
-            home_transition::source_request(&loc),
-            home_transition::resources(),
-            move |source, target| {
-                count.fetch_add(1, Ordering::SeqCst);
-                home_transition::plan(source, target)
-            },
-        )
-        .with_workflow_dispositions(Choices::retire_and_cancel_unperformed());
-    let home = with_bootstrap_advancement_from_request(execution, |phase| {
-        Box::new(request.open_in_advancement(&phase).unwrap_or_else(|cause| {
-            panic!("seam {seam:?}: workflow transition resumes: {cause:?}")
-        }))
-    })
-    .unwrap();
+    let observed = Arc::new(std::sync::Mutex::new(Vec::new()));
+    let home = open_resumed(&loc, execution, authored.clone(), observed.clone(), seam);
     let terminal = Terminal {
-        installed_commits: home
-            .runtime()
-            .runtime()
-            .world_history_snapshot_for_test()
-            .installed_commits(),
+        installed_commits: home.runtime().runtime().world_history_snapshot_for_test().installed_commits(),
         authored: authored.load(Ordering::SeqCst),
+        initial_state: observed.lock().unwrap().first().copied(),
     };
-    check_dispositions_and_close(*home, originals, &execution, seam);
-    let plain = home_transition::successor_request(&loc);
-    let home =
-        with_bootstrap_advancement_from_request(execution, |phase| {
+    check_dispositions_and_close(home, originals, &execution, seam);
+    if recheck_plain_reopen {
+        let plain = home_transition::successor_request(&loc);
+        let home = with_bootstrap_advancement_from_request(execution, |phase| {
             Box::new(plain.open_in_advancement(&phase).unwrap_or_else(|cause| {
                 panic!("seam {seam:?}: ordinary target reopens: {cause:?}")
             }))
         })
         .unwrap();
-    check_dispositions_and_close(*home, originals, &execution, seam);
+        check_dispositions_and_close(*home, originals, &execution, seam);
+    }
     terminal
 }
 
-/// Durable barriers mapped in target/lane-evidence/c3-3-notes.md (run 54) for
-/// each durable state of the 1-step workflow-bearing transition, and whether
-/// resuming from it runs the plan author.
-const DURABLE_STATES: [(Seam, &str, bool); 6] = [
-    (Seam::Barrier(1), "before the durable intent", true),
-    (Seam::Barrier(43), "intent durable", true),
-    (Seam::Barrier(63), "disposition step open durable", true),
-    (
-        Seam::Barrier(95),
-        "disposition step Native effect durable",
-        true,
-    ),
-    (
-        Seam::Barrier(125),
-        "disposition step durable, binding pending",
-        true,
-    ),
-    (Seam::AfterBinding, "binding durable", false),
+/// First durable barrier of each durable state of the 1-step workflow-bearing
+/// transition, verified by Store's observed opening state before recovery
+/// advances it, and whether resuming runs the plan author.
+const DURABLE_STATES: [(Seam, &str, bool, TransitionState, bool); 6] = [
+    (Seam::Barrier(1), "before the durable intent", true, TransitionState::Fresh, false),
+    (Seam::Barrier(43), "intent durable", true, TransitionState::UnopenedStep { step: 0 }, false),
+    (Seam::Barrier(63), "disposition step open durable", true, TransitionState::RecoveredOpenWithoutNative { step: 0 }, false),
+    (Seam::Barrier(95), "disposition step Native effect durable", true, TransitionState::RecoveredWithNative { step: 0 }, true),
+    (Seam::Barrier(125), "disposition step durable, binding pending", true, TransitionState::StepsDurableBindingPending, false),
+    (Seam::AfterBinding, "binding durable", false, TransitionState::Current, false),
 ];
 
 #[test]
 fn a_workflow_transition_killed_in_each_durable_state_resumes_with_dispositions_once() {
-    let (end, control) = killed_at(Seam::Uninterrupted);
+    let (end, control) = killed_at(Seam::Uninterrupted, true);
     assert_eq!(end, crate::killed_child::ChildEnd::Finished);
+    assert_eq!(control.initial_state, Some(TransitionState::Current));
     assert_eq!(
         control.authored, 0,
         "a completed workflow transition is never re-planned"
     );
-    for (seam, state, reauthored) in DURABLE_STATES {
-        let (end, resumed) = killed_at(seam);
+    for (seam, state, reauthored, expected_state, recheck_plain_reopen) in DURABLE_STATES {
+        let (end, resumed) = killed_at(seam, recheck_plain_reopen);
         assert_eq!(
             end,
             crate::killed_child::ChildEnd::KilledAtPark,
             "{state}: seam {seam:?} did not park inside the open; refresh the map"
+        );
+        assert_eq!(
+            resumed.initial_state,
+            Some(expected_state),
+            "{state}: seam {seam:?} must land in its exact durable state before recovery advances"
         );
         assert_eq!(
             resumed.installed_commits, control.installed_commits,
@@ -280,7 +276,10 @@ fn a_workflow_transition_killed_in_each_durable_state_resumes_with_dispositions_
     }
 }
 
-fn killed_at(seam: Seam) -> (crate::killed_child::ChildEnd, Terminal) {
+fn killed_at(
+    seam: Seam,
+    recheck_plain_reopen: bool,
+) -> (crate::killed_child::ChildEnd, Terminal) {
     let directory = tempfile::tempdir().unwrap();
     let location = directory.path().join("home");
     let markers = directory.path().join("markers");
@@ -299,7 +298,7 @@ fn killed_at(seam: Seam) -> (crate::killed_child::ChildEnd, Terminal) {
     );
     (
         end,
-        resumes_to_the_uninterrupted_end(&location, &originals, seam),
+        resumes_to_the_uninterrupted_end(&location, &originals, seam, recheck_plain_reopen),
     )
 }
 

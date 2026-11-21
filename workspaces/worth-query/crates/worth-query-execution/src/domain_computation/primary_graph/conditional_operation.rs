@@ -55,7 +55,7 @@ pub use clock_observation::{
     WorthQueryConditionalClockObservationDenial, WorthQueryConditionalClockObservationDenialKind,
     WorthQueryConditionalClockObservationFailure, WorthQueryConditionalClockObservationFailureKind,
     WorthQueryConditionalClockObservationOutcome, WorthQueryConditionalClockObservationPort,
-    WorthQueryConditionalClockObservationReceipt,
+    WorthQueryConditionalClockObservationReceipt, WorthQueryConditionalOriginalResolution,
 };
 pub use execution_provenance::{
     WorthQueryConditionalExecutionCause, WorthQueryConditionalExecutionProvenance,

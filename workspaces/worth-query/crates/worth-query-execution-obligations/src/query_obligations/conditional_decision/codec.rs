@@ -4,7 +4,10 @@ use super::super::{
     QueryManagedCleanupOriginal, QueryObligationDenial,
 };
 use super::*;
-use worth_foundational::facade::HomeIdentity;
+use worth_foundational::facade::{
+    DurableProductBranchIncarnation, DurableWorldOwnerIdentity, HomeIdentity,
+    WorldOwnerSlotIdentity,
+};
 
 pub(in crate::query_obligations) fn encode(
     bytes: &mut Vec<u8>,
@@ -18,6 +21,9 @@ pub(in crate::query_obligations) fn encode(
     bytes.extend_from_slice(key);
     bytes.extend_from_slice(intent);
     if let QueryConditionalDecisionRecord::Retain(row) = record {
+        bytes.extend_from_slice(&row.product.owner().home().bytes());
+        bytes.extend_from_slice(&row.product.owner().slot().get().to_le_bytes());
+        bytes.extend_from_slice(&row.product.ordinal().to_le_bytes());
         bytes.push(match row.posture {
             QueryConditionalPosture::CleanupRequired(_) => 0,
             QueryConditionalPosture::Retryable => 1,
@@ -48,34 +54,45 @@ pub(in crate::query_obligations) fn decode(
     let key = reader.take()?;
     let intent = reader.take()?;
     Ok(match tag {
-        0 => QueryConditionalDecisionRecord::Retain(QueryConditionalDecision {
-            key,
-            intent,
-            posture: match reader.take::<1>()?[0] {
-                0 => QueryConditionalPosture::CleanupRequired(
-                    ManagedCleanupObligationIdentity::from_recorded(
-                        home,
-                        std::num::NonZeroU64::new(u64::from_le_bytes(reader.take()?))
-                            .ok_or(MalformedFrame)?,
+        0 => {
+            let product_home =
+                HomeIdentity::from_observed_bytes(reader.take()?).map_err(|_| MalformedFrame)?;
+            let product_slot =
+                WorldOwnerSlotIdentity::from_recorded(u64::from_le_bytes(reader.take()?));
+            let product = DurableProductBranchIncarnation::from_recorded(
+                DurableWorldOwnerIdentity::from_recorded(product_home, product_slot),
+                u64::from_le_bytes(reader.take()?),
+            );
+            QueryConditionalDecisionRecord::Retain(QueryConditionalDecision {
+                key,
+                intent,
+                product,
+                posture: match reader.take::<1>()?[0] {
+                    0 => QueryConditionalPosture::CleanupRequired(
+                        ManagedCleanupObligationIdentity::from_recorded(
+                            home,
+                            std::num::NonZeroU64::new(u64::from_le_bytes(reader.take()?))
+                                .ok_or(MalformedFrame)?,
+                        ),
                     ),
-                ),
-                1 => QueryConditionalPosture::Retryable,
-                2 => QueryConditionalPosture::CommitRetryable,
-                3 => QueryConditionalPosture::ProductStale,
-                4 => QueryConditionalPosture::Indeterminate(
-                    match business_original::decode(reader)? {
-                        None => QueryConditionalOriginal::Unclassified,
-                        Some(QueryManagedCleanupOriginal::Attempt(attempt)) => {
-                            QueryConditionalOriginal::Recovered(attempt)
-                        }
-                        Some(QueryManagedCleanupOriginal::Unpublished(_)) => {
-                            return Err(MalformedFrame)
-                        }
-                    },
-                ),
-                _ => return Err(MalformedFrame),
-            },
-        }),
+                    1 => QueryConditionalPosture::Retryable,
+                    2 => QueryConditionalPosture::CommitRetryable,
+                    3 => QueryConditionalPosture::ProductStale,
+                    4 => QueryConditionalPosture::Indeterminate(
+                        match business_original::decode(reader)? {
+                            None => QueryConditionalOriginal::Unclassified,
+                            Some(QueryManagedCleanupOriginal::Attempt(attempt)) => {
+                                QueryConditionalOriginal::Recovered(attempt)
+                            }
+                            Some(QueryManagedCleanupOriginal::Unpublished(_)) => {
+                                return Err(MalformedFrame)
+                            }
+                        },
+                    ),
+                    _ => return Err(MalformedFrame),
+                },
+            })
+        }
         1 => QueryConditionalDecisionRecord::Finish { key, intent },
         _ => return Err(MalformedFrame),
     })

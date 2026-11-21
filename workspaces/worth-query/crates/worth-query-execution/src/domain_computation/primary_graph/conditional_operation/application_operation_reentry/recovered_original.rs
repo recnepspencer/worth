@@ -16,7 +16,9 @@ use worth_runtime_world::facade::WorldRecoveredContinuationOutcome as Continuati
 
 /// `None` when the key has no recovered original: the ordinary commit path
 /// then resolves the key itself before any effect.
-pub(super) fn continue_recovered_original<Schema>(
+pub(in crate::domain_computation::primary_graph::conditional_operation) fn continue_recovered_original<
+    Schema,
+>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     product: &crate::basis::WorthQueryProductBranchLease,
@@ -48,7 +50,14 @@ pub(super) fn continue_recovered_original<Schema>(
             .into_recovery()
             .continue_original_in_request(execution)
         {
-            Ok(Continuation::Published { .. }) => Outcome::AlreadyCommitted,
+            Ok(Continuation::Published { commit }) => Outcome::AlreadyCommitted(
+                commit.owner_identity().durable().map(|owner| {
+                    worth_foundational::facade::DurableCompositeCommitIdentity::from_recorded(
+                        owner,
+                        commit.ordinal(),
+                    )
+                }),
+            ),
             Ok(
                 Continuation::Pending(_)
                 | Continuation::Refused { .. }
@@ -58,6 +67,59 @@ pub(super) fn continue_recovered_original<Schema>(
             | Err(_) => unresolved("the recovered original did not publish; a retry continues it"),
         },
     )
+}
+
+/// Consult World's owning fate for a live indeterminate decision when the
+/// current candidate disappeared or changed revision. Never finishes the
+/// obligation unless World itself establishes publication, release, or proven
+/// absence with no live pending/unpublished original.
+pub(super) fn resolve_live_indeterminate_world_fate<Schema>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    product: &crate::basis::WorthQueryProductBranchLease,
+    key: [u8; 32],
+    intent: [u8; 32],
+) -> Outcome {
+    use crate::domain_computation::primary_graph::provider::WorthQueryConditionalKeyFate as Fate;
+    let provider = &runtime.runtime.primary_provider;
+    let publication = product.publication_binding();
+    if provider.has_live_unpublished_or_pending_conditional_key(&publication, key) {
+        return unresolved("live unpublished or pending original still held for indeterminate key");
+    }
+    match provider.conditional_key_fate(execution, &publication, key, intent) {
+        Ok(Fate::Published(receipt)) => Outcome::AlreadyCommitted(
+            receipt
+                .new_product_head()
+                .durable()
+                .map(|head| head.selected_commit()),
+        ),
+        Ok(Fate::Released) => Outcome::AlreadyCommitted(None),
+        Ok(Fate::Absent) => Outcome::Obsolete,
+        Ok(Fate::RecoveredUnpublished(_)) => {
+            let joined = runtime
+                .installed_program_support()
+                .and_then(|support| {
+                    match support
+                        .lifecycle()
+                        .retained_indeterminate_original(&key)
+                    {
+                        crate::domain_computation::primary_graph::query_obligations::QueryConditionalOriginal::Recovered(original) => Some(original),
+                        crate::domain_computation::primary_graph::query_obligations::QueryConditionalOriginal::Unclassified => None,
+                    }
+                });
+            continue_recovered_original(
+                execution,
+                runtime,
+                product,
+                WorthQueryApplicationIdempotencyBinding::new(key, intent),
+                joined,
+            )
+            .unwrap_or_else(|| unresolved("recovered original disappeared before continuation"))
+        }
+        Ok(Fate::OtherIntent) | Err(_) => {
+            unresolved("World did not resolve the indeterminate key")
+        }
+    }
 }
 
 /// The decision stays indeterminate; its row keeps the original association.

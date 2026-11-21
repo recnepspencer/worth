@@ -5,7 +5,9 @@ use journal::{
     QueryConditionalPosture, QueryObligationDenial,
 };
 use worth_execution::ExecutionRequest;
-use worth_foundational::facade::DurableCompositePublicationAttemptIdentity;
+use worth_foundational::facade::{
+    DurableCompositePublicationAttemptIdentity, DurableProductBranchIncarnation,
+};
 use worth_query_execution_obligations::facade::ledger_inspect;
 
 /// What an admitted conditional retry must do before any fresh execution.
@@ -18,6 +20,9 @@ pub(in crate::domain_computation::primary_graph) enum QueryConditionalRetryAdmis
 }
 
 impl QueryObligationHistory {
+    pub(in crate::domain_computation::primary_graph) fn has_medium(&self) -> bool {
+        self.medium.get().is_some()
+    }
     fn conditional_decision(&self, key: &[u8; 32]) -> Option<QueryConditionalDecision> {
         self.state()
             .journal
@@ -52,11 +57,22 @@ impl QueryObligationHistory {
         }
     }
 
+    pub(in crate::domain_computation::primary_graph) fn is_indeterminate(
+        &self,
+        key: &[u8; 32],
+    ) -> bool {
+        matches!(
+            self.conditional_decision(key).map(|row| row.posture),
+            Some(QueryConditionalPosture::Indeterminate(_))
+        )
+    }
+
     pub(in crate::domain_computation::primary_graph) fn admit_conditional_retry(
         &self,
         request: &ExecutionRequest<'_, '_>,
         key: [u8; 32],
         intent: [u8; 32],
+        product: Option<DurableProductBranchIncarnation>,
     ) -> Result<QueryConditionalRetryAdmission, QueryObligationDenial> {
         let Some(medium) = self.medium.get() else {
             return Ok(QueryConditionalRetryAdmission::Ordinary);
@@ -66,7 +82,7 @@ impl QueryObligationHistory {
         let Some(row) = self.conditional_decision(&key) else {
             return Ok(QueryConditionalRetryAdmission::Ordinary);
         };
-        if row.intent != intent {
+        if row.intent != intent || product.is_some_and(|expected| row.product != expected) {
             return Err(QueryObligationDenial::ObligationSubjectMismatch);
         }
         match row.posture {

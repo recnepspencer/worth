@@ -1,6 +1,7 @@
 //! Durable continuation meaning; Relational owns input and World owns effects.
 use worth_foundational::facade::{
-    DurableCompositePublicationAttemptIdentity, ManagedCleanupObligationIdentity,
+    DurableCompositePublicationAttemptIdentity, DurableProductBranchIncarnation,
+    ManagedCleanupObligationIdentity,
 };
 
 /// A retry needs its original key and intent, not the live error or clock lease.
@@ -32,6 +33,9 @@ pub enum QueryConditionalOriginal {
 pub struct QueryConditionalDecision {
     pub key: [u8; 32],
     pub intent: [u8; 32],
+    /// The durable product branch occurrence where this key was derived and
+    /// where World resolves its fate.
+    pub product: DurableProductBranchIncarnation,
     pub posture: QueryConditionalPosture,
 }
 

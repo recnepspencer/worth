@@ -35,6 +35,7 @@ pub struct WorthQueryConditionalExecutionProvenance {
     terminal: WorthQueryConditionalExecutionTerminal,
     cause: Option<WorthQueryConditionalExecutionCause>,
     managed_cleanup_run_identity: Option<String>,
+    published_commit: Option<worth_foundational::facade::DurableCompositeCommitIdentity>,
     canonical_work: worth_query_installation::facade::WorthQueryCanonicalWorkPhases,
 }
 
@@ -73,6 +74,14 @@ impl WorthQueryConditionalExecutionProvenance {
         self.managed_cleanup_run_identity.as_deref()
     }
 
+    /// The original published World occurrence when this wake committed or
+    /// resolved to an already-published original.
+    pub fn published_commit(
+        &self,
+    ) -> Option<&worth_foundational::facade::DurableCompositeCommitIdentity> {
+        self.published_commit.as_ref()
+    }
+
     pub const fn canonical_work(
         &self,
     ) -> worth_query_installation::facade::WorthQueryCanonicalWorkPhases {
@@ -98,6 +107,13 @@ pub(super) fn execution_provenance(
             managed_cleanup_run_identity: match &wake.decision {
                 WorthQueryRetainedConditionalDecision::OperationCleanupRequired(_, cleanup) => {
                     Some(cleanup.run_identity().to_owned())
+                }
+                _ => None,
+            },
+            published_commit: match &wake.decision {
+                WorthQueryRetainedConditionalDecision::OperationCommitted(_, commit)
+                | WorthQueryRetainedConditionalDecision::OperationAlreadyCommitted(_, commit) => {
+                    *commit
                 }
                 _ => None,
             },
@@ -206,8 +222,8 @@ fn cause(
         | Decision::Deferred(_)
         | Decision::OperationPreparationPending(_, _)
         | Decision::OperationPreparationRefused(_, _)
-        | Decision::OperationCommitted(_)
-        | Decision::OperationAlreadyCommitted(_) => None,
+        | Decision::OperationCommitted(_, _)
+        | Decision::OperationAlreadyCommitted(_, _) => None,
         Decision::OperationRetryable(_, cause) | Decision::OperationIndeterminate(_, cause) => {
             Some(Cause::Reentry(cause.clone()))
         }
@@ -342,10 +358,10 @@ fn terminal(
         WorthQueryRetainedConditionalDecision::OperationNoEffect(_, _) => {
             WorthQueryConditionalExecutionTerminal::NoEffect
         }
-        WorthQueryRetainedConditionalDecision::OperationCommitted(_) => {
+        WorthQueryRetainedConditionalDecision::OperationCommitted(_, _) => {
             WorthQueryConditionalExecutionTerminal::Committed
         }
-        WorthQueryRetainedConditionalDecision::OperationAlreadyCommitted(_) => {
+        WorthQueryRetainedConditionalDecision::OperationAlreadyCommitted(_, _) => {
             WorthQueryConditionalExecutionTerminal::AlreadyCommitted
         }
         WorthQueryRetainedConditionalDecision::Failed(_)

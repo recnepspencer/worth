@@ -1,7 +1,10 @@
 //! Injected provider terminal-outcome boundary.
 
 use std::sync::Arc;
+mod answer_pause;
 mod cancellation;
+pub use answer_pause::WorthQueryCommitAnswerPauseForTest;
+use answer_pause::BoundaryAnswerPause;
 use cancellation::BoundaryCancellation;
 
 #[derive(Clone, Copy)]
@@ -53,6 +56,12 @@ pub trait WorthQueryPrimaryGraphFaultPort: Send + Sync {
     fn schedule_for_test(&self, _fault: WorthQueryPrimaryGraphFault) -> bool {
         false
     }
+
+    fn pause_before_commit_answer(&self) {}
+
+    fn arm_pause_before_commit_answer_for_test(&self) -> Option<WorthQueryCommitAnswerPauseForTest> {
+        None
+    }
 }
 
 pub(in crate::domain_computation::primary_graph) fn production_fault_port(
@@ -67,6 +76,7 @@ struct WorthQueryScriptedPrimaryGraphFaults {
     scheduled: std::sync::atomic::AtomicU16,
     output_comparison_cancellation: BoundaryCancellation,
     inspection_materialization_cancellation: BoundaryCancellation,
+    commit_answer_pause: BoundaryAnswerPause,
 }
 
 impl WorthQueryPrimaryGraphFaultPort for WorthQueryScriptedPrimaryGraphFaults {
@@ -112,6 +122,14 @@ impl WorthQueryPrimaryGraphFaultPort for WorthQueryScriptedPrimaryGraphFaults {
             .fetch_or(fault_mask(fault), std::sync::atomic::Ordering::AcqRel);
         true
     }
+
+    fn pause_before_commit_answer(&self) {
+        self.commit_answer_pause.pause_if_armed();
+    }
+
+    fn arm_pause_before_commit_answer_for_test(&self) -> Option<WorthQueryCommitAnswerPauseForTest> {
+        Some(self.commit_answer_pause.arm())
+    }
 }
 
 const fn fault_mask(fault: WorthQueryPrimaryGraphFault) -> u16 {
@@ -147,6 +165,18 @@ impl super::WorthQueryPrimaryGraphProvider {
         assert!(self
             .fault_port
             .schedule_for_test(WorthQueryPrimaryGraphFault::LostCommitAnswer));
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn pause_before_commit_answer(&self) {
+        self.fault_port.pause_before_commit_answer();
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn pause_after_commit_before_answer_for_test(
+        &self,
+    ) -> WorthQueryCommitAnswerPauseForTest {
+        self.fault_port
+            .arm_pause_before_commit_answer_for_test()
+            .expect("scripted fault port supports commit-answer pause")
     }
 
     pub(super) fn take_rejected_session_prepare(&self) -> bool {

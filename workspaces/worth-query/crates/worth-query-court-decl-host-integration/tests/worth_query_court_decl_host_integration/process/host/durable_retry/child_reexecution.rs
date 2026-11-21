@@ -38,7 +38,7 @@ pub(crate) fn location() -> std::path::PathBuf {
     std::env::var_os(LOCATION).unwrap().into()
 }
 /// The writer's expectation file, read back by the fresh reader process.
-pub(super) fn expected() -> std::path::PathBuf {
+pub(crate) fn expected() -> std::path::PathBuf {
     std::env::var_os(EXPECTED).unwrap().into()
 }
 pub(crate) fn wait_for_kill() {

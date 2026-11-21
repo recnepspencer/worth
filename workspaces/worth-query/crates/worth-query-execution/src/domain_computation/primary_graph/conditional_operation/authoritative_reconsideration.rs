@@ -221,8 +221,8 @@ fn retained_decision_evidence_mut(
         | Decision::OperationProductStale(evidence, _)
         | Decision::OperationNoEffect(evidence, _)
         | Decision::OperationIndeterminate(evidence, _)
-        | Decision::OperationCommitted(evidence)
-        | Decision::OperationAlreadyCommitted(evidence) => Some(evidence),
+        | Decision::OperationCommitted(evidence, _)
+        | Decision::OperationAlreadyCommitted(evidence, _) => Some(evidence),
         Decision::OperationCommitRetryable(evidence, _)
         | Decision::OperationExecutionControlRetryable(evidence, _) => Some(evidence),
         Decision::Failed(_) | Decision::InterruptedDuringReentry => None,

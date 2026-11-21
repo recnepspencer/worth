@@ -1,5 +1,8 @@
 //! Value-only protocol evidence; the Host court supplies real cold continuation.
-use worth_foundational::facade::{HomeIdentity, ManagedCleanupObligationIdentity};
+use worth_foundational::facade::{
+    DurableProductBranchIncarnation, DurableWorldOwnerIdentity, HomeIdentity,
+    ManagedCleanupObligationIdentity, WorldOwnerSlotIdentity,
+};
 use worth_query_execution::facade::{
     domain_computation::{
         WorthQueryManagedRunCleanupDisposition, WorthQueryManagedRunCleanupFailureKind,
@@ -19,6 +22,10 @@ fn append(ledger: &mut QueryObligationLedger, record: impl Into<QueryObligationR
 #[test]
 fn conditional_temporal_custody_keeps_keys_and_requires_logical_cleanup_discharge() {
     let home = HomeIdentity::from_observed_bytes([3; 16]).unwrap();
+    let product = DurableProductBranchIncarnation::from_recorded(
+        DurableWorldOwnerIdentity::from_recorded(home, WorldOwnerSlotIdentity::from_recorded(1)),
+        1,
+    );
     let identity = ManagedCleanupObligationIdentity::from_recorded(home, std::num::NonZeroU64::MIN);
     let mut ledger = QueryObligationLedger::empty(home);
     append(
@@ -46,6 +53,7 @@ fn conditional_temporal_custody_keeps_keys_and_requires_logical_cleanup_discharg
         let row = QueryConditionalDecision {
             key: [ordinal as u8; 32],
             intent: [9; 32],
+            product,
             posture,
         };
         append(
