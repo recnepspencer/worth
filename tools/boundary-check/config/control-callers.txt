@@ -2034,3 +2034,10 @@ workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crat
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/producer_succession/native_walk/source_action.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-contribution/tests/worth_query_court_execution_primary_graph_application_contribution/domain_computation/primary_graph/application_contribution/partitioned_computation/incremental/tests/structural_walk/chains/property.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-contribution/tests/worth_query_court_execution_primary_graph_application_contribution/domain_computation/primary_graph/application_contribution/partitioned_computation/incremental/tests/structural_walk/orbits/property.rs
+
+# C3.1 mixed kill parks a real mixed definition commit at Signal's durable write or World's product compare; it injects no fate.
+crates/worth-runtime-world/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/host_oracle/graceful/signal/mixed_kill.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/host_oracle/graceful/signal/mixed_kill.rs
+crates/worth-signal/ workspaces/worth-store/crates/worth-store-testkit-application-oracle/src/host_interruption/signal_write.rs
+# C3.1 Signal readmission rows append one changed Signal advance through the Home's physical journal, then abort.
+workspaces/worth-store/crates/worth-store-application/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/host_oracle/graceful/signal/readmission_refusals.rs

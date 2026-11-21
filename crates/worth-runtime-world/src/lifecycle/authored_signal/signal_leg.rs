@@ -88,8 +88,8 @@ where
         if !definition.admits_signal_basis(expected) {
             return Err(WorldSignalLegDenial::SourceMoved);
         }
-        let backing =
-            WorldDurableSignalBacking::reserve(request).map_err(|_| WorldSignalLegDenial::Capacity)?;
+        let backing = WorldDurableSignalBacking::reserve(request)
+            .map_err(|_| WorldSignalLegDenial::Capacity)?;
         let binding = assembly
             .signal_owner()
             .mutation_port()

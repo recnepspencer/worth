@@ -1,7 +1,9 @@
 //! Concrete authored-declaration codec. It never visits node evaluation storage.
 mod conditional_definition;
 mod planned_definition;
-pub(crate) use planned_definition::{read as read_planned_definition, write as write_planned_definition};
+pub(crate) use planned_definition::{
+    read as read_planned_definition, write as write_planned_definition,
+};
 mod configuration;
 mod contracts;
 mod execution_tags;

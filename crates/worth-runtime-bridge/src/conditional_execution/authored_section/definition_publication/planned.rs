@@ -27,8 +27,12 @@ impl BridgeReadmittedAuthoredAssembly {
             dependencies: predecessor.semantic_dependencies().cloned().collect(),
             providers,
         };
-        let prepared =
-            self.prepare_conditional_definition_publication(execution, branch, &predecessor, request)?;
+        let prepared = self.prepare_conditional_definition_publication(
+            execution,
+            branch,
+            &predecessor,
+            request,
+        )?;
         if prepared.planned_leg() != leg {
             return Err(D::PlannedLegChanged);
         }

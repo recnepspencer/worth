@@ -44,8 +44,8 @@ pub(crate) use artifact::{
     DurableWorldHead, PreparedWorldArtifact, WorldArtifactInput, WorldBranchCreatedRecord,
     WorldCreatedBranchOwnerEvidence, WorldCreationIntentInput, WorldCreationIntentRecord,
     WorldHeadInput, WorldOpenAttemptInput, WorldOpenAttemptRecord, WorldPlannedSignalLegRecord,
-    WorldRecord, WorldRecordedRelationalCreationPlan, WorldRelationalCreationInput, WorldRelationalEvidence,
-    WorldRelationalForkEvidence,
+    WorldRecord, WorldRecordedRelationalCreationPlan, WorldRelationalCreationInput,
+    WorldRelationalEvidence, WorldRelationalForkEvidence,
 };
 pub use artifact::{
     WorldDurableArtifact, WorldDurableFrameDenial, WorldOpenComponentIntent,

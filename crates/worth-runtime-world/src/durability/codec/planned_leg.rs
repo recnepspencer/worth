@@ -7,7 +7,10 @@ use crate::durability::{
 use worth_execution::ExecutionRequest;
 use worth_runtime_bridge::facade::{BridgeAuthoredSectionDenial, BridgePlannedDefinitionLeg};
 
-pub(super) fn write(out: &mut Emit<'_>, planned: &WorldPlannedSignalLegRecord) -> Result<(), Frame> {
+pub(super) fn write(
+    out: &mut Emit<'_>,
+    planned: &WorldPlannedSignalLegRecord,
+) -> Result<(), Frame> {
     association(out, &planned.association)?;
     number(out, planned.custody.ordinal())?;
     number(out, planned.leg.as_bytes().len() as u64)?;

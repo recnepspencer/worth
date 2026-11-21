@@ -77,7 +77,10 @@ impl Pending {
         definition: &worth_signal::facade::SignalConditionalContractDefinition,
     ) -> Result<crate::conditional_execution::BridgePlannedDefinitionLeg, D> {
         let section = |cause| D::Section(Box::new(cause));
-        let admission = self.admission.as_ref().expect("prepared, not yet published");
+        let admission = self
+            .admission
+            .as_ref()
+            .expect("prepared, not yet published");
         let signal = worth_signal::facade::durability::SignalPlannedConditionalDefinition::capture(
             execution, node, definition,
         )

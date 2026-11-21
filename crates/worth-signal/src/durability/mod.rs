@@ -65,8 +65,7 @@ pub use readmission::{SignalOwnerReadmissionDenial, SignalRecordedIdentityContri
 mod tier_vocabulary;
 pub use authored_image::{
     SignalAuthoredImage, SignalAuthoredImageDenial, SignalPlannedConditionalDefinition,
-    SignalRuntimeAuthoredImage,
-    SIGNAL_AUTHORED_IMAGE_PROTOCOL, SIGNAL_AUTHORED_IMAGE_VERSION,
+    SignalRuntimeAuthoredImage, SIGNAL_AUTHORED_IMAGE_PROTOCOL, SIGNAL_AUTHORED_IMAGE_VERSION,
     SIGNAL_RUNTIME_AUTHORED_IMAGE_PROTOCOL,
 };
 pub use branch_advance::{SignalAuthoredBranchChange, SignalBranchAdvanceArtifact};

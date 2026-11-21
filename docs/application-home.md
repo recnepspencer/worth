@@ -203,6 +203,19 @@ fixed owner order before the Home serves anything.
   `RecoveredCommitted` and the same receipt.
 - **A kill after a Signal effect whose open World recorded:** the effect is
   readmitted on reopen.
+- **A kill inside a commit that carries a conditional definition** (a Native
+  write and a Signal definition in one original): World durably records the
+  planned Signal leg before Native's effect. If Native's effect is durable and
+  Signal's is not, reopen keeps the original with Native as its only acting
+  owner; continuing performs the recorded Signal leg exactly once, at the
+  original's Signal basis, then publishes. Release stays available until that
+  leg begins. If the reopened program no longer prepares the recorded leg,
+  continuation refuses with `SignalLeg(..)` before any Signal effect; a leg whose
+  Signal fate is unknown is never begun twice and waits for the next reopen.
+  A kill after the open, before any owner effect, releases the original as
+  proven no effect. A Signal leg supplied as a closure cannot be recorded, so a
+  Directory Home refuses such a commit with `UnrecordableSignalLeg` before any
+  owner effect.
 - **An unfinished branch creation:** opening the Home decides it before
   service, under its original identity. With no owner fork it is released;
   once any fork is durable it continues. A kill between Native's fork and

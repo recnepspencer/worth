@@ -22,9 +22,9 @@ pub(crate) use dependency_order::CollectedWorldHistoryStep;
 pub(crate) use disposition::{AdmittedWorldDisposition, PreparedWorldReleasedDisposition};
 mod open;
 mod planned_leg;
-pub(crate) use planned_leg::AdmittedWorldPlannedSignalLeg;
 pub(crate) use occurrence::{AdmittedWorldOccurrence, AdmittedWorldOccurrenceLocation};
 pub(crate) use open::AdmittedWorldOpenAttempt;
+pub(crate) use planned_leg::AdmittedWorldPlannedSignalLeg;
 
 #[derive(Debug)]
 pub enum WorldReadmissionDenial {

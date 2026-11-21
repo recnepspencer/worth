@@ -1,0 +1,348 @@
+//! A real Home is killed inside one mixed conditional-definition commit, after
+//! Native's effect is durable and again after both owner effects; a fresh
+//! process continues the original once, without re-executing either owner.
+use super::{opening, operations, session::Session};
+use std::path::PathBuf;
+use std::sync::{atomic::AtomicUsize, Arc};
+use std::time::Duration;
+use worth_query_host::facade::{primary_graph, WorthQueryApplicationHomeLocation};
+use worth_query_testkit_host::facade::host::temporal_conditional_operation::contribution_installation::{ApplicationBuildIdentity, ContactCounters};
+use worth_runtime_world::facade::{ProductUnpublishedNextAction, WorldRecoveredContinuationOutcome};
+
+const CHILD: &str =
+    "process::application::host_oracle::graceful::signal::mixed_kill::signal_mixed_kill_child";
+const BUILD: &str = "11111111-1111-4111-8111-111111111111";
+
+#[derive(Clone, Copy, Debug, serde::Serialize, serde::Deserialize)]
+enum Cut {
+    /// Native's effect is durable; Signal's planned leg has not begun its write.
+    NativeDurable,
+    /// Both owner effects are durable; World's occurrence is not.
+    BothDurable,
+}
+#[derive(serde::Serialize, serde::Deserialize)]
+enum Request {
+    Commit(u8),
+    Cut(Cut, u8),
+    Recover(u8),
+    Close,
+}
+#[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+struct Observation {
+    states: Vec<operations::State>,
+    frontiers: Vec<(u64, u64, u64)>,
+    contacts: (usize, usize, usize, usize),
+    recovered_rows: usize,
+}
+/// The recovered original as Query and World answer it in the fresh process.
+#[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+struct Recovered {
+    owner_effects: usize,
+    continue_offered: bool,
+    /// Sent only while Signal's leg is outstanding (see `recover`).
+    duplicate_key_is_original: Option<bool>,
+    published: bool,
+    key_answers_recovered_commit: bool,
+    after: Observation,
+}
+
+#[test]
+fn killed_with_only_native_durable_the_mixed_original_continues_its_signal_leg_once() {
+    journey(Cut::NativeDurable, 1);
+}
+#[test]
+fn killed_with_both_owner_effects_durable_the_mixed_original_publishes_once() {
+    journey(Cut::BothDurable, 2);
+}
+
+fn journey(cut: Cut, acting_owners: usize) {
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("home");
+    let expected = reference();
+    let mut generation = 0;
+    let start = |generation: &mut usize| -> (Session, Observation) {
+        *generation += 1;
+        let channel = directory.path().join(format!("session-{generation}"));
+        Session::start_child(&path, &channel, BUILD, CHILD)
+    };
+    let (mut session, fresh) = start(&mut generation);
+    let first: Observation = session.exchange(&Request::Commit(1));
+    assert_eq!(first.states, expected[0]);
+    session.kill();
+    // Positive control: a quiescent kill leaves nothing to recover.
+    let (mut session, quiet) = start(&mut generation);
+    assert_eq!(quiet, first);
+    let parked: bool = session.exchange(&Request::Cut(cut, 2));
+    assert!(parked, "the original reached its cut");
+    session.kill();
+    let (mut session, reopened) = start(&mut generation);
+    assert_eq!(
+        reopened.recovered_rows, 1,
+        "exactly the original is recovered"
+    );
+    assert_eq!(
+        reopened.states, first.states,
+        "the product stays at its predecessor"
+    );
+    assert_eq!(reopened.frontiers, first.frontiers);
+    assert_eq!(reopened.contacts, (0, 0, 0, 0), "reopen runs no provider");
+    let recovered: Recovered = session.exchange(&Request::Recover(2));
+    assert_eq!(
+        recovered.owner_effects, acting_owners,
+        "exactly the acting owners"
+    );
+    assert!(recovered.continue_offered);
+    assert_eq!(
+        recovered.duplicate_key_is_original,
+        (acting_owners == 1).then_some(true),
+        "the original key answers its retained original"
+    );
+    assert!(recovered.published, "the original continues once");
+    assert!(recovered.key_answers_recovered_commit);
+    assert_eq!(
+        recovered.after.states, expected[1],
+        "one Native and one Signal effect, as uninterrupted"
+    );
+    assert_eq!(recovered.after.recovered_rows, 0);
+    for ((before, after), (initial, once)) in first
+        .frontiers
+        .iter()
+        .zip(&recovered.after.frontiers)
+        .zip(fresh.frontiers.iter().zip(&first.frontiers))
+    {
+        assert_eq!(
+            (after.0 - before.0, after.1 - before.1, after.2 - before.2),
+            (once.0 - initial.0, once.1 - initial.1, once.2 - initial.2),
+            "the continuation moves each owner exactly as one uninterrupted commit"
+        );
+    }
+    assert_eq!(
+        recovered.after.contacts,
+        (0, 0, 0, 0),
+        "continuation re-executes no provider"
+    );
+    session.kill();
+    let (mut session, again) = start(&mut generation);
+    assert_eq!(
+        again.states, recovered.after.states,
+        "a second reopen serves the same definitions"
+    );
+    assert_eq!(again.frontiers, recovered.after.frontiers);
+    assert_eq!(again.recovered_rows, 0);
+    // C3.2 hold: the killed writer's managed run still refuses graceful close.
+    let closed_gracefully: bool = session.exchange(&Request::Close);
+    assert!(
+        !closed_gracefully,
+        "only the pending managed run refuses close"
+    );
+    session.finish();
+}
+
+/// The same two commits on an uninterrupted MemoryOnly Home.
+fn reference() -> [Vec<operations::State>; 2] {
+    let request = super::super::super::opening::serial();
+    let execution = worth_execution::ExecutionRequest::serial(&request);
+    let home = opening::open(
+        WorthQueryApplicationHomeLocation::MemoryOnly,
+        ApplicationBuildIdentity::parse(BUILD).unwrap(),
+        Arc::new(AtomicUsize::new(0)),
+        ContactCounters::default(),
+        &execution,
+    );
+    let branches = operations::installed(&home);
+    operations::mixed(&home, branches[0], 1);
+    let first = operations::observe(&home, &branches);
+    operations::mixed(&home, branches[0], 2);
+    let second = operations::observe(&home, &branches);
+    drop(home.close(&execution).err().unwrap().resume().unwrap());
+    [first, second]
+}
+
+#[test]
+fn signal_mixed_kill_child() {
+    let Some(channel) = std::env::var_os("WORTH_SIGNAL_HOME_CHANNEL").map(PathBuf::from) else {
+        return;
+    };
+    let path = PathBuf::from(std::env::var_os("WORTH_SIGNAL_HOME_PATH").unwrap());
+    let build = ApplicationBuildIdentity::parse(&std::env::var("WORTH_SIGNAL_HOME_BUILD").unwrap())
+        .unwrap();
+    let request = super::super::super::opening::serial();
+    let execution = worth_execution::ExecutionRequest::serial(&request);
+    let contacts = ContactCounters::default();
+    let home = opening::open(
+        WorthQueryApplicationHomeLocation::Directory(path),
+        build,
+        Arc::new(AtomicUsize::new(0)),
+        contacts.clone(),
+        &execution,
+    );
+    let main = operations::installed(&home)[0];
+    let observe = |home: &opening::Home| Observation {
+        states: operations::observe(home, &[main]),
+        frontiers: operations::frontiers(home, &[main]),
+        contacts: contacts.snapshot(),
+        recovered_rows: home
+            .runtime()
+            .product_publication_recovery_page(None, std::num::NonZeroUsize::new(16).unwrap())
+            .unwrap()
+            .rows()
+            .len(),
+    };
+    let respond = |bytes: Vec<u8>| crate::killed_child::announce(&channel.join("response"), &bytes);
+    let answer = |home: &opening::Home| serde_json::to_vec(&observe(home)).unwrap();
+    respond(answer(&home));
+    loop {
+        let path = channel.join("request");
+        if !path.is_file() {
+            std::thread::sleep(Duration::from_millis(10));
+            continue;
+        }
+        let command: Request = serde_json::from_slice(&std::fs::read(&path).unwrap()).unwrap();
+        std::fs::remove_file(path).unwrap();
+        match command {
+            Request::Commit(ordinal) => {
+                operations::mixed(&home, main, ordinal);
+                respond(answer(&home));
+            }
+            Request::Cut(cut, ordinal) => {
+                // The parked original holds its branch's publication gate, so
+                // only the arrival is answered; the product is observed on reopen.
+                park(&home, main, cut, ordinal, || {
+                    respond(serde_json::to_vec(&true).unwrap())
+                })
+            }
+            Request::Recover(ordinal) => {
+                let recovered = recover(&home, main, ordinal, &execution, &observe);
+                respond(serde_json::to_vec(&recovered).unwrap());
+            }
+            Request::Close => {
+                respond(serde_json::to_vec(&close(home, &execution)).unwrap());
+                return;
+            }
+        }
+    }
+}
+
+/// Close gracefully, or end the one refusal C3.2 still owes: the killed
+/// writer's managed run. Returns whether the Home closed.
+fn close(home: opening::Home, execution: &worth_execution::ExecutionRequest<'_, '_>) -> bool {
+    use worth_query_execution::facade::query_obligations::QueryObligationDenial;
+    use worth_query_host::facade::primary_graph::WorthQueryHomeRetirementDenial as Denial;
+    match home.close(execution) {
+        Ok(closed) => {
+            assert!(closed.is_closed());
+            closed.reclaim();
+            true
+        }
+        Err(refused) => {
+            assert!(
+                matches!(
+                    refused.query_denial(),
+                    Some(Denial::ManagedCleanup(
+                        QueryObligationDenial::ManagedRunPending { .. }
+                    ))
+                ),
+                "C3.2 managed-run release is the only refusal: {refused:?}"
+            );
+            drop(
+                refused
+                    .resume()
+                    .expect("refused close keeps the serving Home"),
+            );
+            false
+        }
+    }
+}
+
+/// Run the commit until the cut's real owner boundary, answer, and stay parked
+/// until the parent kills this process.
+fn park(
+    home: &opening::Home,
+    branch: worth_query_host::facade::product::WorthQueryProductBranch,
+    cut: Cut,
+    ordinal: u8,
+    parked: impl FnOnce(),
+) {
+    let app = home.runtime();
+    let bound = Duration::from_secs(120);
+    std::thread::scope(|scope| {
+        let reached = match cut {
+            Cut::NativeDurable => {
+                let control = app.signal_operation_control_for_test().unwrap();
+                let pause =
+                    worth_store_testkit_application_oracle::host_interruption::signal_write::pause_before_signal_durable_write(&control);
+                scope.spawn(|| operations::commit_mixed(home, branch, ordinal));
+                let reached = pause.wait_until_reached(bound);
+                std::mem::forget(pause);
+                reached
+            }
+            Cut::BothDurable => {
+                let pause = app
+                    .world_operation_control_for_test()
+                    .pause_before_product_compare_for_test(std::num::NonZeroUsize::MIN);
+                scope.spawn(|| operations::commit_mixed(home, branch, ordinal));
+                let reached = pause.wait_until_reached(bound);
+                std::mem::forget(pause);
+                reached
+            }
+        };
+        assert!(reached, "the mixed commit reaches its cut");
+        parked();
+        let until = std::time::Instant::now() + bound;
+        while std::time::Instant::now() < until {
+            std::thread::sleep(Duration::from_millis(10));
+        }
+        panic!("parent did not kill the parked mixed commit");
+    });
+}
+
+fn recover(
+    home: &opening::Home,
+    branch: worth_query_host::facade::product::WorthQueryProductBranch,
+    ordinal: u8,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    observe: &dyn Fn(&opening::Home) -> Observation,
+) -> Recovered {
+    let app = home.runtime();
+    let page = app
+        .product_publication_recovery_page(None, std::num::NonZeroUsize::MIN)
+        .unwrap();
+    let handle = page.rows()[0].handle().clone();
+    let recovery = app.readmit_product_publication_recovery(&handle).unwrap();
+    let original = recovery.inspect().unwrap();
+    let owner_effects = original.owner_effect_count();
+    let continue_offered = original
+        .next_actions()
+        .contains(&ProductUnpublishedNextAction::ContinueOriginalPublication);
+    drop(original);
+    // With Signal's leg already durable, the handler's own definition
+    // admission refuses before any key lookup (the installed lowering is ahead
+    // of the product basis), so the duplicate key is sent only while Signal's
+    // leg is outstanding; after continuation the key is answered either way.
+    let duplicate_key_is_original =
+        (owner_effects == 1).then(|| match operations::commit_mixed(home, branch, ordinal) {
+            primary_graph::WorthQueryApplicationCommitOutcome::ProductUnpublished(original) => {
+                original.into_recovery().record_handle() == &handle
+            }
+            other => panic!("the original key answers its retained original: {other:?}"),
+        });
+    let published = loop {
+        match recovery.continue_original_in_request(execution).unwrap() {
+            WorldRecoveredContinuationOutcome::Pending(custody) => drop(custody),
+            WorldRecoveredContinuationOutcome::Published { .. } => break true,
+            other => panic!("the recovered mixed original continues: {other:?}"),
+        }
+    };
+    let key_answers_recovered_commit = matches!(
+        operations::commit_mixed(home, branch, ordinal),
+        primary_graph::WorthQueryApplicationCommitOutcome::RecoveredCommitted(_)
+    );
+    Recovered {
+        owner_effects,
+        continue_offered,
+        duplicate_key_is_original,
+        published,
+        key_answers_recovered_commit,
+        after: observe(home),
+    }
+}

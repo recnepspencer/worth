@@ -31,14 +31,18 @@ impl SignalPlannedConditionalDefinition {
             bytes,
         })
     }
-    pub fn readmit_bytes(execution: &ExecutionRequest<'_, '_>, bytes: &[u8]) -> Result<Self, Denial> {
+    pub fn readmit_bytes(
+        execution: &ExecutionRequest<'_, '_>,
+        bytes: &[u8],
+    ) -> Result<Self, Denial> {
         framing::admit_work(execution, bytes.len().saturating_mul(2))?;
         let (node, definition) = codec::read_planned_definition(framing::payload(
             AuthoredSectionKind::PlannedDefinition,
             bytes,
         )?)?;
-        let mut copy = worth_execution::ExecutionRequestArrayBuilder::allocate(*execution, bytes.len())
-            .map_err(Denial::Backing)?;
+        let mut copy =
+            worth_execution::ExecutionRequestArrayBuilder::allocate(*execution, bytes.len())
+                .map_err(Denial::Backing)?;
         copy.extend_from_slice(bytes).map_err(Denial::Backing)?;
         Ok(Self {
             node,

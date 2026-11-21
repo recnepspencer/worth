@@ -116,7 +116,7 @@ pub(super) fn payload_section(section: Section, bytes: &[u8]) -> Result<Reader<'
             .map_err(|_| D::Malformed)?;
     BoundaryProtocolCompatibilityWindow::inclusive(section.version(), section.version())
         .admit(version)
-    .map_err(D::UnsupportedVersion)?;
+        .map_err(D::UnsupportedVersion)?;
     if u64::from_le_bytes(bytes[12..20].try_into().unwrap()) != (bytes.len() - HEADER) as u64 {
         return Err(D::Malformed);
     }

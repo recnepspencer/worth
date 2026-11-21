@@ -550,7 +550,9 @@ deliver change ─────────────────────�
    decides whether output changed meaningfully and returns evidence.
 
 If the commit also changes a conditional definition, the Signal leg runs
-inside the World's order, after Relational settlement.
+inside the World's order, after Relational settlement. On a Directory Home World
+first records that planned Signal leg durably, so a kill after Native's effect
+can still finish the same leg exactly once on reopen.
 
 Two different things follow a commit, and they sit at different points in
 this order. *Query's native marking*, the record of which settled outputs

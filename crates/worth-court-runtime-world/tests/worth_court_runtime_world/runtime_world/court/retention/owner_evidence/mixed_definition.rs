@@ -59,10 +59,8 @@ pub(in super::super) fn prepare(
     let assembly = fixture.bridge();
     let predecessor = bridge_owner::installed(assembly);
     let generation = generation(&predecessor) + 1;
-    let branch = DurableSignalBranchIdentity::from_recorded(
-        assembly.signal_owner().binding().owner(),
-        0,
-    );
+    let branch =
+        DurableSignalBranchIdentity::from_recorded(assembly.signal_owner().binding().owner(), 0);
     let definition = assembly
         .prepare_conditional_definition_publication(
             request,

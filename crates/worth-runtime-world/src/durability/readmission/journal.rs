@@ -218,7 +218,8 @@ impl WorldCheckpointImage {
         self.require_open(&planned.association, planned.custody)?;
         let attempt = planned.association.attempt();
         let open = &self.opens[&attempt];
-        if open.component_intent != crate::durability::WorldOpenComponentIntent::RelationalAndSignal {
+        if open.component_intent != crate::durability::WorldOpenComponentIntent::RelationalAndSignal
+        {
             return Err(WorldReadmissionDenial::OccurrenceEvidenceMismatch);
         }
         if position <= open.position()
@@ -227,7 +228,8 @@ impl WorldCheckpointImage {
         {
             return Err(WorldReadmissionDenial::ConflictingOpenAttempt);
         }
-        let row = super::AdmittedWorldPlannedSignalLeg::from_validated_journal(record, position, digest);
+        let row =
+            super::AdmittedWorldPlannedSignalLeg::from_validated_journal(record, position, digest);
         insert(&mut self.planned_legs, &attempt, &row, execution)
     }
     pub(in crate::durability) fn admit_disposition(

@@ -52,7 +52,9 @@ fn run(mixed: bool, orphan: bool) {
             other => panic!("actual original open: {other:?}"),
         };
         let commit = opened.reserved_commit_identity().ordinal();
-        let prepared = opened.prepare_signal(&fixture.native, request, None).unwrap();
+        let prepared = opened
+            .prepare_signal(&fixture.native, request, None)
+            .unwrap();
         (Original::Closure(prepared), commit)
     };
     let control = fixture.world.world_operation_control_for_test();
@@ -69,12 +71,16 @@ fn run(mixed: bool, orphan: bool) {
                     calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
                     super::mixed_definition::publish(&port, &request, original, &token)
                 }
-                Original::Closure(prepared) => {
-                    port.execute_durable_with_signal(request, prepared, &mut (), &token, move |_| {
+                Original::Closure(prepared) => port.execute_durable_with_signal(
+                    request,
+                    prepared,
+                    &mut (),
+                    &token,
+                    move |_| {
                         calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
                         Ok(())
-                    })
-                }
+                    },
+                ),
             }
         });
         assert!(pause.wait_until_reached(std::time::Duration::from_secs(30)));

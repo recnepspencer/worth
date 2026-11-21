@@ -87,7 +87,8 @@ fn an_indeterminate_recovered_signal_leg_waits_for_reopen_and_is_never_begun_twi
     let recovery = fixture.world.recovery_port();
     let outcome = recovery.continue_recovered_effects(&request, recovered(&fixture));
     let WorldRecoveredContinuationOutcome::Refused {
-        cause: WorldRecoveredContinuationDenial::Admission(RuntimeWorldRecoveryDenial::ReopenRequired),
+        cause:
+            WorldRecoveredContinuationDenial::Admission(RuntimeWorldRecoveryDenial::ReopenRequired),
         custody,
     } = outcome
     else {
@@ -162,16 +163,11 @@ fn a_closure_signal_leg_on_a_durable_mixed_original_refuses_before_any_owner_eff
         .prepare_signal(&fixture.native, &request, Some(proposal))
         .unwrap();
     let mut body = false;
-    let outcome = port.execute_durable_with_signal(
-        request,
-        prepared,
-        &mut (),
-        &cancellation.token(),
-        |_| {
+    let outcome =
+        port.execute_durable_with_signal(request, prepared, &mut (), &cancellation.token(), |_| {
             body = true;
             Ok(())
-        },
-    );
+        });
     assert!(matches!(
         outcome,
         WorldDurablePublicationOutcome::RecoveryRequired {
@@ -181,7 +177,10 @@ fn a_closure_signal_leg_on_a_durable_mixed_original_refuses_before_any_owner_eff
     ));
     drop((outcome, head, port));
     assert!(!body, "the closure never runs");
-    assert_eq!(fixture.native.history().immutable_commit_count(), native_before);
+    assert_eq!(
+        fixture.native.history().immutable_commit_count(),
+        native_before
+    );
     assert_eq!(
         fixture.signal().published_advance_count().unwrap(),
         signal_before

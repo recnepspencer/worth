@@ -15,8 +15,11 @@ pub(crate) fn write(
 pub(crate) fn read(payload: &[u8]) -> Result<(DurableSignalNodeIdentity, Definition), Denial> {
     let mut input = Read::image(payload)?;
     input.materialize = true;
-    let node =
-        DurableSignalNodeIdentity::from_recorded(input.branch, input.small_number()?, input.small_number()?);
+    let node = DurableSignalNodeIdentity::from_recorded(
+        input.branch,
+        input.small_number()?,
+        input.small_number()?,
+    );
     let definition = conditional_definition::read(&mut input)?;
     input.finish()?;
     Ok((node, definition))

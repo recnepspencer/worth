@@ -386,7 +386,14 @@ A foreign grant refuses before the callback, and callback refusal restores the
 predecessor projection. The standalone entry refuses after composite attachment.
 
 For a mixed World publication, `prepare_conditional_definition_publication`
-reserves the actual Bridge successor without running a Signal effect. The
+reserves the actual Bridge successor without running a Signal effect. Its
+`planned_leg()` is a versioned, checksummed `BridgePlannedDefinitionLeg`
+(Signal's planned definition at the recorded node, the contract row and the
+authored provider sources) that World records before Native's effect. After a
+kill with only Native durable, `prepare_planned_definition_publication`
+prepares the same successor again through this program's installed decoders and
+refuses `PlannedLegChanged` (or the ordinary identity, currentness and provider
+refusals) when the program no longer reproduces the recorded leg byte for byte. The
 linear `WithSignal` route checks that preparation against its admitted source,
 settles Native first, then transfers it to Signal's existing original task.
 `BridgeDurableDefinitionCompletion` accepts only that original's committed

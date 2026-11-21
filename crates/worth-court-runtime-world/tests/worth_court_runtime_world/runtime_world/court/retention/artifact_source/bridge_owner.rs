@@ -30,9 +30,7 @@ pub(super) fn fresh(
     medium: &Arc<Medium>,
     request: &ExecutionRequest<'_, '_>,
 ) -> Arc<BridgeReadmittedAuthoredAssembly> {
-    builder
-        .install_owned_conditional(installation(0))
-        .unwrap();
+    builder.install_owned_conditional(installation(0)).unwrap();
     let mut publication = builder
         .prepare_initial_authored_source(
             medium.clone(),
@@ -47,7 +45,11 @@ pub(super) fn fresh(
     let published = publication
         .try_into_published()
         .unwrap_or_else(|_| panic!("initial Bridge source remained pending"));
-    Arc::from(published.readmit_authored_owner(&mut Bindings, request).unwrap())
+    Arc::from(
+        published
+            .readmit_authored_owner(&mut Bindings, request)
+            .unwrap(),
+    )
 }
 
 /// Readmit the same program from the medium's durable Signal journals.
@@ -92,7 +94,8 @@ pub(in super::super) fn installation(generation: u64) -> BridgeOwnedConditionalI
 pub(in super::super) fn installed(
     assembly: &BridgeReadmittedAuthoredAssembly,
 ) -> Arc<BridgeInstalledConditionalLowering> {
-    let branch = DurableSignalBranchIdentity::from_recorded(assembly.signal_owner().binding().owner(), 0);
+    let branch =
+        DurableSignalBranchIdentity::from_recorded(assembly.signal_owner().binding().owner(), 0);
     assembly
         .with_authored_branch(branch, |view| {
             view.with_conditional_definitions(|items| items.next().unwrap())

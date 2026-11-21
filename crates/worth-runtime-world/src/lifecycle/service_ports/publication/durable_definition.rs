@@ -83,11 +83,11 @@ impl RuntimeWorldPublicationPort<(), (), (), (), ()> {
         // The Signal leg is durable DATA before Native may take its effect.
         // A Signal-only original has no state between two owner effects.
         let recorded = match prepared.prepared.durable_open() {
-            Some(open) if open.plans_signal_after_native() => open.publish_planned_signal_leg(
-                definition.planned_leg(),
-                &execution,
-                &|| cancellation.is_cancelled(),
-            ),
+            Some(open) if open.plans_signal_after_native() => {
+                open.publish_planned_signal_leg(definition.planned_leg(), &execution, &|| {
+                    cancellation.is_cancelled()
+                })
+            }
             Some(_) => Ok(()),
             None => Err(crate::durability::WorldDurableMediumDenial::Unavailable),
         };

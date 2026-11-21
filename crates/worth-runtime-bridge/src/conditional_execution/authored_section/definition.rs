@@ -303,7 +303,9 @@ pub(super) fn contract_from_signal(
             BridgeConditionalCondition::DeltaThreshold(value.clone())
         }
         SignalConditionalCondition::OnDemand => BridgeConditionalCondition::OnDemand,
-        SignalConditionalCondition::RuntimePredicate => BridgeConditionalCondition::RuntimePredicate,
+        SignalConditionalCondition::RuntimePredicate => {
+            BridgeConditionalCondition::RuntimePredicate
+        }
         SignalConditionalCondition::TemporalWake => BridgeConditionalCondition::TemporalWake,
     };
     BridgeConditionalContract::new(BridgeConditionalContractParts {

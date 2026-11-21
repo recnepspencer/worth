@@ -61,27 +61,31 @@ impl BridgePlannedDefinitionLeg {
         location: &BridgeConditionalLocation,
         providers: &BridgeAuthoredProviderDescriptions,
     ) -> Result<Self, D> {
-        let bytes = framing::encode_section(Section::PlannedDefinitionLeg, execution, &mut |out| {
-            out.blob(signal.as_bytes())?;
-            out.text(contract.identity())?;
-            out.byte(u8::from(location.stage_identity().is_some()))?;
-            if let Some(stage) = location.stage_identity() {
-                out.text(stage)?;
-            }
-            out.number(contract.dependency_count() as u64)?;
-            let ordinals = contract.condition_dependency_ordinals();
-            out.number(ordinals.len() as u64)?;
-            for ordinal in ordinals {
-                out.number(*ordinal as u64)?;
-            }
-            out.record(&mut |out| provider_source::write(out, providers))
-        })?;
+        let bytes =
+            framing::encode_section(Section::PlannedDefinitionLeg, execution, &mut |out| {
+                out.blob(signal.as_bytes())?;
+                out.text(contract.identity())?;
+                out.byte(u8::from(location.stage_identity().is_some()))?;
+                if let Some(stage) = location.stage_identity() {
+                    out.text(stage)?;
+                }
+                out.number(contract.dependency_count() as u64)?;
+                let ordinals = contract.condition_dependency_ordinals();
+                out.number(ordinals.len() as u64)?;
+                for ordinal in ordinals {
+                    out.number(*ordinal as u64)?;
+                }
+                out.record(&mut |out| provider_source::write(out, providers))
+            })?;
         if bytes.bytes().len() > MAXIMUM_BYTES {
             return Err(D::SizeLimit);
         }
         Ok(Self { bytes })
     }
-    pub(super) fn decode(&self, execution: &ExecutionRequest<'_, '_>) -> Result<PlannedLegParts, D> {
+    pub(super) fn decode(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+    ) -> Result<PlannedLegParts, D> {
         decode(execution, self.as_bytes())
     }
 }
@@ -133,4 +137,3 @@ fn read_ordinals(input: &mut Reader<'_>, dependencies: usize) -> Result<Vec<usiz
     }
     Ok(ordinals)
 }
-

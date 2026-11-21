@@ -72,7 +72,10 @@ impl Model {
                     custody,
                 },
             ) => {
-                assert!(custody.component_results().relational_settlement().is_none());
+                assert!(custody
+                    .component_results()
+                    .relational_settlement()
+                    .is_none());
                 None
             }
             (

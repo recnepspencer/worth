@@ -67,7 +67,12 @@ impl Fixture {
     /// A journal Home whose Signal owner is a real Bridge projection with
     /// one authored conditional definition.
     pub(super) fn bridge_journal(request: &ExecutionRequest<'_, '_>) -> Self {
-        Self::fresh_owned(request, true, RuntimeWorldBudgets::without_policy_limits(), true)
+        Self::fresh_owned(
+            request,
+            true,
+            RuntimeWorldBudgets::without_policy_limits(),
+            true,
+        )
     }
     pub(super) fn new(request: &ExecutionRequest<'_, '_>) -> Self {
         Self::fresh(request, false, RuntimeWorldBudgets::without_policy_limits())
