@@ -17,6 +17,7 @@ use std::ops::Range;
 
 mod coverage;
 mod fold;
+mod relations;
 pub(super) use fold::withdraw_superseded;
 
 type Read = RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>;
@@ -207,12 +208,26 @@ impl RelationalAuthoredCoupledCandidate<'_> {
                     }
                 }
                 let created = part.chain.created.iter().copied().collect::<BTreeSet<_>>();
+                // Identity: each head relation is re-created over the same endpoints.
+                let mut links = BTreeSet::new();
+                for intent in &part.commands.plan().merged_intents {
+                    if let Some(link) = relations::relink(bindings, intent, source, &mut charge)? {
+                        links.insert(link);
+                    }
+                }
+                let mut relinked = BTreeSet::new();
                 let mut written = BTreeSet::<Unit>::new();
                 let mut recreated = BTreeSet::new();
                 // One write per record: a chain record folds as one round's one write.
                 let mut targets = BTreeSet::new();
                 for intent in batches.iter().flat_map(|batch| &batch.intents) {
                     charge(intent.owned_allocation_capacity_bytes().saturating_add(1))?;
+                    if let Some(link) = relations::relink(bindings, intent, source, &mut charge)? {
+                        if !links.contains(&link) || !relinked.insert(link) {
+                            return Err(continuation::postponed(Reason::StructuralEffect, source));
+                        }
+                        continue;
+                    }
                     let id = match intent {
                         MutationIntent::Create(CreateIntent::Entity(spec)) => {
                             let Some(id) = allocation(bindings, spec, &mut charge)?
@@ -253,6 +268,12 @@ impl RelationalAuthoredCoupledCandidate<'_> {
                 }
                 for intent in &part.commands.plan().merged_intents {
                     charge(intent.owned_allocation_capacity_bytes().saturating_add(1))?;
+                    if let Some(link) = relations::relink(bindings, intent, source, &mut charge)? {
+                        if !relinked.contains(&link) {
+                            return Err(continuation::postponed(Reason::UncoveredWrite, source));
+                        }
+                        continue;
+                    }
                     let id = match intent {
                         MutationIntent::Create(CreateIntent::Entity(spec)) => {
                             allocation(bindings, spec, &mut charge)?.ok_or_else(|| {

@@ -142,9 +142,7 @@ pub(in crate::domain_computation::primary_graph) fn touch_changes(
         _ => match (touch_probe(touch), fact_keys(fact)) {
             (TouchProbe::Nothing, _) => false,
             (TouchProbe::Everything, _) | (TouchProbe::Keys(_), None) => true,
-            (TouchProbe::Keys(touched), Some(read)) => {
-                touched.iter().any(|key| read.contains(key))
-            }
+            (TouchProbe::Keys(touched), Some(read)) => touched.iter().any(|key| read.contains(key)),
         },
     }
 }

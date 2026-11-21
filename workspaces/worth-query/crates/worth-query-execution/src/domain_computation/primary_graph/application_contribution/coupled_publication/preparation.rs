@@ -300,7 +300,7 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
         let PreparedCoupledWriter {
             writer,
             publication,
-            batch,
+            mut batch,
             content,
         } = prepared;
         // Keep the session even when Native requests an ordinary symbol retry;
@@ -315,6 +315,7 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
         self.record_consumption(execution, &self.consuming(), produces)?;
         if let Some(chain) = &chain {
             self.require_independent(candidate, chain, writer.session())?;
+            self.rekey_original(chain.index, writer.session(), &mut batch);
         }
         let next = CoupledWriter {
             position,

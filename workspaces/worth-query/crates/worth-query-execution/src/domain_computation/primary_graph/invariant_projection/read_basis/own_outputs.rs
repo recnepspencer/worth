@@ -9,6 +9,7 @@ use worth_relational::facade::{
     runtime::{RelationalAppliedCandidateReadIdentity, RelationalPinnedRead},
 };
 
+#[derive(Clone)]
 pub struct OwnOutputOverlay {
     head: RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
     exclusive: Vec<EntityId>,
@@ -22,6 +23,13 @@ impl OwnOutputOverlay {
             head: chain.head_pre_pin().clone(),
             exclusive: chain.exclusive_entities().to_vec(),
         }
+    }
+
+    /// The chain head's pre-pin: the image before the chain's first round.
+    pub(in crate::domain_computation::primary_graph) fn head(
+        &self,
+    ) -> &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity> {
+        &self.head
     }
 
     /// The chain head's pre-pin, for a record the chain wrote exclusively.

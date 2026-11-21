@@ -187,23 +187,25 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthorit
                     &decode_work,
                 )
             })),
-            NativeReadAccess::Applied(before, candidate, own_outputs) => catch_unwind(AssertUnwindSafe(|| {
-                self.execute_reader(
-                    execution,
-                    NativeProjectionRead::Applied {
-                        before,
-                        candidate,
-                        own_outputs,
-                    },
-                    value_decode,
-                    basis,
-                    snapshot,
-                    work_budget,
-                    projection,
-                    retention_control,
-                    &decode_work,
-                )
-            })),
+            NativeReadAccess::Applied(before, candidate, own_outputs) => {
+                catch_unwind(AssertUnwindSafe(|| {
+                    self.execute_reader(
+                        execution,
+                        NativeProjectionRead::Applied {
+                            before,
+                            candidate,
+                            own_outputs,
+                        },
+                        value_decode,
+                        basis,
+                        snapshot,
+                        work_budget,
+                        projection,
+                        retention_control,
+                        &decode_work,
+                    )
+                }))
+            }
         });
         let projected = decoded.map_err(|cause| {
             WorthQueryInvariantProjectionDenial::value_decode_stopped(cause, decode_work.get())

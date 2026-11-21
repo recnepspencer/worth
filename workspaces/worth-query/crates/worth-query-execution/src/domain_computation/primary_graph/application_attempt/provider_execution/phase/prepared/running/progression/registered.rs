@@ -148,6 +148,7 @@ impl<'run> WorthQueryRegisteredProviderAttempt<'run> {
         candidate: &worth_relational::facade::runtime::RelationalPinnedRead<
             worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
         >,
+        own_outputs: Option<&crate::domain_computation::primary_graph::invariant_projection::read_basis::OwnOutputOverlay>,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         (
@@ -160,7 +161,7 @@ impl<'run> WorthQueryRegisteredProviderAttempt<'run> {
     > {
         let control = crate::domain_computation::primary_graph::request_allocation_control::RequestAllocationControl::new(request, allocation_policy);
         let freshness = provider.capture_and_compare_application_read_set(
-            execution, &self.staged.read_authority(), Some(candidate),
+            execution, &self.staged.read_authority(), Some((candidate, own_outputs)),
             crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(control.policy(), Some(request)),
         );
         let fresh = match freshness {

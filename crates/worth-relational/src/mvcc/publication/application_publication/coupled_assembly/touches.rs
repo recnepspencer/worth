@@ -175,4 +175,3 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         continuation::postponed(Reason::PriorEffectRead, record.unwrap_or(source))
     }
 }
-

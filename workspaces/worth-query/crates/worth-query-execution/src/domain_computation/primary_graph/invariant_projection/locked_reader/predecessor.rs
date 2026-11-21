@@ -30,7 +30,9 @@ impl<S: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthority<S> 
                     })
             }).transpose()?;
             let access = match (before.as_ref(), input.applied_read()) {
-                (Some(before), Some(candidate)) => NativeReadAccess::Applied(before, candidate, None),
+                (Some(before), Some(candidate)) => {
+                    NativeReadAccess::Applied(before, candidate, None)
+                }
                 _ => NativeReadAccess::Borrowed(native),
             };
             self.read_native_with_access(

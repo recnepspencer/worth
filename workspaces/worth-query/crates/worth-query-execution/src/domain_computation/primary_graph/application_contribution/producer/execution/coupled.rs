@@ -226,6 +226,7 @@ where
             runtime,
             registered,
             candidate,
+            own_outputs,
             predecessor,
         )
         .map_err(|outcome| coupled_preparation::preparation_denial(Binding::IDENTITY, outcome))?;

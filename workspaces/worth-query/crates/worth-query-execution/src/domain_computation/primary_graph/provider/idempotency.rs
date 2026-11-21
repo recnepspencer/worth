@@ -13,6 +13,7 @@ pub(super) mod recorded_origin;
 mod registration;
 pub(super) mod released_original;
 pub use registration::idempotency_create_intent;
+pub(in crate::domain_computation::primary_graph) use registration::original_client_key;
 pub use released_original::WorthQueryReleasedApplicationEffect;
 pub(crate) mod snapshot_resolution;
 use snapshot_resolution::resolve_at_snapshot;

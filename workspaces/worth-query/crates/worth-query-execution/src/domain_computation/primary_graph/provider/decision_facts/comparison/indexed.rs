@@ -44,6 +44,7 @@ impl PreparedSelections {
                 worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
             >,
         >,
+        own_outputs: Option<&crate::domain_computation::primary_graph::invariant_projection::read_basis::OwnOutputOverlay>,
         control: StorageControl<'_, '_>,
     ) -> Result<bool, WorthQueryDecisionReadSetFailure> {
         super::check_control(control)?;
@@ -59,6 +60,11 @@ impl PreparedSelections {
             candidates,
         } = fact
         else {
+            // A record the successor's own chain wrote exclusively is read as
+            // it was before the chain (§1.5), so it compares there.
+            let applied = crate::domain_computation::primary_graph::application_attempt::fact::touch_key::fact_record(fact)
+                .and_then(|record| own_outputs.and_then(|own| own.head_for(record)))
+                .or(applied);
             return fact
                 .remains_equal_in_image(runtime, execution, snapshot, applied)
                 .map_err(super::super::fact_read_set_failure);
@@ -95,10 +101,48 @@ impl PreparedSelections {
         }
         let prepared = &self.selectors[&key];
         if let Some(candidate) = applied {
-            return match candidate.lookup_applied_entity_field(execution, prepared, value, BoundedIndexParityMode::Production, *candidate_limit) {
-                Ok(current) => Ok(!current.overflowed()
+            let lookup = |image: &worth_relational::facade::runtime::RelationalPinnedRead<
+                worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
+            >| {
+                image.lookup_applied_entity_field(
+                    execution,
+                    prepared,
+                    value,
+                    BoundedIndexParityMode::Production,
+                    *candidate_limit,
+                )
+            };
+            let current = lookup(candidate).and_then(|current| {
+                let Some(own) = own_outputs else {
+                    return Ok((
+                        current.overflowed(),
+                        current.candidate_entity_ids().to_vec(),
+                    ));
+                };
+                // Own records match as before the chain, the rest as now.
+                let head = lookup(own.head())?;
+                let mut ids = current
+                    .candidate_entity_ids()
+                    .iter()
+                    .copied()
+                    .filter(|entity| !own.covers(*entity))
+                    .chain(
+                        head.candidate_entity_ids()
+                            .iter()
+                            .copied()
+                            .filter(|entity| own.covers(*entity)),
+                    )
+                    .collect::<Vec<_>>();
+                ids.sort_unstable();
+                ids.dedup();
+                let overflowed =
+                    current.overflowed() || head.overflowed() || ids.len() > *candidate_limit;
+                Ok((overflowed, ids))
+            });
+            return match current {
+                Ok((overflowed, current)) => Ok(!overflowed
                     && prepared.retain_definition().as_ref() == definition.as_ref()
-                    && current.candidate_entity_ids() == candidates),
+                    && current.as_slice() == candidates.as_slice()),
                 Err(worth_relational::facade::indexes::AppliedEntityFieldLookupDenial::Execution(cause)) => Err(super::super::fact_read_set_failure(
                     crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::relational_read_stopped(cause, "applied indexed comparison"))),
                 Err(worth_relational::facade::indexes::AppliedEntityFieldLookupDenial::PredecessorIndex(cause)) => comparison_stop(BoundedEntityFieldLookupAdmissionStop::Lookup(cause)),

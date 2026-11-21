@@ -59,6 +59,35 @@ impl<'run, S: ApplicationSchema> CoupledApplicationAssembly<'_, 'run, '_, S> {
         }
     }
 
+    /// The successor's original idempotency record is the chain's record:
+    /// its key binds the round's own dependency, so it is re-created under
+    /// the head's local coordinate with the successor's values (§1.5
+    /// Identity). The key is only a create coordinate inside the candidate.
+    pub(super) fn rekey_original(
+        &self,
+        index: usize,
+        successor: crate::domain_computation::WorthQueryProviderSessionView<'_>,
+        batch: &mut worth_relational::facade::transactions::WorkerIntentBatch,
+    ) {
+        use worth_relational::facade::transactions::{CreateIntent, MutationIntent};
+        let provider = &self.application.runtime.primary_provider;
+        let head = {
+            let writers = self.writers.borrow();
+            let Some(CoupledWriterStage::Inspected(writer)) = writers[index].stage.as_ref() else {
+                unreachable!("an appended chain keeps its inspected writer")
+            };
+            provider.coupled_writer_original_key(writer.session())
+        };
+        let own = provider.coupled_writer_original_key(successor);
+        for intent in &mut batch.intents {
+            if let MutationIntent::Create(CreateIntent::Entity(spec)) = intent
+                && spec.client_key.as_raw_str() == Some(own.as_str())
+            {
+                spec.client_key = worth_relational::facade::symbols::ClientKey::raw(head.clone());
+            }
+        }
+    }
+
     /// The successor writer takes its chain's slot: the superseded round's
     /// session is discarded, never published (Native folded it).
     pub(super) fn replace_writer(
