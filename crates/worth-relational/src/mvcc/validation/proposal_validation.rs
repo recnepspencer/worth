@@ -102,8 +102,17 @@ impl RelationalPreparationRuntime {
         source: RelationalProposalSource,
         context: Option<&dyn crate::validation::candidate_source::ManagedIndexSourceContextFactory>,
     ) -> Result<ValidatedRelationalProposal, TransactionCommitError> {
-        self.select_home_contracts(&transaction.basis, transaction.home_target.as_ref())?
-            .validate_selected_branch_transaction_source(execution, transaction, source, context)
+        self.select_home_contracts(
+            &transaction.basis,
+            transaction.home_target.as_ref(),
+            transaction.recorded_result_schema(),
+        )?
+        .validate_selected_branch_transaction_source(
+            execution,
+            transaction,
+            source,
+            context,
+        )
     }
 
     fn validate_selected_branch_transaction_source(

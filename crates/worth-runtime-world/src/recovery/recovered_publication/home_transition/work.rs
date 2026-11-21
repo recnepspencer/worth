@@ -20,6 +20,7 @@ use worth_proof::RelationalPublicationReadmitted;
 use worth_relational::facade::durability::RelationalRecoveredPublicationCustody;
 
 pub(crate) struct ContinuationCommon {
+    pub(crate) control: Option<Arc<crate::publication::HomeTransitionEffectControlState>>,
     pub(crate) before: ProductBranchObservation,
     pub(crate) after: ProductBranchReferenceSnapshot,
     pub(crate) attempt: crate::identity::CompositePublicationAttemptIdentity,

@@ -1,0 +1,813 @@
+== case 00 InputCaptureSwitch { retain_old: true, value: 5 }
+-- switch: committed
+   batch id=0 rank=0 ready=[1, 2]
+   prepare task=1 subject=captured-input.seed-parent family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(26), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=2 subject=captured-input.seed-parent family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(22), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=1 rank=0 ready=[14]
+   prepare task=14 subject=captured-input.anchor-parent family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(25), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=2 rank=0 ready=[0, 9]
+   prepare task=0 subject=captured-input.start family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(23), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=9 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(24), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   quiescence
+   captured:capture:child = 135
+   first:carriage:d = 40
+== case 01 Carriage { pre_seed: true, steps: [Member(1)] }
+-- run: committed
+   batch id=0 rank=0 ready=[0]
+   prepare task=0 subject=component-carriage.member family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(19), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=1 rank=0 ready=[5]
+   prepare task=5 subject=component-carriage.foreign family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(21), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=2 rank=0 ready=[1]
+   prepare task=1 subject=component-carriage.previous family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(20), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=3 rank=1 ready=[3]
+   prepare task=3 subject=component-carriage.static family=from-first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(47), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   quiescence
+   first:a = 20
+   first:carriage:b = 620
+   first:carriage:late = absent
+== case 02 Chains { width: 3, length: 2, second_value: 5 }
+-- second: committed
+   batch id=0 rank=1 ready=[0]
+   prepare task=0 subject=captured-input.supplier family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(8), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=1 rank=1 ready=[1, 2, 3]
+   prepare task=1 subject=captured-input.chains.link family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(9), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=2 subject=captured-input.chains.link family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(11), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=3 subject=captured-input.chains.link family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(13), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=2 rank=1 ready=[4, 5, 6]
+   prepare task=4 subject=captured-input.chains.link family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(10), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=5 subject=captured-input.chains.link family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(12), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=6 subject=captured-input.chains.link family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(14), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   quiescence
+   first:chain:0:0 = 0
+   first:chain:2:1 = 50
+== case 03 RecaptureSplit { second_value: 4 }
+-- second: committed
+   batch id=0 rank=0 ready=[0]
+   prepare task=0 subject=captured-input.supplier family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(15), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=1 rank=0 ready=[1, 2]
+   prepare task=1 subject=captured-input.r3.split-parent family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(17), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=2 subject=captured-input.r3.split-parent family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(18), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=2 rank=0 ready=[3, 5, 6, 7]
+   prepare task=3 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(11), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=5 subject=captured-input.r3.split-parent family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(14), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=6 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(12), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=7 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(13), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   quiescence
+   captured:capture:x = 393
+   captured:capture:z = 34
+== case 04 WideSupplier { width: 2, second_value: 4 }
+-- second: committed
+   batch id=0 rank=1 ready=[0]
+   prepare task=0 subject=captured-input.supplier family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(21), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=1 rank=0 ready=[1, 2, 3]
+   prepare task=1 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(14), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=2 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(18), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=3 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(19), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=2 rank=1 ready=[7]
+   prepare task=7 subject=captured-input.generated family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(20), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   quiescence
+   captured:capture:w0 = 133
+   first:carriage:d = 40
+== case 05 WideSupplier { width: 1, second_value: 5 }
+-- second: refused CoupledReadSupportChanged hold=None
+   batch id=0 rank=1 ready=[0]
+   prepare task=0 subject=captured-input.supplier family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(18), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=1 rank=0 ready=[1, 2]
+   prepare task=1 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(12), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=2 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(16), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=2 rank=1 ready=[5]
+   prepare task=5 subject=captured-input.generated family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(17), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   quiescence
+   captured:capture:w0 = 133
+   first:carriage:d = 40
+== case 06 Carriage { pre_seed: true, steps: [ObserveChild, After(1), AttachLate] }
+-- run: committed
+   batch id=0 rank=0 ready=[0]
+   prepare task=0 subject=component-carriage.after family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(19), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=1 rank=0 ready=[5]
+   prepare task=5 subject=component-carriage.foreign family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(21), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=2 rank=0 ready=[1]
+   prepare task=1 subject=component-carriage.previous family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(20), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   quiescence
+   batch id=0 rank=1 ready=[3]
+   prepare task=3 subject=component-carriage.static family=from-first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(45), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   quiescence
+   batch id=1 rank=0 ready=[14]
+   prepare task=14 subject=component-carriage.previous family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(22), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   quiescence
+   first:a = 20
+   first:carriage:b = 620
+   first:carriage:late = 250
+== case 07 RecaptureSplit { second_value: 4 }
+-- second: committed
+   batch id=0 rank=0 ready=[0]
+   prepare task=0 subject=captured-input.supplier family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(15), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=1 rank=0 ready=[1, 2]
+   prepare task=1 subject=captured-input.r3.split-parent family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(17), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=2 subject=captured-input.r3.split-parent family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(18), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=2 rank=0 ready=[3, 5, 6, 7]
+   prepare task=3 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(11), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=5 subject=captured-input.r3.split-parent family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(14), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=6 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(12), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=7 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(13), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   quiescence
+   captured:capture:x = 393
+   captured:capture:z = 34
+== case 08 Composed { waits: true, second_value: 5 }
+-- second: committed
+   batch id=0 rank=1 ready=[0]
+   prepare task=0 subject=captured-input.supplier family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(17), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=1 rank=0 ready=[1]
+   prepare task=1 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(12), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=2 rank=1 ready=[3, 4]
+   prepare task=3 subject=captured-input.composed.sibling family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(14), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=4 subject=captured-input.composed.owed family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(16), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=3 rank=0 ready=[6]
+   prepare task=6 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(13), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=4 rank=1 ready=[9]
+   prepare task=9 subject=captured-input.composed.owed family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(15), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   quiescence
+   captured:capture:p = 52
+   captured:capture:r = 513
+== case 09 RecaptureSplit { second_value: 5 }
+-- second: committed
+   batch id=0 rank=0 ready=[0]
+   prepare task=0 subject=captured-input.supplier family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(15), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=1 rank=0 ready=[1, 2]
+   prepare task=1 subject=captured-input.r3.split-parent family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(17), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=2 subject=captured-input.r3.split-parent family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(18), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=2 rank=0 ready=[3, 5, 6, 7]
+   prepare task=3 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(11), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=5 subject=captured-input.r3.split-parent family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(14), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=6 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(12), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) recapture
+   break recapture at=6
+   batch id=3 rank=0 ready=[6, 7]
+   prepare task=6 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(12), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=7 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(13), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   quiescence
+   captured:capture:x = 483
+   captured:capture:z = 34
+== case 10 Composed { waits: true, second_value: 5 }
+-- second: committed
+   batch id=0 rank=1 ready=[0]
+   prepare task=0 subject=captured-input.supplier family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(17), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=1 rank=0 ready=[1]
+   prepare task=1 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(12), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=2 rank=1 ready=[3, 4]
+   prepare task=3 subject=captured-input.composed.sibling family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(14), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=4 subject=captured-input.composed.owed family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(16), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=3 rank=0 ready=[6]
+   prepare task=6 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(13), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=4 rank=1 ready=[9]
+   prepare task=9 subject=captured-input.composed.owed family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(15), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   quiescence
+   captured:capture:p = 52
+   captured:capture:r = 513
+== case 11 Carriage { pre_seed: false, steps: [Model(1, 4)] }
+-- run: committed
+   batch id=0 rank=0 ready=[0]
+   prepare task=0 subject=component-carriage.start family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(19), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=1 rank=0 ready=[5]
+   prepare task=5 subject=component-carriage.foreign family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(21), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=2 rank=0 ready=[1]
+   prepare task=1 subject=component-carriage.previous family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(20), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=3 rank=1 ready=[3]
+   prepare task=3 subject=component-carriage.static family=from-first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(45), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   quiescence
+   first:a = 40
+   first:carriage:b = 820
+   first:carriage:late = absent
+== case 12 Carriage { pre_seed: true, steps: [Member(1), Model(1, 5), Member(2)] }
+-- run: refused ConflictingIntent { target: Entity(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(9), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }), earlier: 0, later: 2 }
+   quiescence
+   quiescence
+   first:a = 20
+   first:carriage:b = 620
+   first:carriage:late = absent
+== case 13 Carriage { pre_seed: true, steps: [Member(2)] }
+-- run: committed
+   batch id=0 rank=0 ready=[0]
+   prepare task=0 subject=component-carriage.member family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(19), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=1 rank=0 ready=[5]
+   prepare task=5 subject=component-carriage.foreign family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(21), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=2 rank=0 ready=[1]
+   prepare task=1 subject=component-carriage.previous family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(20), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=3 rank=1 ready=[3]
+   prepare task=3 subject=component-carriage.static family=from-first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(47), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   quiescence
+   first:a = 20
+   first:carriage:b = 620
+   first:carriage:late = absent
+== case 14 WideSupplier { width: 2, second_value: 5 }
+-- second: refused CoupledReadSupportChanged hold=None
+   batch id=0 rank=1 ready=[0]
+   prepare task=0 subject=captured-input.supplier family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(21), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=1 rank=0 ready=[1, 2, 3]
+   prepare task=1 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(14), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=2 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(18), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=3 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(19), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=2 rank=1 ready=[7]
+   prepare task=7 subject=captured-input.generated family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(20), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   quiescence
+   captured:capture:w0 = 133
+   first:carriage:d = 40
+== case 15 Chains { width: 2, length: 2, second_value: 5 }
+-- second: committed
+   batch id=0 rank=1 ready=[0]
+   prepare task=0 subject=captured-input.supplier family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(8), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=1 rank=1 ready=[1, 2]
+   prepare task=1 subject=captured-input.chains.link family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(9), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=2 subject=captured-input.chains.link family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(11), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=2 rank=1 ready=[3, 4]
+   prepare task=3 subject=captured-input.chains.link family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(10), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=4 subject=captured-input.chains.link family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(12), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   quiescence
+   first:chain:0:0 = 0
+   first:chain:1:1 = 30
+== case 16 Carriage { pre_seed: false, steps: [After(3), Model(1, 2), Member(1)] }
+-- run: denied Stage { ordinal: 0, binding: "owned-outputs.edit-envelope.after-producer.v1" }
+   first:a = absent
+   first:carriage:b = absent
+   first:carriage:late = absent
+== case 17 Composed { waits: false, second_value: 5 }
+-- second: committed
+   batch id=0 rank=1 ready=[0]
+   prepare task=0 subject=captured-input.supplier family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(15), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=1 rank=0 ready=[1]
+   prepare task=1 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(10), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=2 rank=1 ready=[3, 4]
+   prepare task=3 subject=captured-input.composed.sibling family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(12), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=4 subject=captured-input.composed.owed family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(14), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=3 rank=0 ready=[5]
+   prepare task=5 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(11), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=4 rank=1 ready=[8]
+   prepare task=8 subject=captured-input.composed.owed family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(13), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   quiescence
+   captured:capture:p = 52
+   captured:capture:r = 513
+== case 18 WideSupplier { width: 2, second_value: 4 }
+-- second: committed
+   batch id=0 rank=1 ready=[0]
+   prepare task=0 subject=captured-input.supplier family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(21), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=1 rank=0 ready=[1, 2, 3]
+   prepare task=1 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(14), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=2 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(18), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=3 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(19), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=2 rank=1 ready=[7]
+   prepare task=7 subject=captured-input.generated family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(20), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   quiescence
+   captured:capture:w0 = 133
+   first:carriage:d = 40
+== case 19 Chains { width: 2, length: 1, second_value: 4 }
+-- second: committed
+   batch id=0 rank=1 ready=[0]
+   prepare task=0 subject=captured-input.supplier family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(8), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=1 rank=1 ready=[1, 2]
+   prepare task=1 subject=captured-input.chains.link family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(9), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=2 subject=captured-input.chains.link family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(10), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   quiescence
+   first:chain:0:0 = 0
+   first:chain:1:0 = 10
+== case 20 Carriage { pre_seed: true, steps: [Member(2)] }
+-- run: committed
+   batch id=0 rank=0 ready=[0]
+   prepare task=0 subject=component-carriage.member family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(19), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=1 rank=0 ready=[5]
+   prepare task=5 subject=component-carriage.foreign family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(21), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=2 rank=0 ready=[1]
+   prepare task=1 subject=component-carriage.previous family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(20), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=3 rank=1 ready=[3]
+   prepare task=3 subject=component-carriage.static family=from-first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(47), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   quiescence
+   first:a = 20
+   first:carriage:b = 620
+   first:carriage:late = absent
+== case 21 Chains { width: 3, length: 2, second_value: 4 }
+-- second: committed
+   batch id=0 rank=1 ready=[0]
+   prepare task=0 subject=captured-input.supplier family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(8), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=1 rank=1 ready=[1, 2, 3]
+   prepare task=1 subject=captured-input.chains.link family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(9), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=2 subject=captured-input.chains.link family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(11), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=3 subject=captured-input.chains.link family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(13), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=2 rank=1 ready=[4, 5, 6]
+   prepare task=4 subject=captured-input.chains.link family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(10), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=5 subject=captured-input.chains.link family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(12), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=6 subject=captured-input.chains.link family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(14), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   quiescence
+   first:chain:0:0 = 0
+   first:chain:2:1 = 50
+== case 22 InputCaptureSwitch { retain_old: true, value: 4 }
+-- switch: committed
+   batch id=0 rank=0 ready=[1, 2]
+   prepare task=1 subject=captured-input.seed-parent family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(26), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=2 subject=captured-input.seed-parent family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(22), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=1 rank=0 ready=[14]
+   prepare task=14 subject=captured-input.anchor-parent family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(25), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=2 rank=0 ready=[0, 9]
+   prepare task=0 subject=captured-input.start family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(23), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=9 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(24), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   quiescence
+   captured:capture:child = 134
+   first:carriage:d = 40
+== case 23 Carriage { pre_seed: false, steps: [Member(2), Model(0, 4)] }
+-- run: committed
+   quiescence
+   batch id=0 rank=0 ready=[0, 3]
+   prepare task=0 subject=component-carriage.member family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(19), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=3 subject=component-carriage.foreign family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(21), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=1 rank=0 ready=[1]
+   prepare task=1 subject=component-carriage.start family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(20), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=2 rank=1 ready=[6]
+   prepare task=6 subject=component-carriage.static family=from-first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(47), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   quiescence
+   first:a = 10
+   first:carriage:b = 540
+   first:carriage:late = absent
+== case 24 Chains { width: 1, length: 3, second_value: 5 }
+-- second: committed
+   batch id=0 rank=1 ready=[0]
+   prepare task=0 subject=captured-input.supplier family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(8), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=1 rank=1 ready=[1]
+   prepare task=1 subject=captured-input.chains.link family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(9), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=2 rank=1 ready=[2]
+   prepare task=2 subject=captured-input.chains.link family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(10), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=3 rank=1 ready=[3]
+   prepare task=3 subject=captured-input.chains.link family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(11), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   quiescence
+   first:chain:0:0 = 0
+   first:chain:0:2 = 20
+== case 25 InputCaptureSwitch { retain_old: false, value: 4 }
+-- switch: committed
+   batch id=0 rank=0 ready=[1, 2]
+   prepare task=1 subject=captured-input.seed-parent family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(21), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   break input-captures before=2
+   batch id=1 rank=0 ready=[8]
+   prepare task=8 subject=captured-input.anchor-parent family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(24), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=2 rank=0 ready=[0, 4]
+   prepare task=0 subject=captured-input.start family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(22), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=4 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(23), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   quiescence
+   captured:capture:child = 84
+   first:carriage:d = 40
+== case 26 InputCaptureSwitch { retain_old: false, value: 3 }
+-- switch: committed
+   batch id=0 rank=0 ready=[1, 2]
+   prepare task=1 subject=captured-input.seed-parent family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(21), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   break input-captures before=2
+   batch id=1 rank=0 ready=[8]
+   prepare task=8 subject=captured-input.anchor-parent family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(24), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=2 rank=0 ready=[0, 4]
+   prepare task=0 subject=captured-input.start family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(22), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=4 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(23), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   quiescence
+   captured:capture:child = 83
+   first:carriage:d = 40
+== case 27 Composed { waits: false, second_value: 4 }
+-- second: committed
+   batch id=0 rank=1 ready=[0]
+   prepare task=0 subject=captured-input.supplier family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(15), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=1 rank=0 ready=[1]
+   prepare task=1 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(10), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=2 rank=1 ready=[3, 4]
+   prepare task=3 subject=captured-input.composed.sibling family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(12), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=4 subject=captured-input.composed.owed family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(14), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=3 rank=0 ready=[5]
+   prepare task=5 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(11), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=4 rank=1 ready=[7]
+   prepare task=7 subject=captured-input.composed.owed family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(13), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   quiescence
+   captured:capture:p = 52
+   captured:capture:r = 423
+== case 28 Carriage { pre_seed: false, steps: [ObserveChild, Member(2)] }
+-- run: denied Stage { ordinal: 0, binding: "owned-outputs.component-value-observation.v1" }
+   first:a = absent
+   first:carriage:b = absent
+   first:carriage:late = absent
+== case 29 Composed { waits: true, second_value: 4 }
+-- second: committed
+   batch id=0 rank=1 ready=[0]
+   prepare task=0 subject=captured-input.supplier family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(17), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=1 rank=0 ready=[1]
+   prepare task=1 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(12), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=2 rank=1 ready=[3, 4]
+   prepare task=3 subject=captured-input.composed.sibling family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(14), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=4 subject=captured-input.composed.owed family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(16), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=3 rank=0 ready=[6]
+   prepare task=6 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(13), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=4 rank=1 ready=[8]
+   prepare task=8 subject=captured-input.composed.owed family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(15), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   quiescence
+   captured:capture:p = 52
+   captured:capture:r = 423
+== case 30 Composed { waits: true, second_value: 4 }
+-- second: committed
+   batch id=0 rank=1 ready=[0]
+   prepare task=0 subject=captured-input.supplier family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(17), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=1 rank=0 ready=[1]
+   prepare task=1 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(12), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=2 rank=1 ready=[3, 4]
+   prepare task=3 subject=captured-input.composed.sibling family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(14), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=4 subject=captured-input.composed.owed family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(16), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=3 rank=0 ready=[6]
+   prepare task=6 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(13), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=4 rank=1 ready=[8]
+   prepare task=8 subject=captured-input.composed.owed family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(15), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   quiescence
+   captured:capture:p = 52
+   captured:capture:r = 423
+== case 31 RecaptureSplit { second_value: 4 }
+-- second: committed
+   batch id=0 rank=0 ready=[0]
+   prepare task=0 subject=captured-input.supplier family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(15), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=1 rank=0 ready=[1, 2]
+   prepare task=1 subject=captured-input.r3.split-parent family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(17), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=2 subject=captured-input.r3.split-parent family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(18), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=2 rank=0 ready=[3, 5, 6, 7]
+   prepare task=3 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(11), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=5 subject=captured-input.r3.split-parent family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(14), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=6 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(12), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=7 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(13), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   quiescence
+   captured:capture:x = 393
+   captured:capture:z = 34
+== case 32 Chains { width: 2, length: 2, second_value: 5 }
+-- second: committed
+   batch id=0 rank=1 ready=[0]
+   prepare task=0 subject=captured-input.supplier family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(8), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=1 rank=1 ready=[1, 2]
+   prepare task=1 subject=captured-input.chains.link family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(9), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=2 subject=captured-input.chains.link family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(11), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=2 rank=1 ready=[3, 4]
+   prepare task=3 subject=captured-input.chains.link family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(10), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=4 subject=captured-input.chains.link family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(12), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   quiescence
+   first:chain:0:0 = 0
+   first:chain:1:1 = 30
+== case 33 WideSupplier { width: 1, second_value: 5 }
+-- second: refused CoupledReadSupportChanged hold=None
+   batch id=0 rank=1 ready=[0]
+   prepare task=0 subject=captured-input.supplier family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(18), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=1 rank=0 ready=[1, 2]
+   prepare task=1 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(12), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=2 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(16), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=2 rank=1 ready=[5]
+   prepare task=5 subject=captured-input.generated family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(17), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   quiescence
+   captured:capture:w0 = 133
+   first:carriage:d = 40
+== case 34 Carriage { pre_seed: false, steps: [After(3), AttachLate] }
+-- run: denied Stage { ordinal: 0, binding: "owned-outputs.edit-envelope.after-producer.v1" }
+   first:a = absent
+   first:carriage:b = absent
+   first:carriage:late = absent
+== case 35 Composed { waits: false, second_value: 5 }
+-- second: committed
+   batch id=0 rank=1 ready=[0]
+   prepare task=0 subject=captured-input.supplier family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(15), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=1 rank=0 ready=[1]
+   prepare task=1 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(10), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=2 rank=1 ready=[3, 4]
+   prepare task=3 subject=captured-input.composed.sibling family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(12), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=4 subject=captured-input.composed.owed family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(14), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=3 rank=0 ready=[5]
+   prepare task=5 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(11), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=4 rank=1 ready=[8]
+   prepare task=8 subject=captured-input.composed.owed family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(13), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   quiescence
+   captured:capture:p = 52
+   captured:capture:r = 513
+== case 36 Carriage { pre_seed: true, steps: [Member(2), Member(3), After(1), ObserveChild] }
+-- run: refused ConflictingIntent { target: Entity(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(9), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }), earlier: 0, later: 1 }
+   quiescence
+   first:a = 20
+   first:carriage:b = 620
+   first:carriage:late = absent
+== case 37 Carriage { pre_seed: false, steps: [Member(1), Member(1), Model(0, 5)] }
+-- run: refused ConflictingIntent { target: Entity(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(9), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }), earlier: 0, later: 1 }
+   quiescence
+   first:a = absent
+   first:carriage:b = absent
+   first:carriage:late = absent
+== case 38 Composed { waits: false, second_value: 4 }
+-- second: committed
+   batch id=0 rank=1 ready=[0]
+   prepare task=0 subject=captured-input.supplier family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(15), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=1 rank=0 ready=[1]
+   prepare task=1 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(10), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=2 rank=1 ready=[3, 4]
+   prepare task=3 subject=captured-input.composed.sibling family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(12), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=4 subject=captured-input.composed.owed family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(14), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=3 rank=0 ready=[5]
+   prepare task=5 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(11), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=4 rank=1 ready=[7]
+   prepare task=7 subject=captured-input.composed.owed family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(13), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   quiescence
+   captured:capture:p = 52
+   captured:capture:r = 423
+== case 39 WideSupplier { width: 2, second_value: 4 }
+-- second: committed
+   batch id=0 rank=1 ready=[0]
+   prepare task=0 subject=captured-input.supplier family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(21), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=1 rank=0 ready=[1, 2, 3]
+   prepare task=1 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(14), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=2 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(18), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=3 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(19), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=2 rank=1 ready=[7]
+   prepare task=7 subject=captured-input.generated family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(20), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   quiescence
+   captured:capture:w0 = 133
+   first:carriage:d = 40
+== case 40 Chains { width: 2, length: 1, second_value: 4 }
+-- second: committed
+   batch id=0 rank=1 ready=[0]
+   prepare task=0 subject=captured-input.supplier family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(8), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=1 rank=1 ready=[1, 2]
+   prepare task=1 subject=captured-input.chains.link family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(9), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=2 subject=captured-input.chains.link family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(10), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   quiescence
+   first:chain:0:0 = 0
+   first:chain:1:0 = 10
+== case 41 Carriage { pre_seed: true, steps: [Member(1), Member(1), ObserveChild, Model(1, 2)] }
+-- run: refused ConflictingIntent { target: Entity(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(9), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }), earlier: 0, later: 1 }
+   quiescence
+   first:a = 20
+   first:carriage:b = 620
+   first:carriage:late = absent
+== case 42 Chains { width: 3, length: 2, second_value: 4 }
+-- second: committed
+   batch id=0 rank=1 ready=[0]
+   prepare task=0 subject=captured-input.supplier family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(8), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=1 rank=1 ready=[1, 2, 3]
+   prepare task=1 subject=captured-input.chains.link family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(9), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=2 subject=captured-input.chains.link family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(11), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=3 subject=captured-input.chains.link family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(13), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=2 rank=1 ready=[4, 5, 6]
+   prepare task=4 subject=captured-input.chains.link family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(10), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=5 subject=captured-input.chains.link family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(12), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=6 subject=captured-input.chains.link family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(14), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   quiescence
+   first:chain:0:0 = 0
+   first:chain:2:1 = 50
+== case 43 RecaptureSplit { second_value: 5 }
+-- second: committed
+   batch id=0 rank=0 ready=[0]
+   prepare task=0 subject=captured-input.supplier family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(15), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=1 rank=0 ready=[1, 2]
+   prepare task=1 subject=captured-input.r3.split-parent family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(17), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=2 subject=captured-input.r3.split-parent family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(18), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=2 rank=0 ready=[3, 5, 6, 7]
+   prepare task=3 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(11), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=5 subject=captured-input.r3.split-parent family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(14), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=6 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(12), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) recapture
+   break recapture at=6
+   batch id=3 rank=0 ready=[6, 7]
+   prepare task=6 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(12), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=7 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(13), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   quiescence
+   captured:capture:x = 483
+   captured:capture:z = 34
+== case 44 Carriage { pre_seed: false, steps: [ObserveChild, Model(0, 3)] }
+-- run: denied Stage { ordinal: 0, binding: "owned-outputs.component-value-observation.v1" }
+   first:a = absent
+   first:carriage:b = absent
+   first:carriage:late = absent
+== case 45 Composed { waits: true, second_value: 4 }
+-- second: committed
+   batch id=0 rank=1 ready=[0]
+   prepare task=0 subject=captured-input.supplier family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(17), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=1 rank=0 ready=[1]
+   prepare task=1 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(12), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=2 rank=1 ready=[3, 4]
+   prepare task=3 subject=captured-input.composed.sibling family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(14), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=4 subject=captured-input.composed.owed family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(16), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=3 rank=0 ready=[6]
+   prepare task=6 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(13), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=4 rank=1 ready=[8]
+   prepare task=8 subject=captured-input.composed.owed family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(15), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   quiescence
+   captured:capture:p = 52
+   captured:capture:r = 423
+== case 46 InputCaptureSwitch { retain_old: false, value: 5 }
+-- switch: committed
+   batch id=0 rank=0 ready=[1, 2]
+   prepare task=1 subject=captured-input.seed-parent family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(21), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   break input-captures before=2
+   batch id=1 rank=0 ready=[8]
+   prepare task=8 subject=captured-input.anchor-parent family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(24), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=2 rank=0 ready=[0, 4]
+   prepare task=0 subject=captured-input.start family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(22), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=4 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(23), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   quiescence
+   captured:capture:child = 85
+   first:carriage:d = 40
+== case 47 Composed { waits: false, second_value: 5 }
+-- second: committed
+   batch id=0 rank=1 ready=[0]
+   prepare task=0 subject=captured-input.supplier family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(15), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=1 rank=0 ready=[1]
+   prepare task=1 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(10), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=2 rank=1 ready=[3, 4]
+   prepare task=3 subject=captured-input.composed.sibling family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(12), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=4 subject=captured-input.composed.owed family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(14), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=3 rank=0 ready=[5]
+   prepare task=5 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(11), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=4 rank=1 ready=[8]
+   prepare task=8 subject=captured-input.composed.owed family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(13), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   quiescence
+   captured:capture:p = 52
+   captured:capture:r = 513
+== case 48 Chains { width: 3, length: 1, second_value: 5 }
+-- second: committed
+   batch id=0 rank=1 ready=[0]
+   prepare task=0 subject=captured-input.supplier family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(8), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=1 rank=1 ready=[1, 2, 3]
+   prepare task=1 subject=captured-input.chains.link family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(9), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=2 subject=captured-input.chains.link family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(10), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=3 subject=captured-input.chains.link family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(11), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   quiescence
+   first:chain:0:0 = 0
+   first:chain:2:0 = 20
+== case 49 Carriage { pre_seed: false, steps: [After(1), ObserveChild, After(1), Model(1, 5)] }
+-- run: denied Stage { ordinal: 0, binding: "owned-outputs.edit-envelope.after-producer.v1" }
+   first:a = absent
+   first:carriage:b = absent
+   first:carriage:late = absent
+== case 50 Composed { waits: false, second_value: 4 }
+-- second: committed
+   batch id=0 rank=1 ready=[0]
+   prepare task=0 subject=captured-input.supplier family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(15), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=1 rank=0 ready=[1]
+   prepare task=1 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(10), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=2 rank=1 ready=[3, 4]
+   prepare task=3 subject=captured-input.composed.sibling family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(12), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=4 subject=captured-input.composed.owed family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(14), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=3 rank=0 ready=[5]
+   prepare task=5 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(11), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=4 rank=1 ready=[7]
+   prepare task=7 subject=captured-input.composed.owed family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(13), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   quiescence
+   captured:capture:p = 52
+   captured:capture:r = 423
+== case 51 Composed { waits: false, second_value: 4 }
+-- second: committed
+   batch id=0 rank=1 ready=[0]
+   prepare task=0 subject=captured-input.supplier family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(15), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=1 rank=0 ready=[1]
+   prepare task=1 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(10), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=2 rank=1 ready=[3, 4]
+   prepare task=3 subject=captured-input.composed.sibling family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(12), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=4 subject=captured-input.composed.owed family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(14), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=3 rank=0 ready=[5]
+   prepare task=5 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(11), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=4 rank=1 ready=[7]
+   prepare task=7 subject=captured-input.composed.owed family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(13), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   quiescence
+   captured:capture:p = 52
+   captured:capture:r = 423
+== case 52 Composed { waits: true, second_value: 4 }
+-- second: committed
+   batch id=0 rank=1 ready=[0]
+   prepare task=0 subject=captured-input.supplier family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(17), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=1 rank=0 ready=[1]
+   prepare task=1 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(12), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=2 rank=1 ready=[3, 4]
+   prepare task=3 subject=captured-input.composed.sibling family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(14), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=4 subject=captured-input.composed.owed family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(16), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=3 rank=0 ready=[6]
+   prepare task=6 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(13), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=4 rank=1 ready=[8]
+   prepare task=8 subject=captured-input.composed.owed family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(15), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   quiescence
+   captured:capture:p = 52
+   captured:capture:r = 423
+== case 53 Carriage { pre_seed: false, steps: [Model(1, 5), Model(0, 4), After(1)] }
+-- run: committed
+   quiescence
+   batch id=0 rank=0 ready=[0, 3]
+   prepare task=0 subject=component-carriage.start family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(19), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=3 subject=component-carriage.foreign family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(21), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=1 rank=0 ready=[1]
+   prepare task=1 subject=component-carriage.start family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(20), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   quiescence
+   batch id=0 rank=1 ready=[6]
+   prepare task=6 subject=component-carriage.static family=from-first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(45), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   quiescence
+   first:a = 50
+   first:carriage:b = 940
+   first:carriage:late = absent
+== case 54 InputCaptureSwitch { retain_old: true, value: 5 }
+-- switch: committed
+   batch id=0 rank=0 ready=[1, 2]
+   prepare task=1 subject=captured-input.seed-parent family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(26), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=2 subject=captured-input.seed-parent family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(22), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=1 rank=0 ready=[14]
+   prepare task=14 subject=captured-input.anchor-parent family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(25), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=2 rank=0 ready=[0, 9]
+   prepare task=0 subject=captured-input.start family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(23), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=9 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(24), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   quiescence
+   captured:capture:child = 135
+   first:carriage:d = 40
+== case 55 InputCaptureSwitch { retain_old: false, value: 3 }
+-- switch: committed
+   batch id=0 rank=0 ready=[1, 2]
+   prepare task=1 subject=captured-input.seed-parent family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(21), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   break input-captures before=2
+   batch id=1 rank=0 ready=[8]
+   prepare task=8 subject=captured-input.anchor-parent family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(24), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=2 rank=0 ready=[0, 4]
+   prepare task=0 subject=captured-input.start family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(22), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=4 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(23), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   quiescence
+   captured:capture:child = 83
+   first:carriage:d = 40
+== case 56 InputCaptureSwitch { retain_old: true, value: 3 }
+-- switch: committed
+   batch id=0 rank=0 ready=[1, 2]
+   prepare task=1 subject=captured-input.seed-parent family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(26), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=2 subject=captured-input.seed-parent family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(22), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=1 rank=0 ready=[14]
+   prepare task=14 subject=captured-input.anchor-parent family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(25), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=2 rank=0 ready=[0, 9]
+   prepare task=0 subject=captured-input.start family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(23), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=9 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(24), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   quiescence
+   captured:capture:child = 133
+   first:carriage:d = 40
+== case 57 Carriage { pre_seed: true, steps: [ObserveChild] }
+-- run: committed
+   first:a = 20
+   first:carriage:b = 620
+   first:carriage:late = absent
+== case 58 Chains { width: 1, length: 2, second_value: 4 }
+-- second: committed
+   batch id=0 rank=1 ready=[0]
+   prepare task=0 subject=captured-input.supplier family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(8), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=1 rank=1 ready=[1]
+   prepare task=1 subject=captured-input.chains.link family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(9), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=2 rank=1 ready=[2]
+   prepare task=2 subject=captured-input.chains.link family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(10), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   quiescence
+   first:chain:0:0 = 0
+   first:chain:0:1 = 10
+== case 59 Carriage { pre_seed: false, steps: [Model(0, 3), ObserveChild] }
+-- run: refused Refused
+   batch id=0 rank=0 ready=[1, 2]
+   prepare task=1 subject=component-carriage.previous family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(19), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=2 subject=component-carriage.foreign family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(21), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=1 rank=0 ready=[0]
+   prepare task=0 subject=component-carriage.start family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(20), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   quiescence
+   first:a = absent
+   first:carriage:b = absent
+   first:carriage:late = absent
+== case 60 Carriage { pre_seed: false, steps: [Member(3)] }
+-- run: refused SourceScope(UnknownEntity)
+   batch id=0 rank=0 ready=[0]
+   prepare task=0 subject=component-carriage.member family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(19), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   first:a = absent
+   first:carriage:b = absent
+   first:carriage:late = absent
+== case 61 InputCaptureSwitch { retain_old: true, value: 5 }
+-- switch: committed
+   batch id=0 rank=0 ready=[1, 2]
+   prepare task=1 subject=captured-input.seed-parent family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(26), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=2 subject=captured-input.seed-parent family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(22), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=1 rank=0 ready=[14]
+   prepare task=14 subject=captured-input.anchor-parent family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(25), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=2 rank=0 ready=[0, 9]
+   prepare task=0 subject=captured-input.start family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(23), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=9 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(24), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   quiescence
+   captured:capture:child = 135
+   first:carriage:d = 40
+== case 62 InputCaptureSwitch { retain_old: false, value: 4 }
+-- switch: committed
+   batch id=0 rank=0 ready=[1, 2]
+   prepare task=1 subject=captured-input.seed-parent family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(21), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   break input-captures before=2
+   batch id=1 rank=0 ready=[8]
+   prepare task=8 subject=captured-input.anchor-parent family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(24), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=2 rank=0 ready=[0, 4]
+   prepare task=0 subject=captured-input.start family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(22), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=4 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(23), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   quiescence
+   captured:capture:child = 84
+   first:carriage:d = 40
+== case 63 Chains { width: 2, length: 3, second_value: 5 }
+-- second: committed
+   batch id=0 rank=1 ready=[0]
+   prepare task=0 subject=captured-input.supplier family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(8), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=1 rank=1 ready=[1, 2]
+   prepare task=1 subject=captured-input.chains.link family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(9), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=2 subject=captured-input.chains.link family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(12), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=2 rank=1 ready=[3, 4]
+   prepare task=3 subject=captured-input.chains.link family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(10), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=4 subject=captured-input.chains.link family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(13), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=3 rank=1 ready=[5, 6]
+   prepare task=5 subject=captured-input.chains.link family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(11), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=6 subject=captured-input.chains.link family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(14), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   quiescence
+   first:chain:0:0 = 0
+   first:chain:1:2 = 50

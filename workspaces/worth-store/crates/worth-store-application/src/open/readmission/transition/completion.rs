@@ -136,6 +136,29 @@ pub(crate) fn accept(
     Ok(())
 }
 
+/// A readmitted pending intent continues counting from its Store-verified
+/// durable prefix. The cursor never moves backwards to an older head.
+pub(super) fn resume(
+    context: &HomeContext,
+    durable: u32,
+    head: &ProductBranchObservation,
+) -> Result<(), ApplicationHomeTransitionIntentDenial> {
+    let mut completion = context
+        .transition
+        .completion
+        .lock()
+        .unwrap_or_else(|cause| cause.into_inner());
+    if durable < completion.next {
+        return Err(ApplicationHomeTransitionIntentDenial::SourceMismatch);
+    }
+    completion.next = durable;
+    completion.source = Some(CompletedStepSource {
+        world: head.selected_commit().clone(),
+        native: head.basis().relational_basis().admission_identity().clone(),
+    });
+    Ok(())
+}
+
 pub(crate) fn completed(
     context: &HomeContext,
     source: &ProductBranchObservation,

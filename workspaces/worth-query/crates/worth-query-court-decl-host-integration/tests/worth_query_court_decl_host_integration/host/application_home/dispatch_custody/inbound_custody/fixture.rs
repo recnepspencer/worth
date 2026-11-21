@@ -287,3 +287,47 @@ pub(super) fn assert_conflict(result: Result<Posture, Denial>, expected: Conflic
     };
     assert_eq!(actual.kind(), expected);
 }
+
+// D5 and Shared durable owner contracts, Live abandonment and recovered
+// disposition: live durable custody requires ending this Home and reopening.
+// Close refuses it; only actual cold reconciliation grants continuation.
+pub(super) fn end_live_home_for_required_reopen(
+    home: Arc<Home>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) {
+    let refused = Arc::into_inner(home)
+        .expect("no live Home alias")
+        .close(execution)
+        .err()
+        .expect("live original custody requires Home reopen");
+    assert!(refused.directory_denial().is_some());
+    assert!(refused.query_denial().is_none());
+    let serving = refused
+        .resume()
+        .expect("refused close retains the same serving Home");
+    drop(serving);
+}
+
+/// After a recovered original continues, close still refuses on the managed
+/// run its killed first Home left pending (C3); abandon the serving Home.
+pub(super) fn end_recovered_home(
+    home: Arc<Home>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) {
+    assert!(
+        home.runtime()
+            .runtime()
+            .product_publication_recovery_page(None, std::num::NonZeroUsize::MIN)
+            .unwrap()
+            .rows()
+            .is_empty(),
+        "no World recovery custody remains; only C3's managed run refuses close"
+    );
+    pending_support::end_with_pending_managed_run(
+        Arc::into_inner(home)
+            .expect("no live Home alias")
+            .close(execution)
+            .err()
+            .expect("C3: the recovered original's managed run is still pending"),
+    );
+}

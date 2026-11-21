@@ -6,6 +6,9 @@ use worth_query_execution_lineage::facade::domain_computation::execution_observa
 pub use worth_query_execution_lineage::facade::domain_computation::execution_observation::{
     is_installed, owned_control_scope, register_cleanup,
 };
+pub(crate) use worth_query_execution_lineage::facade::domain_computation::execution_observation::{
+    record_wave_charged, record_wave_event,
+};
 
 /// Records this thread's Query work while an owned listener exists.
 /// It grants no execution, publication or installation authority.

@@ -11,9 +11,11 @@ mod merge_plan;
 mod original_inputs;
 mod original_schemas;
 pub(crate) use original_schemas::OriginalSchemaGraph;
+mod recorded_result_schema;
 mod recovered_counter_capacity;
 mod recovered_lineage_artifacts;
 mod recovered_schema_basis;
+pub(crate) use recorded_result_schema::RecordedReplayResultSchema;
 mod root_inventory;
 mod transition_replay;
 mod world_selection;
@@ -215,6 +217,10 @@ pub(super) fn rebuild_runtime_from_plan(
                     graph.get(inputs.result_schema)?.registry(),
                 );
             }
+            let recorded_result_schema = match &original_schemas {
+                Some(graph) => original_inputs::recorded_result_schema(graph, pending.envelope())?,
+                None => None,
+            };
             let commit_id = pending.envelope().commit.commit_id;
             let restore_authoritative_envelope =
                 plan.should_restore_authoritative_envelope(commit_id);
@@ -225,6 +231,7 @@ pub(super) fn rebuild_runtime_from_plan(
                 &available_commit_ids,
                 restore_authoritative_envelope,
                 &mut recovered_roots,
+                recorded_result_schema,
             )?;
             if let Some(graph) = &original_schemas {
                 original_inputs::bind_replayed_schema(

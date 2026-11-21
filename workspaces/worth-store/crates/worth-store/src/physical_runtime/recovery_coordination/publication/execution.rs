@@ -92,7 +92,7 @@ fn replace_root_protocol(
         PerformedRecoveryPhysicalEffect::record_root_protocol(RecoveryPublicationOccurrence::new(
             coordination.session_identity(),
             command.plan,
-            command.staging_generation,
+            command.generation.generation(),
             command.protocol.publication(),
             completed.physical,
             work_identity,
@@ -161,7 +161,7 @@ fn synchronize_record_namespace(
         RecoveryPublicationOccurrence::new(
             coordination.session_identity(),
             command.plan,
-            command.staging_generation,
+            command.generation.generation(),
             command.protocol.publication(),
             completed.physical,
             work_identity,

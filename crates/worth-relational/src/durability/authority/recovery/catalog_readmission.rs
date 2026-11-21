@@ -11,8 +11,10 @@ use std::sync::{Arc, Mutex, TryLockError};
 use worth_execution::{ExecutionArray, ExecutionRequest, ExecutionRequestArrayBuilder};
 use worth_proof::AdmittedHomeProgramTransitionCatalog;
 
+mod planning_root;
 mod prefix;
 mod refusal;
+pub use planning_root::RelationalHomeProgramPlanningRoot;
 pub use refusal::{
     RefusedRelationalHomeProgramCatalogReadmission, RelationalHomeProgramCatalogReadmissionDenial,
 };
@@ -56,6 +58,8 @@ impl RecoveredRelationalRuntimeAuthority {
 
     /// Catalog admission carries no permission to open, validate or execute a
     /// migration. The caller keeps its exact prepared target on every outcome.
+    /// `root` is the planning root the target was compiled against; it is
+    /// installed as given and never readmitted a second time.
     pub fn readmit_home_program_catalogs(
         &self,
         request: &ExecutionRequest<'_, '_>,
@@ -63,13 +67,14 @@ impl RecoveredRelationalRuntimeAuthority {
         admission: &AdmittedHomeProgramTransitionCatalog<
             RelationalHomeProgramCatalogReadmissionSource<'_>,
         >,
+        root: &RelationalHomeProgramPlanningRoot,
         target: &PreparedRelationalHomeProgramContracts,
     ) -> Result<
         ReadmittedRelationalHomeProgramCatalogs,
         RefusedRelationalHomeProgramCatalogReadmission,
     > {
         let mut custody = None;
-        self.prepare_catalog_readmission(request, runtime, admission, target, &mut custody)
+        self.prepare_catalog_readmission(request, runtime, admission, root, target, &mut custody)
             .map_err(|cause| RefusedRelationalHomeProgramCatalogReadmission {
                 cause,
                 custody: custody.take(),
@@ -84,6 +89,7 @@ impl RecoveredRelationalRuntimeAuthority {
         admission: &AdmittedHomeProgramTransitionCatalog<
             RelationalHomeProgramCatalogReadmissionSource<'_>,
         >,
+        root: &RelationalHomeProgramPlanningRoot,
         target: &PreparedRelationalHomeProgramContracts,
         custody: &mut Option<ReadmittedRelationalHomeProgramCatalogs>,
     ) -> Result<(), Denial> {
@@ -99,6 +105,7 @@ impl RecoveredRelationalRuntimeAuthority {
             .map_err(Denial::Admission)?;
         if self.runtime_instance_id != runtime.runtime_instance_id()
             || target.meaning.runtime != self.runtime_instance_id
+            || root.runtime != self.runtime_instance_id
         {
             return Err(Denial::ForeignRuntime);
         }
@@ -106,7 +113,7 @@ impl RecoveredRelationalRuntimeAuthority {
             .home_program_predecessor
             .as_ref()
             .ok_or(Denial::PredecessorRequired)?;
-        if &planning.source != original.predecessor() {
+        if &planning.source != original.predecessor() || &root.source != original.predecessor() {
             return Err(Denial::PredecessorMismatch);
         }
         if original.assignments().len() != original.plan().steps() as usize
@@ -141,10 +148,7 @@ impl RecoveredRelationalRuntimeAuthority {
             prefix.push(Mutex::new(None)).map_err(Denial::Backing)?;
         }
         let prefix = prefix.seal().map_err(Denial::Backing)?;
-        let predecessor = self
-            .admit_recorded_component(request, runtime, original.predecessor())
-            .map_err(Denial::Component)?
-            .into_basis();
+        let predecessor = root.basis.clone();
         *custody = Some(ReadmittedRelationalHomeProgramCatalogs {
             current: predecessor.clone(),
             predecessor,

@@ -53,18 +53,21 @@ pub use crate::query_dispatch::{
 };
 pub use crate::relational_preparation::{
     attach_relational, ApplicationHomeInitializationDenial, ApplicationHomeInitializationRefused,
-    ApplicationHomeNativeSchemaPreparation, ApplicationHomeNativeSchemaPreparationDenial,
-    RelationalAttachmentFailedHome, RelationalAttachmentRefused, RelationalHomeOpenRefused,
-    RelationalHomeReadmissionRefused, UnrecoveredApplicationHome,
-    UnrecoveredApplicationHomeCloseRefused, UnsharedApplicationHomeCloseRefused,
-    UnsharedReadmittedApplicationHome,
+    ApplicationHomeNativeIdentityBound, ApplicationHomeNativeSchemaPreparation,
+    ApplicationHomeNativeSchemaPreparationDenial, RelationalAttachmentFailedHome,
+    RelationalAttachmentRefused, RelationalHomeOpenRefused, RelationalHomeReadmissionRefused,
+    UnrecoveredApplicationHome, UnrecoveredApplicationHomeCloseRefused,
+    UnsharedApplicationHomeCloseRefused, UnsharedReadmittedApplicationHome,
 };
 pub use crate::world_section::{
     readmit_query_world, readmit_world, ApplicationHomeOwnerAdmissionRefused,
-    ApplicationHomeQueryCompositionDenial, ApplicationHomeQueryRootDenial,
-    ApplicationHomeTransitionBindingStageDenial, ApplicationHomeTransitionFinishDenial,
-    ApplicationHomeTransitionPlanningRequestDenial, ApplicationHomeWorldDefinition,
-    ApplicationWorldDefinition, ApplicationWorldPorts, NoPendingApplicationHomeTransition,
+    ApplicationHomeProgramTransitionResumption, ApplicationHomeQueryCompositionDenial,
+    ApplicationHomeQueryRootDenial, ApplicationHomeTransitionBindingStageDenial,
+    ApplicationHomeTransitionCompilationBasis, ApplicationHomeTransitionFinishDenial,
+    ApplicationHomeTransitionPlanningRequest, ApplicationHomeTransitionPlanningRequestDenial,
+    ApplicationHomeTransitionResumeRequired, ApplicationHomeTransitionResumptionDenial,
+    ApplicationHomeWorldDefinition, ApplicationWorldDefinition, ApplicationWorldPorts,
+    NoPendingApplicationHomeTransition, ResumedApplicationHomeTransitionPlanning,
     WorldHomeClosePosture, WorldHomeCloseRefused, WorldHomeReadmissionRefused,
     WorldReadmittedApplicationHome, WorldSealedApplicationHome,
 };

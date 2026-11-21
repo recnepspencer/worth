@@ -13,6 +13,7 @@
 mod basis;
 mod commit_touches;
 mod domain_computation;
+mod owner_cleanup_port;
 mod ports;
 
 pub(crate) use worth_query_execution_foundation::facade::{

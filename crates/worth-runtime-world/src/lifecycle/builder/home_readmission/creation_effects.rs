@@ -5,16 +5,30 @@ use crate::durability::{
 };
 use crate::durability::{
     WorldCreatedBranchOwnerEvidence as Owners, WorldRecordedRelationalCreationPlan as Plan,
+    WorldRelationalForkEvidence,
 };
 use std::ops::ControlFlow;
-use worth_execution::ExecutionRequest;
+use worth_execution::{ExecutionOrderedMap, ExecutionRequest};
 use worth_foundational::facade::{
-    CanonicalDigestId, DurableOwnerFamily, UncleanRecoveryUnsupported,
+    CanonicalDigestId, DurableCompositePublicationAttemptIdentity as Attempt, DurableOwnerFamily,
+    UncleanRecoveryUnsupported,
 };
 use worth_relational::facade::{
     branch::RelationalBranchTransition as Transition,
     durability::RecoveredRelationalRuntimeAuthority, runtime::RelationalRuntime,
 };
+
+/// Native's own recovered inventory of forks whose original creation has
+/// neither a selection nor a release. Absence here is Native's no-effect proof.
+#[derive(Default)]
+pub(super) struct UnresolvedCreationForks {
+    forks: ExecutionOrderedMap<Attempt, WorldRelationalForkEvidence>,
+}
+impl UnresolvedCreationForks {
+    pub(super) fn get(&self, attempt: &Attempt) -> Option<&WorldRelationalForkEvidence> {
+        self.forks.get(attempt)
+    }
+}
 
 pub(super) fn validate(
     native: &RelationalRuntime,
@@ -22,7 +36,8 @@ pub(super) fn validate(
     image: &WorldRecoveredJournalState,
     binding: &WorldDurableHomeBinding,
     request: &ExecutionRequest<'_, '_>,
-) -> Result<(), D> {
+) -> Result<UnresolvedCreationForks, D> {
+    let mut unresolved = UnresolvedCreationForks::default();
     let result = authority
         .inspect_recovered_associated_branch_transitions(request, native, |effect| {
             let bytes = effect
@@ -42,14 +57,14 @@ pub(super) fn validate(
             let Some(digest) = effect.recorded_artifact_digest() else {
                 return ControlFlow::Break(D::CreationEvidenceMismatch);
             };
-            let unclean = || {
-                D::UncleanRecoveryUnsupported(UncleanRecoveryUnsupported {
-                    owner: DurableOwnerFamily::Relational,
-                    effect: CanonicalDigestId::new(digest),
-                })
-            };
+            // A fork with no recorded intent joins no original (D18 until C5).
             let Some(original) = image.creations.get(&association.attempt()) else {
-                return ControlFlow::Break(unclean());
+                return ControlFlow::Break(D::UncleanRecoveryUnsupported(
+                    UncleanRecoveryUnsupported {
+                        owner: DurableOwnerFamily::Relational,
+                        effect: CanonicalDigestId::new(digest),
+                    },
+                ));
             };
             let intent = original.intent();
             if intent.association != association {
@@ -76,8 +91,21 @@ pub(super) fn validate(
                     return ControlFlow::Break(D::CreationEvidenceMismatch)
                 }
             }
+            // A durable release is published only for never-submitted owners.
+            if image.creation_releases.contains_key(&association.attempt()) {
+                return ControlFlow::Break(D::CreationEvidenceMismatch);
+            }
+            let evidence = WorldRelationalForkEvidence {
+                sequence: effect.sequence(),
+                digest,
+            };
             let Some(selected) = image.created.get(&association.attempt()) else {
-                return ControlFlow::Break(unclean());
+                return admit_unresolved(
+                    &mut unresolved,
+                    &association.attempt(),
+                    evidence,
+                    request,
+                );
             };
             let recorded = match &selected.created().owners {
                 Owners::Relational(recorded)
@@ -89,22 +117,35 @@ pub(super) fn validate(
                     return ControlFlow::Break(D::CreationEvidenceMismatch)
                 }
             };
-            if recorded.sequence != effect.sequence() || recorded.digest != digest {
+            if *recorded != evidence {
                 return ControlFlow::Break(D::CreationEvidenceMismatch);
             }
             ControlFlow::Continue(())
         })
         .map_err(D::NativeForkDiscovery)?;
-    if let ControlFlow::Break(cause) = result {
-        return Err(cause);
+    match result {
+        ControlFlow::Continue(()) => Ok(unresolved),
+        ControlFlow::Break(cause) => Err(cause),
     }
-    for (attempt, original) in &image.creations {
-        if !image.created.contains_key(attempt) && !image.creation_releases.contains_key(attempt) {
-            return Err(D::UncleanRecoveryUnsupported(UncleanRecoveryUnsupported {
-                owner: DurableOwnerFamily::World,
-                effect: CanonicalDigestId::new(*original.digest()),
-            }));
-        }
+}
+
+/// One original creation owns at most one actual Native fork.
+fn admit_unresolved(
+    unresolved: &mut UnresolvedCreationForks,
+    attempt: &Attempt,
+    evidence: WorldRelationalForkEvidence,
+    request: &ExecutionRequest<'_, '_>,
+) -> ControlFlow<D> {
+    if unresolved.forks.contains_key(attempt) {
+        return ControlFlow::Break(D::DuplicateNativeEffect);
     }
-    Ok(())
+    match unresolved
+        .forks
+        .insert_cloned_native_for_request(attempt, &evidence, *request)
+    {
+        Ok(_) => ControlFlow::Continue(()),
+        Err(cause) => ControlFlow::Break(D::Medium(
+            crate::durability::WorldDurableMediumDenial::Ordered(cause),
+        )),
+    }
 }

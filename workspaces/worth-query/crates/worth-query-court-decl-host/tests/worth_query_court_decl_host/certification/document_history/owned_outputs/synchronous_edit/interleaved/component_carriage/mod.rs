@@ -3,6 +3,7 @@ use super::super::super::hierarchy::program as hierarchy;
 use super::super::super::program as entry;
 pub(in super::super::super) mod attach;
 pub(in super::super::super) mod authored_parent;
+pub(in super::super::super) mod availability;
 pub(in super::super::super) mod outgoing;
 pub(in super::super::super) mod parent;
 pub(in super::super::super) mod pending;
@@ -14,6 +15,8 @@ use connections::*;
 #[cfg(test)]
 mod courts;
 mod differential;
+#[cfg(test)]
+mod live_outputs;
 
 #[derive(Clone)]
 pub struct Demand {
@@ -269,9 +272,9 @@ pub(super) fn seed(
 pub(super) fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
-    authored_parent::declare(value_observation::declare(pending::declare(
-        parent::declare(outgoing::declare(topology::declare(attach::declare(
-            schema,
+    availability::declare(authored_parent::declare(value_observation::declare(
+        pending::declare(parent::declare(outgoing::declare(topology::declare(
+            attach::declare(schema),
         )))),
     )))
 }
@@ -280,5 +283,6 @@ pub(super) fn install(
 ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
     setup.handler::<value_observation::Binding, _>(value_observation::Handler)?;
     setup.handler::<authored_parent::Binding, _>(authored_parent::Handler)?;
+    setup.handler::<availability::Binding, _>(availability::Handler)?;
     setup.handler::<attach::Binding, _>(attach::Handler)
 }

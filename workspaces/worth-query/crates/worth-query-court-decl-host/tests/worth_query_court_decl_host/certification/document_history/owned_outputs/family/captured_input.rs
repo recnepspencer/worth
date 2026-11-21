@@ -3,13 +3,20 @@ use super::super::schema::{Model as SourceEntity, ModelKey as SourceKey};
 use super::*;
 #[macro_use]
 mod handler;
+pub mod chains;
 #[cfg(test)]
 mod cold_contract;
+pub mod composed;
 #[cfg(test)]
 mod courts;
 pub mod program;
 #[cfg(test)]
 mod recapture;
+#[cfg(test)]
+mod retention;
+pub mod supplier;
+#[cfg(test)]
+mod wave_order;
 
 type Scope = ApplicationMutationFieldScope<ModelKey>;
 fn source_key() -> ModelKey {

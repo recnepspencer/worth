@@ -23,6 +23,8 @@ pub enum QueryHomeCustodyReadmissionDenial {
     World(RuntimeWorldServiceDenial<RuntimeWorldRecoveryDenial>),
     Recovery(RuntimeWorldRecoveryDenial),
     UnclassifiedWorldCustody,
+    /// A recovered original branch creation outlived attachment's decision.
+    UndecidedBranchCreation,
     OriginalBindingUnavailable,
     ForeignOriginalAffinity,
     OriginalMemoryAdmission,

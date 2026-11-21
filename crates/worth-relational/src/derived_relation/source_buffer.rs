@@ -2,7 +2,7 @@
 use super::evaluation::SourceRead;
 use super::{DerivedRelationDenial as Definition, DerivedRelationReadDenial as Denial};
 
-pub(in crate::derived_relation) fn reserve<T>(
+pub(crate) fn reserve<T>(
     read: &mut impl SourceRead,
     support: &mut Vec<T>,
     additional: usize,

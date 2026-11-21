@@ -1964,8 +1964,10 @@ Application (`worth-store-application`) owns. Each runtime owner publishes its
 own durable records to it and readmits them when the Home reopens: graph state,
 original occurrences and receipts, Signal and Bridge definitions, programs,
 workflows, external dispatch and corrections. Graceful close and fresh-process
-reopen are supported; crash recovery is in progress (Milestone 3 cleanup track)
-and not yet certified. Nine crates for semantic durable programs (snapshots,
+reopen are supported. Reopen after a kill recovers interrupted Native effects,
+no-effect originals, branch creations and program transitions (see
+[After a crash](application-home.md#after-a-crash-or-unclean-close)); crash
+recovery is not yet certified (Milestone 3 cleanup track). Nine crates for semantic durable programs (snapshots,
 branch deltas, schema lineage, live-query sync, subscriptions, bulk ingest,
 extensions, analysis, claim boundaries) exist but are dormant.
 

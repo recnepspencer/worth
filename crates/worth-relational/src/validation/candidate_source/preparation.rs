@@ -110,6 +110,15 @@ impl<'a> ManagedIndexSourceScope<'a> {
     pub fn changed_entities(&self) -> impl Iterator<Item = EntityId> + '_ {
         self.changed.iter().copied()
     }
+    /// Row-kind and projection-endpoint entities whose own entity record
+    /// (fields or lifecycle) changed on either side of this commit, distinct
+    /// from rows routed only by an incident relation delta.
+    ///
+    /// Returns `None` on a target-only rebuild (such as home-target recovery)
+    /// where no committed before-image record delta was discovered.
+    pub fn changed_occurrence_record_entities(&self) -> Option<&[EntityId]> {
+        self.closure.changed_occurrence_records.as_deref()
+    }
 
     pub fn changed_occurrences(
         &self,

@@ -1,3 +1,4 @@
+mod candidate_generation;
 mod capacity;
 mod checkpoint_publication;
 mod checkpoint_residue;
@@ -19,6 +20,7 @@ mod source_read_allocation;
 mod staging;
 mod wal_admission;
 
+pub use candidate_generation::RecoveryCandidateGeneration;
 pub use capacity::PhysicalRecoveryCoordinationCapacity;
 pub use checkpoint_publication::SelectedCheckpointPublicationDenial;
 pub use checkpoint_residue::{RecoveryCheckpointResidueDenial, RecoveryCheckpointResidueOutcome};

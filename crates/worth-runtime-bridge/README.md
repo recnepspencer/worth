@@ -393,10 +393,12 @@ settles Native first, then transfers it to Signal's existing original task.
 Signal output and installed projection. Query publishes the generation obtained
 from this completion. An accepted World open stays retained across refusal;
 canceling it never invents a no-effect answer. Unresolved live publication
-custody refuses Home close. Track H reopens published authored state; an unclean
-tail with an associated effect but no occurrence or disposition refuses with
-`UncleanRecoveryUnsupported` (D18). Crash continuation of the retained original
-owner evidence belongs to track C.
+custody refuses Home close. Reopen restores published authored state. After an
+unclean end, a Native effect without its World occurrence is retained as
+recovered `ProductUnpublished` custody that the same key continues, and a Signal
+effect with its recorded open is readmitted; a Signal effect with no recorded
+open (damage, not a kill) still refuses with `UncleanRecoveryUnsupported` (D18,
+retired in C5). Crash recovery is not yet certified.
 
 Writeback execution records and replay-comparison records are process-local
 diagnostics. Current enumeration returns retained entries; historical reads take

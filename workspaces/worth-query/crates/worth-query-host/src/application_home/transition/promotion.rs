@@ -1,7 +1,10 @@
 //! Original steps and guarded binding consume one planned transition.
 use super::{
-    planning::PlannedHomeProgramTransition, preparation::ReadmittedHomeProgramTransition,
-    refusal::*, source_attachment::BoundHomeProgramTransition,
+    planning::{PlannedHomeProgramTransition, PlannedHomeProgramTransitionOrigin as Origin},
+    preparation::ReadmittedHomeProgramTransition,
+    refusal::*,
+    source_attachment::BoundHomeProgramTransition,
+    step_execution::HomeProgramTransitionSteps,
 };
 use worth_query_declaration::facade::application_schema::ApplicationSchemaComposition;
 use worth_query_execution::facade::application_contribution::WorthQueryBootstrapAdvancementPhase;
@@ -21,39 +24,43 @@ impl<A: ApplicationSchemaComposition, AP, B: ApplicationSchemaComposition, BP>
             binding,
             bridge,
             plan,
-            reserved,
+            origin,
             resources,
         } = self;
         let request = phase.execution_request();
+        let steps = HomeProgramTransitionSteps::new(plan);
         let performed = (|| {
-            owners
-                .home
-                .stage_home_program_transition_intent(reserved, binding, &request)
-                .map_err(Denial::Intent)?;
-            loop {
-                request.consult().map_err(Denial::Request)?;
-                match owners
-                    .home
-                    .advance_home_program_transition_intent(&request)
-                    .map_err(Denial::Intent)?
-                {
-                    ApplicationHomeTransitionIntentOutcome::Committed => break,
-                    ApplicationHomeTransitionIntentOutcome::Pending => std::thread::yield_now(),
-                    outcome @ (ApplicationHomeTransitionIntentOutcome::Refused(_)
-                    | ApplicationHomeTransitionIntentOutcome::Unresolved
-                    | ApplicationHomeTransitionIntentOutcome::SourceMismatch) => {
-                        return Err(Denial::IntentOutcome(outcome))
-                    }
+            // Resumed original roots stay pinned until the binding has finished.
+            let _catalogs = match origin {
+                Origin::Fresh(reserved) => {
+                    publish_intent(&mut owners.home, reserved, binding, &request)?;
+                    super::publication::publish(
+                        &mut owners.home,
+                        &owners.target,
+                        &owners.before,
+                        steps,
+                        resources,
+                        &request,
+                    )?;
+                    None
                 }
-            }
-            super::publication::publish(
-                &mut owners.home,
-                &owners.target,
-                &owners.before,
-                plan,
-                resources,
-                &request,
-            )?;
+                Origin::Resumed {
+                    recomputed,
+                    catalogs,
+                } => {
+                    drop(binding);
+                    super::resumption::resume(
+                        &mut owners.home,
+                        &owners.target,
+                        &owners.before,
+                        steps,
+                        &recomputed,
+                        resources,
+                        &request,
+                    )?;
+                    Some(catalogs)
+                }
+            };
             let final_source = owners
                 .home
                 .world()
@@ -99,5 +106,31 @@ impl<A: ApplicationSchemaComposition, AP, B: ApplicationSchemaComposition, BP>
             home,
             bridge,
         })
+    }
+}
+
+/// Stage and durably publish the original intent before its first step.
+fn publish_intent(
+    home: &mut super::super::runtime::DirectoryHome,
+    reserved: worth_store_application::ReservedApplicationHomeTransitionPlan,
+    binding: super::preparation::SuccessorBinding,
+    request: &worth_execution::ExecutionRequest<'_, '_>,
+) -> Result<(), Denial> {
+    home.stage_home_program_transition_intent(reserved, binding, request)
+        .map_err(Denial::Intent)?;
+    loop {
+        request.consult().map_err(Denial::Request)?;
+        match home
+            .advance_home_program_transition_intent(request)
+            .map_err(Denial::Intent)?
+        {
+            ApplicationHomeTransitionIntentOutcome::Committed => return Ok(()),
+            ApplicationHomeTransitionIntentOutcome::Pending => std::thread::yield_now(),
+            outcome @ (ApplicationHomeTransitionIntentOutcome::Refused(_)
+            | ApplicationHomeTransitionIntentOutcome::Unresolved
+            | ApplicationHomeTransitionIntentOutcome::SourceMismatch) => {
+                return Err(Denial::IntentOutcome(outcome))
+            }
+        }
     }
 }

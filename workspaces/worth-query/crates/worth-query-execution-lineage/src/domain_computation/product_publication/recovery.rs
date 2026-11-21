@@ -60,7 +60,9 @@ impl WorthQueryProductUnpublishedRecovery {
     }
 
     /// Continue the admitted original Home occurrence under the caller's request.
-    /// No handler, owner effect or replacement World identity is executed.
+    /// No handler, owner effect or replacement World identity is executed. The
+    /// same original is kept across physical Pending steps; `Pending` returns
+    /// only when the caller's request stops first.
     pub fn continue_original_in_request(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -69,7 +71,12 @@ impl WorthQueryProductUnpublishedRecovery {
         RuntimeWorldRecoveryDenial,
     > {
         let effects = self.recovery.inspect_recovered_effects(&self.handle)?;
-        let outcome = self.recovery.continue_recovered_effects(execution, effects);
+        let outcome =
+            crate::domain_computation::primary_graph::home_original_progression::continue_original(
+                &self.recovery,
+                execution,
+                effects,
+            );
         if matches!(
             outcome,
             worth_runtime_world::facade::WorldRecoveredContinuationOutcome::Published { .. }

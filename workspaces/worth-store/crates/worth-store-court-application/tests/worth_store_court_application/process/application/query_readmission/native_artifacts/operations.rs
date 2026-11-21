@@ -6,7 +6,10 @@ type Runtime =
         HomeProgram,
     >;
 
-pub(super) fn fresh_closed(path: &std::path::Path, execution: ExecutionRequest<'_, '_>) {
+pub(in crate::process::application) fn fresh_closed(
+    path: &std::path::Path,
+    execution: ExecutionRequest<'_, '_>,
+) {
     let request = fixture::request(
         path.to_path_buf(),
         build(),
@@ -26,7 +29,10 @@ fn scope() -> worth_query_host::facade::admission::authenticated_principal::Wort
     use worth_query_host::facade::admission::authenticated_principal::*;
     WorthQueryRequestScope::new(None, WorthQueryCancellationSource::new().token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system())
 }
-pub(super) fn set(runtime: &Runtime, value: u64) -> WorthQueryApplicationMutationOutcome<(), u64> {
+pub(in crate::process::application) fn set(
+    runtime: &Runtime,
+    value: u64,
+) -> WorthQueryApplicationMutationOutcome<(), u64> {
     set_key(runtime, 0x9911, value)
 }
 pub(super) fn set_key(
@@ -54,7 +60,7 @@ pub(super) fn set_key(
         )
         .unwrap()
 }
-pub(super) fn balance(runtime: &Runtime) -> u64 {
+pub(in crate::process::application) fn balance(runtime: &Runtime) -> u64 {
     let scope = scope();
     let principal = identity::inspection_authentication::authenticate(
         runtime.runtime().installed_schema(),

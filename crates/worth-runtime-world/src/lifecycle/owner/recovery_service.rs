@@ -266,6 +266,9 @@ where
     ) -> Result<crate::recovery::WorldReleasedEffects, crate::recovery::RuntimeWorldRecoveryDenial>
     {
         self.state.recovery.admit_handle(handle)?;
+        self.state
+            .recovery
+            .refuse_recovered_creation_release(handle)?;
         self.release_memory_original(execution, handle, minimum_age_ticks, native)
     }
     fn released_original_page(

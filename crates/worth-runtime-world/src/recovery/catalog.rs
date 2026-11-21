@@ -17,6 +17,8 @@ mod incarnation;
 mod initialization;
 mod page;
 mod reactivation;
+mod recovered_creation;
+pub(crate) use recovered_creation::ClaimedRecoveredCreation;
 mod recovered_publication;
 mod released;
 pub(crate) use released::PreparedReleasedOriginal;
@@ -216,7 +218,7 @@ impl ProductUnpublishedRecoveryCatalog {
         }
         match state.slots.get(handle.identity()) {
             Some(RecoveryEntry::Retained(record)) => Ok(Arc::clone(record)),
-            Some(RecoveryEntry::Recovered(_)) => {
+            Some(RecoveryEntry::Recovered(_) | RecoveryEntry::RecoveredCreation(_)) => {
                 Err(RuntimeWorldRecoveryDenial::RecoveredCustodyRequired)
             }
             _ => Err(RuntimeWorldRecoveryDenial::MissingRecord),
@@ -242,7 +244,7 @@ impl ProductUnpublishedRecoveryCatalog {
         ) {
             if matches!(
                 state.slots.get(handle.identity()),
-                Some(RecoveryEntry::Recovered(_))
+                Some(RecoveryEntry::Recovered(_) | RecoveryEntry::RecoveredCreation(_))
             ) {
                 return Err(super::RuntimeWorldRecoveryDenial::RecoveredCustodyRequired);
             }

@@ -3,24 +3,18 @@ use super::*;
 use fixture::schema::{Account, AccountIdentity, HomeRecords};
 use worth_query_decl::facade::application_schema::fragment::FieldSelection;
 mod activation_siblings;
-mod successor;
 use worth_query_host::facade::{
     application_entry::WorthQueryApplicationMutationOutcome, home_program_transition::*,
     WorthQueryHomeProgramTransitionDenial as Denial,
     WorthQueryHomeProgramTransitionOpenPhase as Refused,
     WorthQueryHomeProgramTransitionPlan as Plan, WorthQueryHomeProgramTransitionStep as Step,
 };
+use worth_query_testkit_host::facade::host::program_transition_successor as successor;
 type B = worth_query_host::facade::application_installation::WorthQueryProgramApplicationRuntime<
     successor::SuccessorSchema,
     successor::ExtendedProgram,
 >;
-fn resources() -> DerivedIndexMaintenanceBudget {
-    DerivedIndexMaintenanceBudget {
-        maximum_work_units: Some(1_000_000),
-        maximum_cold_record_slots: Some(100_000),
-        maximum_derived_rows: Some(100_000),
-    }
-}
+use successor::resources;
 
 #[test]
 fn host_transition_requires_finite_resources_before_creating_a_home() {
@@ -145,49 +139,8 @@ fn host_transition_plans_on_nonempty_a_then_serves_writes_closes_and_reopens_b()
     (*home)
         .close(&execution)
         .unwrap_or_else(|cause| panic!("A closes: {cause:?}"));
-    let predecessor =
-        fixture::request_with_initializer(location.clone(), build, contacts.clone(), |_, _, _| {
-            panic!("A cannot initialize during transition")
-        });
-    let author_calls = planned.clone();
-    let request = successor(location.clone(), build, contacts.clone()).with_program_transition(
-        predecessor,
-        resources(),
-        move |source, target| {
-            author_calls.fetch_add(1, Ordering::SeqCst);
-            let rows = source.entities("Account", 10_000)?;
-            let [row] = rows.records() else {
-                panic!("the author reads the original seeded A row");
-            };
-            let before = source
-                .planned_field(
-                    "Account",
-                    FieldSelection::<HomeRecords, Account, AccountIdentity, u64>::at("Balance")
-                        .aspect(),
-                    "Balance",
-                )
-                .unwrap();
-            let after = target
-                .planned_field(
-                    "Account",
-                    FieldSelection::<HomeRecords, Account, AccountIdentity, u64>::at("Balance")
-                        .aspect(),
-                    "Balance",
-                )
-                .unwrap();
-            let mut target_body = body(row.entity_id, after.clone(), 9);
-            target_body.batches.push(successor::body(target));
-            Ok(Plan {
-                target: 1,
-                schema_transition: Some((successor::schema_change(source, target), None)),
-                steps: vec![
-                    body(row.entity_id, before, 8),
-                    target_body,
-                    body(row.entity_id, after, 10),
-                ],
-            })
-        },
-    );
+    let request =
+        successor::transition_request(location.clone(), build, contacts.clone(), planned.clone());
     let home = with_bootstrap_advancement_from_request(execution, |phase| {
         Box::new(
             request

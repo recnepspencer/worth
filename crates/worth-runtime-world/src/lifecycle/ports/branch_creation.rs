@@ -10,20 +10,45 @@ pub trait RuntimeWorldBranchCreationCompletion: std::fmt::Debug + Send + Sync {
     );
 }
 
-/// The actual World release ACK terminated the original source-cell resource.
+/// The actual World release ACK terminated the original: a live source-cell
+/// resource, or a cold-recovered creation decided by its owners' inventories.
 #[derive(Debug)]
 #[must_use = "the receipt names the original that was durably released"]
 pub struct RuntimeWorldBranchCreationRelease {
-    original: crate::branch::ActualWorldCreationRelease,
+    original: ReleasedCreationOriginal,
+}
+#[derive(Debug)]
+enum ReleasedCreationOriginal {
+    Live(crate::branch::ActualWorldCreationRelease),
+    Recovered {
+        association: worth_foundational::facade::CompositeAttemptAssociation,
+        _acknowledgement: crate::durability::WorldCommittedPublication,
+    },
 }
 impl RuntimeWorldBranchCreationRelease {
     pub(crate) fn from_original(
         original: worth_proof::DurablyCommitted<crate::branch::ActualWorldCreationRelease>,
     ) -> Self {
-        original.consume(|original| Self { original })
+        original.consume(|original| Self {
+            original: ReleasedCreationOriginal::Live(original),
+        })
+    }
+    pub(crate) fn from_recovered(
+        association: worth_foundational::facade::CompositeAttemptAssociation,
+        acknowledgement: crate::durability::WorldCommittedPublication,
+    ) -> Self {
+        Self {
+            original: ReleasedCreationOriginal::Recovered {
+                association,
+                _acknowledgement: acknowledgement,
+            },
+        }
     }
     pub fn association(&self) -> &worth_foundational::facade::CompositeAttemptAssociation {
-        self.original.association()
+        match &self.original {
+            ReleasedCreationOriginal::Live(original) => original.association(),
+            ReleasedCreationOriginal::Recovered { association, .. } => association,
+        }
     }
 }
 

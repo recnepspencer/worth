@@ -1,5 +1,9 @@
 use super::*;
 
+fn successor(generation: u64) -> super::super::super::RecoveryCandidateGeneration {
+    super::super::super::RecoveryCandidateGeneration::successor(generation - 1).unwrap()
+}
+
 fn candidates(
     generation: u64,
     publication: u64,
@@ -43,14 +47,14 @@ fn release_head_candidate_keeps_publication_generation_and_closure_checks() {
     .unwrap();
     assert!(super::super::PhysicalRecoveryPublicationCommand::new(
         [1; 32],
-        generation,
+        successor(generation),
         candidates(generation, publication, generation),
         protocol,
     )
     .is_some());
     assert!(super::super::PhysicalRecoveryPublicationCommand::new(
         [1; 32],
-        generation,
+        successor(generation),
         candidates(generation, publication, generation - 1),
         protocol,
     )
@@ -64,7 +68,7 @@ fn release_head_candidate_keeps_publication_generation_and_closure_checks() {
     });
     assert!(super::super::PhysicalRecoveryPublicationCommand::new(
         [1; 32],
-        generation,
+        successor(generation),
         missing_root.into_boxed_slice(),
         protocol,
     )
@@ -73,14 +77,14 @@ fn release_head_candidate_keeps_publication_generation_and_closure_checks() {
     unordered.swap(0, 1);
     assert!(super::super::PhysicalRecoveryPublicationCommand::new(
         [1; 32],
-        generation,
+        successor(generation),
         unordered.into_boxed_slice(),
         protocol,
     )
     .is_none());
     assert!(super::super::PhysicalRecoveryPublicationCommand::new(
         [1; 32],
-        generation,
+        successor(generation),
         candidates(generation, publication + 1, generation),
         protocol,
     )

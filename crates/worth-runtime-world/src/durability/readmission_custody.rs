@@ -57,6 +57,8 @@ impl WorldNativeReadmissionCustody {
         use super::{WorldDurableMediumDenial as Medium, WorldReadmissionDenial as Denial};
         let failed = || Denial::RecoveryCapacity;
         let publications = opens;
+        // Opens and unresolved creations each own at most one recovery slot.
+        let recovery_slots = opens.checked_add(creations).ok_or_else(failed)?;
         let fork_shares = creations.checked_mul(2).ok_or_else(failed)?;
         let observations = occurrences.checked_add(branches).ok_or_else(failed)?;
         let quote = [
@@ -83,7 +85,7 @@ impl WorldNativeReadmissionCustody {
             std::mem::size_of::<crate::branch::ProductBranchObservation>()
                 .checked_mul(observations),
             std::mem::size_of::<Option<crate::recovery::ReservedProductUnpublishedSlot>>()
-                .checked_mul(opens),
+                .checked_mul(recovery_slots),
             std::mem::size_of::<crate::history::ReservedCompositeCommitCapacity>()
                 .checked_mul(occurrences),
         ]
@@ -106,7 +108,7 @@ impl WorldNativeReadmissionCustody {
             branches: None,
             recovery: None,
             observations: Vec::with_capacity(observations),
-            slots: Vec::with_capacity(opens),
+            slots: Vec::with_capacity(recovery_slots),
             capacities: Vec::with_capacity(occurrences),
             checkpoint_origins: Vec::with_capacity(branches),
             checkpoint_occurrences: Vec::with_capacity(occurrences),

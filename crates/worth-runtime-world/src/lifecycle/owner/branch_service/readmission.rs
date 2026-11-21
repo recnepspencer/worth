@@ -20,6 +20,7 @@ where
         source_signal: &SignalRecordedSourcePoint,
         native: Option<&ReadmittedRelationalAssociatedFork>,
         signal: Option<&SignalReadmittedSourcePoint>,
+        reservation: &mut crate::branch::registry::ProductBranchRegistryReservation,
         request: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<
         (
@@ -118,14 +119,9 @@ where
             let head = &intent.destination;
             let name = ProductBranchName::try_new(head.branch.name())
                 .map_err(|_| Denial::BranchLineage)?;
-            let branch = ProductBranchIdentity::issued(owner, name.clone());
+            let branch = ProductBranchIdentity::issued(owner, name);
             let incarnation =
                 readmit_incarnation(owner, head.incarnation).ok_or(Denial::ForeignOwner)?;
-            let mut reservation = self
-                .state
-                .branches
-                .reserve_branch(owner, name)
-                .map_err(|_| Denial::RecoveryCapacity)?;
             let observation_capacity = self
                 .state
                 .retention

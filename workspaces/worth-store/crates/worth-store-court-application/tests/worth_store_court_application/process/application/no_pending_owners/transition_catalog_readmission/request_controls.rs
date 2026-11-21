@@ -1,7 +1,10 @@
 //! The authentic catalog grant cannot replace its caller's original controls.
 use super::*;
 use worth_relational::facade::{
-    durability::{RecoveredRelationalRuntimeAuthority, RelationalRecoveryStop},
+    durability::{
+        RecoveredRelationalRuntimeAuthority, RelationalHomeProgramPlanningRoot,
+        RelationalRecoveryStop,
+    },
     runtime::{
         PreparedRelationalHomeProgramContracts, RelationalHomeProgramCatalogReadmissionSource,
         RelationalHomeProgramContractDenial, RelationalRuntime,
@@ -15,6 +18,7 @@ pub(super) fn refuse(
     grant: &worth_proof::AdmittedHomeProgramTransitionCatalog<
         RelationalHomeProgramCatalogReadmissionSource<'_>,
     >,
+    root: &RelationalHomeProgramPlanningRoot,
     contracts: &PreparedRelationalHomeProgramContracts,
 ) {
     let memory = worth_execution::SerialMemoryBudget::new(Some(0));
@@ -28,6 +32,7 @@ pub(super) fn refuse(
             &ExecutionRequest::serial(&request),
             native,
             grant,
+            root,
             contracts,
         )
         .unwrap_err();
@@ -59,6 +64,7 @@ pub(super) fn refuse(
             &ExecutionRequest::serial(&request),
             native,
             grant,
+            root,
             contracts,
         )
         .unwrap_err();

@@ -71,7 +71,18 @@ where
                 .unwrap_or_default()
         });
     if !authored_stages.is_empty() {
-        coupled_outputs.authored_stages = Some(Box::new(authored_stages));
+        let stages: Vec<
+            crate::domain_computation::primary_graph::application_contribution::authored_edit::CapturedAuthoredEditStage<Schema>,
+        > = authored_stages
+            .into_iter()
+            .map(|stage| {
+                *stage
+                    .downcast::<crate::domain_computation::primary_graph::application_contribution::authored_edit::CapturedAuthoredEditStage<Schema>>()
+                    .ok()
+                    .expect("same-schema authored stage capture")
+            })
+            .collect();
+        coupled_outputs.authored_stages = Some(Box::new(stages));
     }
     coupled_outputs.synchronous = synchronous_outputs;
     coupled_outputs.round_limits = producer_round_limits;

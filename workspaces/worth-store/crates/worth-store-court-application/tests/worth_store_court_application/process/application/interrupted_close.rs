@@ -110,3 +110,4 @@ fn interrupted_close(deadline: bool) {
 }
 
 mod checkpoint;
+mod killed_checkpoint;

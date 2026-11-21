@@ -12,7 +12,6 @@ use worth_proof::{HomeAdmitted, RelationalReadmitted, StoreRecovered};
 #[derive(Debug)]
 pub enum ApplicationHomeOpenRefusal {
     Execution(WorkCeilingDenial),
-    UncleanRecoveryUnsupported(worth_foundational::facade::UncleanRecoveryUnsupported),
     Physical(physical_admission::ApplicationHomePhysicalRefusal),
     Descriptor(crate::descriptor::ApplicationHomeDescriptorDenial),
     Checkpoint(crate::checkpoint::ApplicationHomeCheckpointDenial),

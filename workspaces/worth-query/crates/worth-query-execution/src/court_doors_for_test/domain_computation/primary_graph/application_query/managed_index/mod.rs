@@ -3,5 +3,7 @@
 pub mod invocation;
 #[path = "retention/mod.rs"]
 pub mod retention;
+#[path = "source/mod.rs"]
+pub mod source;
 #[path = "source_structure/mod.rs"]
 pub mod source_structure;

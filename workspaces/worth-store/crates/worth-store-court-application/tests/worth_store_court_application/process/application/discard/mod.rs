@@ -59,7 +59,7 @@ fn discard_refuses_the_live_lease_and_closed_disposal_reinitializes_with_a_new_i
 fn assert_fresh_host(location: &Path) {
     use worth_query_host::facade::{
         application_contribution::with_bootstrap_advancement_from_request,
-        application_installation::ApplicationBuildIdentity,
+        application_installation::ApplicationBuildIdentity, ApplicationHomePhysicalRefusalKind,
     };
     use worth_query_testkit_host::facade::host::{application_home as fixture, checkpoint_capture};
     let initialized = Arc::new(AtomicUsize::new(0));
@@ -81,6 +81,26 @@ fn assert_fresh_host(location: &Path) {
         discard(location),
         Err(Denial::MutationOwnerContended)
     ));
+    // A competing Host open is matched by type through the application facade.
+    let competing = fixture::request(
+        location.to_owned(),
+        ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID")).unwrap(),
+        initialized.clone(),
+        Arc::new(AtomicUsize::new(0)),
+    );
+    match with_bootstrap_advancement_from_request(execution, |phase| {
+        competing.open_in_advancement(&phase)
+    })
+    .unwrap()
+    {
+        Err(refused) => assert_eq!(
+            refused.physical_refusal().map(|cause| cause.kind()),
+            Some(ApplicationHomePhysicalRefusalKind::MutationOwnerContended),
+            "Host must expose the typed contention refusal: {refused:?}"
+        ),
+        Ok(_) => panic!("a second Host open cannot serve a live Home"),
+    }
+    assert_eq!(initialized.load(Ordering::SeqCst), 1);
     // This fixture's opaque handler cannot yet retire (P-B). Abandonment is not Closed.
     drop(home);
 }
@@ -155,7 +175,7 @@ fn torn_discard_intent_refuses_open_and_explicit_retry_finishes_it() {
 fn assert_host_discard_pending(location: &Path) {
     use worth_query_host::facade::{
         application_contribution::with_bootstrap_advancement_from_request,
-        application_installation::ApplicationBuildIdentity, WorthQueryApplicationHomeOpenRefused,
+        application_installation::ApplicationBuildIdentity, ApplicationHomePhysicalRefusalKind,
     };
     use worth_query_testkit_host::facade::host::{application_home as fixture, checkpoint_capture};
     let initialized = Arc::new(AtomicUsize::new(0));
@@ -172,14 +192,11 @@ fn assert_host_discard_pending(location: &Path) {
     })
     .unwrap()
     {
-        Err(WorthQueryApplicationHomeOpenRefused::Physical {
-            cause: ApplicationHomeOpenRefusal::Physical(cause),
-            ..
-        }) => assert_eq!(
-            cause.kind(),
-            ApplicationHomePhysicalRefusalKind::DiscardPending
+        Err(refused) => assert_eq!(
+            refused.physical_refusal().map(|cause| cause.kind()),
+            Some(ApplicationHomePhysicalRefusalKind::DiscardPending),
+            "Host must preserve the typed tombstone refusal: {refused:?}"
         ),
-        Err(cause) => panic!("Host must preserve the typed tombstone refusal: {cause:?}"),
         Ok(_) => panic!("Host cannot serve a tombstoned location"),
     }
     assert_eq!(initialized.load(Ordering::SeqCst), 0);

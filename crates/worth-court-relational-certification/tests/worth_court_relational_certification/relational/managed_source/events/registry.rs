@@ -86,3 +86,60 @@ pub(in super::super::super) fn profile() -> (
         .unwrap();
     (registry, program, path)
 }
+pub(super) fn ordered_predecessor_profile() -> (
+    RelationalSchemaRegistry,
+    ManagedIndexSourceProgram,
+    DerivedRelationHandle,
+) {
+    let (mut registry, _) = super::super::registry::registry();
+    for (kind, to) in [(3, 4), (5, 1)] {
+        let cardinality = if kind == 5 {
+            vec![CardinalityContractDeclaration {
+                contract_id: "one-predecessor".into(),
+                source_max: Some(1),
+                target_max: None,
+                pair_max: None,
+                source_min: None,
+                target_min: None,
+                pair_min: None,
+                pair_min_semantics: PairMinimumSemantics::ObservedDirectedPairs,
+                minimum_enforcement: MinimumCardinalityEnforcement::CommitBoundary,
+            }]
+        } else {
+            vec![]
+        };
+        registry = registry
+            .register_relation_kind(RelationKindRegistration {
+                kind_id: KindId(kind),
+                kind_name: format!("event-{kind}"),
+                schema_id: SchemaId("managed-source-court".into()),
+                schema_version_id: SchemaVersionId(1),
+                cross_context_policy: CrossContextPolicy::Forbid,
+                cascade_delete_policy: CascadeDeletePolicy::RetainDanglingForAudit,
+                aspect_contract_declarations: Default::default(),
+                relation_integrity: RelationIntegrityDeclarations::new(
+                    vec![EndpointKindContractDeclaration {
+                        contract_id: format!("event-{kind}").into(),
+                        allowed_source_kinds: vec![KindId(1)],
+                        allowed_target_kinds: vec![KindId(to)],
+                        self_edges_allowed: false,
+                        cross_context_policy: CrossContextPolicy::Forbid,
+                    }],
+                    cardinality,
+                    vec![],
+                    vec![],
+                    vec![],
+                ),
+            })
+            .unwrap();
+    }
+    let parts = parts();
+    let registry = registry
+        .register_derived_relations(vec![parts.clone()])
+        .unwrap();
+    let path = registry.derived_relation(&parts.identity).unwrap();
+    let program = registry
+        .bind_ordered_predecessor_managed_index_source(&path, vec![], vec![])
+        .unwrap();
+    (registry, program, path)
+}

@@ -200,6 +200,22 @@ impl<K: RecordKind> RecordArena<K> {
             .carrier_mut_using(physical, request)?
             .and_then(Option::as_mut))
     }
+    pub(crate) fn replace_revision_maps_for_request(
+        &mut self,
+        slot: usize,
+        aspect_versions: AspectVersions,
+        field_revisions: Option<FieldRevisions>,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Option<()>, crate::execution::RelationalExecutionDenialCause> {
+        let Some(physical) = self.physical_index(slot) else {
+            return Ok(None);
+        };
+        self.aspect_versions
+            .set_value_using(physical, aspect_versions, Some(request))?;
+        self.field_revisions
+            .set_value_using(physical, field_revisions, Some(request))?;
+        Ok(Some(()))
+    }
     pub(crate) fn retained_extra(
         &self,
         slot: usize,

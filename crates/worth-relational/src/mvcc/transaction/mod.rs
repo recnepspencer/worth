@@ -37,6 +37,7 @@ mod staging_storage;
 
 pub use admission::RelationalBranchTransactionAdmissionDenial;
 pub use bound::BranchBoundRelationalTransaction;
+pub(crate) use bound::TransactionSchemaOrigin;
 pub use footprint::{
     RelationalTransactionFootprint, RelationalTransactionReadLocus, RelationalTransactionWriteLocus,
 };

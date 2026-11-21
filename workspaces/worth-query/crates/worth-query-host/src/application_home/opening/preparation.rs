@@ -107,6 +107,7 @@ where
         Ok(home) => home,
         Err(home) => return Err(Refused::RelationalAttachment { query, home }),
     };
+    // Store chooses the identity bound for the open it admitted.
     let installed = match home.prepare_native_schema_for_home(&request) {
         Ok(ApplicationHomeNativeSchemaPreparation::Fresh {
             native,
@@ -115,15 +116,14 @@ where
         Ok(ApplicationHomeNativeSchemaPreparation::Existing {
             native,
             source,
-            maximum_kind,
-            maximum_aspect,
+            identities,
             installation,
         }) => query.prepare_home_native_receiver_schema(
             phase,
             native,
             source,
-            maximum_kind,
-            maximum_aspect,
+            identities.maximum_kind(),
+            identities.maximum_aspect(),
             installation,
         ),
         Err(cause) => return Err(Refused::NativePreparation { query, home, cause }),

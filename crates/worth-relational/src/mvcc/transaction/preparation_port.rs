@@ -135,6 +135,7 @@ impl RelationalPreparationPort {
         let runtime = runtime.select_home_contracts(
             proposal.state.validation_input.basis(),
             proposal.state.validation_input.home_target(),
+            proposal.state.validation_input.recorded_result_schema(),
         )?;
         let proposal = runtime.revalidate_proposal_for_publication(proposal)?;
         crate::authority::commit::pipeline::prepare_consulted_authoritative_commit(

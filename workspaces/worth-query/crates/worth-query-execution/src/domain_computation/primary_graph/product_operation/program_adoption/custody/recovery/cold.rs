@@ -93,6 +93,12 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             product,
             support_custody: _,
         } = recovery;
+        use worth_query_execution_runtime::facade::ports::ProductBranchOwnerCleanupPort as _;
+        let cleanup = Ok(
+            crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanupReceipt::continued_original_for_published(
+                &commit,
+            ),
+        );
         let adoption = WorthQueryPerformedBranchAdoption::recovered(
             commit,
             branch,
@@ -108,7 +114,9 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             .expect("readmitted support")
             .lifecycle()
             .release_branch_adoption(execution, attempt);
-        let cleanup=self.application().release_product_recovery_in_request(execution,product,IMMEDIATE_RECOVERY_RELEASE_AGE_TICKS,&mut crate::domain_computation::execution_runtime::product_world::OwnerCleanupRetirements::default());
+        // The published continuation removed the World record and released
+        // its Native custody; releasing the record again would only miss.
+        drop(product);
         let outcome = WorthQueryBranchAdoptionRecoveryOutcome::Performed { adoption, cleanup };
         Ok(match discharge {
             Ok(()) => outcome,

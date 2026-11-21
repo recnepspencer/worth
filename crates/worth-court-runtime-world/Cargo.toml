@@ -8,6 +8,7 @@
 "license" = { "workspace" = true }
 
 [dependencies]
+"proptest" = { "version" = "1", "default-features" = false, "features" = ["std", "bit-set"] }
 sha2 = "0.10"
 "worth-testkit-relational" = { "path" = "../worth-testkit-relational" }
 "worth-testkit-compiler" = { "path" = "../worth-testkit-compiler" }

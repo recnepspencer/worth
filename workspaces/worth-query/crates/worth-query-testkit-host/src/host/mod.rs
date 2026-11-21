@@ -30,6 +30,7 @@ pub mod installed_contract_inspection;
 #[allow(dead_code, unused_imports)]
 #[path = "support/process_deadline.rs"]
 pub mod process_deadline;
+pub mod program_transition_successor;
 #[allow(dead_code, unused_imports)]
 #[path = "temporal_conditional_operation/schema.rs"]
 pub mod schema;
