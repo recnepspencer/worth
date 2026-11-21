@@ -411,10 +411,12 @@ fn an_unchanged_replacement_of_a_recorded_parent_settles_its_consuming_writer() 
 /// The same edit over a parent recorded by its Initial producer: `b = 4`
 /// commits `saturated:a` = 7. The reopened parent's replacement (Preserve,
 /// 2 + min(9, 5) = 7) has an equal payload under a different custody, its
-/// producer: R3 reopens the consuming writer instead of settling it (§1.2:
-/// equal value alone is never enough). The writer runs again on the
-/// replacement, writes m = 9 again, and the edit commits the sequential world
-/// (saturated:a = 7, second:b = 1008) with 3 producer contacts.
+/// producer. Plan §1.2: "Equal value alone is never enough. Custody, role,
+/// generation, readiness and demand key are part of the comparison." So R3
+/// reopens the consuming writer instead of settling it. The writer runs
+/// again on the replacement, writes m = 9 again, and the edit commits the
+/// sequential world (saturated:a = 7, second:b = 1008) with 3 producer
+/// contacts.
 #[test]
 fn an_equal_payload_under_another_custody_reopens_its_consuming_writer() {
     let _execution = WorthQueryExecutionObservation::install_on_this_thread();

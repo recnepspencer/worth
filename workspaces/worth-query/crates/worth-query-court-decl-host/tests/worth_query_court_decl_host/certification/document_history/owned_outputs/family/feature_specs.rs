@@ -10,6 +10,7 @@ pub(in super::super) fn feature_specs(
         decision_input::feature(),
         parity_input::feature(),
         saturated_input::feature(),
+        self_write::feature(),
         cross_reader::feature(),
         cross_converge::feature(),
         cross_oscillate::feature(),
